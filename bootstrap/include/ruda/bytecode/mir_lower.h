@@ -6,6 +6,7 @@
 
 #include "ruda/base/allocator.h"
 #include "ruda/bytecode/bytecode.h"
+#include "ruda/bytecode/program.h"
 #include "ruda/mir/mir.h"
 
 typedef enum RudaMirBytecodeLowerStatus {
@@ -25,7 +26,15 @@ typedef struct RudaMirBytecodeLowerOptions {
     RudaBytecodeFunctionOptions function_options;
 } RudaMirBytecodeLowerOptions;
 
+typedef struct RudaMirBytecodeProgramLowerOptions {
+    uint64_t source;
+    size_t source_count;
+    RudaBytecodeProgramOptions program_options;
+} RudaMirBytecodeProgramLowerOptions;
+
 RudaMirBytecodeLowerOptions ruda_mir_bytecode_lower_default_options(void);
+RudaMirBytecodeProgramLowerOptions
+ruda_mir_bytecode_program_lower_default_options(void);
 
 /*
  * Lowers only verified scalar bool/i64/void MIR. Unsupported semantics fail
@@ -38,6 +47,19 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
     RudaAllocator allocator,
     RudaMirBytecodeLowerOptions options,
     RudaBytecodeFunction *output
+);
+
+/*
+ * Lowers an unordered set of verified scalar MIR functions into stable symbol
+ * order, resolves the requested entry, and verifies the complete program.
+ */
+RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_program(
+    const RudaMirFunction *const *functions,
+    size_t function_count,
+    RudaSymbolId entry,
+    RudaAllocator allocator,
+    RudaMirBytecodeProgramLowerOptions options,
+    RudaBytecodeProgram *output
 );
 
 #endif

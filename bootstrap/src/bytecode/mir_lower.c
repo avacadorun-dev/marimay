@@ -1,6 +1,7 @@
 #include "ruda/bytecode/mir_lower.h"
 
 #include <limits.h>
+#include <stdlib.h>
 #include <string.h>
 
 RudaMirBytecodeLowerOptions ruda_mir_bytecode_lower_default_options(void) {
@@ -8,6 +9,15 @@ RudaMirBytecodeLowerOptions ruda_mir_bytecode_lower_default_options(void) {
     options.source = 0;
     options.source_count = 1;
     options.function_options = ruda_bytecode_function_default_options();
+    return options;
+}
+
+RudaMirBytecodeProgramLowerOptions
+ruda_mir_bytecode_program_lower_default_options(void) {
+    RudaMirBytecodeProgramLowerOptions options;
+    options.source = 0;
+    options.source_count = 1;
+    options.program_options = ruda_bytecode_program_default_options();
     return options;
 }
 
@@ -22,6 +32,8 @@ static bool ruda_mir_bytecode_options_valid(
         && options.function_options.max_registers != 0
         && options.function_options.max_blocks != 0
         && options.function_options.max_instructions != 0
+        && options.function_options.max_calls != 0
+        && options.function_options.max_call_arguments != 0
         && options.function_options.max_source_files != 0
         && options.function_options.max_encoded_bytes >= 8U
         && options.function_options.max_verify_work != 0;
@@ -48,6 +60,9 @@ static bool ruda_mir_bytecode_type(
     bool allow_void,
     RudaBytecodeType *output
 ) {
+    if (output == NULL) {
+        return false;
+    }
     if (input == RUDA_TYPE_BOOL) {
         *output = RUDA_BYTECODE_TYPE_BOOL;
         return true;
@@ -64,6 +79,7 @@ static bool ruda_mir_bytecode_type(
 }
 
 static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
+    const RudaMirFunction *function,
     const RudaMirInstruction *input,
     uint64_t source,
     RudaBytecodeInstruction *output
@@ -178,8 +194,24 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
         case RUDA_MIR_ENUM_IS_VARIANT:
         case RUDA_MIR_ENUM_REQUIRE_VARIANT:
         case RUDA_MIR_ENUM_GET_PAYLOAD:
-        case RUDA_MIR_CALL:
             return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_INSTRUCTION;
+        case RUDA_MIR_CALL: {
+            const RudaMirCall *call = input->call < function->calls.length
+                ? ruda_vector_at_const(&function->calls, input->call)
+                : NULL;
+            if (call == NULL) {
+                return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            }
+            if (call->result_type == RUDA_TYPE_VOID) {
+                output->opcode = RUDA_OPCODE_CALL_DIRECT_VOID;
+                output->operands[0].unsigned_value = input->call;
+            } else {
+                output->opcode = RUDA_OPCODE_CALL_DIRECT;
+                output->operands[0].unsigned_value = input->target;
+                output->operands[1].unsigned_value = input->call;
+            }
+            break;
+        }
     }
     return RUDA_MIR_BYTECODE_LOWER_OK;
 }
@@ -260,6 +292,14 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
             return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
         }
     }
+    for (index = 0; index < input->blocks.length; index += 1) {
+        const RudaMirBlock *block = ruda_vector_at_const(&input->blocks, index);
+        if (block != NULL
+            && (block->terminator.kind == RUDA_MIR_PANIC
+                || block->terminator.kind == RUDA_MIR_CALL_NEVER)) {
+            return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TERMINATOR;
+        }
+    }
     if (!ruda_mir_bytecode_type(input->result_type, true, &result_type)) {
         return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
     }
@@ -270,7 +310,11 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
         );
         RudaBytecodeType ignored;
         if (input_type == NULL
-            || !ruda_mir_bytecode_type(*input_type, false, &ignored)) {
+            || !ruda_mir_bytecode_type(
+                *input_type,
+                index >= input->parameter_count,
+                &ignored
+            )) {
             return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
         }
     }
@@ -280,7 +324,10 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
             &lowered_instruction_count
         ) || input->register_types.length > options.function_options.max_registers
         || input->blocks.length > options.function_options.max_blocks
-        || lowered_instruction_count > options.function_options.max_instructions) {
+        || lowered_instruction_count > options.function_options.max_instructions
+        || input->calls.length > options.function_options.max_calls
+        || input->call_arguments.length
+            > options.function_options.max_call_arguments) {
         return RUDA_MIR_BYTECODE_LOWER_LIMIT_REACHED;
     }
     if (!ruda_size_multiply(
@@ -333,7 +380,7 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
         );
         RudaBytecodeType type;
         uint32_t register_id = UINT32_MAX;
-        if (!ruda_mir_bytecode_type(*input_type, false, &type)) {
+        if (!ruda_mir_bytecode_type(*input_type, true, &type)) {
             status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
             goto cleanup;
         }
@@ -342,6 +389,70 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
             goto cleanup;
         }
         if (register_id != index) {
+            status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            goto cleanup;
+        }
+    }
+    for (index = 0; index < input->calls.length; index += 1) {
+        const RudaMirCall *call = ruda_vector_at_const(&input->calls, index);
+        RudaBytecodeCallArgument *arguments = NULL;
+        size_t argument_bytes = 0;
+        size_t argument_index = 0;
+        RudaBytecodeType call_result_type;
+        RudaBytecodeCallId call_id = RUDA_BYTECODE_NO_CALL;
+        if (call == NULL
+            || !ruda_mir_bytecode_type(
+                call->result_type,
+                true,
+                &call_result_type
+            ) || !ruda_size_multiply(
+                call->argument_count,
+                sizeof(RudaBytecodeCallArgument),
+                &argument_bytes
+            )) {
+            status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            goto cleanup;
+        }
+        if (argument_bytes != 0) {
+            arguments = ruda_allocate(&allocator, argument_bytes);
+            if (arguments == NULL) {
+                status = RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+                goto cleanup;
+            }
+        }
+        for (argument_index = 0;
+            argument_index < call->argument_count;
+            argument_index += 1) {
+            const RudaMirCallArgument *argument = ruda_vector_at_const(
+                &input->call_arguments,
+                call->argument_start + argument_index
+            );
+            if (argument == NULL || !ruda_mir_bytecode_type(
+                    argument->type,
+                    false,
+                    &arguments[argument_index].type
+                )) {
+                status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+                break;
+            }
+            arguments[argument_index].register_id = argument->register_id;
+        }
+        if (status == RUDA_MIR_BYTECODE_LOWER_OK
+            && !ruda_bytecode_add_call(
+                &lowered,
+                call->callee,
+                call_result_type,
+                arguments,
+                call->argument_count,
+                &call_id
+            )) {
+            status = RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+        }
+        ruda_deallocate(&allocator, arguments, argument_bytes);
+        if (status != RUDA_MIR_BYTECODE_LOWER_OK) {
+            goto cleanup;
+        }
+        if ((size_t)call_id != index) {
             status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
             goto cleanup;
         }
@@ -369,6 +480,7 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
             );
             RudaBytecodeInstruction lowered_instruction;
             status = ruda_mir_bytecode_instruction(
+                input,
                 instruction,
                 options.source,
                 &lowered_instruction
@@ -427,5 +539,151 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
 cleanup:
     ruda_deallocate(&allocator, parameter_types, parameter_bytes);
     ruda_bytecode_function_dispose(&lowered);
+    return status;
+}
+
+static int ruda_mir_bytecode_compare_function_symbols(
+    const void *left,
+    const void *right
+) {
+    const RudaMirFunction *const left_function =
+        *(const RudaMirFunction *const *)left;
+    const RudaMirFunction *const right_function =
+        *(const RudaMirFunction *const *)right;
+    return memcmp(
+        left_function->symbol.bytes,
+        right_function->symbol.bytes,
+        sizeof(left_function->symbol.bytes)
+    );
+}
+
+RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_program(
+    const RudaMirFunction *const *functions,
+    size_t function_count,
+    RudaSymbolId entry,
+    RudaAllocator allocator,
+    RudaMirBytecodeProgramLowerOptions options,
+    RudaBytecodeProgram *output
+) {
+    RudaBytecodeProgram lowered;
+    const RudaMirFunction **ordered = NULL;
+    size_t ordered_bytes = 0;
+    size_t index = 0;
+    RudaMirBytecodeLowerStatus status = RUDA_MIR_BYTECODE_LOWER_OK;
+    if (output == NULL) {
+        return RUDA_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
+    }
+    if (output->initialized) {
+        ruda_bytecode_program_dispose(output);
+    } else {
+        memset(output, 0, sizeof(*output));
+    }
+    memset(&lowered, 0, sizeof(lowered));
+    if ((functions == NULL && function_count != 0) || function_count == 0
+        || function_count > options.program_options.max_functions
+        || allocator.allocate == NULL || allocator.resize == NULL
+        || allocator.deallocate == NULL
+        || options.source_count == 0 || options.source >= options.source_count
+        || options.source_count
+            > options.program_options.function_options.max_source_files
+        || !ruda_size_multiply(
+            function_count,
+            sizeof(const RudaMirFunction *),
+            &ordered_bytes
+        )) {
+        return RUDA_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
+    }
+    if (!ruda_bytecode_program_init(
+            &lowered,
+            allocator,
+            options.source_count,
+            options.program_options
+        )) {
+        return RUDA_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
+    }
+    ordered = ruda_allocate(&allocator, ordered_bytes);
+    if (ordered == NULL) {
+        ruda_bytecode_program_dispose(&lowered);
+        return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+    }
+    for (index = 0; index < function_count; index += 1) {
+        if (functions[index] == NULL || !functions[index]->initialized) {
+            status = RUDA_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
+            goto cleanup_program;
+        }
+        ordered[index] = functions[index];
+    }
+    qsort(
+        ordered,
+        function_count,
+        sizeof(const RudaMirFunction *),
+        ruda_mir_bytecode_compare_function_symbols
+    );
+    for (index = 1; index < function_count; index += 1) {
+        if (ruda_mir_bytecode_compare_function_symbols(
+                &ordered[index - 1],
+                &ordered[index]
+            ) == 0) {
+            status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            goto cleanup_program;
+        }
+    }
+    for (index = 0; index < function_count; index += 1) {
+        RudaBytecodeFunction function;
+        RudaMirBytecodeLowerOptions function_options;
+        uint32_t function_id = UINT32_MAX;
+        memset(&function, 0, sizeof(function));
+        function_options.source = options.source;
+        function_options.source_count = options.source_count;
+        function_options.function_options =
+            options.program_options.function_options;
+        status = ruda_mir_lower_bytecode_function(
+            ordered[index],
+            allocator,
+            function_options,
+            &function
+        );
+        if (status == RUDA_MIR_BYTECODE_LOWER_OK
+            && !ruda_bytecode_program_take_function(
+                &lowered,
+                ordered[index]->symbol,
+                &function,
+                &function_id
+            )) {
+            status = RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+        }
+        ruda_bytecode_function_dispose(&function);
+        if (status != RUDA_MIR_BYTECODE_LOWER_OK) {
+            goto cleanup_program;
+        }
+        if ((size_t)function_id != index) {
+            status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            goto cleanup_program;
+        }
+    }
+    if (!ruda_bytecode_program_set_entry(&lowered, entry)) {
+        status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+        goto cleanup_program;
+    }
+    {
+        RudaBytecodeProgramVerifyStatus verify_status =
+            ruda_bytecode_program_verify(&lowered);
+        if (verify_status == RUDA_BYTECODE_PROGRAM_VERIFY_ALLOCATION_FAILED) {
+            status = RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+        } else if (verify_status == RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED) {
+            status = RUDA_MIR_BYTECODE_LOWER_LIMIT_REACHED;
+        } else if (verify_status != RUDA_BYTECODE_PROGRAM_VERIFY_OK) {
+            status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+        }
+        if (status != RUDA_MIR_BYTECODE_LOWER_OK) {
+            goto cleanup_program;
+        }
+    }
+    *output = lowered;
+    memset(&lowered, 0, sizeof(lowered));
+
+cleanup_program:
+    ruda_bytecode_program_dispose(&lowered);
+    ruda_deallocate(&allocator, ordered, ordered_bytes);
     return status;
 }

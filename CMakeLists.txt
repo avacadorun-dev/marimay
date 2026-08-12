@@ -83,6 +83,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/base/vector.c
   bootstrap/src/base/writer.c
   bootstrap/src/bytecode/bytecode.c
+  bootstrap/src/bytecode/program.c
   bootstrap/src/bytecode/mir_lower.c
   bootstrap/src/bytecode/vm.c
   bootstrap/src/check/checker.c

@@ -17,6 +17,117 @@ static bool ruda_fuzz_discard_write(
     return bytes != NULL || length == 0;
 }
 
+static bool ruda_fuzz_run_status_expected(RudaBytecodeRunStatus status) {
+    return status == RUDA_BYTECODE_RUN_OK
+        || status == RUDA_BYTECODE_RUN_STEP_LIMIT
+        || status == RUDA_BYTECODE_RUN_OVERFLOW
+        || status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
+        || status == RUDA_BYTECODE_RUN_INVALID_SHIFT
+        || status == RUDA_BYTECODE_RUN_LIMIT_REACHED
+        || status == RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+}
+
+static void ruda_fuzz_program(const uint8_t *data, size_t size) {
+    RudaBytecodeProgram program;
+    RudaBytecodeProgramOptions options = ruda_bytecode_program_default_options();
+    RudaBytecodeCodecStatus status;
+    RudaOwnedBytes encoded;
+    RudaBytecodeValue *arguments = NULL;
+    size_t argument_count = 0;
+    size_t argument_bytes = 0;
+    size_t index = 0;
+    memset(&program, 0, sizeof(program));
+    memset(&encoded, 0, sizeof(encoded));
+    options.max_functions = 256;
+    options.max_total_registers = 4096;
+    options.max_total_blocks = 4096;
+    options.max_total_instructions = 65536;
+    options.max_total_calls = 4096;
+    options.max_total_call_arguments = 65536;
+    options.max_encoded_bytes = 1024U * 1024U;
+    options.max_verify_work = 1000000;
+    options.function_options.max_registers = 4096;
+    options.function_options.max_blocks = 4096;
+    options.function_options.max_instructions = 65536;
+    options.function_options.max_calls = 4096;
+    options.function_options.max_call_arguments = 65536;
+    options.function_options.max_source_files = 4096;
+    options.function_options.max_encoded_bytes = 1024U * 1024U;
+    options.function_options.max_verify_work = 1000000;
+    status = ruda_bytecode_decode_program(
+        data,
+        size,
+        ruda_system_allocator(),
+        options,
+        &program
+    );
+    if (status != RUDA_BYTECODE_CODEC_OK) {
+        if (status == RUDA_BYTECODE_CODEC_INVALID_ARGUMENT) {
+            abort();
+        }
+        return;
+    }
+    if (ruda_bytecode_program_verify(&program)
+            != RUDA_BYTECODE_PROGRAM_VERIFY_OK
+        || ruda_bytecode_encode_program(
+            &program,
+            ruda_system_allocator(),
+            &encoded
+        ) != RUDA_BYTECODE_CODEC_OK
+        || encoded.length != size
+        || memcmp(encoded.data, data, size) != 0) {
+        abort();
+    }
+    {
+        const RudaBytecodeProgramFunction *entry =
+            ruda_bytecode_program_function(&program, program.entry_function);
+        if (entry == NULL || !ruda_size_multiply(
+                entry->body.parameter_count,
+                sizeof(RudaBytecodeValue),
+                &argument_bytes
+            )) {
+            abort();
+        }
+        argument_count = entry->body.parameter_count;
+        if (argument_bytes != 0) {
+            arguments = ruda_allocate(&program.allocator, argument_bytes);
+            if (arguments == NULL) {
+                ruda_owned_bytes_dispose(&encoded);
+                ruda_bytecode_program_dispose(&program);
+                return;
+            }
+            memset(arguments, 0, argument_bytes);
+            for (index = 0; index < argument_count; index += 1) {
+                const RudaBytecodeType *type = ruda_vector_at_const(
+                    &entry->body.register_types,
+                    index
+                );
+                arguments[index].type = *type;
+            }
+        }
+    }
+    {
+        RudaBytecodeRunOptions run_options = ruda_bytecode_run_default_options();
+        RudaBytecodeValue result;
+        run_options.max_steps = 1024;
+        run_options.max_call_depth = 64;
+        memset(&result, 0, sizeof(result));
+        if (!ruda_fuzz_run_status_expected(ruda_bytecode_run_program(
+                &program,
+                arguments,
+                argument_count,
+                ruda_system_allocator(),
+                run_options,
+                &result
+            ))) {
+            abort();
+        }
+    }
+    ruda_deallocate(&program.allocator, arguments, argument_bytes);
+    ruda_owned_bytes_dispose(&encoded);
+    ruda_bytecode_program_dispose(&program);
+}
+
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     RudaBytecodeFunction function;
     RudaBytecodeFunction decoded_again;
@@ -30,9 +141,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     if (size > 1024U * 1024U) {
         return 0;
     }
+    ruda_fuzz_program(data, size);
     options.max_registers = 4096;
     options.max_blocks = 4096;
     options.max_instructions = 65536;
+    options.max_calls = 4096;
+    options.max_call_arguments = 65536;
     options.max_source_files = 4096;
     options.max_encoded_bytes = 1024U * 1024U;
     options.max_verify_work = 1000000;
@@ -107,13 +221,12 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             run_options,
             &result
         );
-        if (run_status != RUDA_BYTECODE_RUN_OK
-            && run_status != RUDA_BYTECODE_RUN_STEP_LIMIT
-            && run_status != RUDA_BYTECODE_RUN_OVERFLOW
-            && run_status != RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
-            && run_status != RUDA_BYTECODE_RUN_INVALID_SHIFT
-            && run_status != RUDA_BYTECODE_RUN_LIMIT_REACHED
-            && run_status != RUDA_BYTECODE_RUN_ALLOCATION_FAILED) {
+        if (function.calls.length == 0
+            && !ruda_fuzz_run_status_expected(run_status)) {
+            abort();
+        }
+        if (function.calls.length != 0
+            && run_status != RUDA_BYTECODE_RUN_INVALID_BYTECODE) {
             abort();
         }
     }

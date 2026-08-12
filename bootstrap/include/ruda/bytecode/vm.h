@@ -7,6 +7,7 @@
 
 #include "ruda/base/allocator.h"
 #include "ruda/bytecode/bytecode.h"
+#include "ruda/bytecode/program.h"
 
 typedef struct RudaBytecodeValue {
     RudaBytecodeType type;
@@ -22,7 +23,10 @@ typedef struct RudaBytecodeTrap {
 } RudaBytecodeTrap;
 
 typedef struct RudaBytecodeRunOptions {
+    /* Per frame, matching the MIR oracle's max_steps_per_function. */
     size_t max_steps;
+    /* Root counts as depth one; exhaustion reports STEP_LIMIT. */
+    size_t max_call_depth;
     size_t *remaining_shared_steps;
     /* Optional caller-owned output, reset before execution. */
     RudaBytecodeTrap *trap;
@@ -49,6 +53,20 @@ RudaBytecodeRunOptions ruda_bytecode_run_default_options(void);
  */
 RudaBytecodeRunStatus ruda_bytecode_run(
     const RudaBytecodeFunction *function,
+    const RudaBytecodeValue *arguments,
+    size_t argument_count,
+    RudaAllocator allocator,
+    RudaBytecodeRunOptions options,
+    RudaBytecodeValue *result
+);
+
+/*
+ * Verifies the complete program before allocating execution frames. Direct
+ * calls use an explicit heap frame stack, never C recursion. The entry result
+ * and call destinations are published only after successful returns.
+ */
+RudaBytecodeRunStatus ruda_bytecode_run_program(
+    const RudaBytecodeProgram *program,
     const RudaBytecodeValue *arguments,
     size_t argument_count,
     RudaAllocator allocator,

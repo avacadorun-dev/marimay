@@ -10,6 +10,7 @@
 #include "ruda/base/vector.h"
 #include "ruda/base/writer.h"
 #include "ruda/generated/opcodes.h"
+#include "ruda/types/type.h"
 
 enum {
     RUDA_BYTECODE_FORMAT_VERSION = 1
@@ -19,6 +20,7 @@ typedef enum RudaBytecodeOperandKind {
     RUDA_BYTECODE_OPERAND_NONE,
     RUDA_BYTECODE_OPERAND_REGISTER,
     RUDA_BYTECODE_OPERAND_BLOCK,
+    RUDA_BYTECODE_OPERAND_CALL,
     RUDA_BYTECODE_OPERAND_I64,
     RUDA_BYTECODE_OPERAND_BOOL
 } RudaBytecodeOperandKind;
@@ -69,10 +71,28 @@ typedef struct RudaBytecodeBlock {
     bool initialized;
 } RudaBytecodeBlock;
 
+typedef uint32_t RudaBytecodeCallId;
+
+#define RUDA_BYTECODE_NO_CALL UINT32_MAX
+
+typedef struct RudaBytecodeCallArgument {
+    uint32_t register_id;
+    RudaBytecodeType type;
+} RudaBytecodeCallArgument;
+
+typedef struct RudaBytecodeCall {
+    RudaSymbolId callee;
+    RudaBytecodeType result_type;
+    size_t argument_start;
+    size_t argument_count;
+} RudaBytecodeCall;
+
 typedef struct RudaBytecodeFunctionOptions {
     size_t max_registers;
     size_t max_blocks;
     size_t max_instructions;
+    size_t max_calls;
+    size_t max_call_arguments;
     size_t max_source_files;
     size_t max_encoded_bytes;
     size_t max_verify_work;
@@ -85,6 +105,8 @@ typedef struct RudaBytecodeFunction {
     size_t parameter_count;
     RudaVector register_types;
     RudaVector blocks;
+    RudaVector calls;
+    RudaVector call_arguments;
     size_t instruction_count;
     RudaBytecodeFunctionOptions options;
     bool initialized;
@@ -149,6 +171,22 @@ bool ruda_bytecode_append_instruction(
     RudaBytecodeFunction *function,
     uint32_t block,
     const RudaBytecodeInstruction *instruction
+);
+bool ruda_bytecode_add_call(
+    RudaBytecodeFunction *function,
+    RudaSymbolId callee,
+    RudaBytecodeType result_type,
+    const RudaBytecodeCallArgument *arguments,
+    size_t argument_count,
+    RudaBytecodeCallId *result
+);
+const RudaBytecodeCall *ruda_bytecode_call(
+    const RudaBytecodeFunction *function,
+    RudaBytecodeCallId call
+);
+const RudaBytecodeCallArgument *ruda_bytecode_call_argument(
+    const RudaBytecodeFunction *function,
+    size_t index
 );
 
 RudaBytecodeVerifyStatus ruda_bytecode_verify(

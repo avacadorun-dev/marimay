@@ -50,6 +50,19 @@ static bool ruda_test_vm_append(
     return ruda_bytecode_append_instruction(function, block, &instruction);
 }
 
+static RudaBytecodeInstruction *ruda_test_vm_at(
+    RudaBytecodeFunction *function,
+    size_t block,
+    size_t instruction
+) {
+    RudaBytecodeBlock *target = function != NULL
+        ? ruda_vector_at(&function->blocks, block)
+        : NULL;
+    return target != NULL
+        ? ruda_vector_at(&target->instructions, instruction)
+        : NULL;
+}
+
 static bool ruda_test_vm_add_registers(
     RudaBytecodeFunction *function,
     const RudaBytecodeType *types,
@@ -459,6 +472,224 @@ static bool ruda_test_vm_build_void(
         return false;
     }
     return true;
+}
+
+static bool ruda_test_vm_build_direct_constant(
+    RudaBytecodeFunction *function,
+    RudaAllocator allocator,
+    int64_t value,
+    uint64_t span_start
+) {
+    uint32_t result = UINT32_MAX;
+    uint32_t block = UINT32_MAX;
+    RudaBytecodeInstruction constant;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_bytecode_function_init(function, allocator, RUDA_BYTECODE_TYPE_I64,
+            1, NULL, 0, ruda_bytecode_function_default_options())
+        || !ruda_bytecode_add_register(function, RUDA_BYTECODE_TYPE_I64, &result)
+        || !ruda_bytecode_add_block(function, &block)) {
+        ruda_bytecode_function_dispose(function);
+        return false;
+    }
+    constant = ruda_test_vm_instruction(RUDA_OPCODE_CONST_I64, result, 0, 0,
+        span_start);
+    constant.operands[1].signed_value = value;
+    span_start += 1;
+    if (!ruda_bytecode_append_instruction(function, block, &constant)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_RETURN, result, 0,
+            0, &span_start)) {
+        ruda_bytecode_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_test_vm_build_direct_forward(
+    RudaBytecodeFunction *function,
+    RudaAllocator allocator,
+    RudaSymbolId callee,
+    uint64_t span_start
+) {
+    RudaBytecodeCallId call = RUDA_BYTECODE_NO_CALL;
+    uint32_t result = UINT32_MAX;
+    uint32_t block = UINT32_MAX;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_bytecode_function_init(function, allocator, RUDA_BYTECODE_TYPE_I64,
+            1, NULL, 0, ruda_bytecode_function_default_options())
+        || !ruda_bytecode_add_register(function, RUDA_BYTECODE_TYPE_I64, &result)
+        || !ruda_bytecode_add_block(function, &block)
+        || !ruda_bytecode_add_call(function, callee, RUDA_BYTECODE_TYPE_I64,
+            NULL, 0, &call)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_CALL_DIRECT, result,
+            call, 0, &span_start)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_RETURN, result, 0,
+            0, &span_start)) {
+        ruda_bytecode_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_test_vm_build_nested_program(
+    RudaBytecodeProgram *program,
+    RudaAllocator allocator
+) {
+    const RudaSymbolId leaf = {{0x10}};
+    const RudaSymbolId middle = {{0x20}};
+    const RudaSymbolId entry = {{0x30}};
+    RudaBytecodeFunction function;
+    uint32_t id = UINT32_MAX;
+    memset(program, 0, sizeof(*program));
+    memset(&function, 0, sizeof(function));
+    if (!ruda_bytecode_program_init(program, allocator, 1,
+            ruda_bytecode_program_default_options())
+        || !ruda_test_vm_build_direct_constant(&function, allocator, 42, 50)
+        || !ruda_bytecode_program_take_function(program, leaf, &function, &id)
+        || id != 0
+        || !ruda_test_vm_build_direct_forward(&function, allocator, leaf, 40)
+        || !ruda_bytecode_program_take_function(program, middle, &function, &id)
+        || id != 1
+        || !ruda_test_vm_build_direct_forward(&function, allocator, middle, 30)
+        || !ruda_bytecode_program_take_function(program, entry, &function, &id)
+        || id != 2 || !ruda_bytecode_program_set_entry(program, entry)) {
+        ruda_bytecode_function_dispose(&function);
+        ruda_bytecode_program_dispose(program);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_test_vm_build_recursive_program(
+    RudaBytecodeProgram *program,
+    RudaAllocator allocator
+) {
+    const RudaSymbolId symbol = {{0x10}};
+    static const RudaBytecodeType parameters[] = {RUDA_BYTECODE_TYPE_I64};
+    RudaBytecodeFunction function;
+    RudaBytecodeCallArgument argument;
+    RudaBytecodeCallId call = RUDA_BYTECODE_NO_CALL;
+    uint32_t one = UINT32_MAX;
+    uint32_t base_case = UINT32_MAX;
+    uint32_t decremented = UINT32_MAX;
+    uint32_t recursive_result = UINT32_MAX;
+    uint32_t blocks[3] = {UINT32_MAX, UINT32_MAX, UINT32_MAX};
+    uint32_t id = UINT32_MAX;
+    uint64_t span = 120;
+    memset(program, 0, sizeof(*program));
+    memset(&function, 0, sizeof(function));
+    if (!ruda_bytecode_function_init(
+            &function,
+            allocator,
+            RUDA_BYTECODE_TYPE_I64,
+            1,
+            parameters,
+            1,
+            ruda_bytecode_function_default_options()
+        ) || !ruda_bytecode_add_register(
+            &function,
+            RUDA_BYTECODE_TYPE_I64,
+            &one
+        ) || !ruda_bytecode_add_register(
+            &function,
+            RUDA_BYTECODE_TYPE_BOOL,
+            &base_case
+        ) || !ruda_bytecode_add_register(
+            &function,
+            RUDA_BYTECODE_TYPE_I64,
+            &decremented
+        ) || !ruda_bytecode_add_register(
+            &function,
+            RUDA_BYTECODE_TYPE_I64,
+            &recursive_result
+        ) || !ruda_bytecode_add_block(&function, &blocks[0])
+        || !ruda_bytecode_add_block(&function, &blocks[1])
+        || !ruda_bytecode_add_block(&function, &blocks[2])) {
+        goto cleanup;
+    }
+    argument.register_id = decremented;
+    argument.type = RUDA_BYTECODE_TYPE_I64;
+    if (!ruda_bytecode_add_call(
+            &function,
+            symbol,
+            RUDA_BYTECODE_TYPE_I64,
+            &argument,
+            1,
+            &call
+        ) || !ruda_test_vm_append(
+            &function,
+            blocks[0],
+            RUDA_OPCODE_CONST_I64,
+            one,
+            1,
+            0,
+            &span
+        ) || !ruda_test_vm_append(
+            &function,
+            blocks[0],
+            RUDA_OPCODE_I64_LESS_EQUAL,
+            base_case,
+            0,
+            one,
+            &span
+        ) || !ruda_test_vm_append(
+            &function,
+            blocks[0],
+            RUDA_OPCODE_BRANCH_BOOL,
+            base_case,
+            blocks[1],
+            blocks[2],
+            &span
+        ) || !ruda_test_vm_append(
+            &function,
+            blocks[1],
+            RUDA_OPCODE_RETURN,
+            one,
+            0,
+            0,
+            &span
+        ) || !ruda_test_vm_append(
+            &function,
+            blocks[2],
+            RUDA_OPCODE_I64_SUBTRACT_CHECKED,
+            decremented,
+            0,
+            one,
+            &span
+        ) || !ruda_test_vm_append(
+            &function,
+            blocks[2],
+            RUDA_OPCODE_CALL_DIRECT,
+            recursive_result,
+            call,
+            0,
+            &span
+        ) || !ruda_test_vm_append(
+            &function,
+            blocks[2],
+            RUDA_OPCODE_RETURN,
+            recursive_result,
+            0,
+            0,
+            &span
+        ) || !ruda_bytecode_program_init(
+            program,
+            allocator,
+            1,
+            ruda_bytecode_program_default_options()
+        ) || !ruda_bytecode_program_take_function(
+            program,
+            symbol,
+            &function,
+            &id
+        ) || id != 0 || !ruda_bytecode_program_set_entry(program, symbol)) {
+        goto cleanup;
+    }
+    return true;
+
+cleanup:
+    ruda_bytecode_function_dispose(&function);
+    ruda_bytecode_program_dispose(program);
+    return false;
 }
 
 static bool ruda_test_vm_build_negate(
@@ -921,6 +1152,357 @@ static void ruda_test_vm_bitwise_and_shifts(void) {
     }
 }
 
+static void ruda_test_vm_direct_calls(void) {
+    RudaBytecodeProgram program;
+    RudaBytecodeProgram decoded;
+    RudaOwnedBytes encoded;
+    RudaBytecodeValue result;
+    RudaBytecodeTrap trap;
+    RudaBytecodeRunOptions options;
+    size_t shared_steps = 0;
+    size_t failure_index = 0;
+    bool reached_success = false;
+
+    memset(&decoded, 0, sizeof(decoded));
+    memset(&encoded, 0, sizeof(encoded));
+    RUDA_EXPECT(ruda_test_vm_build_nested_program(&program,
+        ruda_system_allocator()));
+    RUDA_EXPECT(ruda_bytecode_program_verify(&program)
+        == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
+    memset(&trap, 0, sizeof(trap));
+    options = ruda_bytecode_run_default_options();
+    options.trap = &trap;
+    options.max_steps = 2;
+    options.max_call_depth = 3;
+    result = ruda_test_vm_i64(1234);
+    RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
+        ruda_system_allocator(), options, &result) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 42);
+    RUDA_EXPECT(!trap.has_span);
+    options.max_steps = 1;
+    result = ruda_test_vm_i64(1234);
+    RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
+        ruda_system_allocator(), options, &result) == RUDA_BYTECODE_RUN_STEP_LIMIT);
+    RUDA_EXPECT(result.as.i64 == 1234 && trap.has_span);
+    RUDA_EXPECT(trap.span.start == 51 && trap.span.end == 52);
+    options.max_steps = 2;
+    options.max_call_depth = 2;
+    result = ruda_test_vm_i64(1234);
+    RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
+        ruda_system_allocator(), options, &result) == RUDA_BYTECODE_RUN_STEP_LIMIT);
+    RUDA_EXPECT(result.as.i64 == 1234 && trap.has_span);
+    RUDA_EXPECT(trap.span.start == 40 && trap.span.end == 41);
+    options.max_call_depth = 3;
+    shared_steps = 6;
+    options.remaining_shared_steps = &shared_steps;
+    RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
+        ruda_system_allocator(), options, &result) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(shared_steps == 0);
+    shared_steps = 5;
+    result = ruda_test_vm_i64(1234);
+    RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
+        ruda_system_allocator(), options, &result) == RUDA_BYTECODE_RUN_STEP_LIMIT);
+    RUDA_EXPECT(shared_steps == 0 && result.as.i64 == 1234 && trap.has_span);
+    RUDA_EXPECT(trap.span.start == 31 && trap.span.end == 32);
+    options.remaining_shared_steps = NULL;
+
+    /* Per-frame limit is local: the leaf's second instruction is the boundary. */
+    options.max_steps = 1;
+    options.max_call_depth = 3;
+    result = ruda_test_vm_i64(1234);
+    memset(&trap, 0, sizeof(trap));
+    RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
+        ruda_system_allocator(), options, &result) == RUDA_BYTECODE_RUN_STEP_LIMIT);
+    RUDA_EXPECT(result.as.i64 == 1234 && trap.has_span);
+    RUDA_EXPECT(trap.span.start == 51 && trap.span.end == 52);
+    options.max_steps = 2;
+    RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
+        ruda_system_allocator(), options, &result) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 42);
+
+    RUDA_EXPECT(ruda_bytecode_encode_program(&program, ruda_system_allocator(),
+        &encoded) == RUDA_BYTECODE_CODEC_OK);
+    RUDA_EXPECT(ruda_bytecode_decode_program(encoded.data, encoded.length,
+        ruda_system_allocator(), ruda_bytecode_program_default_options(),
+        &decoded) == RUDA_BYTECODE_CODEC_OK);
+    RUDA_EXPECT(ruda_bytecode_run_program(&decoded, NULL, 0,
+        ruda_system_allocator(), ruda_bytecode_run_default_options(), &result)
+        == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 42);
+    ruda_bytecode_program_dispose(&decoded);
+    ruda_owned_bytes_dispose(&encoded);
+
+    for (failure_index = 0; failure_index < 64 && !reached_success;
+        failure_index += 1) {
+        RudaFailAllocator state;
+        RudaBytecodeRunStatus status;
+        ruda_fail_allocator_init(&state, ruda_system_allocator(), failure_index);
+        result = ruda_test_vm_i64(1234);
+        status = ruda_bytecode_run_program(&program, NULL, 0,
+            ruda_fail_allocator(&state), ruda_bytecode_run_default_options(),
+            &result);
+        if (status == RUDA_BYTECODE_RUN_OK) {
+            reached_success = true;
+            RUDA_EXPECT(result.as.i64 == 42);
+        } else {
+            RUDA_EXPECT(status == RUDA_BYTECODE_RUN_ALLOCATION_FAILED);
+            RUDA_EXPECT(result.as.i64 == 1234);
+        }
+        RUDA_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+    }
+    RUDA_EXPECT(reached_success);
+    ruda_bytecode_program_dispose(&program);
+
+    {
+        RudaBytecodeValue argument = ruda_test_vm_i64(3);
+        RUDA_EXPECT(ruda_test_vm_build_recursive_program(
+            &program,
+            ruda_system_allocator()
+        ));
+        options = ruda_bytecode_run_default_options();
+        options.max_steps = 6;
+        options.max_call_depth = 3;
+        options.trap = &trap;
+        result = ruda_test_vm_i64(1234);
+        RUDA_EXPECT(ruda_bytecode_run_program(
+            &program,
+            &argument,
+            1,
+            ruda_system_allocator(),
+            options,
+            &result
+        ) == RUDA_BYTECODE_RUN_OK);
+        RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 1);
+        options.max_call_depth = 2;
+        result = ruda_test_vm_i64(1234);
+        RUDA_EXPECT(ruda_bytecode_run_program(
+            &program,
+            &argument,
+            1,
+            ruda_system_allocator(),
+            options,
+            &result
+        ) == RUDA_BYTECODE_RUN_STEP_LIMIT);
+        RUDA_EXPECT(result.as.i64 == 1234 && trap.has_span);
+        RUDA_EXPECT(trap.span.start == 125 && trap.span.end == 126);
+        options.max_call_depth = 3;
+        shared_steps = 16;
+        options.remaining_shared_steps = &shared_steps;
+        RUDA_EXPECT(ruda_bytecode_run_program(
+            &program,
+            &argument,
+            1,
+            ruda_system_allocator(),
+            options,
+            &result
+        ) == RUDA_BYTECODE_RUN_OK);
+        RUDA_EXPECT(shared_steps == 0 && result.as.i64 == 1);
+        shared_steps = 15;
+        result = ruda_test_vm_i64(1234);
+        RUDA_EXPECT(ruda_bytecode_run_program(
+            &program,
+            &argument,
+            1,
+            ruda_system_allocator(),
+            options,
+            &result
+        ) == RUDA_BYTECODE_RUN_STEP_LIMIT);
+        RUDA_EXPECT(shared_steps == 0 && result.as.i64 == 1234 && trap.has_span);
+        RUDA_EXPECT(trap.span.start == 126 && trap.span.end == 127);
+        ruda_bytecode_program_dispose(&program);
+    }
+
+    {
+        const RudaSymbolId callee_symbol = {{0x10}};
+        const RudaSymbolId entry_symbol = {{0x20}};
+        static const RudaBytecodeType parameters[] = {
+            RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64
+        };
+        RudaBytecodeFunction callee;
+        RudaBytecodeFunction entry;
+        RudaBytecodeCallArgument call_arguments[2];
+        RudaBytecodeCallId call = RUDA_BYTECODE_NO_CALL;
+        RudaBytecodeInstruction *operation = NULL;
+        uint32_t value = UINT32_MAX;
+        uint32_t block = UINT32_MAX;
+        uint32_t function_id = UINT32_MAX;
+        uint64_t span = 70;
+        RudaBytecodeValue arguments[2];
+        memset(&callee, 0, sizeof(callee));
+        memset(&entry, 0, sizeof(entry));
+        RUDA_EXPECT(ruda_bytecode_function_init(&callee, ruda_system_allocator(),
+            RUDA_BYTECODE_TYPE_I64, 1, parameters, 2,
+            ruda_bytecode_function_default_options()));
+        RUDA_EXPECT(ruda_bytecode_add_register(&callee, RUDA_BYTECODE_TYPE_I64,
+            &value));
+        RUDA_EXPECT(ruda_bytecode_add_block(&callee, &block));
+        RUDA_EXPECT(ruda_test_vm_append(&callee, block,
+            RUDA_OPCODE_I64_SUBTRACT_CHECKED, value, 0, 1, &span));
+        RUDA_EXPECT(ruda_test_vm_append(&callee, block, RUDA_OPCODE_RETURN,
+            value, 0, 0, &span));
+        call_arguments[0].register_id = 1;
+        call_arguments[0].type = RUDA_BYTECODE_TYPE_I64;
+        call_arguments[1].register_id = 0;
+        call_arguments[1].type = RUDA_BYTECODE_TYPE_I64;
+        span = 60;
+        RUDA_EXPECT(ruda_bytecode_function_init(&entry, ruda_system_allocator(),
+            RUDA_BYTECODE_TYPE_I64, 1, parameters, 2,
+            ruda_bytecode_function_default_options()));
+        RUDA_EXPECT(ruda_bytecode_add_register(&entry, RUDA_BYTECODE_TYPE_I64,
+            &value));
+        RUDA_EXPECT(ruda_bytecode_add_block(&entry, &block));
+        RUDA_EXPECT(ruda_bytecode_add_call(&entry, callee_symbol,
+            RUDA_BYTECODE_TYPE_I64, call_arguments, 2, &call));
+        RUDA_EXPECT(ruda_test_vm_append(&entry, block, RUDA_OPCODE_CALL_DIRECT,
+            value, call, 0, &span));
+        RUDA_EXPECT(ruda_test_vm_append(&entry, block, RUDA_OPCODE_RETURN,
+            value, 0, 0, &span));
+        RUDA_EXPECT(ruda_bytecode_program_init(&program, ruda_system_allocator(),
+            1, ruda_bytecode_program_default_options()));
+        RUDA_EXPECT(ruda_bytecode_program_take_function(&program, callee_symbol,
+            &callee, &function_id) && function_id == 0);
+        RUDA_EXPECT(ruda_bytecode_program_take_function(&program, entry_symbol,
+            &entry, &function_id) && function_id == 1);
+        RUDA_EXPECT(ruda_bytecode_program_set_entry(&program, entry_symbol));
+        arguments[0] = ruda_test_vm_i64(2);
+        arguments[1] = ruda_test_vm_i64(40);
+        result = ruda_test_vm_i64(1234);
+        RUDA_EXPECT(ruda_bytecode_run_program(&program, arguments, 2,
+            ruda_system_allocator(), ruda_bytecode_run_default_options(), &result)
+            == RUDA_BYTECODE_RUN_OK);
+        RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 38);
+        operation = ruda_test_vm_at(&((RudaBytecodeProgramFunction *)
+            ruda_bytecode_program_function(&program, 0))->body, 0, 0);
+        RUDA_EXPECT(operation != NULL);
+        if (operation != NULL) {
+            operation->opcode = RUDA_OPCODE_I64_DIVIDE_CHECKED;
+            arguments[0] = ruda_test_vm_i64(0);
+            arguments[1] = ruda_test_vm_i64(1);
+            result = ruda_test_vm_i64(1234);
+            memset(&trap, 0, sizeof(trap));
+            options = ruda_bytecode_run_default_options();
+            options.trap = &trap;
+            RUDA_EXPECT(ruda_bytecode_run_program(&program, arguments, 2,
+                ruda_system_allocator(), options, &result)
+                == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO);
+            RUDA_EXPECT(result.as.i64 == 1234 && trap.has_span
+                && trap.span.start == 70 && trap.span.end == 71);
+            operation->opcode = RUDA_OPCODE_I64_ADD_CHECKED;
+            arguments[0] = ruda_test_vm_i64(1);
+            arguments[1] = ruda_test_vm_i64(INT64_MAX);
+            result = ruda_test_vm_i64(1234);
+            RUDA_EXPECT(ruda_bytecode_run_program(&program, arguments, 2,
+                ruda_system_allocator(), options, &result)
+                == RUDA_BYTECODE_RUN_OVERFLOW);
+            RUDA_EXPECT(result.as.i64 == 1234 && trap.has_span
+                && trap.span.start == 70 && trap.span.end == 71);
+            operation->opcode = RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED;
+            arguments[0] = ruda_test_vm_i64(-1);
+            arguments[1] = ruda_test_vm_i64(1);
+            result = ruda_test_vm_i64(1234);
+            RUDA_EXPECT(ruda_bytecode_run_program(&program, arguments, 2,
+                ruda_system_allocator(), options, &result)
+                == RUDA_BYTECODE_RUN_INVALID_SHIFT);
+            RUDA_EXPECT(result.as.i64 == 1234 && trap.has_span
+                && trap.span.start == 70 && trap.span.end == 71);
+        }
+        ruda_bytecode_program_dispose(&program);
+    }
+
+    {
+        const RudaSymbolId bool_callee = {{0x10}};
+        const RudaSymbolId bool_entry = {{0x20}};
+        static const RudaBytecodeType bool_parameter[] = {RUDA_BYTECODE_TYPE_BOOL};
+        RudaBytecodeFunction callee;
+        RudaBytecodeFunction entry;
+        RudaBytecodeCallArgument argument;
+        RudaBytecodeCallId call = RUDA_BYTECODE_NO_CALL;
+        RudaBytecodeValue argument_value;
+        uint32_t value = UINT32_MAX;
+        uint32_t block = UINT32_MAX;
+        uint32_t id = UINT32_MAX;
+        uint64_t span = 80;
+        memset(&callee, 0, sizeof(callee));
+        memset(&entry, 0, sizeof(entry));
+        RUDA_EXPECT(ruda_bytecode_function_init(&callee, ruda_system_allocator(),
+            RUDA_BYTECODE_TYPE_BOOL, 1, bool_parameter, 1,
+            ruda_bytecode_function_default_options()));
+        RUDA_EXPECT(ruda_bytecode_add_register(&callee, RUDA_BYTECODE_TYPE_BOOL,
+            &value) && ruda_bytecode_add_block(&callee, &block));
+        RUDA_EXPECT(ruda_test_vm_append(&callee, block, RUDA_OPCODE_BOOL_NOT,
+            value, 0, 0, &span));
+        RUDA_EXPECT(ruda_test_vm_append(&callee, block, RUDA_OPCODE_RETURN,
+            value, 0, 0, &span));
+        argument.register_id = 0;
+        argument.type = RUDA_BYTECODE_TYPE_BOOL;
+        span = 90;
+        RUDA_EXPECT(ruda_bytecode_function_init(&entry, ruda_system_allocator(),
+            RUDA_BYTECODE_TYPE_BOOL, 1, bool_parameter, 1,
+            ruda_bytecode_function_default_options()));
+        RUDA_EXPECT(ruda_bytecode_add_register(&entry, RUDA_BYTECODE_TYPE_BOOL,
+            &value) && ruda_bytecode_add_block(&entry, &block));
+        RUDA_EXPECT(ruda_bytecode_add_call(&entry, bool_callee,
+            RUDA_BYTECODE_TYPE_BOOL, &argument, 1, &call));
+        RUDA_EXPECT(ruda_test_vm_append(&entry, block, RUDA_OPCODE_CALL_DIRECT,
+            value, call, 0, &span));
+        RUDA_EXPECT(ruda_test_vm_append(&entry, block, RUDA_OPCODE_RETURN,
+            value, 0, 0, &span));
+        RUDA_EXPECT(ruda_bytecode_program_init(&program, ruda_system_allocator(),
+            1, ruda_bytecode_program_default_options()));
+        RUDA_EXPECT(ruda_bytecode_program_take_function(&program, bool_callee,
+            &callee, &id) && ruda_bytecode_program_take_function(&program,
+            bool_entry, &entry, &id));
+        RUDA_EXPECT(ruda_bytecode_program_set_entry(&program, bool_entry));
+        argument_value = ruda_test_vm_bool(true);
+        RUDA_EXPECT(ruda_bytecode_run_program(&program, &argument_value, 1,
+            ruda_system_allocator(), ruda_bytecode_run_default_options(), &result)
+            == RUDA_BYTECODE_RUN_OK);
+        RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_BOOL && !result.as.boolean);
+        ruda_bytecode_program_dispose(&program);
+    }
+
+    {
+        const RudaSymbolId void_callee = {{0x10}};
+        const RudaSymbolId void_entry = {{0x20}};
+        RudaBytecodeFunction callee;
+        RudaBytecodeFunction entry;
+        RudaBytecodeCallId call = RUDA_BYTECODE_NO_CALL;
+        uint32_t block = UINT32_MAX;
+        uint32_t id = UINT32_MAX;
+        uint64_t span = 100;
+        memset(&callee, 0, sizeof(callee));
+        memset(&entry, 0, sizeof(entry));
+        RUDA_EXPECT(ruda_bytecode_function_init(&callee, ruda_system_allocator(),
+            RUDA_BYTECODE_TYPE_VOID, 1, NULL, 0,
+            ruda_bytecode_function_default_options())
+            && ruda_bytecode_add_block(&callee, &block));
+        RUDA_EXPECT(ruda_test_vm_append(&callee, block, RUDA_OPCODE_RETURN_VOID,
+            0, 0, 0, &span));
+        span = 110;
+        RUDA_EXPECT(ruda_bytecode_function_init(&entry, ruda_system_allocator(),
+            RUDA_BYTECODE_TYPE_VOID, 1, NULL, 0,
+            ruda_bytecode_function_default_options())
+            && ruda_bytecode_add_block(&entry, &block));
+        RUDA_EXPECT(ruda_bytecode_add_call(&entry, void_callee,
+            RUDA_BYTECODE_TYPE_VOID, NULL, 0, &call));
+        RUDA_EXPECT(ruda_test_vm_append(&entry, block, RUDA_OPCODE_CALL_DIRECT_VOID,
+            call, 0, 0, &span));
+        RUDA_EXPECT(ruda_test_vm_append(&entry, block, RUDA_OPCODE_RETURN_VOID,
+            0, 0, 0, &span));
+        RUDA_EXPECT(ruda_bytecode_program_init(&program, ruda_system_allocator(),
+            1, ruda_bytecode_program_default_options()));
+        RUDA_EXPECT(ruda_bytecode_program_take_function(&program, void_callee,
+            &callee, &id) && ruda_bytecode_program_take_function(&program,
+            void_entry, &entry, &id));
+        RUDA_EXPECT(ruda_bytecode_program_set_entry(&program, void_entry));
+        RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
+            ruda_system_allocator(), ruda_bytecode_run_default_options(), &result)
+            == RUDA_BYTECODE_RUN_OK);
+        RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_VOID);
+        ruda_bytecode_program_dispose(&program);
+    }
+}
+
 static void ruda_test_vm_rejection_round_trip_and_allocation(void) {
     RudaBytecodeFunction function;
     RudaBytecodeFunction decoded;
@@ -1077,5 +1659,6 @@ void ruda_test_bytecode_vm(void) {
     ruda_test_vm_checked_arithmetic();
     ruda_test_vm_scalar_results();
     ruda_test_vm_bitwise_and_shifts();
+    ruda_test_vm_direct_calls();
     ruda_test_vm_rejection_round_trip_and_allocation();
 }

@@ -35,3 +35,5 @@ Stage 0 codec.
 | 22 | `i64_bitwise_or` | `destination:register`, `left:register`, `right:register` | — | Compute portable two's-complement bitwise OR of signed 64-bit operands. |
 | 23 | `i64_shift_left_checked` | `destination:register`, `left:register`, `count:register` | `may_panic` | Shift signed 64-bit left under D035 count and representability checks. |
 | 24 | `i64_shift_right` | `destination:register`, `left:register`, `count:register` | `may_panic` | Shift signed 64-bit right with D035 count checks and explicit sign extension. |
+| 25 | `call_direct` | `destination:register`, `call:call` | `may_panic` | Invoke a verified direct call descriptor and publish its exact typed result. |
+| 26 | `call_direct_void` | `call:call` | `may_panic` | Invoke a verified direct call descriptor that returns void. |
