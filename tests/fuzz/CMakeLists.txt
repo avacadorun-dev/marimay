@@ -1,4 +1,5 @@
 set(RUDA_FUZZ_TARGETS
+  bytecode
   frontend
   formatter
 )

@@ -81,6 +81,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/base/utf8.c
   bootstrap/src/base/vector.c
   bootstrap/src/base/writer.c
+  bootstrap/src/bytecode/bytecode.c
   bootstrap/src/check/checker.c
   bootstrap/src/cli/cli.c
   bootstrap/src/diagnostic/diagnostic.c

@@ -95,7 +95,7 @@
       "name": "fuzz",
       "configurePreset": "fuzz",
       "configuration": "Debug",
-      "targets": ["ruda_fuzz_frontend", "ruda_fuzz_formatter"]
+      "targets": ["ruda_fuzz_bytecode", "ruda_fuzz_frontend", "ruda_fuzz_formatter"]
     }
   ],
   "testPresets": [

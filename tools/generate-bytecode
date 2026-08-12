@@ -1,0 +1,222 @@
+#!/usr/bin/env python3
+"""Generate committed bytecode opcode artifacts from the TSV registry."""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List, Tuple
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE = ROOT / "bootstrap/tables/opcodes.tsv"
+HEADER = ROOT / "bootstrap/include/ruda/generated/opcodes.h"
+DATA = ROOT / "bootstrap/src/generated/opcode_data.inc"
+REFERENCE = ROOT / "docs/generated/bytecode-opcodes.md"
+VALID_OPERANDS = {
+    "register": "RUDA_BYTECODE_OPERAND_REGISTER",
+    "block": "RUDA_BYTECODE_OPERAND_BLOCK",
+    "i64": "RUDA_BYTECODE_OPERAND_I64",
+    "bool": "RUDA_BYTECODE_OPERAND_BOOL",
+}
+VALID_FLAGS = {
+    "invalid": "RUDA_OPCODE_FLAG_INVALID",
+    "terminator": "RUDA_OPCODE_FLAG_TERMINATOR",
+    "branch": "RUDA_OPCODE_FLAG_BRANCH",
+    "may_panic": "RUDA_OPCODE_FLAG_MAY_PANIC",
+}
+
+
+@dataclass(frozen=True)
+class Opcode:
+    wire_id: int
+    symbol: str
+    mnemonic: str
+    operands: Tuple[Tuple[str, str], ...]
+    flags: Tuple[str, ...]
+    summary: str
+
+
+def read_entries() -> List[Opcode]:
+    entries: List[Opcode] = []
+    symbols = set()
+    mnemonics = set()
+    for number, raw_line in enumerate(SOURCE.read_text(encoding="utf-8").splitlines(), 1):
+        if not raw_line or raw_line.startswith("#"):
+            continue
+        fields = raw_line.split("\t")
+        if len(fields) != 6:
+            raise ValueError(f"{SOURCE}:{number}: expected six tab-separated fields")
+        wire_text, symbol, mnemonic, operand_text, flag_text, summary = fields
+        if not wire_text.isascii() or not wire_text.isdecimal():
+            raise ValueError(f"{SOURCE}:{number}: invalid wire id")
+        wire_id = int(wire_text)
+        if wire_id != len(entries) or wire_id > 255:
+            raise ValueError(
+                f"{SOURCE}:{number}: wire ids must be contiguous from zero and fit one byte"
+            )
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]*", symbol):
+            raise ValueError(f"{SOURCE}:{number}: invalid opcode symbol")
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", mnemonic):
+            raise ValueError(f"{SOURCE}:{number}: invalid opcode mnemonic")
+        if symbol in symbols or mnemonic in mnemonics:
+            raise ValueError(f"{SOURCE}:{number}: duplicate symbol or mnemonic")
+        symbols.add(symbol)
+        mnemonics.add(mnemonic)
+
+        operands: List[Tuple[str, str]] = []
+        operand_names = set()
+        if operand_text != "-":
+            for operand in operand_text.split(","):
+                parts = operand.split(":")
+                if len(parts) != 2:
+                    raise ValueError(f"{SOURCE}:{number}: invalid operand {operand!r}")
+                name, kind = parts
+                if not re.fullmatch(r"[a-z][a-z0-9_]*", name):
+                    raise ValueError(f"{SOURCE}:{number}: invalid operand name")
+                if name in operand_names or kind not in VALID_OPERANDS:
+                    raise ValueError(f"{SOURCE}:{number}: duplicate or invalid operand")
+                operand_names.add(name)
+                operands.append((name, kind))
+        if len(operands) > 3:
+            raise ValueError(f"{SOURCE}:{number}: at most three operands are supported")
+
+        flags = tuple(flag_text.split(",")) if flag_text != "none" else ()
+        if len(set(flags)) != len(flags) or any(flag not in VALID_FLAGS for flag in flags):
+            raise ValueError(f"{SOURCE}:{number}: duplicate or invalid flag")
+        if not summary:
+            raise ValueError(f"{SOURCE}:{number}: summary must not be empty")
+        entries.append(Opcode(wire_id, symbol, mnemonic, tuple(operands), flags, summary))
+
+    if not entries or entries[0].symbol != "INVALID" or entries[0].wire_id != 0:
+        raise ValueError(f"{SOURCE}: INVALID with wire id zero must be first")
+    if entries[0].flags != ("invalid",) or entries[0].operands:
+        raise ValueError(f"{SOURCE}: INVALID must have only the invalid flag and no operands")
+    for entry in entries[1:]:
+        if "invalid" in entry.flags:
+            raise ValueError(f"{SOURCE}: only INVALID may use the invalid flag")
+        is_terminator = "terminator" in entry.flags
+        if "branch" in entry.flags and not is_terminator:
+            raise ValueError(f"{SOURCE}: branch opcodes must be terminators")
+    return entries
+
+
+def c_string(value: str) -> str:
+    return '"' + value.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def render_header(entries: List[Opcode]) -> str:
+    enum_rows = ",\n".join(
+        f"    RUDA_OPCODE_{entry.symbol} = {entry.wire_id}" for entry in entries
+    )
+    return f"""#ifndef RUDA_GENERATED_OPCODES_H
+#define RUDA_GENERATED_OPCODES_H
+
+#include <stddef.h>
+
+/* Generated from bootstrap/tables/opcodes.tsv. Do not edit by hand. */
+typedef enum RudaOpcode {{
+{enum_rows}
+}} RudaOpcode;
+
+#define RUDA_OPCODE_COUNT ((size_t){len(entries)})
+
+#endif
+"""
+
+
+def render_data(entries: List[Opcode]) -> str:
+    rows = []
+    for entry in entries:
+        operands = [VALID_OPERANDS[kind] for _, kind in entry.operands]
+        operands.extend(["RUDA_BYTECODE_OPERAND_NONE"] * (3 - len(operands)))
+        flags = " | ".join(VALID_FLAGS[flag] for flag in entry.flags) or "0U"
+        rows.append(
+            "    {"
+            f"RUDA_OPCODE_{entry.symbol}, {entry.wire_id}U, {c_string(entry.mnemonic)}, "
+            f"{len(entry.operands)}U, {{{', '.join(operands)}}}, {flags}"
+            "}"
+        )
+    rendered_rows = ",\n".join(rows)
+    return f"""/* Generated from bootstrap/tables/opcodes.tsv. Do not edit by hand. */
+static const RudaOpcodeMetadata ruda_opcode_metadata_table[RUDA_OPCODE_COUNT] = {{
+{rendered_rows}
+}};
+
+_Static_assert(
+    sizeof(ruda_opcode_metadata_table) / sizeof(ruda_opcode_metadata_table[0])
+        == RUDA_OPCODE_COUNT,
+    "opcode metadata must cover every wire opcode"
+);
+"""
+
+
+def markdown_cell(value: str) -> str:
+    return value.replace("|", "\\|")
+
+
+def render_reference(entries: List[Opcode]) -> str:
+    rows = []
+    for entry in entries:
+        operand_text = "—" if not entry.operands else ", ".join(
+            f"`{name}:{kind}`" for name, kind in entry.operands
+        )
+        flag_text = "—" if not entry.flags else ", ".join(f"`{flag}`" for flag in entry.flags)
+        rows.append(
+            f"| {entry.wire_id} | `{entry.mnemonic}` | {operand_text} | "
+            f"{flag_text} | {markdown_cell(entry.summary)} |"
+        )
+    return f"""# Generated Ruda bytecode opcode registry
+
+<!-- Generated from bootstrap/tables/opcodes.tsv. Do not edit by hand. -->
+
+This registry assigns explicit stable wire identifiers to the currently
+implemented internal typed-bytecode foundation. It does not by itself define a
+complete `.rudab` bundle, VM execution support, or a public compatibility
+promise. Operands use canonical bounded variable-length encodings in the
+Stage 0 codec.
+
+| Wire ID | Mnemonic | Operands | Flags | Meaning |
+|---:|---|---|---|---|
+{chr(10).join(rows)}
+"""
+
+
+def update(path: Path, expected: str, check: bool) -> bool:
+    actual = path.read_text(encoding="utf-8") if path.exists() else None
+    if actual == expected:
+        return True
+    if check:
+        print(f"generated artifact is stale: {path.relative_to(ROOT)}", file=sys.stderr)
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(expected, encoding="utf-8")
+    print(f"updated {path.relative_to(ROOT)}")
+    return True
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true", help="fail instead of writing stale outputs")
+    arguments = parser.parse_args()
+    try:
+        entries = read_entries()
+    except (OSError, UnicodeError, ValueError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    results = [
+        update(HEADER, render_header(entries), arguments.check),
+        update(DATA, render_data(entries), arguments.check),
+        update(REFERENCE, render_reference(entries), arguments.check),
+    ]
+    if all(results):
+        print("bytecode generated artifacts: ok" if arguments.check else "bytecode generation: ok")
+        return 0
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

@@ -5,6 +5,7 @@
 void ruda_test_allocator(void);
 void ruda_test_ast(void);
 void ruda_test_base(void);
+void ruda_test_bytecode(void);
 void ruda_test_checker(void);
 void ruda_test_cli(void);
 void ruda_test_diagnostic(void);
@@ -34,6 +35,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_allocator();
     ruda_test_ast();
     ruda_test_base();
+    ruda_test_bytecode();
     ruda_test_checker();
     ruda_test_diagnostic();
     ruda_test_directory();

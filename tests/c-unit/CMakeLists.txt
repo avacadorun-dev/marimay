@@ -2,6 +2,7 @@ add_executable(ruda_c_unit
   test_allocator.c
   test_ast.c
   test_base.c
+  test_bytecode.c
   test_checker.c
   test_cli.c
   test_diagnostic.c

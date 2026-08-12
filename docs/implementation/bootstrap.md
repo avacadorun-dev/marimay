@@ -116,6 +116,7 @@ work or complete syntax-kind coverage for a completed grammar-production gate.
 Explicit regeneration commands are:
 
 ```sh
+./tools/generate-bytecode
 ./tools/generate-diagnostics
 ./tools/generate-unicode
 ./tools/generate-syntax
