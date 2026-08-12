@@ -111,6 +111,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             && run_status != RUDA_BYTECODE_RUN_STEP_LIMIT
             && run_status != RUDA_BYTECODE_RUN_OVERFLOW
             && run_status != RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
+            && run_status != RUDA_BYTECODE_RUN_INVALID_SHIFT
             && run_status != RUDA_BYTECODE_RUN_LIMIT_REACHED
             && run_status != RUDA_BYTECODE_RUN_ALLOCATION_FAILED) {
             abort();

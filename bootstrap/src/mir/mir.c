@@ -2806,46 +2806,6 @@ cleanup:
     return status;
 }
 
-static int64_t ruda_mir_i64_from_twos_complement(uint64_t bits) {
-    const uint64_t sign = UINT64_C(1) << 63;
-    uint64_t magnitude = 0;
-    if (bits <= (uint64_t)INT64_MAX) {
-        return (int64_t)bits;
-    }
-    if (bits == sign) {
-        return INT64_MIN;
-    }
-    magnitude = (~bits) + UINT64_C(1);
-    return -(int64_t)magnitude;
-}
-
-static int64_t ruda_mir_shift_right_i64(int64_t value, unsigned int count) {
-    uint64_t bits = (uint64_t)value;
-    if (count == 0) {
-        return value;
-    }
-    bits >>= count;
-    if (value < 0) {
-        bits |= UINT64_MAX << (64U - count);
-    }
-    return ruda_mir_i64_from_twos_complement(bits);
-}
-
-static bool ruda_mir_shift_left_i64(
-    int64_t value,
-    unsigned int count,
-    int64_t *result
-) {
-    int64_t shifted = ruda_mir_i64_from_twos_complement(
-        (uint64_t)value << count
-    );
-    if (ruda_mir_shift_right_i64(shifted, count) != value) {
-        return false;
-    }
-    *result = shifted;
-    return true;
-}
-
 static RudaMirManagedRecord *ruda_mir_execution_record(
     RudaMirExecution *execution,
     RudaMirReference reference
@@ -3438,43 +3398,52 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             target->as.boolean = !first->as.boolean;
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_BITWISE_NOT_I64:
-            target->as.i64 = ruda_mir_i64_from_twos_complement(
-                ~(uint64_t)first->as.i64
-            );
+            target->as.i64 = ruda_i64_bitwise_not(first->as.i64);
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_BITWISE_AND_I64:
-            target->as.i64 = ruda_mir_i64_from_twos_complement(
-                (uint64_t)first->as.i64 & (uint64_t)second->as.i64
+            target->as.i64 = ruda_i64_bitwise_and(
+                first->as.i64,
+                second->as.i64
             );
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_BITWISE_XOR_I64:
-            target->as.i64 = ruda_mir_i64_from_twos_complement(
-                (uint64_t)first->as.i64 ^ (uint64_t)second->as.i64
+            target->as.i64 = ruda_i64_bitwise_xor(
+                first->as.i64,
+                second->as.i64
             );
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_BITWISE_OR_I64:
-            target->as.i64 = ruda_mir_i64_from_twos_complement(
-                (uint64_t)first->as.i64 | (uint64_t)second->as.i64
+            target->as.i64 = ruda_i64_bitwise_or(
+                first->as.i64,
+                second->as.i64
             );
             return RUDA_MIR_INTERPRET_OK;
-        case RUDA_MIR_SHIFT_LEFT_CHECKED_I64:
-            if (second->as.i64 < 0 || second->as.i64 >= 64) {
-                return RUDA_MIR_INTERPRET_INVALID_SHIFT;
-            }
-            return ruda_mir_shift_left_i64(
+        case RUDA_MIR_SHIFT_LEFT_CHECKED_I64: {
+            RudaCheckedI64Status checked = ruda_checked_i64_shift_left(
                 first->as.i64,
-                (unsigned int)second->as.i64,
+                second->as.i64,
                 &target->as.i64
-            ) ? RUDA_MIR_INTERPRET_OK : RUDA_MIR_INTERPRET_OVERFLOW;
-        case RUDA_MIR_SHIFT_RIGHT_I64:
-            if (second->as.i64 < 0 || second->as.i64 >= 64) {
+            );
+            if (checked == RUDA_CHECKED_I64_INVALID_SHIFT) {
                 return RUDA_MIR_INTERPRET_INVALID_SHIFT;
             }
-            target->as.i64 = ruda_mir_shift_right_i64(
+            return checked == RUDA_CHECKED_I64_OK
+                ? RUDA_MIR_INTERPRET_OK
+                : RUDA_MIR_INTERPRET_OVERFLOW;
+        }
+        case RUDA_MIR_SHIFT_RIGHT_I64: {
+            RudaCheckedI64Status checked = ruda_checked_i64_shift_right(
                 first->as.i64,
-                (unsigned int)second->as.i64
+                second->as.i64,
+                &target->as.i64
             );
-            return RUDA_MIR_INTERPRET_OK;
+            if (checked == RUDA_CHECKED_I64_INVALID_SHIFT) {
+                return RUDA_MIR_INTERPRET_INVALID_SHIFT;
+            }
+            return checked == RUDA_CHECKED_I64_OK
+                ? RUDA_MIR_INTERPRET_OK
+                : RUDA_MIR_INTERPRET_OVERFLOW;
+        }
         case RUDA_MIR_EQUAL_I64:
             target->as.boolean = first->as.i64 == second->as.i64;
             return RUDA_MIR_INTERPRET_OK;

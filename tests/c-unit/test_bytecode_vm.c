@@ -79,7 +79,9 @@ static bool ruda_test_vm_build_all_opcodes(
         RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64,
         RUDA_BYTECODE_TYPE_BOOL, RUDA_BYTECODE_TYPE_BOOL, RUDA_BYTECODE_TYPE_BOOL,
         RUDA_BYTECODE_TYPE_BOOL,
-        RUDA_BYTECODE_TYPE_BOOL
+        RUDA_BYTECODE_TYPE_BOOL, RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64,
+        RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64,
+        RUDA_BYTECODE_TYPE_I64
     };
     uint32_t blocks[4];
     uint64_t span_start = 0;
@@ -123,6 +125,18 @@ static bool ruda_test_vm_build_all_opcodes(
         || !ruda_test_vm_append(function, 0, RUDA_OPCODE_I64_LESS, 15, 2, 1,
             &span_start)
         || !ruda_test_vm_append(function, 0, RUDA_OPCODE_I64_LESS_EQUAL, 16, 2, 1,
+            &span_start)
+        || !ruda_test_vm_append(function, 0, RUDA_OPCODE_I64_BITWISE_NOT, 17, 1, 0,
+            &span_start)
+        || !ruda_test_vm_append(function, 0, RUDA_OPCODE_I64_BITWISE_AND, 18, 1, 2,
+            &span_start)
+        || !ruda_test_vm_append(function, 0, RUDA_OPCODE_I64_BITWISE_XOR, 19, 1, 2,
+            &span_start)
+        || !ruda_test_vm_append(function, 0, RUDA_OPCODE_I64_BITWISE_OR, 20, 1, 2,
+            &span_start)
+        || !ruda_test_vm_append(function, 0, RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED,
+            21, 3, 3, &span_start)
+        || !ruda_test_vm_append(function, 0, RUDA_OPCODE_I64_SHIFT_RIGHT, 22, 1, 3,
             &span_start)
         || !ruda_test_vm_append(function, 0, RUDA_OPCODE_BRANCH_BOOL, 0, 1, 2,
             &span_start)
@@ -511,28 +525,53 @@ static void ruda_test_vm_all_opcodes_and_limits(void) {
 
     options = ruda_bytecode_run_default_options();
     options.trap = &trap;
-    options.max_steps = 16;
+    options.max_steps = 22;
     arguments[0] = ruda_test_vm_bool(true);
     RUDA_EXPECT(ruda_bytecode_run(&function, arguments, 3, ruda_system_allocator(),
         options, &result) == RUDA_BYTECODE_RUN_OK);
-    options.max_steps = 15;
+    options.max_steps = 21;
     RUDA_EXPECT(ruda_bytecode_run(&function, arguments, 3, ruda_system_allocator(),
         options, &result) == RUDA_BYTECODE_RUN_STEP_LIMIT);
     RUDA_EXPECT(trap.has_span);
-    RUDA_EXPECT(trap.span.start == 15 && trap.span.end == 16);
-    shared_steps = 16;
+    RUDA_EXPECT(trap.span.start == 21 && trap.span.end == 22);
+    shared_steps = 22;
     options = ruda_bytecode_run_default_options();
     options.trap = &trap;
     options.remaining_shared_steps = &shared_steps;
     RUDA_EXPECT(ruda_bytecode_run(&function, arguments, 3, ruda_system_allocator(),
         options, &result) == RUDA_BYTECODE_RUN_OK);
     RUDA_EXPECT(shared_steps == 0);
-    shared_steps = 15;
+    shared_steps = 21;
     RUDA_EXPECT(ruda_bytecode_run(&function, arguments, 3, ruda_system_allocator(),
         options, &result) == RUDA_BYTECODE_RUN_STEP_LIMIT);
     RUDA_EXPECT(shared_steps == 0);
     RUDA_EXPECT(trap.has_span);
-    RUDA_EXPECT(trap.span.start == 15 && trap.span.end == 16);
+    RUDA_EXPECT(trap.span.start == 21 && trap.span.end == 22);
+
+    arguments[0] = ruda_test_vm_bool(false);
+    options = ruda_bytecode_run_default_options();
+    options.trap = &trap;
+    options.max_steps = 23;
+    RUDA_EXPECT(ruda_bytecode_run(&function, arguments, 3, ruda_system_allocator(),
+        options, &result) == RUDA_BYTECODE_RUN_OK);
+    options.max_steps = 22;
+    RUDA_EXPECT(ruda_bytecode_run(&function, arguments, 3, ruda_system_allocator(),
+        options, &result) == RUDA_BYTECODE_RUN_STEP_LIMIT);
+    RUDA_EXPECT(trap.has_span);
+    RUDA_EXPECT(trap.span.start == 23 && trap.span.end == 24);
+    shared_steps = 23;
+    options = ruda_bytecode_run_default_options();
+    options.trap = &trap;
+    options.remaining_shared_steps = &shared_steps;
+    RUDA_EXPECT(ruda_bytecode_run(&function, arguments, 3, ruda_system_allocator(),
+        options, &result) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(shared_steps == 0);
+    shared_steps = 22;
+    RUDA_EXPECT(ruda_bytecode_run(&function, arguments, 3, ruda_system_allocator(),
+        options, &result) == RUDA_BYTECODE_RUN_STEP_LIMIT);
+    RUDA_EXPECT(shared_steps == 0);
+    RUDA_EXPECT(trap.has_span);
+    RUDA_EXPECT(trap.span.start == 23 && trap.span.end == 24);
     ruda_bytecode_function_dispose(&function);
 
     RUDA_EXPECT(ruda_test_vm_build_loop(&function, ruda_system_allocator()));
@@ -807,6 +846,81 @@ static void ruda_test_vm_rejects_before_frame_allocation(
     ruda_bytecode_function_dispose(&function);
 }
 
+static void ruda_test_vm_bitwise_and_shifts(void) {
+    static const struct {
+        RudaOpcode opcode;
+        int64_t left;
+        int64_t right;
+        RudaBytecodeRunStatus status;
+        int64_t value;
+    } cases[] = {
+        {RUDA_OPCODE_I64_BITWISE_NOT, 0, 0, RUDA_BYTECODE_RUN_OK, -1},
+        {RUDA_OPCODE_I64_BITWISE_NOT, -1, 0, RUDA_BYTECODE_RUN_OK, 0},
+        {RUDA_OPCODE_I64_BITWISE_AND, -1, INT64_C(0x55), RUDA_BYTECODE_RUN_OK, INT64_C(0x55)},
+        {RUDA_OPCODE_I64_BITWISE_XOR, -1, INT64_C(0x55), RUDA_BYTECODE_RUN_OK, -86},
+        {RUDA_OPCODE_I64_BITWISE_OR, INT64_MIN, 1, RUDA_BYTECODE_RUN_OK, INT64_MIN + 1},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 1, 0, RUDA_BYTECODE_RUN_OK, 1},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 1, 1, RUDA_BYTECODE_RUN_OK, 2},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 1, 62, RUDA_BYTECODE_RUN_OK,
+            INT64_C(4611686018427387904)},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, -2, 1, RUDA_BYTECODE_RUN_OK, -4},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, -1, 63, RUDA_BYTECODE_RUN_OK, INT64_MIN},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, -2, 62, RUDA_BYTECODE_RUN_OK, INT64_MIN},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, -2, 63, RUDA_BYTECODE_RUN_OVERFLOW, 0},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 0, 63, RUDA_BYTECODE_RUN_OK, 0},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, INT64_MIN, 0, RUDA_BYTECODE_RUN_OK, INT64_MIN},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, INT64_MAX, 0, RUDA_BYTECODE_RUN_OK, INT64_MAX},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, INT64_MAX, 1, RUDA_BYTECODE_RUN_OVERFLOW, 0},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, INT64_MIN, 1, RUDA_BYTECODE_RUN_OVERFLOW, 0},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 1, -1, RUDA_BYTECODE_RUN_INVALID_SHIFT, 0},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 1, 64, RUDA_BYTECODE_RUN_INVALID_SHIFT, 0},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 1, INT64_MIN, RUDA_BYTECODE_RUN_INVALID_SHIFT, 0},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 1, INT64_MAX, RUDA_BYTECODE_RUN_INVALID_SHIFT, 0},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, -7, 0, RUDA_BYTECODE_RUN_OK, -7},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, -1, 1, RUDA_BYTECODE_RUN_OK, -1},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, INT64_MIN, 63, RUDA_BYTECODE_RUN_OK, -1},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, INT64_MAX, 62, RUDA_BYTECODE_RUN_OK, 1},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, 1, 63, RUDA_BYTECODE_RUN_OK, 0},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, 1, -1, RUDA_BYTECODE_RUN_INVALID_SHIFT, 0},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, 1, 64, RUDA_BYTECODE_RUN_INVALID_SHIFT, 0},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, 1, INT64_MIN, RUDA_BYTECODE_RUN_INVALID_SHIFT, 0},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, 1, INT64_MAX, RUDA_BYTECODE_RUN_INVALID_SHIFT, 0}
+    };
+    RudaBytecodeFunction function;
+    RudaBytecodeValue arguments[2];
+    RudaBytecodeValue result;
+    RudaBytecodeTrap trap;
+    size_t index = 0;
+
+    for (index = 0; index < sizeof(cases) / sizeof(cases[0]); index += 1) {
+        RudaBytecodeRunOptions options = ruda_bytecode_run_default_options();
+        memset(&trap, 0, sizeof(trap));
+        result = ruda_test_vm_i64(9876);
+        options.trap = &trap;
+        RUDA_EXPECT(ruda_test_vm_build_binary(
+            &function,
+            ruda_system_allocator(),
+            cases[index].opcode
+        ));
+        arguments[0] = ruda_test_vm_i64(cases[index].left);
+        arguments[1] = ruda_test_vm_i64(cases[index].right);
+        RUDA_EXPECT(ruda_bytecode_run(&function, arguments, 2,
+            ruda_system_allocator(), options, &result) == cases[index].status);
+        if (cases[index].status == RUDA_BYTECODE_RUN_OK) {
+            RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64);
+            RUDA_EXPECT(result.as.i64 == cases[index].value);
+            RUDA_EXPECT(!trap.has_span);
+        } else {
+            RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64);
+            RUDA_EXPECT(result.as.i64 == 9876);
+            RUDA_EXPECT(trap.has_span);
+            RUDA_EXPECT(trap.span.source == 0);
+            RUDA_EXPECT(trap.span.start == 10 && trap.span.end == 11);
+        }
+        ruda_bytecode_function_dispose(&function);
+    }
+}
+
 static void ruda_test_vm_rejection_round_trip_and_allocation(void) {
     RudaBytecodeFunction function;
     RudaBytecodeFunction decoded;
@@ -825,7 +939,7 @@ static void ruda_test_vm_rejection_round_trip_and_allocation(void) {
         0
     );
     ruda_test_vm_rejects_before_frame_allocation(
-        14,
+        20,
         false,
         RUDA_OPCODE_BRANCH_BOOL,
         1,
@@ -837,6 +951,13 @@ static void ruda_test_vm_rejection_round_trip_and_allocation(void) {
         RUDA_OPCODE_COPY,
         1,
         11
+    );
+    ruda_test_vm_rejects_before_frame_allocation(
+        14,
+        false,
+        RUDA_OPCODE_I64_BITWISE_NOT,
+        1,
+        22
     );
 
     RUDA_EXPECT(ruda_test_vm_build_all_opcodes(&function, ruda_system_allocator()));
@@ -955,5 +1076,6 @@ void ruda_test_bytecode_vm(void) {
     ruda_test_vm_all_opcodes_and_limits();
     ruda_test_vm_checked_arithmetic();
     ruda_test_vm_scalar_results();
+    ruda_test_vm_bitwise_and_shifts();
     ruda_test_vm_rejection_round_trip_and_allocation();
 }

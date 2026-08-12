@@ -73,7 +73,7 @@ static const RudaBytecodeInstruction *ruda_test_mir_bytecode_at(
         : NULL;
 }
 
-/* Builds a valid scalar CFG exercising all initially lowerable value opcodes. */
+/* Builds a valid scalar CFG exercising every currently lowerable value opcode. */
 static bool ruda_test_mir_bytecode_build_scalar(
     RudaMirFunction *function,
     RudaAllocator allocator
@@ -97,6 +97,12 @@ static bool ruda_test_mir_bytecode_build_scalar(
     RudaMirRegister division = RUDA_MIR_NO_REGISTER;
     RudaMirRegister remainder = RUDA_MIR_NO_REGISTER;
     RudaMirRegister less_equal = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister bitwise_not = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister bitwise_and = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister bitwise_xor = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister bitwise_or = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister shift_left = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister shift_right = RUDA_MIR_NO_REGISTER;
     RudaMirInstruction instruction;
 
     memset(function, 0, sizeof(*function));
@@ -117,6 +123,12 @@ static bool ruda_test_mir_bytecode_build_scalar(
         || !ruda_mir_add_register(function, RUDA_TYPE_I64, &division)
         || !ruda_mir_add_register(function, RUDA_TYPE_I64, &remainder)
         || !ruda_mir_add_register(function, RUDA_TYPE_BOOL, &less_equal)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &bitwise_not)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &bitwise_and)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &bitwise_xor)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &bitwise_or)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &shift_left)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &shift_right)
         || !ruda_mir_add_block(function, &entry)
         || !ruda_mir_add_block(function, &when_true)
         || !ruda_mir_add_block(function, &when_false)) {
@@ -213,20 +225,62 @@ static bool ruda_test_mir_bytecode_build_scalar(
         RUDA_MIR_LESS_EQUAL_I64, less_equal, copied, arithmetic,
         0, false, 23
     );
+    if (!ruda_mir_append_instruction(function, entry, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_BITWISE_NOT_I64, bitwise_not, copied,
+        RUDA_MIR_NO_REGISTER, 0, false, 24
+    );
+    if (!ruda_mir_append_instruction(function, entry, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_BITWISE_AND_I64, bitwise_and, copied, constant,
+        0, false, 25
+    );
+    if (!ruda_mir_append_instruction(function, entry, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_BITWISE_XOR_I64, bitwise_xor, copied, constant,
+        0, false, 26
+    );
+    if (!ruda_mir_append_instruction(function, entry, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_BITWISE_OR_I64, bitwise_or, copied, constant,
+        0, false, 27
+    );
+    if (!ruda_mir_append_instruction(function, entry, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_SHIFT_LEFT_CHECKED_I64, shift_left, copied, constant,
+        0, false, 28
+    );
+    if (!ruda_mir_append_instruction(function, entry, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_SHIFT_RIGHT_I64, shift_right, copied, constant,
+        0, false, 29
+    );
     if (!ruda_mir_append_instruction(function, entry, &instruction)
         || !ruda_mir_set_terminator(function, entry,
             ruda_test_mir_bytecode_terminator(
-                RUDA_MIR_BRANCH, bool_equality, when_true, when_false, 24
+                RUDA_MIR_BRANCH, bool_equality, when_true, when_false, 30
             ))
         || !ruda_mir_set_terminator(function, when_true,
             ruda_test_mir_bytecode_terminator(
                 RUDA_MIR_RETURN, arithmetic, RUDA_MIR_NO_BLOCK,
-                RUDA_MIR_NO_BLOCK, 25
+                RUDA_MIR_NO_BLOCK, 31
             ))
         || !ruda_mir_set_terminator(function, when_false,
             ruda_test_mir_bytecode_terminator(
                 RUDA_MIR_GOTO, RUDA_MIR_NO_REGISTER, when_true,
-                RUDA_MIR_NO_BLOCK, 26
+                RUDA_MIR_NO_BLOCK, 32
             ))) {
         goto failure;
     }
@@ -317,6 +371,24 @@ static void ruda_test_mir_bytecode_scalar_mapping(void) {
         && instruction->opcode == RUDA_OPCODE_I64_LESS_EQUAL);
     instruction = ruda_test_mir_bytecode_at(&output, 0, 14);
     RUDA_EXPECT(instruction != NULL
+        && instruction->opcode == RUDA_OPCODE_I64_BITWISE_NOT);
+    instruction = ruda_test_mir_bytecode_at(&output, 0, 15);
+    RUDA_EXPECT(instruction != NULL
+        && instruction->opcode == RUDA_OPCODE_I64_BITWISE_AND);
+    instruction = ruda_test_mir_bytecode_at(&output, 0, 16);
+    RUDA_EXPECT(instruction != NULL
+        && instruction->opcode == RUDA_OPCODE_I64_BITWISE_XOR);
+    instruction = ruda_test_mir_bytecode_at(&output, 0, 17);
+    RUDA_EXPECT(instruction != NULL
+        && instruction->opcode == RUDA_OPCODE_I64_BITWISE_OR);
+    instruction = ruda_test_mir_bytecode_at(&output, 0, 18);
+    RUDA_EXPECT(instruction != NULL
+        && instruction->opcode == RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED);
+    instruction = ruda_test_mir_bytecode_at(&output, 0, 19);
+    RUDA_EXPECT(instruction != NULL
+        && instruction->opcode == RUDA_OPCODE_I64_SHIFT_RIGHT);
+    instruction = ruda_test_mir_bytecode_at(&output, 0, 20);
+    RUDA_EXPECT(instruction != NULL
         && instruction->opcode == RUDA_OPCODE_BRANCH_BOOL
         && instruction->operands[0].unsigned_value == 7
         && instruction->operands[1].unsigned_value == 1
@@ -376,7 +448,7 @@ static void ruda_test_mir_bytecode_scalar_mapping(void) {
             RUDA_EXPECT(bytecode_result.type == RUDA_BYTECODE_TYPE_I64);
             RUDA_EXPECT(mir_result.as.i64 == bytecode_result.as.i64);
             {
-                size_t exact_steps = values[value_index] == -7 ? 16 : 17;
+                size_t exact_steps = values[value_index] == -7 ? 22 : 23;
                 RudaMirInterpretOptions mir_options =
                     ruda_mir_interpret_default_options();
                 RudaBytecodeRunOptions bytecode_options =
@@ -562,7 +634,21 @@ static void ruda_test_mir_bytecode_void_and_failures(void) {
     RUDA_EXPECT(ruda_mir_verify(&input) == RUDA_MIR_VERIFY_OK);
     memset(&output, 0, sizeof(output));
     RUDA_EXPECT(ruda_mir_lower_bytecode_function(&input, ruda_system_allocator(),
-        options, &output) == RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_INSTRUCTION);
+        options, &output) == RUDA_MIR_BYTECODE_LOWER_OK);
+    {
+        const RudaBytecodeInstruction *bytecode_instruction =
+            ruda_test_mir_bytecode_at(&output, 0, 0);
+        RUDA_EXPECT(bytecode_instruction != NULL);
+        if (bytecode_instruction != NULL) {
+            RUDA_EXPECT(bytecode_instruction->opcode == RUDA_OPCODE_I64_BITWISE_NOT);
+            RUDA_EXPECT(bytecode_instruction->operands[0].unsigned_value == 1);
+            RUDA_EXPECT(bytecode_instruction->operands[1].unsigned_value == 0);
+            RUDA_EXPECT(bytecode_instruction->span.source == 2);
+            RUDA_EXPECT(bytecode_instruction->span.start == 21);
+            RUDA_EXPECT(bytecode_instruction->span.end == 22);
+        }
+    }
+    ruda_bytecode_function_dispose(&output);
     ruda_mir_function_dispose(&input);
 
     memset(&input, 0, sizeof(input));
@@ -769,7 +855,31 @@ static RudaMirInterpretStatus ruda_test_mir_bytecode_vm_status(
     if (status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO) {
         return RUDA_MIR_INTERPRET_DIVISION_BY_ZERO;
     }
+    if (status == RUDA_BYTECODE_RUN_INVALID_SHIFT) {
+        return RUDA_MIR_INTERPRET_INVALID_SHIFT;
+    }
     return RUDA_MIR_INTERPRET_INVALID_MIR;
+}
+
+static RudaOpcode ruda_test_mir_bytecode_expected_opcode(
+    RudaMirInstructionKind kind
+) {
+    switch (kind) {
+        case RUDA_MIR_BITWISE_NOT_I64:
+            return RUDA_OPCODE_I64_BITWISE_NOT;
+        case RUDA_MIR_BITWISE_AND_I64:
+            return RUDA_OPCODE_I64_BITWISE_AND;
+        case RUDA_MIR_BITWISE_XOR_I64:
+            return RUDA_OPCODE_I64_BITWISE_XOR;
+        case RUDA_MIR_BITWISE_OR_I64:
+            return RUDA_OPCODE_I64_BITWISE_OR;
+        case RUDA_MIR_SHIFT_LEFT_CHECKED_I64:
+            return RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED;
+        case RUDA_MIR_SHIFT_RIGHT_I64:
+            return RUDA_OPCODE_I64_SHIFT_RIGHT;
+        default:
+            return RUDA_OPCODE_INVALID;
+    }
 }
 
 static void ruda_test_mir_bytecode_arithmetic_differential(void) {
@@ -800,21 +910,53 @@ static void ruda_test_mir_bytecode_arithmetic_differential(void) {
         {RUDA_MIR_REMAINDER_CHECKED_I64, 1, 0},
         {RUDA_MIR_REMAINDER_CHECKED_I64, INT64_MIN, -1},
         {RUDA_MIR_NEGATE_CHECKED_I64, 7, 0},
-        {RUDA_MIR_NEGATE_CHECKED_I64, INT64_MIN, 0}
+        {RUDA_MIR_NEGATE_CHECKED_I64, INT64_MIN, 0},
+        {RUDA_MIR_BITWISE_NOT_I64, 0, 0},
+        {RUDA_MIR_BITWISE_NOT_I64, -1, 0},
+        {RUDA_MIR_BITWISE_AND_I64, -1, INT64_C(0x55)},
+        {RUDA_MIR_BITWISE_XOR_I64, -1, INT64_C(0x55)},
+        {RUDA_MIR_BITWISE_OR_I64, INT64_MIN, 1},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, -2, 1},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, 1, 62},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, -1, 63},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, -2, 62},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, -2, 63},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, 0, 63},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, INT64_MIN, 0},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, INT64_MAX, 0},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, INT64_MAX, 1},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, INT64_MIN, 1},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, 1, -1},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, 1, 64},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, 1, INT64_MIN},
+        {RUDA_MIR_SHIFT_LEFT_CHECKED_I64, 1, INT64_MAX},
+        {RUDA_MIR_SHIFT_RIGHT_I64, -7, 0},
+        {RUDA_MIR_SHIFT_RIGHT_I64, -1, 1},
+        {RUDA_MIR_SHIFT_RIGHT_I64, INT64_MIN, 63},
+        {RUDA_MIR_SHIFT_RIGHT_I64, INT64_MAX, 62},
+        {RUDA_MIR_SHIFT_RIGHT_I64, 1, 63},
+        {RUDA_MIR_SHIFT_RIGHT_I64, 1, -1},
+        {RUDA_MIR_SHIFT_RIGHT_I64, 1, 64},
+        {RUDA_MIR_SHIFT_RIGHT_I64, 1, INT64_MIN},
+        {RUDA_MIR_SHIFT_RIGHT_I64, 1, INT64_MAX}
     };
     size_t index = 0;
     for (index = 0; index < sizeof(cases) / sizeof(cases[0]); index += 1) {
         RudaMirFunction mir;
         RudaBytecodeFunction bytecode;
+        RudaBytecodeFunction decoded;
         RudaMirValue mir_arguments[2];
         RudaMirValue mir_result;
         RudaBytecodeValue bytecode_arguments[2];
         RudaBytecodeValue bytecode_result;
         RudaBytecodeTrap trap;
+        RudaOwnedBytes encoded;
         RudaBytecodeRunOptions run_options = ruda_bytecode_run_default_options();
         RudaMirInterpretStatus mir_status;
         RudaBytecodeRunStatus bytecode_status;
         memset(&bytecode, 0, sizeof(bytecode));
+        memset(&decoded, 0, sizeof(decoded));
+        memset(&encoded, 0, sizeof(encoded));
         memset(mir_arguments, 0, sizeof(mir_arguments));
         memset(&mir_result, 0, sizeof(mir_result));
         memset(bytecode_arguments, 0, sizeof(bytecode_arguments));
@@ -830,6 +972,31 @@ static void ruda_test_mir_bytecode_arithmetic_differential(void) {
             ruda_test_mir_bytecode_options(),
             &bytecode
         ) == RUDA_MIR_BYTECODE_LOWER_OK);
+        if (ruda_test_mir_bytecode_expected_opcode(cases[index].kind)
+            != RUDA_OPCODE_INVALID) {
+            const RudaBytecodeInstruction *instruction =
+                ruda_test_mir_bytecode_at(&bytecode, 0, 0);
+            RUDA_EXPECT(instruction != NULL);
+            if (instruction != NULL) {
+                RUDA_EXPECT(instruction->opcode
+                    == ruda_test_mir_bytecode_expected_opcode(cases[index].kind));
+                RUDA_EXPECT(instruction->span.source == 2);
+                RUDA_EXPECT(instruction->span.start == 30);
+                RUDA_EXPECT(instruction->span.end == 31);
+            }
+        }
+        RUDA_EXPECT(ruda_bytecode_encode_function(
+            &bytecode,
+            ruda_system_allocator(),
+            &encoded
+        ) == RUDA_BYTECODE_CODEC_OK);
+        RUDA_EXPECT(ruda_bytecode_decode_function(
+            encoded.data,
+            encoded.length,
+            ruda_system_allocator(),
+            ruda_bytecode_function_default_options(),
+            &decoded
+        ) == RUDA_BYTECODE_CODEC_OK);
         mir_arguments[0].type = RUDA_TYPE_I64;
         mir_arguments[0].as.i64 = cases[index].left;
         mir_arguments[1].type = RUDA_TYPE_I64;
@@ -848,7 +1015,7 @@ static void ruda_test_mir_bytecode_arithmetic_differential(void) {
         );
         run_options.trap = &trap;
         bytecode_status = ruda_bytecode_run(
-            &bytecode,
+            &decoded,
             bytecode_arguments,
             2,
             ruda_system_allocator(),
@@ -868,6 +1035,8 @@ static void ruda_test_mir_bytecode_arithmetic_differential(void) {
             RUDA_EXPECT(trap.span.source == 2);
             RUDA_EXPECT(trap.span.start == 30 && trap.span.end == 31);
         }
+        ruda_bytecode_function_dispose(&decoded);
+        ruda_owned_bytes_dispose(&encoded);
         ruda_bytecode_function_dispose(&bytecode);
         ruda_mir_function_dispose(&mir);
     }

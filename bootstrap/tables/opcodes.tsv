@@ -18,3 +18,9 @@
 16	BRANCH_BOOL	branch_bool	condition:register,then:block,otherwise:block	terminator,branch	Transfer control according to an exact boolean register.
 17	RETURN	return	value:register	terminator	Return one typed register value.
 18	RETURN_VOID	return_void	-	terminator	Return normally from a void function.
+19	I64_BITWISE_NOT	i64_bitwise_not	destination:register,source:register	none	Compute portable two's-complement bitwise complement of a signed 64-bit operand.
+20	I64_BITWISE_AND	i64_bitwise_and	destination:register,left:register,right:register	none	Compute portable two's-complement bitwise AND of signed 64-bit operands.
+21	I64_BITWISE_XOR	i64_bitwise_xor	destination:register,left:register,right:register	none	Compute portable two's-complement bitwise XOR of signed 64-bit operands.
+22	I64_BITWISE_OR	i64_bitwise_or	destination:register,left:register,right:register	none	Compute portable two's-complement bitwise OR of signed 64-bit operands.
+23	I64_SHIFT_LEFT_CHECKED	i64_shift_left_checked	destination:register,left:register,count:register	may_panic	Shift signed 64-bit left under D035 count and representability checks.
+24	I64_SHIFT_RIGHT	i64_shift_right	destination:register,left:register,count:register	may_panic	Shift signed 64-bit right with D035 count checks and explicit sign extension.

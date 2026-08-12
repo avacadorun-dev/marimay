@@ -29,3 +29,9 @@ Stage 0 codec.
 | 16 | `branch_bool` | `condition:register`, `then:block`, `otherwise:block` | `terminator`, `branch` | Transfer control according to an exact boolean register. |
 | 17 | `return` | `value:register` | `terminator` | Return one typed register value. |
 | 18 | `return_void` | — | `terminator` | Return normally from a void function. |
+| 19 | `i64_bitwise_not` | `destination:register`, `source:register` | — | Compute portable two's-complement bitwise complement of a signed 64-bit operand. |
+| 20 | `i64_bitwise_and` | `destination:register`, `left:register`, `right:register` | — | Compute portable two's-complement bitwise AND of signed 64-bit operands. |
+| 21 | `i64_bitwise_xor` | `destination:register`, `left:register`, `right:register` | — | Compute portable two's-complement bitwise XOR of signed 64-bit operands. |
+| 22 | `i64_bitwise_or` | `destination:register`, `left:register`, `right:register` | — | Compute portable two's-complement bitwise OR of signed 64-bit operands. |
+| 23 | `i64_shift_left_checked` | `destination:register`, `left:register`, `count:register` | `may_panic` | Shift signed 64-bit left under D035 count and representability checks. |
+| 24 | `i64_shift_right` | `destination:register`, `left:register`, `count:register` | `may_panic` | Shift signed 64-bit right with D035 count checks and explicit sign extension. |

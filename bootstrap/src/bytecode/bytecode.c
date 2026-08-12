@@ -776,11 +776,17 @@ static bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_I64_DIVIDE_CHECKED:
         case RUDA_OPCODE_I64_REMAINDER_CHECKED:
         case RUDA_OPCODE_I64_NEGATE_CHECKED:
+        case RUDA_OPCODE_I64_BITWISE_NOT:
         case RUDA_OPCODE_BOOL_NOT:
         case RUDA_OPCODE_I64_EQUAL:
         case RUDA_OPCODE_BOOL_EQUAL:
         case RUDA_OPCODE_I64_LESS:
         case RUDA_OPCODE_I64_LESS_EQUAL:
+        case RUDA_OPCODE_I64_BITWISE_AND:
+        case RUDA_OPCODE_I64_BITWISE_XOR:
+        case RUDA_OPCODE_I64_BITWISE_OR:
+        case RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED:
+        case RUDA_OPCODE_I64_SHIFT_RIGHT:
             return true;
         case RUDA_OPCODE_INVALID:
         case RUDA_OPCODE_JUMP:
@@ -877,6 +883,7 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
         case RUDA_OPCODE_I64_NEGATE_CHECKED:
+        case RUDA_OPCODE_I64_BITWISE_NOT:
             first = instruction->operands[1].unsigned_value;
             status = ruda_bytecode_require_assigned(
                 assigned,
@@ -915,6 +922,11 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
         case RUDA_OPCODE_I64_MULTIPLY_CHECKED:
         case RUDA_OPCODE_I64_DIVIDE_CHECKED:
         case RUDA_OPCODE_I64_REMAINDER_CHECKED:
+        case RUDA_OPCODE_I64_BITWISE_AND:
+        case RUDA_OPCODE_I64_BITWISE_XOR:
+        case RUDA_OPCODE_I64_BITWISE_OR:
+        case RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED:
+        case RUDA_OPCODE_I64_SHIFT_RIGHT:
         case RUDA_OPCODE_I64_EQUAL:
         case RUDA_OPCODE_I64_LESS:
         case RUDA_OPCODE_I64_LESS_EQUAL:

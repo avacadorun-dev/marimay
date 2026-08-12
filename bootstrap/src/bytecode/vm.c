@@ -21,6 +21,9 @@ static RudaBytecodeRunStatus ruda_bytecode_run_checked_status(
     if (status == RUDA_CHECKED_I64_DIVISION_BY_ZERO) {
         return RUDA_BYTECODE_RUN_DIVISION_BY_ZERO;
     }
+    if (status == RUDA_CHECKED_I64_INVALID_SHIFT) {
+        return RUDA_BYTECODE_RUN_INVALID_SHIFT;
+    }
     return RUDA_BYTECODE_RUN_OVERFLOW;
 }
 
@@ -98,6 +101,62 @@ static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             size_t first = (size_t)instruction->operands[1].unsigned_value;
             registers[target].as.boolean = !registers[first].as.boolean;
             return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_I64_BITWISE_NOT: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            registers[target].as.i64 = ruda_i64_bitwise_not(
+                registers[first].as.i64
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_I64_BITWISE_AND: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.i64 = ruda_i64_bitwise_and(
+                registers[first].as.i64,
+                registers[second].as.i64
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_I64_BITWISE_XOR: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.i64 = ruda_i64_bitwise_xor(
+                registers[first].as.i64,
+                registers[second].as.i64
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_I64_BITWISE_OR: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.i64 = ruda_i64_bitwise_or(
+                registers[first].as.i64,
+                registers[second].as.i64
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            return ruda_bytecode_run_checked_status(
+                ruda_checked_i64_shift_left(
+                    registers[first].as.i64,
+                    registers[second].as.i64,
+                    &registers[target].as.i64
+                )
+            );
+        }
+        case RUDA_OPCODE_I64_SHIFT_RIGHT: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            return ruda_bytecode_run_checked_status(
+                ruda_checked_i64_shift_right(
+                    registers[first].as.i64,
+                    registers[second].as.i64,
+                    &registers[target].as.i64
+                )
+            );
         }
         case RUDA_OPCODE_I64_EQUAL: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;
@@ -275,7 +334,8 @@ RudaBytecodeRunStatus ruda_bytecode_run(
             if (status != RUDA_BYTECODE_RUN_OK) {
                 if (options.trap != NULL
                     && (status == RUDA_BYTECODE_RUN_OVERFLOW
-                        || status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO)) {
+                        || status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
+                        || status == RUDA_BYTECODE_RUN_INVALID_SHIFT)) {
                     options.trap->span = instruction->span;
                     options.trap->has_span = true;
                 }

@@ -119,6 +119,35 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->opcode = RUDA_OPCODE_BOOL_NOT;
             output->operands[1].unsigned_value = input->first;
             break;
+        case RUDA_MIR_BITWISE_NOT_I64:
+            output->opcode = RUDA_OPCODE_I64_BITWISE_NOT;
+            output->operands[1].unsigned_value = input->first;
+            break;
+        case RUDA_MIR_BITWISE_AND_I64:
+            output->opcode = RUDA_OPCODE_I64_BITWISE_AND;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_BITWISE_XOR_I64:
+            output->opcode = RUDA_OPCODE_I64_BITWISE_XOR;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_BITWISE_OR_I64:
+            output->opcode = RUDA_OPCODE_I64_BITWISE_OR;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_SHIFT_LEFT_CHECKED_I64:
+            output->opcode = RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_SHIFT_RIGHT_I64:
+            output->opcode = RUDA_OPCODE_I64_SHIFT_RIGHT;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case RUDA_MIR_EQUAL_I64:
             output->opcode = RUDA_OPCODE_I64_EQUAL;
             output->operands[1].unsigned_value = input->first;
@@ -140,12 +169,6 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->operands[2].unsigned_value = input->second;
             break;
         case RUDA_MIR_CONSTANT_STRING:
-        case RUDA_MIR_BITWISE_NOT_I64:
-        case RUDA_MIR_BITWISE_AND_I64:
-        case RUDA_MIR_BITWISE_XOR_I64:
-        case RUDA_MIR_BITWISE_OR_I64:
-        case RUDA_MIR_SHIFT_LEFT_CHECKED_I64:
-        case RUDA_MIR_SHIFT_RIGHT_I64:
         case RUDA_MIR_EQUAL_STRING:
         case RUDA_MIR_RECORD_NEW:
         case RUDA_MIR_RECORD_GET:

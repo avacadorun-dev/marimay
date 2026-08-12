@@ -72,7 +72,10 @@ static bool ruda_test_bytecode_build_full(
         RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64,
         RUDA_BYTECODE_TYPE_BOOL, RUDA_BYTECODE_TYPE_BOOL,
         RUDA_BYTECODE_TYPE_BOOL, RUDA_BYTECODE_TYPE_BOOL,
-        RUDA_BYTECODE_TYPE_BOOL
+        RUDA_BYTECODE_TYPE_BOOL,
+        RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64,
+        RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64,
+        RUDA_BYTECODE_TYPE_I64, RUDA_BYTECODE_TYPE_I64
     };
     RudaBytecodeFunctionOptions options = ruda_bytecode_function_default_options();
     uint32_t blocks[3];
@@ -136,6 +139,18 @@ static bool ruda_test_bytecode_build_full(
             &span_index)
         || !ruda_test_bytecode_append(function, 0, RUDA_OPCODE_BOOL_EQUAL, 10, 10, 14,
             &span_index)
+        || !ruda_test_bytecode_append(function, 0, RUDA_OPCODE_I64_BITWISE_NOT,
+            15, 0, 0, &span_index)
+        || !ruda_test_bytecode_append(function, 0, RUDA_OPCODE_I64_BITWISE_AND,
+            16, 0, 1, &span_index)
+        || !ruda_test_bytecode_append(function, 0, RUDA_OPCODE_I64_BITWISE_XOR,
+            17, 0, 1, &span_index)
+        || !ruda_test_bytecode_append(function, 0, RUDA_OPCODE_I64_BITWISE_OR,
+            18, 0, 1, &span_index)
+        || !ruda_test_bytecode_append(function, 0,
+            RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 19, 1, 1, &span_index)
+        || !ruda_test_bytecode_append(function, 0, RUDA_OPCODE_I64_SHIFT_RIGHT,
+            20, 0, 1, &span_index)
         || !ruda_test_bytecode_append(function, 0, RUDA_OPCODE_BRANCH_BOOL, 10, 1, 2,
             &span_index)
         || !ruda_test_bytecode_append(function, 1, RUDA_OPCODE_RETURN, 3, 0, 0,
@@ -278,7 +293,19 @@ static void ruda_test_bytecode_metadata(void) {
         {RUDA_OPCODE_RETURN, 17, "return", 1,
             {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_NONE, RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_TERMINATOR},
         {RUDA_OPCODE_RETURN_VOID, 18, "return_void", 0,
-            {RUDA_BYTECODE_OPERAND_NONE, RUDA_BYTECODE_OPERAND_NONE, RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_TERMINATOR}
+            {RUDA_BYTECODE_OPERAND_NONE, RUDA_BYTECODE_OPERAND_NONE, RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_TERMINATOR},
+        {RUDA_OPCODE_I64_BITWISE_NOT, 19, "i64_bitwise_not", 2,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_NONE}, 0},
+        {RUDA_OPCODE_I64_BITWISE_AND, 20, "i64_bitwise_and", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, 0},
+        {RUDA_OPCODE_I64_BITWISE_XOR, 21, "i64_bitwise_xor", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, 0},
+        {RUDA_OPCODE_I64_BITWISE_OR, 22, "i64_bitwise_or", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, 0},
+        {RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED, 23, "i64_shift_left_checked", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, RUDA_OPCODE_FLAG_MAY_PANIC},
+        {RUDA_OPCODE_I64_SHIFT_RIGHT, 24, "i64_shift_right", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, RUDA_OPCODE_FLAG_MAY_PANIC}
     };
     size_t index = 0;
 
@@ -301,6 +328,12 @@ static void ruda_test_bytecode_metadata(void) {
     RUDA_EXPECT(RUDA_OPCODE_BRANCH_BOOL == 16);
     RUDA_EXPECT(RUDA_OPCODE_RETURN == 17);
     RUDA_EXPECT(RUDA_OPCODE_RETURN_VOID == 18);
+    RUDA_EXPECT(RUDA_OPCODE_I64_BITWISE_NOT == 19);
+    RUDA_EXPECT(RUDA_OPCODE_I64_BITWISE_AND == 20);
+    RUDA_EXPECT(RUDA_OPCODE_I64_BITWISE_XOR == 21);
+    RUDA_EXPECT(RUDA_OPCODE_I64_BITWISE_OR == 22);
+    RUDA_EXPECT(RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED == 23);
+    RUDA_EXPECT(RUDA_OPCODE_I64_SHIFT_RIGHT == 24);
     RUDA_EXPECT(RUDA_OPCODE_COUNT == sizeof(expected) / sizeof(expected[0]));
     for (index = 0; index < sizeof(expected) / sizeof(expected[0]); index += 1) {
         const RudaOpcodeMetadata *metadata = ruda_opcode_metadata(expected[index].opcode);
@@ -326,8 +359,8 @@ static void ruda_test_bytecode_metadata(void) {
 
 static void ruda_test_bytecode_valid_and_disassembly(void) {
     static const char expected_disassembly[] =
-        "bytecode function v1 result=i64 sources=1 parameters=0 registers=15 blocks=3\n"
-        "registers r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64 r8:i64 r9:i64 r10:bool r11:bool r12:bool r13:bool r14:bool\n"
+        "bytecode function v1 result=i64 sources=1 parameters=0 registers=21 blocks=3\n"
+        "registers r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64 r8:i64 r9:i64 r10:bool r11:bool r12:bool r13:bool r14:bool r15:i64 r16:i64 r17:i64 r18:i64 r19:i64 r20:i64\n"
         "block b0:\n"
         "  const_i64 r0, 40 @s0:0..1\n"
         "  const_i64 r1, 2 @s0:1..2\n"
@@ -344,11 +377,17 @@ static void ruda_test_bytecode_valid_and_disassembly(void) {
         "  i64_less_equal r13, r1, r0 @s0:12..13\n"
         "  bool_not r14, r11 @s0:13..14\n"
         "  bool_equal r10, r10, r14 @s0:14..15\n"
-        "  branch_bool r10, b1, b2 @s0:15..16\n"
+        "  i64_bitwise_not r15, r0 @s0:15..16\n"
+        "  i64_bitwise_and r16, r0, r1 @s0:16..17\n"
+        "  i64_bitwise_xor r17, r0, r1 @s0:17..18\n"
+        "  i64_bitwise_or r18, r0, r1 @s0:18..19\n"
+        "  i64_shift_left_checked r19, r1, r1 @s0:19..20\n"
+        "  i64_shift_right r20, r0, r1 @s0:20..21\n"
+        "  branch_bool r10, b1, b2 @s0:21..22\n"
         "block b1:\n"
-        "  return r3 @s0:16..17\n"
+        "  return r3 @s0:22..23\n"
         "block b2:\n"
-        "  jump b1 @s0:17..18\n";
+        "  jump b1 @s0:23..24\n";
     RudaBytecodeFunction function;
     RudaBytecodeFunction void_function;
     RudaTestBuffer buffer;
@@ -572,6 +611,19 @@ static void ruda_test_bytecode_decode_rejections(void) {
 static void ruda_test_bytecode_verifier_rejections(void) {
     RudaBytecodeFunction function;
     RudaBytecodeInstruction *instruction = NULL;
+    static const struct {
+        size_t instruction;
+        size_t operand;
+    } new_opcode_inputs[] = {
+        {15, 1},
+        {16, 1}, {16, 2},
+        {17, 1}, {17, 2},
+        {18, 1}, {18, 2},
+        {19, 1}, {19, 2},
+        {20, 1}, {20, 2}
+    };
+    static const size_t new_opcode_indices[] = {15, 16, 17, 18, 19, 20};
+    size_t input_index = 0;
 
     RUDA_EXPECT(ruda_test_bytecode_build_full(&function, ruda_system_allocator()));
     instruction = ruda_test_bytecode_at(&function, 1, 0);
@@ -597,7 +649,7 @@ static void ruda_test_bytecode_verifier_rejections(void) {
     instruction = ruda_test_bytecode_at(&function, 0, 0);
     RUDA_EXPECT(instruction != NULL);
     if (instruction != NULL) {
-        instruction->operands[0].unsigned_value = 15;
+        instruction->operands[0].unsigned_value = 21;
     }
     RUDA_EXPECT(ruda_bytecode_verify(&function)
         == RUDA_BYTECODE_VERIFY_INVALID_REGISTER);
@@ -608,6 +660,60 @@ static void ruda_test_bytecode_verifier_rejections(void) {
     RUDA_EXPECT(instruction != NULL);
     if (instruction != NULL) {
         instruction->operands[0].unsigned_value = 10;
+    }
+    RUDA_EXPECT(ruda_bytecode_verify(&function)
+        == RUDA_BYTECODE_VERIFY_TYPE_MISMATCH);
+    ruda_bytecode_function_dispose(&function);
+
+    for (input_index = 0;
+        input_index < sizeof(new_opcode_inputs) / sizeof(new_opcode_inputs[0]);
+        input_index += 1) {
+        RUDA_EXPECT(ruda_test_bytecode_build_full(
+            &function,
+            ruda_system_allocator()
+        ));
+        instruction = ruda_test_bytecode_at(
+            &function,
+            0,
+            new_opcode_inputs[input_index].instruction
+        );
+        RUDA_EXPECT(instruction != NULL);
+        if (instruction != NULL) {
+            instruction->operands[
+                new_opcode_inputs[input_index].operand
+            ].unsigned_value = 20;
+        }
+        RUDA_EXPECT(ruda_bytecode_verify(&function)
+            == RUDA_BYTECODE_VERIFY_UNINITIALIZED_REGISTER);
+        ruda_bytecode_function_dispose(&function);
+    }
+
+    for (input_index = 0;
+        input_index < sizeof(new_opcode_indices) / sizeof(new_opcode_indices[0]);
+        input_index += 1) {
+        RUDA_EXPECT(ruda_test_bytecode_build_full(
+            &function,
+            ruda_system_allocator()
+        ));
+        instruction = ruda_test_bytecode_at(
+            &function,
+            0,
+            new_opcode_indices[input_index]
+        );
+        RUDA_EXPECT(instruction != NULL);
+        if (instruction != NULL) {
+            instruction->operands[0].unsigned_value = 14;
+        }
+        RUDA_EXPECT(ruda_bytecode_verify(&function)
+            == RUDA_BYTECODE_VERIFY_TYPE_MISMATCH);
+        ruda_bytecode_function_dispose(&function);
+    }
+
+    RUDA_EXPECT(ruda_test_bytecode_build_full(&function, ruda_system_allocator()));
+    instruction = ruda_test_bytecode_at(&function, 0, 19);
+    RUDA_EXPECT(instruction != NULL);
+    if (instruction != NULL) {
+        instruction->operands[2].unsigned_value = 10;
     }
     RUDA_EXPECT(ruda_bytecode_verify(&function)
         == RUDA_BYTECODE_VERIFY_TYPE_MISMATCH);
@@ -634,7 +740,7 @@ static void ruda_test_bytecode_verifier_rejections(void) {
     ruda_bytecode_function_dispose(&function);
 
     RUDA_EXPECT(ruda_test_bytecode_build_full(&function, ruda_system_allocator()));
-    instruction = ruda_test_bytecode_at(&function, 0, 15);
+    instruction = ruda_test_bytecode_at(&function, 0, 21);
     RUDA_EXPECT(instruction != NULL);
     if (instruction != NULL) {
         instruction->operands[2].unsigned_value = 1;

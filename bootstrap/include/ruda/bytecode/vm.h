@@ -36,7 +36,8 @@ typedef enum RudaBytecodeRunStatus {
     RUDA_BYTECODE_RUN_INVALID_BYTECODE,
     RUDA_BYTECODE_RUN_STEP_LIMIT,
     RUDA_BYTECODE_RUN_OVERFLOW,
-    RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
+    RUDA_BYTECODE_RUN_DIVISION_BY_ZERO,
+    RUDA_BYTECODE_RUN_INVALID_SHIFT
 } RudaBytecodeRunStatus;
 
 RudaBytecodeRunOptions ruda_bytecode_run_default_options(void);
