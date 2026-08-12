@@ -6,6 +6,7 @@
 #include "ruda/base/allocator.h"
 #include "ruda/base/owned_bytes.h"
 #include "ruda/bytecode/bytecode.h"
+#include "ruda/bytecode/vm.h"
 
 static bool ruda_fuzz_discard_write(
     void *context,
@@ -23,6 +24,9 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     RudaBytecodeCodecStatus status;
     RudaOwnedBytes encoded;
     RudaWriter writer;
+    RudaBytecodeValue *arguments = NULL;
+    size_t argument_bytes = 0;
+    size_t argument_index = 0;
     if (size > 1024U * 1024U) {
         return 0;
     }
@@ -64,6 +68,54 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         != RUDA_BYTECODE_DISASSEMBLE_OK) {
         abort();
     }
+    if (!ruda_size_multiply(
+            function.parameter_count,
+            sizeof(RudaBytecodeValue),
+            &argument_bytes
+        )) {
+        abort();
+    }
+    if (argument_bytes != 0) {
+        arguments = ruda_allocate(&function.allocator, argument_bytes);
+        if (arguments == NULL) {
+            ruda_owned_bytes_dispose(&encoded);
+            ruda_bytecode_function_dispose(&function);
+            return 0;
+        }
+        memset(arguments, 0, argument_bytes);
+        for (argument_index = 0;
+            argument_index < function.parameter_count;
+            argument_index += 1) {
+            const RudaBytecodeType *type = ruda_vector_at_const(
+                &function.register_types,
+                argument_index
+            );
+            arguments[argument_index].type = *type;
+        }
+    }
+    {
+        RudaBytecodeRunOptions run_options = ruda_bytecode_run_default_options();
+        RudaBytecodeValue result;
+        RudaBytecodeRunStatus run_status;
+        run_options.max_steps = 1024;
+        memset(&result, 0, sizeof(result));
+        run_status = ruda_bytecode_run(
+            &function,
+            arguments,
+            function.parameter_count,
+            ruda_system_allocator(),
+            run_options,
+            &result
+        );
+        if (run_status != RUDA_BYTECODE_RUN_OK
+            && run_status != RUDA_BYTECODE_RUN_STEP_LIMIT
+            && run_status != RUDA_BYTECODE_RUN_OVERFLOW
+            && run_status != RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
+            && run_status != RUDA_BYTECODE_RUN_LIMIT_REACHED
+            && run_status != RUDA_BYTECODE_RUN_ALLOCATION_FAILED) {
+            abort();
+        }
+    }
     if (ruda_bytecode_decode_function(
             encoded.data,
             encoded.length,
@@ -75,6 +127,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         abort();
     }
     ruda_bytecode_function_dispose(&decoded_again);
+    ruda_deallocate(&function.allocator, arguments, argument_bytes);
     ruda_owned_bytes_dispose(&encoded);
     ruda_bytecode_function_dispose(&function);
     return 0;

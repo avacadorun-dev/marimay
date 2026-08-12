@@ -3,6 +3,7 @@ add_executable(ruda_c_unit
   test_ast.c
   test_base.c
   test_bytecode.c
+  test_bytecode_vm.c
   test_checker.c
   test_cli.c
   test_diagnostic.c
@@ -15,6 +16,7 @@ add_executable(ruda_c_unit
   test_lexer.c
   test_manifest.c
   test_mir.c
+  test_mir_bytecode.c
   test_main.c
   test_path_stream.c
   test_parser.c

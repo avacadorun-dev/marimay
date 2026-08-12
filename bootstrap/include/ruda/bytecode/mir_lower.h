@@ -1,0 +1,43 @@
+#ifndef RUDA_BYTECODE_MIR_LOWER_H
+#define RUDA_BYTECODE_MIR_LOWER_H
+
+#include <stddef.h>
+#include <stdint.h>
+
+#include "ruda/base/allocator.h"
+#include "ruda/bytecode/bytecode.h"
+#include "ruda/mir/mir.h"
+
+typedef enum RudaMirBytecodeLowerStatus {
+    RUDA_MIR_BYTECODE_LOWER_OK,
+    RUDA_MIR_BYTECODE_LOWER_INVALID_ARGUMENT,
+    RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED,
+    RUDA_MIR_BYTECODE_LOWER_LIMIT_REACHED,
+    RUDA_MIR_BYTECODE_LOWER_INVALID_MIR,
+    RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE,
+    RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_INSTRUCTION,
+    RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TERMINATOR
+} RudaMirBytecodeLowerStatus;
+
+typedef struct RudaMirBytecodeLowerOptions {
+    uint64_t source;
+    size_t source_count;
+    RudaBytecodeFunctionOptions function_options;
+} RudaMirBytecodeLowerOptions;
+
+RudaMirBytecodeLowerOptions ruda_mir_bytecode_lower_default_options(void);
+
+/*
+ * Lowers only verified scalar bool/i64/void MIR. Unsupported semantics fail
+ * explicitly. Output must be zero-initialized or a valid initialized bytecode
+ * function. Any previous output value is disposed before lowering begins. On
+ * failure output is reset and owns no allocations.
+ */
+RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
+    const RudaMirFunction *input,
+    RudaAllocator allocator,
+    RudaMirBytecodeLowerOptions options,
+    RudaBytecodeFunction *output
+);
+
+#endif

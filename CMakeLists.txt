@@ -71,6 +71,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/ast/ast.c
   bootstrap/src/base/allocator.c
   bootstrap/src/base/arena.c
+  bootstrap/src/base/checked_i64.c
   bootstrap/src/base/hash.c
   bootstrap/src/base/map.c
   bootstrap/src/base/owned_bytes.c
@@ -82,6 +83,8 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/base/vector.c
   bootstrap/src/base/writer.c
   bootstrap/src/bytecode/bytecode.c
+  bootstrap/src/bytecode/mir_lower.c
+  bootstrap/src/bytecode/vm.c
   bootstrap/src/check/checker.c
   bootstrap/src/cli/cli.c
   bootstrap/src/diagnostic/diagnostic.c

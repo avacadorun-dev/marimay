@@ -1,5 +1,7 @@
 #include "ruda/mir/mir.h"
 
+#include "ruda/base/checked_i64.h"
+
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -2804,46 +2806,6 @@ cleanup:
     return status;
 }
 
-static bool ruda_mir_add_i64(int64_t left, int64_t right, int64_t *result) {
-    if ((right > 0 && left > INT64_MAX - right)
-        || (right < 0 && left < INT64_MIN - right)) {
-        return false;
-    }
-    *result = left + right;
-    return true;
-}
-
-static bool ruda_mir_subtract_i64(int64_t left, int64_t right, int64_t *result) {
-    if ((right < 0 && left > INT64_MAX + right)
-        || (right > 0 && left < INT64_MIN + right)) {
-        return false;
-    }
-    *result = left - right;
-    return true;
-}
-
-static bool ruda_mir_multiply_i64(int64_t left, int64_t right, int64_t *result) {
-    if (left == 0 || right == 0) {
-        *result = 0;
-        return true;
-    }
-    if ((left == INT64_MIN && right == -1)
-        || (right == INT64_MIN && left == -1)) {
-        return false;
-    }
-    if (left > 0) {
-        if ((right > 0 && left > INT64_MAX / right)
-            || (right < 0 && right < INT64_MIN / left)) {
-            return false;
-        }
-    } else if ((right > 0 && left < INT64_MIN / right)
-        || (right < 0 && left < INT64_MAX / right)) {
-        return false;
-    }
-    *result = left * right;
-    return true;
-}
-
 static int64_t ruda_mir_i64_from_twos_complement(uint64_t bits) {
     const uint64_t sign = UINT64_C(1) << 63;
     uint64_t magnitude = 0;
@@ -3416,47 +3378,62 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             *target = *first;
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_ADD_CHECKED_I64:
-            return ruda_mir_add_i64(
+            return ruda_checked_i64_add(
                 first->as.i64,
                 second->as.i64,
                 &target->as.i64
-            ) ? RUDA_MIR_INTERPRET_OK : RUDA_MIR_INTERPRET_OVERFLOW;
+            ) == RUDA_CHECKED_I64_OK
+                ? RUDA_MIR_INTERPRET_OK
+                : RUDA_MIR_INTERPRET_OVERFLOW;
         case RUDA_MIR_SUBTRACT_CHECKED_I64:
-            return ruda_mir_subtract_i64(
+            return ruda_checked_i64_subtract(
                 first->as.i64,
                 second->as.i64,
                 &target->as.i64
-            ) ? RUDA_MIR_INTERPRET_OK : RUDA_MIR_INTERPRET_OVERFLOW;
+            ) == RUDA_CHECKED_I64_OK
+                ? RUDA_MIR_INTERPRET_OK
+                : RUDA_MIR_INTERPRET_OVERFLOW;
         case RUDA_MIR_MULTIPLY_CHECKED_I64:
-            return ruda_mir_multiply_i64(
+            return ruda_checked_i64_multiply(
                 first->as.i64,
                 second->as.i64,
                 &target->as.i64
-            ) ? RUDA_MIR_INTERPRET_OK : RUDA_MIR_INTERPRET_OVERFLOW;
-        case RUDA_MIR_DIVIDE_CHECKED_I64:
-            if (second->as.i64 == 0) {
+            ) == RUDA_CHECKED_I64_OK
+                ? RUDA_MIR_INTERPRET_OK
+                : RUDA_MIR_INTERPRET_OVERFLOW;
+        case RUDA_MIR_DIVIDE_CHECKED_I64: {
+            RudaCheckedI64Status checked = ruda_checked_i64_divide(
+                first->as.i64,
+                second->as.i64,
+                &target->as.i64
+            );
+            if (checked == RUDA_CHECKED_I64_DIVISION_BY_ZERO) {
                 return RUDA_MIR_INTERPRET_DIVISION_BY_ZERO;
             }
-            if (first->as.i64 == INT64_MIN && second->as.i64 == -1) {
-                return RUDA_MIR_INTERPRET_OVERFLOW;
-            }
-            target->as.i64 = first->as.i64 / second->as.i64;
-            return RUDA_MIR_INTERPRET_OK;
-        case RUDA_MIR_REMAINDER_CHECKED_I64:
-            if (second->as.i64 == 0) {
+            return checked == RUDA_CHECKED_I64_OK
+                ? RUDA_MIR_INTERPRET_OK
+                : RUDA_MIR_INTERPRET_OVERFLOW;
+        }
+        case RUDA_MIR_REMAINDER_CHECKED_I64: {
+            RudaCheckedI64Status checked = ruda_checked_i64_remainder(
+                first->as.i64,
+                second->as.i64,
+                &target->as.i64
+            );
+            if (checked == RUDA_CHECKED_I64_DIVISION_BY_ZERO) {
                 return RUDA_MIR_INTERPRET_DIVISION_BY_ZERO;
             }
-            if (first->as.i64 == INT64_MIN && second->as.i64 == -1) {
-                return RUDA_MIR_INTERPRET_OVERFLOW;
-            }
-            target->as.i64 = first->as.i64 % second->as.i64;
-            return RUDA_MIR_INTERPRET_OK;
+            return checked == RUDA_CHECKED_I64_OK
+                ? RUDA_MIR_INTERPRET_OK
+                : RUDA_MIR_INTERPRET_OVERFLOW;
+        }
         case RUDA_MIR_NEGATE_CHECKED_I64:
-            if (first->as.i64 == INT64_MIN) {
-                return RUDA_MIR_INTERPRET_OVERFLOW;
-            }
-            target->as.i64 = -first->as.i64;
-            return RUDA_MIR_INTERPRET_OK;
+            return ruda_checked_i64_negate(
+                first->as.i64,
+                &target->as.i64
+            ) == RUDA_CHECKED_I64_OK
+                ? RUDA_MIR_INTERPRET_OK
+                : RUDA_MIR_INTERPRET_OVERFLOW;
         case RUDA_MIR_NOT_BOOL:
             target->as.boolean = !first->as.boolean;
             return RUDA_MIR_INTERPRET_OK;
