@@ -1,0 +1,13 @@
+type Scalar = int;
+
+type Qualified = pkg.User;
+
+type Nested = Map<string, Array<Result<int, Error>>>;
+
+type Tuple = [string, int];
+
+type Callback = (string, int) => Result<void, Error>;
+
+fn maximum<T: Ordered<T> & Hash<T>>(value: T): T {
+  return value;
+}

@@ -1,0 +1,399 @@
+#!/usr/bin/env python3
+"""Generate token/syntax enums, data, and public references from TSV files."""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List
+
+
+ROOT = Path(__file__).resolve().parents[1]
+TOKEN_SOURCE = ROOT / "bootstrap/tables/tokens.tsv"
+TOKEN_HEADER = ROOT / "bootstrap/include/ruda/generated/token_kinds.h"
+TOKEN_DATA = ROOT / "bootstrap/src/generated/token_data.inc"
+TOKEN_REFERENCE = ROOT / "docs/generated/syntax-tokens.md"
+KIND_SOURCE = ROOT / "bootstrap/tables/syntax-kinds.tsv"
+KIND_HEADER = ROOT / "bootstrap/include/ruda/generated/syntax_kinds.h"
+KIND_DATA = ROOT / "bootstrap/src/generated/syntax_data.inc"
+KIND_REFERENCE = ROOT / "docs/generated/syntax-kinds.md"
+GRAMMAR_SOURCE = ROOT / "bootstrap/tables/grammar-productions.tsv"
+GRAMMAR_REFERENCE = ROOT / "docs/generated/source-grammar.md"
+VALID_CATEGORIES = {
+    "special", "trivia", "name", "literal", "interpolation", "keyword",
+    "contextual", "punctuation", "operator"
+}
+VALID_KIND_CATEGORIES = {
+    "root", "recovery", "declaration", "list", "type", "statement",
+    "expression"
+}
+VALID_PRODUCTION_CATEGORIES = {
+    "root", "declaration", "list", "type", "statement", "expression",
+    "pattern"
+}
+VALID_PRODUCTION_STATES = {"baseline", "provisional"}
+
+
+@dataclass(frozen=True)
+class Token:
+    symbol: str
+    display: str
+    category: str
+    spelling: str
+
+
+@dataclass(frozen=True)
+class SyntaxKind:
+    symbol: str
+    display: str
+    category: str
+
+
+@dataclass(frozen=True)
+class GrammarProduction:
+    name: str
+    category: str
+    state: str
+    rule: str
+
+
+def read_tokens() -> List[Token]:
+    tokens: List[Token] = []
+    symbols = set()
+    displays = set()
+    spellings = set()
+    for number, raw_line in enumerate(TOKEN_SOURCE.read_text(encoding="utf-8").splitlines(), 1):
+        if not raw_line or raw_line.startswith("#"):
+            continue
+        fields = raw_line.split("\t")
+        if len(fields) != 4:
+            raise ValueError(f"{TOKEN_SOURCE}:{number}: expected four tab-separated fields")
+        token = Token(*fields)
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]*", token.symbol):
+            raise ValueError(f"{TOKEN_SOURCE}:{number}: invalid symbol")
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]*", token.display):
+            raise ValueError(f"{TOKEN_SOURCE}:{number}: invalid display name")
+        if token.category not in VALID_CATEGORIES:
+            raise ValueError(f"{TOKEN_SOURCE}:{number}: invalid category")
+        if token.symbol in symbols or token.display in displays:
+            raise ValueError(f"{TOKEN_SOURCE}:{number}: duplicate symbol/display")
+        if token.category in {"keyword", "contextual"}:
+            if not re.fullmatch(r"[a-z]+", token.spelling):
+                raise ValueError(f"{TOKEN_SOURCE}:{number}: invalid keyword spelling")
+            if token.spelling in spellings:
+                raise ValueError(f"{TOKEN_SOURCE}:{number}: duplicate keyword spelling")
+            spellings.add(token.spelling)
+        symbols.add(token.symbol)
+        displays.add(token.display)
+        tokens.append(token)
+    if not tokens or tokens[0].symbol != "EOF":
+        raise ValueError(f"{TOKEN_SOURCE}: EOF must be the first token")
+    return tokens
+
+
+def read_syntax_kinds() -> List[SyntaxKind]:
+    kinds: List[SyntaxKind] = []
+    symbols = set()
+    displays = set()
+    for number, raw_line in enumerate(KIND_SOURCE.read_text(encoding="utf-8").splitlines(), 1):
+        if not raw_line or raw_line.startswith("#"):
+            continue
+        fields = raw_line.split("\t")
+        if len(fields) != 3:
+            raise ValueError(f"{KIND_SOURCE}:{number}: expected three tab-separated fields")
+        kind = SyntaxKind(*fields)
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]*", kind.symbol):
+            raise ValueError(f"{KIND_SOURCE}:{number}: invalid symbol")
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]*", kind.display):
+            raise ValueError(f"{KIND_SOURCE}:{number}: invalid display name")
+        if kind.category not in VALID_KIND_CATEGORIES:
+            raise ValueError(f"{KIND_SOURCE}:{number}: invalid category")
+        if kind.symbol in symbols or kind.display in displays:
+            raise ValueError(f"{KIND_SOURCE}:{number}: duplicate symbol/display")
+        symbols.add(kind.symbol)
+        displays.add(kind.display)
+        kinds.append(kind)
+    if not kinds or kinds[0].symbol != "ROOT":
+        raise ValueError(f"{KIND_SOURCE}: ROOT must be the first syntax kind")
+    return kinds
+
+
+def grammar_references(rule: str) -> List[str]:
+    """Return lower-case production references outside quoted terminals."""
+    without_terminals = re.sub(r'"(?:[^"\\]|\\.)*"', " ", rule)
+    return [
+        name
+        for name in re.findall(r"\b[A-Za-z_][A-Za-z0-9_]*\b", without_terminals)
+        if name[0].islower()
+    ]
+
+
+def read_grammar_productions(tokens: List[Token]) -> List[GrammarProduction]:
+    productions: List[GrammarProduction] = []
+    names = set()
+    token_names = {token.display for token in tokens}
+    for number, raw_line in enumerate(
+        GRAMMAR_SOURCE.read_text(encoding="utf-8").splitlines(), 1
+    ):
+        if not raw_line or raw_line.startswith("#"):
+            continue
+        fields = raw_line.split("\t")
+        if len(fields) != 4:
+            raise ValueError(
+                f"{GRAMMAR_SOURCE}:{number}: expected four tab-separated fields"
+            )
+        production = GrammarProduction(*fields)
+        if not re.fullmatch(r"[a-z][a-z0-9_]*", production.name):
+            raise ValueError(f"{GRAMMAR_SOURCE}:{number}: invalid production name")
+        if production.name in names:
+            raise ValueError(f"{GRAMMAR_SOURCE}:{number}: duplicate production name")
+        if production.category not in VALID_PRODUCTION_CATEGORIES:
+            raise ValueError(f"{GRAMMAR_SOURCE}:{number}: invalid production category")
+        if production.state not in VALID_PRODUCTION_STATES:
+            raise ValueError(f"{GRAMMAR_SOURCE}:{number}: invalid production state")
+        if not production.rule:
+            raise ValueError(f"{GRAMMAR_SOURCE}:{number}: empty production rule")
+        if re.sub(r'"(?:[^"\\]|\\.)*"', "", production.rule).count('"') != 0:
+            raise ValueError(f"{GRAMMAR_SOURCE}:{number}: unterminated quoted terminal")
+
+        unquoted = re.sub(r'"(?:[^"\\]|\\.)*"', "", production.rule)
+        stack: List[str] = []
+        pairs = {")": "(", "]": "[", "}": "{"}
+        for character in unquoted:
+            if character in "([{":
+                stack.append(character)
+            elif character in pairs:
+                if not stack or stack.pop() != pairs[character]:
+                    raise ValueError(
+                        f"{GRAMMAR_SOURCE}:{number}: unbalanced EBNF delimiter"
+                    )
+        if stack:
+            raise ValueError(f"{GRAMMAR_SOURCE}:{number}: unbalanced EBNF delimiter")
+
+        for terminal in re.findall(r"\b[A-Z][A-Z0-9_]*\b", unquoted):
+            if terminal not in token_names:
+                raise ValueError(
+                    f"{GRAMMAR_SOURCE}:{number}: unknown token terminal {terminal}"
+                )
+        names.add(production.name)
+        productions.append(production)
+
+    if not productions or productions[0].name != "file":
+        raise ValueError(f"{GRAMMAR_SOURCE}: file must be the first production")
+
+    by_name = {production.name: production for production in productions}
+    for production in productions:
+        for reference in grammar_references(production.rule):
+            if reference not in by_name:
+                raise ValueError(
+                    f"{GRAMMAR_SOURCE}: {production.name} references unknown production "
+                    f"{reference}"
+                )
+
+    reachable = {"file"}
+    pending = ["file"]
+    while pending:
+        name = pending.pop()
+        for reference in grammar_references(by_name[name].rule):
+            if reference not in reachable:
+                reachable.add(reference)
+                pending.append(reference)
+    unreachable = sorted(set(by_name) - reachable)
+    if unreachable:
+        raise ValueError(
+            f"{GRAMMAR_SOURCE}: unreachable production(s): {', '.join(unreachable)}"
+        )
+    return productions
+
+
+def render_header(tokens: List[Token]) -> str:
+    entries = ",\n".join(f"    RUDA_TOKEN_{token.symbol}" for token in tokens)
+    return f"""#ifndef RUDA_GENERATED_TOKEN_KINDS_H
+#define RUDA_GENERATED_TOKEN_KINDS_H
+
+/* Generated from bootstrap/tables/tokens.tsv. Do not edit by hand. */
+typedef enum RudaTokenKind {{
+{entries}
+}} RudaTokenKind;
+
+#define RUDA_TOKEN_KIND_COUNT ((size_t)RUDA_TOKEN_{tokens[-1].symbol} + 1U)
+
+#endif
+"""
+
+
+def render_kind_header(kinds: List[SyntaxKind]) -> str:
+    entries = ",\n".join(f"    RUDA_SYNTAX_{kind.symbol}" for kind in kinds)
+    return f"""#ifndef RUDA_GENERATED_SYNTAX_KINDS_H
+#define RUDA_GENERATED_SYNTAX_KINDS_H
+
+/* Generated from bootstrap/tables/syntax-kinds.tsv. Do not edit by hand. */
+typedef enum RudaSyntaxKind {{
+{entries}
+}} RudaSyntaxKind;
+
+#define RUDA_SYNTAX_KIND_COUNT ((size_t)RUDA_SYNTAX_{kinds[-1].symbol} + 1U)
+
+#endif
+"""
+
+
+def c_string(text: str) -> str:
+    return '"' + text.replace('\\', '\\\\').replace('"', '\\"') + '"'
+
+
+def render_data(tokens: List[Token]) -> str:
+    names = ",\n".join(f"    {c_string(token.display)}" for token in tokens)
+    keywords = ",\n".join(
+        f"    {{{c_string(token.spelling)}, RUDA_TOKEN_{token.symbol}}}"
+        for token in tokens
+        if token.category in {"keyword", "contextual"}
+    )
+    return f"""/* Generated from bootstrap/tables/tokens.tsv. Do not edit by hand. */
+static const RudaKeyword ruda_keywords[] = {{
+{keywords}
+}};
+
+static const char *const ruda_token_names[] = {{
+{names}
+}};
+
+_Static_assert(
+    sizeof(ruda_token_names) / sizeof(ruda_token_names[0]) == RUDA_TOKEN_KIND_COUNT,
+    "token name table must cover every token kind"
+);
+"""
+
+
+def render_kind_data(kinds: List[SyntaxKind]) -> str:
+    names = ",\n".join(f"    {c_string(kind.display)}" for kind in kinds)
+    return f"""/* Generated from bootstrap/tables/syntax-kinds.tsv. Do not edit by hand. */
+static const char *const ruda_syntax_names[] = {{
+{names}
+}};
+
+_Static_assert(
+    sizeof(ruda_syntax_names) / sizeof(ruda_syntax_names[0]) == RUDA_SYNTAX_KIND_COUNT,
+    "syntax name table must cover every syntax kind"
+);
+"""
+
+
+def markdown_cell(text: str) -> str:
+    return text.replace("|", "\\|")
+
+
+def render_reference(tokens: List[Token]) -> str:
+    rows = "\n".join(
+        f"| `{token.display}` | {token.category} | "
+        f"{('—' if token.spelling == '-' else f'`{markdown_cell(token.spelling)}`')} |"
+        for token in tokens
+    )
+    return f"""# Generated syntax token reference
+
+<!-- Generated by tools/generate-syntax. Do not edit by hand. -->
+
+This is the lossless token vocabulary used by the Stage 0 lexer. Trivia and interpolation boundaries remain in the stream so parsing, formatting, and editor projections share exact source bytes.
+
+| Token | Category | Fixed spelling or form |
+|---|---|---|
+{rows}
+"""
+
+
+def render_kind_reference(kinds: List[SyntaxKind]) -> str:
+    rows = "\n".join(
+        f"| `{kind.display}` | {kind.category} |" for kind in kinds
+    )
+    return f"""# Generated syntax-node reference
+
+<!-- Generated by tools/generate-syntax. Do not edit by hand. -->
+
+These immutable green-node kinds retain source structure. Physical tokens and trivia remain children, while synthetic recovery tokens are zero-width.
+
+| Node kind | Category |
+|---|---|
+{rows}
+"""
+
+
+def render_grammar_reference(productions: List[GrammarProduction]) -> str:
+    rows = "\n".join(
+        f"| `{production.name}` | {production.category} | {production.state} | "
+        f"`{markdown_cell(production.rule)}` |"
+        for production in productions
+    )
+    ebnf = "\n".join(
+        f"{production.name:<28} = {production.rule} ;"
+        for production in productions
+    )
+    return f"""# Generated Ruda source grammar
+
+<!-- Generated by tools/generate-syntax. Do not edit by hand. -->
+
+This checked reference is generated from
+`bootstrap/tables/grammar-productions.tsv`. Quoted text is a fixed spelling,
+upper-case names are lexer tokens, braces mean repetition, brackets mean an
+optional term, and parentheses group alternatives. A `baseline` row restates
+the accepted 0.1 design; a `provisional` row still requires syntax-freeze
+evidence. Under the language specification this reference becomes normative
+only when the I1 syntax-freeze gate is verified.
+
+```ebnf
+{ebnf}
+```
+
+| Production | Category | State | Rule |
+|---|---|---|---|
+{rows}
+"""
+
+
+def update(path: Path, expected: str, check: bool) -> bool:
+    actual = path.read_text(encoding="utf-8") if path.exists() else None
+    if actual == expected:
+        return True
+    if check:
+        print(f"generated artifact is stale: {path.relative_to(ROOT)}", file=sys.stderr)
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(expected, encoding="utf-8")
+    print(f"updated {path.relative_to(ROOT)}")
+    return True
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true", help="fail instead of writing stale outputs")
+    arguments = parser.parse_args()
+    try:
+        tokens = read_tokens()
+        kinds = read_syntax_kinds()
+        productions = read_grammar_productions(tokens)
+    except (OSError, UnicodeError, ValueError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    results = [
+        update(TOKEN_HEADER, render_header(tokens), arguments.check),
+        update(TOKEN_DATA, render_data(tokens), arguments.check),
+        update(TOKEN_REFERENCE, render_reference(tokens), arguments.check),
+        update(KIND_HEADER, render_kind_header(kinds), arguments.check),
+        update(KIND_DATA, render_kind_data(kinds), arguments.check),
+        update(KIND_REFERENCE, render_kind_reference(kinds), arguments.check),
+        update(
+            GRAMMAR_REFERENCE,
+            render_grammar_reference(productions),
+            arguments.check,
+        ),
+    ]
+    if all(results):
+        print("syntax generated artifacts: ok" if arguments.check else "syntax generation: ok")
+        return 0
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

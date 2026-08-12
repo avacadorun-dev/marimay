@@ -1,0 +1,89 @@
+import { Item as Renamed, other } from "pkg";
+
+type Id = i64;
+
+type Box<T> {
+  public mutable value: T;
+}
+
+enum Maybe<T> {
+  None,
+  Some(T),
+  Named { value: T; },
+}
+
+interface Reader<T> {
+  read(buffer: T): Result<int, Error>;
+  Close;
+}
+
+@link("c")
+extern "c" fn call(value: i32): i32;
+
+const answer: int = 42;
+
+@fuzz
+fn fuzzBytes(input: Array<byte>): void {
+  const _ = input;
+}
+
+@test
+fn ok(): void {
+  expect.equal(answer, 42);
+}
+
+fn expressions(a: int, b: int, c: int): void {
+  const precedence = a + b * c;
+  const left = a - b - c;
+  let assigned = a;
+  assigned = b;
+  assigned <<= 1;
+  assigned >>= 1;
+  const shifted = a + 1 << b >> 1;
+  const value = service.load<Result<int, Error>>(a, b)[0]?;
+  const flag = !a == -b && true || false;
+  const array = [a, b + c];
+  const record = Box { value: a };
+  const closure = (error: Error): Result<int, Error> => service.handle(error);
+  const spawned = spawn service.load(a);
+  const matched = match a {
+    case 0 => b;
+    case _ if c > 0 => c;
+  };
+  const textMatched = match text {
+    case "ready" => 1;
+    case _ => 0;
+  };
+  const pointMatched = match point {
+    case Point { x, y } => x + y;
+  };
+}
+
+fn scope(break: int, continue: int, unsafe: int): int {
+  return break + continue + unsafe;
+}
+
+fn nested(value: Option<Array<Result<int, Error>>>): Option<Array<int>> {
+  for const item of value {
+    use(item);
+  }
+  for let index = 0; index < 3; index += 1 {
+    if index == 1 {
+      continue;
+    } else if false {
+      break;
+    } else {
+      use(index);
+    }
+  }
+  while false {
+    break;
+  }
+  unsafe {
+    panic("checked");
+  }
+  {
+    const local = 1;
+  }
+  return value;
+}

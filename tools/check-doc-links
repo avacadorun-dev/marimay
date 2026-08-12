@@ -1,0 +1,4 @@
+#!/usr/bin/env python3
+from _d0_checks import main
+
+raise SystemExit(main("doc-links"))

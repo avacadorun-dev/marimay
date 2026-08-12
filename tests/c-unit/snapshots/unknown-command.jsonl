@@ -1,0 +1,1 @@
+{"schema":"ruda.diagnostic/1","code":"U0001","severity":"error","message":"unknown command 'buid'; did you mean 'build'?","primary":null,"labels":[],"notes":[],"fixes":[],"context":{"kind":"command-line","argument":1}}

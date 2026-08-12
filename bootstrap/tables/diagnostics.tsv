@@ -1,0 +1,55 @@
+# code	symbol	component	summary
+F0001	FORMAT_INPUT_IO	formatter	Formatter could not read the selected source input.
+F0002	FORMAT_OUTPUT_IO	formatter	Formatter could not write or transactionally replace canonical output.
+F0003	FORMAT_LIMIT	formatter	Formatter exhausted a defensive input, nesting, work, or output limit.
+F0004	FORMAT_CHECK_FAILED	formatter	Source input does not match canonical formatting.
+K0001	MANIFEST_SYNTAX	manifest	Manifest directive or grouping syntax is invalid.
+K0002	MANIFEST_STRING	manifest	Manifest contains an invalid JSON-compatible string.
+K0003	WORKSPACE_PATH	manifest	Workspace use path is not a canonical relative path within the workspace root.
+L0001	INVALID_UTF8	lexer	Source contains malformed UTF-8.
+L0002	UNEXPECTED_CHARACTER	lexer	Source contains a character that cannot begin a token.
+L0003	RESERVED_WORD	lexer	Reserved word cannot be used as an identifier.
+L0004	UNTERMINATED_BLOCK_COMMENT	lexer	Nested block comment reaches end of source before closing.
+L0005	UNTERMINATED_LITERAL	lexer	Quoted literal reaches a physical newline or end of source before closing.
+L0006	INVALID_ESCAPE	lexer	Quoted literal contains an invalid or incomplete escape.
+L0007	INVALID_NUMBER	lexer	Numeric literal does not follow the closed base, separator, or exponent grammar.
+L0008	INVALID_RUNE	lexer	Rune literal does not contain exactly one Unicode scalar or escape.
+L0009	LEXICAL_NESTING_LIMIT	lexer	Comment or interpolation nesting exceeds the configured defensive limit.
+L0010	LEXICAL_WORK_LIMIT	lexer	Token or diagnostic production exceeds the configured defensive limit.
+L0011	INVALID_BYTE_STRING	lexer	Byte string contains non-ASCII text or a non-byte escape.
+L0012	UNMATCHED_INTERPOLATION_BRACE	lexer	Interpolated text contains a single unmatched closing brace.
+P0001	EXPECTED_TOKEN	parser	Required syntax token is missing at the recovery point.
+P0002	UNEXPECTED_TOKEN	parser	Token is not valid in the current grammar position.
+P0003	UNTERMINATED_DELIMITER	parser	Delimited syntax reaches end of source before closing.
+P0004	PARSER_NESTING_LIMIT	parser	Parser nesting exceeds the configured defensive limit.
+P0005	PARSER_WORK_LIMIT	parser	Parser event or diagnostic production exceeds the configured defensive limit.
+P0006	INVALID_DECLARATION	parser	Top-level declaration does not match a baseline declaration form.
+R0001	UNKNOWN_NAME	resolver	Name does not resolve in the current lexical scope.
+R0002	DUPLICATE_NAME	resolver	Name is declared more than once in the same lexical scope.
+R0003	PRIVATE_TYPE_IN_PUBLIC_API	resolver	Public declaration signature exposes a package-private type.
+R0004	UNKNOWN_FIELD	resolver	Field name does not exist on the resolved nominal record or named enum payload.
+R0005	DUPLICATE_FIELD	resolver	Record or named enum payload construction supplies the same field more than once.
+R0006	UNKNOWN_VARIANT	resolver	Variant name does not exist on the resolved nominal enum type.
+R0007	INVALID_ATTRIBUTE	resolver	Compiler-known attribute is invalid for the declaration or has invalid arguments.
+T0001	UNKNOWN_TYPE	type checker	Type name does not resolve to a primitive, declared, or imported type.
+T0002	TYPE_MISMATCH	type checker	Expression type is not compatible with the required exact type.
+T0003	INVALID_OPERATOR	type checker	Operator is not defined for the operand types.
+T0004	ASSIGN_IMMUTABLE	type checker	Assignment targets an immutable binding or record field.
+T0005	UNINITIALIZED_LOCAL	type checker	Local binding is read before definite initialization.
+T0006	MISSING_RETURN	type checker	Reachable path in a non-void function does not return a value.
+T0007	INTEGER_LITERAL_RANGE	type checker	Integer literal is outside the range of its required type.
+T0008	LOOP_CONTROL_OUTSIDE_LOOP	type checker	Break or continue appears outside a loop.
+T0009	CALL_ARITY	type checker	Argument count does not match the resolved function or positional enum variant signature.
+T0010	CONSTANT_EVALUATION	type checker	Required constant expression cannot be evaluated under constant semantics.
+T0011	TYPE_ALIAS_CYCLE	type checker	Type alias expansion contains a dependency cycle.
+T0012	MISSING_FIELD	type checker	Record or named enum payload construction/pattern omits a required field.
+T0013	NON_EXHAUSTIVE_MATCH	type checker	Match over a closed domain does not cover every reachable case.
+T0014	REDUNDANT_PATTERN	type checker	Match arm pattern is redundant or unreachable after earlier arms.
+T0015	YIELD_OUTSIDE_MATCH_ARM	type checker	Yield appears outside a block match arm.
+T0016	MISSING_MATCH_YIELD	type checker	A reachable path through a block match arm does not yield a value.
+U0001	UNKNOWN_COMMAND	command line	Unknown top-level command or help target.
+U0002	UNKNOWN_OPTION	command line	Unknown command-line option.
+U0003	UNAVAILABLE_COMMAND	command line	Specified command is not present in this bootstrap stage.
+U0004	MISSING_OPTION_VALUE	command line	Command-line option is missing its required value.
+U0005	INVALID_OPTION_VALUE	command line	Command-line option value is outside its closed value set.
+U0006	UNEXPECTED_ARGUMENT	command line	Command received an unsupported positional argument.

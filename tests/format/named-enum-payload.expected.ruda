@@ -1,0 +1,5 @@
+enum Response<T> {
+  Empty,
+  Value(T),
+  Failure { code: int; message: string; },
+}

@@ -1,0 +1,44 @@
+#ifndef RUDA_DIAGNOSTIC_H
+#define RUDA_DIAGNOSTIC_H
+
+#include <stdbool.h>
+#include <stddef.h>
+
+#include "ruda/base/writer.h"
+#include "ruda/source/source_manager.h"
+
+typedef enum RudaDiagnosticStyle {
+    RUDA_DIAGNOSTIC_HUMAN,
+    RUDA_DIAGNOSTIC_SHORT,
+    RUDA_DIAGNOSTIC_JSON
+} RudaDiagnosticStyle;
+
+typedef enum RudaSeverity {
+    RUDA_SEVERITY_ERROR,
+    RUDA_SEVERITY_WARNING,
+    RUDA_SEVERITY_INFORMATION,
+    RUDA_SEVERITY_HELP
+} RudaSeverity;
+
+typedef struct RudaDiagnostic {
+    const char *code;
+    RudaSeverity severity;
+    const char *message;
+    bool has_command_argument;
+    size_t command_argument;
+    const RudaSourceSnapshot *source;
+    size_t source_start;
+    size_t source_end;
+} RudaDiagnostic;
+
+/*
+ * Diagnostic strings are borrowed for the duration of this call. The writer
+ * owns its destination. False means the destination rejected a write.
+ */
+bool ruda_diagnostic_render(
+    RudaWriter writer,
+    RudaDiagnosticStyle style,
+    const RudaDiagnostic *diagnostic
+);
+
+#endif

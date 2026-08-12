@@ -1,0 +1,61 @@
+import * as http from "std/http";
+import * as json from "std/json";
+
+enum AppError {
+  Network(http.Error),
+  Decode(json.Error),
+}
+
+fn message(error: AppError): string {
+  return match error {
+    case Network(inner) => $"network: {inner.message()}";
+    case Decode(inner) => $"decode: {inner.message()}";
+  };
+}
+
+type User {
+  public id: int;
+  public name: string;
+}
+
+type Order {
+  public id: int;
+  public total: int;
+}
+
+type Dashboard {
+  public user: User;
+  public orders: Array<Order>;
+}
+
+fn loadUser(id: int): Result<User, AppError> {
+  // This call may park the current lightweight task. It does not change
+  // the declared return type and does not block the isolate's carrier.
+  const response = http.get($"/users/{id}").mapError(
+    (error: http.Error): AppError => AppError.Network(error),
+  )?;
+  return json.decode<User>(response.body).mapError(
+    (error: json.Error): AppError => AppError.Decode(error),
+  );
+}
+
+fn loadOrders(id: int): Result<Array<Order>, AppError> {
+  const response = http.get($"/users/{id}/orders").mapError(
+    (error: http.Error): AppError => AppError.Network(error),
+  )?;
+  return json.decode<Array<Order>>(response.body).mapError(
+    (error: json.Error): AppError => AppError.Decode(error),
+  );
+}
+
+fn loadDashboard(id: int): Result<Dashboard, AppError> {
+  scope {
+    const userTask = spawn loadUser(id);
+    const ordersTask = spawn loadOrders(id);
+    // If either ? returns early, the scope cancels and joins the sibling
+    // before the function actually returns.
+    const user = userTask.wait()?;
+    const orders = ordersTask.wait()?;
+    return Ok(Dashboard { user, orders });
+  }
+}

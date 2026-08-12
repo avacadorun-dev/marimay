@@ -1,0 +1,13 @@
+import * as io from "std/io";
+
+type Pair<T> {
+  first: T;
+  second: T;
+}
+
+fn main(): void {
+  const values = [1, 2, 3];
+  for const value of values {
+    io.print($"value {value}");
+  }
+}

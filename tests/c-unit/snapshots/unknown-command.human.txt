@@ -1,0 +1,1 @@
+error[U0001]: unknown command 'buid'; did you mean 'build'?

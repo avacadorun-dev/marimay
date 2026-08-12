@@ -1,0 +1,11 @@
+/// First paragraph.
+///
+/// Third paragraph.
+@derive(Debug) // derives Item
+type Item{public value:int; // public field
+}
+fn main():void{
+const value=Item{value:1}; /* constructed */
+if true{use(value);} // used inline
+return;
+}

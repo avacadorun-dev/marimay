@@ -1,0 +1,52 @@
+import { println } from "std/io";
+
+enum LookupError {
+  NotFound { id: int; },
+  Denied { reason: string; },
+}
+
+fn message(error: LookupError): string {
+  return match error {
+    case NotFound { id } => $"user {id} was not found";
+    case Denied { reason } => $"access denied: {reason}";
+  };
+}
+
+@derive(Debug)
+type User {
+  public id: int;
+  public name: string;
+  public mutable visits: int;
+}
+
+interface Stringer {
+  string(): string;
+}
+
+fn string(user: User): string {
+  return $"{user.name} (#{user.id}, visits: {user.visits})";
+}
+
+fn visit(user: User): void {
+  user.visits += 1;
+}
+
+fn printValue(value: Stringer): void {
+  println(value.string());
+}
+
+fn findUser(id: int): Result<User, LookupError> {
+  if id != 7 {
+    return Err(LookupError.NotFound { id });
+  }
+  return Ok(User { id, name: "Mara", visits: 0 });
+}
+
+fn main(): Result<void, LookupError> {
+  const user = findUser(7)?;
+  user.visit();
+  printValue(user);
+  // Dot call and ordinary call resolve to the same function.
+  println(string(user));
+  return Ok();
+}

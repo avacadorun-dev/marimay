@@ -1,0 +1,122 @@
+import { Item as Renamed, other } from "pkg";
+
+@derive(Debug, Box { value: Debug })
+public type Alias<T: Constraint> = Result<T, Error>;
+
+public type Box<T> {
+  public mutable value: T;
+}
+
+enum Maybe<T> {
+  None,
+  Some(T),
+  Named { value: T; },
+}
+
+interface Reader<T> {
+  read<U>(buffer: T): Result<U, Error>;
+  Close;
+}
+
+@link("c")
+extern "c" fn foreign(value: i32): i32;
+
+const answer: int = 42;
+
+@fuzz
+fn fuzzBytes(input: Array<byte>): void {
+  const _ = input;
+}
+
+@test
+fn allProductionsParse(): void {
+  expect.equal(answer, 42);
+}
+
+unsafe fn allForms<T>(value: int, boxed: Box<T>): Result<int, Error> {
+  let assigned = value;
+  assigned = answer;
+  assigned += answer;
+  assigned -= answer;
+  assigned *= answer;
+  assigned /= answer;
+  assigned %= answer;
+  assigned &= answer;
+  assigned |= answer;
+  assigned ^= answer;
+  assigned <<= answer;
+  assigned >>= answer;
+  const literal = true;
+  const literals = [0, 1.5, "string", r"\\", b"bytes", 'r', true, false];
+  const parenthesized = (assigned);
+  const array = [assigned, answer];
+  const record = Box { value: boxed.value };
+  const arithmetic = assigned * answer / 2 % answer + answer - assigned << 1 >> 1;
+  const compared = assigned < answer && assigned <= answer && assigned > 0 && assigned >= 0;
+  const equal = assigned == answer || assigned != 0;
+  const bits = assigned & answer ^ 1 | 2;
+  const generic = service.load<Result<int, Error>>(assigned);
+  const indexed = array[0];
+  const tried = generic?;
+  const unary = !literal || -assigned < ~answer;
+  const interpolated = $"value {assigned}";
+  const closure = (error: Error): Result<int, Error> => service.handle(error);
+  const blockClosure = (item: int): int => {
+    return item;
+  };
+  const spawned = spawn service.load(assigned);
+  defer cleanup(record);
+  if literal {
+    use(parenthesized);
+  } else if false {
+    use(indexed);
+  } else {
+    use(unary);
+  }
+  while false {
+    break;
+  }
+  for const item of array {
+    use(item);
+    continue;
+  }
+  for let index = 0; index < 2; index += 1 {
+    use(index);
+  }
+  scope {
+    const task = spawn service.load(assigned);
+    task.wait();
+  }
+  unsafe {
+    panic("checked");
+  }
+  {
+    const local = 1;
+    use(local);
+  }
+  const matched = match assigned {
+    case 0 => {
+      return 0;
+    }
+    case "ready" => 3;
+    case _ => 1;
+    case None | Gone => 2;
+    case Some(inner) => inner;
+    case [first, second] => first;
+    case Some { value } if literal => {
+      yield value;
+    }
+  };
+  use(interpolated);
+  use(literals);
+  use(arithmetic);
+  use(compared);
+  use(equal);
+  use(bits);
+  use(closure);
+  use(blockClosure);
+  use(spawned);
+  use(tried);
+  use(matched);
+  return Ok(assigned);
+}

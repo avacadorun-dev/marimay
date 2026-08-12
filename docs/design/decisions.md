@@ -1,0 +1,598 @@
+# Architectural decisions
+
+Status values: `accepted`, `provisional`, `deferred`, `rejected`.
+
+## D001 — Name, file extension, and command
+
+Status: accepted; external distribution clearance remains gated by N0.
+
+The official language and product name is **Ruda**. English prose, code-adjacent prose, product metadata, and technical identifiers spell it `Ruda`. Russian prose may additionally show the Cyrillic form **Ру́да**, pronounced «ру́да». `Rudalang` is not an official name; `ruda-lang` is only an allowed fallback for a domain, repository slug, or occupied external namespace.
+
+The canonical toolchain executable is `ruda`, source files use `.ruda`, bytecode bundles use `.rudab`, project manifests are `ruda.mod`, `ruda.work`, and `ruda.lock`, and tool-owned local state uses `.ruda/`. All first-party workflows start with `ruda`; the former executable `ma`, source extension `.ma`, manifest names `ma.mod`/`ma.work`/`ma.lock`, bundle suffix `.mab`, and tool-state directory `.ma/` are not current aliases. Repository-owned user-visible identifiers and internal language/toolchain namespaces use `Ruda`/`ruda` consistently; this rule does not alter ordinary words merely containing the letters `ma`.
+
+This is a pre-release product rename only: it changes no syntax beyond the source filename suffix, source semantics, manifest or package data model, MIR, bytecode/ABI contents, runtime behavior, or observable program behavior. The repository has not published a compatible release with established users, so no undocumented `ma` executable or `.ma` source compatibility alias is retained.
+
+The name uses the ore metaphor: a clear language, strict types, and cohesive toolchain turn source material into reliable native software. It replaces the former working name **Malang** because a separately published project already used “Malang Compiler” for a programming language. This accepted text supersedes both D001's former provisional Malang identity and its short-lived intermediate wording that retained `ma`/`.ma`; no other accepted naming decision is superseded.
+
+N0 remains a release blocker for trademark/legal review, domains, public handles, organization and registry namespaces, package/module prefixes, signing identity, and independent verification of `ruda` across supported PATH/package-manager environments. Accepting `Ruda` here does not claim that any domain, external account, package, namespace, or trademark is available, reserved, controlled, or legally cleared.
+
+## D002 — Familiar C-family surface, Ruda-native forms
+
+Status: accepted.
+
+Use `fn`, `const`, `let`, `name: Type`, `<T>`, braces, and named imports because they are readable without a glossary. Give Ruda's core constructs their own regular forms: `type User { ... }` for records, `User { ... }` for construction, `Variant { ... }` for named enum payloads, `$"...{value}..."` for interpolation, `public` for every public declaration, and control-flow conditions without mandatory parentheses. Keep semicolons explicit where statements or signatures require them.
+
+Do not inherit browser-language semantics: no coercion, prototypes, classes, `any`, nullish values, truthiness, automatic semicolon insertion, open record-shape assignment, or dynamic escape tier. Familiar punctuation is not a compatibility promise.
+
+Reason: familiarity should reduce reading cost without weakening runtime guarantees.
+
+## D003 — Ordinary functions with restricted first-parameter dot calls
+
+Status: accepted.
+
+Behavior is declared by an ordinary top-level function with an ordinary, meaningfully named first parameter:
+
+```ruda
+fn string(user: User): string {
+  return user.name;
+}
+```
+
+`user.string()` and `string(user)` resolve to the same symbol and evaluate `user` once. A function is dot-call eligible only when it is top-level, visible at the call site, and its first parameter is the exact nominal type owned by the declaring package. A package cannot add dot-call behavior to a foreign nominal type.
+
+There is no general overload facility. The same function name may be declared more than once only when every declaration is dot-call eligible and their first nominal parameter types are distinct. Interfaces are satisfied structurally by the derived dot-call set after removing that first parameter from each eligible signature. There is no special method keyword, method body inside a record, or `impl` declaration.
+
+Reason: one declaration should support free composition, discoverable dot notation, and interface conformance. A second behavior hierarchy would repeat information already present in the function signature. Package ownership supplies a simple coherence boundary without a general trait solver.
+
+## D003a — Compact core declaration and task-scope keywords
+
+Status: accepted.
+
+Functions are declared with `fn`. Structured concurrency uses `scope { ... }`; `spawn` remains the only operation that creates a child task. `scope` is intentionally not named after parallelism: tasks in one isolate may interleave without running simultaneously.
+
+Reason: these constructs are common enough to deserve low typing cost. `fn` is established and unambiguous; `scope` names the lifetime guarantee that matters more than the scheduling mechanism.
+
+## D004 — Nominal records/enums, structural interfaces
+
+Status: accepted.
+
+Record and enum identity follows declarations, not field shape. Interface satisfaction uses exact dot-call signatures. Interfaces contain call signatures only; 1.0 has no fields, constructors, associated types, default bodies, negative conformance, or specialization.
+
+Reason: this keeps domain data distinct while retaining Go-like decoupling at behavior boundaries and a bounded solver.
+
+## D005 — Algebraic enums and exhaustive match
+
+Status: accepted.
+
+Enums are closed nominal sums with unit, positional, or named payloads. `match` is an expression. A match over a closed enum must cover every reachable case unless an unguarded wildcard is present. Guards do not contribute to exhaustiveness.
+
+## D006 — No null; typed expected failure
+
+Status: accepted.
+
+Safe Ruda has no null-like value. Absence is `Option<T>`. Recoverable failure is `Result<T,E>`. Postfix `?` propagates an `Err` from a function with the same error type. Error conversion is explicit; ordinary structural conversion to a declared interface remains available at an explicit construction/return boundary. Panic represents a violated invariant, not routine control flow.
+
+## D007 — Managed reference data with immutable fields by default
+
+Status: provisional, prototype gate required.
+
+Nominal record values have managed reference identity. Fields are immutable after construction unless marked `mutable`. `const`/`let` govern rebinding of a local, not deep object mutability. Strings and enum values are immutable. Arrays and maps are managed mutable containers.
+
+Reason: this avoids source-level ownership and accidental large copies while supporting graphs, services, and FFI handles. The single-threaded isolate rule prevents data races within one heap. The prototype must measure allocation behavior and confirm that escape analysis can stack-allocate or scalar-replace common short-lived records. The required workloads include decoded/encoded JSON DTO graphs, immutable UI-style trees, request/response models, and collection-heavy transformations; microbenchmarks alone cannot accept D007.
+
+Rejected alternative: implicit copy-on-write value semantics for every record. It makes alias behavior attractive but imposes substantial hidden runtime and FFI complexity. Ruda may later add an explicitly declared compact `value type`; it will not change `type` semantics.
+
+## D008 — One frontend and typed MIR, two required engines
+
+Status: accepted.
+
+Stage 0 implements a typed bytecode VM and a C17 native backend from one canonical MIR. VM is the default for `run` and `test`; native is the default for `build`. Engine choice cannot change accepted programs or observable language behavior.
+
+Reason: fast interactive work and standalone deployment have different performance needs but do not require different languages.
+
+## D009 — C17 bootstrap then self-hosting
+
+Status: accepted.
+
+The first compiler, VM, garbage collector, task runtime, bytecode verifier, formatter, and test harness are implemented in portable C17. After the language reaches the bootstrap gate, the compiler is rewritten in Ruda. Reproducible C17 Stage 0 remains the root of trust and must be able to build Stage 1.
+
+## D010 — No source-level async color
+
+Status: accepted, high-risk implementation gate.
+
+Ordinary functions may call suspending standard-library operations. `spawn call()` explicitly creates concurrency, but functions are not declared `async`, calls do not return `Future<T>`, and users do not select an executor. The compiler infers a transitive suspension effect and lowers suspending frames in both engines. The effect is visible in compiler diagnostics and metadata but is not part of source-level function compatibility.
+
+Reason: direct-style code preserves Go's usability while avoiding Rust's sync/async ecosystem split. This moves complexity into the compiler/runtime and therefore requires a dedicated ABI, debugger, cancellation, and FFI prototype before the syntax freezes.
+
+## D011 — Lexically scoped tasks
+
+Status: accepted.
+
+`spawn` is legal only inside `scope { ... }`. A `Task<T>` handle cannot escape that block, be stored in heap data, or cross an isolate. Leaving the block for any reason cancels unfinished children and joins them before control continues. Child tasks form an observable tree.
+
+Reason: unstructured goroutine lifetime is a documented leak and reliability hazard. Structure makes ownership of work explicit without ownership types.
+
+## D012 — Concurrency inside isolates; parallelism across isolates
+
+Status: provisional through 1.0 performance validation.
+
+Each isolate has one heap and one cooperative scheduler bound to one OS thread at a time. Safe code cannot share mutable heap objects between isolates. Inter-isolate channels copy immutable/sendable values or transfer supported buffers/resources, invalidating the sender's handle through a compiler-known operation.
+
+Reason: data-race freedom without a borrow checker or pervasive locks. The cost is explicit isolation for CPU parallelism and serialization/transfer overhead, which must be benchmarked against target service workloads.
+
+## D013 — Shape-shared generics
+
+Status: provisional, benchmark gate required.
+
+Generic code is generated once per ABI representation shape by default (`i64`, `f64`, managed reference, and aggregate shapes as defined by MIR). Runtime type dictionaries provide operations required by constraints. The optimizer may specialize hot concrete instantiations without changing observable semantics.
+
+Reason: avoid Rust-style mandatory per-type monomorphization costs while keeping primitives unboxed on common paths.
+
+## D014 — No arbitrary compile-time code in 1.0
+
+Status: accepted.
+
+There are no user-defined syntax macros, procedural macros, import hooks, package install scripts, or implicit build scripts. A small closed set of compiler derives may generate predictable functions. External code generation is an explicit `ruda generate` action and generated files are ordinary reviewed inputs.
+
+## D015 — Canonical formatting is non-configurable in 1.x
+
+Status: accepted.
+
+`ruda fmt` has one style and is idempotent. Projects cannot configure brace, indentation, semicolon, or line-width policy. Compatibility exceptions require a language-versioned formatter change.
+
+## D016 — Deterministic safe semantics
+
+Status: accepted.
+
+Evaluation order is left to right. Signed and unsigned integer overflow traps in every build mode; explicit wrapping operations live in the numeric API. Map iteration is insertion-ordered. Safe code has no undefined behavior. Clock, randomness, scheduling, and external I/O are modeled as nondeterministic inputs and can be controlled by the test runtime.
+
+## D017 — Package builds are hermetic by default
+
+Status: accepted.
+
+The lock file pins immutable artifacts and cryptographic hashes. Build and test do not access the network after dependency fetch. Dependencies cannot execute installation code. The root application declares ambient runtime capabilities; libraries cannot silently broaden them.
+
+## D018 — Exceptions and inheritance
+
+Status: rejected for 1.x.
+
+Ruda has no catchable exceptions for expected failure and no class inheritance. `Result`, exhaustive enums, interfaces, composition, and `defer` cover the intended use cases with visible control flow.
+
+## D019 — JIT
+
+Status: deferred.
+
+The mandatory VM is initially an interpreter over typed bytecode. A tracing or method JIT may be added only after VM/AOT conformance and profiler evidence identify a need. JIT support cannot introduce a third semantic tier or become required for acceptable startup.
+
+## D020 — User-defined value types and deterministic destruction
+
+Status: deferred.
+
+Compact stack-oriented values and non-GC resource types may be valuable for games, embedded systems, and zero-copy FFI. They interact with aliasing, suspension, cancellation, and self-hosting. 1.0 uses managed records, opaque standard-library resources, and `defer`; a later proposal must preserve the no-lifetime-annotation goal.
+
+## D021 — Diagnostics without source locations
+
+Status: accepted.
+
+Every diagnostic keeps the same schema, code, severity, message, labels, notes, and fixes fields. The required `primary` field contains a source span when a meaningful source snapshot owns the failure and is `null` otherwise. A non-source diagnostic may carry a typed `context` object, such as a command-line argument index, package identity, bytecode section, or runtime resource.
+
+Reason: command invocation, dependency transport, corrupt bundle, capability, and process-level failures often have no honest source byte range. Inventing a pseudo-file or unrelated source span would make machine output look more precise while weakening it. Requiring the nullable field preserves streaming schema shape and lets consumers distinguish “no source owner” from an accidentally omitted field.
+
+## D022 — Exact source bytes and logical newline positions
+
+Status: accepted.
+
+Source snapshots retain physical bytes unchanged. Diagnostic byte offsets address those bytes, including an optional UTF-8 BOM at offsets 0–2. A BOM is ignored for tokenization and Unicode-scalar columns, so the first byte after it is line 1, column 1. LF, CRLF, and a lone CR each form one logical newline. An offset on any byte of a newline sequence maps to the preceding line's end position; the offset immediately after the complete sequence maps to column 1 of the next line.
+
+Reason: editor overlays, fixes, and hashes need exact bytes, while diagnostics and formatting need stable positions across common newline encodings. Treating CRLF as two lines or counting an accepted BOM as a visible column would make the same text report different logical locations after canonical formatting.
+
+## D023 — Versioned Unicode identifier profile
+
+Status: accepted.
+
+Language version `0.1-design` uses the Unicode 17.0.0 `XID_Start` and `XID_Continue` derived properties and the default identifier form from UAX #31 requirement R1-1: `XID_Start XID_Continue*`. Source code points are compared exactly and are not normalized by the compiler. A standalone ASCII `_` is a dedicated wildcard/discard token; because `_` is not `XID_Start`, `_name` is not an identifier, while an underscore may occur after a valid start character.
+
+The bootstrap consumes generated, committed range tables derived from the versioned Unicode Character Database. Their source URL, version, and SHA-256 are committed beside the generator. Release configure/build/test does not download Unicode data. Changing the Unicode version is a language-versioned compatibility change with identifier-boundary fixtures; it must not follow the host C library or generator runtime implicitly.
+
+Reason: XID membership grows between Unicode releases. Pinning the data makes lexical acceptance reproducible on every host, while UAX #31's recommended XID profile gives normalization-closed identifier classes without silently rewriting user spelling.
+
+## D024 — Closed literal and escape spelling for 0.1
+
+Status: accepted.
+
+The 0.1 lexer uses one closed, locale-independent literal grammar. Decimal digits are ASCII. `_` may separate digits only when a valid digit for that base appears on both sides. Binary, octal, and hexadecimal integers use lowercase or uppercase `0b`, `0o`, and `0x` prefixes. Decimal floats require digits on both sides of `.` when a decimal point is present; an exponent uses `e` or `E`, an optional sign, and at least one decimal digit. Hexadecimal floats and numeric suffixes are not in 0.1.
+
+Normal strings and runes accept simple escapes `\\`, `\"`, `\'`, `\n`, `\r`, `\t`, and `\0`, plus `\u{H...}` with one to six hexadecimal digits naming a Unicode scalar. Byte strings accept the simple escapes and `\xHH` with exactly two hexadecimal digits; their unescaped content is ASCII. Raw strings perform no escape processing. No 0.1 quoted literal contains an unescaped physical newline. A rune contains exactly one Unicode scalar or one escape.
+
+Interpolated string text follows normal-string escapes. `{{` and `}}` are literal braces, a single `{` starts an expression, and the balancing single `}` ends it. The lexer retains interpolation boundary tokens and enforces explicit nesting limits.
+
+Reason: the baseline already promises targeted malformed-escape and numeric diagnostics but did not define their accepted spellings. A closed grammar prevents dependence on C locale/library parsing and leaves multiline/hash-delimited/raw variants and numeric suffixes available for a later language version.
+
+## D025 — Named enum payload declaration separators
+
+Status: accepted.
+
+Fields inside a named enum payload declaration use the same `name: Type;` signature form as record fields. The closing brace is followed by the enum variant's optional comma: `InvalidDigit { offset: int; },`. Commas continue to separate enum variants, construction fields, and pattern fields; they do not replace the semicolon that terminates a payload field signature.
+
+Reason: the language grammar and record/enum declaration examples already use semicolon-terminated field signatures, while several standard-library and tour examples accidentally omitted those semicolons. One declaration-field rule is easier to parse, format, and teach than a separator change based only on which nominal declaration owns the fields.
+
+## D026 — Deterministic formatter column metric
+
+Status: accepted.
+
+The canonical formatter uses Unicode 17.0.0 scalar properties rather than host locale, terminal, font, or `wcwidth`. A scalar in `Grapheme_Extend` or `Default_Ignorable_Code_Point` contributes zero formatter columns. A remaining scalar with East Asian Width `W` or `F` contributes two columns. Every other valid scalar, including East Asian Width `A`, contributes one column. A hard line resets the column to zero; the target width is 100 columns.
+
+The metric sums scalar contributions and deliberately does not perform font shaping or claim the rendered width of an extended grapheme cluster. Source spelling remains exact under D023, so canonically equivalent but differently spelled unbreakable tokens may have different measured widths. Unicode inputs and generated tables are committed and hash-pinned; changing the Unicode version or metric is a language-versioned formatter compatibility change.
+
+Reason: “Unicode display columns” is otherwise host- and terminal-dependent, especially for ambiguous-width characters, combining marks, variation selectors, and emoji sequences. Canonical formatting must produce identical bytes on every Tier 1 platform. Unicode UAX #11 explicitly requires contextual treatment of ambiguous width and notes that combining-mark East Asian Width is not advance width, so Ruda defines the non-East-Asian deterministic tailoring above rather than inheriting an OS policy.
+
+## D027 — Manifest syntax and formatter gate ownership
+
+Status: accepted.
+
+I1 owns the bounded syntactic parsers and canonical formatters for `.ruda`, `ruda.mod`, and `ruda.work`, including their use by no-argument `ruda fmt`. I7 reuses those parsers and adds manifest semantic validation, dependency resolution, canonical `ruda.lock`, and package commands; it does not introduce a second manifest grammar or formatter. A syntactically valid manifest may therefore be formatted before its module names, version constraints, capabilities, or workspace membership can be semantically resolved.
+
+Reason: the toolchain contract assigns no-argument canonical formatting to I1, while the original I7 roadmap wording also assigned all manifest parsing/formatting to I7. Leaving both statements in place would either make the I1 gate unverifiable or encourage a temporary formatter grammar that later drifts. One early hostile-input syntax implementation and one later semantic consumer preserve the public command contract and eliminate duplicate parsers.
+
+## D028 — Deterministic formatter target discovery
+
+Status: accepted.
+
+No-argument `ruda fmt` finds the nearest regular `ruda.mod` on the physical working-directory ancestor chain and formats that module tree. It also formats the nearest regular `ruda.work`, if one exists from the module root upward. A module-tree walk visits regular `.ruda` files and the root manifests in unsigned UTF-8 path order, does not follow symbolic links, ignores tool-owned `.git` and `.ruda` directories, and does not enter a nested directory that owns another `ruda.mod`. An explicit regular file formats only that recognized `.ruda`, `ruda.mod`, or `ruda.work` input; an explicit directory uses the same bounded physical-tree rules rooted at that directory.
+
+Directory-entry count, nesting, path bytes, and total selected files are bounded before unbounded allocation or recursion. Each file retains the existing per-file transactional rule; tree formatting does not claim an all-filesystem atomic commit. Discovery/traversal failures are formatter input failures, and a symbolic link explicitly selected as the target is rejected rather than followed.
+
+Reason: root discovery and tree selection affect which user files a write-capable command mutates. Leaving symlinks, nested modules, hidden tool state, ordering, and bounds to host directory APIs would make `ruda fmt` nondeterministic and could rewrite sources outside the selected module. Physical no-follow traversal is portable, auditable, and independent of the later package resolver.
+
+## D029 — Structured race and readiness selection before 1.0
+
+Status: accepted, prototype gate required.
+
+Direct-style concurrency must provide both structured first-completion racing and readiness selection before I6 is verified. A race owns its competing operations in a nested scope, cancels and joins losers, and cannot return while losing work remains detached. A selection waits on a finite set of task completions, bounded-channel operations, timers, or cancellation-aware I/O registrations, removes losing registrations, and does not implicitly cancel independently owned tasks. Deterministic test mode resolves simultaneously ready alternatives by declared source order and records the choice for VM/native replay.
+
+These are compiler-aware first-party library/runtime operations, not new source syntax in 0.1. Exact API spelling is frozen only after the I6 prototype covers fan-out requests, hedged calls, timeout-plus-channel loops, closed channels, simultaneous readiness, cancellation during registration, and cleanup/panic paths.
+
+Reason: `spawn`, `wait`, and a single-operation timeout do not express common server coordination without hand-built channels and cancellation plumbing. Requiring structured race/select semantics preserves D011 lifetimes while avoiding detached winner-takes-all work.
+
+## D030 — Native toolchain delivery is a product responsibility
+
+Status: accepted.
+
+The required C17 AOT backend remains the auditable Stage 0 native path, but ordinary Tier 1 users must not configure compiler, linker, SDK paths, or cache keys manually. Each official distribution provides one tested zero-manual-configuration host-build path: a version-matched managed toolchain where redistribution permits it, or verified platform-toolchain discovery plus an installer/preflight flow that performs or precisely requests the one unavoidable platform installation step. `ruda build` itself remains offline and deterministic after installation.
+
+Missing or incompatible native tools produce one actionable diagnostic and a machine-readable `ruda doctor` result; they never fail later as raw C compiler/linker output. Cross-compilation may require an explicitly installed target pack. A future direct object-code backend may remove the external C toolchain from day-to-day builds only after it reaches the same safety, portability, and VM/native differential gates; it does not weaken the required C17 bootstrap root.
+
+Reason: exposing generated C is valuable for audit and bootstrap, but making users assemble a C development environment would break the single-command `ruda build` product promise. Packaging and discovery complexity belongs to the toolchain, not each Ruda project.
+
+## D031 — Width-sensitive braced list layout
+
+Status: accepted.
+
+Import name lists, record constructions, record/named-variant patterns, and named enum payload declarations are formatter groups rather than unconditionally multiline blocks. If the complete group fits within the D026 100-column metric and contains no hard-line comment, canonical output keeps it on one line with one space inside each brace. Otherwise it breaks after `{` and before `}`, indents one item per line, and emits a trailing comma for comma-separated lists. Named enum payload declaration fields retain D025 semicolons and do not gain an internal comma.
+
+Declaration bodies, control-flow bodies, `scope`, `unsafe`, `match`, test/fuzz bodies, and ordinary statement blocks remain structurally multiline even when short. An empty grouped brace pair remains `{}`.
+
+Reason: treating record-like lists as statement blocks expands common DTO construction and match patterns into unnecessary vertical space, while always keeping them inline makes large data shapes unreadable. The existing deterministic document model already has an exact fit decision, so one width-sensitive rule preserves both scanability and cross-platform canonical bytes.
+
+## D032 — Canonical ordinary and raw string spelling
+
+Status: accepted.
+
+The formatter decodes every valid ordinary or raw string before choosing its
+canonical spelling. Ordinary strings emit valid non-control Unicode scalars
+literally, use `\\`, `\"`, `\n`, `\r`, `\t`, and `\0` for those exact values,
+and use the shortest lowercase `\u{h...}` spelling for remaining C0/C1 control
+scalars. An escaped apostrophe becomes a literal apostrophe because it needs no
+escape inside a double-quoted string.
+
+Raw syntax is canonical in expression-literal positions only when the decoded
+value can be represented by the 0.1 raw-string grammar and contains at least
+two backslashes that an ordinary string would have to double. With the one-byte
+`r` prefix this is exactly the case where raw syntax is strictly shorter; one
+or zero doubled backslashes remain an ordinary string. Grammar positions that
+specifically require an ordinary string token—such as import paths and the
+extern ABI—remain ordinary. A quote, physical newline, or C0/C1 control
+scalar makes raw spelling ineligible. Byte strings, runes, and
+interpolated-string text retain their distinct literal forms.
+
+Reason: the previous phrase “unless raw syntax materially reduces escaping”
+did not define an interoperable byte result. A decoded-value rule makes
+formatting idempotent across hosts, removes non-canonical escape choices, and
+keeps raw strings for the path/regular-expression cases where they actually
+reduce source noise without changing the runtime string value.
+
+String literal patterns use that same decoded-value identity. Two spellings
+that decode to the same UTF-8 bytes are the same pattern, including embedded
+zero bytes; matching applies no locale collation, case folding, or Unicode
+normalization. Because the string domain is not finite, literal arms alone are
+never exhaustive: an unguarded wildcard or binding must cover the remainder.
+
+## D033 — Exact loop-header forms
+
+Status: accepted.
+
+Ruda has exactly two 0.1 `for` headers. Iteration uses
+`for const name of expression`; its binding is immutable and must be an
+identifier. The C-style form uses
+`for let name = initializer; condition; step`; all three expressions are
+required, the initializer declares exactly one `let` binding, and the binding
+must be an identifier. The forms do not mix: `let name of value`, a `const`
+C-style initializer, an arbitrary expression initializer, omitted clauses, and
+`_` loop bindings are not accepted syntax.
+
+Reason: the two explicit forms cover collection iteration and counter/state
+loops while preserving definite initialization and avoiding the punctuation-
+heavy family of optional C clauses. Requiring `const` for iteration makes the
+per-iteration binding contract visible; requiring `let` for the stepped form
+makes its intended mutation visible. This decision freezes the exact syntax
+already used by the normative control-flow examples and supersedes the
+provisional state of `simple_for_header`; it does not define iterator or
+counter runtime semantics beyond the existing language contract.
+
+## D034 — Semantic facts do not encode tooling trust policy
+
+Status: accepted.
+
+The Ruda language owns program meaning and static validity: types, memory and
+error behavior, arithmetic, control flow, task lifetimes, and any effect that
+is proven to be part of a function's semantic contract. The compiler proves
+those rules and exposes stable factual outputs. First-party tools may use the
+same typed AST, symbol graph, effect metadata, MIR, and diagnostics for
+formatting, semantic diff, dependency analysis, testing, fuzzing, vetting, and
+editor features.
+
+Repository and CI policy owns authorship, generated-code provenance,
+attestation, required coverage, review authority, and release admission.
+Runtime and operating-system layers own sandbox enforcement and resource
+limits. Ruda source has no author/agent marker, trust level, coverage promise,
+or attestation construct. Co-locating compiler, formatter, tests, audit, and
+package commands under the `ruda` executable does not make every command a
+language feature.
+
+A future source-level capability annotation is justified only if the
+capability set changes the statically checked semantic contract of calls and
+function values. A package/network/filesystem admission policy remains in the
+manifest, runtime grant, sandbox, or CI layer and must not be added to syntax
+merely to make an audit policy look language-enforced.
+
+Reason: Ruda should be a small language with precise semantics from which
+tools can reliably extract facts. It cannot determine an author's intent or
+replace engineering governance; mixing those concerns would expand the type
+system while weakening the responsibility boundary.
+
+## D035 — Exact checked shift semantics
+
+Status: accepted.
+
+The binary shift operators require integer operands of the same exact type;
+an integer literal may receive that type from the other operand under the
+ordinary contextual-literal rule. The result has the left operand's type. A
+shift count is valid only in the half-open range from zero to the bit width of
+that type. A negative signed count or a count greater than or equal to the
+width panics in every build mode.
+
+`left << count` is checked arithmetic. It produces the mathematical value
+`left * 2^count` only when that value is representable in the operand type;
+otherwise it panics. It does not silently discard high bits. Explicit
+wrapping shift operations belong to the numeric API alongside the other
+wrapping operations.
+
+`left >> count` never overflows. For an unsigned type it shifts in zero bits.
+For a signed two's-complement type it is an arithmetic right shift that copies
+the sign bit; this is a language rule and does not inherit C's
+implementation-defined behavior. Compound `<<=` and `>>=` have exactly the
+same operation and panic behavior before assigning the result.
+
+Reason: “out-of-range shift” previously fixed only part of the contract and
+left signed right shift plus left-shift overflow vulnerable to backend drift.
+Checked left shift follows D016's default arithmetic rule, while explicit sign
+extension and count validation give VM and portable C17 backends one
+testable result independent of host operators.
+
+## D036 — Stable explicit-panic identity
+
+Status: accepted.
+
+The source expression `panic(message)` requires exactly one value of type
+`string`, has type `never`, and uses stable runtime code `G4000`. Its primary
+source location is the complete call expression, while its message is the exact
+runtime string value, including embedded zero bytes. It is distinct from
+compiler/runtime-generated panics such as bounds, arithmetic, assertion,
+capability, and resource failures, which have their own stable codes.
+
+Reason: VM/native equivalence and `expect.panics` compare panic identity, not
+only process failure. Fixing the explicit-source code and source span before
+backend work prevents each engine or test harness from inventing a different
+classification, while leaving the richer frame/task rendering to the runtime
+and diagnostics layers.
+
+## D037 — Declared `never` is a non-returning call contract
+
+Status: accepted.
+
+A named function may explicitly declare result type `never`. Every reachable
+path in its body must terminate without producing a normal return value. After
+its arguments have been evaluated left to right, a call resolved to that
+signature has type `never` and has no normal continuation in typed MIR. It is
+not a call returning a fabricated sentinel, zero-sized value, `void`, or
+backend-specific unreachable value.
+
+Reason: `never` was already a primitive bottom type and was compatible with
+every return position, but leaving its call boundary implicit permits one
+backend to synthesize a value or fallthrough that another rejects. A dedicated
+terminating-call edge lets the checker and every engine agree without requiring
+the compiler to prove whether abnormal completion is an explicit panic,
+unbounded recursion, cancellation, or another defined non-returning operation.
+
+## D038 — Minimal hard-keyword boundary and ordinary test/fuzz/panic names
+
+Status: accepted.
+
+Ruda reserves a spelling globally only when the parser needs it to determine
+program structure without surrounding context. The audited 0.1 hard-keyword
+set is `defer false if match return spawn true while`. The parser treats
+`as break case const continue else enum extern fn for from import interface let
+mutable of public scope type unsafe yield` contextually: each retains its
+grammatical role where that role is unambiguous and otherwise becomes an
+ordinary identifier token in the syntax tree. Hard keywords remain unavailable
+as declaration, field, member, or local names in 0.1; Ruda does not add a
+separate escaped-identifier syntax at this stage.
+
+The disambiguating forms are part of the grammar contract. `break;` and
+`continue;` are loop control; a call/member/postfix form is an identifier.
+`const`/`let` begin a binding only with a following binding name or discard.
+`for` begins a loop only with a valid or recoverably intended loop header.
+`scope { ... }` and `unsafe { ... }` are statements at a statement boundary;
+the same spelling remains a name in expression context (for example
+`const value = scope {};`).
+Top-level `import`, `type`, `enum`, `interface`, `extern`, `fn`, and `const`
+retain their declaration roles at a declaration boundary. `else` attaches only
+when followed by `if` or a block. These rules keep malformed constructs
+recoverable without reserving the same words across every API namespace.
+
+`test`, `fuzz`, and `panic` are ordinary identifiers. Tests and fuzz targets
+are ordinary package-private functions marked with the closed compiler
+attributes `@test` and `@fuzz`; the former requires `fn(): void`, and the latter
+exactly one typed parameter plus `void`. Both attributes are legal only in a
+source file ending `_test.ruda`; normal builds exclude those files while test,
+fuzz, and explicit all-targets checks include them. The unshadowed prelude declaration
+`fn panic(message: string): never` is compiler intrinsic, but normal lexical
+and package name resolution may shadow it. Its stable D036 runtime identity
+applies only after resolution selects that prelude symbol.
+
+`yield expression;` is recognized contextually as the match-arm transfer form
+and remains invalid outside a block match arm. `yield()`, `task.yield()`, and
+declarations named `yield` are ordinary identifier uses. `in`, `any`, `async`,
+`await`, `class`, `extends`, `impl`, and `throws` are also ordinary identifiers:
+Ruda omits the corresponding type or construct by grammar/semantic rules, not
+by preemptively occupying API vocabulary. Only `null` and `undefined` remain
+reserved sentinel spellings so ordinary resolution cannot introduce a
+null-like value tier.
+
+Reason: every globally reserved word creates permanent collisions for domain
+models, generated bindings, foreign APIs, and standard-library functions.
+Keeping tool discovery in attributes, invariant failure in the prelude, and
+ambiguous control words contextual makes the semantic core smaller without
+weakening null safety, structured matching, diagnostics, or toolchain
+behavior. This supersedes D003a only where that decision called all compact
+surface spellings “keywords”; its accepted `fn`/`scope`/`spawn` forms and task
+semantics are unchanged. It also supersedes the keyword/test/fuzz/panic portions
+of the original baseline consistency audit and D036's implicit assumption that
+the intrinsic spelling needed special lexical status. The complete follow-up
+audit supersedes D038's initial 20-hard/9-contextual partition; it does not
+change the syntax or meaning of any construct.
+
+## D039 — C17 generated identifiers are compiler-owned
+
+Status: accepted.
+
+No user-controlled Ruda identifier is copied verbatim into a generated C
+identifier. The C17 backend assigns functions, types, field accessors, locals,
+temporaries, descriptors, and helpers injective compiler-owned spellings from
+stable symbol identity plus bounded ordinals. A generated spelling is valid
+C17, avoids every C keyword and implementation-reserved namespace, cannot
+collide with runtime helpers or C-library external identifiers, and remains
+distinct under target filesystem case folding and backend length limits.
+Unicode source spelling and normalization-distinct Ruda names remain distinct.
+
+Explicit `extern "c"` link names are not internal generated identifiers. They
+are validated foreign ABI contracts and are never silently mangled; I9 owns
+their platform-specific linkage and library validation.
+
+Reason: reserving C vocabulary in Ruda would leak the temporary Stage 0 backend
+into source semantics, break generated bindings, and still fail to cover C's
+underscore-reserved, library, runtime-helper, case-folding, and truncation
+collision spaces. A compiler-owned namespace closes the entire boundary and
+keeps VM/native source acceptance identical. This decision does not freeze
+human-readable emitted-C symbol spelling or make generated C a public ABI.
+
+## D040 — Construction source order is semantic and formatter-preserved
+
+Status: accepted.
+
+In record construction and named enum-payload construction, a field name
+selects its destination while the field's position in source selects when its
+initializer is evaluated. Initializers execute exactly once from left to right
+in written order, including when that order differs from declaration order.
+The formatter preserves field order and changes only layout, whitespace,
+comments, trailing separators, and other spelling choices that do not reorder
+expressions. It does not use name or type resolution to format a construction.
+
+Reason: reordering `Pair { second: next(), first: next() }` changes which
+effectful result is stored in each field even though both constructions name
+the same destinations. Canonical formatting must preserve program meaning and
+remain available from the lossless syntax tree before semantic resolution.
+This supersedes the former language §5.4 sentence that made construction order
+irrelevant and allowed declaration-order canonicalization; it narrows D031's
+braced-group rule without changing its width or line-breaking policy.
+
+## D041 — Deferred cleanup keeps failure policy explicit
+
+Status: accepted.
+
+`defer` schedules only a call whose static result type is `void`; it does not
+implicitly discard or unwrap `Result`, and no cleanup result can implicitly
+replace a function's declared result. Fallible resources expose a fallible
+operation such as `File.close(): Result<void, fs.Error>` for failures that the
+program must observe, plus a separately named infallible fallback such as
+`File.closeBestEffort(): void` when the program intentionally chooses release
+attempt over error propagation. `closeBestEffort` is idempotent, does not
+panic, and never replaces an in-flight fallthrough, `return`, `Err`, panic, or
+cancellation outcome. Applications that must observe cleanup failure on every
+exit defer an ordinary `void` helper that matches the `Result` and reports it
+to an explicit sink.
+
+Deferred calls run exactly once in LIFO order on every outward edge. Cleanup
+runs with an already-requested task cancellation masked until the registered
+calls finish. If an arbitrary deferred `void` call panics, remaining deferred
+calls are still attempted. The first cleanup panic becomes the primary outcome
+when the prior outcome was fallthrough, return, expected `Err`, loop transfer,
+or cancellation; an already-active panic remains primary, and cleanup panics
+are attached to it as suppressed failures in LIFO observation order.
+
+Reason: treating `Result` specially inside `defer` would hide an error mapping
+and create exit-dependent return semantics. An ordinary fallible operation,
+an explicitly named best-effort fallback, and deterministic panic precedence
+keep resource policy visible without adding block-defer syntax or exceptions.
+
+## D042 — Exact signed division and remainder
+
+Status: accepted.
+
+For every signed integer width, `/` computes the mathematical quotient rounded
+toward zero. `%` returns `left - (left / right) * right`; a nonzero remainder
+therefore has the sign of the left operand and magnitude less than the
+magnitude of the right operand. A zero right operand panics for both operators.
+`MIN / -1` and `MIN % -1` both panic as checked overflow before a backend host
+operator executes. Unsigned division and remainder use the corresponding
+nonnegative quotient and remainder and panic on a zero right operand.
+
+Reason: overflow and zero-divisor rules alone do not determine negative
+quotients or remainders and do not protect portable generated C from its
+`MIN / -1` undefined-behavior boundary. Fixing quotient rounding, remainder
+identity, sign, and the shared overflow case gives the MIR interpreter, VM,
+and every C17 backend one executable contract.
+
+## D043 — Owned public dot-call behavior travels with the nominal type
+
+Status: accepted.
+
+When a public nominal type from another package is usable at a call site, all
+public dot-call-eligible functions owned by that same package participate in
+the type's dot-call set. This is true for a named type import, a named function
+import, and a namespace import. Import spelling changes only the available
+free-call spelling: a named function import permits `string(user)`, a namespace
+import permits `store.string(user)`, and a type-only named import may provide
+neither while still permitting `user.string()` and the same structural
+interface conformance. Private functions and behavior owned by any other
+package never enter that set.
+
+Reason: otherwise the same nominal value could satisfy an interface in one
+file and fail in another solely because the owning function name was imported
+differently. Package ownership already provides coherence, so importing the
+type's public behavior for dot lookup makes conformance stable while keeping
+ordinary free names explicit. Because this behavior is intentionally not
+spelled at the call site, checker-owned completion and documentation must show
+the owning package and equivalent available free-call spelling. This
+supersedes D003 only where “visible” could be read as requiring a separately
+named function import; it does not admit foreign extensions or `impl` blocks.

@@ -1,0 +1,18 @@
+@test
+fn dotCallAndFreeCallAreEquivalent(): void {
+  const user = User { id: 7, name: "Mara", visits: 0 };
+  expect.equal(user.string(), string(user));
+}
+
+@test
+fn matchReportsEveryLookupOutcome(): void {
+  const error = LookupError.NotFound { id: 9 };
+  expect.equal(error.message(), "user 9 was not found");
+}
+
+@test
+fn mutableFieldsRequireExplicitDeclaration(): void {
+  const user = User { id: 7, name: "Mara", visits: 0 };
+  user.visit();
+  expect.equal(user.visits, 1);
+}

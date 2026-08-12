@@ -1,0 +1,133 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": {
+    "major": 3,
+    "minor": 25,
+    "patch": 0
+  },
+  "configurePresets": [
+    {
+      "name": "debug",
+      "displayName": "Debug",
+      "binaryDir": "${sourceDir}/build/debug",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "BUILD_TESTING": "ON",
+        "RUDA_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "release",
+      "displayName": "Release",
+      "binaryDir": "${sourceDir}/build/release",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "BUILD_TESTING": "ON",
+        "RUDA_WARNINGS_AS_ERRORS": "ON"
+      }
+    },
+    {
+      "name": "asan",
+      "displayName": "Debug with ASan",
+      "inherits": "debug",
+      "binaryDir": "${sourceDir}/build/asan",
+      "cacheVariables": {
+        "RUDA_ENABLE_ADDRESS_SANITIZER": "ON"
+      }
+    },
+    {
+      "name": "asan-ubsan",
+      "displayName": "Debug with ASan and UBSan",
+      "inherits": "debug",
+      "binaryDir": "${sourceDir}/build/asan-ubsan",
+      "cacheVariables": {
+        "RUDA_ENABLE_ADDRESS_SANITIZER": "ON",
+        "RUDA_ENABLE_UNDEFINED_SANITIZER": "ON"
+      }
+    },
+    {
+      "name": "tsan",
+      "displayName": "Debug with TSan",
+      "inherits": "debug",
+      "binaryDir": "${sourceDir}/build/tsan",
+      "cacheVariables": {
+        "RUDA_ENABLE_THREAD_SANITIZER": "ON"
+      }
+    },
+    {
+      "name": "fuzz",
+      "displayName": "Clang libFuzzer with ASan and UBSan",
+      "inherits": "asan-ubsan",
+      "binaryDir": "${sourceDir}/build/fuzz",
+      "cacheVariables": {
+        "BUILD_TESTING": "OFF",
+        "RUDA_BUILD_FUZZERS": "ON"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "configuration": "Debug"
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "configuration": "Release"
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan",
+      "configuration": "Debug"
+    },
+    {
+      "name": "asan-ubsan",
+      "configurePreset": "asan-ubsan",
+      "configuration": "Debug"
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan",
+      "configuration": "Debug"
+    },
+    {
+      "name": "fuzz",
+      "configurePreset": "fuzz",
+      "configuration": "Debug",
+      "targets": ["ruda_fuzz_frontend", "ruda_fuzz_formatter"]
+    }
+  ],
+  "testPresets": [
+    {
+      "name": "debug",
+      "configurePreset": "debug",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "release",
+      "configurePreset": "release",
+      "configuration": "Release",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "asan",
+      "configurePreset": "asan",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "asan-ubsan",
+      "configurePreset": "asan-ubsan",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true }
+    },
+    {
+      "name": "tsan",
+      "configurePreset": "tsan",
+      "configuration": "Debug",
+      "output": { "outputOnFailure": true }
+    }
+  ]
+}

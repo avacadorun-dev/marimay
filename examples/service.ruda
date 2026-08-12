@@ -1,0 +1,42 @@
+import * as convert from "std/convert";
+import * as http from "std/http";
+import * as log from "std/log";
+
+enum ServiceError {
+  InvalidId,
+  Upstream(http.Error),
+}
+
+fn message(error: ServiceError): string {
+  return match error {
+    case InvalidId => "invalid user id";
+    case Upstream(error) => error.message();
+  };
+}
+
+fn userHandler(request: http.Request): Result<http.Response, ServiceError> {
+  const idText = match request.pathParameter("id") {
+    case Some(value) => value;
+    case None => {
+      return Err(ServiceError.InvalidId);
+    }
+  };
+  const id = convert.parseInt(idText).mapError(
+    (error: convert.ParseError): ServiceError => ServiceError.InvalidId,
+  )?;
+  const response = http.get($"https://service.example/{id}").mapError(
+    (error: http.Error): ServiceError => ServiceError.Upstream(error),
+  )?;
+  return Ok(http.Response { status: 200, headers: http.jsonHeaders(), body: response.body });
+}
+
+fn main(): Result<void, http.Error> {
+  const server = http.Server {
+    address: "0.0.0.0:8080",
+    routes: [http.getRoute("/users/:id", userHandler)],
+  };
+  log.info($"service listening on {server.address}");
+  // serve uses direct-style suspension. The public signature contains
+  // neither async nor Future, and the runtime owns request task scopes.
+  return server.serve();
+}

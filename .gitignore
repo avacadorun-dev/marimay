@@ -1,0 +1,17 @@
+.DS_Store
+/build/
+/out/
+/dist/
+/.ruda/cache/
+*.rudab
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dylib
+*.dll
+*.exe
+*.profraw
+*.profdata
+*.plist

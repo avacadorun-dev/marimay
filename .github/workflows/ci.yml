@@ -1,0 +1,142 @@
+name: C17 bootstrap
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  documentation:
+    name: Documentation invariants
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Check generated artifacts
+        run: ./tools/check-generated
+      - name: Check documentation links
+        run: ./tools/check-doc-links
+      - name: Check specification terms
+        run: ./tools/check-spec-terms
+      - name: Check example syntax
+        run: ./tools/check-example-syntax
+      - name: Check syntax coverage manifest
+        run: ./tools/check-syntax-coverage
+
+  c17:
+    name: ${{ matrix.target.name }} / ${{ matrix.configuration }}
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - name: Linux x86_64 GCC
+            runner: ubuntu-24.04
+            compiler: gcc
+          - name: Linux x86_64 Clang
+            runner: ubuntu-24.04
+            compiler: clang
+          - name: Linux arm64 GCC
+            runner: ubuntu-24.04-arm
+            compiler: gcc
+          - name: macOS arm64 AppleClang
+            runner: macos-15
+            compiler: clang
+          - name: macOS x86_64 AppleClang
+            runner: macos-15-intel
+            compiler: clang
+          - name: Windows x86_64 MSVC
+            runner: windows-2025
+            compiler: ""
+        configuration: [Debug, Release]
+    runs-on: ${{ matrix.target.runner }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Configure (Unix)
+        if: runner.os != 'Windows'
+        run: >-
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
+          -DCMAKE_C_COMPILER=${{ matrix.target.compiler }}
+          -DRUDA_WARNINGS_AS_ERRORS=ON
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        run: cmake -S . -B build -DRUDA_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build --config ${{ matrix.configuration }} --parallel
+      - name: Test
+        run: ctest --test-dir build -C ${{ matrix.configuration }} --output-on-failure
+
+  unix-sanitizers:
+    name: ${{ matrix.name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux x86_64 ASan+UBSan
+            runner: ubuntu-24.04
+            compiler: clang
+          - name: Linux arm64 ASan+UBSan
+            runner: ubuntu-24.04-arm
+            compiler: clang
+          - name: macOS arm64 ASan+UBSan
+            runner: macos-15
+            compiler: clang
+    runs-on: ${{ matrix.runner }}
+    env:
+      ASAN_OPTIONS: halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Configure
+        env:
+          CC: ${{ matrix.compiler }}
+        run: cmake --preset asan-ubsan
+      - name: Build
+        run: cmake --build --preset asan-ubsan --parallel
+      - name: Test
+        run: ctest --preset asan-ubsan
+
+  linux-tsan:
+    name: Linux x86_64 TSan
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang
+      TSAN_OPTIONS: halt_on_error=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Configure
+        run: cmake --preset tsan
+      - name: Build
+        run: cmake --build --preset tsan --parallel
+      - name: Test
+        run: ctest --preset tsan
+
+  windows-asan:
+    name: Windows x86_64 MSVC ASan
+    runs-on: windows-2025
+    env:
+      ASAN_OPTIONS: halt_on_error=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Configure
+        run: cmake --preset asan
+      - name: Build
+        run: cmake --build --preset asan --parallel
+      - name: Test
+        run: ctest --preset asan

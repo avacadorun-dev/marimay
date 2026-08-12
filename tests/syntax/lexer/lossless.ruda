@@ -1,0 +1,4 @@
+/** docs */
+public fn greet(name_2: string): string {
+  return $"hello {name_2}!";
+}

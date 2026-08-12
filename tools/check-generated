@@ -1,0 +1,7 @@
+#!/bin/sh
+set -eu
+
+tool_directory=$(dirname "$0")
+"$tool_directory/generate-diagnostics" --check
+"$tool_directory/generate-unicode" --check
+exec "$tool_directory/generate-syntax" --check

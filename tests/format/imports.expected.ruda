@@ -1,0 +1,12 @@
+import * as fmt from "std/fmt";
+import * as io from "std/io";
+
+import * as localA from "./a";
+import * as localB from "./b";
+
+import * as alpha from "a.example/a";
+import * as beta from "b.example/b";
+import * as zed from "z.example/z";
+// This comment pins the adjacent import boundary.
+import * as pinned from "c.example/c";
+import * as trailing from "aa.example/aa";

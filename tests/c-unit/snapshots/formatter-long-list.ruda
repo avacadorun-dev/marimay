@@ -1,0 +1,8 @@
+fn main(): void {
+  return compute(
+    firstArgumentWithALongName,
+    secondArgumentWithALongName,
+    thirdArgumentWithALongName,
+    fourthArgumentWithALongName,
+  );
+}

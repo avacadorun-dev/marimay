@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+"""Generate committed diagnostic registry artifacts from the TSV source."""
+
+from __future__ import annotations
+
+import argparse
+import re
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+from typing import List
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SOURCE = ROOT / "bootstrap/tables/diagnostics.tsv"
+HEADER = ROOT / "bootstrap/include/ruda/generated/diagnostic_codes.h"
+REFERENCE = ROOT / "docs/generated/diagnostic-codes.md"
+
+
+@dataclass(frozen=True)
+class Entry:
+    code: str
+    symbol: str
+    component: str
+    summary: str
+
+
+def read_entries() -> List[Entry]:
+    entries: List[Entry] = []
+    codes = set()
+    symbols = set()
+    for number, raw_line in enumerate(SOURCE.read_text(encoding="utf-8").splitlines(), 1):
+        if not raw_line or raw_line.startswith("#"):
+            continue
+        fields = raw_line.split("\t")
+        if len(fields) != 4:
+            raise ValueError(f"{SOURCE}:{number}: expected four tab-separated fields")
+        entry = Entry(*fields)
+        if not re.fullmatch(r"[LPRTMEFBGKCQUI][0-9]{4}", entry.code):
+            raise ValueError(f"{SOURCE}:{number}: invalid diagnostic code {entry.code!r}")
+        if not re.fullmatch(r"[A-Z][A-Z0-9_]*", entry.symbol):
+            raise ValueError(f"{SOURCE}:{number}: invalid symbol {entry.symbol!r}")
+        if entry.code in codes or entry.symbol in symbols:
+            raise ValueError(f"{SOURCE}:{number}: duplicate code or symbol")
+        codes.add(entry.code)
+        symbols.add(entry.symbol)
+        entries.append(entry)
+    if entries != sorted(entries, key=lambda item: item.code):
+        raise ValueError(f"{SOURCE}: entries must be sorted by code")
+    return entries
+
+
+def render_header(entries: List[Entry]) -> str:
+    definitions = "\n".join(
+        f'#define RUDA_DIAGNOSTIC_{entry.symbol} "{entry.code}"' for entry in entries
+    )
+    return f"""#ifndef RUDA_GENERATED_DIAGNOSTIC_CODES_H
+#define RUDA_GENERATED_DIAGNOSTIC_CODES_H
+
+/* Generated from bootstrap/tables/diagnostics.tsv. Do not edit by hand. */
+{definitions}
+
+#endif
+"""
+
+
+def render_reference(entries: List[Entry]) -> str:
+    rows = "\n".join(
+        f"| `{entry.code}` | {entry.component} | {entry.summary} |" for entry in entries
+    )
+    return f"""# Ruda diagnostic code registry
+
+<!-- Generated from bootstrap/tables/diagnostics.tsv. Do not edit by hand. -->
+
+The committed registry is the source of stable diagnostic identities. Later gates add codes without reusing an existing code for a different rule.
+
+| Code | Component | Meaning |
+|---|---|---|
+{rows}
+"""
+
+
+def update(path: Path, expected: str, check: bool) -> bool:
+    actual = path.read_text(encoding="utf-8") if path.exists() else None
+    if actual == expected:
+        return True
+    if check:
+        print(f"generated artifact is stale: {path.relative_to(ROOT)}", file=sys.stderr)
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(expected, encoding="utf-8")
+    print(f"updated {path.relative_to(ROOT)}")
+    return True
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true", help="fail instead of writing stale outputs")
+    arguments = parser.parse_args()
+    try:
+        entries = read_entries()
+    except ValueError as error:
+        print(error, file=sys.stderr)
+        return 1
+    results = [
+        update(HEADER, render_header(entries), arguments.check),
+        update(REFERENCE, render_reference(entries), arguments.check),
+    ]
+    if all(results):
+        print("diagnostic generated artifacts: ok" if arguments.check else "diagnostic generation: ok")
+        return 0
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

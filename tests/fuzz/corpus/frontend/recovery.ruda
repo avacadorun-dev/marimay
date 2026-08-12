@@ -1,0 +1,4 @@
+fn broken(value int): Result<int, Error> {
+  const = [1, 2;
+  return value
+}

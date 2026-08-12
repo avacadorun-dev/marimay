@@ -1,0 +1,13 @@
+fn stringSpellings(): void {
+  const plain = r"plain";
+  const oneBackslash = r"path\file";
+  const twoBackslashes = "C:\\demo\\name";
+  const rawMany = r"\\server\share";
+  const quote = "\u{22}quoted\u{22}";
+  const unicode = "\u{41}\u{1f642}";
+  const controls = "\u{1}\u{7F}\u{85}\n\r\t\0";
+  const apostrophe = "it\'s";
+}
+
+@test
+fn suiteNameCase(): void {}

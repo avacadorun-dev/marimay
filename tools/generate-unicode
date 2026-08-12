@@ -1,0 +1,270 @@
+#!/usr/bin/env python3
+"""Generate committed Unicode identifier and formatter-width tables."""
+
+from __future__ import annotations
+
+import argparse
+import hashlib
+import re
+import sys
+from pathlib import Path
+from typing import Dict, List, Tuple
+
+
+ROOT = Path(__file__).resolve().parents[1]
+VERSION = "17.0.0"
+EXPECTED_SHA256 = "24c7fed1195c482faaefd5c1e7eb821c5ee1fb6de07ecdbaa64b56a99da22c08"
+EAST_ASIAN_WIDTH_SHA256 = "ea7ce50f3444a050333448dffef1cadd9325af55cbb764b4a2280faf52170a33"
+SOURCE = ROOT / "bootstrap/tables/unicode/DerivedCoreProperties-17.0.0.txt"
+EAST_ASIAN_WIDTH_SOURCE = ROOT / "bootstrap/tables/unicode/EastAsianWidth-17.0.0.txt"
+HEADER = ROOT / "bootstrap/include/ruda/generated/unicode_xid.h"
+WIDTH_HEADER = ROOT / "bootstrap/include/ruda/generated/unicode_width.h"
+REFERENCE = ROOT / "docs/generated/unicode-xid.md"
+WIDTH_REFERENCE = ROOT / "docs/generated/unicode-width.md"
+LINE = re.compile(
+    r"^([0-9A-F]{4,6})(?:\.\.([0-9A-F]{4,6}))?\s*;\s*"
+    r"(XID_Start|XID_Continue|Grapheme_Extend|Default_Ignorable_Code_Point)"
+    r"\s*(?:#.*)?$"
+)
+EAST_ASIAN_WIDTH_LINE = re.compile(
+    r"^([0-9A-F]{4,6})(?:\.\.([0-9A-F]{4,6}))?\s*;\s*"
+    r"(A|F|H|N|Na|W)\s*(?:#.*)?$"
+)
+
+Range = Tuple[int, int]
+
+
+def read_ranges() -> Dict[str, List[Range]]:
+    source_bytes = SOURCE.read_bytes()
+    actual_hash = hashlib.sha256(source_bytes).hexdigest()
+    if actual_hash != EXPECTED_SHA256:
+        raise ValueError(
+            f"{SOURCE}: SHA-256 {actual_hash} does not match pinned {EXPECTED_SHA256}"
+        )
+    properties: Dict[str, List[Range]] = {
+        "XID_Start": [],
+        "XID_Continue": [],
+        "Grapheme_Extend": [],
+        "Default_Ignorable_Code_Point": [],
+    }
+    for number, raw_line in enumerate(source_bytes.decode("utf-8").splitlines(), 1):
+        match = LINE.fullmatch(raw_line)
+        if match is None:
+            continue
+        first = int(match.group(1), 16)
+        last = int(match.group(2) or match.group(1), 16)
+        if first > last or last > 0x10FFFF:
+            raise ValueError(f"{SOURCE}:{number}: invalid scalar range")
+        ranges = properties[match.group(3)]
+        if ranges and first <= ranges[-1][1]:
+            raise ValueError(f"{SOURCE}:{number}: unordered or overlapping range")
+        ranges.append((first, last))
+    if not all(properties.values()):
+        raise ValueError(f"{SOURCE}: missing XID properties")
+    continue_points = {
+        point
+        for first, last in properties["XID_Continue"]
+        for point in range(first, last + 1)
+    }
+    for first, last in properties["XID_Start"]:
+        if any(point not in continue_points for point in range(first, last + 1)):
+            raise ValueError(f"{SOURCE}: XID_Start is not a subset of XID_Continue")
+    return properties
+
+
+def merge_ranges(ranges: List[Range]) -> List[Range]:
+    merged: List[Range] = []
+    for first, last in sorted(ranges):
+        if merged and first <= merged[-1][1] + 1:
+            merged[-1] = (merged[-1][0], max(last, merged[-1][1]))
+        else:
+            merged.append((first, last))
+    return merged
+
+
+def read_width_ranges(core: Dict[str, List[Range]]) -> Dict[str, List[Range]]:
+    source_bytes = EAST_ASIAN_WIDTH_SOURCE.read_bytes()
+    actual_hash = hashlib.sha256(source_bytes).hexdigest()
+    if actual_hash != EAST_ASIAN_WIDTH_SHA256:
+        raise ValueError(
+            f"{EAST_ASIAN_WIDTH_SOURCE}: SHA-256 {actual_hash} does not match "
+            f"pinned {EAST_ASIAN_WIDTH_SHA256}"
+        )
+    wide: List[Range] = []
+    previous_first = -1
+    for number, raw_line in enumerate(source_bytes.decode("utf-8").splitlines(), 1):
+        match = EAST_ASIAN_WIDTH_LINE.fullmatch(raw_line)
+        if match is None:
+            continue
+        first = int(match.group(1), 16)
+        last = int(match.group(2) or match.group(1), 16)
+        if first > last or last > 0x10FFFF or first < previous_first:
+            raise ValueError(f"{EAST_ASIAN_WIDTH_SOURCE}:{number}: invalid range order")
+        previous_first = first
+        if match.group(3) in {"W", "F"}:
+            wide.append((first, last))
+    if not wide:
+        raise ValueError(f"{EAST_ASIAN_WIDTH_SOURCE}: missing W/F properties")
+    return {
+        "zero": merge_ranges(
+            core["Grapheme_Extend"]
+            + core["Default_Ignorable_Code_Point"]
+        ),
+        "wide": merge_ranges(wide),
+    }
+
+
+def render_ranges(ranges: List[Range]) -> str:
+    return "\n".join(
+        f"    {{0x{first:08X}U, 0x{last:08X}U}}," for first, last in ranges
+    )
+
+
+def render_header(properties: Dict[str, List[Range]]) -> str:
+    start = render_ranges(properties["XID_Start"])
+    continuation = render_ranges(properties["XID_Continue"])
+    return f"""#ifndef RUDA_GENERATED_UNICODE_XID_H
+#define RUDA_GENERATED_UNICODE_XID_H
+
+#include <stddef.h>
+#include <stdint.h>
+
+/*
+ * Generated from Unicode {VERSION} DerivedCoreProperties.txt.
+ * Source SHA-256: {EXPECTED_SHA256}
+ * Do not edit by hand.
+ */
+#define RUDA_UNICODE_VERSION "{VERSION}"
+
+typedef struct RudaUnicodeRange {{
+    uint32_t first;
+    uint32_t last;
+}} RudaUnicodeRange;
+
+static const RudaUnicodeRange ruda_unicode_xid_start_ranges[] = {{
+{start}
+}};
+
+static const RudaUnicodeRange ruda_unicode_xid_continue_ranges[] = {{
+{continuation}
+}};
+
+#define RUDA_UNICODE_XID_START_RANGE_COUNT \\
+    (sizeof(ruda_unicode_xid_start_ranges) / sizeof(ruda_unicode_xid_start_ranges[0]))
+#define RUDA_UNICODE_XID_CONTINUE_RANGE_COUNT \\
+    (sizeof(ruda_unicode_xid_continue_ranges) / sizeof(ruda_unicode_xid_continue_ranges[0]))
+
+#endif
+"""
+
+
+def render_width_header(properties: Dict[str, List[Range]]) -> str:
+    zero = render_ranges(properties["zero"])
+    wide = render_ranges(properties["wide"])
+    return f"""#ifndef RUDA_GENERATED_UNICODE_WIDTH_H
+#define RUDA_GENERATED_UNICODE_WIDTH_H
+
+#include <stddef.h>
+#include <stdint.h>
+
+/*
+ * Generated from Unicode {VERSION} DerivedCoreProperties.txt and
+ * EastAsianWidth.txt under D026.
+ * Core SHA-256: {EXPECTED_SHA256}
+ * EastAsianWidth SHA-256: {EAST_ASIAN_WIDTH_SHA256}
+ * Do not edit by hand.
+ */
+static const RudaUnicodeRange ruda_unicode_zero_width_ranges[] = {{
+{zero}
+}};
+
+static const RudaUnicodeRange ruda_unicode_wide_ranges[] = {{
+{wide}
+}};
+
+#define RUDA_UNICODE_ZERO_WIDTH_RANGE_COUNT \
+    (sizeof(ruda_unicode_zero_width_ranges) / sizeof(ruda_unicode_zero_width_ranges[0]))
+#define RUDA_UNICODE_WIDE_RANGE_COUNT \
+    (sizeof(ruda_unicode_wide_ranges) / sizeof(ruda_unicode_wide_ranges[0]))
+
+#endif
+"""
+
+
+def property_size(ranges: List[Range]) -> int:
+    return sum(last - first + 1 for first, last in ranges)
+
+
+def render_reference(properties: Dict[str, List[Range]]) -> str:
+    start = properties["XID_Start"]
+    continuation = properties["XID_Continue"]
+    return f"""# Generated Unicode identifier data
+
+<!-- Generated by tools/generate-unicode. Do not edit by hand. -->
+
+Ruda language version `0.1-design` uses Unicode {VERSION} under D023.
+
+| Property | Ranges | Code points |
+|---|---:|---:|
+| `XID_Start` | {len(start)} | {property_size(start)} |
+| `XID_Continue` | {len(continuation)} | {property_size(continuation)} |
+
+Input: [`DerivedCoreProperties-17.0.0.txt`](../../bootstrap/tables/unicode/DerivedCoreProperties-17.0.0.txt), SHA-256 `{EXPECTED_SHA256}`. Provenance and regeneration instructions are committed in the adjacent Unicode table README.
+"""
+
+
+def render_width_reference(properties: Dict[str, List[Range]]) -> str:
+    zero = properties["zero"]
+    wide = properties["wide"]
+    return f"""# Generated Unicode formatter-width data
+
+<!-- Generated by tools/generate-unicode. Do not edit by hand. -->
+
+Ruda formatter compatibility uses Unicode {VERSION} under D026. Scalars in the zero-width table contribute zero columns; remaining scalars in the wide table contribute two; all other valid scalars contribute one.
+
+| Class | Ranges | Code points |
+|---|---:|---:|
+| `Grapheme_Extend ∪ Default_Ignorable_Code_Point` | {len(zero)} | {property_size(zero)} |
+| East Asian Width `W ∪ F` | {len(wide)} | {property_size(wide)} |
+
+Inputs: [`DerivedCoreProperties-17.0.0.txt`](../../bootstrap/tables/unicode/DerivedCoreProperties-17.0.0.txt), SHA-256 `{EXPECTED_SHA256}`; [`EastAsianWidth-17.0.0.txt`](../../bootstrap/tables/unicode/EastAsianWidth-17.0.0.txt), SHA-256 `{EAST_ASIAN_WIDTH_SHA256}`. Provenance is committed in the adjacent Unicode table README.
+"""
+
+
+def update(path: Path, expected: str, check: bool) -> bool:
+    actual = path.read_text(encoding="utf-8") if path.exists() else None
+    if actual == expected:
+        return True
+    if check:
+        print(f"generated artifact is stale: {path.relative_to(ROOT)}", file=sys.stderr)
+        return False
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(expected, encoding="utf-8")
+    print(f"updated {path.relative_to(ROOT)}")
+    return True
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--check", action="store_true", help="fail instead of writing stale outputs")
+    arguments = parser.parse_args()
+    try:
+        properties = read_ranges()
+        width_properties = read_width_ranges(properties)
+    except (OSError, UnicodeError, ValueError) as error:
+        print(error, file=sys.stderr)
+        return 1
+    results = [
+        update(HEADER, render_header(properties), arguments.check),
+        update(WIDTH_HEADER, render_width_header(width_properties), arguments.check),
+        update(REFERENCE, render_reference(properties), arguments.check),
+        update(WIDTH_REFERENCE, render_width_reference(width_properties), arguments.check),
+    ]
+    if all(results):
+        print("Unicode generated artifacts: ok" if arguments.check else "Unicode generation: ok")
+        return 0
+    return 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

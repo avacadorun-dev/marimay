@@ -1,0 +1,1 @@
+{"schema":"ruda.version/1","compiler":"@RUDA_COMPILER_VERSION@","runtime":"@RUDA_RUNTIME_VERSION@","language":"@RUDA_LANGUAGE_VERSION@","bytecode":"@RUDA_BYTECODE_VERSION@","standardLibrary":"@RUDA_STANDARD_LIBRARY_VERSION@","bootstrapStage":@RUDA_BOOTSTRAP_STAGE@,"host":{"system":"@CMAKE_SYSTEM_NAME@","processor":"@CMAKE_SYSTEM_PROCESSOR@"},"targets":["native-host"]}

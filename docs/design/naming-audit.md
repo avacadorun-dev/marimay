@@ -1,0 +1,36 @@
+# N0 naming and distribution identity audit
+
+Status: **open release blocker for external distribution identity**. D001 now fixes the official identity as `Ruda`, executable `ruda`, source suffix `.ruda`, bundle suffix `.rudab`, and `ruda.*` project/tool-state names. This task does not select, register, reserve, control, or legally clear domains, accounts, trademarks, organization/package namespaces, or the placeholder example namespace `ruda-lang.example`.
+
+## Confirmed collision
+
+As of 2026-08-10, the Go package index publishes [`github.com/whoppingdisc/malang`](https://pkg.go.dev/github.com/whoppingdisc/malang) as a command module. Its indexed README is titled “Malang Compiler”, calls its Malang project a programming language, and instructs users to build `-o malang`. The indexed pseudo-version was published 2025-05-16, is MIT licensed, and reports `Imported by: 0`.
+
+This is direct historical evidence that the repository's former working name **Malang** collided with a public language/project name. Low indexed adoption reduced practical migration pressure but did not remove search, package, social-identity, or legal ambiguity; D001 therefore replaced that working name with Ruda. The other project's documented executable is `malang`; it does not establish a collision with the new `ruda` command.
+
+The historical search also surfaced other projects using “Malang” for programming-language work. N0 preserves those URLs, dates, activity, distribution identifiers, and screenshots/exports as the rationale for the rename; they are not evidence that Ruda itself is cleared.
+
+## Required evidence matrix
+
+N0 owns one versioned report covering:
+
+1. **Language and product name:** `Ruda` and confusingly similar software/language names across source hosts, language lists, package indexes, app stores, documentation/search results, and developer communities.
+2. **Legal identity:** trademark/company/product searches in the initial distribution jurisdictions, relevant Nice classes, counsel or qualified-review scope, unresolved marks, and a dated risk conclusion. Repository research is not legal clearance by itself.
+3. **Domains and public handles:** exact/defensible domains, Git hosting organization, registry host, documentation host, security-contact address, and primary social/community identifiers. Availability checks are dated; verification requires reservation/control evidence, not a search result.
+4. **Package namespace:** unique organization, canonical module-path prefix, registry namespace, standard-library namespace, signing identity, and typo/confusable analysis. Placeholder `ruda-lang.example` cannot become a published contract without control evidence.
+5. **Command and PATH identity:** `ruda` checked independently on every Tier 1 OS against default commands and supported installers/package managers (including their case-folding, aliases, shims, and uninstall behavior). A clean-image install/upgrade/uninstall matrix proves there is no destructive PATH takeover; migration evidence also proves the former `ma` executable is not installed as a hidden alias.
+6. **Artifact identity:** `.ruda`, `.rudab`, `ruda.mod`/`ruda.work`/`ruda.lock`, MIME/editor associations, service names, environment-variable prefix, cache/config directories, and diagnostic/protocol schema prefixes.
+7. **Migration completion:** inventory of code, specs, examples, generated registries, package paths, caches, protocol strings, signing keys, websites, CI, installers, and compatibility aliases affected by the Ruda rebrand.
+
+## Gate and deadline
+
+The repository-side naming migration may complete while N0 remains `in-progress`. N0 is `verified` only when every external evidence row links direct dated evidence, the Ruda migration audit is clean, and a follow-up decision records the controlled public organization/registry/module identity and residual legal/search risk. That follow-up may use `ruda-lang` only where an exact domain, repository slug, or namespace is unavailable; it must not present `Rudalang` as the language name.
+
+N0 blocks:
+
+- I7 registry/package namespace implementation beyond replaceable internal prototypes;
+- public/indexed E0 previews (private invitation-only usability work may use an explicit working codename);
+- P0 alpha publication, package publication, domain announcement, and signing-identity creation;
+- any claim that `Ruda`, `ruda`, `ruda-lang.example`, or `ruda-lang` is a legally cleared, available, reserved, or controlled external release identity.
+
+Popularity, `Imported by` count, an unused exact domain, or absence from one trademark database cannot independently close the gate.
