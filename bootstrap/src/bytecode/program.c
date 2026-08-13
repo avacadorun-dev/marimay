@@ -60,6 +60,8 @@ static bool ruda_bytecode_program_valid_options(
         && options.max_total_registers != 0 && options.max_total_blocks != 0
         && options.max_total_instructions != 0 && options.max_total_calls != 0
         && options.max_total_call_arguments != 0
+        && options.max_total_string_constants != 0
+        && options.max_total_string_bytes != 0
         && options.max_encoded_bytes
             >= RUDA_BYTECODE_PROGRAM_MINIMUM_ENCODED_BYTES
         && options.max_verify_work != 0
@@ -68,6 +70,8 @@ static bool ruda_bytecode_program_valid_options(
         && options.function_options.max_instructions != 0
         && options.function_options.max_calls != 0
         && options.function_options.max_call_arguments != 0
+        && options.function_options.max_string_constants != 0
+        && options.function_options.max_string_bytes != 0
         && options.function_options.max_source_files != 0
         && options.function_options.max_encoded_bytes != 0
         && options.function_options.max_verify_work != 0;
@@ -82,6 +86,8 @@ static bool ruda_bytecode_program_function_options_within(
         && actual.max_instructions <= limit.max_instructions
         && actual.max_calls <= limit.max_calls
         && actual.max_call_arguments <= limit.max_call_arguments
+        && actual.max_string_constants <= limit.max_string_constants
+        && actual.max_string_bytes <= limit.max_string_bytes
         && actual.max_source_files <= limit.max_source_files
         && actual.max_encoded_bytes <= limit.max_encoded_bytes
         && actual.max_verify_work <= limit.max_verify_work;
@@ -221,6 +227,8 @@ RudaBytecodeProgramOptions ruda_bytecode_program_default_options(void) {
     options.max_total_instructions = 10000000;
     options.max_total_calls = 1000000;
     options.max_total_call_arguments = 10000000;
+    options.max_total_string_constants = 1000000;
+    options.max_total_string_bytes = 256U * 1024U * 1024U;
     options.max_encoded_bytes = 256U * 1024U * 1024U;
     options.max_verify_work = 64000000;
     options.function_options = ruda_bytecode_function_default_options();
@@ -366,6 +374,8 @@ RudaBytecodeProgramVerifyStatus ruda_bytecode_program_verify(
     size_t total_instructions = 0;
     size_t total_calls = 0;
     size_t total_call_arguments = 0;
+    size_t total_string_constants = 0;
+    size_t total_string_bytes = 0;
     size_t work = 0;
     size_t index = 0;
     if (program == NULL || !program->initialized
@@ -437,6 +447,14 @@ RudaBytecodeProgramVerifyStatus ruda_bytecode_program_verify(
                 &total_call_arguments,
                 function->body.call_arguments.length,
                 program->options.max_total_call_arguments
+            ) || !ruda_bytecode_program_add_bounded(
+                &total_string_constants,
+                function->body.string_constants.length,
+                program->options.max_total_string_constants
+            ) || !ruda_bytecode_program_add_bounded(
+                &total_string_bytes,
+                function->body.string_bytes,
+                program->options.max_total_string_bytes
             ) || !ruda_bytecode_program_consume_work(
                 &work,
                 function->body.register_types.length,
@@ -685,6 +703,8 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_program(
     size_t total_instructions = 0;
     size_t total_calls = 0;
     size_t total_call_arguments = 0;
+    size_t total_string_constants = 0;
+    size_t total_string_bytes = 0;
     if (output == NULL) {
         return RUDA_BYTECODE_CODEC_INVALID_ARGUMENT;
     }
@@ -841,6 +861,14 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_program(
                         &total_call_arguments,
                         function.call_arguments.length,
                         options.max_total_call_arguments
+                    ) || !ruda_bytecode_program_add_bounded(
+                        &total_string_constants,
+                        function.string_constants.length,
+                        options.max_total_string_constants
+                    ) || !ruda_bytecode_program_add_bounded(
+                        &total_string_bytes,
+                        function.string_bytes,
+                        options.max_total_string_bytes
                     )) {
                     ruda_bytecode_function_dispose(&function);
                     status = source_mismatch

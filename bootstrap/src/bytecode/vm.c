@@ -4,11 +4,159 @@
 
 #include "ruda/base/checked_i64.h"
 
+RudaBytecodeExecutionOptions ruda_bytecode_execution_default_options(void) {
+    RudaBytecodeExecutionOptions options;
+    options.max_strings = 1000000;
+    options.max_total_string_bytes = 64U * 1024U * 1024U;
+    return options;
+}
+
+bool ruda_bytecode_execution_init(
+    RudaBytecodeExecution *execution,
+    RudaAllocator allocator,
+    RudaBytecodeExecutionOptions options
+) {
+    if (execution == NULL || allocator.allocate == NULL || allocator.resize == NULL
+        || allocator.deallocate == NULL || options.max_strings == 0
+        || options.max_strings > UINT32_MAX || options.max_total_string_bytes == 0) {
+        return false;
+    }
+    memset(execution, 0, sizeof(*execution));
+    if (!ruda_vector_init(
+            &execution->strings, allocator, sizeof(RudaOwnedBytes)
+        ) || !ruda_map_init(
+            &execution->string_index, allocator, sizeof(RudaBytecodeReference),
+            UINT64_C(0x7275646162746573), UINT64_C(0x7472696e67696478)
+        )) {
+        ruda_map_dispose(&execution->string_index);
+        ruda_vector_dispose(&execution->strings);
+        return false;
+    }
+    execution->allocator = allocator;
+    execution->options = options;
+    execution->initialized = true;
+    return true;
+}
+
+void ruda_bytecode_execution_dispose(RudaBytecodeExecution *execution) {
+    size_t index = 0;
+    if (execution == NULL) {
+        return;
+    }
+    for (index = 0; index < execution->strings.length; index += 1) {
+        RudaOwnedBytes *string = ruda_vector_at(&execution->strings, index);
+        if (string != NULL) {
+            ruda_owned_bytes_dispose(string);
+        }
+    }
+    ruda_map_dispose(&execution->string_index);
+    ruda_vector_dispose(&execution->strings);
+    memset(execution, 0, sizeof(*execution));
+}
+
+bool ruda_bytecode_execution_string_bytes(
+    const RudaBytecodeExecution *execution,
+    RudaBytecodeValue value,
+    const unsigned char **bytes,
+    size_t *length
+) {
+    const RudaOwnedBytes *string = execution != NULL && execution->initialized
+            && value.type == RUDA_BYTECODE_TYPE_STRING
+            && value.as.reference != RUDA_BYTECODE_INVALID_REFERENCE
+        ? ruda_vector_at_const(&execution->strings, value.as.reference)
+        : NULL;
+    if (string == NULL || string->data == NULL || bytes == NULL || length == NULL) {
+        return false;
+    }
+    *bytes = string->data;
+    *length = string->length;
+    return true;
+}
+
+bool ruda_bytecode_panic_init(RudaBytecodePanic *panic, RudaAllocator allocator) {
+    if (panic == NULL || allocator.allocate == NULL || allocator.resize == NULL
+        || allocator.deallocate == NULL) {
+        return false;
+    }
+    memset(panic, 0, sizeof(*panic));
+    if (!ruda_vector_init(
+            &panic->frames, allocator, sizeof(RudaBytecodePanicFrame)
+        )) {
+        return false;
+    }
+    panic->initialized = true;
+    return true;
+}
+
+void ruda_bytecode_panic_dispose(RudaBytecodePanic *panic) {
+    if (panic == NULL) {
+        return;
+    }
+    ruda_owned_bytes_dispose(&panic->message);
+    ruda_vector_dispose(&panic->frames);
+    memset(panic, 0, sizeof(*panic));
+}
+
+const RudaBytecodePanicFrame *ruda_bytecode_panic_frame(
+    const RudaBytecodePanic *panic,
+    size_t index
+) {
+    return panic != NULL && panic->initialized
+        ? ruda_vector_at_const(&panic->frames, index)
+        : NULL;
+}
+
+static RudaBytecodeRunStatus ruda_bytecode_execution_intern(
+    RudaBytecodeExecution *execution,
+    const unsigned char *bytes,
+    size_t length,
+    RudaBytecodeReference *result
+) {
+    const RudaBytecodeReference *found = NULL;
+    RudaOwnedBytes owned;
+    RudaBytecodeReference reference;
+    size_t next_bytes = 0;
+    if (execution == NULL || !execution->initialized || result == NULL
+        || (bytes == NULL && length != 0)) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
+    found = ruda_map_get_const(&execution->string_index, bytes, length);
+    if (found != NULL) {
+        *result = *found;
+        return RUDA_BYTECODE_RUN_OK;
+    }
+    if (execution->strings.length >= execution->options.max_strings
+        || execution->strings.length >= UINT32_MAX
+        || !ruda_size_add(execution->total_string_bytes, length, &next_bytes)
+        || next_bytes > execution->options.max_total_string_bytes) {
+        return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+    }
+    memset(&owned, 0, sizeof(owned));
+    if (!ruda_owned_bytes_copy(&owned, execution->allocator, bytes, length)) {
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    reference = (RudaBytecodeReference)execution->strings.length;
+    if (!ruda_vector_push(&execution->strings, &owned)
+        || !ruda_map_put(&execution->string_index, bytes, length, &reference)) {
+        if (execution->strings.length != 0
+            && reference == execution->strings.length - 1) {
+            execution->strings.length -= 1;
+        }
+        ruda_owned_bytes_dispose(&owned);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    execution->total_string_bytes = next_bytes;
+    *result = reference;
+    return RUDA_BYTECODE_RUN_OK;
+}
+
 RudaBytecodeRunOptions ruda_bytecode_run_default_options(void) {
     RudaBytecodeRunOptions options;
     options.max_steps = 10000000;
     options.max_call_depth = 1024;
     options.remaining_shared_steps = NULL;
+    options.execution = NULL;
+    options.panic = NULL;
     options.trap = NULL;
     return options;
 }
@@ -30,7 +178,9 @@ static RudaBytecodeRunStatus ruda_bytecode_run_checked_status(
 
 static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
     const RudaBytecodeInstruction *instruction,
-    RudaBytecodeValue *registers
+    RudaBytecodeValue *registers,
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function
 ) {
     size_t target = (size_t)instruction->operands[0].unsigned_value;
     switch (instruction->opcode) {
@@ -41,6 +191,28 @@ static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             registers[target].as.boolean = instruction->operands[1].unsigned_value
                 != 0;
             return RUDA_BYTECODE_RUN_OK;
+        case RUDA_OPCODE_CONST_STRING: {
+            const RudaBytecodeStringConstant *constant =
+                ruda_bytecode_string_constant(
+                    function,
+                    (RudaBytecodeStringId)instruction->operands[1].unsigned_value
+                );
+            RudaBytecodeReference reference = RUDA_BYTECODE_INVALID_REFERENCE;
+            if (constant == NULL || execution == NULL || !execution->initialized) {
+                return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+            }
+            RudaBytecodeRunStatus status = ruda_bytecode_execution_intern(
+                    execution,
+                    constant->value.data,
+                    constant->value.length,
+                    &reference
+                );
+            if (status != RUDA_BYTECODE_RUN_OK) {
+                return status;
+            }
+            registers[target].as.reference = reference;
+            return RUDA_BYTECODE_RUN_OK;
+        }
         case RUDA_OPCODE_COPY:
             registers[target] = registers[
                 (size_t)instruction->operands[1].unsigned_value
@@ -173,6 +345,24 @@ static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                 == registers[second].as.boolean;
             return RUDA_BYTECODE_RUN_OK;
         }
+        case RUDA_OPCODE_STRING_EQUAL: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            const unsigned char *left = NULL;
+            const unsigned char *right = NULL;
+            size_t left_length = 0;
+            size_t right_length = 0;
+            if (!ruda_bytecode_execution_string_bytes(
+                    execution, registers[first], &left, &left_length
+                ) || !ruda_bytecode_execution_string_bytes(
+                    execution, registers[second], &right, &right_length
+                )) {
+                return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+            }
+            registers[target].as.boolean = left_length == right_length
+                && (left_length == 0 || memcmp(left, right, left_length) == 0);
+            return RUDA_BYTECODE_RUN_OK;
+        }
         case RUDA_OPCODE_I64_LESS: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;
             size_t second = (size_t)instruction->operands[2].unsigned_value;
@@ -194,6 +384,8 @@ static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
         case RUDA_OPCODE_RETURN_VOID:
         case RUDA_OPCODE_CALL_DIRECT:
         case RUDA_OPCODE_CALL_DIRECT_VOID:
+        case RUDA_OPCODE_CALL_DIRECT_NEVER:
+        case RUDA_OPCODE_PANIC_STRING:
             return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
     }
     return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
@@ -225,6 +417,122 @@ static void ruda_bytecode_run_set_trap(
     }
 }
 
+static void ruda_bytecode_run_reset_panic(RudaBytecodePanic *panic) {
+    if (panic != NULL && panic->initialized) {
+        ruda_owned_bytes_dispose(&panic->message);
+        panic->frames.length = 0;
+        panic->code = NULL;
+        memset(&panic->symbol, 0, sizeof(panic->symbol));
+        memset(&panic->span, 0, sizeof(panic->span));
+    }
+}
+
+static RudaBytecodeRunStatus ruda_bytecode_run_begin_panic(
+    RudaBytecodePanic *panic,
+    RudaAllocator allocator,
+    RudaBytecodeExecution *execution,
+    RudaBytecodeValue message,
+    RudaSymbolId symbol,
+    RudaBytecodeSpan span
+) {
+    const unsigned char *bytes = NULL;
+    size_t length = 0;
+    RudaBytecodePanicFrame frame;
+    if (!ruda_bytecode_execution_string_bytes(
+            execution, message, &bytes, &length
+        )) {
+        return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+    }
+    if (panic == NULL) {
+        return RUDA_BYTECODE_RUN_PANIC;
+    }
+    ruda_bytecode_run_reset_panic(panic);
+    if (!ruda_owned_bytes_copy(&panic->message, allocator, bytes, length)) {
+        ruda_bytecode_run_reset_panic(panic);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    panic->code = "G4000";
+    panic->symbol = symbol;
+    panic->span = span;
+    frame.symbol = symbol;
+    frame.call_span = span;
+    if (!ruda_vector_push(&panic->frames, &frame)) {
+        ruda_bytecode_run_reset_panic(panic);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    return RUDA_BYTECODE_RUN_PANIC;
+}
+
+static RudaBytecodeRunStatus ruda_bytecode_run_append_panic_frame(
+    RudaBytecodePanic *panic,
+    RudaSymbolId symbol,
+    RudaBytecodeSpan call_span
+) {
+    RudaBytecodePanicFrame frame;
+    if (panic == NULL) {
+        return RUDA_BYTECODE_RUN_PANIC;
+    }
+    frame.symbol = symbol;
+    frame.call_span = call_span;
+    if (!ruda_vector_push(&panic->frames, &frame)) {
+        ruda_bytecode_run_reset_panic(panic);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    return RUDA_BYTECODE_RUN_PANIC;
+}
+
+static bool ruda_bytecode_run_string_value_valid(
+    RudaBytecodeExecution *execution,
+    RudaBytecodeValue value
+) {
+    const unsigned char *bytes = NULL;
+    size_t length = 0;
+    return ruda_bytecode_execution_string_bytes(
+        execution, value, &bytes, &length
+    );
+}
+
+static bool ruda_bytecode_run_function_uses_strings(
+    const RudaBytecodeFunction *function
+) {
+    size_t index = 0;
+    if (function == NULL) {
+        return false;
+    }
+    if (function->string_constants.length != 0) {
+        return true;
+    }
+    for (index = 0; index < function->register_types.length; index += 1) {
+        const RudaBytecodeType *type = ruda_vector_at_const(
+            &function->register_types, index
+        );
+        if (type != NULL && *type == RUDA_BYTECODE_TYPE_STRING) {
+            return true;
+        }
+    }
+    return function->result_type == RUDA_BYTECODE_TYPE_STRING;
+}
+
+static bool ruda_bytecode_run_program_uses_strings(
+    const RudaBytecodeProgram *program
+) {
+    size_t index = 0;
+    if (program == NULL) {
+        return false;
+    }
+    for (index = 0; index < program->functions.length; index += 1) {
+        const RudaBytecodeProgramFunction *function = ruda_vector_at_const(
+            &program->functions, index
+        );
+        if (function == NULL || ruda_bytecode_run_function_uses_strings(
+                &function->body
+            )) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool ruda_bytecode_run_function_has_calls(
     const RudaBytecodeFunction *function
 ) {
@@ -252,7 +560,8 @@ static bool ruda_bytecode_run_function_has_calls(
             );
             if (instruction == NULL
                 || instruction->opcode == RUDA_OPCODE_CALL_DIRECT
-                || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID) {
+                || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
+                || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER) {
                 return true;
             }
         }
@@ -286,6 +595,11 @@ RudaBytecodeRunStatus ruda_bytecode_run(
         || (arguments == NULL && argument_count != 0)) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
+    if ((options.execution != NULL && !options.execution->initialized)
+        || (options.panic != NULL && !options.panic->initialized)) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
+    ruda_bytecode_run_reset_panic(options.panic);
     {
         RudaBytecodeVerifyStatus verify_status = ruda_bytecode_verify(function);
         if (verify_status == RUDA_BYTECODE_VERIFY_ALLOCATION_FAILED) {
@@ -301,6 +615,10 @@ RudaBytecodeRunStatus ruda_bytecode_run(
     if (ruda_bytecode_run_function_has_calls(function)) {
         return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
     }
+    if (ruda_bytecode_run_function_uses_strings(function)
+        && options.execution == NULL) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
     for (index = 0; index < argument_count; index += 1) {
         const RudaBytecodeType *expected = ruda_vector_at_const(
             &function->register_types,
@@ -308,6 +626,12 @@ RudaBytecodeRunStatus ruda_bytecode_run(
         );
         if (expected == NULL || arguments[index].type != *expected) {
             return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        }
+        if (*expected == RUDA_BYTECODE_TYPE_STRING
+            && !ruda_bytecode_run_string_value_valid(
+                options.execution, arguments[index]
+            )) {
+            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
         }
     }
     register_count = function->register_types.length;
@@ -357,6 +681,13 @@ RudaBytecodeRunStatus ruda_bytecode_run(
                 completed = registers[
                     (size_t)instruction->operands[0].unsigned_value
                 ];
+                if (completed.type == RUDA_BYTECODE_TYPE_STRING
+                    && !ruda_bytecode_run_string_value_valid(
+                        options.execution, completed
+                    )) {
+                    status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                    goto cleanup;
+                }
                 *result = completed;
                 goto cleanup;
             }
@@ -378,9 +709,22 @@ RudaBytecodeRunStatus ruda_bytecode_run(
                 transferred = true;
                 break;
             }
+            if (instruction->opcode == RUDA_OPCODE_PANIC_STRING) {
+                status = ruda_bytecode_run_begin_panic(
+                    options.panic,
+                    allocator,
+                    options.execution,
+                    registers[(size_t)instruction->operands[0].unsigned_value],
+                    (RudaSymbolId){{0}},
+                    instruction->span
+                );
+                goto cleanup;
+            }
             status = ruda_bytecode_run_value_instruction(
                 instruction,
-                registers
+                registers,
+                options.execution,
+                function
             );
             if (status != RUDA_BYTECODE_RUN_OK) {
                 if (options.trap != NULL
@@ -413,6 +757,8 @@ typedef struct RudaBytecodeRunFrame {
     size_t steps;
     uint32_t return_destination;
     bool return_is_void;
+    bool return_is_never;
+    RudaBytecodeSpan call_span;
 } RudaBytecodeRunFrame;
 
 static void ruda_bytecode_run_frame_dispose(
@@ -432,7 +778,9 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
     size_t argument_count,
     RudaAllocator allocator,
     uint32_t return_destination,
-    bool return_is_void
+    bool return_is_void,
+    bool return_is_never,
+    RudaBytecodeSpan call_span
 ) {
     const RudaBytecodeFunction *body = function != NULL ? &function->body : NULL;
     size_t index = 0;
@@ -470,6 +818,8 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
     frame->function = function;
     frame->return_destination = return_destination;
     frame->return_is_void = return_is_void;
+    frame->return_is_never = return_is_never;
+    frame->call_span = call_span;
     return RUDA_BYTECODE_RUN_OK;
 }
 
@@ -564,11 +914,20 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         || (arguments == NULL && argument_count != 0)) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
+    if ((options.execution != NULL && !options.execution->initialized)
+        || (options.panic != NULL && !options.panic->initialized)) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
+    ruda_bytecode_run_reset_panic(options.panic);
     status = ruda_bytecode_run_program_verify_status(
         ruda_bytecode_program_verify(program)
     );
     if (status != RUDA_BYTECODE_RUN_OK) {
         return status;
+    }
+    if (ruda_bytecode_run_program_uses_strings(program)
+        && options.execution == NULL) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
     entry = ruda_bytecode_program_function(program, program->entry_function);
     if (entry == NULL || argument_count != entry->body.parameter_count) {
@@ -582,6 +941,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         if (expected == NULL || arguments[index].type != *expected) {
             return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
         }
+        if (*expected == RUDA_BYTECODE_TYPE_STRING
+            && !ruda_bytecode_run_string_value_valid(
+                options.execution, arguments[index]
+            )) {
+            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        }
     }
     if (!ruda_bytecode_run_frames_reserve(
             &frames,
@@ -593,7 +958,8 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     status = ruda_bytecode_run_frame_init(
-        &frames[0], entry, arguments, argument_count, allocator, 0, false
+        &frames[0], entry, arguments, argument_count, allocator, 0, false,
+        false, (RudaBytecodeSpan){0}
     );
     if (status != RUDA_BYTECODE_RUN_OK) {
         ruda_bytecode_run_frame_dispose(&frames[0], &allocator);
@@ -631,6 +997,17 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                     (size_t)instruction->operands[0].unsigned_value
                 ];
             }
+            if (frame->return_is_never) {
+                status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                goto cleanup;
+            }
+            if (completed.type == RUDA_BYTECODE_TYPE_STRING
+                && !ruda_bytecode_run_string_value_valid(
+                    options.execution, completed
+                )) {
+                status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                goto cleanup;
+            }
             if (frame_count == 1) {
                 *result = completed;
                 status = RUDA_BYTECODE_RUN_OK;
@@ -661,11 +1038,33 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
             frame->instruction = 0;
             continue;
         }
+        if (instruction->opcode == RUDA_OPCODE_PANIC_STRING) {
+            size_t panic_index = frame_count - 1;
+            status = ruda_bytecode_run_begin_panic(
+                options.panic,
+                allocator,
+                options.execution,
+                frame->registers[(size_t)instruction->operands[0].unsigned_value],
+                frame->function->symbol,
+                instruction->span
+            );
+            while (status == RUDA_BYTECODE_RUN_PANIC && panic_index != 0) {
+                RudaBytecodeRunFrame *callee = &frames[panic_index];
+                RudaBytecodeRunFrame *caller = &frames[panic_index - 1];
+                status = ruda_bytecode_run_append_panic_frame(
+                    options.panic, caller->function->symbol, callee->call_span
+                );
+                panic_index -= 1;
+            }
+            goto cleanup;
+        }
         if (instruction->opcode == RUDA_OPCODE_CALL_DIRECT
-            || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID) {
+            || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
+            || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER) {
             bool returns_void = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID;
+            bool returns_never = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER;
             uint64_t call_wire = instruction->operands[
-                returns_void ? 0 : 1
+                returns_void || returns_never ? 0 : 1
             ].unsigned_value;
             const RudaBytecodeCall *call = call_wire < body->calls.length
                 ? ruda_bytecode_call(body, (RudaBytecodeCallId)call_wire)
@@ -700,8 +1099,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 NULL,
                 0,
                 allocator,
-                returns_void ? 0 : (uint32_t)instruction->operands[0].unsigned_value,
-                returns_void
+                returns_void || returns_never
+                    ? 0
+                    : (uint32_t)instruction->operands[0].unsigned_value,
+                returns_void,
+                returns_never,
+                instruction->span
             );
             if (status != RUDA_BYTECODE_RUN_OK) {
                 goto cleanup;
@@ -728,7 +1131,9 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
             frame_count += 1;
             continue;
         }
-        status = ruda_bytecode_run_value_instruction(instruction, frame->registers);
+        status = ruda_bytecode_run_value_instruction(
+            instruction, frame->registers, options.execution, body
+        );
         if (status != RUDA_BYTECODE_RUN_OK) {
             if (status == RUDA_BYTECODE_RUN_OVERFLOW
                 || status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO

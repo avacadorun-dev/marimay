@@ -6,12 +6,14 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "ruda/base/utf8.h"
 #include "bytecode_internal.h"
 #include "../generated/opcode_data.inc"
 
 enum {
     RUDA_BYTECODE_MAGIC_LENGTH = 8,
-    RUDA_BYTECODE_FEATURE_CALLS = 1U << 0
+    RUDA_BYTECODE_FEATURE_CALLS = 1U << 0,
+    RUDA_BYTECODE_FEATURE_STRINGS = 1U << 1
 };
 
 static const unsigned char ruda_bytecode_magic[RUDA_BYTECODE_MAGIC_LENGTH] = {
@@ -31,16 +33,17 @@ typedef struct RudaBytecodeCursor {
 } RudaBytecodeCursor;
 
 static bool ruda_bytecode_type_is_register(RudaBytecodeType type) {
-    return type == RUDA_BYTECODE_TYPE_BOOL || type == RUDA_BYTECODE_TYPE_I64;
+    return type == RUDA_BYTECODE_TYPE_BOOL || type == RUDA_BYTECODE_TYPE_I64
+        || type == RUDA_BYTECODE_TYPE_STRING;
 }
 
 static bool ruda_bytecode_type_is_result(RudaBytecodeType type) {
     return ruda_bytecode_type_is_register(type)
-        || type == RUDA_BYTECODE_TYPE_VOID;
+        || type == RUDA_BYTECODE_TYPE_VOID || type == RUDA_BYTECODE_TYPE_NEVER;
 }
 
 static bool ruda_bytecode_type_is_local(RudaBytecodeType type) {
-    return ruda_bytecode_type_is_result(type);
+    return ruda_bytecode_type_is_register(type) || type == RUDA_BYTECODE_TYPE_VOID;
 }
 
 static const char *ruda_bytecode_type_name(RudaBytecodeType type) {
@@ -51,6 +54,10 @@ static const char *ruda_bytecode_type_name(RudaBytecodeType type) {
             return "i64";
         case RUDA_BYTECODE_TYPE_VOID:
             return "void";
+        case RUDA_BYTECODE_TYPE_STRING:
+            return "string";
+        case RUDA_BYTECODE_TYPE_NEVER:
+            return "never";
         case RUDA_BYTECODE_TYPE_INVALID:
             break;
     }
@@ -64,6 +71,8 @@ RudaBytecodeFunctionOptions ruda_bytecode_function_default_options(void) {
     options.max_instructions = 1000000;
     options.max_calls = 100000;
     options.max_call_arguments = 1000000;
+    options.max_string_constants = 100000;
+    options.max_string_bytes = 16U * 1024U * 1024U;
     options.max_source_files = 4096;
     options.max_encoded_bytes = 64U * 1024U * 1024U;
     options.max_verify_work = 16000000;
@@ -107,7 +116,8 @@ bool ruda_bytecode_function_init(
         || (parameter_types == NULL && parameter_count != 0)
         || options.max_registers == 0 || options.max_blocks == 0
         || options.max_instructions == 0 || options.max_calls == 0
-        || options.max_call_arguments == 0 || options.max_source_files == 0
+        || options.max_call_arguments == 0 || options.max_string_constants == 0
+        || options.max_string_bytes == 0 || options.max_source_files == 0
         || options.max_encoded_bytes < RUDA_BYTECODE_MAGIC_LENGTH
         || options.max_verify_work == 0) {
         return false;
@@ -134,11 +144,16 @@ bool ruda_bytecode_function_init(
             &function->call_arguments,
             allocator,
             sizeof(RudaBytecodeCallArgument)
+        ) || !ruda_vector_init(
+            &function->string_constants,
+            allocator,
+            sizeof(RudaBytecodeStringConstant)
         )) {
         ruda_vector_dispose(&function->register_types);
         ruda_vector_dispose(&function->blocks);
         ruda_vector_dispose(&function->calls);
         ruda_vector_dispose(&function->call_arguments);
+        ruda_vector_dispose(&function->string_constants);
         memset(function, 0, sizeof(*function));
         return false;
     }
@@ -168,6 +183,16 @@ void ruda_bytecode_function_dispose(RudaBytecodeFunction *function) {
             block->initialized = false;
         }
     }
+    for (index = 0; index < function->string_constants.length; index += 1) {
+        RudaBytecodeStringConstant *constant = ruda_vector_at(
+            &function->string_constants,
+            index
+        );
+        if (constant != NULL) {
+            ruda_owned_bytes_dispose(&constant->value);
+        }
+    }
+    ruda_vector_dispose(&function->string_constants);
     ruda_vector_dispose(&function->blocks);
     ruda_vector_dispose(&function->register_types);
     ruda_vector_dispose(&function->call_arguments);
@@ -317,6 +342,51 @@ const RudaBytecodeCallArgument *ruda_bytecode_call_argument(
 ) {
     return function != NULL && function->initialized
         ? ruda_vector_at_const(&function->call_arguments, index)
+        : NULL;
+}
+
+bool ruda_bytecode_add_string_constant(
+    RudaBytecodeFunction *function,
+    const unsigned char *bytes,
+    size_t length,
+    RudaBytecodeStringId *result
+) {
+    RudaBytecodeStringConstant constant;
+    size_t next_bytes = 0;
+    if (function == NULL || !function->initialized || result == NULL
+        || (bytes == NULL && length != 0)
+        || !ruda_utf8_validate((const char *)bytes, length, NULL)
+        || function->string_constants.length
+            >= function->options.max_string_constants
+        || function->string_constants.length >= UINT32_MAX
+        || !ruda_size_add(function->string_bytes, length, &next_bytes)
+        || next_bytes > function->options.max_string_bytes) {
+        return false;
+    }
+    memset(&constant, 0, sizeof(constant));
+    if (!ruda_owned_bytes_copy(
+            &constant.value,
+            function->allocator,
+            bytes,
+            length
+        )) {
+        return false;
+    }
+    if (!ruda_vector_push(&function->string_constants, &constant)) {
+        ruda_owned_bytes_dispose(&constant.value);
+        return false;
+    }
+    function->string_bytes = next_bytes;
+    *result = (RudaBytecodeStringId)(function->string_constants.length - 1);
+    return true;
+}
+
+const RudaBytecodeStringConstant *ruda_bytecode_string_constant(
+    const RudaBytecodeFunction *function,
+    RudaBytecodeStringId string_id
+) {
+    return function != NULL && function->initialized
+        ? ruda_vector_at_const(&function->string_constants, string_id)
         : NULL;
 }
 
@@ -483,7 +553,10 @@ RudaBytecodeCodecStatus ruda_bytecode_encode_function(
         ) || !ruda_bytecode_encode_u64(&buffer, RUDA_BYTECODE_FORMAT_VERSION)
         || !ruda_bytecode_encode_u64(
             &buffer,
-            function->calls.length == 0 ? 0 : RUDA_BYTECODE_FEATURE_CALLS
+            (function->calls.length == 0 ? 0 : RUDA_BYTECODE_FEATURE_CALLS)
+                | (function->string_constants.length == 0
+                    ? 0
+                    : RUDA_BYTECODE_FEATURE_STRINGS)
         )
         || !ruda_bytecode_encode_u64(&buffer, (uint64_t)function->result_type)
         || !ruda_bytecode_encode_u64(&buffer, (uint64_t)function->source_count)
@@ -636,6 +709,40 @@ RudaBytecodeCodecStatus ruda_bytecode_encode_function(
             }
         }
     }
+    if (function->string_constants.length != 0) {
+        size_t string_index = 0;
+        if (!ruda_bytecode_encode_u64(
+                &buffer,
+                (uint64_t)function->string_constants.length
+            )) {
+            status = buffer.limit_reached
+                ? RUDA_BYTECODE_CODEC_LIMIT_REACHED
+                : RUDA_BYTECODE_CODEC_ALLOCATION_FAILED;
+            goto cleanup;
+        }
+        for (string_index = 0;
+            string_index < function->string_constants.length;
+            string_index += 1) {
+            const RudaBytecodeStringConstant *constant =
+                ruda_bytecode_string_constant(
+                    function,
+                    (RudaBytecodeStringId)string_index
+                );
+            if (constant == NULL || !ruda_bytecode_encode_u64(
+                    &buffer,
+                    (uint64_t)constant->value.length
+                ) || !ruda_bytecode_encode_append(
+                    &buffer,
+                    constant->value.data,
+                    constant->value.length
+                )) {
+                status = buffer.limit_reached
+                    ? RUDA_BYTECODE_CODEC_LIMIT_REACHED
+                    : RUDA_BYTECODE_CODEC_ALLOCATION_FAILED;
+                goto cleanup;
+            }
+        }
+    }
     if (!ruda_owned_bytes_copy(
             output,
             allocator,
@@ -700,7 +807,9 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
     if (status != RUDA_BYTECODE_CODEC_OK) {
         return status;
     }
-    if (value != 0 && value != RUDA_BYTECODE_FEATURE_CALLS) {
+    if ((value & ~(uint64_t)(
+            RUDA_BYTECODE_FEATURE_CALLS | RUDA_BYTECODE_FEATURE_STRINGS
+        )) != 0) {
         return RUDA_BYTECODE_CODEC_UNSUPPORTED_VERSION;
     }
     features = value;
@@ -708,7 +817,7 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
     if (status != RUDA_BYTECODE_CODEC_OK) {
         return status;
     }
-    if (value > RUDA_BYTECODE_TYPE_VOID
+    if (value > RUDA_BYTECODE_TYPE_NEVER
         || !ruda_bytecode_type_is_result((RudaBytecodeType)value)) {
         return RUDA_BYTECODE_CODEC_INVALID_ENCODING;
     }
@@ -761,7 +870,7 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
         if (status != RUDA_BYTECODE_CODEC_OK) {
             goto cleanup;
         }
-        if (value > RUDA_BYTECODE_TYPE_VOID
+        if (value > RUDA_BYTECODE_TYPE_NEVER
             || !ruda_bytecode_type_is_local((RudaBytecodeType)value)
             || (index < function.parameter_count
                 && !ruda_bytecode_type_is_register((RudaBytecodeType)value))) {
@@ -909,7 +1018,7 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
             if (status != RUDA_BYTECODE_CODEC_OK) {
                 goto cleanup;
             }
-            if (value > RUDA_BYTECODE_TYPE_VOID
+            if (value > RUDA_BYTECODE_TYPE_NEVER
                 || !ruda_bytecode_type_is_result((RudaBytecodeType)value)) {
                 status = RUDA_BYTECODE_CODEC_INVALID_ENCODING;
                 goto cleanup;
@@ -943,6 +1052,10 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
             }
             for (argument_index = 0; argument_index < argument_count;
                 argument_index += 1) {
+                if (arguments == NULL) {
+                    status = RUDA_BYTECODE_CODEC_ALLOCATION_FAILED;
+                    break;
+                }
                 status = ruda_bytecode_decode_u64(&cursor, &value);
                 if (status != RUDA_BYTECODE_CODEC_OK) {
                     break;
@@ -957,7 +1070,7 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
                 if (status != RUDA_BYTECODE_CODEC_OK) {
                     break;
                 }
-                if (value > RUDA_BYTECODE_TYPE_VOID
+                if (value > RUDA_BYTECODE_TYPE_NEVER
                     || !ruda_bytecode_type_is_register(
                         (RudaBytecodeType)value
                     )) {
@@ -1001,6 +1114,66 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
                 status = RUDA_BYTECODE_CODEC_INVALID_ENCODING;
                 goto cleanup;
             }
+        }
+    }
+    if ((features & RUDA_BYTECODE_FEATURE_STRINGS) != 0) {
+        size_t string_count = 0;
+        status = ruda_bytecode_decode_u64(&cursor, &value);
+        if (status != RUDA_BYTECODE_CODEC_OK) {
+            goto cleanup;
+        }
+        if (!ruda_bytecode_u64_to_size(value, &string_count)
+            || string_count == 0 || string_count > options.max_string_constants
+            || string_count > UINT32_MAX) {
+            status = string_count == 0
+                ? RUDA_BYTECODE_CODEC_INVALID_ENCODING
+                : RUDA_BYTECODE_CODEC_LIMIT_REACHED;
+            goto cleanup;
+        }
+        for (index = 0; index < string_count; index += 1) {
+            size_t string_length = 0;
+            RudaBytecodeStringId string_id = RUDA_BYTECODE_NO_STRING;
+            status = ruda_bytecode_decode_u64(&cursor, &value);
+            if (status != RUDA_BYTECODE_CODEC_OK) {
+                goto cleanup;
+            }
+            if (!ruda_bytecode_u64_to_size(value, &string_length)
+                || string_length > options.max_string_bytes
+                || string_length > cursor.length - cursor.offset) {
+                status = string_length > cursor.length - cursor.offset
+                    ? RUDA_BYTECODE_CODEC_TRUNCATED
+                    : RUDA_BYTECODE_CODEC_LIMIT_REACHED;
+                goto cleanup;
+            }
+            if (!ruda_utf8_validate(
+                    (const char *)(cursor.bytes + cursor.offset),
+                    string_length,
+                    NULL
+                )) {
+                status = RUDA_BYTECODE_CODEC_INVALID_ENCODING;
+                goto cleanup;
+            }
+            if (!ruda_bytecode_add_string_constant(
+                    &function,
+                    cursor.bytes + cursor.offset,
+                    string_length,
+                    &string_id
+                )) {
+                size_t next_bytes = 0;
+                status = !ruda_size_add(
+                        function.string_bytes,
+                        string_length,
+                        &next_bytes
+                    ) || next_bytes > options.max_string_bytes
+                    ? RUDA_BYTECODE_CODEC_LIMIT_REACHED
+                    : RUDA_BYTECODE_CODEC_ALLOCATION_FAILED;
+                goto cleanup;
+            }
+            if ((size_t)string_id != index) {
+                status = RUDA_BYTECODE_CODEC_INVALID_ENCODING;
+                goto cleanup;
+            }
+            cursor.offset += string_length;
         }
     }
     if (cursor.offset != cursor.length) {
@@ -1080,6 +1253,8 @@ static bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_I64_BITWISE_OR:
         case RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED:
         case RUDA_OPCODE_I64_SHIFT_RIGHT:
+        case RUDA_OPCODE_CONST_STRING:
+        case RUDA_OPCODE_STRING_EQUAL:
         case RUDA_OPCODE_CALL_DIRECT:
             return true;
         case RUDA_OPCODE_INVALID:
@@ -1088,6 +1263,8 @@ static bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_RETURN:
         case RUDA_OPCODE_RETURN_VOID:
         case RUDA_OPCODE_CALL_DIRECT_VOID:
+        case RUDA_OPCODE_PANIC_STRING:
+        case RUDA_OPCODE_CALL_DIRECT_NEVER:
             return false;
     }
     return false;
@@ -1136,7 +1313,8 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_call_instruction(
     unsigned char *assigned
 ) {
     bool returns_void = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID;
-    uint64_t call_wire = returns_void
+    bool returns_never = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER;
+    uint64_t call_wire = returns_void || returns_never
         ? instruction->operands[0].unsigned_value
         : instruction->operands[1].unsigned_value;
     const RudaBytecodeCall *call = call_wire < function->calls.length
@@ -1146,10 +1324,11 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_call_instruction(
     if (call == NULL) {
         return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
     }
-    if (returns_void != (call->result_type == RUDA_BYTECODE_TYPE_VOID)) {
+    if (returns_void != (call->result_type == RUDA_BYTECODE_TYPE_VOID)
+        || returns_never != (call->result_type == RUDA_BYTECODE_TYPE_NEVER)) {
         return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
-    if (!returns_void) {
+    if (!returns_void && !returns_never) {
         uint64_t target = instruction->operands[0].unsigned_value;
         const RudaBytecodeType *target_type = ruda_bytecode_register_type(
             function,
@@ -1180,7 +1359,7 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_call_instruction(
             return status;
         }
     }
-    if (!returns_void) {
+    if (!returns_void && !returns_never) {
         assigned[(size_t)instruction->operands[0].unsigned_value] = 1;
     }
     return RUDA_BYTECODE_VERIFY_OK;
@@ -1199,7 +1378,8 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
     const RudaBytecodeType *second_type = NULL;
     RudaBytecodeVerifyStatus status = RUDA_BYTECODE_VERIFY_OK;
     if (instruction->opcode == RUDA_OPCODE_CALL_DIRECT
-        || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID) {
+        || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
+        || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER) {
         return ruda_bytecode_verify_call_instruction(
             function,
             instruction,
@@ -1221,6 +1401,15 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
             }
             status = *target_type == RUDA_BYTECODE_TYPE_BOOL
+                ? RUDA_BYTECODE_VERIFY_OK
+                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            break;
+        case RUDA_OPCODE_CONST_STRING:
+            if (instruction->operands[1].unsigned_value
+                    >= function->string_constants.length) {
+                return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+            }
+            status = *target_type == RUDA_BYTECODE_TYPE_STRING
                 ? RUDA_BYTECODE_VERIFY_OK
                 : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
@@ -1288,6 +1477,7 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
         case RUDA_OPCODE_I64_LESS:
         case RUDA_OPCODE_I64_LESS_EQUAL:
         case RUDA_OPCODE_BOOL_EQUAL:
+        case RUDA_OPCODE_STRING_EQUAL:
             first = instruction->operands[1].unsigned_value;
             second = instruction->operands[2].unsigned_value;
             status = ruda_bytecode_require_assigned(
@@ -1312,6 +1502,13 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                         && *target_type == RUDA_BYTECODE_TYPE_BOOL
                         && *first_type == RUDA_BYTECODE_TYPE_BOOL
                         && *second_type == RUDA_BYTECODE_TYPE_BOOL
+                    ? RUDA_BYTECODE_VERIFY_OK
+                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            } else if (instruction->opcode == RUDA_OPCODE_STRING_EQUAL) {
+                status = first_type != NULL && second_type != NULL
+                        && *target_type == RUDA_BYTECODE_TYPE_BOOL
+                        && *first_type == RUDA_BYTECODE_TYPE_STRING
+                        && *second_type == RUDA_BYTECODE_TYPE_STRING
                     ? RUDA_BYTECODE_VERIFY_OK
                     : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             } else if (instruction->opcode == RUDA_OPCODE_I64_EQUAL
@@ -1339,6 +1536,8 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
         case RUDA_OPCODE_RETURN_VOID:
         case RUDA_OPCODE_CALL_DIRECT:
         case RUDA_OPCODE_CALL_DIRECT_VOID:
+        case RUDA_OPCODE_PANIC_STRING:
+        case RUDA_OPCODE_CALL_DIRECT_NEVER:
             return RUDA_BYTECODE_VERIFY_INVALID_OPCODE;
     }
     if (status == RUDA_BYTECODE_VERIFY_OK) {
@@ -1375,7 +1574,8 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_terminator(
             : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
     if (instruction->opcode == RUDA_OPCODE_RETURN) {
-        if (function->result_type == RUDA_BYTECODE_TYPE_VOID) {
+        if (function->result_type == RUDA_BYTECODE_TYPE_VOID
+            || function->result_type == RUDA_BYTECODE_TYPE_NEVER) {
             return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
         status = ruda_bytecode_require_assigned(
@@ -1398,6 +1598,30 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_terminator(
         return function->result_type == RUDA_BYTECODE_TYPE_VOID
             ? RUDA_BYTECODE_VERIFY_OK
             : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
+    if (instruction->opcode == RUDA_OPCODE_PANIC_STRING) {
+        status = ruda_bytecode_require_assigned(
+            assigned,
+            function->register_types.length,
+            instruction->operands[0].unsigned_value
+        );
+        type = status == RUDA_BYTECODE_VERIFY_OK
+            ? ruda_bytecode_register_type(
+                function,
+                instruction->operands[0].unsigned_value
+            )
+            : NULL;
+        return status != RUDA_BYTECODE_VERIFY_OK ? status
+            : type != NULL && *type == RUDA_BYTECODE_TYPE_STRING
+                ? RUDA_BYTECODE_VERIFY_OK
+                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
+    if (instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER) {
+        return ruda_bytecode_verify_call_instruction(
+            function,
+            instruction,
+            (unsigned char *)assigned
+        );
     }
     return RUDA_BYTECODE_VERIFY_INVALID_OPCODE;
 }
@@ -1452,11 +1676,17 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
         || function->calls.length > UINT32_MAX
         || function->call_arguments.length
             > function->options.max_call_arguments
+        || function->string_constants.length
+            > function->options.max_string_constants
+        || function->string_constants.length > UINT32_MAX
+        || function->string_bytes > function->options.max_string_bytes
         || function->options.max_registers == 0
         || function->options.max_blocks == 0
         || function->options.max_instructions == 0
         || function->options.max_calls == 0
         || function->options.max_call_arguments == 0
+        || function->options.max_string_constants == 0
+        || function->options.max_string_bytes == 0
         || function->options.max_source_files == 0
         || function->options.max_encoded_bytes < RUDA_BYTECODE_MAGIC_LENGTH
         || function->options.max_verify_work == 0) {
@@ -1470,6 +1700,47 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
         : function->options.max_verify_work;
     register_count = function->register_types.length;
     block_count = function->blocks.length;
+    {
+        size_t verified_string_bytes = 0;
+        size_t string_index = 0;
+        for (string_index = 0;
+            string_index < function->string_constants.length;
+            string_index += 1) {
+            const RudaBytecodeStringConstant *constant =
+                ruda_bytecode_string_constant(
+                    function,
+                    (RudaBytecodeStringId)string_index
+                );
+            size_t string_work = 0;
+            if (constant == NULL || constant->value.data == NULL
+                || !ruda_utf8_validate(
+                    (const char *)constant->value.data,
+                    constant->value.length,
+                    NULL
+                ) || !ruda_size_add(
+                    verified_string_bytes,
+                    constant->value.length,
+                    &verified_string_bytes
+                ) || !ruda_size_add(
+                    constant->value.length,
+                    1,
+                    &string_work
+                )) {
+                return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+            }
+            if (!ruda_bytecode_consume_verify_work(
+                    &work,
+                    string_work,
+                    work_limit
+                )) {
+                return RUDA_BYTECODE_VERIFY_LIMIT_REACHED;
+            }
+        }
+        if (verified_string_bytes != function->string_bytes
+            || verified_string_bytes > function->options.max_string_bytes) {
+            return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        }
+    }
     for (block_index = 0; block_index < register_count; block_index += 1) {
         const RudaBytecodeType *type = ruda_vector_at_const(
             &function->register_types,
@@ -1617,6 +1888,7 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
                 if (kind == RUDA_BYTECODE_OPERAND_REGISTER
                     || kind == RUDA_BYTECODE_OPERAND_BLOCK
                     || kind == RUDA_BYTECODE_OPERAND_CALL
+                    || kind == RUDA_BYTECODE_OPERAND_STRING
                     || kind == RUDA_BYTECODE_OPERAND_BOOL) {
                     uint64_t operand = instruction->operands[operand_index]
                         .unsigned_value;
@@ -1650,6 +1922,11 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
                             status = RUDA_BYTECODE_VERIFY_LIMIT_REACHED;
                             goto cleanup;
                         }
+                    }
+                    if (kind == RUDA_BYTECODE_OPERAND_STRING
+                        && operand >= function->string_constants.length) {
+                        status = RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+                        goto cleanup;
                     }
                     if (kind == RUDA_BYTECODE_OPERAND_BOOL && operand > 1) {
                         status = RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
@@ -2136,6 +2413,14 @@ RudaBytecodeDisassembleStatus ruda_bytecode_disassemble(
                     wrote = ruda_bytecode_writef(
                         writer,
                         "%sc%" PRIu64,
+                        separator,
+                        instruction->operands[operand_index].unsigned_value
+                    );
+                } else if (metadata->operands[operand_index]
+                    == RUDA_BYTECODE_OPERAND_STRING) {
+                    wrote = ruda_bytecode_writef(
+                        writer,
+                        "%ss%" PRIu64,
                         separator,
                         instruction->operands[operand_index].unsigned_value
                     );

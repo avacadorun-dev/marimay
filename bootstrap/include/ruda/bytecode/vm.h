@@ -6,16 +6,54 @@
 #include <stdint.h>
 
 #include "ruda/base/allocator.h"
+#include "ruda/base/map.h"
+#include "ruda/base/owned_bytes.h"
+#include "ruda/base/vector.h"
 #include "ruda/bytecode/bytecode.h"
 #include "ruda/bytecode/program.h"
+
+typedef uint32_t RudaBytecodeReference;
+
+#define RUDA_BYTECODE_INVALID_REFERENCE UINT32_MAX
 
 typedef struct RudaBytecodeValue {
     RudaBytecodeType type;
     union {
         int64_t i64;
         bool boolean;
+        RudaBytecodeReference reference;
     } as;
 } RudaBytecodeValue;
+
+typedef struct RudaBytecodeExecutionOptions {
+    size_t max_strings;
+    size_t max_total_string_bytes;
+} RudaBytecodeExecutionOptions;
+
+typedef struct RudaBytecodeExecution {
+    RudaAllocator allocator;
+    /* Owns RudaOwnedBytes values indexed by RudaBytecodeReference. */
+    RudaVector strings;
+    /* Exact UTF-8 bytes to RudaBytecodeReference. */
+    RudaMap string_index;
+    RudaBytecodeExecutionOptions options;
+    size_t total_string_bytes;
+    bool initialized;
+} RudaBytecodeExecution;
+
+typedef struct RudaBytecodePanicFrame {
+    RudaSymbolId symbol;
+    RudaBytecodeSpan call_span;
+} RudaBytecodePanicFrame;
+
+typedef struct RudaBytecodePanic {
+    const char *code;
+    RudaOwnedBytes message;
+    RudaSymbolId symbol;
+    RudaBytecodeSpan span;
+    RudaVector frames;
+    bool initialized;
+} RudaBytecodePanic;
 
 typedef struct RudaBytecodeTrap {
     RudaBytecodeSpan span;
@@ -28,6 +66,8 @@ typedef struct RudaBytecodeRunOptions {
     /* Root counts as depth one; exhaustion reports STEP_LIMIT. */
     size_t max_call_depth;
     size_t *remaining_shared_steps;
+    RudaBytecodeExecution *execution;
+    RudaBytecodePanic *panic;
     /* Optional caller-owned output, reset before execution. */
     RudaBytecodeTrap *trap;
 } RudaBytecodeRunOptions;
@@ -41,15 +81,38 @@ typedef enum RudaBytecodeRunStatus {
     RUDA_BYTECODE_RUN_STEP_LIMIT,
     RUDA_BYTECODE_RUN_OVERFLOW,
     RUDA_BYTECODE_RUN_DIVISION_BY_ZERO,
-    RUDA_BYTECODE_RUN_INVALID_SHIFT
+    RUDA_BYTECODE_RUN_INVALID_SHIFT,
+    RUDA_BYTECODE_RUN_PANIC,
+    RUDA_BYTECODE_RUN_INVALID_REFERENCE
 } RudaBytecodeRunStatus;
 
 RudaBytecodeRunOptions ruda_bytecode_run_default_options(void);
+RudaBytecodeExecutionOptions ruda_bytecode_execution_default_options(void);
+bool ruda_bytecode_execution_init(
+    RudaBytecodeExecution *execution,
+    RudaAllocator allocator,
+    RudaBytecodeExecutionOptions options
+);
+void ruda_bytecode_execution_dispose(RudaBytecodeExecution *execution);
+bool ruda_bytecode_execution_string_bytes(
+    const RudaBytecodeExecution *execution,
+    RudaBytecodeValue value,
+    const unsigned char **bytes,
+    size_t *length
+);
+bool ruda_bytecode_panic_init(RudaBytecodePanic *panic, RudaAllocator allocator);
+void ruda_bytecode_panic_dispose(RudaBytecodePanic *panic);
+const RudaBytecodePanicFrame *ruda_bytecode_panic_frame(
+    const RudaBytecodePanic *panic,
+    size_t index
+);
 
 /*
  * Verifies the complete function before allocating its register frame or
  * dispatching any instruction. Each instruction, including a terminator,
- * consumes one step. The result is published only on success.
+ * consumes one step. The result is published only on success. A standalone
+ * panic has no program symbol, so its panic symbol and primary frame symbol
+ * are the all-zero sentinel; program execution always records exact symbols.
  */
 RudaBytecodeRunStatus ruda_bytecode_run(
     const RudaBytecodeFunction *function,

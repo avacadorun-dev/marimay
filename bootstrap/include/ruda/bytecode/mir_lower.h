@@ -37,10 +37,11 @@ RudaMirBytecodeProgramLowerOptions
 ruda_mir_bytecode_program_lower_default_options(void);
 
 /*
- * Lowers only verified scalar bool/i64/void MIR. Unsupported semantics fail
- * explicitly. Output must be zero-initialized or a valid initialized bytecode
- * function. Any previous output value is disposed before lowering begins. On
- * failure output is reset and owns no allocations.
+ * Lowers the verified bool/i64/void/string/never MIR subset supported by the
+ * bytecode registry. Unsupported managed semantics fail explicitly. Output
+ * must be zero-initialized or a valid initialized bytecode function. Any
+ * previous output value is disposed before lowering begins. On failure output
+ * is reset and owns no allocations.
  */
 RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
     const RudaMirFunction *input,
@@ -50,8 +51,9 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
 );
 
 /*
- * Lowers an unordered set of verified scalar MIR functions into stable symbol
- * order, resolves the requested entry, and verifies the complete program.
+ * Lowers an unordered set of supported verified MIR functions into stable
+ * symbol order, resolves the requested entry, and verifies the complete
+ * program.
  */
 RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_program(
     const RudaMirFunction *const *functions,

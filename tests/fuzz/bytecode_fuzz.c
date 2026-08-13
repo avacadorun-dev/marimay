@@ -23,6 +23,8 @@ static bool ruda_fuzz_run_status_expected(RudaBytecodeRunStatus status) {
         || status == RUDA_BYTECODE_RUN_OVERFLOW
         || status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
         || status == RUDA_BYTECODE_RUN_INVALID_SHIFT
+        || status == RUDA_BYTECODE_RUN_PANIC
+        || status == RUDA_BYTECODE_RUN_INVALID_REFERENCE
         || status == RUDA_BYTECODE_RUN_LIMIT_REACHED
         || status == RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
 }
@@ -44,6 +46,8 @@ static void ruda_fuzz_program(const uint8_t *data, size_t size) {
     options.max_total_instructions = 65536;
     options.max_total_calls = 4096;
     options.max_total_call_arguments = 65536;
+    options.max_total_string_constants = 4096;
+    options.max_total_string_bytes = 1024U * 1024U;
     options.max_encoded_bytes = 1024U * 1024U;
     options.max_verify_work = 1000000;
     options.function_options.max_registers = 4096;
@@ -51,6 +55,8 @@ static void ruda_fuzz_program(const uint8_t *data, size_t size) {
     options.function_options.max_instructions = 65536;
     options.function_options.max_calls = 4096;
     options.function_options.max_call_arguments = 65536;
+    options.function_options.max_string_constants = 4096;
+    options.function_options.max_string_bytes = 1024U * 1024U;
     options.function_options.max_source_files = 4096;
     options.function_options.max_encoded_bytes = 1024U * 1024U;
     options.function_options.max_verify_work = 1000000;
@@ -108,9 +114,16 @@ static void ruda_fuzz_program(const uint8_t *data, size_t size) {
     }
     {
         RudaBytecodeRunOptions run_options = ruda_bytecode_run_default_options();
+        RudaBytecodeExecution execution;
         RudaBytecodeValue result;
+        memset(&execution, 0, sizeof(execution));
+        if (!ruda_bytecode_execution_init(&execution, ruda_system_allocator(),
+                ruda_bytecode_execution_default_options())) {
+            abort();
+        }
         run_options.max_steps = 1024;
         run_options.max_call_depth = 64;
+        run_options.execution = &execution;
         memset(&result, 0, sizeof(result));
         if (!ruda_fuzz_run_status_expected(ruda_bytecode_run_program(
                 &program,
@@ -122,6 +135,7 @@ static void ruda_fuzz_program(const uint8_t *data, size_t size) {
             ))) {
             abort();
         }
+        ruda_bytecode_execution_dispose(&execution);
     }
     ruda_deallocate(&program.allocator, arguments, argument_bytes);
     ruda_owned_bytes_dispose(&encoded);
@@ -147,6 +161,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     options.max_instructions = 65536;
     options.max_calls = 4096;
     options.max_call_arguments = 65536;
+    options.max_string_constants = 4096;
+    options.max_string_bytes = 1024U * 1024U;
     options.max_source_files = 4096;
     options.max_encoded_bytes = 1024U * 1024U;
     options.max_verify_work = 1000000;
@@ -209,9 +225,16 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
     {
         RudaBytecodeRunOptions run_options = ruda_bytecode_run_default_options();
+        RudaBytecodeExecution execution;
         RudaBytecodeValue result;
         RudaBytecodeRunStatus run_status;
+        memset(&execution, 0, sizeof(execution));
+        if (!ruda_bytecode_execution_init(&execution, ruda_system_allocator(),
+                ruda_bytecode_execution_default_options())) {
+            abort();
+        }
         run_options.max_steps = 1024;
+        run_options.execution = &execution;
         memset(&result, 0, sizeof(result));
         run_status = ruda_bytecode_run(
             &function,
@@ -229,6 +252,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             && run_status != RUDA_BYTECODE_RUN_INVALID_BYTECODE) {
             abort();
         }
+        ruda_bytecode_execution_dispose(&execution);
     }
     if (ruda_bytecode_decode_function(
             encoded.data,

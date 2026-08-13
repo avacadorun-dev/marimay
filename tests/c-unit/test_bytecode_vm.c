@@ -731,6 +731,304 @@ static RudaBytecodeValue ruda_test_vm_i64(int64_t value) {
     return result;
 }
 
+static bool ruda_test_vm_build_string_literal(
+    RudaBytecodeFunction *function,
+    RudaAllocator allocator,
+    const unsigned char *bytes,
+    size_t length,
+    bool panic
+) {
+    RudaBytecodeStringId string_id = RUDA_BYTECODE_NO_STRING;
+    uint32_t value = UINT32_MAX;
+    uint32_t block = UINT32_MAX;
+    uint64_t span = 140;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_bytecode_function_init(function, allocator,
+            panic ? RUDA_BYTECODE_TYPE_NEVER : RUDA_BYTECODE_TYPE_STRING,
+            1, NULL, 0, ruda_bytecode_function_default_options())
+        || !ruda_bytecode_add_register(function, RUDA_BYTECODE_TYPE_STRING,
+            &value)
+        || !ruda_bytecode_add_string_constant(function, bytes, length, &string_id)
+        || !ruda_bytecode_add_block(function, &block)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_CONST_STRING,
+            value, string_id, 0, &span)
+        || !ruda_test_vm_append(function, block,
+            panic ? RUDA_OPCODE_PANIC_STRING : RUDA_OPCODE_RETURN,
+            value, 0, 0, &span)) {
+        ruda_bytecode_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_test_vm_build_string_equal(
+    RudaBytecodeFunction *function,
+    RudaAllocator allocator,
+    const unsigned char *left,
+    size_t left_length,
+    const unsigned char *right,
+    size_t right_length
+) {
+    RudaBytecodeStringId left_id = RUDA_BYTECODE_NO_STRING;
+    RudaBytecodeStringId right_id = RUDA_BYTECODE_NO_STRING;
+    uint32_t left_register = UINT32_MAX;
+    uint32_t right_register = UINT32_MAX;
+    uint32_t result = UINT32_MAX;
+    uint32_t block = UINT32_MAX;
+    uint64_t span = 150;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_bytecode_function_init(function, allocator, RUDA_BYTECODE_TYPE_BOOL,
+            1, NULL, 0, ruda_bytecode_function_default_options())
+        || !ruda_bytecode_add_register(function, RUDA_BYTECODE_TYPE_STRING,
+            &left_register)
+        || !ruda_bytecode_add_register(function, RUDA_BYTECODE_TYPE_STRING,
+            &right_register)
+        || !ruda_bytecode_add_register(function, RUDA_BYTECODE_TYPE_BOOL, &result)
+        || !ruda_bytecode_add_string_constant(function, left, left_length, &left_id)
+        || !ruda_bytecode_add_string_constant(function, right, right_length, &right_id)
+        || !ruda_bytecode_add_block(function, &block)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_CONST_STRING,
+            left_register, left_id, 0, &span)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_CONST_STRING,
+            right_register, right_id, 0, &span)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_STRING_EQUAL,
+            result, left_register, right_register, &span)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_RETURN,
+            result, 0, 0, &span)) {
+        ruda_bytecode_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_test_vm_build_string_identity(
+    RudaBytecodeFunction *function,
+    RudaAllocator allocator
+) {
+    static const RudaBytecodeType parameters[] = {RUDA_BYTECODE_TYPE_STRING};
+    uint32_t block = UINT32_MAX;
+    uint64_t span = 170;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_bytecode_function_init(function, allocator,
+            RUDA_BYTECODE_TYPE_STRING, 1, parameters, 1,
+            ruda_bytecode_function_default_options())
+        || !ruda_bytecode_add_block(function, &block)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_RETURN,
+            0, 0, 0, &span)) {
+        ruda_bytecode_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static void ruda_test_vm_strings_and_panic(void) {
+    static const unsigned char message[] = {'p', 0, '!', 0xe2, 0x98, 0x83};
+    RudaBytecodeFunction function;
+    RudaBytecodeExecution execution;
+    RudaBytecodePanic panic;
+    RudaBytecodeRunOptions options;
+    RudaBytecodeValue result;
+    const unsigned char *bytes = NULL;
+    size_t length = 0;
+
+    memset(&execution, 0, sizeof(execution));
+    memset(&panic, 0, sizeof(panic));
+    RUDA_EXPECT(ruda_bytecode_execution_init(&execution, ruda_system_allocator(),
+        ruda_bytecode_execution_default_options()));
+    RUDA_EXPECT(ruda_test_vm_build_string_literal(&function,
+        ruda_system_allocator(), message, sizeof(message), false));
+    result = ruda_test_vm_i64(1234);
+    RUDA_EXPECT(ruda_bytecode_run(&function, NULL, 0, ruda_system_allocator(),
+        ruda_bytecode_run_default_options(), &result)
+        == RUDA_BYTECODE_RUN_INVALID_ARGUMENT);
+    options = ruda_bytecode_run_default_options();
+    options.execution = &execution;
+    RUDA_EXPECT(ruda_bytecode_run(&function, NULL, 0, ruda_system_allocator(),
+        options, &result) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_STRING);
+    RUDA_EXPECT(ruda_bytecode_execution_string_bytes(&execution, result,
+        &bytes, &length));
+    RUDA_EXPECT(length == sizeof(message)
+        && memcmp(bytes, message, sizeof(message)) == 0);
+    ruda_bytecode_function_dispose(&function);
+
+    RUDA_EXPECT(ruda_test_vm_build_string_equal(&function,
+        ruda_system_allocator(), message, sizeof(message), message,
+        sizeof(message)));
+    RUDA_EXPECT(ruda_bytecode_run(&function, NULL, 0, ruda_system_allocator(),
+        options, &result) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_BOOL && result.as.boolean);
+    ruda_bytecode_function_dispose(&function);
+    RUDA_EXPECT(ruda_test_vm_build_string_equal(&function,
+        ruda_system_allocator(), (const unsigned char *)"a", 1,
+        (const unsigned char *)"b", 1));
+    RUDA_EXPECT(ruda_bytecode_run(&function, NULL, 0, ruda_system_allocator(),
+        options, &result) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_BOOL && !result.as.boolean);
+    ruda_bytecode_function_dispose(&function);
+
+    RUDA_EXPECT(ruda_bytecode_panic_init(&panic, ruda_system_allocator()));
+    RUDA_EXPECT(ruda_test_vm_build_string_literal(&function,
+        ruda_system_allocator(), message, sizeof(message), true));
+    options.panic = &panic;
+    result = ruda_test_vm_i64(1234);
+    RUDA_EXPECT(ruda_bytecode_run(&function, NULL, 0, ruda_system_allocator(),
+        options, &result) == RUDA_BYTECODE_RUN_PANIC);
+    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 1234);
+    RUDA_EXPECT(panic.code != NULL && strcmp(panic.code, "G4000") == 0);
+    RUDA_EXPECT(panic.message.length == sizeof(message)
+        && memcmp(panic.message.data, message, sizeof(message)) == 0);
+    RUDA_EXPECT(panic.span.source == 0 && panic.span.start == 141
+        && panic.span.end == 142 && panic.frames.length == 1);
+    ruda_bytecode_function_dispose(&function);
+    ruda_bytecode_panic_dispose(&panic);
+    ruda_bytecode_execution_dispose(&execution);
+
+    {
+        RudaBytecodeExecution foreign_execution;
+        RudaFailAllocator state;
+        RudaBytecodeValue argument;
+        memset(&foreign_execution, 0, sizeof(foreign_execution));
+        RUDA_EXPECT(ruda_bytecode_execution_init(&foreign_execution,
+            ruda_system_allocator(), ruda_bytecode_execution_default_options()));
+        RUDA_EXPECT(ruda_bytecode_execution_init(&execution,
+            ruda_system_allocator(), ruda_bytecode_execution_default_options()));
+        RUDA_EXPECT(ruda_test_vm_build_string_literal(&function,
+            ruda_system_allocator(), message, sizeof(message), false));
+        options = ruda_bytecode_run_default_options();
+        options.execution = &execution;
+        RUDA_EXPECT(ruda_bytecode_run(&function, NULL, 0,
+            ruda_system_allocator(), options, &argument) == RUDA_BYTECODE_RUN_OK);
+        ruda_bytecode_function_dispose(&function);
+        RUDA_EXPECT(ruda_test_vm_build_string_identity(&function,
+            ruda_system_allocator()));
+        options.execution = &foreign_execution;
+        ruda_fail_allocator_init(&state, ruda_system_allocator(), 0);
+        result = ruda_test_vm_i64(1234);
+        RUDA_EXPECT(ruda_bytecode_run(&function, &argument, 1,
+            ruda_fail_allocator(&state), options, &result)
+            == RUDA_BYTECODE_RUN_INVALID_REFERENCE);
+        RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 1234);
+        RUDA_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+        argument.as.reference = RUDA_BYTECODE_INVALID_REFERENCE;
+        result = ruda_test_vm_i64(5678);
+        RUDA_EXPECT(ruda_bytecode_run(&function, &argument, 1,
+            ruda_fail_allocator(&state), options, &result)
+            == RUDA_BYTECODE_RUN_INVALID_REFERENCE);
+        RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 5678);
+        RUDA_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+        ruda_bytecode_function_dispose(&function);
+        ruda_bytecode_execution_dispose(&execution);
+        ruda_bytecode_execution_dispose(&foreign_execution);
+    }
+
+    {
+        const RudaSymbolId callee_symbol = {{0x10}};
+        const RudaSymbolId entry_symbol = {{0x20}};
+        RudaBytecodeProgram program;
+        RudaBytecodeFunction callee;
+        RudaBytecodeFunction entry;
+        RudaBytecodeCallId call = RUDA_BYTECODE_NO_CALL;
+        uint32_t block = UINT32_MAX;
+        uint32_t id = UINT32_MAX;
+        uint64_t span = 160;
+        const RudaBytecodePanicFrame *callee_frame = NULL;
+        const RudaBytecodePanicFrame *caller_frame = NULL;
+        memset(&program, 0, sizeof(program));
+        memset(&callee, 0, sizeof(callee));
+        memset(&entry, 0, sizeof(entry));
+        memset(&execution, 0, sizeof(execution));
+        memset(&panic, 0, sizeof(panic));
+        RUDA_EXPECT(ruda_bytecode_execution_init(&execution,
+            ruda_system_allocator(), ruda_bytecode_execution_default_options()));
+        RUDA_EXPECT(ruda_bytecode_panic_init(&panic, ruda_system_allocator()));
+        RUDA_EXPECT(ruda_test_vm_build_string_literal(&callee,
+            ruda_system_allocator(), message, sizeof(message), true));
+        RUDA_EXPECT(ruda_bytecode_function_init(&entry,
+            ruda_system_allocator(), RUDA_BYTECODE_TYPE_NEVER, 1, NULL, 0,
+            ruda_bytecode_function_default_options()));
+        RUDA_EXPECT(ruda_bytecode_add_block(&entry, &block));
+        RUDA_EXPECT(ruda_bytecode_add_call(&entry, callee_symbol,
+            RUDA_BYTECODE_TYPE_NEVER, NULL, 0, &call));
+        RUDA_EXPECT(ruda_test_vm_append(&entry, block,
+            RUDA_OPCODE_CALL_DIRECT_NEVER, call, 0, 0, &span));
+        RUDA_EXPECT(ruda_bytecode_program_init(&program, ruda_system_allocator(),
+            1, ruda_bytecode_program_default_options()));
+        RUDA_EXPECT(ruda_bytecode_program_take_function(&program, callee_symbol,
+            &callee, &id) && id == 0);
+        RUDA_EXPECT(ruda_bytecode_program_take_function(&program, entry_symbol,
+            &entry, &id) && id == 1);
+        RUDA_EXPECT(ruda_bytecode_program_set_entry(&program, entry_symbol));
+        options = ruda_bytecode_run_default_options();
+        options.execution = &execution;
+        options.panic = &panic;
+        result = ruda_test_vm_i64(1234);
+        RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
+            ruda_system_allocator(), options, &result) == RUDA_BYTECODE_RUN_PANIC);
+        RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 1234);
+        RUDA_EXPECT(panic.code != NULL && strcmp(panic.code, "G4000") == 0);
+        RUDA_EXPECT(panic.message.length == sizeof(message)
+            && memcmp(panic.message.data, message, sizeof(message)) == 0);
+        RUDA_EXPECT(memcmp(&panic.symbol, &callee_symbol, sizeof(panic.symbol)) == 0
+            && panic.span.start == 141 && panic.span.end == 142
+            && panic.frames.length == 2);
+        callee_frame = ruda_bytecode_panic_frame(&panic, 0);
+        caller_frame = ruda_bytecode_panic_frame(&panic, 1);
+        RUDA_EXPECT(callee_frame != NULL && caller_frame != NULL);
+        if (callee_frame != NULL) {
+            RUDA_EXPECT(memcmp(&callee_frame->symbol, &callee_symbol,
+                sizeof(callee_symbol)) == 0 && callee_frame->call_span.start == 141
+                && callee_frame->call_span.end == 142);
+        }
+        if (caller_frame != NULL) {
+            RUDA_EXPECT(memcmp(&caller_frame->symbol, &entry_symbol,
+                sizeof(entry_symbol)) == 0 && caller_frame->call_span.start == 160
+                && caller_frame->call_span.end == 161);
+        }
+        ruda_bytecode_program_dispose(&program);
+        ruda_bytecode_panic_dispose(&panic);
+        ruda_bytecode_execution_dispose(&execution);
+    }
+
+    {
+        size_t failure_index = 0;
+        bool reached_success = false;
+        RUDA_EXPECT(ruda_test_vm_build_string_literal(&function,
+            ruda_system_allocator(), message, sizeof(message), false));
+        for (failure_index = 0; failure_index < 32 && !reached_success;
+            failure_index += 1) {
+            RudaFailAllocator state;
+            RudaBytecodeExecution failed_execution;
+            RudaBytecodeRunStatus status;
+            memset(&failed_execution, 0, sizeof(failed_execution));
+            ruda_fail_allocator_init(&state, ruda_system_allocator(), failure_index);
+            if (!ruda_bytecode_execution_init(&failed_execution,
+                    ruda_fail_allocator(&state),
+                    ruda_bytecode_execution_default_options())) {
+                RUDA_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+                continue;
+            }
+            options = ruda_bytecode_run_default_options();
+            options.execution = &failed_execution;
+            result = ruda_test_vm_i64(1234);
+            status = ruda_bytecode_run(&function, NULL, 0,
+                ruda_system_allocator(), options, &result);
+            RUDA_EXPECT(status == RUDA_BYTECODE_RUN_ALLOCATION_FAILED
+                || status == RUDA_BYTECODE_RUN_OK);
+            if (status == RUDA_BYTECODE_RUN_OK) {
+                reached_success = true;
+            } else {
+                RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64
+                    && result.as.i64 == 1234);
+            }
+            ruda_bytecode_execution_dispose(&failed_execution);
+            RUDA_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+        }
+        RUDA_EXPECT(reached_success);
+        ruda_bytecode_function_dispose(&function);
+    }
+}
+
 static void ruda_test_vm_all_opcodes_and_limits(void) {
     RudaBytecodeFunction function;
     RudaBytecodeValue arguments[3];
@@ -1659,6 +1957,7 @@ void ruda_test_bytecode_vm(void) {
     ruda_test_vm_checked_arithmetic();
     ruda_test_vm_scalar_results();
     ruda_test_vm_bitwise_and_shifts();
+    ruda_test_vm_strings_and_panic();
     ruda_test_vm_direct_calls();
     ruda_test_vm_rejection_round_trip_and_allocation();
 }

@@ -37,3 +37,7 @@ Stage 0 codec.
 | 24 | `i64_shift_right` | `destination:register`, `left:register`, `count:register` | `may_panic` | Shift signed 64-bit right with D035 count checks and explicit sign extension. |
 | 25 | `call_direct` | `destination:register`, `call:call` | `may_panic` | Invoke a verified direct call descriptor and publish its exact typed result. |
 | 26 | `call_direct_void` | `call:call` | `may_panic` | Invoke a verified direct call descriptor that returns void. |
+| 27 | `const_string` | `destination:register`, `constant:string` | — | Materialize an immutable UTF-8 string constant in an execution context. |
+| 28 | `string_equal` | `destination:register`, `left:register`, `right:register` | — | Compare complete UTF-8 string bytes without normalization or NUL termination. |
+| 29 | `panic_string` | `message:register` | `terminator`, `may_panic` | Terminate with explicit-source panic G4000 and the exact string message. |
+| 30 | `call_direct_never` | `call:call` | `terminator`, `may_panic` | Invoke a verified declared-never direct call with no normal continuation. |

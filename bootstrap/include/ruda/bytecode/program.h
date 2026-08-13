@@ -27,6 +27,8 @@ typedef struct RudaBytecodeProgramOptions {
     size_t max_total_instructions;
     size_t max_total_calls;
     size_t max_total_call_arguments;
+    size_t max_total_string_constants;
+    size_t max_total_string_bytes;
     size_t max_encoded_bytes;
     size_t max_verify_work;
     RudaBytecodeFunctionOptions function_options;

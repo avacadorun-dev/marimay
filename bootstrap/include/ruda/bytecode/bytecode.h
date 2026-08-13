@@ -21,6 +21,7 @@ typedef enum RudaBytecodeOperandKind {
     RUDA_BYTECODE_OPERAND_REGISTER,
     RUDA_BYTECODE_OPERAND_BLOCK,
     RUDA_BYTECODE_OPERAND_CALL,
+    RUDA_BYTECODE_OPERAND_STRING,
     RUDA_BYTECODE_OPERAND_I64,
     RUDA_BYTECODE_OPERAND_BOOL
 } RudaBytecodeOperandKind;
@@ -45,7 +46,9 @@ typedef enum RudaBytecodeType {
     RUDA_BYTECODE_TYPE_INVALID,
     RUDA_BYTECODE_TYPE_BOOL,
     RUDA_BYTECODE_TYPE_I64,
-    RUDA_BYTECODE_TYPE_VOID
+    RUDA_BYTECODE_TYPE_VOID,
+    RUDA_BYTECODE_TYPE_STRING,
+    RUDA_BYTECODE_TYPE_NEVER
 } RudaBytecodeType;
 
 typedef struct RudaBytecodeSpan {
@@ -72,8 +75,14 @@ typedef struct RudaBytecodeBlock {
 } RudaBytecodeBlock;
 
 typedef uint32_t RudaBytecodeCallId;
+typedef uint32_t RudaBytecodeStringId;
 
 #define RUDA_BYTECODE_NO_CALL UINT32_MAX
+#define RUDA_BYTECODE_NO_STRING UINT32_MAX
+
+typedef struct RudaBytecodeStringConstant {
+    RudaOwnedBytes value;
+} RudaBytecodeStringConstant;
 
 typedef struct RudaBytecodeCallArgument {
     uint32_t register_id;
@@ -93,6 +102,8 @@ typedef struct RudaBytecodeFunctionOptions {
     size_t max_instructions;
     size_t max_calls;
     size_t max_call_arguments;
+    size_t max_string_constants;
+    size_t max_string_bytes;
     size_t max_source_files;
     size_t max_encoded_bytes;
     size_t max_verify_work;
@@ -107,6 +118,8 @@ typedef struct RudaBytecodeFunction {
     RudaVector blocks;
     RudaVector calls;
     RudaVector call_arguments;
+    RudaVector string_constants;
+    size_t string_bytes;
     size_t instruction_count;
     RudaBytecodeFunctionOptions options;
     bool initialized;
@@ -187,6 +200,16 @@ const RudaBytecodeCall *ruda_bytecode_call(
 const RudaBytecodeCallArgument *ruda_bytecode_call_argument(
     const RudaBytecodeFunction *function,
     size_t index
+);
+bool ruda_bytecode_add_string_constant(
+    RudaBytecodeFunction *function,
+    const unsigned char *bytes,
+    size_t length,
+    RudaBytecodeStringId *result
+);
+const RudaBytecodeStringConstant *ruda_bytecode_string_constant(
+    const RudaBytecodeFunction *function,
+    RudaBytecodeStringId string_id
 );
 
 RudaBytecodeVerifyStatus ruda_bytecode_verify(

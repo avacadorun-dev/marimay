@@ -591,7 +591,29 @@ static void ruda_test_mir_bytecode_void_and_failures(void) {
             RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 22)));
     RUDA_EXPECT(ruda_mir_verify(&input) == RUDA_MIR_VERIFY_OK);
     RUDA_EXPECT(ruda_mir_lower_bytecode_function(&input, ruda_system_allocator(),
-        options, &output) == RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE);
+        options, &output) == RUDA_MIR_BYTECODE_LOWER_OK);
+    RUDA_EXPECT(output.string_constants.length == 1
+        && output.string_bytes == 1);
+    {
+        const RudaBytecodeInstruction *bytecode_instruction =
+            ruda_test_mir_bytecode_at(&output, 0, 0);
+        const RudaBytecodeStringConstant *constant =
+            ruda_bytecode_string_constant(&output, 0);
+        RUDA_EXPECT(bytecode_instruction != NULL && constant != NULL);
+        if (bytecode_instruction != NULL) {
+            RUDA_EXPECT(bytecode_instruction->opcode == RUDA_OPCODE_CONST_STRING);
+            RUDA_EXPECT(bytecode_instruction->operands[0].unsigned_value == 0);
+            RUDA_EXPECT(bytecode_instruction->operands[1].unsigned_value == 0);
+            RUDA_EXPECT(bytecode_instruction->span.source == 2);
+            RUDA_EXPECT(bytecode_instruction->span.start == 21);
+            RUDA_EXPECT(bytecode_instruction->span.end == 22);
+        }
+        if (constant != NULL) {
+            RUDA_EXPECT(constant->value.length == 1
+                && constant->value.data[0] == 'x');
+        }
+    }
+    ruda_bytecode_function_dispose(&output);
     ruda_mir_function_dispose(&input);
 
     {
@@ -668,7 +690,21 @@ static void ruda_test_mir_bytecode_void_and_failures(void) {
     }
     RUDA_EXPECT(ruda_mir_verify(&input) == RUDA_MIR_VERIFY_OK);
     RUDA_EXPECT(ruda_mir_lower_bytecode_function(&input, ruda_system_allocator(),
-        options, &output) == RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TERMINATOR);
+        options, &output) == RUDA_MIR_BYTECODE_LOWER_OK);
+    {
+        const RudaBytecodeInstruction *bytecode_instruction =
+            ruda_test_mir_bytecode_at(&output, 0, 0);
+        RUDA_EXPECT(bytecode_instruction != NULL);
+        if (bytecode_instruction != NULL) {
+            RUDA_EXPECT(bytecode_instruction->opcode
+                == RUDA_OPCODE_CALL_DIRECT_NEVER);
+            RUDA_EXPECT(bytecode_instruction->operands[0].unsigned_value == 0);
+            RUDA_EXPECT(bytecode_instruction->span.source == 2);
+            RUDA_EXPECT(bytecode_instruction->span.start == 23);
+            RUDA_EXPECT(bytecode_instruction->span.end == 24);
+        }
+    }
+    ruda_bytecode_function_dispose(&output);
     ruda_mir_function_dispose(&input);
 
     RUDA_EXPECT(ruda_test_mir_bytecode_build_scalar(
@@ -1191,6 +1227,178 @@ static bool ruda_test_mir_bytecode_build_void_entry(
     return true;
 }
 
+static bool ruda_test_mir_bytecode_build_string_panic_leaf(
+    RudaMirFunction *function,
+    RudaSymbolId symbol
+) {
+    static const unsigned char message[] = {'p', 0, '!', 0xe2, 0x98, 0x83};
+    RudaMirRegister value = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirStringId string_id = RUDA_MIR_NO_STRING;
+    RudaMirInstruction instruction;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol, NULL,
+            0, RUDA_TYPE_NEVER, ruda_mir_function_default_options())
+        || !ruda_mir_add_register(function, RUDA_TYPE_STRING, &value)
+        || !ruda_mir_add_block(function, &block)
+        || !ruda_mir_add_string_constant(function, message, sizeof(message),
+            &string_id)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(RUDA_MIR_CONSTANT_STRING,
+        value, RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0, false, 200);
+    instruction.string_constant = string_id;
+    if (!ruda_mir_append_instruction(function, block, &instruction)
+        || !ruda_mir_set_terminator(function, block,
+            ruda_test_mir_bytecode_terminator(RUDA_MIR_PANIC, value,
+                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 201))) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_test_mir_bytecode_build_never_entry(
+    RudaMirFunction *function,
+    RudaSymbolId symbol,
+    RudaSymbolId callee
+) {
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirCallId call = RUDA_MIR_NO_CALL;
+    RudaMirTerminator terminator;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol, NULL,
+            0, RUDA_TYPE_NEVER, ruda_mir_function_default_options())
+        || !ruda_mir_add_block(function, &block)
+        || !ruda_mir_add_call(function, callee, RUDA_TYPE_NEVER, NULL, 0,
+            &call)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    terminator = ruda_test_mir_bytecode_terminator(RUDA_MIR_CALL_NEVER,
+        RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 210);
+    terminator.call = call;
+    if (!ruda_mir_set_terminator(function, block, terminator)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static void ruda_test_mir_bytecode_string_panic_program(void) {
+    static const unsigned char message[] = {'p', 0, '!', 0xe2, 0x98, 0x83};
+    const RudaSymbolId leaf_symbol = {{0x10}};
+    const RudaSymbolId entry_symbol = {{0x20}};
+    RudaMirFunction leaf;
+    RudaMirFunction entry;
+    const RudaMirFunction *functions[2];
+    RudaMirExecution mir_execution;
+    RudaMirPanic mir_panic;
+    RudaMirInterpretOptions mir_options;
+    RudaMirValue mir_result;
+    RudaBytecodeProgram program;
+    RudaBytecodeProgram decoded;
+    RudaBytecodeExecution execution;
+    RudaBytecodePanic panic;
+    RudaBytecodeRunOptions run_options;
+    RudaBytecodeValue result;
+    RudaOwnedBytes encoded;
+    const RudaBytecodeProgramFunction *lowered_leaf;
+    const RudaBytecodeProgramFunction *lowered_entry;
+    const RudaBytecodeInstruction *instruction;
+    const RudaBytecodePanicFrame *frame;
+
+    memset(&mir_execution, 0, sizeof(mir_execution));
+    memset(&mir_panic, 0, sizeof(mir_panic));
+    memset(&mir_result, 0, sizeof(mir_result));
+    memset(&program, 0, sizeof(program));
+    memset(&decoded, 0, sizeof(decoded));
+    memset(&execution, 0, sizeof(execution));
+    memset(&panic, 0, sizeof(panic));
+    memset(&encoded, 0, sizeof(encoded));
+    RUDA_EXPECT(ruda_test_mir_bytecode_build_string_panic_leaf(&leaf,
+        leaf_symbol));
+    RUDA_EXPECT(ruda_test_mir_bytecode_build_never_entry(&entry, entry_symbol,
+        leaf_symbol));
+    RUDA_EXPECT(ruda_mir_verify(&leaf) == RUDA_MIR_VERIFY_OK);
+    RUDA_EXPECT(ruda_mir_verify(&entry) == RUDA_MIR_VERIFY_OK);
+
+    RUDA_EXPECT(ruda_mir_execution_init(&mir_execution, ruda_system_allocator(),
+        ruda_mir_execution_default_options()));
+    mir_options = ruda_mir_interpret_default_options();
+    mir_options.execution = &mir_execution;
+    mir_options.panic = &mir_panic;
+    RUDA_EXPECT(ruda_mir_interpret(&leaf, NULL, 0, ruda_system_allocator(),
+        mir_options, &mir_result) == RUDA_MIR_INTERPRET_PANIC);
+    RUDA_EXPECT(mir_panic.code != NULL && strcmp(mir_panic.code, "G4000") == 0);
+    RUDA_EXPECT(mir_panic.message.length == sizeof(message)
+        && memcmp(mir_panic.message.data, message, sizeof(message)) == 0);
+    RUDA_EXPECT(memcmp(&mir_panic.symbol, &leaf_symbol, sizeof(leaf_symbol)) == 0
+        && mir_panic.span.start == 201 && mir_panic.span.end == 202);
+    ruda_mir_panic_dispose(&mir_panic);
+    ruda_mir_execution_dispose(&mir_execution);
+
+    functions[0] = &entry;
+    functions[1] = &leaf;
+    RUDA_EXPECT(ruda_mir_lower_bytecode_program(functions, 2, entry_symbol,
+        ruda_system_allocator(), ruda_mir_bytecode_program_lower_default_options(),
+        &program) == RUDA_MIR_BYTECODE_LOWER_OK);
+    RUDA_EXPECT(program.functions.length == 2 && program.entry_function == 1);
+    lowered_leaf = ruda_bytecode_program_function(&program, 0);
+    lowered_entry = ruda_bytecode_program_function(&program, 1);
+    instruction = lowered_leaf != NULL
+        ? ruda_test_mir_bytecode_at(&lowered_leaf->body, 0, 0) : NULL;
+    RUDA_EXPECT(instruction != NULL && instruction->opcode == RUDA_OPCODE_CONST_STRING);
+    instruction = lowered_leaf != NULL
+        ? ruda_test_mir_bytecode_at(&lowered_leaf->body, 0, 1) : NULL;
+    RUDA_EXPECT(instruction != NULL && instruction->opcode == RUDA_OPCODE_PANIC_STRING
+        && instruction->span.start == 201 && instruction->span.end == 202);
+    instruction = lowered_entry != NULL
+        ? ruda_test_mir_bytecode_at(&lowered_entry->body, 0, 0) : NULL;
+    RUDA_EXPECT(instruction != NULL
+        && instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER
+        && instruction->operands[0].unsigned_value == 0
+        && instruction->span.start == 210 && instruction->span.end == 211);
+    RUDA_EXPECT(ruda_bytecode_encode_program(&program, ruda_system_allocator(),
+        &encoded) == RUDA_BYTECODE_CODEC_OK);
+    RUDA_EXPECT(ruda_bytecode_decode_program(encoded.data, encoded.length,
+        ruda_system_allocator(), ruda_bytecode_program_default_options(),
+        &decoded) == RUDA_BYTECODE_CODEC_OK);
+    RUDA_EXPECT(ruda_bytecode_execution_init(&execution, ruda_system_allocator(),
+        ruda_bytecode_execution_default_options()));
+    RUDA_EXPECT(ruda_bytecode_panic_init(&panic, ruda_system_allocator()));
+    run_options = ruda_bytecode_run_default_options();
+    run_options.execution = &execution;
+    run_options.panic = &panic;
+    result.type = RUDA_BYTECODE_TYPE_I64;
+    result.as.i64 = 1234;
+    RUDA_EXPECT(ruda_bytecode_run_program(&decoded, NULL, 0,
+        ruda_system_allocator(), run_options, &result) == RUDA_BYTECODE_RUN_PANIC);
+    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 1234);
+    RUDA_EXPECT(panic.code != NULL && strcmp(panic.code, "G4000") == 0);
+    RUDA_EXPECT(panic.message.length == sizeof(message)
+        && memcmp(panic.message.data, message, sizeof(message)) == 0);
+    RUDA_EXPECT(memcmp(&panic.symbol, &leaf_symbol, sizeof(leaf_symbol)) == 0
+        && panic.span.source == 0 && panic.span.start == 201
+        && panic.span.end == 202 && panic.frames.length == 2);
+    frame = ruda_bytecode_panic_frame(&panic, 0);
+    RUDA_EXPECT(frame != NULL && memcmp(&frame->symbol, &leaf_symbol,
+        sizeof(leaf_symbol)) == 0 && frame->call_span.start == 201
+        && frame->call_span.end == 202);
+    frame = ruda_bytecode_panic_frame(&panic, 1);
+    RUDA_EXPECT(frame != NULL && memcmp(&frame->symbol, &entry_symbol,
+        sizeof(entry_symbol)) == 0 && frame->call_span.start == 210
+        && frame->call_span.end == 211);
+    ruda_bytecode_panic_dispose(&panic);
+    ruda_bytecode_execution_dispose(&execution);
+    ruda_bytecode_program_dispose(&decoded);
+    ruda_owned_bytes_dispose(&encoded);
+    ruda_bytecode_program_dispose(&program);
+    ruda_mir_function_dispose(&entry);
+    ruda_mir_function_dispose(&leaf);
+}
+
 static void ruda_test_mir_bytecode_direct_program(void) {
     const RudaSymbolId leaf_symbol = {{0x10}};
     const RudaSymbolId entry_symbol = {{0x20}};
@@ -1290,4 +1498,5 @@ void ruda_test_mir_bytecode(void) {
     ruda_test_mir_bytecode_options_and_allocations();
     ruda_test_mir_bytecode_arithmetic_differential();
     ruda_test_mir_bytecode_direct_program();
+    ruda_test_mir_bytecode_string_panic_program();
 }
