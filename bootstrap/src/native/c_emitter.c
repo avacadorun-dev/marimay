@@ -20,6 +20,13 @@ typedef struct RudaNativeCCycleFrame {
     size_t instruction_index;
 } RudaNativeCCycleFrame;
 
+typedef enum RudaNativeCArrayKind {
+    RUDA_NATIVE_C_ARRAY_NONE,
+    RUDA_NATIVE_C_ARRAY_F64,
+    RUDA_NATIVE_C_ARRAY_ARRAY_F64,
+    RUDA_NATIVE_C_ARRAY_UNSUPPORTED
+} RudaNativeCArrayKind;
+
 static int ruda_native_c_symbol_compare(RudaSymbolId left, RudaSymbolId right) {
     return memcmp(left.bytes, right.bytes, sizeof(left.bytes));
 }
@@ -36,14 +43,64 @@ static int ruda_native_c_function_pointer_compare(
     );
 }
 
-static bool ruda_native_c_type_supported(RudaTypeId type, bool result) {
+static const RudaMirArray *ruda_native_c_array(
+    const RudaMirFunction *function,
+    RudaTypeId type
+) {
+    size_t index = 0;
+    if (function == NULL || type < RUDA_TYPE_FIRST_DYNAMIC) {
+        return NULL;
+    }
+    for (index = 0; index < function->arrays.length; index += 1) {
+        const RudaMirArray *array = ruda_vector_at_const(
+            &function->arrays,
+            index
+        );
+        if (array != NULL && array->type == type) {
+            return array;
+        }
+    }
+    return NULL;
+}
+
+static RudaNativeCArrayKind ruda_native_c_array_kind(
+    const RudaMirFunction *function,
+    RudaTypeId type
+) {
+    const RudaMirArray *array = ruda_native_c_array(function, type);
+    const RudaMirArray *element = NULL;
+    if (array == NULL) {
+        return type >= RUDA_TYPE_FIRST_DYNAMIC
+            ? RUDA_NATIVE_C_ARRAY_UNSUPPORTED
+            : RUDA_NATIVE_C_ARRAY_NONE;
+    }
+    if (array->element_type == RUDA_TYPE_F64) {
+        return RUDA_NATIVE_C_ARRAY_F64;
+    }
+    element = ruda_native_c_array(function, array->element_type);
+    return element != NULL && element->element_type == RUDA_TYPE_F64
+        ? RUDA_NATIVE_C_ARRAY_ARRAY_F64
+        : RUDA_NATIVE_C_ARRAY_UNSUPPORTED;
+}
+
+static bool ruda_native_c_type_supported(
+    const RudaMirFunction *function,
+    RudaTypeId type,
+    bool result
+) {
     return type == RUDA_TYPE_BOOL || type == RUDA_TYPE_I64
         || type == RUDA_TYPE_F64
         || type == RUDA_TYPE_STRING
+        || ruda_native_c_array_kind(function, type) == RUDA_NATIVE_C_ARRAY_F64
+        || ruda_native_c_array_kind(function, type)
+            == RUDA_NATIVE_C_ARRAY_ARRAY_F64
         || (result && (type == RUDA_TYPE_VOID || type == RUDA_TYPE_NEVER));
 }
 
-static const char *ruda_native_c_type(RudaTypeId type) {
+static const char *ruda_native_c_type(
+    const RudaMirFunction *function,
+    RudaTypeId type
+) {
     if (type == RUDA_TYPE_BOOL) {
         return "bool";
     }
@@ -52,6 +109,11 @@ static const char *ruda_native_c_type(RudaTypeId type) {
     }
     if (type == RUDA_TYPE_F64) {
         return "uint64_t";
+    }
+    if (ruda_native_c_array_kind(function, type) == RUDA_NATIVE_C_ARRAY_F64
+        || ruda_native_c_array_kind(function, type)
+            == RUDA_NATIVE_C_ARRAY_ARRAY_F64) {
+        return "RudaManagedReference";
     }
     return "int64_t";
 }
@@ -72,7 +134,7 @@ static bool ruda_native_c_buffer_append(
 }
 
 static bool ruda_native_c_write(RudaNativeCBuffer *buffer, const char *format, ...) {
-    char text[512];
+    char text[4096];
     va_list arguments;
     int written = 0;
     va_start(arguments, format);
@@ -164,6 +226,64 @@ static const RudaMirCallArgument *ruda_native_c_call_argument(
         : NULL;
 }
 
+static const RudaMirArrayConstruction *ruda_native_c_array_construction(
+    const RudaMirFunction *function,
+    RudaMirArrayConstructionId construction
+) {
+    return function != NULL
+        ? ruda_vector_at_const(&function->array_constructions, construction)
+        : NULL;
+}
+
+static const RudaMirArrayArgument *ruda_native_c_array_argument(
+    const RudaMirFunction *function,
+    size_t index
+) {
+    return function != NULL
+        ? ruda_vector_at_const(&function->array_arguments, index)
+        : NULL;
+}
+
+static const char *ruda_native_c_array_descriptor(
+    const RudaMirFunction *function,
+    RudaTypeId type
+) {
+    switch (ruda_native_c_array_kind(function, type)) {
+        case RUDA_NATIVE_C_ARRAY_F64:
+            return "&ruda_managed_array_f64_descriptor";
+        case RUDA_NATIVE_C_ARRAY_ARRAY_F64:
+            return "&ruda_managed_array_array_f64_descriptor";
+        case RUDA_NATIVE_C_ARRAY_NONE:
+        case RUDA_NATIVE_C_ARRAY_UNSUPPORTED:
+            return "NULL";
+    }
+    return "NULL";
+}
+
+static size_t ruda_native_c_managed_register_count(
+    const RudaMirFunction *function
+) {
+    size_t index = 0;
+    size_t result = 0;
+    if (function == NULL) {
+        return 0;
+    }
+    for (index = 0; index < function->register_types.length; index += 1) {
+        const RudaTypeId *type = ruda_vector_at_const(
+            &function->register_types,
+            index
+        );
+        if (type != NULL
+            && (ruda_native_c_array_kind(function, *type)
+                    == RUDA_NATIVE_C_ARRAY_F64
+                || ruda_native_c_array_kind(function, *type)
+                    == RUDA_NATIVE_C_ARRAY_ARRAY_F64)) {
+            result += 1;
+        }
+    }
+    return result;
+}
+
 static bool ruda_native_c_call_supported(
     const RudaMirFunction *function,
     RudaMirCallId call_id,
@@ -178,6 +298,8 @@ static bool ruda_native_c_call_supported(
     size_t argument_index = 0;
     if (callee == NULL || call->result_type != required_result
         || callee->result_type != call->result_type
+        || ruda_native_c_array_kind(function, call->result_type)
+            != ruda_native_c_array_kind(callee, callee->result_type)
         || call->argument_count != callee->parameter_count) {
         return false;
     }
@@ -192,7 +314,9 @@ static bool ruda_native_c_call_supported(
             &callee->register_types,
             argument_index
         );
-        if (argument == NULL || parameter == NULL || argument->type != *parameter) {
+        if (argument == NULL || parameter == NULL || argument->type != *parameter
+            || ruda_native_c_array_kind(function, argument->type)
+                != ruda_native_c_array_kind(callee, *parameter)) {
             return false;
         }
     }
@@ -218,12 +342,16 @@ static RudaNativeCEmitStatus ruda_native_c_validate_function(
     if (verify_status != RUDA_MIR_VERIFY_OK) {
         return RUDA_NATIVE_C_EMIT_INVALID_MIR;
     }
-    if (!ruda_native_c_type_supported(function->result_type, true)) {
+    if (!ruda_native_c_type_supported(function, function->result_type, true)) {
         return RUDA_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
     }
     for (index = 0; index < function->register_types.length; index += 1) {
         const RudaTypeId *type = ruda_vector_at_const(&function->register_types, index);
-        if (type == NULL || !ruda_native_c_type_supported(*type, false)) {
+        if (type == NULL || !ruda_native_c_type_supported(
+                function,
+                *type,
+                false
+            )) {
             return RUDA_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
         }
     }
@@ -259,11 +387,18 @@ static RudaNativeCEmitStatus ruda_native_c_validate_function(
                 case RUDA_MIR_MULTIPLY_F64: case RUDA_MIR_DIVIDE_F64:
                 case RUDA_MIR_NEGATE_F64: case RUDA_MIR_EQUAL_F64:
                 case RUDA_MIR_LESS_F64: case RUDA_MIR_LESS_EQUAL_F64:
+                case RUDA_MIR_ARRAY_NEW: case RUDA_MIR_ARRAY_LENGTH:
+                case RUDA_MIR_ARRAY_REQUIRE_INDEX: case RUDA_MIR_ARRAY_GET:
+                case RUDA_MIR_ARRAY_SET:
                     break;
                 case RUDA_MIR_CALL: {
                     const RudaMirCall *call = ruda_native_c_call(function, instruction->call);
                     if (call == NULL
-                        || !ruda_native_c_type_supported(call->result_type, false)
+                        || !ruda_native_c_type_supported(
+                            function,
+                            call->result_type,
+                            false
+                        )
                         || !ruda_native_c_call_supported(
                             function,
                             instruction->call,
@@ -279,9 +414,6 @@ static RudaNativeCEmitStatus ruda_native_c_validate_function(
                 case RUDA_MIR_RECORD_SET: case RUDA_MIR_RECORD_IDENTITY_SAME:
                 case RUDA_MIR_ENUM_NEW: case RUDA_MIR_ENUM_IS_VARIANT:
                 case RUDA_MIR_ENUM_REQUIRE_VARIANT: case RUDA_MIR_ENUM_GET_PAYLOAD:
-                case RUDA_MIR_ARRAY_NEW: case RUDA_MIR_ARRAY_LENGTH:
-                case RUDA_MIR_ARRAY_REQUIRE_INDEX: case RUDA_MIR_ARRAY_GET:
-                case RUDA_MIR_ARRAY_SET:
                     return RUDA_NATIVE_C_EMIT_UNSUPPORTED_INSTRUCTION;
             }
         }
@@ -418,14 +550,14 @@ static bool ruda_native_c_emit_signature(
 ) {
     size_t index = 0;
     if (!ruda_native_c_write(buffer, "static int ") || !ruda_native_c_symbol(buffer, function->symbol)
-        || !ruda_native_c_write(buffer, "(ruda_g_panic *ruda_g_p")) return false;
+        || !ruda_native_c_write(buffer, "(ruda_g_execution *ruda_g_x, ruda_g_panic *ruda_g_p")) return false;
     for (index = 0; index < function->parameter_count; index += 1) {
         const RudaTypeId *type = ruda_vector_at_const(&function->register_types, index);
-        if (!ruda_native_c_write(buffer, ", %s ruda_g_v_%zu", ruda_native_c_type(*type), index)) return false;
+        if (!ruda_native_c_write(buffer, ", %s ruda_g_v_%zu", ruda_native_c_type(function, *type), index)) return false;
     }
     if (function->result_type != RUDA_TYPE_VOID
         && function->result_type != RUDA_TYPE_NEVER
-        && !ruda_native_c_write(buffer, ", %s *ruda_g_out", ruda_native_c_type(function->result_type))) return false;
+        && !ruda_native_c_write(buffer, ", %s *ruda_g_out", ruda_native_c_type(function, function->result_type))) return false;
     return ruda_native_c_write(buffer,
         ", size_t *ruda_g_start, size_t *ruda_g_end)%s", prototype ? ";\n" : " {\n"
     );
@@ -465,7 +597,7 @@ static bool ruda_native_c_emit_propagate_call(
         || !ruda_native_c_symbol_data(buffer, symbol)
         || !ruda_native_c_write(
             buffer,
-            ", %zu, %zu)) return 5;\n    return 4;\n  }\n",
+            ", %zu, %zu)) ruda_g_s = 5;\n    goto ruda_g_cleanup;\n  }\n",
             span.start,
             span.end
         )) {
@@ -474,14 +606,14 @@ static bool ruda_native_c_emit_propagate_call(
     if (returns_never) {
         return ruda_native_c_write(
             buffer,
-            "  if (ruda_g_s == 0) { *ruda_g_start = %zu; *ruda_g_end = %zu; return 5; }\n  return ruda_g_s;\n",
+            "  if (ruda_g_s == 0) { *ruda_g_start = %zu; *ruda_g_end = %zu; ruda_g_s = 5; }\n  goto ruda_g_cleanup;\n",
             span.start,
             span.end
         );
     }
     return ruda_native_c_write(
         buffer,
-        "  if (ruda_g_s != 0) return ruda_g_s;\n"
+        "  if (ruda_g_s != 0) goto ruda_g_cleanup;\n"
     );
 }
 
@@ -490,10 +622,11 @@ static bool ruda_native_c_emit_function(
     const RudaMirFunction *const *functions, size_t count
 ) {
     size_t index = 0;
+    size_t managed_count = ruda_native_c_managed_register_count(function);
     if (!ruda_native_c_emit_signature(buffer, function, false)
         || !ruda_native_c_write(
             buffer,
-            "  int ruda_g_s;\n  (void)ruda_g_s;\n  (void)ruda_g_p;\n"
+            "  int ruda_g_s = 0;\n  (void)ruda_g_p;\n  (void)ruda_g_x;\n"
         )) return false;
     if (!ruda_native_c_write(
             buffer, "  (void)ruda_g_start;\n  (void)ruda_g_end;\n"
@@ -505,7 +638,83 @@ static bool ruda_native_c_emit_function(
     }
     for (index = function->parameter_count; index < function->register_types.length; index += 1) {
         const RudaTypeId *type = ruda_vector_at_const(&function->register_types, index);
-        if (!ruda_native_c_write(buffer, "  %s ruda_g_v_%zu;\n", ruda_native_c_type(*type), index)) return false;
+        if (!ruda_native_c_write(
+                buffer,
+                ruda_native_c_array_kind(function, *type)
+                        == RUDA_NATIVE_C_ARRAY_F64
+                    || ruda_native_c_array_kind(function, *type)
+                        == RUDA_NATIVE_C_ARRAY_ARRAY_F64
+                    ? "  %s ruda_g_v_%zu = ruda_managed_invalid_reference();\n"
+                    : (*type == RUDA_TYPE_STRING
+                        ? "  %s ruda_g_v_%zu = {0};\n"
+                        : (*type == RUDA_TYPE_BOOL
+                            ? "  %s ruda_g_v_%zu = false;\n"
+                            : "  %s ruda_g_v_%zu = 0;\n")),
+                ruda_native_c_type(function, *type),
+                index
+            )) return false;
+        if (!ruda_native_c_write(buffer, "  (void)ruda_g_v_%zu;\n", index)) {
+            return false;
+        }
+    }
+    if (managed_count != 0) {
+        size_t managed_index = 0;
+        if (!ruda_native_c_write(
+                buffer,
+                "  RudaManagedStatus ruda_g_m;\n"
+                "  RudaManagedRootFrame ruda_g_root = {0};\n"
+                "  RudaManagedReference **ruda_g_locations = NULL;\n"
+                "  size_t ruda_g_location_bytes = 0;\n"
+                "  bool ruda_g_root_linked = false;\n"
+                "  if (!ruda_size_multiply(%zu, sizeof(*ruda_g_locations), &ruda_g_location_bytes)) { ruda_g_s = 6; goto ruda_g_cleanup; }\n"
+                "  ruda_g_locations = ruda_allocate(&ruda_g_x->allocator, ruda_g_location_bytes);\n"
+                "  if (ruda_g_locations == NULL) { ruda_g_s = 5; goto ruda_g_cleanup; }\n",
+                managed_count
+            )) return false;
+        for (index = 0; index < function->register_types.length; index += 1) {
+            const RudaTypeId *type = ruda_vector_at_const(
+                &function->register_types,
+                index
+            );
+            if (type != NULL
+                && (ruda_native_c_array_kind(function, *type)
+                        == RUDA_NATIVE_C_ARRAY_F64
+                    || ruda_native_c_array_kind(function, *type)
+                        == RUDA_NATIVE_C_ARRAY_ARRAY_F64)) {
+                if (!ruda_native_c_write(
+                        buffer,
+                        "  ruda_g_locations[%zu] = &ruda_g_v_%zu;\n",
+                        managed_index,
+                        index
+                    )) return false;
+                managed_index += 1;
+            }
+        }
+        if (!ruda_native_c_write(
+                buffer,
+                "  ruda_g_m = ruda_managed_root_push(&ruda_g_x->heap, &ruda_g_root, ruda_g_locations, %zu);\n"
+                "  if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n"
+                "  ruda_g_root_linked = true;\n",
+                managed_count
+            )) return false;
+        for (index = 0; index < function->parameter_count; index += 1) {
+            const RudaTypeId *type = ruda_vector_at_const(
+                &function->register_types,
+                index
+            );
+            if (type != NULL
+                && (ruda_native_c_array_kind(function, *type)
+                        == RUDA_NATIVE_C_ARRAY_F64
+                    || ruda_native_c_array_kind(function, *type)
+                        == RUDA_NATIVE_C_ARRAY_ARRAY_F64)) {
+                if (!ruda_native_c_write(
+                        buffer,
+                        "  { const RudaManagedArrayDescriptor *ruda_g_actual = NULL; ruda_g_m = ruda_managed_array_describe(&ruda_g_x->heap, ruda_g_v_%zu, &ruda_g_actual); if (ruda_g_m != RUDA_MANAGED_OK || ruda_g_actual != %s) { ruda_g_s = ruda_g_m == RUDA_MANAGED_OK ? 7 : ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } }\n",
+                        index,
+                        ruda_native_c_array_descriptor(function, *type)
+                    )) return false;
+            }
+        }
     }
     if (!ruda_native_c_write(buffer, "  goto ruda_g_b_0;\n")) return false;
     for (index = 0; index < function->blocks.length; index += 1) {
@@ -564,6 +773,152 @@ static bool ruda_native_c_emit_function(
                 case RUDA_MIR_MULTIPLY_F64: if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = ruda_f64_multiply(ruda_g_v_%u, ruda_g_v_%u);\n", i->target, i->first, i->second)) return false; break;
                 case RUDA_MIR_DIVIDE_F64: if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = ruda_f64_divide(ruda_g_v_%u, ruda_g_v_%u);\n", i->target, i->first, i->second)) return false; break;
                 case RUDA_MIR_NEGATE_F64: if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = ruda_f64_negate(ruda_g_v_%u);\n", i->target, i->first)) return false; break;
+                case RUDA_MIR_ARRAY_NEW: {
+                    const RudaMirArrayConstruction *construction =
+                        ruda_native_c_array_construction(
+                            function,
+                            i->array_construction
+                        );
+                    const RudaMirArray *array = construction != NULL
+                        ? ruda_vector_at_const(
+                            &function->arrays,
+                            construction->array
+                        )
+                        : NULL;
+                    size_t argument_index = 0;
+                    if (construction == NULL || array == NULL
+                        || !ruda_native_c_write(
+                            buffer,
+                            "  { RudaManagedCell *ruda_g_cells = NULL; size_t ruda_g_cell_bytes = 0;\n"
+                            "    if (!ruda_size_multiply(%zu, sizeof(*ruda_g_cells), &ruda_g_cell_bytes)) { ruda_g_s = 6; goto ruda_g_cleanup; }\n"
+                            "    if (ruda_g_cell_bytes != 0) { ruda_g_cells = ruda_allocate(&ruda_g_x->allocator, ruda_g_cell_bytes); if (ruda_g_cells == NULL) { ruda_g_s = 5; goto ruda_g_cleanup; } }\n",
+                            construction->argument_count
+                        )) return false;
+                    for (argument_index = 0;
+                        argument_index < construction->argument_count;
+                        argument_index += 1) {
+                        const RudaMirArrayArgument *argument =
+                            ruda_native_c_array_argument(
+                                function,
+                                construction->argument_start + argument_index
+                            );
+                        if (argument == NULL || !ruda_native_c_write(
+                                buffer,
+                                array->element_type == RUDA_TYPE_F64
+                                    ? "    ruda_g_cells[%zu].f64_bits = ruda_g_v_%u;\n"
+                                    : "    ruda_g_cells[%zu].reference = ruda_g_v_%u;\n",
+                                argument_index,
+                                argument->register_id
+                            )) return false;
+                    }
+                    if (!ruda_native_c_write(
+                            buffer,
+                            "    ruda_g_m = ruda_managed_array_new(&ruda_g_x->heap, %s, ruda_g_cells, %zu, &ruda_g_v_%u);\n"
+                            "    ruda_deallocate(&ruda_g_x->allocator, ruda_g_cells, ruda_g_cell_bytes);\n"
+                            "    if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n"
+                            "  }\n",
+                            ruda_native_c_array_descriptor(function, array->type),
+                            construction->argument_count,
+                            i->target
+                        )) return false;
+                    break;
+                }
+                case RUDA_MIR_ARRAY_LENGTH:
+                    if (!ruda_native_c_write(
+                            buffer,
+                            "  { size_t ruda_g_length = 0; const RudaManagedArrayDescriptor *ruda_g_actual = NULL; ruda_g_m = ruda_managed_array_describe(&ruda_g_x->heap, ruda_g_v_%u, &ruda_g_actual); if (ruda_g_m == RUDA_MANAGED_OK && ruda_g_actual != %s) ruda_g_m = RUDA_MANAGED_TYPE_MISMATCH; if (ruda_g_m == RUDA_MANAGED_OK) ruda_g_m = ruda_managed_array_length(&ruda_g_x->heap, ruda_g_v_%u, &ruda_g_length); if (ruda_g_m != RUDA_MANAGED_OK || ruda_g_length > (size_t)INT64_MAX) { ruda_g_s = ruda_g_m == RUDA_MANAGED_OK ? 6 : ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } ruda_g_v_%u = (int64_t)ruda_g_length; }\n",
+                            i->first,
+                            ruda_native_c_array_descriptor(
+                                function,
+                                ((const RudaMirArray *)ruda_vector_at_const(
+                                    &function->arrays,
+                                    i->array
+                                ))->type
+                            ),
+                            i->first,
+                            i->target
+                        )) return false;
+                    break;
+                case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+                    if (!ruda_native_c_write(
+                            buffer,
+                            "  { size_t ruda_g_length = 0; ruda_g_m = ruda_g_array_check(&ruda_g_x->heap, ruda_g_v_%u, %s, ruda_g_v_%u, &ruda_g_length); if (ruda_g_m == RUDA_MANAGED_BOUNDS) { ruda_g_s = ruda_g_begin_bounds(ruda_g_p, ruda_g_v_%u, ruda_g_length, ",
+                            i->first,
+                            ruda_native_c_array_descriptor(
+                                function,
+                                ((const RudaMirArray *)ruda_vector_at_const(
+                                    &function->arrays,
+                                    i->array
+                                ))->type
+                            ),
+                            i->second,
+                            i->second
+                        ) || !ruda_native_c_symbol_data(buffer, function->symbol)
+                        || !ruda_native_c_write(
+                            buffer,
+                            ", %zu, %zu); goto ruda_g_cleanup; } if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } ruda_g_v_%u = ruda_g_v_%u; }\n",
+                            i->span.start,
+                            i->span.end,
+                            i->target,
+                            i->first
+                        )) return false;
+                    break;
+                case RUDA_MIR_ARRAY_GET: {
+                    const RudaMirArray *array = ruda_vector_at_const(
+                        &function->arrays,
+                        i->array
+                    );
+                    if (array == NULL || !ruda_native_c_write(
+                            buffer,
+                            "  { RudaManagedCell ruda_g_cell; size_t ruda_g_length = 0; ruda_g_m = ruda_g_array_check(&ruda_g_x->heap, ruda_g_v_%u, %s, ruda_g_v_%u, &ruda_g_length); if (ruda_g_m == RUDA_MANAGED_OK) ruda_g_m = ruda_managed_array_get(&ruda_g_x->heap, ruda_g_v_%u, ruda_g_v_%u, &ruda_g_cell, &ruda_g_length); if (ruda_g_m == RUDA_MANAGED_BOUNDS) { ruda_g_s = ruda_g_begin_bounds(ruda_g_p, ruda_g_v_%u, ruda_g_length, ",
+                            i->first,
+                            ruda_native_c_array_descriptor(function, array->type),
+                            i->second,
+                            i->first,
+                            i->second,
+                            i->second
+                        ) || !ruda_native_c_symbol_data(buffer, function->symbol)
+                        || !ruda_native_c_write(
+                            buffer,
+                            ", %zu, %zu); goto ruda_g_cleanup; } if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } ruda_g_v_%u = ruda_g_cell.%s; }\n",
+                            i->span.start,
+                            i->span.end,
+                            i->target,
+                            array->element_type == RUDA_TYPE_F64
+                                ? "f64_bits"
+                                : "reference"
+                        )) return false;
+                    break;
+                }
+                case RUDA_MIR_ARRAY_SET: {
+                    const RudaMirArray *array = ruda_vector_at_const(
+                        &function->arrays,
+                        i->array
+                    );
+                    if (array == NULL || !ruda_native_c_write(
+                            buffer,
+                            "  { RudaManagedCell ruda_g_cell; size_t ruda_g_length = 0; ruda_g_cell.%s = ruda_g_v_%u; ruda_g_m = ruda_g_array_check(&ruda_g_x->heap, ruda_g_v_%u, %s, ruda_g_v_%u, &ruda_g_length); if (ruda_g_m == RUDA_MANAGED_OK) ruda_g_m = ruda_managed_array_set(&ruda_g_x->heap, ruda_g_v_%u, ruda_g_v_%u, ruda_g_cell, &ruda_g_length); if (ruda_g_m == RUDA_MANAGED_BOUNDS) { ruda_g_s = ruda_g_begin_bounds(ruda_g_p, ruda_g_v_%u, ruda_g_length, ",
+                            array->element_type == RUDA_TYPE_F64
+                                ? "f64_bits"
+                                : "reference",
+                            i->third,
+                            i->first,
+                            ruda_native_c_array_descriptor(function, array->type),
+                            i->second,
+                            i->first,
+                            i->second,
+                            i->second
+                        ) || !ruda_native_c_symbol_data(buffer, function->symbol)
+                        || !ruda_native_c_write(
+                            buffer,
+                            ", %zu, %zu); goto ruda_g_cleanup; } if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } ruda_g_v_%u = ruda_g_v_%u; }\n",
+                            i->span.start,
+                            i->span.end,
+                            i->target,
+                            i->third
+                        )) return false;
+                    break;
+                }
                 case RUDA_MIR_BITWISE_NOT_I64: if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = ruda_i64_bitwise_not(ruda_g_v_%u);\n", i->target, i->first)) return false; break;
                 case RUDA_MIR_BITWISE_AND_I64: case RUDA_MIR_BITWISE_XOR_I64: case RUDA_MIR_BITWISE_OR_I64: {
                     const char *name = i->kind == RUDA_MIR_BITWISE_AND_I64 ? "and" : i->kind == RUDA_MIR_BITWISE_XOR_I64 ? "xor" : "or";
@@ -582,7 +937,7 @@ static bool ruda_native_c_emit_function(
                     const RudaMirFunction *callee = ruda_native_c_find(functions, count, call->callee);
                     if (!ruda_native_c_write(buffer, "  ruda_g_s = ")
                         || !ruda_native_c_symbol(buffer, callee->symbol)
-                        || !ruda_native_c_write(buffer, "(ruda_g_p")
+                        || !ruda_native_c_write(buffer, "(ruda_g_x, ruda_g_p")
                         || !ruda_native_c_emit_call_arguments(buffer, function, call)
                         || !ruda_native_c_write(
                             buffer,
@@ -603,7 +958,7 @@ static bool ruda_native_c_emit_function(
                 if (i->kind == RUDA_MIR_NEGATE_CHECKED_I64) {
                     if (!ruda_native_c_write(buffer, "  ruda_g_s = (int)%s(ruda_g_v_%u, &ruda_g_v_%u);\n", helper, i->first, i->target)) return false;
                 } else if (!ruda_native_c_write(buffer, "  ruda_g_s = (int)%s(ruda_g_v_%u, ruda_g_v_%u, &ruda_g_v_%u);\n", helper, i->first, i->second, i->target)) return false;
-                if (!ruda_native_c_write(buffer, "  if (ruda_g_s != 0) { *ruda_g_start = %zu; *ruda_g_end = %zu; return ruda_g_s; }\n", i->span.start, i->span.end)) return false;
+                if (!ruda_native_c_write(buffer, "  if (ruda_g_s != 0) { *ruda_g_start = %zu; *ruda_g_end = %zu; goto ruda_g_cleanup; }\n", i->span.start, i->span.end)) return false;
             }
         }
         if (block->terminator.kind == RUDA_MIR_GOTO) {
@@ -613,13 +968,13 @@ static bool ruda_native_c_emit_function(
         } else if (block->terminator.kind == RUDA_MIR_PANIC) {
             if (!ruda_native_c_write(
                     buffer,
-                    "  return ruda_g_begin_panic(ruda_g_p, ruda_g_v_%u, ",
+                    "  ruda_g_s = ruda_g_begin_panic(ruda_g_p, ruda_g_v_%u, ",
                     block->terminator.value
                 )
                 || !ruda_native_c_symbol_data(buffer, function->symbol)
                 || !ruda_native_c_write(
                     buffer,
-                    ", %zu, %zu);\n",
+                    ", %zu, %zu); goto ruda_g_cleanup;\n",
                     block->terminator.span.start,
                     block->terminator.span.end
                 )) return false;
@@ -635,7 +990,7 @@ static bool ruda_native_c_emit_function(
             );
             if (!ruda_native_c_write(buffer, "  ruda_g_s = ")
                 || !ruda_native_c_symbol(buffer, callee->symbol)
-                || !ruda_native_c_write(buffer, "(ruda_g_p")
+                || !ruda_native_c_write(buffer, "(ruda_g_x, ruda_g_p")
                 || !ruda_native_c_emit_call_arguments(buffer, function, call)
                 || !ruda_native_c_write(
                     buffer,
@@ -648,10 +1003,20 @@ static bool ruda_native_c_emit_function(
                     true
                 )) return false;
         } else if (function->result_type == RUDA_TYPE_VOID) {
-            if (!ruda_native_c_write(buffer, "  return 0;\n")) return false;
-        } else if (!ruda_native_c_write(buffer, "  *ruda_g_out = ruda_g_v_%u; return 0;\n", block->terminator.value)) return false;
+            if (!ruda_native_c_write(buffer, "  ruda_g_s = 0; goto ruda_g_cleanup;\n")) return false;
+        } else if (!ruda_native_c_write(buffer, "  *ruda_g_out = ruda_g_v_%u; ruda_g_s = 0; goto ruda_g_cleanup;\n", block->terminator.value)) return false;
     }
-    return ruda_native_c_write(buffer, "}\n\n");
+    if (!ruda_native_c_write(buffer, "ruda_g_cleanup:\n")) {
+        return false;
+    }
+    if (managed_count != 0 && !ruda_native_c_write(
+            buffer,
+            "  if (ruda_g_root_linked && ruda_managed_root_pop(&ruda_g_x->heap, &ruda_g_root) != RUDA_MANAGED_OK && ruda_g_s == 0) ruda_g_s = 7;\n"
+            "  ruda_deallocate(&ruda_g_x->allocator, ruda_g_locations, ruda_g_location_bytes);\n"
+        )) {
+        return false;
+    }
+    return ruda_native_c_write(buffer, "  return ruda_g_s;\n}\n\n");
 }
 
 static bool ruda_native_c_emit_symbol_and_strings(
@@ -723,17 +1088,39 @@ static bool ruda_native_c_emit_runtime(
     size_t max_frames
 ) {
     return ruda_native_c_write(buffer,
+        "typedef struct { RudaAllocator delegate; size_t attempts; size_t failure_index; } ruda_g_fail_allocator;\n"
+        "typedef struct { RudaAllocator allocator; RudaManagedHeap heap; ruda_g_fail_allocator fail_allocator; } ruda_g_execution;\n")
+        && ruda_native_c_write(buffer,
+            "#ifndef RUDA_G_COLLECT_BEFORE_ALLOCATION\n#define RUDA_G_COLLECT_BEFORE_ALLOCATION 0\n#endif\n"
+            "#ifndef RUDA_G_FAIL_ALLOCATION_AT\n#define RUDA_G_FAIL_ALLOCATION_AT SIZE_MAX\n#endif\n"
+            "#ifndef RUDA_G_MAX_OBJECTS\n#define RUDA_G_MAX_OBJECTS SIZE_MAX\n#endif\n")
+        && ruda_native_c_write(buffer,
         "typedef struct { const unsigned char *data; size_t length; } ruda_g_string;\n")
         && ruda_native_c_write(buffer,
             "typedef struct { const unsigned char *symbol; size_t start; size_t end; } ruda_g_frame;\n")
         && ruda_native_c_write(buffer,
-            "typedef struct { const char *code; ruda_g_string message; const unsigned char *symbol; size_t start; size_t end; ruda_g_frame *frames; size_t frame_count; size_t frame_capacity; } ruda_g_panic;\n")
+            "typedef struct { const char *code; ruda_g_string message; unsigned char message_storage[96]; const unsigned char *symbol; size_t start; size_t end; ruda_g_frame *frames; size_t frame_count; size_t frame_capacity; } ruda_g_panic;\n")
         && ruda_native_c_write(buffer,
             "static bool ruda_g_string_equal(ruda_g_string a, ruda_g_string b) { return a.length == b.length && (a.length == 0 || memcmp(a.data, b.data, a.length) == 0); }\n")
         && ruda_native_c_write(buffer,
             "static bool ruda_g_append_frame(ruda_g_panic *p, const unsigned char *symbol, size_t start, size_t end) { if (p == NULL || p->frame_count >= p->frame_capacity) return false; p->frames[p->frame_count].symbol = symbol; p->frames[p->frame_count].start = start; p->frames[p->frame_count].end = end; p->frame_count += 1; return true; }\n")
         && ruda_native_c_write(buffer,
             "static int ruda_g_begin_panic(ruda_g_panic *p, ruda_g_string message, const unsigned char *symbol, size_t start, size_t end) { if (p == NULL) return 4; p->code = \"G4000\"; p->message = message; p->symbol = symbol; p->start = start; p->end = end; p->frame_count = 0; return ruda_g_append_frame(p, symbol, start, end) ? 4 : 5; }\n")
+        && ruda_native_c_write(buffer,
+            "static void *ruda_g_fail_allocate(void *context, size_t size) { ruda_g_fail_allocator *state = context; if (state == NULL) return NULL; if (state->attempts++ == state->failure_index) return NULL; return state->delegate.allocate(state->delegate.context, size); }\n"
+            "static void *ruda_g_fail_resize(void *context, void *pointer, size_t old_size, size_t new_size) { ruda_g_fail_allocator *state = context; if (state == NULL) return NULL; if (state->attempts++ == state->failure_index) return NULL; return state->delegate.resize(state->delegate.context, pointer, old_size, new_size); }\n"
+            "static void ruda_g_fail_deallocate(void *context, void *pointer, size_t old_size) { ruda_g_fail_allocator *state = context; if (state != NULL) state->delegate.deallocate(state->delegate.context, pointer, old_size); }\n"
+            "static RudaAllocator ruda_g_make_allocator(ruda_g_fail_allocator *state) { RudaAllocator result; state->delegate = ruda_system_allocator(); state->attempts = 0; state->failure_index = (size_t)RUDA_G_FAIL_ALLOCATION_AT; result.context = state; result.allocate = ruda_g_fail_allocate; result.resize = ruda_g_fail_resize; result.deallocate = ruda_g_fail_deallocate; return result; }\n")
+        && ruda_native_c_write(buffer,
+            "static size_t ruda_g_decimal_u64(unsigned char *out, size_t at, uint64_t value) { unsigned char reversed[20]; size_t count = 0, i; do { reversed[count++] = (unsigned char)('0' + value %% UINT64_C(10)); value /= UINT64_C(10); } while (value != 0); for (i = count; i != 0; i -= 1) out[at++] = reversed[i - 1]; return at; }\n")
+        && ruda_native_c_write(buffer,
+            "static size_t ruda_g_decimal_i64(unsigned char *out, size_t at, int64_t value) { uint64_t magnitude = (uint64_t)value; if (value < 0) { out[at++] = '-'; magnitude = UINT64_C(0) - magnitude; } return ruda_g_decimal_u64(out, at, magnitude); }\n")
+        && ruda_native_c_write(buffer,
+            "static int ruda_g_begin_bounds(ruda_g_panic *p, int64_t index, size_t length, const unsigned char *symbol, size_t start, size_t end) { static const unsigned char prefix[] = \"array index \"; static const unsigned char suffix[] = \" is outside length \"; size_t at = 0; if (p == NULL) return 4; memcpy(p->message_storage + at, prefix, sizeof(prefix) - 1); at += sizeof(prefix) - 1; at = ruda_g_decimal_i64(p->message_storage, at, index); memcpy(p->message_storage + at, suffix, sizeof(suffix) - 1); at += sizeof(suffix) - 1; at = ruda_g_decimal_u64(p->message_storage, at, (uint64_t)length); p->code = \"G4002\"; p->message.data = p->message_storage; p->message.length = at; p->symbol = symbol; p->start = start; p->end = end; p->frame_count = 0; return ruda_g_append_frame(p, symbol, start, end) ? 4 : 5; }\n")
+        && ruda_native_c_write(buffer,
+            "static int ruda_g_managed_status(RudaManagedStatus status) { if (status == RUDA_MANAGED_OK) return 0; if (status == RUDA_MANAGED_ALLOCATION_FAILED) return 5; if (status == RUDA_MANAGED_LIMIT_REACHED || status == RUDA_MANAGED_LENGTH_LIMIT) return 6; if (status == RUDA_MANAGED_INVALID_REFERENCE || status == RUDA_MANAGED_TYPE_MISMATCH) return 7; return 5; }\n")
+        && ruda_native_c_write(buffer,
+            "static RudaManagedStatus ruda_g_array_check(const RudaManagedHeap *heap, RudaManagedReference array, const RudaManagedArrayDescriptor *expected, int64_t index, size_t *length) { const RudaManagedArrayDescriptor *actual = NULL; RudaManagedStatus status = ruda_managed_array_describe(heap, array, &actual); if (status != RUDA_MANAGED_OK) return status; if (actual != expected) return RUDA_MANAGED_TYPE_MISMATCH; status = ruda_managed_array_length(heap, array, length); if (status != RUDA_MANAGED_OK) return status; return index < 0 || (uint64_t)index >= (uint64_t)*length ? RUDA_MANAGED_BOUNDS : RUDA_MANAGED_OK; }\n")
         && ruda_native_c_write(buffer,
             "static void ruda_g_print_hex(const unsigned char *data, size_t length) { size_t i; for (i = 0; i < length; i += 1) printf(\"%%02x\", (unsigned int)data[i]); }\n")
         && ruda_native_c_write(buffer,
@@ -778,7 +1165,7 @@ static bool ruda_native_c_emit_keep_assets(
     }
     return ruda_native_c_write(
         buffer,
-        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n}\n\n"
+        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n}\n\n"
     );
 }
 
@@ -882,6 +1269,13 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
         status = RUDA_NATIVE_C_EMIT_INVALID_MIR;
         goto cleanup;
     }
+    if (ruda_native_c_array_kind(entry, entry->result_type)
+            == RUDA_NATIVE_C_ARRAY_F64
+        || ruda_native_c_array_kind(entry, entry->result_type)
+            == RUDA_NATIVE_C_ARRAY_ARRAY_F64) {
+        status = RUDA_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
+        goto cleanup;
+    }
     if (uses_f64 && !ruda_f64_binary64_supported()) {
         status = RUDA_NATIVE_C_EMIT_UNSUPPORTED_HOST;
         goto cleanup;
@@ -897,7 +1291,7 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     }
     memset(&buffer, 0, sizeof(buffer)); buffer.limit = options.max_generated_bytes;
     if (!ruda_vector_init(&buffer.bytes, allocator, sizeof(char))) { status = RUDA_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup; }
-    if (!ruda_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"ruda/base/checked_i64.h\"\n")
+    if (!ruda_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"ruda/base/checked_i64.h\"\n#include \"ruda/base/allocator.h\"\n#include \"ruda/runtime/managed.h\"\n")
         || (uses_f64 && !ruda_native_c_write(
             &buffer,
             "#include \"ruda/base/f64.h\"\n"
@@ -916,14 +1310,14 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_signature(&buffer, ordered[index], true)) goto emit_fail;
     if (!ruda_native_c_write(&buffer, "\n")) goto emit_fail;
     for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_function(&buffer, ordered[index], ordered, program->function_count)) goto emit_fail;
-    if (!ruda_native_c_write(&buffer, "int main(void) { size_t ruda_g_start = 0, ruda_g_end = 0; int ruda_g_s; static ruda_g_frame ruda_g_frames[RUDA_G_MAX_FRAMES]; ruda_g_panic ruda_g_p = {0}; ")) goto emit_fail;
+    if (!ruda_native_c_write(&buffer, "int main(void) { size_t ruda_g_start = 0, ruda_g_end = 0; int ruda_g_s; static ruda_g_frame ruda_g_frames[RUDA_G_MAX_FRAMES]; ruda_g_panic ruda_g_p = {0}; ruda_g_execution ruda_g_x = {0}; RudaManagedHeapOptions ruda_g_heap_options; ")) goto emit_fail;
     if (uses_f64 && !ruda_native_c_write(&buffer, "if (!ruda_f64_binary64_supported()) { fputs(\"unsupported:f64\\n\", stderr); return 2; } ")) goto emit_fail;
-    if (!ruda_native_c_write(&buffer, "ruda_g_keep_assets(); ruda_g_p.frames = ruda_g_frames; ruda_g_p.frame_capacity = RUDA_G_MAX_FRAMES; ")) goto emit_fail;
-    if (entry->result_type == RUDA_TYPE_I64) { if (!ruda_native_c_write(&buffer, "int64_t ruda_g_result; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); return 1; } printf(\"ok:i64:%%lld\\n\", (long long)ruda_g_result); return 0; }\n")) goto emit_fail; }
-    else if (entry->result_type == RUDA_TYPE_F64) { if (!ruda_native_c_write(&buffer, "uint64_t ruda_g_result; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); return 1; } printf(\"ok:f64:%%016llx\\n\", (unsigned long long)ruda_g_result); return 0; }\n")) goto emit_fail; }
-    else if (entry->result_type == RUDA_TYPE_BOOL) { if (!ruda_native_c_write(&buffer, "bool ruda_g_result; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); return 1; } printf(\"ok:bool:%%s\\n\", ruda_g_result ? \"true\" : \"false\"); return 0; }\n")) goto emit_fail; }
-    else if (entry->result_type == RUDA_TYPE_STRING) { if (!ruda_native_c_write(&buffer, "ruda_g_string ruda_g_result; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); return 1; } printf(\"ok:string:%%zu:\", ruda_g_result.length); ruda_g_print_hex(ruda_g_result.data, ruda_g_result.length); putchar('\\n'); return 0; }\n")) goto emit_fail; }
-    else { if (!ruda_native_c_write(&buffer, "ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_p, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); return 1; } puts(\"ok:void\"); return 0; }\n")) goto emit_fail; }
+    if (!ruda_native_c_write(&buffer, "ruda_g_keep_assets(); ruda_g_p.frames = ruda_g_frames; ruda_g_p.frame_capacity = RUDA_G_MAX_FRAMES; ruda_g_x.allocator = ruda_g_make_allocator(&ruda_g_x.fail_allocator); ruda_g_heap_options = ruda_managed_heap_default_options(); ruda_g_heap_options.collect_before_allocation = RUDA_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)RUDA_G_MAX_OBJECTS < ruda_g_heap_options.max_objects) ruda_g_heap_options.max_objects = (size_t)RUDA_G_MAX_OBJECTS; if (!ruda_managed_heap_init(&ruda_g_x.heap, ruda_g_x.allocator, ruda_g_heap_options)) { fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
+    if (entry->result_type == RUDA_TYPE_I64) { if (!ruda_native_c_write(&buffer, "int64_t ruda_g_result; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:i64:%%lld\\n\", (long long)ruda_g_result); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
+    else if (entry->result_type == RUDA_TYPE_F64) { if (!ruda_native_c_write(&buffer, "uint64_t ruda_g_result; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:f64:%%016llx\\n\", (unsigned long long)ruda_g_result); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
+    else if (entry->result_type == RUDA_TYPE_BOOL) { if (!ruda_native_c_write(&buffer, "bool ruda_g_result; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:bool:%%s\\n\", ruda_g_result ? \"true\" : \"false\"); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
+    else if (entry->result_type == RUDA_TYPE_STRING) { if (!ruda_native_c_write(&buffer, "ruda_g_string ruda_g_result; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:string:%%zu:\", ruda_g_result.length); ruda_g_print_hex(ruda_g_result.data, ruda_g_result.length); putchar('\\n'); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
+    else { if (!ruda_native_c_write(&buffer, "ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } puts(\"ok:void\"); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
     if (!ruda_owned_bytes_copy(output, allocator, buffer.bytes.data, buffer.bytes.length)) { status = RUDA_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup_buffer; }
     goto cleanup_buffer;
 emit_fail:
