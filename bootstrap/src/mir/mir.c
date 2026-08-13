@@ -2,6 +2,7 @@
 
 #include "ruda/base/checked_i64.h"
 #include "ruda/base/f64.h"
+#include "ruda/base/provenance.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -12,8 +13,78 @@
 #include "ruda/base/utf8.h"
 
 enum {
-    RUDA_MIR_MAX_DATAFLOW_CELLS = 16000000
+    RUDA_MIR_MAX_DATAFLOW_CELLS = 16000000,
+    RUDA_MIR_REFERENCE_KIND_SHIFT = 30
 };
+
+#define RUDA_MIR_REFERENCE_INDEX_MASK UINT32_C(0x3fffffff)
+
+typedef enum RudaMirReferenceKind {
+    RUDA_MIR_REFERENCE_RECORD = 0,
+    RUDA_MIR_REFERENCE_ENUM = 1,
+    RUDA_MIR_REFERENCE_STRING = 2,
+    RUDA_MIR_REFERENCE_ARRAY = 3
+} RudaMirReferenceKind;
+
+bool ruda_mir_reference_is_invalid(RudaMirReference reference) {
+    return reference.execution_provenance == UINT64_MAX
+        && reference.slot == UINT32_MAX;
+}
+
+bool ruda_mir_reference_equal(
+    RudaMirReference left,
+    RudaMirReference right
+) {
+    return left.execution_provenance == right.execution_provenance
+        && left.slot == right.slot;
+}
+
+static bool ruda_mir_reference_encode(
+    const RudaMirExecution *execution,
+    RudaMirReferenceKind kind,
+    size_t index,
+    RudaMirReference *result
+) {
+    uint32_t encoded = 0;
+    if (execution == NULL || !execution->initialized
+        || execution->provenance == 0
+        || execution->provenance == UINT64_MAX || result == NULL
+        || index >= RUDA_MIR_REFERENCE_INDEX_MASK) {
+        return false;
+    }
+    encoded = ((uint32_t)kind << RUDA_MIR_REFERENCE_KIND_SHIFT)
+        | (uint32_t)index;
+    if (encoded == UINT32_MAX) {
+        return false;
+    }
+    result->execution_provenance = execution->provenance;
+    result->slot = encoded;
+    return true;
+}
+
+static bool ruda_mir_reference_decode(
+    const RudaMirExecution *execution,
+    RudaMirReference reference,
+    RudaMirReferenceKind expected,
+    size_t *index
+) {
+    RudaMirReferenceKind actual;
+    if (execution == NULL || !execution->initialized
+        || execution->provenance == 0
+        || execution->provenance == UINT64_MAX
+        || reference.execution_provenance != execution->provenance
+        || reference.slot == UINT32_MAX || index == NULL) {
+        return false;
+    }
+    actual = (RudaMirReferenceKind)(
+        reference.slot >> RUDA_MIR_REFERENCE_KIND_SHIFT
+    );
+    if (actual != expected) {
+        return false;
+    }
+    *index = (size_t)(reference.slot & RUDA_MIR_REFERENCE_INDEX_MASK);
+    return true;
+}
 
 typedef struct RudaMirManagedRecord {
     RudaTypeId type;
@@ -37,6 +108,14 @@ typedef struct RudaMirManagedString {
     size_t length;
     unsigned char bytes[];
 } RudaMirManagedString;
+
+typedef struct RudaMirManagedArray {
+    RudaTypeId type;
+    RudaTypeId element_type;
+    size_t allocation_size;
+    size_t length;
+    RudaMirValue elements[];
+} RudaMirManagedArray;
 
 static RudaMirRecordField *ruda_mir_managed_record_layout(
     RudaMirManagedRecord *record
@@ -72,6 +151,9 @@ RudaMirFunctionOptions ruda_mir_function_default_options(void) {
     options.max_enum_arguments = 1000000;
     options.max_string_constants = 100000;
     options.max_string_bytes = 16U * 1024U * 1024U;
+    options.max_array_layouts = 100000;
+    options.max_array_constructions = 100000;
+    options.max_array_arguments = 1000000;
     options.max_verify_work = 100000000;
     return options;
 }
@@ -94,6 +176,9 @@ RudaMirExecutionOptions ruda_mir_execution_default_options(void) {
     options.max_total_fields = 10000000;
     options.max_strings = 1000000;
     options.max_total_string_bytes = 64U * 1024U * 1024U;
+    options.max_arrays = 1000000;
+    options.max_array_length = 1000000;
+    options.max_total_array_elements = 10000000;
     return options;
 }
 
@@ -102,13 +187,20 @@ bool ruda_mir_execution_init(
     RudaAllocator allocator,
     RudaMirExecutionOptions options
 ) {
+    uint64_t provenance = 0;
     if (execution == NULL || allocator.allocate == NULL
         || allocator.resize == NULL || allocator.deallocate == NULL
-        || options.max_objects == 0 || options.max_objects > UINT32_MAX
+        || options.max_objects == 0
+        || options.max_objects > RUDA_MIR_REFERENCE_INDEX_MASK
         || options.max_fields_per_object == 0
         || options.max_total_fields == 0 || options.max_strings == 0
-        || options.max_strings > UINT32_MAX
-        || options.max_total_string_bytes == 0) {
+        || options.max_strings > RUDA_MIR_REFERENCE_INDEX_MASK
+        || options.max_total_string_bytes == 0
+        || options.max_arrays == 0
+        || options.max_arrays > RUDA_MIR_REFERENCE_INDEX_MASK
+        || options.max_array_length == 0
+        || options.max_total_array_elements == 0
+        || !ruda_new_provenance(&provenance)) {
         return false;
     }
     memset(execution, 0, sizeof(*execution));
@@ -124,13 +216,20 @@ bool ruda_mir_execution_init(
             &execution->strings,
             allocator,
             sizeof(RudaMirManagedString *)
+        ) || !ruda_vector_init(
+            &execution->arrays,
+            allocator,
+            sizeof(RudaMirManagedArray *)
         )) {
+        ruda_vector_dispose(&execution->arrays);
+        ruda_vector_dispose(&execution->strings);
         ruda_vector_dispose(&execution->enums);
         ruda_vector_dispose(&execution->objects);
         return false;
     }
     execution->allocator = allocator;
     execution->options = options;
+    execution->provenance = provenance;
     execution->initialized = true;
     return true;
 }
@@ -182,6 +281,21 @@ void ruda_mir_execution_dispose(RudaMirExecution *execution) {
             *value = NULL;
         }
     }
+    for (index = 0; index < execution->arrays.length; index += 1) {
+        RudaMirManagedArray **value = ruda_vector_at(
+            &execution->arrays,
+            index
+        );
+        if (value != NULL && *value != NULL) {
+            ruda_deallocate(
+                &execution->allocator,
+                *value,
+                (*value)->allocation_size
+            );
+            *value = NULL;
+        }
+    }
+    ruda_vector_dispose(&execution->arrays);
     ruda_vector_dispose(&execution->strings);
     ruda_vector_dispose(&execution->enums);
     ruda_vector_dispose(&execution->objects);
@@ -192,10 +306,16 @@ static const RudaMirManagedEnum *ruda_mir_execution_enum_value(
     const RudaMirExecution *execution,
     RudaMirValue value
 ) {
+    size_t index = 0;
     RudaMirManagedEnum *const *stored = execution != NULL
             && execution->initialized
-            && value.as.reference != RUDA_MIR_INVALID_REFERENCE
-        ? ruda_vector_at_const(&execution->enums, value.as.reference)
+            && ruda_mir_reference_decode(
+                execution,
+                value.as.reference,
+                RUDA_MIR_REFERENCE_ENUM,
+                &index
+            )
+        ? ruda_vector_at_const(&execution->enums, index)
         : NULL;
     return stored != NULL && *stored != NULL && (*stored)->type == value.type
         ? *stored
@@ -242,12 +362,57 @@ static const RudaMirManagedString *ruda_mir_execution_string_value(
     const RudaMirExecution *execution,
     RudaMirValue value
 ) {
+    size_t index = 0;
     RudaMirManagedString *const *stored = execution != NULL
             && execution->initialized && value.type == RUDA_TYPE_STRING
-            && value.as.reference != RUDA_MIR_INVALID_REFERENCE
-        ? ruda_vector_at_const(&execution->strings, value.as.reference)
+            && ruda_mir_reference_decode(
+                execution,
+                value.as.reference,
+                RUDA_MIR_REFERENCE_STRING,
+                &index
+            )
+        ? ruda_vector_at_const(&execution->strings, index)
         : NULL;
     return stored != NULL ? *stored : NULL;
+}
+
+static RudaMirManagedArray *ruda_mir_execution_array_value_mutable(
+    RudaMirExecution *execution,
+    RudaMirValue value
+) {
+    size_t index = 0;
+    RudaMirManagedArray **stored = execution != NULL && execution->initialized
+            && ruda_mir_reference_decode(
+                execution,
+                value.as.reference,
+                RUDA_MIR_REFERENCE_ARRAY,
+                &index
+            )
+        ? ruda_vector_at(&execution->arrays, index)
+        : NULL;
+    return stored != NULL && *stored != NULL && (*stored)->type == value.type
+        ? *stored
+        : NULL;
+}
+
+static const RudaMirManagedArray *ruda_mir_execution_array_value(
+    const RudaMirExecution *execution,
+    RudaMirValue value
+) {
+    size_t index = 0;
+    RudaMirManagedArray *const *stored = execution != NULL
+            && execution->initialized
+            && ruda_mir_reference_decode(
+                execution,
+                value.as.reference,
+                RUDA_MIR_REFERENCE_ARRAY,
+                &index
+            )
+        ? ruda_vector_at_const(&execution->arrays, index)
+        : NULL;
+    return stored != NULL && *stored != NULL && (*stored)->type == value.type
+        ? *stored
+        : NULL;
 }
 
 bool ruda_mir_execution_string_bytes(
@@ -265,6 +430,61 @@ bool ruda_mir_execution_string_bytes(
     }
     *bytes = stored->bytes;
     *length = stored->length;
+    return true;
+}
+
+bool ruda_mir_execution_array_length(
+    const RudaMirExecution *execution,
+    RudaMirValue value,
+    size_t *length
+) {
+    const RudaMirManagedArray *stored = ruda_mir_execution_array_value(
+        execution,
+        value
+    );
+    if (stored == NULL || length == NULL) {
+        return false;
+    }
+    *length = stored->length;
+    return true;
+}
+
+bool ruda_mir_execution_array_element(
+    const RudaMirExecution *execution,
+    RudaMirValue value,
+    size_t index,
+    RudaMirValue *result
+) {
+    const RudaMirManagedArray *stored = ruda_mir_execution_array_value(
+        execution,
+        value
+    );
+    if (stored == NULL || result == NULL || index >= stored->length) {
+        return false;
+    }
+    *result = stored->elements[index];
+    return true;
+}
+
+bool ruda_mir_execution_array_at(
+    const RudaMirExecution *execution,
+    size_t ordinal,
+    RudaMirValue *result
+) {
+    RudaMirManagedArray *const *stored = execution != NULL
+            && execution->initialized
+        ? ruda_vector_at_const(&execution->arrays, ordinal)
+        : NULL;
+    if (stored == NULL || *stored == NULL || result == NULL
+        || !ruda_mir_reference_encode(
+            execution,
+            RUDA_MIR_REFERENCE_ARRAY,
+            ordinal,
+            &result->as.reference
+        )) {
+        return false;
+    }
+    result->type = (*stored)->type;
     return true;
 }
 
@@ -300,6 +520,9 @@ bool ruda_mir_function_init(
     bool enum_constructions_initialized = false;
     bool enum_arguments_initialized = false;
     bool string_constants_initialized = false;
+    bool arrays_initialized = false;
+    bool array_constructions_initialized = false;
+    bool array_arguments_initialized = false;
     if (function == NULL || allocator.allocate == NULL
         || allocator.deallocate == NULL
         || (parameter_types == NULL && parameter_count != 0)
@@ -326,6 +549,11 @@ bool ruda_mir_function_init(
         || options.max_string_constants == 0
         || options.max_string_constants > UINT32_MAX
         || options.max_string_bytes == 0
+        || options.max_array_layouts == 0
+        || options.max_array_layouts > UINT32_MAX
+        || options.max_array_constructions == 0
+        || options.max_array_constructions > UINT32_MAX
+        || options.max_array_arguments == 0
         || options.max_verify_work == 0) {
         return false;
     }
@@ -405,18 +633,43 @@ bool ruda_mir_function_init(
         allocator,
         sizeof(RudaMirStringConstant)
     );
+    arrays_initialized = ruda_vector_init(
+        &function->arrays,
+        allocator,
+        sizeof(RudaMirArray)
+    );
+    array_constructions_initialized = ruda_vector_init(
+        &function->array_constructions,
+        allocator,
+        sizeof(RudaMirArrayConstruction)
+    );
+    array_arguments_initialized = ruda_vector_init(
+        &function->array_arguments,
+        allocator,
+        sizeof(RudaMirArrayArgument)
+    );
     if (!registers_initialized || !blocks_initialized || !calls_initialized
         || !call_arguments_initialized || !records_initialized
         || !record_fields_initialized || !record_constructions_initialized
         || !record_arguments_initialized || !enums_initialized
         || !enum_variants_initialized || !enum_payloads_initialized
         || !enum_constructions_initialized || !enum_arguments_initialized
-        || !string_constants_initialized
+        || !string_constants_initialized || !arrays_initialized
+        || !array_constructions_initialized || !array_arguments_initialized
         || (parameter_count != 0 && !ruda_vector_append(
             &function->register_types,
             parameter_types,
             parameter_count
         ))) {
+        if (array_arguments_initialized) {
+            ruda_vector_dispose(&function->array_arguments);
+        }
+        if (array_constructions_initialized) {
+            ruda_vector_dispose(&function->array_constructions);
+        }
+        if (arrays_initialized) {
+            ruda_vector_dispose(&function->arrays);
+        }
         if (string_constants_initialized) {
             ruda_vector_dispose(&function->string_constants);
         }
@@ -493,6 +746,9 @@ void ruda_mir_function_dispose(RudaMirFunction *function) {
         }
     }
     ruda_vector_dispose(&function->string_constants);
+    ruda_vector_dispose(&function->array_arguments);
+    ruda_vector_dispose(&function->array_constructions);
+    ruda_vector_dispose(&function->arrays);
     ruda_vector_dispose(&function->call_arguments);
     ruda_vector_dispose(&function->calls);
     ruda_vector_dispose(&function->record_arguments);
@@ -1032,6 +1288,108 @@ bool ruda_mir_add_string_constant(
     return true;
 }
 
+bool ruda_mir_add_array(
+    RudaMirFunction *function,
+    RudaTypeId type,
+    RudaTypeId element_type,
+    RudaMirArrayId *result
+) {
+    size_t index = 0;
+    RudaMirArray array;
+    if (function == NULL || !function->initialized || result == NULL
+        || type < RUDA_TYPE_FIRST_DYNAMIC
+        || element_type == RUDA_TYPE_INVALID) {
+        return false;
+    }
+    for (index = 0; index < function->arrays.length; index += 1) {
+        const RudaMirArray *existing = ruda_vector_at_const(
+            &function->arrays,
+            index
+        );
+        if (existing != NULL && existing->type == type) {
+            if (existing->element_type != element_type) {
+                return false;
+            }
+            *result = (RudaMirArrayId)index;
+            return true;
+        }
+    }
+    if (function->arrays.length >= function->options.max_array_layouts
+        || function->arrays.length >= UINT32_MAX) {
+        return false;
+    }
+    array.type = type;
+    array.element_type = element_type;
+    if (!ruda_vector_push(&function->arrays, &array)) {
+        return false;
+    }
+    *result = (RudaMirArrayId)(function->arrays.length - 1);
+    return true;
+}
+
+bool ruda_mir_add_array_construction(
+    RudaMirFunction *function,
+    RudaMirArrayId array_id,
+    const RudaMirArrayArgument *arguments,
+    size_t argument_count,
+    RudaMirArrayConstructionId *result
+) {
+    const RudaMirArray *array = NULL;
+    RudaMirArrayConstruction construction;
+    size_t new_argument_count = 0;
+    size_t index = 0;
+    if (function == NULL || !function->initialized || result == NULL
+        || (arguments == NULL && argument_count != 0)
+        || function->array_constructions.length
+            >= function->options.max_array_constructions
+        || function->array_constructions.length >= UINT32_MAX
+        || !ruda_size_add(
+            function->array_arguments.length,
+            argument_count,
+            &new_argument_count
+        ) || new_argument_count > function->options.max_array_arguments) {
+        return false;
+    }
+    array = ruda_vector_at_const(&function->arrays, array_id);
+    if (array == NULL) {
+        return false;
+    }
+    for (index = 0; index < argument_count; index += 1) {
+        const RudaTypeId *actual = ruda_vector_at_const(
+            &function->register_types,
+            arguments[index].register_id
+        );
+        if (actual == NULL || arguments[index].type != array->element_type
+            || *actual != arguments[index].type) {
+            return false;
+        }
+    }
+    construction.array = array_id;
+    construction.argument_start = function->array_arguments.length;
+    construction.argument_count = argument_count;
+    if (!ruda_vector_reserve(
+            &function->array_constructions,
+            function->array_constructions.length + 1
+        ) || !ruda_vector_reserve(
+            &function->array_arguments,
+            new_argument_count
+        ) || !ruda_vector_append(
+            &function->array_arguments,
+            arguments,
+            argument_count
+        )) {
+        return false;
+    }
+    if (!ruda_vector_push(&function->array_constructions, &construction)) {
+        function->array_arguments.length = construction.argument_start;
+        return false;
+    }
+    *result = (RudaMirArrayConstructionId)(
+        function->array_constructions.length - 1
+    );
+    return true;
+}
+
 bool ruda_mir_append_instruction(
     RudaMirFunction *function,
     RudaMirBlockId block,
@@ -1209,6 +1567,34 @@ static const RudaMirStringConstant *ruda_mir_string_constant(
     return string_id != RUDA_MIR_NO_STRING
         ? ruda_vector_at_const(&function->string_constants, string_id)
         : NULL;
+}
+
+static const RudaMirArray *ruda_mir_array(
+    const RudaMirFunction *function,
+    RudaMirArrayId array_id
+) {
+    return array_id != RUDA_MIR_NO_ARRAY
+        ? ruda_vector_at_const(&function->arrays, array_id)
+        : NULL;
+}
+
+static const RudaMirArrayConstruction *ruda_mir_array_construction(
+    const RudaMirFunction *function,
+    RudaMirArrayConstructionId construction_id
+) {
+    return construction_id != RUDA_MIR_NO_ARRAY_CONSTRUCTION
+        ? ruda_vector_at_const(
+            &function->array_constructions,
+            construction_id
+        )
+        : NULL;
+}
+
+static const RudaMirArrayArgument *ruda_mir_array_argument(
+    const RudaMirFunction *function,
+    size_t index
+) {
+    return ruda_vector_at_const(&function->array_arguments, index);
 }
 
 static RudaMirVerifyStatus ruda_mir_validate_instruction_types(
@@ -1457,6 +1843,95 @@ static RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             }
             return RUDA_MIR_VERIFY_OK;
         }
+        case RUDA_MIR_ARRAY_NEW: {
+            const RudaMirArrayConstruction *construction =
+                ruda_mir_array_construction(
+                    function,
+                    instruction->array_construction
+                );
+            const RudaMirArray *array = construction != NULL
+                ? ruda_mir_array(function, construction->array)
+                : NULL;
+            size_t argument_end = 0;
+            size_t index = 0;
+            if (construction == NULL || array == NULL
+                || instruction->array != construction->array
+                || target_type != array->type
+                || !ruda_size_add(
+                    construction->argument_start,
+                    construction->argument_count,
+                    &argument_end
+                ) || argument_end > function->array_arguments.length) {
+                return construction != NULL && array != NULL
+                        && target_type != array->type
+                    ? RUDA_MIR_VERIFY_TYPE_MISMATCH
+                    : RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+            }
+            for (index = construction->argument_start; index < argument_end;
+                index += 1) {
+                const RudaMirArrayArgument *argument = ruda_mir_array_argument(
+                    function,
+                    index
+                );
+                RudaTypeId actual = argument != NULL
+                    ? ruda_mir_register_type(function, argument->register_id)
+                    : RUDA_TYPE_INVALID;
+                if (actual == RUDA_TYPE_INVALID) {
+                    return RUDA_MIR_VERIFY_INVALID_REGISTER;
+                }
+                if (argument->type != array->element_type
+                    || actual != argument->type) {
+                    return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+                }
+            }
+            return RUDA_MIR_VERIFY_OK;
+        }
+        case RUDA_MIR_ARRAY_LENGTH:
+        case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+        case RUDA_MIR_ARRAY_GET:
+        case RUDA_MIR_ARRAY_SET: {
+            const RudaMirArray *array = ruda_mir_array(
+                function,
+                instruction->array
+            );
+            if (array == NULL) {
+                return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+            }
+            if (first_type == RUDA_TYPE_INVALID
+                || (instruction->kind != RUDA_MIR_ARRAY_LENGTH
+                    && second_type == RUDA_TYPE_INVALID)
+                || (instruction->kind == RUDA_MIR_ARRAY_SET
+                    && ruda_mir_register_type(
+                        function,
+                        instruction->third
+                    ) == RUDA_TYPE_INVALID)) {
+                return RUDA_MIR_VERIFY_INVALID_REGISTER;
+            }
+            if (first_type != array->type) {
+                return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == RUDA_MIR_ARRAY_LENGTH) {
+                return target_type == RUDA_TYPE_I64
+                    ? RUDA_MIR_VERIFY_OK
+                    : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX) {
+                return second_type == RUDA_TYPE_I64
+                        && target_type == array->type
+                    ? RUDA_MIR_VERIFY_OK
+                    : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (second_type != RUDA_TYPE_I64
+                || target_type != array->element_type
+                || (instruction->kind == RUDA_MIR_ARRAY_SET
+                    && ruda_mir_register_type(
+                        function,
+                        instruction->third
+                    ) != array->element_type)) {
+                return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            return RUDA_MIR_VERIFY_OK;
+        }
         case RUDA_MIR_ENUM_NEW: {
             const RudaMirEnumConstruction *construction =
                 ruda_mir_enum_construction(
@@ -1607,7 +2082,8 @@ static bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind) {
     return kind != RUDA_MIR_CONSTANT_I64 && kind != RUDA_MIR_CONSTANT_F64
         && kind != RUDA_MIR_CONSTANT_BOOL
         && kind != RUDA_MIR_CONSTANT_STRING && kind != RUDA_MIR_RECORD_NEW
-        && kind != RUDA_MIR_ENUM_NEW && kind != RUDA_MIR_CALL;
+        && kind != RUDA_MIR_ENUM_NEW && kind != RUDA_MIR_ARRAY_NEW
+        && kind != RUDA_MIR_CALL;
 }
 
 static bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
@@ -1636,6 +2112,9 @@ static bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_LESS_EQUAL_F64:
         case RUDA_MIR_RECORD_SET:
         case RUDA_MIR_RECORD_IDENTITY_SAME:
+        case RUDA_MIR_ARRAY_GET:
+        case RUDA_MIR_ARRAY_SET:
+        case RUDA_MIR_ARRAY_REQUIRE_INDEX:
             return true;
         case RUDA_MIR_CONSTANT_I64:
         case RUDA_MIR_CONSTANT_F64:
@@ -1648,6 +2127,8 @@ static bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_BITWISE_NOT_I64:
         case RUDA_MIR_RECORD_NEW:
         case RUDA_MIR_RECORD_GET:
+        case RUDA_MIR_ARRAY_NEW:
+        case RUDA_MIR_ARRAY_LENGTH:
         case RUDA_MIR_ENUM_NEW:
         case RUDA_MIR_ENUM_IS_VARIANT:
         case RUDA_MIR_ENUM_REQUIRE_VARIANT:
@@ -1656,6 +2137,10 @@ static bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
             return false;
     }
     return false;
+}
+
+static bool ruda_mir_instruction_uses_third(RudaMirInstructionKind kind) {
+    return kind == RUDA_MIR_ARRAY_SET;
 }
 
 static bool ruda_mir_uses_f64(const RudaMirFunction *function) {
@@ -1733,11 +2218,11 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
     unsigned char *incoming = NULL;
     unsigned char *outgoing = NULL;
     unsigned char *scratch = NULL;
-    RudaMap record_types;
+    RudaMap managed_types;
     size_t iteration = 0;
     size_t work = 0;
     bool changed = false;
-    bool record_types_initialized = false;
+    bool managed_types_initialized = false;
     RudaMirVerifyStatus status = RUDA_MIR_VERIFY_OK;
     if (function == NULL || !function->initialized
         || function->result_type == RUDA_TYPE_INVALID
@@ -1768,20 +2253,26 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
         || function->string_constants.length
             > function->options.max_string_constants
         || function->string_bytes > function->options.max_string_bytes
+        || function->arrays.length > function->options.max_array_layouts
+        || function->array_constructions.length
+            > function->options.max_array_constructions
+        || function->array_arguments.length
+            > function->options.max_array_arguments
         || function->options.max_verify_work == 0) {
         return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
     }
-    if (function->records.length != 0 || function->enums.length != 0) {
+    if (function->records.length != 0 || function->enums.length != 0
+        || function->arrays.length != 0) {
         if (!ruda_map_init(
-                &record_types,
+                &managed_types,
                 function->allocator,
-                sizeof(RudaMirRecordId),
+                sizeof(RudaTypeId),
                 UINT64_C(0x725564614d495231),
                 UINT64_C(0x725564614d495232)
             )) {
             return RUDA_MIR_VERIFY_ALLOCATION_FAILED;
         }
-        record_types_initialized = true;
+        managed_types_initialized = true;
     }
     {
         size_t verified_string_bytes = 0;
@@ -1830,7 +2321,7 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
         );
         size_t field_end = 0;
         size_t field_index = 0;
-        if (record == NULL || record->type == RUDA_TYPE_INVALID
+        if (record == NULL || record->type < RUDA_TYPE_FIRST_DYNAMIC
             || !ruda_size_add(
                 record->field_start,
                 record->field_count,
@@ -1840,7 +2331,7 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
             goto cleanup;
         }
         if (ruda_map_get_const(
-                &record_types,
+                &managed_types,
                 &record->type,
                 sizeof(record->type)
             ) != NULL) {
@@ -1850,7 +2341,7 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
         {
             RudaMirRecordId record_id = (RudaMirRecordId)block_index;
             if (!ruda_map_put(
-                    &record_types,
+                    &managed_types,
                     &record->type,
                     sizeof(record->type),
                     &record_id
@@ -1959,7 +2450,8 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
         size_t payload_end = 0;
         size_t payload_cursor = 0;
         size_t variant_index = 0;
-        if (enum_layout == NULL || enum_layout->type == RUDA_TYPE_INVALID
+        if (enum_layout == NULL
+            || enum_layout->type < RUDA_TYPE_FIRST_DYNAMIC
             || !ruda_size_add(
                 enum_layout->variant_start,
                 enum_layout->variant_count,
@@ -1974,7 +2466,7 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
             goto cleanup;
         }
         if (ruda_map_get_const(
-                &record_types,
+                &managed_types,
                 &enum_layout->type,
                 sizeof(enum_layout->type)
             ) != NULL) {
@@ -1984,7 +2476,7 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
         {
             RudaMirEnumId enum_id = (RudaMirEnumId)block_index;
             if (!ruda_map_put(
-                    &record_types,
+                    &managed_types,
                     &enum_layout->type,
                     sizeof(enum_layout->type),
                     &enum_id
@@ -2049,6 +2541,44 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
         }
         if (payload_cursor != enum_layout->payload_count) {
             status = RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+            goto cleanup;
+        }
+    }
+    for (block_index = 0; block_index < function->arrays.length;
+        block_index += 1) {
+        const RudaMirArray *array = ruda_mir_array(
+            function,
+            (RudaMirArrayId)block_index
+        );
+        RudaTypeId layout_id = (RudaTypeId)block_index;
+        if (array == NULL || array->type < RUDA_TYPE_FIRST_DYNAMIC
+            || array->element_type == RUDA_TYPE_INVALID) {
+            status = RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+            goto cleanup;
+        }
+        if (ruda_map_get_const(
+                &managed_types,
+                &array->type,
+                sizeof(array->type)
+            ) != NULL) {
+            status = RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+            goto cleanup;
+        }
+        if (!ruda_map_put(
+                &managed_types,
+                &array->type,
+                sizeof(array->type),
+                &layout_id
+            )) {
+            status = RUDA_MIR_VERIFY_ALLOCATION_FAILED;
+            goto cleanup;
+        }
+        if (!ruda_mir_consume_verify_work(
+                &work,
+                1,
+                function->options.max_verify_work
+            )) {
+            status = RUDA_MIR_VERIFY_LIMIT_REACHED;
             goto cleanup;
         }
     }
@@ -2121,6 +2651,60 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
             }
         }
     }
+    for (block_index = 0; block_index < function->array_constructions.length;
+        block_index += 1) {
+        const RudaMirArrayConstruction *construction =
+            ruda_mir_array_construction(
+                function,
+                (RudaMirArrayConstructionId)block_index
+            );
+        const RudaMirArray *array = construction != NULL
+            ? ruda_mir_array(function, construction->array)
+            : NULL;
+        size_t argument_end = 0;
+        size_t argument_index = 0;
+        if (construction == NULL || array == NULL || !ruda_size_add(
+                construction->argument_start,
+                construction->argument_count,
+                &argument_end
+            ) || argument_end > function->array_arguments.length) {
+            status = RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+            goto cleanup;
+        }
+        if (!ruda_mir_consume_verify_work(
+                &work,
+                1,
+                function->options.max_verify_work
+            )) {
+            status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+            goto cleanup;
+        }
+        for (argument_index = construction->argument_start;
+            argument_index < argument_end; argument_index += 1) {
+            const RudaMirArrayArgument *argument = ruda_mir_array_argument(
+                function,
+                argument_index
+            );
+            if (argument == NULL
+                || argument->register_id >= function->register_types.length
+                || argument->type != array->element_type
+                || ruda_mir_register_type(
+                    function,
+                    argument->register_id
+                ) != argument->type) {
+                status = RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+                goto cleanup;
+            }
+            if (!ruda_mir_consume_verify_work(
+                    &work,
+                    1,
+                    function->options.max_verify_work
+                )) {
+                status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+                goto cleanup;
+            }
+        }
+    }
     block_count = function->blocks.length;
     register_count = function->register_types.length;
     if (!ruda_size_multiply(block_count, register_count, &cell_count)
@@ -2135,7 +2719,8 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
             sizeof(size_t),
             &predecessor_offsets_size
         )) {
-        return RUDA_MIR_VERIFY_LIMIT_REACHED;
+        status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+        goto cleanup;
     }
     cell_allocation_count = cell_count == 0 ? 1 : cell_count;
     scratch_allocation_count = register_count == 0 ? 1 : register_count;
@@ -2248,6 +2833,23 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                     ruda_mir_enum_construction(
                         function,
                         instruction->enum_construction
+                    );
+                if (construction == NULL || !ruda_size_add(
+                        instruction_work,
+                        construction->argument_count,
+                        &instruction_work
+                    )) {
+                    status = construction == NULL
+                        ? RUDA_MIR_VERIFY_INVALID_ARGUMENT
+                        : RUDA_MIR_VERIFY_LIMIT_REACHED;
+                    goto cleanup;
+                }
+            } else if (instruction != NULL
+                && instruction->kind == RUDA_MIR_ARRAY_NEW) {
+                const RudaMirArrayConstruction *construction =
+                    ruda_mir_array_construction(
+                        function,
+                        instruction->array_construction
                     );
                 if (construction == NULL || !ruda_size_add(
                         instruction_work,
@@ -2612,6 +3214,17 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                 status = RUDA_MIR_VERIFY_UNINITIALIZED_REGISTER;
                 goto cleanup;
             }
+            if (ruda_mir_instruction_uses_third(instruction->kind)
+                && !ruda_mir_assigned_register(
+                    working,
+                    register_count,
+                    instruction->third
+                )) {
+                status = instruction->third < register_count
+                    ? RUDA_MIR_VERIFY_UNINITIALIZED_REGISTER
+                    : RUDA_MIR_VERIFY_INVALID_REGISTER;
+                goto cleanup;
+            }
             if (instruction->kind == RUDA_MIR_CALL) {
                 const RudaMirCall *call = ruda_mir_call(
                     function,
@@ -2731,6 +3344,46 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                         goto cleanup;
                     }
                 }
+            } else if (instruction->kind == RUDA_MIR_ARRAY_NEW) {
+                const RudaMirArrayConstruction *construction =
+                    ruda_mir_array_construction(
+                        function,
+                        instruction->array_construction
+                    );
+                size_t argument_end = 0;
+                size_t argument_index = 0;
+                if (construction == NULL || !ruda_size_add(
+                        construction->argument_start,
+                        construction->argument_count,
+                        &argument_end
+                    ) || argument_end > function->array_arguments.length) {
+                    status = RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+                    goto cleanup;
+                }
+                if (!ruda_mir_consume_verify_work(
+                        &work,
+                        construction->argument_count,
+                        function->options.max_verify_work
+                    )) {
+                    status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+                    goto cleanup;
+                }
+                for (argument_index = construction->argument_start;
+                    argument_index < argument_end; argument_index += 1) {
+                    const RudaMirArrayArgument *argument =
+                        ruda_mir_array_argument(function, argument_index);
+                    if (argument == NULL || !ruda_mir_assigned_register(
+                            working,
+                            register_count,
+                            argument->register_id
+                        )) {
+                        status = argument != NULL
+                                && argument->register_id < register_count
+                            ? RUDA_MIR_VERIFY_UNINITIALIZED_REGISTER
+                            : RUDA_MIR_VERIFY_INVALID_REGISTER;
+                        goto cleanup;
+                    }
+                }
             }
             working[instruction->target] = 1;
         }
@@ -2823,8 +3476,8 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
     }
 
 cleanup:
-    if (record_types_initialized) {
-        ruda_map_dispose(&record_types);
+    if (managed_types_initialized) {
+        ruda_map_dispose(&managed_types);
     }
     if (scratch != NULL) {
         ruda_deallocate(
@@ -2875,9 +3528,16 @@ static RudaMirManagedRecord *ruda_mir_execution_record(
     RudaMirExecution *execution,
     RudaMirReference reference
 ) {
+    size_t index = 0;
     RudaMirManagedRecord **record = execution != NULL
-            && execution->initialized && reference != RUDA_MIR_INVALID_REFERENCE
-        ? ruda_vector_at(&execution->objects, reference)
+            && execution->initialized
+            && ruda_mir_reference_decode(
+                execution,
+                reference,
+                RUDA_MIR_REFERENCE_RECORD,
+                &index
+            )
+        ? ruda_vector_at(&execution->objects, index)
         : NULL;
     return record != NULL ? *record : NULL;
 }
@@ -2916,14 +3576,33 @@ bool ruda_mir_execution_owns_reference(
     const RudaMirExecution *execution,
     RudaMirValue value
 ) {
+    size_t index = 0;
     RudaMirManagedRecord *const *record = execution != NULL
             && execution->initialized
-            && value.as.reference != RUDA_MIR_INVALID_REFERENCE
-        ? ruda_vector_at_const(&execution->objects, value.as.reference)
+            && ruda_mir_reference_decode(
+                execution,
+                value.as.reference,
+                RUDA_MIR_REFERENCE_RECORD,
+                &index
+            )
+        ? ruda_vector_at_const(&execution->objects, index)
         : NULL;
     return ruda_mir_execution_string_value(execution, value) != NULL
         || ruda_mir_execution_enum_value(execution, value) != NULL
+        || ruda_mir_execution_array_value(execution, value) != NULL
         || (record != NULL && *record != NULL && (*record)->type == value.type);
+}
+
+static bool ruda_mir_type_is_managed(RudaTypeId type) {
+    return type == RUDA_TYPE_STRING || type >= RUDA_TYPE_FIRST_DYNAMIC;
+}
+
+static bool ruda_mir_managed_array_matches_layout(
+    const RudaMirArray *layout,
+    const RudaMirManagedArray *value
+) {
+    return layout != NULL && value != NULL && value->type == layout->type
+        && value->element_type == layout->element_type;
 }
 
 static RudaMirEnumVariant *ruda_mir_managed_enum_variants(
@@ -3039,7 +3718,7 @@ static RudaMirInterpretStatus ruda_mir_execution_new_record(
             execution->enums.length,
             &object_count
         ) || object_count >= execution->options.max_objects
-        || execution->objects.length >= UINT32_MAX
+        || execution->objects.length >= RUDA_MIR_REFERENCE_INDEX_MASK
         || field_count > execution->options.max_fields_per_object
         || !ruda_size_add(
             execution->total_fields,
@@ -3093,8 +3772,14 @@ static RudaMirInterpretStatus ruda_mir_execution_new_record(
         return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     execution->total_fields = new_total_fields;
-    *result = (RudaMirReference)(execution->objects.length - 1);
-    return RUDA_MIR_INTERPRET_OK;
+    return ruda_mir_reference_encode(
+            execution,
+            RUDA_MIR_REFERENCE_RECORD,
+            execution->objects.length - 1,
+            result
+        )
+        ? RUDA_MIR_INTERPRET_OK
+        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
 }
 
 static RudaMirInterpretStatus ruda_mir_execution_new_string(
@@ -3109,7 +3794,7 @@ static RudaMirInterpretStatus ruda_mir_execution_new_string(
     if (execution == NULL || !execution->initialized || result == NULL
         || (bytes == NULL && length != 0)
         || execution->strings.length >= execution->options.max_strings
-        || execution->strings.length >= UINT32_MAX
+        || execution->strings.length >= RUDA_MIR_REFERENCE_INDEX_MASK
         || !ruda_size_add(sizeof(*value), length, &allocation_size)
         || !ruda_size_add(
             execution->total_string_bytes,
@@ -3132,8 +3817,14 @@ static RudaMirInterpretStatus ruda_mir_execution_new_string(
         return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     execution->total_string_bytes = new_total;
-    *result = (RudaMirReference)(execution->strings.length - 1);
-    return RUDA_MIR_INTERPRET_OK;
+    return ruda_mir_reference_encode(
+            execution,
+            RUDA_MIR_REFERENCE_STRING,
+            execution->strings.length - 1,
+            result
+        )
+        ? RUDA_MIR_INTERPRET_OK
+        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
 }
 
 static RudaMirInterpretStatus ruda_mir_execution_new_enum(
@@ -3178,7 +3869,7 @@ static RudaMirInterpretStatus ruda_mir_execution_new_enum(
             enum_layout->payload_count,
             &object_slots
         ) || object_count >= execution->options.max_objects
-        || execution->enums.length >= UINT32_MAX
+        || execution->enums.length >= RUDA_MIR_REFERENCE_INDEX_MASK
         || object_slots > execution->options.max_fields_per_object
         || !ruda_size_add(
             execution->total_fields,
@@ -3278,8 +3969,222 @@ static RudaMirInterpretStatus ruda_mir_execution_new_enum(
         return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     execution->total_fields = new_total_fields;
-    *result = (RudaMirReference)(execution->enums.length - 1);
+    return ruda_mir_reference_encode(
+            execution,
+            RUDA_MIR_REFERENCE_ENUM,
+            execution->enums.length - 1,
+            result
+        )
+        ? RUDA_MIR_INTERPRET_OK
+        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+}
+
+static RudaMirInterpretStatus ruda_mir_execution_array_preflight(
+    RudaMirExecution *execution,
+    size_t length,
+    size_t *new_total,
+    size_t *element_bytes,
+    size_t *allocation_size
+) {
+    size_t checked_total = 0;
+    size_t checked_element_bytes = 0;
+    size_t checked_allocation_size = 0;
+    if (execution == NULL || !execution->initialized) {
+        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+    }
+    if (execution->arrays.length >= execution->options.max_arrays
+        || execution->arrays.length >= RUDA_MIR_REFERENCE_INDEX_MASK
+        || length > execution->options.max_array_length
+        || (uintmax_t)length > (uintmax_t)INT64_MAX
+        || !ruda_size_add(
+            execution->total_array_elements,
+            length,
+            &checked_total
+        ) || checked_total > execution->options.max_total_array_elements
+        || !ruda_size_multiply(
+            length,
+            sizeof(RudaMirValue),
+            &checked_element_bytes
+        ) || !ruda_size_add(
+            offsetof(RudaMirManagedArray, elements),
+            checked_element_bytes,
+            &checked_allocation_size
+        )) {
+        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+    }
+    if (new_total != NULL) {
+        *new_total = checked_total;
+    }
+    if (element_bytes != NULL) {
+        *element_bytes = checked_element_bytes;
+    }
+    if (allocation_size != NULL) {
+        *allocation_size = checked_allocation_size;
+    }
     return RUDA_MIR_INTERPRET_OK;
+}
+
+static RudaMirInterpretStatus ruda_mir_execution_new_array(
+    RudaMirExecution *execution,
+    const RudaMirArray *layout,
+    const RudaMirValue *elements,
+    size_t length,
+    RudaMirReference *result
+) {
+    RudaMirManagedArray *value = NULL;
+    size_t element_bytes = 0;
+    size_t allocation_size = 0;
+    size_t new_total = 0;
+    size_t index = 0;
+    RudaMirInterpretStatus preflight_status;
+    if (execution == NULL || !execution->initialized || layout == NULL
+        || result == NULL || layout->type < RUDA_TYPE_FIRST_DYNAMIC
+        || layout->element_type == RUDA_TYPE_INVALID
+        || (elements == NULL && length != 0)) {
+        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+    }
+    preflight_status = ruda_mir_execution_array_preflight(
+        execution,
+        length,
+        &new_total,
+        &element_bytes,
+        &allocation_size
+    );
+    if (preflight_status != RUDA_MIR_INTERPRET_OK) {
+        return preflight_status;
+    }
+    for (index = 0; index < length; index += 1) {
+        if (elements[index].type != layout->element_type) {
+            return RUDA_MIR_INTERPRET_INVALID_MIR;
+        }
+        if (ruda_mir_type_is_managed(elements[index].type)
+            && !ruda_mir_execution_owns_reference(
+                execution,
+                elements[index]
+            )) {
+            return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+        }
+    }
+    if (!ruda_vector_reserve(
+            &execution->arrays,
+            execution->arrays.length + 1
+        )) {
+        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    }
+    value = ruda_allocate(&execution->allocator, allocation_size);
+    if (value == NULL) {
+        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    }
+    value->type = layout->type;
+    value->element_type = layout->element_type;
+    value->allocation_size = allocation_size;
+    value->length = length;
+    if (length != 0) {
+        memcpy(value->elements, elements, element_bytes);
+    }
+    if (!ruda_vector_push(&execution->arrays, &value)) {
+        ruda_deallocate(&execution->allocator, value, allocation_size);
+        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    }
+    execution->total_array_elements = new_total;
+    return ruda_mir_reference_encode(
+            execution,
+            RUDA_MIR_REFERENCE_ARRAY,
+            execution->arrays.length - 1,
+            result
+        )
+        ? RUDA_MIR_INTERPRET_OK
+        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+}
+
+static size_t ruda_mir_append_decimal_size(
+    unsigned char *buffer,
+    size_t offset,
+    size_t value
+) {
+    unsigned char digits[3 * sizeof(size_t)];
+    size_t count = 0;
+    do {
+        digits[count] = (unsigned char)('0' + value % 10);
+        count += 1;
+        value /= 10;
+    } while (value != 0);
+    while (count != 0) {
+        count -= 1;
+        buffer[offset] = digits[count];
+        offset += 1;
+    }
+    return offset;
+}
+
+static size_t ruda_mir_append_decimal_i64(
+    unsigned char *buffer,
+    size_t offset,
+    int64_t value
+) {
+    uint64_t magnitude = (uint64_t)value;
+    unsigned char digits[3 * sizeof(uint64_t)];
+    size_t count = 0;
+    if (value < 0) {
+        buffer[offset] = '-';
+        offset += 1;
+        magnitude = UINT64_C(0) - magnitude;
+    }
+    do {
+        digits[count] = (unsigned char)('0' + magnitude % UINT64_C(10));
+        count += 1;
+        magnitude /= UINT64_C(10);
+    } while (magnitude != 0);
+    while (count != 0) {
+        count -= 1;
+        buffer[offset] = digits[count];
+        offset += 1;
+    }
+    return offset;
+}
+
+static RudaMirInterpretStatus ruda_mir_array_bounds_panic(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    int64_t index,
+    size_t length,
+    const RudaAllocator *allocator,
+    RudaMirPanic *panic
+) {
+    static const unsigned char prefix[] = "array index ";
+    static const unsigned char suffix[] = " is outside length ";
+    unsigned char message[sizeof(prefix) + sizeof(suffix)
+        + 3 * sizeof(uint64_t) + 3 * sizeof(size_t)];
+    size_t message_length = 0;
+    if (panic == NULL) {
+        return RUDA_MIR_INTERPRET_PANIC;
+    }
+    memcpy(message + message_length, prefix, sizeof(prefix) - 1);
+    message_length += sizeof(prefix) - 1;
+    message_length = ruda_mir_append_decimal_i64(
+        message,
+        message_length,
+        index
+    );
+    memcpy(message + message_length, suffix, sizeof(suffix) - 1);
+    message_length += sizeof(suffix) - 1;
+    message_length = ruda_mir_append_decimal_size(
+        message,
+        message_length,
+        length
+    );
+    if (!ruda_owned_bytes_copy(
+            &panic->message,
+            *allocator,
+            message,
+            message_length
+        )) {
+        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    }
+    panic->code = "G4002";
+    panic->symbol = function->symbol;
+    panic->span = instruction->span;
+    return RUDA_MIR_INTERPRET_PANIC;
 }
 
 static RudaMirInterpretStatus ruda_mir_invoke_call(
@@ -3355,6 +4260,7 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
     RudaMirValue *target = NULL;
     const RudaMirValue *first = NULL;
     const RudaMirValue *second = NULL;
+    const RudaMirValue *third = NULL;
     if (function == NULL || instruction == NULL || registers == NULL
         || allocator == NULL
         || instruction->target >= register_count) {
@@ -3363,6 +4269,7 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
     target = &registers[instruction->target];
     first = target;
     second = target;
+    third = target;
     if (ruda_mir_instruction_uses_first(instruction->kind)) {
         if (instruction->first >= register_count) {
             return RUDA_MIR_INTERPRET_INVALID_MIR;
@@ -3374,6 +4281,12 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             return RUDA_MIR_INTERPRET_INVALID_MIR;
         }
         second = &registers[instruction->second];
+    }
+    if (ruda_mir_instruction_uses_third(instruction->kind)) {
+        if (instruction->third >= register_count) {
+            return RUDA_MIR_INTERPRET_INVALID_MIR;
+        }
+        third = &registers[instruction->third];
     }
     switch (instruction->kind) {
         case RUDA_MIR_CONSTANT_I64:
@@ -3605,8 +4518,10 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 )) {
                 return RUDA_MIR_INTERPRET_INVALID_MIR;
             }
-            target->as.boolean = first->as.reference
-                == second->as.reference;
+            target->as.boolean = ruda_mir_reference_equal(
+                first->as.reference,
+                second->as.reference
+            );
             return RUDA_MIR_INTERPRET_OK;
         }
         case RUDA_MIR_LESS_I64:
@@ -3627,6 +4542,140 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 second->as.f64_bits
             );
             return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_ARRAY_NEW: {
+            const RudaMirArrayConstruction *construction =
+                ruda_mir_array_construction(
+                    function,
+                    instruction->array_construction
+                );
+            const RudaMirArray *layout = construction != NULL
+                ? ruda_mir_array(function, construction->array)
+                : NULL;
+            RudaMirValue *elements = NULL;
+            size_t element_bytes = 0;
+            size_t argument_end = 0;
+            size_t index = 0;
+            RudaMirInterpretStatus status;
+            if (construction == NULL || layout == NULL
+                || instruction->array != construction->array
+                || options.execution == NULL
+                || !ruda_size_add(
+                    construction->argument_start,
+                    construction->argument_count,
+                    &argument_end
+                ) || argument_end > function->array_arguments.length
+                || !ruda_size_multiply(
+                    construction->argument_count,
+                    sizeof(RudaMirValue),
+                    &element_bytes
+                )) {
+                return options.execution == NULL
+                    ? RUDA_MIR_INTERPRET_INVALID_ARGUMENT
+                    : RUDA_MIR_INTERPRET_INVALID_MIR;
+            }
+            status = ruda_mir_execution_array_preflight(
+                options.execution,
+                construction->argument_count,
+                NULL,
+                NULL,
+                NULL
+            );
+            if (status != RUDA_MIR_INTERPRET_OK) {
+                return status;
+            }
+            if (element_bytes != 0) {
+                elements = ruda_allocate(allocator, element_bytes);
+                if (elements == NULL) {
+                    return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+                }
+            }
+            if (construction->argument_count != 0 && elements == NULL) {
+                return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+            }
+            for (index = 0; index < construction->argument_count;
+                index += 1) {
+                const RudaMirArrayArgument *argument =
+                    ruda_mir_array_argument(
+                        function,
+                        construction->argument_start + index
+                    );
+                if (argument == NULL
+                    || argument->register_id >= register_count) {
+                    ruda_deallocate(allocator, elements, element_bytes);
+                    return RUDA_MIR_INTERPRET_INVALID_MIR;
+                }
+                elements[index] = registers[argument->register_id];
+            }
+            status = ruda_mir_execution_new_array(
+                options.execution,
+                layout,
+                elements,
+                construction->argument_count,
+                &target->as.reference
+            );
+            ruda_deallocate(allocator, elements, element_bytes);
+            return status;
+        }
+        case RUDA_MIR_ARRAY_LENGTH:
+        case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+        case RUDA_MIR_ARRAY_GET:
+        case RUDA_MIR_ARRAY_SET: {
+            const RudaMirArray *layout = ruda_mir_array(
+                function,
+                instruction->array
+            );
+            RudaMirManagedArray *array = options.execution != NULL
+                ? ruda_mir_execution_array_value_mutable(
+                    options.execution,
+                    *first
+                )
+                : NULL;
+            size_t index = 0;
+            if (options.execution == NULL) {
+                return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+            }
+            if (array == NULL) {
+                return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+            }
+            if (layout == NULL
+                || !ruda_mir_managed_array_matches_layout(layout, array)) {
+                return RUDA_MIR_INTERPRET_INVALID_MIR;
+            }
+            if (instruction->kind == RUDA_MIR_ARRAY_LENGTH) {
+                target->as.i64 = (int64_t)array->length;
+                return RUDA_MIR_INTERPRET_OK;
+            }
+            if (second->as.i64 < 0
+                || (uint64_t)second->as.i64 >= (uint64_t)array->length) {
+                return ruda_mir_array_bounds_panic(
+                    function,
+                    instruction,
+                    second->as.i64,
+                    array->length,
+                    allocator,
+                    options.panic
+                );
+            }
+            index = (size_t)second->as.i64;
+            if (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX) {
+                *target = *first;
+                return RUDA_MIR_INTERPRET_OK;
+            }
+            if (instruction->kind == RUDA_MIR_ARRAY_SET) {
+                if (ruda_mir_type_is_managed(third->type)
+                    && !ruda_mir_execution_owns_reference(
+                        options.execution,
+                        *third
+                    )) {
+                    return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+                }
+                array->elements[index] = *third;
+                *target = *third;
+                return RUDA_MIR_INTERPRET_OK;
+            }
+            *target = array->elements[index];
+            return RUDA_MIR_INTERPRET_OK;
+        }
         case RUDA_MIR_RECORD_NEW: {
             const RudaMirRecordConstruction *construction =
                 ruda_mir_record_construction(
@@ -3876,6 +4925,15 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             if (call == NULL || call_result.type != call->result_type) {
                 return RUDA_MIR_INTERPRET_INVALID_MIR;
             }
+            if (ruda_mir_type_is_managed(call_result.type)
+                && !ruda_mir_execution_owns_reference(
+                    options.execution,
+                    call_result
+                )) {
+                return options.execution == NULL
+                    ? RUDA_MIR_INTERPRET_INVALID_ARGUMENT
+                    : RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+            }
             *target = call_result;
             return RUDA_MIR_INTERPRET_OK;
         }
@@ -3926,11 +4984,11 @@ RudaMirInterpretStatus ruda_mir_interpret(
             )) {
             return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
         }
-        if (arguments[index].type == RUDA_TYPE_STRING
-            && ruda_mir_execution_string_value(
+        if (ruda_mir_type_is_managed(arguments[index].type)
+            && !ruda_mir_execution_owns_reference(
                 options.execution,
                 arguments[index]
-            ) == NULL) {
+            )) {
             return options.execution == NULL
                 ? RUDA_MIR_INTERPRET_INVALID_ARGUMENT
                 : RUDA_MIR_INTERPRET_INVALID_REFERENCE;

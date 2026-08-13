@@ -18,8 +18,17 @@ typedef uint32_t RudaMirRecordConstructionId;
 typedef uint32_t RudaMirEnumId;
 typedef uint32_t RudaMirEnumConstructionId;
 typedef uint32_t RudaMirStringId;
-/* Context-bound index into a caller-selected RudaMirExecution object graph. */
-typedef uint32_t RudaMirReference;
+typedef uint32_t RudaMirArrayId;
+typedef uint32_t RudaMirArrayConstructionId;
+/*
+ * Context-bound handle into a RudaMirExecution object graph.  Execution
+ * provenance rejects foreign and stale handles; slot stores a kind-tagged
+ * arena index and is never a host pointer.
+ */
+typedef struct RudaMirReference {
+    uint64_t execution_provenance;
+    uint32_t slot;
+} RudaMirReference;
 
 #define RUDA_MIR_NO_REGISTER UINT32_MAX
 #define RUDA_MIR_NO_BLOCK UINT32_MAX
@@ -29,7 +38,10 @@ typedef uint32_t RudaMirReference;
 #define RUDA_MIR_NO_ENUM UINT32_MAX
 #define RUDA_MIR_NO_ENUM_CONSTRUCTION UINT32_MAX
 #define RUDA_MIR_NO_STRING UINT32_MAX
-#define RUDA_MIR_INVALID_REFERENCE UINT32_MAX
+#define RUDA_MIR_NO_ARRAY UINT32_MAX
+#define RUDA_MIR_NO_ARRAY_CONSTRUCTION UINT32_MAX
+#define RUDA_MIR_INVALID_REFERENCE \
+    ((RudaMirReference){UINT64_MAX, UINT32_MAX})
 
 typedef struct RudaMirSpan {
     size_t start;
@@ -76,7 +88,17 @@ typedef enum RudaMirInstructionKind {
     RUDA_MIR_NEGATE_F64,
     RUDA_MIR_EQUAL_F64,
     RUDA_MIR_LESS_F64,
-    RUDA_MIR_LESS_EQUAL_F64
+    RUDA_MIR_LESS_EQUAL_F64,
+    RUDA_MIR_ARRAY_NEW,
+    RUDA_MIR_ARRAY_LENGTH,
+    /*
+     * Bounds-check barrier used before evaluating an indexed assignment RHS.
+     * On success it copies the array handle into target; on failure it raises
+     * G4002 at this instruction's full access span.
+     */
+    RUDA_MIR_ARRAY_REQUIRE_INDEX,
+    RUDA_MIR_ARRAY_GET,
+    RUDA_MIR_ARRAY_SET
 } RudaMirInstructionKind;
 
 typedef struct RudaMirInstruction {
@@ -84,12 +106,15 @@ typedef struct RudaMirInstruction {
     RudaMirRegister target;
     RudaMirRegister first;
     RudaMirRegister second;
+    RudaMirRegister third;
     RudaMirCallId call;
     RudaMirRecordId record;
     RudaMirRecordConstructionId record_construction;
     RudaMirEnumId enum_id;
     RudaMirEnumConstructionId enum_construction;
     RudaMirStringId string_constant;
+    RudaMirArrayId array;
+    RudaMirArrayConstructionId array_construction;
     size_t variant;
     size_t field;
     int64_t integer;
@@ -197,6 +222,22 @@ typedef struct RudaMirStringConstant {
     RudaOwnedBytes value;
 } RudaMirStringConstant;
 
+typedef struct RudaMirArray {
+    RudaTypeId type;
+    RudaTypeId element_type;
+} RudaMirArray;
+
+typedef struct RudaMirArrayArgument {
+    RudaMirRegister register_id;
+    RudaTypeId type;
+} RudaMirArrayArgument;
+
+typedef struct RudaMirArrayConstruction {
+    RudaMirArrayId array;
+    size_t argument_start;
+    size_t argument_count;
+} RudaMirArrayConstruction;
+
 typedef struct RudaMirFunctionOptions {
     size_t max_registers;
     size_t max_blocks;
@@ -214,6 +255,9 @@ typedef struct RudaMirFunctionOptions {
     size_t max_enum_arguments;
     size_t max_string_constants;
     size_t max_string_bytes;
+    size_t max_array_layouts;
+    size_t max_array_constructions;
+    size_t max_array_arguments;
     size_t max_verify_work;
 } RudaMirFunctionOptions;
 
@@ -235,6 +279,9 @@ typedef struct RudaMirFunction {
     RudaVector enum_constructions;
     RudaVector enum_arguments;
     RudaVector string_constants;
+    RudaVector arrays;
+    RudaVector array_constructions;
+    RudaVector array_arguments;
     size_t parameter_count;
     size_t instruction_count;
     size_t string_bytes;
@@ -269,6 +316,9 @@ typedef struct RudaMirExecutionOptions {
     size_t max_total_fields;
     size_t max_strings;
     size_t max_total_string_bytes;
+    size_t max_arrays;
+    size_t max_array_length;
+    size_t max_total_array_elements;
 } RudaMirExecutionOptions;
 
 typedef struct RudaMirExecution {
@@ -279,9 +329,13 @@ typedef struct RudaMirExecution {
     RudaVector enums;
     /* Oracle-owned immutable UTF-8 strings. */
     RudaVector strings;
+    /* Oracle-owned mutable arrays, indexed separately by exact type. */
+    RudaVector arrays;
     RudaMirExecutionOptions options;
     size_t total_fields;
     size_t total_string_bytes;
+    size_t total_array_elements;
+    uint64_t provenance;
     bool initialized;
 } RudaMirExecution;
 
@@ -329,6 +383,11 @@ typedef struct RudaMirInterpretOptions {
 RudaMirFunctionOptions ruda_mir_function_default_options(void);
 RudaMirInterpretOptions ruda_mir_interpret_default_options(void);
 RudaMirExecutionOptions ruda_mir_execution_default_options(void);
+bool ruda_mir_reference_is_invalid(RudaMirReference reference);
+bool ruda_mir_reference_equal(
+    RudaMirReference left,
+    RudaMirReference right
+);
 
 bool ruda_mir_execution_init(
     RudaMirExecution *execution,
@@ -355,6 +414,23 @@ bool ruda_mir_execution_string_bytes(
     RudaMirValue value,
     const unsigned char **bytes,
     size_t *length
+);
+bool ruda_mir_execution_array_length(
+    const RudaMirExecution *execution,
+    RudaMirValue value,
+    size_t *length
+);
+bool ruda_mir_execution_array_element(
+    const RudaMirExecution *execution,
+    RudaMirValue value,
+    size_t index,
+    RudaMirValue *result
+);
+/* Internal oracle inspection by allocation order. */
+bool ruda_mir_execution_array_at(
+    const RudaMirExecution *execution,
+    size_t ordinal,
+    RudaMirValue *result
 );
 /* Internal boundary validation for context-bound managed handles. */
 bool ruda_mir_execution_owns_reference(
@@ -422,6 +498,19 @@ bool ruda_mir_add_string_constant(
     const unsigned char *bytes,
     size_t length,
     RudaMirStringId *result
+);
+bool ruda_mir_add_array(
+    RudaMirFunction *function,
+    RudaTypeId type,
+    RudaTypeId element_type,
+    RudaMirArrayId *result
+);
+bool ruda_mir_add_array_construction(
+    RudaMirFunction *function,
+    RudaMirArrayId array,
+    const RudaMirArrayArgument *arguments,
+    size_t argument_count,
+    RudaMirArrayConstructionId *result
 );
 bool ruda_mir_append_instruction(
     RudaMirFunction *function,

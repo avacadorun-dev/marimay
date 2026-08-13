@@ -1634,7 +1634,10 @@ static void ruda_test_checker_record_execution(void) {
                 &result
             ) == RUDA_MIR_INTERPRET_OK);
             RUDA_EXPECT(result.type == make->mir.result_type);
-            RUDA_EXPECT(result.as.reference == 0);
+            RUDA_EXPECT(ruda_mir_execution_owns_reference(
+                &execution,
+                result
+            ));
             RUDA_EXPECT(execution.objects.length == 1);
             record_argument = result;
             RUDA_EXPECT(ruda_check_interpret_function(
@@ -2082,7 +2085,10 @@ static void ruda_test_checker_record_match(void) {
             &checked, 5, &point, 1, ruda_system_allocator(), options, &result
         ) == RUDA_MIR_INTERPRET_OK);
         RUDA_EXPECT(result.type == point.type
-            && result.as.reference == point.as.reference);
+            && ruda_mir_reference_equal(
+                result.as.reference,
+                point.as.reference
+            ));
         arguments[0] = point;
         arguments[0].as.reference = RUDA_MIR_INVALID_REFERENCE;
         RUDA_EXPECT(ruda_check_interpret_function(
@@ -2844,7 +2850,7 @@ static void ruda_test_checker_enum_execution(void) {
             &result
         ) == RUDA_MIR_INTERPRET_OK);
         RUDA_EXPECT(message != NULL && result.type == message->type);
-        RUDA_EXPECT(result.as.reference == 0);
+        RUDA_EXPECT(ruda_mir_execution_owns_reference(&execution, result));
         RUDA_EXPECT(ruda_mir_execution_inspect_enum(
             &execution,
             result,
@@ -2866,7 +2872,7 @@ static void ruda_test_checker_enum_execution(void) {
             interpret_options,
             &result
         ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.reference == 1);
+        RUDA_EXPECT(ruda_mir_execution_owns_reference(&execution, result));
         RUDA_EXPECT(ruda_mir_execution_inspect_enum(
             &execution,
             result,
@@ -2898,7 +2904,7 @@ static void ruda_test_checker_enum_execution(void) {
             interpret_options,
             &result
         ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.reference == 2);
+        RUDA_EXPECT(ruda_mir_execution_owns_reference(&execution, result));
         RUDA_EXPECT(ruda_mir_execution_inspect_enum(
             &execution,
             result,
@@ -2930,7 +2936,7 @@ static void ruda_test_checker_enum_execution(void) {
             interpret_options,
             &result
         ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.reference == 3);
+        RUDA_EXPECT(ruda_mir_execution_owns_reference(&execution, result));
         enum_argument = result;
         retained_count = execution.enums.length;
         RUDA_EXPECT(ruda_check_interpret_function(
@@ -2951,7 +2957,10 @@ static void ruda_test_checker_enum_execution(void) {
             interpret_options,
             &result
         ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.reference == enum_argument.as.reference);
+        RUDA_EXPECT(ruda_mir_reference_equal(
+            result.as.reference,
+            enum_argument.as.reference
+        ));
         RUDA_EXPECT(execution.enums.length == retained_count);
         enum_argument.as.reference = RUDA_MIR_INVALID_REFERENCE;
         RUDA_EXPECT(ruda_check_interpret_function(

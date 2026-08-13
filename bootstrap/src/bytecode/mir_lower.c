@@ -259,6 +259,11 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
         case RUDA_MIR_ENUM_IS_VARIANT:
         case RUDA_MIR_ENUM_REQUIRE_VARIANT:
         case RUDA_MIR_ENUM_GET_PAYLOAD:
+        case RUDA_MIR_ARRAY_NEW:
+        case RUDA_MIR_ARRAY_LENGTH:
+        case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+        case RUDA_MIR_ARRAY_GET:
+        case RUDA_MIR_ARRAY_SET:
             return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_INSTRUCTION;
         case RUDA_MIR_CALL: {
             const RudaMirCall *call = input->call < function->calls.length

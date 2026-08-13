@@ -78,6 +78,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/base/map.c
   bootstrap/src/base/owned_bytes.c
   bootstrap/src/base/path.c
+  bootstrap/src/base/provenance.c
   bootstrap/src/base/stream.c
   bootstrap/src/base/string_literal.c
   bootstrap/src/base/unicode.c

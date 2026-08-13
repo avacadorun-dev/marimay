@@ -1,7 +1,8 @@
 #include "ruda/runtime/managed.h"
 
+#include "ruda/base/provenance.h"
+
 #include <limits.h>
-#include <stdatomic.h>
 #include <string.h>
 
 typedef struct RudaManagedArray {
@@ -30,38 +31,12 @@ const RudaManagedArrayDescriptor ruda_managed_array_array_f64_descriptor = {
     &ruda_managed_array_f64_descriptor
 };
 
-static _Atomic uint64_t ruda_managed_next_provenance = UINT64_C(1);
-
 static size_t ruda_managed_language_max_array_length(void) {
 #if SIZE_MAX > INT64_MAX
     return (size_t)INT64_MAX;
 #else
     return SIZE_MAX;
 #endif
-}
-
-static bool ruda_managed_new_provenance(uint64_t *result) {
-    uint64_t current = atomic_load_explicit(
-        &ruda_managed_next_provenance,
-        memory_order_relaxed
-    );
-    if (result == NULL) {
-        return false;
-    }
-    while (current != 0 && current != UINT64_MAX) {
-        uint64_t next = current + UINT64_C(1);
-        if (atomic_compare_exchange_weak_explicit(
-                &ruda_managed_next_provenance,
-                &current,
-                next,
-                memory_order_relaxed,
-                memory_order_relaxed
-            )) {
-            *result = current;
-            return true;
-        }
-    }
-    return false;
 }
 
 RudaManagedReference ruda_managed_invalid_reference(void) {
@@ -110,7 +85,7 @@ bool ruda_managed_heap_init(
         || allocator.deallocate == NULL || options.max_objects == 0
         || options.max_objects > UINT32_MAX || options.max_live_bytes == 0
         || options.max_array_length > ruda_managed_language_max_array_length()
-        || !ruda_managed_new_provenance(&provenance)) {
+        || !ruda_new_provenance(&provenance)) {
         return false;
     }
     memset(heap, 0, sizeof(*heap));
