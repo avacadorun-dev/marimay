@@ -24,7 +24,33 @@ A green test proves only its named behavior. Code coverage is diagnostic evidenc
 
 Directly test bootstrap base modules, source positions, UTF-8, arenas, checked arithmetic, vectors/maps, hashing, paths, diagnostics, lexer, parser utilities, type canonicalization, pattern matrices, MIR builders, bytecode codecs/verifier, GC marking, scheduler queues, capability matching, archive safety, and CLI parsing.
 
-Every allocation-capable C API is exercised under deterministic allocation failure at each allocation index. All error paths run under sanitizers.
+Every allocation-capable C API is exercised on the successful path, all
+material error paths, and under deterministic allocation failure at every
+reachable allocation index. After full teardown, every such scenario asserts
+both `live_allocations == 0` and `live_bytes == 0`. These aggregate counters
+prove balance only for calls routed through `RudaAllocator` with correct size
+arguments; they do not track pointer identity and do not replace LeakSanitizer
+or Valgrind. All error paths run under sanitizers.
+
+Production code under `bootstrap/` and `runtime/` must not reference raw
+process-heap APIs outside `bootstrap/src/base/allocator.c`;
+`tools/check-c-memory-policy` enforces that boundary across compiled C headers,
+sources, and include fragments after C line-splicing and removal of comments
+and literals. Linux x86_64 LSan
+with `detect_leaks=1` is a stable required CI contract for the current commit
+SHA. A scheduled/manual Ubuntu Valgrind job independently checks the parent
+C-unit process, reports all of its leak kinds, and fails on definite or
+indirect leaks. Child-process tracing is deferred until system compiler
+children can be excluded without hiding Ruda children. Sanitizer suppressions
+require a committed rationale and review.
+
+C token pasting is rejected in production code unless a future exact allowlist
+is separately reviewed, because parameterized macros can otherwise manufacture
+a forbidden heap identifier after this policy check.
+
+Evidence wording remains bounded: a green commit means covered paths were
+leak-clean under the named LSan, allocator-balance, and Valgrind checks. It does
+not prove that no leak exists in unexecuted behavior.
 
 ### 2.2 Syntax and formatter fixtures
 

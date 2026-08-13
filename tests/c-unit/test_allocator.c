@@ -62,7 +62,16 @@ void ruda_test_allocator(void) {
         if (resized != NULL) {
             RUDA_EXPECT(fail_state.live_allocations == 1);
             RUDA_EXPECT(fail_state.live_bytes == 24);
-            RUDA_EXPECT(ruda_resize(&failing, resized, 24, 0) == NULL);
+            bytes = resized;
+            resized = ruda_resize(&failing, bytes, 24, 10);
+            RUDA_EXPECT(resized != NULL);
+            if (resized != NULL) {
+                RUDA_EXPECT(fail_state.live_allocations == 1);
+                RUDA_EXPECT(fail_state.live_bytes == 10);
+                RUDA_EXPECT(ruda_resize(&failing, resized, 10, 0) == NULL);
+            } else {
+                ruda_deallocate(&failing, bytes, 24);
+            }
         } else {
             ruda_deallocate(&failing, bytes, 8);
         }

@@ -1,0 +1,41 @@
+name: C17 memory audit
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  valgrind:
+    name: Linux x86_64 Valgrind
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install Valgrind
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes valgrind
+          valgrind --version
+          clang --version
+          echo "commit: ${GITHUB_SHA}"
+      - name: Configure
+        env:
+          CC: clang
+        run: cmake --preset debug
+      - name: Build
+        run: cmake --build --preset debug --parallel
+      - name: Test under Valgrind
+        working-directory: build/debug/tests/c-unit
+        run: >-
+          valgrind
+          --leak-check=full
+          --show-leak-kinds=all
+          --errors-for-leak-kinds=definite,indirect
+          --error-exitcode=99
+          ./ruda_c_unit ../../ruda

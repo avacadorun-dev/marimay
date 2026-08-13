@@ -214,6 +214,7 @@ void ruda_test_base(void) {
     RUDA_EXPECT(vector.length == 0);
     ruda_vector_dispose(&vector);
     RUDA_EXPECT(fail_state.live_allocations == 0);
+    RUDA_EXPECT(fail_state.live_bytes == 0);
 
     RUDA_EXPECT(ruda_owned_bytes_copy(&bytes, system, payload, sizeof(payload)));
     RUDA_EXPECT(bytes.length == sizeof(payload));
@@ -276,6 +277,7 @@ void ruda_test_base(void) {
     ) == RUDA_STRING_LITERAL_ALLOCATION_FAILED);
     RUDA_EXPECT(decoded.data == NULL && decoded.length == 0);
     RUDA_EXPECT(fail_state.live_allocations == 0);
+    RUDA_EXPECT(fail_state.live_bytes == 0);
 
     ruda_arena_init(&arena, system, 32);
     for (index = 0; index < 20; index += 1) {
@@ -296,4 +298,5 @@ void ruda_test_base(void) {
     RUDA_EXPECT(RUDA_ARENA_NEW(&arena, RudaAlignedFixture) == NULL);
     ruda_arena_dispose(&arena);
     RUDA_EXPECT(fail_state.live_allocations == 0);
+    RUDA_EXPECT(fail_state.live_bytes == 0);
 }

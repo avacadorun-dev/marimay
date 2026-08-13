@@ -1,0 +1,218 @@
+#!/usr/bin/env python3
+"""Reject production heap identifiers outside the allocator boundary."""
+
+from __future__ import annotations
+
+import re
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent.parent
+ALLOWED = {
+    Path("bootstrap/src/base/allocator.c"): {"malloc", "realloc", "free"},
+}
+FORBIDDEN = (
+    "malloc",
+    "calloc",
+    "realloc",
+    "free",
+    "aligned_alloc",
+    "strdup",
+    "strndup",
+    "_aligned_malloc",
+    "_aligned_realloc",
+    "_aligned_free",
+    "_strdup",
+    "_strndup",
+    "HeapAlloc",
+    "HeapReAlloc",
+    "HeapFree",
+    "LocalAlloc",
+    "LocalFree",
+    "GlobalAlloc",
+    "GlobalFree",
+    "VirtualAlloc",
+    "VirtualFree",
+)
+IDENTIFIER = re.compile(
+    r"\b(" + "|".join(map(re.escape, FORBIDDEN)) + r")\b"
+)
+TOKEN_PASTE = re.compile(r"##")
+
+
+def splice_lines(source: str) -> tuple[str, list[int]]:
+    output: list[str] = []
+    source_lines: list[int] = []
+    line = 1
+    index = 0
+    while index < len(source):
+        if source[index] == "\\" and index + 1 < len(source):
+            if source[index + 1] == "\n":
+                index += 2
+                line += 1
+                continue
+            if (
+                source[index + 1] == "\r"
+                and index + 2 < len(source)
+                and source[index + 2] == "\n"
+            ):
+                index += 3
+                line += 1
+                continue
+        output.append(source[index])
+        source_lines.append(line)
+        if source[index] == "\n":
+            line += 1
+        index += 1
+    return "".join(output), source_lines
+
+
+def strip_comments_and_literals(source: str) -> tuple[str, list[int]]:
+    # C translation phase 2 removes line splices before comments are formed.
+    source, source_lines = splice_lines(source)
+    output: list[str] = []
+    output_lines: list[int] = []
+    state = "code"
+    index = 0
+    while index < len(source):
+        character = source[index]
+        following = source[index + 1] if index + 1 < len(source) else ""
+        if state == "code":
+            if character == "/" and following == "/":
+                output.extend((" ", " "))
+                output_lines.extend((source_lines[index], source_lines[index + 1]))
+                index += 2
+                state = "line-comment"
+                continue
+            if character == "/" and following == "*":
+                output.extend((" ", " "))
+                output_lines.extend((source_lines[index], source_lines[index + 1]))
+                index += 2
+                state = "block-comment"
+                continue
+            if character == '"':
+                output.append(" ")
+                state = "string"
+            elif character == "'":
+                output.append(" ")
+                state = "character"
+            else:
+                output.append(character)
+            output_lines.append(source_lines[index])
+            index += 1
+            continue
+        if state == "line-comment":
+            output.append("\n" if character == "\n" else " ")
+            output_lines.append(source_lines[index])
+            if character == "\n":
+                state = "code"
+            index += 1
+            continue
+        if state == "block-comment":
+            if character == "*" and following == "/":
+                output.extend((" ", " "))
+                output_lines.extend((source_lines[index], source_lines[index + 1]))
+                index += 2
+                state = "code"
+            else:
+                output.append("\n" if character == "\n" else " ")
+                output_lines.append(source_lines[index])
+                index += 1
+            continue
+        if character == "\\" and following:
+            output.extend((" ", "\n" if following == "\n" else " "))
+            output_lines.extend((source_lines[index], source_lines[index + 1]))
+            index += 2
+            continue
+        output.append("\n" if character == "\n" else " ")
+        output_lines.append(source_lines[index])
+        if (state == "string" and character == '"') or (
+            state == "character" and character == "'"
+        ):
+            state = "code"
+        index += 1
+    return "".join(output), output_lines
+
+
+def production_files() -> list[Path]:
+    files: list[Path] = []
+    for directory in (ROOT / "bootstrap", ROOT / "runtime"):
+        files.extend(directory.rglob("*.c"))
+        files.extend(directory.rglob("*.h"))
+        files.extend(directory.rglob("*.inc"))
+    return sorted(files)
+
+
+def violations_for(relative: Path, source: str) -> list[str]:
+    violations: list[str] = []
+    cleaned, source_lines = strip_comments_and_literals(source)
+    allowed = ALLOWED.get(relative, set())
+    for match in TOKEN_PASTE.finditer(cleaned):
+        line = source_lines[match.start()]
+        violations.append(
+            f"{relative}:{line}: token pasting requires a reviewed allowlist"
+        )
+    for match in IDENTIFIER.finditer(cleaned):
+        name = match.group(1)
+        if name in allowed:
+            continue
+        line = source_lines[match.start()]
+        violations.append(
+            f"{relative}:{line}: forbidden direct heap identifier {name}"
+        )
+    return violations
+
+
+def self_test() -> None:
+    fixture = Path("bootstrap/src/example.c")
+    rejected = (
+        "void *value = malloc(4);",
+        "void *(*heap)(size_t) = malloc;",
+        "#define heap malloc\nvoid *value = heap(4);",
+        "void *value = mal\\\nloc(4);",
+        "#define HEAP ma ## lloc\nvoid *value = HEAP(4);",
+        "#define CAT(a, b) a ## b\nvoid *value = CAT(m, alloc)(4);",
+    )
+    ignored = (
+        "// malloc(4)\nint value = 0;",
+        'const char *text = "free(value)";',
+        "// explanation \\\nfree(value);\nint value = 0;",
+        "/* realloc(value, 8) */ int value = 0;",
+    )
+    for source in rejected:
+        if not violations_for(fixture, source):
+            raise RuntimeError(f"policy self-test accepted forbidden input: {source!r}")
+    for source in ignored:
+        if violations_for(fixture, source):
+            raise RuntimeError(f"policy self-test rejected inert input: {source!r}")
+    allocator = Path("bootstrap/src/base/allocator.c")
+    if violations_for(allocator, "malloc(1); realloc(0, 1); free(0);"):
+        raise RuntimeError("policy self-test rejected the exact allocator allowlist")
+    if not violations_for(allocator, "calloc(1, 1);"):
+        raise RuntimeError("policy self-test widened the allocator allowlist")
+    if not any(path.suffix == ".inc" for path in production_files()):
+        raise RuntimeError("policy self-test did not discover compiled .inc files")
+    numbered = violations_for(
+        fixture,
+        "#define FIRST 1 \\\n+  + 2\nvoid *value = malloc(4);\n",
+    )
+    if not numbered or ":3:" not in numbered[0]:
+        raise RuntimeError("policy self-test lost the original source line map")
+
+
+def main() -> int:
+    self_test()
+    violations: list[str] = []
+    for path in production_files():
+        relative = path.relative_to(ROOT)
+        violations.extend(violations_for(relative, path.read_text(encoding="utf-8")))
+    if violations:
+        print("check-c-memory-policy: failed")
+        for violation in violations:
+            print(violation)
+        return 1
+    print("check-c-memory-policy: ok")
+    return 0
+
+
+raise SystemExit(main())

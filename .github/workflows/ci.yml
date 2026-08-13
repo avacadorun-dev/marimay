@@ -26,6 +26,8 @@ jobs:
         run: ./tools/check-example-syntax
       - name: Check syntax coverage manifest
         run: ./tools/check-syntax-coverage
+      - name: Check production C memory policy
+        run: ./tools/check-c-memory-policy
 
   c17:
     name: ${{ matrix.target.name }} / ${{ matrix.configuration }}
@@ -123,6 +125,25 @@ jobs:
         run: cmake --build --preset tsan --parallel
       - name: Test
         run: ctest --preset tsan
+
+  linux-leaks:
+    name: Linux x86_64 LeakSanitizer
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Configure
+        run: cmake --preset asan-ubsan
+      - name: Build
+        run: cmake --build --preset asan-ubsan --parallel
+      - name: Test
+        run: ctest --preset asan-ubsan --output-on-failure
 
   windows-asan:
     name: Windows x86_64 MSVC ASan

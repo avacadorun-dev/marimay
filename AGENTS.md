@@ -48,3 +48,16 @@ Implementation convenience is not a reason to change source semantics. Temporary
 ## Definition of done
 
 A milestone is `verified` only when its documented commands pass on all supported Tier 1 platforms and the evidence is linked from `ROADMAP.md`. “Implemented” without conformance, negative, sanitizer, and differential coverage is not done.
+
+## C memory ownership
+
+Every C change that adds or modifies an allocation-capable API must cover
+successful cleanup, all material error paths, and every reachable deterministic
+allocation-failure index. After full teardown, allocator-backed tests must
+assert both `live_allocations == 0` and `live_bytes == 0`.
+
+Direct production heap calls outside the central allocator implementation are
+forbidden and enforced by `tools/check-c-memory-policy`. Linux LeakSanitizer is
+a required CI contract. Sanitizer suppressions require a documented reason and
+review; neither sanitizer success nor allocator counters justify an unqualified
+claim that all leaks are absent.
