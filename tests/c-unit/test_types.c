@@ -136,6 +136,57 @@ static void ruda_test_type_interner_rollback(void) {
     RUDA_EXPECT(reached_success);
 }
 
+static void ruda_test_array_type_interner_rollback(void) {
+    size_t failure_index = 0;
+    bool reached_success = false;
+    for (failure_index = 0; failure_index < 16; failure_index += 1) {
+        RudaFailAllocator state;
+        RudaAllocator allocator;
+        RudaTypeTable table;
+        RudaTypeId array = RUDA_TYPE_INVALID;
+        RudaTypeId repeated = RUDA_TYPE_INVALID;
+        bool initialized = false;
+        bool interned = false;
+        ruda_fail_allocator_init(
+            &state,
+            ruda_system_allocator(),
+            failure_index
+        );
+        allocator = ruda_fail_allocator(&state);
+        initialized = ruda_type_table_init(
+            &table,
+            allocator,
+            ruda_type_table_default_options()
+        );
+        if (initialized) {
+            interned = ruda_type_intern_array(
+                &table,
+                RUDA_TYPE_F64,
+                &array
+            );
+            if (interned) {
+                reached_success = true;
+                RUDA_EXPECT(ruda_type_intern_array(
+                    &table,
+                    RUDA_TYPE_F64,
+                    &repeated
+                ));
+                RUDA_EXPECT(repeated == array);
+            } else {
+                RUDA_EXPECT(table.descriptors.length == 0);
+                RUDA_EXPECT(table.canonical.length == 0);
+            }
+            ruda_type_table_dispose(&table);
+        }
+        RUDA_EXPECT(state.live_allocations == 0);
+        RUDA_EXPECT(state.live_bytes == 0);
+        if (reached_success) {
+            break;
+        }
+    }
+    RUDA_EXPECT(reached_success);
+}
+
 void ruda_test_types(void) {
     RudaTypeTable table;
     RudaTypeTableOptions options = ruda_type_table_default_options();
@@ -146,6 +197,11 @@ void ruda_test_types(void) {
     RudaTypeId other_user = RUDA_TYPE_INVALID;
     RudaTypeId tuple = RUDA_TYPE_INVALID;
     RudaTypeId function = RUDA_TYPE_INVALID;
+    RudaTypeId array_f64 = RUDA_TYPE_INVALID;
+    RudaTypeId same_array_f64 = RUDA_TYPE_INVALID;
+    RudaTypeId array_i64 = RUDA_TYPE_INVALID;
+    RudaTypeId nested_array = RUDA_TYPE_INVALID;
+    RudaTypeId element = RUDA_TYPE_INVALID;
     RudaTypeId tuple_elements[] = {RUDA_TYPE_STRING, RUDA_TYPE_I64};
     RudaTypeId parameters[] = {RUDA_TYPE_I64, RUDA_TYPE_BOOL};
     const RudaTypeDescriptor *descriptor = NULL;
@@ -223,6 +279,43 @@ void ruda_test_types(void) {
     RUDA_EXPECT(descriptor != NULL && descriptor->kind == RUDA_TYPE_KIND_FUNCTION);
     RUDA_EXPECT(descriptor != NULL && descriptor->parameter_count == 2);
     RUDA_EXPECT(descriptor != NULL && descriptor->argument_count == 3);
+    RUDA_EXPECT(ruda_type_intern_array(
+        &table,
+        RUDA_TYPE_F64,
+        &array_f64
+    ));
+    RUDA_EXPECT(ruda_type_intern_array(
+        &table,
+        RUDA_TYPE_F64,
+        &same_array_f64
+    ));
+    RUDA_EXPECT(array_f64 == same_array_f64);
+    RUDA_EXPECT(ruda_type_kind(&table, array_f64) == RUDA_TYPE_KIND_ARRAY);
+    RUDA_EXPECT(ruda_type_array_element(&table, array_f64, &element));
+    RUDA_EXPECT(element == RUDA_TYPE_F64);
+    RUDA_EXPECT(ruda_type_intern_array(
+        &table,
+        RUDA_TYPE_I64,
+        &array_i64
+    ));
+    RUDA_EXPECT(array_i64 != array_f64);
+    RUDA_EXPECT(ruda_type_intern_array(
+        &table,
+        array_f64,
+        &nested_array
+    ));
+    RUDA_EXPECT(ruda_type_array_element(&table, nested_array, &element));
+    RUDA_EXPECT(element == array_f64);
+    RUDA_EXPECT(!ruda_type_intern_array(
+        &table,
+        RUDA_TYPE_INVALID,
+        &element
+    ));
+    RUDA_EXPECT(!ruda_type_array_element(
+        &table,
+        RUDA_TYPE_F64,
+        &element
+    ));
 
     RUDA_EXPECT(ruda_inference_context_init(
         &inference,
@@ -284,4 +377,5 @@ void ruda_test_types(void) {
 
     ruda_test_type_interner_scale();
     ruda_test_type_interner_rollback();
+    ruda_test_array_type_interner_rollback();
 }

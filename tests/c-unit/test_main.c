@@ -18,6 +18,7 @@ void ruda_test_formatter(void);
 void ruda_test_hash_map(void);
 void ruda_test_lexer(void);
 void ruda_test_manifest(void);
+void ruda_test_managed(void);
 void ruda_test_mir(void);
 void ruda_test_mir_bytecode(void);
 void ruda_test_native_c_emitter(void);
@@ -50,6 +51,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_hash_map();
     ruda_test_lexer();
     ruda_test_manifest();
+    ruda_test_managed();
     ruda_test_mir();
     ruda_test_mir_bytecode();
     ruda_test_native_c_emitter();

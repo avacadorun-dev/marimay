@@ -162,6 +162,12 @@ Run fixtures record typed result, stdout, stderr, exit, panic, source frames, ca
   subnormals, NaN/infinity/signed zero; arithmetic NaN canonicalization,
   unary-NaN sign toggle, ordered/unordered comparisons, and IEEE division by
   signed zero;
+- managed arrays cover exact homogeneous construction, empty contextual and
+  explicit-type construction, alias-visible mutation, length and failure-atomic
+  growth, nested reference tracing/cycle collection, signed bounds including
+  `INT64_MIN`/`INT64_MAX`, exact G4002 bytes/spans/frames, and D045 indexed-RHS
+  ordering. A loop-based rectangular f64 matrix fixture must agree bit-for-bit
+  in the MIR oracle, encoded VM, and optimized/unoptimized native output;
 - left-to-right evaluation with side effects;
 - strings, Unicode, collection ordering, equality/hash laws;
 - nominal-record identity: aliases compare equal, distinct allocations with

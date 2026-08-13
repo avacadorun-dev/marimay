@@ -15,6 +15,7 @@ add_executable(ruda_c_unit
   test_hash_map.c
   test_lexer.c
   test_manifest.c
+  test_managed.c
   test_mir.c
   test_mir_bytecode.c
   test_native_c_emitter.c

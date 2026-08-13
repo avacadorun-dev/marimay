@@ -397,6 +397,43 @@ bool ruda_type_intern_nominal(
     );
 }
 
+bool ruda_type_intern_array(
+    RudaTypeTable *table,
+    RudaTypeId element,
+    RudaTypeId *result
+) {
+    RudaSymbolId symbol;
+    memset(&symbol, 0, sizeof(symbol));
+    if (table == NULL || !table->initialized || result == NULL
+        || ruda_type_kind(table, element) == RUDA_TYPE_KIND_INVALID) {
+        return false;
+    }
+    return ruda_type_intern(
+        table,
+        RUDA_TYPE_KIND_ARRAY,
+        symbol,
+        0,
+        &element,
+        1,
+        result
+    );
+}
+
+bool ruda_type_array_element(
+    const RudaTypeTable *table,
+    RudaTypeId array,
+    RudaTypeId *element
+) {
+    const RudaTypeDescriptor *descriptor = ruda_type_descriptor(table, array);
+    if (descriptor == NULL || descriptor->kind != RUDA_TYPE_KIND_ARRAY
+        || descriptor->parameter_count != 0
+        || descriptor->argument_count != 1 || element == NULL) {
+        return false;
+    }
+    *element = descriptor->arguments[0];
+    return true;
+}
+
 bool ruda_type_intern_tuple(
     RudaTypeTable *table,
     const RudaTypeId *elements,

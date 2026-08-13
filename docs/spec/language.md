@@ -236,7 +236,12 @@ Any nominal type whose dot-call set contains an exact visible `message(): string
 
 When a positional enum variant's instantiated payload type is `void`, its constructor takes no argument. Thus a function returning `Result<void,E>` completes with `Ok()`.
 
-`Array<T>` is an ordered mutable collection. `Map<K,V>` preserves insertion iteration order and requires keys supporting equality and hashing. Updating an existing key retains its position; deleting and reinserting appends it. `Set<T>` follows the same order rule. `Slice<T>` is a non-owning, scope-bounded view supplied by compiler-known library types; it cannot outlive its owner and does not expose lifetime syntax.
+`Array<T>` is an ordered mutable managed-reference collection under D045.
+`Map<K,V>` preserves insertion iteration order and requires keys supporting
+equality and hashing. Updating an existing key retains its position; deleting
+and reinserting appends it. `Set<T>` follows the same order rule. `Slice<T>` is
+a non-owning, scope-bounded view supplied by compiler-known library types; it
+cannot outlive its owner and does not expose lifetime syntax.
 
 There is no null-like value. A reference, interface value, array, map, function value, and string is always valid. Absence is represented by `Option<T>`.
 
@@ -329,7 +334,33 @@ Tuple types use brackets in type position and values use brackets with a fixed a
 const pair: [string, int] = ["port", 8080];
 ```
 
-`Array<T>` construction uses the prelude `arrayOf(...)` function or a contextual array literal. This avoids inventing static methods on types and avoids treating arbitrary heterogeneous values as an array.
+`Array<T>` construction uses the compiler-known variadic prelude
+`arrayOf(...)` function or a contextual array literal. This avoids inventing
+static methods on types and avoids treating arbitrary heterogeneous values as
+an array. Arguments evaluate once from left to right and require one exact
+element type. `arrayOf<T>()` constructs an empty array with an explicit element
+type. An empty literal requires an expected `Array<T>` type; a non-empty
+literal infers one exact common element type and performs no implicit numeric
+or user conversion.
+
+The prelude exposes ordinary free functions whose exact first `Array<T>`
+parameter makes them dot-call eligible:
+
+```ruda
+public fn length<T>(values: Array<T>): int;
+public fn push<T>(values: Array<T>, value: T): Result<void, ArrayGrowthError>;
+
+public enum ArrayGrowthError {
+  LengthLimit { limit: int; },
+}
+```
+
+The variadic behavior of `arrayOf` is compiler-known and does not introduce
+user-declarable variadic functions. `length(values)` and `values.length()` are
+the same call. `push` returns `Err(ArrayGrowthError.LengthLimit { limit })`
+only when adding an element would exceed the semantic maximum `int::MAX`.
+Capacity is unobservable. Runtime heap ceilings and process allocation failure
+remain execution outcomes rather than recoverable array values.
 
 Function types use arrow notation:
 
@@ -489,7 +520,18 @@ Comparison chaining is not supported. User-defined implicit conversions and
 general operator overloading are absent in 1.0. Compiler-known derives may
 provide equality and hashing under their fixed contracts.
 
-An index operation performs bounds checking in every build mode. Safe code cannot suppress it; proven redundant checks may be removed by optimization.
+An array index has exact type `int`/`i64`; unsigned and other integer widths do
+not convert implicitly. Access is valid exactly when
+`0 <= index < array.length()`. Every access performs this check in every build
+mode; safe code cannot suppress it, though a proven redundant check may be
+removed by optimization. A failed read or write produces the D045 `G4002`
+panic before accessing element storage.
+
+For `array[index] = value`, evaluation proceeds as receiver, index, bounds
+check, right-hand side, then store. For a compound indexed assignment, the old
+element is also read after the bounds check and before the right-hand side.
+Each source expression is evaluated once. A failing bounds check performs no
+write and does not evaluate the right-hand side.
 
 ## 8. Control flow
 

@@ -105,6 +105,7 @@ REQUIRED_DECISIONS = {
     "D042",
     "D043",
     "D044",
+    "D045",
 }
 
 VALID_DECISION_STATES = {"accepted", "provisional", "deferred", "rejected"}

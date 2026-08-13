@@ -637,3 +637,41 @@ rounding, NaN payloads, division by zero, and target precision to each host.
 Fixing the binary64 value boundary permits MIR, bytecode, and generated C to
 compare exact result bits without making `printf`, host parsers, or a future
 `f32` implementation accidental language authorities.
+
+## D045 — Exact managed-array construction, access, and growth
+
+Status: accepted.
+
+`Array<T>` is a managed mutable container with stable reference identity.
+`arrayOf(...)` is a compiler-known variadic prelude function whose arguments
+are evaluated once from left to right and must have one exact element type.
+An empty `arrayOf<T>()` supplies that type explicitly; an empty array literal
+requires an expected `Array<T>` type. Non-empty literals infer one exact common
+element type without implicit conversion.
+
+The ordinary prelude function `length(array): int` is dot-call eligible as
+`array.length()`. Array indexing accepts exact `int`/`i64` only and is valid
+exactly when `0 <= index < length`. A failed read or write panics with `G4002`,
+the locale-independent message `array index <signed-index> is outside length
+<length>`, and the complete failing `array[index]` expression as its primary
+span. Nested indexing reports the first failing access.
+
+For `array[index] = value`, the receiver and index are evaluated, the bounds
+check is performed, and only then is the right-hand side evaluated and stored.
+A compound indexed assignment additionally reads the old element before
+evaluating its right-hand side. Thus an invalid destination cannot trigger
+right-hand-side effects, and no failing operation mutates the array.
+
+The ordinary prelude function `push(array, value)` is dot-call eligible and
+returns `Result<void, ArrayGrowthError>`. `ArrayGrowthError.LengthLimit` reports
+the documented semantic maximum of `int::MAX` elements. Capacity is not
+observable. Allocator exhaustion and a configured VM/isolate heap ceiling keep
+their execution-specification fatal/runtime-limit behavior; they are not
+silently converted into a recoverable collection error.
+
+Reason: array construction, indexing, mutation, panic identity, and resource
+failure must agree in the MIR oracle, VM, and native engine. Leaving the index
+type, bounds span, assignment order, or growth failure implicit would make a
+matrix program observably backend-dependent. This decision does not define
+array value equality or hashing, iteration invalidation, slices, or a general
+variadic-function declaration feature.

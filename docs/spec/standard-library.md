@@ -24,7 +24,7 @@ The prelude is imported implicitly and intentionally small. It contains primitiv
 Option, Some, None
 Result, Ok, Err
 Error
-Array, Map, Set, Bytes
+Array, ArrayGrowthError, Map, Set, Bytes
 Iterator
 Task
 expect          # @test/@fuzz functions only
@@ -111,9 +111,19 @@ public fn parseIntRadix(text: string, radix: int): Result<int, ParseError>;
 
 `Array<T>`, `Map<K,V>`, and `Set<T>` are mutable managed containers. Mutation while an iterator over the same container is active is rejected by a runtime generation check with a stable panic, unless the iterator API explicitly owns the mutation operation.
 
+D045 fixes the initial `Array<T>` core surface to compiler-known
+`arrayOf(...)`, ordinary free/dot-call `length`, checked indexing and indexed
+assignment, and `push` returning `Result<void,ArrayGrowthError>`. Arrays contain
+at most `int::MAX` initialized elements. Hitting that logical limit returns
+`ArrayGrowthError.LengthLimit`; exceeding a configured isolate heap limit is a
+runtime-limit outcome under the execution specification instead.
+
 Map/set iteration is insertion-ordered. Updating retains position; delete then reinsert appends. Hash seeding may be process-randomized for attack resistance without changing visible order.
 
-Collection APIs use checked sizes and return `Result` for growth that can exceed configured limits. They never expose capacity bytes as initialized elements.
+Collection APIs use checked sizes and return `Result` for recoverable logical
+growth limits documented by that API. Configured VM/isolate heap ceilings and
+process allocation failure remain execution outcomes. Collections never expose
+capacity bytes as initialized elements.
 
 Iterators are pull-based direct calls. A separate `Stream<T,E>` protocol models suspending sequences without source-level futures:
 

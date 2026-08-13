@@ -125,6 +125,12 @@ Generated C must not depend on C undefined behavior to implement safe Ruda. In p
 - aliasing assumptions are conservative unless proven from MIR;
 - default compiler flags preserve strict floating-point semantics.
 
+For D045 indexed assignment, generated code evaluates the receiver and signed
+index, validates `0 <= index < length`, and only then evaluates the right-hand
+side or performs address arithmetic. Compound indexed assignment reads the old
+element after the check and before its right-hand side. Bounds failure publishes
+no destination or mutation and produces the exact `G4002` panic contract.
+
 For D044 `f64`, a native target is conforming only when its `double` is IEC
 60559/IEEE 754 binary64 and generated C preserves binary64
 round-to-nearest-ties-to-even semantics without fast-math, reassociation,
@@ -398,6 +404,13 @@ Objects retain stable reference identity for 1.0. The Stage 0 collector is a pre
 Collection stops tasks in one isolate, not the whole process. Roots include VM registers, native shadow-root frames, resumable task frames, cleanup stacks, package constants, runtime handles, channel buffers, pending I/O registrations, and explicit FFI handle scopes.
 
 Root descriptors are precise. Cycles are collectible. Collection order and timing are not observable in safe source.
+
+Managed array objects are non-moving and participate in the same precise root
+graph. An array of managed references traces each initialized element; scalar
+array storage is not conservatively scanned. Array growth is failure-atomic,
+and a collection attempt precedes a heap-limit outcome when reclaimable
+objects could satisfy the operation. Capacity and collection timing remain
+unobservable.
 
 ### 9.3 Resource lifetime
 

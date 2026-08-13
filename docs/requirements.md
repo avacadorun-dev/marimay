@@ -44,6 +44,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | LANG-034 | signed division truncates toward zero, remainder follows the dividend and quotient identity, and zero plus `MIN / -1`/`MIN % -1` are checked before backend host operations | language §§5.1,7; execution §5.1; D042 | I2/I4 |
 | LANG-035 | a public nominal type's owning-package dot-call set and structural conformance are invariant across named type, named function, and namespace import forms; import spelling changes only free-call visibility | language §§3,5.8,6.2; D003/D043 | I2/E0 |
 | LANG-036 | `f64` decimal literals round exactly to binary64 nearest-even; raw bits cross value boundaries unchanged; arithmetic is strict and canonicalizes NaNs; unary negation preserves NaN payload bits; comparisons and signed-zero division follow D044 | language §5.1; execution §§5.1,15; D044 | I2/I3/I4 |
+| LANG-037 | managed `Array<T>` construction, exact `int` indexing, mutation order, `length`, `push` growth result, and G4002 bounds identity follow D045 across MIR, VM, and native execution | language §§5.2,5.6,7; execution §§5.1,9; diagnostics §9; D045 | I2/I3/I4/I5 |
 
 ## Execution and concurrency
 

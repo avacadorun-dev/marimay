@@ -195,6 +195,14 @@ task 17 spawned at src/server.ruda:88:24
   from task 3 (server scope)
 ```
 
+Under D045, `G4002` formats a negative or non-negative `int` index as
+locale-independent signed decimal and the current array length as unsigned
+decimal. Its primary span is the complete failing `array[index]` expression,
+including on the left of an assignment. Nested indexing reports the first
+failing access. The check occurs before the right-hand side of an indexed
+assignment, so that expression has no effects on failure. VM and native traces
+use the same primary span and source-first caller frames.
+
 The same controlled program yields equivalent source frames under VM/native. Raw native addresses are available only in a separate debug section and cannot replace source information.
 
 Cancellation is normally not printed as an error. Unexpected forced shutdown, cleanup panic, or leaked resource receives a runtime diagnostic with allocation/open and owning task spans.

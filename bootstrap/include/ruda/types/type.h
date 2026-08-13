@@ -55,7 +55,9 @@ typedef enum RudaTypeKind {
     RUDA_TYPE_KIND_INTERFACE,
     RUDA_TYPE_KIND_TUPLE,
     RUDA_TYPE_KIND_FUNCTION,
-    RUDA_TYPE_KIND_TYPE_PARAMETER
+    RUDA_TYPE_KIND_TYPE_PARAMETER,
+    /* Compiler-owned generic container kind; appended for API stability. */
+    RUDA_TYPE_KIND_ARRAY
 } RudaTypeKind;
 
 typedef struct RudaSymbolId {
@@ -129,6 +131,17 @@ bool ruda_type_intern_nominal(
     const RudaTypeId *arguments,
     size_t argument_count,
     RudaTypeId *result
+);
+/* Interns the canonical compiler-owned Array<element> type. */
+bool ruda_type_intern_array(
+    RudaTypeTable *table,
+    RudaTypeId element,
+    RudaTypeId *result
+);
+bool ruda_type_array_element(
+    const RudaTypeTable *table,
+    RudaTypeId array,
+    RudaTypeId *element
 );
 bool ruda_type_intern_tuple(
     RudaTypeTable *table,

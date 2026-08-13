@@ -103,6 +103,11 @@ No provisional item permits an implementation to silently substitute source-leve
     locale-independent nearest-even binary64 conversion; arithmetic, NaN,
     signed-zero, comparison, raw-bit boundary, and strict native-host rules now
     have one VM/C-safe contract with executable differential coverage.
+42. Closed managed-array access and growth ambiguity through D045: construction
+    and inference use exact element types, indexes are exact `int`, G4002 owns a
+    stable message and complete access span, indexed assignment checks before
+    right-hand-side effects, and recoverable logical growth is distinct from a
+    VM/isolate heap-limit outcome.
 
 ## Automated structural checks performed
 
