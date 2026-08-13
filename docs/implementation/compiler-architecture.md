@@ -137,7 +137,7 @@ boundaries:
 bootstrap/src/check/
   checker.c             package coordinator and stable public entry points
   checker_internal.h    owner-private contexts and phase contracts
-  result.c              result/default/dispose/accessor ownership
+  result.c              result/default/dispose/accessor ownership (extracted)
   declarations.c        collection, signature, and publication phases
   expression.c          expression typing/lowering after its context is stable
   pattern.c             usefulness/exhaustiveness and pattern lowering
@@ -246,9 +246,13 @@ checkpoint:
 |---|---:|---:|---|
 | `tests/c-unit/test_mir.c` | 4,612 | 3,396 | scalar, verifier, calls, records, enums, strings, and `f64`; remains the registered aggregator |
 | `tests/c-unit/test_mir_arrays.c` | 0 | 1,251 | array layouts, construction, provenance, bounds, allocation failure, limits, and D045 RHS ordering |
+| `bootstrap/src/check/checker.c` | 14,559 | 14,299 | package/checking phases remain coordinated here; published-result ownership moved out |
+| `bootstrap/src/check/result.c` | 0 | 263 | defaults, nested published-value cleanup, rollback helpers, public dispose, and const accessors |
 
 The split preserves assertion order within the array suite and the single
 external `ruda_test_mir` registration. Test-local helpers are private to each
 translation unit; no production header or semantic implementation changed.
 The command evidence is recorded in
-[architecture checkpoint 2](evidence/architecture-checkpoint-2-2026-08-14.md).
+[architecture checkpoint 2](evidence/architecture-checkpoint-2-2026-08-14.md)
+and
+[architecture checkpoint 3](evidence/architecture-checkpoint-3-2026-08-14.md).

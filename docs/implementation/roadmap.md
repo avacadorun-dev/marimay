@@ -36,7 +36,9 @@ recorded in the [Stage 0 compiler architecture](compiler-architecture.md), with
 the first research/planning checkpoint captured in
 [architecture checkpoint 1](evidence/architecture-checkpoint-1-2026-08-13.md)
 and the first mechanical test-owner extraction captured in
-[architecture checkpoint 2](evidence/architecture-checkpoint-2-2026-08-14.md).
+[architecture checkpoint 2](evidence/architecture-checkpoint-2-2026-08-14.md),
+followed by the first production checker-result boundary in
+[architecture checkpoint 3](evidence/architecture-checkpoint-3-2026-08-14.md).
 This maintenance work does not change any gate state and cannot displace a
 vertical VM/native feature slice.
 
