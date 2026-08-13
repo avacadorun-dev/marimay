@@ -1,7 +1,7 @@
 # Ruda Stage 0 compiler architecture
 
 Status: implementation architecture for the C17 bootstrap.
-Last reviewed: 2026-08-13.
+Last reviewed: 2026-08-14.
 
 This document maps the normative compiler and execution contracts to physical
 owners. It changes no language semantics. When it conflicts with `docs/spec/`
@@ -156,7 +156,8 @@ test order and give each extracted owner a focused suite:
 ```text
 tests/c-unit/
   test_mir.c
-  test_mir_managed.c
+  test_mir_arrays.c
+  test_mir_managed.c       future record/enum managed-oracle extraction
   test_mir_support.h
   test_checker.c
   test_checker_match.c
@@ -235,3 +236,19 @@ As measured on 2026-08-13 before the first extraction:
 These counts justify review, not a hard maximum. The completion criterion is
 that each extracted module has one owner, a narrow private API, and independent
 verification—not that every file falls below an arbitrary number.
+
+## Extraction progress
+
+The first behavior-preserving extraction landed after the managed-array oracle
+checkpoint:
+
+| Owner | Before | After | Boundary |
+|---|---:|---:|---|
+| `tests/c-unit/test_mir.c` | 4,612 | 3,396 | scalar, verifier, calls, records, enums, strings, and `f64`; remains the registered aggregator |
+| `tests/c-unit/test_mir_arrays.c` | 0 | 1,251 | array layouts, construction, provenance, bounds, allocation failure, limits, and D045 RHS ordering |
+
+The split preserves assertion order within the array suite and the single
+external `ruda_test_mir` registration. Test-local helpers are private to each
+translation unit; no production header or semantic implementation changed.
+The command evidence is recorded in
+[architecture checkpoint 2](evidence/architecture-checkpoint-2-2026-08-14.md).
