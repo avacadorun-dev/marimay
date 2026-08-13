@@ -97,6 +97,8 @@ These commands are the normative product workflow. In the current bootstrap, onl
 - [`IMPLEMENTATION-BRIEF.md`](IMPLEMENTATION-BRIEF.md) — complete handoff to an implementation agent;
 - [`docs/implementation/roadmap.md`](docs/implementation/roadmap.md) — gates from C17 bootstrap to production and self-hosting;
 - [`docs/implementation/bootstrap.md`](docs/implementation/bootstrap.md) — build and verify the current C17 bootstrap slice;
+- [`docs/implementation/compiler-architecture.md`](docs/implementation/compiler-architecture.md) — Stage 0 phase ownership, validation boundaries, and refactoring checkpoints;
+- [`docs/research/compiler-architecture.md`](docs/research/compiler-architecture.md) — primary-source research behind the physical compiler architecture;
 - [`docs/implementation/test-strategy.md`](docs/implementation/test-strategy.md) — required verification matrix;
 - [`examples/`](examples) — readability and conformance examples.
 

@@ -31,6 +31,13 @@ A gate is `verified` only with linked command output and artifacts satisfying ev
 
 ## Immediate execution priority: V0 engine-equivalence spine
 
+The physical ownership map and behavior-preserving extraction sequence are
+recorded in the [Stage 0 compiler architecture](compiler-architecture.md), with
+the first research/planning checkpoint captured in
+[architecture checkpoint 1](evidence/architecture-checkpoint-1-2026-08-13.md).
+This maintenance work does not change any gate state and cannot displace a
+vertical VM/native feature slice.
+
 I2, I3, and I4 are intentionally overlapped after the minimally useful pure
 subset exists. The next execution release blocker is the first complete V0
 spine:
