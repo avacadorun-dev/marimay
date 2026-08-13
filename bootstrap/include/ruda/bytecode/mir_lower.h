@@ -37,8 +37,8 @@ RudaMirBytecodeProgramLowerOptions
 ruda_mir_bytecode_program_lower_default_options(void);
 
 /*
- * Lowers the verified bool/i64/void/string/never MIR subset supported by the
- * bytecode registry. Unsupported managed semantics fail explicitly. Output
+ * Lowers the verified bool/i64/f64/void/string/never MIR subset supported by
+ * the bytecode registry. Unsupported managed semantics fail explicitly. Output
  * must be zero-initialized or a valid initialized bytecode function. Any
  * previous output value is disposed before lowering begins. On failure output
  * is reset and owns no allocations.

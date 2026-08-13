@@ -125,6 +125,15 @@ Generated C must not depend on C undefined behavior to implement safe Ruda. In p
 - aliasing assumptions are conservative unless proven from MIR;
 - default compiler flags preserve strict floating-point semantics.
 
+For D044 `f64`, a native target is conforming only when its `double` is IEC
+60559/IEEE 754 binary64 and generated C preserves binary64
+round-to-nearest-ties-to-even semantics without fast-math, reassociation,
+contraction, excess precision, or locale-dependent literal conversion. The
+backend rejects an unsupported host before publishing a native artifact; it
+does not silently substitute host floating-point behavior. Native lowering
+canonicalizes NaNs at every `f64` arithmetic result boundary to
+`0x7ff8000000000000`, while unary negation is an exact sign-bit toggle.
+
 The C backend test suite runs generated code with strong warnings, AddressSanitizer, UndefinedBehaviorSanitizer, and platform equivalents.
 
 ### 5.1.1 Generated identifiers
@@ -450,6 +459,14 @@ With the same source, dependency graph, language version, input capabilities, an
 - capability denials and resource-limit classification.
 
 Addresses, GC timing, backend helper frames, native symbol names, throughput, and independent-task scheduling are not observable guarantees.
+
+For the implemented D044 `f64` slice, comparison includes raw binary64 bits at
+constant, copy, call-argument, call-result, return, and arithmetic-result
+boundaries. Fixtures cover decimal nearest-even conversion, finite values,
+subnormals, both zero signs, infinities, canonical NaN, IEEE divide-by-zero,
+unary negation of raw NaN bits, and ordered/unordered comparison behavior. No
+textual floating-point rendering protocol is implied by bitwise result
+comparison; formatting is a separate library contract.
 
 Construction traces preserve source field-initializer order even when MIR
 stores the resulting values in declaration-layout order. Cleanup traces

@@ -20,6 +20,7 @@ typedef struct RudaBytecodeValue {
     RudaBytecodeType type;
     union {
         int64_t i64;
+        uint64_t f64_bits;
         bool boolean;
         RudaBytecodeReference reference;
     } as;
@@ -83,7 +84,8 @@ typedef enum RudaBytecodeRunStatus {
     RUDA_BYTECODE_RUN_DIVISION_BY_ZERO,
     RUDA_BYTECODE_RUN_INVALID_SHIFT,
     RUDA_BYTECODE_RUN_PANIC,
-    RUDA_BYTECODE_RUN_INVALID_REFERENCE
+    RUDA_BYTECODE_RUN_INVALID_REFERENCE,
+    RUDA_BYTECODE_RUN_UNSUPPORTED_HOST
 } RudaBytecodeRunStatus;
 
 RudaBytecodeRunOptions ruda_bytecode_run_default_options(void);

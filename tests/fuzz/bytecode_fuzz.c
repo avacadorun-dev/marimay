@@ -25,6 +25,7 @@ static bool ruda_fuzz_run_status_expected(RudaBytecodeRunStatus status) {
         || status == RUDA_BYTECODE_RUN_INVALID_SHIFT
         || status == RUDA_BYTECODE_RUN_PANIC
         || status == RUDA_BYTECODE_RUN_INVALID_REFERENCE
+        || status == RUDA_BYTECODE_RUN_UNSUPPORTED_HOST
         || status == RUDA_BYTECODE_RUN_LIMIT_REACHED
         || status == RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
 }

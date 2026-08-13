@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "ruda/generated/diagnostic_codes.h"
+#include "ruda/base/f64.h"
 #include "ruda/base/string_literal.h"
 
 typedef struct RudaCheckName {
@@ -1987,6 +1988,35 @@ static bool ruda_function_emit_instruction(
     return true;
 }
 
+static bool ruda_function_emit_f64_constant(
+    RudaFunctionChecker *function,
+    uint64_t bits,
+    size_t start,
+    size_t end,
+    RudaExpressionValue *result
+) {
+    RudaMirInstruction instruction;
+    RudaMirRegister target = RUDA_MIR_NO_REGISTER;
+    if (!ruda_function_add_register(function, RUDA_TYPE_F64, &target)) {
+        return false;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_CONSTANT_F64;
+    instruction.target = target;
+    instruction.first = RUDA_MIR_NO_REGISTER;
+    instruction.second = RUDA_MIR_NO_REGISTER;
+    instruction.f64_bits = bits;
+    instruction.span.start = start;
+    instruction.span.end = end;
+    if (!ruda_function_append_instruction(function, &instruction)) {
+        return false;
+    }
+    result->type = RUDA_TYPE_F64;
+    result->register_id = target;
+    result->valid = true;
+    return true;
+}
+
 static bool ruda_function_record_layout(
     RudaFunctionChecker *function,
     const RudaCheckRecordDeclaration *declaration,
@@ -2521,6 +2551,46 @@ static bool ruda_compile_literal(
             result
         );
     }
+    if (token->kind == RUDA_TOKEN_FLOAT) {
+        uint64_t bits = 0;
+        RudaF64ParseStatus parse_status;
+        if (expected != RUDA_TYPE_INVALID && expected != RUDA_TYPE_F64) {
+            (void)ruda_checker_add_diagnostic(
+                checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "f64 literal does not match the required type",
+                token->start,
+                token->end
+            );
+            return false;
+        }
+        parse_status = ruda_f64_parse_decimal(
+            checker->source + token->start,
+            token->end - token->start,
+            checker->result->allocator,
+            checker->options.max_float_literal_digits,
+            &bits
+        );
+        if (parse_status == RUDA_F64_PARSE_ALLOCATION_FAILED) {
+            ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+            return false;
+        }
+        if (parse_status == RUDA_F64_PARSE_LIMIT_REACHED) {
+            ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+            return false;
+        }
+        if (parse_status != RUDA_F64_PARSE_OK) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            return false;
+        }
+        return ruda_function_emit_f64_constant(
+            function,
+            bits,
+            token->start,
+            token->end,
+            result
+        );
+    }
     if (token->kind == RUDA_TOKEN_STRING
         || token->kind == RUDA_TOKEN_RAW_STRING) {
         RudaOwnedBytes decoded;
@@ -2660,6 +2730,15 @@ static bool ruda_compile_name(
                     result
                 );
             }
+            if (constant->value.type == RUDA_TYPE_F64) {
+                return ruda_function_emit_f64_constant(
+                    function,
+                    constant->value.as.f64_bits,
+                    token->start,
+                    token->end,
+                    result
+                );
+            }
             ruda_checker_fail(
                 function->checker,
                 RUDA_CHECK_INCOMPLETE_LANGUAGE
@@ -2771,6 +2850,35 @@ static bool ruda_compile_unary(
                     result
                 );
             }
+        } else if (literal != NULL && literal->kind == RUDA_TOKEN_FLOAT) {
+            uint64_t bits = 0;
+            RudaF64ParseStatus parse_status = ruda_f64_parse_decimal(
+                function->checker->source + literal->start,
+                literal->end - literal->start,
+                function->checker->result->allocator,
+                function->checker->options.max_float_literal_digits,
+                &bits
+            );
+            if (parse_status == RUDA_F64_PARSE_OK) {
+                return ruda_function_emit_f64_constant(
+                    function,
+                    ruda_f64_negate(bits),
+                    node->start,
+                    node->end,
+                    result
+                );
+            }
+            if (parse_status == RUDA_F64_PARSE_ALLOCATION_FAILED) {
+                ruda_checker_fail(
+                    function->checker,
+                    RUDA_CHECK_ALLOCATION_FAILED
+                );
+            } else if (parse_status == RUDA_F64_PARSE_LIMIT_REACHED) {
+                ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+            } else {
+                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            }
+            return false;
         } else if (ruda_checker_has_failed(function->checker)
             || function->checker->result->diagnostics.length
                 != function->diagnostic_start) {
@@ -2781,7 +2889,7 @@ static bool ruda_compile_unary(
         operand_type = RUDA_TYPE_BOOL;
         kind = RUDA_MIR_NOT_BOOL;
     } else if (operator_token->kind == RUDA_TOKEN_MINUS) {
-        operand_type = RUDA_TYPE_I64;
+        operand_type = RUDA_TYPE_INVALID;
         kind = RUDA_MIR_NEGATE_CHECKED_I64;
     } else if (operator_token->kind == RUDA_TOKEN_TILDE) {
         operand_type = RUDA_TYPE_I64;
@@ -2796,6 +2904,13 @@ static bool ruda_compile_unary(
     if (ruda_expression_is_never(function, &value)) {
         *result = value;
         return true;
+    }
+    if (operator_token->kind == RUDA_TOKEN_MINUS
+        && (value.type == RUDA_TYPE_I64 || value.type == RUDA_TYPE_F64)) {
+        operand_type = value.type;
+        kind = value.type == RUDA_TYPE_F64
+            ? RUDA_MIR_NEGATE_F64
+            : RUDA_MIR_NEGATE_CHECKED_I64;
     }
     if (value.type != operand_type) {
         if ((operator_token->kind == RUDA_TOKEN_MINUS
@@ -3182,6 +3297,7 @@ static bool ruda_compile_binary(
         return false;
     }
     if (operand_type != RUDA_TYPE_I64
+        && operand_type != RUDA_TYPE_F64
         && !(equality_operator && operand_type == RUDA_TYPE_BOOL)) {
         if ((numeric_operator || comparison_operator)
             && ruda_type_is_numeric(operand_type)) {
@@ -3221,10 +3337,44 @@ static bool ruda_compile_binary(
         );
         return false;
     }
+    if (operand_type == RUDA_TYPE_F64) {
+        if (bitwise_operator || shift_operator
+            || operator_token->kind == RUDA_TOKEN_PERCENT) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+                "operator is not defined for f64 operands",
+                operator_token->start,
+                operator_token->end
+            );
+            return false;
+        }
+        if (numeric_operator) {
+            result_type = RUDA_TYPE_F64;
+        }
+        if (equality_operator) {
+            kind = RUDA_MIR_EQUAL_F64;
+        } else if (comparison_operator) {
+            kind = operator_token->kind == RUDA_TOKEN_LESS
+                    || operator_token->kind == RUDA_TOKEN_GREATER
+                ? RUDA_MIR_LESS_F64
+                : RUDA_MIR_LESS_EQUAL_F64;
+        } else if (operator_token->kind == RUDA_TOKEN_PLUS) {
+            kind = RUDA_MIR_ADD_F64;
+        } else if (operator_token->kind == RUDA_TOKEN_MINUS) {
+            kind = RUDA_MIR_SUBTRACT_F64;
+        } else if (operator_token->kind == RUDA_TOKEN_STAR) {
+            kind = RUDA_MIR_MULTIPLY_F64;
+        } else if (operator_token->kind == RUDA_TOKEN_SLASH) {
+            kind = RUDA_MIR_DIVIDE_F64;
+        }
+    }
     if (equality_operator) {
-        kind = operand_type == RUDA_TYPE_BOOL
-            ? RUDA_MIR_EQUAL_BOOL
-            : RUDA_MIR_EQUAL_I64;
+        if (operand_type == RUDA_TYPE_BOOL) {
+            kind = RUDA_MIR_EQUAL_BOOL;
+        } else if (operand_type == RUDA_TYPE_I64) {
+            kind = RUDA_MIR_EQUAL_I64;
+        }
     }
     if (!ruda_function_emit_instruction(
             function,
@@ -9361,6 +9511,71 @@ static bool ruda_compile_binding(
         || expression == NULL;
 }
 
+static bool ruda_compound_assignment_kind(
+    RudaTypeId type,
+    RudaTokenKind operator_kind,
+    RudaMirInstructionKind *kind
+) {
+    if (kind == NULL) {
+        return false;
+    }
+    if (type == RUDA_TYPE_I64) {
+        switch (operator_kind) {
+            case RUDA_TOKEN_PLUS_EQUAL:
+                *kind = RUDA_MIR_ADD_CHECKED_I64;
+                return true;
+            case RUDA_TOKEN_MINUS_EQUAL:
+                *kind = RUDA_MIR_SUBTRACT_CHECKED_I64;
+                return true;
+            case RUDA_TOKEN_STAR_EQUAL:
+                *kind = RUDA_MIR_MULTIPLY_CHECKED_I64;
+                return true;
+            case RUDA_TOKEN_SLASH_EQUAL:
+                *kind = RUDA_MIR_DIVIDE_CHECKED_I64;
+                return true;
+            case RUDA_TOKEN_PERCENT_EQUAL:
+                *kind = RUDA_MIR_REMAINDER_CHECKED_I64;
+                return true;
+            case RUDA_TOKEN_AMPERSAND_EQUAL:
+                *kind = RUDA_MIR_BITWISE_AND_I64;
+                return true;
+            case RUDA_TOKEN_CARET_EQUAL:
+                *kind = RUDA_MIR_BITWISE_XOR_I64;
+                return true;
+            case RUDA_TOKEN_PIPE_EQUAL:
+                *kind = RUDA_MIR_BITWISE_OR_I64;
+                return true;
+            case RUDA_TOKEN_SHIFT_LEFT_EQUAL:
+                *kind = RUDA_MIR_SHIFT_LEFT_CHECKED_I64;
+                return true;
+            case RUDA_TOKEN_SHIFT_RIGHT_EQUAL:
+                *kind = RUDA_MIR_SHIFT_RIGHT_I64;
+                return true;
+            default:
+                return false;
+        }
+    }
+    if (type == RUDA_TYPE_F64) {
+        switch (operator_kind) {
+            case RUDA_TOKEN_PLUS_EQUAL:
+                *kind = RUDA_MIR_ADD_F64;
+                return true;
+            case RUDA_TOKEN_MINUS_EQUAL:
+                *kind = RUDA_MIR_SUBTRACT_F64;
+                return true;
+            case RUDA_TOKEN_STAR_EQUAL:
+                *kind = RUDA_MIR_MULTIPLY_F64;
+                return true;
+            case RUDA_TOKEN_SLASH_EQUAL:
+                *kind = RUDA_MIR_DIVIDE_F64;
+                return true;
+            default:
+                return false;
+        }
+    }
+    return false;
+}
+
 static bool ruda_compile_record_assignment(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
@@ -9413,21 +9628,18 @@ static bool ruda_compile_record_assignment(
         );
         return false;
     }
-    if (compound && field_declaration->type != RUDA_TYPE_I64) {
-        if (ruda_type_is_numeric(field_declaration->type)) {
-            ruda_checker_fail(
-                function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
-            );
-        } else {
-            (void)ruda_checker_add_diagnostic(
-                function->checker,
-                RUDA_DIAGNOSTIC_INVALID_OPERATOR,
-                "operator is not defined for the record field type",
-                operator_token->start,
-                operator_token->end
-            );
-        }
+    if (compound && !ruda_compound_assignment_kind(
+            field_declaration->type,
+            operator_token->kind,
+            &compound_kind
+        )) {
+        (void)ruda_checker_add_diagnostic(
+            function->checker,
+            RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+            "operator is not defined for the record field type",
+            operator_token->start,
+            operator_token->end
+        );
         return false;
     }
     if (compound && !ruda_function_emit_record_access(
@@ -9618,21 +9830,18 @@ static bool ruda_compile_assignment(
         );
         return false;
     }
-    if (compound && local->type != RUDA_TYPE_I64) {
-        if (ruda_type_is_numeric(local->type)) {
-            ruda_checker_fail(
-                function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
-            );
-        } else {
-            (void)ruda_checker_add_diagnostic(
-                function->checker,
-                RUDA_DIAGNOSTIC_INVALID_OPERATOR,
-                "operator is not defined for the operand types",
-                operator_token->start,
-                operator_token->end
-            );
-        }
+    if (compound && !ruda_compound_assignment_kind(
+            local->type,
+            operator_token->kind,
+            &compound_kind
+        )) {
+        (void)ruda_checker_add_diagnostic(
+            function->checker,
+            RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+            "operator is not defined for the operand types",
+            operator_token->start,
+            operator_token->end
+        );
         return false;
     }
     memset(&value, 0, sizeof(value));
@@ -12728,6 +12937,7 @@ static bool ruda_collect_constant_declaration(
     }
     if (declaration.type != RUDA_TYPE_INVALID
         && declaration.type != RUDA_TYPE_I64
+        && declaration.type != RUDA_TYPE_F64
         && declaration.type != RUDA_TYPE_BOOL) {
         ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
         goto cleanup;
@@ -13015,6 +13225,10 @@ static bool ruda_infer_constant_expression_type(
             *result = RUDA_TYPE_I64;
             return true;
         }
+        if (token->kind == RUDA_TOKEN_FLOAT) {
+            *result = RUDA_TYPE_F64;
+            return true;
+        }
         if (token->kind == RUDA_TOKEN_KW_TRUE
             || token->kind == RUDA_TOKEN_KW_FALSE) {
             *result = RUDA_TYPE_BOOL;
@@ -13070,6 +13284,17 @@ static bool ruda_infer_constant_expression_type(
         }
         if (token->kind == RUDA_TOKEN_MINUS
             || token->kind == RUDA_TOKEN_TILDE) {
+            if (token->kind == RUDA_TOKEN_MINUS) {
+                const RudaAstNode *operand = ruda_expression_only_node(node);
+                if (operand != NULL && ruda_infer_constant_expression_type(
+                        checker,
+                        operand,
+                        result
+                    )) {
+                    return true;
+                }
+                return false;
+            }
             *result = RUDA_TYPE_I64;
             return true;
         }
@@ -13079,17 +13304,36 @@ static bool ruda_infer_constant_expression_type(
     if (node->kind == RUDA_SYNTAX_BINARY_EXPRESSION) {
         const RudaAstNode *left = NULL;
         const RudaAstNode *right = NULL;
+        RudaTypeId left_type = RUDA_TYPE_INVALID;
+        RudaTypeId right_type = RUDA_TYPE_INVALID;
         if (!ruda_binary_parts(node, &left, &token, &right)) {
             ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
             return false;
         }
-        (void)left;
-        (void)right;
         switch (token->kind) {
             case RUDA_TOKEN_PLUS:
             case RUDA_TOKEN_MINUS:
             case RUDA_TOKEN_STAR:
             case RUDA_TOKEN_SLASH:
+                if (!ruda_infer_constant_expression_type(
+                        checker,
+                        left,
+                        &left_type
+                    ) || !ruda_infer_constant_expression_type(
+                        checker,
+                        right,
+                        &right_type
+                    )) {
+                    return false;
+                }
+                if (left_type == right_type
+                    && (left_type == RUDA_TYPE_I64
+                        || left_type == RUDA_TYPE_F64)) {
+                    *result = left_type;
+                    return true;
+                }
+                *result = RUDA_TYPE_I64;
+                return true;
             case RUDA_TOKEN_PERCENT:
             case RUDA_TOKEN_AMPERSAND:
             case RUDA_TOKEN_CARET:
@@ -13205,6 +13449,7 @@ static bool ruda_evaluate_constant(
         goto cleanup;
     }
     if (declaration->type != RUDA_TYPE_I64
+        && declaration->type != RUDA_TYPE_F64
         && declaration->type != RUDA_TYPE_BOOL) {
         ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
         goto cleanup;
@@ -13421,6 +13666,7 @@ RudaCheckOptions ruda_check_default_options(void) {
     options.max_constant_steps = 10000000;
     options.max_constant_depth = 1024;
     options.max_type_alias_depth = 1024;
+    options.max_float_literal_digits = 4096;
     options.type_options = ruda_type_table_default_options();
     options.mir_options = ruda_mir_function_default_options();
     return options;
@@ -13652,6 +13898,7 @@ static bool ruda_check_options_valid(
         && options.max_diagnostics != 0 && options.max_constant_steps != 0
         && options.max_constant_depth != 0
         && options.max_type_alias_depth != 0
+        && options.max_float_literal_digits != 0
         && options.type_options.max_types >= RUDA_TYPE_FIRST_DYNAMIC
         && options.type_options.max_types <= UINT32_MAX
         && options.type_options.max_type_arguments != 0

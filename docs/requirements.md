@@ -43,6 +43,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | LANG-033 | `defer` accepts only `void`, runs exactly once in LIFO order on every exit, masks requested cancellation during cleanup, and has deterministic primary/suppressed panic precedence; fallible resource policy remains explicit | language §10.3; standard library §5; diagnostics §9; D041 | I2/I6/I9 |
 | LANG-034 | signed division truncates toward zero, remainder follows the dividend and quotient identity, and zero plus `MIN / -1`/`MIN % -1` are checked before backend host operations | language §§5.1,7; execution §5.1; D042 | I2/I4 |
 | LANG-035 | a public nominal type's owning-package dot-call set and structural conformance are invariant across named type, named function, and namespace import forms; import spelling changes only free-call visibility | language §§3,5.8,6.2; D003/D043 | I2/E0 |
+| LANG-036 | `f64` decimal literals round exactly to binary64 nearest-even; raw bits cross value boundaries unchanged; arithmetic is strict and canonicalizes NaNs; unary negation preserves NaN payload bits; comparisons and signed-zero division follow D044 | language §5.1; execution §§5.1,15; D044 | I2/I3/I4 |
 
 ## Execution and concurrency
 

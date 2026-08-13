@@ -23,7 +23,9 @@ typedef enum RudaBytecodeOperandKind {
     RUDA_BYTECODE_OPERAND_CALL,
     RUDA_BYTECODE_OPERAND_STRING,
     RUDA_BYTECODE_OPERAND_I64,
-    RUDA_BYTECODE_OPERAND_BOOL
+    RUDA_BYTECODE_OPERAND_BOOL,
+    /* Appended to preserve the established public operand-kind values. */
+    RUDA_BYTECODE_OPERAND_F64_BITS
 } RudaBytecodeOperandKind;
 
 enum {
@@ -48,7 +50,9 @@ typedef enum RudaBytecodeType {
     RUDA_BYTECODE_TYPE_I64,
     RUDA_BYTECODE_TYPE_VOID,
     RUDA_BYTECODE_TYPE_STRING,
-    RUDA_BYTECODE_TYPE_NEVER
+    RUDA_BYTECODE_TYPE_NEVER,
+    /* Appended to preserve the established feature-0 wire type IDs. */
+    RUDA_BYTECODE_TYPE_F64
 } RudaBytecodeType;
 
 typedef struct RudaBytecodeSpan {

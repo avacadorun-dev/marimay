@@ -99,6 +99,10 @@ No provisional item permits an implementation to silently substitute source-leve
     behavior owned with an imported nominal type participates regardless of
     named-type, named-function, or namespace import spelling; free-call
     spelling remains import-dependent and E0 still measures discoverability.
+41. Closed deterministic `f64` execution through D044: decimal literals use
+    locale-independent nearest-even binary64 conversion; arithmetic, NaN,
+    signed-zero, comparison, raw-bit boundary, and strict native-host rules now
+    have one VM/C-safe contract with executable differential coverage.
 
 ## Automated structural checks performed
 

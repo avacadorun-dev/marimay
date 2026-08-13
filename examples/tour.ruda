@@ -31,6 +31,10 @@ fn visit(user: User): void {
   user.visits += 1;
 }
 
+fn interpolate(left: f64, right: f64, weight: f64): f64 {
+  return left + ((right - left) * weight);
+}
+
 fn printValue(value: Stringer): void {
   println(value.string());
 }

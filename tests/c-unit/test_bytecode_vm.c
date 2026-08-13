@@ -731,6 +731,117 @@ static RudaBytecodeValue ruda_test_vm_i64(int64_t value) {
     return result;
 }
 
+static bool ruda_test_vm_build_f64(
+    RudaBytecodeFunction *function,
+    RudaOpcode opcode,
+    uint64_t left_bits,
+    uint64_t right_bits,
+    RudaBytecodeType result_type
+) {
+    uint32_t left = UINT32_MAX;
+    uint32_t right = UINT32_MAX;
+    uint32_t result = UINT32_MAX;
+    uint32_t block = UINT32_MAX;
+    uint64_t span = 500;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_bytecode_function_init(function, ruda_system_allocator(), result_type,
+            1, NULL, 0, ruda_bytecode_function_default_options())
+        || !ruda_bytecode_add_register(function, RUDA_BYTECODE_TYPE_F64, &left)
+        || !ruda_bytecode_add_register(function, RUDA_BYTECODE_TYPE_F64, &right)
+        || !ruda_bytecode_add_register(function, result_type, &result)
+        || !ruda_bytecode_add_block(function, &block)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_CONST_F64, left,
+            left_bits, 0, &span)
+        || !ruda_test_vm_append(function, block, RUDA_OPCODE_CONST_F64, right,
+            right_bits, 0, &span)) {
+        ruda_bytecode_function_dispose(function);
+        return false;
+    }
+    if (opcode == RUDA_OPCODE_F64_NEGATE) {
+        if (!ruda_test_vm_append(function, block, opcode, result, left, 0, &span)) {
+            ruda_bytecode_function_dispose(function);
+            return false;
+        }
+    } else if (!ruda_test_vm_append(function, block, opcode, result, left, right,
+            &span)) {
+        ruda_bytecode_function_dispose(function);
+        return false;
+    }
+    if (!ruda_test_vm_append(function, block, RUDA_OPCODE_RETURN, result, 0, 0,
+            &span)) {
+        ruda_bytecode_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static void ruda_test_vm_f64(void) {
+    typedef struct RudaTestVmF64Case {
+        RudaOpcode opcode;
+        uint64_t left;
+        uint64_t right;
+        RudaBytecodeType type;
+        uint64_t expected_bits;
+        bool expected_boolean;
+    } RudaTestVmF64Case;
+    static const RudaTestVmF64Case cases[] = {
+        {RUDA_OPCODE_F64_ADD, UINT64_C(0x3ff8000000000000),
+            UINT64_C(0x4002000000000000), RUDA_BYTECODE_TYPE_F64,
+            UINT64_C(0x400e000000000000), false},
+        {RUDA_OPCODE_F64_SUBTRACT, UINT64_C(0x4014000000000000),
+            UINT64_C(0x4000000000000000), RUDA_BYTECODE_TYPE_F64,
+            UINT64_C(0x4008000000000000), false},
+        {RUDA_OPCODE_F64_MULTIPLY, UINT64_C(0xc000000000000000),
+            UINT64_C(0x4008000000000000), RUDA_BYTECODE_TYPE_F64,
+            UINT64_C(0xc018000000000000), false},
+        {RUDA_OPCODE_F64_DIVIDE, UINT64_C(0xc018000000000000),
+            UINT64_C(0x4008000000000000), RUDA_BYTECODE_TYPE_F64,
+            UINT64_C(0xc000000000000000), false},
+        {RUDA_OPCODE_F64_DIVIDE, UINT64_C(0x3ff0000000000000),
+            UINT64_C(0x0000000000000000), RUDA_BYTECODE_TYPE_F64,
+            UINT64_C(0x7ff0000000000000), false},
+        {RUDA_OPCODE_F64_DIVIDE, UINT64_C(0xbff0000000000000),
+            UINT64_C(0x0000000000000000), RUDA_BYTECODE_TYPE_F64,
+            UINT64_C(0xfff0000000000000), false},
+        {RUDA_OPCODE_F64_DIVIDE, UINT64_C(0x0000000000000000),
+            UINT64_C(0x0000000000000000), RUDA_BYTECODE_TYPE_F64,
+            UINT64_C(0x7ff8000000000000), false},
+        {RUDA_OPCODE_F64_NEGATE, UINT64_C(0x0000000000000000), 0,
+            RUDA_BYTECODE_TYPE_F64, UINT64_C(0x8000000000000000), false},
+        {RUDA_OPCODE_F64_NEGATE, UINT64_C(0x7ff8000000000001), 0,
+            RUDA_BYTECODE_TYPE_F64, UINT64_C(0xfff8000000000001), false},
+        {RUDA_OPCODE_F64_EQUAL, UINT64_C(0x8000000000000000),
+            UINT64_C(0x0000000000000000), RUDA_BYTECODE_TYPE_BOOL, 0, true},
+        {RUDA_OPCODE_F64_EQUAL, UINT64_C(0x7ff8000000000001),
+            UINT64_C(0x7ff8000000000001), RUDA_BYTECODE_TYPE_BOOL, 0, false},
+        {RUDA_OPCODE_F64_LESS, UINT64_C(0xbff0000000000000),
+            UINT64_C(0x0000000000000000), RUDA_BYTECODE_TYPE_BOOL, 0, true},
+        {RUDA_OPCODE_F64_LESS, UINT64_C(0x7ff8000000000001),
+            UINT64_C(0x3ff0000000000000), RUDA_BYTECODE_TYPE_BOOL, 0, false},
+        {RUDA_OPCODE_F64_LESS_EQUAL, UINT64_C(0x8000000000000000),
+            UINT64_C(0x0000000000000000), RUDA_BYTECODE_TYPE_BOOL, 0, true}
+    };
+    size_t index = 0;
+    for (index = 0; index < sizeof(cases) / sizeof(cases[0]); index += 1) {
+        RudaBytecodeFunction function;
+        RudaBytecodeValue result;
+        memset(&function, 0, sizeof(function));
+        result = ruda_test_vm_i64(1234);
+        RUDA_EXPECT(ruda_test_vm_build_f64(&function, cases[index].opcode,
+            cases[index].left, cases[index].right, cases[index].type));
+        RUDA_EXPECT(ruda_bytecode_run(&function, NULL, 0,
+            ruda_system_allocator(), ruda_bytecode_run_default_options(), &result)
+            == RUDA_BYTECODE_RUN_OK);
+        RUDA_EXPECT(result.type == cases[index].type);
+        if (cases[index].type == RUDA_BYTECODE_TYPE_F64) {
+            RUDA_EXPECT(result.as.f64_bits == cases[index].expected_bits);
+        } else {
+            RUDA_EXPECT(result.as.boolean == cases[index].expected_boolean);
+        }
+        ruda_bytecode_function_dispose(&function);
+    }
+}
+
 static bool ruda_test_vm_build_string_literal(
     RudaBytecodeFunction *function,
     RudaAllocator allocator,
@@ -1957,6 +2068,7 @@ void ruda_test_bytecode_vm(void) {
     ruda_test_vm_checked_arithmetic();
     ruda_test_vm_scalar_results();
     ruda_test_vm_bitwise_and_shifts();
+    ruda_test_vm_f64();
     ruda_test_vm_strings_and_panic();
     ruda_test_vm_direct_calls();
     ruda_test_vm_rejection_round_trip_and_allocation();

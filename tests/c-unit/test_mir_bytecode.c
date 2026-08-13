@@ -1492,6 +1492,241 @@ static void ruda_test_mir_bytecode_direct_program(void) {
     ruda_mir_function_dispose(&leaf);
 }
 
+static bool ruda_test_mir_bytecode_build_f64_leaf(
+    RudaMirFunction *function,
+    RudaSymbolId symbol,
+    uint64_t bits
+) {
+    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirInstruction instruction;
+
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(
+            function, ruda_system_allocator(), symbol, NULL, 0, RUDA_TYPE_F64,
+            ruda_mir_function_default_options()
+        ) || !ruda_mir_add_register(function, RUDA_TYPE_F64, &result)
+        || !ruda_mir_add_block(function, &block)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_CONSTANT_F64, result, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 0, false, 620
+    );
+    instruction.f64_bits = bits;
+    if (!ruda_mir_append_instruction(function, block, &instruction)
+        || !ruda_mir_set_terminator(
+            function, block, ruda_test_mir_bytecode_terminator(
+                RUDA_MIR_RETURN, result, RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK,
+                621
+            )
+        )) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_test_mir_bytecode_build_f64_entry(
+    RudaMirFunction *function,
+    RudaSymbolId symbol,
+    RudaSymbolId callee
+) {
+    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirCallId call = RUDA_MIR_NO_CALL;
+    RudaMirInstruction instruction;
+
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(
+            function, ruda_system_allocator(), symbol, NULL, 0, RUDA_TYPE_F64,
+            ruda_mir_function_default_options()
+        ) || !ruda_mir_add_register(function, RUDA_TYPE_F64, &result)
+        || !ruda_mir_add_block(function, &block)
+        || !ruda_mir_add_call(function, callee, RUDA_TYPE_F64, NULL, 0, &call)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_CALL, result, RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0,
+        false, 630
+    );
+    instruction.call = call;
+    if (!ruda_mir_append_instruction(function, block, &instruction)
+        || !ruda_mir_set_terminator(
+            function, block, ruda_test_mir_bytecode_terminator(
+                RUDA_MIR_RETURN, result, RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK,
+                631
+            )
+        )) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static void ruda_test_mir_bytecode_f64(void) {
+    static const uint64_t left_bits = UINT64_C(0x8000000000000000);
+    static const uint64_t right_bits = UINT64_C(0x0000000000000000);
+    static const uint64_t nan_bits = UINT64_C(0x7ff8000000000042);
+    RudaMirFunction input;
+    RudaBytecodeFunction lowered;
+    RudaBytecodeFunction decoded;
+    RudaOwnedBytes encoded;
+    RudaMirRegister left = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister right = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister copied = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister sum = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirInstruction instruction;
+    RudaMirValue mir_result;
+    RudaBytecodeValue vm_result;
+    const RudaBytecodeInstruction *lowered_instruction;
+
+    memset(&input, 0, sizeof(input));
+    memset(&lowered, 0, sizeof(lowered));
+    memset(&decoded, 0, sizeof(decoded));
+    memset(&encoded, 0, sizeof(encoded));
+    RUDA_EXPECT(ruda_mir_function_init(
+        &input, ruda_system_allocator(), (RudaSymbolId){{0x64}}, NULL, 0,
+        RUDA_TYPE_F64, ruda_mir_function_default_options()
+    ));
+    RUDA_EXPECT(ruda_mir_add_register(&input, RUDA_TYPE_F64, &left));
+    RUDA_EXPECT(ruda_mir_add_register(&input, RUDA_TYPE_F64, &right));
+    RUDA_EXPECT(ruda_mir_add_register(&input, RUDA_TYPE_F64, &copied));
+    RUDA_EXPECT(ruda_mir_add_register(&input, RUDA_TYPE_F64, &sum));
+    RUDA_EXPECT(ruda_mir_add_block(&input, &block));
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_CONSTANT_F64, left, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 0, false, 600
+    );
+    instruction.f64_bits = left_bits;
+    RUDA_EXPECT(ruda_mir_append_instruction(&input, block, &instruction));
+    instruction.target = right;
+    instruction.f64_bits = right_bits;
+    RUDA_EXPECT(ruda_mir_append_instruction(&input, block, &instruction));
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_COPY, copied, left, RUDA_MIR_NO_REGISTER, 0, false, 602
+    );
+    RUDA_EXPECT(ruda_mir_append_instruction(&input, block, &instruction));
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_ADD_F64, sum, copied, right, 0, false, 603
+    );
+    RUDA_EXPECT(ruda_mir_append_instruction(&input, block, &instruction));
+    RUDA_EXPECT(ruda_mir_set_terminator(
+        &input, block, ruda_test_mir_bytecode_terminator(
+            RUDA_MIR_RETURN, copied, RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 604
+        )
+    ));
+    RUDA_EXPECT(ruda_mir_verify(&input) == RUDA_MIR_VERIFY_OK);
+    RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+        &input, ruda_system_allocator(), ruda_test_mir_bytecode_options(),
+        &lowered
+    ) == RUDA_MIR_BYTECODE_LOWER_OK);
+    lowered_instruction = ruda_test_mir_bytecode_at(&lowered, 0, 0);
+    RUDA_EXPECT(lowered_instruction != NULL
+        && lowered_instruction->opcode == RUDA_OPCODE_CONST_F64
+        && lowered_instruction->operands[1].unsigned_value == left_bits
+        && lowered_instruction->span.source == 2
+        && lowered_instruction->span.start == 600);
+    lowered_instruction = ruda_test_mir_bytecode_at(&lowered, 0, 3);
+    RUDA_EXPECT(lowered_instruction != NULL
+        && lowered_instruction->opcode == RUDA_OPCODE_F64_ADD);
+    RUDA_EXPECT(ruda_bytecode_encode_function(
+        &lowered, ruda_system_allocator(), &encoded
+    ) == RUDA_BYTECODE_CODEC_OK);
+    RUDA_EXPECT(ruda_bytecode_decode_function(
+        encoded.data, encoded.length, ruda_system_allocator(),
+        ruda_bytecode_function_default_options(), &decoded
+    ) == RUDA_BYTECODE_CODEC_OK);
+    memset(&mir_result, 0, sizeof(mir_result));
+    memset(&vm_result, 0, sizeof(vm_result));
+    RUDA_EXPECT(ruda_mir_interpret(
+        &input, NULL, 0, ruda_system_allocator(),
+        ruda_mir_interpret_default_options(), &mir_result
+    ) == RUDA_MIR_INTERPRET_OK);
+    RUDA_EXPECT(ruda_bytecode_run(
+        &decoded, NULL, 0, ruda_system_allocator(),
+        ruda_bytecode_run_default_options(), &vm_result
+    ) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(mir_result.type == RUDA_TYPE_F64
+        && vm_result.type == RUDA_BYTECODE_TYPE_F64
+        && mir_result.as.f64_bits == left_bits
+        && vm_result.as.f64_bits == left_bits);
+    ruda_bytecode_function_dispose(&decoded);
+    ruda_owned_bytes_dispose(&encoded);
+    ruda_bytecode_function_dispose(&lowered);
+    ruda_mir_function_dispose(&input);
+
+    /* A NaN constant survives lowering, codec, and return without rewriting. */
+    memset(&input, 0, sizeof(input));
+    memset(&lowered, 0, sizeof(lowered));
+    RUDA_EXPECT(ruda_mir_function_init(
+        &input, ruda_system_allocator(), (RudaSymbolId){{0x65}}, NULL, 0,
+        RUDA_TYPE_F64, ruda_mir_function_default_options()
+    ));
+    RUDA_EXPECT(ruda_mir_add_register(&input, RUDA_TYPE_F64, &left));
+    RUDA_EXPECT(ruda_mir_add_block(&input, &block));
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_CONSTANT_F64, left, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 0, false, 610
+    );
+    instruction.f64_bits = nan_bits;
+    RUDA_EXPECT(ruda_mir_append_instruction(&input, block, &instruction));
+    RUDA_EXPECT(ruda_mir_set_terminator(
+        &input, block, ruda_test_mir_bytecode_terminator(
+            RUDA_MIR_RETURN, left, RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 611
+        )
+    ));
+    RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+        &input, ruda_system_allocator(), ruda_test_mir_bytecode_options(),
+        &lowered
+    ) == RUDA_MIR_BYTECODE_LOWER_OK);
+    memset(&vm_result, 0, sizeof(vm_result));
+    RUDA_EXPECT(ruda_bytecode_run(
+        &lowered, NULL, 0, ruda_system_allocator(),
+        ruda_bytecode_run_default_options(), &vm_result
+    ) == RUDA_BYTECODE_RUN_OK && vm_result.as.f64_bits == nan_bits);
+    ruda_bytecode_function_dispose(&lowered);
+    ruda_mir_function_dispose(&input);
+
+    {
+        const RudaSymbolId leaf_symbol = {{0x66}};
+        const RudaSymbolId entry_symbol = {{0x67}};
+        const RudaMirFunction *functions[2];
+        RudaMirFunction leaf;
+        RudaMirFunction entry;
+        RudaBytecodeProgram program;
+
+        memset(&leaf, 0, sizeof(leaf));
+        memset(&entry, 0, sizeof(entry));
+        memset(&program, 0, sizeof(program));
+        RUDA_EXPECT(ruda_test_mir_bytecode_build_f64_leaf(
+            &leaf, leaf_symbol, nan_bits
+        ));
+        RUDA_EXPECT(ruda_test_mir_bytecode_build_f64_entry(
+            &entry, entry_symbol, leaf_symbol
+        ));
+        functions[0] = &entry;
+        functions[1] = &leaf;
+        RUDA_EXPECT(ruda_mir_lower_bytecode_program(
+            functions, 2, entry_symbol, ruda_system_allocator(),
+            ruda_mir_bytecode_program_lower_default_options(), &program
+        ) == RUDA_MIR_BYTECODE_LOWER_OK);
+        memset(&vm_result, 0, sizeof(vm_result));
+        RUDA_EXPECT(ruda_bytecode_run_program(
+            &program, NULL, 0, ruda_system_allocator(),
+            ruda_bytecode_run_default_options(), &vm_result
+        ) == RUDA_BYTECODE_RUN_OK
+            && vm_result.type == RUDA_BYTECODE_TYPE_F64
+            && vm_result.as.f64_bits == nan_bits);
+        ruda_bytecode_program_dispose(&program);
+        ruda_mir_function_dispose(&entry);
+        ruda_mir_function_dispose(&leaf);
+    }
+}
+
 void ruda_test_mir_bytecode(void) {
     ruda_test_mir_bytecode_scalar_mapping();
     ruda_test_mir_bytecode_void_and_failures();
@@ -1499,4 +1734,5 @@ void ruda_test_mir_bytecode(void) {
     ruda_test_mir_bytecode_arithmetic_differential();
     ruda_test_mir_bytecode_direct_program();
     ruda_test_mir_bytecode_string_panic_program();
+    ruda_test_mir_bytecode_f64();
 }

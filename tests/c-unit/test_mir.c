@@ -356,6 +356,285 @@ static void ruda_test_mir_strings_and_panic(RudaSymbolId symbol) {
     ruda_mir_function_dispose(&function);
 }
 
+static void ruda_test_mir_f64(RudaSymbolId symbol) {
+    static const uint64_t positive_zero = UINT64_C(0x0000000000000000);
+    static const uint64_t negative_zero = UINT64_C(0x8000000000000000);
+    static const uint64_t one = UINT64_C(0x3ff0000000000000);
+    static const uint64_t two = UINT64_C(0x4000000000000000);
+    static const uint64_t infinity = UINT64_C(0x7ff0000000000000);
+    static const uint64_t subnormal = UINT64_C(0x0000000000000001);
+    static const uint64_t nan = UINT64_C(0x7ff8000000000042);
+    static const uint64_t canonical_nan = UINT64_C(0x7ff8000000000000);
+    RudaMirFunction function;
+    RudaMirRegister left = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister right = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister copied = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister result_register = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister comparison = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirInstruction instruction;
+    RudaMirValue result;
+    RudaMirBlock *stored_block = NULL;
+    RudaTypeId *stored_type = NULL;
+    size_t index = 0;
+    const RudaMirInstructionKind arithmetic[] = {
+        RUDA_MIR_ADD_F64,
+        RUDA_MIR_SUBTRACT_F64,
+        RUDA_MIR_MULTIPLY_F64,
+        RUDA_MIR_DIVIDE_F64
+    };
+    const uint64_t arithmetic_results[] = {
+        UINT64_C(0x4008000000000000),
+        UINT64_C(0xbff0000000000000),
+        UINT64_C(0x4000000000000000),
+        UINT64_C(0x3fe0000000000000)
+    };
+
+    memset(&function, 0, sizeof(function));
+    RUDA_EXPECT(ruda_mir_function_init(
+        &function, ruda_system_allocator(), symbol, NULL, 0, RUDA_TYPE_F64,
+        ruda_mir_function_default_options()
+    ));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &left));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &right));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &copied));
+    RUDA_EXPECT(ruda_mir_add_register(
+        &function, RUDA_TYPE_F64, &result_register
+    ));
+    RUDA_EXPECT(ruda_mir_add_register(
+        &function, RUDA_TYPE_BOOL, &comparison
+    ));
+    RUDA_EXPECT(ruda_mir_add_block(&function, &block));
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_CONSTANT_F64;
+    instruction.target = left;
+    instruction.f64_bits = one;
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    instruction.target = right;
+    instruction.f64_bits = two;
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    instruction = ruda_test_mir_binary(
+        RUDA_MIR_COPY, copied, left, RUDA_MIR_NO_REGISTER
+    );
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    instruction = ruda_test_mir_binary(
+        RUDA_MIR_ADD_F64, result_register, copied, right
+    );
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    RUDA_EXPECT(ruda_mir_set_terminator(
+        &function, block, ruda_test_mir_return(result_register)
+    ));
+    RUDA_EXPECT(ruda_mir_verify(&function) == RUDA_MIR_VERIFY_OK);
+    memset(&result, 0, sizeof(result));
+    RUDA_EXPECT(ruda_mir_interpret(
+        &function, NULL, 0, ruda_system_allocator(),
+        ruda_mir_interpret_default_options(), &result
+    ) == RUDA_MIR_INTERPRET_OK);
+    RUDA_EXPECT(result.type == RUDA_TYPE_F64
+        && result.as.f64_bits == arithmetic_results[0]);
+
+    stored_block = ruda_vector_at(&function.blocks, block);
+    stored_type = ruda_vector_at(&function.register_types, left);
+    RUDA_EXPECT(stored_block != NULL && stored_type != NULL);
+    if (stored_type != NULL) {
+        *stored_type = RUDA_TYPE_I64;
+        RUDA_EXPECT(ruda_mir_verify(&function) == RUDA_MIR_VERIFY_TYPE_MISMATCH);
+        *stored_type = RUDA_TYPE_F64;
+    }
+    if (stored_block != NULL) {
+        RudaMirInstruction *add = ruda_vector_at(
+            &stored_block->instructions,
+            3
+        );
+        RUDA_EXPECT(add != NULL);
+        if (add != NULL) {
+            add->first = RUDA_MIR_NO_REGISTER;
+            RUDA_EXPECT(
+                ruda_mir_verify(&function) == RUDA_MIR_VERIFY_INVALID_REGISTER
+            );
+            add->first = copied;
+        }
+    }
+    ruda_mir_function_dispose(&function);
+
+    for (index = 0; index < sizeof(arithmetic) / sizeof(arithmetic[0]);
+        index += 1) {
+        memset(&function, 0, sizeof(function));
+        RUDA_EXPECT(ruda_mir_function_init(
+            &function, ruda_system_allocator(), symbol, NULL, 0, RUDA_TYPE_F64,
+            ruda_mir_function_default_options()
+        ));
+        RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &left));
+        RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &right));
+        RUDA_EXPECT(ruda_mir_add_register(
+            &function, RUDA_TYPE_F64, &result_register
+        ));
+        RUDA_EXPECT(ruda_mir_add_block(&function, &block));
+        memset(&instruction, 0, sizeof(instruction));
+        instruction.kind = RUDA_MIR_CONSTANT_F64;
+        instruction.target = left;
+        instruction.f64_bits = one;
+        RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+        instruction.target = right;
+        instruction.f64_bits = two;
+        RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+        instruction = ruda_test_mir_binary(
+            arithmetic[index], result_register, left, right
+        );
+        RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+        RUDA_EXPECT(ruda_mir_set_terminator(
+            &function, block, ruda_test_mir_return(result_register)
+        ));
+        RUDA_EXPECT(ruda_mir_interpret(
+            &function, NULL, 0, ruda_system_allocator(),
+            ruda_mir_interpret_default_options(), &result
+        ) == RUDA_MIR_INTERPRET_OK);
+        RUDA_EXPECT(result.as.f64_bits == arithmetic_results[index]);
+        ruda_mir_function_dispose(&function);
+    }
+
+    memset(&function, 0, sizeof(function));
+    RUDA_EXPECT(ruda_mir_function_init(
+        &function, ruda_system_allocator(), symbol, NULL, 0, RUDA_TYPE_F64,
+        ruda_mir_function_default_options()
+    ));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &left));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &result_register));
+    RUDA_EXPECT(ruda_mir_add_block(&function, &block));
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_CONSTANT_F64;
+    instruction.target = left;
+    instruction.f64_bits = negative_zero;
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    instruction = ruda_test_mir_binary(
+        RUDA_MIR_NEGATE_F64, result_register, left, RUDA_MIR_NO_REGISTER
+    );
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    RUDA_EXPECT(ruda_mir_set_terminator(
+        &function, block, ruda_test_mir_return(result_register)
+    ));
+    RUDA_EXPECT(ruda_mir_interpret(
+        &function, NULL, 0, ruda_system_allocator(),
+        ruda_mir_interpret_default_options(), &result
+    ) == RUDA_MIR_INTERPRET_OK);
+    RUDA_EXPECT(result.as.f64_bits == positive_zero);
+    ruda_mir_function_dispose(&function);
+
+    memset(&function, 0, sizeof(function));
+    RUDA_EXPECT(ruda_mir_function_init(
+        &function, ruda_system_allocator(), symbol, NULL, 0, RUDA_TYPE_BOOL,
+        ruda_mir_function_default_options()
+    ));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &left));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &right));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_BOOL, &comparison));
+    RUDA_EXPECT(ruda_mir_add_block(&function, &block));
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_CONSTANT_F64;
+    instruction.target = left;
+    instruction.f64_bits = negative_zero;
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    instruction.target = right;
+    instruction.f64_bits = positive_zero;
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    instruction = ruda_test_mir_binary(
+        RUDA_MIR_EQUAL_F64, comparison, left, right
+    );
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    RUDA_EXPECT(ruda_mir_set_terminator(
+        &function, block, ruda_test_mir_return(comparison)
+    ));
+    RUDA_EXPECT(ruda_mir_interpret(
+        &function, NULL, 0, ruda_system_allocator(),
+        ruda_mir_interpret_default_options(), &result
+    ) == RUDA_MIR_INTERPRET_OK && result.as.boolean);
+    stored_block = ruda_vector_at(&function.blocks, block);
+    if (stored_block != NULL) {
+        RudaMirInstruction *comparison_instruction = ruda_vector_at(
+            &stored_block->instructions,
+            2
+        );
+        RUDA_EXPECT(comparison_instruction != NULL);
+        if (comparison_instruction != NULL) {
+            RudaMirInstruction *left_constant = ruda_vector_at(
+                &stored_block->instructions,
+                0
+            );
+            RUDA_EXPECT(left_constant != NULL);
+            if (left_constant != NULL) {
+                left_constant->f64_bits = nan;
+            }
+            comparison_instruction->kind = RUDA_MIR_EQUAL_F64;
+            RUDA_EXPECT(ruda_mir_interpret(
+                &function, NULL, 0, ruda_system_allocator(),
+                ruda_mir_interpret_default_options(), &result
+            ) == RUDA_MIR_INTERPRET_OK && !result.as.boolean);
+            comparison_instruction->kind = RUDA_MIR_LESS_F64;
+            RUDA_EXPECT(ruda_mir_interpret(
+                &function, NULL, 0, ruda_system_allocator(),
+                ruda_mir_interpret_default_options(), &result
+            ) == RUDA_MIR_INTERPRET_OK && !result.as.boolean);
+            comparison_instruction->kind = RUDA_MIR_LESS_EQUAL_F64;
+            RUDA_EXPECT(ruda_mir_interpret(
+                &function, NULL, 0, ruda_system_allocator(),
+                ruda_mir_interpret_default_options(), &result
+            ) == RUDA_MIR_INTERPRET_OK && !result.as.boolean);
+        }
+    }
+    ruda_mir_function_dispose(&function);
+
+    memset(&function, 0, sizeof(function));
+    RUDA_EXPECT(ruda_mir_function_init(
+        &function, ruda_system_allocator(), symbol, NULL, 0, RUDA_TYPE_F64,
+        ruda_mir_function_default_options()
+    ));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &left));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &right));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &result_register));
+    RUDA_EXPECT(ruda_mir_add_block(&function, &block));
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_CONSTANT_F64;
+    instruction.target = left;
+    instruction.f64_bits = infinity;
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    instruction.target = right;
+    instruction.f64_bits = infinity;
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    instruction = ruda_test_mir_binary(
+        RUDA_MIR_SUBTRACT_F64, result_register, left, right
+    );
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    RUDA_EXPECT(ruda_mir_set_terminator(
+        &function, block, ruda_test_mir_return(result_register)
+    ));
+    RUDA_EXPECT(ruda_mir_interpret(
+        &function, NULL, 0, ruda_system_allocator(),
+        ruda_mir_interpret_default_options(), &result
+    ) == RUDA_MIR_INTERPRET_OK && result.as.f64_bits == canonical_nan);
+    ruda_mir_function_dispose(&function);
+
+    memset(&function, 0, sizeof(function));
+    RUDA_EXPECT(ruda_mir_function_init(
+        &function, ruda_system_allocator(), symbol, NULL, 0, RUDA_TYPE_F64,
+        ruda_mir_function_default_options()
+    ));
+    RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_F64, &left));
+    RUDA_EXPECT(ruda_mir_add_block(&function, &block));
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_CONSTANT_F64;
+    instruction.target = left;
+    instruction.f64_bits = subnormal;
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    RUDA_EXPECT(ruda_mir_set_terminator(
+        &function, block, ruda_test_mir_return(left)
+    ));
+    RUDA_EXPECT(ruda_mir_interpret(
+        &function, NULL, 0, ruda_system_allocator(),
+        ruda_mir_interpret_default_options(), &result
+    ) == RUDA_MIR_INTERPRET_OK && result.as.f64_bits == subnormal);
+    ruda_mir_function_dispose(&function);
+}
+
 static void ruda_test_mir_string_equality(RudaSymbolId symbol) {
     static const unsigned char embedded[] = {'a', 0, 'b'};
     RudaMirFunction function;
@@ -3104,4 +3383,5 @@ void ruda_test_mir(void) {
     ruda_test_mir_enum_projection(symbol);
     ruda_test_mir_strings_and_panic(symbol);
     ruda_test_mir_string_equality(symbol);
+    ruda_test_mir_f64(symbol);
 }

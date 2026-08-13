@@ -41,3 +41,12 @@ Stage 0 codec.
 | 28 | `string_equal` | `destination:register`, `left:register`, `right:register` | — | Compare complete UTF-8 string bytes without normalization or NUL termination. |
 | 29 | `panic_string` | `message:register` | `terminator`, `may_panic` | Terminate with explicit-source panic G4000 and the exact string message. |
 | 30 | `call_direct_never` | `call:call` | `terminator`, `may_panic` | Invoke a verified declared-never direct call with no normal continuation. |
+| 31 | `const_f64` | `destination:register`, `value:f64_bits` | — | Load an IEEE 754 binary64 constant by its exact raw 64-bit bit pattern. |
+| 32 | `f64_add` | `destination:register`, `left:register`, `right:register` | — | Add IEEE 754 binary64 operands under strict floating-point semantics. |
+| 33 | `f64_subtract` | `destination:register`, `left:register`, `right:register` | — | Subtract IEEE 754 binary64 operands under strict floating-point semantics. |
+| 34 | `f64_multiply` | `destination:register`, `left:register`, `right:register` | — | Multiply IEEE 754 binary64 operands under strict floating-point semantics. |
+| 35 | `f64_divide` | `destination:register`, `left:register`, `right:register` | — | Divide IEEE 754 binary64 operands under strict IEEE division-by-zero semantics. |
+| 36 | `f64_negate` | `destination:register`, `source:register` | — | Negate an IEEE 754 binary64 operand while preserving its exact result bits. |
+| 37 | `f64_equal` | `destination:register`, `left:register`, `right:register` | — | Compare IEEE 754 binary64 operands for equality. |
+| 38 | `f64_less` | `destination:register`, `left:register`, `right:register` | — | Compare IEEE 754 binary64 operands using less-than. |
+| 39 | `f64_less_equal` | `destination:register`, `left:register`, `right:register` | — | Compare IEEE 754 binary64 operands using less-than-or-equal. |

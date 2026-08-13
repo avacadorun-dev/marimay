@@ -1,6 +1,7 @@
 #include "ruda/mir/mir.h"
 
 #include "ruda/base/checked_i64.h"
+#include "ruda/base/f64.h"
 
 #include <limits.h>
 #include <stddef.h>
@@ -1234,6 +1235,10 @@ static RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             return target_type == RUDA_TYPE_I64
                 ? RUDA_MIR_VERIFY_OK
                 : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+        case RUDA_MIR_CONSTANT_F64:
+            return target_type == RUDA_TYPE_F64
+                ? RUDA_MIR_VERIFY_OK
+                : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         case RUDA_MIR_CONSTANT_BOOL:
             return target_type == RUDA_TYPE_BOOL
                 ? RUDA_MIR_VERIFY_OK
@@ -1265,9 +1270,23 @@ static RudaMirVerifyStatus ruda_mir_validate_instruction_types(
         case RUDA_MIR_BITWISE_OR_I64:
         case RUDA_MIR_SHIFT_LEFT_CHECKED_I64:
         case RUDA_MIR_SHIFT_RIGHT_I64:
+        case RUDA_MIR_ADD_F64:
+        case RUDA_MIR_SUBTRACT_F64:
+        case RUDA_MIR_MULTIPLY_F64:
+        case RUDA_MIR_DIVIDE_F64:
             if (first_type == RUDA_TYPE_INVALID
                 || second_type == RUDA_TYPE_INVALID) {
                 return RUDA_MIR_VERIFY_INVALID_REGISTER;
+            }
+            if (instruction->kind == RUDA_MIR_ADD_F64
+                || instruction->kind == RUDA_MIR_SUBTRACT_F64
+                || instruction->kind == RUDA_MIR_MULTIPLY_F64
+                || instruction->kind == RUDA_MIR_DIVIDE_F64) {
+                return target_type == RUDA_TYPE_F64
+                        && first_type == RUDA_TYPE_F64
+                        && second_type == RUDA_TYPE_F64
+                    ? RUDA_MIR_VERIFY_OK
+                    : RUDA_MIR_VERIFY_TYPE_MISMATCH;
             }
             return target_type == RUDA_TYPE_I64
                     && first_type == RUDA_TYPE_I64
@@ -1281,6 +1300,13 @@ static RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             }
             return target_type == RUDA_TYPE_I64
                     && first_type == RUDA_TYPE_I64
+                ? RUDA_MIR_VERIFY_OK
+                : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+        case RUDA_MIR_NEGATE_F64:
+            if (first_type == RUDA_TYPE_INVALID) {
+                return RUDA_MIR_VERIFY_INVALID_REGISTER;
+            }
+            return target_type == RUDA_TYPE_F64 && first_type == RUDA_TYPE_F64
                 ? RUDA_MIR_VERIFY_OK
                 : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         case RUDA_MIR_NOT_BOOL:
@@ -1301,6 +1327,18 @@ static RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             return target_type == RUDA_TYPE_BOOL
                     && first_type == RUDA_TYPE_I64
                     && second_type == RUDA_TYPE_I64
+                ? RUDA_MIR_VERIFY_OK
+                : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+        case RUDA_MIR_EQUAL_F64:
+        case RUDA_MIR_LESS_F64:
+        case RUDA_MIR_LESS_EQUAL_F64:
+            if (first_type == RUDA_TYPE_INVALID
+                || second_type == RUDA_TYPE_INVALID) {
+                return RUDA_MIR_VERIFY_INVALID_REGISTER;
+            }
+            return target_type == RUDA_TYPE_BOOL
+                    && first_type == RUDA_TYPE_F64
+                    && second_type == RUDA_TYPE_F64
                 ? RUDA_MIR_VERIFY_OK
                 : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         case RUDA_MIR_EQUAL_BOOL:
@@ -1566,7 +1604,8 @@ static RudaMirVerifyStatus ruda_mir_validate_instruction_types(
 }
 
 static bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind) {
-    return kind != RUDA_MIR_CONSTANT_I64 && kind != RUDA_MIR_CONSTANT_BOOL
+    return kind != RUDA_MIR_CONSTANT_I64 && kind != RUDA_MIR_CONSTANT_F64
+        && kind != RUDA_MIR_CONSTANT_BOOL
         && kind != RUDA_MIR_CONSTANT_STRING && kind != RUDA_MIR_RECORD_NEW
         && kind != RUDA_MIR_ENUM_NEW && kind != RUDA_MIR_CALL;
 }
@@ -1583,19 +1622,28 @@ static bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_BITWISE_OR_I64:
         case RUDA_MIR_SHIFT_LEFT_CHECKED_I64:
         case RUDA_MIR_SHIFT_RIGHT_I64:
+        case RUDA_MIR_ADD_F64:
+        case RUDA_MIR_SUBTRACT_F64:
+        case RUDA_MIR_MULTIPLY_F64:
+        case RUDA_MIR_DIVIDE_F64:
         case RUDA_MIR_EQUAL_I64:
+        case RUDA_MIR_EQUAL_F64:
         case RUDA_MIR_EQUAL_BOOL:
         case RUDA_MIR_EQUAL_STRING:
         case RUDA_MIR_LESS_I64:
         case RUDA_MIR_LESS_EQUAL_I64:
+        case RUDA_MIR_LESS_F64:
+        case RUDA_MIR_LESS_EQUAL_F64:
         case RUDA_MIR_RECORD_SET:
         case RUDA_MIR_RECORD_IDENTITY_SAME:
             return true;
         case RUDA_MIR_CONSTANT_I64:
+        case RUDA_MIR_CONSTANT_F64:
         case RUDA_MIR_CONSTANT_BOOL:
         case RUDA_MIR_CONSTANT_STRING:
         case RUDA_MIR_COPY:
         case RUDA_MIR_NEGATE_CHECKED_I64:
+        case RUDA_MIR_NEGATE_F64:
         case RUDA_MIR_NOT_BOOL:
         case RUDA_MIR_BITWISE_NOT_I64:
         case RUDA_MIR_RECORD_NEW:
@@ -1606,6 +1654,23 @@ static bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_ENUM_GET_PAYLOAD:
         case RUDA_MIR_CALL:
             return false;
+    }
+    return false;
+}
+
+static bool ruda_mir_uses_f64(const RudaMirFunction *function) {
+    size_t index = 0;
+    if (function == NULL || function->result_type == RUDA_TYPE_F64) {
+        return function != NULL;
+    }
+    for (index = 0; index < function->register_types.length; index += 1) {
+        const RudaTypeId *type = ruda_vector_at_const(
+            &function->register_types,
+            index
+        );
+        if (type != NULL && *type == RUDA_TYPE_F64) {
+            return true;
+        }
     }
     return false;
 }
@@ -3314,6 +3379,9 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         case RUDA_MIR_CONSTANT_I64:
             target->as.i64 = instruction->integer;
             return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_CONSTANT_F64:
+            target->as.f64_bits = instruction->f64_bits;
+            return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_CONSTANT_BOOL:
             target->as.boolean = instruction->boolean;
             return RUDA_MIR_INTERPRET_OK;
@@ -3394,6 +3462,33 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             ) == RUDA_CHECKED_I64_OK
                 ? RUDA_MIR_INTERPRET_OK
                 : RUDA_MIR_INTERPRET_OVERFLOW;
+        case RUDA_MIR_ADD_F64:
+            target->as.f64_bits = ruda_f64_add(
+                first->as.f64_bits,
+                second->as.f64_bits
+            );
+            return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_SUBTRACT_F64:
+            target->as.f64_bits = ruda_f64_subtract(
+                first->as.f64_bits,
+                second->as.f64_bits
+            );
+            return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_MULTIPLY_F64:
+            target->as.f64_bits = ruda_f64_multiply(
+                first->as.f64_bits,
+                second->as.f64_bits
+            );
+            return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_DIVIDE_F64:
+            target->as.f64_bits = ruda_f64_divide(
+                first->as.f64_bits,
+                second->as.f64_bits
+            );
+            return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_NEGATE_F64:
+            target->as.f64_bits = ruda_f64_negate(first->as.f64_bits);
+            return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_NOT_BOOL:
             target->as.boolean = !first->as.boolean;
             return RUDA_MIR_INTERPRET_OK;
@@ -3446,6 +3541,12 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         }
         case RUDA_MIR_EQUAL_I64:
             target->as.boolean = first->as.i64 == second->as.i64;
+            return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_EQUAL_F64:
+            target->as.boolean = ruda_f64_equal(
+                first->as.f64_bits,
+                second->as.f64_bits
+            );
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_EQUAL_BOOL:
             target->as.boolean = first->as.boolean == second->as.boolean;
@@ -3511,8 +3612,20 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         case RUDA_MIR_LESS_I64:
             target->as.boolean = first->as.i64 < second->as.i64;
             return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_LESS_F64:
+            target->as.boolean = ruda_f64_less(
+                first->as.f64_bits,
+                second->as.f64_bits
+            );
+            return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_LESS_EQUAL_I64:
             target->as.boolean = first->as.i64 <= second->as.i64;
+            return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_LESS_EQUAL_F64:
+            target->as.boolean = ruda_f64_less_equal(
+                first->as.f64_bits,
+                second->as.f64_bits
+            );
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_RECORD_NEW: {
             const RudaMirRecordConstruction *construction =
@@ -3802,6 +3915,9 @@ RudaMirInterpretStatus ruda_mir_interpret(
     }
     if (verify_status != RUDA_MIR_VERIFY_OK) {
         return RUDA_MIR_INTERPRET_INVALID_MIR;
+    }
+    if (ruda_mir_uses_f64(function) && !ruda_f64_binary64_supported()) {
+        return RUDA_MIR_INTERPRET_UNSUPPORTED_HOST;
     }
     for (index = 0; index < argument_count; index += 1) {
         if (arguments[index].type != ruda_mir_register_type(

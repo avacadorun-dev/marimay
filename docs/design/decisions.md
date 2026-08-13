@@ -596,3 +596,44 @@ spelled at the call site, checker-owned completion and documentation must show
 the owning package and equivalent available free-call spelling. This
 supersedes D003 only where “visible” could be read as requiring a separately
 named function import; it does not admit foreign extensions or `impl` blocks.
+
+## D044 — Deterministic `f64` binary64 execution
+
+Status: accepted.
+
+`f64` and its `float` alias use IEEE 754 binary64. A decimal `f64` literal is
+converted from its source decimal value with round-to-nearest, ties-to-even,
+independently of the host locale. The resulting raw binary64 bit pattern is
+preserved by constants, copies, call arguments, call results, and returns.
+
+`f64` arithmetic uses IEEE 754 binary64 under round-to-nearest, ties-to-even.
+Each arithmetic result canonicalizes any NaN to raw bits
+`0x7ff8000000000000`; this includes a NaN produced by an operation or supplied
+as an operand. Unary negation is not arithmetic for this rule: it toggles the
+sign bit exactly and therefore preserves the payload and quiet/signaling state
+of a NaN. A binary64 division by positive or negative zero has its IEEE result
+and does not use the integer divide-by-zero panic rule.
+
+Comparisons use IEEE ordered semantics: `+0.0 == -0.0`; every comparison with
+a NaN is false except `!=`, which is true; and NaN is unordered for `<`, `<=`,
+`>`, and `>=`. The canonical NaN rule applies before a value is observed across
+an arithmetic boundary, so backend-specific NaN payload propagation is not
+observable.
+
+Tier 1 native targets must provide an IEC 60559/IEEE 754 binary64 `double` and
+compile generated floating-point C with strict semantics: no fast-math,
+reassociation, contraction, excess precision, or locale-dependent literal
+conversion. A host that cannot meet those conditions is unsupported for native
+`f64` execution rather than a conforming approximation.
+
+This decision specifies `f64` only. `f32` remains an IEEE-width primitive in
+the language table, but its literal conversion, NaN canonicalization, and
+backend conformance rules require a separate decision before implementation.
+Textual formatting and parsing APIs for floating-point values likewise remain
+separate library contracts.
+
+Reason: merely requiring "IEEE" and disabling fast-math leaves locale parsing,
+rounding, NaN payloads, division by zero, and target precision to each host.
+Fixing the binary64 value boundary permits MIR, bytecode, and generated C to
+compare exact result bits without making `printf`, host parsers, or a future
+`f32` implementation accidental language authorities.

@@ -11,3 +11,12 @@ fn main(): void {
     io.print($"value {value}");
   }
 }
+
+const rounded: f64 = 9007199254740993.0;
+
+fn strictFloat(value: f64): f64 {
+  let result: f64 = value;
+  result += 1.0;
+  result *= 2.0;
+  return result / 4.0;
+}

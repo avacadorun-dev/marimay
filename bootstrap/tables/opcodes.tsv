@@ -30,3 +30,12 @@
 28	STRING_EQUAL	string_equal	destination:register,left:register,right:register	none	Compare complete UTF-8 string bytes without normalization or NUL termination.
 29	PANIC_STRING	panic_string	message:register	terminator,may_panic	Terminate with explicit-source panic G4000 and the exact string message.
 30	CALL_DIRECT_NEVER	call_direct_never	call:call	terminator,may_panic	Invoke a verified declared-never direct call with no normal continuation.
+31	CONST_F64	const_f64	destination:register,value:f64_bits	none	Load an IEEE 754 binary64 constant by its exact raw 64-bit bit pattern.
+32	F64_ADD	f64_add	destination:register,left:register,right:register	none	Add IEEE 754 binary64 operands under strict floating-point semantics.
+33	F64_SUBTRACT	f64_subtract	destination:register,left:register,right:register	none	Subtract IEEE 754 binary64 operands under strict floating-point semantics.
+34	F64_MULTIPLY	f64_multiply	destination:register,left:register,right:register	none	Multiply IEEE 754 binary64 operands under strict floating-point semantics.
+35	F64_DIVIDE	f64_divide	destination:register,left:register,right:register	none	Divide IEEE 754 binary64 operands under strict IEEE division-by-zero semantics.
+36	F64_NEGATE	f64_negate	destination:register,source:register	none	Negate an IEEE 754 binary64 operand while preserving its exact result bits.
+37	F64_EQUAL	f64_equal	destination:register,left:register,right:register	none	Compare IEEE 754 binary64 operands for equality.
+38	F64_LESS	f64_less	destination:register,left:register,right:register	none	Compare IEEE 754 binary64 operands using less-than.
+39	F64_LESS_EQUAL	f64_less_equal	destination:register,left:register,right:register	none	Compare IEEE 754 binary64 operands using less-than-or-equal.

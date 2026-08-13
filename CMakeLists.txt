@@ -72,6 +72,8 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/base/allocator.c
   bootstrap/src/base/arena.c
   bootstrap/src/base/checked_i64.c
+  bootstrap/src/base/f64.c
+  bootstrap/src/base/f64_runtime.c
   bootstrap/src/base/hash.c
   bootstrap/src/base/map.c
   bootstrap/src/base/owned_bytes.c
@@ -112,6 +114,18 @@ target_include_directories(ruda_bootstrap
     bootstrap/include
     runtime/include
 )
+if(UNIX)
+  target_link_libraries(ruda_bootstrap PUBLIC m)
+endif()
+if(MSVC)
+  target_compile_options(ruda_bootstrap PRIVATE /fp:strict)
+else()
+  target_compile_options(ruda_bootstrap PRIVATE
+    -fno-fast-math
+    -ffp-contract=off
+    -fexcess-precision=standard
+  )
+endif()
 ruda_target_warnings(ruda_bootstrap)
 ruda_target_sanitizers(ruda_bootstrap)
 if(RUDA_BUILD_FUZZERS)

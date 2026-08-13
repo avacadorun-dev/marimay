@@ -473,6 +473,75 @@ static void ruda_test_lexer_literal_boundaries(void) {
     }
 }
 
+static void ruda_test_lexer_float_grammar(void) {
+    static const char accepted[] =
+        "0.0 1_2.5_0 6.02e23 1e-9 1.0E+2 5e-324 9_0e3_0";
+    static const char rejected[] =
+        "1_.0 1.0_ 1e_2 1e+_2 1e- 1.0f64";
+    static const char not_float[] = ".5 1. 0x1.0";
+    RudaLexFixture fixture;
+    size_t token_index = 0;
+    size_t float_count = 0;
+
+    RUDA_EXPECT(ruda_lex_fixture_init(&fixture, accepted));
+    if (fixture.result.initialized) {
+        RUDA_EXPECT(fixture.result.diagnostics.length == 0);
+        for (token_index = 0; token_index < fixture.result.tokens.length;
+            token_index += 1) {
+            const RudaToken *token = ruda_lex_token(
+                &fixture.result,
+                token_index
+            );
+            if (token != NULL && token->kind == RUDA_TOKEN_FLOAT) {
+                float_count += 1;
+            }
+        }
+        RUDA_EXPECT(float_count == 7);
+        ruda_expect_lossless(&fixture);
+        ruda_lex_fixture_dispose(&fixture);
+    }
+
+    RUDA_EXPECT(ruda_lex_fixture_init(&fixture, rejected));
+    if (fixture.result.initialized) {
+        RUDA_EXPECT(fixture.result.diagnostics.length == 6);
+        for (token_index = 0; token_index < fixture.result.diagnostics.length;
+            token_index += 1) {
+            const RudaLexDiagnostic *diagnostic = ruda_lex_diagnostic(
+                &fixture.result,
+                token_index
+            );
+            RUDA_EXPECT(diagnostic != NULL);
+            if (diagnostic != NULL) {
+                RUDA_EXPECT(strcmp(
+                    diagnostic->code,
+                    RUDA_DIAGNOSTIC_INVALID_NUMBER
+                ) == 0);
+            }
+        }
+        ruda_expect_lossless(&fixture);
+        ruda_lex_fixture_dispose(&fixture);
+    }
+
+    RUDA_EXPECT(ruda_lex_fixture_init(&fixture, not_float));
+    if (fixture.result.initialized) {
+        float_count = 0;
+        RUDA_EXPECT(fixture.result.diagnostics.length == 0);
+        for (token_index = 0; token_index < fixture.result.tokens.length;
+            token_index += 1) {
+            const RudaToken *token = ruda_lex_token(
+                &fixture.result,
+                token_index
+            );
+            if (token != NULL && token->kind == RUDA_TOKEN_FLOAT) {
+                float_count += 1;
+            }
+        }
+        RUDA_EXPECT(float_count == 0);
+        ruda_expect_lossless(&fixture);
+        ruda_lex_fixture_dispose(&fixture);
+    }
+}
+
 static void ruda_test_lexer_limits(void) {
     RudaSourceManager sources;
     const RudaSourceSnapshot *snapshot = NULL;
@@ -633,6 +702,7 @@ void ruda_test_lexer(void) {
     ruda_test_lexer_interpolation();
     ruda_test_lexer_fixed_tokens();
     ruda_test_lexer_literal_boundaries();
+    ruda_test_lexer_float_grammar();
     ruda_test_lexer_limits();
     ruda_test_lexer_allocation_failure();
     ruda_test_lexer_arbitrary_bytes();

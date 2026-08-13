@@ -8,12 +8,17 @@
 #include <unistd.h>
 #endif
 
+#include "ruda/ast/ast.h"
 #include "ruda/base/allocator.h"
 #include "ruda/base/owned_bytes.h"
 #include "ruda/bytecode/mir_lower.h"
 #include "ruda/bytecode/vm.h"
+#include "ruda/check/checker.h"
+#include "ruda/lex/lexer.h"
 #include "ruda/mir/mir.h"
 #include "ruda/native/c_emitter.h"
+#include "ruda/parse/parser.h"
+#include "ruda/source/source_manager.h"
 #if !defined(_WIN32)
 #include "ruda/platform/process.h"
 #endif
@@ -222,6 +227,7 @@ static void ruda_test_native_compile_and_run(
     char executable_path[512];
     char include_argument[1024];
     char checked_source_path[1024];
+    char f64_source_path[1024];
     const char *run_arguments[2];
     RudaProcessResult process;
     FILE *file = NULL;
@@ -257,6 +263,16 @@ static void ruda_test_native_compile_and_run(
         RUDA_EXPECT(false);
         goto cleanup;
     }
+    written = snprintf(
+        f64_source_path,
+        sizeof(f64_source_path),
+        "%s/bootstrap/src/base/f64_runtime.c",
+        RUDA_TEST_SOURCE_DIR
+    );
+    if (written < 0 || (size_t)written >= sizeof(f64_source_path)) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
     file = fopen(source_path, "wb");
     if (file == NULL) {
         RUDA_EXPECT(false);
@@ -273,7 +289,7 @@ static void ruda_test_native_compile_and_run(
     for (optimization_index = 0;
         optimization_index < sizeof(optimizations) / sizeof(optimizations[0]);
         optimization_index += 1) {
-        const char *arguments[16];
+        const char *arguments[23];
         size_t argument_count = 0;
         written = snprintf(
             executable_path,
@@ -298,9 +314,14 @@ static void ruda_test_native_compile_and_run(
         arguments[argument_count++] = "-Wconversion";
         arguments[argument_count++] = "-Wshadow";
         arguments[argument_count++] = "-Werror";
+        arguments[argument_count++] = "-fno-fast-math";
+        arguments[argument_count++] = "-ffp-contract=off";
+        arguments[argument_count++] = "-fexcess-precision=standard";
         arguments[argument_count++] = include_argument;
         arguments[argument_count++] = source_path;
         arguments[argument_count++] = checked_source_path;
+        arguments[argument_count++] = f64_source_path;
+        arguments[argument_count++] = "-lm";
         arguments[argument_count++] = "-o";
         arguments[argument_count++] = executable_path;
         arguments[argument_count] = NULL;
@@ -687,6 +708,399 @@ static void ruda_test_native_scalar_differential(void) {
     }
 }
 
+static bool ruda_test_native_f64_is_boolean(RudaMirInstructionKind kind) {
+    return kind == RUDA_MIR_EQUAL_F64 || kind == RUDA_MIR_LESS_F64
+        || kind == RUDA_MIR_LESS_EQUAL_F64;
+}
+
+static bool ruda_test_native_f64_is_unary(RudaMirInstructionKind kind) {
+    return kind == RUDA_MIR_NEGATE_F64;
+}
+
+static bool ruda_test_native_build_f64_operation(
+    RudaMirFunction *function,
+    RudaSymbolId symbol,
+    RudaMirInstructionKind kind,
+    uint64_t left_bits,
+    uint64_t right_bits
+) {
+    RudaMirRegister left = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister right = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirInstruction instruction;
+    RudaTypeId result_type = ruda_test_native_f64_is_boolean(kind)
+        ? RUDA_TYPE_BOOL : RUDA_TYPE_F64;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol, NULL,
+            0, result_type, ruda_mir_function_default_options())
+        || !ruda_mir_add_register(function, RUDA_TYPE_F64, &left)
+        || (!ruda_test_native_f64_is_unary(kind)
+            && !ruda_mir_add_register(function, RUDA_TYPE_F64, &right))
+        || !ruda_mir_add_register(function, result_type, &result)
+        || !ruda_mir_add_block(function, &block)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    if (ruda_test_native_f64_is_unary(kind)) {
+        right = left;
+    }
+    instruction = ruda_test_native_instruction(RUDA_MIR_CONSTANT_F64, left,
+        RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0, false, 500);
+    instruction.f64_bits = left_bits;
+    if (!ruda_mir_append_instruction(function, block, &instruction)) goto failure;
+    if (!ruda_test_native_f64_is_unary(kind)) {
+        instruction = ruda_test_native_instruction(RUDA_MIR_CONSTANT_F64, right,
+            RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0, false, 501);
+        instruction.f64_bits = right_bits;
+        if (!ruda_mir_append_instruction(function, block, &instruction)) goto failure;
+    }
+    instruction = ruda_test_native_instruction(kind, result, left, right,
+        0, false, 502);
+    if (!ruda_mir_append_instruction(function, block, &instruction)
+        || !ruda_mir_set_terminator(function, block,
+            ruda_test_native_terminator(RUDA_MIR_RETURN, result,
+                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 503))) goto failure;
+    return true;
+failure:
+    ruda_mir_function_dispose(function);
+    return false;
+}
+
+static bool ruda_test_native_build_f64_identity(
+    RudaMirFunction *function, RudaSymbolId symbol
+) {
+    const RudaTypeId parameter = RUDA_TYPE_F64;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol,
+            &parameter, 1, RUDA_TYPE_F64, ruda_mir_function_default_options())
+        || !ruda_mir_add_block(function, &block)
+        || !ruda_mir_set_terminator(function, block,
+            ruda_test_native_terminator(RUDA_MIR_RETURN, 0,
+                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 510))) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_test_native_build_f64_direct_entry(
+    RudaMirFunction *function, RudaSymbolId symbol, RudaSymbolId callee
+) {
+    const RudaMirCallArgument argument = {0, RUDA_TYPE_F64};
+    RudaMirRegister value = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirCallId call = RUDA_MIR_NO_CALL;
+    RudaMirInstruction instruction;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol, NULL,
+            0, RUDA_TYPE_F64, ruda_mir_function_default_options())
+        || !ruda_mir_add_register(function, RUDA_TYPE_F64, &value)
+        || !ruda_mir_add_register(function, RUDA_TYPE_F64, &result)
+        || !ruda_mir_add_block(function, &block)
+        || !ruda_mir_add_call(function, callee, RUDA_TYPE_F64, &argument, 1, &call)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_native_instruction(RUDA_MIR_CONSTANT_F64, value,
+        RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0, false, 520);
+    instruction.f64_bits = UINT64_C(0x8000000000000000);
+    if (!ruda_mir_append_instruction(function, block, &instruction)) goto failure;
+    instruction = ruda_test_native_instruction(RUDA_MIR_CALL, result,
+        RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0, false, 521);
+    instruction.call = call;
+    if (!ruda_mir_append_instruction(function, block, &instruction)
+        || !ruda_mir_set_terminator(function, block,
+            ruda_test_native_terminator(RUDA_MIR_RETURN, result,
+                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 522))) goto failure;
+    return true;
+failure:
+    ruda_mir_function_dispose(function);
+    return false;
+}
+
+static void ruda_test_native_f64_differential(void) {
+    typedef struct RudaTestNativeF64Case {
+        RudaMirInstructionKind kind;
+        uint64_t left;
+        uint64_t right;
+        bool boolean;
+        uint64_t expected_bits;
+    } RudaTestNativeF64Case;
+    static const RudaTestNativeF64Case cases[] = {
+        {RUDA_MIR_ADD_F64, UINT64_C(0x3ff8000000000000), UINT64_C(0x4002000000000000), false, UINT64_C(0x400e000000000000)},
+        {RUDA_MIR_DIVIDE_F64, UINT64_C(0x3ff0000000000000), UINT64_C(0x8000000000000000), false, UINT64_C(0xfff0000000000000)},
+        {RUDA_MIR_MULTIPLY_F64, UINT64_C(0x7ff0000000000000), UINT64_C(0x0000000000000000), false, UINT64_C(0x7ff8000000000000)},
+        {RUDA_MIR_NEGATE_F64, UINT64_C(0x7ff0000000000001), 0, false, UINT64_C(0xfff0000000000001)},
+        {RUDA_MIR_EQUAL_F64, UINT64_C(0x0000000000000000), UINT64_C(0x8000000000000000), true, 1},
+        {RUDA_MIR_EQUAL_F64, UINT64_C(0x7ff8000000000000), UINT64_C(0x7ff8000000000000), true, 0},
+        {RUDA_MIR_LESS_F64, UINT64_C(0x7ff8000000000000), UINT64_C(0x3ff0000000000000), true, 0},
+        {RUDA_MIR_LESS_EQUAL_F64, UINT64_C(0xbff0000000000000), UINT64_C(0xbff0000000000000), true, 1}
+    };
+    const RudaSymbolId symbol = {{0x50}};
+    size_t index = 0;
+    for (index = 0; index < sizeof(cases) / sizeof(cases[0]); index += 1) {
+        RudaMirFunction function;
+        RudaMirValue mir_result;
+        RudaBytecodeFunction bytecode;
+        RudaBytecodeValue vm_result;
+        RudaOwnedBytes source;
+        const RudaMirFunction *functions[1];
+        RudaNativeCProgram program;
+        char expected[64];
+        memset(&function, 0, sizeof(function)); memset(&mir_result, 0, sizeof(mir_result));
+        memset(&bytecode, 0, sizeof(bytecode)); memset(&vm_result, 0, sizeof(vm_result));
+        memset(&source, 0, sizeof(source));
+        RUDA_EXPECT(ruda_test_native_build_f64_operation(&function, symbol,
+            cases[index].kind, cases[index].left, cases[index].right));
+        RUDA_EXPECT(ruda_mir_interpret(&function, NULL, 0, ruda_system_allocator(),
+            ruda_mir_interpret_default_options(), &mir_result) == RUDA_MIR_INTERPRET_OK);
+        RUDA_EXPECT(ruda_mir_lower_bytecode_function(&function, ruda_system_allocator(),
+            ruda_mir_bytecode_lower_default_options(), &bytecode) == RUDA_MIR_BYTECODE_LOWER_OK);
+        RUDA_EXPECT(ruda_bytecode_run(&bytecode, NULL, 0, ruda_system_allocator(),
+            ruda_bytecode_run_default_options(), &vm_result) == RUDA_BYTECODE_RUN_OK);
+        if (cases[index].boolean) {
+            RUDA_EXPECT(mir_result.type == RUDA_TYPE_BOOL && mir_result.as.boolean == (cases[index].expected_bits != 0));
+            RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_BOOL && vm_result.as.boolean == (cases[index].expected_bits != 0));
+            (void)snprintf(expected, sizeof(expected), "ok:bool:%s\n", cases[index].expected_bits != 0 ? "true" : "false");
+        } else {
+            RUDA_EXPECT(mir_result.type == RUDA_TYPE_F64 && mir_result.as.f64_bits == cases[index].expected_bits);
+            RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_F64 && vm_result.as.f64_bits == cases[index].expected_bits);
+            (void)snprintf(expected, sizeof(expected), "ok:f64:%016llx\n", (unsigned long long)cases[index].expected_bits);
+        }
+        functions[0] = &function;
+        program.functions = functions; program.function_count = 1; program.entry_symbol = symbol;
+        RUDA_EXPECT(ruda_native_c_emit_program(&program, ruda_system_allocator(),
+            ruda_native_c_emit_default_options(), &source) == RUDA_NATIVE_C_EMIT_OK);
+#if !defined(_WIN32)
+        ruda_test_native_compile_and_run(&source, expected, 0);
+#endif
+        ruda_owned_bytes_dispose(&source); ruda_bytecode_function_dispose(&bytecode);
+        ruda_mir_function_dispose(&function);
+    }
+}
+
+static void ruda_test_native_f64_direct_call(void) {
+    const RudaSymbolId callee_symbol = {{0x51}};
+    const RudaSymbolId entry_symbol = {{0x52}};
+    RudaMirFunction callee;
+    RudaMirFunction entry;
+    const RudaMirFunction *functions[2];
+    RudaBytecodeProgram bytecode;
+    RudaBytecodeValue result;
+    RudaOwnedBytes first;
+    RudaOwnedBytes second;
+    RudaNativeCProgram program;
+    memset(&callee, 0, sizeof(callee)); memset(&entry, 0, sizeof(entry));
+    memset(&bytecode, 0, sizeof(bytecode)); memset(&result, 0, sizeof(result));
+    memset(&first, 0, sizeof(first)); memset(&second, 0, sizeof(second));
+    RUDA_EXPECT(ruda_test_native_build_f64_identity(&callee, callee_symbol));
+    RUDA_EXPECT(ruda_test_native_build_f64_direct_entry(&entry, entry_symbol,
+        callee_symbol));
+    functions[0] = &callee; functions[1] = &entry;
+    RUDA_EXPECT(ruda_mir_lower_bytecode_program(functions, 2, entry_symbol,
+        ruda_system_allocator(), ruda_mir_bytecode_program_lower_default_options(),
+        &bytecode) == RUDA_MIR_BYTECODE_LOWER_OK);
+    RUDA_EXPECT(ruda_bytecode_run_program(&bytecode, NULL, 0,
+        ruda_system_allocator(), ruda_bytecode_run_default_options(), &result)
+        == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_F64
+        && result.as.f64_bits == UINT64_C(0x8000000000000000));
+    ruda_bytecode_program_dispose(&bytecode);
+    program.functions = functions; program.function_count = 2;
+    program.entry_symbol = entry_symbol;
+    RUDA_EXPECT(ruda_native_c_emit_program(&program, ruda_system_allocator(),
+        ruda_native_c_emit_default_options(), &first) == RUDA_NATIVE_C_EMIT_OK);
+    {
+        const RudaMirFunction *permuted[2] = {&entry, &callee};
+        program.functions = permuted;
+        RUDA_EXPECT(ruda_native_c_emit_program(&program, ruda_system_allocator(),
+            ruda_native_c_emit_default_options(), &second) == RUDA_NATIVE_C_EMIT_OK);
+    }
+    RUDA_EXPECT(first.length == second.length
+        && memcmp(first.data, second.data, first.length) == 0);
+#if !defined(_WIN32)
+    ruda_test_native_compile_and_run(&first, "ok:f64:8000000000000000\n", 0);
+#endif
+    ruda_owned_bytes_dispose(&second); ruda_owned_bytes_dispose(&first);
+    ruda_mir_function_dispose(&entry); ruda_mir_function_dispose(&callee);
+}
+
+static void ruda_test_native_f64_source_differential(void) {
+    static const char source[] =
+        "fn main(): f64 {\n"
+        "  let value: f64 = 3.0;\n"
+        "  value += 1.0;\n"
+        "  value *= 2.0;\n"
+        "  return value / 4.0;\n"
+        "}\n";
+    static const uint64_t expected_bits = UINT64_C(0x4000000000000000);
+    RudaSourceManager sources;
+    const RudaSourceSnapshot *snapshot = NULL;
+    RudaLexResult lexed;
+    RudaParseResult parsed;
+    RudaAstTree ast;
+    RudaCheckResult checked;
+    const RudaCheckedFunction *entry = NULL;
+    const RudaMirFunction *functions[1];
+    RudaBytecodeProgram program;
+    RudaBytecodeProgram decoded;
+    RudaOwnedBytes encoded;
+    RudaBytecodeValue vm_result;
+    RudaNativeCProgram native_program;
+    RudaOwnedBytes generated;
+    bool sources_initialized = false;
+    bool lexed_initialized = false;
+    bool parsed_initialized = false;
+    bool ast_initialized = false;
+    bool checked_initialized = false;
+    bool program_initialized = false;
+    bool decoded_initialized = false;
+    memset(&sources, 0, sizeof(sources));
+    memset(&lexed, 0, sizeof(lexed));
+    memset(&parsed, 0, sizeof(parsed));
+    memset(&ast, 0, sizeof(ast));
+    memset(&checked, 0, sizeof(checked));
+    memset(&program, 0, sizeof(program));
+    memset(&decoded, 0, sizeof(decoded));
+    memset(&encoded, 0, sizeof(encoded));
+    memset(&vm_result, 0, sizeof(vm_result));
+    memset(&generated, 0, sizeof(generated));
+    if (!ruda_source_manager_init(&sources, ruda_system_allocator())) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    sources_initialized = true;
+    if (ruda_source_manager_add(
+            &sources,
+            "source-f64.ruda",
+            sizeof("source-f64.ruda") - 1,
+            source,
+            sizeof(source) - 1,
+            &snapshot
+        ) != RUDA_SOURCE_OK) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    if (ruda_lex_snapshot(snapshot, ruda_system_allocator(),
+            ruda_lex_default_options(), &lexed) != RUDA_LEX_OK) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    lexed_initialized = true;
+    RUDA_EXPECT(lexed.diagnostics.length == 0);
+    if (ruda_parse_file(&lexed, ruda_system_allocator(),
+            ruda_parse_default_options(), &parsed) != RUDA_PARSE_OK) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    parsed_initialized = true;
+    RUDA_EXPECT(parsed.diagnostics.length == 0);
+    if (ruda_ast_project(&parsed.tree, ruda_system_allocator(),
+            ruda_ast_default_options(), &ast) != RUDA_AST_OK) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    ast_initialized = true;
+    if (ruda_check_ast(&ast, "test/source-f64", ruda_system_allocator(),
+            ruda_check_default_options(), &checked) != RUDA_CHECK_OK) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    checked_initialized = true;
+    RUDA_EXPECT(checked.diagnostics.length == 0);
+    RUDA_EXPECT(checked.functions.length == 1);
+    entry = ruda_checked_function(&checked, 0);
+    RUDA_EXPECT(entry != NULL);
+    if (entry == NULL) {
+        goto cleanup;
+    }
+    functions[0] = &entry->mir;
+    if (ruda_mir_lower_bytecode_program(
+            functions,
+            1,
+            entry->mir.symbol,
+            ruda_system_allocator(),
+            ruda_mir_bytecode_program_lower_default_options(),
+            &program
+        ) != RUDA_MIR_BYTECODE_LOWER_OK) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    program_initialized = true;
+    if (ruda_bytecode_encode_program(
+            &program,
+            ruda_system_allocator(),
+            &encoded
+        ) != RUDA_BYTECODE_CODEC_OK
+        || ruda_bytecode_decode_program(
+            encoded.data,
+            encoded.length,
+            ruda_system_allocator(),
+            ruda_bytecode_program_default_options(),
+            &decoded
+        ) != RUDA_BYTECODE_CODEC_OK) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    decoded_initialized = true;
+    RUDA_EXPECT(ruda_bytecode_run_program(
+        &decoded,
+        NULL,
+        0,
+        ruda_system_allocator(),
+        ruda_bytecode_run_default_options(),
+        &vm_result
+    ) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_F64
+        && vm_result.as.f64_bits == expected_bits);
+    native_program.functions = functions;
+    native_program.function_count = 1;
+    native_program.entry_symbol = entry->mir.symbol;
+    RUDA_EXPECT(ruda_native_c_emit_program(
+        &native_program,
+        ruda_system_allocator(),
+        ruda_native_c_emit_default_options(),
+        &generated
+    ) == RUDA_NATIVE_C_EMIT_OK);
+#if !defined(_WIN32)
+    if (generated.data != NULL) {
+        ruda_test_native_compile_and_run(
+            &generated,
+            "ok:f64:4000000000000000\n",
+            0
+        );
+    }
+#endif
+
+cleanup:
+    ruda_owned_bytes_dispose(&generated);
+    if (decoded_initialized) {
+        ruda_bytecode_program_dispose(&decoded);
+    }
+    ruda_owned_bytes_dispose(&encoded);
+    if (program_initialized) {
+        ruda_bytecode_program_dispose(&program);
+    }
+    if (checked_initialized) {
+        ruda_check_result_dispose(&checked);
+    }
+    if (ast_initialized) {
+        ruda_ast_tree_dispose(&ast);
+    }
+    if (parsed_initialized) {
+        ruda_parse_result_dispose(&parsed);
+    }
+    if (lexed_initialized) {
+        ruda_lex_result_dispose(&lexed);
+    }
+    if (sources_initialized) {
+        ruda_source_manager_dispose(&sources);
+    }
+}
+
 static bool ruda_test_native_build_string_return(
     RudaMirFunction *function,
     RudaSymbolId symbol
@@ -1048,6 +1462,9 @@ void ruda_test_native_c_emitter(void) {
     bool reached_success = false;
 
     ruda_test_native_scalar_differential();
+    ruda_test_native_f64_differential();
+    ruda_test_native_f64_direct_call();
+    ruda_test_native_f64_source_differential();
     ruda_test_native_strings_and_panic();
     memset(&first, 0, sizeof(first));
     memset(&second, 0, sizeof(second));

@@ -13,7 +13,9 @@
 enum {
     RUDA_BYTECODE_MAGIC_LENGTH = 8,
     RUDA_BYTECODE_FEATURE_CALLS = 1U << 0,
-    RUDA_BYTECODE_FEATURE_STRINGS = 1U << 1
+    RUDA_BYTECODE_FEATURE_STRINGS = 1U << 1,
+    /* Newly assigned; legacy decoders deliberately reject this capability. */
+    RUDA_BYTECODE_FEATURE_F64 = 1U << 2
 };
 
 static const unsigned char ruda_bytecode_magic[RUDA_BYTECODE_MAGIC_LENGTH] = {
@@ -34,7 +36,7 @@ typedef struct RudaBytecodeCursor {
 
 static bool ruda_bytecode_type_is_register(RudaBytecodeType type) {
     return type == RUDA_BYTECODE_TYPE_BOOL || type == RUDA_BYTECODE_TYPE_I64
-        || type == RUDA_BYTECODE_TYPE_STRING;
+        || type == RUDA_BYTECODE_TYPE_F64 || type == RUDA_BYTECODE_TYPE_STRING;
 }
 
 static bool ruda_bytecode_type_is_result(RudaBytecodeType type) {
@@ -52,6 +54,8 @@ static const char *ruda_bytecode_type_name(RudaBytecodeType type) {
             return "bool";
         case RUDA_BYTECODE_TYPE_I64:
             return "i64";
+        case RUDA_BYTECODE_TYPE_F64:
+            return "f64";
         case RUDA_BYTECODE_TYPE_VOID:
             return "void";
         case RUDA_BYTECODE_TYPE_STRING:
@@ -62,6 +66,36 @@ static const char *ruda_bytecode_type_name(RudaBytecodeType type) {
             break;
     }
     return "invalid";
+}
+
+static bool ruda_bytecode_function_uses_f64(const RudaBytecodeFunction *function) {
+    size_t index = 0;
+    if (function == NULL || function->result_type == RUDA_BYTECODE_TYPE_F64) {
+        return function != NULL;
+    }
+    for (index = 0; index < function->register_types.length; index += 1) {
+        const RudaBytecodeType *type = ruda_vector_at_const(
+            &function->register_types, index
+        );
+        if (type != NULL && *type == RUDA_BYTECODE_TYPE_F64) {
+            return true;
+        }
+    }
+    for (index = 0; index < function->calls.length; index += 1) {
+        const RudaBytecodeCall *call = ruda_vector_at_const(&function->calls, index);
+        if (call != NULL && call->result_type == RUDA_BYTECODE_TYPE_F64) {
+            return true;
+        }
+    }
+    for (index = 0; index < function->call_arguments.length; index += 1) {
+        const RudaBytecodeCallArgument *argument = ruda_vector_at_const(
+            &function->call_arguments, index
+        );
+        if (argument != NULL && argument->type == RUDA_BYTECODE_TYPE_F64) {
+            return true;
+        }
+    }
+    return false;
 }
 
 RudaBytecodeFunctionOptions ruda_bytecode_function_default_options(void) {
@@ -557,6 +591,9 @@ RudaBytecodeCodecStatus ruda_bytecode_encode_function(
                 | (function->string_constants.length == 0
                     ? 0
                     : RUDA_BYTECODE_FEATURE_STRINGS)
+                | (ruda_bytecode_function_uses_f64(function)
+                    ? RUDA_BYTECODE_FEATURE_F64
+                    : 0)
         )
         || !ruda_bytecode_encode_u64(&buffer, (uint64_t)function->result_type)
         || !ruda_bytecode_encode_u64(&buffer, (uint64_t)function->source_count)
@@ -809,6 +846,7 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
     }
     if ((value & ~(uint64_t)(
             RUDA_BYTECODE_FEATURE_CALLS | RUDA_BYTECODE_FEATURE_STRINGS
+                | RUDA_BYTECODE_FEATURE_F64
         )) != 0) {
         return RUDA_BYTECODE_CODEC_UNSUPPORTED_VERSION;
     }
@@ -817,7 +855,7 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
     if (status != RUDA_BYTECODE_CODEC_OK) {
         return status;
     }
-    if (value > RUDA_BYTECODE_TYPE_NEVER
+    if (value > RUDA_BYTECODE_TYPE_F64
         || !ruda_bytecode_type_is_result((RudaBytecodeType)value)) {
         return RUDA_BYTECODE_CODEC_INVALID_ENCODING;
     }
@@ -870,7 +908,7 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
         if (status != RUDA_BYTECODE_CODEC_OK) {
             goto cleanup;
         }
-        if (value > RUDA_BYTECODE_TYPE_NEVER
+        if (value > RUDA_BYTECODE_TYPE_F64
             || !ruda_bytecode_type_is_local((RudaBytecodeType)value)
             || (index < function.parameter_count
                 && !ruda_bytecode_type_is_register((RudaBytecodeType)value))) {
@@ -1018,7 +1056,7 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
             if (status != RUDA_BYTECODE_CODEC_OK) {
                 goto cleanup;
             }
-            if (value > RUDA_BYTECODE_TYPE_NEVER
+            if (value > RUDA_BYTECODE_TYPE_F64
                 || !ruda_bytecode_type_is_result((RudaBytecodeType)value)) {
                 status = RUDA_BYTECODE_CODEC_INVALID_ENCODING;
                 goto cleanup;
@@ -1070,7 +1108,7 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
                 if (status != RUDA_BYTECODE_CODEC_OK) {
                     break;
                 }
-                if (value > RUDA_BYTECODE_TYPE_NEVER
+                if (value > RUDA_BYTECODE_TYPE_F64
                     || !ruda_bytecode_type_is_register(
                         (RudaBytecodeType)value
                     )) {
@@ -1176,6 +1214,11 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
             cursor.offset += string_length;
         }
     }
+    if (((features & RUDA_BYTECODE_FEATURE_F64) != 0)
+        != ruda_bytecode_function_uses_f64(&function)) {
+        status = RUDA_BYTECODE_CODEC_INVALID_ENCODING;
+        goto cleanup;
+    }
     if (cursor.offset != cursor.length) {
         status = RUDA_BYTECODE_CODEC_TRAILING_DATA;
         goto cleanup;
@@ -1234,6 +1277,7 @@ static const RudaBytecodeInstruction *ruda_bytecode_block_terminator(
 static bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
     switch (opcode) {
         case RUDA_OPCODE_CONST_I64:
+        case RUDA_OPCODE_CONST_F64:
         case RUDA_OPCODE_CONST_BOOL:
         case RUDA_OPCODE_COPY:
         case RUDA_OPCODE_I64_ADD_CHECKED:
@@ -1243,6 +1287,7 @@ static bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_I64_REMAINDER_CHECKED:
         case RUDA_OPCODE_I64_NEGATE_CHECKED:
         case RUDA_OPCODE_I64_BITWISE_NOT:
+        case RUDA_OPCODE_F64_NEGATE:
         case RUDA_OPCODE_BOOL_NOT:
         case RUDA_OPCODE_I64_EQUAL:
         case RUDA_OPCODE_BOOL_EQUAL:
@@ -1253,6 +1298,13 @@ static bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_I64_BITWISE_OR:
         case RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED:
         case RUDA_OPCODE_I64_SHIFT_RIGHT:
+        case RUDA_OPCODE_F64_ADD:
+        case RUDA_OPCODE_F64_SUBTRACT:
+        case RUDA_OPCODE_F64_MULTIPLY:
+        case RUDA_OPCODE_F64_DIVIDE:
+        case RUDA_OPCODE_F64_EQUAL:
+        case RUDA_OPCODE_F64_LESS:
+        case RUDA_OPCODE_F64_LESS_EQUAL:
         case RUDA_OPCODE_CONST_STRING:
         case RUDA_OPCODE_STRING_EQUAL:
         case RUDA_OPCODE_CALL_DIRECT:
@@ -1396,6 +1448,11 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 ? RUDA_BYTECODE_VERIFY_OK
                 : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
+        case RUDA_OPCODE_CONST_F64:
+            status = *target_type == RUDA_BYTECODE_TYPE_F64
+                ? RUDA_BYTECODE_VERIFY_OK
+                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            break;
         case RUDA_OPCODE_CONST_BOOL:
             if (instruction->operands[1].unsigned_value > 1) {
                 return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
@@ -1446,6 +1503,21 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 ? RUDA_BYTECODE_VERIFY_OK
                 : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
+        case RUDA_OPCODE_F64_NEGATE:
+            first = instruction->operands[1].unsigned_value;
+            status = ruda_bytecode_require_assigned(
+                assigned, function->register_types.length, first
+            );
+            if (status != RUDA_BYTECODE_VERIFY_OK) {
+                return status;
+            }
+            first_type = ruda_bytecode_register_type(function, first);
+            status = first_type != NULL
+                    && *target_type == RUDA_BYTECODE_TYPE_F64
+                    && *first_type == RUDA_BYTECODE_TYPE_F64
+                ? RUDA_BYTECODE_VERIFY_OK
+                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            break;
         case RUDA_OPCODE_BOOL_NOT:
             first = instruction->operands[1].unsigned_value;
             status = ruda_bytecode_require_assigned(
@@ -1478,6 +1550,13 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
         case RUDA_OPCODE_I64_LESS_EQUAL:
         case RUDA_OPCODE_BOOL_EQUAL:
         case RUDA_OPCODE_STRING_EQUAL:
+        case RUDA_OPCODE_F64_ADD:
+        case RUDA_OPCODE_F64_SUBTRACT:
+        case RUDA_OPCODE_F64_MULTIPLY:
+        case RUDA_OPCODE_F64_DIVIDE:
+        case RUDA_OPCODE_F64_EQUAL:
+        case RUDA_OPCODE_F64_LESS:
+        case RUDA_OPCODE_F64_LESS_EQUAL:
             first = instruction->operands[1].unsigned_value;
             second = instruction->operands[2].unsigned_value;
             status = ruda_bytecode_require_assigned(
@@ -1518,6 +1597,25 @@ static RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                         && *target_type == RUDA_BYTECODE_TYPE_BOOL
                         && *first_type == RUDA_BYTECODE_TYPE_I64
                         && *second_type == RUDA_BYTECODE_TYPE_I64
+                    ? RUDA_BYTECODE_VERIFY_OK
+                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            } else if (instruction->opcode == RUDA_OPCODE_F64_EQUAL
+                || instruction->opcode == RUDA_OPCODE_F64_LESS
+                || instruction->opcode == RUDA_OPCODE_F64_LESS_EQUAL) {
+                status = first_type != NULL && second_type != NULL
+                        && *target_type == RUDA_BYTECODE_TYPE_BOOL
+                        && *first_type == RUDA_BYTECODE_TYPE_F64
+                        && *second_type == RUDA_BYTECODE_TYPE_F64
+                    ? RUDA_BYTECODE_VERIFY_OK
+                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            } else if (instruction->opcode == RUDA_OPCODE_F64_ADD
+                || instruction->opcode == RUDA_OPCODE_F64_SUBTRACT
+                || instruction->opcode == RUDA_OPCODE_F64_MULTIPLY
+                || instruction->opcode == RUDA_OPCODE_F64_DIVIDE) {
+                status = first_type != NULL && second_type != NULL
+                        && *target_type == RUDA_BYTECODE_TYPE_F64
+                        && *first_type == RUDA_BYTECODE_TYPE_F64
+                        && *second_type == RUDA_BYTECODE_TYPE_F64
                     ? RUDA_BYTECODE_VERIFY_OK
                     : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             } else {
@@ -2431,6 +2529,14 @@ RudaBytecodeDisassembleStatus ruda_bytecode_disassemble(
                         "%s%" PRId64,
                         separator,
                         instruction->operands[operand_index].signed_value
+                    );
+                } else if (metadata->operands[operand_index]
+                    == RUDA_BYTECODE_OPERAND_F64_BITS) {
+                    wrote = ruda_bytecode_writef(
+                        writer,
+                        "%s0x%016" PRIx64,
+                        separator,
+                        instruction->operands[operand_index].unsigned_value
                     );
                 } else if (metadata->operands[operand_index]
                     == RUDA_BYTECODE_OPERAND_BOOL) {

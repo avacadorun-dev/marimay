@@ -35,6 +35,7 @@ typedef struct RudaCheckOptions {
     size_t max_constant_steps;
     size_t max_constant_depth;
     size_t max_type_alias_depth;
+    size_t max_float_literal_digits;
     RudaTypeTableOptions type_options;
     RudaMirFunctionOptions mir_options;
 } RudaCheckOptions;

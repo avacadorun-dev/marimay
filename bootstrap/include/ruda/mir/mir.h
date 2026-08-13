@@ -67,7 +67,16 @@ typedef enum RudaMirInstructionKind {
     RUDA_MIR_ENUM_IS_VARIANT,
     RUDA_MIR_ENUM_REQUIRE_VARIANT,
     RUDA_MIR_ENUM_GET_PAYLOAD,
-    RUDA_MIR_CALL
+    RUDA_MIR_CALL,
+    RUDA_MIR_CONSTANT_F64,
+    RUDA_MIR_ADD_F64,
+    RUDA_MIR_SUBTRACT_F64,
+    RUDA_MIR_MULTIPLY_F64,
+    RUDA_MIR_DIVIDE_F64,
+    RUDA_MIR_NEGATE_F64,
+    RUDA_MIR_EQUAL_F64,
+    RUDA_MIR_LESS_F64,
+    RUDA_MIR_LESS_EQUAL_F64
 } RudaMirInstructionKind;
 
 typedef struct RudaMirInstruction {
@@ -84,6 +93,7 @@ typedef struct RudaMirInstruction {
     size_t variant;
     size_t field;
     int64_t integer;
+    uint64_t f64_bits;
     bool boolean;
     RudaMirSpan span;
 } RudaMirInstruction;
@@ -247,6 +257,7 @@ typedef struct RudaMirValue {
     RudaTypeId type;
     union {
         int64_t i64;
+        uint64_t f64_bits;
         bool boolean;
         RudaMirReference reference;
     } as;
@@ -285,7 +296,8 @@ typedef enum RudaMirInterpretStatus {
     RUDA_MIR_INTERPRET_INVALID_SHIFT,
     RUDA_MIR_INTERPRET_PANIC,
     RUDA_MIR_INTERPRET_INVALID_REFERENCE,
-    RUDA_MIR_INTERPRET_OBJECT_LIMIT
+    RUDA_MIR_INTERPRET_OBJECT_LIMIT,
+    RUDA_MIR_INTERPRET_UNSUPPORTED_HOST
 } RudaMirInterpretStatus;
 
 typedef struct RudaMirPanic {

@@ -175,7 +175,7 @@ Assignments evaluate the target location first and the value second, each exactl
 | `void` | successful absence of a value |
 | `never` | an uninhabited result of an expression that cannot complete normally |
 
-Integer overflow traps in all build modes. Explicit operations such as `wrappingAdd`, `saturatingAdd`, and `checkedAdd` request other behavior. Division and remainder by zero and an out-of-range shift panic. Narrowing and signedness-changing conversions are explicit and return `Option` or `Result` where information may be lost.
+Integer overflow traps in all build modes. Explicit operations such as `wrappingAdd`, `saturatingAdd`, and `checkedAdd` request other behavior. Integer division and remainder by zero and an out-of-range shift panic. Narrowing and signedness-changing conversions are explicit and return `Option` or `Result` where information may be lost.
 
 Signed `/` rounds its mathematical quotient toward zero. Signed `%` is
 defined by `left - (left / right) * right`; a nonzero remainder has the sign of
@@ -193,7 +193,22 @@ fills with zero. Signed right shift copies the sign bit using the language's
 two's-complement value model. Explicit wrapping shifts are numeric-library
 operations, not alternate source operators.
 
-Floating-point operations use the declared IEEE width and strict semantics. Optimizations must not reassociate expressions, discard NaN behavior, or enable a global fast-math dialect. Numerically relaxed algorithms use explicit library APIs.
+`f64` has the deterministic binary64 contract in D044. Decimal literals round
+their mathematical decimal value to binary64 with round-to-nearest,
+ties-to-even, independent of locale. Constants, copies, call arguments, call
+results, and returns preserve raw binary64 bits. Arithmetic rounds at binary64
+precision using round-to-nearest, ties-to-even and canonicalizes every NaN to
+`0x7ff8000000000000`; unary `-` toggles the sign bit exactly and does not
+canonicalize a NaN. `f64` division by positive or negative zero follows IEEE
+754 and does not panic. Equality and ordered comparisons use IEEE rules: the
+two zero signs compare equal, and a NaN is unequal and unordered.
+
+Floating-point operations use strict semantics. Optimizations must not
+reassociate expressions, discard NaN behavior, contract operations, use excess
+precision, or enable a global fast-math dialect. Numerically relaxed algorithms
+use explicit library APIs. `f32` literal conversion, NaN canonicalization, and
+backend conformance are not yet specified by D044 and must not be inferred from
+the `f64` rules.
 
 Conditions require `bool`; there is no truthiness.
 

@@ -157,7 +157,11 @@ Run fixtures record typed result, stdout, stderr, exit, panic, source frames, ca
 - integer boundaries and every explicit overflow operation;
 - signed division/remainder signs, quotient identity, zero divisors, and
   `MIN / -1` plus `MIN % -1` at every signed width;
-- IEEE bit patterns, NaN/infinity/signed zero;
+- `f64` decimal nearest-even conversion and raw-bit preservation across
+  constants, copies, arguments, results, and returns; IEEE bit patterns,
+  subnormals, NaN/infinity/signed zero; arithmetic NaN canonicalization,
+  unary-NaN sign toggle, ordered/unordered comparisons, and IEEE division by
+  signed zero;
 - left-to-right evaluation with side effects;
 - strings, Unicode, collection ordering, equality/hash laws;
 - nominal-record identity: aliases compare equal, distinct allocations with

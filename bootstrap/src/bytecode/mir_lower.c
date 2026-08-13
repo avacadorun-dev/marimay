@@ -74,6 +74,10 @@ static bool ruda_mir_bytecode_type(
         *output = RUDA_BYTECODE_TYPE_I64;
         return true;
     }
+    if (input == RUDA_TYPE_F64) {
+        *output = RUDA_BYTECODE_TYPE_F64;
+        return true;
+    }
     if (input == RUDA_TYPE_STRING) {
         *output = RUDA_BYTECODE_TYPE_STRING;
         return true;
@@ -108,6 +112,10 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
         case RUDA_MIR_CONSTANT_BOOL:
             output->opcode = RUDA_OPCODE_CONST_BOOL;
             output->operands[1].unsigned_value = input->boolean ? 1U : 0U;
+            break;
+        case RUDA_MIR_CONSTANT_F64:
+            output->opcode = RUDA_OPCODE_CONST_F64;
+            output->operands[1].unsigned_value = input->f64_bits;
             break;
         case RUDA_MIR_CONSTANT_STRING:
             output->opcode = RUDA_OPCODE_CONST_STRING;
@@ -144,6 +152,30 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             break;
         case RUDA_MIR_NEGATE_CHECKED_I64:
             output->opcode = RUDA_OPCODE_I64_NEGATE_CHECKED;
+            output->operands[1].unsigned_value = input->first;
+            break;
+        case RUDA_MIR_ADD_F64:
+            output->opcode = RUDA_OPCODE_F64_ADD;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_SUBTRACT_F64:
+            output->opcode = RUDA_OPCODE_F64_SUBTRACT;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_MULTIPLY_F64:
+            output->opcode = RUDA_OPCODE_F64_MULTIPLY;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_DIVIDE_F64:
+            output->opcode = RUDA_OPCODE_F64_DIVIDE;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_NEGATE_F64:
+            output->opcode = RUDA_OPCODE_F64_NEGATE;
             output->operands[1].unsigned_value = input->first;
             break;
         case RUDA_MIR_NOT_BOOL:
@@ -194,6 +226,11 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
             break;
+        case RUDA_MIR_EQUAL_F64:
+            output->opcode = RUDA_OPCODE_F64_EQUAL;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case RUDA_MIR_LESS_I64:
             output->opcode = RUDA_OPCODE_I64_LESS;
             output->operands[1].unsigned_value = input->first;
@@ -201,6 +238,16 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             break;
         case RUDA_MIR_LESS_EQUAL_I64:
             output->opcode = RUDA_OPCODE_I64_LESS_EQUAL;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_LESS_F64:
+            output->opcode = RUDA_OPCODE_F64_LESS;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_LESS_EQUAL_F64:
+            output->opcode = RUDA_OPCODE_F64_LESS_EQUAL;
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
             break;

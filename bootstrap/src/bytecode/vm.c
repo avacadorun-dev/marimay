@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "ruda/base/checked_i64.h"
+#include "ruda/base/f64.h"
 
 RudaBytecodeExecutionOptions ruda_bytecode_execution_default_options(void) {
     RudaBytecodeExecutionOptions options;
@@ -187,6 +188,9 @@ static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
         case RUDA_OPCODE_CONST_I64:
             registers[target].as.i64 = instruction->operands[1].signed_value;
             return RUDA_BYTECODE_RUN_OK;
+        case RUDA_OPCODE_CONST_F64:
+            registers[target].as.f64_bits = instruction->operands[1].unsigned_value;
+            return RUDA_BYTECODE_RUN_OK;
         case RUDA_OPCODE_CONST_BOOL:
             registers[target].as.boolean = instruction->operands[1].unsigned_value
                 != 0;
@@ -270,6 +274,13 @@ static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                 &registers[target].as.i64
             ));
         }
+        case RUDA_OPCODE_F64_NEGATE: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            registers[target].as.f64_bits = ruda_f64_negate(
+                registers[first].as.f64_bits
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
         case RUDA_OPCODE_BOOL_NOT: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;
             registers[target].as.boolean = !registers[first].as.boolean;
@@ -336,6 +347,62 @@ static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             size_t second = (size_t)instruction->operands[2].unsigned_value;
             registers[target].as.boolean = registers[first].as.i64
                 == registers[second].as.i64;
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_F64_ADD: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.f64_bits = ruda_f64_add(
+                registers[first].as.f64_bits, registers[second].as.f64_bits
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_F64_SUBTRACT: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.f64_bits = ruda_f64_subtract(
+                registers[first].as.f64_bits, registers[second].as.f64_bits
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_F64_MULTIPLY: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.f64_bits = ruda_f64_multiply(
+                registers[first].as.f64_bits, registers[second].as.f64_bits
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_F64_DIVIDE: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.f64_bits = ruda_f64_divide(
+                registers[first].as.f64_bits, registers[second].as.f64_bits
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_F64_EQUAL: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.boolean = ruda_f64_equal(
+                registers[first].as.f64_bits, registers[second].as.f64_bits
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_F64_LESS: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.boolean = ruda_f64_less(
+                registers[first].as.f64_bits, registers[second].as.f64_bits
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_F64_LESS_EQUAL: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.boolean = ruda_f64_less_equal(
+                registers[first].as.f64_bits, registers[second].as.f64_bits
+            );
             return RUDA_BYTECODE_RUN_OK;
         }
         case RUDA_OPCODE_BOOL_EQUAL: {
@@ -533,6 +600,46 @@ static bool ruda_bytecode_run_program_uses_strings(
     return false;
 }
 
+static bool ruda_bytecode_run_function_uses_f64(
+    const RudaBytecodeFunction *function
+) {
+    size_t index = 0;
+    if (function == NULL) {
+        return false;
+    }
+    if (function->result_type == RUDA_BYTECODE_TYPE_F64) {
+        return true;
+    }
+    for (index = 0; index < function->register_types.length; index += 1) {
+        const RudaBytecodeType *type = ruda_vector_at_const(
+            &function->register_types, index
+        );
+        if (type != NULL && *type == RUDA_BYTECODE_TYPE_F64) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool ruda_bytecode_run_program_uses_f64(
+    const RudaBytecodeProgram *program
+) {
+    size_t index = 0;
+    if (program == NULL) {
+        return false;
+    }
+    for (index = 0; index < program->functions.length; index += 1) {
+        const RudaBytecodeProgramFunction *function = ruda_vector_at_const(
+            &program->functions, index
+        );
+        if (function == NULL
+            || ruda_bytecode_run_function_uses_f64(&function->body)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool ruda_bytecode_run_function_has_calls(
     const RudaBytecodeFunction *function
 ) {
@@ -614,6 +721,10 @@ RudaBytecodeRunStatus ruda_bytecode_run(
     }
     if (ruda_bytecode_run_function_has_calls(function)) {
         return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+    }
+    if (ruda_bytecode_run_function_uses_f64(function)
+        && !ruda_f64_binary64_supported()) {
+        return RUDA_BYTECODE_RUN_UNSUPPORTED_HOST;
     }
     if (ruda_bytecode_run_function_uses_strings(function)
         && options.execution == NULL) {
@@ -924,6 +1035,10 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
     );
     if (status != RUDA_BYTECODE_RUN_OK) {
         return status;
+    }
+    if (ruda_bytecode_run_program_uses_f64(program)
+        && !ruda_f64_binary64_supported()) {
+        return RUDA_BYTECODE_RUN_UNSUPPORTED_HOST;
     }
     if (ruda_bytecode_run_program_uses_strings(program)
         && options.execution == NULL) {
