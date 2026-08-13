@@ -1727,6 +1727,270 @@ static void ruda_test_mir_bytecode_f64(void) {
     }
 }
 
+static bool ruda_test_mir_bytecode_build_array(
+    RudaMirFunction *function,
+    int64_t access_index
+) {
+    const RudaTypeId array_type = RUDA_TYPE_FIRST_DYNAMIC + 100;
+    const RudaSymbolId symbol = {{0x71}};
+    RudaMirRegister first = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister second = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister array_value = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister length = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister index = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister replacement = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister checked = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirArrayId array = RUDA_MIR_NO_ARRAY;
+    RudaMirArrayConstructionId construction =
+        RUDA_MIR_NO_ARRAY_CONSTRUCTION;
+    RudaMirArrayArgument arguments[2];
+    RudaMirInstruction instruction;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(
+            function, ruda_system_allocator(), symbol, NULL, 0,
+            RUDA_TYPE_F64, ruda_mir_function_default_options()
+        ) || !ruda_mir_add_register(function, RUDA_TYPE_F64, &first)
+        || !ruda_mir_add_register(function, RUDA_TYPE_F64, &second)
+        || !ruda_mir_add_register(function, array_type, &array_value)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &length)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &index)
+        || !ruda_mir_add_register(function, RUDA_TYPE_F64, &replacement)
+        || !ruda_mir_add_register(function, RUDA_TYPE_F64, &result)
+        || !ruda_mir_add_register(function, array_type, &checked)
+        || !ruda_mir_add_array(function, array_type, RUDA_TYPE_F64, &array)
+        || !ruda_mir_add_block(function, &block)) {
+        goto failure;
+    }
+    arguments[0].register_id = first;
+    arguments[0].type = RUDA_TYPE_F64;
+    arguments[1].register_id = second;
+    arguments[1].type = RUDA_TYPE_F64;
+    if (!ruda_mir_add_array_construction(
+            function, array, arguments, 2, &construction
+        )) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_CONSTANT_F64, first, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 0, false, 800
+    );
+    instruction.f64_bits = UINT64_C(0x3ff8000000000000);
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_CONSTANT_F64, second, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 0, false, 801
+    );
+    instruction.f64_bits = UINT64_C(0x4004000000000000);
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_NEW;
+    instruction.target = array_value;
+    instruction.array = array;
+    instruction.array_construction = construction;
+    instruction.span = (RudaMirSpan){802, 803};
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_LENGTH;
+    instruction.target = length;
+    instruction.first = array_value;
+    instruction.array = array;
+    instruction.span = (RudaMirSpan){803, 804};
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_CONSTANT_I64, index, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, access_index, false, 804
+    );
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_REQUIRE_INDEX;
+    instruction.target = checked;
+    instruction.first = array_value;
+    instruction.second = index;
+    instruction.array = array;
+    instruction.span = (RudaMirSpan){805, 806};
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_mir_bytecode_instruction(
+        RUDA_MIR_CONSTANT_F64, replacement, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 0, false, 806
+    );
+    instruction.f64_bits = UINT64_C(0x4022000000000000);
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_SET;
+    instruction.target = result;
+    instruction.first = checked;
+    instruction.second = index;
+    instruction.third = replacement;
+    instruction.array = array;
+    instruction.span = (RudaMirSpan){805, 806};
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_GET;
+    instruction.target = result;
+    instruction.first = array_value;
+    instruction.second = index;
+    instruction.array = array;
+    instruction.span = (RudaMirSpan){807, 808};
+    if (!ruda_mir_append_instruction(function, block, &instruction)
+        || !ruda_mir_set_terminator(
+            function, block, ruda_test_mir_bytecode_terminator(
+                RUDA_MIR_RETURN, result, RUDA_MIR_NO_BLOCK,
+                RUDA_MIR_NO_BLOCK, 808
+            )
+        )) {
+        goto failure;
+    }
+    return true;
+
+failure:
+    ruda_mir_function_dispose(function);
+    return false;
+}
+
+static void ruda_test_mir_bytecode_arrays(void) {
+    RudaMirFunction function;
+    RudaMirExecution mir_execution;
+    RudaMirPanic mir_panic;
+    RudaMirValue mir_result;
+    RudaMirInterpretOptions mir_options;
+    RudaBytecodeFunction lowered;
+    RudaBytecodeFunction decoded;
+    RudaBytecodeExecution vm_execution;
+    RudaBytecodePanic vm_panic;
+    RudaBytecodeValue vm_result;
+    RudaBytecodeRunOptions vm_options;
+    RudaOwnedBytes encoded;
+    const RudaBytecodeInstruction *instruction;
+    memset(&function, 0, sizeof(function));
+    memset(&mir_execution, 0, sizeof(mir_execution));
+    memset(&mir_panic, 0, sizeof(mir_panic));
+    memset(&lowered, 0, sizeof(lowered));
+    memset(&decoded, 0, sizeof(decoded));
+    memset(&vm_execution, 0, sizeof(vm_execution));
+    memset(&vm_panic, 0, sizeof(vm_panic));
+    memset(&encoded, 0, sizeof(encoded));
+    RUDA_EXPECT(ruda_test_mir_bytecode_build_array(&function, 1));
+    RUDA_EXPECT(ruda_mir_verify(&function) == RUDA_MIR_VERIFY_OK);
+    RUDA_EXPECT(ruda_mir_execution_init(
+        &mir_execution, ruda_system_allocator(),
+        ruda_mir_execution_default_options()
+    ));
+    mir_options = ruda_mir_interpret_default_options();
+    mir_options.execution = &mir_execution;
+    mir_options.panic = &mir_panic;
+    memset(&mir_result, 0, sizeof(mir_result));
+    RUDA_EXPECT(ruda_mir_interpret(
+        &function, NULL, 0, ruda_system_allocator(), mir_options, &mir_result
+    ) == RUDA_MIR_INTERPRET_OK);
+    RUDA_EXPECT(mir_result.type == RUDA_TYPE_F64
+        && mir_result.as.f64_bits == UINT64_C(0x4022000000000000));
+    RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+        &function, ruda_system_allocator(), ruda_test_mir_bytecode_options(),
+        &lowered
+    ) == RUDA_MIR_BYTECODE_LOWER_OK);
+    instruction = ruda_test_mir_bytecode_at(&lowered, 0, 5);
+    RUDA_EXPECT(instruction != NULL
+        && instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_INDEX);
+    instruction = ruda_test_mir_bytecode_at(&lowered, 0, 7);
+    RUDA_EXPECT(instruction != NULL
+        && instruction->opcode == RUDA_OPCODE_ARRAY_SET);
+    instruction = ruda_test_mir_bytecode_at(&lowered, 0, 8);
+    RUDA_EXPECT(instruction != NULL && instruction->opcode == RUDA_OPCODE_COPY);
+    RUDA_EXPECT(ruda_bytecode_encode_function(
+        &lowered, ruda_system_allocator(), &encoded
+    ) == RUDA_BYTECODE_CODEC_OK);
+    RUDA_EXPECT(ruda_bytecode_decode_function(
+        encoded.data, encoded.length, ruda_system_allocator(),
+        ruda_bytecode_function_default_options(), &decoded
+    ) == RUDA_BYTECODE_CODEC_OK);
+    RUDA_EXPECT(ruda_bytecode_execution_init(
+        &vm_execution, ruda_system_allocator(),
+        ruda_bytecode_execution_default_options()
+    ));
+    RUDA_EXPECT(ruda_bytecode_panic_init(&vm_panic, ruda_system_allocator()));
+    vm_options = ruda_bytecode_run_default_options();
+    vm_options.execution = &vm_execution;
+    vm_options.panic = &vm_panic;
+    memset(&vm_result, 0, sizeof(vm_result));
+    RUDA_EXPECT(ruda_bytecode_run(
+        &decoded, NULL, 0, ruda_system_allocator(), vm_options, &vm_result
+    ) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_F64
+        && vm_result.as.f64_bits == mir_result.as.f64_bits);
+    ruda_bytecode_panic_dispose(&vm_panic);
+    ruda_bytecode_execution_dispose(&vm_execution);
+    ruda_bytecode_function_dispose(&decoded);
+    ruda_owned_bytes_dispose(&encoded);
+    ruda_bytecode_function_dispose(&lowered);
+    ruda_mir_panic_dispose(&mir_panic);
+    ruda_mir_execution_dispose(&mir_execution);
+    ruda_mir_function_dispose(&function);
+
+    memset(&function, 0, sizeof(function));
+    memset(&mir_execution, 0, sizeof(mir_execution));
+    memset(&mir_panic, 0, sizeof(mir_panic));
+    memset(&lowered, 0, sizeof(lowered));
+    memset(&vm_execution, 0, sizeof(vm_execution));
+    memset(&vm_panic, 0, sizeof(vm_panic));
+    RUDA_EXPECT(ruda_test_mir_bytecode_build_array(&function, -1));
+    RUDA_EXPECT(ruda_mir_execution_init(
+        &mir_execution, ruda_system_allocator(),
+        ruda_mir_execution_default_options()
+    ));
+    mir_options = ruda_mir_interpret_default_options();
+    mir_options.execution = &mir_execution;
+    mir_options.panic = &mir_panic;
+    RUDA_EXPECT(ruda_mir_interpret(
+        &function, NULL, 0, ruda_system_allocator(), mir_options, &mir_result
+    ) == RUDA_MIR_INTERPRET_PANIC);
+    RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+        &function, ruda_system_allocator(), ruda_test_mir_bytecode_options(),
+        &lowered
+    ) == RUDA_MIR_BYTECODE_LOWER_OK);
+    RUDA_EXPECT(ruda_bytecode_execution_init(
+        &vm_execution, ruda_system_allocator(),
+        ruda_bytecode_execution_default_options()
+    ));
+    RUDA_EXPECT(ruda_bytecode_panic_init(&vm_panic, ruda_system_allocator()));
+    vm_options = ruda_bytecode_run_default_options();
+    vm_options.execution = &vm_execution;
+    vm_options.panic = &vm_panic;
+    RUDA_EXPECT(ruda_bytecode_run(
+        &lowered, NULL, 0, ruda_system_allocator(), vm_options, &vm_result
+    ) == RUDA_BYTECODE_RUN_PANIC);
+    RUDA_EXPECT(mir_panic.code != NULL && vm_panic.code != NULL
+        && strcmp(mir_panic.code, vm_panic.code) == 0
+        && mir_panic.message.length == vm_panic.message.length
+        && memcmp(mir_panic.message.data, vm_panic.message.data,
+            mir_panic.message.length) == 0
+        && mir_panic.span.start == vm_panic.span.start
+        && mir_panic.span.end == vm_panic.span.end);
+    ruda_bytecode_panic_dispose(&vm_panic);
+    ruda_bytecode_execution_dispose(&vm_execution);
+    ruda_bytecode_function_dispose(&lowered);
+    ruda_mir_panic_dispose(&mir_panic);
+    ruda_mir_execution_dispose(&mir_execution);
+    ruda_mir_function_dispose(&function);
+}
+
 void ruda_test_mir_bytecode(void) {
     ruda_test_mir_bytecode_scalar_mapping();
     ruda_test_mir_bytecode_void_and_failures();
@@ -1735,4 +1999,5 @@ void ruda_test_mir_bytecode(void) {
     ruda_test_mir_bytecode_direct_program();
     ruda_test_mir_bytecode_string_panic_program();
     ruda_test_mir_bytecode_f64();
+    ruda_test_mir_bytecode_arrays();
 }

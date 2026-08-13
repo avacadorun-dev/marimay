@@ -25,7 +25,8 @@ typedef enum RudaBytecodeOperandKind {
     RUDA_BYTECODE_OPERAND_I64,
     RUDA_BYTECODE_OPERAND_BOOL,
     /* Appended to preserve the established public operand-kind values. */
-    RUDA_BYTECODE_OPERAND_F64_BITS
+    RUDA_BYTECODE_OPERAND_F64_BITS,
+    RUDA_BYTECODE_OPERAND_ARRAY_CONSTRUCTION
 } RudaBytecodeOperandKind;
 
 enum {
@@ -52,7 +53,10 @@ typedef enum RudaBytecodeType {
     RUDA_BYTECODE_TYPE_STRING,
     RUDA_BYTECODE_TYPE_NEVER,
     /* Appended to preserve the established feature-0 wire type IDs. */
-    RUDA_BYTECODE_TYPE_F64
+    RUDA_BYTECODE_TYPE_F64,
+    /* Exact bounded I3 types; never collapse these to one generic array tag. */
+    RUDA_BYTECODE_TYPE_ARRAY_F64,
+    RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64
 } RudaBytecodeType;
 
 typedef struct RudaBytecodeSpan {
@@ -80,9 +84,11 @@ typedef struct RudaBytecodeBlock {
 
 typedef uint32_t RudaBytecodeCallId;
 typedef uint32_t RudaBytecodeStringId;
+typedef uint32_t RudaBytecodeArrayConstructionId;
 
 #define RUDA_BYTECODE_NO_CALL UINT32_MAX
 #define RUDA_BYTECODE_NO_STRING UINT32_MAX
+#define RUDA_BYTECODE_NO_ARRAY_CONSTRUCTION UINT32_MAX
 
 typedef struct RudaBytecodeStringConstant {
     RudaOwnedBytes value;
@@ -100,6 +106,17 @@ typedef struct RudaBytecodeCall {
     size_t argument_count;
 } RudaBytecodeCall;
 
+typedef struct RudaBytecodeArrayArgument {
+    uint32_t register_id;
+    RudaBytecodeType type;
+} RudaBytecodeArrayArgument;
+
+typedef struct RudaBytecodeArrayConstruction {
+    RudaBytecodeType array_type;
+    size_t argument_start;
+    size_t argument_count;
+} RudaBytecodeArrayConstruction;
+
 typedef struct RudaBytecodeFunctionOptions {
     size_t max_registers;
     size_t max_blocks;
@@ -108,6 +125,8 @@ typedef struct RudaBytecodeFunctionOptions {
     size_t max_call_arguments;
     size_t max_string_constants;
     size_t max_string_bytes;
+    size_t max_array_constructions;
+    size_t max_array_arguments;
     size_t max_source_files;
     size_t max_encoded_bytes;
     size_t max_verify_work;
@@ -123,6 +142,8 @@ typedef struct RudaBytecodeFunction {
     RudaVector calls;
     RudaVector call_arguments;
     RudaVector string_constants;
+    RudaVector array_constructions;
+    RudaVector array_arguments;
     size_t string_bytes;
     size_t instruction_count;
     RudaBytecodeFunctionOptions options;
@@ -214,6 +235,21 @@ bool ruda_bytecode_add_string_constant(
 const RudaBytecodeStringConstant *ruda_bytecode_string_constant(
     const RudaBytecodeFunction *function,
     RudaBytecodeStringId string_id
+);
+bool ruda_bytecode_add_array_construction(
+    RudaBytecodeFunction *function,
+    RudaBytecodeType array_type,
+    const RudaBytecodeArrayArgument *arguments,
+    size_t argument_count,
+    RudaBytecodeArrayConstructionId *result
+);
+const RudaBytecodeArrayConstruction *ruda_bytecode_array_construction(
+    const RudaBytecodeFunction *function,
+    RudaBytecodeArrayConstructionId construction
+);
+const RudaBytecodeArrayArgument *ruda_bytecode_array_argument(
+    const RudaBytecodeFunction *function,
+    size_t index
 );
 
 RudaBytecodeVerifyStatus ruda_bytecode_verify(

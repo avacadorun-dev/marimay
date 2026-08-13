@@ -50,3 +50,8 @@ Stage 0 codec.
 | 37 | `f64_equal` | `destination:register`, `left:register`, `right:register` | — | Compare IEEE 754 binary64 operands for equality. |
 | 38 | `f64_less` | `destination:register`, `left:register`, `right:register` | — | Compare IEEE 754 binary64 operands using less-than. |
 | 39 | `f64_less_equal` | `destination:register`, `left:register`, `right:register` | — | Compare IEEE 754 binary64 operands using less-than-or-equal. |
+| 40 | `array_new` | `destination:register`, `construction:array_construction` | `may_panic` | Create an exact managed array from a verified construction descriptor. |
+| 41 | `array_length` | `destination:register`, `array:register` | — | Read an exact managed array length as i64. |
+| 42 | `array_require_index` | `destination:register`, `array:register`, `index:register` | `may_panic` | Check D045 bounds and copy the array only after success. |
+| 43 | `array_get` | `destination:register`, `array:register`, `index:register` | `may_panic` | Read one exact managed array element after a D045 bounds check. |
+| 44 | `array_set` | `array:register`, `index:register`, `value:register` | `may_panic` | Store through an ARRAY_REQUIRE_INDEX carrier verified for the same D045 index. |

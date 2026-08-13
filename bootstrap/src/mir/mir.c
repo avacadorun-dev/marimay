@@ -2186,6 +2186,61 @@ static void ruda_mir_transfer_assignments(
     }
 }
 
+static const uint64_t ruda_mir_checked_index_top = UINT64_MAX;
+static const uint64_t ruda_mir_checked_index_none = UINT64_MAX - 1;
+
+static void ruda_mir_transfer_checked_index_instruction(
+    const RudaMirInstruction *instruction,
+    uint64_t *checked,
+    size_t register_count
+) {
+    size_t register_index = 0;
+    if (instruction == NULL || checked == NULL
+        || instruction->target >= register_count) {
+        return;
+    }
+    for (register_index = 0; register_index < register_count;
+        register_index += 1) {
+        if (checked[register_index] == instruction->target) {
+            checked[register_index] = ruda_mir_checked_index_none;
+        }
+    }
+    checked[instruction->target] = instruction->kind
+            == RUDA_MIR_ARRAY_REQUIRE_INDEX
+        ? instruction->second
+        : ruda_mir_checked_index_none;
+}
+
+static void ruda_mir_transfer_checked_indices(
+    const RudaMirBlock *block,
+    uint64_t *checked,
+    size_t register_count
+) {
+    size_t instruction_index = 0;
+    if (block == NULL || checked == NULL) {
+        return;
+    }
+    for (instruction_index = 0;
+        instruction_index < block->instructions.length;
+        instruction_index += 1) {
+        ruda_mir_transfer_checked_index_instruction(
+            ruda_vector_at_const(&block->instructions, instruction_index),
+            checked,
+            register_count
+        );
+    }
+}
+
+static uint64_t ruda_mir_meet_checked_index(uint64_t left, uint64_t right) {
+    if (left == ruda_mir_checked_index_top) {
+        return right;
+    }
+    if (right == ruda_mir_checked_index_top || left == right) {
+        return left;
+    }
+    return ruda_mir_checked_index_none;
+}
+
 static bool ruda_mir_consume_verify_work(
     size_t *used,
     size_t amount,
@@ -2218,11 +2273,17 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
     unsigned char *incoming = NULL;
     unsigned char *outgoing = NULL;
     unsigned char *scratch = NULL;
+    uint64_t *checked_incoming = NULL;
+    uint64_t *checked_outgoing = NULL;
+    uint64_t *checked_scratch = NULL;
     RudaMap managed_types;
     size_t iteration = 0;
     size_t work = 0;
     bool changed = false;
+    bool has_checked_index_operations = false;
     bool managed_types_initialized = false;
+    size_t checked_cell_bytes = 0;
+    size_t checked_scratch_bytes = 0;
     RudaMirVerifyStatus status = RUDA_MIR_VERIFY_OK;
     if (function == NULL || !function->initialized
         || function->result_type == RUDA_TYPE_INVALID
@@ -2786,6 +2847,11 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                 &block->instructions,
                 instruction_index
             );
+            if (instruction != NULL
+                && (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX
+                    || instruction->kind == RUDA_MIR_ARRAY_SET)) {
+                has_checked_index_operations = true;
+            }
             size_t instruction_work = 1;
             if (instruction != NULL
                 && instruction->kind == RUDA_MIR_CALL) {
@@ -3163,6 +3229,136 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
         }
     } while (changed);
 
+    if (has_checked_index_operations) {
+        const RudaMirBlock *entry = ruda_vector_at_const(
+            &function->blocks, 0
+        );
+        size_t index = 0;
+        size_t entry_work = 0;
+        if (!ruda_size_multiply(
+                cell_allocation_count,
+                sizeof(uint64_t),
+                &checked_cell_bytes
+            ) || !ruda_size_multiply(
+                scratch_allocation_count,
+                sizeof(uint64_t),
+                &checked_scratch_bytes
+            )) {
+            status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+            goto cleanup;
+        }
+        checked_incoming = ruda_allocate_array(
+            &function->allocator, cell_allocation_count, sizeof(uint64_t)
+        );
+        checked_outgoing = ruda_allocate_array(
+            &function->allocator, cell_allocation_count, sizeof(uint64_t)
+        );
+        checked_scratch = ruda_allocate_array(
+            &function->allocator, scratch_allocation_count, sizeof(uint64_t)
+        );
+        if (checked_incoming == NULL || checked_outgoing == NULL
+            || checked_scratch == NULL) {
+            status = RUDA_MIR_VERIFY_ALLOCATION_FAILED;
+            goto cleanup;
+        }
+        for (index = 0; index < cell_count; index += 1) {
+            checked_incoming[index] = ruda_mir_checked_index_top;
+            checked_outgoing[index] = ruda_mir_checked_index_top;
+        }
+        for (index = 0; index < register_count; index += 1) {
+            checked_incoming[index] = ruda_mir_checked_index_none;
+            checked_outgoing[index] = ruda_mir_checked_index_none;
+        }
+        if (!ruda_size_multiply(
+                entry != NULL ? entry->instructions.length : 0,
+                register_count,
+                &entry_work
+            ) || !ruda_mir_consume_verify_work(
+                &work, entry_work, function->options.max_verify_work
+            )) {
+            status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+            goto cleanup;
+        }
+        ruda_mir_transfer_checked_indices(
+            entry, checked_outgoing, register_count
+        );
+        do {
+            changed = false;
+            for (block_index = 1; block_index < block_count;
+                block_index += 1) {
+                const RudaMirBlock *block = ruda_vector_at_const(
+                    &function->blocks, block_index
+                );
+                uint64_t *incoming_row = checked_incoming
+                    + block_index * register_count;
+                uint64_t *outgoing_row = checked_outgoing
+                    + block_index * register_count;
+                size_t predecessor_index = 0;
+                size_t register_index = 0;
+                size_t transfer_work = 0;
+                for (register_index = 0; register_index < register_count;
+                    register_index += 1) {
+                    checked_scratch[register_index] =
+                        ruda_mir_checked_index_top;
+                }
+                for (predecessor_index = predecessor_offsets[block_index];
+                    predecessor_index < predecessor_offsets[block_index + 1];
+                    predecessor_index += 1) {
+                    const uint64_t *predecessor_row = checked_outgoing
+                        + (size_t)predecessors[predecessor_index]
+                            * register_count;
+                    for (register_index = 0; register_index < register_count;
+                        register_index += 1) {
+                        checked_scratch[register_index] =
+                            ruda_mir_meet_checked_index(
+                                checked_scratch[register_index],
+                                predecessor_row[register_index]
+                            );
+                    }
+                    if (!ruda_mir_consume_verify_work(
+                            &work, register_count,
+                            function->options.max_verify_work
+                        )) {
+                        status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+                        goto cleanup;
+                    }
+                }
+                if (register_count != 0 && memcmp(
+                        incoming_row, checked_scratch,
+                        checked_scratch_bytes
+                    ) != 0) {
+                    memcpy(
+                        incoming_row, checked_scratch, checked_scratch_bytes
+                    );
+                    changed = true;
+                }
+                if (!ruda_size_multiply(
+                        block->instructions.length,
+                        register_count,
+                        &transfer_work
+                    ) || !ruda_mir_consume_verify_work(
+                        &work, transfer_work,
+                        function->options.max_verify_work
+                    )) {
+                    status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+                    goto cleanup;
+                }
+                ruda_mir_transfer_checked_indices(
+                    block, checked_scratch, register_count
+                );
+                if (register_count != 0 && memcmp(
+                        outgoing_row, checked_scratch,
+                        checked_scratch_bytes
+                    ) != 0) {
+                    memcpy(
+                        outgoing_row, checked_scratch, checked_scratch_bytes
+                    );
+                    changed = true;
+                }
+            }
+        } while (changed);
+    }
+
     for (block_index = 0; block_index < block_count; block_index += 1) {
         const RudaMirBlock *block = ruda_vector_at_const(
             &function->blocks,
@@ -3189,6 +3385,13 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
             goto cleanup;
         }
         memcpy(working, assigned, register_count);
+        if (has_checked_index_operations && register_count != 0) {
+            memcpy(
+                checked_scratch,
+                checked_incoming + block_index * register_count,
+                checked_scratch_bytes
+            );
+        }
         for (instruction_index = 0;
             instruction_index < block->instructions.length;
             instruction_index += 1) {
@@ -3196,6 +3399,13 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                 &block->instructions,
                 instruction_index
             );
+            if (instruction->kind == RUDA_MIR_ARRAY_SET
+                && (checked_scratch == NULL
+                    || checked_scratch[instruction->first]
+                        != instruction->second)) {
+                status = RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+                goto cleanup;
+            }
             if (ruda_mir_instruction_uses_first(instruction->kind)
                 && !ruda_mir_assigned_register(
                     working,
@@ -3386,6 +3596,18 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                 }
             }
             working[instruction->target] = 1;
+            if (has_checked_index_operations) {
+                if (!ruda_mir_consume_verify_work(
+                        &work, register_count,
+                        function->options.max_verify_work
+                    )) {
+                    status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+                    goto cleanup;
+                }
+                ruda_mir_transfer_checked_index_instruction(
+                    instruction, checked_scratch, register_count
+                );
+            }
         }
         if (block->terminator.kind == RUDA_MIR_RETURN) {
             if (function->result_type == RUDA_TYPE_NEVER) {
@@ -3478,6 +3700,21 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
 cleanup:
     if (managed_types_initialized) {
         ruda_map_dispose(&managed_types);
+    }
+    if (checked_scratch != NULL) {
+        ruda_deallocate(
+            &function->allocator, checked_scratch, checked_scratch_bytes
+        );
+    }
+    if (checked_outgoing != NULL) {
+        ruda_deallocate(
+            &function->allocator, checked_outgoing, checked_cell_bytes
+        );
+    }
+    if (checked_incoming != NULL) {
+        ruda_deallocate(
+            &function->allocator, checked_incoming, checked_cell_bytes
+        );
     }
     if (scratch != NULL) {
         ruda_deallocate(

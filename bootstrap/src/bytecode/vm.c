@@ -1,5 +1,6 @@
 #include "ruda/bytecode/vm.h"
 
+#include <limits.h>
 #include <string.h>
 
 #include "ruda/base/checked_i64.h"
@@ -9,6 +10,7 @@ RudaBytecodeExecutionOptions ruda_bytecode_execution_default_options(void) {
     RudaBytecodeExecutionOptions options;
     options.max_strings = 1000000;
     options.max_total_string_bytes = 64U * 1024U * 1024U;
+    options.managed_heap = ruda_managed_heap_default_options();
     return options;
 }
 
@@ -28,7 +30,10 @@ bool ruda_bytecode_execution_init(
         ) || !ruda_map_init(
             &execution->string_index, allocator, sizeof(RudaBytecodeReference),
             UINT64_C(0x7275646162746573), UINT64_C(0x7472696e67696478)
+        ) || !ruda_managed_heap_init(
+            &execution->managed_heap, allocator, options.managed_heap
         )) {
+        ruda_managed_heap_dispose(&execution->managed_heap);
         ruda_map_dispose(&execution->string_index);
         ruda_vector_dispose(&execution->strings);
         return false;
@@ -52,7 +57,38 @@ void ruda_bytecode_execution_dispose(RudaBytecodeExecution *execution) {
     }
     ruda_map_dispose(&execution->string_index);
     ruda_vector_dispose(&execution->strings);
+    ruda_managed_heap_dispose(&execution->managed_heap);
     memset(execution, 0, sizeof(*execution));
+}
+
+static bool ruda_bytecode_type_is_array(RudaBytecodeType type) {
+    return type == RUDA_BYTECODE_TYPE_ARRAY_F64
+        || type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64;
+}
+
+static const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor(
+    RudaBytecodeType type
+) {
+    if (type == RUDA_BYTECODE_TYPE_ARRAY_F64) {
+        return &ruda_managed_array_f64_descriptor;
+    }
+    if (type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64) {
+        return &ruda_managed_array_array_f64_descriptor;
+    }
+    return NULL;
+}
+
+static bool ruda_bytecode_managed_value_valid(
+    RudaBytecodeExecution *execution,
+    RudaBytecodeValue value
+) {
+    const RudaManagedArrayDescriptor *actual = NULL;
+    const RudaManagedArrayDescriptor *expected =
+        ruda_bytecode_array_descriptor(value.type);
+    return execution != NULL && execution->initialized && expected != NULL
+        && ruda_managed_array_describe(
+            &execution->managed_heap, value.as.managed_reference, &actual
+        ) == RUDA_MANAGED_OK && actual == expected;
 }
 
 bool ruda_bytecode_execution_string_bytes(
@@ -177,11 +213,38 @@ static RudaBytecodeRunStatus ruda_bytecode_run_checked_status(
     return RUDA_BYTECODE_RUN_OVERFLOW;
 }
 
+static RudaBytecodeRunStatus ruda_bytecode_run_managed_status(
+    RudaManagedStatus status
+) {
+    switch (status) {
+        case RUDA_MANAGED_OK:
+            return RUDA_BYTECODE_RUN_OK;
+        case RUDA_MANAGED_ALLOCATION_FAILED:
+            return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        case RUDA_MANAGED_LIMIT_REACHED:
+            return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+        case RUDA_MANAGED_LENGTH_LIMIT:
+            /* ARRAY_NEW cannot reach this after verified bounded decoding. */
+            return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        case RUDA_MANAGED_INVALID_REFERENCE:
+            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        case RUDA_MANAGED_BOUNDS:
+            return RUDA_BYTECODE_RUN_PANIC;
+        case RUDA_MANAGED_INVALID_ARGUMENT:
+        case RUDA_MANAGED_TYPE_MISMATCH:
+            return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+    }
+    return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+}
+
 static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
     const RudaBytecodeInstruction *instruction,
     RudaBytecodeValue *registers,
     RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function
+    const RudaBytecodeFunction *function,
+    RudaAllocator allocator,
+    int64_t *bounds_index,
+    size_t *bounds_length
 ) {
     size_t target = (size_t)instruction->operands[0].unsigned_value;
     switch (instruction->opcode) {
@@ -222,6 +285,172 @@ static RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                 (size_t)instruction->operands[1].unsigned_value
             ];
             return RUDA_BYTECODE_RUN_OK;
+        case RUDA_OPCODE_ARRAY_NEW: {
+            const RudaBytecodeArrayConstruction *construction =
+                ruda_bytecode_array_construction(
+                    function,
+                    (RudaBytecodeArrayConstructionId)
+                        instruction->operands[1].unsigned_value
+                );
+            const RudaManagedArrayDescriptor *descriptor = construction != NULL
+                ? ruda_bytecode_array_descriptor(construction->array_type)
+                : NULL;
+            RudaManagedCell *cells = NULL;
+            size_t cell_bytes = 0;
+            size_t index = 0;
+            RudaManagedStatus managed_status;
+            if (execution == NULL || descriptor == NULL
+                || construction->argument_count
+                    > execution->options.managed_heap.max_array_length
+                || !ruda_size_multiply(
+                    construction->argument_count, sizeof(RudaManagedCell),
+                    &cell_bytes
+                )) {
+                return descriptor == NULL
+                    ? RUDA_BYTECODE_RUN_INVALID_BYTECODE
+                    : RUDA_BYTECODE_RUN_LIMIT_REACHED;
+            }
+            if (cell_bytes != 0) {
+                cells = ruda_allocate(&allocator, cell_bytes);
+                if (cells == NULL) {
+                    return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+                }
+                memset(cells, 0, cell_bytes);
+            }
+            if (construction->argument_count != 0 && cells == NULL) {
+                return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+            }
+            for (index = 0; index < construction->argument_count; index += 1) {
+                const RudaBytecodeArrayArgument *argument =
+                    ruda_bytecode_array_argument(
+                        function, construction->argument_start + index
+                    );
+                if (argument == NULL) {
+                    ruda_deallocate(&allocator, cells, cell_bytes);
+                    return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                }
+                if (construction->array_type == RUDA_BYTECODE_TYPE_ARRAY_F64) {
+                    cells[index].f64_bits =
+                        registers[argument->register_id].as.f64_bits;
+                } else {
+                    cells[index].reference =
+                        registers[argument->register_id].as.managed_reference;
+                }
+            }
+            managed_status = ruda_managed_array_new(
+                &execution->managed_heap, descriptor, cells,
+                construction->argument_count,
+                &registers[target].as.managed_reference
+            );
+            ruda_deallocate(&allocator, cells, cell_bytes);
+            return ruda_bytecode_run_managed_status(managed_status);
+        }
+        case RUDA_OPCODE_ARRAY_LENGTH: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t length = 0;
+            if (!ruda_bytecode_managed_value_valid(
+                    execution, registers[first]
+                )) {
+                return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+            }
+            RudaManagedStatus managed_status = execution != NULL
+                ? ruda_managed_array_length(
+                    &execution->managed_heap,
+                    registers[first].as.managed_reference,
+                    &length
+                )
+                : RUDA_MANAGED_INVALID_ARGUMENT;
+            if (managed_status != RUDA_MANAGED_OK) {
+                return ruda_bytecode_run_managed_status(managed_status);
+            }
+            if ((uintmax_t)length > (uintmax_t)INT64_MAX) {
+                return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+            }
+            registers[target].as.i64 = (int64_t)length;
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_ARRAY_REQUIRE_INDEX:
+        case RUDA_OPCODE_ARRAY_GET: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            RudaManagedCell cell;
+            size_t length = 0;
+            int64_t index = registers[second].as.i64;
+            if (!ruda_bytecode_managed_value_valid(
+                    execution, registers[first]
+                )) {
+                return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+            }
+            RudaManagedStatus managed_status = execution != NULL
+                ? ruda_managed_array_get(
+                    &execution->managed_heap,
+                    registers[first].as.managed_reference,
+                    index,
+                    &cell,
+                    &length
+                )
+                : RUDA_MANAGED_INVALID_ARGUMENT;
+            if (managed_status == RUDA_MANAGED_BOUNDS) {
+                if (bounds_index != NULL) {
+                    *bounds_index = index;
+                }
+                if (bounds_length != NULL) {
+                    *bounds_length = length;
+                }
+                return RUDA_BYTECODE_RUN_PANIC;
+            }
+            if (managed_status != RUDA_MANAGED_OK) {
+                return ruda_bytecode_run_managed_status(managed_status);
+            }
+            if (instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_INDEX) {
+                registers[target] = registers[first];
+            } else if (registers[target].type == RUDA_BYTECODE_TYPE_F64) {
+                registers[target].as.f64_bits = cell.f64_bits;
+            } else {
+                registers[target].as.managed_reference = cell.reference;
+            }
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        case RUDA_OPCODE_ARRAY_SET: {
+            size_t array = (size_t)instruction->operands[0].unsigned_value;
+            size_t index_register =
+                (size_t)instruction->operands[1].unsigned_value;
+            size_t value = (size_t)instruction->operands[2].unsigned_value;
+            RudaManagedCell cell;
+            size_t length = 0;
+            int64_t index = registers[index_register].as.i64;
+            RudaManagedStatus managed_status;
+            memset(&cell, 0, sizeof(cell));
+            if (!ruda_bytecode_managed_value_valid(
+                    execution, registers[array]
+                )) {
+                return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+            }
+            if (registers[value].type == RUDA_BYTECODE_TYPE_F64) {
+                cell.f64_bits = registers[value].as.f64_bits;
+            } else {
+                cell.reference = registers[value].as.managed_reference;
+            }
+            managed_status = execution != NULL
+                ? ruda_managed_array_set(
+                    &execution->managed_heap,
+                    registers[array].as.managed_reference,
+                    index,
+                    cell,
+                    &length
+                )
+                : RUDA_MANAGED_INVALID_ARGUMENT;
+            if (managed_status == RUDA_MANAGED_BOUNDS) {
+                if (bounds_index != NULL) {
+                    *bounds_index = index;
+                }
+                if (bounds_length != NULL) {
+                    *bounds_length = length;
+                }
+                return RUDA_BYTECODE_RUN_PANIC;
+            }
+            return ruda_bytecode_run_managed_status(managed_status);
+        }
         case RUDA_OPCODE_I64_ADD_CHECKED: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;
             size_t second = (size_t)instruction->operands[2].unsigned_value;
@@ -530,6 +759,82 @@ static RudaBytecodeRunStatus ruda_bytecode_run_begin_panic(
     return RUDA_BYTECODE_RUN_PANIC;
 }
 
+static size_t ruda_bytecode_append_decimal_u64(
+    unsigned char *buffer,
+    size_t offset,
+    uint64_t value
+) {
+    unsigned char digits[3 * sizeof(uint64_t)];
+    size_t count = 0;
+    do {
+        digits[count++] = (unsigned char)('0' + value % UINT64_C(10));
+        value /= UINT64_C(10);
+    } while (value != 0);
+    while (count != 0) {
+        buffer[offset++] = digits[--count];
+    }
+    return offset;
+}
+
+static size_t ruda_bytecode_append_decimal_i64(
+    unsigned char *buffer,
+    size_t offset,
+    int64_t value
+) {
+    uint64_t magnitude = (uint64_t)value;
+    if (value < 0) {
+        buffer[offset++] = '-';
+        magnitude = UINT64_C(0) - magnitude;
+    }
+    return ruda_bytecode_append_decimal_u64(buffer, offset, magnitude);
+}
+
+static RudaBytecodeRunStatus ruda_bytecode_run_begin_bounds_panic(
+    RudaBytecodePanic *panic,
+    RudaAllocator allocator,
+    int64_t index,
+    size_t length,
+    RudaSymbolId symbol,
+    RudaBytecodeSpan span
+) {
+    static const unsigned char prefix[] = "array index ";
+    static const unsigned char suffix[] = " is outside length ";
+    unsigned char message[sizeof(prefix) + sizeof(suffix)
+        + 6 * sizeof(uint64_t)];
+    size_t message_length = 0;
+    RudaBytecodePanicFrame frame;
+    if (panic == NULL) {
+        return RUDA_BYTECODE_RUN_PANIC;
+    }
+    ruda_bytecode_run_reset_panic(panic);
+    memcpy(message + message_length, prefix, sizeof(prefix) - 1);
+    message_length += sizeof(prefix) - 1;
+    message_length = ruda_bytecode_append_decimal_i64(
+        message, message_length, index
+    );
+    memcpy(message + message_length, suffix, sizeof(suffix) - 1);
+    message_length += sizeof(suffix) - 1;
+    message_length = ruda_bytecode_append_decimal_u64(
+        message, message_length, (uint64_t)length
+    );
+    if (!ruda_owned_bytes_copy(
+            &panic->message, allocator, message, message_length
+        )) {
+        ruda_bytecode_run_reset_panic(panic);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    panic->code = "G4002";
+    panic->symbol = symbol;
+    panic->span = span;
+    frame.symbol = symbol;
+    frame.call_span = span;
+    if (!ruda_vector_push(&panic->frames, &frame)) {
+        ruda_bytecode_run_reset_panic(panic);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    return RUDA_BYTECODE_RUN_PANIC;
+}
+
 static RudaBytecodeRunStatus ruda_bytecode_run_append_panic_frame(
     RudaBytecodePanic *panic,
     RudaSymbolId symbol,
@@ -598,6 +903,123 @@ static bool ruda_bytecode_run_program_uses_strings(
         }
     }
     return false;
+}
+
+static bool ruda_bytecode_run_function_uses_arrays(
+    const RudaBytecodeFunction *function
+) {
+    size_t index = 0;
+    if (function == NULL || ruda_bytecode_type_is_array(function->result_type)
+        || function->array_constructions.length != 0) {
+        return function != NULL;
+    }
+    for (index = 0; index < function->register_types.length; index += 1) {
+        const RudaBytecodeType *type = ruda_vector_at_const(
+            &function->register_types, index
+        );
+        if (type != NULL && ruda_bytecode_type_is_array(*type)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool ruda_bytecode_run_program_uses_arrays(
+    const RudaBytecodeProgram *program
+) {
+    size_t index = 0;
+    if (program == NULL) {
+        return false;
+    }
+    for (index = 0; index < program->functions.length; index += 1) {
+        const RudaBytecodeProgramFunction *function = ruda_vector_at_const(
+            &program->functions, index
+        );
+        if (function == NULL
+            || ruda_bytecode_run_function_uses_arrays(&function->body)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+typedef struct RudaBytecodeManagedRoots {
+    RudaManagedRootFrame frame;
+    RudaManagedReference **locations;
+    size_t location_bytes;
+} RudaBytecodeManagedRoots;
+
+static RudaBytecodeRunStatus ruda_bytecode_run_roots_init(
+    RudaBytecodeManagedRoots *roots,
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function,
+    RudaBytecodeValue *registers,
+    RudaAllocator allocator
+) {
+    size_t count = 0;
+    size_t index = 0;
+    RudaManagedStatus status;
+    if (roots == NULL || execution == NULL || function == NULL
+        || registers == NULL) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
+    memset(roots, 0, sizeof(*roots));
+    for (index = 0; index < function->register_types.length; index += 1) {
+        const RudaBytecodeType *type = ruda_vector_at_const(
+            &function->register_types, index
+        );
+        if (type != NULL && ruda_bytecode_type_is_array(*type)) {
+            count += 1;
+        }
+    }
+    if (!ruda_size_multiply(
+            count, sizeof(RudaManagedReference *), &roots->location_bytes
+        )) {
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    if (roots->location_bytes != 0) {
+        roots->locations = ruda_allocate(&allocator, roots->location_bytes);
+        if (roots->locations == NULL) {
+            return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        }
+    }
+    count = 0;
+    for (index = 0; index < function->register_types.length; index += 1) {
+        const RudaBytecodeType *type = ruda_vector_at_const(
+            &function->register_types, index
+        );
+        if (type != NULL && ruda_bytecode_type_is_array(*type)) {
+            roots->locations[count++] = &registers[index].as.managed_reference;
+        }
+    }
+    status = ruda_managed_root_push(
+        &execution->managed_heap, &roots->frame, roots->locations, count
+    );
+    if (status != RUDA_MANAGED_OK) {
+        ruda_deallocate(
+            &allocator, roots->locations, roots->location_bytes
+        );
+        memset(roots, 0, sizeof(*roots));
+        return status == RUDA_MANAGED_INVALID_REFERENCE
+            ? RUDA_BYTECODE_RUN_INVALID_REFERENCE
+            : RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+    }
+    return RUDA_BYTECODE_RUN_OK;
+}
+
+static void ruda_bytecode_run_roots_dispose(
+    RudaBytecodeManagedRoots *roots,
+    RudaBytecodeExecution *execution,
+    RudaAllocator allocator
+) {
+    if (roots == NULL) {
+        return;
+    }
+    if (execution != NULL && roots->frame.linked) {
+        (void)ruda_managed_root_pop(&execution->managed_heap, &roots->frame);
+    }
+    ruda_deallocate(&allocator, roots->locations, roots->location_bytes);
+    memset(roots, 0, sizeof(*roots));
 }
 
 static bool ruda_bytecode_run_function_uses_f64(
@@ -686,12 +1108,14 @@ RudaBytecodeRunStatus ruda_bytecode_run(
 ) {
     RudaBytecodeValue *registers = NULL;
     RudaBytecodeValue completed;
+    RudaBytecodeManagedRoots managed_roots;
     size_t register_count = 0;
     size_t register_bytes = 0;
     size_t index = 0;
     size_t steps = 0;
     size_t current_block = 0;
     RudaBytecodeRunStatus status = RUDA_BYTECODE_RUN_OK;
+    memset(&managed_roots, 0, sizeof(managed_roots));
     if (options.trap != NULL) {
         memset(options.trap, 0, sizeof(*options.trap));
     }
@@ -730,6 +1154,10 @@ RudaBytecodeRunStatus ruda_bytecode_run(
         && options.execution == NULL) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
+    if (ruda_bytecode_run_function_uses_arrays(function)
+        && options.execution == NULL) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
     for (index = 0; index < argument_count; index += 1) {
         const RudaBytecodeType *expected = ruda_vector_at_const(
             &function->register_types,
@@ -740,6 +1168,12 @@ RudaBytecodeRunStatus ruda_bytecode_run(
         }
         if (*expected == RUDA_BYTECODE_TYPE_STRING
             && !ruda_bytecode_run_string_value_valid(
+                options.execution, arguments[index]
+            )) {
+            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        }
+        if (ruda_bytecode_type_is_array(*expected)
+            && !ruda_bytecode_managed_value_valid(
                 options.execution, arguments[index]
             )) {
             return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
@@ -764,9 +1198,21 @@ RudaBytecodeRunStatus ruda_bytecode_run(
             index
         );
         registers[index].type = *type;
+        if (ruda_bytecode_type_is_array(*type)) {
+            registers[index].as.managed_reference =
+                ruda_managed_invalid_reference();
+        }
     }
     for (index = 0; index < argument_count; index += 1) {
         registers[index] = arguments[index];
+    }
+    if (ruda_bytecode_run_function_uses_arrays(function)) {
+        status = ruda_bytecode_run_roots_init(
+            &managed_roots, options.execution, function, registers, allocator
+        );
+        if (status != RUDA_BYTECODE_RUN_OK) {
+            goto cleanup;
+        }
     }
     memset(&completed, 0, sizeof(completed));
     for (;;) {
@@ -794,6 +1240,13 @@ RudaBytecodeRunStatus ruda_bytecode_run(
                 ];
                 if (completed.type == RUDA_BYTECODE_TYPE_STRING
                     && !ruda_bytecode_run_string_value_valid(
+                        options.execution, completed
+                    )) {
+                    status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                    goto cleanup;
+                }
+                if (ruda_bytecode_type_is_array(completed.type)
+                    && !ruda_bytecode_managed_value_valid(
                         options.execution, completed
                     )) {
                     status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
@@ -831,12 +1284,25 @@ RudaBytecodeRunStatus ruda_bytecode_run(
                 );
                 goto cleanup;
             }
-            status = ruda_bytecode_run_value_instruction(
+            {
+                int64_t bounds_index = 0;
+                size_t bounds_length = 0;
+                status = ruda_bytecode_run_value_instruction(
                 instruction,
                 registers,
                 options.execution,
-                function
-            );
+                function,
+                allocator,
+                &bounds_index,
+                &bounds_length
+                );
+                if (status == RUDA_BYTECODE_RUN_PANIC) {
+                    status = ruda_bytecode_run_begin_bounds_panic(
+                        options.panic, allocator, bounds_index, bounds_length,
+                        (RudaSymbolId){{0}}, instruction->span
+                    );
+                }
+            }
             if (status != RUDA_BYTECODE_RUN_OK) {
                 if (options.trap != NULL
                     && (status == RUDA_BYTECODE_RUN_OVERFLOW
@@ -855,6 +1321,9 @@ RudaBytecodeRunStatus ruda_bytecode_run(
     }
 
 cleanup:
+    ruda_bytecode_run_roots_dispose(
+        &managed_roots, options.execution, allocator
+    );
     ruda_deallocate(&allocator, registers, register_bytes);
     return status;
 }
@@ -870,13 +1339,24 @@ typedef struct RudaBytecodeRunFrame {
     bool return_is_void;
     bool return_is_never;
     RudaBytecodeSpan call_span;
+    RudaBytecodeManagedRoots *managed_roots;
 } RudaBytecodeRunFrame;
 
 static void ruda_bytecode_run_frame_dispose(
     RudaBytecodeRunFrame *frame,
-    const RudaAllocator *allocator
+    const RudaAllocator *allocator,
+    RudaBytecodeExecution *execution
 ) {
     if (frame != NULL && allocator != NULL) {
+        if (frame->managed_roots != NULL) {
+            ruda_bytecode_run_roots_dispose(
+                frame->managed_roots, execution, *allocator
+            );
+            ruda_deallocate(
+                allocator, frame->managed_roots,
+                sizeof(*frame->managed_roots)
+            );
+        }
         ruda_deallocate(allocator, frame->registers, frame->register_bytes);
         memset(frame, 0, sizeof(*frame));
     }
@@ -918,10 +1398,14 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
             index
         );
         if (type == NULL) {
-            ruda_bytecode_run_frame_dispose(frame, &allocator);
+            ruda_bytecode_run_frame_dispose(frame, &allocator, NULL);
             return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
         }
         frame->registers[index].type = *type;
+        if (ruda_bytecode_type_is_array(*type)) {
+            frame->registers[index].as.managed_reference =
+                ruda_managed_invalid_reference();
+        }
     }
     for (index = 0; index < argument_count; index += 1) {
         frame->registers[index] = arguments[index];
@@ -932,6 +1416,41 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
     frame->return_is_never = return_is_never;
     frame->call_span = call_span;
     return RUDA_BYTECODE_RUN_OK;
+}
+
+static RudaBytecodeRunStatus ruda_bytecode_run_frame_roots_init(
+    RudaBytecodeRunFrame *frame,
+    RudaBytecodeExecution *execution,
+    RudaAllocator allocator
+) {
+    RudaBytecodeRunStatus status;
+    if (frame == NULL || frame->function == NULL) {
+        return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+    }
+    if (!ruda_bytecode_run_function_uses_arrays(&frame->function->body)) {
+        return RUDA_BYTECODE_RUN_OK;
+    }
+    if (execution == NULL) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
+    frame->managed_roots = ruda_allocate(
+        &allocator, sizeof(*frame->managed_roots)
+    );
+    if (frame->managed_roots == NULL) {
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    memset(frame->managed_roots, 0, sizeof(*frame->managed_roots));
+    status = ruda_bytecode_run_roots_init(
+        frame->managed_roots, execution, &frame->function->body,
+        frame->registers, allocator
+    );
+    if (status != RUDA_BYTECODE_RUN_OK) {
+        ruda_deallocate(
+            &allocator, frame->managed_roots, sizeof(*frame->managed_roots)
+        );
+        frame->managed_roots = NULL;
+    }
+    return status;
 }
 
 static RudaBytecodeRunStatus ruda_bytecode_run_program_verify_status(
@@ -1044,6 +1563,10 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         && options.execution == NULL) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
+    if (ruda_bytecode_run_program_uses_arrays(program)
+        && options.execution == NULL) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
     entry = ruda_bytecode_program_function(program, program->entry_function);
     if (entry == NULL || argument_count != entry->body.parameter_count) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
@@ -1058,6 +1581,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         }
         if (*expected == RUDA_BYTECODE_TYPE_STRING
             && !ruda_bytecode_run_string_value_valid(
+                options.execution, arguments[index]
+            )) {
+            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        }
+        if (ruda_bytecode_type_is_array(*expected)
+            && !ruda_bytecode_managed_value_valid(
                 options.execution, arguments[index]
             )) {
             return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
@@ -1077,7 +1606,18 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         false, (RudaBytecodeSpan){0}
     );
     if (status != RUDA_BYTECODE_RUN_OK) {
-        ruda_bytecode_run_frame_dispose(&frames[0], &allocator);
+        ruda_bytecode_run_frame_dispose(
+            &frames[0], &allocator, options.execution
+        );
+        goto cleanup;
+    }
+    status = ruda_bytecode_run_frame_roots_init(
+        &frames[0], options.execution, allocator
+    );
+    if (status != RUDA_BYTECODE_RUN_OK) {
+        ruda_bytecode_run_frame_dispose(
+            &frames[0], &allocator, options.execution
+        );
         goto cleanup;
     }
     frame_count = 1;
@@ -1123,6 +1663,13 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
                 goto cleanup;
             }
+            if (ruda_bytecode_type_is_array(completed.type)
+                && !ruda_bytecode_managed_value_valid(
+                    options.execution, completed
+                )) {
+                status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                goto cleanup;
+            }
             if (frame_count == 1) {
                 *result = completed;
                 status = RUDA_BYTECODE_RUN_OK;
@@ -1132,11 +1679,13 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 RudaBytecodeRunFrame *parent = &frames[frame_count - 2];
                 uint32_t destination = frame->return_destination;
                 bool return_is_void = frame->return_is_void;
-                ruda_bytecode_run_frame_dispose(frame, &allocator);
-                frame_count -= 1;
                 if (!return_is_void) {
                     parent->registers[destination] = completed;
                 }
+                ruda_bytecode_run_frame_dispose(
+                    frame, &allocator, options.execution
+                );
+                frame_count -= 1;
             }
             continue;
         }
@@ -1222,6 +1771,9 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 instruction->span
             );
             if (status != RUDA_BYTECODE_RUN_OK) {
+                ruda_bytecode_run_frame_dispose(
+                    &frames[frame_count], &allocator, options.execution
+                );
                 goto cleanup;
             }
             for (argument_index = 0;
@@ -1235,7 +1787,8 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 if (argument == NULL) {
                     ruda_bytecode_run_frame_dispose(
                         &frames[frame_count],
-                        &allocator
+                        &allocator,
+                        options.execution
                     );
                     status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
                     goto cleanup;
@@ -1243,12 +1796,43 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 frames[frame_count].registers[argument_index] =
                     frames[frame_count - 1].registers[argument->register_id];
             }
+            status = ruda_bytecode_run_frame_roots_init(
+                &frames[frame_count], options.execution, allocator
+            );
+            if (status != RUDA_BYTECODE_RUN_OK) {
+                ruda_bytecode_run_frame_dispose(
+                    &frames[frame_count], &allocator, options.execution
+                );
+                goto cleanup;
+            }
             frame_count += 1;
             continue;
         }
-        status = ruda_bytecode_run_value_instruction(
-            instruction, frame->registers, options.execution, body
-        );
+        {
+            int64_t bounds_index = 0;
+            size_t bounds_length = 0;
+            status = ruda_bytecode_run_value_instruction(
+                instruction, frame->registers, options.execution, body,
+                allocator, &bounds_index, &bounds_length
+            );
+            if (status == RUDA_BYTECODE_RUN_PANIC) {
+                size_t panic_index = frame_count - 1;
+                status = ruda_bytecode_run_begin_bounds_panic(
+                    options.panic, allocator, bounds_index, bounds_length,
+                    frame->function->symbol, instruction->span
+                );
+                while (status == RUDA_BYTECODE_RUN_PANIC
+                    && panic_index != 0) {
+                    RudaBytecodeRunFrame *callee = &frames[panic_index];
+                    RudaBytecodeRunFrame *caller = &frames[panic_index - 1];
+                    status = ruda_bytecode_run_append_panic_frame(
+                        options.panic, caller->function->symbol,
+                        callee->call_span
+                    );
+                    panic_index -= 1;
+                }
+            }
+        }
         if (status != RUDA_BYTECODE_RUN_OK) {
             if (status == RUDA_BYTECODE_RUN_OVERFLOW
                 || status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
@@ -1263,7 +1847,9 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
 cleanup:
     while (frame_count != 0) {
         frame_count -= 1;
-        ruda_bytecode_run_frame_dispose(&frames[frame_count], &allocator);
+        ruda_bytecode_run_frame_dispose(
+            &frames[frame_count], &allocator, options.execution
+        );
     }
     if (frames != NULL) {
         size_t bytes = 0;

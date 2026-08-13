@@ -111,6 +111,7 @@ void ruda_test_mir_arrays(RudaSymbolId symbol) {
     RudaMirRegister length = RUDA_MIR_NO_REGISTER;
     RudaMirRegister offset = RUDA_MIR_NO_REGISTER;
     RudaMirRegister index = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister checked_destination = RUDA_MIR_NO_REGISTER;
     RudaMirRegister replacement = RUDA_MIR_NO_REGISTER;
     RudaMirRegister set_result = RUDA_MIR_NO_REGISTER;
     RudaMirRegister projected = RUDA_MIR_NO_REGISTER;
@@ -196,6 +197,11 @@ void ruda_test_mir_arrays(RudaSymbolId symbol) {
     RUDA_EXPECT(ruda_mir_add_register(&function, RUDA_TYPE_I64, &index));
     RUDA_EXPECT(ruda_mir_add_register(
         &function,
+        array_type,
+        &checked_destination
+    ));
+    RUDA_EXPECT(ruda_mir_add_register(
+        &function,
         RUDA_TYPE_F64,
         &replacement
     ));
@@ -273,6 +279,15 @@ void ruda_test_mir_arrays(RudaSymbolId symbol) {
     );
     RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
     memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_REQUIRE_INDEX;
+    instruction.target = checked_destination;
+    instruction.first = array_value;
+    instruction.second = index;
+    instruction.array = array;
+    instruction.span.start = 10;
+    instruction.span.end = 18;
+    RUDA_EXPECT(ruda_mir_append_instruction(&function, block, &instruction));
+    memset(&instruction, 0, sizeof(instruction));
     instruction.kind = RUDA_MIR_CONSTANT_F64;
     instruction.target = replacement;
     instruction.f64_bits = four;
@@ -280,7 +295,7 @@ void ruda_test_mir_arrays(RudaSymbolId symbol) {
     memset(&instruction, 0, sizeof(instruction));
     instruction.kind = RUDA_MIR_ARRAY_SET;
     instruction.target = set_result;
-    instruction.first = array_value;
+    instruction.first = checked_destination;
     instruction.second = index;
     instruction.third = replacement;
     instruction.array = array;
@@ -669,17 +684,51 @@ void ruda_test_mir_arrays(RudaSymbolId symbol) {
 
     stored_block = ruda_vector_at(&function.blocks, block);
     stored_set = stored_block != NULL
-        ? ruda_vector_at(&stored_block->instructions, 9)
+        ? ruda_vector_at(&stored_block->instructions, 10)
         : NULL;
     stored_array = ruda_vector_at(&function.arrays, array);
     RUDA_EXPECT(stored_set != NULL && stored_array != NULL);
     if (stored_set != NULL) {
+        RudaMirInstruction *rhs = stored_block != NULL
+            ? ruda_vector_at(&stored_block->instructions, 9)
+            : NULL;
+        RudaMirInstruction saved_rhs;
+        memset(&saved_rhs, 0, sizeof(saved_rhs));
+        if (rhs != NULL) {
+            saved_rhs = *rhs;
+        }
         stored_set->third = uninitialized;
         RUDA_EXPECT(
             ruda_mir_verify(&function)
                 == RUDA_MIR_VERIFY_UNINITIALIZED_REGISTER
         );
         stored_set->third = replacement;
+        stored_set->first = array_value;
+        RUDA_EXPECT(ruda_mir_verify(&function)
+            == RUDA_MIR_VERIFY_INVALID_ARGUMENT);
+        stored_set->first = checked_destination;
+        stored_set->second = offset;
+        RUDA_EXPECT(ruda_mir_verify(&function)
+            == RUDA_MIR_VERIFY_INVALID_ARGUMENT);
+        stored_set->second = index;
+        RUDA_EXPECT(rhs != NULL);
+        if (rhs != NULL) {
+            memset(rhs, 0, sizeof(*rhs));
+            rhs->kind = RUDA_MIR_COPY;
+            rhs->target = checked_destination;
+            rhs->first = array_value;
+            stored_set->third = values[0];
+            RUDA_EXPECT(ruda_mir_verify(&function)
+                == RUDA_MIR_VERIFY_INVALID_ARGUMENT);
+            memset(rhs, 0, sizeof(*rhs));
+            rhs->kind = RUDA_MIR_CONSTANT_I64;
+            rhs->target = index;
+            rhs->integer = 0;
+            RUDA_EXPECT(ruda_mir_verify(&function)
+                == RUDA_MIR_VERIFY_INVALID_ARGUMENT);
+            *rhs = saved_rhs;
+            stored_set->third = replacement;
+        }
     }
     if (stored_array != NULL) {
         stored_array->element_type = RUDA_TYPE_INVALID;
@@ -1052,6 +1101,12 @@ void ruda_test_mir_arrays(RudaSymbolId symbol) {
         if (stored_access != NULL) {
             stored_access->kind = RUDA_MIR_ARRAY_SET;
             stored_access->third = value;
+        }
+        RUDA_EXPECT(ruda_mir_verify(&function)
+            == RUDA_MIR_VERIFY_INVALID_ARGUMENT);
+        if (stored_access != NULL) {
+            stored_access->kind = RUDA_MIR_ARRAY_GET;
+            stored_access->third = RUDA_MIR_NO_REGISTER;
         }
         RUDA_EXPECT(ruda_mir_verify(&function) == RUDA_MIR_VERIFY_OK);
         interpret_options.panic = NULL;

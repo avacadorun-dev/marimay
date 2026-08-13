@@ -566,7 +566,17 @@ static void ruda_test_bytecode_metadata(void) {
         {RUDA_OPCODE_F64_LESS, 38, "f64_less", 3,
             {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, 0},
         {RUDA_OPCODE_F64_LESS_EQUAL, 39, "f64_less_equal", 3,
-            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, 0}
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, 0},
+        {RUDA_OPCODE_ARRAY_NEW, 40, "array_new", 2,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_ARRAY_CONSTRUCTION, RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_MAY_PANIC},
+        {RUDA_OPCODE_ARRAY_LENGTH, 41, "array_length", 2,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_NONE}, 0},
+        {RUDA_OPCODE_ARRAY_REQUIRE_INDEX, 42, "array_require_index", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, RUDA_OPCODE_FLAG_MAY_PANIC},
+        {RUDA_OPCODE_ARRAY_GET, 43, "array_get", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, RUDA_OPCODE_FLAG_MAY_PANIC},
+        {RUDA_OPCODE_ARRAY_SET, 44, "array_set", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, RUDA_OPCODE_FLAG_MAY_PANIC}
     };
     size_t index = 0;
 
@@ -610,6 +620,11 @@ static void ruda_test_bytecode_metadata(void) {
     RUDA_EXPECT(RUDA_OPCODE_F64_EQUAL == 37);
     RUDA_EXPECT(RUDA_OPCODE_F64_LESS == 38);
     RUDA_EXPECT(RUDA_OPCODE_F64_LESS_EQUAL == 39);
+    RUDA_EXPECT(RUDA_OPCODE_ARRAY_NEW == 40);
+    RUDA_EXPECT(RUDA_OPCODE_ARRAY_LENGTH == 41);
+    RUDA_EXPECT(RUDA_OPCODE_ARRAY_REQUIRE_INDEX == 42);
+    RUDA_EXPECT(RUDA_OPCODE_ARRAY_GET == 43);
+    RUDA_EXPECT(RUDA_OPCODE_ARRAY_SET == 44);
     RUDA_EXPECT(RUDA_OPCODE_COUNT == sizeof(expected) / sizeof(expected[0]));
     for (index = 0; index < sizeof(expected) / sizeof(expected[0]); index += 1) {
         const RudaOpcodeMetadata *metadata = ruda_opcode_metadata(expected[index].opcode);
@@ -982,8 +997,8 @@ static void ruda_test_bytecode_decode_rejections(void) {
         ruda_system_allocator(), ruda_bytecode_function_default_options(),
         &output) == RUDA_BYTECODE_CODEC_UNSUPPORTED_VERSION);
     mutated[8] = 1;
-    /* Feature bits one/two are strings/f64; bit three remains unsupported. */
-    mutated[9] = 8;
+    /* Feature bits 0..3 are calls/strings/f64/arrays; bit four is unknown. */
+    mutated[9] = 16;
     RUDA_EXPECT(ruda_bytecode_decode_function(mutated, sizeof(canonical),
         ruda_system_allocator(), ruda_bytecode_function_default_options(),
         &output) == RUDA_BYTECODE_CODEC_UNSUPPORTED_VERSION);

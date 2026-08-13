@@ -11,6 +11,7 @@
 #include "ruda/base/vector.h"
 #include "ruda/bytecode/bytecode.h"
 #include "ruda/bytecode/program.h"
+#include "ruda/runtime/managed.h"
 
 typedef uint32_t RudaBytecodeReference;
 
@@ -23,12 +24,14 @@ typedef struct RudaBytecodeValue {
         uint64_t f64_bits;
         bool boolean;
         RudaBytecodeReference reference;
+        RudaManagedReference managed_reference;
     } as;
 } RudaBytecodeValue;
 
 typedef struct RudaBytecodeExecutionOptions {
     size_t max_strings;
     size_t max_total_string_bytes;
+    RudaManagedHeapOptions managed_heap;
 } RudaBytecodeExecutionOptions;
 
 typedef struct RudaBytecodeExecution {
@@ -39,8 +42,18 @@ typedef struct RudaBytecodeExecution {
     RudaMap string_index;
     RudaBytecodeExecutionOptions options;
     size_t total_string_bytes;
+    RudaManagedHeap managed_heap;
     bool initialized;
 } RudaBytecodeExecution;
+
+/*
+ * Managed array values are bound to this execution's heap.  Active VM frames
+ * root every exact array register.  A returned array remains usable until an
+ * explicit/subsequent collection reclaims it or the execution is disposed;
+ * passing it as the next run's argument roots it before dispatch.  A host that
+ * retains values across unrelated collections registers the value's
+ * managed_reference through the public RudaManagedRootFrame API.
+ */
 
 typedef struct RudaBytecodePanicFrame {
     RudaSymbolId symbol;
