@@ -20,6 +20,7 @@ void ruda_test_lexer(void);
 void ruda_test_manifest(void);
 void ruda_test_mir(void);
 void ruda_test_mir_bytecode(void);
+void ruda_test_native_c_emitter(void);
 void ruda_test_path_stream(void);
 void ruda_test_parser(void);
 void ruda_test_process(void);
@@ -51,6 +52,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_manifest();
     ruda_test_mir();
     ruda_test_mir_bytecode();
+    ruda_test_native_c_emitter();
     ruda_test_path_stream();
     ruda_test_parser();
     ruda_test_process();

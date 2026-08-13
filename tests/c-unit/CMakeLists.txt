@@ -17,6 +17,7 @@ add_executable(ruda_c_unit
   test_manifest.c
   test_mir.c
   test_mir_bytecode.c
+  test_native_c_emitter.c
   test_main.c
   test_path_stream.c
   test_parser.c
@@ -34,6 +35,23 @@ target_include_directories(ruda_c_unit PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../fuzz"
 )
+target_compile_definitions(ruda_c_unit PRIVATE
+  RUDA_TEST_C_COMPILER="${CMAKE_C_COMPILER}"
+  RUDA_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+)
+if(NOT MSVC AND (RUDA_ENABLE_ADDRESS_SANITIZER OR RUDA_ENABLE_UNDEFINED_SANITIZER))
+  set(ruda_test_native_sanitizers "")
+  if(RUDA_ENABLE_ADDRESS_SANITIZER)
+    list(APPEND ruda_test_native_sanitizers "address")
+  endif()
+  if(RUDA_ENABLE_UNDEFINED_SANITIZER)
+    list(APPEND ruda_test_native_sanitizers "undefined")
+  endif()
+  list(JOIN ruda_test_native_sanitizers "," ruda_test_native_sanitizer_list)
+  target_compile_definitions(ruda_c_unit PRIVATE
+    RUDA_TEST_C_SANITIZER="-fsanitize=${ruda_test_native_sanitizer_list}"
+  )
+endif()
 ruda_target_warnings(ruda_c_unit)
 ruda_target_sanitizers(ruda_c_unit)
 add_dependencies(ruda_c_unit ruda)

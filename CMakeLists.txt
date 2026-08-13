@@ -95,6 +95,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/lex/token.c
   bootstrap/src/manifest/manifest.c
   bootstrap/src/mir/mir.c
+  bootstrap/src/native/c_emitter.c
   bootstrap/src/parse/parser.c
   bootstrap/src/session.c
   bootstrap/src/source/source_manager.c
