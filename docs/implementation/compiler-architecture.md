@@ -138,6 +138,7 @@ bootstrap/src/check/
   checker.c             package coordinator and stable public entry points
   checker_internal.h    owner-private contexts and phase contracts
   result.c              result/default/dispose/accessor ownership (extracted)
+  array.c               D045 type/literal/access/assignment lowering (extracted)
   declarations.c        collection, signature, and publication phases
   expression.c          expression typing/lowering after its context is stable
   pattern.c             usefulness/exhaustiveness and pattern lowering
@@ -160,13 +161,15 @@ tests/c-unit/
   test_mir_managed.c       future record/enum managed-oracle extraction
   test_mir_support.h
   test_checker.c
+  test_checker_arrays.c
   test_checker_match.c
   test_checker_support.h
 ```
 
-The existing `ruda_test_mir` and `ruda_test_checker` aggregators remain the
-externally registered test entry points. Splitting tests must not delete,
-rename, reorder, or weaken assertions.
+The existing `ruda_test_mir` and `ruda_test_checker` aggregators retain their
+registrations. A new semantic owner may add one adjacent registered entry point
+when that keeps new coverage out of an existing hotspot; splitting existing
+tests must not delete, rename, reorder, or weaken assertions.
 
 ## Extraction checkpoint contract
 
@@ -250,6 +253,10 @@ checkpoint:
 | `bootstrap/src/check/result.c` | 0 | 263 | defaults, nested published-value cleanup, rollback helpers, public dispose, and const accessors |
 | `bootstrap/src/check/checker.c` | 14,299 | 14,246 | owner-private checker/function/expression contexts moved to the sibling-module contract |
 | `bootstrap/src/check/checker_internal.h` | 21 | 121 | result lifecycle plus minimal expression-lowering context and helper boundary |
+| `bootstrap/src/check/checker.c` | 14,246 | 14,481 | `Array<T>` type/signature integration and expression/call/assignment dispatch remain in the coordinator |
+| `bootstrap/src/check/array.c` | 0 | 912 | D045 layout, literal, index, `length`, and checked-store lowering behind the private boundary |
+| `bootstrap/src/check/checker_internal.h` | 121 | 153 | bounded D045 sibling-module contract; still uninstalled and owner-private |
+| `tests/c-unit/test_checker_arrays.c` | 0 | 548 | source array typing, matrix oracle, G4002, diagnostics, limits, and allocation-failure ownership |
 
 The split preserves assertion order within the array suite and the single
 external `ruda_test_mir` registration. Test-local helpers are private to each
@@ -259,4 +266,6 @@ The command evidence is recorded in
 and
 [architecture checkpoint 3](evidence/architecture-checkpoint-3-2026-08-14.md),
 followed by the
-[checker sibling-module boundary](evidence/architecture-checkpoint-4-2026-08-14.md).
+[checker sibling-module boundary](evidence/architecture-checkpoint-4-2026-08-14.md)
+and the first semantic consumer of that boundary in
+[V0 source arrays iteration 11](evidence/v0-source-arrays-iteration-11-2026-08-14.md).

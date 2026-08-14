@@ -103,6 +103,38 @@ bool ruda_compound_assignment_kind(
     RudaMirInstructionKind *kind
 );
 
+/* Managed-array source lowering, owned by array.c. */
+bool ruda_function_ensure_array_layout(
+    RudaFunctionChecker *function,
+    RudaTypeId type
+);
+bool ruda_compile_array_literal(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node,
+    RudaTypeId expected,
+    RudaExpressionValue *result
+);
+bool ruda_compile_array_index(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node,
+    RudaExpressionValue *result
+);
+bool ruda_compile_array_length_call(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node,
+    bool builtin_available,
+    bool *resolved,
+    RudaExpressionValue *result
+);
+bool ruda_compile_array_assignment(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node,
+    const RudaAstNode *left,
+    const RudaAstNode *right,
+    const RudaSyntaxToken *operator_token,
+    bool compound
+);
+
 /* Result-owner lifecycle used by package publication and rollback. */
 void ruda_checked_record_value_dispose(RudaCheckedRecord *record);
 void ruda_checked_enum_variant_value_dispose(

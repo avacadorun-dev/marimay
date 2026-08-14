@@ -631,6 +631,11 @@ static bool ruda_native_c_emit_function(
     if (!ruda_native_c_write(
             buffer, "  (void)ruda_g_start;\n  (void)ruda_g_end;\n"
         )) return false;
+    if (function->result_type != RUDA_TYPE_VOID
+        && function->result_type != RUDA_TYPE_NEVER
+        && !ruda_native_c_write(buffer, "  (void)ruda_g_out;\n")) {
+        return false;
+    }
     for (index = 0; index < function->parameter_count; index += 1) {
         if (!ruda_native_c_write(buffer, "  (void)ruda_g_v_%zu;\n", index)) {
             return false;
@@ -1311,6 +1316,11 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     if (!ruda_native_c_write(&buffer, "\n")) goto emit_fail;
     for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_function(&buffer, ordered[index], ordered, program->function_count)) goto emit_fail;
     if (!ruda_native_c_write(&buffer, "int main(void) { size_t ruda_g_start = 0, ruda_g_end = 0; int ruda_g_s; static ruda_g_frame ruda_g_frames[RUDA_G_MAX_FRAMES]; ruda_g_panic ruda_g_p = {0}; ruda_g_execution ruda_g_x = {0}; RudaManagedHeapOptions ruda_g_heap_options; ")) goto emit_fail;
+    for (index = 0; index < program->function_count; index += 1) {
+        if (!ruda_native_c_write(&buffer, "(void)&")
+            || !ruda_native_c_symbol(&buffer, ordered[index]->symbol)
+            || !ruda_native_c_write(&buffer, "; ")) goto emit_fail;
+    }
     if (uses_f64 && !ruda_native_c_write(&buffer, "if (!ruda_f64_binary64_supported()) { fputs(\"unsupported:f64\\n\", stderr); return 2; } ")) goto emit_fail;
     if (!ruda_native_c_write(&buffer, "ruda_g_keep_assets(); ruda_g_p.frames = ruda_g_frames; ruda_g_p.frame_capacity = RUDA_G_MAX_FRAMES; ruda_g_x.allocator = ruda_g_make_allocator(&ruda_g_x.fail_allocator); ruda_g_heap_options = ruda_managed_heap_default_options(); ruda_g_heap_options.collect_before_allocation = RUDA_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)RUDA_G_MAX_OBJECTS < ruda_g_heap_options.max_objects) ruda_g_heap_options.max_objects = (size_t)RUDA_G_MAX_OBJECTS; if (!ruda_managed_heap_init(&ruda_g_x.heap, ruda_g_x.allocator, ruda_g_heap_options)) { fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
     if (entry->result_type == RUDA_TYPE_I64) { if (!ruda_native_c_write(&buffer, "int64_t ruda_g_result; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:i64:%%lld\\n\", (long long)ruda_g_result); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }

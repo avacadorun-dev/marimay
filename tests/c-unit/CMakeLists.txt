@@ -5,6 +5,7 @@ add_executable(ruda_c_unit
   test_bytecode.c
   test_bytecode_vm.c
   test_checker.c
+  test_checker_arrays.c
   test_cli.c
   test_diagnostic.c
   test_directory.c

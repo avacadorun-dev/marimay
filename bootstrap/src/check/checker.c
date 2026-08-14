@@ -1593,6 +1593,11 @@ static bool ruda_check_exact_type(
     RudaCheckTypeAliasDeclaration *alias = NULL;
     RudaCheckRecordDeclaration *record = NULL;
     RudaCheckEnumDeclaration *enum_declaration = NULL;
+    const RudaAstNode *type_arguments = NULL;
+    const RudaAstNode *argument_type = NULL;
+    RudaTypeId element_type = RUDA_TYPE_INVALID;
+    size_t argument_count = 0;
+    size_t index = 0;
     if (node == NULL || result == NULL || node->kind != RUDA_SYNTAX_TYPE) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
@@ -1602,6 +1607,78 @@ static bool ruda_check_exact_type(
         || !ruda_check_span_valid(checker, name->start, name->end)) {
         ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
         return false;
+    }
+    type_arguments = ruda_check_child_node(
+        node,
+        RUDA_SYNTAX_TYPE_ARGUMENTS,
+        0
+    );
+    if (ruda_check_text_equal(
+            checker,
+            name->start,
+            name->end,
+            "Array"
+        )) {
+        if (type_arguments != NULL) {
+            for (index = 0; index < type_arguments->child_count; index += 1) {
+                const RudaAstElement *element = ruda_ast_child(
+                    type_arguments,
+                    index
+                );
+                if (element == NULL) {
+                    ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
+                    return false;
+                }
+                if (element->kind == RUDA_AST_ELEMENT_NODE) {
+                    if (element->as.node == NULL
+                        || element->as.node->kind != RUDA_SYNTAX_TYPE
+                        || argument_count == SIZE_MAX) {
+                        ruda_checker_fail(
+                            checker,
+                            RUDA_CHECK_INVALID_ARGUMENT
+                        );
+                        return false;
+                    }
+                    argument_type = element->as.node;
+                    argument_count += 1;
+                } else if (element->as.token.synthetic) {
+                    ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
+                    return false;
+                }
+            }
+        }
+        if (type_arguments == NULL || argument_count != 1
+            || argument_type == NULL) {
+            (void)ruda_checker_add_diagnostic(
+                checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "Array requires exactly one type argument",
+                node->start,
+                node->end
+            );
+            *result = RUDA_TYPE_INVALID;
+            return false;
+        }
+        if (!ruda_check_exact_type(checker, argument_type, &element_type)) {
+            *result = RUDA_TYPE_INVALID;
+            return false;
+        }
+        if (!ruda_type_intern_array(
+                &checker->result->types,
+                element_type,
+                result
+            )) {
+            ruda_checker_fail(
+                checker,
+                checker->result->types.descriptors.length
+                        >= checker->options.type_options.max_types
+                            - RUDA_TYPE_FIRST_DYNAMIC
+                    ? RUDA_CHECK_LIMIT_REACHED
+                    : RUDA_CHECK_ALLOCATION_FAILED
+            );
+            return false;
+        }
+        return true;
     }
     if (node->child_count != 1) {
         ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
@@ -1858,6 +1935,9 @@ bool ruda_function_add_register(
     if (function->mir.register_types.length
         >= function->mir.options.max_registers) {
         ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        return false;
+    }
+    if (!ruda_function_ensure_array_layout(function, type)) {
         return false;
     }
     if (!ruda_mir_add_register(&function->mir, type, result)) {
@@ -4039,6 +4119,89 @@ static bool ruda_compile_call(
     bool accepted = false;
     bool enum_resolved = false;
     bool identity_resolved = false;
+    bool length_resolved = false;
+    bool length_available = false;
+    const RudaAstNode *member_callee = ruda_check_child_node(
+        node,
+        RUDA_SYNTAX_MEMBER_EXPRESSION,
+        0
+    );
+    const RudaSyntaxToken *length_token = name_token != NULL
+        ? name_token
+        : ruda_check_child_token(
+            member_callee,
+            RUDA_TOKEN_IDENTIFIER,
+            0
+        );
+    if (length_token != NULL && !length_token->synthetic
+        && ruda_check_text_equal(
+            function->checker,
+            length_token->start,
+            length_token->end,
+            "length"
+        )) {
+        RudaCheckName length_name;
+        length_name.snapshot = function->checker->ast->snapshot;
+        length_name.start = length_token->start;
+        length_name.end = length_token->end;
+        length_available = ruda_function_find_local(function, length_name) == NULL
+            && ruda_checker_find_top_level(
+                function->checker,
+                length_name
+            ) == NULL;
+    }
+    if (!ruda_compile_array_length_call(
+            function,
+            node,
+            length_available,
+            &length_resolved,
+            result
+        )) {
+        goto cleanup;
+    }
+    if (length_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    {
+        const RudaSyntaxToken *array_builtin_token = name_token != NULL
+            ? name_token
+            : ruda_check_child_token(
+                member_callee,
+                RUDA_TOKEN_IDENTIFIER,
+                0
+            );
+        bool is_deferred_array_builtin = array_builtin_token != NULL
+            && !array_builtin_token->synthetic
+            && (ruda_check_text_equal(
+                    function->checker,
+                    array_builtin_token->start,
+                    array_builtin_token->end,
+                    "push"
+                ) || (name_token != NULL && ruda_check_text_equal(
+                    function->checker,
+                    array_builtin_token->start,
+                    array_builtin_token->end,
+                    "arrayOf"
+                )));
+        if (is_deferred_array_builtin) {
+            RudaCheckName builtin_name;
+            builtin_name.snapshot = function->checker->ast->snapshot;
+            builtin_name.start = array_builtin_token->start;
+            builtin_name.end = array_builtin_token->end;
+            if (ruda_function_find_local(function, builtin_name) == NULL
+                && ruda_checker_find_top_level(
+                    function->checker,
+                    builtin_name
+                ) == NULL) {
+                ruda_checker_fail(
+                    function->checker,
+                    RUDA_CHECK_INCOMPLETE_LANGUAGE
+                );
+                goto cleanup;
+            }
+        }
+    }
     if (name_token != NULL && !name_token->synthetic
         && ruda_check_text_equal(
             function->checker,
@@ -5194,6 +5357,12 @@ bool ruda_compile_expression(
     }
     if (node->kind == RUDA_SYNTAX_LITERAL_EXPRESSION) {
         return ruda_compile_literal(function, node, expected, result);
+    }
+    if (node->kind == RUDA_SYNTAX_ARRAY_EXPRESSION) {
+        return ruda_compile_array_literal(function, node, expected, result);
+    }
+    if (node->kind == RUDA_SYNTAX_INDEX_EXPRESSION) {
+        return ruda_compile_array_index(function, node, result);
     }
     if (node->kind == RUDA_SYNTAX_UNARY_EXPRESSION) {
         return ruda_compile_unary(function, node, result);
@@ -9733,6 +9902,16 @@ static bool ruda_compile_assignment(
             compound
         );
     }
+    if (left->kind == RUDA_SYNTAX_INDEX_EXPRESSION) {
+        return ruda_compile_array_assignment(
+            function,
+            node,
+            left,
+            right,
+            operator_token,
+            compound
+        );
+    }
     if (left->kind != RUDA_SYNTAX_NAME_EXPRESSION) {
         ruda_checker_fail(
             function->checker,
@@ -11012,7 +11191,7 @@ static bool ruda_check_name_is_primitive_type(
     static const char *const names[] = {
         "bool", "i8", "i16", "i32", "i64", "int", "u8", "byte",
         "u16", "u32", "u64", "uint", "f32", "f64", "float", "rune",
-        "string", "void", "never"
+        "string", "void", "never", "Array"
     };
     size_t index = 0;
     for (index = 0; index < sizeof(names) / sizeof(names[0]); index += 1) {
@@ -11037,9 +11216,10 @@ static bool ruda_check_public_type_reference(
     RudaCheckRecordDeclaration *record = NULL;
     RudaCheckEnumDeclaration *enum_declaration = NULL;
     RudaCheckTypeAliasDeclaration *alias = NULL;
+    const RudaAstNode *type_arguments = NULL;
+    const RudaAstNode *argument_type = NULL;
     bool is_public = false;
-    if (checker == NULL || node == NULL || node->kind != RUDA_SYNTAX_TYPE
-        || node->child_count != 1) {
+    if (checker == NULL || node == NULL || node->kind != RUDA_SYNTAX_TYPE) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
     }
@@ -11051,6 +11231,37 @@ static bool ruda_check_public_type_reference(
     name.snapshot = checker->ast->snapshot;
     name.start = name_token->start;
     name.end = name_token->end;
+    if (ruda_check_text_equal(
+            checker,
+            name.start,
+            name.end,
+            "Array"
+        )) {
+        type_arguments = ruda_check_child_node(
+            node,
+            RUDA_SYNTAX_TYPE_ARGUMENTS,
+            0
+        );
+        argument_type = ruda_check_child_node(
+            type_arguments,
+            RUDA_SYNTAX_TYPE,
+            0
+        );
+        if (type_arguments == NULL || argument_type == NULL
+            || ruda_check_child_node(
+                type_arguments,
+                RUDA_SYNTAX_TYPE,
+                1
+            ) != NULL) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            return false;
+        }
+        return ruda_check_public_type_reference(checker, argument_type);
+    }
+    if (node->child_count != 1) {
+        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        return false;
+    }
     if (ruda_check_name_is_primitive_type(checker, name)) {
         return true;
     }
@@ -12927,6 +13138,7 @@ static bool ruda_check_function_body(
     RudaCheckedFunction checked;
     RudaMirVerifyStatus verify_status;
     size_t function_index = 0;
+    size_t layout_index = 0;
     bool locals_initialized = false;
     bool loops_initialized = false;
     bool accepted = false;
@@ -12977,6 +13189,29 @@ static bool ruda_check_function_body(
         goto cleanup;
     }
     function.mir_initialized = true;
+    for (layout_index = 0;
+        layout_index < declaration->parameter_types.length;
+        layout_index += 1) {
+        const RudaTypeId *parameter_type = ruda_vector_at_const(
+            &declaration->parameter_types,
+            layout_index
+        );
+        if (parameter_type == NULL || !ruda_function_ensure_array_layout(
+                &function,
+                *parameter_type
+            )) {
+            if (parameter_type == NULL) {
+                ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            }
+            goto cleanup;
+        }
+    }
+    if (!ruda_function_ensure_array_layout(
+            &function,
+            function.result_type
+        )) {
+        goto cleanup;
+    }
     if (!ruda_function_add_block(&function, &function.block)) {
         goto cleanup;
     }
