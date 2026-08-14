@@ -45,6 +45,44 @@ Every semantic change must include, in the same change:
 
 Implementation convenience is not a reason to change source semantics. Temporary shortcuts must be isolated behind an internal interface, documented in the roadmap, and covered by a removal gate.
 
+## Architecture and context discipline
+
+Checkpoint 0 in `checkpoints.md` is a prerequisite for every numbered preview
+checkpoint. Feature work does not resume while that gate is red.
+
+- Every handwritten production or test C translation unit has one named owner
+  and one reviewable responsibility. Coordinators orchestrate owners; they do
+  not accumulate their implementations.
+- Handwritten `.c` files target 500–1,200 physical lines and have a hard
+  ceiling of 1,500 physical lines. Owner-private `.h` files target 50–250
+  lines and have a hard ceiling of 400; owner API headers have a tighter hard
+  ceiling of 160. Generated files are exempt.
+  A temporary exception must be registered in
+  `docs/implementation/architecture-exceptions.tsv` with an owner, a tighter
+  explicit ceiling, a reason, and a removal checkpoint. New feature logic may
+  not be added to an excepted file.
+- Splits must create independently compiled translation units behind narrow
+  owner-private headers. Handwritten `.inc` shards, `#include` of `.c` files,
+  umbrella private headers that expose an owner's full mutable state, and
+  rename-only or helper-only splits that leave a semantic god file are
+  forbidden.
+- Stable coordinators have tighter path-specific ceilings enforced by the
+  architecture gate. A coordinator's spare line budget is not a place to put
+  the next feature implementation.
+- Tests mirror production ownership. Do not append a new semantic family to a
+  broad aggregator when an adjacent focused test owner can contain it.
+- Dependencies follow `docs/implementation/compiler-architecture.md`.
+  Lowering or backends must not repair or duplicate source-language semantics.
+- Before changing a subsystem, load its architecture contract, the focused
+  owner files, and focused tests. Do not require a whole monolith as the
+  minimum context packet.
+- `./tools/check-architecture` is a required local and CI gate after every
+  feature and every checkpoint. A checkpoint cannot be evidenced, committed,
+  pushed, or marked complete while it fails.
+
+Line count is only the mechanical backstop. Passing the count while preserving
+a mixed-responsibility god object is still an architecture failure.
+
 ## Definition of done
 
 A milestone is `verified` only when its documented commands pass on all supported Tier 1 platforms and the evidence is linked from `ROADMAP.md`. “Implemented” without conformance, negative, sanitizer, and differential coverage is not done.

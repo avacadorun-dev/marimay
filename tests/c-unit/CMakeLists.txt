@@ -3,8 +3,26 @@ add_executable(ruda_c_unit
   test_ast.c
   test_base.c
   test_bytecode.c
+  test_bytecode_support.c
+  test_bytecode_model.c
+  test_bytecode_program.c
   test_bytecode_vm.c
+  test_bytecode_vm_support.c
+  test_bytecode_vm_scalar.c
+  test_bytecode_vm_arithmetic.c
+  test_bytecode_vm_arrays.c
   test_checker.c
+  test_checker_support.c
+  test_checker_core.c
+  test_checker_records.c
+  test_checker_enums.c
+  test_checker_enum_match.c
+  test_checker_match_scalar.c
+  test_checker_match_control.c
+  test_checker_calls_constants.c
+  test_checker_operators.c
+  test_checker_control.c
+  test_checker_failures.c
   test_checker_arrays.c
   test_checker_facts.c
   test_checker_resolution.c
@@ -17,18 +35,42 @@ add_executable(ruda_c_unit
   test_document.c
   test_file.c
   test_formatter.c
+  test_formatter_support.c
+  test_formatter_core.c
+  test_formatter_trivia.c
+  test_formatter_failures.c
   test_hash_map.c
   test_lexer.c
   test_manifest.c
   test_managed.c
+  test_mir_calls.c
   test_mir.c
   test_mir_arrays.c
+  test_mir_arrays_rhs.c
   test_mir_bytecode.c
+  test_mir_bytecode_model.c
+  test_mir_bytecode_programs.c
+  test_mir_bytecode_support.c
+  test_mir_enums.c
+  test_mir_records.c
+  test_mir_scalar.c
+  test_mir_support.c
   test_native_c_emitter.c
+  test_native_c_emitter_arrays.c
+  test_native_c_emitter_baseline.c
+  test_native_c_emitter_matrix.c
+  test_native_c_emitter_scalar.c
+  test_native_c_emitter_strings.c
+  test_native_c_emitter_support.c
   test_native_matrix.c
   test_main.c
   test_path_stream.c
   test_parser.c
+  test_parser_support.c
+  test_parser_core.c
+  test_parser_declarations.c
+  test_parser_expressions.c
+  test_parser_incremental.c
   test_process.c
   test_source_manager.c
   test_types.c

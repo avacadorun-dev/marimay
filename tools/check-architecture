@@ -1,0 +1,267 @@
+#!/usr/bin/env python3
+"""Enforce bounded Stage 0 C modules and coarse owner dependencies."""
+
+from __future__ import annotations
+
+import re
+from dataclasses import dataclass
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parent.parent
+HARD_LIMIT = 1_500
+PRIVATE_HEADER_LIMIT = 400
+OWNER_API_HEADER_LIMIT = 160
+COORDINATOR_LIMITS = {
+    Path("bootstrap/src/bytecode/bytecode.c"): 900,
+    Path("bootstrap/src/bytecode/vm.c"): 900,
+    Path("bootstrap/src/check/checker.c"): 650,
+    Path("bootstrap/src/check/checker_internal.h"): 250,
+    Path("bootstrap/src/cli/cli.c"): 900,
+    Path("bootstrap/src/format/formatter.c"): 1_200,
+    Path("bootstrap/src/mir/mir.c"): 1_200,
+    Path("bootstrap/src/parse/parser.c"): 1_200,
+}
+EXCEPTIONS = ROOT / "docs/implementation/architecture-exceptions.tsv"
+INCLUDE = re.compile(r'^\s*#\s*include\s*["<]([^">]+)[">]', re.MULTILINE)
+
+
+@dataclass(frozen=True)
+class ExceptionEntry:
+    owner: str
+    max_lines: int
+    removal_checkpoint: str
+    reason: str
+
+
+def relative(path: Path) -> Path:
+    return path.relative_to(ROOT)
+
+
+def handwritten_files() -> list[Path]:
+    files: set[Path] = {ROOT / "bootstrap/main.c"}
+    for directory in (
+        ROOT / "bootstrap/src",
+        ROOT / "runtime/common",
+        ROOT / "runtime/platform",
+        ROOT / "tests/c-unit",
+        ROOT / "tests/fuzz",
+    ):
+        for suffix in ("*.c", "*.h"):
+            files.update(directory.rglob(suffix))
+    return sorted(
+        path for path in files if "generated" not in path.relative_to(ROOT).parts
+    )
+
+
+def load_exceptions() -> tuple[dict[Path, ExceptionEntry], list[str]]:
+    entries: dict[Path, ExceptionEntry] = {}
+    violations: list[str] = []
+    if not EXCEPTIONS.is_file():
+        return entries, [
+            "docs/implementation/architecture-exceptions.tsv: missing registry"
+        ]
+    for line_number, raw_line in enumerate(
+        EXCEPTIONS.read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        columns = raw_line.split("\t")
+        if len(columns) != 5 or any(not column.strip() for column in columns):
+            violations.append(
+                f"{relative(EXCEPTIONS)}:{line_number}: expected five non-empty "
+                "tab-separated columns"
+            )
+            continue
+        path_text, owner, max_text, removal_checkpoint, reason = (
+            column.strip() for column in columns
+        )
+        path = Path(path_text)
+        if path.is_absolute() or ".." in path.parts:
+            violations.append(
+                f"{relative(EXCEPTIONS)}:{line_number}: path must be repository-relative"
+            )
+            continue
+        if path in entries:
+            violations.append(
+                f"{relative(EXCEPTIONS)}:{line_number}: duplicate path {path}"
+            )
+            continue
+        try:
+            max_lines = int(max_text)
+        except ValueError:
+            violations.append(
+                f"{relative(EXCEPTIONS)}:{line_number}: max_lines is not an integer"
+            )
+            continue
+        default_ceiling = (
+            PRIVATE_HEADER_LIMIT if path.suffix == ".h" else HARD_LIMIT
+        )
+        if path.name.endswith("_api.h"):
+            default_ceiling = min(default_ceiling, OWNER_API_HEADER_LIMIT)
+        default_ceiling = min(
+            default_ceiling,
+            COORDINATOR_LIMITS.get(path, default_ceiling),
+        )
+        if max_lines <= default_ceiling:
+            violations.append(
+                f"{relative(EXCEPTIONS)}:{line_number}: an exception ceiling must be "
+                f"greater than the path ceiling {default_ceiling}"
+            )
+            continue
+        if not (ROOT / path).is_file():
+            violations.append(
+                f"{relative(EXCEPTIONS)}:{line_number}: missing exception target {path}"
+            )
+            continue
+        entries[path] = ExceptionEntry(
+            owner=owner,
+            max_lines=max_lines,
+            removal_checkpoint=removal_checkpoint,
+            reason=reason,
+        )
+    return entries, violations
+
+
+def line_count(path: Path) -> int:
+    with path.open("rb") as source:
+        return sum(1 for _ in source)
+
+
+def line_limit_violations(exceptions: dict[Path, ExceptionEntry]) -> list[str]:
+    violations: list[str] = []
+    discovered = {relative(path) for path in handwritten_files()}
+    for path in sorted(discovered):
+        count = line_count(ROOT / path)
+        default_ceiling = (
+            PRIVATE_HEADER_LIMIT if path.suffix == ".h" else HARD_LIMIT
+        )
+        if path.name.endswith("_api.h"):
+            default_ceiling = min(default_ceiling, OWNER_API_HEADER_LIMIT)
+        default_ceiling = min(
+            default_ceiling,
+            COORDINATOR_LIMITS.get(path, default_ceiling),
+        )
+        ceiling = exceptions[path].max_lines if path in exceptions else default_ceiling
+        if count > ceiling:
+            suffix = (
+                f" (temporary owner {exceptions[path].owner}, removal "
+                f"{exceptions[path].removal_checkpoint})"
+                if path in exceptions
+                else ""
+            )
+            violations.append(
+                f"{path}: {count} physical lines exceeds ceiling {ceiling}{suffix}"
+            )
+    for path in sorted(exceptions.keys() - discovered):
+        violations.append(f"{path}: exception target is outside checked handwritten C")
+    return violations
+
+
+def include_violations() -> list[str]:
+    violations: list[str] = []
+    forbidden_by_owner = {
+        "check": ("ruda/bytecode/", "ruda/native/", "ruda/runtime/"),
+        "mir": ("ruda/ast/", "ruda/bytecode/", "ruda/check/", "ruda/native/", "ruda/parse/"),
+        "bytecode": ("ruda/ast/", "ruda/check/", "ruda/native/", "ruda/parse/"),
+        "native": ("ruda/ast/", "ruda/bytecode/", "ruda/check/", "ruda/parse/"),
+    }
+    generated_includes = {
+        "../generated/opcode_data.inc",
+        "../generated/syntax_data.inc",
+        "../generated/token_data.inc",
+    }
+    for path in handwritten_files():
+        path_relative = relative(path)
+        source = path.read_text(encoding="utf-8")
+        owner = (
+            path_relative.parts[2]
+            if len(path_relative.parts) >= 3
+            and path_relative.parts[:2] == ("bootstrap", "src")
+            else None
+        )
+        for match in INCLUDE.finditer(source):
+            include = match.group(1)
+            line = source.count("\n", 0, match.start()) + 1
+            if include.endswith(".c"):
+                violations.append(
+                    f"{path_relative}:{line}: including a C translation unit is forbidden"
+                )
+            if include.endswith(".inc") and include not in generated_includes:
+                violations.append(
+                    f"{path_relative}:{line}: handwritten .inc shards are forbidden"
+                )
+            if owner is not None:
+                for prefix in forbidden_by_owner.get(owner, ()):
+                    if include.startswith(prefix):
+                        violations.append(
+                            f"{path_relative}:{line}: owner {owner} must not depend on {include}"
+                        )
+    for inc in sorted((ROOT / "bootstrap").rglob("*.inc")):
+        if "generated" not in relative(inc).parts:
+            violations.append(f"{relative(inc)}: handwritten .inc shard is forbidden")
+    for inc in sorted((ROOT / "runtime").rglob("*.inc")):
+        if "generated" not in relative(inc).parts:
+            violations.append(f"{relative(inc)}: handwritten .inc shard is forbidden")
+    return violations
+
+
+def cmake_registration_violations() -> list[str]:
+    cmake_text = "\n".join(
+        path.read_text(encoding="utf-8") for path in sorted(ROOT.rglob("CMakeLists.txt"))
+    )
+    candidates: list[Path] = []
+    candidates.extend((ROOT / "bootstrap/src").rglob("*.c"))
+    candidates.extend((ROOT / "runtime/common").rglob("*.c"))
+    candidates.extend((ROOT / "runtime/platform").rglob("*.c"))
+    candidates.extend((ROOT / "tests/c-unit").rglob("*.c"))
+    candidates.extend((ROOT / "tests/fuzz").rglob("*.c"))
+    violations: list[str] = []
+    for path in sorted(candidates):
+        path_relative = relative(path)
+        if path_relative.parts[:2] in {
+            ("bootstrap", "src"),
+            ("runtime", "common"),
+            ("runtime", "platform"),
+        }:
+            registered_spellings = {path_relative.as_posix()}
+        elif path_relative.parts[:2] == ("tests", "c-unit"):
+            registered_spellings = {path.name, f"../fuzz/{path.name}"}
+        else:
+            registered_spellings = {path.name, f"../fuzz/{path.name}"}
+        fuzz_template_registration = (
+            path_relative.parts[:2] == ("tests", "fuzz")
+            and path.name.endswith("_fuzz.c")
+            and "${ruda_fuzz_target}_fuzz.c" in cmake_text
+            and re.search(
+                rf"^\s*{re.escape(path.name.removesuffix('_fuzz.c'))}\s*$",
+                cmake_text,
+                re.MULTILINE,
+            )
+            is not None
+        )
+        if not fuzz_template_registration and not any(
+            spelling in cmake_text for spelling in registered_spellings
+        ):
+            violations.append(
+                f"{path_relative}: C translation unit is not registered in CMake"
+            )
+    return violations
+
+
+def main() -> int:
+    exceptions, violations = load_exceptions()
+    violations.extend(line_limit_violations(exceptions))
+    violations.extend(include_violations())
+    violations.extend(cmake_registration_violations())
+    if violations:
+        print("check-architecture: failed")
+        for violation in violations:
+            print(violation)
+        return 1
+    print("check-architecture: ok")
+    return 0
+
+
+raise SystemExit(main())

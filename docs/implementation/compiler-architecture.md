@@ -103,24 +103,48 @@ shortcut for sharing checker internals with a backend.
 The current public headers remain stable during behavior-preserving extraction.
 New files are linked into the same `ruda_bootstrap` library.
 
+### Enforced module-size contract
+
+Every handwritten production and test translation unit must be understandable
+from a bounded context packet: this document, its narrow public/private
+contract, the owner implementation, and its focused tests. Requiring an agent
+or reviewer to load an unrelated multi-thousand-line file is an architecture
+defect.
+
+- Target 500–1,200 physical lines per handwritten `.c`; hard ceiling 1,500.
+- Target 50–250 physical lines per owner-private `.h`; hard ceiling 400.
+  Owner API headers have a tighter hard ceiling of 160. Generated artifacts
+  are the only standing exemption.
+- Temporary exceptions live only in `architecture-exceptions.tsv`. They name
+  the exact path, owner, explicit ceiling, reason, and removal checkpoint. An
+  exception is migration debt, not permission to add feature logic.
+- A valid split moves semantic ownership into independently compiled
+  translation units. Handwritten `.inc` shards, inclusion of `.c` files,
+  include facades, and giant internal headers do not count.
+- Line count cannot excuse mixed ownership: a coordinator below the ceiling
+  that still implements declarations, expressions, patterns, CFG, and
+  publication is a god object and must be divided.
+- Stable coordinators have tighter path-specific ceilings in the executable
+  gate: checker 650, parser/MIR model/formatter 1,200, and bytecode model,
+  VM, and CLI 900 lines. The checker shared internal contract is capped at 250
+  lines. These are ceilings, not growth targets.
+
+`tools/check-architecture` enforces the mechanical portion on every push and
+pull request. Review and checkpoint evidence enforce cohesive ownership.
+
 ### MIR owner
 
-The current `bootstrap/src/mir/mir.c` contains four cohesive units:
-
-1. execution storage and lifecycle;
-2. function representation lifecycle and builders;
-3. instruction/layout plus CFG/dataflow verification;
-4. semantic oracle execution.
-
-After the active managed-array MIR slice is verified and committed, extract in
-this order:
+Checkpoint 0 established these independently compiled owners:
 
 ```text
 bootstrap/src/mir/
   mir.c                 representation lifecycle and public builders
-  mir_internal.h        owner-private const accessors only
+  mir_internal.h        narrow sibling contracts
   verify.c              local, CFG, and initialization verification
-  execution.c           oracle execution graph and interpreter
+  verify_support.c      type/dataflow verifier primitives
+  verify_managed.c      string/record/enum/array layout verification
+  execution.c           oracle graph and interpreter
+  execution_heap.c      execution state and managed allocations
 ```
 
 `ruda_mir_verify` and `ruda_mir_interpret` retain their public signatures. No
@@ -128,29 +152,40 @@ representation or runtime semantics change in these extraction commits.
 
 ### Checker owner
 
-The current `bootstrap/src/check/checker.c` combines infrastructure, expression
-lowering, pattern analysis, statements/CFG, declaration phases, package
-coordination, and result ownership. Extraction proceeds from the least coupled
-boundaries:
+Checkpoint 0 leaves `checker.c` as the package coordinator and gives every
+semantic family an independently compiled owner:
 
 ```text
 bootstrap/src/check/
   checker.c             package coordinator and stable public entry points
-  checker_internal.h    owner-private contexts and phase contracts
-  result.c              result/default/dispose/accessor ownership (extracted)
+  checker_internal.h    common utility/forward contract only
+  checker_*_context.h   narrow package/function/match state contracts
+  checker_core.c        shared checker operations and type helpers
+  checker_lookup.c      deterministic name/type lookup
+  checker_declaration_*.c
+                        lifecycle, constants, functions, nominal families,
+                        and publication phases
+  checker_expression.c  expression dispatcher only
+  checker_expr_*.c      scalar, call, nominal, and record expression owners
+  checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
+                        and lowering
+  checker_cfg.c         block/edge/value-state ownership
+  checker_statement.c   lexical statement/control-flow lowering
+  checker_publication.c checked-package publication
+  checker_interpret.c   checked-result MIR oracle adapter
+  checker_*_api.h       one narrow contract per sibling owner
+  result.c              result/default/dispose/accessor ownership
   facts.c               canonical successful-package definition facts
   resolution.c          package-local D003 free/dot-call resolver
   service.c             snapshots, frontend/check lifetimes, diagnostics owner
-  array.c               D045 type/literal/access/assignment lowering (extracted)
-  declarations.c        collection, signature, and publication phases
-  expression.c          expression typing/lowering after its context is stable
-  pattern.c             usefulness/exhaustiveness and pattern lowering
-  statement.c           lexical scopes, control flow, and cleanup lowering
+  array.c               D045 type/literal/access/assignment lowering
 ```
 
 `ruda_check_package` remains the single coordinator. Pattern and statement
-extraction waits until their shared binding/CFG state has an explicit private
-contract; copying that state into feature-specific modules is forbidden.
+owners share only explicit context contracts; copying that state into
+feature-specific modules is forbidden. Recursive expression lowering returns
+through the dedicated dispatcher contract instead of making a record/scalar
+owner the implicit hub.
 
 `ruda_compiler_service_check` is the reusable owner above the frontend and
 checker. It retains immutable source snapshots, rejects stale overlay versions,
@@ -174,29 +209,58 @@ unavailable until those owners exist.
 
 ### Test owners
 
-Test decomposition precedes production extraction where it can preserve exact
-test order and give each extracted owner a focused suite:
+Test aggregators now contain only the original ordered suite calls. Focused
+translation units mirror production owners:
 
 ```text
 tests/c-unit/
-  test_mir.c
-  test_mir_arrays.c
-  test_mir_managed.c       future record/enum managed-oracle extraction
-  test_mir_support.h
-  test_checker.c
-  test_checker_arrays.c
-  test_checker_facts.c
-  test_checker_resolution.c
-  test_compiler_service.c
-  test_compiler_service_incremental.c
-  test_checker_match.c
-  test_checker_support.h
+  test_checker.c                  ordered aggregator
+  test_checker_{core,records,enums,enum_match,match_scalar,
+                match_control,calls_constants,operators,control,failures}.c
+  test_checker_support.{h,c}
+  test_mir.c                      ordered aggregator
+  test_mir_{scalar,calls,records,enums,arrays,arrays_rhs}.c
+  test_mir_support.{h,c}
+  test_bytecode_{model,program,support}.c
+  test_bytecode_vm_{scalar,arithmetic,arrays,support}.c
+  test_mir_bytecode_{model,programs,support}.c
+  test_native_c_emitter_{baseline,arrays,scalar,matrix,strings,support}.c
+  test_parser_{core,declarations,expressions,incremental,support}.c
+  test_formatter_{core,trivia,failures,support}.c
 ```
 
 The existing `ruda_test_mir` and `ruda_test_checker` aggregators retain their
 registrations. A new semantic owner may add one adjacent registered entry point
 when that keeps new coverage out of an existing hotspot; splitting existing
 tests must not delete, rename, reorder, or weaken assertions.
+
+### Remaining Stage 0 owners
+
+Checkpoint 0 applies the same rule to every existing hotspot, not only checker
+and MIR:
+
+```text
+bootstrap/src/parse/       parser coordinator/tree builder, expression/pattern/
+                           type grammar, declaration/statement grammar
+bootstrap/src/format/      formatter/render coordinator, token collection and
+                           import ordering
+bootstrap/src/bytecode/    model/builders, codec, verifier orchestration,
+                           instruction verifier, MIR lowering, VM coordinator,
+                           VM preflight, and VM value operations
+bootstrap/src/native/      public/descriptor coordinator, validation, and
+                           instruction/function emission
+bootstrap/src/cli/         dispatch/options/help, format actions, and target
+                           discovery/traversal
+bootstrap/src/lex/         public result lifecycle and scanner/tokenization
+bootstrap/src/manifest/    public result lifecycle, parser, and formatter
+runtime/common/            managed heap core and focused object families
+tests/c-unit/              focused suites mirroring those production owners
+```
+
+The exact filenames may follow the stable concepts already present in the
+code, but responsibility boundaries and dependency direction are fixed. A
+single broad `util.c` or `support.c` that merely relocates unrelated code is
+not an owner.
 
 ## Extraction checkpoint contract
 
@@ -252,20 +316,56 @@ deferred until session-local `PackageId`/`ItemId`/`FunctionId`, content
 fingerprints, dependency edges, and invalidation fixtures exist. No hidden
 process-global mutable compiler state is introduced in the interim.
 
-## Current hotspot inventory
+## Checkpoint 0 hotspot inventory
 
-As measured on 2026-08-13 before the first extraction:
+As measured on 2026-08-14 immediately before the full extraction:
 
-| File | Lines | Current responsibilities |
+| File | Lines | Mixed responsibilities |
 |---|---:|---|
-| `bootstrap/src/check/checker.c` | 14,559 | checker contexts, declarations, expressions, patterns, statements/CFG, MIR coordination, result ownership |
-| `tests/c-unit/test_checker.c` | 8,262 | all checker domains and failure injection |
-| `bootstrap/src/mir/mir.c` | 4,536 | storage/builders, verifier, managed oracle graph, interpreter |
-| `tests/c-unit/test_mir.c` | 3,387 | scalar, verifier, call, record, enum, and oracle tests |
+| `bootstrap/src/check/checker.c` | 15,112 | declarations, expressions, patterns, statements/CFG, package coordination |
+| `tests/c-unit/test_checker.c` | 8,271 | all checker domains and failure injection |
+| `bootstrap/src/mir/mir.c` | 5,373 | model/builders, verifier, managed oracle, interpreter |
+| `bootstrap/src/bytecode/bytecode.c` | 3,363 | model, codec, verifier, disassembly |
+| `tests/c-unit/test_mir.c` | 3,396 | scalar, verifier, calls, records, enums, oracle |
+| `tests/c-unit/test_bytecode_vm.c` | 3,152 | every VM value family and failure mode |
+| `bootstrap/src/parse/parser.c` | 2,992 | event engine, all grammar, tree builder, incremental parsing |
+| `tests/c-unit/test_native_c_emitter.c` | 2,737 | all emitter and differential families |
+| `tests/c-unit/test_parser.c` | 2,304 | all parser grammar, recovery, incremental, limits |
+| `bootstrap/src/cli/cli.c` | 2,248 | options/help, format actions, target discovery |
+| `tests/c-unit/test_mir_bytecode.c` | 2,003 | all lowering/program differential families |
+| `tests/c-unit/test_bytecode.c` | 1,971 | model, codec, verifier, program, allocation tests |
+| `bootstrap/src/bytecode/vm.c` | 1,865 | preflight, frames, values, strings, arrays, dispatch |
+| `bootstrap/src/format/formatter.c` | 1,596 | collection/import ordering and document emission |
+| `tests/c-unit/test_formatter.c` | 1,545 | fixtures, properties, limits, failure injection |
 
-These counts justify review, not a hard maximum. The completion criterion is
-that each extracted module has one owner, a narrow private API, and independent
-verification—not that every file falls below an arbitrary number.
+These counts triggered checkpoint 0. The 1,500-line ceiling is a hard automated
+backstop, and cohesive ownership with a narrow private API is the human review
+criterion. Both must pass.
+
+### Checkpoint 0 result
+
+The completed local tree has 94 production/platform C translation units and 82
+unit/fuzz C translation units. The largest handwritten production or test file
+is 1,175 lines; the largest owner-private header is 221 lines; the largest
+checker owner API is 139 lines. The exception registry is empty. No handwritten
+`.inc` shard or `.c` inclusion is used.
+
+| Owner family | Largest before | Largest after | Resulting boundary |
+|---|---:|---:|---|
+| checker | 15,112 | 1,137 | coordinator, declarations, expression dispatcher/families, match families, CFG/statements, publication |
+| checker tests | 8,271 | 1,175 | exact-order aggregator plus focused semantic suites |
+| MIR | 5,373 | 1,108 | model/builders, verifier families, oracle, execution heap |
+| MIR tests | 3,396 | 1,089 | scalar/calls/nominals/arrays and shared fixtures |
+| bytecode + VM | 3,363 | 1,017 | model, codec, verifier families, program/lowering, VM preflight/value/dispatch |
+| bytecode + VM tests | 3,152 | 1,072 | model/program/scalar/arithmetic/array suites |
+| parser | 2,992 | 1,150 | event/tree coordinator, expression/pattern/type grammar, declaration/statement grammar |
+| parser tests | 2,304 | 918 | core, declarations, expressions, incremental/limits |
+| native emitter | 1,343 | 525 | coordinator/descriptors, validation, instruction/function emission |
+| native emitter tests | 2,737 | 867 | baseline, arrays, scalar/f64, matrix, strings/panic |
+| CLI | 2,248 | 826 | dispatch/options, format actions, target discovery |
+| formatter | 1,596 | 1,115 | rendering coordinator and collector/import ordering |
+| lexer | 1,231 | 1,161 | public lifecycle and scanner/tokenization |
+| manifest | 1,284 | 698 | public lifecycle, parser, formatter |
 
 ## Extraction progress
 
@@ -310,3 +410,6 @@ and its
 [request-local incremental/cancellation checkpoint](evidence/i2-compiler-service-incremental-iteration-37-2026-08-14.md),
 followed by
 [successful-package definition facts](evidence/i2-checker-facts-iteration-38-2026-08-14.md).
+The repository-wide bounded-context enforcement and full production/test
+decomposition are recorded in
+[A0 checkpoint 0](evidence/a0-bounded-architecture-checkpoint-0-2026-08-14.md).

@@ -86,25 +86,69 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/base/vector.c
   bootstrap/src/base/writer.c
   bootstrap/src/bytecode/bytecode.c
+  bootstrap/src/bytecode/bytecode_codec.c
+  bootstrap/src/bytecode/bytecode_verify.c
+  bootstrap/src/bytecode/bytecode_verify_instructions.c
   bootstrap/src/bytecode/program.c
   bootstrap/src/bytecode/mir_lower.c
   bootstrap/src/bytecode/vm.c
+  bootstrap/src/bytecode/vm_prepare.c
+  bootstrap/src/bytecode/vm_value.c
   bootstrap/src/check/array.c
   bootstrap/src/check/checker.c
-    bootstrap/src/check/facts.c
-    bootstrap/src/check/resolution.c
-    bootstrap/src/check/result.c
+  bootstrap/src/check/checker_cfg.c
+  bootstrap/src/check/checker_core.c
+  bootstrap/src/check/checker_declaration_constants.c
+  bootstrap/src/check/checker_declaration_enums.c
+  bootstrap/src/check/checker_declaration_functions.c
+  bootstrap/src/check/checker_declaration_lifecycle.c
+  bootstrap/src/check/checker_declaration_nominal.c
+  bootstrap/src/check/checker_declaration_publication_nominal.c
+  bootstrap/src/check/checker_declaration_records.c
+  bootstrap/src/check/checker_expr_calls.c
+  bootstrap/src/check/checker_expr_nominal.c
+  bootstrap/src/check/checker_expr_records.c
+  bootstrap/src/check/checker_expr_scalar.c
+  bootstrap/src/check/checker_expression.c
+  bootstrap/src/check/checker_interpret.c
+  bootstrap/src/check/checker_lookup.c
+  bootstrap/src/check/checker_match_analysis.c
+  bootstrap/src/check/checker_match_binding.c
+  bootstrap/src/check/checker_match_dispatch.c
+  bootstrap/src/check/checker_match_lower.c
+  bootstrap/src/check/checker_match_pattern.c
+  bootstrap/src/check/checker_match_witness.c
+  bootstrap/src/check/checker_publication.c
+  bootstrap/src/check/checker_statement.c
+  bootstrap/src/check/facts.c
+  bootstrap/src/check/resolution.c
+  bootstrap/src/check/result.c
   bootstrap/src/check/service.c
   bootstrap/src/cli/cli.c
+  bootstrap/src/cli/cli_format.c
+  bootstrap/src/cli/cli_format_targets.c
   bootstrap/src/diagnostic/diagnostic.c
   bootstrap/src/format/document.c
   bootstrap/src/format/formatter.c
+  bootstrap/src/format/formatter_collect.c
   bootstrap/src/lex/lexer.c
+  bootstrap/src/lex/lexer_scan.c
   bootstrap/src/lex/token.c
   bootstrap/src/manifest/manifest.c
+  bootstrap/src/manifest/manifest_format.c
+  bootstrap/src/manifest/manifest_parse.c
+  bootstrap/src/mir/execution.c
+  bootstrap/src/mir/execution_heap.c
   bootstrap/src/mir/mir.c
+  bootstrap/src/mir/verify.c
+  bootstrap/src/mir/verify_managed.c
+  bootstrap/src/mir/verify_support.c
   bootstrap/src/native/c_emitter.c
+  bootstrap/src/native/c_emitter_emit.c
+  bootstrap/src/native/c_emitter_validate.c
   bootstrap/src/parse/parser.c
+  bootstrap/src/parse/parser_declaration.c
+  bootstrap/src/parse/parser_expression.c
   bootstrap/src/session.c
   bootstrap/src/source/source_manager.c
   bootstrap/src/syntax/syntax.c

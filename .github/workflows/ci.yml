@@ -28,6 +28,8 @@ jobs:
         run: ./tools/check-syntax-coverage
       - name: Check production C memory policy
         run: ./tools/check-c-memory-policy
+      - name: Check architecture boundaries
+        run: ./tools/check-architecture
 
   c17:
     name: ${{ matrix.target.name }} / ${{ matrix.configuration }}

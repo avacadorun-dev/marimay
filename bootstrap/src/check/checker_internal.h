@@ -1,118 +1,20 @@
 #ifndef RUDA_CHECK_CHECKER_INTERNAL_H
 #define RUDA_CHECK_CHECKER_INTERNAL_H
 
-#include "ruda/check/checker.h"
+#include "checker_declaration_types.h"
 
-typedef struct RudaCheckName {
-    const RudaSourceSnapshot *snapshot;
-    size_t start;
-    size_t end;
-} RudaCheckName;
+#include <limits.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
-typedef struct RudaCheckFunctionDeclaration {
-    const RudaAstTree *ast;
-    const RudaAstNode *node;
-    const RudaAstNode *block;
-    RudaCheckName name;
-    RudaOwnedBytes owned_name;
-    RudaVector parameter_names;
-    RudaVector parameter_types;
-    RudaSymbolId symbol;
-    RudaSymbolId receiver_symbol;
-    RudaTypeId result_type;
-    RudaTypeId signature_type;
-    RudaTypeId receiver_type;
-    bool name_initialized;
-    bool parameter_names_initialized;
-    bool parameter_types_initialized;
-    bool signature_valid;
-    bool dot_eligible;
-    bool is_public;
-    bool is_test;
-    bool is_fuzz;
-} RudaCheckFunctionDeclaration;
+#include "ruda/base/f64.h"
+#include "ruda/base/string_literal.h"
+#include "ruda/generated/diagnostic_codes.h"
 
-typedef enum RudaCheckTopLevelKind {
-    RUDA_CHECK_TOP_LEVEL_FUNCTION,
-    RUDA_CHECK_TOP_LEVEL_CONSTANT,
-    RUDA_CHECK_TOP_LEVEL_TYPE_ALIAS,
-    RUDA_CHECK_TOP_LEVEL_RECORD,
-    RUDA_CHECK_TOP_LEVEL_ENUM
-} RudaCheckTopLevelKind;
-
-typedef struct RudaCheckTopLevelEntry {
-    RudaCheckTopLevelKind kind;
-    size_t index;
-    size_t function_count;
-} RudaCheckTopLevelEntry;
-
-typedef enum RudaCheckCallResolution {
-    RUDA_CHECK_CALL_FOUND,
-    RUDA_CHECK_CALL_UNKNOWN_NAME,
-    RUDA_CHECK_CALL_NOT_FUNCTION,
-    RUDA_CHECK_CALL_RECEIVER_REQUIRED,
-    RUDA_CHECK_CALL_RECEIVER_NOT_OWNED,
-    RUDA_CHECK_CALL_NOT_DOT_ELIGIBLE,
-    RUDA_CHECK_CALL_OTHER_NOMINAL,
-    RUDA_CHECK_CALL_INTERNAL_ERROR
-} RudaCheckCallResolution;
-
-typedef struct RudaChecker {
-    const RudaAstTree *ast;
-    const char *package_name;
-    const unsigned char *source;
-    size_t source_length;
-    RudaCheckOptions options;
-    RudaCheckResult *result;
-    RudaVector declarations;
-    RudaVector constants;
-    RudaVector type_aliases;
-    RudaVector records;
-    RudaVector enums;
-    RudaMap top_level_index;
-    RudaMap local_nominal_index;
-    RudaMap callable_index;
-    size_t constant_depth;
-    size_t type_alias_depth;
-    size_t remaining_constant_steps;
-    RudaCheckStatus failure;
-} RudaChecker;
-
-typedef struct RudaMatchYieldContext {
-    RudaMirBlockId *join;
-    RudaTypeId *match_type;
-    RudaMirRegister *target;
-    bool yielded;
-} RudaMatchYieldContext;
-
-typedef struct RudaFunctionChecker {
-    RudaChecker *checker;
-    RudaVector locals;
-    RudaVector loops;
-    RudaMirFunction mir;
-    RudaMirBlockId block;
-    RudaTypeId result_type;
-    size_t diagnostic_start;
-    size_t scope_depth;
-    RudaMatchYieldContext *match_yield;
-    bool mir_initialized;
-    bool terminated;
-    bool constant_evaluation;
-} RudaFunctionChecker;
-
-typedef struct RudaExpressionValue {
-    RudaTypeId type;
-    RudaMirRegister register_id;
-    bool valid;
-} RudaExpressionValue;
-
-typedef struct RudaCheckSymbolSeed {
-    RudaCheckName name;
-    RudaSymbolId symbol;
-    RudaTypeId type;
-    RudaCheckedSymbolKind kind;
-    bool is_public;
-} RudaCheckSymbolSeed;
+typedef struct RudaChecker RudaChecker;
+typedef struct RudaFunctionChecker RudaFunctionChecker;
+typedef struct RudaExpressionValue RudaExpressionValue;
 
 /* Shared expression-lowering boundary for owner-private sibling modules. */
 void ruda_checker_fail(RudaChecker *checker, RudaCheckStatus status);

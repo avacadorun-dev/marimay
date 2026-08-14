@@ -5,6 +5,52 @@
 
 #include "ruda/bytecode/bytecode.h"
 
+#define RUDA_BYTECODE_MAGIC_LENGTH 8U
+#define RUDA_BYTECODE_CHECKED_INDEX_TOP UINT64_MAX
+#define RUDA_BYTECODE_CHECKED_INDEX_NONE (UINT64_MAX - 1U)
+
+/* Shared bytecode model predicates; public APIs remain in bytecode.h. */
+bool ruda_bytecode_type_is_register(RudaBytecodeType type);
+bool ruda_bytecode_type_is_array(RudaBytecodeType type);
+RudaBytecodeType ruda_bytecode_array_element_type(RudaBytecodeType array_type);
+bool ruda_bytecode_type_is_result(RudaBytecodeType type);
+bool ruda_bytecode_type_is_local(RudaBytecodeType type);
+const char *ruda_bytecode_type_name(RudaBytecodeType type);
+bool ruda_bytecode_function_uses_arrays(const RudaBytecodeFunction *function);
+bool ruda_bytecode_function_uses_f64(const RudaBytecodeFunction *function);
+
+/* Instruction validation/dataflow helpers owned by verifier instruction TU. */
+const RudaBytecodeInstruction *ruda_bytecode_block_terminator(
+    const RudaBytecodeBlock *block
+);
+bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode);
+void ruda_bytecode_transfer_assignments(
+    const RudaBytecodeBlock *block,
+    unsigned char *assigned,
+    size_t register_count
+);
+void ruda_bytecode_transfer_checked_index_instruction(
+    const RudaBytecodeInstruction *instruction,
+    uint64_t *checked,
+    size_t register_count
+);
+void ruda_bytecode_transfer_checked_indices(
+    const RudaBytecodeBlock *block,
+    uint64_t *checked_indices,
+    size_t register_count
+);
+uint64_t ruda_bytecode_meet_checked_index(uint64_t left, uint64_t right);
+RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
+    const RudaBytecodeFunction *function,
+    const RudaBytecodeInstruction *instruction,
+    unsigned char *assigned
+);
+RudaBytecodeVerifyStatus ruda_bytecode_verify_terminator(
+    const RudaBytecodeFunction *function,
+    const RudaBytecodeInstruction *instruction,
+    const unsigned char *assigned
+);
+
 /* Internal entry point for composing a function verifier into a shared budget. */
 RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
     const RudaBytecodeFunction *function,

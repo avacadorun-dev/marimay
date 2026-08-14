@@ -1,4 +1,5 @@
 #include "checker_internal.h"
+#include "checker_function_context.h"
 
 #include <stdint.h>
 #include <string.h>

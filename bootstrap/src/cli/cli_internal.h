@@ -1,0 +1,80 @@
+#ifndef RUDA_CLI_INTERNAL_H
+#define RUDA_CLI_INTERNAL_H
+
+#include <stdbool.h>
+#include <stddef.h>
+
+#include "ruda/base/owned_bytes.h"
+#include "ruda/base/stream.h"
+#include "ruda/base/vector.h"
+#include "ruda/cli.h"
+#include "ruda/diagnostic.h"
+#include "ruda/manifest/manifest.h"
+#include "ruda/platform/file.h"
+
+typedef struct RudaCliOptions {
+    RudaDiagnosticStyle diagnostic_style;
+    const char *command;
+    size_t command_index;
+    const char *help_target;
+    size_t help_target_index;
+    const char *target;
+    size_t target_index;
+    bool top_level_help;
+    bool command_help;
+    bool version_json;
+    size_t version_json_index;
+    bool format_check;
+    size_t format_check_index;
+    bool format_diff;
+    size_t format_diff_index;
+    bool format_stdin;
+    size_t format_stdin_index;
+    bool quiet;
+    bool verbose;
+} RudaCliOptions;
+
+typedef enum RudaCliFormatAction {
+    RUDA_CLI_FORMAT_STDOUT,
+    RUDA_CLI_FORMAT_CHECK,
+    RUDA_CLI_FORMAT_DIFF,
+    RUDA_CLI_FORMAT_WRITE
+} RudaCliFormatAction;
+
+typedef enum RudaCliFormatTargetStatus {
+    RUDA_CLI_FORMAT_TARGET_OK,
+    RUDA_CLI_FORMAT_TARGET_INPUT_ERROR,
+    RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED,
+    RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED
+} RudaCliFormatTargetStatus;
+
+typedef struct RudaCliFormatPath { RudaOwnedBytes path; } RudaCliFormatPath;
+typedef struct RudaCliFormatDirectory {
+    RudaOwnedBytes path;
+    size_t depth;
+} RudaCliFormatDirectory;
+
+enum {
+    RUDA_CLI_FORMAT_MAX_PATH_BYTES = 32768,
+    RUDA_CLI_FORMAT_MAX_NAME_BYTES = 4096,
+    RUDA_CLI_FORMAT_MAX_DEPTH = 256,
+    RUDA_CLI_FORMAT_MAX_DIRECTORIES = 100000,
+    RUDA_CLI_FORMAT_MAX_ENTRIES = 1000000,
+    RUDA_CLI_FORMAT_MAX_FILES = 100000
+};
+
+int ruda_cli_plain_error(RudaWriter error_writer, RudaDiagnosticStyle style,
+    const char *code, const char *message, int exit_code);
+void ruda_display_argument(const char *argument, char *output, size_t capacity);
+bool ruda_cli_manifest_kind(const char *path, RudaManifestKind *kind);
+bool ruda_cli_source_path(const char *path);
+bool ruda_cli_format_file_path(const char *path);
+int ruda_cli_format_stdin(RudaSession *session, const RudaCliOptions *options,
+    RudaReadStream standard_input, RudaWriter standard_output,
+    RudaWriter standard_error);
+int ruda_cli_format_file(RudaSession *session, const RudaCliOptions *options,
+    RudaWriter standard_output, RudaWriter standard_error);
+int ruda_cli_format_target(RudaSession *session, const RudaCliOptions *options,
+    RudaWriter standard_output, RudaWriter standard_error);
+
+#endif
