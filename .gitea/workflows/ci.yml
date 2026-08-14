@@ -1,0 +1,90 @@
+name: Gitea C17 bootstrap
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  documentation:
+    name: Documentation and architecture invariants
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Check generated artifacts
+        run: ./tools/check-generated
+      - name: Check documentation links
+        run: ./tools/check-doc-links
+      - name: Check specification terms
+        run: ./tools/check-spec-terms
+      - name: Check example syntax
+        run: ./tools/check-example-syntax
+      - name: Check syntax coverage manifest
+        run: ./tools/check-syntax-coverage
+      - name: Check production C memory policy
+        run: ./tools/check-c-memory-policy
+      - name: Check architecture boundaries
+        run: ./tools/check-architecture
+
+  c17:
+    name: Linux x86_64 ${{ matrix.compiler }} / ${{ matrix.configuration }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        compiler: [gcc, clang]
+        configuration: [Debug, Release]
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure
+        run: >-
+          cmake -S . -B build
+          -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
+          -DCMAKE_C_COMPILER=${{ matrix.compiler }}
+          -DRUDA_WARNINGS_AS_ERRORS=ON
+      - name: Build
+        run: cmake --build build --parallel
+      - name: Test
+        run: ctest --test-dir build --output-on-failure
+
+  sanitizers:
+    name: Linux x86_64 ASan+UBSan+LSan
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure
+        run: cmake --preset asan-ubsan
+      - name: Build
+        run: cmake --build --preset asan-ubsan --parallel
+      - name: Test
+        run: ctest --preset asan-ubsan --output-on-failure
+
+  thread-sanitizer:
+    name: Linux x86_64 TSan
+    runs-on: ubuntu-latest
+    env:
+      CC: clang
+      TSAN_OPTIONS: halt_on_error=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Configure
+        run: cmake --preset tsan
+      - name: Build
+        run: cmake --build --preset tsan --parallel
+      - name: Test
+        run: ctest --preset tsan --output-on-failure
