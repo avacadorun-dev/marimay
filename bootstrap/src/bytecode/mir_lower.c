@@ -1,5 +1,7 @@
 #include "ruda/bytecode/mir_lower.h"
 
+#include "mir_lower_internal.h"
+
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
@@ -57,75 +59,6 @@ static bool ruda_mir_bytecode_span(
     output->start = (uint64_t)input.start;
     output->end = (uint64_t)input.end;
     return true;
-}
-
-static bool ruda_mir_bytecode_type(
-    const RudaMirFunction *function,
-    RudaTypeId input,
-    bool allow_void,
-    bool allow_never,
-    RudaBytecodeType *output
-) {
-    if (output == NULL) {
-        return false;
-    }
-    if (input == RUDA_TYPE_BOOL) {
-        *output = RUDA_BYTECODE_TYPE_BOOL;
-        return true;
-    }
-    if (input == RUDA_TYPE_I64) {
-        *output = RUDA_BYTECODE_TYPE_I64;
-        return true;
-    }
-    if (input == RUDA_TYPE_F64) {
-        *output = RUDA_BYTECODE_TYPE_F64;
-        return true;
-    }
-    if (input == RUDA_TYPE_STRING) {
-        *output = RUDA_BYTECODE_TYPE_STRING;
-        return true;
-    }
-    if (allow_void && input == RUDA_TYPE_VOID) {
-        *output = RUDA_BYTECODE_TYPE_VOID;
-        return true;
-    }
-    if (allow_never && input == RUDA_TYPE_NEVER) {
-        *output = RUDA_BYTECODE_TYPE_NEVER;
-        return true;
-    }
-    if (function != NULL && input >= RUDA_TYPE_FIRST_DYNAMIC) {
-        size_t index = 0;
-        for (index = 0; index < function->arrays.length; index += 1) {
-            const RudaMirArray *array = ruda_vector_at_const(
-                &function->arrays, index
-            );
-            if (array == NULL || array->type != input) {
-                continue;
-            }
-            if (array->element_type == RUDA_TYPE_F64) {
-                *output = RUDA_BYTECODE_TYPE_ARRAY_F64;
-                return true;
-            }
-            {
-                size_t nested_index = 0;
-                for (nested_index = 0;
-                    nested_index < function->arrays.length;
-                    nested_index += 1) {
-                    const RudaMirArray *nested = ruda_vector_at_const(
-                        &function->arrays, nested_index
-                    );
-                    if (nested != NULL
-                        && nested->type == array->element_type
-                        && nested->element_type == RUDA_TYPE_F64) {
-                        *output = RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64;
-                        return true;
-                    }
-                }
-            }
-            return false;
-        }
-    }
-    return false;
 }
 
 static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
@@ -287,14 +220,46 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->operands[2].unsigned_value = input->second;
             break;
         case RUDA_MIR_RECORD_NEW:
+            output->opcode = RUDA_OPCODE_RECORD_NEW;
+            output->operands[1].unsigned_value = input->record_construction;
+            break;
         case RUDA_MIR_RECORD_GET:
+            output->opcode = RUDA_OPCODE_RECORD_GET;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].signed_value = (int64_t)input->field;
+            break;
         case RUDA_MIR_RECORD_SET:
+            output->opcode = RUDA_OPCODE_RECORD_SET;
+            output->operands[0].unsigned_value = input->second;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].signed_value = (int64_t)input->field;
+            break;
         case RUDA_MIR_RECORD_IDENTITY_SAME:
+            output->opcode = RUDA_OPCODE_RECORD_IDENTITY_SAME;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case RUDA_MIR_ENUM_NEW:
+            output->opcode = RUDA_OPCODE_ENUM_NEW;
+            output->operands[1].unsigned_value = input->enum_construction;
+            break;
         case RUDA_MIR_ENUM_IS_VARIANT:
+            output->opcode = RUDA_OPCODE_ENUM_IS_VARIANT;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].signed_value = (int64_t)input->variant;
+            break;
         case RUDA_MIR_ENUM_REQUIRE_VARIANT:
+            output->opcode = RUDA_OPCODE_ENUM_REQUIRE_VARIANT;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].signed_value = (int64_t)input->variant;
+            break;
         case RUDA_MIR_ENUM_GET_PAYLOAD:
-            return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_INSTRUCTION;
+            output->opcode = RUDA_OPCODE_ENUM_GET_PAYLOAD;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].signed_value = (int64_t)(
+                ((uint64_t)input->variant << 32) | (uint64_t)input->field
+            );
+            break;
         case RUDA_MIR_ARRAY_NEW:
             output->opcode = RUDA_OPCODE_ARRAY_NEW;
             output->operands[1].unsigned_value = input->array_construction;
@@ -336,6 +301,15 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             }
             break;
         }
+        case RUDA_MIR_INTERFACE_NEW:
+            output->opcode = RUDA_OPCODE_INTERFACE_NEW;
+            output->operands[1].unsigned_value = input->interface_construction;
+            break;
+        case RUDA_MIR_CALL_INTERFACE:
+            output->opcode = RUDA_OPCODE_CALL_INTERFACE;
+            output->operands[0].unsigned_value = input->target;
+            output->operands[1].unsigned_value = input->call;
+            break;
     }
     return RUDA_MIR_BYTECODE_LOWER_OK;
 }
@@ -460,7 +434,9 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
             const RudaMirInstruction *instruction = ruda_vector_at_const(
                 &block->instructions, instruction_index
             );
-            if (instruction != NULL && instruction->kind == RUDA_MIR_ARRAY_SET
+            if (instruction != NULL
+                && (instruction->kind == RUDA_MIR_ARRAY_SET
+                    || instruction->kind == RUDA_MIR_RECORD_SET)
                 && !ruda_size_add(array_set_count, 1, &array_set_count)) {
                 return RUDA_MIR_BYTECODE_LOWER_LIMIT_REACHED;
             }
@@ -529,9 +505,26 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
         status = RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
         goto cleanup;
     }
+    lowered.result_layout = ruda_mir_bytecode_layout_for_type(
+        input,
+        input->result_type
+    );
     ruda_deallocate(&allocator, parameter_types, parameter_bytes);
     parameter_types = NULL;
     parameter_bytes = 0;
+    for (index = 0; index < input->parameter_count; index += 1) {
+        const RudaTypeId *input_type = ruda_vector_at_const(
+            &input->register_types, index
+        );
+        if (input_type == NULL || !ruda_bytecode_set_register_layout(
+                &lowered,
+                (uint32_t)index,
+                ruda_mir_bytecode_layout_for_type(input, *input_type)
+            )) {
+            status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            goto cleanup;
+        }
+    }
     for (index = 0; index < input->string_constants.length; index += 1) {
         const RudaMirStringConstant *constant = ruda_vector_at_const(
             &input->string_constants,
@@ -574,6 +567,18 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
             status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
             goto cleanup;
         }
+        if (!ruda_bytecode_set_register_layout(
+                &lowered,
+                register_id,
+                ruda_mir_bytecode_layout_for_type(input, *input_type)
+            )) {
+            status = RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+            goto cleanup;
+        }
+    }
+    status = ruda_mir_bytecode_lower_nominals(input, &lowered, allocator);
+    if (status != RUDA_MIR_BYTECODE_LOWER_OK) {
+        goto cleanup;
     }
     for (index = 0; index < input->array_constructions.length; index += 1) {
         const RudaMirArrayConstruction *construction = ruda_vector_at_const(
@@ -690,6 +695,9 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
                 break;
             }
             arguments[argument_index].register_id = argument->register_id;
+            arguments[argument_index].layout = ruda_mir_bytecode_layout_for_type(
+                input, argument->type
+            );
         }
         if (status == RUDA_MIR_BYTECODE_LOWER_OK
             && !ruda_bytecode_add_call(
@@ -709,6 +717,17 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
         if ((size_t)call_id != index) {
             status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
             goto cleanup;
+        }
+        {
+            RudaBytecodeCall *lowered_call = ruda_vector_at(&lowered.calls, call_id);
+            if (lowered_call == NULL) {
+                status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+                goto cleanup;
+            }
+            lowered_call->result_layout = ruda_mir_bytecode_layout_for_type(
+                input, call->result_type
+            );
+            lowered_call->interface_slot = call->interface_slot;
         }
     }
     for (index = 0; index < input->blocks.length; index += 1) {
@@ -750,12 +769,16 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
                 }
                 goto cleanup;
             }
-            if (instruction->kind == RUDA_MIR_ARRAY_SET) {
+            if (instruction->kind == RUDA_MIR_ARRAY_SET
+                || instruction->kind == RUDA_MIR_RECORD_SET) {
                 RudaBytecodeInstruction copy;
                 memset(&copy, 0, sizeof(copy));
                 copy.opcode = RUDA_OPCODE_COPY;
                 copy.operands[0].unsigned_value = instruction->target;
-                copy.operands[1].unsigned_value = instruction->third;
+                copy.operands[1].unsigned_value = instruction->kind
+                    == RUDA_MIR_ARRAY_SET
+                    ? instruction->third
+                    : instruction->second;
                 copy.span = lowered_instruction.span;
                 if (!ruda_bytecode_append_instruction(
                         &lowered, (uint32_t)index, &copy

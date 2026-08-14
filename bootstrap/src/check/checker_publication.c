@@ -43,6 +43,11 @@
         );
         ruda_checker_private_enum_declaration_dispose(enum_declaration);
     }
+    for (index = 0; index < checker->interfaces.length; index += 1) {
+        ruda_checker_private_interface_declaration_dispose(
+            ruda_vector_at(&checker->interfaces, index)
+        );
+    }
     ruda_map_dispose(&checker->top_level_index);
     ruda_map_dispose(&checker->local_nominal_index);
     ruda_map_dispose(&checker->callable_index);
@@ -50,6 +55,7 @@
     ruda_vector_dispose(&checker->type_aliases);
     ruda_vector_dispose(&checker->records);
     ruda_vector_dispose(&checker->enums);
+    ruda_vector_dispose(&checker->interfaces);
     ruda_vector_dispose(&checker->declarations);
 }
 
@@ -77,7 +83,7 @@
     );
 }
 
- bool ruda_checker_private_check_symbol_fact_total(
+bool ruda_checker_private_check_symbol_fact_total(
     const RudaChecker *checker,
     size_t *result
 ) {
@@ -87,7 +93,8 @@
         || !ruda_size_add(total, checker->constants.length, &total)
         || !ruda_size_add(total, checker->type_aliases.length, &total)
         || !ruda_size_add(total, checker->records.length, &total)
-        || !ruda_size_add(total, checker->enums.length, &total)) {
+        || !ruda_size_add(total, checker->enums.length, &total)
+        || !ruda_size_add(total, checker->interfaces.length, &total)) {
         return false;
     }
     *result = total;
@@ -247,6 +254,22 @@
                 declaration->symbol,
                 declaration->type,
                 RUDA_CHECKED_SYMBOL_ENUM,
+                declaration->is_public
+            )) {
+            goto cleanup;
+        }
+    }
+    for (index = 0; index < checker->interfaces.length; index += 1) {
+        const RudaCheckInterfaceDeclaration *declaration = ruda_vector_at_const(
+            &checker->interfaces, index
+        );
+        if (declaration == NULL || !declaration->methods_resolved) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        if (!ruda_checker_private_check_push_symbol_seed(
+                checker, &seeds, declaration->name, declaration->symbol,
+                declaration->type, RUDA_CHECKED_SYMBOL_INTERFACE,
                 declaration->is_public
             )) {
             goto cleanup;

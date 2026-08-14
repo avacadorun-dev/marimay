@@ -66,6 +66,11 @@
     RudaVector *bindings,
     RudaCheckEnumMatchAlternative *alternative
 );
+ bool ruda_checker_private_enum_match_payloads_are_refutable(
+    RudaFunctionChecker *function,
+    const RudaCheckEnumMatchAlternative *alternative,
+    bool *result
+);
  bool ruda_checker_private_enum_match_bindings_equal(
     const RudaFunctionChecker *function,
     const RudaVector *expected,

@@ -25,6 +25,7 @@ bool ruda_bytecode_execution_init(
         return false;
     }
     memset(execution, 0, sizeof(*execution));
+    execution->allocator = allocator;
     if (!ruda_vector_init(
             &execution->strings, allocator, sizeof(RudaOwnedBytes)
         ) || !ruda_map_init(
@@ -32,10 +33,13 @@ bool ruda_bytecode_execution_init(
             UINT64_C(0x7275646162746573), UINT64_C(0x7472696e67696478)
         ) || !ruda_managed_heap_init(
             &execution->managed_heap, allocator, options.managed_heap
-        )) {
+        ) || !ruda_bytecode_nominal_cache_init(execution, allocator)
+        || !ruda_vector_init(&execution->owned_interface_tables, allocator, sizeof(void *))) {
         ruda_managed_heap_dispose(&execution->managed_heap);
         ruda_map_dispose(&execution->string_index);
         ruda_vector_dispose(&execution->strings);
+        ruda_bytecode_nominal_cache_dispose(execution);
+        ruda_vector_dispose(&execution->owned_interface_tables);
         return false;
     }
     execution->allocator = allocator;
@@ -58,10 +62,12 @@ void ruda_bytecode_execution_dispose(RudaBytecodeExecution *execution) {
     ruda_map_dispose(&execution->string_index);
     ruda_vector_dispose(&execution->strings);
     ruda_managed_heap_dispose(&execution->managed_heap);
+    ruda_bytecode_nominal_cache_dispose(execution);
+    ruda_bytecode_run_interface_tables_dispose(execution);
     memset(execution, 0, sizeof(*execution));
 }
 
-static const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor(
+const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor(
     RudaBytecodeType type
 ) {
     if (type == RUDA_BYTECODE_TYPE_ARRAY_F64) {
@@ -138,7 +144,7 @@ const RudaBytecodePanicFrame *ruda_bytecode_panic_frame(
         : NULL;
 }
 
-static RudaBytecodeRunStatus ruda_bytecode_execution_intern(
+RudaBytecodeRunStatus ruda_bytecode_execution_intern(
     RudaBytecodeExecution *execution,
     const unsigned char *bytes,
     size_t length,
@@ -208,7 +214,7 @@ static RudaBytecodeRunStatus ruda_bytecode_run_checked_status(
     return RUDA_BYTECODE_RUN_OVERFLOW;
 }
 
-static RudaBytecodeRunStatus ruda_bytecode_run_managed_status(
+RudaBytecodeRunStatus ruda_bytecode_run_managed_status(
     RudaManagedStatus status
 ) {
     switch (status) {
@@ -677,6 +683,23 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
         case RUDA_OPCODE_CALL_DIRECT_VOID:
         case RUDA_OPCODE_CALL_DIRECT_NEVER:
         case RUDA_OPCODE_PANIC_STRING:
+            return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        case RUDA_OPCODE_RECORD_NEW:
+        case RUDA_OPCODE_RECORD_GET:
+        case RUDA_OPCODE_RECORD_SET:
+        case RUDA_OPCODE_RECORD_IDENTITY_SAME:
+        case RUDA_OPCODE_ENUM_NEW:
+        case RUDA_OPCODE_ENUM_IS_VARIANT:
+        case RUDA_OPCODE_ENUM_REQUIRE_VARIANT:
+        case RUDA_OPCODE_ENUM_GET_PAYLOAD:
+            return ruda_bytecode_run_nominal_instruction(
+                instruction, registers, execution, function, allocator
+            );
+        case RUDA_OPCODE_INTERFACE_NEW:
+            return ruda_bytecode_run_interface_new(
+                instruction, registers, execution, function
+            );
+        case RUDA_OPCODE_CALL_INTERFACE:
             return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
     }
     return RUDA_BYTECODE_RUN_INVALID_BYTECODE;

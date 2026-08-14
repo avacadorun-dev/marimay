@@ -18,6 +18,7 @@
     RudaCheckTypeAliasDeclaration *alias = NULL;
     RudaCheckRecordDeclaration *record = NULL;
     RudaCheckEnumDeclaration *enum_declaration = NULL;
+    RudaCheckInterfaceDeclaration *interface_declaration = NULL;
     const RudaAstNode *type_arguments = NULL;
     const RudaAstNode *argument_type = NULL;
     RudaTypeId element_type = RUDA_TYPE_INVALID;
@@ -155,6 +156,13 @@
         enum_declaration = ruda_checker_private_checker_find_enum(checker, declared_name);
         if (enum_declaration != NULL) {
             *result = enum_declaration->type;
+            return true;
+        }
+        interface_declaration = ruda_checker_private_checker_find_interface(
+            checker, declared_name
+        );
+        if (interface_declaration != NULL) {
+            *result = interface_declaration->type;
             return true;
         }
         alias = ruda_checker_private_checker_find_type_alias(checker, declared_name);

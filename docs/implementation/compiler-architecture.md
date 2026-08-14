@@ -113,8 +113,9 @@ defect.
 
 - Target 500–1,200 physical lines per handwritten `.c`; hard ceiling 1,500.
 - Target 50–250 physical lines per owner-private `.h`; hard ceiling 400.
-  Owner API headers have a tighter hard ceiling of 160. Generated artifacts
-  are the only standing exemption.
+  Owner API headers, including every handwritten header under
+  `bootstrap/include/ruda/` and `runtime/include/ruda/`, have a tighter hard
+  ceiling of 160. Generated artifacts are the only standing exemption.
 - Temporary exceptions live only in `architecture-exceptions.tsv`. They name
   the exact path, owner, explicit ceiling, reason, and removal checkpoint. An
   exception is migration debt, not permission to add feature logic.
@@ -130,7 +131,9 @@ defect.
   lines. These are ceilings, not growth targets.
 
 `tools/check-architecture` enforces the mechanical portion on every push and
-pull request. Review and checkpoint evidence enforce cohesive ownership.
+pull request. Its policy self-check proves that non-bytecode public headers are
+discovered and that 160 lines are accepted while 161 are rejected. Review and
+checkpoint evidence enforce cohesive ownership.
 
 ### MIR owner
 
@@ -143,6 +146,7 @@ bootstrap/src/mir/
   verify.c              local, CFG, and initialization verification
   verify_support.c      type/dataflow verifier primitives
   verify_managed.c      string/record/enum/array layout verification
+  verify_interfaces.c   interface metadata and nominal payload verification
   execution.c           oracle graph and interpreter
   execution_heap.c      execution state and managed allocations
 ```
@@ -245,8 +249,9 @@ bootstrap/src/parse/       parser coordinator/tree builder, expression/pattern/
 bootstrap/src/format/      formatter/render coordinator, token collection and
                            import ordering
 bootstrap/src/bytecode/    model/builders, codec, verifier orchestration,
-                           instruction verifier, MIR lowering, VM coordinator,
-                           VM preflight, and VM value operations
+                           instruction verifier, CFG provenance verifier, MIR
+                           lowering, VM coordinator, VM preflight, and VM value
+                           operations
 bootstrap/src/native/      public/descriptor coordinator, validation, and
                            instruction/function emission
 bootstrap/src/cli/         dispatch/options/help, format actions, and target
@@ -349,6 +354,14 @@ unit/fuzz C translation units. The largest handwritten production or test file
 is 1,175 lines; the largest owner-private header is 221 lines; the largest
 checker owner API is 139 lines. The exception registry is empty. No handwritten
 `.inc` shard or `.c` inclusion is used.
+
+A post-checkpoint audit found that the first gate revision applied the public
+owner-header ceiling only to the bytecode include subtree. The corrected gate
+walks both complete public include trees. The former aggregate bytecode, MIR,
+checker/service, type-system, and managed-runtime headers are now small
+backwards-compatible umbrellas over self-contained semantic owner headers; the
+largest handwritten public owner header is exactly 160 lines. This closes the
+mechanical blind spot without changing ABI or source semantics.
 
 | Owner family | Largest before | Largest after | Resulting boundary |
 |---|---:|---:|---|

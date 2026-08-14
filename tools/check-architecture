@@ -41,8 +41,10 @@ def relative(path: Path) -> Path:
 def handwritten_files() -> list[Path]:
     files: set[Path] = {ROOT / "bootstrap/main.c"}
     for directory in (
+        ROOT / "bootstrap/include/ruda",
         ROOT / "bootstrap/src",
         ROOT / "runtime/common",
+        ROOT / "runtime/include/ruda",
         ROOT / "runtime/platform",
         ROOT / "tests/c-unit",
         ROOT / "tests/fuzz",
@@ -52,6 +54,23 @@ def handwritten_files() -> list[Path]:
     return sorted(
         path for path in files if "generated" not in path.relative_to(ROOT).parts
     )
+
+
+def is_public_owner_header(path: Path) -> bool:
+    return (
+        path.suffix == ".h"
+        and path.parts[:3] in {
+            ("bootstrap", "include", "ruda"),
+            ("runtime", "include", "ruda"),
+        }
+    )
+
+
+def default_line_limit(path: Path) -> int:
+    ceiling = PRIVATE_HEADER_LIMIT if path.suffix == ".h" else HARD_LIMIT
+    if path.name.endswith("_api.h") or is_public_owner_header(path):
+        ceiling = min(ceiling, OWNER_API_HEADER_LIMIT)
+    return min(ceiling, COORDINATOR_LIMITS.get(path, ceiling))
 
 
 def load_exceptions() -> tuple[dict[Path, ExceptionEntry], list[str]]:
@@ -95,15 +114,7 @@ def load_exceptions() -> tuple[dict[Path, ExceptionEntry], list[str]]:
                 f"{relative(EXCEPTIONS)}:{line_number}: max_lines is not an integer"
             )
             continue
-        default_ceiling = (
-            PRIVATE_HEADER_LIMIT if path.suffix == ".h" else HARD_LIMIT
-        )
-        if path.name.endswith("_api.h"):
-            default_ceiling = min(default_ceiling, OWNER_API_HEADER_LIMIT)
-        default_ceiling = min(
-            default_ceiling,
-            COORDINATOR_LIMITS.get(path, default_ceiling),
-        )
+        default_ceiling = default_line_limit(path)
         if max_lines <= default_ceiling:
             violations.append(
                 f"{relative(EXCEPTIONS)}:{line_number}: an exception ceiling must be "
@@ -129,33 +140,64 @@ def line_count(path: Path) -> int:
         return sum(1 for _ in source)
 
 
+def line_limit_violation(
+    path: Path,
+    count: int,
+    exceptions: dict[Path, ExceptionEntry],
+) -> str | None:
+    default_ceiling = default_line_limit(path)
+    ceiling = exceptions[path].max_lines if path in exceptions else default_ceiling
+    if count <= ceiling:
+        return None
+    suffix = (
+        f" (temporary owner {exceptions[path].owner}, removal "
+        f"{exceptions[path].removal_checkpoint})"
+        if path in exceptions
+        else ""
+    )
+    return f"{path}: {count} physical lines exceeds ceiling {ceiling}{suffix}"
+
+
+def public_header_policy_regression_violations() -> list[str]:
+    """Keep the non-bytecode public-header ceiling wired into the gate."""
+    fixture = Path("bootstrap/include/ruda/check/oversized-regression.h")
+    accepted = line_limit_violation(fixture, OWNER_API_HEADER_LIMIT, {})
+    rejected = line_limit_violation(fixture, OWNER_API_HEADER_LIMIT + 1, {})
+    discovered = {relative(path) for path in handwritten_files()}
+    violations: list[str] = []
+    for required in (
+        Path("bootstrap/include/ruda/check/checker.h"),
+        Path("runtime/include/ruda/runtime/managed.h"),
+    ):
+        if required not in discovered:
+            violations.append(
+                f"check-architecture regression: public header scan omitted {required}"
+            )
+    if accepted is not None:
+        violations.append(
+            "check-architecture regression: a 160-line public checker header "
+            "was rejected"
+        )
+    if rejected is None or "exceeds ceiling 160" not in rejected:
+        violations.append(
+            "check-architecture regression: an oversized non-bytecode public "
+            "header was not rejected"
+        )
+    return violations
+
+
 def line_limit_violations(exceptions: dict[Path, ExceptionEntry]) -> list[str]:
     violations: list[str] = []
     discovered = {relative(path) for path in handwritten_files()}
     for path in sorted(discovered):
         count = line_count(ROOT / path)
-        default_ceiling = (
-            PRIVATE_HEADER_LIMIT if path.suffix == ".h" else HARD_LIMIT
-        )
-        if path.name.endswith("_api.h"):
-            default_ceiling = min(default_ceiling, OWNER_API_HEADER_LIMIT)
-        default_ceiling = min(
-            default_ceiling,
-            COORDINATOR_LIMITS.get(path, default_ceiling),
-        )
-        ceiling = exceptions[path].max_lines if path in exceptions else default_ceiling
-        if count > ceiling:
-            suffix = (
-                f" (temporary owner {exceptions[path].owner}, removal "
-                f"{exceptions[path].removal_checkpoint})"
-                if path in exceptions
-                else ""
-            )
-            violations.append(
-                f"{path}: {count} physical lines exceeds ceiling {ceiling}{suffix}"
-            )
+        violation = line_limit_violation(path, count, exceptions)
+        if violation is not None:
+            violations.append(violation)
     for path in sorted(exceptions.keys() - discovered):
-        violations.append(f"{path}: exception target is outside checked handwritten C")
+        violations.append(
+            f"{path}: exception target is outside checked handwritten C/header"
+        )
     return violations
 
 
@@ -252,6 +294,7 @@ def cmake_registration_violations() -> list[str]:
 
 def main() -> int:
     exceptions, violations = load_exceptions()
+    violations.extend(public_header_policy_regression_violations())
     violations.extend(line_limit_violations(exceptions))
     violations.extend(include_violations())
     violations.extend(cmake_registration_violations())

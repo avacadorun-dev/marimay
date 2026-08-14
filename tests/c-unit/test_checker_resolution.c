@@ -716,20 +716,8 @@ static void ruda_test_checker_resolution_engines(void) {
             ruda_native_c_emit_default_options(),
             &generated
         );
-        /*
-         * Package-local free/dot calls currently require a locally owned
-         * record/enum receiver. VM and native still reject those nominal
-         * constructions; both engines must name the same unsupported class.
-         */
-        RUDA_EXPECT(
-            lower_status == RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE
-            || lower_status
-                == RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_INSTRUCTION
-        );
-        RUDA_EXPECT(
-            emit_status == RUDA_NATIVE_C_EMIT_UNSUPPORTED_TYPE
-            || emit_status == RUDA_NATIVE_C_EMIT_UNSUPPORTED_INSTRUCTION
-        );
+        RUDA_EXPECT(lower_status == RUDA_MIR_BYTECODE_LOWER_OK);
+        RUDA_EXPECT(emit_status == RUDA_NATIVE_C_EMIT_OK);
     }
 
 cleanup:

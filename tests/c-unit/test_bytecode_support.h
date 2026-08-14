@@ -58,5 +58,8 @@ void ruda_test_bytecode_calls_and_program(void);
 void ruda_test_bytecode_string_pool(void);
 void ruda_test_bytecode_string_verifier_rejections(void);
 void ruda_test_bytecode_allocation_failures(void);
+void ruda_test_bytecode_verifier_provenance(void);
+void ruda_test_bytecode_nominal_verifier_matrix(void);
+void ruda_test_bytecode_nominal_program_schemas(void);
 
 #endif

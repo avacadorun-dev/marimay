@@ -199,6 +199,8 @@
             }
             if (alternative->is_catch_all) {
                 *covered = true;
+            } else if (alternative->has_refutable_nested_pattern) {
+                continue;
             } else if (seen_variants != NULL
                 && alternative->variant_index
                     < enum_declaration->variants.length) {
@@ -285,6 +287,411 @@ cleanup:
     );
 }
 
+static bool ruda_checker_private_compile_nested_pattern_cps(
+    RudaFunctionChecker *function,
+    const RudaAstNode *pattern,
+    RudaTypeId type,
+    RudaMirRegister source,
+    RudaMirBlockId success,
+    RudaMirBlockId failure
+);
+
+static bool ruda_checker_private_compile_record_pattern_cps(
+    RudaFunctionChecker *function,
+    const RudaAstNode *pattern,
+    RudaCheckRecordDeclaration *record,
+    RudaMirRegister source,
+    RudaMirBlockId success,
+    RudaMirBlockId failure
+) {
+    const RudaAstNode *named = ruda_checker_private_check_child_node(
+        pattern, RUDA_SYNTAX_NAMED_PATTERN, 0
+    );
+    const RudaAstNode *fields = ruda_checker_private_check_child_node(
+        named, RUDA_SYNTAX_PATTERN_FIELDS, 0
+    );
+    RudaMirRecordId layout = RUDA_MIR_NO_RECORD;
+    size_t ordinal = 0;
+    if (named == NULL || fields == NULL
+        || !ruda_checker_private_function_record_layout(function, record, &layout)) {
+        return false;
+    }
+    for (;;) {
+        const RudaAstNode *field = ruda_checker_private_check_child_node(
+            fields, RUDA_SYNTAX_PATTERN_FIELD, ordinal
+        );
+        const RudaSyntaxToken *token = NULL;
+        const RudaAstNode *child = NULL;
+        RudaCheckName name;
+        RudaCheckRecordFieldDeclaration *declaration = NULL;
+        RudaExpressionValue projected;
+        RudaMirBlockId next = success;
+        size_t field_index = 0;
+        if (field == NULL) {
+            break;
+        }
+        ordinal += 1;
+        token = ruda_checker_private_check_child_token(
+            field, RUDA_TOKEN_IDENTIFIER, 0
+        );
+        if (token == NULL || token->synthetic) {
+            return false;
+        }
+        name = (RudaCheckName){function->checker->ast->snapshot,
+            token->start, token->end};
+        declaration = ruda_checker_private_checker_find_record_field(
+            function->checker, record, name, &field_index
+        );
+        child = ruda_checker_private_check_child_node_any(field, 0);
+        if (declaration == NULL || (ordinal < record->fields.length
+                && !ruda_checker_private_function_add_block(function, &next))) {
+            return false;
+        }
+        memset(&projected, 0, sizeof(projected));
+        if (!ruda_checker_private_function_emit_record_access(
+                function, RUDA_MIR_RECORD_GET, declaration->type, source,
+                RUDA_MIR_NO_REGISTER, layout, field_index, field->start,
+                field->end, &projected
+            ) || (child == NULL
+                ? !ruda_checker_private_assign_match_local(
+                    function, name, declaration->type, projected.register_id,
+                    name.start, name.end
+                ) || !ruda_checker_private_function_set_goto(
+                    function, function->block, next, field->end, field->end
+                )
+                : !ruda_checker_private_compile_nested_pattern_cps(
+                    function, child, declaration->type, projected.register_id,
+                    next, failure
+                ))) {
+            return false;
+        }
+        function->block = next;
+        function->terminated = false;
+    }
+    return ordinal == record->fields.length;
+}
+
+static bool ruda_checker_private_compile_enum_payloads_cps(
+    RudaFunctionChecker *function,
+    const RudaCheckEnumMatchAlternative *alternative,
+    RudaMirEnumId enum_id,
+    RudaMirRegister receiver,
+    RudaMirBlockId success,
+    RudaMirBlockId failure
+) {
+    size_t ordinal = 0;
+    const RudaAstNode *shape = NULL;
+    if (alternative == NULL || alternative->variant == NULL) {
+        return false;
+    }
+    if (alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_UNIT) {
+        return ruda_checker_private_function_set_goto(
+            function, function->block, success,
+            alternative->pattern->end, alternative->pattern->end
+        );
+    }
+    shape = ruda_checker_private_check_child_node(
+        alternative->pattern,
+        alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
+            ? RUDA_SYNTAX_POSITIONAL_PATTERN : RUDA_SYNTAX_NAMED_PATTERN,
+        0
+    );
+    shape = alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
+        ? ruda_checker_private_check_child_node(shape, RUDA_SYNTAX_PATTERN_LIST, 0)
+        : ruda_checker_private_check_child_node(shape, RUDA_SYNTAX_PATTERN_FIELDS, 0);
+    if (shape == NULL) {
+        return false;
+    }
+    for (;;) {
+        const RudaAstNode *field = alternative->variant->kind
+                == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
+            ? ruda_checker_private_check_child_node_any(shape, ordinal)
+            : ruda_checker_private_check_child_node(
+                shape, RUDA_SYNTAX_PATTERN_FIELD, ordinal
+            );
+        const RudaAstNode *child = field;
+        const RudaCheckEnumPayloadItemDeclaration *payload = NULL;
+        RudaCheckName name;
+        RudaExpressionValue projected;
+        RudaMirBlockId next = success;
+        size_t payload_index = ordinal;
+        if (field == NULL) {
+            break;
+        }
+        if (alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_NAMED) {
+            const RudaSyntaxToken *token = ruda_checker_private_check_child_token(
+                field, RUDA_TOKEN_IDENTIFIER, 0
+            );
+            if (token == NULL || token->synthetic) {
+                return false;
+            }
+            name = (RudaCheckName){function->checker->ast->snapshot,
+                token->start, token->end};
+            payload = ruda_checker_private_checker_find_enum_payload(
+                function->checker, alternative->variant, name, &payload_index
+            );
+            child = ruda_checker_private_check_child_node_any(field, 0);
+        } else {
+            memset(&name, 0, sizeof(name));
+            payload = ruda_vector_at_const(&alternative->variant->payload, ordinal);
+        }
+        ordinal += 1;
+        if (payload == NULL || (ordinal < alternative->variant->payload.length
+                && !ruda_checker_private_function_add_block(function, &next))) {
+            return false;
+        }
+        memset(&projected, 0, sizeof(projected));
+        if (!ruda_checker_private_function_emit_enum_access(
+                function, RUDA_MIR_ENUM_GET_PAYLOAD, payload->type, receiver,
+                enum_id, alternative->variant_index, payload_index, field->start,
+                field->end, &projected
+            ) || (child == NULL
+                ? !ruda_checker_private_assign_match_local(
+                    function, name, payload->type, projected.register_id,
+                    name.start, name.end
+                ) || !ruda_checker_private_function_set_goto(
+                    function, function->block, next, field->end, field->end
+                )
+                : !ruda_checker_private_compile_nested_pattern_cps(
+                    function, child, payload->type, projected.register_id,
+                    next, failure
+                ))) {
+            return false;
+        }
+        function->block = next;
+        function->terminated = false;
+    }
+    return ordinal == alternative->variant->payload.length;
+}
+
+static bool ruda_checker_private_compile_nested_pattern_cps(
+    RudaFunctionChecker *function,
+    const RudaAstNode *pattern,
+    RudaTypeId type,
+    RudaMirRegister source,
+    RudaMirBlockId success,
+    RudaMirBlockId failure
+) {
+    RudaCheckName name;
+    RudaCheckRecordDeclaration *record = NULL;
+    RudaCheckEnumDeclaration *enum_declaration = NULL;
+    RudaCheckEnumVariantDeclaration *variant = NULL;
+    RudaCheckEnumMatchAlternative alternative;
+    RudaMirEnumId enum_id = RUDA_MIR_NO_ENUM;
+    RudaExpressionValue matched;
+    RudaExpressionValue guarded;
+    RudaMirBlockId matched_block = RUDA_MIR_NO_BLOCK;
+    size_t variant_index = 0;
+    const RudaAstNode *constructor_name = NULL;
+    if (pattern == NULL) {
+        return false;
+    }
+    if (pattern->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
+        return ruda_checker_private_function_set_goto(
+            function, function->block, success, pattern->end, pattern->end
+        );
+    }
+    if (pattern->kind == RUDA_SYNTAX_NAME_PATTERN) {
+        return ruda_checker_private_enum_match_name(function, pattern, &name)
+            && ruda_checker_private_assign_match_local(
+                function, name, type, source, pattern->start, pattern->end
+            ) && ruda_checker_private_function_set_goto(
+                function, function->block, success, pattern->end, pattern->end
+            );
+    }
+    if (pattern->kind != RUDA_SYNTAX_CONSTRUCTOR_PATTERN) {
+        return false;
+    }
+    record = ruda_checker_private_checker_find_record_by_type(
+        function->checker, type
+    );
+    if (record != NULL) {
+        return ruda_checker_private_compile_record_pattern_cps(
+            function, pattern, record, source, success, failure
+        );
+    }
+    enum_declaration = ruda_checker_private_checker_find_enum_by_type(
+        function->checker, type
+    );
+    constructor_name = ruda_checker_private_check_child_node(
+        pattern, RUDA_SYNTAX_NAME_PATTERN, 0
+    );
+    if (enum_declaration == NULL
+        || !ruda_checker_private_enum_match_name(function, constructor_name, &name)
+        || (variant = ruda_checker_private_checker_find_enum_variant(
+                function->checker, enum_declaration, name, &variant_index
+            )) == NULL
+        || !ruda_checker_private_function_enum_layout(
+            function, enum_declaration, &enum_id
+        ) || !ruda_checker_private_function_add_block(function, &matched_block)) {
+        return false;
+    }
+    memset(&matched, 0, sizeof(matched));
+    memset(&guarded, 0, sizeof(guarded));
+    if (!ruda_checker_private_function_emit_enum_access(
+            function, RUDA_MIR_ENUM_IS_VARIANT, RUDA_TYPE_BOOL, source,
+            enum_id, variant_index, 0, pattern->start, pattern->end, &matched
+        ) || !ruda_checker_private_function_set_branch(
+            function, function->block, matched.register_id, matched_block,
+            failure, pattern->start, pattern->end
+        )) {
+        return false;
+    }
+    function->block = matched_block;
+    function->terminated = false;
+    if (!ruda_checker_private_function_emit_enum_access(
+            function, RUDA_MIR_ENUM_REQUIRE_VARIANT, type, source, enum_id,
+            variant_index, 0, pattern->start, pattern->end, &guarded
+        )) {
+        return false;
+    }
+    memset(&alternative, 0, sizeof(alternative));
+    alternative.pattern = pattern;
+    alternative.variant = variant;
+    alternative.variant_index = variant_index;
+    return ruda_checker_private_compile_enum_payloads_cps(
+        function, &alternative, enum_id, guarded.register_id, success, failure
+    );
+}
+
+ bool ruda_checker_private_compile_enum_match_bindings_cps(
+    RudaFunctionChecker *function,
+    const RudaCheckEnumMatchAlternative *alternative,
+    RudaMirEnumId enum_id,
+    RudaMirRegister receiver,
+    RudaMirBlockId success,
+    RudaMirBlockId failure
+) {
+    if (alternative == NULL) {
+        return false;
+    }
+    if (alternative->is_catch_all) {
+        const RudaTypeId *type = ruda_vector_at_const(
+            &function->mir.register_types, receiver
+        );
+        return type != NULL && (!alternative->has_catch_binding
+            || ruda_checker_private_assign_match_local(
+                function, alternative->catch_binding, *type, receiver,
+                alternative->pattern->start, alternative->pattern->end
+            )) && ruda_checker_private_function_set_goto(
+                function, function->block, success,
+                alternative->pattern->end, alternative->pattern->end
+            );
+    }
+    return ruda_checker_private_compile_enum_payloads_cps(
+        function, alternative, enum_id, receiver, success, failure
+    );
+}
+
+static bool ruda_checker_compile_nested_record_pattern(
+    RudaFunctionChecker *function,
+    const RudaAstNode *pattern,
+    RudaTypeId type,
+    RudaMirRegister source
+) {
+    RudaCheckName name;
+    RudaCheckRecordDeclaration *record = NULL;
+    RudaMirRecordId layout = RUDA_MIR_NO_RECORD;
+    const RudaAstNode *constructor_name = NULL;
+    const RudaAstNode *named = NULL;
+    const RudaAstNode *fields = NULL;
+    size_t ordinal = 0;
+    if (pattern == NULL) {
+        return false;
+    }
+    if (pattern->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
+        return true;
+    }
+    if (pattern->kind == RUDA_SYNTAX_NAME_PATTERN) {
+        return ruda_checker_private_enum_match_name(function, pattern, &name)
+            && ruda_checker_private_assign_match_local(
+                function, name, type, source, pattern->start, pattern->end
+            );
+    }
+    if (pattern->kind != RUDA_SYNTAX_CONSTRUCTOR_PATTERN) {
+        (void)ruda_checker_add_diagnostic(
+            function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            "nested pattern does not match the record field type",
+            pattern->start, pattern->end
+        );
+        return false;
+    }
+    constructor_name = ruda_checker_private_check_child_node(
+        pattern, RUDA_SYNTAX_NAME_PATTERN, 0
+    );
+    if (!ruda_checker_private_enum_match_name(function, constructor_name, &name)
+        || (record = ruda_checker_private_checker_find_record_by_type(
+                function->checker, type
+            )) == NULL
+        || ruda_checker_private_checker_find_record(function->checker, name)
+            != record
+        || (named = ruda_checker_private_check_child_node(
+                pattern, RUDA_SYNTAX_NAMED_PATTERN, 0
+            )) == NULL
+        || (fields = ruda_checker_private_check_child_node(
+                named, RUDA_SYNTAX_PATTERN_FIELDS, 0
+            )) == NULL
+        || !ruda_checker_private_function_record_layout(
+            function, record, &layout
+        )) {
+        if (!ruda_checker_has_failed(function->checker)) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "nested record pattern constructor does not match its exact field type",
+                pattern->start, pattern->end
+            );
+        }
+        return false;
+    }
+    for (;;) {
+        const RudaAstNode *field = ruda_checker_private_check_child_node(
+            fields, RUDA_SYNTAX_PATTERN_FIELD, ordinal
+        );
+        const RudaSyntaxToken *token = NULL;
+        const RudaAstNode *child = NULL;
+        RudaCheckRecordFieldDeclaration *declaration = NULL;
+        RudaExpressionValue projected;
+        size_t field_index = 0;
+        if (field == NULL) {
+            break;
+        }
+        ordinal += 1;
+        token = ruda_checker_private_check_child_token(
+            field, RUDA_TOKEN_IDENTIFIER, 0
+        );
+        if (token == NULL || token->synthetic) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            return false;
+        }
+        name = (RudaCheckName){function->checker->ast->snapshot,
+            token->start, token->end};
+        declaration = ruda_checker_private_checker_find_record_field(
+            function->checker, record, name, &field_index
+        );
+        child = ruda_checker_private_check_child_node_any(field, 0);
+        if (declaration == NULL) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            return false;
+        }
+        memset(&projected, 0, sizeof(projected));
+        if (!ruda_checker_private_function_emit_record_access(
+                function, RUDA_MIR_RECORD_GET, declaration->type, source,
+                RUDA_MIR_NO_REGISTER, layout, field_index,
+                child != NULL ? child->start : name.start,
+                child != NULL ? child->end : name.end, &projected
+            ) || (child == NULL
+                ? !ruda_checker_private_assign_match_local(
+                    function, name, declaration->type, projected.register_id,
+                    name.start, name.end
+                ) : !ruda_checker_compile_nested_record_pattern(
+                    function, child, declaration->type, projected.register_id
+                ))) {
+            return false;
+        }
+    }
+    return ordinal == record->fields.length;
+}
+
  bool ruda_checker_private_bind_enum_match_payload(
     RudaFunctionChecker *function,
     const RudaCheckEnumMatchAlternative *alternative,
@@ -303,14 +710,7 @@ cleanup:
     if (binding != NULL && binding->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
         return true;
     }
-    if (binding != NULL && !ruda_checker_private_enum_match_name(
-            function,
-            binding,
-            &name
-        )) {
-        return false;
-    }
-    if (payload == NULL || name.snapshot == NULL) {
+    if (payload == NULL) {
         ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
     }
@@ -323,19 +723,20 @@ cleanup:
             enum_id,
             alternative->variant_index,
             payload_index,
-            binding != NULL ? binding->start : name.start,
-            binding != NULL ? binding->end : name.end,
+            binding != NULL ? binding->start : shorthand.start,
+            binding != NULL ? binding->end : shorthand.end,
             &projected
         )) {
         return false;
     }
-    return ruda_checker_private_assign_match_local(
-        function,
-        name,
-        payload->type,
-        projected.register_id,
-        binding != NULL ? binding->start : name.start,
-        binding != NULL ? binding->end : name.end
+    if (binding == NULL) {
+        return ruda_checker_private_assign_match_local(
+            function, name, payload->type, projected.register_id,
+            name.start, name.end
+        );
+    }
+    return ruda_checker_compile_nested_record_pattern(
+        function, binding, payload->type, projected.register_id
     );
 }
 
@@ -527,7 +928,6 @@ cleanup:
         const RudaAstNode *binding = NULL;
         RudaCheckRecordFieldDeclaration *field_declaration = NULL;
         RudaCheckName field_name;
-        RudaCheckName binding_name;
         RudaExpressionValue projected;
         size_t field_index = 0;
         if (field == NULL) {
@@ -550,11 +950,6 @@ cleanup:
         if (binding != NULL && binding->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
             continue;
         }
-        binding_name = field_name;
-        if (binding != NULL
-            && !ruda_checker_private_enum_match_name(function, binding, &binding_name)) {
-            return false;
-        }
         field_declaration = ruda_checker_private_checker_find_record_field(
             function->checker,
             record_declaration,
@@ -567,24 +962,18 @@ cleanup:
         }
         memset(&projected, 0, sizeof(projected));
         if (!ruda_checker_private_function_emit_record_access(
-                function,
-                RUDA_MIR_RECORD_GET,
-                field_declaration->type,
-                receiver,
-                RUDA_MIR_NO_REGISTER,
-                record,
-                field_index,
+                function, RUDA_MIR_RECORD_GET, field_declaration->type,
+                receiver, RUDA_MIR_NO_REGISTER, record, field_index,
                 binding != NULL ? binding->start : field_name.start,
-                binding != NULL ? binding->end : field_name.end,
-                &projected
-            ) || !ruda_checker_private_assign_match_local(
-                function,
-                binding_name,
-                field_declaration->type,
-                projected.register_id,
-                binding != NULL ? binding->start : field_name.start,
-                binding != NULL ? binding->end : field_name.end
-            )) {
+                binding != NULL ? binding->end : field_name.end, &projected
+            ) || (binding == NULL
+                ? !ruda_checker_private_assign_match_local(
+                    function, field_name, field_declaration->type,
+                    projected.register_id, field_name.start, field_name.end
+                ) : !ruda_checker_compile_nested_record_pattern(
+                    function, binding, field_declaration->type,
+                    projected.register_id
+                ))) {
             return false;
         }
     }

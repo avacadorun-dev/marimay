@@ -43,18 +43,23 @@ typedef struct RudaBytecodeExecution {
     RudaBytecodeExecutionOptions options;
     size_t total_string_bytes;
     RudaManagedHeap managed_heap;
+    RudaVector interned_record_descriptors;
+    RudaVector interned_record_fields;
+    RudaVector interned_enum_descriptors;
+    RudaVector interned_enum_variants;
+    RudaVector interned_enum_payloads;
+    RudaVector owned_interface_tables;
     bool initialized;
 } RudaBytecodeExecution;
 
 /*
- * Managed array values are bound to this execution's heap.  Active VM frames
- * root every exact array register.  A returned array remains usable until an
+ * Managed values are bound to this execution's heap. Active VM frames root
+ * every exact managed register. A returned value remains usable until an
  * explicit/subsequent collection reclaims it or the execution is disposed;
  * passing it as the next run's argument roots it before dispatch.  A host that
  * retains values across unrelated collections registers the value's
  * managed_reference through the public RudaManagedRootFrame API.
  */
-
 typedef struct RudaBytecodePanicFrame {
     RudaSymbolId symbol;
     RudaBytecodeSpan call_span;

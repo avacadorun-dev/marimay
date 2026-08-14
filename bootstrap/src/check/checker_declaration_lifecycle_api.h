@@ -28,6 +28,12 @@
  void ruda_checker_private_enum_declaration_dispose(
     RudaCheckEnumDeclaration *declaration
 );
+ void ruda_checker_private_interface_method_declaration_dispose(
+    RudaCheckInterfaceMethodDeclaration *method
+);
+ void ruda_checker_private_interface_declaration_dispose(
+    RudaCheckInterfaceDeclaration *declaration
+);
  bool ruda_checker_private_declaration_name_is_duplicate(
     const RudaChecker *checker,
     RudaCheckName name

@@ -16,6 +16,9 @@ RudaCheckOptions ruda_check_default_options(void) {
     options.max_enums = 100000;
     options.max_variants_per_enum = 100000;
     options.max_payload_items_per_variant = 100000;
+    options.max_interfaces = 100000;
+    options.max_methods_per_interface = 100000;
+    options.max_parameters_per_interface_method = 100000;
     options.max_locals_per_function = 100000;
     options.max_diagnostics = 1000;
     options.max_constant_steps = 10000000;
@@ -93,6 +96,27 @@ void ruda_checked_enum_value_dispose(RudaCheckedEnum *enum_value) {
     ruda_owned_bytes_dispose(&enum_value->name);
     memset(enum_value, 0, sizeof(*enum_value));
 }
+static void ruda_checked_interface_value_dispose(
+    RudaCheckedInterface *interface_value
+) {
+    size_t index = 0;
+    if (interface_value == NULL) {
+        return;
+    }
+    for (index = 0; index < interface_value->methods.length; index += 1) {
+        RudaCheckedInterfaceMethod *method = ruda_vector_at(
+            &interface_value->methods, index
+        );
+        if (method != NULL) {
+            ruda_vector_dispose(&method->parameter_types);
+            ruda_owned_bytes_dispose(&method->name);
+            memset(method, 0, sizeof(*method));
+        }
+    }
+    ruda_vector_dispose(&interface_value->methods);
+    ruda_owned_bytes_dispose(&interface_value->name);
+    memset(interface_value, 0, sizeof(*interface_value));
+}
 void ruda_check_dispose_function_values(RudaCheckResult *result) {
     size_t index = 0;
     for (index = 0; index < result->functions.length; index += 1) {
@@ -155,6 +179,16 @@ void ruda_check_dispose_enum_values(RudaCheckResult *result) {
         ruda_checked_enum_value_dispose(enum_value);
     }
     result->enums.length = 0;
+}
+
+static void ruda_check_dispose_interface_values(RudaCheckResult *result) {
+    size_t index = 0;
+    for (index = 0; index < result->interfaces.length; index += 1) {
+        ruda_checked_interface_value_dispose(
+            ruda_vector_at(&result->interfaces, index)
+        );
+    }
+    result->interfaces.length = 0;
 }
 
 void ruda_check_dispose_symbol_values(RudaCheckResult *result) {
@@ -223,6 +257,7 @@ void ruda_check_result_dispose(RudaCheckResult *result) {
     ruda_check_dispose_type_alias_values(result);
     ruda_check_dispose_record_values(result);
     ruda_check_dispose_enum_values(result);
+    ruda_check_dispose_interface_values(result);
     ruda_check_dispose_symbol_values(result);
     ruda_check_dispose_diagnostics(result);
     ruda_map_dispose(&result->symbol_index);
@@ -231,6 +266,7 @@ void ruda_check_result_dispose(RudaCheckResult *result) {
     ruda_vector_dispose(&result->type_aliases);
     ruda_vector_dispose(&result->records);
     ruda_vector_dispose(&result->enums);
+    ruda_vector_dispose(&result->interfaces);
     ruda_vector_dispose(&result->symbols);
     ruda_vector_dispose(&result->functions);
     ruda_vector_dispose(&result->diagnostics);
@@ -289,6 +325,15 @@ const RudaCheckedEnum *ruda_checked_enum(
 ) {
     return result != NULL && result->initialized
         ? ruda_vector_at_const(&result->enums, index)
+        : NULL;
+}
+
+const RudaCheckedInterface *ruda_checked_interface(
+    const RudaCheckResult *result,
+    size_t index
+) {
+    return result != NULL && result->initialized
+        ? ruda_vector_at_const(&result->interfaces, index)
         : NULL;
 }
 

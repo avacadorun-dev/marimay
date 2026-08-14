@@ -39,6 +39,14 @@
     RudaMirEnumId enum_id,
     RudaMirRegister receiver
 );
+ bool ruda_checker_private_compile_enum_match_bindings_cps(
+    RudaFunctionChecker *function,
+    const RudaCheckEnumMatchAlternative *alternative,
+    RudaMirEnumId enum_id,
+    RudaMirRegister receiver,
+    RudaMirBlockId success,
+    RudaMirBlockId failure
+);
  bool ruda_checker_private_compile_record_match_bindings(
     RudaFunctionChecker *function,
     const RudaCheckRecordMatchAlternative *alternative,

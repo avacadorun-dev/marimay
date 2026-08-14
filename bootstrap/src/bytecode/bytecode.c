@@ -13,12 +13,21 @@ bool ruda_bytecode_type_is_register(RudaBytecodeType type) {
     return type == RUDA_BYTECODE_TYPE_BOOL || type == RUDA_BYTECODE_TYPE_I64
         || type == RUDA_BYTECODE_TYPE_F64 || type == RUDA_BYTECODE_TYPE_STRING
         || type == RUDA_BYTECODE_TYPE_ARRAY_F64
-        || type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64;
+        || type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64
+        || type == RUDA_BYTECODE_TYPE_RECORD || type == RUDA_BYTECODE_TYPE_ENUM
+        || type == RUDA_BYTECODE_TYPE_INTERFACE;
 }
 
 bool ruda_bytecode_type_is_array(RudaBytecodeType type) {
     return type == RUDA_BYTECODE_TYPE_ARRAY_F64
         || type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64;
+}
+
+bool ruda_bytecode_type_is_managed(RudaBytecodeType type) {
+    return ruda_bytecode_type_is_array(type)
+        || type == RUDA_BYTECODE_TYPE_RECORD
+        || type == RUDA_BYTECODE_TYPE_ENUM
+        || type == RUDA_BYTECODE_TYPE_INTERFACE;
 }
 
 RudaBytecodeType ruda_bytecode_array_element_type(
@@ -60,6 +69,12 @@ const char *ruda_bytecode_type_name(RudaBytecodeType type) {
             return "Array<f64>";
         case RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64:
             return "Array<Array<f64>>";
+        case RUDA_BYTECODE_TYPE_RECORD:
+            return "record";
+        case RUDA_BYTECODE_TYPE_ENUM:
+            return "enum";
+        case RUDA_BYTECODE_TYPE_INTERFACE:
+            return "interface";
         case RUDA_BYTECODE_TYPE_INVALID:
             break;
     }
@@ -98,6 +113,33 @@ bool ruda_bytecode_function_uses_arrays(
             return true;
         }
     }
+    for (index = 0; index < function->record_fields.length; index += 1) {
+        const RudaBytecodeRecordField *field = ruda_vector_at_const(
+            &function->record_fields,
+            index
+        );
+        if (field != NULL && ruda_bytecode_type_is_array(field->type)) {
+            return true;
+        }
+    }
+    for (index = 0; index < function->enum_payloads.length; index += 1) {
+        const RudaBytecodeEnumPayload *payload = ruda_vector_at_const(
+            &function->enum_payloads,
+            index
+        );
+        if (payload != NULL && ruda_bytecode_type_is_array(payload->type)) {
+            return true;
+        }
+    }
+    for (index = 0; index < function->interface_constructions.length;
+        index += 1) {
+        const RudaBytecodeInterfaceConstruction *construction =
+            ruda_vector_at_const(&function->interface_constructions, index);
+        if (construction != NULL
+            && ruda_bytecode_type_is_array(construction->payload_type)) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -128,6 +170,33 @@ bool ruda_bytecode_function_uses_f64(const RudaBytecodeFunction *function) {
             return true;
         }
     }
+    for (index = 0; index < function->record_fields.length; index += 1) {
+        const RudaBytecodeRecordField *field = ruda_vector_at_const(
+            &function->record_fields,
+            index
+        );
+        if (field != NULL && field->type == RUDA_BYTECODE_TYPE_F64) {
+            return true;
+        }
+    }
+    for (index = 0; index < function->enum_payloads.length; index += 1) {
+        const RudaBytecodeEnumPayload *payload = ruda_vector_at_const(
+            &function->enum_payloads,
+            index
+        );
+        if (payload != NULL && payload->type == RUDA_BYTECODE_TYPE_F64) {
+            return true;
+        }
+    }
+    for (index = 0; index < function->interface_constructions.length;
+        index += 1) {
+        const RudaBytecodeInterfaceConstruction *construction =
+            ruda_vector_at_const(&function->interface_constructions, index);
+        if (construction != NULL
+            && construction->payload_type == RUDA_BYTECODE_TYPE_F64) {
+            return true;
+        }
+    }
     return false;
 }
 
@@ -142,6 +211,18 @@ RudaBytecodeFunctionOptions ruda_bytecode_function_default_options(void) {
     options.max_string_bytes = 16U * 1024U * 1024U;
     options.max_array_constructions = 100000;
     options.max_array_arguments = 1000000;
+    options.max_record_layouts = 100000;
+    options.max_record_fields = 1000000;
+    options.max_record_constructions = 100000;
+    options.max_record_arguments = 1000000;
+    options.max_enum_layouts = 100000;
+    options.max_enum_variants = 1000000;
+    options.max_enum_payloads = 1000000;
+    options.max_enum_constructions = 100000;
+    options.max_enum_arguments = 1000000;
+    options.max_interface_layouts = 100000;
+    options.max_interface_constructions = 100000;
+    options.max_interface_methods = 1000000;
     options.max_source_files = 4096;
     options.max_encoded_bytes = 64U * 1024U * 1024U;
     options.max_verify_work = 16000000;
@@ -187,7 +268,13 @@ bool ruda_bytecode_function_init(
         || options.max_instructions == 0 || options.max_calls == 0
         || options.max_call_arguments == 0 || options.max_string_constants == 0
         || options.max_string_bytes == 0 || options.max_array_constructions == 0
-        || options.max_array_arguments == 0 || options.max_source_files == 0
+        || options.max_array_arguments == 0 || options.max_record_layouts == 0
+        || options.max_record_fields == 0 || options.max_record_constructions == 0
+        || options.max_record_arguments == 0 || options.max_enum_layouts == 0
+        || options.max_enum_variants == 0 || options.max_enum_payloads == 0
+        || options.max_enum_constructions == 0 || options.max_enum_arguments == 0
+        || options.max_interface_layouts == 0 || options.max_interface_constructions == 0
+        || options.max_interface_methods == 0 || options.max_source_files == 0
         || options.max_encoded_bytes < RUDA_BYTECODE_MAGIC_LENGTH
         || options.max_verify_work == 0) {
         return false;
@@ -195,6 +282,7 @@ bool ruda_bytecode_function_init(
     memset(function, 0, sizeof(*function));
     function->allocator = allocator;
     function->result_type = result_type;
+    function->result_layout = RUDA_BYTECODE_NO_LAYOUT;
     function->source_count = source_count;
     function->parameter_count = parameter_count;
     function->options = options;
@@ -226,23 +314,29 @@ bool ruda_bytecode_function_init(
             &function->array_arguments,
             allocator,
             sizeof(RudaBytecodeArrayArgument)
-        )) {
-        ruda_vector_dispose(&function->register_types);
-        ruda_vector_dispose(&function->blocks);
-        ruda_vector_dispose(&function->calls);
-        ruda_vector_dispose(&function->call_arguments);
-        ruda_vector_dispose(&function->string_constants);
-        ruda_vector_dispose(&function->array_constructions);
-        ruda_vector_dispose(&function->array_arguments);
-        memset(function, 0, sizeof(*function));
+        ) || !ruda_vector_init(&function->register_layouts, allocator, sizeof(uint32_t))
+        || !ruda_vector_init(&function->record_layouts, allocator, sizeof(RudaBytecodeRecordLayout))
+        || !ruda_vector_init(&function->record_fields, allocator, sizeof(RudaBytecodeRecordField))
+        || !ruda_vector_init(&function->record_constructions, allocator, sizeof(RudaBytecodeRecordConstruction))
+        || !ruda_vector_init(&function->record_arguments, allocator, sizeof(RudaBytecodeRecordArgument))
+        || !ruda_vector_init(&function->enum_layouts, allocator, sizeof(RudaBytecodeEnumLayout))
+        || !ruda_vector_init(&function->enum_variants, allocator, sizeof(RudaBytecodeEnumVariant))
+        || !ruda_vector_init(&function->enum_payloads, allocator, sizeof(RudaBytecodeEnumPayload))
+        || !ruda_vector_init(&function->enum_constructions, allocator, sizeof(RudaBytecodeEnumConstruction))
+        || !ruda_vector_init(&function->enum_arguments, allocator, sizeof(RudaBytecodeEnumArgument))
+        || !ruda_vector_init(&function->interface_layouts, allocator, sizeof(RudaBytecodeInterfaceLayout))
+        || !ruda_vector_init(&function->interface_constructions, allocator, sizeof(RudaBytecodeInterfaceConstruction))
+        || !ruda_vector_init(&function->interface_methods, allocator, sizeof(RudaSymbolId))) {
+        ruda_bytecode_function_dispose(function);
         return false;
     }
     for (index = 0; index < parameter_count; index += 1) {
+        uint32_t layout = RUDA_BYTECODE_NO_LAYOUT;
         if (!ruda_bytecode_type_is_register(parameter_types[index])
             || !ruda_vector_push(
                 &function->register_types,
                 &parameter_types[index]
-            )) {
+            ) || !ruda_vector_push(&function->register_layouts, &layout)) {
             ruda_bytecode_function_dispose(function);
             return false;
         }
@@ -275,6 +369,19 @@ void ruda_bytecode_function_dispose(RudaBytecodeFunction *function) {
     ruda_vector_dispose(&function->string_constants);
     ruda_vector_dispose(&function->array_arguments);
     ruda_vector_dispose(&function->array_constructions);
+    ruda_vector_dispose(&function->register_layouts);
+    ruda_vector_dispose(&function->record_arguments);
+    ruda_vector_dispose(&function->record_constructions);
+    ruda_vector_dispose(&function->record_fields);
+    ruda_vector_dispose(&function->record_layouts);
+    ruda_vector_dispose(&function->enum_arguments);
+    ruda_vector_dispose(&function->enum_constructions);
+    ruda_vector_dispose(&function->enum_payloads);
+    ruda_vector_dispose(&function->enum_variants);
+    ruda_vector_dispose(&function->enum_layouts);
+    ruda_vector_dispose(&function->interface_methods);
+    ruda_vector_dispose(&function->interface_constructions);
+    ruda_vector_dispose(&function->interface_layouts);
     ruda_vector_dispose(&function->blocks);
     ruda_vector_dispose(&function->register_types);
     ruda_vector_dispose(&function->call_arguments);
@@ -287,13 +394,18 @@ bool ruda_bytecode_add_register(
     RudaBytecodeType type,
     uint32_t *result
 ) {
+    uint32_t layout = RUDA_BYTECODE_NO_LAYOUT;
     if (function == NULL || !function->initialized || result == NULL
         || !ruda_bytecode_type_is_local(type)
         || function->register_types.length >= function->options.max_registers
         || function->register_types.length >= UINT32_MAX) {
         return false;
     }
-    if (!ruda_vector_push(&function->register_types, &type)) {
+    if (!ruda_vector_push(&function->register_types, &type)
+        || !ruda_vector_push(&function->register_layouts, &layout)) {
+        if (function->register_types.length > function->register_layouts.length) {
+            function->register_types.length -= 1;
+        }
         return false;
     }
     *result = (uint32_t)(function->register_types.length - 1);
@@ -361,6 +473,9 @@ bool ruda_bytecode_add_call(
     RudaBytecodeCall call;
     size_t next_argument_count = 0;
     size_t index = 0;
+    memset(&call, 0, sizeof(call));
+    call.result_layout = RUDA_BYTECODE_NO_LAYOUT;
+    call.interface_slot = UINT32_MAX;
     if (function == NULL || !function->initialized || result == NULL
         || !ruda_bytecode_type_is_result(result_type)
         || (arguments == NULL && argument_count != 0)
@@ -404,6 +519,21 @@ bool ruda_bytecode_add_call(
         ) || !ruda_vector_push(&function->calls, &call)) {
         function->call_arguments.length = call.argument_start;
         return false;
+    }
+    for (index = 0; index < argument_count; index += 1) {
+        RudaBytecodeCallArgument *stored = ruda_vector_at(
+            &function->call_arguments,
+            call.argument_start + index
+        );
+        if (stored == NULL) {
+            function->call_arguments.length = call.argument_start;
+            function->calls.length -= 1;
+            return false;
+        }
+        stored->layout = ruda_bytecode_register_layout(
+            function,
+            stored->register_id
+        );
     }
     *result = (RudaBytecodeCallId)(function->calls.length - 1);
     return true;

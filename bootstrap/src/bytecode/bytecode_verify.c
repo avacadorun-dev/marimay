@@ -5,6 +5,7 @@
 
 #include "ruda/base/utf8.h"
 #include "bytecode_internal.h"
+#include "bytecode_verify_provenance.h"
 
 static bool ruda_bytecode_consume_verify_work(
     size_t *used,
@@ -40,9 +41,7 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
     unsigned char *incoming = NULL;
     unsigned char *outgoing = NULL;
     unsigned char *scratch = NULL;
-    uint64_t *checked_incoming = NULL;
-    uint64_t *checked_outgoing = NULL;
-    uint64_t *checked_scratch = NULL;
+    RudaBytecodeProvenanceAnalysis *provenance = NULL;
     size_t predecessor_counts_size = 0;
     size_t predecessor_offsets_size = 0;
     size_t predecessor_cursors_size = 0;
@@ -51,10 +50,9 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
     size_t queue_size = 0;
     size_t cells_size = 0;
     size_t scratch_size = 0;
-    size_t checked_cells_size = 0;
-    size_t checked_scratch_size = 0;
     size_t work_limit = 0;
     bool has_checked_index_operations = false;
+    bool has_required_variant_operations = false;
     RudaBytecodeVerifyStatus status = RUDA_BYTECODE_VERIFY_OK;
     if (work_used == NULL) {
         return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
@@ -62,6 +60,11 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
     *work_used = 0;
     if (function == NULL || !function->initialized
         || !ruda_bytecode_type_is_result(function->result_type)
+        || !ruda_bytecode_type_layout_is_valid(
+            function,
+            function->result_type,
+            function->result_layout
+        )
         || function->source_count == 0
         || function->source_count > function->options.max_source_files
         || function->parameter_count > function->register_types.length
@@ -203,6 +206,18 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
             return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
         }
     }
+    {
+        size_t nominal_work = 0;
+        status = ruda_bytecode_verify_nominal_metadata(
+            function,
+            work_limit - work,
+            &nominal_work
+        );
+        if (status != RUDA_BYTECODE_VERIFY_OK) {
+            return status;
+        }
+        work += nominal_work;
+    }
     for (block_index = 0; block_index < register_count; block_index += 1) {
         const RudaBytecodeType *type = ruda_vector_at_const(
             &function->register_types,
@@ -226,6 +241,11 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
             size_t argument_index = 0;
             size_t argument_end = 0;
             if (call == NULL || !ruda_bytecode_type_is_result(call->result_type)
+                || !ruda_bytecode_type_layout_is_valid(
+                    function,
+                    call->result_type,
+                    call->result_layout
+                )
                 || call->argument_start != expected_argument_start
                 || !ruda_size_add(
                     call->argument_start,
@@ -257,7 +277,11 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
                     : NULL;
                 if (argument == NULL || register_type == NULL
                     || !ruda_bytecode_type_is_register(argument->type)
-                    || *register_type != argument->type) {
+                    || *register_type != argument->type
+                    || ruda_bytecode_register_layout(
+                        function,
+                        argument->register_id
+                    ) != argument->layout) {
                     return register_type == NULL
                         ? RUDA_BYTECODE_VERIFY_INVALID_REGISTER
                         : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
@@ -337,6 +361,10 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
             if (instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_INDEX
                 || instruction->opcode == RUDA_OPCODE_ARRAY_SET) {
                 has_checked_index_operations = true;
+            }
+            if (instruction->opcode == RUDA_OPCODE_ENUM_REQUIRE_VARIANT
+                || instruction->opcode == RUDA_OPCODE_ENUM_GET_PAYLOAD) {
+                has_required_variant_operations = true;
             }
             if (((metadata->flags & RUDA_OPCODE_FLAG_TERMINATOR) != 0)
                 != should_terminate) {
@@ -595,19 +623,6 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
         status = RUDA_BYTECODE_VERIFY_LIMIT_REACHED;
         goto cleanup;
     }
-    if (has_checked_index_operations
-        && (!ruda_size_multiply(
-                cell_count == 0 ? 1 : cell_count,
-                sizeof(uint64_t),
-                &checked_cells_size
-            ) || !ruda_size_multiply(
-                register_count == 0 ? 1 : register_count,
-                sizeof(uint64_t),
-                &checked_scratch_size
-            ))) {
-        status = RUDA_BYTECODE_VERIFY_LIMIT_REACHED;
-        goto cleanup;
-    }
     incoming = ruda_allocate_array(
         &function->allocator,
         cell_count == 0 ? 1 : cell_count,
@@ -623,27 +638,7 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
         register_count == 0 ? 1 : register_count,
         sizeof(unsigned char)
     );
-    if (has_checked_index_operations) {
-        checked_incoming = ruda_allocate_array(
-            &function->allocator,
-            cell_count == 0 ? 1 : cell_count,
-            sizeof(uint64_t)
-        );
-        checked_outgoing = ruda_allocate_array(
-            &function->allocator,
-            cell_count == 0 ? 1 : cell_count,
-            sizeof(uint64_t)
-        );
-        checked_scratch = ruda_allocate_array(
-            &function->allocator,
-            register_count == 0 ? 1 : register_count,
-            sizeof(uint64_t)
-        );
-    }
-    if (incoming == NULL || outgoing == NULL || scratch == NULL
-        || (has_checked_index_operations
-            && (checked_incoming == NULL || checked_outgoing == NULL
-                || checked_scratch == NULL))) {
+    if (incoming == NULL || outgoing == NULL || scratch == NULL) {
         status = RUDA_BYTECODE_VERIFY_ALLOCATION_FAILED;
         goto cleanup;
     }
@@ -657,42 +652,6 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
         ruda_bytecode_transfer_assignments(
             ruda_vector_at_const(&function->blocks, 0),
             outgoing,
-            register_count
-        );
-    }
-    if (has_checked_index_operations && cell_count != 0) {
-        const RudaBytecodeBlock *entry = ruda_vector_at_const(
-            &function->blocks, 0
-        );
-        size_t register_index = 0;
-        size_t entry_work = 0;
-        for (register_index = 0; register_index < cell_count;
-            register_index += 1) {
-            checked_incoming[register_index] =
-                RUDA_BYTECODE_CHECKED_INDEX_TOP;
-            checked_outgoing[register_index] =
-                RUDA_BYTECODE_CHECKED_INDEX_TOP;
-        }
-        for (register_index = 0; register_index < register_count;
-            register_index += 1) {
-            checked_incoming[register_index] =
-                RUDA_BYTECODE_CHECKED_INDEX_NONE;
-            checked_outgoing[register_index] =
-                RUDA_BYTECODE_CHECKED_INDEX_NONE;
-        }
-        if (!ruda_size_multiply(
-                entry != NULL ? entry->instructions.length : 0,
-                register_count,
-                &entry_work
-            ) || !ruda_bytecode_consume_verify_work(
-                &work, entry_work, work_limit
-            )) {
-            status = RUDA_BYTECODE_VERIFY_LIMIT_REACHED;
-            goto cleanup;
-        }
-        ruda_bytecode_transfer_checked_indices(
-            entry,
-            checked_outgoing,
             register_count
         );
     }
@@ -761,81 +720,22 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
             }
         } while (changed);
     }
-    if (has_checked_index_operations) {
-        bool changed = false;
-        do {
-            changed = false;
-            for (block_index = 1; block_index < block_count;
-                block_index += 1) {
-                size_t predecessor_index = 0;
-                uint64_t *incoming_row = checked_incoming
-                    + block_index * register_count;
-                uint64_t *outgoing_row = checked_outgoing
-                    + block_index * register_count;
-                const RudaBytecodeBlock *block = ruda_vector_at_const(
-                    &function->blocks, block_index
-                );
-                size_t register_index = 0;
-                size_t transfer_work = 0;
-                for (register_index = 0; register_index < register_count;
-                    register_index += 1) {
-                    checked_scratch[register_index] =
-                    RUDA_BYTECODE_CHECKED_INDEX_TOP;
-                }
-                for (predecessor_index = predecessor_offsets[block_index];
-                    predecessor_index < predecessor_offsets[block_index + 1];
-                    predecessor_index += 1) {
-                    const uint64_t *predecessor_row = checked_outgoing
-                        + (size_t)predecessors[predecessor_index]
-                            * register_count;
-                    for (register_index = 0; register_index < register_count;
-                        register_index += 1) {
-                        checked_scratch[register_index] =
-                            ruda_bytecode_meet_checked_index(
-                                checked_scratch[register_index],
-                                predecessor_row[register_index]
-                            );
-                    }
-                    if (!ruda_bytecode_consume_verify_work(
-                            &work, register_count, work_limit
-                        )) {
-                        status = RUDA_BYTECODE_VERIFY_LIMIT_REACHED;
-                        goto cleanup;
-                    }
-                }
-                if (register_count != 0 && memcmp(
-                        incoming_row, checked_scratch,
-                        checked_scratch_size
-                    ) != 0) {
-                    memcpy(
-                        incoming_row, checked_scratch, checked_scratch_size
-                    );
-                    changed = true;
-                }
-                if (!ruda_size_multiply(
-                        block->instructions.length,
-                        register_count,
-                        &transfer_work
-                    ) || !ruda_bytecode_consume_verify_work(
-                        &work, transfer_work, work_limit
-                    )) {
-                    status = RUDA_BYTECODE_VERIFY_LIMIT_REACHED;
-                    goto cleanup;
-                }
-                ruda_bytecode_transfer_checked_indices(
-                    block, checked_scratch, register_count
-                );
-                if (register_count != 0 && memcmp(
-                        outgoing_row, checked_scratch,
-                        checked_scratch_size
-                    ) != 0) {
-                    memcpy(
-                        outgoing_row, checked_scratch, checked_scratch_size
-                    );
-                    changed = true;
-                }
-            }
-        } while (changed);
+    {
+        size_t provenance_work = 0;
+        status = ruda_bytecode_provenance_analyze(
+            function,
+            predecessor_offsets,
+            predecessors,
+            has_checked_index_operations,
+            has_required_variant_operations,
+            work_limit - work,
+            &provenance_work,
+            &provenance
+        );
+        if (status != RUDA_BYTECODE_VERIFY_OK) {
+            goto cleanup;
+        }
+        work += provenance_work;
     }
     for (block_index = 0; block_index < block_count; block_index += 1) {
         const RudaBytecodeBlock *block = ruda_vector_at_const(
@@ -849,14 +749,8 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
                 incoming + block_index * register_count,
                 register_count
             );
-            if (has_checked_index_operations) {
-                memcpy(
-                    checked_scratch,
-                    checked_incoming + block_index * register_count,
-                    checked_scratch_size
-                );
-            }
         }
+        ruda_bytecode_provenance_begin_block(provenance, block_index);
         for (instruction_index = 0;
             instruction_index + 1 < block->instructions.length;
             instruction_index += 1) {
@@ -864,12 +758,11 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
                 &block->instructions,
                 instruction_index
             );
-            if (instruction->opcode == RUDA_OPCODE_ARRAY_SET
-                && (checked_scratch == NULL
-                    || checked_scratch[
-                        (size_t)instruction->operands[0].unsigned_value
-                    ] != instruction->operands[1].unsigned_value)) {
-                status = RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+            status = ruda_bytecode_provenance_validate_instruction(
+                provenance,
+                instruction
+            );
+            if (status != RUDA_BYTECODE_VERIFY_OK) {
                 goto cleanup;
             }
             status = ruda_bytecode_verify_value_instruction(
@@ -880,23 +773,18 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
             if (status != RUDA_BYTECODE_VERIFY_OK) {
                 goto cleanup;
             }
-            if (has_checked_index_operations) {
-                size_t transfer_work = 0;
-                if (!ruda_size_multiply(
-                        ruda_bytecode_opcode_writes_register(
-                            instruction->opcode
-                        ) ? 1 : 0,
-                        register_count,
-                        &transfer_work
-                    ) || !ruda_bytecode_consume_verify_work(
-                        &work, transfer_work, work_limit
-                    )) {
-                    status = RUDA_BYTECODE_VERIFY_LIMIT_REACHED;
+            {
+                size_t provenance_work = 0;
+                status = ruda_bytecode_provenance_advance_instruction(
+                    provenance,
+                    instruction,
+                    work_limit - work,
+                    &provenance_work
+                );
+                if (status != RUDA_BYTECODE_VERIFY_OK) {
                     goto cleanup;
                 }
-                ruda_bytecode_transfer_checked_index_instruction(
-                    instruction, checked_scratch, register_count
-                );
+                work += provenance_work;
             }
         }
         status = ruda_bytecode_verify_terminator(
@@ -910,21 +798,7 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
     }
 
 cleanup:
-    ruda_deallocate(
-        &function->allocator,
-        checked_scratch,
-        checked_scratch_size
-    );
-    ruda_deallocate(
-        &function->allocator,
-        checked_outgoing,
-        checked_cells_size
-    );
-    ruda_deallocate(
-        &function->allocator,
-        checked_incoming,
-        checked_cells_size
-    );
+    ruda_bytecode_provenance_dispose(provenance);
     ruda_deallocate(
         &function->allocator,
         scratch,

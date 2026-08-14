@@ -66,12 +66,15 @@ RudaMirVerifyStatus ruda_mir_verify_managed_layouts(
             return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
         }
         {
-            RudaMirRecordId record_id = (RudaMirRecordId)block_index;
+            RudaMirManagedLayoutInfo info = {
+                RUDA_MIR_MANAGED_LAYOUT_RECORD,
+                (uint32_t)block_index
+            };
             if (!ruda_map_put(
                     managed_types,
                     &record->type,
                     sizeof(record->type),
-                    &record_id
+                    &info
                 )) {
                 return RUDA_MIR_VERIFY_ALLOCATION_FAILED;
             }
@@ -191,12 +194,15 @@ RudaMirVerifyStatus ruda_mir_verify_managed_layouts(
             return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
         }
         {
-            RudaMirEnumId enum_id = (RudaMirEnumId)block_index;
+            RudaMirManagedLayoutInfo info = {
+                RUDA_MIR_MANAGED_LAYOUT_ENUM,
+                (uint32_t)block_index
+            };
             if (!ruda_map_put(
                     managed_types,
                     &enum_layout->type,
                     sizeof(enum_layout->type),
-                    &enum_id
+                    &info
                 )) {
                 return RUDA_MIR_VERIFY_ALLOCATION_FAILED;
             }
@@ -261,7 +267,10 @@ RudaMirVerifyStatus ruda_mir_verify_managed_layouts(
             function,
             (RudaMirArrayId)block_index
         );
-        RudaTypeId layout_id = (RudaTypeId)block_index;
+        RudaMirManagedLayoutInfo info = {
+            RUDA_MIR_MANAGED_LAYOUT_ARRAY,
+            (uint32_t)block_index
+        };
         if (array == NULL || array->type < RUDA_TYPE_FIRST_DYNAMIC
             || array->element_type == RUDA_TYPE_INVALID) {
             return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
@@ -274,11 +283,11 @@ RudaMirVerifyStatus ruda_mir_verify_managed_layouts(
             return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
         }
         if (!ruda_map_put(
-                managed_types,
-                &array->type,
-                sizeof(array->type),
-                &layout_id
-            )) {
+            managed_types,
+            &array->type,
+            sizeof(array->type),
+            &info
+        )) {
             return RUDA_MIR_VERIFY_ALLOCATION_FAILED;
         }
         if (!ruda_mir_consume_verify_work(

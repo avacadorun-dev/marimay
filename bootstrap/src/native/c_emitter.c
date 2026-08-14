@@ -81,7 +81,7 @@ bool ruda_native_c_emit_runtime(
             "#ifndef RUDA_G_FAIL_ALLOCATION_AT\n#define RUDA_G_FAIL_ALLOCATION_AT SIZE_MAX\n#endif\n"
             "#ifndef RUDA_G_MAX_OBJECTS\n#define RUDA_G_MAX_OBJECTS SIZE_MAX\n#endif\n")
         && ruda_native_c_write(buffer,
-        "typedef struct { const unsigned char *data; size_t length; } ruda_g_string;\n")
+        "typedef struct { const unsigned char *data; size_t length; RudaManagedReference managed; } ruda_g_string;\n")
         && ruda_native_c_write(buffer,
             "typedef struct { const unsigned char *symbol; size_t start; size_t end; } ruda_g_frame;\n")
         && ruda_native_c_write(buffer,
@@ -151,7 +151,7 @@ bool ruda_native_c_emit_keep_assets(
     }
     return ruda_native_c_write(
         buffer,
-        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n}\n\n"
+        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n  ruda_g_keep_managed();\n}\n\n"
     );
 }
 
@@ -216,6 +216,12 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
         sizeof(*ordered),
         ruda_native_c_function_pointer_compare
     );
+    if (!ruda_native_c_managed_layouts_valid(
+            ordered, program->function_count
+        )) {
+        status = RUDA_NATIVE_C_EMIT_INVALID_MIR;
+        goto cleanup;
+    }
     for (index = 0; index < program->function_count; index += 1) {
         if (index != 0 && ruda_native_c_symbol_compare(
                 ordered[index - 1]->symbol, ordered[index]->symbol
@@ -262,6 +268,15 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
         status = RUDA_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
         goto cleanup;
     }
+    if (entry->result_type != RUDA_TYPE_VOID
+        && entry->result_type != RUDA_TYPE_NEVER
+        && entry->result_type != RUDA_TYPE_I64
+        && entry->result_type != RUDA_TYPE_F64
+        && entry->result_type != RUDA_TYPE_BOOL
+        && entry->result_type != RUDA_TYPE_STRING) {
+        status = RUDA_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
+        goto cleanup;
+    }
     if (uses_f64 && !ruda_f64_binary64_supported()) {
         status = RUDA_NATIVE_C_EMIT_UNSUPPORTED_HOST;
         goto cleanup;
@@ -288,6 +303,9 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
         if (!ruda_native_c_emit_symbol_and_strings(&buffer, ordered[index])) goto emit_fail;
     }
     if (!ruda_native_c_write(&buffer, "\n")
+        || !ruda_native_c_emit_managed_descriptors(
+            &buffer, ordered, program->function_count
+        )
         || !ruda_native_c_emit_keep_assets(
             &buffer,
             ordered,

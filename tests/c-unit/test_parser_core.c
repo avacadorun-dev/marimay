@@ -149,6 +149,7 @@ void ruda_test_parser_examples(void) {
     static const char *const paths[] = {
         "examples/concurrency.ruda",
         "examples/matrix.ruda",
+        "examples/nominal_cp1.ruda",
         "examples/service.ruda",
         "examples/tour.ruda",
         "examples/tour_test.ruda",

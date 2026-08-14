@@ -3,14 +3,15 @@
 #include <limits.h>
 #include <string.h>
 enum {
-    RUDA_MIR_REFERENCE_KIND_SHIFT = 30
+    RUDA_MIR_REFERENCE_KIND_SHIFT = 29
 };
-#define RUDA_MIR_REFERENCE_INDEX_MASK UINT32_C(0x3fffffff)
+#define RUDA_MIR_REFERENCE_INDEX_MASK UINT32_C(0x1fffffff)
 typedef enum RudaMirReferenceKind {
     RUDA_MIR_REFERENCE_RECORD = 0,
     RUDA_MIR_REFERENCE_ENUM = 1,
     RUDA_MIR_REFERENCE_STRING = 2,
-    RUDA_MIR_REFERENCE_ARRAY = 3
+    RUDA_MIR_REFERENCE_ARRAY = 3,
+    RUDA_MIR_REFERENCE_INTERFACE = 4
 } RudaMirReferenceKind;
 static bool ruda_mir_reference_encode(
     const RudaMirExecution *execution,
@@ -121,7 +122,12 @@ bool ruda_mir_execution_init(
             &execution->arrays,
             allocator,
             sizeof(RudaMirManagedArray *)
+        ) || !ruda_vector_init(
+            &execution->interface_values,
+            allocator,
+            sizeof(RudaMirManagedInterface *)
         )) {
+        ruda_vector_dispose(&execution->interface_values);
         ruda_vector_dispose(&execution->arrays);
         ruda_vector_dispose(&execution->strings);
         ruda_vector_dispose(&execution->enums);
@@ -195,6 +201,21 @@ void ruda_mir_execution_dispose(RudaMirExecution *execution) {
             *value = NULL;
         }
     }
+    for (index = 0; index < execution->interface_values.length; index += 1) {
+        RudaMirManagedInterface **value = ruda_vector_at(
+            &execution->interface_values,
+            index
+        );
+        if (value != NULL && *value != NULL) {
+            ruda_deallocate(
+                &execution->allocator,
+                *value,
+                (*value)->allocation_size
+            );
+            *value = NULL;
+        }
+    }
+    ruda_vector_dispose(&execution->interface_values);
     ruda_vector_dispose(&execution->arrays);
     ruda_vector_dispose(&execution->strings);
     ruda_vector_dispose(&execution->enums);
@@ -303,6 +324,25 @@ const RudaMirManagedArray *ruda_mir_execution_array_value(
                 &index
             )
         ? ruda_vector_at_const(&execution->arrays, index)
+        : NULL;
+    return stored != NULL && *stored != NULL && (*stored)->type == value.type
+        ? *stored
+        : NULL;
+}
+const RudaMirManagedInterface *ruda_mir_execution_interface_value(
+    const RudaMirExecution *execution,
+    RudaMirValue value
+) {
+    size_t index = 0;
+    RudaMirManagedInterface *const *stored = execution != NULL
+            && execution->initialized
+            && ruda_mir_reference_decode(
+                execution,
+                value.as.reference,
+                RUDA_MIR_REFERENCE_INTERFACE,
+                &index
+            )
+        ? ruda_vector_at_const(&execution->interface_values, index)
         : NULL;
     return stored != NULL && *stored != NULL && (*stored)->type == value.type
         ? *stored
@@ -441,6 +481,7 @@ bool ruda_mir_execution_owns_reference(
     return ruda_mir_execution_string_value(execution, value) != NULL
         || ruda_mir_execution_enum_value(execution, value) != NULL
         || ruda_mir_execution_array_value(execution, value) != NULL
+        || ruda_mir_execution_interface_value(execution, value) != NULL
         || (record != NULL && *record != NULL && (*record)->type == value.type);
 }
 bool ruda_mir_type_is_managed(RudaTypeId type) {
@@ -561,6 +602,10 @@ RudaMirInterpretStatus ruda_mir_execution_new_record(
     if (!ruda_size_add(
             execution->objects.length,
             execution->enums.length,
+            &object_count
+        ) || !ruda_size_add(
+            object_count,
+            execution->interface_values.length,
             &object_count
         ) || object_count >= execution->options.max_objects
         || execution->objects.length >= RUDA_MIR_REFERENCE_INDEX_MASK
@@ -702,6 +747,10 @@ RudaMirInterpretStatus ruda_mir_execution_new_enum(
     if (!ruda_size_add(
             execution->objects.length,
             execution->enums.length,
+            &object_count
+        ) || !ruda_size_add(
+            object_count,
+            execution->interface_values.length,
             &object_count
         ) || !ruda_size_add(
             payload_value_count,
@@ -932,6 +981,88 @@ RudaMirInterpretStatus ruda_mir_execution_new_array(
             execution,
             RUDA_MIR_REFERENCE_ARRAY,
             execution->arrays.length - 1,
+            result
+        )
+        ? RUDA_MIR_INTERPRET_OK
+        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+}
+RudaMirInterpretStatus ruda_mir_execution_new_interface(
+    RudaMirExecution *execution,
+    RudaTypeId type,
+    RudaMirValue payload,
+    const RudaSymbolId *methods,
+    size_t method_count,
+    RudaMirReference *result
+) {
+    RudaMirManagedInterface *value = NULL;
+    size_t method_bytes = 0;
+    size_t allocation_size = 0;
+    size_t object_count = 0;
+    size_t object_slots = 0;
+    size_t new_total_fields = 0;
+    if (execution == NULL || !execution->initialized || result == NULL
+        || type < RUDA_TYPE_FIRST_DYNAMIC
+        || (methods == NULL && method_count != 0)) {
+        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+    }
+    if (!ruda_mir_type_is_managed(payload.type)
+        || !ruda_mir_execution_owns_reference(execution, payload)) {
+        return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+    }
+    if (!ruda_size_add(
+            execution->objects.length,
+            execution->enums.length,
+            &object_count
+        ) || !ruda_size_add(
+            object_count,
+            execution->interface_values.length,
+            &object_count
+        ) || !ruda_size_add(method_count, 1, &object_slots)
+        || object_count >= execution->options.max_objects
+        || execution->interface_values.length >= RUDA_MIR_REFERENCE_INDEX_MASK
+        || object_slots > execution->options.max_fields_per_object
+        || !ruda_size_add(
+            execution->total_fields,
+            object_slots,
+            &new_total_fields
+        ) || new_total_fields > execution->options.max_total_fields
+        || !ruda_size_multiply(
+            method_count,
+            sizeof(RudaSymbolId),
+            &method_bytes
+        ) || !ruda_size_add(
+            offsetof(RudaMirManagedInterface, methods),
+            method_bytes,
+            &allocation_size
+        )) {
+        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+    }
+    if (!ruda_vector_reserve(
+            &execution->interface_values,
+            execution->interface_values.length + 1
+        )) {
+        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    }
+    value = ruda_allocate(&execution->allocator, allocation_size);
+    if (value == NULL) {
+        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    }
+    value->type = type;
+    value->payload = payload;
+    value->method_count = method_count;
+    value->allocation_size = allocation_size;
+    if (method_count != 0) {
+        memcpy(value->methods, methods, method_bytes);
+    }
+    if (!ruda_vector_push(&execution->interface_values, &value)) {
+        ruda_deallocate(&execution->allocator, value, allocation_size);
+        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    }
+    execution->total_fields = new_total_fields;
+    return ruda_mir_reference_encode(
+            execution,
+            RUDA_MIR_REFERENCE_INTERFACE,
+            execution->interface_values.length - 1,
             result
         )
         ? RUDA_MIR_INTERPRET_OK

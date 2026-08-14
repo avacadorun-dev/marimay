@@ -101,25 +101,8 @@ static bool ruda_checked_type_is_managed(
     const RudaCheckResult *checked,
     RudaTypeId type
 ) {
-    size_t index = 0;
-    if (type == RUDA_TYPE_STRING) {
-        return true;
-    }
-    for (index = 0; checked != NULL && index < checked->records.length;
-        index += 1) {
-        const RudaCheckedRecord *record = ruda_checked_record(checked, index);
-        if (record != NULL && record->type == type) {
-            return true;
-        }
-    }
-    for (index = 0; checked != NULL && index < checked->enums.length;
-        index += 1) {
-        const RudaCheckedEnum *enum_value = ruda_checked_enum(checked, index);
-        if (enum_value != NULL && enum_value->type == type) {
-            return true;
-        }
-    }
-    return false;
+    (void)checked;
+    return type == RUDA_TYPE_STRING || type >= RUDA_TYPE_FIRST_DYNAMIC;
 }
 
 RudaMirInterpretStatus ruda_check_interpret_function(

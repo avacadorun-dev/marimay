@@ -56,15 +56,23 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
             > function->options.max_array_constructions
         || function->array_arguments.length
             > function->options.max_array_arguments
+        || function->interfaces.length
+            > function->options.max_interface_layouts
+        || function->interface_constructions.length
+            > function->options.max_interface_constructions
+        || function->interface_methods.length
+            > function->options.max_interface_methods
         || function->options.max_verify_work == 0) {
         return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
     }
     if (function->records.length != 0 || function->enums.length != 0
-        || function->arrays.length != 0) {
+        || function->arrays.length != 0 || function->interfaces.length != 0
+        || function->interface_constructions.length != 0
+        || function->interface_methods.length != 0) {
         if (!ruda_map_init(
                 &managed_types,
                 function->allocator,
-                sizeof(RudaTypeId),
+                sizeof(RudaMirManagedLayoutInfo),
                 UINT64_C(0x725564614d495231),
                 UINT64_C(0x725564614d495232)
             )) {
@@ -77,6 +85,16 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
         &managed_types,
         &work
     );
+    if (status != RUDA_MIR_VERIFY_OK) {
+        goto cleanup;
+    }
+    status = managed_types_initialized
+        ? ruda_mir_verify_interface_layouts(
+            function,
+            &managed_types,
+            &work
+        )
+        : RUDA_MIR_VERIFY_OK;
     if (status != RUDA_MIR_VERIFY_OK) {
         goto cleanup;
     }
@@ -168,7 +186,8 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
             }
             size_t instruction_work = 1;
             if (instruction != NULL
-                && instruction->kind == RUDA_MIR_CALL) {
+                && (instruction->kind == RUDA_MIR_CALL
+                    || instruction->kind == RUDA_MIR_CALL_INTERFACE)) {
                 const RudaMirCall *call = ruda_mir_call(
                     function,
                     instruction->call
@@ -241,6 +260,21 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                         : RUDA_MIR_VERIFY_LIMIT_REACHED;
                     goto cleanup;
                 }
+            } else if (instruction != NULL
+                && instruction->kind == RUDA_MIR_INTERFACE_NEW) {
+                if (instruction->interface_construction
+                    >= function->interface_constructions.length) {
+                    status = RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+                    goto cleanup;
+                }
+                if (!ruda_size_add(
+                        instruction_work,
+                        1,
+                        &instruction_work
+                    )) {
+                    status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+                    goto cleanup;
+                }
             }
             if (!ruda_mir_consume_verify_work(
                     &work,
@@ -251,7 +285,11 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                 goto cleanup;
             }
             status = instruction != NULL
-                ? ruda_mir_validate_instruction_types(function, instruction)
+                ? ruda_mir_validate_instruction_types(
+                    function,
+                    instruction,
+                    managed_types_initialized ? &managed_types : NULL
+                )
                 : RUDA_MIR_VERIFY_INVALID_ARGUMENT;
             if (status != RUDA_MIR_VERIFY_OK) {
                 goto cleanup;
@@ -747,7 +785,8 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                     : RUDA_MIR_VERIFY_INVALID_REGISTER;
                 goto cleanup;
             }
-            if (instruction->kind == RUDA_MIR_CALL) {
+            if (instruction->kind == RUDA_MIR_CALL
+                || instruction->kind == RUDA_MIR_CALL_INTERFACE) {
                 const RudaMirCall *call = ruda_mir_call(
                     function,
                     instruction->call
@@ -785,6 +824,35 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                             : RUDA_MIR_VERIFY_INVALID_REGISTER;
                         goto cleanup;
                     }
+                }
+            } else if (instruction->kind == RUDA_MIR_INTERFACE_NEW) {
+                const RudaMirInterfaceConstruction *construction =
+                    instruction->interface_construction
+                            < function->interface_constructions.length
+                        ? ruda_vector_at_const(
+                            &function->interface_constructions,
+                            instruction->interface_construction
+                        )
+                        : NULL;
+                if (!ruda_mir_consume_verify_work(
+                        &work,
+                        1,
+                        function->options.max_verify_work
+                    )) {
+                    status = RUDA_MIR_VERIFY_LIMIT_REACHED;
+                    goto cleanup;
+                }
+                if (construction == NULL
+                    || !ruda_mir_assigned_register(
+                        working,
+                        register_count,
+                        construction->payload
+                    )) {
+                    status = construction != NULL
+                            && construction->payload < register_count
+                        ? RUDA_MIR_VERIFY_UNINITIALIZED_REGISTER
+                        : RUDA_MIR_VERIFY_INVALID_REGISTER;
+                    goto cleanup;
                 }
             } else if (instruction->kind == RUDA_MIR_RECORD_NEW) {
                 const RudaMirRecordConstruction *construction =

@@ -3,7 +3,8 @@
 #include <string.h>
 RudaMirVerifyStatus ruda_mir_validate_instruction_types(
     const RudaMirFunction *function,
-    const RudaMirInstruction *instruction
+    const RudaMirInstruction *instruction,
+    const RudaMap *managed_types
 ) {
     RudaTypeId target_type = ruda_mir_register_type(
         function,
@@ -447,6 +448,7 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             size_t argument_end = 0;
             size_t index = 0;
             if (call == NULL || call->result_type == RUDA_TYPE_NEVER
+                || call->interface_slot != UINT32_MAX
                 || !ruda_size_add(
                     call->argument_start,
                     call->argument_count,
@@ -478,6 +480,108 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             }
             return RUDA_MIR_VERIFY_OK;
         }
+        case RUDA_MIR_INTERFACE_NEW: {
+            const RudaMirInterfaceConstruction *construction =
+                instruction->interface_construction
+                    < function->interface_constructions.length
+                ? ruda_vector_at_const(
+                    &function->interface_constructions,
+                    instruction->interface_construction
+                ) : NULL;
+            const RudaMirInterface *layout = construction != NULL
+                ? ruda_vector_at_const(
+                    &function->interfaces, construction->interface_id
+                ) : NULL;
+            const RudaMirManagedLayoutInfo *payload_layout =
+                construction != NULL && managed_types != NULL
+                ? ruda_map_get_const(
+                    managed_types,
+                    &construction->payload_type,
+                    sizeof(construction->payload_type)
+                )
+                : NULL;
+            RudaTypeId payload_type = construction != NULL
+                ? ruda_mir_register_type(function, construction->payload)
+                : RUDA_TYPE_INVALID;
+            if (construction == NULL || layout == NULL
+                || construction->method_count != layout->method_count
+                || payload_layout == NULL
+                || (payload_layout->kind != RUDA_MIR_MANAGED_LAYOUT_RECORD
+                    && payload_layout->kind != RUDA_MIR_MANAGED_LAYOUT_ENUM)) {
+                return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+            }
+            if (payload_type == RUDA_TYPE_INVALID) {
+                return RUDA_MIR_VERIFY_INVALID_REGISTER;
+            }
+            if (payload_type != construction->payload_type) {
+                return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            return target_type == layout->type ? RUDA_MIR_VERIFY_OK
+                : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+        }
+        case RUDA_MIR_CALL_INTERFACE: {
+            const RudaMirCall *call = ruda_mir_call(function, instruction->call);
+            size_t argument_end = 0;
+            size_t argument_index = 0;
+            const RudaMirCallArgument *receiver = call != NULL
+                    && call->argument_count != 0
+                ? ruda_mir_call_argument(function, call->argument_start)
+                : NULL;
+            const RudaMirManagedLayoutInfo *receiver_layout =
+                receiver != NULL && managed_types != NULL
+                ? ruda_map_get_const(
+                    managed_types,
+                    &receiver->type,
+                    sizeof(receiver->type)
+                )
+                : NULL;
+            const RudaMirInterface *interface_layout =
+                receiver_layout != NULL
+                    && receiver_layout->kind
+                        == RUDA_MIR_MANAGED_LAYOUT_INTERFACE
+                    && receiver_layout->layout < function->interfaces.length
+                ? ruda_vector_at_const(
+                    &function->interfaces,
+                    receiver_layout->layout
+                )
+                : NULL;
+            if (call == NULL || call->interface_slot == UINT32_MAX
+                || call->argument_count == 0
+                || !ruda_size_add(
+                    call->argument_start,
+                    call->argument_count,
+                    &argument_end
+                )
+                || argument_end > function->call_arguments.length
+                || interface_layout == NULL
+                || call->interface_slot >= interface_layout->method_count) {
+                return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+            }
+            if (target_type != call->result_type) {
+                return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            for (argument_index = call->argument_start;
+                argument_index < argument_end;
+                argument_index += 1) {
+                const RudaMirCallArgument *argument = ruda_mir_call_argument(
+                    function,
+                    argument_index
+                );
+                RudaTypeId actual = argument != NULL
+                    ? ruda_mir_register_type(
+                        function,
+                        argument->register_id
+                    )
+                    : RUDA_TYPE_INVALID;
+                if (actual == RUDA_TYPE_INVALID) {
+                    return RUDA_MIR_VERIFY_INVALID_REGISTER;
+                }
+                if (actual != argument->type) {
+                    return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+                }
+            }
+            return RUDA_MIR_VERIFY_OK;
+        }
     }
     return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
 }
@@ -486,7 +590,8 @@ bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind) {
         && kind != RUDA_MIR_CONSTANT_BOOL
         && kind != RUDA_MIR_CONSTANT_STRING && kind != RUDA_MIR_RECORD_NEW
         && kind != RUDA_MIR_ENUM_NEW && kind != RUDA_MIR_ARRAY_NEW
-        && kind != RUDA_MIR_CALL;
+        && kind != RUDA_MIR_INTERFACE_NEW && kind != RUDA_MIR_CALL
+        && kind != RUDA_MIR_CALL_INTERFACE;
 }
 bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
     switch (kind) {
@@ -536,6 +641,8 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_ENUM_REQUIRE_VARIANT:
         case RUDA_MIR_ENUM_GET_PAYLOAD:
         case RUDA_MIR_CALL:
+        case RUDA_MIR_INTERFACE_NEW:
+        case RUDA_MIR_CALL_INTERFACE:
             return false;
     }
     return false;

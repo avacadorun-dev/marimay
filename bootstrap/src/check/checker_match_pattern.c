@@ -2,6 +2,19 @@
 #include "checker_core_api.h"
 #include "checker_lookup_api.h"
 
+bool ruda_checker_private_analyze_enum_match_alternative(
+    RudaFunctionChecker *function,
+    RudaCheckEnumDeclaration *enum_declaration,
+    const RudaAstNode *pattern,
+    RudaVector *bindings,
+    RudaCheckEnumMatchAlternative *alternative
+);
+bool ruda_checker_private_record_match_validate_named(
+    RudaFunctionChecker *function,
+    const RudaAstNode *constructor,
+    RudaCheckRecordDeclaration *record,
+    RudaVector *bindings
+);
 
 
 
@@ -146,7 +159,59 @@
                 type
             );
     }
-    ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+    if (node != NULL && node->kind == RUDA_SYNTAX_CONSTRUCTOR_PATTERN) {
+        const RudaAstNode *constructor_name =
+            ruda_checker_private_check_child_node(
+                node, RUDA_SYNTAX_NAME_PATTERN, 0
+            );
+        RudaCheckRecordDeclaration *record = NULL;
+        RudaCheckEnumDeclaration *enum_declaration = NULL;
+        if (!ruda_checker_private_enum_match_name(
+                function, constructor_name, &name
+            )) {
+            return false;
+        }
+        record = ruda_checker_private_checker_find_record_by_type(
+            function->checker, type
+        );
+        if (record != NULL) {
+            RudaCheckRecordDeclaration *named =
+                ruda_checker_private_checker_find_record(
+                    function->checker, name
+                );
+            if (named != record) {
+                (void)ruda_checker_add_diagnostic(
+                    function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                    "nested record pattern constructor does not match its exact field type",
+                    constructor_name->start, constructor_name->end
+                );
+                return false;
+            }
+            return ruda_checker_private_record_match_validate_named(
+                function, node, record, bindings
+            );
+        }
+        enum_declaration = ruda_checker_private_checker_find_enum_by_type(
+            function->checker, type
+        );
+        if (enum_declaration != NULL) {
+            RudaCheckEnumMatchAlternative nested;
+            return ruda_checker_private_analyze_enum_match_alternative(
+                function, enum_declaration, node, bindings, &nested
+            );
+        }
+        (void)ruda_checker_add_diagnostic(
+            function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            "nested constructor pattern requires a nominal record or enum field",
+            node->start, node->end
+        );
+        return false;
+    }
+    (void)ruda_checker_add_diagnostic(
+        function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        "pattern does not match the nested field type",
+        node != NULL ? node->start : 0, node != NULL ? node->end : 0
+    );
     return false;
 }
 
@@ -705,6 +770,186 @@ cleanup:
     if (!alternative->is_catch_all) {
         alternative->variant = variant;
         alternative->variant_index = variant_index;
+        if (!ruda_checker_private_enum_match_payloads_are_refutable(
+                function,
+                alternative,
+                &alternative->has_refutable_nested_pattern
+            )) {
+            return false;
+        }
+    }
+    return true;
+}
+
+static bool ruda_checker_private_pattern_is_refutable(
+    RudaFunctionChecker *function,
+    const RudaAstNode *pattern,
+    RudaTypeId type,
+    bool *result
+) {
+    RudaCheckRecordDeclaration *record = NULL;
+    const RudaAstNode *named = NULL;
+    const RudaAstNode *fields = NULL;
+    size_t ordinal = 0;
+    if (function == NULL || pattern == NULL || result == NULL) {
+        return false;
+    }
+    *result = false;
+    if (pattern->kind == RUDA_SYNTAX_WILDCARD_PATTERN
+        || pattern->kind == RUDA_SYNTAX_NAME_PATTERN) {
+        return true;
+    }
+    if (pattern->kind != RUDA_SYNTAX_CONSTRUCTOR_PATTERN) {
+        *result = true;
+        return true;
+    }
+    if (ruda_checker_private_checker_find_enum_by_type(
+            function->checker, type
+        ) != NULL) {
+        *result = true;
+        return true;
+    }
+    record = ruda_checker_private_checker_find_record_by_type(
+        function->checker, type
+    );
+    named = ruda_checker_private_check_child_node(
+        pattern, RUDA_SYNTAX_NAMED_PATTERN, 0
+    );
+    fields = ruda_checker_private_check_child_node(
+        named, RUDA_SYNTAX_PATTERN_FIELDS, 0
+    );
+    if (record == NULL || named == NULL || fields == NULL) {
+        return false;
+    }
+    for (;;) {
+        const RudaAstNode *field = ruda_checker_private_check_child_node(
+            fields, RUDA_SYNTAX_PATTERN_FIELD, ordinal
+        );
+        const RudaSyntaxToken *token = NULL;
+        const RudaAstNode *child = NULL;
+        RudaCheckName name;
+        RudaCheckRecordFieldDeclaration *declaration = NULL;
+        bool child_refutable = false;
+        if (field == NULL) {
+            break;
+        }
+        ordinal += 1;
+        token = ruda_checker_private_check_child_token(
+            field, RUDA_TOKEN_IDENTIFIER, 0
+        );
+        child = ruda_checker_private_check_child_node_any(field, 0);
+        if (token == NULL || token->synthetic || child == NULL) {
+            return false;
+        }
+        name = (RudaCheckName){function->checker->ast->snapshot,
+            token->start, token->end};
+        declaration = ruda_checker_private_checker_find_record_field(
+            function->checker, record, name, NULL
+        );
+        if (declaration == NULL
+            || !ruda_checker_private_pattern_is_refutable(
+                function, child, declaration->type, &child_refutable
+            )) {
+            return false;
+        }
+        if (child_refutable) {
+            *result = true;
+            return true;
+        }
+    }
+    return true;
+}
+
+ bool ruda_checker_private_enum_match_payloads_are_refutable(
+    RudaFunctionChecker *function,
+    const RudaCheckEnumMatchAlternative *alternative,
+    bool *result
+) {
+    const RudaAstNode *shape = NULL;
+    size_t index = 0;
+    if (function == NULL || alternative == NULL || result == NULL
+        || alternative->variant == NULL) {
+        return false;
+    }
+    *result = false;
+    if (alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_UNIT) {
+        return true;
+    }
+    shape = ruda_checker_private_check_child_node(
+        alternative->pattern,
+        alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
+            ? RUDA_SYNTAX_POSITIONAL_PATTERN : RUDA_SYNTAX_NAMED_PATTERN,
+        0
+    );
+    if (shape == NULL) {
+        return false;
+    }
+    if (alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL) {
+        const RudaAstNode *list = ruda_checker_private_check_child_node(
+            shape, RUDA_SYNTAX_PATTERN_LIST, 0
+        );
+        if (list == NULL) {
+            return false;
+        }
+        for (index = 0; index < alternative->variant->payload.length; index += 1) {
+            const RudaAstNode *child = ruda_checker_private_check_child_node_any(
+                list, index
+            );
+            const RudaCheckEnumPayloadItemDeclaration *payload =
+                ruda_vector_at_const(&alternative->variant->payload, index);
+            bool child_refutable = false;
+            if (child == NULL || payload == NULL
+                || !ruda_checker_private_pattern_is_refutable(
+                    function, child, payload->type, &child_refutable
+                )) {
+                return false;
+            }
+            if (child_refutable) {
+                *result = true;
+                return true;
+            }
+        }
+        return true;
+    }
+    shape = ruda_checker_private_check_child_node(
+        shape, RUDA_SYNTAX_PATTERN_FIELDS, 0
+    );
+    if (shape == NULL) {
+        return false;
+    }
+    for (index = 0; index < alternative->variant->payload.length; index += 1) {
+        const RudaAstNode *field = ruda_checker_private_check_child_node(
+            shape, RUDA_SYNTAX_PATTERN_FIELD, index
+        );
+        const RudaAstNode *child = field != NULL
+            ? ruda_checker_private_check_child_node_any(field, 0) : NULL;
+        if (child != NULL) {
+            const RudaSyntaxToken *token = ruda_checker_private_check_child_token(
+                field, RUDA_TOKEN_IDENTIFIER, 0
+            );
+            RudaCheckName name;
+            size_t payload_index = 0;
+            const RudaCheckEnumPayloadItemDeclaration *payload = NULL;
+            bool child_refutable = false;
+            if (token == NULL || token->synthetic) {
+                return false;
+            }
+            name = (RudaCheckName){function->checker->ast->snapshot,
+                token->start, token->end};
+            payload = ruda_checker_private_checker_find_enum_payload(
+                function->checker, alternative->variant, name, &payload_index
+            );
+            if (payload == NULL
+                || !ruda_checker_private_pattern_is_refutable(
+                    function, child, payload->type, &child_refutable
+                )) {
+                return false;
+            }
+            if (child_refutable) {
+                *result = true;
+                return true;
+            }
+        }
     }
     return true;
 }

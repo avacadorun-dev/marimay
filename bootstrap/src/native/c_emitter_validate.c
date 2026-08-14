@@ -61,24 +61,11 @@ RudaNativeCArrayKind ruda_native_c_array_kind(
         : RUDA_NATIVE_C_ARRAY_UNSUPPORTED;
 }
 
-bool ruda_native_c_type_supported(
-    const RudaMirFunction *function,
-    RudaTypeId type,
-    bool result
-) {
-    return type == RUDA_TYPE_BOOL || type == RUDA_TYPE_I64
-        || type == RUDA_TYPE_F64
-        || type == RUDA_TYPE_STRING
-        || ruda_native_c_array_kind(function, type) == RUDA_NATIVE_C_ARRAY_F64
-        || ruda_native_c_array_kind(function, type)
-            == RUDA_NATIVE_C_ARRAY_ARRAY_F64
-        || (result && (type == RUDA_TYPE_VOID || type == RUDA_TYPE_NEVER));
-}
-
 const char *ruda_native_c_type(
     const RudaMirFunction *function,
     RudaTypeId type
 ) {
+    (void)function;
     if (type == RUDA_TYPE_BOOL) {
         return "bool";
     }
@@ -88,9 +75,7 @@ const char *ruda_native_c_type(
     if (type == RUDA_TYPE_F64) {
         return "uint64_t";
     }
-    if (ruda_native_c_array_kind(function, type) == RUDA_NATIVE_C_ARRAY_F64
-        || ruda_native_c_array_kind(function, type)
-            == RUDA_NATIVE_C_ARRAY_ARRAY_F64) {
+    if (type >= RUDA_TYPE_FIRST_DYNAMIC) {
         return "RudaManagedReference";
     }
     return "int64_t";
@@ -252,10 +237,8 @@ size_t ruda_native_c_managed_register_count(
             index
         );
         if (type != NULL
-            && (ruda_native_c_array_kind(function, *type)
-                    == RUDA_NATIVE_C_ARRAY_F64
-                || ruda_native_c_array_kind(function, *type)
-                    == RUDA_NATIVE_C_ARRAY_ARRAY_F64)) {
+            && (*type == RUDA_TYPE_STRING
+                || *type >= RUDA_TYPE_FIRST_DYNAMIC)) {
             result += 1;
         }
     }
@@ -301,6 +284,88 @@ bool ruda_native_c_call_supported(
     return true;
 }
 
+bool ruda_native_c_interface_call_supported(
+    const RudaMirFunction *function,
+    RudaMirCallId call_id,
+    const RudaMirFunction *const *functions,
+    size_t count,
+    RudaTypeId required_result
+) {
+    const RudaMirCall *call = ruda_native_c_call(function, call_id);
+    const RudaMirCallArgument *receiver = call != NULL
+        ? ruda_native_c_call_argument(function, call->argument_start)
+        : NULL;
+    RudaNativeCManagedLayout interface_layout;
+    const RudaMirInterface *interface = NULL;
+    size_t function_index = 0;
+    bool found_construction = false;
+    if (call == NULL || receiver == NULL || call->argument_count == 0
+        || call->interface_slot == UINT32_MAX
+        || call->result_type != required_result
+        || !ruda_native_c_find_managed_layout(
+            functions, count, receiver->type, &interface_layout
+        ) || interface_layout.kind != RUDA_NATIVE_C_MANAGED_INTERFACE) {
+        return false;
+    }
+    interface = ruda_vector_at_const(
+        &interface_layout.function->interfaces, interface_layout.index
+    );
+    if (interface == NULL || call->interface_slot >= interface->method_count) {
+        return false;
+    }
+    for (function_index = 0; function_index < count; function_index += 1) {
+        const RudaMirFunction *owner = functions[function_index];
+        size_t construction_index = 0;
+        for (construction_index = 0;
+            construction_index < owner->interface_constructions.length;
+            construction_index += 1) {
+            const RudaMirInterfaceConstruction *construction =
+                ruda_vector_at_const(
+                    &owner->interface_constructions, construction_index
+                );
+            const RudaMirInterface *constructed = construction != NULL
+                ? ruda_vector_at_const(
+                    &owner->interfaces, construction->interface_id
+                ) : NULL;
+            const RudaSymbolId *method = construction != NULL
+                && call->interface_slot < construction->method_count
+                ? ruda_vector_at_const(
+                    &owner->interface_methods,
+                    construction->method_start + call->interface_slot
+                ) : NULL;
+            const RudaMirFunction *callee = method != NULL
+                ? ruda_native_c_find(functions, count, *method) : NULL;
+            size_t argument_index = 0;
+            if (constructed == NULL || constructed->type != receiver->type) {
+                continue;
+            }
+            found_construction = true;
+            if (callee == NULL || callee->result_type != call->result_type
+                || callee->parameter_count != call->argument_count) {
+                return false;
+            }
+            for (argument_index = 0;
+                argument_index < call->argument_count;
+                argument_index += 1) {
+                const RudaMirCallArgument *argument =
+                    ruda_native_c_call_argument(
+                        function, call->argument_start + argument_index
+                    );
+                const RudaTypeId *parameter = ruda_vector_at_const(
+                    &callee->register_types, argument_index
+                );
+                RudaTypeId expected = argument_index == 0
+                    ? construction->payload_type
+                    : (argument != NULL ? argument->type : RUDA_TYPE_INVALID);
+                if (parameter == NULL || *parameter != expected) {
+                    return false;
+                }
+            }
+        }
+    }
+    return found_construction;
+}
+
 RudaNativeCEmitStatus ruda_native_c_validate_function(
     const RudaMirFunction *function,
     const RudaMirFunction *const *functions,
@@ -320,15 +385,15 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
     if (verify_status != RUDA_MIR_VERIFY_OK) {
         return RUDA_NATIVE_C_EMIT_INVALID_MIR;
     }
-    if (!ruda_native_c_type_supported(function, function->result_type, true)) {
+    if (!ruda_native_c_program_type_supported(
+            functions, count, function->result_type, true
+        )) {
         return RUDA_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
     }
     for (index = 0; index < function->register_types.length; index += 1) {
         const RudaTypeId *type = ruda_vector_at_const(&function->register_types, index);
-        if (type == NULL || !ruda_native_c_type_supported(
-                function,
-                *type,
-                false
+        if (type == NULL || !ruda_native_c_program_type_supported(
+                functions, count, *type, false
             )) {
             return RUDA_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
         }
@@ -368,14 +433,17 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
                 case RUDA_MIR_ARRAY_NEW: case RUDA_MIR_ARRAY_LENGTH:
                 case RUDA_MIR_ARRAY_REQUIRE_INDEX: case RUDA_MIR_ARRAY_GET:
                 case RUDA_MIR_ARRAY_SET:
+                case RUDA_MIR_RECORD_NEW: case RUDA_MIR_RECORD_GET:
+                case RUDA_MIR_RECORD_SET: case RUDA_MIR_RECORD_IDENTITY_SAME:
+                case RUDA_MIR_ENUM_NEW: case RUDA_MIR_ENUM_IS_VARIANT:
+                case RUDA_MIR_ENUM_REQUIRE_VARIANT:
+                case RUDA_MIR_ENUM_GET_PAYLOAD: case RUDA_MIR_INTERFACE_NEW:
                     break;
                 case RUDA_MIR_CALL: {
                     const RudaMirCall *call = ruda_native_c_call(function, instruction->call);
                     if (call == NULL
-                        || !ruda_native_c_type_supported(
-                            function,
-                            call->result_type,
-                            false
+                        || !ruda_native_c_program_type_supported(
+                            functions, count, call->result_type, false
                         )
                         || !ruda_native_c_call_supported(
                             function,
@@ -388,11 +456,16 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
                     }
                     break;
                 }
-                case RUDA_MIR_RECORD_NEW: case RUDA_MIR_RECORD_GET:
-                case RUDA_MIR_RECORD_SET: case RUDA_MIR_RECORD_IDENTITY_SAME:
-                case RUDA_MIR_ENUM_NEW: case RUDA_MIR_ENUM_IS_VARIANT:
-                case RUDA_MIR_ENUM_REQUIRE_VARIANT: case RUDA_MIR_ENUM_GET_PAYLOAD:
-                    return RUDA_NATIVE_C_EMIT_UNSUPPORTED_INSTRUCTION;
+                case RUDA_MIR_CALL_INTERFACE: {
+                    const RudaMirCall *call = ruda_native_c_call(
+                        function, instruction->call
+                    );
+                    if (call == NULL || !ruda_native_c_interface_call_supported(
+                            function, instruction->call, functions, count,
+                            call->result_type
+                        )) return RUDA_NATIVE_C_EMIT_UNSUPPORTED_CALL;
+                    break;
+                }
             }
         }
         if (block->terminator.kind == RUDA_MIR_CALL_NEVER) {

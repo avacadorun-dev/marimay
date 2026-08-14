@@ -19,6 +19,8 @@ void ruda_test_checker_enum_declarations(void);
 void ruda_test_checker_enum_package_order(void);
 void ruda_test_checker_enum_execution(void);
 void ruda_test_checker_enum_match(void);
+void ruda_test_checker_interfaces(void);
+void ruda_test_checker_nested_patterns(void);
 void ruda_test_checker_enum_or_patterns(void);
 void ruda_test_checker_boolean_match(void);
 void ruda_test_checker_match_witnesses(void);

@@ -33,6 +33,9 @@ RudaMirFunctionOptions ruda_mir_function_default_options(void) {
     options.max_array_layouts = 100000;
     options.max_array_constructions = 100000;
     options.max_array_arguments = 1000000;
+    options.max_interface_layouts = 100000;
+    options.max_interface_constructions = 100000;
+    options.max_interface_methods = 1000000;
     options.max_verify_work = 100000000;
     return options;
 }
@@ -63,6 +66,9 @@ bool ruda_mir_function_init(
     bool arrays_initialized = false;
     bool array_constructions_initialized = false;
     bool array_arguments_initialized = false;
+    bool interfaces_initialized = false;
+    bool interface_constructions_initialized = false;
+    bool interface_methods_initialized = false;
     if (function == NULL || allocator.allocate == NULL
         || allocator.deallocate == NULL
         || (parameter_types == NULL && parameter_count != 0)
@@ -94,6 +100,11 @@ bool ruda_mir_function_init(
         || options.max_array_constructions == 0
         || options.max_array_constructions > UINT32_MAX
         || options.max_array_arguments == 0
+        || options.max_interface_layouts == 0
+        || options.max_interface_layouts > UINT32_MAX
+        || options.max_interface_constructions == 0
+        || options.max_interface_constructions > UINT32_MAX
+        || options.max_interface_methods == 0
         || options.max_verify_work == 0) {
         return false;
     }
@@ -188,6 +199,16 @@ bool ruda_mir_function_init(
         allocator,
         sizeof(RudaMirArrayArgument)
     );
+    interfaces_initialized = ruda_vector_init(
+        &function->interfaces, allocator, sizeof(RudaMirInterface)
+    );
+    interface_constructions_initialized = ruda_vector_init(
+        &function->interface_constructions, allocator,
+        sizeof(RudaMirInterfaceConstruction)
+    );
+    interface_methods_initialized = ruda_vector_init(
+        &function->interface_methods, allocator, sizeof(RudaSymbolId)
+    );
     if (!registers_initialized || !blocks_initialized || !calls_initialized
         || !call_arguments_initialized || !records_initialized
         || !record_fields_initialized || !record_constructions_initialized
@@ -196,11 +217,22 @@ bool ruda_mir_function_init(
         || !enum_constructions_initialized || !enum_arguments_initialized
         || !string_constants_initialized || !arrays_initialized
         || !array_constructions_initialized || !array_arguments_initialized
+        || !interfaces_initialized || !interface_constructions_initialized
+        || !interface_methods_initialized
         || (parameter_count != 0 && !ruda_vector_append(
             &function->register_types,
             parameter_types,
             parameter_count
         ))) {
+        if (interface_methods_initialized) {
+            ruda_vector_dispose(&function->interface_methods);
+        }
+        if (interface_constructions_initialized) {
+            ruda_vector_dispose(&function->interface_constructions);
+        }
+        if (interfaces_initialized) {
+            ruda_vector_dispose(&function->interfaces);
+        }
         if (array_arguments_initialized) {
             ruda_vector_dispose(&function->array_arguments);
         }
@@ -285,6 +317,9 @@ void ruda_mir_function_dispose(RudaMirFunction *function) {
         }
     }
     ruda_vector_dispose(&function->string_constants);
+    ruda_vector_dispose(&function->interface_methods);
+    ruda_vector_dispose(&function->interface_constructions);
+    ruda_vector_dispose(&function->interfaces);
     ruda_vector_dispose(&function->array_arguments);
     ruda_vector_dispose(&function->array_constructions);
     ruda_vector_dispose(&function->arrays);
@@ -393,6 +428,7 @@ bool ruda_mir_add_call(
     }
     call.callee = callee;
     call.result_type = result_type;
+    call.interface_slot = UINT32_MAX;
     call.argument_start = function->call_arguments.length;
     call.argument_count = argument_count;
     if (!ruda_vector_append(
@@ -404,6 +440,20 @@ bool ruda_mir_add_call(
         return false;
     }
     *result = (RudaMirCallId)(function->calls.length - 1);
+    return true;
+}
+
+bool ruda_mir_set_call_interface_slot(
+    RudaMirFunction *function,
+    RudaMirCallId call,
+    uint32_t slot
+) {
+    RudaMirCall *stored = function != NULL && function->initialized
+        ? ruda_vector_at(&function->calls, call) : NULL;
+    if (stored == NULL) {
+        return false;
+    }
+    stored->interface_slot = slot;
     return true;
 }
 bool ruda_mir_add_record(
@@ -918,6 +968,7 @@ bool ruda_mir_add_array_construction(
     );
     return true;
 }
+
 bool ruda_mir_append_instruction(
     RudaMirFunction *function,
     RudaMirBlockId block,

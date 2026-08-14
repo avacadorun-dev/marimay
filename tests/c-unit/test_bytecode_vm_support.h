@@ -70,6 +70,12 @@ void ruda_test_vm_array_rhs_ordering(void);
 void ruda_test_vm_managed_array_calls(void);
 void ruda_test_vm_managed_array_provenance(void);
 void ruda_test_vm_managed_array_panic_frames(void);
+void ruda_test_vm_interfaces(void);
+void ruda_test_vm_interface_values(void);
+void ruda_test_vm_nominal_values_and_verifier(void);
+void ruda_test_vm_nominal_host_boundary(void);
+void ruda_test_vm_nominal_identity_and_strings(void);
+void ruda_test_vm_nominal_codec(void);
 void ruda_test_vm_rejection_round_trip_and_allocation(void);
 
 #endif

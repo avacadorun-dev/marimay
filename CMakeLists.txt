@@ -86,12 +86,22 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/base/vector.c
   bootstrap/src/base/writer.c
   bootstrap/src/bytecode/bytecode.c
+  bootstrap/src/bytecode/bytecode_nominal.c
   bootstrap/src/bytecode/bytecode_codec.c
+  bootstrap/src/bytecode/bytecode_codec_nominal.c
+  bootstrap/src/bytecode/bytecode_codec_nominal_values.c
   bootstrap/src/bytecode/bytecode_verify.c
   bootstrap/src/bytecode/bytecode_verify_instructions.c
+  bootstrap/src/bytecode/bytecode_verify_nominal.c
+  bootstrap/src/bytecode/bytecode_verify_provenance.c
   bootstrap/src/bytecode/program.c
+  bootstrap/src/bytecode/program_limits.c
+  bootstrap/src/bytecode/program_verify_nominal.c
   bootstrap/src/bytecode/mir_lower.c
+  bootstrap/src/bytecode/mir_lower_nominal.c
   bootstrap/src/bytecode/vm.c
+  bootstrap/src/bytecode/vm_interface.c
+  bootstrap/src/bytecode/vm_nominal.c
   bootstrap/src/bytecode/vm_prepare.c
   bootstrap/src/bytecode/vm_value.c
   bootstrap/src/check/array.c
@@ -101,11 +111,13 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/checker_declaration_constants.c
   bootstrap/src/check/checker_declaration_enums.c
   bootstrap/src/check/checker_declaration_functions.c
+  bootstrap/src/check/checker_declaration_interfaces.c
   bootstrap/src/check/checker_declaration_lifecycle.c
   bootstrap/src/check/checker_declaration_nominal.c
   bootstrap/src/check/checker_declaration_publication_nominal.c
   bootstrap/src/check/checker_declaration_records.c
   bootstrap/src/check/checker_expr_calls.c
+  bootstrap/src/check/checker_expr_interfaces.c
   bootstrap/src/check/checker_expr_nominal.c
   bootstrap/src/check/checker_expr_records.c
   bootstrap/src/check/checker_expr_scalar.c
@@ -140,11 +152,15 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/mir/execution.c
   bootstrap/src/mir/execution_heap.c
   bootstrap/src/mir/mir.c
+  bootstrap/src/mir/mir_interfaces.c
   bootstrap/src/mir/verify.c
+  bootstrap/src/mir/verify_interfaces.c
   bootstrap/src/mir/verify_managed.c
   bootstrap/src/mir/verify_support.c
   bootstrap/src/native/c_emitter.c
+  bootstrap/src/native/c_emitter_descriptors.c
   bootstrap/src/native/c_emitter_emit.c
+  bootstrap/src/native/c_emitter_managed.c
   bootstrap/src/native/c_emitter_validate.c
   bootstrap/src/parse/parser.c
   bootstrap/src/parse/parser_declaration.c
@@ -156,6 +172,11 @@ add_library(ruda_bootstrap STATIC
   runtime/common/directory.c
   runtime/common/file.c
   runtime/common/managed.c
+  runtime/common/managed_internal.c
+  runtime/common/managed_string.c
+  runtime/common/managed_record.c
+  runtime/common/managed_enum.c
+  runtime/common/managed_interface.c
   ${RUDA_PLATFORM_SOURCES}
 )
 

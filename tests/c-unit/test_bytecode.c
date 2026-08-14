@@ -11,4 +11,7 @@ void ruda_test_bytecode(void) {
     ruda_test_bytecode_string_pool();
     ruda_test_bytecode_string_verifier_rejections();
     ruda_test_bytecode_allocation_failures();
+    ruda_test_bytecode_verifier_provenance();
+    ruda_test_bytecode_nominal_verifier_matrix();
+    ruda_test_bytecode_nominal_program_schemas();
 }

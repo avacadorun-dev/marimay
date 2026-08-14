@@ -1,6 +1,7 @@
 #include "checker_expr_calls_api.h"
 #include "checker_core_api.h"
 #include "checker_expr_nominal_api.h"
+#include "checker_expr_interfaces_api.h"
 #include "checker_expr_records_api.h"
 #include "checker_lookup_api.h"
 
@@ -651,6 +652,7 @@ cleanup:
     bool identity_resolved = false;
     bool length_resolved = false;
     bool length_available = false;
+    bool interface_resolved = false;
     const RudaAstNode *member_callee = ruda_checker_private_check_child_node(
         node,
         RUDA_SYNTAX_MEMBER_EXPRESSION,
@@ -679,6 +681,27 @@ cleanup:
                 function->checker,
                 length_name
             ) == NULL;
+    }
+    if (!ruda_checker_private_compile_identity_same(
+            function,
+            node,
+            &identity_resolved,
+            result
+        )) {
+        goto cleanup;
+    }
+    if (identity_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_checker_private_compile_interface_call(
+            function, node, &interface_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (interface_resolved) {
+        accepted = true;
+        goto cleanup;
     }
     if (!ruda_compile_array_length_call(
             function,
@@ -859,18 +882,6 @@ cleanup:
             goto cleanup;
         }
         ruda_checker_private_expression_set_never(function, result);
-        accepted = true;
-        goto cleanup;
-    }
-    if (!ruda_checker_private_compile_identity_same(
-            function,
-            node,
-            &identity_resolved,
-            result
-        )) {
-        goto cleanup;
-    }
-    if (identity_resolved) {
         accepted = true;
         goto cleanup;
     }

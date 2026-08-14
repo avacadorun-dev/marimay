@@ -15,6 +15,7 @@ typedef struct RudaCheckEnumMatchAlternative {
     size_t variant_index;
     bool is_catch_all;
     bool has_catch_binding;
+    bool has_refutable_nested_pattern;
 } RudaCheckEnumMatchAlternative;
 
 typedef struct RudaCheckEnumMatchArm {

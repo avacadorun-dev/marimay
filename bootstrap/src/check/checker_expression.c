@@ -3,13 +3,14 @@
 #include "checker_expr_nominal_api.h"
 #include "checker_expr_records_api.h"
 #include "checker_expr_scalar_api.h"
+#include "checker_expr_interfaces_api.h"
 #include "checker_lookup_api.h"
 
 
 
 
 
-bool ruda_compile_expression(
+bool ruda_checker_private_compile_expression_raw(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
     RudaTypeId expected,
@@ -30,7 +31,9 @@ bool ruda_compile_expression(
             ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
             return false;
         }
-        return ruda_compile_expression(function, inner, expected, result);
+        return ruda_checker_private_compile_expression_raw(
+            function, inner, expected, result
+        );
     }
     if (node->kind == RUDA_SYNTAX_NAME_EXPRESSION) {
         return ruda_checker_private_compile_name(function, node, result);
@@ -91,4 +94,17 @@ bool ruda_compile_expression(
     }
     ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
     return false;
+}
+
+bool ruda_compile_expression(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node,
+    RudaTypeId expected,
+    RudaExpressionValue *result
+) {
+    return ruda_checker_private_compile_expression_raw(
+        function, node, expected, result
+    ) && ruda_checker_private_maybe_box_interface(
+        function, node, expected, result
+    );
 }

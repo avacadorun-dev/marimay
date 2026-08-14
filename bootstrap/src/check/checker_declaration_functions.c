@@ -2,6 +2,7 @@
 #include "checker_cfg_api.h"
 #include "checker_core_api.h"
 #include "checker_declaration_lifecycle_api.h"
+#include "checker_expr_interfaces_api.h"
 #include "checker_expr_scalar_api.h"
 #include "checker_lookup_api.h"
 #include "checker_statement_api.h"
@@ -834,6 +835,9 @@ cleanup:
             accepted = true;
             goto cleanup;
         }
+    }
+    if (!ruda_checker_private_function_ensure_interface_layouts(&function)) {
+        goto cleanup;
     }
     verify_status = ruda_mir_verify(&function.mir);
     if (verify_status == RUDA_MIR_VERIFY_ALLOCATION_FAILED) {

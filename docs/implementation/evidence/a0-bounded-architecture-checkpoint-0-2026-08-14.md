@@ -59,6 +59,21 @@ is 1,175 lines, the largest owner-private header is 221 lines, and the largest
 checker owner API is 139 lines. There are 94 production/platform and 82
 unit/fuzz C translation units.
 
+## Post-audit public-header closure — 2026-08-15
+
+The first version of `tools/check-architecture` discovered all handwritten C
+translation units but applied the 160-line public owner-header ceiling only to
+the bytecode include subtree. The corrected gate recursively scans both
+`bootstrap/include/ruda/` and `runtime/include/ruda/`, excluding generated
+artifacts only. Its built-in policy regression proves discovery of checker and
+runtime public headers and proves the exact 160/161 acceptance boundary.
+
+The former aggregate bytecode, MIR, checker/service, type-system, and managed
+runtime headers are now backwards-compatible umbrellas over self-contained
+semantic owner headers. The largest handwritten public owner header is
+`bootstrap/include/ruda/bytecode/vm.h` at exactly 160 lines. The exception
+registry remains empty.
+
 ## Semantic ownership review
 
 The first mechanical checker split was rejected even though it passed the line
@@ -103,7 +118,10 @@ ctest --preset asan-ubsan --output-on-failure      1/1 passed; 34.78 s
 
 ## Remaining verification
 
-Tier 1 GitHub Actions is intentionally not claimed before the checkpoint is
-pushed. A0 remains `in-progress` until the Linux x86_64/arm64, macOS
-arm64/x86_64, Windows x86_64, sanitizer, and documentation jobs for the pushed
-commit are linked here and pass.
+The pushed architecture commit passed the complete configured Gitea Linux
+x86_64 matrix, including Clang/GCC Debug and Release, ASan/UBSan/LSan, TSan,
+and documentation/architecture invariants in
+[Gitea run 26](http://ci.example:3000/OS/Ruda/actions/runs/26). A0 remains
+`in-progress`: Linux arm64, macOS arm64/x86_64, and Windows x86_64 Tier 1 jobs
+still require linked GitHub Actions evidence, and the public-header closure
+must pass the CI run for its containing pushed checkpoint commit.

@@ -111,6 +111,31 @@ typedef struct RudaCheckEnumDeclaration {
     bool variants_resolved;
 } RudaCheckEnumDeclaration;
 
+typedef struct RudaCheckInterfaceMethodDeclaration {
+    RudaCheckName name;
+    RudaOwnedBytes owned_name;
+    const RudaAstNode *node;
+    RudaVector parameter_types;
+    RudaTypeId result_type;
+    bool name_initialized;
+    bool parameter_types_initialized;
+} RudaCheckInterfaceMethodDeclaration;
+
+typedef struct RudaCheckInterfaceDeclaration {
+    const RudaAstTree *ast;
+    const RudaAstNode *node;
+    RudaCheckName name;
+    RudaOwnedBytes owned_name;
+    RudaSymbolId symbol;
+    RudaTypeId type;
+    RudaVector methods;
+    bool name_initialized;
+    bool methods_initialized;
+    bool methods_resolved;
+    bool declaration_valid;
+    bool is_public;
+} RudaCheckInterfaceDeclaration;
+
 typedef struct RudaCheckFunctionDeclaration {
     const RudaAstTree *ast;
     const RudaAstNode *node;
@@ -139,7 +164,8 @@ typedef enum RudaCheckTopLevelKind {
     RUDA_CHECK_TOP_LEVEL_CONSTANT,
     RUDA_CHECK_TOP_LEVEL_TYPE_ALIAS,
     RUDA_CHECK_TOP_LEVEL_RECORD,
-    RUDA_CHECK_TOP_LEVEL_ENUM
+    RUDA_CHECK_TOP_LEVEL_ENUM,
+    RUDA_CHECK_TOP_LEVEL_INTERFACE
 } RudaCheckTopLevelKind;
 
 typedef struct RudaCheckTopLevelEntry {

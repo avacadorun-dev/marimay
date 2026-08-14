@@ -82,6 +82,14 @@ void ruda_checker_fail(RudaChecker *checker, RudaCheckStatus status);
     RudaChecker *checker,
     RudaTypeId type
 );
+ RudaCheckInterfaceDeclaration *ruda_checker_private_checker_find_interface(
+    RudaChecker *checker,
+    RudaCheckName name
+);
+ RudaCheckInterfaceDeclaration *ruda_checker_private_checker_find_interface_by_type(
+    RudaChecker *checker,
+    RudaTypeId type
+);
  RudaCheckEnumVariantDeclaration *ruda_checker_private_checker_find_enum_variant(
     RudaChecker *checker,
     RudaCheckEnumDeclaration *enum_declaration,

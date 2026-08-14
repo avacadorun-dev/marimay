@@ -124,6 +124,11 @@ void ruda_test_native_compile_and_run_configured(
     char allocator_source_path[1024];
     char provenance_source_path[1024];
     char managed_source_path[1024];
+    char managed_internal_source_path[1024];
+    char managed_string_source_path[1024];
+    char managed_record_source_path[1024];
+    char managed_enum_source_path[1024];
+    char managed_interface_source_path[1024];
     const char *run_arguments[2];
     RudaProcessResult process;
     FILE *file = NULL;
@@ -197,6 +202,51 @@ void ruda_test_native_compile_and_run_configured(
         RUDA_EXPECT(false);
         goto cleanup;
     }
+    written = snprintf(
+        managed_internal_source_path, sizeof(managed_internal_source_path),
+        "%s/runtime/common/managed_internal.c", RUDA_TEST_SOURCE_DIR
+    );
+    if (written < 0
+        || (size_t)written >= sizeof(managed_internal_source_path)) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    written = snprintf(
+        managed_string_source_path, sizeof(managed_string_source_path),
+        "%s/runtime/common/managed_string.c", RUDA_TEST_SOURCE_DIR
+    );
+    if (written < 0
+        || (size_t)written >= sizeof(managed_string_source_path)) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    written = snprintf(
+        managed_record_source_path, sizeof(managed_record_source_path),
+        "%s/runtime/common/managed_record.c", RUDA_TEST_SOURCE_DIR
+    );
+    if (written < 0
+        || (size_t)written >= sizeof(managed_record_source_path)) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    written = snprintf(
+        managed_enum_source_path, sizeof(managed_enum_source_path),
+        "%s/runtime/common/managed_enum.c", RUDA_TEST_SOURCE_DIR
+    );
+    if (written < 0
+        || (size_t)written >= sizeof(managed_enum_source_path)) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    written = snprintf(
+        managed_interface_source_path, sizeof(managed_interface_source_path),
+        "%s/runtime/common/managed_interface.c", RUDA_TEST_SOURCE_DIR
+    );
+    if (written < 0
+        || (size_t)written >= sizeof(managed_interface_source_path)) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
     file = fopen(source_path, "wb");
     if (file == NULL) {
         RUDA_EXPECT(false);
@@ -254,6 +304,11 @@ void ruda_test_native_compile_and_run_configured(
         arguments[argument_count++] = allocator_source_path;
         arguments[argument_count++] = provenance_source_path;
         arguments[argument_count++] = managed_source_path;
+        arguments[argument_count++] = managed_internal_source_path;
+        arguments[argument_count++] = managed_string_source_path;
+        arguments[argument_count++] = managed_record_source_path;
+        arguments[argument_count++] = managed_enum_source_path;
+        arguments[argument_count++] = managed_interface_source_path;
         arguments[argument_count++] = "-lm";
         arguments[argument_count++] = "-o";
         arguments[argument_count++] = executable_path;

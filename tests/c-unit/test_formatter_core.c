@@ -132,6 +132,10 @@ void ruda_test_formatter_fixture_file(void) {
             "format/named-enum-payload.expected.ruda"
         },
         {
+            "format/nominal-cp1.input.ruda",
+            "format/nominal-cp1.expected.ruda"
+        },
+        {
             "format/grammar.input.ruda",
             "format/grammar.expected.ruda"
         },
@@ -383,6 +387,7 @@ void ruda_test_formatter_long_list(void) {
 void ruda_test_formatter_example_corpus(void) {
     static const char *paths[] = {
         "examples/concurrency.ruda",
+        "examples/nominal_cp1.ruda",
         "examples/service.ruda",
         "examples/tour.ruda",
         "examples/tour_test.ruda"

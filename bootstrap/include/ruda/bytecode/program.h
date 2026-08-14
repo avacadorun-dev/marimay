@@ -31,6 +31,18 @@ typedef struct RudaBytecodeProgramOptions {
     size_t max_total_string_bytes;
     size_t max_total_array_constructions;
     size_t max_total_array_arguments;
+    size_t max_total_record_layouts;
+    size_t max_total_record_fields;
+    size_t max_total_record_constructions;
+    size_t max_total_record_arguments;
+    size_t max_total_enum_layouts;
+    size_t max_total_enum_variants;
+    size_t max_total_enum_payloads;
+    size_t max_total_enum_constructions;
+    size_t max_total_enum_arguments;
+    size_t max_total_interface_layouts;
+    size_t max_total_interface_constructions;
+    size_t max_total_interface_methods;
     size_t max_encoded_bytes;
     size_t max_verify_work;
     RudaBytecodeFunctionOptions function_options;

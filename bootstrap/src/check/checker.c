@@ -3,6 +3,7 @@
 #include "checker_declaration_constants_api.h"
 #include "checker_declaration_enums_api.h"
 #include "checker_declaration_functions_api.h"
+#include "checker_declaration_interfaces_api.h"
 #include "checker_declaration_nominal_api.h"
 #include "checker_declaration_publication_nominal_api.h"
 #include "checker_declaration_records_api.h"
@@ -73,6 +74,8 @@ bool ruda_check_options_valid(
         && options.max_records != 0 && options.max_fields_per_record != 0
         && options.max_enums != 0 && options.max_variants_per_enum != 0
         && options.max_payload_items_per_variant != 0
+        && options.max_interfaces != 0 && options.max_methods_per_interface != 0
+        && options.max_parameters_per_interface_method != 0
         && options.max_locals_per_function != 0
         && options.max_diagnostics != 0 && options.max_constant_steps != 0
         && options.max_constant_depth != 0
@@ -134,6 +137,7 @@ RudaCheckStatus ruda_check_package(
     bool type_aliases_initialized = false;
     bool records_initialized = false;
     bool enums_initialized = false;
+    bool interfaces_initialized = false;
     bool symbols_initialized = false;
     bool function_index_initialized = false;
     bool symbol_index_initialized = false;
@@ -142,6 +146,7 @@ RudaCheckStatus ruda_check_package(
     bool type_alias_declarations_initialized = false;
     bool record_declarations_initialized = false;
     bool enum_declarations_initialized = false;
+    bool interface_declarations_initialized = false;
     bool top_level_index_initialized = false;
     bool local_nominal_index_initialized = false;
     bool callable_index_initialized = false;
@@ -251,6 +256,11 @@ RudaCheckStatus ruda_check_package(
         allocator,
         sizeof(RudaCheckedEnum)
     );
+    interfaces_initialized = ruda_vector_init(
+        &result->interfaces,
+        allocator,
+        sizeof(RudaCheckedInterface)
+    );
     symbols_initialized = ruda_vector_init(
         &result->symbols,
         allocator,
@@ -283,6 +293,11 @@ RudaCheckStatus ruda_check_package(
         allocator,
         sizeof(RudaCheckEnumDeclaration)
     );
+    interface_declarations_initialized = ruda_vector_init(
+        &checker.interfaces,
+        allocator,
+        sizeof(RudaCheckInterfaceDeclaration)
+    );
     top_level_index_initialized = ruda_checker_private_checker_top_level_index_init(
         &checker
     );
@@ -293,13 +308,13 @@ RudaCheckStatus ruda_check_package(
     if (!diagnostics_initialized || !functions_initialized
         || !constants_initialized || !type_aliases_initialized
         || !records_initialized
-        || !enums_initialized || !symbols_initialized
+        || !enums_initialized || !interfaces_initialized || !symbols_initialized
         || !function_index_initialized
         || !symbol_index_initialized
         || !declarations_initialized || !constant_declarations_initialized
         || !type_alias_declarations_initialized
         || !record_declarations_initialized
-        || !enum_declarations_initialized
+        || !enum_declarations_initialized || !interface_declarations_initialized
         || !top_level_index_initialized || !local_nominal_index_initialized
         || !callable_index_initialized) {
         if (callable_index_initialized) {
@@ -326,6 +341,9 @@ RudaCheckStatus ruda_check_package(
         if (enum_declarations_initialized) {
             ruda_vector_dispose(&checker.enums);
         }
+        if (interface_declarations_initialized) {
+            ruda_vector_dispose(&checker.interfaces);
+        }
         if (functions_initialized) {
             ruda_vector_dispose(&result->functions);
         }
@@ -340,6 +358,9 @@ RudaCheckStatus ruda_check_package(
         }
         if (enums_initialized) {
             ruda_vector_dispose(&result->enums);
+        }
+        if (interfaces_initialized) {
+            ruda_vector_dispose(&result->interfaces);
         }
         if (symbols_initialized) {
             ruda_vector_dispose(&result->symbols);
@@ -407,6 +428,11 @@ RudaCheckStatus ruda_check_package(
                     &checker,
                     element->as.node
                 );
+            } else if (element->as.node->kind == RUDA_SYNTAX_INTERFACE_DECL) {
+                (void)ruda_checker_private_collect_interface_declaration(
+                    &checker,
+                    element->as.node
+                );
             }
         }
     }
@@ -421,6 +447,10 @@ RudaCheckStatus ruda_check_package(
     if (!ruda_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
         (void)ruda_checker_private_resolve_all_enum_variants(&checker);
+    }
+    if (!ruda_checker_has_failed(&checker)
+        && result->diagnostics.length == 0) {
+        (void)ruda_checker_private_resolve_all_interface_methods(&checker);
     }
     for (ast_index = 0; ast_index < sorted_asts.length
         && !ruda_checker_has_failed(&checker)
@@ -460,6 +490,8 @@ RudaCheckStatus ruda_check_package(
             } else if (element->as.node->kind == RUDA_SYNTAX_RECORD_DECL) {
                 continue;
             } else if (element->as.node->kind == RUDA_SYNTAX_ENUM_DECL) {
+                continue;
+            } else if (element->as.node->kind == RUDA_SYNTAX_INTERFACE_DECL) {
                 continue;
             } else {
                 ruda_checker_fail(&checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
@@ -509,6 +541,10 @@ RudaCheckStatus ruda_check_package(
     if (!ruda_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
         (void)ruda_checker_private_publish_enums(&checker);
+    }
+    if (!ruda_checker_has_failed(&checker)
+        && result->diagnostics.length == 0) {
+        (void)ruda_checker_private_publish_interfaces(&checker);
     }
     if (!ruda_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {

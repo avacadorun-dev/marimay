@@ -132,6 +132,8 @@ static RudaMirInterpretStatus ruda_mir_invoke_call(
     size_t register_count,
     const RudaAllocator *allocator,
     RudaMirInterpretOptions options,
+    const RudaSymbolId *selected_callee,
+    const RudaMirValue *selected_receiver,
     RudaMirValue *result
 ) {
     const RudaMirCall *call = ruda_mir_call(function, call_id);
@@ -142,6 +144,8 @@ static RudaMirInterpretStatus ruda_mir_invoke_call(
     RudaMirInterpretStatus status;
     if (function == NULL || registers == NULL || allocator == NULL
         || result == NULL || call == NULL || options.call == NULL
+        || ((selected_callee == NULL) != (selected_receiver == NULL))
+        || (selected_receiver != NULL && call->argument_count == 0)
         || !ruda_size_add(
             call->argument_start,
             call->argument_count,
@@ -174,11 +178,13 @@ static RudaMirInterpretStatus ruda_mir_invoke_call(
             ruda_deallocate(allocator, arguments, argument_bytes);
             return RUDA_MIR_INTERPRET_INVALID_MIR;
         }
-        arguments[index] = registers[argument->register_id];
+        arguments[index] = index == 0 && selected_receiver != NULL
+            ? *selected_receiver
+            : registers[argument->register_id];
     }
     status = options.call(
         options.call_context,
-        call->callee,
+        selected_callee != NULL ? *selected_callee : call->callee,
         arguments,
         call->argument_count,
         result
@@ -854,6 +860,8 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 register_count,
                 allocator,
                 options,
+                NULL,
+                NULL,
                 &call_result
             );
             if (status != RUDA_MIR_INTERPRET_OK) {
@@ -870,6 +878,111 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 return options.execution == NULL
                     ? RUDA_MIR_INTERPRET_INVALID_ARGUMENT
                     : RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+            }
+            *target = call_result;
+            return RUDA_MIR_INTERPRET_OK;
+        }
+        case RUDA_MIR_INTERFACE_NEW: {
+            const RudaMirInterfaceConstruction *construction =
+                ruda_mir_interface_construction(
+                    function,
+                    instruction->interface_construction
+                );
+            const RudaMirInterface *layout = construction != NULL
+                ? ruda_mir_interface(function, construction->interface_id)
+                : NULL;
+            const RudaSymbolId *methods = construction != NULL
+                    && construction->method_count != 0
+                ? ruda_mir_interface_method(
+                    function,
+                    construction->method_start
+                )
+                : NULL;
+            size_t method_end = 0;
+            if (options.execution == NULL) {
+                return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+            }
+            if (construction == NULL || layout == NULL
+                || construction->payload >= register_count
+                || construction->method_count != layout->method_count
+                || !ruda_size_add(
+                    construction->method_start,
+                    construction->method_count,
+                    &method_end
+                ) || method_end > function->interface_methods.length
+                || (construction->method_count != 0 && methods == NULL)) {
+                return RUDA_MIR_INTERPRET_INVALID_MIR;
+            }
+            return ruda_mir_execution_new_interface(
+                options.execution,
+                layout->type,
+                registers[construction->payload],
+                methods,
+                construction->method_count,
+                &target->as.reference
+            );
+        }
+        case RUDA_MIR_CALL_INTERFACE: {
+            const RudaMirCall *call = ruda_mir_call(
+                function,
+                instruction->call
+            );
+            const RudaMirCallArgument *receiver = call != NULL
+                    && call->argument_count != 0
+                ? ruda_mir_call_argument(function, call->argument_start)
+                : NULL;
+            const RudaMirManagedInterface *interface_value =
+                receiver != NULL && receiver->register_id < register_count
+                    && options.execution != NULL
+                ? ruda_mir_execution_interface_value(
+                    options.execution,
+                    registers[receiver->register_id]
+                )
+                : NULL;
+            const RudaSymbolId *selected = interface_value != NULL
+                    && call->interface_slot < interface_value->method_count
+                ? &interface_value->methods[call->interface_slot]
+                : NULL;
+            RudaMirValue call_result;
+            RudaMirInterpretStatus status;
+            if (options.execution == NULL) {
+                return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+            }
+            if (call == NULL || receiver == NULL
+                || receiver->register_id >= register_count
+                || call->interface_slot == UINT32_MAX) {
+                return RUDA_MIR_INTERPRET_INVALID_MIR;
+            }
+            if (interface_value == NULL) {
+                return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+            }
+            if (selected == NULL) {
+                return RUDA_MIR_INTERPRET_INVALID_MIR;
+            }
+            memset(&call_result, 0, sizeof(call_result));
+            status = ruda_mir_invoke_call(
+                function,
+                instruction->call,
+                registers,
+                register_count,
+                allocator,
+                options,
+                selected,
+                &interface_value->payload,
+                &call_result
+            );
+            if (status != RUDA_MIR_INTERPRET_OK) {
+                return status;
+            }
+            if (call_result.type != call->result_type) {
+                return RUDA_MIR_INTERPRET_INVALID_MIR;
+            }
+            if (ruda_mir_type_is_managed(call_result.type)
+                && !ruda_mir_execution_owns_reference(
+                    options.execution,
+                    call_result
+                )) {
+                return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
             }
             *target = call_result;
             return RUDA_MIR_INTERPRET_OK;
@@ -1047,6 +1160,8 @@ RudaMirInterpretStatus ruda_mir_interpret(
                 register_count,
                 &allocator,
                 options,
+                NULL,
+                NULL,
                 &unexpected_result
             );
             if (status == RUDA_MIR_INTERPRET_OK) {

@@ -24,14 +24,30 @@ typedef enum RudaNativeCArrayKind {
     RUDA_NATIVE_C_ARRAY_UNSUPPORTED
 } RudaNativeCArrayKind;
 
+typedef enum RudaNativeCManagedKind {
+    RUDA_NATIVE_C_MANAGED_NONE,
+    RUDA_NATIVE_C_MANAGED_ARRAY,
+    RUDA_NATIVE_C_MANAGED_RECORD,
+    RUDA_NATIVE_C_MANAGED_ENUM,
+    RUDA_NATIVE_C_MANAGED_INTERFACE,
+    RUDA_NATIVE_C_MANAGED_UNSUPPORTED
+} RudaNativeCManagedKind;
+
+typedef struct RudaNativeCManagedLayout {
+    const RudaMirFunction *function;
+    RudaNativeCManagedKind kind;
+    size_t index;
+} RudaNativeCManagedLayout;
+
 int ruda_native_c_symbol_compare(RudaSymbolId left, RudaSymbolId right);
 int ruda_native_c_function_pointer_compare(const void *left, const void *right);
 const RudaMirArray *ruda_native_c_array(const RudaMirFunction *function,
     RudaTypeId type);
 RudaNativeCArrayKind ruda_native_c_array_kind(const RudaMirFunction *function,
     RudaTypeId type);
-bool ruda_native_c_type_supported(const RudaMirFunction *function,
-    RudaTypeId type, bool result);
+bool ruda_native_c_program_type_supported(
+    const RudaMirFunction *const *functions, size_t count, RudaTypeId type,
+    bool result);
 const char *ruda_native_c_type(const RudaMirFunction *function, RudaTypeId type);
 bool ruda_native_c_buffer_append(RudaNativeCBuffer *buffer, const char *text,
     size_t length);
@@ -54,9 +70,28 @@ const RudaMirArrayArgument *ruda_native_c_array_argument(
 const char *ruda_native_c_array_descriptor(const RudaMirFunction *function,
     RudaTypeId type);
 size_t ruda_native_c_managed_register_count(const RudaMirFunction *function);
+bool ruda_native_c_find_managed_layout(
+    const RudaMirFunction *const *functions, size_t count, RudaTypeId type,
+    RudaNativeCManagedLayout *result);
+bool ruda_native_c_managed_layouts_valid(
+    const RudaMirFunction *const *functions, size_t count);
+bool ruda_native_c_write_descriptor_name(
+    RudaNativeCBuffer *buffer, RudaNativeCManagedKind kind, RudaTypeId type);
+bool ruda_native_c_write_interface_table_name(
+    RudaNativeCBuffer *buffer, RudaSymbolId symbol, size_t construction);
+bool ruda_native_c_emit_managed_descriptors(
+    RudaNativeCBuffer *buffer, const RudaMirFunction *const *functions,
+    size_t count);
+bool ruda_native_c_emit_managed_parameter_check(
+    RudaNativeCBuffer *buffer, const RudaMirFunction *function,
+    const RudaMirFunction *const *functions, size_t count, size_t parameter);
 bool ruda_native_c_call_supported(const RudaMirFunction *function,
     RudaMirCallId call_id, const RudaMirFunction *const *functions,
     size_t count, RudaTypeId required_result);
+bool ruda_native_c_interface_call_supported(
+    const RudaMirFunction *function, RudaMirCallId call_id,
+    const RudaMirFunction *const *functions, size_t count,
+    RudaTypeId required_result);
 RudaNativeCEmitStatus ruda_native_c_validate_function(
     const RudaMirFunction *function, const RudaMirFunction *const *functions,
     size_t count);
@@ -66,6 +101,16 @@ bool ruda_native_c_has_cycle(const RudaMirFunction *const *functions,
     size_t count, unsigned char *states, RudaNativeCCycleFrame *stack);
 bool ruda_native_c_emit_signature(RudaNativeCBuffer *buffer,
     const RudaMirFunction *function, bool prototype);
+bool ruda_native_c_emit_call_arguments(
+    RudaNativeCBuffer *buffer, const RudaMirFunction *function,
+    const RudaMirCall *call);
+bool ruda_native_c_emit_propagate_call(
+    RudaNativeCBuffer *buffer, RudaSymbolId symbol, RudaMirSpan span,
+    bool returns_never);
+bool ruda_native_c_emit_managed_instruction(
+    RudaNativeCBuffer *buffer, const RudaMirFunction *function,
+    const RudaMirFunction *const *functions, size_t count,
+    const RudaMirInstruction *instruction);
 bool ruda_native_c_emit_function(RudaNativeCBuffer *buffer,
     const RudaMirFunction *function, const RudaMirFunction *const *functions,
     size_t count);

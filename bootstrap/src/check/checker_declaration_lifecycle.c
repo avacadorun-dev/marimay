@@ -118,7 +118,7 @@
     memset(variant, 0, sizeof(*variant));
 }
 
- void ruda_checker_private_enum_declaration_dispose(
+void ruda_checker_private_enum_declaration_dispose(
     RudaCheckEnumDeclaration *declaration
 ) {
     size_t index = 0;
@@ -134,6 +134,42 @@
             ruda_checker_private_enum_variant_declaration_dispose(variant);
         }
         ruda_vector_dispose(&declaration->variants);
+    }
+    if (declaration->name_initialized) {
+        ruda_owned_bytes_dispose(&declaration->owned_name);
+    }
+    memset(declaration, 0, sizeof(*declaration));
+}
+
+void ruda_checker_private_interface_method_declaration_dispose(
+    RudaCheckInterfaceMethodDeclaration *method
+) {
+    if (method == NULL) {
+        return;
+    }
+    if (method->parameter_types_initialized) {
+        ruda_vector_dispose(&method->parameter_types);
+    }
+    if (method->name_initialized) {
+        ruda_owned_bytes_dispose(&method->owned_name);
+    }
+    memset(method, 0, sizeof(*method));
+}
+
+void ruda_checker_private_interface_declaration_dispose(
+    RudaCheckInterfaceDeclaration *declaration
+) {
+    size_t index = 0;
+    if (declaration == NULL) {
+        return;
+    }
+    if (declaration->methods_initialized) {
+        for (index = 0; index < declaration->methods.length; index += 1) {
+            ruda_checker_private_interface_method_declaration_dispose(
+                ruda_vector_at(&declaration->methods, index)
+            );
+        }
+        ruda_vector_dispose(&declaration->methods);
     }
     if (declaration->name_initialized) {
         ruda_owned_bytes_dispose(&declaration->owned_name);
@@ -205,6 +241,7 @@
     RudaCheckName name;
     RudaCheckRecordDeclaration *record = NULL;
     RudaCheckEnumDeclaration *enum_declaration = NULL;
+    RudaCheckInterfaceDeclaration *interface_declaration = NULL;
     RudaCheckTypeAliasDeclaration *alias = NULL;
     const RudaAstNode *type_arguments = NULL;
     const RudaAstNode *argument_type = NULL;
@@ -263,12 +300,18 @@
         if (enum_declaration != NULL) {
             is_public = enum_declaration->is_public;
         } else {
-            alias = ruda_checker_private_checker_find_type_alias(checker, name);
-            if (alias == NULL) {
-                ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
-                return false;
+            interface_declaration =
+                ruda_checker_private_checker_find_interface(checker, name);
+            if (interface_declaration != NULL) {
+                is_public = interface_declaration->is_public;
+            } else {
+                alias = ruda_checker_private_checker_find_type_alias(checker, name);
+                if (alias == NULL) {
+                    ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+                    return false;
+                }
+                is_public = alias->is_public;
             }
-            is_public = alias->is_public;
         }
     }
     if (!is_public) {

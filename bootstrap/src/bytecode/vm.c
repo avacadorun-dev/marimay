@@ -61,30 +61,15 @@ RudaBytecodeRunStatus ruda_bytecode_run(
         && options.execution == NULL) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    if (ruda_bytecode_run_function_uses_arrays(function)
+    if (ruda_bytecode_run_function_uses_managed(function)
         && options.execution == NULL) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    for (index = 0; index < argument_count; index += 1) {
-        const RudaBytecodeType *expected = ruda_vector_at_const(
-            &function->register_types,
-            index
-        );
-        if (expected == NULL || arguments[index].type != *expected) {
-            return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
-        }
-        if (*expected == RUDA_BYTECODE_TYPE_STRING
-            && !ruda_bytecode_run_string_value_valid(
-                options.execution, arguments[index]
-            )) {
-            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
-        }
-        if (ruda_bytecode_type_is_array(*expected)
-            && !ruda_bytecode_managed_value_valid(
-                options.execution, arguments[index]
-            )) {
-            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
-        }
+    status = ruda_bytecode_run_arguments_validate(
+        options.execution, function, arguments, argument_count
+    );
+    if (status != RUDA_BYTECODE_RUN_OK) {
+        return status;
     }
     register_count = function->register_types.length;
     if (!ruda_size_multiply(
@@ -105,7 +90,7 @@ RudaBytecodeRunStatus ruda_bytecode_run(
             index
         );
         registers[index].type = *type;
-        if (ruda_bytecode_type_is_array(*type)) {
+        if (ruda_bytecode_type_is_managed(*type)) {
             registers[index].as.managed_reference =
                 ruda_managed_invalid_reference();
         }
@@ -113,7 +98,7 @@ RudaBytecodeRunStatus ruda_bytecode_run(
     for (index = 0; index < argument_count; index += 1) {
         registers[index] = arguments[index];
     }
-    if (ruda_bytecode_run_function_uses_arrays(function)) {
+    if (ruda_bytecode_run_function_uses_managed(function)) {
         status = ruda_bytecode_run_roots_init(
             &managed_roots, options.execution, function, registers, allocator
         );
@@ -155,6 +140,16 @@ RudaBytecodeRunStatus ruda_bytecode_run(
                 if (ruda_bytecode_type_is_array(completed.type)
                     && !ruda_bytecode_managed_value_valid(
                         options.execution, completed
+                    )) {
+                    status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                    goto cleanup;
+                }
+                if (completed.type == RUDA_BYTECODE_TYPE_INTERFACE
+                    && !ruda_bytecode_run_interface_value_valid(
+                        options.execution,
+                        function,
+                        completed,
+                        function->result_layout
                     )) {
                     status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
                     goto cleanup;
@@ -309,7 +304,7 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
             return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
         }
         frame->registers[index].type = *type;
-        if (ruda_bytecode_type_is_array(*type)) {
+        if (ruda_bytecode_type_is_managed(*type)) {
             frame->registers[index].as.managed_reference =
                 ruda_managed_invalid_reference();
         }
@@ -334,7 +329,7 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_roots_init(
     if (frame == NULL || frame->function == NULL) {
         return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
     }
-    if (!ruda_bytecode_run_function_uses_arrays(&frame->function->body)) {
+    if (!ruda_bytecode_run_function_uses_managed(&frame->function->body)) {
         return RUDA_BYTECODE_RUN_OK;
     }
     if (execution == NULL) {
@@ -439,7 +434,6 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
     RudaBytecodeRunFrame *frames = NULL;
     size_t frame_count = 0;
     size_t frame_capacity = 0;
-    size_t index = 0;
     RudaBytecodeRunStatus status;
     const RudaBytecodeProgramFunction *entry = NULL;
     if (options.trap != NULL) {
@@ -470,7 +464,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         && options.execution == NULL) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    if (ruda_bytecode_run_program_uses_arrays(program)
+    if (ruda_bytecode_run_program_uses_managed(program)
         && options.execution == NULL) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
@@ -478,26 +472,11 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
     if (entry == NULL || argument_count != entry->body.parameter_count) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    for (index = 0; index < argument_count; index += 1) {
-        const RudaBytecodeType *expected = ruda_vector_at_const(
-            &entry->body.register_types,
-            index
-        );
-        if (expected == NULL || arguments[index].type != *expected) {
-            return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
-        }
-        if (*expected == RUDA_BYTECODE_TYPE_STRING
-            && !ruda_bytecode_run_string_value_valid(
-                options.execution, arguments[index]
-            )) {
-            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
-        }
-        if (ruda_bytecode_type_is_array(*expected)
-            && !ruda_bytecode_managed_value_valid(
-                options.execution, arguments[index]
-            )) {
-            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
-        }
+    status = ruda_bytecode_run_arguments_validate(
+        options.execution, &entry->body, arguments, argument_count
+    );
+    if (status != RUDA_BYTECODE_RUN_OK) {
+        return status;
     }
     if (!ruda_bytecode_run_frames_reserve(
             &frames,
@@ -577,6 +556,16 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
                 goto cleanup;
             }
+            if (completed.type == RUDA_BYTECODE_TYPE_INTERFACE
+                && !ruda_bytecode_run_interface_value_valid(
+                    options.execution,
+                    body,
+                    completed,
+                    body->result_layout
+                )) {
+                status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                goto cleanup;
+            }
             if (frame_count == 1) {
                 *result = completed;
                 status = RUDA_BYTECODE_RUN_OK;
@@ -631,19 +620,45 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         }
         if (instruction->opcode == RUDA_OPCODE_CALL_DIRECT
             || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
-            || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER) {
+            || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER
+            || instruction->opcode == RUDA_OPCODE_CALL_INTERFACE) {
             bool returns_void = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID;
             bool returns_never = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER;
+            bool interface_call = instruction->opcode
+                == RUDA_OPCODE_CALL_INTERFACE;
             uint64_t call_wire = instruction->operands[
                 returns_void || returns_never ? 0 : 1
             ].unsigned_value;
             const RudaBytecodeCall *call = call_wire < body->calls.length
                 ? ruda_bytecode_call(body, (RudaBytecodeCallId)call_wire)
                 : NULL;
-            const RudaBytecodeProgramFunction *callee = call != NULL
-                ? ruda_bytecode_program_function_by_symbol(program, call->callee)
-                : NULL;
+            RudaSymbolId callee_symbol;
+            RudaManagedReference interface_payload =
+                ruda_managed_invalid_reference();
+            const RudaBytecodeProgramFunction *callee = NULL;
             size_t argument_index = 0;
+            memset(&callee_symbol, 0, sizeof(callee_symbol));
+            if (interface_call && call != NULL) {
+                status = ruda_bytecode_run_interface_resolve(
+                    instruction,
+                    frame->registers,
+                    options.execution,
+                    body,
+                    &callee_symbol,
+                    &interface_payload
+                );
+                if (status != RUDA_BYTECODE_RUN_OK) {
+                    goto cleanup;
+                }
+            } else if (call != NULL) {
+                callee_symbol = call->callee;
+            }
+            callee = call != NULL
+                ? ruda_bytecode_program_function_by_symbol(
+                    program,
+                    callee_symbol
+                )
+                : NULL;
             if (call == NULL || callee == NULL || frame_count >= options.max_call_depth
             ) {
                 status = frame_count >= options.max_call_depth
@@ -700,8 +715,29 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                     status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
                     goto cleanup;
                 }
-                frames[frame_count].registers[argument_index] =
-                    frames[frame_count - 1].registers[argument->register_id];
+                if (interface_call && argument_index == 0) {
+                    const RudaBytecodeType *parameter = ruda_vector_at_const(
+                        &callee->body.register_types,
+                        0
+                    );
+                    if (parameter == NULL
+                        || !ruda_bytecode_type_is_managed(*parameter)) {
+                        ruda_bytecode_run_frame_dispose(
+                            &frames[frame_count],
+                            &allocator,
+                            options.execution
+                        );
+                        status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                        goto cleanup;
+                    }
+                    frames[frame_count].registers[0].type = *parameter;
+                    frames[frame_count].registers[0].as.managed_reference =
+                        interface_payload;
+                } else {
+                    frames[frame_count].registers[argument_index] =
+                        frames[frame_count - 1]
+                            .registers[argument->register_id];
+                }
             }
             status = ruda_bytecode_run_frame_roots_init(
                 &frames[frame_count], options.execution, allocator

@@ -7,6 +7,8 @@
 #include "ruda/base/allocator.h"
 #include "ruda/runtime/managed.h"
 
+void ruda_test_managed_objects(void);
+
 static const RudaManagedArrayDescriptor ruda_test_managed_i64_descriptor = {
     RUDA_MANAGED_CELL_RAW64,
     NULL
@@ -753,4 +755,5 @@ void ruda_test_managed(void) {
     ruda_test_managed_collection_before_limits();
     ruda_test_managed_allocation_sweep();
     ruda_test_managed_nonempty_allocation_sweep();
+    ruda_test_managed_objects();
 }

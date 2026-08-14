@@ -15,5 +15,11 @@ void ruda_test_bytecode_vm(void) {
     ruda_test_vm_managed_array_calls();
     ruda_test_vm_managed_array_provenance();
     ruda_test_vm_managed_array_panic_frames();
+    ruda_test_vm_interfaces();
+    ruda_test_vm_interface_values();
+    ruda_test_vm_nominal_values_and_verifier();
+    ruda_test_vm_nominal_host_boundary();
+    ruda_test_vm_nominal_identity_and_strings();
+    ruda_test_vm_nominal_codec();
     ruda_test_vm_rejection_round_trip_and_allocation();
 }

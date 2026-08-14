@@ -55,3 +55,13 @@ Stage 0 codec.
 | 42 | `array_require_index` | `destination:register`, `array:register`, `index:register` | `may_panic` | Check D045 bounds and copy the array only after success. |
 | 43 | `array_get` | `destination:register`, `array:register`, `index:register` | `may_panic` | Read one exact managed array element after a D045 bounds check. |
 | 44 | `array_set` | `array:register`, `index:register`, `value:register` | `may_panic` | Store through an ARRAY_REQUIRE_INDEX carrier verified for the same D045 index. |
+| 45 | `record_new` | `destination:register`, `construction:record_construction` | `may_panic` | Create a managed nominal record from a verified construction descriptor. |
+| 46 | `record_get` | `destination:register`, `record:register`, `field:i64` | — | Read one record field by verified declaration-order index. |
+| 47 | `record_set` | `destination:register`, `record:register`, `field:i64` | `may_panic` | Store the destination register into a mutable record field. |
+| 48 | `record_identity_same` | `destination:register`, `left:register`, `right:register` | — | Compare two same-nominal record handles for managed identity. |
+| 49 | `enum_new` | `destination:register`, `construction:enum_construction` | `may_panic` | Create a managed algebraic enum from a verified construction descriptor. |
+| 50 | `enum_is_variant` | `destination:register`, `enum:register`, `variant:i64` | — | Test whether an enum value has the named variant tag. |
+| 51 | `enum_require_variant` | `destination:register`, `enum:register`, `variant:i64` | — | Copy an enum handle after verifying its variant tag. |
+| 52 | `enum_get_payload` | `destination:register`, `enum:register`, `selector:i64` | — | Read one enum payload field after a matching ENUM_REQUIRE_VARIANT. |
+| 53 | `interface_new` | `destination:register`, `construction:interface_construction` | `may_panic` | Box a conforming payload with a compiler-generated method table. |
+| 54 | `call_interface` | `destination:register`, `call:call` | `may_panic` | Dispatch an interface method through the boxed method table to a D003 callee. |

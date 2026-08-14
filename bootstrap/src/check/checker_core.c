@@ -294,6 +294,40 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
     return NULL;
 }
 
+ RudaCheckInterfaceDeclaration *ruda_checker_private_checker_find_interface(
+    RudaChecker *checker,
+    RudaCheckName name
+) {
+    const RudaCheckTopLevelEntry *entry =
+        ruda_checker_private_checker_find_top_level(checker, name);
+    RudaCheckInterfaceDeclaration *declaration = NULL;
+    if (entry != NULL && entry->kind == RUDA_CHECK_TOP_LEVEL_INTERFACE) {
+        declaration = ruda_vector_at(&checker->interfaces, entry->index);
+    }
+    return declaration != NULL && declaration->declaration_valid
+            && ruda_checker_private_check_names_equal(checker, declaration->name, name)
+        ? declaration
+        : NULL;
+}
+
+ RudaCheckInterfaceDeclaration *ruda_checker_private_checker_find_interface_by_type(
+    RudaChecker *checker,
+    RudaTypeId type
+) {
+    size_t index = 0;
+    for (index = 0; checker != NULL && index < checker->interfaces.length;
+        index += 1) {
+        RudaCheckInterfaceDeclaration *declaration = ruda_vector_at(
+            &checker->interfaces, index
+        );
+        if (declaration != NULL && declaration->declaration_valid
+            && declaration->type == type) {
+            return declaration;
+        }
+    }
+    return NULL;
+}
+
  RudaCheckEnumVariantDeclaration *ruda_checker_private_checker_find_enum_variant(
     RudaChecker *checker,
     RudaCheckEnumDeclaration *enum_declaration,

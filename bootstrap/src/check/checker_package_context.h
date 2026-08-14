@@ -15,6 +15,7 @@ typedef struct RudaChecker {
     RudaVector type_aliases;
     RudaVector records;
     RudaVector enums;
+    RudaVector interfaces;
     RudaMap top_level_index;
     RudaMap local_nominal_index;
     RudaMap callable_index;

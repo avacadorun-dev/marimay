@@ -95,10 +95,10 @@ void ruda_test_bytecode_calls_and_program(void) {
     RUDA_EXPECT(ruda_bytecode_program_set_entry(&program, caller_symbol));
     RUDA_EXPECT(ruda_bytecode_program_verify(&program)
         == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
-    program.options.max_verify_work = 29;
+    program.options.max_verify_work = 35;
     RUDA_EXPECT(ruda_bytecode_program_verify(&program)
         == RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED);
-    program.options.max_verify_work = 30;
+    program.options.max_verify_work = 36;
     RUDA_EXPECT(ruda_bytecode_program_verify(&program)
         == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
     program.options.max_verify_work =

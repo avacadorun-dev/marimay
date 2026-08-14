@@ -1,25 +1,9 @@
-#include "ruda/runtime/managed.h"
+#include "managed_internal.h"
 
 #include "ruda/base/provenance.h"
 
 #include <limits.h>
 #include <string.h>
-
-typedef struct RudaManagedArray {
-    const RudaManagedArrayDescriptor *descriptor;
-    size_t length;
-    size_t capacity;
-    RudaManagedCell *cells;
-} RudaManagedArray;
-
-typedef struct RudaManagedSlot {
-    RudaManagedArray *array;
-    uint32_t generation;
-    uint32_t next_free;
-    uint32_t next_gray;
-    bool marked;
-    bool retired;
-} RudaManagedSlot;
 
 const RudaManagedArrayDescriptor ruda_managed_array_f64_descriptor = {
     RUDA_MANAGED_CELL_RAW64,
@@ -70,7 +54,7 @@ RudaManagedHeapOptions ruda_managed_heap_default_options(void) {
     return options;
 }
 
-static bool ruda_managed_heap_valid(const RudaManagedHeap *heap) {
+bool ruda_managed_heap_valid(const RudaManagedHeap *heap) {
     return heap != NULL && heap->initialized && heap->provenance != 0
         && heap->provenance != UINT64_MAX;
 }
@@ -97,7 +81,7 @@ bool ruda_managed_heap_init(
     return true;
 }
 
-static size_t ruda_managed_array_cell_bytes(const RudaManagedArray *array) {
+size_t ruda_managed_array_cell_bytes(const RudaManagedArray *array) {
     size_t bytes = 0;
     return array != NULL && ruda_size_multiply(
             array->capacity,
@@ -108,7 +92,7 @@ static size_t ruda_managed_array_cell_bytes(const RudaManagedArray *array) {
         : 0;
 }
 
-static void ruda_managed_array_dispose(
+void ruda_managed_array_dispose(
     RudaManagedHeap *heap,
     RudaManagedArray *array
 ) {
@@ -134,11 +118,7 @@ void ruda_managed_heap_dispose(RudaManagedHeap *heap) {
         frame = previous;
     }
     for (index = 0; index < heap->slot_count; index += 1) {
-        RudaManagedSlot *slot = &heap->slots[index];
-        if (slot->array != NULL) {
-            ruda_managed_array_dispose(heap, slot->array);
-            slot->array = NULL;
-        }
+        ruda_managed_slot_dispose_object(heap, &heap->slots[index]);
     }
     (void)ruda_size_multiply(
         heap->slot_capacity,
@@ -149,7 +129,7 @@ void ruda_managed_heap_dispose(RudaManagedHeap *heap) {
     memset(heap, 0, sizeof(*heap));
 }
 
-static RudaManagedSlot *ruda_managed_resolve(
+RudaManagedSlot *ruda_managed_resolve(
     RudaManagedHeap *heap,
     RudaManagedReference reference
 ) {
@@ -161,12 +141,13 @@ static RudaManagedSlot *ruda_managed_resolve(
         return NULL;
     }
     slot = &heap->slots[reference.slot];
-    return slot->array != NULL && slot->generation == reference.generation
+    return ruda_managed_slot_occupied(slot)
+            && slot->generation == reference.generation
         ? slot
         : NULL;
 }
 
-static const RudaManagedSlot *ruda_managed_resolve_const(
+const RudaManagedSlot *ruda_managed_resolve_const(
     const RudaManagedHeap *heap,
     RudaManagedReference reference
 ) {
@@ -178,12 +159,13 @@ static const RudaManagedSlot *ruda_managed_resolve_const(
         return NULL;
     }
     slot = &heap->slots[reference.slot];
-    return slot->array != NULL && slot->generation == reference.generation
+    return ruda_managed_slot_occupied(slot)
+            && slot->generation == reference.generation
         ? slot
         : NULL;
 }
 
-static RudaManagedStatus ruda_managed_reference_status(
+RudaManagedStatus ruda_managed_reference_status(
     const RudaManagedHeap *heap,
     RudaManagedReference reference,
     const RudaManagedArrayDescriptor *expected
@@ -192,7 +174,10 @@ static RudaManagedStatus ruda_managed_reference_status(
     if (slot == NULL) {
         return RUDA_MANAGED_INVALID_REFERENCE;
     }
-    return expected == NULL || slot->array->descriptor == expected
+    return expected == NULL
+            || (slot->kind == RUDA_MANAGED_OBJECT_ARRAY
+                && slot->as.array != NULL
+                && slot->as.array->descriptor == expected)
         ? RUDA_MANAGED_OK
         : RUDA_MANAGED_TYPE_MISMATCH;
 }
@@ -251,7 +236,7 @@ static void ruda_managed_clear_marks(RudaManagedHeap *heap) {
     }
 }
 
-static RudaManagedStatus ruda_managed_mark_reference(
+RudaManagedStatus ruda_managed_mark_reference(
     RudaManagedHeap *heap,
     RudaManagedReference reference,
     uint32_t *gray_head
@@ -272,7 +257,8 @@ static RudaManagedStatus ruda_managed_mark_reference(
     return RUDA_MANAGED_OK;
 }
 
-static RudaManagedStatus ruda_managed_collect_internal(
+
+RudaManagedStatus ruda_managed_collect_internal(
     RudaManagedHeap *heap,
     const RudaManagedReference *temporary_roots,
     size_t temporary_root_count,
@@ -333,36 +319,25 @@ static RudaManagedStatus ruda_managed_collect_internal(
     }
     while (gray_head != UINT32_MAX) {
         RudaManagedSlot *slot = &heap->slots[gray_head];
-        RudaManagedArray *array = slot->array;
         gray_head = slot->next_gray;
         slot->next_gray = UINT32_MAX;
-        if (array == NULL) {
+        if (!ruda_managed_slot_occupied(slot)) {
             status = RUDA_MANAGED_INVALID_REFERENCE;
             goto cleanup;
         }
-        if (array->descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
-            for (index = 0; index < array->length; index += 1) {
-                status = ruda_managed_mark_reference(
-                    heap,
-                    array->cells[index].reference,
-                    &gray_head
-                );
-                if (status != RUDA_MANAGED_OK) {
-                    goto cleanup;
-                }
-            }
+        status = ruda_managed_trace_slot(heap, slot, &gray_head);
+        if (status != RUDA_MANAGED_OK) {
+            goto cleanup;
         }
     }
     for (index = 0; index < heap->slot_count; index += 1) {
         RudaManagedSlot *slot = &heap->slots[index];
-        if (slot->array == NULL || slot->marked) {
+        if (!ruda_managed_slot_occupied(slot) || slot->marked) {
             continue;
         }
         {
-            size_t bytes = sizeof(RudaManagedArray)
-                + ruda_managed_array_cell_bytes(slot->array);
-            ruda_managed_array_dispose(heap, slot->array);
-            slot->array = NULL;
+            size_t bytes = ruda_managed_slot_object_bytes(slot);
+            ruda_managed_slot_dispose_object(heap, slot);
             heap->live_object_count -= 1;
             heap->live_byte_count -= bytes;
         }
@@ -386,7 +361,7 @@ RudaManagedStatus ruda_managed_heap_collect(RudaManagedHeap *heap) {
     return ruda_managed_collect_internal(heap, NULL, 0, NULL, 0);
 }
 
-static bool ruda_managed_add_within_limit(
+bool ruda_managed_add_within_limit(
     size_t current,
     size_t amount,
     size_t limit,
@@ -395,7 +370,7 @@ static bool ruda_managed_add_within_limit(
     return ruda_size_add(current, amount, result) && *result <= limit;
 }
 
-static bool ruda_managed_new_slot_capacity(
+bool ruda_managed_new_slot_capacity(
     const RudaManagedHeap *heap,
     size_t *capacity,
     size_t *added_bytes
@@ -626,7 +601,8 @@ retry:
     array->descriptor = descriptor;
     array->length = initial_length;
     array->capacity = initial_length;
-    heap->slots[slot_index].array = array;
+    heap->slots[slot_index].kind = RUDA_MANAGED_OBJECT_ARRAY;
+    heap->slots[slot_index].as.array = array;
     heap->slots[slot_index].marked = false;
     heap->slots[slot_index].retired = false;
     heap->live_object_count += 1;
@@ -653,7 +629,10 @@ RudaManagedStatus ruda_managed_array_length(
     if (slot == NULL) {
         return RUDA_MANAGED_INVALID_REFERENCE;
     }
-    *length = slot->array->length;
+    if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY || slot->as.array == NULL) {
+        return RUDA_MANAGED_TYPE_MISMATCH;
+    }
+    *length = slot->as.array->length;
     return RUDA_MANAGED_OK;
 }
 
@@ -673,7 +652,10 @@ RudaManagedStatus ruda_managed_array_describe(
     if (slot == NULL) {
         return RUDA_MANAGED_INVALID_REFERENCE;
     }
-    *descriptor = slot->array->descriptor;
+    if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY || slot->as.array == NULL) {
+        return RUDA_MANAGED_TYPE_MISMATCH;
+    }
+    *descriptor = slot->as.array->descriptor;
     return RUDA_MANAGED_OK;
 }
 
@@ -699,11 +681,14 @@ static RudaManagedStatus ruda_managed_array_index(
     if (slot == NULL) {
         return RUDA_MANAGED_INVALID_REFERENCE;
     }
-    *current_length = slot->array->length;
-    if (index < 0 || (uint64_t)index >= (uint64_t)slot->array->length) {
+    if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY || slot->as.array == NULL) {
+        return RUDA_MANAGED_TYPE_MISMATCH;
+    }
+    *current_length = slot->as.array->length;
+    if (index < 0 || (uint64_t)index >= (uint64_t)slot->as.array->length) {
         return RUDA_MANAGED_BOUNDS;
     }
-    *array = slot->array;
+    *array = slot->as.array;
     return RUDA_MANAGED_OK;
 }
 
@@ -755,7 +740,7 @@ RudaManagedStatus ruda_managed_array_set(
     if (status != RUDA_MANAGED_OK) {
         return status;
     }
-    resolved = ruda_managed_resolve(heap, array)->array;
+    resolved = ruda_managed_resolve(heap, array)->as.array;
     if (resolved->descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
         status = ruda_managed_reference_status(
             heap,
@@ -810,7 +795,10 @@ RudaManagedStatus ruda_managed_array_push(
     if (slot == NULL) {
         return RUDA_MANAGED_INVALID_REFERENCE;
     }
-    resolved = slot->array;
+    if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY || slot->as.array == NULL) {
+        return RUDA_MANAGED_TYPE_MISMATCH;
+    }
+    resolved = slot->as.array;
     if (resolved->descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
         status = ruda_managed_reference_status(
             heap,
@@ -846,7 +834,11 @@ retry:
         if (slot == NULL) {
             return RUDA_MANAGED_INVALID_REFERENCE;
         }
-        resolved = slot->array;
+        if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY
+            || slot->as.array == NULL) {
+            return RUDA_MANAGED_TYPE_MISMATCH;
+        }
+        resolved = slot->as.array;
     }
     next_capacity = resolved->capacity == 0 ? 4 : resolved->capacity;
     while (next_capacity < next_length) {
@@ -892,7 +884,11 @@ retry:
             if (slot == NULL) {
                 return RUDA_MANAGED_INVALID_REFERENCE;
             }
-            resolved = slot->array;
+            if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY
+                || slot->as.array == NULL) {
+                return RUDA_MANAGED_TYPE_MISMATCH;
+            }
+            resolved = slot->as.array;
             goto retry;
         }
         return RUDA_MANAGED_LIMIT_REACHED;

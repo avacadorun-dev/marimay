@@ -7,6 +7,18 @@ enum {
     RUDA_MIR_MAX_DATAFLOW_CELLS = 16000000
 };
 
+typedef enum RudaMirManagedLayoutKind {
+    RUDA_MIR_MANAGED_LAYOUT_RECORD,
+    RUDA_MIR_MANAGED_LAYOUT_ENUM,
+    RUDA_MIR_MANAGED_LAYOUT_ARRAY,
+    RUDA_MIR_MANAGED_LAYOUT_INTERFACE
+} RudaMirManagedLayoutKind;
+
+typedef struct RudaMirManagedLayoutInfo {
+    RudaMirManagedLayoutKind kind;
+    uint32_t layout;
+} RudaMirManagedLayoutInfo;
+
 extern const uint64_t ruda_mir_checked_index_top;
 extern const uint64_t ruda_mir_checked_index_none;
 typedef struct RudaMirManagedRecord {
@@ -36,6 +48,13 @@ typedef struct RudaMirManagedArray {
     size_t length;
     RudaMirValue elements[];
 } RudaMirManagedArray;
+typedef struct RudaMirManagedInterface {
+    RudaTypeId type;
+    RudaMirValue payload;
+    size_t method_count;
+    size_t allocation_size;
+    RudaSymbolId methods[];
+} RudaMirManagedInterface;
 RudaTypeId ruda_mir_register_type(
     const RudaMirFunction *function,
     RudaMirRegister register_id
@@ -108,9 +127,22 @@ const RudaMirArrayArgument *ruda_mir_array_argument(
     const RudaMirFunction *function,
     size_t index
 );
+const RudaMirInterface *ruda_mir_interface(
+    const RudaMirFunction *function,
+    RudaMirInterfaceId interface_id
+);
+const RudaMirInterfaceConstruction *ruda_mir_interface_construction(
+    const RudaMirFunction *function,
+    RudaMirInterfaceConstructionId construction_id
+);
+const RudaSymbolId *ruda_mir_interface_method(
+    const RudaMirFunction *function,
+    size_t index
+);
 RudaMirVerifyStatus ruda_mir_validate_instruction_types(
     const RudaMirFunction *function,
-    const RudaMirInstruction *instruction
+    const RudaMirInstruction *instruction,
+    const RudaMap *managed_types
 );
 bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind);
 bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind);
@@ -146,6 +178,11 @@ RudaMirVerifyStatus ruda_mir_verify_managed_layouts(
     RudaMap *managed_types,
     size_t *work
 );
+RudaMirVerifyStatus ruda_mir_verify_interface_layouts(
+    const RudaMirFunction *function,
+    RudaMap *managed_types,
+    size_t *work
+);
 const RudaMirManagedEnum *ruda_mir_execution_enum_value(
     const RudaMirExecution *execution,
     RudaMirValue value
@@ -159,6 +196,10 @@ RudaMirManagedArray *ruda_mir_execution_array_value_mutable(
     RudaMirValue value
 );
 const RudaMirManagedArray *ruda_mir_execution_array_value(
+    const RudaMirExecution *execution,
+    RudaMirValue value
+);
+const RudaMirManagedInterface *ruda_mir_execution_interface_value(
     const RudaMirExecution *execution,
     RudaMirValue value
 );
@@ -216,6 +257,14 @@ RudaMirInterpretStatus ruda_mir_execution_new_array(
     const RudaMirArray *layout,
     const RudaMirValue *elements,
     size_t length,
+    RudaMirReference *result
+);
+RudaMirInterpretStatus ruda_mir_execution_new_interface(
+    RudaMirExecution *execution,
+    RudaTypeId type,
+    RudaMirValue payload,
+    const RudaSymbolId *methods,
+    size_t method_count,
     RudaMirReference *result
 );
 #endif

@@ -259,6 +259,103 @@ bool ruda_bytecode_run_program_uses_arrays(
     return false;
 }
 
+bool ruda_bytecode_run_function_uses_managed(
+    const RudaBytecodeFunction *function
+) {
+    size_t index = 0;
+    if (function == NULL
+        || ruda_bytecode_type_is_managed(function->result_type)) {
+        return function != NULL;
+    }
+    for (index = 0; index < function->register_types.length; index += 1) {
+        const RudaBytecodeType *type = ruda_vector_at_const(
+            &function->register_types,
+            index
+        );
+        if (type != NULL && ruda_bytecode_type_is_managed(*type)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool ruda_bytecode_run_program_uses_managed(
+    const RudaBytecodeProgram *program
+) {
+    size_t index = 0;
+    if (program == NULL) {
+        return false;
+    }
+    for (index = 0; index < program->functions.length; index += 1) {
+        const RudaBytecodeProgramFunction *function = ruda_vector_at_const(
+            &program->functions,
+            index
+        );
+        if (function == NULL
+            || ruda_bytecode_run_function_uses_managed(&function->body)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+RudaBytecodeRunStatus ruda_bytecode_run_arguments_validate(
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function,
+    const RudaBytecodeValue *arguments,
+    size_t argument_count
+) {
+    size_t index = 0;
+    if (function == NULL || (arguments == NULL && argument_count != 0)
+        || argument_count != function->parameter_count) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
+    for (index = 0; index < argument_count; index += 1) {
+        const RudaBytecodeType *expected = ruda_vector_at_const(
+            &function->register_types, index
+        );
+        uint32_t layout = ruda_bytecode_register_layout(
+            function, (uint32_t)index
+        );
+        if (expected == NULL || arguments[index].type != *expected) {
+            return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        }
+        if (*expected == RUDA_BYTECODE_TYPE_STRING
+            && !ruda_bytecode_run_string_value_valid(
+                execution, arguments[index]
+            )) {
+            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        }
+        if (ruda_bytecode_type_is_array(*expected)
+            && !ruda_bytecode_managed_value_valid(
+                execution, arguments[index]
+            )) {
+            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        }
+        if (*expected == RUDA_BYTECODE_TYPE_RECORD
+            || *expected == RUDA_BYTECODE_TYPE_ENUM) {
+            RudaBytecodeRunStatus status =
+                ruda_bytecode_run_nominal_value_validate(
+                    execution,
+                    function,
+                    arguments[index],
+                    *expected,
+                    layout
+                );
+            if (status != RUDA_BYTECODE_RUN_OK) {
+                return status;
+            }
+        }
+        if (*expected == RUDA_BYTECODE_TYPE_INTERFACE
+            && !ruda_bytecode_run_interface_value_valid(
+                execution, function, arguments[index], layout
+            )) {
+            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        }
+    }
+    return RUDA_BYTECODE_RUN_OK;
+}
+
 RudaBytecodeRunStatus ruda_bytecode_run_roots_init(
     RudaBytecodeManagedRoots *roots,
     RudaBytecodeExecution *execution,
@@ -278,7 +375,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_roots_init(
         const RudaBytecodeType *type = ruda_vector_at_const(
             &function->register_types, index
         );
-        if (type != NULL && ruda_bytecode_type_is_array(*type)) {
+        if (type != NULL && ruda_bytecode_type_is_managed(*type)) {
             count += 1;
         }
     }
@@ -298,7 +395,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_roots_init(
         const RudaBytecodeType *type = ruda_vector_at_const(
             &function->register_types, index
         );
-        if (type != NULL && ruda_bytecode_type_is_array(*type)) {
+        if (type != NULL && ruda_bytecode_type_is_managed(*type)) {
             roots->locations[count++] = &registers[index].as.managed_reference;
         }
     }
@@ -400,7 +497,8 @@ bool ruda_bytecode_run_function_has_calls(
             if (instruction == NULL
                 || instruction->opcode == RUDA_OPCODE_CALL_DIRECT
                 || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
-                || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER) {
+                || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER
+                || instruction->opcode == RUDA_OPCODE_CALL_INTERFACE) {
                 return true;
             }
         }

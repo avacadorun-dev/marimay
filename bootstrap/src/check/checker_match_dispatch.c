@@ -891,8 +891,10 @@ cleanup:
                 goto cleanup;
             }
             has_catch_all = has_catch_all || alternative->is_catch_all;
+            needs_next = needs_next || alternative->has_refutable_nested_pattern;
         }
-        needs_next = (!last && !has_catch_all) || arm->guard != NULL;
+        needs_next = needs_next || (!last && !has_catch_all)
+            || arm->guard != NULL;
         function->block = test_block;
         function->terminated = false;
         if ((last && arm->guard != NULL)
@@ -1018,17 +1020,13 @@ cleanup:
                 )) {
                 goto arm_cleanup;
             }
-            if (!ruda_checker_private_compile_enum_match_bindings(
+            if (!ruda_checker_private_compile_enum_match_bindings_cps(
                     function,
                     alternative,
                     enum_id,
-                    guarded.register_id
-                ) || !ruda_checker_private_function_set_goto(
-                    function,
-                    function->block,
+                    guarded.register_id,
                     selected_block,
-                    alternative->pattern->end,
-                    alternative->pattern->end
+                    alternative_next
                 )) {
                 goto arm_cleanup;
             }
