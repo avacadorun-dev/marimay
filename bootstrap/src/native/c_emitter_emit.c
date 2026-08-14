@@ -384,7 +384,17 @@ bool ruda_native_c_emit_function(
                 case RUDA_MIR_BITWISE_NOT_I64: if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = ruda_i64_bitwise_not(ruda_g_v_%u);\n", i->target, i->first)) return false; break;
                 case RUDA_MIR_BITWISE_AND_I64: case RUDA_MIR_BITWISE_XOR_I64: case RUDA_MIR_BITWISE_OR_I64: {
                     const char *name = i->kind == RUDA_MIR_BITWISE_AND_I64 ? "and" : i->kind == RUDA_MIR_BITWISE_XOR_I64 ? "xor" : "or";
-                    if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = ruda_i64_bitwise_%s(ruda_g_v_%u, ruda_g_v_%u);\n", i->target, name, i->first, i->second)) return false; break;
+                    if (!ruda_native_c_write(
+                            buffer,
+                            "  ruda_g_v_%u = ruda_i64_bitwise_%s(ruda_g_v_%u, ruda_g_v_%u);\n",
+                            i->target,
+                            name,
+                            i->first,
+                            i->second
+                        )) {
+                        return false;
+                    }
+                    break;
                 }
                 case RUDA_MIR_ADD_CHECKED_I64: helper = "ruda_checked_i64_add"; break;
                 case RUDA_MIR_SUBTRACT_CHECKED_I64: helper = "ruda_checked_i64_subtract"; break;

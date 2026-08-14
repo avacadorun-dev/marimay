@@ -354,8 +354,12 @@ cleanup:
         ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
         goto cleanup;
     }
-    missing_count = (seen[0] == 0 ? 1 : 0)
-        + (seen[1] == 0 ? 1 : 0);
+    if (seen[0] == 0) {
+        missing_count += 1;
+    }
+    if (seen[1] == 0) {
+        missing_count += 1;
+    }
     if (missing_count == 0) {
         ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
         goto cleanup;
