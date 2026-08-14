@@ -428,6 +428,22 @@ Standard file, socket, DNS, timer, process, and HTTP APIs use direct-style signa
 
 Potentially blocking operations without a portable non-blocking primitive run on a bounded blocking pool. Saturation suspends callers rather than creating unbounded OS threads. Completion re-enters the owning isolate through its event queue; foreign worker threads never mutate the isolate heap directly.
 
+### 10.1 Preview user stdout
+
+D046 is the 0.1-dev user stdout contract. `std/io.println` writes the exact
+UTF-8 bytes of one `string` plus a single LF to the isolate's program-ordered
+stdout stream. It requires capability `"io.stdout"`, returns
+`Result<void, io.Error>`, and may suspend. A successful call publishes the
+complete line so the host or test capture can observe it before `Ok()`
+returns. Capability denial writes no program stdout. The internal harness
+spelling `ok:f64:` followed by hexadecimal bits is not this stream and must
+not be emitted by a public `println` path.
+
+Until I6 parks I/O, a Stage 0 implementation may lower `println` to a blocking
+host write only if the published bytes, `Result` classification, capability
+check, and publish-before-`Ok` rule remain identical. That shortcut is a
+removal-gated implementation detail, not a second stdout semantics.
+
 ## 11. FFI interaction
 
 ### 11.1 Calls from Ruda to C
@@ -479,7 +495,9 @@ boundaries. Fixtures cover decimal nearest-even conversion, finite values,
 subnormals, both zero signs, infinities, canonical NaN, IEEE divide-by-zero,
 unary negation of raw NaN bits, and ordered/unordered comparison behavior. No
 textual floating-point rendering protocol is implied by bitwise result
-comparison; formatting is a separate library contract.
+comparison. Public user stdout uses D046 `println` bytes and
+`formatF32`/`formatF64` spellings; the internal `ok:f64:` hexadecimal harness
+is not that contract and is not compared as user-visible output.
 
 Construction traces preserve source field-initializer order even when MIR
 stores the resulting values in declaration-layout order. Cleanup traces

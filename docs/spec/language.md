@@ -22,6 +22,11 @@ fn main(): Result<void, E>;
 
 `E` must satisfy the prelude `Error` interface for the second form. Returning `Err` writes the standard diagnostic form to stderr and exits with status `1`. A panic exits according to the runtime panic policy and is not an expected-error path.
 
+User program stdout is not a language primitive. The 0.1-dev write surface is
+`std/io.println(text: string): Result<void, io.Error>` under D046. It is not in
+the prelude, does not accept a non-`string` argument, and is not the internal
+`ok:f64:` engine-test protocol.
+
 ## 2. Lexical structure
 
 ### 2.1 Encoding and source positions
@@ -96,7 +101,7 @@ Normal strings and runes accept `\\`, `\"`, `\'`, `\n`, `\r`, `\t`, `\0`, and `\
 
 String indexing by integer is forbidden because it is ambiguous between bytes and Unicode scalars. Use explicit byte, rune, or grapheme APIs.
 
-An interpolated string starts with `$"` and ends with `"`. `{expression}` inserts the standard string representation of an expression; `{{` and `}}` produce literal braces. Interpolations are parsed and typed as ordinary expressions, evaluated left to right exactly once, and cannot contain statements.
+An interpolated string starts with `$"` and ends with `"`. `{expression}` inserts the standard string representation of an expression; `{{` and `}}` produce literal braces. Interpolations are parsed and typed as ordinary expressions, evaluated left to right exactly once, and cannot contain statements. That interpolation representation is not the D046 stdout contract and is not an implicit conversion into `println`; a non-`string` interpolation result cannot be passed to `println` until a later decision specifies the interpolation type rule.
 
 Interpolated text uses the normal-string escape set. The lossless token stream retains the `$"`, text, expression-boundary braces, and final `"` separately. A single `}` in text is invalid; nested strings and balanced expression braces are permitted within the implementation's documented defensive nesting limit.
 
@@ -553,7 +558,7 @@ Iterable and C-style loops are supported:
 
 ```ruda
 for const item of items {
-  println(item);
+  process(item);
 }
 
 for let index = 0; index < count; index += 1 {

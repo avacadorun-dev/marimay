@@ -103,9 +103,36 @@ public enum ParseError {
 
 public fn parseInt(text: string): Result<int, ParseError>;
 public fn parseIntRadix(text: string, radix: int): Result<int, ParseError>;
+public fn formatF32(value: f32): string;
+public fn formatF64(value: f64): string;
 ```
 
+Under D046, `formatF32` and `formatF64` are total bit-to-text functions. They
+return the unique locale-independent ASCII spelling specified by that decision
+and do not write stdout, append a newline, or perform I/O. They are not an
+implicit conversion into `println`. `formatF32` formats raw binary32 bits; it
+does not specify `f32` arithmetic.
+
 `std/path` distinguishes portable logical paths from platform-native behavior. Normalization is lexical and never claims to resolve symlinks; filesystem canonicalization is a separate capability-checked operation.
+
+### 3.1 Preview standard output
+
+`std/io` is not in the prelude. The 0.1-dev user stdout surface is:
+
+```ruda
+public enum Error {
+  CapabilityDenied { capability: string; },
+  WriteFailed,
+}
+
+public fn message(error: Error): string;
+public fn println(text: string): Result<void, Error>;
+```
+
+`println` accepts only `string`. It publishes those UTF-8 bytes plus one LF
+under the D046 capability, buffering, and error rules. `message` returns the
+stable strings `capability io.stdout is not granted` and `stdout write failed`.
+`print`, `eprintln`, and a public `flush` are absent from this preview.
 
 ## 4. Collections and iteration
 

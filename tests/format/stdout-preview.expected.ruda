@@ -1,0 +1,10 @@
+import { formatF64, formatF32 } from "std/convert";
+import { println, Error as IoError } from "std/io";
+
+fn main(): Result<void, IoError> {
+  println(formatF32(1.0))?;
+  println(formatF64(415.0))?;
+  println("")?;
+  println("ready\nline")?;
+  return Ok();
+}

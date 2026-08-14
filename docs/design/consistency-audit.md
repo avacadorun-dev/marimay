@@ -108,6 +108,11 @@ No provisional item permits an implementation to silently substitute source-leve
     stable message and complete access span, indexed assignment checks before
     right-hand-side effects, and recoverable logical growth is distinct from a
     VM/isolate heap-limit outcome.
+43. Closed 0.1-dev user stdout through D046: `std/io.println` accepts only
+    `string` and returns `Result`, `std/convert` owns explicit `formatF32`/
+    `formatF64` spellings, `"io.stdout"` is a named capability, published bytes
+    are UTF-8 plus one LF, and the internal `ok:f64:` harness is not a public
+    API.
 
 ## Automated structural checks performed
 

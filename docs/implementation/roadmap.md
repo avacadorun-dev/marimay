@@ -32,7 +32,9 @@ A gate is `verified` only with linked command output and artifacts satisfying ev
 Latest I2 evidence: [iteration 39 adds the package-local non-generic free/dot
 resolver](evidence/i2-dot-call-resolution-iteration-39-2026-08-14.md). I2
 remains `in-progress`; this is not imports, generics, completion, or public
-`ruda check`.
+`ruda check`. Accepted [D046](../design/decisions.md) closes the 0.1-dev user
+stdout contract; [the documentation checkpoint](evidence/d046-stdout-preview-2026-08-14.md)
+does not implement `std/io` or engine writes.
 
 ## Immediate execution priority: V0 engine-equivalence spine
 
@@ -327,6 +329,8 @@ Deliver:
 - record identity, mutable-field semantics, derives, equality/hashing;
 - error formatting and source traces;
 - `std/io`, path basics, conversion, collections, and deterministic test capabilities;
+  D046 is the accepted preview stdout/`formatF32`/`formatF64` contract, still
+  awaiting engine and package implementation;
 - escape analysis prototype for stack/scalar replacement without semantic change;
 - shape-shared generic code generation prototype.
 

@@ -41,7 +41,7 @@ ruda fmt ./src
 ruda run ./cmd/admin -- --repair account-42
 ```
 
-A standalone `.ruda` file without `ruda.mod` can be checked, formatted, tested, or run in script mode. Script mode has no third-party dependencies and receives no filesystem/network/process capability unless explicitly granted.
+A standalone `.ruda` file without `ruda.mod` can be checked, formatted, tested, or run in script mode. Script mode has no third-party dependencies and receives no filesystem/network/process capability unless explicitly granted. D046 capability `"io.stdout"` is granted by default for `ruda run` of a local module or script and for a native executable from `ruda build`; it is not a filesystem, network, or process grant.
 
 ## 2. Global behavior
 
@@ -234,6 +234,11 @@ Each test runs in a fresh root task with a deterministic scheduler, clock, rando
 
 Tests execute concurrently across runtime isolates by default. Results are printed in deterministic package/source order. On failure, captured stdout/stderr for that test is printed without interleaving.
 
+`expect.output(expected, closure)` compares the exact D046 stdout bytes
+published by that closure, including the trailing LF from each `println`.
+Tests grant a captured `"io.stdout"` sink by default; they do not inherit the
+host process stdout unless an opt-in host-stdio capability is requested.
+
 A test that exits while child tasks or resources remain is failed even if assertions passed. Children owned by a structured `scope` are cancelled/joined normally; leaked runtime resources are separately reported with allocation/open spans.
 
 Real network, environment, process, and host filesystem access is denied unless the test explicitly requests an opt-in capability flag. Tests using real nondeterminism are never cached.
@@ -322,7 +327,7 @@ ruda exec --allow-read ./data app.rudab
 ruda exec --max-memory 256MiB --max-tasks 10000 app.rudab
 ```
 
-`exec` verifies the entire bundle, resolves declared capabilities, and starts it in the VM. Untrusted bundles receive no ambient capabilities. Verification happens before package initialization or FFI loading.
+`exec` verifies the entire bundle, resolves declared capabilities, and starts it in the VM. Untrusted bundles receive no ambient capabilities, including `"io.stdout"`. A grant is required before D046 `println` can publish to the invoking process. Verification happens before package initialization or FFI loading.
 
 ## 7. Project and dependency commands
 

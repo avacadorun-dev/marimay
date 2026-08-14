@@ -26,7 +26,7 @@ The first implementation is written in portable C17. After the language and boot
 ## Read the language in one minute
 
 ```ruda
-import { println } from "std/io";
+import { Error as IoError, println } from "std/io";
 
 enum Lookup<T> {
   Found(T),
@@ -55,8 +55,9 @@ fn describe(result: Lookup<User>): string {
   };
 }
 
-fn main(): void {
-  println(describe(Lookup.Found(User { id: 7, name: "Mara" })));
+fn main(): Result<void, IoError> {
+  println(describe(Lookup.Found(User { id: 7, name: "Mara" })))?;
+  return Ok();
 }
 ```
 

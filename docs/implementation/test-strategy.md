@@ -112,6 +112,7 @@ ordinary_test_fuzz_panic_and_yield_calls
 construction_source_order
 signed_division_remainder_boundaries
 dot_call_import_form_invariance
+println_string_result_and_formatters
 ```
 
 Every compile-pass fixture is formatted, type checked twice under perturbed file/import order, lowered to verified MIR, and eventually run on all engines when it has behavior.
@@ -127,6 +128,7 @@ null_undefined_reserved_and_any_not_a_dynamic_type
 hard_keyword_identifier_rejection
 invalid_test_fuzz_attributes
 implicit_numeric_conversion
+println_non_string_argument
 uninitialized_and_same_block_shadow
 unknown_duplicate_missing_record_field
 record_pattern_nominality_fields_and_guard_coverage
@@ -205,7 +207,19 @@ Run fixtures record typed result, stdout, stderr, exit, panic, source frames, ca
 - cleanup on normal/error/panic/cancel paths;
 - explicit fallible close, idempotent best-effort fallback, and cleanup panic
   precedence on normal/`Err`/panic/cancel paths;
-- deterministic capability virtualization.
+- deterministic capability virtualization;
+- D046 preview stdout: `println` accepts only `string`; `formatF32`/`formatF64`
+  produce the specified unique ASCII for finite values, both zero signs,
+  infinities, and signed NaN; each successful `println` publishes exact UTF-8
+  plus one LF, including empty lines, payload newlines, and embedded NUL;
+  `"io.stdout"` denial writes no bytes and returns `CapabilityDenied`;
+  `WriteFailed` is classified without host `errno` text; VM, native, and
+  `expect.output` capture agree on successful bytes. The internal `ok:f64:`
+  hexadecimal harness is not compared as user stdout. A loop-based matrix
+  program must print `415.0\n` through `println(formatF64(...))?`. These run
+  and type fixtures become executable in the engine checkpoint that implements
+  `std/io`/`std/convert`; parser and formatter fixtures own the public source
+  shape now.
 
 ### 2.8 CLI end-to-end tests
 

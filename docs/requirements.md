@@ -45,6 +45,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | LANG-035 | a public nominal type's owning-package dot-call set and structural conformance are invariant across named type, named function, and namespace import forms; import spelling changes only free-call visibility | language §§3,5.8,6.2; D003/D043 | I2/E0 |
 | LANG-036 | `f64` decimal literals round exactly to binary64 nearest-even; raw bits cross value boundaries unchanged; arithmetic is strict and canonicalizes NaNs; unary negation preserves NaN payload bits; comparisons and signed-zero division follow D044 | language §5.1; execution §§5.1,15; D044 | I2/I3/I4 |
 | LANG-037 | managed `Array<T>` construction, exact `int` indexing, mutation order, `length`, `push` growth result, and G4002 bounds identity follow D045 across MIR, VM, and native execution | language §§5.2,5.6,7; execution §§5.1,9; diagnostics §9; D045 | I2/I3/I4/I5 |
+| LANG-038 | user stdout is not a language primitive or implicit conversion; `println` accepts only `string` and interpolation is not the D046 write contract | language §§1,2.5; standard library §3.1; D046 | I5 |
 
 ## Execution and concurrency
 
@@ -70,6 +71,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | EXEC-018 | execution prototype gates pass before concurrency syntax freeze | execution §16 | I6 |
 | EXEC-019 | structured race cancels/joins owned losers and readiness selection unregisters losing waits without detached work | execution §7.7; D029 | I6 |
 | EXEC-020 | the C17 backend assigns injective compiler-owned identifiers and never copies user names into C keyword, implementation-reserved, library, runtime-helper, or case-folded collision namespaces; explicit foreign link names remain separately validated ABI contracts | execution §5.1.1; D039 | I4/I9 |
+| EXEC-021 | VM, native, and test-capture agree on D046 stdout bytes, `Result` classification, and `io.stdout` denial; internal `ok:f64:` traces are not user stdout | execution §§10.1,13.1; toolchain §§5.3,6.4; D046 | I4/I5/I8 |
 
 ## Toolchain and ecosystem
 
@@ -110,6 +112,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | STD-008 | logging/tracing are bounded, contextual, and redactable | standard library §11 | P2 |
 | STD-009 | C API is outside prelude and enforces handle/suspension safety | standard library §13 | I9 |
 | STD-010 | every production std package meets tests/platform/security/benchmark gate | standard library §14 | P1 |
+| STD-011 | 0.1-dev preview stdout is `std/io.println(text: string): Result<void, io.Error>` with explicit `std/convert.formatF32`/`formatF64`, `"io.stdout"` capability, UTF-8 plus LF, and line-atomic publish | standard library §§3,3.1; D046 | I5/I6 |
 
 ## Implementation, bootstrap, and production
 

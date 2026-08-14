@@ -1,0 +1,9 @@
+import{println,Error as IoError,}from "std/io";
+import{formatF64,formatF32,}from "std/convert";
+fn main():Result<void,IoError>{
+println(formatF32(1.0))?;
+println(formatF64(415.0))?;
+println("")?;
+println("ready\nline")?;
+return Ok();
+}

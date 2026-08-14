@@ -629,8 +629,9 @@ conversion. A host that cannot meet those conditions is unsupported for native
 This decision specifies `f64` only. `f32` remains an IEEE-width primitive in
 the language table, but its literal conversion, NaN canonicalization, and
 backend conformance rules require a separate decision before implementation.
-Textual formatting and parsing APIs for floating-point values likewise remain
-separate library contracts.
+Textual formatting and parsing APIs for floating-point values remain
+separate library contracts; D046 is the 0.1-dev preview contract for
+`formatF32`/`formatF64` used by user stdout.
 
 Reason: merely requiring "IEEE" and disabling fast-math leaves locale parsing,
 rounding, NaN payloads, division by zero, and target precision to each host.
@@ -675,3 +676,119 @@ type, bounds span, assignment order, or growth failure implicit would make a
 matrix program observably backend-dependent. This decision does not define
 array value equality or hashing, iteration invalidation, slices, or a general
 variadic-function declaration feature.
+
+## D046 — Preview user stdout is an explicit `std/io` write
+
+Status: accepted.
+
+The 0.1-dev user stdout surface is exactly:
+
+```ruda
+import { println, Error as IoError } from "std/io";
+
+public enum Error {
+  CapabilityDenied { capability: string; },
+  WriteFailed,
+}
+
+public fn message(error: Error): string;
+public fn println(text: string): Result<void, Error>;
+```
+
+`println` is an ordinary public function in `std/io`, not a prelude name and
+not a special call form. Its only accepted argument type is `string`. There is
+no implicit conversion from `bool`, any integer width, `f32`, `f64`, records,
+enums, arrays, or interpolation results that are not already `string`. D003
+forbids same-name overloads over those primitives, so this preview does not
+invent a compiler-known multi-type `println`.
+
+A program that needs decimal text for a binary32 or binary64 value uses the
+total `std/convert` formatters and then writes the resulting string:
+
+```ruda
+import { formatF32, formatF64 } from "std/convert";
+
+public fn formatF32(value: f32): string;
+public fn formatF64(value: f64): string;
+```
+
+Those formatters are not user stdout. They do not write, flush, grant
+capability, or append a newline. Interpolation's "standard string
+representation" is not this contract and remains a separate decision.
+
+`println` evaluates its argument once, then attempts to publish the exact UTF-8
+bytes of that `string` followed by one LF (`U+000A`). It never emits a BOM, a
+CRLF, a trailing extra newline at process exit, or a locale/code-page
+transcoding. Embedded NUL bytes and payload newlines are written unchanged;
+`println("")` publishes a single LF; `println("a\nb")` publishes `a\nb\n`.
+Host console display is outside program semantics; captured and file-redirected
+bytes are the UTF-8 program stream.
+
+Each successful call is line-atomic for that payload-plus-LF sequence: either
+the complete sequence becomes part of the isolate's program-ordered stdout
+stream and is observable to the host or test capture before `Ok()` returns, or
+the call returns `Err` and publishes no additional bytes from this attempt.
+Implementations serialize `println` through one stdout owner per isolate so two
+successful lines cannot interleave inside each other. Order across independent
+tasks is not an additional guarantee beyond ordinary happens-before; sequential
+calls in one task follow source evaluation order. Deterministic tests use the
+execution-spec scheduler.
+
+`println` requires the named capability `"io.stdout"`. `ruda run` of a local
+module or script, and a native executable produced by `ruda build`, grant it by
+default against the process stdout stream. `ruda test` grants a captured sink
+by default; `expect.output` compares those exact bytes. `ruda exec` of an
+untrusted `.rudab` denies it unless the invocation grants it. Libraries cannot
+broaden the root set. Denial returns `Err(Error.CapabilityDenied { capability:
+"io.stdout" })` and writes no program stdout.
+
+Write failure after a grant, including a closed or broken pipe, returns
+`Err(Error.WriteFailed)` rather than panicking. `message` is locale-independent
+and engine-identical:
+
+- `CapabilityDenied` → `capability io.stdout is not granted`
+- `WriteFailed` → `stdout write failed`
+
+Required messages do not embed host `errno` text. A residual host prefix after
+an already-started failed write is not a VM/native byte-match obligation;
+successful programs and capability denials are.
+
+`println` is standard I/O and therefore may suspend. Until I6 implements
+parking, a Stage 0 lowering may use a blocking host write if and only if the
+observable bytes, `Result` cases, capability checks, and publish-before-`Ok`
+rule remain identical; that blocking lowering is removed when I6 lands.
+
+`formatF64` and `formatF32` map raw IEEE bits to a unique ASCII spelling
+without consulting the host locale or `printf`:
+
+1. Sign bit set emits a leading `-`, including for `-0.0` and a negative NaN.
+2. A NaN is `nan` or `-nan`; payload and signaling bits are not printed.
+3. Infinities are `inf` and `-inf`.
+4. A finite value uses the shortest decimal that, interpreted with
+   round-to-nearest, ties-to-even at that IEEE width, recovers the original
+   bits. If several same-length decimals qualify, choose the closest to the
+   exact mathematical value; a remaining tie chooses the even last digit.
+5. Let `k` be the decimal exponent of that significand written in `[1, 10)`.
+   Use plain form when `-4 <= k <= 15`, otherwise scientific form.
+6. Plain form is `digits . digits` with no leading zeros other than a single
+   `0` before the point, and at least one fractional digit (`415.0`, `0.0125`).
+7. Scientific form is `d . digits e [optional -] exponent`, one digit before
+   the point, no `+` on the exponent, and no leading zeros in the exponent
+   (`1.0e10`, `1.25e-8`).
+
+`formatF32` applies that algorithm to binary32 bits. It does not specify `f32`
+arithmetic, literals, or NaN canonicalization; those remain owned by a future
+decision as stated in D044.
+
+The internal engine-test traces of the form `ok:f64:` plus hexadecimal bits are
+not a public API, not a formatter, and not an accepted user stdout spelling.
+Public VM, native, and `ruda test` capture comparison for this surface uses the
+D046 byte stream and `Result` classification.
+
+This decision does not add `print`, `eprintln`, a public `flush`, formatted
+arguments, or a general `Display`/`Debug` system.
+
+Reason: acceptance programs must print identical VM and native bytes without
+turning a hex test oracle, host `printf`, or implicit conversion into language
+law. A single `string` write plus explicit float formatters keeps D003, D006,
+D016, and D044 intact while giving 0.1-dev a closed, testable stdout contract.

@@ -228,9 +228,11 @@ static size_t ruda_syntax_count_kind(
 static void ruda_test_parser_examples(void) {
     static const char *const paths[] = {
         "examples/concurrency.ruda",
+        "examples/matrix.ruda",
         "examples/service.ruda",
         "examples/tour.ruda",
-        "examples/tour_test.ruda"
+        "examples/tour_test.ruda",
+        "syntax/parser/stdout-preview.ruda"
     };
     unsigned char source[32768];
     size_t path_index = 0;

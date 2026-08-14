@@ -1,8 +1,13 @@
-import { println } from "std/io";
+import { Error as IoError, println } from "std/io";
 
 enum LookupError {
   NotFound { id: int; },
   Denied { reason: string; },
+}
+
+enum AppError {
+  Lookup(LookupError),
+  Io(IoError),
 }
 
 fn message(error: LookupError): string {
@@ -10,6 +15,21 @@ fn message(error: LookupError): string {
     case NotFound { id } => $"user {id} was not found";
     case Denied { reason } => $"access denied: {reason}";
   };
+}
+
+fn message(error: AppError): string {
+  return match error {
+    case Lookup(inner) => inner.message();
+    case Io(inner) => inner.message();
+  };
+}
+
+fn lookupError(error: LookupError): AppError {
+  return AppError.Lookup(error);
+}
+
+fn ioError(error: IoError): AppError {
+  return AppError.Io(error);
 }
 
 @derive(Debug)
@@ -35,8 +55,8 @@ fn interpolate(left: f64, right: f64, weight: f64): f64 {
   return left + ((right - left) * weight);
 }
 
-fn printValue(value: Stringer): void {
-  println(value.string());
+fn printValue(value: Stringer): Result<void, IoError> {
+  return println(value.string());
 }
 
 fn findUser(id: int): Result<User, LookupError> {
@@ -46,11 +66,11 @@ fn findUser(id: int): Result<User, LookupError> {
   return Ok(User { id, name: "Mara", visits: 0 });
 }
 
-fn main(): Result<void, LookupError> {
-  const user = findUser(7)?;
+fn main(): Result<void, AppError> {
+  const user = findUser(7).mapError(lookupError)?;
   user.visit();
-  printValue(user);
+  printValue(user).mapError(ioError)?;
   // Dot call and ordinary call resolve to the same function.
-  println(string(user));
+  println(string(user)).mapError(ioError)?;
   return Ok();
 }

@@ -7,8 +7,9 @@ These examples are executable specification fixtures once the parser exists. Unt
 - `service.ruda` sketches a production HTTP handler without async-colored signatures.
 - `tour_test.ruda` shows the built-in test syntax.
 - `matrix.ruda` is the first source-checkable D045 array kernel: a loop-based
-  2-by-3 times 3-by-2 `f64` multiplication whose checksum is `415.0`. It is
-  not yet the final executable acceptance fixture because authoritative public
-  output and CLI `run`/`build` wiring remain open.
+  2-by-3 times 3-by-2 `f64` multiplication whose checksum is `415.0`. Under
+  D046 it writes that checksum with `println(formatF64(...))?`, which must
+  publish `415.0\n` on VM, native, and test capture once `std/io` is
+  implemented. Engine writes remain a later checkpoint.
 
 An implementation change that makes an example invalid must update the normative spec and corresponding decision in the same change. After I2, all examples are compiled by `ruda check`; after I6, they run under `ruda test --engine both` with deterministic service fixtures.

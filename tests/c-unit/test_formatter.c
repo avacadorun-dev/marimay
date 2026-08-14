@@ -822,6 +822,10 @@ static void ruda_test_formatter_fixture_file(void) {
         {
             "format/matrix-arrays.input.ruda",
             "format/matrix-arrays.expected.ruda"
+        },
+        {
+            "format/stdout-preview.input.ruda",
+            "format/stdout-preview.expected.ruda"
         }
     };
     unsigned char input[32768];
