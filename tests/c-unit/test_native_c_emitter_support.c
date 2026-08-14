@@ -1,6 +1,14 @@
+#if !defined(_WIN32)
+#define _POSIX_C_SOURCE 200809L
+#if defined(__APPLE__)
+#define _DARWIN_C_SOURCE
+#endif
+#endif
+
 #include "test_native_c_emitter_support.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #ifndef RUDA_TEST_C_COMPILER
