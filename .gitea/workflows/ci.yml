@@ -48,7 +48,7 @@ jobs:
       - name: Install C17 toolchain
         run: |
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake python3
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev python3
       - name: Configure
         run: >-
           cmake -S . -B build
@@ -75,7 +75,7 @@ jobs:
       - name: Install C17 toolchain
         run: |
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake python3
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev python3
       - name: Configure
         run: cmake --preset asan-ubsan
       - name: Build
@@ -97,7 +97,7 @@ jobs:
       - name: Install C17 toolchain
         run: |
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake python3
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev python3
       - name: Configure
         run: cmake --preset tsan
       - name: Build

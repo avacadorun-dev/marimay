@@ -6,7 +6,7 @@
 
 #if defined(_MSC_VER)
 #pragma fenv_access(on)
-#else
+#elif defined(__clang__)
 #pragma STDC FENV_ACCESS ON
 #pragma STDC FP_CONTRACT OFF
 #endif

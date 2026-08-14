@@ -173,6 +173,7 @@ if(MSVC)
 else()
   target_compile_options(ruda_bootstrap PRIVATE
     -fno-fast-math
+    -frounding-math
     -ffp-contract=off
     -fexcess-precision=standard
   )

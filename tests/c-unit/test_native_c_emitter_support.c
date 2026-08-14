@@ -213,7 +213,7 @@ void ruda_test_native_compile_and_run_configured(
     for (optimization_index = 0;
         optimization_index < sizeof(optimizations) / sizeof(optimizations[0]);
         optimization_index += 1) {
-        const char *arguments[32];
+        const char *arguments[33];
         size_t argument_count = 0;
         written = snprintf(
             executable_path,
@@ -239,6 +239,7 @@ void ruda_test_native_compile_and_run_configured(
         arguments[argument_count++] = "-Wshadow";
         arguments[argument_count++] = "-Werror";
         arguments[argument_count++] = "-fno-fast-math";
+        arguments[argument_count++] = "-frounding-math";
         arguments[argument_count++] = "-ffp-contract=off";
         arguments[argument_count++] = "-fexcess-precision=standard";
         arguments[argument_count++] = "-DRUDA_G_COLLECT_BEFORE_ALLOCATION=1";
