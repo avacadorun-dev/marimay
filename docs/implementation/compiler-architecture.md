@@ -153,8 +153,12 @@ contract; copying that state into feature-specific modules is forbidden.
 `ruda_compiler_service_check` is the reusable owner above the frontend and
 checker. It retains immutable source snapshots, rejects stale overlay versions,
 orders current documents by exact path, and owns lex/parse/AST/check teardown.
-It does not duplicate semantic lookup. Definition, symbol search,
-checker-backed completion, and cancellation remain explicit I2 service gates;
+`ruda_compiler_service_check_request` can reuse immutable top-level parse
+subtrees from one exact versioned edit, polls cooperative cancellation between
+bounded phases, and still rechecks the whole semantic package. It introduces
+no persistent semantic cache and does not duplicate semantic lookup.
+Definition, symbol search, checker-backed completion, and the complete
+public/private/effect invalidation matrix remain explicit I2 service gates;
 the public `ruda check` command stays unavailable until those owners exist.
 
 ### Test owners
@@ -171,6 +175,7 @@ tests/c-unit/
   test_checker.c
   test_checker_arrays.c
   test_compiler_service.c
+  test_compiler_service_incremental.c
   test_checker_match.c
   test_checker_support.h
 ```
@@ -266,8 +271,9 @@ checkpoint:
 | `bootstrap/src/check/array.c` | 0 | 912 | D045 layout, literal, index, `length`, and checked-store lowering behind the private boundary |
 | `bootstrap/src/check/checker_internal.h` | 121 | 153 | bounded D045 sibling-module contract; still uninstalled and owner-private |
 | `tests/c-unit/test_checker_arrays.c` | 0 | 548 | source array typing, matrix oracle, G4002, diagnostics, limits, and allocation-failure ownership |
-| `bootstrap/src/check/service.c` | 0 | 572 | versioned snapshot/overlay orchestration, aggregate input bounds, canonical frontend/check pipeline, and transactional teardown |
+| `bootstrap/src/check/service.c` | 0 | 839 | versioned snapshots, exact edit proofs, request-local parse reuse, phase-boundary cancellation, canonical package recheck, and transactional teardown |
 | `tests/c-unit/test_compiler_service.c` | 0 | 616 | multi-file order, retained overlays, stale versions, aggregate limits, transactional reuse, and fail-every-allocation cleanup |
+| `tests/c-unit/test_compiler_service_incremental.c` | 0 | 854 | exact edit validation, parse reuse/fallback, multi-file semantic recheck, cancellation, result provenance/lifetimes, and failure atomicity |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `ruda_test_mir` registration. The service checkpoint
@@ -282,4 +288,6 @@ followed by the
 and the first semantic consumer of that boundary in
 [V0 source arrays iteration 11](evidence/v0-source-arrays-iteration-11-2026-08-14.md),
 followed by
-[the compiler-service foundation](evidence/i2-compiler-service-foundation-iteration-36-2026-08-14.md).
+[the compiler-service foundation](evidence/i2-compiler-service-foundation-iteration-36-2026-08-14.md)
+and its
+[request-local incremental/cancellation checkpoint](evidence/i2-compiler-service-incremental-iteration-37-2026-08-14.md).

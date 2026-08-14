@@ -22,8 +22,25 @@ typedef enum RudaCompilerStatus {
     RUDA_COMPILER_UNKNOWN_DOCUMENT,
     RUDA_COMPILER_STALE_VERSION,
     RUDA_COMPILER_INCOMPLETE_LANGUAGE,
-    RUDA_COMPILER_INTERNAL_ERROR
+    RUDA_COMPILER_INTERNAL_ERROR,
+    RUDA_COMPILER_CANCELLED
 } RudaCompilerStatus;
+
+typedef struct RudaCompilerEdit {
+    uint64_t base_version;
+    size_t start;
+    size_t previous_end;
+    size_t new_end;
+} RudaCompilerEdit;
+
+typedef bool (*RudaCompilerCancelPoll)(void *context);
+
+typedef struct RudaCompilerCheckStats {
+    size_t full_parse_count;
+    size_t incremental_parse_count;
+    size_t reused_top_level_nodes;
+    size_t reparsed_bytes;
+} RudaCompilerCheckStats;
 
 typedef struct RudaCompilerOptions {
     size_t max_documents;
@@ -43,6 +60,9 @@ typedef struct RudaCompilerDocument {
     uint64_t version;
     const RudaSourceSnapshot *snapshot;
     size_t snapshot_count;
+    const RudaSourceSnapshot *previous_snapshot;
+    RudaCompilerEdit edit;
+    bool has_edit;
 } RudaCompilerDocument;
 
 typedef struct RudaCompilerService {
@@ -52,6 +72,7 @@ typedef struct RudaCompilerService {
     RudaCompilerOptions options;
     size_t retained_snapshot_count;
     size_t retained_source_bytes;
+    uint64_t generation;
     bool initialized;
 } RudaCompilerService;
 
@@ -68,9 +89,17 @@ typedef struct RudaCompilerResult {
     RudaAllocator allocator;
     RudaVector units;
     RudaCheckResult checked;
+    uint64_t workspace_generation;
     bool has_frontend_errors;
     bool initialized;
 } RudaCompilerResult;
+
+typedef struct RudaCompilerCheckRequest {
+    const RudaCompilerResult *previous;
+    RudaCompilerCancelPoll cancel_poll;
+    void *cancel_context;
+    RudaCompilerCheckStats *stats;
+} RudaCompilerCheckRequest;
 
 RudaCompilerOptions ruda_compiler_default_options(void);
 
@@ -110,6 +139,21 @@ RudaCompilerStatus ruda_compiler_service_overlay(
 );
 
 /*
+ * Applies a full new snapshot plus an exact single-edit proof against the
+ * current version. Invalid ranges, changed prefix/suffix bytes, or a stale
+ * base leave the service unchanged. A later request may reuse the previous
+ * parse tree; ordinary overlay performs full invalidation.
+ */
+RudaCompilerStatus ruda_compiler_service_overlay_edit(
+    RudaCompilerService *service,
+    RudaFileId file_id,
+    uint64_t version,
+    const void *source_bytes,
+    size_t source_length,
+    RudaCompilerEdit edit
+);
+
+/*
  * Copies current document metadata; no pointer into the document vector
  * escapes. The copied snapshot remains borrowed until service disposal or
  * successful reinitialization.
@@ -129,15 +173,35 @@ bool ruda_compiler_service_document(
  *
  * This is the diagnostics/lifetime foundation of the I2 compiler service. The
  * I2 editor gate additionally requires checker-owned definition, symbol
- * search, cancellation, and completion APIs before public `ruda check` can be
- * enabled. result must be zero-initialized or a valid initialized result. On
- * success the previous result is disposed and atomically replaced; on failure
- * it remains unchanged.
+ * search, exact completion, and full invalidation APIs before public
+ * `ruda check` can be enabled. result must be zero-initialized or a valid
+ * initialized result. On success the previous result is disposed and
+ * atomically replaced; on failure it remains unchanged.
  */
 RudaCompilerStatus ruda_compiler_service_check(
     const RudaCompilerService *service,
     const char *package_name,
     RudaCompilerResult *result
+);
+
+/*
+ * Request-local incremental check. previous is optional and may equal result.
+ * Cancellation is polled between bounded compiler phases; callbacks must not
+ * mutate service/result and must provide their own cross-thread safety. A
+ * phase failure takes precedence over cancellation polled after that phase.
+ * Stats are replaced only on success. The entire semantic package is rechecked
+ * even when a file's parse tree is reused.
+ */
+RudaCompilerStatus ruda_compiler_service_check_request(
+    const RudaCompilerService *service,
+    const char *package_name,
+    const RudaCompilerCheckRequest *request,
+    RudaCompilerResult *result
+);
+
+bool ruda_compiler_result_is_current(
+    const RudaCompilerService *service,
+    const RudaCompilerResult *result
 );
 
 /* Borrowed until result is successfully replaced or disposed. */

@@ -165,6 +165,33 @@ static RudaCompilerStatus ruda_compiler_result_fail(
     return status;
 }
 
+static bool ruda_compiler_request_cancelled(
+    const RudaCompilerCheckRequest *request
+) {
+    return request != NULL && request->cancel_poll != NULL
+        && request->cancel_poll(request->cancel_context);
+}
+
+static const RudaCompilerUnit *ruda_compiler_find_unit(
+    const RudaCompilerResult *result,
+    RudaFileId file_id
+) {
+    size_t index = 0;
+    if (result == NULL || !result->initialized) {
+        return NULL;
+    }
+    for (index = 0; index < result->units.length; index += 1) {
+        const RudaCompilerUnit *unit = ruda_vector_at_const(
+            &result->units,
+            index
+        );
+        if (unit != NULL && unit->file_id == file_id) {
+            return unit;
+        }
+    }
+    return NULL;
+}
+
 RudaCompilerOptions ruda_compiler_default_options(void) {
     RudaCompilerOptions options;
     options.max_documents = 1024;
@@ -205,6 +232,7 @@ RudaCompilerStatus ruda_compiler_service_init(
     }
     built->allocator = allocator;
     built->options = options;
+    built->generation = 1;
     if (!ruda_source_manager_init(&built->sources, allocator)) {
         return RUDA_COMPILER_INVALID_ARGUMENT;
     }
@@ -249,11 +277,13 @@ RudaCompilerStatus ruda_compiler_service_add_document(
     if (file_id != NULL) {
         *file_id = 0;
     }
+    memset(&document, 0, sizeof(document));
     if (service == NULL || !service->initialized || path == NULL
         || path_length == 0 || (source_bytes == NULL && source_length != 0)) {
         return RUDA_COMPILER_INVALID_ARGUMENT;
     }
     if (service->documents.length >= service->options.max_documents
+        || service->generation == UINT64_MAX
         || service->retained_snapshot_count
             >= service->options.max_total_snapshots
         || path_length > service->options.max_path_bytes
@@ -292,18 +322,20 @@ RudaCompilerStatus ruda_compiler_service_add_document(
     }
     service->retained_snapshot_count += 1;
     service->retained_source_bytes = retained_source_bytes;
+    service->generation += 1;
     if (file_id != NULL) {
         *file_id = document.file_id;
     }
     return RUDA_COMPILER_OK;
 }
 
-RudaCompilerStatus ruda_compiler_service_overlay(
+static RudaCompilerStatus ruda_compiler_service_overlay_internal(
     RudaCompilerService *service,
     RudaFileId file_id,
     uint64_t version,
     const void *source_bytes,
-    size_t source_length
+    size_t source_length,
+    const RudaCompilerEdit *edit
 ) {
     RudaCompilerDocument *document = NULL;
     const RudaSourceSnapshot *snapshot = NULL;
@@ -320,7 +352,8 @@ RudaCompilerStatus ruda_compiler_service_overlay(
     if (version <= document->version) {
         return RUDA_COMPILER_STALE_VERSION;
     }
-    if (source_length > service->options.max_source_bytes
+    if (service->generation == UINT64_MAX
+        || source_length > service->options.max_source_bytes
         || document->snapshot_count
             >= service->options.max_snapshots_per_document
         || service->retained_snapshot_count
@@ -344,11 +377,94 @@ RudaCompilerStatus ruda_compiler_service_overlay(
         return ruda_compiler_source_status(status);
     }
     document->version = version;
+    document->previous_snapshot = edit != NULL
+        ? document->snapshot
+        : NULL;
     document->snapshot = snapshot;
     document->snapshot_count += 1;
+    if (edit != NULL) {
+        document->edit = *edit;
+        document->has_edit = true;
+    } else {
+        memset(&document->edit, 0, sizeof(document->edit));
+        document->has_edit = false;
+    }
     service->retained_snapshot_count += 1;
     service->retained_source_bytes = retained_source_bytes;
+    service->generation += 1;
     return RUDA_COMPILER_OK;
+}
+
+RudaCompilerStatus ruda_compiler_service_overlay(
+    RudaCompilerService *service,
+    RudaFileId file_id,
+    uint64_t version,
+    const void *source_bytes,
+    size_t source_length
+) {
+    return ruda_compiler_service_overlay_internal(
+        service,
+        file_id,
+        version,
+        source_bytes,
+        source_length,
+        NULL
+    );
+}
+
+RudaCompilerStatus ruda_compiler_service_overlay_edit(
+    RudaCompilerService *service,
+    RudaFileId file_id,
+    uint64_t version,
+    const void *source_bytes,
+    size_t source_length,
+    RudaCompilerEdit edit
+) {
+    RudaCompilerDocument *document = NULL;
+    const unsigned char *previous_bytes = NULL;
+    const unsigned char *new_bytes = source_bytes;
+    size_t previous_length = 0;
+    size_t previous_suffix_length = 0;
+    size_t new_suffix_length = 0;
+    if (service == NULL || !service->initialized
+        || (source_bytes == NULL && source_length != 0)) {
+        return RUDA_COMPILER_INVALID_ARGUMENT;
+    }
+    document = ruda_compiler_find_document(service, file_id);
+    if (document == NULL) {
+        return RUDA_COMPILER_UNKNOWN_DOCUMENT;
+    }
+    if (edit.base_version != document->version || version <= document->version) {
+        return RUDA_COMPILER_STALE_VERSION;
+    }
+    previous_length = ruda_source_length(document->snapshot);
+    previous_bytes = ruda_source_bytes(document->snapshot);
+    if (edit.start > edit.previous_end
+        || edit.previous_end > previous_length
+        || edit.start > edit.new_end || edit.new_end > source_length) {
+        return RUDA_COMPILER_INVALID_ARGUMENT;
+    }
+    previous_suffix_length = previous_length - edit.previous_end;
+    new_suffix_length = source_length - edit.new_end;
+    if (previous_suffix_length != new_suffix_length
+        || (edit.start != 0
+            && memcmp(previous_bytes, new_bytes, edit.start) != 0)
+        || (previous_suffix_length != 0
+            && memcmp(
+                previous_bytes + edit.previous_end,
+                new_bytes + edit.new_end,
+                previous_suffix_length
+            ) != 0)) {
+        return RUDA_COMPILER_INVALID_ARGUMENT;
+    }
+    return ruda_compiler_service_overlay_internal(
+        service,
+        file_id,
+        version,
+        source_bytes,
+        source_length,
+        &edit
+    );
 }
 
 bool ruda_compiler_service_document(
@@ -371,9 +487,10 @@ bool ruda_compiler_service_document(
     return true;
 }
 
-RudaCompilerStatus ruda_compiler_service_check(
+RudaCompilerStatus ruda_compiler_service_check_request(
     const RudaCompilerService *service,
     const char *package_name,
+    const RudaCompilerCheckRequest *request,
     RudaCompilerResult *result
 ) {
     RudaCompilerResult candidate;
@@ -384,15 +501,23 @@ RudaCompilerStatus ruda_compiler_service_check(
     bool asts_initialized = false;
     size_t index = 0;
     RudaCompilerStatus failure = RUDA_COMPILER_OK;
+    RudaCompilerCheckStats stats;
+    memset(&stats, 0, sizeof(stats));
     if (result == NULL) {
         return RUDA_COMPILER_INVALID_ARGUMENT;
     }
     memset(built, 0, sizeof(*built));
     if (service == NULL || !service->initialized || package_name == NULL
-        || package_name[0] == '\0' || service->documents.length == 0) {
+        || package_name[0] == '\0' || service->documents.length == 0
+        || (request != NULL && request->previous != NULL
+            && !request->previous->initialized)) {
         return RUDA_COMPILER_INVALID_ARGUMENT;
     }
+    if (ruda_compiler_request_cancelled(request)) {
+        return RUDA_COMPILER_CANCELLED;
+    }
     built->allocator = service->allocator;
+    built->workspace_generation = service->generation;
     if (!ruda_vector_init(
             &built->units,
             service->allocator,
@@ -437,9 +562,16 @@ RudaCompilerStatus ruda_compiler_service_check(
         );
         const RudaCompilerDocument *document = slot != NULL ? *slot : NULL;
         RudaCompilerUnit unit;
+        const RudaCompilerUnit *previous_unit = NULL;
+        RudaIncrementalParseStats incremental_stats;
         RudaLexStatus lex_status;
         RudaParseStatus parse_status;
         memset(&unit, 0, sizeof(unit));
+        memset(&incremental_stats, 0, sizeof(incremental_stats));
+        if (ruda_compiler_request_cancelled(request)) {
+            failure = RUDA_COMPILER_CANCELLED;
+            goto cleanup;
+        }
         if (document == NULL || document->snapshot == NULL) {
             failure = RUDA_COMPILER_INTERNAL_ERROR;
             goto cleanup;
@@ -458,15 +590,88 @@ RudaCompilerStatus ruda_compiler_service_check(
             ruda_compiler_unit_dispose(&unit);
             goto cleanup;
         }
-        parse_status = ruda_parse_file(
-            &unit.lexed,
-            service->allocator,
-            service->options.parse_options,
-            &unit.parsed
-        );
+        if (ruda_compiler_request_cancelled(request)) {
+            ruda_compiler_unit_dispose(&unit);
+            failure = RUDA_COMPILER_CANCELLED;
+            goto cleanup;
+        }
+        previous_unit = request != NULL && request->previous != NULL
+            ? ruda_compiler_find_unit(request->previous, document->file_id)
+            : NULL;
+        if (document->has_edit && previous_unit != NULL
+            && previous_unit->version == document->edit.base_version
+            && previous_unit->snapshot == document->previous_snapshot
+            && previous_unit->parsed.initialized) {
+            parse_status = ruda_parse_file_incremental(
+                &previous_unit->parsed,
+                &unit.lexed,
+                document->edit.start,
+                document->edit.previous_end,
+                document->edit.new_end,
+                service->allocator,
+                service->options.parse_options,
+                &unit.parsed,
+                &incremental_stats
+            );
+            if (parse_status == RUDA_PARSE_INVALID_ARGUMENT) {
+                ruda_compiler_unit_dispose(&unit);
+                failure = RUDA_COMPILER_INTERNAL_ERROR;
+                goto cleanup;
+            }
+            if (parse_status == RUDA_PARSE_OK) {
+                size_t incremental_count = 0;
+                size_t reused_count = 0;
+                size_t reparsed_bytes = 0;
+                if (!ruda_size_add(
+                        stats.incremental_parse_count,
+                        1,
+                        &incremental_count
+                    ) || !ruda_size_add(
+                        stats.reused_top_level_nodes,
+                        incremental_stats.reused_top_level_nodes,
+                        &reused_count
+                    ) || !ruda_size_add(
+                        stats.reparsed_bytes,
+                        incremental_stats.reparsed_bytes,
+                        &reparsed_bytes
+                    )) {
+                    ruda_compiler_unit_dispose(&unit);
+                    failure = RUDA_COMPILER_LIMIT_REACHED;
+                    goto cleanup;
+                }
+                stats.incremental_parse_count = incremental_count;
+                stats.reused_top_level_nodes = reused_count;
+                stats.reparsed_bytes = reparsed_bytes;
+            }
+        } else {
+            parse_status = ruda_parse_file(
+                &unit.lexed,
+                service->allocator,
+                service->options.parse_options,
+                &unit.parsed
+            );
+            if (parse_status == RUDA_PARSE_OK) {
+                size_t full_count = 0;
+                if (!ruda_size_add(
+                        stats.full_parse_count,
+                        1,
+                        &full_count
+                    )) {
+                    ruda_compiler_unit_dispose(&unit);
+                    failure = RUDA_COMPILER_LIMIT_REACHED;
+                    goto cleanup;
+                }
+                stats.full_parse_count = full_count;
+            }
+        }
         failure = ruda_compiler_parse_status(parse_status);
         if (failure != RUDA_COMPILER_OK) {
             ruda_compiler_unit_dispose(&unit);
+            goto cleanup;
+        }
+        if (ruda_compiler_request_cancelled(request)) {
+            ruda_compiler_unit_dispose(&unit);
+            failure = RUDA_COMPILER_CANCELLED;
             goto cleanup;
         }
         if (unit.lexed.diagnostics.length != 0
@@ -480,6 +685,9 @@ RudaCompilerStatus ruda_compiler_service_check(
         }
     }
     if (built->has_frontend_errors) {
+        if (ruda_compiler_request_cancelled(request)) {
+            failure = RUDA_COMPILER_CANCELLED;
+        }
         goto cleanup;
     }
     asts_initialized = ruda_vector_init(
@@ -495,6 +703,10 @@ RudaCompilerStatus ruda_compiler_service_check(
         RudaCompilerUnit *unit = ruda_vector_at(&built->units, index);
         RudaAstStatus ast_status;
         RudaAstTree *ast = NULL;
+        if (ruda_compiler_request_cancelled(request)) {
+            failure = RUDA_COMPILER_CANCELLED;
+            goto cleanup;
+        }
         if (unit == NULL) {
             failure = RUDA_COMPILER_INTERNAL_ERROR;
             goto cleanup;
@@ -509,11 +721,19 @@ RudaCompilerStatus ruda_compiler_service_check(
         if (failure != RUDA_COMPILER_OK) {
             goto cleanup;
         }
+        if (ruda_compiler_request_cancelled(request)) {
+            failure = RUDA_COMPILER_CANCELLED;
+            goto cleanup;
+        }
         ast = &unit->ast;
         if (!ruda_vector_push(&asts, &ast)) {
             failure = RUDA_COMPILER_ALLOCATION_FAILED;
             goto cleanup;
         }
+    }
+    if (ruda_compiler_request_cancelled(request)) {
+        failure = RUDA_COMPILER_CANCELLED;
+        goto cleanup;
     }
     failure = ruda_compiler_check_status(ruda_check_package(
         (const RudaAstTree *const *)asts.data,
@@ -523,6 +743,10 @@ RudaCompilerStatus ruda_compiler_service_check(
         service->options.check_options,
         &built->checked
     ));
+    if (failure == RUDA_COMPILER_OK
+        && ruda_compiler_request_cancelled(request)) {
+        failure = RUDA_COMPILER_CANCELLED;
+    }
 
 cleanup:
     if (asts_initialized) {
@@ -537,7 +761,50 @@ cleanup:
     ruda_compiler_result_dispose(result);
     *result = *built;
     memset(built, 0, sizeof(*built));
+    if (request != NULL && request->stats != NULL) {
+        *request->stats = stats;
+    }
     return RUDA_COMPILER_OK;
+}
+
+RudaCompilerStatus ruda_compiler_service_check(
+    const RudaCompilerService *service,
+    const char *package_name,
+    RudaCompilerResult *result
+) {
+    return ruda_compiler_service_check_request(
+        service,
+        package_name,
+        NULL,
+        result
+    );
+}
+
+bool ruda_compiler_result_is_current(
+    const RudaCompilerService *service,
+    const RudaCompilerResult *result
+) {
+    size_t index = 0;
+    if (service == NULL || !service->initialized || result == NULL
+        || !result->initialized
+        || result->workspace_generation != service->generation
+        || result->units.length != service->documents.length) {
+        return false;
+    }
+    for (index = 0; index < result->units.length; index += 1) {
+        const RudaCompilerUnit *unit = ruda_vector_at_const(
+            &result->units,
+            index
+        );
+        const RudaCompilerDocument *document = unit == NULL
+            ? NULL
+            : ruda_compiler_find_document_const(service, unit->file_id);
+        if (document == NULL || unit->version != document->version
+            || unit->snapshot != document->snapshot) {
+            return false;
+        }
+    }
+    return true;
 }
 
 const RudaCompilerUnit *ruda_compiler_result_unit(

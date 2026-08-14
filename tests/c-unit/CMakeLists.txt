@@ -8,6 +8,7 @@ add_executable(ruda_c_unit
   test_checker_arrays.c
   test_cli.c
   test_compiler_service.c
+  test_compiler_service_incremental.c
   test_diagnostic.c
   test_directory.c
   test_doc_examples.c
