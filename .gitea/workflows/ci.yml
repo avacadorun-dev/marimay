@@ -66,6 +66,7 @@ jobs:
     env:
       CC: clang
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:symbolize=1:allow_addr2line=1
+      ASAN_SYMBOLIZER_PATH: /usr/bin/llvm-symbolizer-18
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - name: Check out source
@@ -75,7 +76,7 @@ jobs:
       - name: Install C17 toolchain
         run: |
           apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev python3
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev llvm-18 python3
       - name: Configure
         run: cmake --preset asan-ubsan
       - name: Build
