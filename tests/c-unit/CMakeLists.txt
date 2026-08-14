@@ -20,6 +20,7 @@ add_executable(ruda_c_unit
   test_mir_arrays.c
   test_mir_bytecode.c
   test_native_c_emitter.c
+  test_native_matrix.c
   test_main.c
   test_path_stream.c
   test_parser.c

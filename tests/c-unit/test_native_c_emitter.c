@@ -875,7 +875,7 @@ cleanup:
     RUDA_EXPECT(rmdir(directory) == 0);
 }
 
-static void ruda_test_native_compile_and_run(
+void ruda_test_native_compile_and_run(
     const RudaOwnedBytes *source,
     const char *expected_output,
     uint32_t expected_exit
