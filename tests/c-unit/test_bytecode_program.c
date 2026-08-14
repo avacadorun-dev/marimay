@@ -141,6 +141,7 @@ void ruda_test_bytecode_calls_and_program(void) {
             &decoded_program
         ) == RUDA_BYTECODE_CODEC_OK);
     }
+    ruda_bytecode_program_dispose(&decoded_program);
 
     {
         RudaBytecodeProgramFunction *callee_function = ruda_vector_at(&program.functions, 0);
