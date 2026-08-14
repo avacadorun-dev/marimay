@@ -9,6 +9,54 @@ typedef struct RudaCheckName {
     size_t end;
 } RudaCheckName;
 
+typedef struct RudaCheckFunctionDeclaration {
+    const RudaAstTree *ast;
+    const RudaAstNode *node;
+    const RudaAstNode *block;
+    RudaCheckName name;
+    RudaOwnedBytes owned_name;
+    RudaVector parameter_names;
+    RudaVector parameter_types;
+    RudaSymbolId symbol;
+    RudaSymbolId receiver_symbol;
+    RudaTypeId result_type;
+    RudaTypeId signature_type;
+    RudaTypeId receiver_type;
+    bool name_initialized;
+    bool parameter_names_initialized;
+    bool parameter_types_initialized;
+    bool signature_valid;
+    bool dot_eligible;
+    bool is_public;
+    bool is_test;
+    bool is_fuzz;
+} RudaCheckFunctionDeclaration;
+
+typedef enum RudaCheckTopLevelKind {
+    RUDA_CHECK_TOP_LEVEL_FUNCTION,
+    RUDA_CHECK_TOP_LEVEL_CONSTANT,
+    RUDA_CHECK_TOP_LEVEL_TYPE_ALIAS,
+    RUDA_CHECK_TOP_LEVEL_RECORD,
+    RUDA_CHECK_TOP_LEVEL_ENUM
+} RudaCheckTopLevelKind;
+
+typedef struct RudaCheckTopLevelEntry {
+    RudaCheckTopLevelKind kind;
+    size_t index;
+    size_t function_count;
+} RudaCheckTopLevelEntry;
+
+typedef enum RudaCheckCallResolution {
+    RUDA_CHECK_CALL_FOUND,
+    RUDA_CHECK_CALL_UNKNOWN_NAME,
+    RUDA_CHECK_CALL_NOT_FUNCTION,
+    RUDA_CHECK_CALL_RECEIVER_REQUIRED,
+    RUDA_CHECK_CALL_RECEIVER_NOT_OWNED,
+    RUDA_CHECK_CALL_NOT_DOT_ELIGIBLE,
+    RUDA_CHECK_CALL_OTHER_NOMINAL,
+    RUDA_CHECK_CALL_INTERNAL_ERROR
+} RudaCheckCallResolution;
+
 typedef struct RudaChecker {
     const RudaAstTree *ast;
     const char *package_name;
@@ -23,6 +71,7 @@ typedef struct RudaChecker {
     RudaVector enums;
     RudaMap top_level_index;
     RudaMap local_nominal_index;
+    RudaMap callable_index;
     size_t constant_depth;
     size_t type_alias_depth;
     size_t remaining_constant_steps;
@@ -110,6 +159,30 @@ bool ruda_compound_assignment_kind(
     RudaTypeId type,
     RudaTokenKind operator_kind,
     RudaMirInstructionKind *kind
+);
+
+/* Package-local D003 call resolution, owned by resolution.c. */
+bool ruda_check_callable_index_init(RudaChecker *checker);
+bool ruda_check_owned_receiver(
+    const RudaChecker *checker,
+    RudaTypeId type,
+    RudaSymbolId *receiver
+);
+bool ruda_check_callable_insert(
+    RudaChecker *checker,
+    const RudaCheckFunctionDeclaration *declaration,
+    size_t declaration_index
+);
+bool ruda_check_callable_remove(
+    RudaChecker *checker,
+    const RudaCheckFunctionDeclaration *declaration
+);
+RudaCheckCallResolution ruda_check_resolve_call(
+    const RudaChecker *checker,
+    RudaCheckName name,
+    bool receiver_known,
+    RudaTypeId receiver_type,
+    const RudaCheckFunctionDeclaration **declaration
 );
 
 /* Successful-package definition-fact publication, owned by facts.c. */

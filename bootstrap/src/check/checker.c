@@ -20,26 +20,6 @@ typedef struct RudaCheckLocal {
     bool initialized;
 } RudaCheckLocal;
 
-typedef struct RudaCheckFunctionDeclaration {
-    const RudaAstTree *ast;
-    const RudaAstNode *node;
-    const RudaAstNode *block;
-    RudaCheckName name;
-    RudaOwnedBytes owned_name;
-    RudaVector parameter_names;
-    RudaVector parameter_types;
-    RudaSymbolId symbol;
-    RudaTypeId result_type;
-    RudaTypeId signature_type;
-    bool name_initialized;
-    bool parameter_names_initialized;
-    bool parameter_types_initialized;
-    bool signature_valid;
-    bool is_public;
-    bool is_test;
-    bool is_fuzz;
-} RudaCheckFunctionDeclaration;
-
 typedef enum RudaCheckConstantState {
     RUDA_CHECK_CONSTANT_UNEVALUATED,
     RUDA_CHECK_CONSTANT_EVALUATING,
@@ -141,19 +121,6 @@ typedef struct RudaCheckEnumDeclaration {
     bool declaration_valid;
     bool variants_resolved;
 } RudaCheckEnumDeclaration;
-
-typedef enum RudaCheckTopLevelKind {
-    RUDA_CHECK_TOP_LEVEL_FUNCTION,
-    RUDA_CHECK_TOP_LEVEL_CONSTANT,
-    RUDA_CHECK_TOP_LEVEL_TYPE_ALIAS,
-    RUDA_CHECK_TOP_LEVEL_RECORD,
-    RUDA_CHECK_TOP_LEVEL_ENUM
-} RudaCheckTopLevelKind;
-
-typedef struct RudaCheckTopLevelEntry {
-    RudaCheckTopLevelKind kind;
-    size_t index;
-} RudaCheckTopLevelEntry;
 
 typedef struct RudaLoopContext {
     RudaMirBlockId break_target;
@@ -361,28 +328,6 @@ static const RudaCheckTopLevelEntry *ruda_checker_find_top_level(
         return NULL;
     }
     return ruda_map_get_const(&checker->top_level_index, bytes, length);
-}
-
-static const RudaCheckFunctionDeclaration *ruda_checker_find_declaration(
-    const RudaChecker *checker,
-    RudaCheckName name
-) {
-    const RudaCheckTopLevelEntry *entry = ruda_checker_find_top_level(
-        checker,
-        name
-    );
-    const RudaCheckFunctionDeclaration *declaration = NULL;
-    if (entry != NULL && entry->kind == RUDA_CHECK_TOP_LEVEL_FUNCTION) {
-        declaration = ruda_vector_at_const(
-            &checker->declarations,
-            entry->index
-        );
-    }
-    if (declaration != NULL && declaration->signature_valid
-        && ruda_check_names_equal(checker, declaration->name, name)) {
-        return declaration;
-    }
-    return NULL;
 }
 
 static RudaCheckConstantDeclaration *ruda_checker_find_constant(
@@ -4085,6 +4030,416 @@ static bool ruda_compile_identity_same(
     return true;
 }
 
+static bool ruda_compile_ordinary_call(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node,
+    RudaExpressionValue *result
+) {
+    const RudaAstNode *callee_node = ruda_check_child_node(
+        node,
+        RUDA_SYNTAX_NAME_EXPRESSION,
+        0
+    );
+    const RudaAstNode *arguments_node = ruda_check_child_node(
+        node,
+        RUDA_SYNTAX_ARGUMENTS,
+        0
+    );
+    const RudaAstNode *member_callee = ruda_check_child_node(
+        node,
+        RUDA_SYNTAX_MEMBER_EXPRESSION,
+        0
+    );
+    const RudaAstNode *receiver_node = NULL;
+    const RudaAstNode *resolution_receiver_node = NULL;
+    const RudaSyntaxToken *name_token = NULL;
+    const RudaCheckFunctionDeclaration *declaration = NULL;
+    RudaCheckName name;
+    RudaMirCallArgument *arguments = NULL;
+    RudaExpressionValue receiver;
+    RudaCheckCallResolution resolution = RUDA_CHECK_CALL_INTERNAL_ERROR;
+    size_t explicit_argument_count = 0;
+    size_t explicit_argument_index = 0;
+    size_t argument_count = 0;
+    size_t argument_bytes = 0;
+    size_t argument_index = 0;
+    size_t preflight_call_argument_count = 0;
+    size_t new_call_argument_count = 0;
+    size_t index = 0;
+    RudaMirCallId call = RUDA_MIR_NO_CALL;
+    RudaMirRegister target = RUDA_MIR_NO_REGISTER;
+    RudaMirInstruction instruction;
+    bool dot_call = false;
+    bool first_argument_compiled = false;
+    bool accepted = false;
+    memset(&receiver, 0, sizeof(receiver));
+    receiver.register_id = RUDA_MIR_NO_REGISTER;
+    if (callee_node != NULL) {
+        name_token = ruda_check_child_token(
+            callee_node,
+            RUDA_TOKEN_IDENTIFIER,
+            0
+        );
+    } else if (member_callee != NULL && ruda_member_parts(
+            member_callee,
+            &receiver_node,
+            &name_token
+        )) {
+        dot_call = true;
+    }
+    if (arguments_node == NULL || name_token == NULL || name_token->synthetic
+        || (!dot_call && callee_node == NULL)
+        || (dot_call && receiver_node == NULL)) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+        goto cleanup;
+    }
+    if (ruda_check_child_node(node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0) != NULL) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+        goto cleanup;
+    }
+    name.snapshot = function->checker->ast->snapshot;
+    name.start = name_token->start;
+    name.end = name_token->end;
+    if (!dot_call && ruda_function_find_local(function, name) != NULL) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+        goto cleanup;
+    }
+    for (index = 0; index < arguments_node->child_count; index += 1) {
+        const RudaAstElement *element = ruda_ast_child(arguments_node, index);
+        if (element == NULL) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            goto cleanup;
+        }
+        if (element->kind == RUDA_AST_ELEMENT_NODE) {
+            if (element->as.node == NULL
+                || element->as.node->kind != RUDA_SYNTAX_EXPRESSION
+                || explicit_argument_count == SIZE_MAX) {
+                ruda_checker_fail(
+                    function->checker,
+                    element->as.node == NULL
+                            || element->as.node->kind
+                                != RUDA_SYNTAX_EXPRESSION
+                        ? RUDA_CHECK_INCOMPLETE_LANGUAGE
+                        : RUDA_CHECK_LIMIT_REACHED
+                );
+                goto cleanup;
+            }
+            explicit_argument_count += 1;
+        } else if (element->as.token.synthetic) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            goto cleanup;
+        }
+    }
+    if (dot_call && explicit_argument_count == SIZE_MAX) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        goto cleanup;
+    }
+    argument_count = explicit_argument_count + (dot_call ? 1 : 0);
+    if (function->mir.calls.length >= function->mir.options.max_calls
+        || !ruda_size_add(
+            function->mir.call_arguments.length,
+            argument_count,
+            &preflight_call_argument_count
+        ) || preflight_call_argument_count
+            > function->mir.options.max_call_arguments) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        goto cleanup;
+    }
+    if (dot_call) {
+        resolution_receiver_node = receiver_node;
+        if (!ruda_compile_expression(
+                function,
+                receiver_node,
+                RUDA_TYPE_INVALID,
+                &receiver
+            )) {
+            goto cleanup;
+        }
+        if (ruda_expression_is_never(function, &receiver)) {
+            *result = receiver;
+            accepted = true;
+            goto cleanup;
+        }
+        resolution = ruda_check_resolve_call(
+            function->checker,
+            name,
+            true,
+            receiver.type,
+            &declaration
+        );
+    } else {
+        resolution = ruda_check_resolve_call(
+            function->checker,
+            name,
+            false,
+            RUDA_TYPE_INVALID,
+            &declaration
+        );
+        if (resolution == RUDA_CHECK_CALL_RECEIVER_REQUIRED) {
+            const RudaAstNode *first_argument = NULL;
+            for (index = 0; index < arguments_node->child_count; index += 1) {
+                const RudaAstElement *element = ruda_ast_child(
+                    arguments_node,
+                    index
+                );
+                if (element != NULL
+                    && element->kind == RUDA_AST_ELEMENT_NODE) {
+                    first_argument = element->as.node;
+                    break;
+                }
+            }
+            if (first_argument == NULL) {
+                (void)ruda_checker_add_diagnostic(
+                    function->checker,
+                    RUDA_DIAGNOSTIC_CALL_ARITY,
+                    "overloaded free call requires a first argument of a locally owned nominal type; value.name() and name(value) resolve to one symbol",
+                    arguments_node->start,
+                    arguments_node->end
+                );
+                goto cleanup;
+            }
+            resolution_receiver_node = first_argument;
+            if (!ruda_compile_expression(
+                    function,
+                    first_argument,
+                    RUDA_TYPE_INVALID,
+                    &receiver
+                )) {
+                goto cleanup;
+            }
+            if (ruda_expression_is_never(function, &receiver)) {
+                *result = receiver;
+                accepted = true;
+                goto cleanup;
+            }
+            first_argument_compiled = true;
+            resolution = ruda_check_resolve_call(
+                function->checker,
+                name,
+                true,
+                receiver.type,
+                &declaration
+            );
+        }
+    }
+    if (resolution != RUDA_CHECK_CALL_FOUND || declaration == NULL) {
+        size_t diagnostic_start = resolution_receiver_node == NULL
+            ? name.start
+            : resolution_receiver_node->start;
+        size_t diagnostic_end = resolution_receiver_node == NULL
+            ? name.end
+            : resolution_receiver_node->end;
+        if (resolution == RUDA_CHECK_CALL_UNKNOWN_NAME) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_UNKNOWN_NAME,
+                "unknown function name",
+                name.start,
+                name.end
+            );
+        } else if (resolution == RUDA_CHECK_CALL_NOT_FUNCTION) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "called name is not a function",
+                name.start,
+                name.end
+            );
+        } else if (resolution == RUDA_CHECK_CALL_NOT_DOT_ELIGIBLE) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "function is not dot-call eligible because its first parameter is not an exact locally owned nominal type",
+                name.start,
+                name.end
+            );
+        } else if (resolution == RUDA_CHECK_CALL_RECEIVER_NOT_OWNED) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                first_argument_compiled
+                    ? "overloaded free call first argument is not a locally owned nominal type; value.name() and name(value) resolve to one symbol"
+                    : "dot-call receiver is not a locally owned nominal type",
+                diagnostic_start,
+                diagnostic_end
+            );
+        } else if (resolution == RUDA_CHECK_CALL_OTHER_NOMINAL) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                first_argument_compiled
+                    ? "overloaded free call has no declaration for this first-argument nominal type; value.name() and name(value) resolve to one symbol"
+                    : "an eligible function with this name exists for a different locally owned nominal type",
+                diagnostic_start,
+                diagnostic_end
+            );
+        } else {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        }
+        goto cleanup;
+    }
+    if (argument_count != declaration->parameter_types.length) {
+        (void)ruda_checker_add_diagnostic(
+            function->checker,
+            RUDA_DIAGNOSTIC_CALL_ARITY,
+            "call argument count does not match the function signature",
+            arguments_node->start,
+            arguments_node->end
+        );
+        goto cleanup;
+    }
+    if (!ruda_size_multiply(
+            argument_count,
+            sizeof(RudaMirCallArgument),
+            &argument_bytes
+        )) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        goto cleanup;
+    }
+    if (argument_bytes != 0) {
+        arguments = ruda_allocate(
+            &function->checker->result->allocator,
+            argument_bytes
+        );
+        if (arguments == NULL) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_ALLOCATION_FAILED);
+            goto cleanup;
+        }
+    }
+    if (dot_call || first_argument_compiled) {
+        const RudaTypeId *first_parameter = ruda_vector_at_const(
+            &declaration->parameter_types,
+            0
+        );
+        if (first_parameter == NULL || receiver.type != *first_parameter
+            || arguments == NULL) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        arguments[0].register_id = receiver.register_id;
+        arguments[0].type = receiver.type;
+        argument_index = 1;
+    }
+    for (index = 0; index < arguments_node->child_count; index += 1) {
+        const RudaAstElement *element = ruda_ast_child(arguments_node, index);
+        const RudaTypeId *parameter_type = NULL;
+        RudaExpressionValue value;
+        if (element == NULL || element->kind != RUDA_AST_ELEMENT_NODE) {
+            continue;
+        }
+        if (first_argument_compiled && explicit_argument_index == 0) {
+            explicit_argument_index += 1;
+            continue;
+        }
+        parameter_type = ruda_vector_at_const(
+            &declaration->parameter_types,
+            dot_call ? explicit_argument_index + 1 : explicit_argument_index
+        );
+        if (parameter_type == NULL || arguments == NULL) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        memset(&value, 0, sizeof(value));
+        if (!ruda_compile_expression(
+                function,
+                element->as.node,
+                *parameter_type,
+                &value
+            )) {
+            goto cleanup;
+        }
+        if (ruda_expression_is_never(function, &value)) {
+            *result = value;
+            accepted = true;
+            goto cleanup;
+        }
+        if (value.type != *parameter_type) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "argument type does not match the function parameter type",
+                element->as.node->start,
+                element->as.node->end
+            );
+            goto cleanup;
+        }
+        arguments[argument_index].register_id = value.register_id;
+        arguments[argument_index].type = value.type;
+        argument_index += 1;
+        explicit_argument_index += 1;
+    }
+    if (argument_index != argument_count
+        || function->mir.calls.length >= function->mir.options.max_calls
+        || !ruda_size_add(
+            function->mir.call_arguments.length,
+            argument_count,
+            &new_call_argument_count
+        ) || new_call_argument_count
+            > function->mir.options.max_call_arguments) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        goto cleanup;
+    }
+    if (!ruda_mir_add_call(
+            &function->mir,
+            declaration->symbol,
+            declaration->result_type,
+            arguments,
+            argument_count,
+            &call
+        )) {
+        if (!ruda_checker_has_failed(function->checker)) {
+            ruda_checker_fail(
+                function->checker,
+                RUDA_CHECK_ALLOCATION_FAILED
+            );
+        }
+        goto cleanup;
+    }
+    if (declaration->result_type == RUDA_TYPE_NEVER) {
+        if (!ruda_function_set_never_call(
+                function,
+                call,
+                node->start,
+                node->end
+            )) {
+            goto cleanup;
+        }
+        ruda_expression_set_never(function, result);
+        accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_function_add_register(
+            function,
+            declaration->result_type,
+            &target
+        )) {
+        goto cleanup;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_CALL;
+    instruction.target = target;
+    instruction.first = RUDA_MIR_NO_REGISTER;
+    instruction.second = RUDA_MIR_NO_REGISTER;
+    instruction.call = call;
+    instruction.span.start = node->start;
+    instruction.span.end = node->end;
+    if (!ruda_function_append_instruction(function, &instruction)) {
+        goto cleanup;
+    }
+    result->type = declaration->result_type;
+    result->register_id = target;
+    result->valid = true;
+    accepted = true;
+
+cleanup:
+    ruda_deallocate(
+        &function->checker->result->allocator,
+        arguments,
+        argument_bytes
+    );
+    return accepted && !ruda_checker_has_failed(function->checker);
+}
+
 static bool ruda_compile_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
@@ -4105,17 +4460,7 @@ static bool ruda_compile_call(
         RUDA_TOKEN_IDENTIFIER,
         0
     );
-    const RudaCheckFunctionDeclaration *declaration = NULL;
-    RudaCheckName name;
-    RudaMirCallArgument *arguments = NULL;
-    size_t argument_count = 0;
-    size_t argument_bytes = 0;
-    size_t argument_index = 0;
-    size_t new_call_argument_count = 0;
     size_t index = 0;
-    RudaMirCallId call = RUDA_MIR_NO_CALL;
-    RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-    RudaMirInstruction instruction;
     bool accepted = false;
     bool enum_resolved = false;
     bool identity_resolved = false;
@@ -4366,225 +4711,9 @@ static bool ruda_compile_call(
         );
         goto cleanup;
     }
-    if (callee_node == NULL || arguments_node == NULL || name_token == NULL
-        || name_token->synthetic) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
-        goto cleanup;
-    }
-    if (ruda_check_child_node(node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0) != NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
-        goto cleanup;
-    }
-    name.snapshot = function->checker->ast->snapshot;
-    name.start = name_token->start;
-    name.end = name_token->end;
-    if (ruda_function_find_local(function, name) != NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
-        goto cleanup;
-    }
-    declaration = ruda_checker_find_declaration(function->checker, name);
-    if (declaration == NULL) {
-        if (ruda_checker_find_top_level(function->checker, name) != NULL) {
-            (void)ruda_checker_add_diagnostic(
-                function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-                "called name is not a function",
-                name.start,
-                name.end
-            );
-        } else {
-            (void)ruda_checker_add_diagnostic(
-                function->checker,
-                RUDA_DIAGNOSTIC_UNKNOWN_NAME,
-                "unknown function name",
-                name.start,
-                name.end
-            );
-        }
-        goto cleanup;
-    }
-    for (index = 0; index < arguments_node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(arguments_node, index);
-        if (element == NULL) {
-            ruda_checker_fail(
-                function->checker,
-                RUDA_CHECK_INVALID_ARGUMENT
-            );
-            goto cleanup;
-        }
-        if (element->kind == RUDA_AST_ELEMENT_NODE) {
-            if (element->as.node->kind != RUDA_SYNTAX_EXPRESSION
-                || argument_count == SIZE_MAX) {
-                ruda_checker_fail(
-                    function->checker,
-                    element->as.node->kind != RUDA_SYNTAX_EXPRESSION
-                        ? RUDA_CHECK_INCOMPLETE_LANGUAGE
-                        : RUDA_CHECK_LIMIT_REACHED
-                );
-                goto cleanup;
-            }
-            argument_count += 1;
-        } else if (element->as.token.synthetic) {
-            ruda_checker_fail(
-                function->checker,
-                RUDA_CHECK_INVALID_ARGUMENT
-            );
-            goto cleanup;
-        }
-    }
-    if (argument_count != declaration->parameter_types.length) {
-        (void)ruda_checker_add_diagnostic(
-            function->checker,
-            RUDA_DIAGNOSTIC_CALL_ARITY,
-            "call argument count does not match the function signature",
-            arguments_node->start,
-            arguments_node->end
-        );
-        goto cleanup;
-    }
-    if (!ruda_size_multiply(
-            argument_count,
-            sizeof(RudaMirCallArgument),
-            &argument_bytes
-        )) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
-        goto cleanup;
-    }
-    if (argument_bytes != 0) {
-        arguments = ruda_allocate(
-            &function->checker->result->allocator,
-            argument_bytes
-        );
-        if (arguments == NULL) {
-            ruda_checker_fail(
-                function->checker,
-                RUDA_CHECK_ALLOCATION_FAILED
-            );
-            goto cleanup;
-        }
-    }
-    for (index = 0; index < arguments_node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(arguments_node, index);
-        const RudaTypeId *parameter_type = NULL;
-        RudaExpressionValue value;
-        if (element == NULL || element->kind != RUDA_AST_ELEMENT_NODE) {
-            continue;
-        }
-        parameter_type = ruda_vector_at_const(
-            &declaration->parameter_types,
-            argument_index
-        );
-        if (parameter_type == NULL) {
-            ruda_checker_fail(
-                function->checker,
-                RUDA_CHECK_INTERNAL_ERROR
-            );
-            goto cleanup;
-        }
-        memset(&value, 0, sizeof(value));
-        if (!ruda_compile_expression(
-                function,
-                element->as.node,
-                *parameter_type,
-                &value
-            )) {
-            goto cleanup;
-        }
-        if (ruda_expression_is_never(function, &value)) {
-            *result = value;
-            accepted = true;
-            goto cleanup;
-        }
-        if (value.type != *parameter_type) {
-            (void)ruda_checker_add_diagnostic(
-                function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-                "argument type does not match the function parameter type",
-                element->as.node->start,
-                element->as.node->end
-            );
-            goto cleanup;
-        }
-        if (arguments == NULL) {
-            ruda_checker_fail(
-                function->checker,
-                RUDA_CHECK_INTERNAL_ERROR
-            );
-            goto cleanup;
-        }
-        arguments[argument_index].register_id = value.register_id;
-        arguments[argument_index].type = value.type;
-        argument_index += 1;
-    }
-    if (argument_index != argument_count
-        || function->mir.calls.length >= function->mir.options.max_calls
-        || !ruda_size_add(
-            function->mir.call_arguments.length,
-            argument_count,
-            &new_call_argument_count
-        ) || new_call_argument_count
-            > function->mir.options.max_call_arguments) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
-        goto cleanup;
-    }
-    if (!ruda_mir_add_call(
-            &function->mir,
-            declaration->symbol,
-            declaration->result_type,
-            arguments,
-            argument_count,
-            &call
-        )) {
-        if (!ruda_checker_has_failed(function->checker)) {
-            ruda_checker_fail(
-                function->checker,
-                RUDA_CHECK_ALLOCATION_FAILED
-            );
-        }
-        goto cleanup;
-    }
-    if (declaration->result_type == RUDA_TYPE_NEVER) {
-        if (!ruda_function_set_never_call(
-                function,
-                call,
-                node->start,
-                node->end
-            )) {
-            goto cleanup;
-        }
-        ruda_expression_set_never(function, result);
-        accepted = true;
-        goto cleanup;
-    }
-    if (!ruda_function_add_register(
-            function,
-            declaration->result_type,
-            &target
-        )) {
-        goto cleanup;
-    }
-    memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_CALL;
-    instruction.target = target;
-    instruction.first = RUDA_MIR_NO_REGISTER;
-    instruction.second = RUDA_MIR_NO_REGISTER;
-    instruction.call = call;
-    instruction.span.start = node->start;
-    instruction.span.end = node->end;
-    if (!ruda_function_append_instruction(function, &instruction)) {
-        goto cleanup;
-    }
-    result->type = declaration->result_type;
-    result->register_id = target;
-    result->valid = true;
-    accepted = true;
+    accepted = ruda_compile_ordinary_call(function, node, result);
 
 cleanup:
-    ruda_deallocate(
-        &function->checker->result->allocator,
-        arguments,
-        argument_bytes
-    );
     return accepted && !ruda_checker_has_failed(function->checker);
 }
 
@@ -11410,6 +11539,7 @@ static bool ruda_collect_record_declaration(
     }
     top_level_entry.kind = RUDA_CHECK_TOP_LEVEL_RECORD;
     top_level_entry.index = checker->records.length;
+    top_level_entry.function_count = 0;
     if (top_level_entry.index == SIZE_MAX || !ruda_vector_reserve(
             &checker->records,
             top_level_entry.index + 1
@@ -11599,6 +11729,7 @@ static bool ruda_collect_enum_declaration(
     }
     top_level_entry.kind = RUDA_CHECK_TOP_LEVEL_ENUM;
     top_level_entry.index = checker->enums.length;
+    top_level_entry.function_count = 0;
     if (top_level_entry.index == SIZE_MAX || !ruda_vector_reserve(
             &checker->enums,
             top_level_entry.index + 1
@@ -12251,6 +12382,7 @@ static bool ruda_collect_type_alias_declaration(
     }
     top_level_entry.kind = RUDA_CHECK_TOP_LEVEL_TYPE_ALIAS;
     top_level_entry.index = checker->type_aliases.length;
+    top_level_entry.function_count = 0;
     if (top_level_entry.index == SIZE_MAX || !ruda_vector_reserve(
             &checker->type_aliases,
             top_level_entry.index + 1
@@ -12661,6 +12793,9 @@ static bool ruda_collect_function_signature(
     bool attribute_valid = true;
     bool duplicate_name = false;
     bool top_level_index_inserted = false;
+    bool callable_index_inserted = false;
+    bool overload_group = false;
+    bool overload_count_incremented = false;
     bool accepted = false;
     memset(&declaration, 0, sizeof(declaration));
     declaration.block = ruda_check_child_node(node, RUDA_SYNTAX_BLOCK, 0);
@@ -12749,23 +12884,6 @@ static bool ruda_collect_function_signature(
         RUDA_TOKEN_KW_PUBLIC,
         0
     ) != NULL;
-    duplicate_name = ruda_declaration_name_is_duplicate(
-        checker,
-        declaration.name
-    );
-    if (duplicate_name) {
-        (void)ruda_checker_add_diagnostic(
-            checker,
-            RUDA_DIAGNOSTIC_DUPLICATE_NAME,
-            "name is already declared in this scope",
-            declaration.name.start,
-            declaration.name.end
-        );
-        declaration.signature_valid = false;
-        if (ruda_checker_has_failed(checker)) {
-            goto cleanup;
-        }
-    }
     if (!ruda_owned_bytes_copy(
             &declaration.owned_name,
             checker->result->allocator,
@@ -12961,25 +13079,13 @@ static bool ruda_collect_function_signature(
                 &declaration.parameter_types,
                 0
             );
-            const RudaTypeDescriptor *first_descriptor = first_type == NULL
-                ? NULL
-                : ruda_type_descriptor(&checker->result->types, *first_type);
-            const RudaSymbolId *local_receiver = first_type == NULL
-                ? NULL
-                : ruda_map_get_const(
-                    &checker->local_nominal_index,
-                    first_type,
-                    sizeof(*first_type)
-                );
-            bool local_nominal = first_type != NULL
-                && first_descriptor != NULL
-                && first_descriptor->kind == RUDA_TYPE_KIND_NOMINAL
-                && local_receiver != NULL
-                && ruda_symbol_id_equal(
-                    *local_receiver,
-                    first_descriptor->symbol
-                );
-            if (local_nominal) {
+            if (first_type != NULL && ruda_check_owned_receiver(
+                    checker,
+                    *first_type,
+                    &declaration.receiver_symbol
+                )) {
+                declaration.dot_eligible = true;
+                declaration.receiver_type = *first_type;
                 if (!ruda_symbol_id_from_bytes_with_receiver(
                         checker->result->package_name.data,
                         checker->result->package_name.length,
@@ -12987,7 +13093,7 @@ static bool ruda_collect_function_signature(
                         ruda_source_path_length(checker->ast->snapshot),
                         declaration.owned_name.data,
                         declaration.owned_name.length,
-                        first_descriptor->symbol,
+                        declaration.receiver_symbol,
                         &declaration.symbol
                     )) {
                     ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
@@ -13020,8 +13126,61 @@ static bool ruda_collect_function_signature(
             goto cleanup;
         }
     }
+    if (declaration.signature_valid) {
+        const RudaCheckTopLevelEntry *existing = ruda_map_get_const(
+            &checker->top_level_index,
+            declaration.owned_name.data,
+            declaration.owned_name.length
+        );
+        if (existing != NULL) {
+            const RudaCheckFunctionDeclaration *resolved = NULL;
+            RudaCheckCallResolution resolution = RUDA_CHECK_CALL_INTERNAL_ERROR;
+            const RudaCheckFunctionDeclaration *first = NULL;
+            if (existing->kind == RUDA_CHECK_TOP_LEVEL_FUNCTION) {
+                first = ruda_vector_at_const(
+                    &checker->declarations,
+                    existing->index
+                );
+            }
+            if (existing->kind != RUDA_CHECK_TOP_LEVEL_FUNCTION
+                || first == NULL || !first->signature_valid
+                || !first->dot_eligible || !declaration.dot_eligible) {
+                duplicate_name = true;
+            } else {
+                resolution = ruda_check_resolve_call(
+                    checker,
+                    declaration.name,
+                    true,
+                    declaration.receiver_type,
+                    &resolved
+                );
+                if (resolution == RUDA_CHECK_CALL_FOUND) {
+                    duplicate_name = true;
+                } else if (resolution == RUDA_CHECK_CALL_OTHER_NOMINAL) {
+                    overload_group = true;
+                } else {
+                    ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+                    goto cleanup;
+                }
+            }
+            if (duplicate_name) {
+                (void)ruda_checker_add_diagnostic(
+                    checker,
+                    RUDA_DIAGNOSTIC_DUPLICATE_NAME,
+                    "name is already declared in this scope",
+                    declaration.name.start,
+                    declaration.name.end
+                );
+                declaration.signature_valid = false;
+                if (ruda_checker_has_failed(checker)) {
+                    goto cleanup;
+                }
+            }
+        }
+    }
     top_level_entry.kind = RUDA_CHECK_TOP_LEVEL_FUNCTION;
     top_level_entry.index = checker->declarations.length;
+    top_level_entry.function_count = 1;
     if (top_level_entry.index == SIZE_MAX || !ruda_vector_reserve(
             &checker->declarations,
             top_level_entry.index + 1
@@ -13029,7 +13188,7 @@ static bool ruda_collect_function_signature(
         ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
         goto cleanup;
     }
-    if (!duplicate_name) {
+    if (declaration.signature_valid && !overload_group) {
         if (!ruda_map_put(
                 &checker->top_level_index,
                 declaration.owned_name.data,
@@ -13041,7 +13200,54 @@ static bool ruda_collect_function_signature(
         }
         top_level_index_inserted = true;
     }
+    if (declaration.signature_valid && declaration.dot_eligible) {
+        if (!ruda_check_callable_insert(
+                checker,
+                &declaration,
+                top_level_entry.index
+            )) {
+            if (top_level_index_inserted) {
+                (void)ruda_map_remove(
+                    &checker->top_level_index,
+                    declaration.owned_name.data,
+                    declaration.owned_name.length
+                );
+            }
+            goto cleanup;
+        }
+        callable_index_inserted = true;
+    }
+    if (overload_group) {
+        RudaCheckTopLevelEntry *group = ruda_map_get(
+            &checker->top_level_index,
+            declaration.owned_name.data,
+            declaration.owned_name.length
+        );
+        if (group == NULL || group->kind != RUDA_CHECK_TOP_LEVEL_FUNCTION
+            || group->function_count == SIZE_MAX) {
+            if (callable_index_inserted) {
+                (void)ruda_check_callable_remove(checker, &declaration);
+            }
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        group->function_count += 1;
+        overload_count_incremented = true;
+    }
     if (!ruda_vector_push(&checker->declarations, &declaration)) {
+        if (overload_count_incremented) {
+            RudaCheckTopLevelEntry *group = ruda_map_get(
+                &checker->top_level_index,
+                declaration.owned_name.data,
+                declaration.owned_name.length
+            );
+            if (group != NULL && group->function_count != 0) {
+                group->function_count -= 1;
+            }
+        }
+        if (callable_index_inserted) {
+            (void)ruda_check_callable_remove(checker, &declaration);
+        }
         if (top_level_index_inserted) {
             (void)ruda_map_remove(
                 &checker->top_level_index,
@@ -13187,6 +13393,7 @@ static bool ruda_collect_constant_declaration(
     }
     top_level_entry.kind = RUDA_CHECK_TOP_LEVEL_CONSTANT;
     top_level_entry.index = checker->constants.length;
+    top_level_entry.function_count = 0;
     if (top_level_entry.index == SIZE_MAX || !ruda_vector_reserve(
             &checker->constants,
             top_level_entry.index + 1
@@ -13952,6 +14159,7 @@ static void ruda_checker_dispose_declarations(RudaChecker *checker) {
     }
     ruda_map_dispose(&checker->top_level_index);
     ruda_map_dispose(&checker->local_nominal_index);
+    ruda_map_dispose(&checker->callable_index);
     ruda_vector_dispose(&checker->constants);
     ruda_vector_dispose(&checker->type_aliases);
     ruda_vector_dispose(&checker->records);
@@ -14302,6 +14510,7 @@ RudaCheckStatus ruda_check_package(
     bool enum_declarations_initialized = false;
     bool top_level_index_initialized = false;
     bool local_nominal_index_initialized = false;
+    bool callable_index_initialized = false;
     size_t ast_index = 0;
     size_t index = 0;
     size_t package_name_length = 0;
@@ -14446,6 +14655,7 @@ RudaCheckStatus ruda_check_package(
     local_nominal_index_initialized = ruda_checker_local_nominal_index_init(
         &checker
     );
+    callable_index_initialized = ruda_check_callable_index_init(&checker);
     if (!diagnostics_initialized || !functions_initialized
         || !constants_initialized || !type_aliases_initialized
         || !records_initialized
@@ -14456,7 +14666,11 @@ RudaCheckStatus ruda_check_package(
         || !type_alias_declarations_initialized
         || !record_declarations_initialized
         || !enum_declarations_initialized
-        || !top_level_index_initialized || !local_nominal_index_initialized) {
+        || !top_level_index_initialized || !local_nominal_index_initialized
+        || !callable_index_initialized) {
+        if (callable_index_initialized) {
+            ruda_map_dispose(&checker.callable_index);
+        }
         if (local_nominal_index_initialized) {
             ruda_map_dispose(&checker.local_nominal_index);
         }

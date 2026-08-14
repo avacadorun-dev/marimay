@@ -139,6 +139,7 @@ bootstrap/src/check/
   checker_internal.h    owner-private contexts and phase contracts
   result.c              result/default/dispose/accessor ownership (extracted)
   facts.c               canonical successful-package definition facts
+  resolution.c          package-local D003 free/dot-call resolver
   service.c             snapshots, frontend/check lifetimes, diagnostics owner
   array.c               D045 type/literal/access/assignment lowering (extracted)
   declarations.c        collection, signature, and publication phases
@@ -162,10 +163,14 @@ Successful diagnostic-free checks now publish bounded, result-owned top-level
 definition facts in canonical source order. Exact declaration hits and stable
 symbol lookup are owned by `facts.c`; source-path hashing consumes exact bytes,
 and nominal-receiver lookup is indexed during declaration collection. Type IDs
-remain result-local. Reference occurrences, symbol search, shared free/dot-call
-resolution, checker-backed completion, and the complete public/private/effect
-invalidation matrix remain explicit I2 service gates; the public `ruda check`
-command stays unavailable until those owners exist.
+remain result-local. Package-local non-generic free and dot calls now share one
+resolver in `resolution.c`: same-name functions are accepted only for distinct
+exact local nominal receivers after alias unwrap, both spellings lower to one
+`RudaSymbolId`, and the dot receiver is evaluated once before explicit
+arguments. Imports, generics, reference occurrences, symbol search,
+checker-backed completion, and the complete public/private/effect invalidation
+matrix remain explicit I2 service gates; the public `ruda check` command stays
+unavailable until those owners exist.
 
 ### Test owners
 
@@ -181,6 +186,7 @@ tests/c-unit/
   test_checker.c
   test_checker_arrays.c
   test_checker_facts.c
+  test_checker_resolution.c
   test_compiler_service.c
   test_compiler_service_incremental.c
   test_checker_match.c
