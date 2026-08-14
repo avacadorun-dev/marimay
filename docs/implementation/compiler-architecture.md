@@ -248,6 +248,8 @@ checkpoint:
 | `tests/c-unit/test_mir_arrays.c` | 0 | 1,251 | array layouts, construction, provenance, bounds, allocation failure, limits, and D045 RHS ordering |
 | `bootstrap/src/check/checker.c` | 14,559 | 14,299 | package/checking phases remain coordinated here; published-result ownership moved out |
 | `bootstrap/src/check/result.c` | 0 | 263 | defaults, nested published-value cleanup, rollback helpers, public dispose, and const accessors |
+| `bootstrap/src/check/checker.c` | 14,299 | 14,246 | owner-private checker/function/expression contexts moved to the sibling-module contract |
+| `bootstrap/src/check/checker_internal.h` | 21 | 121 | result lifecycle plus minimal expression-lowering context and helper boundary |
 
 The split preserves assertion order within the array suite and the single
 external `ruda_test_mir` registration. Test-local helpers are private to each
@@ -255,4 +257,6 @@ translation unit; no production header or semantic implementation changed.
 The command evidence is recorded in
 [architecture checkpoint 2](evidence/architecture-checkpoint-2-2026-08-14.md)
 and
-[architecture checkpoint 3](evidence/architecture-checkpoint-3-2026-08-14.md).
+[architecture checkpoint 3](evidence/architecture-checkpoint-3-2026-08-14.md),
+followed by the
+[checker sibling-module boundary](evidence/architecture-checkpoint-4-2026-08-14.md).

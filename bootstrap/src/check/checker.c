@@ -11,12 +11,6 @@
 #include "ruda/base/f64.h"
 #include "ruda/base/string_literal.h"
 
-typedef struct RudaCheckName {
-    const RudaSourceSnapshot *snapshot;
-    size_t start;
-    size_t end;
-} RudaCheckName;
-
 typedef struct RudaCheckLocal {
     RudaCheckName name;
     RudaTypeId type;
@@ -161,57 +155,10 @@ typedef struct RudaCheckTopLevelEntry {
     size_t index;
 } RudaCheckTopLevelEntry;
 
-typedef struct RudaChecker {
-    const RudaAstTree *ast;
-    const char *package_name;
-    const unsigned char *source;
-    size_t source_length;
-    RudaCheckOptions options;
-    RudaCheckResult *result;
-    RudaVector declarations;
-    RudaVector constants;
-    RudaVector type_aliases;
-    RudaVector records;
-    RudaVector enums;
-    RudaMap top_level_index;
-    size_t constant_depth;
-    size_t type_alias_depth;
-    size_t remaining_constant_steps;
-    RudaCheckStatus failure;
-} RudaChecker;
-
 typedef struct RudaLoopContext {
     RudaMirBlockId break_target;
     RudaMirBlockId continue_target;
 } RudaLoopContext;
-
-typedef struct RudaMatchYieldContext {
-    RudaMirBlockId *join;
-    RudaTypeId *match_type;
-    RudaMirRegister *target;
-    bool yielded;
-} RudaMatchYieldContext;
-
-typedef struct RudaFunctionChecker {
-    RudaChecker *checker;
-    RudaVector locals;
-    RudaVector loops;
-    RudaMirFunction mir;
-    RudaMirBlockId block;
-    RudaTypeId result_type;
-    size_t diagnostic_start;
-    size_t scope_depth;
-    RudaMatchYieldContext *match_yield;
-    bool mir_initialized;
-    bool terminated;
-    bool constant_evaluation;
-} RudaFunctionChecker;
-
-typedef struct RudaExpressionValue {
-    RudaTypeId type;
-    RudaMirRegister register_id;
-    bool valid;
-} RudaExpressionValue;
 
 typedef struct RudaCheckEnumMatchBinding {
     RudaCheckName name;
@@ -295,7 +242,7 @@ static bool ruda_evaluate_type_alias(
     size_t use_end
 );
 
-static void ruda_checker_fail(RudaChecker *checker, RudaCheckStatus status) {
+void ruda_checker_fail(RudaChecker *checker, RudaCheckStatus status) {
     if (checker->failure == RUDA_CHECK_OK) {
         checker->failure = status;
     }
@@ -311,7 +258,7 @@ static void ruda_expression_set_never(
     function->terminated = true;
 }
 
-static bool ruda_expression_is_never(
+bool ruda_expression_is_never(
     const RudaFunctionChecker *function,
     const RudaExpressionValue *value
 ) {
@@ -320,7 +267,7 @@ static bool ruda_expression_is_never(
         && value->register_id == RUDA_MIR_NO_REGISTER;
 }
 
-static bool ruda_checker_has_failed(const RudaChecker *checker) {
+bool ruda_checker_has_failed(const RudaChecker *checker) {
     return checker->failure != RUDA_CHECK_OK;
 }
 
@@ -748,7 +695,7 @@ static bool ruda_check_source_is_test_file(const RudaChecker *checker) {
         ) == 0;
 }
 
-static bool ruda_checker_add_diagnostic(
+bool ruda_checker_add_diagnostic(
     RudaChecker *checker,
     const char *code,
     const char *message,
@@ -1903,7 +1850,7 @@ static void ruda_initialization_snapshot_dispose(
     memset(snapshot, 0, sizeof(*snapshot));
 }
 
-static bool ruda_function_add_register(
+bool ruda_function_add_register(
     RudaFunctionChecker *function,
     RudaTypeId type,
     RudaMirRegister *result
@@ -1935,7 +1882,7 @@ static bool ruda_function_add_block(
     return true;
 }
 
-static bool ruda_function_append_instruction(
+bool ruda_function_append_instruction(
     RudaFunctionChecker *function,
     const RudaMirInstruction *instruction
 ) {
@@ -1955,7 +1902,7 @@ static bool ruda_function_append_instruction(
     return true;
 }
 
-static bool ruda_function_emit_instruction(
+bool ruda_function_emit_instruction(
     RudaFunctionChecker *function,
     RudaMirInstructionKind kind,
     RudaTypeId type,
@@ -2415,7 +2362,7 @@ static bool ruda_integer_magnitude(
     return true;
 }
 
-static bool ruda_compile_expression(
+bool ruda_compile_expression(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
     RudaTypeId expected,
@@ -5219,7 +5166,7 @@ static bool ruda_compile_record_member(
     );
 }
 
-static bool ruda_compile_expression(
+bool ruda_compile_expression(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
     RudaTypeId expected,
@@ -9513,7 +9460,7 @@ static bool ruda_compile_binding(
         || expression == NULL;
 }
 
-static bool ruda_compound_assignment_kind(
+bool ruda_compound_assignment_kind(
     RudaTypeId type,
     RudaTokenKind operator_kind,
     RudaMirInstructionKind *kind

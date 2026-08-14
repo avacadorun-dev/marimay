@@ -38,7 +38,9 @@ the first research/planning checkpoint captured in
 and the first mechanical test-owner extraction captured in
 [architecture checkpoint 2](evidence/architecture-checkpoint-2-2026-08-14.md),
 followed by the first production checker-result boundary in
-[architecture checkpoint 3](evidence/architecture-checkpoint-3-2026-08-14.md).
+[architecture checkpoint 3](evidence/architecture-checkpoint-3-2026-08-14.md)
+and the owner-private expression sibling-module boundary in
+[architecture checkpoint 4](evidence/architecture-checkpoint-4-2026-08-14.md).
 This maintenance work does not change any gate state and cannot displace a
 vertical VM/native feature slice.
 
