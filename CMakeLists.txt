@@ -91,6 +91,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/vm.c
   bootstrap/src/check/array.c
   bootstrap/src/check/checker.c
+  bootstrap/src/check/facts.c
   bootstrap/src/check/result.c
   bootstrap/src/check/service.c
   bootstrap/src/cli/cli.c

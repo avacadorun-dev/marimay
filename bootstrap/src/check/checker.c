@@ -11308,6 +11308,7 @@ static bool ruda_collect_record_declaration(
     size_t index = 0;
     bool duplicate_name = false;
     bool top_level_index_inserted = false;
+    bool local_nominal_inserted = false;
     bool accepted = false;
     memset(&declaration, 0, sizeof(declaration));
     if (name_token == NULL || name_token->synthetic) {
@@ -11376,10 +11377,13 @@ static bool ruda_collect_record_declaration(
         goto cleanup;
     }
     declaration.fields_initialized = true;
-    if (!ruda_symbol_id_from_parts(
-            checker->package_name,
+    if (!ruda_symbol_id_from_bytes(
+            checker->result->package_name.data,
+            checker->result->package_name.length,
             ruda_source_path(checker->ast->snapshot),
-            (const char *)declaration.owned_name.data,
+            ruda_source_path_length(checker->ast->snapshot),
+            declaration.owned_name.data,
+            declaration.owned_name.length,
             0,
             &declaration.symbol
         )) {
@@ -11424,8 +11428,43 @@ static bool ruda_collect_record_declaration(
             goto cleanup;
         }
         top_level_index_inserted = true;
+        if (ruda_map_get_const(
+                &checker->local_nominal_index,
+                &declaration.type,
+                sizeof(declaration.type)
+            ) != NULL) {
+            (void)ruda_map_remove(
+                &checker->top_level_index,
+                declaration.owned_name.data,
+                declaration.owned_name.length
+            );
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        if (!ruda_map_put(
+                &checker->local_nominal_index,
+                &declaration.type,
+                sizeof(declaration.type),
+                &declaration.symbol
+            )) {
+            (void)ruda_map_remove(
+                &checker->top_level_index,
+                declaration.owned_name.data,
+                declaration.owned_name.length
+            );
+            ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+            goto cleanup;
+        }
+        local_nominal_inserted = true;
     }
     if (!ruda_vector_push(&checker->records, &declaration)) {
+        if (local_nominal_inserted) {
+            (void)ruda_map_remove(
+                &checker->local_nominal_index,
+                &declaration.type,
+                sizeof(declaration.type)
+            );
+        }
         if (top_level_index_inserted) {
             (void)ruda_map_remove(
                 &checker->top_level_index,
@@ -11458,6 +11497,7 @@ static bool ruda_collect_enum_declaration(
     size_t index = 0;
     bool duplicate_name = false;
     bool top_level_index_inserted = false;
+    bool local_nominal_inserted = false;
     bool accepted = false;
     memset(&declaration, 0, sizeof(declaration));
     if (name_token == NULL || name_token->synthetic) {
@@ -11526,10 +11566,13 @@ static bool ruda_collect_enum_declaration(
         goto cleanup;
     }
     declaration.variants_initialized = true;
-    if (!ruda_symbol_id_from_parts(
-            checker->package_name,
+    if (!ruda_symbol_id_from_bytes(
+            checker->result->package_name.data,
+            checker->result->package_name.length,
             ruda_source_path(checker->ast->snapshot),
-            (const char *)declaration.owned_name.data,
+            ruda_source_path_length(checker->ast->snapshot),
+            declaration.owned_name.data,
+            declaration.owned_name.length,
             0,
             &declaration.symbol
         )) {
@@ -11574,8 +11617,43 @@ static bool ruda_collect_enum_declaration(
             goto cleanup;
         }
         top_level_index_inserted = true;
+        if (ruda_map_get_const(
+                &checker->local_nominal_index,
+                &declaration.type,
+                sizeof(declaration.type)
+            ) != NULL) {
+            (void)ruda_map_remove(
+                &checker->top_level_index,
+                declaration.owned_name.data,
+                declaration.owned_name.length
+            );
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        if (!ruda_map_put(
+                &checker->local_nominal_index,
+                &declaration.type,
+                sizeof(declaration.type),
+                &declaration.symbol
+            )) {
+            (void)ruda_map_remove(
+                &checker->top_level_index,
+                declaration.owned_name.data,
+                declaration.owned_name.length
+            );
+            ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+            goto cleanup;
+        }
+        local_nominal_inserted = true;
     }
     if (!ruda_vector_push(&checker->enums, &declaration)) {
+        if (local_nominal_inserted) {
+            (void)ruda_map_remove(
+                &checker->local_nominal_index,
+                &declaration.type,
+                sizeof(declaration.type)
+            );
+        }
         if (top_level_index_inserted) {
             (void)ruda_map_remove(
                 &checker->top_level_index,
@@ -12158,10 +12236,13 @@ static bool ruda_collect_type_alias_declaration(
         goto cleanup;
     }
     declaration.name_initialized = true;
-    if (!ruda_symbol_id_from_parts(
-            checker->package_name,
+    if (!ruda_symbol_id_from_bytes(
+            checker->result->package_name.data,
+            checker->result->package_name.length,
             ruda_source_path(checker->ast->snapshot),
-            (const char *)declaration.owned_name.data,
+            ruda_source_path_length(checker->ast->snapshot),
+            declaration.owned_name.data,
+            declaration.owned_name.length,
             0,
             &declaration.symbol
         )) {
@@ -12695,16 +12776,6 @@ static bool ruda_collect_function_signature(
         goto cleanup;
     }
     declaration.name_initialized = true;
-    if (!ruda_symbol_id_from_parts(
-            checker->package_name,
-            ruda_source_path(checker->ast->snapshot),
-            (const char *)declaration.owned_name.data,
-            0,
-            &declaration.symbol
-        )) {
-        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
-        goto cleanup;
-    }
     declaration.parameter_names_initialized = ruda_vector_init(
         &declaration.parameter_names,
         checker->result->allocator,
@@ -12885,6 +12956,69 @@ static bool ruda_collect_function_signature(
             );
             goto cleanup;
         }
+        if (declaration.parameter_types.length != 0) {
+            const RudaTypeId *first_type = ruda_vector_at_const(
+                &declaration.parameter_types,
+                0
+            );
+            const RudaTypeDescriptor *first_descriptor = first_type == NULL
+                ? NULL
+                : ruda_type_descriptor(&checker->result->types, *first_type);
+            const RudaSymbolId *local_receiver = first_type == NULL
+                ? NULL
+                : ruda_map_get_const(
+                    &checker->local_nominal_index,
+                    first_type,
+                    sizeof(*first_type)
+                );
+            bool local_nominal = first_type != NULL
+                && first_descriptor != NULL
+                && first_descriptor->kind == RUDA_TYPE_KIND_NOMINAL
+                && local_receiver != NULL
+                && ruda_symbol_id_equal(
+                    *local_receiver,
+                    first_descriptor->symbol
+                );
+            if (local_nominal) {
+                if (!ruda_symbol_id_from_bytes_with_receiver(
+                        checker->result->package_name.data,
+                        checker->result->package_name.length,
+                        ruda_source_path(checker->ast->snapshot),
+                        ruda_source_path_length(checker->ast->snapshot),
+                        declaration.owned_name.data,
+                        declaration.owned_name.length,
+                        first_descriptor->symbol,
+                        &declaration.symbol
+                    )) {
+                    ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+                    goto cleanup;
+                }
+            } else if (!ruda_symbol_id_from_bytes(
+                    checker->result->package_name.data,
+                    checker->result->package_name.length,
+                    ruda_source_path(checker->ast->snapshot),
+                    ruda_source_path_length(checker->ast->snapshot),
+                    declaration.owned_name.data,
+                    declaration.owned_name.length,
+                    0,
+                    &declaration.symbol
+                )) {
+                ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+                goto cleanup;
+            }
+        } else if (!ruda_symbol_id_from_bytes(
+                checker->result->package_name.data,
+                checker->result->package_name.length,
+                ruda_source_path(checker->ast->snapshot),
+                ruda_source_path_length(checker->ast->snapshot),
+                declaration.owned_name.data,
+                declaration.owned_name.length,
+                0,
+                &declaration.symbol
+            )) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
     }
     top_level_entry.kind = RUDA_CHECK_TOP_LEVEL_FUNCTION;
     top_level_entry.index = checker->declarations.length;
@@ -13012,10 +13146,13 @@ static bool ruda_collect_constant_declaration(
         goto cleanup;
     }
     declaration.name_initialized = true;
-    if (!ruda_symbol_id_from_parts(
-            checker->package_name,
+    if (!ruda_symbol_id_from_bytes(
+            checker->result->package_name.data,
+            checker->result->package_name.length,
             ruda_source_path(checker->ast->snapshot),
-            (const char *)declaration.owned_name.data,
+            ruda_source_path_length(checker->ast->snapshot),
+            declaration.owned_name.data,
+            declaration.owned_name.length,
             0,
             &declaration.symbol
         )) {
@@ -13814,6 +13951,7 @@ static void ruda_checker_dispose_declarations(RudaChecker *checker) {
         ruda_enum_declaration_dispose(enum_declaration);
     }
     ruda_map_dispose(&checker->top_level_index);
+    ruda_map_dispose(&checker->local_nominal_index);
     ruda_vector_dispose(&checker->constants);
     ruda_vector_dispose(&checker->type_aliases);
     ruda_vector_dispose(&checker->records);
@@ -13831,6 +13969,206 @@ static bool ruda_checker_top_level_index_init(RudaChecker *checker) {
         key0,
         key1
     );
+}
+
+static bool ruda_checker_local_nominal_index_init(RudaChecker *checker) {
+    static const uint64_t key0 = UINT64_C(0x727564612d6c6f63);
+    static const uint64_t key1 = UINT64_C(0x616c2d6e6f6d696e);
+    return ruda_map_init(
+        &checker->local_nominal_index,
+        checker->result->allocator,
+        sizeof(RudaSymbolId),
+        key0,
+        key1
+    );
+}
+
+static bool ruda_check_symbol_fact_total(
+    const RudaChecker *checker,
+    size_t *result
+) {
+    size_t total = 0;
+    if (checker == NULL || result == NULL
+        || !ruda_size_add(total, checker->declarations.length, &total)
+        || !ruda_size_add(total, checker->constants.length, &total)
+        || !ruda_size_add(total, checker->type_aliases.length, &total)
+        || !ruda_size_add(total, checker->records.length, &total)
+        || !ruda_size_add(total, checker->enums.length, &total)) {
+        return false;
+    }
+    *result = total;
+    return true;
+}
+
+static bool ruda_check_push_symbol_seed(
+    RudaChecker *checker,
+    RudaVector *seeds,
+    RudaCheckName name,
+    RudaSymbolId symbol,
+    RudaTypeId type,
+    RudaCheckedSymbolKind kind,
+    bool is_public
+) {
+    RudaCheckSymbolSeed seed;
+    if (checker == NULL || seeds == NULL) {
+        return false;
+    }
+    memset(&seed, 0, sizeof(seed));
+    seed.name = name;
+    seed.symbol = symbol;
+    seed.type = type;
+    seed.kind = kind;
+    seed.is_public = is_public;
+    if (!ruda_vector_push(seeds, &seed)) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_publish_symbol_facts(RudaChecker *checker) {
+    RudaVector seeds;
+    size_t total = 0;
+    size_t index = 0;
+    bool seeds_initialized = false;
+    bool published = false;
+    memset(&seeds, 0, sizeof(seeds));
+    if (!ruda_check_symbol_fact_total(checker, &total)
+        || total > checker->options.max_symbols) {
+        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        return false;
+    }
+    if (!ruda_vector_init(
+            &seeds,
+            checker->result->allocator,
+            sizeof(RudaCheckSymbolSeed)
+        )) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        return false;
+    }
+    seeds_initialized = true;
+    if (!ruda_vector_reserve(&seeds, total)) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        goto cleanup;
+    }
+    for (index = 0; index < checker->declarations.length; index += 1) {
+        const RudaCheckFunctionDeclaration *declaration = ruda_vector_at_const(
+            &checker->declarations,
+            index
+        );
+        if (declaration == NULL || !declaration->signature_valid) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        if (!ruda_check_push_symbol_seed(
+                checker,
+                &seeds,
+                declaration->name,
+                declaration->symbol,
+                declaration->signature_type,
+                RUDA_CHECKED_SYMBOL_FUNCTION,
+                declaration->is_public
+            )) {
+            goto cleanup;
+        }
+    }
+    for (index = 0; index < checker->constants.length; index += 1) {
+        const RudaCheckConstantDeclaration *declaration = ruda_vector_at_const(
+            &checker->constants,
+            index
+        );
+        if (declaration == NULL
+            || declaration->state != RUDA_CHECK_CONSTANT_EVALUATED) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        if (!ruda_check_push_symbol_seed(
+                checker,
+                &seeds,
+                declaration->name,
+                declaration->symbol,
+                declaration->type,
+                RUDA_CHECKED_SYMBOL_CONSTANT,
+                declaration->is_public
+            )) {
+            goto cleanup;
+        }
+    }
+    for (index = 0; index < checker->type_aliases.length; index += 1) {
+        const RudaCheckTypeAliasDeclaration *declaration = ruda_vector_at_const(
+            &checker->type_aliases,
+            index
+        );
+        if (declaration == NULL
+            || declaration->state != RUDA_CHECK_TYPE_ALIAS_RESOLVED) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        if (!ruda_check_push_symbol_seed(
+                checker,
+                &seeds,
+                declaration->name,
+                declaration->symbol,
+                declaration->type,
+                RUDA_CHECKED_SYMBOL_TYPE_ALIAS,
+                declaration->is_public
+            )) {
+            goto cleanup;
+        }
+    }
+    for (index = 0; index < checker->records.length; index += 1) {
+        const RudaCheckRecordDeclaration *declaration = ruda_vector_at_const(
+            &checker->records,
+            index
+        );
+        if (declaration == NULL || !declaration->fields_resolved) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        if (!ruda_check_push_symbol_seed(
+                checker,
+                &seeds,
+                declaration->name,
+                declaration->symbol,
+                declaration->type,
+                RUDA_CHECKED_SYMBOL_RECORD,
+                declaration->is_public
+            )) {
+            goto cleanup;
+        }
+    }
+    for (index = 0; index < checker->enums.length; index += 1) {
+        const RudaCheckEnumDeclaration *declaration = ruda_vector_at_const(
+            &checker->enums,
+            index
+        );
+        if (declaration == NULL || !declaration->variants_resolved) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        if (!ruda_check_push_symbol_seed(
+                checker,
+                &seeds,
+                declaration->name,
+                declaration->symbol,
+                declaration->type,
+                RUDA_CHECKED_SYMBOL_ENUM,
+                declaration->is_public
+            )) {
+            goto cleanup;
+        }
+    }
+    published = ruda_check_publish_symbol_seeds(
+        checker,
+        seeds.data,
+        seeds.length
+    );
+
+cleanup:
+    if (seeds_initialized) {
+        ruda_vector_dispose(&seeds);
+    }
+    return published && !ruda_checker_has_failed(checker);
 }
 
 static int ruda_check_compare_ast_paths(const void *left, const void *right) {
@@ -13859,13 +14197,36 @@ static int ruda_check_compare_ast_paths(const void *left, const void *right) {
     return left_length > right_length ? 1 : 0;
 }
 
+static bool ruda_check_bounded_c_string_length(
+    const char *text,
+    size_t maximum,
+    size_t *length
+) {
+    size_t index = 0;
+    if (text == NULL || length == NULL) {
+        return false;
+    }
+    for (index = 0; index <= maximum; index += 1) {
+        if (text[index] == '\0') {
+            *length = index;
+            return true;
+        }
+        if (index == SIZE_MAX) {
+            return false;
+        }
+    }
+    return false;
+}
+
 bool ruda_check_options_valid(
     RudaAllocator allocator,
     RudaCheckOptions options
 ) {
     return allocator.allocate != NULL && allocator.resize != NULL
         && allocator.deallocate != NULL && options.max_source_files != 0
-        && options.max_functions != 0 && options.max_constants != 0
+        && options.max_functions != 0 && options.max_symbols != 0
+        && options.max_package_name_bytes != 0
+        && options.max_constants != 0
         && options.max_type_aliases != 0
         && options.max_records != 0 && options.max_fields_per_record != 0
         && options.max_enums != 0 && options.max_variants_per_enum != 0
@@ -13931,23 +14292,36 @@ RudaCheckStatus ruda_check_package(
     bool type_aliases_initialized = false;
     bool records_initialized = false;
     bool enums_initialized = false;
+    bool symbols_initialized = false;
     bool function_index_initialized = false;
+    bool symbol_index_initialized = false;
     bool declarations_initialized = false;
     bool constant_declarations_initialized = false;
     bool type_alias_declarations_initialized = false;
     bool record_declarations_initialized = false;
     bool enum_declarations_initialized = false;
     bool top_level_index_initialized = false;
+    bool local_nominal_index_initialized = false;
     size_t ast_index = 0;
     size_t index = 0;
+    size_t package_name_length = 0;
     if (result == NULL) {
         return RUDA_CHECK_INVALID_ARGUMENT;
     }
     memset(result, 0, sizeof(*result));
     if (asts == NULL || ast_count == 0 || package_name == NULL
-        || package_name[0] == '\0'
         || !ruda_check_options_valid(allocator, options)) {
         return RUDA_CHECK_INVALID_ARGUMENT;
+    }
+    if (package_name[0] == '\0') {
+        return RUDA_CHECK_INVALID_ARGUMENT;
+    }
+    if (!ruda_check_bounded_c_string_length(
+            package_name,
+            options.max_package_name_bytes,
+            &package_name_length
+        ) || package_name_length > options.max_package_name_bytes) {
+        return RUDA_CHECK_LIMIT_REACHED;
     }
     if (ast_count > options.max_source_files) {
         return RUDA_CHECK_LIMIT_REACHED;
@@ -14034,7 +14408,13 @@ RudaCheckStatus ruda_check_package(
         allocator,
         sizeof(RudaCheckedEnum)
     );
+    symbols_initialized = ruda_vector_init(
+        &result->symbols,
+        allocator,
+        sizeof(RudaCheckedSymbol)
+    );
     function_index_initialized = ruda_check_function_index_init(result);
+    symbol_index_initialized = ruda_check_symbol_index_init(result);
     declarations_initialized = ruda_vector_init(
         &checker.declarations,
         allocator,
@@ -14063,16 +14443,23 @@ RudaCheckStatus ruda_check_package(
     top_level_index_initialized = ruda_checker_top_level_index_init(
         &checker
     );
+    local_nominal_index_initialized = ruda_checker_local_nominal_index_init(
+        &checker
+    );
     if (!diagnostics_initialized || !functions_initialized
         || !constants_initialized || !type_aliases_initialized
         || !records_initialized
-        || !enums_initialized
+        || !enums_initialized || !symbols_initialized
         || !function_index_initialized
+        || !symbol_index_initialized
         || !declarations_initialized || !constant_declarations_initialized
         || !type_alias_declarations_initialized
         || !record_declarations_initialized
         || !enum_declarations_initialized
-        || !top_level_index_initialized) {
+        || !top_level_index_initialized || !local_nominal_index_initialized) {
+        if (local_nominal_index_initialized) {
+            ruda_map_dispose(&checker.local_nominal_index);
+        }
         if (top_level_index_initialized) {
             ruda_map_dispose(&checker.top_level_index);
         }
@@ -14106,6 +14493,12 @@ RudaCheckStatus ruda_check_package(
         if (enums_initialized) {
             ruda_vector_dispose(&result->enums);
         }
+        if (symbols_initialized) {
+            ruda_vector_dispose(&result->symbols);
+        }
+        if (symbol_index_initialized) {
+            ruda_map_dispose(&result->symbol_index);
+        }
         if (function_index_initialized) {
             ruda_map_dispose(&result->function_index);
         }
@@ -14118,6 +14511,18 @@ RudaCheckStatus ruda_check_package(
         return RUDA_CHECK_ALLOCATION_FAILED;
     }
     result->initialized = true;
+    if (!ruda_owned_bytes_copy(
+            &result->package_name,
+            allocator,
+            package_name,
+            package_name_length
+        )) {
+        ruda_checker_dispose_declarations(&checker);
+        ruda_check_result_dispose(result);
+        ruda_vector_dispose(&sorted_asts);
+        return RUDA_CHECK_ALLOCATION_FAILED;
+    }
+    checker.package_name = (const char *)result->package_name.data;
     for (ast_index = 0; ast_index < sorted_asts.length
         && !ruda_checker_has_failed(&checker); ast_index += 1) {
         const RudaAstTree *const *ast = ruda_vector_at_const(
@@ -14216,6 +14621,14 @@ RudaCheckStatus ruda_check_package(
     }
     if (!ruda_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
+        size_t symbol_total = 0;
+        if (!ruda_check_symbol_fact_total(&checker, &symbol_total)
+            || symbol_total > checker.options.max_symbols) {
+            ruda_checker_fail(&checker, RUDA_CHECK_LIMIT_REACHED);
+        }
+    }
+    if (!ruda_checker_has_failed(&checker)
+        && result->diagnostics.length == 0) {
         (void)ruda_evaluate_all_constants(&checker);
     }
     if (!ruda_checker_has_failed(&checker)
@@ -14248,6 +14661,10 @@ RudaCheckStatus ruda_check_package(
     if (!ruda_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
         (void)ruda_publish_enums(&checker);
+    }
+    if (!ruda_checker_has_failed(&checker)
+        && result->diagnostics.length == 0) {
+        (void)ruda_publish_symbol_facts(&checker);
     }
     if (result->diagnostics.length != 0) {
         ruda_check_clear_functions(result);

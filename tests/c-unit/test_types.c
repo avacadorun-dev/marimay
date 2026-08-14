@@ -5,6 +5,51 @@
 #include "ruda/base/allocator.h"
 #include "ruda/types/type.h"
 
+static void ruda_test_receiver_symbol_identity(void) {
+    RudaSymbolId first_receiver;
+    RudaSymbolId second_receiver;
+    RudaSymbolId first_function;
+    RudaSymbolId repeated_function;
+    RudaSymbolId second_function;
+    RUDA_EXPECT(ruda_symbol_id_from_parts(
+        "example.test/owned",
+        "src/model.ruda",
+        "First",
+        0,
+        &first_receiver
+    ));
+    RUDA_EXPECT(ruda_symbol_id_from_parts(
+        "example.test/owned",
+        "src/model.ruda",
+        "Second",
+        0,
+        &second_receiver
+    ));
+    RUDA_EXPECT(ruda_symbol_id_from_parts_with_receiver(
+        "example.test/owned",
+        "src/behavior.ruda",
+        "string",
+        first_receiver,
+        &first_function
+    ));
+    RUDA_EXPECT(ruda_symbol_id_from_parts_with_receiver(
+        "example.test/owned",
+        "src/behavior.ruda",
+        "string",
+        first_receiver,
+        &repeated_function
+    ));
+    RUDA_EXPECT(ruda_symbol_id_from_parts_with_receiver(
+        "example.test/owned",
+        "src/behavior.ruda",
+        "string",
+        second_receiver,
+        &second_function
+    ));
+    RUDA_EXPECT(ruda_symbol_id_equal(first_function, repeated_function));
+    RUDA_EXPECT(!ruda_symbol_id_equal(first_function, second_function));
+}
+
 static void ruda_test_type_interner_scale(void) {
     enum { TYPE_COUNT = 512 };
     RudaTypeTable table;
@@ -375,6 +420,7 @@ void ruda_test_types(void) {
         RUDA_EXPECT(reached_success);
     }
 
+    ruda_test_receiver_symbol_identity();
     ruda_test_type_interner_scale();
     ruda_test_type_interner_rollback();
     ruda_test_array_type_interner_rollback();

@@ -101,12 +101,40 @@ typedef struct RudaInferenceContext {
 
 RudaTypeTableOptions ruda_type_table_default_options(void);
 
-/* Stable across hosts for the same exact UTF-8 parts and discriminator. */
+/* Stable across hosts for the same exact byte parts and discriminator. */
+bool ruda_symbol_id_from_bytes(
+    const void *package_name,
+    size_t package_name_length,
+    const void *source_path,
+    size_t source_path_length,
+    const void *declaration_name,
+    size_t declaration_name_length,
+    uint32_t discriminator,
+    RudaSymbolId *result
+);
 bool ruda_symbol_id_from_parts(
     const char *package_name,
     const char *source_path,
     const char *declaration_name,
     uint32_t discriminator,
+    RudaSymbolId *result
+);
+/* Stable function identity for an exact nominal first-parameter owner. */
+bool ruda_symbol_id_from_bytes_with_receiver(
+    const void *package_name,
+    size_t package_name_length,
+    const void *source_path,
+    size_t source_path_length,
+    const void *declaration_name,
+    size_t declaration_name_length,
+    RudaSymbolId receiver,
+    RudaSymbolId *result
+);
+bool ruda_symbol_id_from_parts_with_receiver(
+    const char *package_name,
+    const char *source_path,
+    const char *declaration_name,
+    RudaSymbolId receiver,
     RudaSymbolId *result
 );
 bool ruda_symbol_id_equal(RudaSymbolId left, RudaSymbolId right);

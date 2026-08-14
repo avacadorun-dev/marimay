@@ -29,6 +29,11 @@ A gate is `verified` only with linked command output and artifacts satisfying ev
 | P3 — 1.0 release candidate | `not-started` | none |
 | P4 — production 1.0 | `not-started` | none |
 
+Latest I2 evidence: [iteration 38 publishes bounded stable successful-package
+definition facts](evidence/i2-checker-facts-iteration-38-2026-08-14.md). I2
+remains `in-progress`; this is not definition-from-reference, symbol search,
+completion, or public `ruda check`.
+
 ## Immediate execution priority: V0 engine-equivalence spine
 
 The physical ownership map and behavior-preserving extraction sequence are
@@ -50,8 +55,9 @@ the same source package also proves exact VM/native G4002 identity. The
 diagnostics/lifetime foundation of the authoritative compiler service now owns
 versioned overlays, request-local parse reuse, phase-boundary cancellation, and
 the canonical full-package frontend/check pipeline. The immediate checkpoint
-is checker-owned stable definition/symbol facts and one shared free/dot-call
-resolver; only then can completion and public `ruda check` be wired without
+is one shared package-local free/dot-call resolver over the newly published
+stable definition/symbol facts; only then can occurrence facts, completion,
+and public `ruda check` be wired without
 weakening the normative I2 editor gate. Do not broaden unrelated I2 syntax work
 ahead of that public path unless it removes a documented blocker.
 

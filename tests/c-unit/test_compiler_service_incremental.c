@@ -101,12 +101,14 @@ static void ruda_test_incremental_same_and_shifted(void) {
     const RudaGreenNode *first = NULL;
     const RudaGreenNode *middle = NULL;
     const RudaGreenNode *last = NULL;
+    RudaSymbolId middle_symbol;
     size_t offset = (size_t)(strstr(initial, "return 2") - initial) + 7;
     memset(&result, 0, sizeof(result));
     memset(&fresh, 0, sizeof(fresh));
     memset(&request, 0, sizeof(request));
     memset(&stats, 0, sizeof(stats));
     memset(&edit, 0, sizeof(edit));
+    memset(&middle_symbol, 0, sizeof(middle_symbol));
 
     RUDA_EXPECT(ruda_compiler_service_add_document(
         &service,
@@ -143,6 +145,10 @@ static void ruda_test_incremental_same_and_shifted(void) {
         2
     );
     RUDA_EXPECT(first != NULL && middle != NULL && last != NULL);
+    RUDA_EXPECT(ruda_checked_symbol(&result.checked, 1) != NULL);
+    if (ruda_checked_symbol(&result.checked, 1) != NULL) {
+        middle_symbol = ruda_checked_symbol(&result.checked, 1)->symbol;
+    }
 
     edit.base_version = 1;
     edit.start = offset;
@@ -170,6 +176,15 @@ static void ruda_test_incremental_same_and_shifted(void) {
     RUDA_EXPECT(stats.reused_top_level_nodes == 2);
     RUDA_EXPECT(ruda_compiler_result_is_current(&service, &result));
     unit = ruda_compiler_result_unit(&result, 0);
+    RUDA_EXPECT(ruda_checked_symbol(&result.checked, 1) != NULL);
+    if (unit != NULL && ruda_checked_symbol(&result.checked, 1) != NULL) {
+        RUDA_EXPECT(ruda_symbol_id_equal(
+            ruda_checked_symbol(&result.checked, 1)->symbol,
+            middle_symbol
+        ));
+        RUDA_EXPECT(ruda_checked_symbol(&result.checked, 1)->snapshot
+            == unit->snapshot);
+    }
     RUDA_EXPECT(unit != NULL);
     if (unit != NULL) {
         RUDA_EXPECT(ruda_test_direct_node(

@@ -83,19 +83,22 @@ static bool ruda_type_canonical_digest(
     return true;
 }
 
-static bool ruda_symbol_hash_part(RudaSha256 *hash, const char *text) {
+static bool ruda_symbol_hash_bytes(
+    RudaSha256 *hash,
+    const void *bytes,
+    size_t length
+) {
     unsigned char length_bytes[8];
-    size_t length = 0;
     size_t index = 0;
-    if (text == NULL) {
+    if (hash == NULL || (bytes == NULL && length != 0)
+        || (uintmax_t)length > UINT64_MAX) {
         return false;
     }
-    length = strlen(text);
     for (index = 0; index < sizeof(length_bytes); index += 1) {
         length_bytes[index] = (unsigned char)((uint64_t)length >> (index * 8));
     }
     return ruda_sha256_update(hash, length_bytes, sizeof(length_bytes))
-        && ruda_sha256_update(hash, text, length);
+        && ruda_sha256_update(hash, bytes, length);
 }
 
 RudaTypeTableOptions ruda_type_table_default_options(void) {
@@ -105,10 +108,13 @@ RudaTypeTableOptions ruda_type_table_default_options(void) {
     return options;
 }
 
-bool ruda_symbol_id_from_parts(
-    const char *package_name,
-    const char *source_path,
-    const char *declaration_name,
+bool ruda_symbol_id_from_bytes(
+    const void *package_name,
+    size_t package_name_length,
+    const void *source_path,
+    size_t source_path_length,
+    const void *declaration_name,
+    size_t declaration_name_length,
     uint32_t discriminator,
     RudaSymbolId *result
 ) {
@@ -116,17 +122,22 @@ bool ruda_symbol_id_from_parts(
     unsigned char discriminator_bytes[4];
     unsigned char digest[32];
     size_t index = 0;
-    if (result == NULL || package_name == NULL || source_path == NULL
-        || declaration_name == NULL) {
+    if (result == NULL || (package_name == NULL && package_name_length != 0)
+        || (source_path == NULL && source_path_length != 0)
+        || (declaration_name == NULL && declaration_name_length != 0)) {
         return false;
     }
     for (index = 0; index < sizeof(discriminator_bytes); index += 1) {
         discriminator_bytes[index] = (unsigned char)(discriminator >> (index * 8));
     }
     ruda_sha256_init(&hash);
-    if (!ruda_symbol_hash_part(&hash, package_name)
-        || !ruda_symbol_hash_part(&hash, source_path)
-        || !ruda_symbol_hash_part(&hash, declaration_name)
+    if (!ruda_symbol_hash_bytes(&hash, package_name, package_name_length)
+        || !ruda_symbol_hash_bytes(&hash, source_path, source_path_length)
+        || !ruda_symbol_hash_bytes(
+            &hash,
+            declaration_name,
+            declaration_name_length
+        )
         || !ruda_sha256_update(
             &hash,
             discriminator_bytes,
@@ -137,6 +148,93 @@ bool ruda_symbol_id_from_parts(
     ruda_sha256_final(&hash, digest);
     memcpy(result->bytes, digest, sizeof(result->bytes));
     return true;
+}
+
+bool ruda_symbol_id_from_parts(
+    const char *package_name,
+    const char *source_path,
+    const char *declaration_name,
+    uint32_t discriminator,
+    RudaSymbolId *result
+) {
+    if (package_name == NULL || source_path == NULL
+        || declaration_name == NULL) {
+        return false;
+    }
+    return ruda_symbol_id_from_bytes(
+        package_name,
+        strlen(package_name),
+        source_path,
+        strlen(source_path),
+        declaration_name,
+        strlen(declaration_name),
+        discriminator,
+        result
+    );
+}
+
+bool ruda_symbol_id_from_bytes_with_receiver(
+    const void *package_name,
+    size_t package_name_length,
+    const void *source_path,
+    size_t source_path_length,
+    const void *declaration_name,
+    size_t declaration_name_length,
+    RudaSymbolId receiver,
+    RudaSymbolId *result
+) {
+    static const unsigned char domain[] = {
+        'r', 'e', 'c', 'e', 'i', 'v', 'e', 'r'
+    };
+    RudaSha256 hash;
+    unsigned char digest[32];
+    if (result == NULL || (package_name == NULL && package_name_length != 0)
+        || (source_path == NULL && source_path_length != 0)
+        || (declaration_name == NULL && declaration_name_length != 0)) {
+        return false;
+    }
+    ruda_sha256_init(&hash);
+    if (!ruda_symbol_hash_bytes(&hash, package_name, package_name_length)
+        || !ruda_symbol_hash_bytes(&hash, source_path, source_path_length)
+        || !ruda_symbol_hash_bytes(
+            &hash,
+            declaration_name,
+            declaration_name_length
+        )
+        || !ruda_sha256_update(&hash, domain, sizeof(domain))
+        || !ruda_sha256_update(
+            &hash,
+            receiver.bytes,
+            sizeof(receiver.bytes)
+        )) {
+        return false;
+    }
+    ruda_sha256_final(&hash, digest);
+    memcpy(result->bytes, digest, sizeof(result->bytes));
+    return true;
+}
+
+bool ruda_symbol_id_from_parts_with_receiver(
+    const char *package_name,
+    const char *source_path,
+    const char *declaration_name,
+    RudaSymbolId receiver,
+    RudaSymbolId *result
+) {
+    if (package_name == NULL || source_path == NULL
+        || declaration_name == NULL) {
+        return false;
+    }
+    return ruda_symbol_id_from_bytes_with_receiver(
+        package_name,
+        strlen(package_name),
+        source_path,
+        strlen(source_path),
+        declaration_name,
+        strlen(declaration_name),
+        receiver,
+        result
+    );
 }
 
 bool ruda_symbol_id_equal(RudaSymbolId left, RudaSymbolId right) {

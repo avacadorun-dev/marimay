@@ -23,6 +23,8 @@ typedef enum RudaCheckStatus {
 typedef struct RudaCheckOptions {
     size_t max_source_files;
     size_t max_functions;
+    size_t max_symbols;
+    size_t max_package_name_bytes;
     size_t max_constants;
     size_t max_type_aliases;
     size_t max_records;
@@ -113,8 +115,38 @@ typedef struct RudaCheckedEnum {
     bool is_public;
 } RudaCheckedEnum;
 
+typedef enum RudaCheckedSymbolKind {
+    RUDA_CHECKED_SYMBOL_FUNCTION,
+    RUDA_CHECKED_SYMBOL_CONSTANT,
+    RUDA_CHECKED_SYMBOL_TYPE_ALIAS,
+    RUDA_CHECKED_SYMBOL_RECORD,
+    RUDA_CHECKED_SYMBOL_ENUM
+} RudaCheckedSymbolKind;
+
+/*
+ * Successful-package definition fact. type belongs to the containing
+ * result's type table. name is result-owned; snapshot is borrowed from the
+ * caller-owned AST/source lifetime. Definition spans are half-open bytes.
+ */
+typedef struct RudaCheckedSymbol {
+    RudaOwnedBytes name;
+    RudaSymbolId symbol;
+    /*
+     * Result-local type: function signature, constant value, alias target,
+     * or record/enum nominal type according to kind. Never compare this ID
+     * across independently produced RudaCheckResult values.
+     */
+    RudaTypeId type;
+    const RudaSourceSnapshot *snapshot;
+    size_t start;
+    size_t end;
+    RudaCheckedSymbolKind kind;
+    bool is_public;
+} RudaCheckedSymbol;
+
 typedef struct RudaCheckResult {
     RudaAllocator allocator;
+    RudaOwnedBytes package_name;
     /* Borrowed first source snapshot in canonical path order. */
     const RudaSourceSnapshot *snapshot;
     RudaTypeTable types;
@@ -124,7 +156,9 @@ typedef struct RudaCheckResult {
     RudaVector type_aliases;
     RudaVector records;
     RudaVector enums;
+    RudaVector symbols;
     RudaMap function_index;
+    RudaMap symbol_index;
     bool initialized;
 } RudaCheckResult;
 
@@ -205,6 +239,20 @@ const RudaCheckedRecord *ruda_checked_record(
 const RudaCheckedEnum *ruda_checked_enum(
     const RudaCheckResult *result,
     size_t index
+);
+const RudaCheckedSymbol *ruda_checked_symbol(
+    const RudaCheckResult *result,
+    size_t index
+);
+const RudaCheckedSymbol *ruda_checked_symbol_by_id(
+    const RudaCheckResult *result,
+    RudaSymbolId symbol
+);
+/* Exact declaration-name hit only; reference occurrences are not indexed yet. */
+const RudaCheckedSymbol *ruda_checked_symbol_defined_at(
+    const RudaCheckResult *result,
+    const RudaSourceSnapshot *snapshot,
+    size_t byte_offset
 );
 RudaMirInterpretStatus ruda_check_interpret_function(
     const RudaCheckResult *checked,

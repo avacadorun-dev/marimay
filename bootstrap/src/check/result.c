@@ -7,6 +7,8 @@ RudaCheckOptions ruda_check_default_options(void) {
     RudaCheckOptions options;
     options.max_source_files = 100000;
     options.max_functions = 100000;
+    options.max_symbols = 100000;
+    options.max_package_name_bytes = 4096;
     options.max_constants = 100000;
     options.max_type_aliases = 100000;
     options.max_records = 100000;
@@ -155,6 +157,18 @@ void ruda_check_dispose_enum_values(RudaCheckResult *result) {
     result->enums.length = 0;
 }
 
+void ruda_check_dispose_symbol_values(RudaCheckResult *result) {
+    size_t index = 0;
+    for (index = 0; index < result->symbols.length; index += 1) {
+        RudaCheckedSymbol *symbol = ruda_vector_at(&result->symbols, index);
+        if (symbol != NULL) {
+            ruda_owned_bytes_dispose(&symbol->name);
+            memset(symbol, 0, sizeof(*symbol));
+        }
+    }
+    result->symbols.length = 0;
+}
+
 void ruda_check_dispose_diagnostics(RudaCheckResult *result) {
     size_t index = 0;
     for (index = 0; index < result->diagnostics.length; index += 1) {
@@ -182,6 +196,18 @@ bool ruda_check_function_index_init(RudaCheckResult *result) {
     );
 }
 
+bool ruda_check_symbol_index_init(RudaCheckResult *result) {
+    static const uint64_t key0 = UINT64_C(0x727564612d73796d);
+    static const uint64_t key1 = UINT64_C(0x626f6c2d69647821);
+    return ruda_map_init(
+        &result->symbol_index,
+        result->allocator,
+        sizeof(size_t),
+        key0,
+        key1
+    );
+}
+
 void ruda_check_clear_functions(RudaCheckResult *result) {
     ruda_check_dispose_function_values(result);
     ruda_map_dispose(&result->function_index);
@@ -197,15 +223,19 @@ void ruda_check_result_dispose(RudaCheckResult *result) {
     ruda_check_dispose_type_alias_values(result);
     ruda_check_dispose_record_values(result);
     ruda_check_dispose_enum_values(result);
+    ruda_check_dispose_symbol_values(result);
     ruda_check_dispose_diagnostics(result);
+    ruda_map_dispose(&result->symbol_index);
     ruda_map_dispose(&result->function_index);
     ruda_vector_dispose(&result->constants);
     ruda_vector_dispose(&result->type_aliases);
     ruda_vector_dispose(&result->records);
     ruda_vector_dispose(&result->enums);
+    ruda_vector_dispose(&result->symbols);
     ruda_vector_dispose(&result->functions);
     ruda_vector_dispose(&result->diagnostics);
     ruda_type_table_dispose(&result->types);
+    ruda_owned_bytes_dispose(&result->package_name);
     memset(result, 0, sizeof(*result));
 }
 const RudaCheckDiagnostic *ruda_check_diagnostic(
@@ -260,4 +290,51 @@ const RudaCheckedEnum *ruda_checked_enum(
     return result != NULL && result->initialized
         ? ruda_vector_at_const(&result->enums, index)
         : NULL;
+}
+
+const RudaCheckedSymbol *ruda_checked_symbol(
+    const RudaCheckResult *result,
+    size_t index
+) {
+    return result != NULL && result->initialized
+        ? ruda_vector_at_const(&result->symbols, index)
+        : NULL;
+}
+
+const RudaCheckedSymbol *ruda_checked_symbol_by_id(
+    const RudaCheckResult *result,
+    RudaSymbolId symbol
+) {
+    const size_t *index = NULL;
+    if (result == NULL || !result->initialized) {
+        return NULL;
+    }
+    index = ruda_map_get_const(
+        &result->symbol_index,
+        symbol.bytes,
+        sizeof(symbol.bytes)
+    );
+    return index == NULL ? NULL : ruda_checked_symbol(result, *index);
+}
+
+const RudaCheckedSymbol *ruda_checked_symbol_defined_at(
+    const RudaCheckResult *result,
+    const RudaSourceSnapshot *snapshot,
+    size_t byte_offset
+) {
+    size_t index = 0;
+    if (result == NULL || !result->initialized || snapshot == NULL) {
+        return NULL;
+    }
+    for (index = 0; index < result->symbols.length; index += 1) {
+        const RudaCheckedSymbol *symbol = ruda_vector_at_const(
+            &result->symbols,
+            index
+        );
+        if (symbol != NULL && symbol->snapshot == snapshot
+            && byte_offset >= symbol->start && byte_offset < symbol->end) {
+            return symbol;
+        }
+    }
+    return NULL;
 }

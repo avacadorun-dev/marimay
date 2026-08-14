@@ -138,6 +138,7 @@ bootstrap/src/check/
   checker.c             package coordinator and stable public entry points
   checker_internal.h    owner-private contexts and phase contracts
   result.c              result/default/dispose/accessor ownership (extracted)
+  facts.c               canonical successful-package definition facts
   service.c             snapshots, frontend/check lifetimes, diagnostics owner
   array.c               D045 type/literal/access/assignment lowering (extracted)
   declarations.c        collection, signature, and publication phases
@@ -157,9 +158,14 @@ orders current documents by exact path, and owns lex/parse/AST/check teardown.
 subtrees from one exact versioned edit, polls cooperative cancellation between
 bounded phases, and still rechecks the whole semantic package. It introduces
 no persistent semantic cache and does not duplicate semantic lookup.
-Definition, symbol search, checker-backed completion, and the complete
-public/private/effect invalidation matrix remain explicit I2 service gates;
-the public `ruda check` command stays unavailable until those owners exist.
+Successful diagnostic-free checks now publish bounded, result-owned top-level
+definition facts in canonical source order. Exact declaration hits and stable
+symbol lookup are owned by `facts.c`; source-path hashing consumes exact bytes,
+and nominal-receiver lookup is indexed during declaration collection. Type IDs
+remain result-local. Reference occurrences, symbol search, shared free/dot-call
+resolution, checker-backed completion, and the complete public/private/effect
+invalidation matrix remain explicit I2 service gates; the public `ruda check`
+command stays unavailable until those owners exist.
 
 ### Test owners
 
@@ -174,6 +180,7 @@ tests/c-unit/
   test_mir_support.h
   test_checker.c
   test_checker_arrays.c
+  test_checker_facts.c
   test_compiler_service.c
   test_compiler_service_incremental.c
   test_checker_match.c
@@ -273,7 +280,11 @@ checkpoint:
 | `tests/c-unit/test_checker_arrays.c` | 0 | 548 | source array typing, matrix oracle, G4002, diagnostics, limits, and allocation-failure ownership |
 | `bootstrap/src/check/service.c` | 0 | 839 | versioned snapshots, exact edit proofs, request-local parse reuse, phase-boundary cancellation, canonical package recheck, and transactional teardown |
 | `tests/c-unit/test_compiler_service.c` | 0 | 616 | multi-file order, retained overlays, stale versions, aggregate limits, transactional reuse, and fail-every-allocation cleanup |
-| `tests/c-unit/test_compiler_service_incremental.c` | 0 | 854 | exact edit validation, parse reuse/fallback, multi-file semantic recheck, cancellation, result provenance/lifetimes, and failure atomicity |
+| `tests/c-unit/test_compiler_service_incremental.c` | 0 | 869 | exact edit validation, parse reuse/fallback, multi-file semantic recheck, cancellation, result provenance/lifetimes, and fact stability |
+| `bootstrap/src/check/checker.c` | 14,481 | 14,898 | bounded fact seeds, receiver-aware identity, and indexed local-nominal ownership remain package-phase coordination |
+| `bootstrap/src/check/facts.c` | 0 | 159 | fact-name ownership, canonical ordering, collision rejection, and symbol-ID lookup index |
+| `bootstrap/src/check/result.c` | 263 | 340 | definition-fact/package-name lifetime plus exact declaration accessors |
+| `tests/c-unit/test_checker_facts.c` | 0 | 804 | five-kind inventory, canonical order, exact identity, limits, diagnostics, and allocation cleanup |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `ruda_test_mir` registration. The service checkpoint
@@ -290,4 +301,6 @@ and the first semantic consumer of that boundary in
 followed by
 [the compiler-service foundation](evidence/i2-compiler-service-foundation-iteration-36-2026-08-14.md)
 and its
-[request-local incremental/cancellation checkpoint](evidence/i2-compiler-service-incremental-iteration-37-2026-08-14.md).
+[request-local incremental/cancellation checkpoint](evidence/i2-compiler-service-incremental-iteration-37-2026-08-14.md),
+followed by
+[successful-package definition facts](evidence/i2-checker-facts-iteration-38-2026-08-14.md).

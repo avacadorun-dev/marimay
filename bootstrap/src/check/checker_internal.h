@@ -22,6 +22,7 @@ typedef struct RudaChecker {
     RudaVector records;
     RudaVector enums;
     RudaMap top_level_index;
+    RudaMap local_nominal_index;
     size_t constant_depth;
     size_t type_alias_depth;
     size_t remaining_constant_steps;
@@ -55,6 +56,14 @@ typedef struct RudaExpressionValue {
     RudaMirRegister register_id;
     bool valid;
 } RudaExpressionValue;
+
+typedef struct RudaCheckSymbolSeed {
+    RudaCheckName name;
+    RudaSymbolId symbol;
+    RudaTypeId type;
+    RudaCheckedSymbolKind kind;
+    bool is_public;
+} RudaCheckSymbolSeed;
 
 /* Shared expression-lowering boundary for owner-private sibling modules. */
 void ruda_checker_fail(RudaChecker *checker, RudaCheckStatus status);
@@ -103,6 +112,13 @@ bool ruda_compound_assignment_kind(
     RudaMirInstructionKind *kind
 );
 
+/* Successful-package definition-fact publication, owned by facts.c. */
+bool ruda_check_publish_symbol_seeds(
+    RudaChecker *checker,
+    const RudaCheckSymbolSeed *seeds,
+    size_t seed_count
+);
+
 /* Managed-array source lowering, owned by array.c. */
 bool ruda_function_ensure_array_layout(
     RudaFunctionChecker *function,
@@ -146,8 +162,10 @@ void ruda_check_dispose_constant_values(RudaCheckResult *result);
 void ruda_check_dispose_type_alias_values(RudaCheckResult *result);
 void ruda_check_dispose_record_values(RudaCheckResult *result);
 void ruda_check_dispose_enum_values(RudaCheckResult *result);
+void ruda_check_dispose_symbol_values(RudaCheckResult *result);
 void ruda_check_dispose_diagnostics(RudaCheckResult *result);
 bool ruda_check_function_index_init(RudaCheckResult *result);
+bool ruda_check_symbol_index_init(RudaCheckResult *result);
 void ruda_check_clear_functions(RudaCheckResult *result);
 
 #endif
