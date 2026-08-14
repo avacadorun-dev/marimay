@@ -13859,7 +13859,7 @@ static int ruda_check_compare_ast_paths(const void *left, const void *right) {
     return left_length > right_length ? 1 : 0;
 }
 
-static bool ruda_check_options_valid(
+bool ruda_check_options_valid(
     RudaAllocator allocator,
     RudaCheckOptions options
 ) {

@@ -43,6 +43,7 @@ typedef struct RudaIncrementalParseStats {
 } RudaIncrementalParseStats;
 
 RudaParseOptions ruda_parse_default_options(void);
+bool ruda_parse_options_valid(RudaParseOptions options);
 
 /*
  * Builds an immutable lossless green tree from a complete lexer result.

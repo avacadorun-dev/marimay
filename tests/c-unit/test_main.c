@@ -10,6 +10,7 @@ void ruda_test_bytecode_vm(void);
 void ruda_test_checker(void);
 void ruda_test_checker_arrays(void);
 void ruda_test_cli(void);
+void ruda_test_compiler_service(void);
 void ruda_test_diagnostic(void);
 void ruda_test_directory(void);
 void ruda_test_doc_examples(void);
@@ -45,6 +46,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_bytecode_vm();
     ruda_test_checker();
     ruda_test_checker_arrays();
+    ruda_test_compiler_service();
     ruda_test_diagnostic();
     ruda_test_directory();
     ruda_test_doc_examples();

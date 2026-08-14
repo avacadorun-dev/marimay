@@ -39,6 +39,7 @@ typedef struct RudaLexResult {
 } RudaLexResult;
 
 RudaLexOptions ruda_lex_default_options(void);
+bool ruda_lex_options_valid(RudaLexOptions options);
 
 /*
  * Produces a lossless token stream ending in EOF. Lexical source errors are

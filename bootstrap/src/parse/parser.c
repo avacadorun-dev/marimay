@@ -2608,6 +2608,11 @@ RudaParseOptions ruda_parse_default_options(void) {
     return options;
 }
 
+bool ruda_parse_options_valid(RudaParseOptions options) {
+    return options.max_events >= 2 && options.max_diagnostics != 0
+        && options.max_nesting >= 2;
+}
+
 RudaParseStatus ruda_parse_file(
     const RudaLexResult *lexed,
     RudaAllocator allocator,
@@ -2622,8 +2627,7 @@ RudaParseStatus ruda_parse_file(
     }
     memset(result, 0, sizeof(*result));
     if (lexed == NULL || !lexed->initialized || lexed->tokens.length == 0
-        || options.max_events < 2 || options.max_diagnostics == 0
-        || options.max_nesting < 2) {
+        || !ruda_parse_options_valid(options)) {
         return RUDA_PARSE_INVALID_ARGUMENT;
     }
     last = ruda_lex_token(lexed, lexed->tokens.length - 1);

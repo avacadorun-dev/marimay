@@ -1115,6 +1115,11 @@ RudaLexOptions ruda_lex_default_options(void) {
     return options;
 }
 
+bool ruda_lex_options_valid(RudaLexOptions options) {
+    return options.max_tokens >= 2 && options.max_diagnostics != 0
+        && options.max_nesting >= 2;
+}
+
 RudaLexStatus ruda_lex_snapshot(
     const RudaSourceSnapshot *snapshot,
     RudaAllocator allocator,
@@ -1127,8 +1132,7 @@ RudaLexStatus ruda_lex_snapshot(
         return RUDA_LEX_INVALID_ARGUMENT;
     }
     memset(result, 0, sizeof(*result));
-    if (snapshot == NULL || options.max_tokens < 2
-        || options.max_diagnostics == 0 || options.max_nesting < 2
+    if (snapshot == NULL || !ruda_lex_options_valid(options)
         || !ruda_vector_init(&result->tokens, allocator, sizeof(RudaToken))
         || !ruda_vector_init(
             &result->diagnostics,

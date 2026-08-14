@@ -176,6 +176,10 @@ RudaAstOptions ruda_ast_default_options(void) {
     return options;
 }
 
+bool ruda_ast_options_valid(RudaAstOptions options) {
+    return options.max_nodes != 0 && options.max_depth != 0;
+}
+
 RudaAstStatus ruda_ast_project(
     const RudaSyntaxTree *syntax,
     RudaAllocator allocator,
@@ -189,8 +193,8 @@ RudaAstStatus ruda_ast_project(
     }
     memset(result, 0, sizeof(*result));
     if (syntax == NULL || !syntax->initialized || syntax->snapshot == NULL
-        || syntax->root == NULL || options.max_nodes == 0
-        || options.max_depth == 0 || !ruda_syntax_tree_is_lossless(syntax)) {
+        || syntax->root == NULL || !ruda_ast_options_valid(options)
+        || !ruda_syntax_tree_is_lossless(syntax)) {
         return RUDA_AST_INVALID_ARGUMENT;
     }
     ruda_arena_init(&result->arena, allocator, 8192);

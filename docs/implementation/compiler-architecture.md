@@ -138,6 +138,7 @@ bootstrap/src/check/
   checker.c             package coordinator and stable public entry points
   checker_internal.h    owner-private contexts and phase contracts
   result.c              result/default/dispose/accessor ownership (extracted)
+  service.c             snapshots, frontend/check lifetimes, diagnostics owner
   array.c               D045 type/literal/access/assignment lowering (extracted)
   declarations.c        collection, signature, and publication phases
   expression.c          expression typing/lowering after its context is stable
@@ -148,6 +149,13 @@ bootstrap/src/check/
 `ruda_check_package` remains the single coordinator. Pattern and statement
 extraction waits until their shared binding/CFG state has an explicit private
 contract; copying that state into feature-specific modules is forbidden.
+
+`ruda_compiler_service_check` is the reusable owner above the frontend and
+checker. It retains immutable source snapshots, rejects stale overlay versions,
+orders current documents by exact path, and owns lex/parse/AST/check teardown.
+It does not duplicate semantic lookup. Definition, symbol search,
+checker-backed completion, and cancellation remain explicit I2 service gates;
+the public `ruda check` command stays unavailable until those owners exist.
 
 ### Test owners
 
@@ -162,6 +170,7 @@ tests/c-unit/
   test_mir_support.h
   test_checker.c
   test_checker_arrays.c
+  test_compiler_service.c
   test_checker_match.c
   test_checker_support.h
 ```
@@ -257,10 +266,13 @@ checkpoint:
 | `bootstrap/src/check/array.c` | 0 | 912 | D045 layout, literal, index, `length`, and checked-store lowering behind the private boundary |
 | `bootstrap/src/check/checker_internal.h` | 121 | 153 | bounded D045 sibling-module contract; still uninstalled and owner-private |
 | `tests/c-unit/test_checker_arrays.c` | 0 | 548 | source array typing, matrix oracle, G4002, diagnostics, limits, and allocation-failure ownership |
+| `bootstrap/src/check/service.c` | 0 | 572 | versioned snapshot/overlay orchestration, aggregate input bounds, canonical frontend/check pipeline, and transactional teardown |
+| `tests/c-unit/test_compiler_service.c` | 0 | 616 | multi-file order, retained overlays, stale versions, aggregate limits, transactional reuse, and fail-every-allocation cleanup |
 
-The split preserves assertion order within the array suite and the single
-external `ruda_test_mir` registration. Test-local helpers are private to each
-translation unit; no production header or semantic implementation changed.
+The earlier mechanical split preserves assertion order within the array suite
+and the single external `ruda_test_mir` registration. The service checkpoint
+adds an explicit public owner plus shared phase-option validators; it changes
+no Ruda language semantics and leaves the public CLI unavailable.
 The command evidence is recorded in
 [architecture checkpoint 2](evidence/architecture-checkpoint-2-2026-08-14.md)
 and
@@ -268,4 +280,6 @@ and
 followed by the
 [checker sibling-module boundary](evidence/architecture-checkpoint-4-2026-08-14.md)
 and the first semantic consumer of that boundary in
-[V0 source arrays iteration 11](evidence/v0-source-arrays-iteration-11-2026-08-14.md).
+[V0 source arrays iteration 11](evidence/v0-source-arrays-iteration-11-2026-08-14.md),
+followed by
+[the compiler-service foundation](evidence/i2-compiler-service-foundation-iteration-36-2026-08-14.md).

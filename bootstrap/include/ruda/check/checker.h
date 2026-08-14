@@ -143,6 +143,10 @@ typedef struct RudaCheckInterpretOptions {
 } RudaCheckInterpretOptions;
 
 RudaCheckOptions ruda_check_default_options(void);
+bool ruda_check_options_valid(
+    RudaAllocator allocator,
+    RudaCheckOptions options
+);
 RudaCheckInterpretOptions ruda_check_interpret_default_options(void);
 
 /*

@@ -53,6 +53,7 @@ typedef struct RudaAstTree {
 } RudaAstTree;
 
 RudaAstOptions ruda_ast_default_options(void);
+bool ruda_ast_options_valid(RudaAstOptions options);
 
 /*
  * Projects a lossless green tree into an immutable trivia-free structural AST.
