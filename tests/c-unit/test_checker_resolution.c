@@ -722,6 +722,7 @@ static void ruda_test_checker_resolution_engines(void) {
 
 cleanup:
     ruda_owned_bytes_dispose(&generated);
+    ruda_bytecode_program_dispose(&program);
     if (checked_initialized) {
         ruda_check_result_dispose(&checked);
     }
