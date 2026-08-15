@@ -41,9 +41,9 @@ does not implement `std/io` or engine writes.
 
 Checkpoint A0 is locally complete and its initial pushed Linux x86_64 matrix is
 green; full Tier 1 evidence remains pending. Its post-audit public-header gate
-closure is part of V0 checkpoint 1 and must pass the containing pushed CI run.
-The architecture gate remains a blocking prerequisite for every subsequent
-feature checkpoint.
+closure passed as part of V0 checkpoint 1 in
+[Gitea run 29](http://ci.example:3000/OS/Ruda/actions/runs/29). The architecture
+gate remains a blocking prerequisite for every subsequent feature checkpoint.
 
 The physical ownership map and behavior-preserving extraction sequence are
 recorded in the [Stage 0 compiler architecture](compiler-architecture.md), with
@@ -68,10 +68,12 @@ free and dot calls now share one D003 resolver over the live declaration and
 callable indexes built during collection. V0 checkpoint 1 now executes managed
 records, algebraic enums, nested patterns, D040 source-order effects, and
 non-generic structural interfaces through the MIR oracle, encoded VM, and
-generated C17. The next ordered preview checkpoint is deterministic local
-packages/imports and D043 import-form invariance; occurrence facts, exact
-checker-backed completion, and public `ruda check` remain later I2 service
-work. Do not broaden unrelated syntax work ahead of those documented paths.
+generated C17; the configured Linux x86_64 matrix is green in
+[Gitea run 29](http://ci.example:3000/OS/Ruda/actions/runs/29). The next ordered
+preview checkpoint is deterministic local packages/imports and D043
+import-form invariance; occurrence facts, exact checker-backed completion, and
+public `ruda check` remain later I2 service work. Do not broaden unrelated
+syntax work ahead of those documented paths.
 
 I2, I3, and I4 are intentionally overlapped after the minimally useful pure
 subset exists. The next execution release blocker is the first complete V0

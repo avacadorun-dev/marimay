@@ -1,8 +1,10 @@
 # V0 nominal engines — checkpoint 1 — 2026-08-15
 
 Gate: preview checkpoint 1, record/enum/non-generic-interface execution through
-the common typed-MIR spine. Checkpoint status: local verification complete;
-pushed Linux CI pending. I2, I3, I4, and I5 remain `in-progress`.
+the common typed-MIR spine. Checkpoint status: closed against the configured
+Gitea Linux x86_64 preview gate by
+[run 29](http://ci.example:3000/OS/Ruda/actions/runs/29). I2, I3, I4, and I5
+remain `in-progress`.
 
 Baseline: `efab86a9d2bee463abf5e3a4295df4c93215bb0d`
 (`test: dispose decoded bytecode program`).
@@ -105,12 +107,27 @@ recursive cache, interface-valued payload, forged host value, MIR-verifier,
 MIR-oracle, allocation-failure, architecture-gate, and source-differential
 gaps before this evidence was recorded.
 
+## Pushed Linux validation
+
+The first pushed checkpoint run exposed undefined behavior from passing the
+null storage of an empty nominal construction to `memset`, even with a zero
+byte count. Commit `bcf7c37` guards all optional nominal buffers before
+initialization. Its follow-up Linux LSan run then found that the checker
+resolution engine differential did not dispose its successfully lowered
+bytecode program. Commit `6781ef7` adds the missing success and early-cleanup
+teardown.
+
+[Gitea run 29](http://ci.example:3000/OS/Ruda/actions/runs/29) passed all seven
+configured jobs: documentation/architecture invariants, Clang and GCC Debug
+and Release, ASan+UBSan+LSan, and TSan. The sanitizer job passed the complete
+C unit executable without an undefined-behavior report or leak report.
+
 ## Remaining verification and boundary
 
-This evidence does not mark any roadmap gate `verified`. The containing commit
-still requires the configured pushed Gitea Linux x86_64 matrix, and the broader
-Tier 1 Linux arm64, macOS arm64/x86_64, and Windows x86_64 jobs require linked
-CI evidence before the milestone can be called verified across Tier 1.
+This evidence closes preview checkpoint 1 against its configured pushed Gitea
+Linux x86_64 gate. It does not mark any roadmap gate `verified`: the broader
+Tier 1 Linux arm64, macOS arm64/x86_64, and Windows x86_64 jobs still require
+linked CI evidence before a milestone can be called verified across Tier 1.
 
 Generic payloads and general `Array<T>` remain checkpoint 4. Package/import
 resolution and D043 invariance remain checkpoint 2. Public `ruda check`,
