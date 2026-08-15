@@ -436,8 +436,12 @@ static const RudaManagedEnumDescriptor *ruda_bytecode_enum_descriptor(
         ruda_deallocate(&execution->allocator, descriptor, sizeof(*descriptor));
         return NULL;
     }
-    memset(variants, 0, variant_bytes);
-    memset(payloads, 0, payload_bytes);
+    if (variant_bytes != 0) {
+        memset(variants, 0, variant_bytes);
+    }
+    if (payload_bytes != 0) {
+        memset(payloads, 0, payload_bytes);
+    }
     descriptor->variant_count = layout->variant_count;
     descriptor->variants = variants;
     memset(&entry, 0, sizeof(entry));
@@ -707,7 +711,9 @@ static RudaBytecodeRunStatus ruda_bytecode_prepare_temporary_cells(
         );
         return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    memset(temporary->cells, 0, temporary->cell_bytes);
+    if (temporary->cell_bytes != 0) {
+        memset(temporary->cells, 0, temporary->cell_bytes);
+    }
     for (index = 0; index < argument_count; index += 1) {
         const RudaBytecodeType type = is_record
             ? ((const RudaBytecodeRecordArgument *)ruda_vector_at_const(
