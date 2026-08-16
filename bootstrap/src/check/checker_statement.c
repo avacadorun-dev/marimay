@@ -218,7 +218,9 @@ bool ruda_compound_assignment_kind(
     RudaExpressionValue stored;
     RudaCheckRecordDeclaration *record_declaration = NULL;
     RudaCheckRecordFieldDeclaration *field_declaration = NULL;
+    const RudaCheckedRecordField *imported_field = NULL;
     RudaMirRecordId record = RUDA_MIR_NO_RECORD;
+    RudaTypeId field_type = RUDA_TYPE_INVALID;
     size_t field_index = 0;
     memset(&receiver, 0, sizeof(receiver));
     memset(&previous, 0, sizeof(previous));
@@ -232,6 +234,7 @@ bool ruda_compound_assignment_kind(
             &receiver,
             &record_declaration,
             &field_declaration,
+            &imported_field,
             &record,
             &field_index
         )) {
@@ -242,7 +245,10 @@ bool ruda_compound_assignment_kind(
     }
     (void)receiver_node;
     (void)record_declaration;
-    if (!field_declaration->is_mutable) {
+    field_type = field_declaration != NULL ? field_declaration->type
+        : imported_field->type;
+    if ((field_declaration != NULL && !field_declaration->is_mutable)
+        || (imported_field != NULL && !imported_field->is_mutable)) {
         (void)ruda_checker_add_diagnostic(
             function->checker,
             RUDA_DIAGNOSTIC_ASSIGN_IMMUTABLE,
@@ -253,7 +259,7 @@ bool ruda_compound_assignment_kind(
         return false;
     }
     if (compound && !ruda_compound_assignment_kind(
-            field_declaration->type,
+            field_type,
             operator_token->kind,
             &compound_kind
         )) {
@@ -269,7 +275,7 @@ bool ruda_compound_assignment_kind(
     if (compound && !ruda_checker_private_function_emit_record_access(
             function,
             RUDA_MIR_RECORD_GET,
-            field_declaration->type,
+            field_type,
             receiver.register_id,
             RUDA_MIR_NO_REGISTER,
             record,
@@ -283,7 +289,7 @@ bool ruda_compound_assignment_kind(
     if (!ruda_compile_expression(
             function,
             right,
-            field_declaration->type,
+            field_type,
             &value
         )) {
         return false;
@@ -291,7 +297,7 @@ bool ruda_compound_assignment_kind(
     if (ruda_expression_is_never(function, &value)) {
         return true;
     }
-    if (value.type != field_declaration->type) {
+    if (value.type != field_type) {
         (void)ruda_checker_add_diagnostic(
             function->checker,
             RUDA_DIAGNOSTIC_TYPE_MISMATCH,
@@ -304,7 +310,7 @@ bool ruda_compound_assignment_kind(
     if (compound && !ruda_function_emit_instruction(
             function,
             compound_kind,
-            field_declaration->type,
+            field_type,
             previous.register_id,
             value.register_id,
             0,
@@ -318,7 +324,7 @@ bool ruda_compound_assignment_kind(
     return ruda_checker_private_function_emit_record_access(
         function,
         RUDA_MIR_RECORD_SET,
-        field_declaration->type,
+        field_type,
         receiver.register_id,
         compound ? combined.register_id : value.register_id,
         record,

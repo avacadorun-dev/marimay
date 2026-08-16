@@ -11,4 +11,15 @@
     size_t *length
 );
  bool ruda_checker_private_check_ast_valid(const RudaAstTree *ast);
+RudaCheckStatus ruda_checker_check_package_unit(
+    const RudaAstTree *const *asts,
+    size_t ast_count,
+    const char *package_name,
+    size_t package_name_length,
+    const struct RudaCheckImportEnvironment *imports,
+    bool initialize_result,
+    RudaAllocator allocator,
+    RudaCheckOptions options,
+    RudaCheckResult *result
+);
 #endif

@@ -1,0 +1,7 @@
+import { User as StoredUser, string as stringifyUser } from "acme/store";
+import {
+  FirstImportedType as FirstImportedTypeAlias,
+  SecondImportedType as SecondImportedTypeAlias,
+  thirdImportedFunction as thirdImportedFunctionAlias,
+  fourthImportedFunction as fourthImportedFunctionAlias,
+} from "example.com/very/long/package/path";

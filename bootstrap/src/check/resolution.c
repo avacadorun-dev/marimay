@@ -1,5 +1,6 @@
 #include "checker_internal.h"
 #include "checker_package_context.h"
+#include "package_imports_api.h"
 
 #include <string.h>
 
@@ -200,12 +201,31 @@ bool ruda_check_callable_remove(
         );
 }
 
+static bool ruda_check_callable_from_declaration(
+    const RudaCheckFunctionDeclaration *declaration,
+    RudaCheckCallable *callable
+) {
+    if (declaration == NULL || callable == NULL
+        || !declaration->signature_valid) {
+        return false;
+    }
+    memset(callable, 0, sizeof(*callable));
+    callable->parameter_types = declaration->parameter_types.data;
+    callable->parameter_count = declaration->parameter_types.length;
+    callable->symbol = declaration->symbol;
+    callable->receiver_symbol = declaration->receiver_symbol;
+    callable->receiver_type = declaration->receiver_type;
+    callable->result_type = declaration->result_type;
+    callable->dot_eligible = declaration->dot_eligible;
+    return true;
+}
+
 RudaCheckCallResolution ruda_check_resolve_call(
     const RudaChecker *checker,
     RudaCheckName name,
     bool receiver_known,
     RudaTypeId receiver_type,
-    const RudaCheckFunctionDeclaration **declaration
+    RudaCheckCallable *callable
 ) {
     const unsigned char *name_bytes = NULL;
     size_t name_length = 0;
@@ -217,10 +237,13 @@ RudaCheckCallResolution ruda_check_resolve_call(
     RudaCheckCallableKey key;
     const size_t *candidate_index = NULL;
     bool receiver_owned = false;
-    if (declaration == NULL || checker == NULL) {
+    RudaCheckCallResolution imported = RUDA_CHECK_CALL_UNKNOWN_NAME;
+    RudaCheckName no_namespace;
+    memset(&no_namespace, 0, sizeof(no_namespace));
+    if (callable == NULL || checker == NULL) {
         return RUDA_CHECK_CALL_INTERNAL_ERROR;
     }
-    *declaration = NULL;
+    memset(callable, 0, sizeof(*callable));
     if (!ruda_check_resolution_name_bytes(name, &name_bytes, &name_length)) {
         return RUDA_CHECK_CALL_INTERNAL_ERROR;
     }
@@ -230,7 +253,10 @@ RudaCheckCallResolution ruda_check_resolve_call(
         name_length
     );
     if (entry == NULL) {
-        return RUDA_CHECK_CALL_UNKNOWN_NAME;
+        return ruda_check_resolve_imported_call(
+            checker, no_namespace, false, name, receiver_known,
+            receiver_type, callable
+        );
     }
     if (entry->kind != RUDA_CHECK_TOP_LEVEL_FUNCTION) {
         return RUDA_CHECK_CALL_NOT_FUNCTION;
@@ -278,11 +304,15 @@ RudaCheckCallResolution ruda_check_resolve_call(
             }
         }
         if (candidate == NULL) {
-            return ruda_check_unresolved_receiver(
-                checker,
-                entry,
-                receiver_owned
+            imported = ruda_check_resolve_imported_call(
+                checker, no_namespace, false, name, true,
+                receiver_type, callable
             );
+            if (imported == RUDA_CHECK_CALL_FOUND) {
+                return imported;
+            }
+            return ruda_check_unresolved_receiver(checker, entry,
+                receiver_owned || imported == RUDA_CHECK_CALL_OTHER_NOMINAL);
         }
     }
     if (candidate == NULL || !candidate->signature_valid
@@ -294,6 +324,20 @@ RudaCheckCallResolution ruda_check_resolve_call(
         || memcmp(candidate_name, name_bytes, name_length) != 0) {
         return RUDA_CHECK_CALL_INTERNAL_ERROR;
     }
-    *declaration = candidate;
-    return RUDA_CHECK_CALL_FOUND;
+    return ruda_check_callable_from_declaration(candidate, callable)
+        ? RUDA_CHECK_CALL_FOUND : RUDA_CHECK_CALL_INTERNAL_ERROR;
+}
+
+RudaCheckCallResolution ruda_check_resolve_qualified_call(
+    const RudaChecker *checker,
+    RudaCheckName namespace_name,
+    RudaCheckName name,
+    bool receiver_known,
+    RudaTypeId receiver_type,
+    RudaCheckCallable *callable
+) {
+    return ruda_check_resolve_imported_call(
+        checker, namespace_name, true, name, receiver_known,
+        receiver_type, callable
+    );
 }

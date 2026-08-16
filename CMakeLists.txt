@@ -123,7 +123,9 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/checker_expr_scalar.c
   bootstrap/src/check/checker_expression.c
   bootstrap/src/check/checker_interpret.c
+  bootstrap/src/check/checker_imported_nominal.c
   bootstrap/src/check/checker_lookup.c
+  bootstrap/src/check/checker_lookup_imports.c
   bootstrap/src/check/checker_match_analysis.c
   bootstrap/src/check/checker_match_binding.c
   bootstrap/src/check/checker_match_dispatch.c
@@ -133,6 +135,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/checker_publication.c
   bootstrap/src/check/checker_statement.c
   bootstrap/src/check/facts.c
+  bootstrap/src/check/package_graph.c
   bootstrap/src/check/resolution.c
   bootstrap/src/check/result.c
   bootstrap/src/check/service.c

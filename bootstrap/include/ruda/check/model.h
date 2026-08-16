@@ -22,7 +22,10 @@ typedef struct RudaCheckDiagnostic {
 typedef struct RudaCheckedFunction {
     RudaOwnedBytes name;
     RudaTypeId signature_type;
+    RudaSymbolId receiver_symbol;
+    RudaTypeId receiver_type;
     RudaMirFunction mir;
+    bool dot_eligible;
     bool is_public;
     bool is_test;
     bool is_fuzz;

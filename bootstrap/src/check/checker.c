@@ -8,6 +8,7 @@
 #include "checker_declaration_publication_nominal_api.h"
 #include "checker_declaration_records_api.h"
 #include "checker_publication_api.h"
+#include "package_imports_api.h"
 
 
 
@@ -120,10 +121,13 @@ bool ruda_check_options_valid(
             || ruda_source_length(ast->snapshot) == 0);
 }
 
-RudaCheckStatus ruda_check_package(
+RudaCheckStatus ruda_checker_check_package_unit(
     const RudaAstTree *const *asts,
     size_t ast_count,
     const char *package_name,
+    size_t package_name_length,
+    const RudaCheckImportEnvironment *imports,
+    bool initialize_result,
     RudaAllocator allocator,
     RudaCheckOptions options,
     RudaCheckResult *result
@@ -131,16 +135,6 @@ RudaCheckStatus ruda_check_package(
     RudaChecker checker;
     RudaVector sorted_asts;
     bool sorted_asts_initialized = false;
-    bool diagnostics_initialized = false;
-    bool functions_initialized = false;
-    bool constants_initialized = false;
-    bool type_aliases_initialized = false;
-    bool records_initialized = false;
-    bool enums_initialized = false;
-    bool interfaces_initialized = false;
-    bool symbols_initialized = false;
-    bool function_index_initialized = false;
-    bool symbol_index_initialized = false;
     bool declarations_initialized = false;
     bool constant_declarations_initialized = false;
     bool type_alias_declarations_initialized = false;
@@ -152,23 +146,19 @@ RudaCheckStatus ruda_check_package(
     bool callable_index_initialized = false;
     size_t ast_index = 0;
     size_t index = 0;
-    size_t package_name_length = 0;
     if (result == NULL) {
         return RUDA_CHECK_INVALID_ARGUMENT;
     }
-    memset(result, 0, sizeof(*result));
+    if (initialize_result) {
+        memset(result, 0, sizeof(*result));
+    }
     if (asts == NULL || ast_count == 0 || package_name == NULL
-        || !ruda_check_options_valid(allocator, options)) {
+        || package_name_length == 0
+        || !ruda_check_options_valid(allocator, options)
+        || (!initialize_result && !result->initialized)) {
         return RUDA_CHECK_INVALID_ARGUMENT;
     }
-    if (package_name[0] == '\0') {
-        return RUDA_CHECK_INVALID_ARGUMENT;
-    }
-    if (!ruda_checker_private_check_bounded_c_string_length(
-            package_name,
-            options.max_package_name_bytes,
-            &package_name_length
-        ) || package_name_length > options.max_package_name_bytes) {
+    if (package_name_length > options.max_package_name_bytes) {
         return RUDA_CHECK_LIMIT_REACHED;
     }
     if (ast_count > options.max_source_files) {
@@ -216,58 +206,26 @@ RudaCheckStatus ruda_check_package(
     }
     memset(&checker, 0, sizeof(checker));
     checker.package_name = package_name;
+    checker.package_name_length = package_name_length;
+    checker.imports = imports;
     checker.options = options;
     checker.result = result;
     checker.failure = RUDA_CHECK_OK;
     checker.remaining_constant_steps = options.max_constant_steps;
-    result->allocator = allocator;
-    result->snapshot = (*(const RudaAstTree *const *)sorted_asts.data)->snapshot;
-    if (!ruda_type_table_init(&result->types, allocator, options.type_options)) {
+    if (initialize_result && !ruda_check_result_init(
+            result,
+            allocator,
+            options,
+            (*(const RudaAstTree *const *)sorted_asts.data)->snapshot,
+            package_name,
+            package_name_length
+        )) {
         ruda_vector_dispose(&sorted_asts);
         return RUDA_CHECK_ALLOCATION_FAILED;
     }
-    diagnostics_initialized = ruda_vector_init(
-        &result->diagnostics,
-        allocator,
-        sizeof(RudaCheckDiagnostic)
-    );
-    functions_initialized = ruda_vector_init(
-        &result->functions,
-        allocator,
-        sizeof(RudaCheckedFunction)
-    );
-    constants_initialized = ruda_vector_init(
-        &result->constants,
-        allocator,
-        sizeof(RudaCheckedConstant)
-    );
-    type_aliases_initialized = ruda_vector_init(
-        &result->type_aliases,
-        allocator,
-        sizeof(RudaCheckedTypeAlias)
-    );
-    records_initialized = ruda_vector_init(
-        &result->records,
-        allocator,
-        sizeof(RudaCheckedRecord)
-    );
-    enums_initialized = ruda_vector_init(
-        &result->enums,
-        allocator,
-        sizeof(RudaCheckedEnum)
-    );
-    interfaces_initialized = ruda_vector_init(
-        &result->interfaces,
-        allocator,
-        sizeof(RudaCheckedInterface)
-    );
-    symbols_initialized = ruda_vector_init(
-        &result->symbols,
-        allocator,
-        sizeof(RudaCheckedSymbol)
-    );
-    function_index_initialized = ruda_check_function_index_init(result);
-    symbol_index_initialized = ruda_check_symbol_index_init(result);
+    if (initialize_result) {
+        checker.package_name = (const char *)result->package_name.data;
+    }
     declarations_initialized = ruda_vector_init(
         &checker.declarations,
         allocator,
@@ -305,93 +263,17 @@ RudaCheckStatus ruda_check_package(
         &checker
     );
     callable_index_initialized = ruda_check_callable_index_init(&checker);
-    if (!diagnostics_initialized || !functions_initialized
-        || !constants_initialized || !type_aliases_initialized
-        || !records_initialized
-        || !enums_initialized || !interfaces_initialized || !symbols_initialized
-        || !function_index_initialized
-        || !symbol_index_initialized
-        || !declarations_initialized || !constant_declarations_initialized
+    if (!declarations_initialized || !constant_declarations_initialized
         || !type_alias_declarations_initialized
         || !record_declarations_initialized
         || !enum_declarations_initialized || !interface_declarations_initialized
         || !top_level_index_initialized || !local_nominal_index_initialized
         || !callable_index_initialized) {
-        if (callable_index_initialized) {
-            ruda_map_dispose(&checker.callable_index);
-        }
-        if (local_nominal_index_initialized) {
-            ruda_map_dispose(&checker.local_nominal_index);
-        }
-        if (top_level_index_initialized) {
-            ruda_map_dispose(&checker.top_level_index);
-        }
-        if (declarations_initialized) {
-            ruda_vector_dispose(&checker.declarations);
-        }
-        if (constant_declarations_initialized) {
-            ruda_vector_dispose(&checker.constants);
-        }
-        if (type_alias_declarations_initialized) {
-            ruda_vector_dispose(&checker.type_aliases);
-        }
-        if (record_declarations_initialized) {
-            ruda_vector_dispose(&checker.records);
-        }
-        if (enum_declarations_initialized) {
-            ruda_vector_dispose(&checker.enums);
-        }
-        if (interface_declarations_initialized) {
-            ruda_vector_dispose(&checker.interfaces);
-        }
-        if (functions_initialized) {
-            ruda_vector_dispose(&result->functions);
-        }
-        if (constants_initialized) {
-            ruda_vector_dispose(&result->constants);
-        }
-        if (type_aliases_initialized) {
-            ruda_vector_dispose(&result->type_aliases);
-        }
-        if (records_initialized) {
-            ruda_vector_dispose(&result->records);
-        }
-        if (enums_initialized) {
-            ruda_vector_dispose(&result->enums);
-        }
-        if (interfaces_initialized) {
-            ruda_vector_dispose(&result->interfaces);
-        }
-        if (symbols_initialized) {
-            ruda_vector_dispose(&result->symbols);
-        }
-        if (symbol_index_initialized) {
-            ruda_map_dispose(&result->symbol_index);
-        }
-        if (function_index_initialized) {
-            ruda_map_dispose(&result->function_index);
-        }
-        if (diagnostics_initialized) {
-            ruda_vector_dispose(&result->diagnostics);
-        }
-        ruda_type_table_dispose(&result->types);
-        ruda_vector_dispose(&sorted_asts);
-        memset(result, 0, sizeof(*result));
-        return RUDA_CHECK_ALLOCATION_FAILED;
-    }
-    result->initialized = true;
-    if (!ruda_owned_bytes_copy(
-            &result->package_name,
-            allocator,
-            package_name,
-            package_name_length
-        )) {
         ruda_checker_private_checker_dispose_declarations(&checker);
         ruda_check_result_dispose(result);
         ruda_vector_dispose(&sorted_asts);
         return RUDA_CHECK_ALLOCATION_FAILED;
     }
-    checker.package_name = (const char *)result->package_name.data;
     for (ast_index = 0; ast_index < sorted_asts.length
         && !ruda_checker_has_failed(&checker); ast_index += 1) {
         const RudaAstTree *const *ast = ruda_vector_at_const(
@@ -493,6 +375,8 @@ RudaCheckStatus ruda_check_package(
                 continue;
             } else if (element->as.node->kind == RUDA_SYNTAX_INTERFACE_DECL) {
                 continue;
+            } else if (element->as.node->kind == RUDA_SYNTAX_IMPORT_DECL) {
+                continue;
             } else {
                 ruda_checker_fail(&checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
                 break;
@@ -551,11 +435,9 @@ RudaCheckStatus ruda_check_package(
         (void)ruda_checker_private_publish_symbol_facts(&checker);
     }
     if (result->diagnostics.length != 0) {
-        ruda_check_clear_functions(result);
-        ruda_check_dispose_constant_values(result);
-        ruda_check_dispose_type_alias_values(result);
-        ruda_check_dispose_record_values(result);
-        ruda_check_dispose_enum_values(result);
+        if (!ruda_check_clear_semantics(result)) {
+            ruda_checker_fail(&checker, RUDA_CHECK_ALLOCATION_FAILED);
+        }
     }
     ruda_checker_private_checker_dispose_declarations(&checker);
     ruda_vector_dispose(&sorted_asts);
@@ -565,6 +447,39 @@ RudaCheckStatus ruda_check_package(
         return status;
     }
     return RUDA_CHECK_OK;
+}
+
+RudaCheckStatus ruda_check_package(
+    const RudaAstTree *const *asts,
+    size_t ast_count,
+    const char *package_name,
+    RudaAllocator allocator,
+    RudaCheckOptions options,
+    RudaCheckResult *result
+) {
+    size_t package_name_length = 0;
+    if (result == NULL) {
+        return RUDA_CHECK_INVALID_ARGUMENT;
+    }
+    memset(result, 0, sizeof(*result));
+    if (!ruda_checker_private_check_bounded_c_string_length(
+            package_name,
+            options.max_package_name_bytes,
+            &package_name_length
+        )) {
+        return RUDA_CHECK_LIMIT_REACHED;
+    }
+    return ruda_checker_check_package_unit(
+        asts,
+        ast_count,
+        package_name,
+        package_name_length,
+        NULL,
+        true,
+        allocator,
+        options,
+        result
+    );
 }
 
 RudaCheckStatus ruda_check_ast(

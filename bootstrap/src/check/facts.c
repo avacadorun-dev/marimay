@@ -106,17 +106,22 @@ bool ruda_check_publish_symbol_seeds(
     size_t seed_count
 ) {
     size_t index = 0;
+    size_t total = 0;
     if (checker == NULL) {
         return false;
     }
     if (checker->result == NULL || (seeds == NULL && seed_count != 0)
-        || seed_count > checker->options.max_symbols
-        || checker->result->symbols.length != 0
-        || checker->result->symbol_index.length != 0) {
+        || !ruda_size_add(
+            checker->result->symbols.length, seed_count, &total
+        )) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
     }
-    if (!ruda_vector_reserve(&checker->result->symbols, seed_count)) {
+    if (total > checker->options.max_symbols) {
+        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        return false;
+    }
+    if (!ruda_vector_reserve(&checker->result->symbols, total)) {
         ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
         return false;
     }
@@ -132,6 +137,11 @@ bool ruda_check_publish_symbol_seeds(
             checker->result->symbols.element_size,
             ruda_check_compare_symbol_facts
         );
+    }
+    ruda_map_dispose(&checker->result->symbol_index);
+    if (!ruda_check_symbol_index_init(checker->result)) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        return false;
     }
     for (index = 0; index < checker->result->symbols.length; index += 1) {
         const RudaCheckedSymbol *fact = ruda_vector_at_const(

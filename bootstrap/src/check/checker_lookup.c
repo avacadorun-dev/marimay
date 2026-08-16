@@ -2,6 +2,7 @@
 #include "checker_cfg_api.h"
 #include "checker_core_api.h"
 #include "checker_expr_records_api.h"
+#include "package_imports_api.h"
 
 
 
@@ -24,6 +25,7 @@
     RudaTypeId element_type = RUDA_TYPE_INVALID;
     size_t argument_count = 0;
     size_t index = 0;
+    bool import_resolved = false;
     if (node == NULL || result == NULL || node->kind != RUDA_SYNTAX_TYPE) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
@@ -105,6 +107,14 @@
             return false;
         }
         return true;
+    }
+    if (!ruda_check_import_type(
+            checker, node, result, &import_resolved
+        )) {
+        return false;
+    }
+    if (import_resolved) {
+        return *result != RUDA_TYPE_INVALID;
     }
     if (node->child_count != 1) {
         ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);

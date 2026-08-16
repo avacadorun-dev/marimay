@@ -124,6 +124,10 @@ void ruda_test_formatter_fixture_file(void) {
             "format/imports.expected.ruda"
         },
         {
+            "format/import-names.input.ruda",
+            "format/import-names.expected.ruda"
+        },
+        {
             "format/braced-groups.input.ruda",
             "format/braced-groups.expected.ruda"
         },

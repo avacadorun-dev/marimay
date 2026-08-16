@@ -91,8 +91,8 @@
     }
     declaration.name_initialized = true;
     if (!ruda_symbol_id_from_bytes(
-            checker->result->package_name.data,
-            checker->result->package_name.length,
+            checker->package_name,
+            checker->package_name_length,
             ruda_source_path(checker->ast->snapshot),
             ruda_source_path_length(checker->ast->snapshot),
             declaration.owned_name.data,

@@ -1,4 +1,5 @@
 #include "checker_declaration_lifecycle_api.h"
+#include "package_imports_api.h"
 #include "checker_core_api.h"
 
 
@@ -184,11 +185,12 @@ void ruda_checker_private_interface_declaration_dispose(
     const unsigned char *bytes = NULL;
     size_t length = 0;
     return ruda_checker_private_check_name_bytes(name, &bytes, &length)
-        && ruda_map_get_const(
-            &checker->top_level_index,
-            bytes,
-            length
-        ) != NULL;
+        && (ruda_map_get_const(
+                &checker->top_level_index,
+                bytes,
+                length
+            ) != NULL
+            || ruda_check_import_binding_exists(checker, bytes, length));
 }
 
  bool ruda_checker_private_parameter_name_is_duplicate(
@@ -246,6 +248,8 @@ void ruda_checker_private_interface_declaration_dispose(
     const RudaAstNode *type_arguments = NULL;
     const RudaAstNode *argument_type = NULL;
     bool is_public = false;
+    bool import_resolved = false;
+    RudaTypeId imported_type = RUDA_TYPE_INVALID;
     if (checker == NULL || node == NULL || node->kind != RUDA_SYNTAX_TYPE) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
@@ -284,6 +288,14 @@ void ruda_checker_private_interface_declaration_dispose(
             return false;
         }
         return ruda_checker_private_check_public_type_reference(checker, argument_type);
+    }
+    if (!ruda_check_import_type(
+            checker, node, &imported_type, &import_resolved
+        )) {
+        return false;
+    }
+    if (import_resolved) {
+        return imported_type != RUDA_TYPE_INVALID;
     }
     if (node->child_count != 1) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);

@@ -40,6 +40,127 @@ RudaCheckInterpretOptions ruda_check_interpret_default_options(void) {
     return options;
 }
 
+bool ruda_check_result_init(
+    RudaCheckResult *result,
+    RudaAllocator allocator,
+    RudaCheckOptions options,
+    const RudaSourceSnapshot *snapshot,
+    const char *package_name,
+    size_t package_name_length
+) {
+    bool diagnostics_initialized = false;
+    bool functions_initialized = false;
+    bool constants_initialized = false;
+    bool type_aliases_initialized = false;
+    bool records_initialized = false;
+    bool enums_initialized = false;
+    bool interfaces_initialized = false;
+    bool symbols_initialized = false;
+    bool function_index_initialized = false;
+    bool symbol_index_initialized = false;
+    if (result == NULL || snapshot == NULL || package_name == NULL) {
+        return false;
+    }
+    memset(result, 0, sizeof(*result));
+    result->allocator = allocator;
+    result->snapshot = snapshot;
+    if (!ruda_type_table_init(&result->types, allocator, options.type_options)) {
+        return false;
+    }
+    diagnostics_initialized = ruda_vector_init(
+        &result->diagnostics,
+        allocator,
+        sizeof(RudaCheckDiagnostic)
+    );
+    functions_initialized = ruda_vector_init(
+        &result->functions,
+        allocator,
+        sizeof(RudaCheckedFunction)
+    );
+    constants_initialized = ruda_vector_init(
+        &result->constants,
+        allocator,
+        sizeof(RudaCheckedConstant)
+    );
+    type_aliases_initialized = ruda_vector_init(
+        &result->type_aliases,
+        allocator,
+        sizeof(RudaCheckedTypeAlias)
+    );
+    records_initialized = ruda_vector_init(
+        &result->records,
+        allocator,
+        sizeof(RudaCheckedRecord)
+    );
+    enums_initialized = ruda_vector_init(
+        &result->enums,
+        allocator,
+        sizeof(RudaCheckedEnum)
+    );
+    interfaces_initialized = ruda_vector_init(
+        &result->interfaces,
+        allocator,
+        sizeof(RudaCheckedInterface)
+    );
+    symbols_initialized = ruda_vector_init(
+        &result->symbols,
+        allocator,
+        sizeof(RudaCheckedSymbol)
+    );
+    function_index_initialized = ruda_check_function_index_init(result);
+    symbol_index_initialized = ruda_check_symbol_index_init(result);
+    if (!diagnostics_initialized || !functions_initialized
+        || !constants_initialized || !type_aliases_initialized
+        || !records_initialized || !enums_initialized
+        || !interfaces_initialized || !symbols_initialized
+        || !function_index_initialized || !symbol_index_initialized) {
+        if (symbols_initialized) {
+            ruda_vector_dispose(&result->symbols);
+        }
+        if (interfaces_initialized) {
+            ruda_vector_dispose(&result->interfaces);
+        }
+        if (enums_initialized) {
+            ruda_vector_dispose(&result->enums);
+        }
+        if (records_initialized) {
+            ruda_vector_dispose(&result->records);
+        }
+        if (type_aliases_initialized) {
+            ruda_vector_dispose(&result->type_aliases);
+        }
+        if (constants_initialized) {
+            ruda_vector_dispose(&result->constants);
+        }
+        if (functions_initialized) {
+            ruda_vector_dispose(&result->functions);
+        }
+        if (diagnostics_initialized) {
+            ruda_vector_dispose(&result->diagnostics);
+        }
+        if (symbol_index_initialized) {
+            ruda_map_dispose(&result->symbol_index);
+        }
+        if (function_index_initialized) {
+            ruda_map_dispose(&result->function_index);
+        }
+        ruda_type_table_dispose(&result->types);
+        memset(result, 0, sizeof(*result));
+        return false;
+    }
+    result->initialized = true;
+    if (!ruda_owned_bytes_copy(
+            &result->package_name,
+            allocator,
+            package_name,
+            package_name_length
+        )) {
+        ruda_check_result_dispose(result);
+        return false;
+    }
+    return true;
+}
+
 void ruda_checked_record_value_dispose(RudaCheckedRecord *record) {
     size_t index = 0;
     if (record == NULL) {
@@ -246,6 +367,26 @@ void ruda_check_clear_functions(RudaCheckResult *result) {
     ruda_check_dispose_function_values(result);
     ruda_map_dispose(&result->function_index);
     (void)ruda_check_function_index_init(result);
+}
+
+bool ruda_check_clear_semantics(RudaCheckResult *result) {
+    if (result == NULL || !result->initialized) {
+        return false;
+    }
+    ruda_check_dispose_function_values(result);
+    ruda_check_dispose_constant_values(result);
+    ruda_check_dispose_type_alias_values(result);
+    ruda_check_dispose_record_values(result);
+    ruda_check_dispose_enum_values(result);
+    ruda_check_dispose_interface_values(result);
+    ruda_check_dispose_symbol_values(result);
+    ruda_map_dispose(&result->function_index);
+    ruda_map_dispose(&result->symbol_index);
+    if (!ruda_check_function_index_init(result)
+        || !ruda_check_symbol_index_init(result)) {
+        return false;
+    }
+    return true;
 }
 
 void ruda_check_result_dispose(RudaCheckResult *result) {

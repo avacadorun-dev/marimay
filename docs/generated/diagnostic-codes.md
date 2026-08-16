@@ -38,6 +38,11 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `R0005` | resolver | Record or named enum payload construction supplies the same field more than once. |
 | `R0006` | resolver | Variant name does not exist on the resolved nominal enum type. |
 | `R0007` | resolver | Compiler-known attribute is invalid for the declaration or has invalid arguments. |
+| `R0008` | resolver | Imported local package path does not resolve in the supplied package graph. |
+| `R0009` | resolver | Local package imports contain a dependency cycle. |
+| `R0010` | resolver | Named or namespace-qualified import does not name an exported declaration. |
+| `R0011` | resolver | Imported declaration or member is package-private at the use site. |
+| `R0012` | resolver | File-local import binding conflicts with another import or package declaration. |
 | `T0001` | type checker | Type name does not resolve to a primitive, declared, or imported type. |
 | `T0002` | type checker | Expression type is not compatible with the required exact type. |
 | `T0003` | type checker | Operator is not defined for the operand types. |

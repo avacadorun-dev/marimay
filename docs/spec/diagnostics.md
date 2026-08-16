@@ -217,6 +217,27 @@ that need fallible-close reporting provide an explicit sink.
 
 Dependency conflicts show the shortest paths introducing incompatible constraints. Hash/signature/provenance failures show expected/actual identities without printing credentials. Archive/path failures name the rejected entry in escaped bounded form.
 
+Local source-package import resolution uses distinct resolver identities. An
+unknown supplied-local package path is `R0008`; a deterministic dependency
+cycle is `R0009`; an absent public item or namespace member is `R0010`; an
+existing but package-private item or member is `R0011`; and a duplicate named
+or namespace binding, including a collision with a package declaration, is
+`R0012`. The primary span is respectively the import string, the
+import edge that closes the canonical cycle, the item or member name, the
+denied item or member name, or the later conflicting binding. Diagnostics for
+`R0009` include the bounded canonical package path cycle. A non-owning package
+cannot add a declaration to the D043 set;
+using such a declaration as a dot call is rejected by the ordinary D003 call
+resolution diagnostic.
+
+Named imports and namespace imports are file-local. Changing between a named
+type import, a named type-plus-function import, and a namespace import must not
+change the D043 public owned dot-call set or structural interface conformance.
+A diagnostic may therefore reject an unavailable free spelling, but it must
+not describe the same public owned dot call as absent merely because its
+function name was not imported. As in section 7, no import diagnostic suggests
+an `impl` block.
+
 Capability denials name operation, requested resource, root package, and the minimal manifest/CLI grant syntax. They distinguish “not granted” from “cannot be safely represented/enforced on this platform”.
 
 Unsafe/FFI diagnostics explain the specific unchecked invariant. A generic “unsafe required” message without naming pointer lifetime/layout/callback/suspension reason is insufficient.

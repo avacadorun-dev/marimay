@@ -20,6 +20,7 @@
     RudaExpressionValue *receiver,
     RudaCheckRecordDeclaration **record_declaration,
     RudaCheckRecordFieldDeclaration **field_declaration,
+    const RudaCheckedRecordField **imported_field,
     RudaMirRecordId *record,
     size_t *field_index
 );

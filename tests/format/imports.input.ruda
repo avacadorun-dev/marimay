@@ -1,8 +1,10 @@
 import * as zed from "z.example/z";
 import * as localB from "./b";
 import * as io from "std/\u{69}o";
+import { User as StoredUser, string as stringifyUser } from "acme/store";
 import * as localA from "./a";
 import * as fmt from "std/fmt";
+import { Decoder, decode } from "std/json";
 import * as alpha from "a.example/a";
 import * as beta from "b.example/b";
 // This comment pins the adjacent import boundary.

@@ -1,6 +1,8 @@
 #include "checker_expr_records_api.h"
 #include "checker_core_api.h"
+#include "checker_imported_nominal_api.h"
 #include "checker_lookup_api.h"
+#include "package_imports_api.h"
 
 
 
@@ -376,12 +378,20 @@ cleanup:
     RudaExpressionValue *receiver,
     RudaCheckRecordDeclaration **record_declaration,
     RudaCheckRecordFieldDeclaration **field_declaration,
+    const RudaCheckedRecordField **imported_field,
     RudaMirRecordId *record,
     size_t *field_index
 ) {
     const RudaAstNode *receiver_node = NULL;
     const RudaSyntaxToken *field_token = NULL;
     RudaCheckName field_name;
+    const RudaCheckedRecord *imported_record = NULL;
+    size_t imported_index = 0;
+    const unsigned char *field_bytes = NULL;
+    size_t field_length = 0;
+    *record_declaration = NULL;
+    *field_declaration = NULL;
+    *imported_field = NULL;
     if (!ruda_checker_private_member_parts(node, &receiver_node, &field_token)
         || !ruda_compile_expression(
             function,
@@ -407,22 +417,44 @@ cleanup:
         receiver->type
     );
     if (*record_declaration == NULL) {
-        ruda_checker_fail(
-            function->checker,
-            RUDA_CHECK_INCOMPLETE_LANGUAGE
+        imported_record = ruda_check_imported_record_by_type(
+            function->checker, receiver->type
         );
-        return false;
+        if (imported_record == NULL) {
+            ruda_checker_fail(
+                function->checker,
+                RUDA_CHECK_INCOMPLETE_LANGUAGE
+            );
+            return false;
+        }
     }
     field_name.snapshot = function->checker->ast->snapshot;
     field_name.start = field_token->start;
     field_name.end = field_token->end;
-    *field_declaration = ruda_checker_private_checker_find_record_field(
-        function->checker,
-        *record_declaration,
-        field_name,
-        field_index
-    );
-    if (*field_declaration == NULL) {
+    if (*record_declaration != NULL) {
+        *field_declaration = ruda_checker_private_checker_find_record_field(
+            function->checker,
+            *record_declaration,
+            field_name,
+            field_index
+        );
+    } else if (ruda_checker_private_check_name_bytes(
+            field_name, &field_bytes, &field_length
+        )) {
+        for (imported_index = 0; imported_index < imported_record->fields.length;
+            imported_index += 1) {
+            const RudaCheckedRecordField *candidate = ruda_vector_at_const(
+                &imported_record->fields, imported_index
+            );
+            if (candidate != NULL && candidate->name.length == field_length
+                && memcmp(candidate->name.data, field_bytes, field_length) == 0) {
+                *imported_field = candidate;
+                *field_index = imported_index;
+                break;
+            }
+        }
+    }
+    if (*field_declaration == NULL && *imported_field == NULL) {
         (void)ruda_checker_add_diagnostic(
             function->checker,
             RUDA_DIAGNOSTIC_UNKNOWN_FIELD,
@@ -431,6 +463,21 @@ cleanup:
             field_name.end
         );
         return false;
+    }
+    if (*imported_field != NULL && !(*imported_field)->is_public) {
+        (void)ruda_checker_add_diagnostic(
+            function->checker,
+            RUDA_DIAGNOSTIC_PRIVATE_IMPORT,
+            "record field is package-private in the owning package",
+            field_name.start,
+            field_name.end
+        );
+        return false;
+    }
+    if (imported_record != NULL) {
+        return ruda_checker_private_imported_record_layout(
+            function, imported_record, record
+        );
     }
     return ruda_checker_private_function_record_layout(
         function,
@@ -447,6 +494,7 @@ cleanup:
     RudaExpressionValue receiver;
     RudaCheckRecordDeclaration *record_declaration = NULL;
     RudaCheckRecordFieldDeclaration *field_declaration = NULL;
+    const RudaCheckedRecordField *imported_field = NULL;
     RudaMirRecordId record = RUDA_MIR_NO_RECORD;
     size_t field_index = 0;
     memset(&receiver, 0, sizeof(receiver));
@@ -456,6 +504,7 @@ cleanup:
             &receiver,
             &record_declaration,
             &field_declaration,
+            &imported_field,
             &record,
             &field_index
         )) {
@@ -469,7 +518,8 @@ cleanup:
     return ruda_checker_private_function_emit_record_access(
         function,
         RUDA_MIR_RECORD_GET,
-        field_declaration->type,
+        field_declaration != NULL ? field_declaration->type
+            : imported_field->type,
         receiver.register_id,
         RUDA_MIR_NO_REGISTER,
         record,

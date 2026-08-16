@@ -1,6 +1,8 @@
 #include "checker_expr_interfaces_api.h"
 #include "checker_core_api.h"
+#include "checker_imported_nominal_api.h"
 #include "checker_lookup_api.h"
+#include "package_imports_api.h"
 
 static bool ruda_checker_private_function_ensure_interface_type(
     RudaFunctionChecker *function,
@@ -190,16 +192,16 @@ bool ruda_checker_private_maybe_box_interface(
         const RudaCheckInterfaceMethodDeclaration *method = ruda_vector_at_const(
             &interface_declaration->methods, index
         );
-        const RudaCheckFunctionDeclaration *implementation = NULL;
+        RudaCheckCallable implementation;
         RudaCheckCallResolution resolution = method == NULL
             ? RUDA_CHECK_CALL_INTERNAL_ERROR : ruda_check_resolve_call(
                 function->checker, method->name, true, result->type,
                 &implementation
             );
         size_t parameter = 0;
-        if (resolution != RUDA_CHECK_CALL_FOUND || implementation == NULL
-            || implementation->result_type != method->result_type
-            || implementation->parameter_types.length
+        if (resolution != RUDA_CHECK_CALL_FOUND
+            || implementation.result_type != method->result_type
+            || implementation.parameter_count
                 != method->parameter_types.length + 1) {
             goto mismatch;
         }
@@ -208,15 +210,14 @@ bool ruda_checker_private_maybe_box_interface(
             const RudaTypeId *expected_parameter = ruda_vector_at_const(
                 &method->parameter_types, parameter
             );
-            const RudaTypeId *actual_parameter = ruda_vector_at_const(
-                &implementation->parameter_types, parameter + 1
-            );
+            const RudaTypeId *actual_parameter =
+                &implementation.parameter_types[parameter + 1];
             if (expected_parameter == NULL || actual_parameter == NULL
                 || *expected_parameter != *actual_parameter) {
                 goto mismatch;
             }
         }
-        methods[index] = implementation->symbol;
+        methods[index] = implementation.symbol;
     }
     {
         RudaCheckRecordDeclaration *record =
@@ -230,6 +231,15 @@ bool ruda_checker_private_maybe_box_interface(
                 result->type
             )
             : NULL;
+        const RudaCheckedRecord *imported_record = record == NULL
+            ? ruda_check_imported_record_by_type(
+                function->checker, result->type
+            ) : NULL;
+        const RudaCheckedEnum *imported_enum = record == NULL
+                && enum_declaration == NULL && imported_record == NULL
+            ? ruda_check_imported_enum_by_type(
+                function->checker, result->type
+            ) : NULL;
         if (record != NULL) {
             RudaMirRecordId record_layout = RUDA_MIR_NO_RECORD;
             if (!ruda_checker_private_function_record_layout(
@@ -256,6 +266,24 @@ bool ruda_checker_private_maybe_box_interface(
                     methods,
                     bytes
                 );
+                return false;
+            }
+        } else if (imported_record != NULL) {
+            RudaMirRecordId imported_layout = RUDA_MIR_NO_RECORD;
+            if (!ruda_checker_private_imported_record_layout(
+                    function, imported_record, &imported_layout
+                )) {
+                ruda_deallocate(&function->checker->result->allocator,
+                    methods, bytes);
+                return false;
+            }
+        } else if (imported_enum != NULL) {
+            RudaMirEnumId imported_layout = RUDA_MIR_NO_ENUM;
+            if (!ruda_checker_private_imported_enum_layout(
+                    function, imported_enum, &imported_layout
+                )) {
+                ruda_deallocate(&function->checker->result->allocator,
+                    methods, bytes);
                 return false;
             }
         } else {

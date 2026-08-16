@@ -166,6 +166,10 @@ bootstrap/src/check/
   checker_*_context.h   narrow package/function/match state contracts
   checker_core.c        shared checker operations and type helpers
   checker_lookup.c      deterministic name/type lookup
+  checker_lookup_imports.c
+                        file-local imported names and D043 owned lookup
+  checker_imported_nominal.c
+                        imported record/enum MIR layout adaptation
   checker_declaration_*.c
                         lifecycle, constants, functions, nominal families,
                         and publication phases
@@ -181,15 +185,20 @@ bootstrap/src/check/
   result.c              result/default/dispose/accessor ownership
   facts.c               canonical successful-package definition facts
   resolution.c          package-local D003 free/dot-call resolver
+  package_graph.c       bounded deterministic local-package graph coordinator
+  package_imports_api.h narrow graph/checker import contract
   service.c             snapshots, frontend/check lifetimes, diagnostics owner
   array.c               D045 type/literal/access/assignment lowering
 ```
 
-`ruda_check_package` remains the single coordinator. Pattern and statement
-owners share only explicit context contracts; copying that state into
-feature-specific modules is forbidden. Recursive expression lowering returns
-through the dedicated dispatcher contract instead of making a record/scalar
-owner the implicit hub.
+`ruda_check_package` remains the single-package coordinator;
+`ruda_check_package_graph` owns only canonical graph ordering, import binding,
+and repeated package-phase orchestration. One graph check uses one result and
+one type table; independently checked package results are never concatenated.
+Pattern and statement owners share only explicit context contracts; copying
+that state into feature-specific modules is forbidden. Recursive expression
+lowering returns through the dedicated dispatcher contract instead of making
+a record/scalar owner the implicit hub.
 
 `ruda_compiler_service_check` is the reusable owner above the frontend and
 checker. It retains immutable source snapshots, rejects stale overlay versions,
@@ -202,14 +211,17 @@ Successful diagnostic-free checks now publish bounded, result-owned top-level
 definition facts in canonical source order. Exact declaration hits and stable
 symbol lookup are owned by `facts.c`; source-path hashing consumes exact bytes,
 and nominal-receiver lookup is indexed during declaration collection. Type IDs
-remain result-local. Package-local non-generic free and dot calls now share one
+remain result-local. Package-local non-generic free and dot calls share one
 resolver in `resolution.c`: same-name functions are accepted only for distinct
 exact local nominal receivers after alias unwrap, both spellings lower to one
 `RudaSymbolId`, and the dot receiver is evaluated once before explicit
-arguments. Imports, generics, reference occurrences, symbol search,
-checker-backed completion, and the complete public/private/effect invalidation
-matrix remain explicit I2 service gates; the public `ruda check` command stays
-unavailable until those owners exist.
+arguments. The local-package graph exposes named and namespace bindings to
+that same resolver; D043 owned public candidates are selected from canonical
+package surfaces rather than reconstructed from a compiler-service result.
+Generics, reference occurrences, symbol search, checker-backed completion, and
+the complete public/private/effect invalidation matrix remain explicit I2
+service gates; the public `ruda check` command stays unavailable until those
+owners exist.
 
 ### Test owners
 
@@ -221,6 +233,9 @@ tests/c-unit/
   test_checker.c                  ordered aggregator
   test_checker_{core,records,enums,enum_match,match_scalar,
                 match_control,calls_constants,operators,control,failures}.c
+  test_checker_imports.c
+  test_checker_imports_determinism.c
+  test_checker_imports_support.{h,c}
   test_checker_support.{h,c}
   test_mir.c                      ordered aggregator
   test_mir_{scalar,calls,records,enums,arrays,arrays_rhs}.c
@@ -228,7 +243,8 @@ tests/c-unit/
   test_bytecode_{model,program,support}.c
   test_bytecode_vm_{scalar,arithmetic,arrays,support}.c
   test_mir_bytecode_{model,programs,support}.c
-  test_native_c_emitter_{baseline,arrays,scalar,matrix,strings,support}.c
+  test_native_c_emitter_{baseline,arrays,scalar,matrix,strings,imports,
+                         support}.c
   test_parser_{core,declarations,expressions,incremental,support}.c
   test_formatter_{core,trivia,failures,support}.c
 ```

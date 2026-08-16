@@ -4,6 +4,7 @@
 #include "checker_expr_interfaces_api.h"
 #include "checker_expr_records_api.h"
 #include "checker_lookup_api.h"
+#include "package_imports_api.h"
 
 
 
@@ -239,8 +240,9 @@
     const RudaAstNode *receiver_node = NULL;
     const RudaAstNode *resolution_receiver_node = NULL;
     const RudaSyntaxToken *name_token = NULL;
-    const RudaCheckFunctionDeclaration *declaration = NULL;
+    RudaCheckCallable declaration;
     RudaCheckName name;
+    RudaCheckName namespace_name;
     RudaMirCallArgument *arguments = NULL;
     RudaExpressionValue receiver;
     RudaCheckCallResolution resolution = RUDA_CHECK_CALL_INTERNAL_ERROR;
@@ -256,9 +258,12 @@
     RudaMirRegister target = RUDA_MIR_NO_REGISTER;
     RudaMirInstruction instruction;
     bool dot_call = false;
+    bool qualified_call = false;
     bool first_argument_compiled = false;
     bool accepted = false;
     memset(&receiver, 0, sizeof(receiver));
+    memset(&declaration, 0, sizeof(declaration));
+    memset(&namespace_name, 0, sizeof(namespace_name));
     receiver.register_id = RUDA_MIR_NO_REGISTER;
     if (callee_node != NULL) {
         name_token = ruda_checker_private_check_child_token(
@@ -272,9 +277,29 @@
             &name_token
         )) {
         dot_call = true;
+        if (receiver_node != NULL
+            && receiver_node->kind == RUDA_SYNTAX_NAME_EXPRESSION) {
+            const RudaSyntaxToken *namespace_token =
+                ruda_checker_private_check_child_token(
+                    receiver_node, RUDA_TOKEN_IDENTIFIER, 0
+                );
+            const unsigned char *source = function->checker->source;
+            if (namespace_token != NULL && !namespace_token->synthetic
+                && ruda_check_import_namespace_exists(
+                    function->checker,
+                    source + namespace_token->start,
+                    namespace_token->end - namespace_token->start
+                )) {
+                namespace_name.snapshot = function->checker->ast->snapshot;
+                namespace_name.start = namespace_token->start;
+                namespace_name.end = namespace_token->end;
+                qualified_call = true;
+                dot_call = false;
+            }
+        }
     }
     if (arguments_node == NULL || name_token == NULL || name_token->synthetic
-        || (!dot_call && callee_node == NULL)
+        || (!dot_call && !qualified_call && callee_node == NULL)
         || (dot_call && receiver_node == NULL)) {
         ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
         goto cleanup;
@@ -286,7 +311,8 @@
     name.snapshot = function->checker->ast->snapshot;
     name.start = name_token->start;
     name.end = name_token->end;
-    if (!dot_call && ruda_checker_private_function_find_local(function, name) != NULL) {
+    if (!dot_call && !qualified_call
+        && ruda_checker_private_function_find_local(function, name) != NULL) {
         ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
         goto cleanup;
     }
@@ -331,7 +357,58 @@
         ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
         goto cleanup;
     }
-    if (dot_call) {
+    if (qualified_call) {
+        resolution = ruda_check_resolve_qualified_call(
+            function->checker,
+            namespace_name,
+            name,
+            false,
+            RUDA_TYPE_INVALID,
+            &declaration
+        );
+        if (resolution == RUDA_CHECK_CALL_RECEIVER_REQUIRED) {
+            const RudaAstNode *first_argument = NULL;
+            for (index = 0; index < arguments_node->child_count; index += 1) {
+                const RudaAstElement *element = ruda_ast_child(
+                    arguments_node, index
+                );
+                if (element != NULL
+                    && element->kind == RUDA_AST_ELEMENT_NODE) {
+                    first_argument = element->as.node;
+                    break;
+                }
+            }
+            if (first_argument == NULL) {
+                (void)ruda_checker_add_diagnostic(
+                    function->checker,
+                    RUDA_DIAGNOSTIC_CALL_ARITY,
+                    "qualified overloaded call requires a first argument",
+                    arguments_node->start,
+                    arguments_node->end
+                );
+                goto cleanup;
+            }
+            resolution_receiver_node = first_argument;
+            if (!ruda_compile_expression(function, first_argument,
+                    RUDA_TYPE_INVALID, &receiver)) {
+                goto cleanup;
+            }
+            if (ruda_expression_is_never(function, &receiver)) {
+                *result = receiver;
+                accepted = true;
+                goto cleanup;
+            }
+            first_argument_compiled = true;
+            resolution = ruda_check_resolve_qualified_call(
+                function->checker,
+                namespace_name,
+                name,
+                true,
+                receiver.type,
+                &declaration
+            );
+        }
+    } else if (dot_call) {
         resolution_receiver_node = receiver_node;
         if (!ruda_compile_expression(
                 function,
@@ -408,7 +485,7 @@
             );
         }
     }
-    if (resolution != RUDA_CHECK_CALL_FOUND || declaration == NULL) {
+    if (resolution != RUDA_CHECK_CALL_FOUND) {
         size_t diagnostic_start = resolution_receiver_node == NULL
             ? name.start
             : resolution_receiver_node->start;
@@ -420,6 +497,22 @@
                 function->checker,
                 RUDA_DIAGNOSTIC_UNKNOWN_NAME,
                 "unknown function name",
+                name.start,
+                name.end
+            );
+        } else if (resolution == RUDA_CHECK_CALL_UNKNOWN_IMPORT) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_UNKNOWN_IMPORT,
+                "unknown public function in imported package",
+                name.start,
+                name.end
+            );
+        } else if (resolution == RUDA_CHECK_CALL_PRIVATE_IMPORT) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_PRIVATE_IMPORT,
+                "imported function is package-private",
                 name.start,
                 name.end
             );
@@ -464,7 +557,7 @@
         }
         goto cleanup;
     }
-    if (argument_count != declaration->parameter_types.length) {
+    if (argument_count != declaration.parameter_count) {
         (void)ruda_checker_add_diagnostic(
             function->checker,
             RUDA_DIAGNOSTIC_CALL_ARITY,
@@ -493,10 +586,8 @@
         }
     }
     if (dot_call || first_argument_compiled) {
-        const RudaTypeId *first_parameter = ruda_vector_at_const(
-            &declaration->parameter_types,
-            0
-        );
+        const RudaTypeId *first_parameter = declaration.parameter_count == 0
+            ? NULL : &declaration.parameter_types[0];
         if (first_parameter == NULL || receiver.type != *first_parameter
             || arguments == NULL) {
             ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
@@ -517,10 +608,13 @@
             explicit_argument_index += 1;
             continue;
         }
-        parameter_type = ruda_vector_at_const(
-            &declaration->parameter_types,
-            dot_call ? explicit_argument_index + 1 : explicit_argument_index
-        );
+        if ((dot_call ? explicit_argument_index + 1
+                : explicit_argument_index) < declaration.parameter_count) {
+            parameter_type = &declaration.parameter_types[
+                dot_call ? explicit_argument_index + 1
+                    : explicit_argument_index
+            ];
+        }
         if (parameter_type == NULL || arguments == NULL) {
             ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
             goto cleanup;
@@ -567,8 +661,8 @@
     }
     if (!ruda_mir_add_call(
             &function->mir,
-            declaration->symbol,
-            declaration->result_type,
+            declaration.symbol,
+            declaration.result_type,
             arguments,
             argument_count,
             &call
@@ -581,7 +675,7 @@
         }
         goto cleanup;
     }
-    if (declaration->result_type == RUDA_TYPE_NEVER) {
+    if (declaration.result_type == RUDA_TYPE_NEVER) {
         if (!ruda_checker_private_function_set_never_call(
                 function,
                 call,
@@ -596,7 +690,7 @@
     }
     if (!ruda_function_add_register(
             function,
-            declaration->result_type,
+            declaration.result_type,
             &target
         )) {
         goto cleanup;
@@ -612,7 +706,7 @@
     if (!ruda_function_append_instruction(function, &instruction)) {
         goto cleanup;
     }
-    result->type = declaration->result_type;
+    result->type = declaration.result_type;
     result->register_id = target;
     result->valid = true;
     accepted = true;

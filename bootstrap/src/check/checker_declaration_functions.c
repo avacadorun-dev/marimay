@@ -1,8 +1,10 @@
 #include "checker_declaration_functions_api.h"
+#include "package_imports_api.h"
 #include "checker_cfg_api.h"
 #include "checker_core_api.h"
 #include "checker_declaration_lifecycle_api.h"
 #include "checker_expr_interfaces_api.h"
+#include "checker_imported_nominal_api.h"
 #include "checker_expr_scalar_api.h"
 #include "checker_lookup_api.h"
 #include "checker_statement_api.h"
@@ -332,8 +334,8 @@
                 declaration.dot_eligible = true;
                 declaration.receiver_type = *first_type;
                 if (!ruda_symbol_id_from_bytes_with_receiver(
-                        checker->result->package_name.data,
-                        checker->result->package_name.length,
+                        checker->package_name,
+                        checker->package_name_length,
                         ruda_source_path(checker->ast->snapshot),
                         ruda_source_path_length(checker->ast->snapshot),
                         declaration.owned_name.data,
@@ -345,8 +347,8 @@
                     goto cleanup;
                 }
             } else if (!ruda_symbol_id_from_bytes(
-                    checker->result->package_name.data,
-                    checker->result->package_name.length,
+                    checker->package_name,
+                    checker->package_name_length,
                     ruda_source_path(checker->ast->snapshot),
                     ruda_source_path_length(checker->ast->snapshot),
                     declaration.owned_name.data,
@@ -358,8 +360,8 @@
                 goto cleanup;
             }
         } else if (!ruda_symbol_id_from_bytes(
-                checker->result->package_name.data,
-                checker->result->package_name.length,
+                checker->package_name,
+                checker->package_name_length,
                 ruda_source_path(checker->ast->snapshot),
                 ruda_source_path_length(checker->ast->snapshot),
                 declaration.owned_name.data,
@@ -378,7 +380,7 @@
             declaration.owned_name.length
         );
         if (existing != NULL) {
-            const RudaCheckFunctionDeclaration *resolved = NULL;
+            RudaCheckCallable resolved;
             RudaCheckCallResolution resolution = RUDA_CHECK_CALL_INTERNAL_ERROR;
             const RudaCheckFunctionDeclaration *first = NULL;
             if (existing->kind == RUDA_CHECK_TOP_LEVEL_FUNCTION) {
@@ -598,8 +600,8 @@ cleanup:
     }
     declaration.name_initialized = true;
     if (!ruda_symbol_id_from_bytes(
-            checker->result->package_name.data,
-            checker->result->package_name.length,
+            checker->package_name,
+            checker->package_name_length,
             ruda_source_path(checker->ast->snapshot),
             ruda_source_path_length(checker->ast->snapshot),
             declaration.owned_name.data,
@@ -836,7 +838,8 @@ cleanup:
             goto cleanup;
         }
     }
-    if (!ruda_checker_private_function_ensure_interface_layouts(&function)) {
+    if (!ruda_checker_private_function_ensure_nominal_layouts(&function)
+        || !ruda_checker_private_function_ensure_interface_layouts(&function)) {
         goto cleanup;
     }
     verify_status = ruda_mir_verify(&function.mir);
@@ -877,6 +880,9 @@ cleanup:
     memset(&declaration->owned_name, 0, sizeof(declaration->owned_name));
     declaration->name_initialized = false;
     checked.signature_type = declaration->signature_type;
+    checked.receiver_symbol = declaration->receiver_symbol;
+    checked.receiver_type = declaration->receiver_type;
+    checked.dot_eligible = declaration->dot_eligible;
     checked.is_public = declaration->is_public;
     checked.is_test = declaration->is_test;
     checked.is_fuzz = declaration->is_fuzz;

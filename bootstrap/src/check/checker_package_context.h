@@ -6,6 +6,8 @@
 typedef struct RudaChecker {
     const RudaAstTree *ast;
     const char *package_name;
+    size_t package_name_length;
+    const struct RudaCheckImportEnvironment *imports;
     const unsigned char *source;
     size_t source_length;
     RudaCheckOptions options;

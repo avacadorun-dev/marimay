@@ -16,5 +16,9 @@ These examples are executable specification fixtures once the parser exists. Unt
   D046 it writes that checksum with `println(formatF64(...))?`, which must
   publish `415.0\n` on VM, native, and test capture once `std/io` is
   implemented. Engine writes remain a later checkpoint.
+- `local_packages.ruda` shows the D043 local-package surface: named type and
+  function aliases, namespace qualification, direct dot calls, and structural
+  interface conformance all resolve behavior owned by the imported nominal
+  package.
 
 An implementation change that makes an example invalid must update the normative spec and corresponding decision in the same change. After I2, all examples are compiled by `ruda check`; after I6, they run under `ruda test --engine both` with deterministic service fixtures.

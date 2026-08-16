@@ -15,6 +15,7 @@
 typedef struct RudaChecker RudaChecker;
 typedef struct RudaFunctionChecker RudaFunctionChecker;
 typedef struct RudaExpressionValue RudaExpressionValue;
+typedef struct RudaCheckCallable RudaCheckCallable;
 
 /* Shared expression-lowering boundary for owner-private sibling modules. */
 void ruda_checker_fail(RudaChecker *checker, RudaCheckStatus status);
@@ -63,7 +64,7 @@ bool ruda_compound_assignment_kind(
     RudaMirInstructionKind *kind
 );
 
-/* Package-local D003 call resolution, owned by resolution.c. */
+/* Shared package-local/imported D003/D043 call resolution. */
 bool ruda_check_callable_index_init(RudaChecker *checker);
 bool ruda_check_owned_receiver(
     const RudaChecker *checker,
@@ -84,7 +85,15 @@ RudaCheckCallResolution ruda_check_resolve_call(
     RudaCheckName name,
     bool receiver_known,
     RudaTypeId receiver_type,
-    const RudaCheckFunctionDeclaration **declaration
+    RudaCheckCallable *callable
+);
+RudaCheckCallResolution ruda_check_resolve_qualified_call(
+    const RudaChecker *checker,
+    RudaCheckName namespace_name,
+    RudaCheckName name,
+    bool receiver_known,
+    RudaTypeId receiver_type,
+    RudaCheckCallable *callable
 );
 
 /* Successful-package definition-fact publication, owned by facts.c. */
@@ -127,6 +136,14 @@ bool ruda_compile_array_assignment(
 );
 
 /* Result-owner lifecycle used by package publication and rollback. */
+bool ruda_check_result_init(
+    RudaCheckResult *result,
+    RudaAllocator allocator,
+    RudaCheckOptions options,
+    const RudaSourceSnapshot *snapshot,
+    const char *package_name,
+    size_t package_name_length
+);
 void ruda_checked_record_value_dispose(RudaCheckedRecord *record);
 void ruda_checked_enum_variant_value_dispose(
     RudaCheckedEnumVariant *variant
@@ -139,6 +156,7 @@ void ruda_check_dispose_record_values(RudaCheckResult *result);
 void ruda_check_dispose_enum_values(RudaCheckResult *result);
 void ruda_check_dispose_symbol_values(RudaCheckResult *result);
 void ruda_check_dispose_diagnostics(RudaCheckResult *result);
+bool ruda_check_clear_semantics(RudaCheckResult *result);
 bool ruda_check_function_index_init(RudaCheckResult *result);
 bool ruda_check_symbol_index_init(RudaCheckResult *result);
 void ruda_check_clear_functions(RudaCheckResult *result);

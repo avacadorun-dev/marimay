@@ -1,0 +1,18 @@
+import { Level, User, score as scoreFree } from "acme/store";
+import * as store from "acme/store";
+
+interface Scored {
+  score(): int;
+}
+
+fn through(value: Scored): int {
+  return value.score();
+}
+
+public fn evaluateUser(user: User): int {
+  return through(user) + user.score() + scoreFree(user) + store.score(user);
+}
+
+public fn evaluateLevel(level: Level): int {
+  return through(level) + level.score() + scoreFree(level) + store.score(level);
+}

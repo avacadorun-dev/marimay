@@ -3,6 +3,7 @@
 
 /* Backwards-compatible umbrella for the public checker owner APIs. */
 #include "ruda/check/interpret.h"
+#include "ruda/check/graph.h"
 #include "ruda/check/package.h"
 #include "ruda/mir/mir.h"
 
