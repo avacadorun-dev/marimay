@@ -89,7 +89,8 @@ static void ruda_checker_import_expect_form(
     RudaSymbolId *user_score,
     RudaSymbolId *level_score,
     RudaSymbolId *evaluate_user,
-    RudaSymbolId *evaluate_level
+    RudaSymbolId *evaluate_level,
+    RudaOwnedBytes *canonical_mir
 ) {
     RudaCheckerImportFixture fixture;
     RudaCheckResult checked;
@@ -98,6 +99,7 @@ static void ruda_checker_import_expect_form(
     const RudaCheckedFunction *level_function = NULL;
     RudaCheckInterpretOptions interpret_options;
     RudaMirValue value;
+    RudaOwnedBytes mir_bytes;
     RudaCheckStatus status;
     size_t main_index = SIZE_MAX;
     size_t user_index = SIZE_MAX;
@@ -105,6 +107,7 @@ static void ruda_checker_import_expect_form(
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
     memset(&value, 0, sizeof(value));
+    memset(&mir_bytes, 0, sizeof(mir_bytes));
     RUDA_EXPECT(ruda_checker_import_build(&fixture, evaluator));
     status = ruda_checker_import_fixture_check(
         &fixture,
@@ -126,6 +129,33 @@ static void ruda_checker_import_expect_form(
     RUDA_EXPECT(checked.enums.length == 1);
     RUDA_EXPECT(checked.interfaces.length == 1);
     RUDA_EXPECT(checked.functions.length == 8);
+    RUDA_EXPECT(ruda_checker_import_mir_bytes(
+        &checked, ruda_system_allocator(), &mir_bytes
+    ));
+    if (canonical_mir->data == NULL) {
+        *canonical_mir = mir_bytes;
+        memset(&mir_bytes, 0, sizeof(mir_bytes));
+    } else {
+        RUDA_EXPECT(mir_bytes.length == canonical_mir->length);
+        if (mir_bytes.length == canonical_mir->length) {
+            size_t difference = 0;
+            while (difference < mir_bytes.length
+                && mir_bytes.data[difference]
+                    == canonical_mir->data[difference]) {
+                difference += 1;
+            }
+            if (difference != mir_bytes.length) {
+                fprintf(stderr,
+                    "import MIR differs at byte %zu: %u != %u\n",
+                    difference,
+                    (unsigned int)mir_bytes.data[difference],
+                    (unsigned int)canonical_mir->data[difference]);
+            }
+            RUDA_EXPECT(mir_bytes.length == 0 || memcmp(
+                mir_bytes.data, canonical_mir->data, mir_bytes.length
+            ) == 0);
+        }
+    }
     main_function = ruda_checker_import_function(
         &checked, "main", &main_index
     );
@@ -184,6 +214,7 @@ static void ruda_checker_import_expect_form(
         RUDA_EXPECT(value.type == RUDA_TYPE_I64);
         RUDA_EXPECT(value.as.i64 == 14);
     }
+    ruda_owned_bytes_dispose(&mir_bytes);
     ruda_check_result_dispose(&checked);
     ruda_checker_import_fixture_dispose(&fixture);
 }
@@ -193,31 +224,37 @@ static void ruda_checker_import_forms(void) {
     RudaSymbolId level_score;
     RudaSymbolId evaluate_user;
     RudaSymbolId evaluate_level;
+    RudaOwnedBytes canonical_mir;
     memset(&user_score, 0, sizeof(user_score));
     memset(&level_score, 0, sizeof(level_score));
     memset(&evaluate_user, 0, sizeof(evaluate_user));
     memset(&evaluate_level, 0, sizeof(evaluate_level));
+    memset(&canonical_mir, 0, sizeof(canonical_mir));
     ruda_checker_import_expect_form(
         ruda_import_evaluator_type_only,
         &user_score,
         &level_score,
         &evaluate_user,
-        &evaluate_level
+        &evaluate_level,
+        &canonical_mir
     );
     ruda_checker_import_expect_form(
         ruda_import_evaluator_named,
         &user_score,
         &level_score,
         &evaluate_user,
-        &evaluate_level
+        &evaluate_level,
+        &canonical_mir
     );
     ruda_checker_import_expect_form(
         ruda_import_evaluator_namespace,
         &user_score,
         &level_score,
         &evaluate_user,
-        &evaluate_level
+        &evaluate_level,
+        &canonical_mir
     );
+    ruda_owned_bytes_dispose(&canonical_mir);
 }
 
 static void ruda_checker_import_expect_diagnostic(
@@ -687,6 +724,48 @@ static void ruda_checker_import_allocation_failures(void) {
     ruda_checker_import_fixture_dispose(&fixture);
 }
 
+static void ruda_checker_import_mir_allocation_failures(void) {
+    RudaCheckerImportFixture fixture;
+    RudaCheckResult checked;
+    size_t failure_index = 0;
+    bool reached_success = false;
+    memset(&fixture, 0, sizeof(fixture));
+    memset(&checked, 0, sizeof(checked));
+    RUDA_EXPECT(ruda_checker_import_build(
+        &fixture, ruda_import_evaluator_named
+    ));
+    RUDA_EXPECT(ruda_checker_import_fixture_check(
+        &fixture, "acme/app", ruda_system_allocator(),
+        ruda_check_graph_default_options(), &checked
+    ) == RUDA_CHECK_OK);
+    for (failure_index = 0; checked.initialized && failure_index < 4096;
+        failure_index += 1) {
+        RudaFailAllocator state;
+        RudaOwnedBytes bytes;
+        bool accepted = false;
+        memset(&bytes, 0, sizeof(bytes));
+        ruda_fail_allocator_init(
+            &state, ruda_system_allocator(), failure_index
+        );
+        accepted = ruda_checker_import_mir_bytes(
+            &checked, ruda_fail_allocator(&state), &bytes
+        );
+        if (accepted) {
+            reached_success = true;
+            RUDA_EXPECT(bytes.length != 0);
+        }
+        ruda_owned_bytes_dispose(&bytes);
+        RUDA_EXPECT(state.live_allocations == 0);
+        RUDA_EXPECT(state.live_bytes == 0);
+        if (reached_success) {
+            break;
+        }
+    }
+    RUDA_EXPECT(reached_success);
+    ruda_check_result_dispose(&checked);
+    ruda_checker_import_fixture_dispose(&fixture);
+}
+
 void ruda_test_checker_imports(void) {
     ruda_checker_import_forms();
     ruda_checker_import_diagnostics();
@@ -697,4 +776,5 @@ void ruda_test_checker_imports(void) {
     ruda_checker_import_limits();
     ruda_checker_import_allocation_failures();
     ruda_checker_import_diagnostic_allocation_failures();
+    ruda_checker_import_mir_allocation_failures();
 }

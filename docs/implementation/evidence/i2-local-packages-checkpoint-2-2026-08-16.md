@@ -47,12 +47,14 @@ record and enum values through the same structural interface, and resolves
 the same owned symbols. The root package executes the graph to exact `i64`
 value `14` in the MIR oracle, collect-before-allocation VM, and generated C17.
 
-Each form verifies every MIR function, and span-normalized encoded bytecode is
-byte-identical across the three source spellings. Source spans remain
-form-specific by design. A separate permutation test reverses package/file
-input order and import declaration order and compares complete encoded program
-bytes; diagnostic code, message, source path, and primary span are likewise
-stable under input enumeration reversal.
+Each form verifies every MIR function. A field-by-field canonical serialization
+of typed MIR is byte-identical across the three source spellings after removing
+only source spans, which remain form-specific by design. The span-normalized
+encoded bytecode is byte-identical as an independent lowering assertion. A
+separate permutation test reverses package/file input order and import
+declaration order and compares complete encoded program bytes; diagnostic code,
+message, source path, and primary span are likewise stable under input
+enumeration reversal.
 
 Negative tests cover unknown package and export, private named and namespace
 functions/types, private record fields, unavailable type-only and namespace
@@ -67,6 +69,8 @@ import, total bindings, dependency depth, package-path bytes, graph-wide
 function count, and graph-wide symbol count. Success, cycle-message, and
 late-checker-diagnostic paths run deterministic fail-every-allocation sweeps;
 every teardown asserts both `live_allocations == 0` and `live_bytes == 0`.
+The canonical MIR serializer used by the form-invariance assertion has its own
+deterministic fail-every-allocation sweep with the same zero-live counters.
 
 ## Architecture
 
@@ -103,10 +107,10 @@ Commands and results:
 | `./tools/check-example-syntax` | 0 | all public examples accepted |
 | `./tools/check-syntax-coverage` | 0 | 74 syntax kinds and 115 grammar productions covered, 0 open |
 | `git diff --check` | 0 | patch whitespace clean |
-| `cmake --preset debug` + build + full CTest | 0 | 1/1 passed in 59.32 s on the final production diff |
-| `cmake --preset release` + build + full CTest | 0 | 1/1 passed in 54.39 s on the final production diff |
-| `cmake --preset asan-ubsan` + build + strict full CTest | 0 | 1/1 passed in 76.58 s on the final production diff without sanitizer report; Apple leak detection disabled |
-| `clang --analyze` over new graph/import/result owners and focused tests | 0 | no analyzer finding after explicit non-null layout invariants |
+| `cmake --preset debug` + build + full CTest | 0 | 1/1 passed in 40.83 s on the final checkpoint diff |
+| `cmake --preset release` + build + full CTest | 0 | 1/1 passed in 41.94 s on the final checkpoint diff |
+| `cmake --preset asan-ubsan` + build + strict full CTest | 0 | 1/1 passed in 63.93 s on the final checkpoint diff without sanitizer report; Apple leak detection disabled |
+| `clang --analyze` over new graph/import/result owners and focused tests | 0 | no analyzer finding, including the canonical MIR comparison and its failure sweep |
 
 ## Remaining boundary
 

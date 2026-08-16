@@ -42,5 +42,10 @@ const RudaCheckedFunction *ruda_checker_import_function(
     const char *name,
     size_t *index
 );
+bool ruda_checker_import_mir_bytes(
+    const RudaCheckResult *result,
+    RudaAllocator allocator,
+    RudaOwnedBytes *bytes
+);
 
 #endif
