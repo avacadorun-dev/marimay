@@ -174,7 +174,7 @@ bool ruda_native_c_emit_function(
         )) return false;
     if (function->calls.length != 0 && !ruda_native_c_write(
             buffer,
-            "  uint32_t ruda_g_defers[%zu] = {0};\n  size_t ruda_g_defer_count = 0;\n  ruda_g_frame ruda_g_cleanup_frames[RUDA_G_MAX_FRAMES];\n  ruda_g_suppressed_panic ruda_g_cleanup_suppressed[RUDA_G_MAX_SUPPRESSED];\n  ruda_g_panic ruda_g_cleanup_p = {0};\n  ruda_g_cleanup_p.frames = ruda_g_cleanup_frames;\n  ruda_g_cleanup_p.frame_capacity = RUDA_G_MAX_FRAMES;\n  ruda_g_cleanup_p.suppressed = ruda_g_cleanup_suppressed;\n  ruda_g_cleanup_p.suppressed_capacity = RUDA_G_MAX_SUPPRESSED;\n  (void)ruda_g_defers;\n  (void)ruda_g_defer_count;\n",
+            "  uint32_t ruda_g_defers[%zu] = {0};\n  size_t ruda_g_defer_count = 0;\n  ruda_g_frame ruda_g_cleanup_frames[RUDA_G_MAX_FRAMES];\n  ruda_g_suppressed_panic ruda_g_cleanup_suppressed[RUDA_G_MAX_SUPPRESSED];\n  ruda_g_panic ruda_g_cleanup_p = {0};\n  ruda_g_cleanup_p.frames = ruda_g_cleanup_frames;\n  ruda_g_cleanup_p.frame_capacity = RUDA_G_MAX_FRAMES;\n  ruda_g_cleanup_p.suppressed = ruda_g_cleanup_suppressed;\n  ruda_g_cleanup_p.suppressed_capacity = RUDA_G_MAX_SUPPRESSED;\n  (void)ruda_g_defers;\n  (void)ruda_g_defer_count;\n  (void)ruda_g_cleanup_p;\n",
             function->calls.length
         )) {
         return false;

@@ -169,6 +169,9 @@ void ruda_test_native_baseline(void) {
     RUDA_EXPECT(ruda_test_native_contains(&first, "#include <stdint.h>"));
     RUDA_EXPECT(ruda_test_native_contains(&first, "ruda_g_b_"));
     RUDA_EXPECT(ruda_test_native_contains(&first, "ruda_g_f_"));
+    RUDA_EXPECT(ruda_test_native_contains(
+        &first, "(void)ruda_g_cleanup_p;"
+    ));
 #if !defined(_WIN32)
     ruda_test_native_compile_and_run(&first, "ok:i64:42\n", 0);
 #endif
