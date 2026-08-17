@@ -3,6 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
+typedef struct RudaCompilerSemanticTarget {
+    const char *package_name;
+    const RudaCompilerPackage *packages;
+    size_t package_count;
+    const char *root_import_path;
+    size_t root_import_path_length;
+    bool is_graph;
+} RudaCompilerSemanticTarget;
+
 static bool ruda_compiler_allocator_valid(RudaAllocator allocator) {
     return allocator.allocate != NULL && allocator.resize != NULL
         && allocator.deallocate != NULL;
@@ -190,6 +199,146 @@ static const RudaCompilerUnit *ruda_compiler_find_unit(
         }
     }
     return NULL;
+}
+
+static bool ruda_compiler_graph_target_valid(
+    const RudaCompilerService *service,
+    const RudaCompilerSemanticTarget *target
+) {
+    RudaCheckGraphOptions graph_options = ruda_check_graph_default_options();
+    size_t package_index = 0;
+    size_t total_files = 0;
+    if (service == NULL || target == NULL || target->packages == NULL
+        || target->package_count == 0
+        || target->package_count > graph_options.max_packages
+        || target->root_import_path == NULL
+        || target->root_import_path_length == 0) {
+        return false;
+    }
+    for (package_index = 0; package_index < target->package_count;
+        package_index += 1) {
+        const RudaCompilerPackage *package = &target->packages[package_index];
+        size_t file_index = 0;
+        if (package->import_path == NULL || package->import_path_length == 0
+            || package->import_path_length
+                > service->options.check_options.max_package_name_bytes
+            || memchr(
+                package->import_path,
+                0,
+                package->import_path_length
+            ) != NULL || package->file_ids == NULL
+            || package->file_count == 0
+            || !ruda_size_add(total_files, package->file_count, &total_files)) {
+            return false;
+        }
+        for (file_index = 0; file_index < package->file_count;
+            file_index += 1) {
+            size_t earlier_package = 0;
+            if (ruda_compiler_find_document_const(
+                    service,
+                    package->file_ids[file_index]
+                ) == NULL) {
+                return false;
+            }
+            for (earlier_package = 0;
+                earlier_package <= package_index; earlier_package += 1) {
+                const RudaCompilerPackage *earlier =
+                    &target->packages[earlier_package];
+                size_t earlier_file = 0;
+                size_t limit = earlier_package == package_index
+                    ? file_index : earlier->file_count;
+                for (earlier_file = 0; earlier_file < limit;
+                    earlier_file += 1) {
+                    if (earlier->file_ids[earlier_file]
+                        == package->file_ids[file_index]) {
+                        return false;
+                    }
+                }
+            }
+        }
+    }
+    return total_files == service->documents.length;
+}
+
+static RudaCompilerStatus ruda_compiler_check_graph_semantics(
+    const RudaCompilerService *service,
+    const RudaCompilerSemanticTarget *target,
+    RudaCompilerResult *built
+) {
+    RudaVector graph_asts;
+    RudaVector graph_inputs;
+    RudaCheckGraphOptions options = ruda_check_graph_default_options();
+    RudaCheckStatus status = RUDA_CHECK_INTERNAL_ERROR;
+    size_t package_index = 0;
+    bool asts_initialized = false;
+    bool inputs_initialized = false;
+    memset(&graph_asts, 0, sizeof(graph_asts));
+    memset(&graph_inputs, 0, sizeof(graph_inputs));
+    asts_initialized = ruda_vector_init(
+        &graph_asts,
+        service->allocator,
+        sizeof(RudaAstTree *)
+    );
+    inputs_initialized = ruda_vector_init(
+        &graph_inputs,
+        service->allocator,
+        sizeof(RudaCheckPackageInput)
+    );
+    if (!asts_initialized || !inputs_initialized
+        || !ruda_vector_reserve(&graph_asts, built->units.length)
+        || !ruda_vector_reserve(&graph_inputs, target->package_count)) {
+        if (inputs_initialized) {
+            ruda_vector_dispose(&graph_inputs);
+        }
+        if (asts_initialized) {
+            ruda_vector_dispose(&graph_asts);
+        }
+        return RUDA_COMPILER_ALLOCATION_FAILED;
+    }
+    for (package_index = 0; package_index < target->package_count;
+        package_index += 1) {
+        const RudaCompilerPackage *package = &target->packages[package_index];
+        RudaCheckPackageInput input;
+        size_t ast_start = graph_asts.length;
+        size_t file_index = 0;
+        memset(&input, 0, sizeof(input));
+        for (file_index = 0; file_index < package->file_count;
+            file_index += 1) {
+            const RudaCompilerUnit *unit = ruda_compiler_find_unit(
+                built,
+                package->file_ids[file_index]
+            );
+            const RudaAstTree *ast = unit == NULL ? NULL : &unit->ast;
+            if (ast == NULL || !ruda_vector_push(&graph_asts, &ast)) {
+                ruda_vector_dispose(&graph_inputs);
+                ruda_vector_dispose(&graph_asts);
+                return ast == NULL ? RUDA_COMPILER_INTERNAL_ERROR
+                    : RUDA_COMPILER_ALLOCATION_FAILED;
+            }
+        }
+        input.import_path = package->import_path;
+        input.import_path_length = package->import_path_length;
+        input.asts = (const RudaAstTree *const *)graph_asts.data + ast_start;
+        input.ast_count = package->file_count;
+        if (!ruda_vector_push(&graph_inputs, &input)) {
+            ruda_vector_dispose(&graph_inputs);
+            ruda_vector_dispose(&graph_asts);
+            return RUDA_COMPILER_ALLOCATION_FAILED;
+        }
+    }
+    options.package_options = service->options.check_options;
+    status = ruda_check_package_graph(
+        graph_inputs.data,
+        graph_inputs.length,
+        target->root_import_path,
+        target->root_import_path_length,
+        service->allocator,
+        options,
+        &built->checked
+    );
+    ruda_vector_dispose(&graph_inputs);
+    ruda_vector_dispose(&graph_asts);
+    return ruda_compiler_check_status(status);
 }
 
 RudaCompilerOptions ruda_compiler_default_options(void) {
@@ -487,9 +636,9 @@ bool ruda_compiler_service_document(
     return true;
 }
 
-RudaCompilerStatus ruda_compiler_service_check_request(
+static RudaCompilerStatus ruda_compiler_service_check_target_request(
     const RudaCompilerService *service,
-    const char *package_name,
+    const RudaCompilerSemanticTarget *target,
     const RudaCompilerCheckRequest *request,
     RudaCompilerResult *result
 ) {
@@ -507,8 +656,12 @@ RudaCompilerStatus ruda_compiler_service_check_request(
         return RUDA_COMPILER_INVALID_ARGUMENT;
     }
     memset(built, 0, sizeof(*built));
-    if (service == NULL || !service->initialized || package_name == NULL
-        || package_name[0] == '\0' || service->documents.length == 0
+    if (service == NULL || !service->initialized || target == NULL
+        || service->documents.length == 0
+        || (!target->is_graph && (target->package_name == NULL
+            || target->package_name[0] == '\0'))
+        || (target->is_graph
+            && !ruda_compiler_graph_target_valid(service, target))
         || (request != NULL && request->previous != NULL
             && !request->previous->initialized)) {
         return RUDA_COMPILER_INVALID_ARGUMENT;
@@ -735,14 +888,16 @@ RudaCompilerStatus ruda_compiler_service_check_request(
         failure = RUDA_COMPILER_CANCELLED;
         goto cleanup;
     }
-    failure = ruda_compiler_check_status(ruda_check_package(
-        (const RudaAstTree *const *)asts.data,
-        asts.length,
-        package_name,
-        service->allocator,
-        service->options.check_options,
-        &built->checked
-    ));
+    failure = target->is_graph
+        ? ruda_compiler_check_graph_semantics(service, target, built)
+        : ruda_compiler_check_status(ruda_check_package(
+            (const RudaAstTree *const *)asts.data,
+            asts.length,
+            target->package_name,
+            service->allocator,
+            service->options.check_options,
+            &built->checked
+        ));
     if (failure == RUDA_COMPILER_OK
         && ruda_compiler_request_cancelled(request)) {
         failure = RUDA_COMPILER_CANCELLED;
@@ -767,6 +922,23 @@ cleanup:
     return RUDA_COMPILER_OK;
 }
 
+RudaCompilerStatus ruda_compiler_service_check_request(
+    const RudaCompilerService *service,
+    const char *package_name,
+    const RudaCompilerCheckRequest *request,
+    RudaCompilerResult *result
+) {
+    RudaCompilerSemanticTarget target;
+    memset(&target, 0, sizeof(target));
+    target.package_name = package_name;
+    return ruda_compiler_service_check_target_request(
+        service,
+        &target,
+        request,
+        result
+    );
+}
+
 RudaCompilerStatus ruda_compiler_service_check(
     const RudaCompilerService *service,
     const char *package_name,
@@ -775,6 +947,49 @@ RudaCompilerStatus ruda_compiler_service_check(
     return ruda_compiler_service_check_request(
         service,
         package_name,
+        NULL,
+        result
+    );
+}
+
+RudaCompilerStatus ruda_compiler_service_check_graph_request(
+    const RudaCompilerService *service,
+    const RudaCompilerPackage *packages,
+    size_t package_count,
+    const char *root_import_path,
+    size_t root_import_path_length,
+    const RudaCompilerCheckRequest *request,
+    RudaCompilerResult *result
+) {
+    RudaCompilerSemanticTarget target;
+    memset(&target, 0, sizeof(target));
+    target.packages = packages;
+    target.package_count = package_count;
+    target.root_import_path = root_import_path;
+    target.root_import_path_length = root_import_path_length;
+    target.is_graph = true;
+    return ruda_compiler_service_check_target_request(
+        service,
+        &target,
+        request,
+        result
+    );
+}
+
+RudaCompilerStatus ruda_compiler_service_check_graph(
+    const RudaCompilerService *service,
+    const RudaCompilerPackage *packages,
+    size_t package_count,
+    const char *root_import_path,
+    size_t root_import_path_length,
+    RudaCompilerResult *result
+) {
+    return ruda_compiler_service_check_graph_request(
+        service,
+        packages,
+        package_count,
+        root_import_path,
+        root_import_path_length,
         NULL,
         result
     );

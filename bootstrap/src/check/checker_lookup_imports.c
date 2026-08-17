@@ -83,6 +83,7 @@ static bool ruda_import_surface_type(
     const unsigned char *name,
     size_t name_length,
     RudaTypeId *type,
+    RudaSymbolId *symbol,
     bool *exists_private
 ) {
     size_t index = 0;
@@ -96,6 +97,7 @@ static bool ruda_import_surface_type(
             *exists_private = !item->is_public;
             if (item->is_public) {
                 *type = item->type;
+                *symbol = item->symbol;
                 return true;
             }
             return false;
@@ -110,6 +112,7 @@ static bool ruda_import_surface_type(
             *exists_private = !item->is_public;
             if (item->is_public) {
                 *type = item->type;
+                *symbol = item->symbol;
                 return true;
             }
             return false;
@@ -124,6 +127,7 @@ static bool ruda_import_surface_type(
             *exists_private = !item->is_public;
             if (item->is_public) {
                 *type = item->type;
+                *symbol = item->symbol;
                 return true;
             }
             return false;
@@ -138,6 +142,7 @@ static bool ruda_import_surface_type(
             *exists_private = !item->is_public;
             if (item->is_public) {
                 *type = item->target_type;
+                *symbol = item->symbol;
                 return true;
             }
             return false;
@@ -160,12 +165,14 @@ bool ruda_check_import_type(
     size_t second_length = 0;
     const RudaCheckImportBinding *binding = NULL;
     const RudaCheckPackageSurface *surface = NULL;
+    RudaSymbolId symbol;
     bool exists_private = false;
     if (checker == NULL || type_node == NULL || type == NULL
         || resolved == NULL || checker->ast == NULL) {
         return false;
     }
     *resolved = false;
+    memset(&symbol, 0, sizeof(symbol));
     first = ruda_checker_private_check_child_token(
         type_node, RUDA_TOKEN_IDENTIFIER, 0
     );
@@ -191,9 +198,15 @@ bool ruda_check_import_type(
                 binding->original,
                 binding->original_length,
                 type,
+                &symbol,
                 &exists_private
             )) {
             *resolved = true;
+            return ruda_check_record_occurrence(
+                checker,
+                (RudaCheckName){checker->ast->snapshot, first->start, first->end},
+                symbol
+            );
         }
         return true;
     }
@@ -211,9 +224,14 @@ bool ruda_check_import_type(
             second_bytes,
             second_length,
             type,
+            &symbol,
             &exists_private
         )) {
-        return true;
+        return ruda_check_record_occurrence(
+            checker,
+            (RudaCheckName){checker->ast->snapshot, second->start, second->end},
+            symbol
+        );
     }
     *type = RUDA_TYPE_INVALID;
     (void)ruda_checker_add_diagnostic(
@@ -349,6 +367,41 @@ static RudaCheckCallResolution ruda_import_resolve_surface_function(
     }
     return name_exists ? RUDA_CHECK_CALL_OTHER_NOMINAL
         : RUDA_CHECK_CALL_UNKNOWN_NAME;
+}
+
+RudaCheckCallResolution ruda_check_resolve_imported_named_call(
+    const RudaChecker *checker,
+    RudaCheckName name,
+    RudaTypeId receiver_type,
+    RudaCheckCallable *callable
+) {
+    const unsigned char *name_bytes = NULL;
+    size_t name_length = 0;
+    const RudaCheckImportBinding *binding = NULL;
+    const RudaCheckPackageSurface *surface = NULL;
+    if (checker == NULL || callable == NULL
+        || !ruda_import_name(name, &name_bytes, &name_length)) {
+        return RUDA_CHECK_CALL_INTERNAL_ERROR;
+    }
+    binding = ruda_import_binding(
+        checker,
+        name_bytes,
+        name_length,
+        false
+    );
+    surface = ruda_import_surface(checker, binding);
+    if (binding == NULL || binding->is_namespace || surface == NULL) {
+        return RUDA_CHECK_CALL_UNKNOWN_NAME;
+    }
+    return ruda_import_resolve_surface_function(
+        checker,
+        surface,
+        binding->original,
+        binding->original_length,
+        true,
+        receiver_type,
+        callable
+    );
 }
 
 RudaCheckCallResolution ruda_check_resolve_imported_call(

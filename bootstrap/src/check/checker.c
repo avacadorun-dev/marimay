@@ -69,6 +69,7 @@ bool ruda_check_options_valid(
     return allocator.allocate != NULL && allocator.resize != NULL
         && allocator.deallocate != NULL && options.max_source_files != 0
         && options.max_functions != 0 && options.max_symbols != 0
+        && options.max_occurrences != 0 && options.max_completions != 0
         && options.max_package_name_bytes != 0
         && options.max_constants != 0
         && options.max_type_aliases != 0
@@ -383,6 +384,21 @@ RudaCheckStatus ruda_checker_check_package_unit(
             }
         }
     }
+    for (ast_index = 0; ast_index < sorted_asts.length
+        && !ruda_checker_has_failed(&checker)
+        && result->diagnostics.length == 0; ast_index += 1) {
+        const RudaAstTree *const *ast = ruda_vector_at_const(
+            &sorted_asts,
+            ast_index
+        );
+        if (ast == NULL || !ruda_checker_private_checker_set_ast(&checker, *ast)
+            || !ruda_check_publish_completions_for_ast(&checker)) {
+            if (!ruda_checker_has_failed(&checker)) {
+                ruda_checker_fail(&checker, RUDA_CHECK_INTERNAL_ERROR);
+            }
+            break;
+        }
+    }
     if (!ruda_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
         size_t symbol_total = 0;
@@ -433,6 +449,10 @@ RudaCheckStatus ruda_checker_check_package_unit(
     if (!ruda_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
         (void)ruda_checker_private_publish_symbol_facts(&checker);
+    }
+    if (!ruda_checker_has_failed(&checker)
+        && result->diagnostics.length == 0) {
+        (void)ruda_check_finalize_semantic_facts(&checker);
     }
     if (result->diagnostics.length != 0) {
         if (!ruda_check_clear_semantics(result)) {

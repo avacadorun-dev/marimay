@@ -23,6 +23,8 @@ typedef struct RudaCheckOptions {
     size_t max_source_files;
     size_t max_functions;
     size_t max_symbols;
+    size_t max_occurrences;
+    size_t max_completions;
     size_t max_package_name_bytes;
     size_t max_constants;
     size_t max_type_aliases;

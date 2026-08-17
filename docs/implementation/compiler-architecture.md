@@ -1,7 +1,7 @@
 # Ruda Stage 0 compiler architecture
 
 Status: implementation architecture for the C17 bootstrap.
-Last reviewed: 2026-08-14.
+Last reviewed: 2026-08-17.
 
 This document maps the normative compiler and execution contracts to physical
 owners. It changes no language semantics. When it conflicts with `docs/spec/`
@@ -183,11 +183,13 @@ bootstrap/src/check/
   checker_interpret.c   checked-result MIR oracle adapter
   checker_*_api.h       one narrow contract per sibling owner
   result.c              result/default/dispose/accessor ownership
-  facts.c               canonical successful-package definition facts
-  resolution.c          package-local D003 free/dot-call resolver
+  facts.c               canonical definition/reference fact publication
+  queries.c             result-scoped definition/search/completion queries
+  resolution.c          shared D003/D043 resolver and exact completion facts
   package_graph.c       bounded deterministic local-package graph coordinator
   package_imports_api.h narrow graph/checker import contract
-  service.c             snapshots, frontend/check lifetimes, diagnostics owner
+  service.c             snapshots, package-graph checks, frontend lifetimes
+  service_queries.c     generation/snapshot-safe compiler-service queries
   array.c               D045 type/literal/access/assignment lowering
 ```
 
@@ -207,21 +209,34 @@ orders current documents by exact path, and owns lex/parse/AST/check teardown.
 subtrees from one exact versioned edit, polls cooperative cancellation between
 bounded phases, and still rechecks the whole semantic package. It introduces
 no persistent semantic cache and does not duplicate semantic lookup.
-Successful diagnostic-free checks now publish bounded, result-owned top-level
-definition facts in canonical source order. Exact declaration hits and stable
-symbol lookup are owned by `facts.c`; source-path hashing consumes exact bytes,
-and nominal-receiver lookup is indexed during declaration collection. Type IDs
-remain result-local. Package-local non-generic free and dot calls share one
-resolver in `resolution.c`: same-name functions are accepted only for distinct
-exact local nominal receivers after alias unwrap, both spellings lower to one
-`RudaSymbolId`, and the dot receiver is evaluated once before explicit
-arguments. The local-package graph exposes named and namespace bindings to
-that same resolver; D043 owned public candidates are selected from canonical
-package surfaces rather than reconstructed from a compiler-service result.
-Generics, reference occurrences, symbol search, checker-backed completion, and
-the complete public/private/effect invalidation matrix remain explicit I2
-service gates; the public `ruda check` command stays unavailable until those
-owners exist.
+Successful diagnostic-free checks publish bounded, result-owned top-level
+definition facts and references to that stable symbol universe in canonical
+source order. `facts.c` owns publication, occurrence canonicalization, and
+cross-fact validation; `queries.c` owns allocation-free result-scoped
+definition-from-reference, byte-prefix package-symbol search, and completion
+access. Source-path hashing consumes exact bytes, and nominal-receiver lookup
+is indexed during declaration collection. Result-local `RudaTypeId` values do
+not cross the query boundary; receiver and candidate identity use stable
+`RudaSymbolId` values.
+
+Package-local and imported non-generic free and dot calls share one resolver in
+`resolution.c`: same-name functions are accepted only for distinct exact local
+nominal receivers after alias unwrap, both spellings lower to one symbol, and
+the dot receiver is evaluated once before explicit arguments. The same live
+resolver publishes per-snapshot dot completion after signature collection;
+the compiler service never reconstructs candidates by filtering published
+function vectors. Canonical package surfaces provide D043 public candidates,
+and import bindings contribute only the available named, aliased, namespace,
+or empty free spelling. `service.c` maps current documents into one bounded
+package-graph check, while `service_queries.c` rejects both older result
+generations and snapshots outside the supplied current result. Full semantic
+rechecking provides public/private/import-aware invalidation without a hidden
+persistent semantic cache.
+
+The present occurrence universe covers stable top-level type, constant, and
+resolved call references. Local bindings, record fields, enum variants,
+generic instantiations, effect metadata, production indexing/LSP transport,
+and public `ruda check` remain later I2/I8 work.
 
 ### Test owners
 
@@ -420,6 +435,9 @@ checkpoint:
 | `bootstrap/src/check/facts.c` | 0 | 159 | fact-name ownership, canonical ordering, collision rejection, and symbol-ID lookup index |
 | `bootstrap/src/check/result.c` | 263 | 340 | definition-fact/package-name lifetime plus exact declaration accessors |
 | `tests/c-unit/test_checker_facts.c` | 0 | 804 | five-kind inventory, canonical order, exact identity, limits, diagnostics, and allocation cleanup |
+| `bootstrap/src/check/queries.c` | 0 | 168 | allocation-free result-scoped occurrence, definition, prefix-search, and completion access |
+| `bootstrap/src/check/service_queries.c` | 0 | 171 | current-generation and exact-snapshot validation around result queries |
+| `tests/c-unit/test_compiler_service_queries.c` | 0 | 839 | import-form completion/resolver equivalence, reverse order, overlays, stale safety, cancellation, limits, and fail-every-allocation cleanup |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `ruda_test_mir` registration. The service checkpoint
@@ -439,6 +457,9 @@ and its
 [request-local incremental/cancellation checkpoint](evidence/i2-compiler-service-incremental-iteration-37-2026-08-14.md),
 followed by
 [successful-package definition facts](evidence/i2-checker-facts-iteration-38-2026-08-14.md).
+The result-scoped query and exact checker-backed completion foundation is
+recorded in
+[preview checkpoint 3](evidence/i2-compiler-service-queries-checkpoint-3-2026-08-17.md).
 The repository-wide bounded-context enforcement and full production/test
 decomposition are recorded in
 [A0 checkpoint 0](evidence/a0-bounded-architecture-checkpoint-0-2026-08-14.md).

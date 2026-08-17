@@ -222,6 +222,13 @@
                 )) {
                 return false;
             }
+            if (!ruda_check_record_occurrence(
+                    function->checker,
+                    name,
+                    constant->symbol
+                )) {
+                return false;
+            }
             if (constant->value.type == RUDA_TYPE_I64) {
                 return ruda_function_emit_instruction(
                     function,

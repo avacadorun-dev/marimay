@@ -39,14 +39,14 @@ static const char *const ruda_native_import_evaluators[] = {
     "public fn evaluateLevel(level: Level): int {\n"
     "  return through(level) + level.score();\n"
     "}\n",
-    "import { User, Level, score } from \"acme/store\";\n"
+    "import { User, Level, score as namedScore } from \"acme/store\";\n"
     "interface Scored { score(): int; }\n"
     "fn through(value: Scored): int { return value.score(); }\n"
     "public fn evaluateUser(user: User): int {\n"
-    "  return through(user) + score(user);\n"
+    "  return through(user) + namedScore(user);\n"
     "}\n"
     "public fn evaluateLevel(level: Level): int {\n"
-    "  return through(level) + score(level);\n"
+    "  return through(level) + namedScore(level);\n"
     "}\n",
     "import * as store from \"acme/store\";\n"
     "interface Scored { score(): int; }\n"

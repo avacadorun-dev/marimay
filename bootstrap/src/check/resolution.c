@@ -328,6 +328,30 @@ RudaCheckCallResolution ruda_check_resolve_call(
         ? RUDA_CHECK_CALL_FOUND : RUDA_CHECK_CALL_INTERNAL_ERROR;
 }
 
+RudaCheckCallResolution ruda_check_resolve_free_call(
+    const RudaChecker *checker,
+    RudaCheckName name,
+    RudaTypeId receiver_type,
+    RudaCheckCallable *callable
+) {
+    RudaCheckCallResolution resolution = ruda_check_resolve_imported_named_call(
+        checker,
+        name,
+        receiver_type,
+        callable
+    );
+    if (resolution != RUDA_CHECK_CALL_UNKNOWN_NAME) {
+        return resolution;
+    }
+    return ruda_check_resolve_call(
+        checker,
+        name,
+        true,
+        receiver_type,
+        callable
+    );
+}
+
 RudaCheckCallResolution ruda_check_resolve_qualified_call(
     const RudaChecker *checker,
     RudaCheckName namespace_name,
@@ -340,4 +364,295 @@ RudaCheckCallResolution ruda_check_resolve_qualified_call(
         checker, namespace_name, true, name, receiver_known,
         receiver_type, callable
     );
+}
+
+static bool ruda_check_completion_surface_active(
+    const RudaChecker *checker,
+    size_t surface_index
+) {
+    size_t index = 0;
+    for (index = 0; checker != NULL && checker->imports != NULL
+        && index < checker->imports->binding_count; index += 1) {
+        const RudaCheckImportBinding *binding =
+            &checker->imports->bindings[index];
+        if (binding->ast == checker->ast
+            && binding->surface_index == surface_index) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool ruda_check_completion_copy_free_spelling(
+    RudaChecker *checker,
+    RudaCheckedCompletion *completion,
+    const RudaCheckImportBinding *binding,
+    const unsigned char *name,
+    size_t name_length,
+    bool local_free
+) {
+    size_t length = 0;
+    size_t allocation_size = 0;
+    if (local_free) {
+        return ruda_owned_bytes_copy(
+            &completion->free_spelling,
+            checker->result->allocator,
+            name,
+            name_length
+        );
+    }
+    if (binding == NULL) {
+        return ruda_owned_bytes_copy(
+            &completion->free_spelling,
+            checker->result->allocator,
+            NULL,
+            0
+        );
+    }
+    if (!binding->is_namespace) {
+        return ruda_owned_bytes_copy(
+            &completion->free_spelling,
+            checker->result->allocator,
+            binding->local,
+            binding->local_length
+        );
+    }
+    if (!ruda_size_add(binding->local_length, 1, &length)
+        || !ruda_size_add(length, name_length, &length)
+        || !ruda_size_add(length, 1, &allocation_size)) {
+        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        return false;
+    }
+    completion->free_spelling.allocator = checker->result->allocator;
+    completion->free_spelling.data = ruda_allocate(
+        &completion->free_spelling.allocator,
+        allocation_size
+    );
+    if (completion->free_spelling.data == NULL) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        return false;
+    }
+    memcpy(
+        completion->free_spelling.data,
+        binding->local,
+        binding->local_length
+    );
+    completion->free_spelling.data[binding->local_length] = '.';
+    memcpy(
+        completion->free_spelling.data + binding->local_length + 1,
+        name,
+        name_length
+    );
+    completion->free_spelling.data[length] = 0;
+    completion->free_spelling.length = length;
+    return true;
+}
+
+static const RudaCheckImportBinding *ruda_check_completion_free_binding(
+    const RudaChecker *checker,
+    size_t surface_index,
+    const unsigned char *name,
+    size_t name_length
+) {
+    const RudaCheckImportBinding *best_named = NULL;
+    const RudaCheckImportBinding *best_namespace = NULL;
+    size_t index = 0;
+    for (index = 0; checker != NULL && checker->imports != NULL
+        && index < checker->imports->binding_count; index += 1) {
+        const RudaCheckImportBinding *binding =
+            &checker->imports->bindings[index];
+        const RudaCheckImportBinding **best = NULL;
+        size_t shared = 0;
+        int comparison = 0;
+        if (binding->ast != checker->ast
+            || binding->surface_index != surface_index
+            || (!binding->is_namespace
+                && (binding->original_length != name_length
+                    || memcmp(binding->original, name, name_length) != 0))) {
+            continue;
+        }
+        best = binding->is_namespace ? &best_namespace : &best_named;
+        if (*best == NULL) {
+            *best = binding;
+            continue;
+        }
+        shared = binding->local_length < (*best)->local_length
+            ? binding->local_length : (*best)->local_length;
+        comparison = shared == 0 ? 0 : memcmp(
+            binding->local,
+            (*best)->local,
+            shared
+        );
+        if (comparison < 0 || (comparison == 0
+                && binding->local_length < (*best)->local_length)) {
+            *best = binding;
+        }
+    }
+    return best_named != NULL ? best_named : best_namespace;
+}
+
+static bool ruda_check_append_completion(
+    RudaChecker *checker,
+    const unsigned char *name,
+    size_t name_length,
+    const unsigned char *package_name,
+    size_t package_name_length,
+    RudaSymbolId symbol,
+    RudaSymbolId receiver_symbol,
+    const RudaCheckImportBinding *free_binding,
+    bool local_free
+) {
+    RudaCheckedCompletion completion;
+    memset(&completion, 0, sizeof(completion));
+    if (checker->result->completions.length
+        >= checker->options.max_completions) {
+        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        return false;
+    }
+    completion.symbol = symbol;
+    completion.receiver_symbol = receiver_symbol;
+    completion.snapshot = checker->ast->snapshot;
+    if (!ruda_owned_bytes_copy(
+            &completion.name,
+            checker->result->allocator,
+            name,
+            name_length
+        ) || !ruda_owned_bytes_copy(
+            &completion.package_name,
+            checker->result->allocator,
+            package_name,
+            package_name_length
+        ) || !ruda_check_completion_copy_free_spelling(
+            checker,
+            &completion,
+            free_binding,
+            name,
+            name_length,
+            local_free
+        )) {
+        ruda_owned_bytes_dispose(&completion.free_spelling);
+        ruda_owned_bytes_dispose(&completion.package_name);
+        ruda_owned_bytes_dispose(&completion.name);
+        if (!ruda_checker_has_failed(checker)) {
+            ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        }
+        return false;
+    }
+    if (!ruda_vector_push(&checker->result->completions, &completion)) {
+        ruda_owned_bytes_dispose(&completion.free_spelling);
+        ruda_owned_bytes_dispose(&completion.package_name);
+        ruda_owned_bytes_dispose(&completion.name);
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        return false;
+    }
+    return true;
+}
+
+bool ruda_check_publish_completions_for_ast(RudaChecker *checker) {
+    size_t index = 0;
+    if (checker == NULL || checker->result == NULL || checker->ast == NULL) {
+        return false;
+    }
+    for (index = 0; index < checker->declarations.length; index += 1) {
+        const RudaCheckFunctionDeclaration *declaration = ruda_vector_at_const(
+            &checker->declarations,
+            index
+        );
+        RudaCheckCallable resolved;
+        if (declaration == NULL || !declaration->signature_valid) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            return false;
+        }
+        if (!declaration->dot_eligible) {
+            continue;
+        }
+        if (ruda_check_resolve_call(
+                checker,
+                declaration->name,
+                true,
+                declaration->receiver_type,
+                &resolved
+            ) != RUDA_CHECK_CALL_FOUND
+            || !ruda_symbol_id_equal(resolved.symbol, declaration->symbol)
+            || !ruda_check_append_completion(
+                checker,
+                declaration->owned_name.data,
+                declaration->owned_name.length,
+                (const unsigned char *)checker->package_name,
+                checker->package_name_length,
+                declaration->symbol,
+                declaration->receiver_symbol,
+                NULL,
+                true
+            )) {
+            if (!ruda_checker_has_failed(checker)) {
+                ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            }
+            return false;
+        }
+    }
+    for (index = 0; checker->imports != NULL
+        && index < checker->imports->surface_count; index += 1) {
+        const RudaCheckPackageSurface *surface = checker->imports->surfaces[index];
+        size_t function_index = 0;
+        if (!ruda_check_completion_surface_active(checker, index)) {
+            continue;
+        }
+        for (function_index = 0; function_index < surface->function_count;
+            function_index += 1) {
+            const RudaCheckedFunction *function = ruda_checked_function(
+                checker->result,
+                surface->function_start + function_index
+            );
+            const RudaCheckedSymbol *definition = function == NULL ? NULL
+                : ruda_checked_symbol_by_id(
+                    checker->result,
+                    function->mir.symbol
+                );
+            RudaCheckCallable resolved;
+            RudaCheckName name;
+            const RudaCheckImportBinding *free_binding = NULL;
+            if (function == NULL || !function->is_public
+                || !function->dot_eligible) {
+                continue;
+            }
+            if (definition == NULL) {
+                ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+                return false;
+            }
+            name.snapshot = definition->snapshot;
+            name.start = definition->start;
+            name.end = definition->end;
+            if (ruda_check_resolve_call(
+                    checker,
+                    name,
+                    true,
+                    function->receiver_type,
+                    &resolved
+                ) != RUDA_CHECK_CALL_FOUND
+                || !ruda_symbol_id_equal(resolved.symbol, function->mir.symbol)) {
+                continue;
+            }
+            free_binding = ruda_check_completion_free_binding(
+                checker,
+                index,
+                function->name.data,
+                function->name.length
+            );
+            if (!ruda_check_append_completion(
+                    checker,
+                    function->name.data,
+                    function->name.length,
+                    surface->path,
+                    surface->path_length,
+                    function->mir.symbol,
+                    function->receiver_symbol,
+                    free_binding,
+                    false
+                )) {
+                return false;
+            }
+        }
+    }
+    return true;
 }

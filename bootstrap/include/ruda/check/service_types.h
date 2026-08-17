@@ -23,7 +23,8 @@ typedef enum RudaCompilerStatus {
     RUDA_COMPILER_STALE_VERSION,
     RUDA_COMPILER_INCOMPLETE_LANGUAGE,
     RUDA_COMPILER_INTERNAL_ERROR,
-    RUDA_COMPILER_CANCELLED
+    RUDA_COMPILER_CANCELLED,
+    RUDA_COMPILER_STALE_RESULT
 } RudaCompilerStatus;
 
 typedef struct RudaCompilerEdit {
@@ -100,5 +101,12 @@ typedef struct RudaCompilerCheckRequest {
     void *cancel_context;
     RudaCompilerCheckStats *stats;
 } RudaCompilerCheckRequest;
+
+typedef struct RudaCompilerPackage {
+    const char *import_path;
+    size_t import_path_length;
+    const RudaFileId *file_ids;
+    size_t file_count;
+} RudaCompilerPackage;
 
 #endif

@@ -87,6 +87,12 @@ RudaCheckCallResolution ruda_check_resolve_call(
     RudaTypeId receiver_type,
     RudaCheckCallable *callable
 );
+RudaCheckCallResolution ruda_check_resolve_free_call(
+    const RudaChecker *checker,
+    RudaCheckName name,
+    RudaTypeId receiver_type,
+    RudaCheckCallable *callable
+);
 RudaCheckCallResolution ruda_check_resolve_qualified_call(
     const RudaChecker *checker,
     RudaCheckName namespace_name,
@@ -102,6 +108,13 @@ bool ruda_check_publish_symbol_seeds(
     const RudaCheckSymbolSeed *seeds,
     size_t seed_count
 );
+bool ruda_check_record_occurrence(
+    RudaChecker *checker,
+    RudaCheckName name,
+    RudaSymbolId symbol
+);
+bool ruda_check_publish_completions_for_ast(RudaChecker *checker);
+bool ruda_check_finalize_semantic_facts(RudaChecker *checker);
 
 /* Managed-array source lowering, owned by array.c. */
 bool ruda_function_ensure_array_layout(
@@ -155,6 +168,7 @@ void ruda_check_dispose_type_alias_values(RudaCheckResult *result);
 void ruda_check_dispose_record_values(RudaCheckResult *result);
 void ruda_check_dispose_enum_values(RudaCheckResult *result);
 void ruda_check_dispose_symbol_values(RudaCheckResult *result);
+void ruda_check_dispose_completion_values(RudaCheckResult *result);
 void ruda_check_dispose_diagnostics(RudaCheckResult *result);
 bool ruda_check_clear_semantics(RudaCheckResult *result);
 bool ruda_check_function_index_init(RudaCheckResult *result);

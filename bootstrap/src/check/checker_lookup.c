@@ -161,19 +161,25 @@
         record = ruda_checker_private_checker_find_record(checker, declared_name);
         if (record != NULL) {
             *result = record->type;
-            return true;
+            return ruda_check_record_occurrence(
+                checker, declared_name, record->symbol
+            );
         }
         enum_declaration = ruda_checker_private_checker_find_enum(checker, declared_name);
         if (enum_declaration != NULL) {
             *result = enum_declaration->type;
-            return true;
+            return ruda_check_record_occurrence(
+                checker, declared_name, enum_declaration->symbol
+            );
         }
         interface_declaration = ruda_checker_private_checker_find_interface(
             checker, declared_name
         );
         if (interface_declaration != NULL) {
             *result = interface_declaration->type;
-            return true;
+            return ruda_check_record_occurrence(
+                checker, declared_name, interface_declaration->symbol
+            );
         }
         alias = ruda_checker_private_checker_find_type_alias(checker, declared_name);
         if (alias != NULL) {
@@ -187,7 +193,9 @@
                 return false;
             }
             *result = alias->type;
-            return true;
+            return ruda_check_record_occurrence(
+                checker, declared_name, alias->symbol
+            );
         }
         *result = RUDA_TYPE_INVALID;
         (void)ruda_checker_add_diagnostic(

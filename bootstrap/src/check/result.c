@@ -8,6 +8,8 @@ RudaCheckOptions ruda_check_default_options(void) {
     options.max_source_files = 100000;
     options.max_functions = 100000;
     options.max_symbols = 100000;
+    options.max_occurrences = 1000000;
+    options.max_completions = 1000000;
     options.max_package_name_bytes = 4096;
     options.max_constants = 100000;
     options.max_type_aliases = 100000;
@@ -56,6 +58,8 @@ bool ruda_check_result_init(
     bool enums_initialized = false;
     bool interfaces_initialized = false;
     bool symbols_initialized = false;
+    bool occurrences_initialized = false;
+    bool completions_initialized = false;
     bool function_index_initialized = false;
     bool symbol_index_initialized = false;
     if (result == NULL || snapshot == NULL || package_name == NULL) {
@@ -107,13 +111,30 @@ bool ruda_check_result_init(
         allocator,
         sizeof(RudaCheckedSymbol)
     );
+    occurrences_initialized = ruda_vector_init(
+        &result->occurrences,
+        allocator,
+        sizeof(RudaCheckedOccurrence)
+    );
+    completions_initialized = ruda_vector_init(
+        &result->completions,
+        allocator,
+        sizeof(RudaCheckedCompletion)
+    );
     function_index_initialized = ruda_check_function_index_init(result);
     symbol_index_initialized = ruda_check_symbol_index_init(result);
     if (!diagnostics_initialized || !functions_initialized
         || !constants_initialized || !type_aliases_initialized
         || !records_initialized || !enums_initialized
         || !interfaces_initialized || !symbols_initialized
+        || !occurrences_initialized || !completions_initialized
         || !function_index_initialized || !symbol_index_initialized) {
+        if (completions_initialized) {
+            ruda_vector_dispose(&result->completions);
+        }
+        if (occurrences_initialized) {
+            ruda_vector_dispose(&result->occurrences);
+        }
         if (symbols_initialized) {
             ruda_vector_dispose(&result->symbols);
         }
@@ -318,10 +339,28 @@ void ruda_check_dispose_symbol_values(RudaCheckResult *result) {
         RudaCheckedSymbol *symbol = ruda_vector_at(&result->symbols, index);
         if (symbol != NULL) {
             ruda_owned_bytes_dispose(&symbol->name);
+            ruda_owned_bytes_dispose(&symbol->package_name);
             memset(symbol, 0, sizeof(*symbol));
         }
     }
     result->symbols.length = 0;
+}
+
+void ruda_check_dispose_completion_values(RudaCheckResult *result) {
+    size_t index = 0;
+    for (index = 0; index < result->completions.length; index += 1) {
+        RudaCheckedCompletion *completion = ruda_vector_at(
+            &result->completions,
+            index
+        );
+        if (completion != NULL) {
+            ruda_owned_bytes_dispose(&completion->name);
+            ruda_owned_bytes_dispose(&completion->package_name);
+            ruda_owned_bytes_dispose(&completion->free_spelling);
+            memset(completion, 0, sizeof(*completion));
+        }
+    }
+    result->completions.length = 0;
 }
 
 void ruda_check_dispose_diagnostics(RudaCheckResult *result) {
@@ -380,6 +419,8 @@ bool ruda_check_clear_semantics(RudaCheckResult *result) {
     ruda_check_dispose_enum_values(result);
     ruda_check_dispose_interface_values(result);
     ruda_check_dispose_symbol_values(result);
+    ruda_check_dispose_completion_values(result);
+    result->occurrences.length = 0;
     ruda_map_dispose(&result->function_index);
     ruda_map_dispose(&result->symbol_index);
     if (!ruda_check_function_index_init(result)
@@ -400,6 +441,7 @@ void ruda_check_result_dispose(RudaCheckResult *result) {
     ruda_check_dispose_enum_values(result);
     ruda_check_dispose_interface_values(result);
     ruda_check_dispose_symbol_values(result);
+    ruda_check_dispose_completion_values(result);
     ruda_check_dispose_diagnostics(result);
     ruda_map_dispose(&result->symbol_index);
     ruda_map_dispose(&result->function_index);
@@ -409,6 +451,8 @@ void ruda_check_result_dispose(RudaCheckResult *result) {
     ruda_vector_dispose(&result->enums);
     ruda_vector_dispose(&result->interfaces);
     ruda_vector_dispose(&result->symbols);
+    ruda_vector_dispose(&result->occurrences);
+    ruda_vector_dispose(&result->completions);
     ruda_vector_dispose(&result->functions);
     ruda_vector_dispose(&result->diagnostics);
     ruda_type_table_dispose(&result->types);

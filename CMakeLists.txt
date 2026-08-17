@@ -136,9 +136,11 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/checker_statement.c
   bootstrap/src/check/facts.c
   bootstrap/src/check/package_graph.c
+  bootstrap/src/check/queries.c
   bootstrap/src/check/resolution.c
   bootstrap/src/check/result.c
   bootstrap/src/check/service.c
+  bootstrap/src/check/service_queries.c
   bootstrap/src/cli/cli.c
   bootstrap/src/cli/cli_format.c
   bootstrap/src/cli/cli_format_targets.c

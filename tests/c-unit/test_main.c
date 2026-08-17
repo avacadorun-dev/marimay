@@ -16,6 +16,7 @@ void ruda_test_checker_resolution(void);
 void ruda_test_cli(void);
 void ruda_test_compiler_service(void);
 void ruda_test_compiler_service_incremental(void);
+void ruda_test_compiler_service_queries(void);
 void ruda_test_diagnostic(void);
 void ruda_test_directory(void);
 void ruda_test_doc_examples(void);
@@ -60,6 +61,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_checker_resolution();
     ruda_test_compiler_service();
     ruda_test_compiler_service_incremental();
+    ruda_test_compiler_service_queries();
     ruda_test_diagnostic();
     ruda_test_directory();
     ruda_test_doc_examples();

@@ -476,10 +476,9 @@
                 goto cleanup;
             }
             first_argument_compiled = true;
-            resolution = ruda_check_resolve_call(
+            resolution = ruda_check_resolve_free_call(
                 function->checker,
                 name,
-                true,
                 receiver.type,
                 &declaration
             );
@@ -657,6 +656,13 @@
         ) || new_call_argument_count
             > function->mir.options.max_call_arguments) {
         ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        goto cleanup;
+    }
+    if (!ruda_check_record_occurrence(
+            function->checker,
+            name,
+            declaration.symbol
+        )) {
         goto cleanup;
     }
     if (!ruda_mir_add_call(

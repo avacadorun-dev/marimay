@@ -5,6 +5,7 @@
 #include "ruda/check/interpret.h"
 #include "ruda/check/graph.h"
 #include "ruda/check/package.h"
+#include "ruda/check/queries.h"
 #include "ruda/mir/mir.h"
 
 #endif

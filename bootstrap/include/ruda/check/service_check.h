@@ -30,6 +30,29 @@ RudaCompilerStatus ruda_compiler_service_check_request(
     const RudaCompilerCheckRequest *request,
     RudaCompilerResult *result
 );
+
+/*
+ * Checks an exact caller-supplied local package graph over current service
+ * documents. Every document must appear exactly once. Import paths are copied
+ * into result facts by the checker; this API performs no filesystem access.
+ */
+RudaCompilerStatus ruda_compiler_service_check_graph_request(
+    const RudaCompilerService *service,
+    const RudaCompilerPackage *packages,
+    size_t package_count,
+    const char *root_import_path,
+    size_t root_import_path_length,
+    const RudaCompilerCheckRequest *request,
+    RudaCompilerResult *result
+);
+RudaCompilerStatus ruda_compiler_service_check_graph(
+    const RudaCompilerService *service,
+    const RudaCompilerPackage *packages,
+    size_t package_count,
+    const char *root_import_path,
+    size_t root_import_path_length,
+    RudaCompilerResult *result
+);
 bool ruda_compiler_result_is_current(
     const RudaCompilerService *service,
     const RudaCompilerResult *result

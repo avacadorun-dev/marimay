@@ -19,11 +19,13 @@ typedef enum RudaCheckedSymbolKind {
 
 /*
  * Successful-package definition fact. type belongs to the containing
- * result's type table. name is result-owned; snapshot is borrowed from the
- * caller-owned AST/source lifetime. Definition spans are half-open bytes.
+ * result's type table. name and package_name are result-owned; snapshot is
+ * borrowed from the caller-owned AST/source lifetime. Definition spans are
+ * half-open bytes.
  */
 typedef struct RudaCheckedSymbol {
     RudaOwnedBytes name;
+    RudaOwnedBytes package_name;
     RudaSymbolId symbol;
     /*
      * Result-local type: function signature, constant value, alias target,
@@ -37,5 +39,32 @@ typedef struct RudaCheckedSymbol {
     RudaCheckedSymbolKind kind;
     bool is_public;
 } RudaCheckedSymbol;
+
+/*
+ * Successful-package reference occurrence. The symbol resolves through the
+ * containing result; snapshot is borrowed from that result's source lifetime.
+ * Occurrence spans are exact half-open identifier bytes.
+ */
+typedef struct RudaCheckedOccurrence {
+    RudaSymbolId symbol;
+    const RudaSourceSnapshot *snapshot;
+    size_t start;
+    size_t end;
+} RudaCheckedOccurrence;
+
+/*
+ * Resolver-published exact dot-call candidate for one source snapshot and
+ * nominal receiver. All byte strings are result-owned. An empty free_spelling
+ * means the dot call is available but no free spelling is visible in scope.
+ * No result-local RudaTypeId crosses this query boundary.
+ */
+typedef struct RudaCheckedCompletion {
+    RudaOwnedBytes name;
+    RudaOwnedBytes package_name;
+    RudaOwnedBytes free_spelling;
+    RudaSymbolId symbol;
+    RudaSymbolId receiver_symbol;
+    const RudaSourceSnapshot *snapshot;
+} RudaCheckedCompletion;
 
 #endif

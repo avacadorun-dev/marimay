@@ -27,6 +27,8 @@ typedef struct RudaCheckResult {
     RudaVector enums;
     RudaVector interfaces;
     RudaVector symbols;
+    RudaVector occurrences;
+    RudaVector completions;
     RudaMap function_index;
     RudaMap symbol_index;
     bool initialized;

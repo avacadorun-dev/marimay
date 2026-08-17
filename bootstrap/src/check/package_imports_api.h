@@ -81,6 +81,12 @@ RudaCheckCallResolution ruda_check_resolve_imported_call(
     RudaTypeId receiver_type,
     RudaCheckCallable *callable
 );
+RudaCheckCallResolution ruda_check_resolve_imported_named_call(
+    const RudaChecker *checker,
+    RudaCheckName name,
+    RudaTypeId receiver_type,
+    RudaCheckCallable *callable
+);
 const RudaCheckedRecord *ruda_check_imported_record_by_type(
     const RudaChecker *checker,
     RudaTypeId type
