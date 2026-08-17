@@ -1,0 +1,13 @@
+fn identity<T>(value: T): T { return value; }
+fn option(): Option<int> { return Some(7); }
+enum InputError { Bad, }
+enum OutputError { Config, }
+fn configError(error: InputError): OutputError {
+  return OutputError.Config;
+}
+fn read(): Result<int, InputError> { return Err(InputError.Bad); }
+fn mapped(): Result<int, OutputError> {
+  const value = read().mapError(configError)?;
+  return Ok(value);
+}
+fn main(): int { return identity(7); }

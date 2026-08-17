@@ -180,8 +180,12 @@ static bool ruda_checker_private_function_ensure_nominal_type(
     }
     if (enum_value != NULL) {
         RudaMirEnumId layout = RUDA_MIR_NO_ENUM;
+        RudaCheckEnumDeclaration concrete = *enum_value;
+        if (enum_value->is_generic) {
+            concrete.type = type;
+        }
         return ruda_checker_private_function_enum_layout(
-            function, enum_value, &layout
+            function, &concrete, &layout
         );
     }
     if (imported_record != NULL) {

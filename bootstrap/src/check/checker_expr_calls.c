@@ -5,6 +5,10 @@
 #include "checker_expr_records_api.h"
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
+#include "checker_generic_specialization_api.h"
+#include "checker_generic_types_api.h"
+#include "checker_expr_prelude_api.h"
+#include "checker_expr_map_error_api.h"
 
 
 
@@ -261,6 +265,18 @@
     bool qualified_call = false;
     bool first_argument_compiled = false;
     bool accepted = false;
+    const RudaCheckFunctionDeclaration *generic_base = NULL;
+    RudaCheckFunctionDeclaration *generic_instance = NULL;
+    size_t generic_base_index = SIZE_MAX;
+    RudaVector explicit_generic_arguments;
+    bool explicit_generic_arguments_initialized = false;
+    RudaExpressionValue *generic_values = NULL;
+    RudaTypeId *generic_actual_types = NULL;
+    size_t generic_value_bytes = 0;
+    size_t generic_type_bytes = 0;
+    size_t generic_cursor = 0;
+    bool generic_call = false;
+    memset(&explicit_generic_arguments, 0, sizeof(explicit_generic_arguments));
     memset(&receiver, 0, sizeof(receiver));
     memset(&declaration, 0, sizeof(declaration));
     memset(&namespace_name, 0, sizeof(namespace_name));
@@ -301,10 +317,6 @@
     if (arguments_node == NULL || name_token == NULL || name_token->synthetic
         || (!dot_call && !qualified_call && callee_node == NULL)
         || (dot_call && receiver_node == NULL)) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
-        goto cleanup;
-    }
-    if (ruda_checker_private_check_child_node(node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0) != NULL) {
         ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
         goto cleanup;
     }
@@ -556,6 +568,158 @@
         }
         goto cleanup;
     }
+    generic_base = ruda_checker_private_find_function_by_symbol(
+        function->checker, declaration.symbol, &generic_base_index
+    );
+    if (generic_base != NULL && generic_base->is_generic) {
+        const RudaAstNode *type_arguments =
+            ruda_checker_private_check_child_node(
+                node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0
+            );
+        generic_call = true;
+        if (type_arguments != NULL) {
+            if (!ruda_vector_init(
+                    &explicit_generic_arguments,
+                    function->checker->result->allocator,
+                    sizeof(RudaTypeId)
+                ) || !ruda_checker_private_parse_type_arguments(
+                    function->checker,
+                    type_arguments,
+                    &explicit_generic_arguments
+                )) {
+                goto cleanup;
+            }
+            explicit_generic_arguments_initialized = true;
+        }
+        if (!ruda_size_multiply(
+                argument_count,
+                sizeof(RudaExpressionValue),
+                &generic_value_bytes
+            ) || !ruda_size_multiply(
+                argument_count,
+                sizeof(RudaTypeId),
+                &generic_type_bytes
+            )) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+            goto cleanup;
+        }
+        if (generic_value_bytes != 0) {
+            generic_values = ruda_allocate(
+                &function->checker->result->allocator,
+                generic_value_bytes
+            );
+            generic_actual_types = ruda_allocate(
+                &function->checker->result->allocator,
+                generic_type_bytes
+            );
+            if (generic_values == NULL || generic_actual_types == NULL) {
+                ruda_checker_fail(
+                    function->checker, RUDA_CHECK_ALLOCATION_FAILED
+                );
+                goto cleanup;
+            }
+            memset(generic_values, 0, generic_value_bytes);
+            memset(generic_actual_types, 0, generic_type_bytes);
+        }
+        if (dot_call || first_argument_compiled) {
+            if (argument_count == 0) {
+                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+                goto cleanup;
+            }
+            generic_values[0] = receiver;
+            generic_actual_types[0] = receiver.type;
+            generic_cursor = 1;
+        }
+        for (index = 0; index < arguments_node->child_count; index += 1) {
+            const RudaAstElement *element = ruda_ast_child(
+                arguments_node, index
+            );
+            RudaExpressionValue value;
+            if (element == NULL || element->kind != RUDA_AST_ELEMENT_NODE) {
+                continue;
+            }
+            if (first_argument_compiled && explicit_argument_index == 0) {
+                explicit_argument_index += 1;
+                continue;
+            }
+            memset(&value, 0, sizeof(value));
+            if (!ruda_compile_expression(
+                    function,
+                    element->as.node,
+                    RUDA_TYPE_INVALID,
+                    &value
+                )) {
+                goto cleanup;
+            }
+            if (ruda_expression_is_never(function, &value)) {
+                *result = value;
+                accepted = true;
+                goto cleanup;
+            }
+            if (generic_cursor >= argument_count) {
+                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+                goto cleanup;
+            }
+            generic_values[generic_cursor] = value;
+            generic_actual_types[generic_cursor] = value.type;
+            generic_cursor += 1;
+            explicit_argument_index += 1;
+        }
+        if (generic_cursor != argument_count) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            goto cleanup;
+        }
+        {
+            RudaVector inferred_arguments;
+            memset(&inferred_arguments, 0, sizeof(inferred_arguments));
+            if (!ruda_vector_init(
+                    &inferred_arguments,
+                    function->checker->result->allocator,
+                    sizeof(RudaTypeId)
+                ) || !ruda_checker_private_prepare_generic_arguments(
+                    function->checker,
+                    generic_base,
+                    generic_actual_types,
+                    argument_count,
+                    explicit_generic_arguments_initialized
+                        ? &explicit_generic_arguments : NULL,
+                    &inferred_arguments
+                ) || !ruda_checker_private_instantiate_function(
+                    function->checker,
+                    generic_base_index,
+                    &inferred_arguments,
+                    &generic_instance
+                )) {
+                ruda_vector_dispose(&inferred_arguments);
+                goto cleanup;
+            }
+            declaration.parameter_types = generic_instance->parameter_types.data;
+            declaration.parameter_count = generic_instance->parameter_types.length;
+            declaration.symbol = generic_instance->symbol;
+            declaration.result_type = generic_instance->result_type;
+            declaration.receiver_symbol = generic_instance->receiver_symbol;
+            declaration.receiver_type = generic_instance->receiver_type;
+            declaration.dot_eligible = generic_instance->dot_eligible;
+            ruda_vector_dispose(&inferred_arguments);
+        }
+    } else if (ruda_checker_private_check_child_node(
+            node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0
+        ) != NULL) {
+        (void)ruda_checker_add_diagnostic(
+            function->checker,
+            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            "call supplies type arguments to a non-generic function",
+            node->start,
+            node->end
+        );
+        goto cleanup;
+    }
+    /* Generic preflight caches argument values; the ordinary lowering pass
+     * starts its source-argument cursor afresh. */
+    if (generic_call) {
+        explicit_argument_index = 0;
+        argument_index = 0;
+    }
     if (argument_count != declaration.parameter_count) {
         (void)ruda_checker_add_diagnostic(
             function->checker,
@@ -619,11 +783,15 @@
             goto cleanup;
         }
         memset(&value, 0, sizeof(value));
-        if (!ruda_compile_expression(
-                function,
-                element->as.node,
-                *parameter_type,
-                &value
+        if (generic_call) {
+            size_t cached_index = argument_index;
+            if (cached_index >= argument_count || generic_values == NULL) {
+                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+                goto cleanup;
+            }
+            value = generic_values[cached_index];
+        } else if (!ruda_compile_expression(
+                function, element->as.node, *parameter_type, &value
             )) {
             goto cleanup;
         }
@@ -723,12 +891,26 @@ cleanup:
         arguments,
         argument_bytes
     );
+    ruda_deallocate(
+        &function->checker->result->allocator,
+        generic_values,
+        generic_value_bytes
+    );
+    ruda_deallocate(
+        &function->checker->result->allocator,
+        generic_actual_types,
+        generic_type_bytes
+    );
+    if (explicit_generic_arguments_initialized) {
+        ruda_vector_dispose(&explicit_generic_arguments);
+    }
     return accepted && !ruda_checker_has_failed(function->checker);
 }
 
  bool ruda_checker_private_compile_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     RudaExpressionValue *result
 ) {
     const RudaAstNode *callee_node = ruda_checker_private_check_child_node(
@@ -753,6 +935,8 @@ cleanup:
     bool length_resolved = false;
     bool length_available = false;
     bool interface_resolved = false;
+    bool prelude_resolved = false;
+    bool map_error_resolved = false;
     const RudaAstNode *member_callee = ruda_checker_private_check_child_node(
         node,
         RUDA_SYNTAX_MEMBER_EXPRESSION,
@@ -791,6 +975,24 @@ cleanup:
         goto cleanup;
     }
     if (identity_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_checker_private_compile_prelude_constructor(
+            function, node, expected, &prelude_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (prelude_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_checker_private_compile_map_error(
+            function, node, expected, &map_error_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (map_error_resolved) {
         accepted = true;
         goto cleanup;
     }
@@ -988,6 +1190,7 @@ cleanup:
     if (!ruda_checker_private_compile_enum_positional(
             function,
             node,
+            expected,
             &enum_resolved,
             result
         )) {

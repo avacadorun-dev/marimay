@@ -37,18 +37,21 @@
  bool ruda_checker_private_compile_enum_unit(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     bool *resolved,
     RudaExpressionValue *result
 );
  bool ruda_checker_private_compile_enum_positional(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     bool *resolved,
     RudaExpressionValue *result
 );
  bool ruda_checker_private_compile_enum_named(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     bool *resolved,
     RudaExpressionValue *result
 );

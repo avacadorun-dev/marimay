@@ -44,6 +44,9 @@ typedef struct RudaFunctionChecker {
     bool mir_initialized;
     bool terminated;
     bool constant_evaluation;
+    bool unsafe_context;
+    const RudaVector *type_parameters;
+    const RudaVector *type_arguments;
 } RudaFunctionChecker;
 
 typedef struct RudaExpressionValue {

@@ -9,6 +9,15 @@ typedef struct RudaCheckName {
     size_t end;
 } RudaCheckName;
 
+typedef struct RudaCheckTypeParameterDeclaration {
+    RudaCheckName name;
+    RudaOwnedBytes owned_name;
+    RudaTypeId type;
+    RudaVector constraints;
+    bool name_initialized;
+    bool constraints_initialized;
+} RudaCheckTypeParameterDeclaration;
+
 typedef enum RudaCheckConstantState {
     RUDA_CHECK_CONSTANT_UNEVALUATED,
     RUDA_CHECK_CONSTANT_EVALUATING,
@@ -70,11 +79,14 @@ typedef struct RudaCheckRecordDeclaration {
     RudaSymbolId symbol;
     RudaTypeId type;
     RudaVector fields;
+    RudaVector type_parameters;
     bool name_initialized;
     bool fields_initialized;
     bool is_public;
     bool declaration_valid;
     bool fields_resolved;
+    bool type_parameters_initialized;
+    bool is_generic;
 } RudaCheckRecordDeclaration;
 
 typedef struct RudaCheckEnumPayloadItemDeclaration {
@@ -104,11 +116,15 @@ typedef struct RudaCheckEnumDeclaration {
     RudaSymbolId symbol;
     RudaTypeId type;
     RudaVector variants;
+    RudaVector type_parameters;
     bool name_initialized;
     bool variants_initialized;
     bool is_public;
     bool declaration_valid;
     bool variants_resolved;
+    bool type_parameters_initialized;
+    bool is_generic;
+    bool is_builtin;
 } RudaCheckEnumDeclaration;
 
 typedef struct RudaCheckInterfaceMethodDeclaration {
@@ -144,6 +160,8 @@ typedef struct RudaCheckFunctionDeclaration {
     RudaOwnedBytes owned_name;
     RudaVector parameter_names;
     RudaVector parameter_types;
+    RudaVector type_parameters;
+    RudaVector generic_arguments;
     RudaSymbolId symbol;
     RudaSymbolId receiver_symbol;
     RudaTypeId result_type;
@@ -155,8 +173,15 @@ typedef struct RudaCheckFunctionDeclaration {
     bool signature_valid;
     bool dot_eligible;
     bool is_public;
+    bool is_unsafe;
+    bool is_external;
     bool is_test;
     bool is_fuzz;
+    bool type_parameters_initialized;
+    bool generic_arguments_initialized;
+    bool is_generic;
+    bool is_instance;
+    size_t generic_base_index;
 } RudaCheckFunctionDeclaration;
 
 typedef enum RudaCheckTopLevelKind {

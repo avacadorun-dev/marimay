@@ -1,0 +1,19 @@
+fn identity<T>(value: T): T {
+  return value;
+}
+
+enum InputError {
+  Bad,
+}
+
+enum OutputError {
+  Config,
+}
+
+fn configError(error: InputError): OutputError {
+  return OutputError.Config;
+}
+
+fn mapped(): Result<int, OutputError> {
+  return Err(InputError.Bad).mapError(configError)?;
+}

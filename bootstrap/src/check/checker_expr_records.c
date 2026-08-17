@@ -3,6 +3,7 @@
 #include "checker_imported_nominal_api.h"
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
+#include "checker_generic_types_api.h"
 
 
 
@@ -11,6 +12,7 @@
  bool ruda_checker_private_compile_record_construction(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     RudaExpressionValue *result
 ) {
     const RudaAstNode *name_node = ruda_checker_private_check_child_node(
@@ -30,6 +32,7 @@
     );
     RudaCheckName type_name;
     RudaCheckRecordDeclaration *declaration = NULL;
+    RudaCheckRecordDeclaration concrete;
     RudaCheckTypeAliasDeclaration *alias = NULL;
     RudaMirRecordArgument *arguments = NULL;
     unsigned char *seen = NULL;
@@ -97,6 +100,26 @@
         }
         goto cleanup;
     }
+    concrete = *declaration;
+    if (declaration->is_generic) {
+        const RudaTypeDescriptor *descriptor = expected == RUDA_TYPE_INVALID
+            ? NULL : ruda_type_descriptor(
+                &function->checker->result->types, expected
+            );
+        if (descriptor == NULL || descriptor->kind != RUDA_TYPE_KIND_NOMINAL
+            || !ruda_symbol_id_equal(descriptor->symbol, declaration->symbol)
+            || descriptor->argument_count != declaration->type_parameters.length) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "generic record construction requires an expected concrete record type",
+                node->start,
+                node->end
+            );
+            goto cleanup;
+        }
+        concrete.type = expected;
+    }
     if (!ruda_size_multiply(
             declaration->fields.length,
             sizeof(RudaMirRecordArgument),
@@ -146,6 +169,7 @@
         RudaCheckName field_name;
         RudaCheckRecordFieldDeclaration *field = NULL;
         RudaExpressionValue value;
+        RudaTypeId expected_field_type = RUDA_TYPE_INVALID;
         size_t field_index = 0;
         if (element == NULL) {
             ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
@@ -216,11 +240,17 @@
         );
         memset(&value, 0, sizeof(value));
         value.register_id = RUDA_MIR_NO_REGISTER;
+        if (!ruda_checker_private_substitute_nominal_member_type(
+                function, concrete.type, &concrete.type_parameters,
+                field->type, &expected_field_type
+            )) {
+            goto cleanup;
+        }
         if (expression != NULL) {
             if (!ruda_compile_expression(
                     function,
                     expression,
-                    field->type,
+                    expected_field_type,
                     &value
                 )) {
                 goto cleanup;
@@ -259,7 +289,7 @@
             value.register_id = local->register_id;
             value.valid = true;
         }
-        if (value.type != field->type) {
+        if (value.type != expected_field_type) {
             (void)ruda_checker_add_diagnostic(
                 function->checker,
                 RUDA_DIAGNOSTIC_TYPE_MISMATCH,
@@ -284,14 +314,14 @@
         );
         goto cleanup;
     }
-    if (!ruda_checker_private_function_record_layout(function, declaration, &record)) {
+    if (!ruda_checker_private_function_record_layout(function, &concrete, &record)) {
         goto cleanup;
     }
     if (function->mir.record_constructions.length
             >= function->mir.options.max_record_constructions
         || !ruda_size_add(
             function->mir.record_arguments.length,
-            declaration->fields.length,
+            concrete.fields.length,
             &new_argument_count
         ) || new_argument_count > function->mir.options.max_record_arguments) {
         ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
@@ -310,7 +340,7 @@
         );
         goto cleanup;
     }
-    if (!ruda_function_add_register(function, declaration->type, &target)) {
+    if (!ruda_function_add_register(function, concrete.type, &target)) {
         goto cleanup;
     }
     memset(&instruction, 0, sizeof(instruction));
@@ -325,7 +355,7 @@
     if (!ruda_function_append_instruction(function, &instruction)) {
         goto cleanup;
     }
-    result->type = declaration->type;
+    result->type = concrete.type;
     result->register_id = target;
     result->valid = true;
     accepted = true;
@@ -389,6 +419,7 @@ cleanup:
     size_t imported_index = 0;
     const unsigned char *field_bytes = NULL;
     size_t field_length = 0;
+    RudaCheckRecordDeclaration concrete;
     *record_declaration = NULL;
     *field_declaration = NULL;
     *imported_field = NULL;
@@ -479,10 +510,26 @@ cleanup:
             function, imported_record, record
         );
     }
+    if ((*record_declaration)->is_generic) {
+        const RudaTypeDescriptor *descriptor = ruda_type_descriptor(
+            &function->checker->result->types, receiver->type
+        );
+        if (descriptor == NULL || descriptor->kind != RUDA_TYPE_KIND_NOMINAL
+            || !ruda_symbol_id_equal(
+                descriptor->symbol, (*record_declaration)->symbol
+            ) || descriptor->argument_count
+                != (*record_declaration)->type_parameters.length) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            return false;
+        }
+        concrete = **record_declaration;
+        concrete.type = receiver->type;
+        return ruda_checker_private_function_record_layout(
+            function, &concrete, record
+        );
+    }
     return ruda_checker_private_function_record_layout(
-        function,
-        *record_declaration,
-        record
+        function, *record_declaration, record
     );
 }
 
@@ -514,12 +561,24 @@ cleanup:
         *result = receiver;
         return true;
     }
-    (void)record_declaration;
+    {
+        RudaTypeId field_type = field_declaration != NULL
+            ? field_declaration->type : imported_field->type;
+        if (field_declaration != NULL && record_declaration != NULL
+            && record_declaration->is_generic
+            && !ruda_checker_private_substitute_nominal_member_type(
+                function,
+                receiver.type,
+                &record_declaration->type_parameters,
+                field_type,
+                &field_type
+            )) {
+            return false;
+        }
     return ruda_checker_private_function_emit_record_access(
         function,
         RUDA_MIR_RECORD_GET,
-        field_declaration != NULL ? field_declaration->type
-            : imported_field->type,
+        field_type,
         receiver.register_id,
         RUDA_MIR_NO_REGISTER,
         record,
@@ -528,4 +587,5 @@ cleanup:
         node->end,
         result
     );
+    }
 }

@@ -48,6 +48,15 @@
             ruda_vector_at(&checker->interfaces, index)
         );
     }
+    if (checker->prelude_enums_initialized) {
+        for (index = 0; index < checker->prelude_enums.length; index += 1) {
+            ruda_checker_private_enum_declaration_dispose(
+                ruda_vector_at(&checker->prelude_enums, index)
+            );
+        }
+        ruda_vector_dispose(&checker->prelude_enums);
+        checker->prelude_enums_initialized = false;
+    }
     ruda_map_dispose(&checker->top_level_index);
     ruda_map_dispose(&checker->local_nominal_index);
     ruda_map_dispose(&checker->callable_index);

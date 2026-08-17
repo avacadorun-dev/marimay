@@ -2,11 +2,6 @@
 #include "package_imports_api.h"
 #include "checker_core_api.h"
 
-
-
-
-
-
  void ruda_checker_private_function_declaration_dispose(
     RudaCheckFunctionDeclaration *declaration
 ) {
@@ -16,6 +11,14 @@
     if (declaration->parameter_types_initialized) {
         ruda_vector_dispose(&declaration->parameter_types);
     }
+    if (declaration->generic_arguments_initialized) {
+        ruda_vector_dispose(&declaration->generic_arguments);
+    }
+    if (declaration->type_parameters_initialized) {
+        ruda_checker_private_type_parameter_vector_dispose(
+            &declaration->type_parameters
+        );
+    }
     if (declaration->parameter_names_initialized) {
         ruda_vector_dispose(&declaration->parameter_names);
     }
@@ -23,6 +26,27 @@
         ruda_owned_bytes_dispose(&declaration->owned_name);
     }
     memset(declaration, 0, sizeof(*declaration));
+}
+
+void ruda_checker_private_type_parameter_vector_dispose(
+    RudaVector *parameters
+) {
+    size_t index = 0;
+    if (parameters == NULL) {
+        return;
+    }
+    for (index = 0; index < parameters->length; index += 1) {
+        RudaCheckTypeParameterDeclaration *parameter = ruda_vector_at(
+            parameters, index
+        );
+        if (parameter != NULL && parameter->name_initialized) {
+            ruda_owned_bytes_dispose(&parameter->owned_name);
+        }
+        if (parameter != NULL && parameter->constraints_initialized) {
+            ruda_vector_dispose(&parameter->constraints);
+        }
+    }
+    ruda_vector_dispose(parameters);
 }
 
  void ruda_checker_private_constant_declaration_dispose(
@@ -77,6 +101,11 @@
             ruda_checker_private_record_field_declaration_dispose(field);
         }
         ruda_vector_dispose(&declaration->fields);
+    }
+    if (declaration->type_parameters_initialized) {
+        ruda_checker_private_type_parameter_vector_dispose(
+            &declaration->type_parameters
+        );
     }
     if (declaration->name_initialized) {
         ruda_owned_bytes_dispose(&declaration->owned_name);
@@ -135,6 +164,11 @@ void ruda_checker_private_enum_declaration_dispose(
             ruda_checker_private_enum_variant_declaration_dispose(variant);
         }
         ruda_vector_dispose(&declaration->variants);
+    }
+    if (declaration->type_parameters_initialized) {
+        ruda_checker_private_type_parameter_vector_dispose(
+            &declaration->type_parameters
+        );
     }
     if (declaration->name_initialized) {
         ruda_owned_bytes_dispose(&declaration->owned_name);
@@ -262,6 +296,11 @@ void ruda_checker_private_interface_declaration_dispose(
     name.snapshot = checker->ast->snapshot;
     name.start = name_token->start;
     name.end = name_token->end;
+    type_arguments = ruda_checker_private_check_child_node(
+        node,
+        RUDA_SYNTAX_TYPE_ARGUMENTS,
+        0
+    );
     if (ruda_checker_private_check_text_equal(
             checker,
             name.start,
@@ -296,6 +335,59 @@ void ruda_checker_private_interface_declaration_dispose(
     }
     if (import_resolved) {
         return imported_type != RUDA_TYPE_INVALID;
+    }
+    if (type_arguments != NULL) {
+        size_t argument_index = 0;
+        bool arguments_public = true;
+        record = ruda_checker_private_checker_find_record(checker, name);
+        enum_declaration = ruda_checker_private_checker_find_enum(checker, name);
+        if (record != NULL) {
+            is_public = record->is_public;
+        } else if (enum_declaration != NULL) {
+            is_public = enum_declaration->is_public;
+        } else {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            return false;
+        }
+        for (argument_index = 0; argument_index < type_arguments->child_count;
+            argument_index += 1) {
+            const RudaAstElement *element = ruda_ast_child(
+                type_arguments, argument_index
+            );
+            if (element == NULL) {
+                ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
+                return false;
+            }
+            if (element->kind == RUDA_AST_ELEMENT_TOKEN) {
+                if (element->as.token.synthetic) {
+                    ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
+                    return false;
+                }
+                continue;
+            }
+            if (element->kind != RUDA_AST_ELEMENT_NODE
+                || element->as.node == NULL
+                || element->as.node->kind != RUDA_SYNTAX_TYPE
+                || !ruda_checker_private_check_public_type_reference(
+                    checker, element->as.node
+                )) {
+                arguments_public = false;
+                if (ruda_checker_has_failed(checker)) {
+                    return false;
+                }
+            }
+        }
+        if (!is_public) {
+            (void)ruda_checker_add_diagnostic(
+                checker,
+                RUDA_DIAGNOSTIC_PRIVATE_TYPE_IN_PUBLIC_API,
+                "public declaration exposes a package-private type",
+                name.start,
+                name.end
+            );
+            return false;
+        }
+        return arguments_public;
     }
     if (node->child_count != 1) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);

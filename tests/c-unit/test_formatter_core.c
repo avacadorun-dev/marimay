@@ -158,6 +158,10 @@ void ruda_test_formatter_fixture_file(void) {
         {
             "format/stdout-preview.input.ruda",
             "format/stdout-preview.expected.ruda"
+        },
+        {
+            "format/generics.input.ruda",
+            "format/generics.expected.ruda"
         }
     };
     unsigned char input[32768];

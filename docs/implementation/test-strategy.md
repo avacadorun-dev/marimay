@@ -240,9 +240,11 @@ knowledge of the free function.
 
 The D006 documentation pair is explicit: the pass case uses
 `fs.readText(filePath, limit).mapError(configError)?`; fail cases omit the
-mapping or the `limit` and assert wrong-error or arity diagnostics. These are
-parser-backed now and become checker-backed immediately when generic
-`Result`/`std/fs` imports exist; parser success is not compile-pass evidence.
+mapping or the `limit` and assert wrong-error or arity diagnostics. The
+checkpoint-4 checker fixture now covers the pass-side generic `Result` and
+`std/fs` namespace import through an external signature; parser success alone
+is not compile-pass evidence, and runtime filesystem behavior remains a later
+standard-library checkpoint.
 
 I1 parser overlay tests additionally assert green-node pointer identity for
 unchanged top-level prefixes and same-offset suffixes, safe shared-storage

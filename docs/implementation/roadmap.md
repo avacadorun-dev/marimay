@@ -38,6 +38,13 @@ public `ruda check`. Accepted [D046](../design/decisions.md) closes the 0.1-dev 
 stdout contract; [the documentation checkpoint](evidence/d046-stdout-preview-2026-08-14.md)
 does not implement `std/io` or engine writes.
 
+Preview checkpoint 4 evidence: [generic `Option`/`Result`/`?`/`mapError`
+vertical slice](evidence/i2-generics-checkpoint-4-2026-08-17.md). The slice
+closes the checker-backed D006 compile fixture with a signature-only external
+`std/fs` boundary and extends the typed MIR, encoded VM, and native C17
+differential; it does not verify I2 or claim a runtime filesystem
+implementation.
+
 ## Immediate execution priority: V0 engine-equivalence spine
 
 Checkpoint A0 is locally complete and its initial pushed Linux x86_64 matrix is

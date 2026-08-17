@@ -319,6 +319,7 @@ static bool ruda_import_callable_from_checked(
     callable->receiver_type = function->receiver_type;
     callable->result_type = function->mir.result_type;
     callable->dot_eligible = function->dot_eligible;
+    callable->is_external = function->is_external;
     return true;
 }
 

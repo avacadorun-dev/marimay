@@ -36,16 +36,27 @@
     RudaTypeId type,
     RudaVector *bindings
 );
+ bool ruda_checker_private_enum_match_payload_type(
+    RudaFunctionChecker *function,
+    RudaTypeId enum_type,
+    const RudaCheckEnumDeclaration *enum_declaration,
+    RudaTypeId declared_type,
+    RudaTypeId *result
+);
  bool ruda_checker_private_enum_match_validate_positional(
     RudaFunctionChecker *function,
     const RudaAstNode *constructor,
+    const RudaCheckEnumDeclaration *enum_declaration,
     const RudaCheckEnumVariantDeclaration *variant,
+    RudaTypeId enum_type,
     RudaVector *bindings
 );
  bool ruda_checker_private_enum_match_validate_named(
     RudaFunctionChecker *function,
     const RudaAstNode *constructor,
+    const RudaCheckEnumDeclaration *enum_declaration,
     RudaCheckEnumVariantDeclaration *variant,
+    RudaTypeId enum_type,
     RudaVector *bindings
 );
  bool ruda_checker_private_record_match_validate_named(
@@ -62,6 +73,7 @@
  bool ruda_checker_private_analyze_enum_match_alternative(
     RudaFunctionChecker *function,
     RudaCheckEnumDeclaration *enum_declaration,
+    RudaTypeId enum_type,
     const RudaAstNode *pattern,
     RudaVector *bindings,
     RudaCheckEnumMatchAlternative *alternative

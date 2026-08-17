@@ -49,6 +49,7 @@ typedef struct RudaCheckCallable {
     RudaTypeId receiver_type;
     RudaTypeId result_type;
     bool dot_eligible;
+    bool is_external;
 } RudaCheckCallable;
 
 bool ruda_check_import_binding_exists(

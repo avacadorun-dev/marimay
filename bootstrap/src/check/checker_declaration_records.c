@@ -2,6 +2,7 @@
 #include "checker_core_api.h"
 #include "checker_declaration_lifecycle_api.h"
 #include "checker_lookup_api.h"
+#include "checker_generic_types_api.h"
 
 
 
@@ -33,8 +34,7 @@
         const RudaAstElement *element = ruda_ast_child(node, index);
         if (element != NULL && element->kind == RUDA_AST_ELEMENT_NODE
             && element->as.node != NULL
-            && (element->as.node->kind == RUDA_SYNTAX_ATTRIBUTE
-                || element->as.node->kind == RUDA_SYNTAX_TYPE_PARAMETERS)) {
+            && element->as.node->kind == RUDA_SYNTAX_ATTRIBUTE) {
             ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
             goto cleanup;
         }
@@ -91,6 +91,19 @@
         goto cleanup;
     }
     declaration.fields_initialized = true;
+    declaration.type_parameters_initialized = ruda_vector_init(
+        &declaration.type_parameters,
+        checker->result->allocator,
+        sizeof(RudaCheckTypeParameterDeclaration)
+    );
+    if (!declaration.type_parameters_initialized
+        || !ruda_checker_private_collect_type_parameters(
+            checker, node, &declaration.type_parameters
+        )) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        goto cleanup;
+    }
+    declaration.is_generic = declaration.type_parameters.length != 0;
     if (!ruda_symbol_id_from_bytes(
             checker->package_name,
             checker->package_name_length,
@@ -223,8 +236,7 @@ cleanup:
         const RudaAstElement *element = ruda_ast_child(node, index);
         if (element != NULL && element->kind == RUDA_AST_ELEMENT_NODE
             && element->as.node != NULL
-            && (element->as.node->kind == RUDA_SYNTAX_ATTRIBUTE
-                || element->as.node->kind == RUDA_SYNTAX_TYPE_PARAMETERS)) {
+            && element->as.node->kind == RUDA_SYNTAX_ATTRIBUTE) {
             ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
             goto cleanup;
         }
@@ -281,6 +293,19 @@ cleanup:
         goto cleanup;
     }
     declaration.variants_initialized = true;
+    declaration.type_parameters_initialized = ruda_vector_init(
+        &declaration.type_parameters,
+        checker->result->allocator,
+        sizeof(RudaCheckTypeParameterDeclaration)
+    );
+    if (!declaration.type_parameters_initialized
+        || !ruda_checker_private_collect_type_parameters(
+            checker, node, &declaration.type_parameters
+        )) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        goto cleanup;
+    }
+    declaration.is_generic = declaration.type_parameters.length != 0;
     if (!ruda_symbol_id_from_bytes(
             checker->package_name,
             checker->package_name_length,
@@ -419,6 +444,7 @@ cleanup:
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
     }
+    checker->active_type_parameters = &declaration->type_parameters;
     for (child_index = 0; child_index < declaration->node->child_count;
         child_index += 1) {
         const RudaAstElement *element = ruda_ast_child(
@@ -521,6 +547,9 @@ cleanup:
             return false;
         }
         memset(&field, 0, sizeof(field));
+    }
+    if (checker->active_type_parameters == &declaration->type_parameters) {
+        checker->active_type_parameters = NULL;
     }
     declaration->fields_resolved = valid;
     return valid && !ruda_checker_has_failed(checker);

@@ -8,12 +8,8 @@
 #include "checker_declaration_publication_nominal_api.h"
 #include "checker_declaration_records_api.h"
 #include "checker_publication_api.h"
+#include "checker_prelude_api.h"
 #include "package_imports_api.h"
-
-
-
-
-
 
  int ruda_checker_private_check_compare_ast_paths(const void *left, const void *right) {
     const RudaAstTree *left_ast = *(const RudaAstTree *const *)left;
@@ -275,6 +271,13 @@ RudaCheckStatus ruda_checker_check_package_unit(
         ruda_vector_dispose(&sorted_asts);
         return RUDA_CHECK_ALLOCATION_FAILED;
     }
+    if (!ruda_checker_private_prelude_init(&checker)) {
+        ruda_checker_private_checker_dispose_declarations(&checker);
+        ruda_check_result_dispose(result);
+        ruda_vector_dispose(&sorted_asts);
+        return checker.failure == RUDA_CHECK_OK
+            ? RUDA_CHECK_ALLOCATION_FAILED : checker.failure;
+    }
     for (ast_index = 0; ast_index < sorted_asts.length
         && !ruda_checker_has_failed(&checker); ast_index += 1) {
         const RudaAstTree *const *ast = ruda_vector_at_const(
@@ -357,7 +360,8 @@ RudaCheckStatus ruda_checker_check_package_unit(
                 ruda_checker_fail(&checker, RUDA_CHECK_INVALID_ARGUMENT);
                 break;
             }
-            if (element->as.node->kind == RUDA_SYNTAX_FUNCTION_DECL) {
+            if (element->as.node->kind == RUDA_SYNTAX_FUNCTION_DECL
+                || element->as.node->kind == RUDA_SYNTAX_EXTERN_DECL) {
                 (void)ruda_checker_private_collect_function_signature(
                     &checker,
                     element->as.node
@@ -426,6 +430,9 @@ RudaCheckStatus ruda_checker_check_package_unit(
             if (declaration == NULL || !declaration->signature_valid) {
                 ruda_checker_fail(&checker, RUDA_CHECK_INTERNAL_ERROR);
                 break;
+            }
+            if (declaration->is_generic && !declaration->is_instance) {
+                continue;
             }
             (void)ruda_checker_private_check_function_body(&checker, declaration);
         }

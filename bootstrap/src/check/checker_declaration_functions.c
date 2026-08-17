@@ -8,11 +8,7 @@
 #include "checker_expr_scalar_api.h"
 #include "checker_lookup_api.h"
 #include "checker_statement_api.h"
-
-
-
-
-
+#include "checker_generic_types_api.h"
 
  bool ruda_checker_private_collect_function_signature(
     RudaChecker *checker,
@@ -44,10 +40,13 @@
     bool overload_group = false;
     bool overload_count_incremented = false;
     bool accepted = false;
+    bool external = node != NULL && node->kind == RUDA_SYNTAX_EXTERN_DECL;
     memset(&declaration, 0, sizeof(declaration));
     declaration.block = ruda_checker_private_check_child_node(node, RUDA_SYNTAX_BLOCK, 0);
     if (name_token == NULL || name_token->synthetic || parameters == NULL
-        || return_type_node == NULL || declaration.block == NULL) {
+        || return_type_node == NULL
+        || (!external && declaration.block == NULL)
+        || (external && declaration.block != NULL)) {
         ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
         goto cleanup;
     }
@@ -105,15 +104,9 @@
             attribute_valid = false;
             continue;
         }
-        if (element != NULL && element->kind == RUDA_AST_ELEMENT_NODE
-            && element->as.node->kind == RUDA_SYNTAX_TYPE_PARAMETERS) {
-            ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
-            goto cleanup;
-        }
         if (element != NULL && element->kind == RUDA_AST_ELEMENT_TOKEN
             && element->as.token.kind == RUDA_TOKEN_KW_UNSAFE) {
-            ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
-            goto cleanup;
+            declaration.is_unsafe = true;
         }
     }
     if (checker->declarations.length >= checker->options.max_functions) {
@@ -126,6 +119,7 @@
     declaration.name.start = name_token->start;
     declaration.name.end = name_token->end;
     declaration.signature_valid = attribute_valid;
+    declaration.is_external = external;
     declaration.is_public = ruda_checker_private_check_child_token(
         node,
         RUDA_TOKEN_KW_PUBLIC,
@@ -156,6 +150,20 @@
         ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
         goto cleanup;
     }
+    declaration.type_parameters_initialized = ruda_vector_init(
+        &declaration.type_parameters,
+        checker->result->allocator,
+        sizeof(RudaCheckTypeParameterDeclaration)
+    );
+    if (!declaration.type_parameters_initialized
+        || !ruda_checker_private_collect_type_parameters(
+            checker, node, &declaration.type_parameters
+        )) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        goto cleanup;
+    }
+    declaration.is_generic = declaration.type_parameters.length != 0;
+    checker->active_type_parameters = &declaration.type_parameters;
     for (index = 0; index < parameters->child_count; index += 1) {
         const RudaAstElement *element = ruda_ast_child(parameters, index);
         const RudaSyntaxToken *parameter_name = NULL;
@@ -509,6 +517,9 @@
     accepted = true;
 
 cleanup:
+    if (checker->active_type_parameters == &declaration.type_parameters) {
+        checker->active_type_parameters = NULL;
+    }
     ruda_checker_private_function_declaration_dispose(&declaration);
     return accepted && !ruda_checker_has_failed(checker);
 }
@@ -721,6 +732,95 @@ cleanup:
     return true;
 }
 
+static bool ruda_checker_private_publish_external_function(
+    RudaChecker *checker,
+    RudaCheckFunctionDeclaration *declaration
+) {
+    RudaMirFunction mir;
+    RudaCheckedFunction checked;
+    size_t function_index = 0;
+    bool accepted = false;
+    memset(&mir, 0, sizeof(mir));
+    memset(&checked, 0, sizeof(checked));
+    if (checker == NULL || declaration == NULL || !declaration->is_external
+        || !declaration->signature_valid || declaration->block != NULL) {
+        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        return false;
+    }
+    if (!ruda_mir_function_init(
+            &mir,
+            checker->result->allocator,
+            declaration->symbol,
+            declaration->parameter_types.data,
+            declaration->parameter_types.length,
+            declaration->result_type,
+            checker->options.mir_options
+        )) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        return false;
+    }
+    function_index = checker->result->functions.length;
+    if (ruda_map_get_const(
+            &checker->result->function_index,
+            mir.symbol.bytes,
+            sizeof(mir.symbol.bytes)
+        ) != NULL
+        || !ruda_vector_reserve(
+            &checker->result->functions,
+            function_index + 1
+        ) || !ruda_map_put(
+            &checker->result->function_index,
+            mir.symbol.bytes,
+            sizeof(mir.symbol.bytes),
+            &function_index
+        )) {
+        ruda_checker_fail(
+            checker,
+            ruda_map_get_const(
+                &checker->result->function_index,
+                mir.symbol.bytes,
+                sizeof(mir.symbol.bytes)
+            ) != NULL
+                ? RUDA_CHECK_INTERNAL_ERROR
+                : RUDA_CHECK_ALLOCATION_FAILED
+        );
+        goto cleanup;
+    }
+    checked.name = declaration->owned_name;
+    memset(&declaration->owned_name, 0, sizeof(declaration->owned_name));
+    declaration->name_initialized = false;
+    checked.signature_type = declaration->signature_type;
+    checked.receiver_symbol = declaration->receiver_symbol;
+    checked.receiver_type = declaration->receiver_type;
+    checked.dot_eligible = declaration->dot_eligible;
+    checked.is_public = declaration->is_public;
+    checked.is_external = true;
+    checked.is_test = declaration->is_test;
+    checked.is_fuzz = declaration->is_fuzz;
+    checked.mir = mir;
+    memset(&mir, 0, sizeof(mir));
+    if (!ruda_vector_push(&checker->result->functions, &checked)) {
+        (void)ruda_map_remove(
+            &checker->result->function_index,
+            checked.mir.symbol.bytes,
+            sizeof(checked.mir.symbol.bytes)
+        );
+        ruda_owned_bytes_dispose(&checked.name);
+        ruda_mir_function_dispose(&checked.mir);
+        memset(&checked, 0, sizeof(checked));
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        goto cleanup;
+    }
+    memset(&checked, 0, sizeof(checked));
+    accepted = true;
+
+cleanup:
+    if (mir.initialized) {
+        ruda_mir_function_dispose(&mir);
+    }
+    return accepted && !ruda_checker_has_failed(checker);
+}
+
  bool ruda_checker_private_check_function_body(
     RudaChecker *checker,
     RudaCheckFunctionDeclaration *declaration
@@ -735,6 +835,9 @@ cleanup:
     bool accepted = false;
     memset(&function, 0, sizeof(function));
     memset(&checked, 0, sizeof(checked));
+    if (declaration != NULL && declaration->is_external) {
+        return ruda_checker_private_publish_external_function(checker, declaration);
+    }
     if (declaration == NULL || declaration->ast == NULL
         || !declaration->signature_valid
         || declaration->signature_type == RUDA_TYPE_INVALID
@@ -749,6 +852,12 @@ cleanup:
     function.checker = checker;
     function.block = RUDA_MIR_NO_BLOCK;
     function.result_type = declaration->result_type;
+    function.unsafe_context = declaration->is_unsafe;
+    function.type_parameters = &declaration->type_parameters;
+    function.type_arguments = declaration->is_instance
+        ? &declaration->generic_arguments : NULL;
+    checker->active_type_parameters = function.type_parameters;
+    checker->active_type_arguments = function.type_arguments;
     function.diagnostic_start = checker->result->diagnostics.length;
     locals_initialized = ruda_vector_init(
         &function.locals,
@@ -905,6 +1014,10 @@ cleanup:
     accepted = true;
 
 cleanup:
+    if (checker->active_type_parameters == function.type_parameters) {
+        checker->active_type_parameters = NULL;
+        checker->active_type_arguments = NULL;
+    }
     if (function.mir_initialized) {
         ruda_mir_function_dispose(&function.mir);
     }

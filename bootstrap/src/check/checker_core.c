@@ -15,6 +15,7 @@
 #include "ruda/generated/diagnostic_codes.h"
 #include "ruda/base/f64.h"
 #include "ruda/base/string_literal.h"
+#include "checker_generic_types_api.h"
 
 
  bool ruda_checker_private_evaluate_constant(
@@ -221,7 +222,15 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
             index
         );
         if (declaration != NULL && declaration->declaration_valid
-            && declaration->fields_resolved && declaration->type == type) {
+            && declaration->fields_resolved
+            && (declaration->type == type
+                || (declaration->is_generic
+                    && ruda_checker_private_type_matches_nominal(
+                        checker,
+                        type,
+                        declaration->symbol,
+                        declaration->type_parameters.length
+                    )))) {
             return declaration;
         }
     }
@@ -255,7 +264,7 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
     return NULL;
 }
 
- RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
+RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
     RudaChecker *checker,
     RudaCheckName name
 ) {
@@ -270,6 +279,25 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
     if (declaration != NULL && declaration->declaration_valid
         && ruda_checker_private_check_names_equal(checker, declaration->name, name)) {
         return declaration;
+    }
+    {
+        const unsigned char *bytes = NULL;
+        size_t length = 0;
+        if (ruda_checker_private_check_name_bytes(name, &bytes, &length)) {
+            size_t index = 0;
+            for (index = 0; checker != NULL
+                && index < checker->prelude_enums.length; index += 1) {
+                declaration = ruda_vector_at(
+                    &checker->prelude_enums, index
+                );
+                if (declaration != NULL && declaration->is_builtin
+                    && declaration->declaration_valid
+                    && declaration->owned_name.length == length
+                    && memcmp(declaration->owned_name.data, bytes, length) == 0) {
+                    return declaration;
+                }
+            }
+        }
     }
     return NULL;
 }
@@ -287,7 +315,31 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
         );
         if (declaration != NULL && declaration->declaration_valid
             && declaration->variants_resolved
-            && declaration->type == type) {
+            && (declaration->type == type
+                || (declaration->is_generic
+                    && ruda_checker_private_type_matches_nominal(
+                        checker,
+                        type,
+                        declaration->symbol,
+                        declaration->type_parameters.length
+                    )))) {
+            return declaration;
+        }
+    }
+    for (index = 0; checker != NULL && index < checker->prelude_enums.length;
+        index += 1) {
+        RudaCheckEnumDeclaration *declaration = ruda_vector_at(
+            &checker->prelude_enums, index
+        );
+        if (declaration != NULL && declaration->declaration_valid
+            && declaration->variants_resolved
+            && (declaration->type == type
+                || ruda_checker_private_type_matches_nominal(
+                    checker,
+                    type,
+                    declaration->symbol,
+                    declaration->type_parameters.length
+                ))) {
             return declaration;
         }
     }
@@ -341,11 +393,17 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
             &enum_declaration->variants,
             index
         );
-        if (variant != NULL && ruda_checker_private_check_names_equal(
-                checker,
-                variant->name,
-                name
-            )) {
+        const unsigned char *bytes = NULL;
+        size_t length = 0;
+        bool same_name = variant != NULL
+            && ruda_checker_private_check_names_equal(checker, variant->name, name);
+        if (enum_declaration != NULL && enum_declaration->is_builtin
+            && variant != NULL
+            && ruda_checker_private_check_name_bytes(name, &bytes, &length)) {
+            same_name = variant->owned_name.length == length
+                && memcmp(variant->owned_name.data, bytes, length) == 0;
+        }
+        if (same_name) {
             if (variant_index != NULL) {
                 *variant_index = index;
             }

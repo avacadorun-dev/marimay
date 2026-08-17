@@ -1,14 +1,40 @@
 #include "checker_match_pattern_api.h"
 #include "checker_core_api.h"
+#include "checker_generic_types_api.h"
 #include "checker_lookup_api.h"
 
 bool ruda_checker_private_analyze_enum_match_alternative(
     RudaFunctionChecker *function,
     RudaCheckEnumDeclaration *enum_declaration,
+    RudaTypeId enum_type,
     const RudaAstNode *pattern,
     RudaVector *bindings,
     RudaCheckEnumMatchAlternative *alternative
 );
+
+bool ruda_checker_private_enum_match_payload_type(
+    RudaFunctionChecker *function,
+    RudaTypeId enum_type,
+    const RudaCheckEnumDeclaration *enum_declaration,
+    RudaTypeId declared_type,
+    RudaTypeId *result
+) {
+    if (function == NULL || enum_declaration == NULL || result == NULL
+        || enum_type == RUDA_TYPE_INVALID
+        || declared_type == RUDA_TYPE_INVALID) {
+        if (function != NULL) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        }
+        return false;
+    }
+    return ruda_checker_private_substitute_nominal_member_type(
+        function,
+        enum_type,
+        &enum_declaration->type_parameters,
+        declared_type,
+        result
+    );
+}
 bool ruda_checker_private_record_match_validate_named(
     RudaFunctionChecker *function,
     const RudaAstNode *constructor,
@@ -197,7 +223,7 @@ bool ruda_checker_private_record_match_validate_named(
         if (enum_declaration != NULL) {
             RudaCheckEnumMatchAlternative nested;
             return ruda_checker_private_analyze_enum_match_alternative(
-                function, enum_declaration, node, bindings, &nested
+                function, enum_declaration, type, node, bindings, &nested
             );
         }
         (void)ruda_checker_add_diagnostic(
@@ -215,10 +241,12 @@ bool ruda_checker_private_record_match_validate_named(
     return false;
 }
 
- bool ruda_checker_private_enum_match_validate_positional(
+bool ruda_checker_private_enum_match_validate_positional(
     RudaFunctionChecker *function,
     const RudaAstNode *constructor,
+    const RudaCheckEnumDeclaration *enum_declaration,
     const RudaCheckEnumVariantDeclaration *variant,
+    RudaTypeId enum_type,
     RudaVector *bindings
 ) {
     const RudaAstNode *positional = ruda_checker_private_check_child_node(
@@ -255,10 +283,17 @@ bool ruda_checker_private_record_match_validate_named(
         const RudaCheckEnumPayloadItemDeclaration *payload =
             ruda_vector_at_const(&variant->payload, count);
         binding = ruda_checker_private_check_child_node_any(list, count);
-        if (payload == NULL || !ruda_checker_private_enum_match_collect_simple_binding(
+        RudaTypeId payload_type = RUDA_TYPE_INVALID;
+        if (payload == NULL || !ruda_checker_private_enum_match_payload_type(
+                function,
+                enum_type,
+                enum_declaration,
+                payload->type,
+                &payload_type
+            ) || !ruda_checker_private_enum_match_collect_simple_binding(
                 function,
                 binding,
-                payload->type,
+                payload_type,
                 bindings
             )) {
             if (payload == NULL) {
@@ -276,7 +311,9 @@ bool ruda_checker_private_record_match_validate_named(
  bool ruda_checker_private_enum_match_validate_named(
     RudaFunctionChecker *function,
     const RudaAstNode *constructor,
+    const RudaCheckEnumDeclaration *enum_declaration,
     RudaCheckEnumVariantDeclaration *variant,
+    RudaTypeId enum_type,
     RudaVector *bindings
 ) {
     const RudaAstNode *named = ruda_checker_private_check_child_node(
@@ -322,6 +359,7 @@ bool ruda_checker_private_record_match_validate_named(
         const RudaSyntaxToken *field_token = NULL;
         const RudaAstNode *binding = NULL;
         RudaCheckEnumPayloadItemDeclaration *payload = NULL;
+        RudaTypeId payload_type = RUDA_TYPE_INVALID;
         RudaCheckName field_name;
         size_t payload_index = 0;
         if (field == NULL) {
@@ -373,12 +411,21 @@ bool ruda_checker_private_record_match_validate_named(
             );
             goto cleanup;
         }
+        if (!ruda_checker_private_enum_match_payload_type(
+                function,
+                enum_type,
+                enum_declaration,
+                payload->type,
+                &payload_type
+            )) {
+            goto cleanup;
+        }
         binding = ruda_checker_private_check_child_node_any(field, 0);
         if (binding != NULL) {
             if (!ruda_checker_private_enum_match_collect_simple_binding(
                     function,
                     binding,
-                    payload->type,
+                    payload_type,
                     bindings
                 )) {
                 goto cleanup;
@@ -387,7 +434,7 @@ bool ruda_checker_private_record_match_validate_named(
                 function,
                 bindings,
                 field_name,
-                payload->type
+                payload_type
             )) {
             goto cleanup;
         }
@@ -630,9 +677,10 @@ cleanup:
     return accepted && !ruda_checker_has_failed(function->checker);
 }
 
- bool ruda_checker_private_analyze_enum_match_alternative(
+bool ruda_checker_private_analyze_enum_match_alternative(
     RudaFunctionChecker *function,
     RudaCheckEnumDeclaration *enum_declaration,
+    RudaTypeId enum_type,
     const RudaAstNode *pattern,
     RudaVector *bindings,
     RudaCheckEnumMatchAlternative *alternative
@@ -648,6 +696,7 @@ cleanup:
     }
     memset(alternative, 0, sizeof(*alternative));
     alternative->pattern = pattern;
+    alternative->enum_type = enum_type;
     if (pattern->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
         alternative->is_catch_all = true;
     } else if (pattern->kind == RUDA_SYNTAX_NAME_PATTERN) {
@@ -668,7 +717,7 @@ cleanup:
                     function,
                     bindings,
                     name,
-                    enum_declaration->type
+                    enum_type
                 )) {
                 return false;
             }
@@ -725,7 +774,9 @@ cleanup:
             if (!ruda_checker_private_enum_match_validate_positional(
                     function,
                     pattern,
+                    enum_declaration,
                     variant,
+                    enum_type,
                     bindings
                 )) {
                 return false;
@@ -748,7 +799,9 @@ cleanup:
             if (!ruda_checker_private_enum_match_validate_named(
                     function,
                     pattern,
+                    enum_declaration,
                     variant,
+                    enum_type,
                     bindings
                 )) {
                 return false;
@@ -866,12 +919,20 @@ static bool ruda_checker_private_pattern_is_refutable(
     bool *result
 ) {
     const RudaAstNode *shape = NULL;
+    RudaCheckEnumDeclaration *enum_declaration = NULL;
     size_t index = 0;
     if (function == NULL || alternative == NULL || result == NULL
         || alternative->variant == NULL) {
         return false;
     }
     *result = false;
+    enum_declaration = ruda_checker_private_checker_find_enum_by_type(
+        function->checker, alternative->enum_type
+    );
+    if (enum_declaration == NULL) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        return false;
+    }
     if (alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_UNIT) {
         return true;
     }
@@ -897,10 +958,18 @@ static bool ruda_checker_private_pattern_is_refutable(
             );
             const RudaCheckEnumPayloadItemDeclaration *payload =
                 ruda_vector_at_const(&alternative->variant->payload, index);
+            RudaTypeId payload_type = RUDA_TYPE_INVALID;
             bool child_refutable = false;
             if (child == NULL || payload == NULL
+                || !ruda_checker_private_enum_match_payload_type(
+                    function,
+                    alternative->enum_type,
+                    enum_declaration,
+                    payload->type,
+                    &payload_type
+                )
                 || !ruda_checker_private_pattern_is_refutable(
-                    function, child, payload->type, &child_refutable
+                    function, child, payload_type, &child_refutable
                 )) {
                 return false;
             }
@@ -930,6 +999,7 @@ static bool ruda_checker_private_pattern_is_refutable(
             RudaCheckName name;
             size_t payload_index = 0;
             const RudaCheckEnumPayloadItemDeclaration *payload = NULL;
+            RudaTypeId payload_type = RUDA_TYPE_INVALID;
             bool child_refutable = false;
             if (token == NULL || token->synthetic) {
                 return false;
@@ -940,8 +1010,15 @@ static bool ruda_checker_private_pattern_is_refutable(
                 function->checker, alternative->variant, name, &payload_index
             );
             if (payload == NULL
+                || !ruda_checker_private_enum_match_payload_type(
+                    function,
+                    alternative->enum_type,
+                    enum_declaration,
+                    payload->type,
+                    &payload_type
+                )
                 || !ruda_checker_private_pattern_is_refutable(
-                    function, child, payload->type, &child_refutable
+                    function, child, payload_type, &child_refutable
                 )) {
                 return false;
             }

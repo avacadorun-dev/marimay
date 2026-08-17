@@ -4,9 +4,10 @@
 #include "checker_internal.h"
 #include "checker_package_context.h"
 
- void ruda_checker_private_function_declaration_dispose(
+void ruda_checker_private_function_declaration_dispose(
     RudaCheckFunctionDeclaration *declaration
 );
+void ruda_checker_private_type_parameter_vector_dispose(RudaVector *parameters);
  void ruda_checker_private_constant_declaration_dispose(
     RudaCheckConstantDeclaration *declaration
 );

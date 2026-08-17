@@ -27,6 +27,7 @@ typedef struct RudaCheckedFunction {
     RudaMirFunction mir;
     bool dot_eligible;
     bool is_public;
+    bool is_external;
     bool is_test;
     bool is_fuzz;
 } RudaCheckedFunction;

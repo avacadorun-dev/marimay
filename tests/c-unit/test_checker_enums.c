@@ -275,8 +275,9 @@ void ruda_test_checker_enum_declarations(void) {
         ruda_system_allocator(),
         ruda_check_default_options(),
         &checked
-    ) == RUDA_CHECK_INCOMPLETE_LANGUAGE);
-    RUDA_EXPECT(!checked.initialized);
+    ) == RUDA_CHECK_OK);
+    RUDA_EXPECT(checked.initialized);
+    ruda_check_result_dispose(&checked);
     ruda_checker_fixture_dispose(&fixture);
 
     RUDA_EXPECT(ruda_checker_fixture_init(

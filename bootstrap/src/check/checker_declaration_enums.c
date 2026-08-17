@@ -2,6 +2,7 @@
 #include "checker_core_api.h"
 #include "checker_declaration_lifecycle_api.h"
 #include "checker_lookup_api.h"
+#include "checker_generic_types_api.h"
 
 
 
@@ -139,6 +140,7 @@
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
     }
+    checker->active_type_parameters = &declaration->type_parameters;
     for (child_index = 0; child_index < declaration->node->child_count;
         child_index += 1) {
         const RudaAstElement *element = ruda_ast_child(
@@ -301,6 +303,9 @@
             return false;
         }
         memset(&variant, 0, sizeof(variant));
+    }
+    if (checker->active_type_parameters == &declaration->type_parameters) {
+        checker->active_type_parameters = NULL;
     }
     declaration->variants_resolved = valid;
     return valid && !ruda_checker_has_failed(checker);

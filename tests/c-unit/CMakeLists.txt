@@ -28,6 +28,8 @@ add_executable(ruda_c_unit
   test_checker_interfaces.c
   test_checker_imports.c
   test_checker_imports_determinism.c
+  test_checker_generics.c
+  test_checker_generics_imports.c
   test_checker_imports_support.c
   test_checker_nested_patterns.c
   test_checker_enum_match.c
@@ -78,6 +80,7 @@ add_executable(ruda_c_unit
   test_native_c_emitter_baseline.c
   test_native_c_emitter_matrix.c
   test_native_c_emitter_nominal.c
+  test_native_c_emitter_generics.c
   test_native_c_emitter_nominal_differential.c
   test_native_c_emitter_imports.c
   test_native_c_emitter_scalar.c

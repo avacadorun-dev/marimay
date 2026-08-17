@@ -24,6 +24,10 @@ typedef struct RudaChecker {
     size_t constant_depth;
     size_t type_alias_depth;
     size_t remaining_constant_steps;
+    const RudaVector *active_type_parameters;
+    const RudaVector *active_type_arguments;
+    RudaVector prelude_enums;
+    bool prelude_enums_initialized;
     RudaCheckStatus failure;
 } RudaChecker;
 

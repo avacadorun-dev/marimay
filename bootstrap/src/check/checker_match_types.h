@@ -11,6 +11,7 @@ typedef struct RudaCheckEnumMatchBinding {
 typedef struct RudaCheckEnumMatchAlternative {
     const RudaAstNode *pattern;
     RudaCheckEnumVariantDeclaration *variant;
+    RudaTypeId enum_type;
     RudaCheckName catch_binding;
     size_t variant_index;
     bool is_catch_all;

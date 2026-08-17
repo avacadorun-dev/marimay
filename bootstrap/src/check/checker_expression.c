@@ -5,6 +5,7 @@
 #include "checker_expr_scalar_api.h"
 #include "checker_expr_interfaces_api.h"
 #include "checker_lookup_api.h"
+#include "checker_expr_try_api.h"
 
 
 
@@ -54,12 +55,15 @@ bool ruda_checker_private_compile_expression_raw(
         return ruda_checker_private_compile_binary(function, node, result);
     }
     if (node->kind == RUDA_SYNTAX_CALL_EXPRESSION) {
-        return ruda_checker_private_compile_call(function, node, result);
+        return ruda_checker_private_compile_call(
+            function, node, expected, result
+        );
     }
     if (node->kind == RUDA_SYNTAX_RECORD_EXPRESSION) {
         if (!ruda_checker_private_compile_enum_named(
                 function,
                 node,
+                expected,
                 &enum_resolved,
                 result
             )) {
@@ -68,12 +72,15 @@ bool ruda_checker_private_compile_expression_raw(
         if (enum_resolved) {
             return true;
         }
-        return ruda_checker_private_compile_record_construction(function, node, result);
+        return ruda_checker_private_compile_record_construction(
+            function, node, expected, result
+        );
     }
     if (node->kind == RUDA_SYNTAX_MEMBER_EXPRESSION) {
         if (!ruda_checker_private_compile_enum_unit(
                 function,
                 node,
+                expected,
                 &enum_resolved,
                 result
             )) {
@@ -90,6 +97,11 @@ bool ruda_checker_private_compile_expression_raw(
             node,
             expected,
             result
+        );
+    }
+    if (node->kind == RUDA_SYNTAX_TRY_EXPRESSION) {
+        return ruda_checker_private_compile_try_expression(
+            function, node, expected, result
         );
     }
     ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);

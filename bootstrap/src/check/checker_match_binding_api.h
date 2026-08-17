@@ -7,6 +7,7 @@
  bool ruda_checker_private_analyze_enum_match_arm(
     RudaFunctionChecker *function,
     RudaCheckEnumDeclaration *enum_declaration,
+    RudaTypeId enum_type,
     const RudaAstNode *arm_node,
     unsigned char *seen_variants,
     bool *covered,

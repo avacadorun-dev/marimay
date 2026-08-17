@@ -15,9 +15,10 @@
     const RudaAstNode *node,
     RudaExpressionValue *result
 );
- bool ruda_checker_private_compile_call(
+bool ruda_checker_private_compile_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     RudaExpressionValue *result
 );
 #endif

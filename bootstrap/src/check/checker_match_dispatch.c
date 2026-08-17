@@ -656,6 +656,7 @@ cleanup:
     );
     RudaExpressionValue scrutinee;
     RudaCheckEnumDeclaration *enum_declaration = NULL;
+    RudaCheckEnumDeclaration concrete_enum;
     RudaCheckEnumMatchArm *arms = NULL;
     unsigned char *seen_variants = NULL;
     size_t arm_count = 0;
@@ -823,6 +824,7 @@ cleanup:
         if (!ruda_checker_private_analyze_enum_match_arm(
                 function,
                 enum_declaration,
+                scrutinee.type,
                 arm_node,
                 seen_variants,
                 &covered,
@@ -852,10 +854,10 @@ cleanup:
         );
         goto cleanup;
     }
+    concrete_enum = *enum_declaration;
+    concrete_enum.type = scrutinee.type;
     if (!ruda_checker_private_function_enum_layout(
-            function,
-            enum_declaration,
-            &enum_id
+            function, &concrete_enum, &enum_id
         )) {
         goto cleanup;
     }

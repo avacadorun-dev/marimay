@@ -2,6 +2,7 @@
 #include "checker_core_api.h"
 #include "checker_expr_records_api.h"
 #include "checker_lookup_api.h"
+#include "checker_generic_types_api.h"
 
 
 
@@ -96,6 +97,48 @@
         );
         return false;
     }
+    return true;
+}
+
+static bool ruda_checker_private_concrete_enum(
+    RudaFunctionChecker *function,
+    const RudaCheckEnumDeclaration *base,
+    RudaTypeId expected,
+    RudaCheckEnumDeclaration *result
+) {
+    const RudaTypeDescriptor *descriptor = NULL;
+    if (function == NULL || base == NULL || result == NULL) {
+        return false;
+    }
+    *result = *base;
+    if (!base->is_generic) {
+        if (expected != RUDA_TYPE_INVALID && expected != base->type) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "enum constructor result type does not match the expected type",
+                base->name.start,
+                base->name.end
+            );
+            return false;
+        }
+        return true;
+    }
+    descriptor = expected == RUDA_TYPE_INVALID ? NULL
+        : ruda_type_descriptor(&function->checker->result->types, expected);
+    if (descriptor == NULL || descriptor->kind != RUDA_TYPE_KIND_NOMINAL
+        || !ruda_symbol_id_equal(descriptor->symbol, base->symbol)
+        || descriptor->argument_count != base->type_parameters.length) {
+        (void)ruda_checker_add_diagnostic(
+            function->checker,
+            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            "generic enum constructor requires an expected concrete enum type",
+            base->name.start,
+            base->name.end
+        );
+        return false;
+    }
+    result->type = expected;
     return true;
 }
 
@@ -223,11 +266,13 @@
  bool ruda_checker_private_compile_enum_unit(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     bool *resolved,
     RudaExpressionValue *result
 ) {
     RudaCheckEnumDeclaration *enum_declaration = NULL;
     RudaCheckEnumVariantDeclaration *variant = NULL;
+    RudaCheckEnumDeclaration concrete;
     size_t variant_index = 0;
     if (!ruda_checker_private_resolve_enum_member(
             function,
@@ -242,6 +287,11 @@
     if (!*resolved) {
         return true;
     }
+    if (!ruda_checker_private_concrete_enum(
+            function, enum_declaration, expected, &concrete
+        )) {
+        return false;
+    }
     if (variant == NULL
         || variant->kind != RUDA_CHECKED_ENUM_VARIANT_UNIT) {
         (void)ruda_checker_add_diagnostic(
@@ -255,7 +305,7 @@
     }
     return ruda_checker_private_function_emit_enum_construction(
         function,
-        enum_declaration,
+        &concrete,
         variant_index,
         NULL,
         0,
@@ -268,6 +318,7 @@
  bool ruda_checker_private_compile_enum_positional(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     bool *resolved,
     RudaExpressionValue *result
 ) {
@@ -283,6 +334,7 @@
     );
     RudaCheckEnumDeclaration *enum_declaration = NULL;
     RudaCheckEnumVariantDeclaration *variant = NULL;
+    RudaCheckEnumDeclaration concrete;
     RudaMirEnumArgument *arguments = NULL;
     size_t variant_index = 0;
     size_t argument_count = 0;
@@ -310,6 +362,11 @@
     }
     if (!*resolved) {
         accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_checker_private_concrete_enum(
+            function, enum_declaration, expected, &concrete
+        )) {
         goto cleanup;
     }
     if (function->constant_evaluation) {
@@ -398,7 +455,15 @@
             ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }
-        payload_type = payload->type;
+        if (!ruda_checker_private_substitute_nominal_member_type(
+                function,
+                concrete.type,
+                &concrete.type_parameters,
+                payload->type,
+                &payload_type
+            )) {
+            goto cleanup;
+        }
         memset(&value, 0, sizeof(value));
         if (!ruda_compile_expression(
                 function,
@@ -433,7 +498,7 @@
     }
     accepted = ruda_checker_private_function_emit_enum_construction(
         function,
-        enum_declaration,
+        &concrete,
         variant_index,
         arguments,
         argument_count,
@@ -455,6 +520,7 @@ cleanup:
  bool ruda_checker_private_compile_enum_named(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     bool *resolved,
     RudaExpressionValue *result
 ) {
@@ -470,6 +536,7 @@ cleanup:
     );
     RudaCheckEnumDeclaration *enum_declaration = NULL;
     RudaCheckEnumVariantDeclaration *variant = NULL;
+    RudaCheckEnumDeclaration concrete;
     RudaMirEnumArgument *arguments = NULL;
     unsigned char *seen = NULL;
     size_t variant_index = 0;
@@ -498,6 +565,11 @@ cleanup:
     }
     if (!*resolved) {
         accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_checker_private_concrete_enum(
+            function, enum_declaration, expected, &concrete
+        )) {
         goto cleanup;
     }
     if (function->constant_evaluation) {
@@ -608,7 +680,15 @@ cleanup:
             ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }
-        payload_type = payload->type;
+        if (!ruda_checker_private_substitute_nominal_member_type(
+                function,
+                concrete.type,
+                &concrete.type_parameters,
+                payload->type,
+                &payload_type
+            )) {
+            goto cleanup;
+        }
         if (seen[payload_index] != 0) {
             (void)ruda_checker_add_diagnostic(
                 function->checker,
@@ -696,7 +776,7 @@ cleanup:
     }
     accepted = ruda_checker_private_function_emit_enum_construction(
         function,
-        enum_declaration,
+        &concrete,
         variant_index,
         arguments,
         variant->payload.length,

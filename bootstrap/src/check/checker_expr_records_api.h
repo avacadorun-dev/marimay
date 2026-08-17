@@ -7,6 +7,7 @@
  bool ruda_checker_private_compile_record_construction(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     RudaExpressionValue *result
 );
  bool ruda_checker_private_member_parts(

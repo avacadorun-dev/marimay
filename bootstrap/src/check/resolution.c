@@ -217,6 +217,7 @@ static bool ruda_check_callable_from_declaration(
     callable->receiver_type = declaration->receiver_type;
     callable->result_type = declaration->result_type;
     callable->dot_eligible = declaration->dot_eligible;
+    callable->is_external = declaration->is_external;
     return true;
 }
 

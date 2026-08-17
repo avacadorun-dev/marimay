@@ -2,6 +2,7 @@
 #include "checker_cfg_api.h"
 #include "checker_core_api.h"
 #include "checker_expr_records_api.h"
+#include "checker_generic_types_api.h"
 #include "package_imports_api.h"
 
 
@@ -26,6 +27,11 @@
     size_t argument_count = 0;
     size_t index = 0;
     bool import_resolved = false;
+    const RudaCheckTypeParameterDeclaration *type_parameter = NULL;
+    RudaTypeId active_type_parameter = RUDA_TYPE_INVALID;
+    RudaVector generic_arguments;
+    bool generic_arguments_initialized = false;
+    memset(&generic_arguments, 0, sizeof(generic_arguments));
     if (node == NULL || result == NULL || node->kind != RUDA_SYNTAX_TYPE) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
@@ -41,6 +47,34 @@
         RUDA_SYNTAX_TYPE_ARGUMENTS,
         0
     );
+    declared_name.snapshot = checker->ast->snapshot;
+    declared_name.start = name->start;
+    declared_name.end = name->end;
+    type_parameter = ruda_checker_private_find_type_parameter(
+        checker, declared_name
+    );
+    if (type_parameter != NULL) {
+        if (type_arguments != NULL) {
+            (void)ruda_checker_add_diagnostic(
+                checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "a type parameter cannot receive type arguments",
+                node->start,
+                node->end
+            );
+            *result = RUDA_TYPE_INVALID;
+            return false;
+        }
+        (void)type_parameter;
+        if (!ruda_checker_private_resolve_type_parameter(
+                checker, declared_name, &active_type_parameter
+            )) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            return false;
+        }
+        *result = active_type_parameter;
+        return true;
+    }
     if (ruda_checker_private_check_text_equal(
             checker,
             name->start,
@@ -116,6 +150,76 @@
     if (import_resolved) {
         return *result != RUDA_TYPE_INVALID;
     }
+    if (type_arguments != NULL) {
+        if (!ruda_vector_init(
+                &generic_arguments,
+                checker->result->allocator,
+                sizeof(RudaTypeId)
+            )) {
+            ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+            return false;
+        }
+        generic_arguments_initialized = true;
+        if (!ruda_checker_private_parse_type_arguments(
+                checker, type_arguments, &generic_arguments
+            )) {
+            goto generic_cleanup;
+        }
+        record = ruda_checker_private_checker_find_record(checker, declared_name);
+        enum_declaration = ruda_checker_private_checker_find_enum(
+            checker, declared_name
+        );
+        if (record != NULL || enum_declaration != NULL) {
+            size_t expected_count = record != NULL
+                ? record->type_parameters.length
+                : enum_declaration->type_parameters.length;
+            RudaSymbolId symbol = record != NULL ? record->symbol : enum_declaration->symbol;
+            RudaTypeKind kind = record != NULL
+                ? RUDA_TYPE_KIND_NOMINAL : RUDA_TYPE_KIND_NOMINAL;
+            if (expected_count == 0 || generic_arguments.length != expected_count) {
+                (void)ruda_checker_add_diagnostic(
+                    checker,
+                    RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                    expected_count == 0
+                        ? "type does not accept generic arguments"
+                        : "generic type argument count does not match its declaration",
+                    node->start,
+                    node->end
+                );
+                goto generic_cleanup;
+            }
+            if (!ruda_checker_private_intern_generic_nominal(
+                    checker, kind, symbol, &generic_arguments, result
+                )) {
+                ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+                goto generic_cleanup;
+            }
+            if ((record == NULL && enum_declaration != NULL
+                    && enum_declaration->is_builtin)
+                || ruda_check_record_occurrence(
+                    checker, declared_name, symbol
+                )) {
+                ruda_vector_dispose(&generic_arguments);
+                return true;
+            }
+            {
+                goto generic_cleanup;
+            }
+        }
+        (void)ruda_checker_add_diagnostic(
+            checker,
+            RUDA_DIAGNOSTIC_UNKNOWN_TYPE,
+            "generic type name is unknown",
+            name->start,
+            name->end
+        );
+generic_cleanup:
+        if (generic_arguments_initialized) {
+            ruda_vector_dispose(&generic_arguments);
+        }
+        *result = RUDA_TYPE_INVALID;
+        return false;
+    }
     if (node->child_count != 1) {
         ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
         return false;
@@ -160,6 +264,17 @@
         declared_name.end = name->end;
         record = ruda_checker_private_checker_find_record(checker, declared_name);
         if (record != NULL) {
+            if (record->type_parameters.length != 0) {
+                (void)ruda_checker_add_diagnostic(
+                    checker,
+                    RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                    "generic record type requires explicit type arguments",
+                    node->start,
+                    node->end
+                );
+                *result = RUDA_TYPE_INVALID;
+                return false;
+            }
             *result = record->type;
             return ruda_check_record_occurrence(
                 checker, declared_name, record->symbol
@@ -167,10 +282,22 @@
         }
         enum_declaration = ruda_checker_private_checker_find_enum(checker, declared_name);
         if (enum_declaration != NULL) {
+            if (enum_declaration->type_parameters.length != 0) {
+                (void)ruda_checker_add_diagnostic(
+                    checker,
+                    RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                    "generic enum type requires explicit type arguments",
+                    node->start,
+                    node->end
+                );
+                *result = RUDA_TYPE_INVALID;
+                return false;
+            }
             *result = enum_declaration->type;
-            return ruda_check_record_occurrence(
-                checker, declared_name, enum_declaration->symbol
-            );
+            return enum_declaration->is_builtin
+                || ruda_check_record_occurrence(
+                    checker, declared_name, enum_declaration->symbol
+                );
         }
         interface_declaration = ruda_checker_private_checker_find_interface(
             checker, declared_name
@@ -497,7 +624,7 @@ bool ruda_function_emit_instruction(
     return true;
 }
 
- bool ruda_checker_private_function_record_layout(
+bool ruda_checker_private_function_record_layout(
     RudaFunctionChecker *function,
     const RudaCheckRecordDeclaration *declaration,
     RudaMirRecordId *result
@@ -569,7 +696,20 @@ bool ruda_function_emit_instruction(
             );
             return false;
         }
-        fields[index].type = field->type;
+        if (!ruda_checker_private_substitute_nominal_member_type(
+                function,
+                declaration->type,
+                &declaration->type_parameters,
+                field->type,
+                &fields[index].type
+            )) {
+            ruda_deallocate(
+                &function->checker->result->allocator,
+                fields,
+                field_bytes
+            );
+            return false;
+        }
         fields[index].is_mutable = field->is_mutable;
     }
     if (!ruda_mir_add_record(
@@ -630,14 +770,29 @@ bool ruda_function_emit_instruction(
             &declaration->variants,
             variant_index
         );
-        if (variant == NULL || !variant->payload_initialized
-            || !ruda_size_add(
-                payload_count,
-                variant->payload.length,
-                &payload_count
-            )) {
+        size_t payload_index = 0;
+        if (variant == NULL || !variant->payload_initialized) {
             ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
             return false;
+        }
+        for (payload_index = 0; payload_index < variant->payload.length;
+            payload_index += 1) {
+            const RudaCheckEnumPayloadItemDeclaration *payload =
+                ruda_vector_at_const(&variant->payload, payload_index);
+            RudaTypeId payload_type = RUDA_TYPE_INVALID;
+            if (payload == NULL
+                || !ruda_checker_private_substitute_nominal_member_type(
+                    function,
+                    declaration->type,
+                    &declaration->type_parameters,
+                    payload->type,
+                    &payload_type
+                )
+                || (payload_type != RUDA_TYPE_VOID
+                    && !ruda_size_add(payload_count, 1, &payload_count))) {
+                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+                return false;
+            }
         }
     }
     if (!ruda_size_multiply(
@@ -735,25 +890,59 @@ bool ruda_function_emit_instruction(
                 goto cleanup;
         }
         variants[variant_index].payload_start = payload_cursor;
-        variants[variant_index].payload_count = variant->payload.length;
+        variants[variant_index].payload_count = 0;
         for (payload_index = 0; payload_index < variant->payload.length;
             payload_index += 1) {
             const RudaCheckEnumPayloadItemDeclaration *payload =
                 ruda_vector_at_const(&variant->payload, payload_index);
-            if (payload == NULL || payloads == NULL
+            RudaTypeId payload_type = RUDA_TYPE_INVALID;
+            if (payload == NULL
                 || payload->type == RUDA_TYPE_INVALID
                 || (variant->kind == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
                     && payload->has_name)
                 || (variant->kind == RUDA_CHECKED_ENUM_VARIANT_NAMED
-                    && !payload->has_name)) {
+                    && !payload->has_name)
+                || !ruda_checker_private_substitute_nominal_member_type(
+                    function,
+                    declaration->type,
+                    &declaration->type_parameters,
+                    payload->type,
+                    &payload_type
+                )) {
                 ruda_checker_fail(
                     function->checker,
                     RUDA_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
             }
-            payloads[payload_cursor].type = payload->type;
+            if (payload_type == RUDA_TYPE_VOID) {
+                continue;
+            }
+            {
+                RudaCheckEnumDeclaration *nested_declaration =
+                    ruda_checker_private_checker_find_enum_by_type(
+                        function->checker, payload_type
+                    );
+                RudaCheckEnumDeclaration nested_concrete;
+                RudaMirEnumId nested_id = RUDA_MIR_NO_ENUM;
+                if (nested_declaration != NULL
+                    && nested_declaration->type != declaration->type) {
+                    nested_concrete = *nested_declaration;
+                    nested_concrete.type = payload_type;
+                    if (!ruda_checker_private_function_enum_layout(
+                            function, &nested_concrete, &nested_id
+                        )) {
+                        goto cleanup;
+                    }
+                }
+            }
+            if (payloads == NULL) {
+                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+                goto cleanup;
+            }
+            payloads[payload_cursor].type = payload_type;
             payload_cursor += 1;
+            variants[variant_index].payload_count += 1;
         }
     }
     if (payload_cursor != payload_count || !ruda_mir_add_enum(
