@@ -16,6 +16,9 @@ void ruda_test_checker_unsupported_is_explicit(void) {
         &checked
     ) == RUDA_CHECK_OK);
     RUDA_EXPECT(checked.initialized);
+    if (checked.initialized) {
+        ruda_check_result_dispose(&checked);
+    }
     ruda_checker_fixture_dispose(&fixture);
 
     RUDA_EXPECT(ruda_checker_fixture_init(

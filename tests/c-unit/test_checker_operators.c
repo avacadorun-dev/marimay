@@ -166,6 +166,9 @@ void ruda_test_checker_bitwise(void) {
         &checked
     ) == RUDA_CHECK_OK);
     RUDA_EXPECT(checked.initialized);
+    if (checked.initialized) {
+        ruda_check_result_dispose(&checked);
+    }
     ruda_checker_fixture_dispose(&fixture);
 }
 
@@ -426,6 +429,9 @@ void ruda_test_checker_shifts(void) {
         &checked
     ) == RUDA_CHECK_OK);
     RUDA_EXPECT(checked.initialized);
+    if (checked.initialized) {
+        ruda_check_result_dispose(&checked);
+    }
     ruda_checker_fixture_dispose(&fixture);
 }
 
