@@ -38,6 +38,7 @@ add_executable(ruda_c_unit
   test_checker_match_control.c
   test_checker_calls_constants.c
   test_checker_operators.c
+  test_checker_numeric_policy.c
   test_checker_control.c
   test_checker_failures.c
   test_checker_arrays.c
@@ -48,6 +49,7 @@ add_executable(ruda_c_unit
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
   test_diagnostic.c
+  test_defer_cp7.c
   test_directory.c
   test_doc_examples.c
   test_document.c
@@ -90,6 +92,7 @@ add_executable(ruda_c_unit
   test_native_c_emitter_support.c
   test_native_matrix.c
   test_nominal_engine_allocations.c
+  test_numeric_cp6_differential.c
   test_main.c
   test_path_stream.c
   test_parser.c

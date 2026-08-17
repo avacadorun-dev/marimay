@@ -45,6 +45,7 @@ static const char *const ruda_syntax_names[] = {
     "UNARY_EXPRESSION",
     "BINARY_EXPRESSION",
     "ASSIGNMENT_EXPRESSION",
+    "CONVERSION_EXPRESSION",
     "MEMBER_EXPRESSION",
     "CALL_EXPRESSION",
     "INDEX_EXPRESSION",

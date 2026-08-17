@@ -56,6 +56,16 @@ bool ruda_mir_add_enum(
     size_t payload_count,
     RudaMirEnumId *result
 );
+bool ruda_mir_add_enum_with_symbol(
+    RudaMirFunction *function,
+    RudaSymbolId symbol,
+    RudaTypeId type,
+    const RudaMirEnumVariant *variants,
+    size_t variant_count,
+    const RudaMirEnumPayload *payloads,
+    size_t payload_count,
+    RudaMirEnumId *result
+);
 bool ruda_mir_add_enum_construction(
     RudaMirFunction *function,
     RudaMirEnumId enum_id,

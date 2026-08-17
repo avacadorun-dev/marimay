@@ -20,12 +20,20 @@ typedef enum RudaMirInterpretStatus {
     RUDA_MIR_INTERPRET_UNSUPPORTED_HOST
 } RudaMirInterpretStatus;
 
+typedef struct RudaMirSuppressedPanic {
+    const char *code;
+    RudaOwnedBytes message;
+    RudaSymbolId symbol;
+    RudaMirSpan span;
+} RudaMirSuppressedPanic;
+
 typedef struct RudaMirPanic {
     /* Stable explicit-source-panic code from the runtime diagnostic contract. */
     const char *code;
     RudaOwnedBytes message;
     RudaSymbolId symbol;
     RudaMirSpan span;
+    RudaVector suppressed;
 } RudaMirPanic;
 
 typedef RudaMirInterpretStatus (*RudaMirCallHandler)(

@@ -6,6 +6,7 @@
 #include "checker_expr_interfaces_api.h"
 #include "checker_lookup_api.h"
 #include "checker_expr_try_api.h"
+#include "checker_expr_numeric_api.h"
 
 
 
@@ -101,6 +102,11 @@ bool ruda_checker_private_compile_expression_raw(
     }
     if (node->kind == RUDA_SYNTAX_TRY_EXPRESSION) {
         return ruda_checker_private_compile_try_expression(
+            function, node, expected, result
+        );
+    }
+    if (node->kind == RUDA_SYNTAX_CONVERSION_EXPRESSION) {
+        return ruda_checker_private_compile_integer_conversion(
             function, node, expected, result
         );
     }

@@ -945,8 +945,9 @@ bool ruda_checker_private_function_record_layout(
             variants[variant_index].payload_count += 1;
         }
     }
-    if (payload_cursor != payload_count || !ruda_mir_add_enum(
+    if (payload_cursor != payload_count || !ruda_mir_add_enum_with_symbol(
             &function->mir,
+            declaration->symbol,
             declaration->type,
             variants,
             declaration->variants.length,

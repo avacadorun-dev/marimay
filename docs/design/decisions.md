@@ -807,3 +807,57 @@ Reason: acceptance programs must print identical VM and native bytes without
 turning a hex test oracle, host `printf`, or implicit conversion into language
 law. A single `string` write plus explicit float formatters keeps D003, D006,
 D016, and D044 intact while giving 0.1-dev a closed, testable stdout contract.
+
+## D047 — Integer policy operations and conversions are explicit and closed
+
+Status: accepted.
+
+The prelude defines a compiler-known generic integer family over exactly
+`i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, and `u64`. Binary operations
+require two values of the same exact integer type `T`; negate takes one `T`:
+
+```ruda
+checkedAdd<T>(left: T, right: T): Option<T>
+checkedSubtract<T>(left: T, right: T): Option<T>
+checkedMultiply<T>(left: T, right: T): Option<T>
+checkedDivide<T>(left: T, right: T): Option<T>
+checkedRemainder<T>(left: T, right: T): Option<T>
+checkedNegate<T>(value: T): Option<T>
+checkedShiftLeft<T>(value: T, count: T): Option<T>
+checkedShiftRight<T>(value: T, count: T): Option<T>
+```
+
+The `wrapping` and `saturating` families have the same operation suffixes and
+arguments, are named `wrappingAdd` through `wrappingShiftRight` and
+`saturatingAdd` through `saturatingShiftRight`, and return `T` directly.
+These are unqualified prelude symbols subject to ordinary name resolution and
+shadowing; they are not dot-call eligible because primitive integers are not
+package-owned nominal types.
+
+For the checked family, every arithmetic overflow, zero divisor, or invalid
+shift count returns `None`; success returns `Some(value)`. The wrapping family
+reduces overflow modulo `2^bitWidth`; in particular signed `MIN / -1` produces
+`MIN` and `MIN % -1` produces zero. The saturating family clamps an overflow
+to the nearest representable endpoint; signed `MIN / -1` produces `MAX` and
+its remainder produces zero. A zero divisor and an invalid shift count still
+panic for wrapping and saturating operations because neither policy supplies
+a numeric result for those invalid operands. Right shift follows D035 and has
+no overflow to wrap or saturate.
+
+Integer conversion uses the contextual infix form `value as Target`. Source
+and target must both be one of the eight integer primitives. If every source
+value is representable in the target, the expression has type `Target` and is
+total. Otherwise it has type `Option<Target>`, producing `Some(converted)` only
+when the runtime value is representable and `None` otherwise. Conversion never
+wraps, saturates, or panics. There are no implicit integer conversions and no
+integer/float conversion is introduced by this decision.
+
+`as` binds more tightly than multiplicative operators and less tightly than
+prefix unary operators. Repeated conversions associate left to right.
+
+Reason: the previous specification named policy operations and required
+loss-detecting explicit conversion without fixing callable signatures or
+conversion syntax. A closed primitive family keeps inference decidable without
+inventing a public numeric constraint, makes every information-losing result
+visible in the type, and gives MIR, bytecode, VM, and native C17 one portable
+contract at signed overflow boundaries.

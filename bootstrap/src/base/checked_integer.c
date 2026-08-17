@@ -200,6 +200,49 @@ bool ruda_integer_kind_is_signed(RudaIntegerKind kind) {
     return ruda_integer_spec(kind, &spec) && spec.is_signed;
 }
 
+bool ruda_integer_convert(
+    RudaIntegerValue value,
+    RudaIntegerKind target_kind,
+    RudaIntegerValue *result
+) {
+    RudaIntegerSpec source;
+    RudaIntegerSpec target;
+    if (result == NULL || !ruda_value_is_valid(value, &source)
+        || !ruda_integer_spec(target_kind, &target)) {
+        return false;
+    }
+    if (source.is_signed) {
+        int64_t signed_value = ruda_bits_to_signed(value.bits, &source);
+        if (target.is_signed) {
+            if (signed_value < target.signed_min
+                || signed_value > target.signed_max) {
+                return false;
+            }
+            *result = ruda_integer_make(
+                target_kind, ruda_signed_to_bits(signed_value, &target)
+            );
+            return true;
+        }
+        if (signed_value < 0 || (uint64_t)signed_value > target.mask) {
+            return false;
+        }
+        *result = ruda_integer_make(target_kind, (uint64_t)signed_value);
+        return true;
+    }
+    if (target.is_signed) {
+        if (value.bits > (uint64_t)target.signed_max) {
+            return false;
+        }
+        *result = ruda_integer_make(target_kind, value.bits);
+        return true;
+    }
+    if (value.bits > target.mask) {
+        return false;
+    }
+    *result = ruda_integer_make(target_kind, value.bits);
+    return true;
+}
+
 RudaIntegerValue ruda_integer_from_i8(int8_t value) {
     RudaIntegerSpec spec;
     (void)ruda_integer_spec(RUDA_INTEGER_I8, &spec);

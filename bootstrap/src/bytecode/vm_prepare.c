@@ -31,12 +31,68 @@ void ruda_bytecode_run_set_trap(
 
 void ruda_bytecode_run_reset_panic(RudaBytecodePanic *panic) {
     if (panic != NULL && panic->initialized) {
+        size_t index = 0;
         ruda_owned_bytes_dispose(&panic->message);
+        for (index = 0; index < panic->suppressed.length; index += 1) {
+            RudaBytecodeSuppressedPanic *suppressed = ruda_vector_at(
+                &panic->suppressed, index
+            );
+            if (suppressed != NULL) {
+                ruda_owned_bytes_dispose(&suppressed->message);
+                ruda_vector_dispose(&suppressed->frames);
+            }
+        }
         panic->frames.length = 0;
+        panic->suppressed.length = 0;
         panic->code = NULL;
         memset(&panic->symbol, 0, sizeof(panic->symbol));
         memset(&panic->span, 0, sizeof(panic->span));
     }
+}
+
+static bool ruda_bytecode_run_push_suppressed(
+    RudaBytecodePanic *primary,
+    RudaBytecodeSuppressedPanic *suppressed
+) {
+    if (!ruda_vector_push(&primary->suppressed, suppressed)) {
+        return false;
+    }
+    memset(&suppressed->message, 0, sizeof(suppressed->message));
+    memset(&suppressed->frames, 0, sizeof(suppressed->frames));
+    return true;
+}
+
+bool ruda_bytecode_run_append_suppressed_panic(
+    RudaBytecodePanic *primary,
+    RudaBytecodePanic *secondary
+) {
+    RudaBytecodeSuppressedPanic observed;
+    size_t index = 0;
+    if (primary == NULL || secondary == NULL || !primary->initialized
+        || !secondary->initialized) {
+        return false;
+    }
+    memset(&observed, 0, sizeof(observed));
+    observed.code = secondary->code;
+    observed.message = secondary->message;
+    observed.symbol = secondary->symbol;
+    observed.span = secondary->span;
+    observed.frames = secondary->frames;
+    if (!ruda_bytecode_run_push_suppressed(primary, &observed)) {
+        return false;
+    }
+    memset(&secondary->message, 0, sizeof(secondary->message));
+    memset(&secondary->frames, 0, sizeof(secondary->frames));
+    for (index = 0; index < secondary->suppressed.length; index += 1) {
+        RudaBytecodeSuppressedPanic *nested = ruda_vector_at(
+            &secondary->suppressed, index
+        );
+        if (nested != NULL
+            && !ruda_bytecode_run_push_suppressed(primary, nested)) {
+            return false;
+        }
+    }
+    return true;
 }
 
 RudaBytecodeRunStatus ruda_bytecode_run_begin_panic(

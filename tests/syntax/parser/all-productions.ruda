@@ -49,6 +49,7 @@ unsafe fn allForms<T>(value: int, boxed: Box<T>): Result<int, Error> {
   const literal = true;
   const literals = [0, 1.5, "string", r"\\", b"bytes", 'r', true, false];
   const parenthesized = (assigned);
+  const converted = assigned as u64;
   const array = [assigned, answer];
   const record = Box { value: boxed.value };
   const arithmetic = assigned * answer / 2 % answer + answer - assigned << 1 >> 1;
@@ -68,6 +69,7 @@ unsafe fn allForms<T>(value: int, boxed: Box<T>): Result<int, Error> {
   defer cleanup(record);
   if literal {
     use(parenthesized);
+    use(converted);
   } else if false {
     use(indexed);
   } else {

@@ -46,6 +46,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | LANG-036 | `f64` decimal literals round exactly to binary64 nearest-even; raw bits cross value boundaries unchanged; arithmetic is strict and canonicalizes NaNs; unary negation preserves NaN payload bits; comparisons and signed-zero division follow D044 | language §5.1; execution §§5.1,15; D044 | I2/I3/I4 |
 | LANG-037 | managed `Array<T>` construction, exact `int` indexing, mutation order, `length`, `push` growth result, and G4002 bounds identity follow D045 across MIR, VM, and native execution | language §§5.2,5.6,7; execution §§5.1,9; diagnostics §9; D045 | I2/I3/I4/I5 |
 | LANG-038 | user stdout is not a language primitive or implicit conversion; `println` accepts only `string` and interpolation is not the D046 write contract | language §§1,2.5; standard library §3.1; D046 | I5 |
+| LANG-039 | all eight integer primitives expose one closed checked/wrapping/saturating policy family, and `value as Target` is the only loss-detecting explicit integer conversion form; invalid divisors and shifts retain the D035/D042 panic rules | language §§5.1,7; D035/D042/D047 | I2/I4 |
 
 ## Execution and concurrency
 

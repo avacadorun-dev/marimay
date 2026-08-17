@@ -67,3 +67,33 @@ Stage 0 codec.
 | 54 | `call_interface` | `destination:register`, `call:call` | `may_panic` | Dispatch an interface method through the boxed method table to a D003 callee. |
 | 55 | `array_push` | `array:register`, `value:register` | `may_panic` | Append one exact element to a managed array with failure-atomic growth. |
 | 56 | `const_integer` | `destination:register`, `value:u64` | — | Load an exact-width integer bit pattern into a typed integer register. |
+| 57 | `integer_checked_add` | `destination:register`, `left:register`, `right:register` | `may_panic` | Return Some(sum) or None for checked integer failure. |
+| 58 | `integer_checked_subtract` | `destination:register`, `left:register`, `right:register` | `may_panic` | Return Some(difference) or None for checked integer failure. |
+| 59 | `integer_checked_multiply` | `destination:register`, `left:register`, `right:register` | `may_panic` | Return Some(product) or None for checked integer failure. |
+| 60 | `integer_checked_divide` | `destination:register`, `left:register`, `right:register` | `may_panic` | Return Some(quotient) or None for checked integer failure. |
+| 61 | `integer_checked_remainder` | `destination:register`, `left:register`, `right:register` | `may_panic` | Return Some(remainder) or None for checked integer failure. |
+| 62 | `integer_checked_negate` | `destination:register`, `source:register` | `may_panic` | Return Some(negated value) or None for checked integer failure. |
+| 63 | `integer_checked_shift_left` | `destination:register`, `left:register`, `right:register` | `may_panic` | Return Some(left shift) or None for checked integer failure. |
+| 64 | `integer_checked_shift_right` | `destination:register`, `left:register`, `right:register` | `may_panic` | Return Some(right shift) or None for an invalid count. |
+| 65 | `integer_wrapping_add` | `destination:register`, `left:register`, `right:register` | — | Add exact-width integers modulo their bit width. |
+| 66 | `integer_wrapping_subtract` | `destination:register`, `left:register`, `right:register` | — | Subtract exact-width integers modulo their bit width. |
+| 67 | `integer_wrapping_multiply` | `destination:register`, `left:register`, `right:register` | — | Multiply exact-width integers modulo their bit width. |
+| 68 | `integer_wrapping_divide` | `destination:register`, `left:register`, `right:register` | `may_panic` | Divide with D047 wrapping overflow and zero-divisor policy. |
+| 69 | `integer_wrapping_remainder` | `destination:register`, `left:register`, `right:register` | `may_panic` | Compute remainder with D047 wrapping overflow and zero-divisor policy. |
+| 70 | `integer_wrapping_negate` | `destination:register`, `source:register` | — | Negate exact-width integers modulo their bit width. |
+| 71 | `integer_wrapping_shift_left` | `destination:register`, `left:register`, `right:register` | `may_panic` | Shift left modulo the bit width after validating the count. |
+| 72 | `integer_wrapping_shift_right` | `destination:register`, `left:register`, `right:register` | `may_panic` | Shift right under D035 after validating the count. |
+| 73 | `integer_saturating_add` | `destination:register`, `left:register`, `right:register` | — | Add and clamp to the exact integer range. |
+| 74 | `integer_saturating_subtract` | `destination:register`, `left:register`, `right:register` | — | Subtract and clamp to the exact integer range. |
+| 75 | `integer_saturating_multiply` | `destination:register`, `left:register`, `right:register` | — | Multiply and clamp to the exact integer range. |
+| 76 | `integer_saturating_divide` | `destination:register`, `left:register`, `right:register` | `may_panic` | Divide with D047 saturation and zero-divisor policy. |
+| 77 | `integer_saturating_remainder` | `destination:register`, `left:register`, `right:register` | `may_panic` | Compute remainder with D047 saturation and zero-divisor policy. |
+| 78 | `integer_saturating_negate` | `destination:register`, `source:register` | — | Negate and clamp to the exact integer range. |
+| 79 | `integer_saturating_shift_left` | `destination:register`, `left:register`, `right:register` | `may_panic` | Shift left and clamp after validating the count. |
+| 80 | `integer_saturating_shift_right` | `destination:register`, `left:register`, `right:register` | `may_panic` | Shift right under D035 after validating the count. |
+| 81 | `integer_convert_total` | `destination:register`, `source:register` | — | Apply a range-preserving explicit integer conversion. |
+| 82 | `integer_convert_option` | `destination:register`, `source:register` | `may_panic` | Return Some(converted) or None for a loss-detecting integer conversion. |
+| 83 | `format_f32` | `destination:register`, `source:register` | `may_panic` | Format exact raw binary32 bits as the D046 string spelling. |
+| 84 | `format_f64` | `destination:register`, `source:register` | `may_panic` | Format exact raw binary64 bits as the D046 string spelling. |
+| 85 | `defer_register` | `marker:register`, `call:call` | — | Register one captured void call for lexical cleanup. |
+| 86 | `defer_call` | `marker:register`, `call:call` | `may_panic` | Pop and invoke the most recently registered lexical cleanup. |

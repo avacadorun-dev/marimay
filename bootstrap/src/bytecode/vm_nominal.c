@@ -173,8 +173,8 @@ void ruda_bytecode_nominal_cache_dispose(
 static RudaManagedCellKind ruda_bytecode_nominal_cell_kind(
     RudaBytecodeType type
 ) {
-    return type == RUDA_BYTECODE_TYPE_I64 || type == RUDA_BYTECODE_TYPE_BOOL
-            || type == RUDA_BYTECODE_TYPE_F64
+    return ruda_bytecode_type_is_integer(type)
+            || type == RUDA_BYTECODE_TYPE_BOOL || type == RUDA_BYTECODE_TYPE_F64
         ? RUDA_MANAGED_CELL_RAW64
         : RUDA_MANAGED_CELL_REFERENCE;
 }
@@ -584,8 +584,8 @@ static RudaBytecodeRunStatus ruda_bytecode_value_to_nominal_cell(
     RudaManagedCell *cell
 ) {
     memset(cell, 0, sizeof(*cell));
-    if (value->type == RUDA_BYTECODE_TYPE_I64) {
-        cell->f64_bits = (uint64_t)value->as.i64;
+    if (ruda_bytecode_type_is_integer(value->type)) {
+        cell->f64_bits = value->as.integer_bits;
     } else if (value->type == RUDA_BYTECODE_TYPE_BOOL) {
         cell->f64_bits = value->as.boolean ? 1 : 0;
     } else if (value->type == RUDA_BYTECODE_TYPE_F64) {
@@ -614,8 +614,8 @@ static RudaBytecodeRunStatus ruda_bytecode_nominal_cell_to_value(
     RudaManagedCell cell,
     RudaBytecodeValue *value
 ) {
-    if (value->type == RUDA_BYTECODE_TYPE_I64) {
-        value->as.i64 = (int64_t)cell.f64_bits;
+    if (ruda_bytecode_type_is_integer(value->type)) {
+        value->as.integer_bits = cell.f64_bits;
     } else if (value->type == RUDA_BYTECODE_TYPE_BOOL) {
         value->as.boolean = cell.f64_bits != 0;
     } else if (value->type == RUDA_BYTECODE_TYPE_F64) {
@@ -635,6 +635,43 @@ static RudaBytecodeRunStatus ruda_bytecode_nominal_cell_to_value(
         value->as.managed_reference = cell.reference;
     }
     return RUDA_BYTECODE_RUN_OK;
+}
+
+RudaBytecodeRunStatus ruda_bytecode_execution_new_numeric_option(
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function,
+    uint32_t enum_id,
+    bool some,
+    RudaBytecodeValue payload,
+    RudaBytecodeValue *target
+) {
+    const RudaManagedEnumDescriptor *descriptor = execution != NULL
+        ? ruda_bytecode_enum_descriptor(execution, function, enum_id)
+        : NULL;
+    RudaManagedCell cell;
+    RudaBytecodeRunStatus status;
+    if (execution == NULL || descriptor == NULL || target == NULL) {
+        return execution == NULL
+            ? RUDA_BYTECODE_RUN_INVALID_ARGUMENT
+            : RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    memset(&cell, 0, sizeof(cell));
+    if (some) {
+        status = ruda_bytecode_value_to_nominal_cell(
+            execution, &payload, &cell
+        );
+        if (status != RUDA_BYTECODE_RUN_OK) {
+            return status;
+        }
+    }
+    return ruda_bytecode_run_managed_status(ruda_managed_enum_new(
+        &execution->managed_heap,
+        descriptor,
+        some ? 0 : 1,
+        some ? &cell : NULL,
+        some ? 1 : 0,
+        &target->as.managed_reference
+    ));
 }
 
 static void ruda_bytecode_temporary_cells_dispose(

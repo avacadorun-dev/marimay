@@ -18,6 +18,7 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
     size_t iteration = 0;
     size_t work = 0;
     bool changed = false, has_checked_index_operations = false;
+    bool has_defer_operations = false;
     bool managed_types_initialized = false;
     size_t checked_cell_bytes = 0;
     size_t checked_scratch_bytes = 0;
@@ -184,10 +185,17 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                     || instruction->kind == RUDA_MIR_ARRAY_SET)) {
                 has_checked_index_operations = true;
             }
+            if (instruction != NULL
+                && (instruction->kind == RUDA_MIR_DEFER_REGISTER
+                    || instruction->kind == RUDA_MIR_DEFER_CALL)) {
+                has_defer_operations = true;
+            }
             size_t instruction_work = 1;
             if (instruction != NULL
                 && (instruction->kind == RUDA_MIR_CALL
-                    || instruction->kind == RUDA_MIR_CALL_INTERFACE)) {
+                    || instruction->kind == RUDA_MIR_CALL_INTERFACE
+                    || instruction->kind == RUDA_MIR_DEFER_REGISTER
+                    || instruction->kind == RUDA_MIR_DEFER_CALL)) {
                 const RudaMirCall *call = ruda_mir_call(
                     function,
                     instruction->call
@@ -394,6 +402,12 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
     if (instruction_total != function->instruction_count) {
         status = RUDA_MIR_VERIFY_INVALID_ARGUMENT;
         goto cleanup;
+    }
+    if (has_defer_operations) {
+        status = ruda_mir_verify_defer_control_flow(function, &work);
+        if (status != RUDA_MIR_VERIFY_OK) {
+            goto cleanup;
+        }
     }
     predecessor_offsets = ruda_allocate_array(
         &function->allocator,
@@ -786,7 +800,9 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
                 goto cleanup;
             }
             if (instruction->kind == RUDA_MIR_CALL
-                || instruction->kind == RUDA_MIR_CALL_INTERFACE) {
+                || instruction->kind == RUDA_MIR_CALL_INTERFACE
+                || instruction->kind == RUDA_MIR_DEFER_REGISTER
+                || instruction->kind == RUDA_MIR_DEFER_CALL) {
                 const RudaMirCall *call = ruda_mir_call(
                     function,
                     instruction->call

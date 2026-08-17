@@ -44,6 +44,7 @@ LITERAL_EXPRESSION	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/
 UNARY_EXPRESSION	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-productions.ruda	c:ruda_test_parser_expression_recovery	c:ruda_test_parser_expression_recovery	covered
 BINARY_EXPRESSION	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-productions.ruda	c:ruda_test_parser_expression_recovery	c:ruda_test_parser_expression_recovery	covered
 ASSIGNMENT_EXPRESSION	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-productions.ruda	c:ruda_test_parser_expression_recovery	c:ruda_test_parser_expression_recovery	covered
+CONVERSION_EXPRESSION	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-productions.ruda	c:ruda_test_parser_expression_grammar	c:ruda_test_parser_expression_grammar	covered
 MEMBER_EXPRESSION	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-productions.ruda	c:ruda_test_parser_expression_recovery	c:ruda_test_parser_expression_recovery	covered
 CALL_EXPRESSION	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-productions.ruda	c:ruda_test_parser_expression_recovery	c:ruda_test_parser_expression_recovery	covered
 INDEX_EXPRESSION	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-productions.ruda	c:ruda_test_parser_exact_delimited_grammar	c:ruda_test_parser_exact_delimited_grammar	covered

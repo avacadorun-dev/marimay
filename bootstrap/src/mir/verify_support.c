@@ -30,6 +30,20 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
         return RUDA_MIR_VERIFY_INVALID_REGISTER;
     }
     switch (instruction->kind) {
+        case RUDA_MIR_INTEGER_POLICY:
+        case RUDA_MIR_INTEGER_CONVERT:
+            return ruda_mir_verify_numeric_instruction(
+                function, instruction
+            );
+        case RUDA_MIR_FORMAT_F32:
+        case RUDA_MIR_FORMAT_F64:
+            if (first_type == RUDA_TYPE_INVALID) {
+                return RUDA_MIR_VERIFY_INVALID_REGISTER;
+            }
+            return target_type == RUDA_TYPE_STRING
+                    && first_type == (instruction->kind == RUDA_MIR_FORMAT_F32
+                        ? RUDA_TYPE_F32 : RUDA_TYPE_F64)
+                ? RUDA_MIR_VERIFY_OK : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         case RUDA_MIR_CONSTANT_I64:
             return target_type == RUDA_TYPE_I64
                 ? RUDA_MIR_VERIFY_OK
@@ -465,15 +479,18 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
                 ? RUDA_MIR_VERIFY_OK
                 : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         }
-        case RUDA_MIR_CALL: {
+        case RUDA_MIR_CALL:
+        case RUDA_MIR_DEFER_REGISTER:
+        case RUDA_MIR_DEFER_CALL: {
             const RudaMirCall *call = ruda_mir_call(
                 function,
                 instruction->call
             );
             size_t argument_end = 0;
             size_t index = 0;
+            bool deferred = instruction->kind != RUDA_MIR_CALL;
             if (call == NULL || call->result_type == RUDA_TYPE_NEVER
-                || call->interface_slot != UINT32_MAX
+                || (!deferred && call->interface_slot != UINT32_MAX)
                 || !ruda_size_add(
                     call->argument_start,
                     call->argument_count,
@@ -481,8 +498,35 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
                 ) || argument_end > function->call_arguments.length) {
                 return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
             }
-            if (target_type != call->result_type) {
+            if ((deferred && (target_type != RUDA_TYPE_BOOL
+                    || call->result_type != RUDA_TYPE_VOID))
+                || (!deferred && target_type != call->result_type)) {
                 return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (deferred && call->interface_slot != UINT32_MAX) {
+                const RudaMirCallArgument *receiver = call->argument_count != 0
+                    ? ruda_mir_call_argument(function, call->argument_start)
+                    : NULL;
+                const RudaMirManagedLayoutInfo *receiver_layout =
+                    receiver != NULL && managed_types != NULL
+                    ? ruda_map_get_const(
+                        managed_types, &receiver->type,
+                        sizeof(receiver->type)
+                    )
+                    : NULL;
+                const RudaMirInterface *interface_layout =
+                    receiver_layout != NULL
+                        && receiver_layout->kind
+                            == RUDA_MIR_MANAGED_LAYOUT_INTERFACE
+                        && receiver_layout->layout < function->interfaces.length
+                    ? ruda_vector_at_const(
+                        &function->interfaces, receiver_layout->layout
+                    )
+                    : NULL;
+                if (interface_layout == NULL
+                    || call->interface_slot >= interface_layout->method_count) {
+                    return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+                }
             }
             for (index = call->argument_start; index < argument_end;
                 index += 1) {
@@ -618,6 +662,8 @@ bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind) {
         && kind != RUDA_MIR_CONSTANT_STRING && kind != RUDA_MIR_RECORD_NEW
         && kind != RUDA_MIR_ENUM_NEW && kind != RUDA_MIR_ARRAY_NEW
         && kind != RUDA_MIR_INTERFACE_NEW && kind != RUDA_MIR_CALL
+        && kind != RUDA_MIR_DEFER_REGISTER
+        && kind != RUDA_MIR_DEFER_CALL
         && kind != RUDA_MIR_CALL_INTERFACE;
 }
 bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
@@ -650,6 +696,7 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_ARRAY_SET:
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
         case RUDA_MIR_ARRAY_PUSH:
+        case RUDA_MIR_INTEGER_POLICY:
             return true;
         case RUDA_MIR_CONSTANT_I64:
         case RUDA_MIR_CONSTANT_INTEGER:
@@ -672,6 +719,11 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_CALL:
         case RUDA_MIR_INTERFACE_NEW:
         case RUDA_MIR_CALL_INTERFACE:
+        case RUDA_MIR_INTEGER_CONVERT:
+        case RUDA_MIR_FORMAT_F32:
+        case RUDA_MIR_FORMAT_F64:
+        case RUDA_MIR_DEFER_REGISTER:
+        case RUDA_MIR_DEFER_CALL:
             return false;
     }
     return false;

@@ -37,6 +37,16 @@ const RudaBytecodeInstruction *ruda_bytecode_block_terminator(
     const RudaBytecodeBlock *block
 );
 bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode);
+bool ruda_bytecode_opcode_is_numeric(RudaOpcode opcode);
+bool ruda_bytecode_numeric_option_symbol(
+    RudaBytecodeType payload_type,
+    RudaSymbolId *symbol
+);
+RudaBytecodeVerifyStatus ruda_bytecode_verify_numeric_instruction(
+    const RudaBytecodeFunction *function,
+    const RudaBytecodeInstruction *instruction,
+    unsigned char *assigned
+);
 void ruda_bytecode_transfer_assignments(
     const RudaBytecodeBlock *block,
     unsigned char *assigned,
@@ -53,6 +63,11 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_terminator(
     const unsigned char *assigned
 );
 RudaBytecodeVerifyStatus ruda_bytecode_verify_nominal_metadata(
+    const RudaBytecodeFunction *function,
+    size_t available_work,
+    size_t *work_used
+);
+RudaBytecodeVerifyStatus ruda_bytecode_verify_defer_control_flow(
     const RudaBytecodeFunction *function,
     size_t available_work,
     size_t *work_used

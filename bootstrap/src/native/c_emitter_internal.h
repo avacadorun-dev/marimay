@@ -50,6 +50,8 @@ bool ruda_native_c_program_type_supported(
     const RudaMirFunction *const *functions, size_t count, RudaTypeId type,
     bool result);
 const char *ruda_native_c_type(const RudaMirFunction *function, RudaTypeId type);
+const char *ruda_native_c_integer_kind_name(RudaTypeId type);
+const char *ruda_native_c_integer_conversion_name(RudaTypeId type);
 bool ruda_native_c_buffer_append(RudaNativeCBuffer *buffer, const char *text,
     size_t length);
 bool ruda_native_c_write(RudaNativeCBuffer *buffer, const char *format, ...);
@@ -112,12 +114,32 @@ bool ruda_native_c_emit_managed_instruction(
     RudaNativeCBuffer *buffer, const RudaMirFunction *function,
     const RudaMirFunction *const *functions, size_t count,
     const RudaMirInstruction *instruction);
+bool ruda_native_c_method_possible(
+    const RudaMirFunction *const *functions, size_t count,
+    RudaTypeId interface_type, uint32_t slot, size_t target);
+bool ruda_native_c_emit_defer_instruction(
+    RudaNativeCBuffer *buffer, const RudaMirFunction *function,
+    const RudaMirFunction *const *functions, size_t count,
+    const RudaMirInstruction *instruction);
+bool ruda_native_c_emit_defer_cleanup(
+    RudaNativeCBuffer *buffer, const RudaMirFunction *function,
+    const RudaMirFunction *const *functions, size_t count);
+bool ruda_native_c_write_from_managed_cell(
+    RudaNativeCBuffer *buffer, RudaTypeId type, RudaMirRegister target);
+bool ruda_native_c_write_to_managed_cell(
+    RudaNativeCBuffer *buffer, RudaTypeId type, RudaMirRegister source);
+bool ruda_native_c_emit_numeric_instruction(
+    RudaNativeCBuffer *buffer, const RudaMirFunction *function,
+    const RudaMirInstruction *instruction);
+bool ruda_native_c_emit_format_instruction(
+    RudaNativeCBuffer *buffer, const RudaMirInstruction *instruction);
 bool ruda_native_c_emit_function(RudaNativeCBuffer *buffer,
     const RudaMirFunction *function, const RudaMirFunction *const *functions,
     size_t count);
 bool ruda_native_c_emit_symbol_and_strings(RudaNativeCBuffer *buffer,
     const RudaMirFunction *function);
-bool ruda_native_c_emit_runtime(RudaNativeCBuffer *buffer, size_t max_frames);
+bool ruda_native_c_emit_runtime(
+    RudaNativeCBuffer *buffer, size_t max_frames, size_t max_suppressed);
 bool ruda_native_c_emit_keep_assets(RudaNativeCBuffer *buffer,
     const RudaMirFunction *const *functions, size_t count);
 

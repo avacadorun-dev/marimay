@@ -98,9 +98,15 @@ bool ruda_native_c_emit_symbol_and_strings(
 
 bool ruda_native_c_emit_runtime(
     RudaNativeCBuffer *buffer,
-    size_t max_frames
+    size_t max_frames,
+    size_t max_suppressed
 ) {
-    return ruda_native_c_write(buffer,
+    return ruda_native_c_write(
+            buffer,
+            "#define RUDA_G_MAX_FRAMES %zu\n#define RUDA_G_MAX_SUPPRESSED %zu\n\n",
+            max_frames, max_suppressed
+        )
+        && ruda_native_c_write(buffer,
         "typedef struct { RudaAllocator delegate; size_t attempts; size_t failure_index; } ruda_g_fail_allocator;\n"
         "typedef struct { RudaAllocator allocator; RudaManagedHeap heap; ruda_g_fail_allocator fail_allocator; } ruda_g_execution;\n")
         && ruda_native_c_write(buffer,
@@ -112,13 +118,16 @@ bool ruda_native_c_emit_runtime(
         && ruda_native_c_write(buffer,
             "typedef struct { const unsigned char *symbol; size_t start; size_t end; } ruda_g_frame;\n")
         && ruda_native_c_write(buffer,
-            "typedef struct { const char *code; ruda_g_string message; unsigned char message_storage[96]; const unsigned char *symbol; size_t start; size_t end; ruda_g_frame *frames; size_t frame_count; size_t frame_capacity; } ruda_g_panic;\n")
+            "typedef struct { const char *code; ruda_g_string message; unsigned char message_storage[96]; const unsigned char *symbol; size_t start; size_t end; ruda_g_frame frames[RUDA_G_MAX_FRAMES]; size_t frame_count; } ruda_g_suppressed_panic;\n"
+            "typedef struct { const char *code; ruda_g_string message; unsigned char message_storage[96]; const unsigned char *symbol; size_t start; size_t end; ruda_g_frame *frames; size_t frame_count; size_t frame_capacity; ruda_g_suppressed_panic *suppressed; size_t suppressed_count; size_t suppressed_capacity; } ruda_g_panic;\n")
         && ruda_native_c_write(buffer,
             "static bool ruda_g_string_equal(ruda_g_string a, ruda_g_string b) { return a.length == b.length && (a.length == 0 || memcmp(a.data, b.data, a.length) == 0); }\n")
         && ruda_native_c_write(buffer,
             "static bool ruda_g_append_frame(ruda_g_panic *p, const unsigned char *symbol, size_t start, size_t end) { if (p == NULL || p->frame_count >= p->frame_capacity) return false; p->frames[p->frame_count].symbol = symbol; p->frames[p->frame_count].start = start; p->frames[p->frame_count].end = end; p->frame_count += 1; return true; }\n")
         && ruda_native_c_write(buffer,
-            "static int ruda_g_begin_panic(ruda_g_panic *p, ruda_g_string message, const unsigned char *symbol, size_t start, size_t end) { if (p == NULL) return 4; p->code = \"G4000\"; p->message = message; p->symbol = symbol; p->start = start; p->end = end; p->frame_count = 0; return ruda_g_append_frame(p, symbol, start, end) ? 4 : 5; }\n")
+            "static bool ruda_g_append_suppressed_record(ruda_g_panic *p, const ruda_g_suppressed_panic *source) { ruda_g_suppressed_panic *target; if (p == NULL || source == NULL || p->suppressed_count >= p->suppressed_capacity || source->frame_count > RUDA_G_MAX_FRAMES) return false; target = &p->suppressed[p->suppressed_count++]; *target = *source; if (source->message.data == source->message_storage) { if (source->message.length > sizeof(target->message_storage)) return false; memcpy(target->message_storage, source->message_storage, source->message.length); target->message.data = target->message_storage; } return true; }\n"
+            "static bool ruda_g_append_suppressed_panic(ruda_g_panic *p, const ruda_g_panic *source) { ruda_g_suppressed_panic observed; size_t i; if (p == NULL || source == NULL || source->frame_count > RUDA_G_MAX_FRAMES) return false; memset(&observed, 0, sizeof(observed)); observed.code = source->code; observed.message = source->message; observed.symbol = source->symbol; observed.start = source->start; observed.end = source->end; observed.frame_count = source->frame_count; if (source->frame_count != 0) memcpy(observed.frames, source->frames, source->frame_count * sizeof(*source->frames)); if (source->message.data == source->message_storage) { if (source->message.length > sizeof(observed.message_storage)) return false; memcpy(observed.message_storage, source->message_storage, source->message.length); observed.message.data = observed.message_storage; } if (!ruda_g_append_suppressed_record(p, &observed)) return false; for (i = 0; i < source->suppressed_count; i += 1) if (!ruda_g_append_suppressed_record(p, &source->suppressed[i])) return false; return true; }\n"
+            "static int ruda_g_begin_panic(ruda_g_panic *p, ruda_g_string message, const unsigned char *symbol, size_t start, size_t end) { if (p == NULL) return 4; p->code = \"G4000\"; p->message = message; p->symbol = symbol; p->start = start; p->end = end; p->frame_count = 0; p->suppressed_count = 0; return ruda_g_append_frame(p, symbol, start, end) ? 4 : 5; }\n")
         && ruda_native_c_write(buffer,
             "static void *ruda_g_fail_allocate(void *context, size_t size) { ruda_g_fail_allocator *state = context; if (state == NULL) return NULL; if (state->attempts++ == state->failure_index) return NULL; return state->delegate.allocate(state->delegate.context, size); }\n"
             "static void *ruda_g_fail_resize(void *context, void *pointer, size_t old_size, size_t new_size) { ruda_g_fail_allocator *state = context; if (state == NULL) return NULL; if (state->attempts++ == state->failure_index) return NULL; return state->delegate.resize(state->delegate.context, pointer, old_size, new_size); }\n"
@@ -129,7 +138,7 @@ bool ruda_native_c_emit_runtime(
         && ruda_native_c_write(buffer,
             "static size_t ruda_g_decimal_i64(unsigned char *out, size_t at, int64_t value) { uint64_t magnitude = (uint64_t)value; if (value < 0) { out[at++] = '-'; magnitude = UINT64_C(0) - magnitude; } return ruda_g_decimal_u64(out, at, magnitude); }\n")
         && ruda_native_c_write(buffer,
-            "static int ruda_g_begin_bounds(ruda_g_panic *p, int64_t index, size_t length, const unsigned char *symbol, size_t start, size_t end) { static const unsigned char prefix[] = \"array index \"; static const unsigned char suffix[] = \" is outside length \"; size_t at = 0; if (p == NULL) return 4; memcpy(p->message_storage + at, prefix, sizeof(prefix) - 1); at += sizeof(prefix) - 1; at = ruda_g_decimal_i64(p->message_storage, at, index); memcpy(p->message_storage + at, suffix, sizeof(suffix) - 1); at += sizeof(suffix) - 1; at = ruda_g_decimal_u64(p->message_storage, at, (uint64_t)length); p->code = \"G4002\"; p->message.data = p->message_storage; p->message.length = at; p->symbol = symbol; p->start = start; p->end = end; p->frame_count = 0; return ruda_g_append_frame(p, symbol, start, end) ? 4 : 5; }\n")
+            "static int ruda_g_begin_bounds(ruda_g_panic *p, int64_t index, size_t length, const unsigned char *symbol, size_t start, size_t end) { static const unsigned char prefix[] = \"array index \"; static const unsigned char suffix[] = \" is outside length \"; size_t at = 0; if (p == NULL) return 4; memcpy(p->message_storage + at, prefix, sizeof(prefix) - 1); at += sizeof(prefix) - 1; at = ruda_g_decimal_i64(p->message_storage, at, index); memcpy(p->message_storage + at, suffix, sizeof(suffix) - 1); at += sizeof(suffix) - 1; at = ruda_g_decimal_u64(p->message_storage, at, (uint64_t)length); p->code = \"G4002\"; p->message.data = p->message_storage; p->message.length = at; p->symbol = symbol; p->start = start; p->end = end; p->frame_count = 0; p->suppressed_count = 0; return ruda_g_append_frame(p, symbol, start, end) ? 4 : 5; }\n")
         && ruda_native_c_write(buffer,
             "static int ruda_g_managed_status(RudaManagedStatus status) { if (status == RUDA_MANAGED_OK) return 0; if (status == RUDA_MANAGED_ALLOCATION_FAILED) return 5; if (status == RUDA_MANAGED_LIMIT_REACHED || status == RUDA_MANAGED_LENGTH_LIMIT) return 6; if (status == RUDA_MANAGED_INVALID_REFERENCE || status == RUDA_MANAGED_TYPE_MISMATCH) return 7; return 5; }\n")
         && ruda_native_c_write(buffer,
@@ -137,12 +146,7 @@ bool ruda_native_c_emit_runtime(
         && ruda_native_c_write(buffer,
             "static void ruda_g_print_hex(const unsigned char *data, size_t length) { size_t i; for (i = 0; i < length; i += 1) printf(\"%%02x\", (unsigned int)data[i]); }\n")
         && ruda_native_c_write(buffer,
-            "static void ruda_g_print_panic(const ruda_g_panic *p) { size_t i; printf(\"panic:%%s:\", p->code); ruda_g_print_hex(p->symbol, 16); printf(\":%%zu:%%zu:%%zu:\", p->start, p->end, p->message.length); ruda_g_print_hex(p->message.data, p->message.length); printf(\":%%zu\", p->frame_count); for (i = 0; i < p->frame_count; i += 1) { putchar(':'); ruda_g_print_hex(p->frames[i].symbol, 16); printf(\":%%zu:%%zu\", p->frames[i].start, p->frames[i].end); } putchar('\\n'); }\n")
-        && ruda_native_c_write(
-            buffer,
-            "#define RUDA_G_MAX_FRAMES %zu\n\n",
-            max_frames
-        );
+            "static void ruda_g_print_panic(const ruda_g_panic *p) { size_t i, j; printf(\"panic:%%s:\", p->code); ruda_g_print_hex(p->symbol, 16); printf(\":%%zu:%%zu:%%zu:\", p->start, p->end, p->message.length); ruda_g_print_hex(p->message.data, p->message.length); printf(\":%%zu\", p->frame_count); for (i = 0; i < p->frame_count; i += 1) { putchar(':'); ruda_g_print_hex(p->frames[i].symbol, 16); printf(\":%%zu:%%zu\", p->frames[i].start, p->frames[i].end); } if (p->suppressed_count != 0) { printf(\":suppressed:%%zu\", p->suppressed_count); for (i = 0; i < p->suppressed_count; i += 1) { const ruda_g_suppressed_panic *s = &p->suppressed[i]; printf(\":%%s:\", s->code); ruda_g_print_hex(s->symbol, 16); printf(\":%%zu:%%zu:%%zu:\", s->start, s->end, s->message.length); ruda_g_print_hex(s->message.data, s->message.length); printf(\":%%zu\", s->frame_count); for (j = 0; j < s->frame_count; j += 1) { putchar(':'); ruda_g_print_hex(s->frames[j].symbol, 16); printf(\":%%zu:%%zu\", s->frames[j].start, s->frames[j].end); } } } putchar('\\n'); }\n");
 }
 
 bool ruda_native_c_emit_keep_assets(
@@ -178,7 +182,7 @@ bool ruda_native_c_emit_keep_assets(
     }
     return ruda_native_c_write(
         buffer,
-        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n  ruda_g_keep_managed();\n}\n\n"
+        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_append_suppressed_panic;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n  ruda_g_keep_managed();\n}\n\n"
     );
 }
 
@@ -200,6 +204,7 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     RudaNativeCEmitStatus status = RUDA_NATIVE_C_EMIT_OK;
     size_t bytes = 0;
     size_t cycle_stack_bytes = 0;
+    size_t max_suppressed = 1;
     size_t index = 0;
     const RudaMirFunction *entry = NULL;
     bool uses_f64 = false;
@@ -260,6 +265,14 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
             ordered[index], ordered, program->function_count
         );
         if (status != RUDA_NATIVE_C_EMIT_OK) {
+            goto cleanup;
+        }
+        if (!ruda_size_add(
+                max_suppressed,
+                ordered[index]->calls.length,
+                &max_suppressed
+            )) {
+            status = RUDA_NATIVE_C_EMIT_LIMIT_REACHED;
             goto cleanup;
         }
         if (ordered[index]->result_type == RUDA_TYPE_F64) {
@@ -328,12 +341,15 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     if (!ruda_vector_init(&buffer.bytes, allocator, sizeof(char))) { status = RUDA_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup; }
     if (!ruda_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"ruda/base/checked_i64.h\"\n#include \"ruda/base/allocator.h\"\n#include \"ruda/runtime/managed.h\"\n")
         || !ruda_native_c_write(&buffer, "#include \"ruda/base/checked_integer.h\"\n")
+        || !ruda_native_c_write(&buffer, "#include \"ruda/base/number_format.h\"\n")
         || (uses_f64 && !ruda_native_c_write(
             &buffer,
             "#include \"ruda/base/f64.h\"\n"
         ))
         || !ruda_native_c_write(&buffer, "\n")
-        || !ruda_native_c_emit_runtime(&buffer, program->function_count)) goto emit_fail;
+        || !ruda_native_c_emit_runtime(
+            &buffer, program->function_count, max_suppressed
+        )) goto emit_fail;
     for (index = 0; index < program->function_count; index += 1) {
         if (!ruda_native_c_emit_symbol_and_strings(&buffer, ordered[index])) goto emit_fail;
     }
@@ -349,14 +365,14 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_signature(&buffer, ordered[index], true)) goto emit_fail;
     if (!ruda_native_c_write(&buffer, "\n")) goto emit_fail;
     for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_function(&buffer, ordered[index], ordered, program->function_count)) goto emit_fail;
-    if (!ruda_native_c_write(&buffer, "int main(void) { size_t ruda_g_start = 0, ruda_g_end = 0; int ruda_g_s; static ruda_g_frame ruda_g_frames[RUDA_G_MAX_FRAMES]; ruda_g_panic ruda_g_p = {0}; ruda_g_execution ruda_g_x = {0}; RudaManagedHeapOptions ruda_g_heap_options; ")) goto emit_fail;
+    if (!ruda_native_c_write(&buffer, "int main(void) { size_t ruda_g_start = 0, ruda_g_end = 0; int ruda_g_s; static ruda_g_frame ruda_g_frames[RUDA_G_MAX_FRAMES]; static ruda_g_suppressed_panic ruda_g_suppressed[RUDA_G_MAX_SUPPRESSED]; ruda_g_panic ruda_g_p = {0}; ruda_g_execution ruda_g_x = {0}; RudaManagedHeapOptions ruda_g_heap_options; ")) goto emit_fail;
     for (index = 0; index < program->function_count; index += 1) {
         if (!ruda_native_c_write(&buffer, "(void)&")
             || !ruda_native_c_symbol(&buffer, ordered[index]->symbol)
             || !ruda_native_c_write(&buffer, "; ")) goto emit_fail;
     }
     if (uses_f64 && !ruda_native_c_write(&buffer, "if (!ruda_f64_binary64_supported()) { fputs(\"unsupported:f64\\n\", stderr); return 2; } ")) goto emit_fail;
-    if (!ruda_native_c_write(&buffer, "ruda_g_keep_assets(); ruda_g_p.frames = ruda_g_frames; ruda_g_p.frame_capacity = RUDA_G_MAX_FRAMES; ruda_g_x.allocator = ruda_g_make_allocator(&ruda_g_x.fail_allocator); ruda_g_heap_options = ruda_managed_heap_default_options(); ruda_g_heap_options.collect_before_allocation = RUDA_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)RUDA_G_MAX_OBJECTS < ruda_g_heap_options.max_objects) ruda_g_heap_options.max_objects = (size_t)RUDA_G_MAX_OBJECTS; if (!ruda_managed_heap_init(&ruda_g_x.heap, ruda_g_x.allocator, ruda_g_heap_options)) { fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
+    if (!ruda_native_c_write(&buffer, "ruda_g_keep_assets(); ruda_g_p.frames = ruda_g_frames; ruda_g_p.frame_capacity = RUDA_G_MAX_FRAMES; ruda_g_p.suppressed = ruda_g_suppressed; ruda_g_p.suppressed_capacity = RUDA_G_MAX_SUPPRESSED; ruda_g_x.allocator = ruda_g_make_allocator(&ruda_g_x.fail_allocator); ruda_g_heap_options = ruda_managed_heap_default_options(); ruda_g_heap_options.collect_before_allocation = RUDA_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)RUDA_G_MAX_OBJECTS < ruda_g_heap_options.max_objects) ruda_g_heap_options.max_objects = (size_t)RUDA_G_MAX_OBJECTS; if (!ruda_managed_heap_init(&ruda_g_x.heap, ruda_g_x.allocator, ruda_g_heap_options)) { fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
     if (entry->result_type >= RUDA_TYPE_I8
         && entry->result_type <= RUDA_TYPE_U64
         && entry->result_type != RUDA_TYPE_I64) {

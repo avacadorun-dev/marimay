@@ -180,7 +180,22 @@ Assignments evaluate the target location first and the value second, each exactl
 | `void` | successful absence of a value |
 | `never` | an uninhabited result of an expression that cannot complete normally |
 
-Integer overflow traps in all build modes. Explicit operations such as `wrappingAdd`, `saturatingAdd`, and `checkedAdd` request other behavior. Integer division and remainder by zero and an out-of-range shift panic. Narrowing and signedness-changing conversions are explicit and return `Option` or `Result` where information may be lost.
+Integer overflow traps in all build modes. Explicit operations such as `wrappingAdd`, `saturatingAdd`, and `checkedAdd` request other behavior. Integer division and remainder by zero and an out-of-range shift panic. Narrowing and signedness-changing integer conversions are explicit and return `Option` where information may be lost.
+
+Under D047 the compiler-known prelude exposes checked, wrapping, and
+saturating `Add`, `Subtract`, `Multiply`, `Divide`, `Remainder`, `Negate`,
+`ShiftLeft`, and `ShiftRight` families for the eight integer primitives.
+Checked functions return `Option<T>` for overflow and invalid operands;
+wrapping and saturating functions return `T` and retain the ordinary panic for
+zero divisors and invalid shift counts. Exact signatures and the `MIN / -1`
+outcomes are defined by D047.
+
+An explicit integer conversion is `value as Target`. When the entire source
+range fits in `Target`, the expression has type `Target`; otherwise it has type
+`Option<Target>` and returns `None` for an unrepresentable runtime value. The
+form does not define integer/float conversion and never wraps or saturates.
+`as` binds between prefix unary and multiplicative operators and associates
+left to right.
 
 Signed `/` rounds its mathematical quotient toward zero. Signed `%` is
 defined by `left - (left / right) * right`; a nonzero remainder has the sign of

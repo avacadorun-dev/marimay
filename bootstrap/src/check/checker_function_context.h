@@ -15,7 +15,15 @@ typedef struct RudaCheckLocal {
 typedef struct RudaLoopContext {
     RudaMirBlockId break_target;
     RudaMirBlockId continue_target;
+    size_t scope_depth;
 } RudaLoopContext;
+
+typedef struct RudaDeferredCall {
+    RudaMirCallId call;
+    RudaMirRegister marker;
+    size_t scope_depth;
+    RudaMirSpan span;
+} RudaDeferredCall;
 
 typedef struct RudaInitializationSnapshot {
     RudaAllocator allocator;
@@ -35,6 +43,7 @@ typedef struct RudaFunctionChecker {
     RudaChecker *checker;
     RudaVector locals;
     RudaVector loops;
+    RudaVector defers;
     RudaMirFunction mir;
     RudaMirBlockId block;
     RudaTypeId result_type;

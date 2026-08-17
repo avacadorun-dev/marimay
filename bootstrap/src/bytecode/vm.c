@@ -1,10 +1,7 @@
 #include "vm_internal.h"
-
 #include <limits.h>
 #include <string.h>
-
 #include "ruda/base/f64.h"
-
 RudaBytecodeRunStatus ruda_bytecode_run(
     const RudaBytecodeFunction *function,
     const RudaBytecodeValue *arguments,
@@ -233,7 +230,6 @@ cleanup:
     ruda_deallocate(&allocator, registers, register_bytes);
     return status;
 }
-
 typedef struct RudaBytecodeRunFrame {
     const RudaBytecodeProgramFunction *function;
     RudaBytecodeValue *registers;
@@ -246,8 +242,10 @@ typedef struct RudaBytecodeRunFrame {
     bool return_is_never;
     RudaBytecodeSpan call_span;
     RudaBytecodeManagedRoots *managed_roots;
+    RudaBytecodeCallId *defer_stack;
+    size_t defer_stack_bytes;
+    size_t defer_count;
 } RudaBytecodeRunFrame;
-
 static void ruda_bytecode_run_frame_dispose(
     RudaBytecodeRunFrame *frame,
     const RudaAllocator *allocator,
@@ -263,6 +261,9 @@ static void ruda_bytecode_run_frame_dispose(
                 sizeof(*frame->managed_roots)
             );
         }
+        ruda_deallocate(
+            allocator, frame->defer_stack, frame->defer_stack_bytes
+        );
         ruda_deallocate(allocator, frame->registers, frame->register_bytes);
         memset(frame, 0, sizeof(*frame));
     }
@@ -298,6 +299,22 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
         return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     memset(frame->registers, 0, frame->register_bytes);
+    if (body->calls.length != 0) {
+        if (!ruda_size_multiply(
+                body->calls.length, sizeof(*frame->defer_stack),
+                &frame->defer_stack_bytes
+            )) {
+            ruda_bytecode_run_frame_dispose(frame, &allocator, NULL);
+            return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        }
+        frame->defer_stack = ruda_allocate(
+            &allocator, frame->defer_stack_bytes
+        );
+        if (frame->defer_stack == NULL) {
+            ruda_bytecode_run_frame_dispose(frame, &allocator, NULL);
+            return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        }
+    }
     for (index = 0; index < body->register_types.length; index += 1) {
         const RudaBytecodeType *type = ruda_vector_at_const(
             &body->register_types,
@@ -323,7 +340,6 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
     frame->call_span = call_span;
     return RUDA_BYTECODE_RUN_OK;
 }
-
 static RudaBytecodeRunStatus ruda_bytecode_run_frame_roots_init(
     RudaBytecodeRunFrame *frame,
     RudaBytecodeExecution *execution,
@@ -625,6 +641,48 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
             }
             goto cleanup;
         }
+        if (instruction->opcode == RUDA_OPCODE_DEFER_REGISTER) {
+            RudaBytecodeCallId call_id = (RudaBytecodeCallId)
+                instruction->operands[1].unsigned_value;
+            if (frame->defer_count >= body->calls.length) {
+                status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                goto cleanup;
+            }
+            frame->defer_stack[frame->defer_count] = call_id;
+            frame->defer_count += 1;
+            frame->registers[
+                (size_t)instruction->operands[0].unsigned_value
+            ].as.boolean = true;
+            frame->instruction += 1;
+            continue;
+        }
+        if (instruction->opcode == RUDA_OPCODE_DEFER_CALL) {
+            RudaBytecodeCallId call_id = (RudaBytecodeCallId)
+                instruction->operands[1].unsigned_value;
+            const RudaBytecodeCall *call = call_id < body->calls.length
+                ? ruda_bytecode_call(body, call_id)
+                : NULL;
+            if (call == NULL || frame->defer_count == 0
+                || frame->defer_stack[frame->defer_count - 1] != call_id) {
+                status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                goto cleanup;
+            }
+            frame->defer_count -= 1;
+            status = ruda_bytecode_run_deferred_program_call(
+                program, body, call, instruction, frame->registers,
+                allocator, options, false
+            );
+            if (status == RUDA_BYTECODE_RUN_PANIC) {
+                status = ruda_bytecode_run_append_panic_frame(
+                    options.panic, frame->function->symbol, instruction->span
+                );
+            }
+            if (status != RUDA_BYTECODE_RUN_OK) {
+                goto cleanup;
+            }
+            frame->instruction += 1;
+            continue;
+        }
         if (instruction->opcode == RUDA_OPCODE_CALL_DIRECT
             || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
             || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER
@@ -796,6 +854,33 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
 
 cleanup:
     while (frame_count != 0) {
+        RudaBytecodeRunFrame *frame = &frames[frame_count - 1];
+        const RudaBytecodeFunction *body = &frame->function->body;
+        while (frame->defer_count != 0) {
+            RudaBytecodeCallId call_id;
+            const RudaBytecodeCall *call;
+            RudaBytecodeInstruction instruction;
+            RudaBytecodeRunStatus cleanup_status;
+            frame->defer_count -= 1;
+            call_id = frame->defer_stack[frame->defer_count];
+            call = call_id < body->calls.length
+                ? ruda_bytecode_call(body, call_id)
+                : NULL;
+            memset(&instruction, 0, sizeof(instruction));
+            instruction.opcode = RUDA_OPCODE_DEFER_CALL;
+            instruction.operands[1].unsigned_value = call_id;
+            cleanup_status = ruda_bytecode_run_deferred_program_call(
+                program, body, call, &instruction, frame->registers,
+                allocator, options, status == RUDA_BYTECODE_RUN_PANIC
+            );
+            if (cleanup_status == RUDA_BYTECODE_RUN_PANIC
+                && status != RUDA_BYTECODE_RUN_PANIC) {
+                status = RUDA_BYTECODE_RUN_PANIC;
+            } else if (status == RUDA_BYTECODE_RUN_OK
+                && cleanup_status != RUDA_BYTECODE_RUN_OK) {
+                status = cleanup_status;
+            }
+        }
         frame_count -= 1;
         ruda_bytecode_run_frame_dispose(
             &frames[frame_count], &allocator, options.execution

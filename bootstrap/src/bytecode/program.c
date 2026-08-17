@@ -7,6 +7,7 @@
 #include "bytecode_internal.h"
 #include "program_internal.h"
 
+
 enum {
     RUDA_BYTECODE_PROGRAM_MAGIC_LENGTH = 8,
     RUDA_BYTECODE_PROGRAM_DIGEST_LENGTH = 32

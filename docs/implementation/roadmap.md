@@ -49,8 +49,19 @@ Preview checkpoint 6 evidence: [numeric widths, explicit conversions,
 strings, and D046 formatters](evidence/cp6-numeric-widths-2026-08-17.md).
 This locally closes the numeric/text preview slice across checker, MIR, VM,
 bytecode, and native C17, including malformed bytecode and O0/O2 differential
-coverage. I2–I5 remain `in-progress`; I6 remains `not-started`, and this
-evidence does not claim `std/io`, `ruda run`, or public stdout.
+coverage. The checkpoint-7 re-audit additionally closes all D047 public-name
+checks, raw-binary32 native formatter execution, and registered numeric
+formatter fixtures. I2–I5 remain `in-progress`; I6 remains `not-started`, and
+this evidence does not claim `std/io`, `ruda run`, or public stdout.
+
+Preview checkpoint 7 evidence: [D041 lexical defer across checker, verified
+MIR, encoded VM, and native C17](evidence/cp7-lexical-defer-2026-08-18.md).
+The slice covers every pre-task-runtime exit edge, exact LIFO/once semantics,
+explicit cleanup-panic precedence and suppressed failures, verifier and
+allocation negatives including suppression OOM paths, unequal-stack CFG merge
+rejection, dedicated formatter fixtures, and VM/native differential execution.
+I6 remains `not-started`; scheduler and cancellation runtime work were not
+started.
 
 ## Immediate execution priority: V0 engine-equivalence spine
 
@@ -88,10 +99,10 @@ generated C17; the configured Linux x86_64 matrix is green in
 checkpoint 2 established deterministic local packages and D043 invariance;
 preview checkpoint 3 now publishes bounded occurrence facts and exact
 resolver-owned dot completion through generation/snapshot-safe query APIs.
-The next ordered preview checkpoint is the constrained generic
-`Option`/`Result`/`?`/`mapError` vertical slice. Production LSP transport and
-public `ruda check` remain later work. Do not broaden unrelated syntax work
-ahead of those documented paths.
+Preview checkpoints 4–7 now cover constrained generics, generic arrays,
+numeric/text primitives, and lexical cleanup. The next ordered preview
+checkpoint is authoritative `ruda check`. Production LSP transport and later
+execution/I/O work remain out of scope until their ordered checkpoints.
 
 I2, I3, and I4 are intentionally overlapped after the minimally useful pure
 subset exists. The next execution release blocker is the first complete V0

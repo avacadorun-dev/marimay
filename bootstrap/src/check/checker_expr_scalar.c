@@ -972,6 +972,10 @@
         );
         return false;
     }
+    if ((numeric_operator || bitwise_operator || shift_operator)
+        && ruda_checker_private_type_is_integer(operand_type)) {
+        result_type = operand_type;
+    }
     if (operand_type == RUDA_TYPE_F64) {
         if (bitwise_operator || shift_operator
             || operator_token->kind == RUDA_TOKEN_PERCENT) {

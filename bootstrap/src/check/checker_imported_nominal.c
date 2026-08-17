@@ -140,8 +140,10 @@ bool ruda_checker_private_imported_enum_layout(
             payload_cursor += 1;
         }
     }
-    if (!ruda_mir_add_enum(&function->mir, enum_value->type, variants,
-            enum_value->variants.length, payloads, payload_count, layout)) {
+    if (!ruda_mir_add_enum_with_symbol(
+            &function->mir, enum_value->symbol, enum_value->type, variants,
+            enum_value->variants.length, payloads, payload_count, layout
+        )) {
         ruda_checker_fail(function->checker, RUDA_CHECK_ALLOCATION_FAILED);
         goto cleanup;
     }

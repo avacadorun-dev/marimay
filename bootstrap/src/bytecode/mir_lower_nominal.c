@@ -218,6 +218,53 @@ static RudaSymbolId ruda_mir_bytecode_nominal_symbol(
     return symbol;
 }
 
+static RudaSymbolId ruda_mir_bytecode_enum_symbol(
+    const RudaMirFunction *function,
+    const RudaMirEnum *enumeration
+) {
+    RudaSymbolId option_base;
+    RudaSymbolId specialized;
+    const RudaMirEnumVariant *some = enumeration != NULL
+            && enumeration->variant_count == 2
+        ? ruda_vector_at_const(
+            &function->enum_variants, enumeration->variant_start
+        ) : NULL;
+    const RudaMirEnumVariant *none = enumeration != NULL
+            && enumeration->variant_count == 2
+        ? ruda_vector_at_const(
+            &function->enum_variants, enumeration->variant_start + 1
+        ) : NULL;
+    const RudaMirEnumPayload *payload = enumeration != NULL && some != NULL
+            && some->payload_count == 1
+        ? ruda_vector_at_const(
+            &function->enum_payloads,
+            some->payload_start
+        ) : NULL;
+    RudaBytecodeType payload_type = RUDA_BYTECODE_TYPE_INVALID;
+    memset(&option_base, 0, sizeof(option_base));
+    memset(&specialized, 0, sizeof(specialized));
+    if (enumeration != NULL
+        && ruda_symbol_id_from_bytes(
+            "std", 3, "prelude", 7,
+            (const unsigned char *)"Option", 6, 0, &option_base
+        ) && ruda_symbol_id_equal(enumeration->symbol, option_base)
+        && enumeration->payload_count == 1 && some != NULL
+        && some->kind == RUDA_MIR_ENUM_VARIANT_POSITIONAL
+        && some->payload_start == 0 && some->payload_count == 1
+        && none != NULL && none->kind == RUDA_MIR_ENUM_VARIANT_UNIT
+        && none->payload_count == 0 && payload != NULL
+        && ruda_mir_bytecode_type(
+            function, payload->type, false, false, &payload_type
+        ) && ruda_bytecode_numeric_option_symbol(
+            payload_type, &specialized
+        )) {
+        return specialized;
+    }
+    return enumeration != NULL
+        ? ruda_mir_bytecode_nominal_symbol(enumeration->type, 0x45)
+        : specialized;
+}
+
 static RudaMirBytecodeLowerStatus ruda_mir_bytecode_record_layouts(
     const RudaMirFunction *input,
     RudaBytecodeFunction *output,
@@ -349,7 +396,7 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_enum_layouts(
         }
         if (!ruda_bytecode_add_enum_layout(
                 output,
-                ruda_mir_bytecode_nominal_symbol(enumeration->type, 0x45),
+                ruda_mir_bytecode_enum_symbol(input, enumeration),
                 variants,
                 enumeration->variant_count,
                 payloads,

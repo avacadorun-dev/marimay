@@ -1,5 +1,6 @@
 #include "checker_statement_api.h"
 #include "checker_core_api.h"
+#include "checker_defer_api.h"
 #include "checker_expr_records_api.h"
 #include "checker_expr_scalar_api.h"
 #include "checker_lookup_api.h"
@@ -639,6 +640,9 @@ bool ruda_compound_assignment_kind(
     size_t end
 ) {
     RudaMirTerminator terminator;
+    if (!ruda_checker_private_emit_defers_from(function, 0)) {
+        return false;
+    }
     memset(&terminator, 0, sizeof(terminator));
     terminator.kind = RUDA_MIR_RETURN;
     terminator.value = value;

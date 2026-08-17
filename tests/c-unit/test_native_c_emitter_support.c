@@ -121,6 +121,7 @@ void ruda_test_native_compile_and_run_configured(
     char runtime_include_argument[1024];
     char checked_source_path[1024];
     char checked_integer_source_path[1024];
+    char number_format_source_path[1024];
     char f64_source_path[1024];
     char allocator_source_path[1024];
     char provenance_source_path[1024];
@@ -183,6 +184,17 @@ void ruda_test_native_compile_and_run_configured(
     );
     if (written < 0
         || (size_t)written >= sizeof(checked_integer_source_path)) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    written = snprintf(
+        number_format_source_path,
+        sizeof(number_format_source_path),
+        "%s/bootstrap/src/base/number_format.c",
+        RUDA_TEST_SOURCE_DIR
+    );
+    if (written < 0
+        || (size_t)written >= sizeof(number_format_source_path)) {
         RUDA_EXPECT(false);
         goto cleanup;
     }
@@ -275,7 +287,7 @@ void ruda_test_native_compile_and_run_configured(
     for (optimization_index = 0;
         optimization_index < sizeof(optimizations) / sizeof(optimizations[0]);
         optimization_index += 1) {
-        const char *arguments[36];
+        const char *arguments[40];
         size_t argument_count = 0;
         written = snprintf(
             executable_path,
@@ -313,6 +325,7 @@ void ruda_test_native_compile_and_run_configured(
         arguments[argument_count++] = source_path;
         arguments[argument_count++] = checked_source_path;
         arguments[argument_count++] = checked_integer_source_path;
+        arguments[argument_count++] = number_format_source_path;
         arguments[argument_count++] = f64_source_path;
         arguments[argument_count++] = allocator_source_path;
         arguments[argument_count++] = provenance_source_path;
@@ -353,6 +366,15 @@ void ruda_test_native_compile_and_run_configured(
                 expected_output,
                 process.output.length
             ) == 0);
+        if (process.exit_code != expected_exit || process.signaled
+            || process.output.length != strlen(expected_output)
+            || memcmp(
+                process.output.data,
+                expected_output,
+                process.output.length
+            ) != 0) {
+            (void)fwrite(process.output.data, 1, process.output.length, stderr);
+        }
         ruda_process_result_dispose(&process);
         (void)remove(executable_path);
     }

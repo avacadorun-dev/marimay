@@ -55,6 +55,10 @@ typedef struct RudaMirManagedInterface {
     size_t allocation_size;
     RudaSymbolId methods[];
 } RudaMirManagedInterface;
+RudaMirVerifyStatus ruda_mir_verify_defer_control_flow(
+    const RudaMirFunction *function,
+    size_t *work
+);
 RudaTypeId ruda_mir_register_type(
     const RudaMirFunction *function,
     RudaMirRegister register_id
@@ -144,6 +148,13 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
     const RudaMirInstruction *instruction,
     const RudaMap *managed_types
 );
+RudaMirVerifyStatus ruda_mir_verify_numeric_instruction(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction
+);
+RudaMirInterpretStatus ruda_mir_execute_format_instruction(
+    const RudaMirInstruction *instruction, const RudaMirValue *source,
+    RudaMirValue *target, RudaMirInterpretOptions options);
 bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind);
 bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind);
 bool ruda_mir_instruction_uses_third(RudaMirInstructionKind kind);
@@ -245,6 +256,14 @@ RudaMirInterpretStatus ruda_mir_execution_new_enum(
     size_t payload_value_count,
     RudaMirReference *result
 );
+RudaMirInterpretStatus ruda_mir_execute_numeric_instruction(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    const RudaMirValue *first,
+    const RudaMirValue *second,
+    RudaMirValue *target,
+    RudaMirInterpretOptions options
+);
 RudaMirInterpretStatus ruda_mir_execution_array_preflight(
     RudaMirExecution *execution,
     size_t length,
@@ -272,5 +291,20 @@ RudaMirInterpretStatus ruda_mir_execution_new_interface(
     const RudaSymbolId *methods,
     size_t method_count,
     RudaMirReference *result
+);
+RudaMirInterpretStatus ruda_mir_invoke_call(
+    const RudaMirFunction *function, RudaMirCallId call_id,
+    const RudaMirValue *registers, size_t register_count,
+    const RudaAllocator *allocator, RudaMirInterpretOptions options,
+    const RudaSymbolId *selected_callee,
+    const RudaMirValue *selected_receiver, RudaMirValue *result
+);
+RudaMirInterpretStatus ruda_mir_invoke_deferred_call(
+    const RudaMirFunction *function, RudaMirCallId call_id,
+    const RudaMirValue *registers, size_t register_count,
+    const RudaAllocator *allocator, RudaMirInterpretOptions options
+);
+bool ruda_mir_panic_append_suppressed(
+    RudaMirPanic *primary, RudaMirPanic *secondary, RudaAllocator allocator
 );
 #endif

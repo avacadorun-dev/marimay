@@ -166,6 +166,14 @@ void ruda_test_formatter_fixture_file(void) {
         {
             "format/generics.input.ruda",
             "format/generics.expected.ruda"
+        },
+        {
+            "format/numeric-widths.input.ruda",
+            "format/numeric-widths.expected.ruda"
+        },
+        {
+            "format/defer.input.ruda",
+            "format/defer.expected.ruda"
         }
     };
     unsigned char input[32768];
@@ -399,7 +407,9 @@ void ruda_test_formatter_long_list(void) {
 void ruda_test_formatter_example_corpus(void) {
     static const char *paths[] = {
         "examples/concurrency.ruda",
+        "examples/defer_cp7.ruda",
         "examples/nominal_cp1.ruda",
+        "examples/numeric_cp6.ruda",
         "examples/service.ruda",
         "examples/tour.ruda",
         "examples/tour_test.ruda"

@@ -46,6 +46,7 @@ typedef struct RudaMirEnumVariant {
 } RudaMirEnumVariant;
 
 typedef struct RudaMirEnum {
+    RudaSymbolId symbol;
     RudaTypeId type;
     size_t variant_start;
     size_t variant_count;

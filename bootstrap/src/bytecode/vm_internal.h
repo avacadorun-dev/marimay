@@ -46,6 +46,16 @@ RudaBytecodeRunStatus ruda_bytecode_run_nominal_instruction(
     const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
     RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
     RudaAllocator allocator);
+RudaBytecodeRunStatus ruda_bytecode_execution_new_numeric_option(
+    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
+    uint32_t enum_id, bool some, RudaBytecodeValue payload,
+    RudaBytecodeValue *target);
+RudaBytecodeRunStatus ruda_bytecode_run_numeric_instruction(
+    const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
+    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function);
+RudaBytecodeRunStatus ruda_bytecode_run_format_instruction(
+    const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
+    RudaBytecodeExecution *execution);
 RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
     const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
     RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
@@ -65,6 +75,8 @@ RudaBytecodeRunStatus ruda_bytecode_run_begin_bounds_panic(
 RudaBytecodeRunStatus ruda_bytecode_run_append_panic_frame(
     RudaBytecodePanic *panic, RudaSymbolId symbol,
     RudaBytecodeSpan call_span);
+bool ruda_bytecode_run_append_suppressed_panic(
+    RudaBytecodePanic *primary, RudaBytecodePanic *secondary);
 bool ruda_bytecode_run_string_value_valid(RudaBytecodeExecution *execution,
     RudaBytecodeValue value);
 bool ruda_bytecode_run_function_uses_strings(
@@ -91,6 +103,11 @@ bool ruda_bytecode_run_function_has_calls(
 RudaBytecodeRunStatus ruda_bytecode_run_arguments_validate(
     RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
     const RudaBytecodeValue *arguments, size_t argument_count);
+RudaBytecodeRunStatus ruda_bytecode_run_deferred_program_call(
+    const RudaBytecodeProgram *program, const RudaBytecodeFunction *caller,
+    const RudaBytecodeCall *call, const RudaBytecodeInstruction *instruction,
+    const RudaBytecodeValue *registers, RudaAllocator allocator,
+    RudaBytecodeRunOptions options, bool preserve_primary);
 
 RudaBytecodeRunStatus ruda_bytecode_run_interface_new(
     const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,

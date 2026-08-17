@@ -1,0 +1,123 @@
+// Checkpoint-6 executable acceptance: policy operations, explicit conversions,
+// boundary shifts/division, and iterative scalar programs.
+fn fibonacci(limit: u16): u64 {
+  let index: u16 = 0;
+  let previous: u64 = 0;
+  let current: u64 = 1;
+  while index < limit {
+    const next: u64 = previous + current;
+    previous = current;
+    current = next;
+    index += 1;
+  }
+  return previous;
+}
+
+fn factorial(limit: u64): u64 {
+  let index: u64 = 2;
+  let product: u64 = 1;
+  while index <= limit {
+    product *= index;
+    index += 1;
+  }
+  return product;
+}
+
+fn checkedOverflowIsNone(): bool {
+  const maximum: u8 = 255;
+  const one: u8 = 1;
+  return match checkedAdd(maximum, one) {
+    case Some(_) => false;
+    case None => true;
+  };
+}
+
+fn conversionsAreLossDetecting(): bool {
+  const small: u8 = 200;
+  const wide: u16 = small as u16;
+  const tooWide: u16 = 300;
+  const negative: i8 = -1;
+  const narrowed = wide as u8;
+  const rejected = tooWide as u8;
+  const unsigned = negative as u8;
+  return wide == 200
+    && match narrowed { case Some(value) => value == 200; case None => false; }
+    && match rejected { case Some(_) => false; case None => true; }
+    && match unsigned { case Some(_) => false; case None => true; };
+}
+
+fn policyBoundaries(): bool {
+  const maximum: u8 = 255;
+  const one: u8 = 1;
+  const minimum: i8 = -128;
+  const negativeOne: i8 = -1;
+  const signedOne: i8 = 1;
+  const six: i8 = 6;
+  const seven: i8 = 7;
+  const width: i8 = 8;
+  return wrappingAdd(maximum, one) == 0
+    && saturatingAdd(maximum, one) == maximum
+    && wrappingDivide(minimum, negativeOne) == minimum
+    && saturatingDivide(minimum, negativeOne) == 127
+    && wrappingRemainder(minimum, negativeOne) == 0
+    && saturatingRemainder(minimum, negativeOne) == 0
+    && match checkedDivide(minimum, negativeOne) {
+      case Some(_) => false;
+      case None => true;
+    }
+    && match checkedShiftLeft(signedOne, six) {
+      case Some(value) => value == 64;
+      case None => false;
+    }
+    && match checkedShiftLeft(signedOne, seven) {
+      case Some(_) => false;
+      case None => true;
+    }
+    && match checkedShiftLeft(signedOne, width) {
+      case Some(_) => false;
+      case None => true;
+    };
+}
+
+fn allWidths(): bool {
+  const i8One: i8 = 1;
+  const i16One: i16 = 1;
+  const i32One: i32 = 1;
+  const i64One: i64 = 1;
+  const u8One: u8 = 1;
+  const u16One: u16 = 1;
+  const u32One: u32 = 1;
+  const u64One: u64 = 1;
+  return wrappingAdd(i8One, i8One) == 2
+    && saturatingAdd(i16One, i16One) == 2
+    && wrappingMultiply(i32One, i32One) == 1
+    && saturatingSubtract(i64One, i64One) == 0
+    && wrappingShiftLeft(u8One, u8One) == 2
+    && saturatingShiftRight(u16One, u16One) == 0
+    && wrappingDivide(u32One, u32One) == 1
+    && saturatingRemainder(u64One, u64One) == 0;
+}
+
+fn wrappingZeroDivisor(): u8 {
+  const one: u8 = 1;
+  const zero: u8 = 0;
+  return wrappingDivide(one, zero);
+}
+
+fn saturatingInvalidShift(): u8 {
+  const one: u8 = 1;
+  const width: u8 = 8;
+  return saturatingShiftLeft(one, width);
+}
+
+fn main(): i64 {
+  const ten16: u16 = 10;
+  const ten64: u64 = 10;
+  if fibonacci(ten16) != 55 { return -1; }
+  if factorial(ten64) != 3628800 { return -2; }
+  if !checkedOverflowIsNone() { return -3; }
+  if !conversionsAreLossDetecting() { return -4; }
+  if !policyBoundaries() { return -5; }
+  if !allWidths() { return -6; }
+  return 6;
+}

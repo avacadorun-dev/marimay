@@ -39,6 +39,11 @@ typedef struct RudaIntegerValue {
 
 unsigned int ruda_integer_bit_width(RudaIntegerKind kind);
 bool ruda_integer_kind_is_signed(RudaIntegerKind kind);
+bool ruda_integer_convert(
+    RudaIntegerValue value,
+    RudaIntegerKind target_kind,
+    RudaIntegerValue *result
+);
 
 RudaIntegerValue ruda_integer_from_i8(int8_t value);
 RudaIntegerValue ruda_integer_from_i16(int16_t value);

@@ -606,8 +606,9 @@ bool ruda_mir_add_record_construction(
     );
     return true;
 }
-bool ruda_mir_add_enum(
+bool ruda_mir_add_enum_with_symbol(
     RudaMirFunction *function,
+    RudaSymbolId symbol,
     RudaTypeId type,
     const RudaMirEnumVariant *variants,
     size_t variant_count,
@@ -661,6 +662,8 @@ bool ruda_mir_add_enum(
             enum_index
         );
         bool equal = existing != NULL && existing->type == type
+            && memcmp(existing->symbol.bytes, symbol.bytes,
+                sizeof(symbol.bytes)) == 0
             && existing->variant_count == variant_count
             && existing->payload_count == payload_count;
         if (existing == NULL || existing->type != type) {
@@ -723,6 +726,7 @@ bool ruda_mir_add_enum(
         )) {
         return false;
     }
+    enum_layout.symbol = symbol;
     enum_layout.type = type;
     enum_layout.variant_start = function->enum_variants.length;
     enum_layout.variant_count = variant_count;
@@ -752,6 +756,31 @@ bool ruda_mir_add_enum(
     }
     *result = (RudaMirEnumId)(function->enums.length - 1);
     return true;
+}
+
+bool ruda_mir_add_enum(
+    RudaMirFunction *function,
+    RudaTypeId type,
+    const RudaMirEnumVariant *variants,
+    size_t variant_count,
+    const RudaMirEnumPayload *payloads,
+    size_t payload_count,
+    RudaMirEnumId *result
+) {
+    RudaSymbolId symbol;
+    memset(&symbol, 0, sizeof(symbol));
+    memcpy(symbol.bytes, &type, sizeof(type));
+    symbol.bytes[sizeof(type)] = 0x45;
+    return ruda_mir_add_enum_with_symbol(
+        function,
+        symbol,
+        type,
+        variants,
+        variant_count,
+        payloads,
+        payload_count,
+        result
+    );
 }
 bool ruda_mir_add_enum_construction(
     RudaMirFunction *function,

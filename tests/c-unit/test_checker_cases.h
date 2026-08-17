@@ -38,6 +38,7 @@ void ruda_test_checker_constant_diagnostics(void);
 void ruda_test_checker_short_circuit(void);
 void ruda_test_checker_bitwise(void);
 void ruda_test_checker_numeric_widths(void);
+void ruda_test_checker_numeric_policy(void);
 void ruda_test_checker_shifts(void);
 void ruda_test_checker_division_and_remainder(void);
 void ruda_test_checker_f64_literals_and_operators(void);

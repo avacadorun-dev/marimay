@@ -51,6 +51,7 @@ These immutable green-node kinds retain source structure. Physical tokens and tr
 | `UNARY_EXPRESSION` | expression |
 | `BINARY_EXPRESSION` | expression |
 | `ASSIGNMENT_EXPRESSION` | expression |
+| `CONVERSION_EXPRESSION` | expression |
 | `MEMBER_EXPRESSION` | expression |
 | `CALL_EXPRESSION` | expression |
 | `INDEX_EXPRESSION` | expression |

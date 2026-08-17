@@ -1,0 +1,2 @@
+fn cleanup(value:int):void{}
+fn main():void{defer cleanup(1);{defer cleanup(2);}}

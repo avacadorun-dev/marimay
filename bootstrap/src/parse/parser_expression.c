@@ -971,6 +971,24 @@ static RudaCompletedMarker ruda_parse_expression_bp(
             record_eligible = false;
             continue;
         }
+        if (current == RUDA_TOKEN_KW_AS) {
+            RudaMarker type;
+            if (85 < minimum_binding_power) {
+                break;
+            }
+            parent = ruda_parser_precede(parser, left);
+            ruda_parser_bump(parser);
+            type = ruda_parser_start(parser);
+            ruda_parser_expect_identifier(
+                parser, "expected integer target type after 'as'"
+            );
+            (void)ruda_parser_complete(parser, type, RUDA_SYNTAX_TYPE);
+            left = ruda_parser_complete(
+                parser, parent, RUDA_SYNTAX_CONVERSION_EXPRESSION
+            );
+            record_eligible = false;
+            continue;
+        }
         if (!ruda_expression_infix_binding_power(
                 current,
                 &left_power,

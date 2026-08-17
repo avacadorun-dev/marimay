@@ -834,6 +834,7 @@ cleanup:
     size_t layout_index = 0;
     bool locals_initialized = false;
     bool loops_initialized = false;
+    bool defers_initialized = false;
     bool accepted = false;
     memset(&function, 0, sizeof(function));
     memset(&checked, 0, sizeof(checked));
@@ -871,7 +872,12 @@ cleanup:
         checker->result->allocator,
         sizeof(RudaLoopContext)
     );
-    if (!locals_initialized || !loops_initialized) {
+    defers_initialized = ruda_vector_init(
+        &function.defers,
+        checker->result->allocator,
+        sizeof(RudaDeferredCall)
+    );
+    if (!locals_initialized || !loops_initialized || !defers_initialized) {
         ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
         goto cleanup;
     }
@@ -1028,6 +1034,9 @@ cleanup:
     }
     if (loops_initialized) {
         ruda_vector_dispose(&function.loops);
+    }
+    if (defers_initialized) {
+        ruda_vector_dispose(&function.defers);
     }
     return accepted && !ruda_checker_has_failed(checker);
 }

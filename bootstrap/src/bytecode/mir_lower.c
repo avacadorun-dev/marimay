@@ -61,6 +61,26 @@ static bool ruda_mir_bytecode_span(
     return true;
 }
 
+static RudaOpcode ruda_mir_bytecode_integer_policy_opcode(
+    RudaMirIntegerPolicy policy,
+    RudaMirIntegerOperation operation
+) {
+    RudaOpcode base;
+    if (policy == RUDA_MIR_INTEGER_CHECKED_OPTION) {
+        base = RUDA_OPCODE_INTEGER_CHECKED_ADD;
+    } else if (policy == RUDA_MIR_INTEGER_WRAPPING) {
+        base = RUDA_OPCODE_INTEGER_WRAPPING_ADD;
+    } else if (policy == RUDA_MIR_INTEGER_SATURATING) {
+        base = RUDA_OPCODE_INTEGER_SATURATING_ADD;
+    } else {
+        return RUDA_OPCODE_INVALID;
+    }
+    if (operation > RUDA_MIR_POLICY_SHIFT_RIGHT) {
+        return RUDA_OPCODE_INVALID;
+    }
+    return (RudaOpcode)((unsigned int)base + (unsigned int)operation);
+}
+
 static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
     const RudaMirFunction *function,
     const RudaMirInstruction *input,
@@ -318,6 +338,45 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->opcode = RUDA_OPCODE_CALL_INTERFACE;
             output->operands[0].unsigned_value = input->target;
             output->operands[1].unsigned_value = input->call;
+            break;
+        case RUDA_MIR_DEFER_REGISTER:
+            output->opcode = RUDA_OPCODE_DEFER_REGISTER;
+            output->operands[1].unsigned_value = input->call;
+            break;
+        case RUDA_MIR_DEFER_CALL:
+            output->opcode = RUDA_OPCODE_DEFER_CALL;
+            output->operands[1].unsigned_value = input->call;
+            break;
+        case RUDA_MIR_INTEGER_POLICY:
+            output->opcode = ruda_mir_bytecode_integer_policy_opcode(
+                input->integer_policy, input->integer_operation
+            );
+            if (output->opcode == RUDA_OPCODE_INVALID) {
+                return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            }
+            output->operands[1].unsigned_value = input->first;
+            if (input->integer_operation != RUDA_MIR_POLICY_NEGATE) {
+                output->operands[2].unsigned_value = input->second;
+            }
+            break;
+        case RUDA_MIR_INTEGER_CONVERT: {
+            const RudaTypeId *target_type = ruda_vector_at_const(
+                &function->register_types, input->target
+            );
+            if (target_type == NULL) {
+                return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            }
+            output->opcode = *target_type == input->integer_target_type
+                ? RUDA_OPCODE_INTEGER_CONVERT_TOTAL
+                : RUDA_OPCODE_INTEGER_CONVERT_OPTION;
+            output->operands[1].unsigned_value = input->first;
+            break;
+        }
+        case RUDA_MIR_FORMAT_F32:
+        case RUDA_MIR_FORMAT_F64:
+            output->opcode = input->kind == RUDA_MIR_FORMAT_F32
+                ? RUDA_OPCODE_FORMAT_F32 : RUDA_OPCODE_FORMAT_F64;
+            output->operands[1].unsigned_value = input->first;
             break;
     }
     return RUDA_MIR_BYTECODE_LOWER_OK;

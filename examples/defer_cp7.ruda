@@ -1,0 +1,107 @@
+// D041 lexical cleanup acceptance: capture-at-registration, LIFO, exactly
+// once, nested scopes, return, continue, break, and panic precedence helpers.
+type CleanupLog {
+  mutable value: int;
+}
+
+interface Cleanup {
+  append(digit: int): void;
+}
+
+enum CleanupError {
+  Failed,
+}
+
+fn append(log: CleanupLog, digit: int): void {
+  log.value = log.value * 10 + digit;
+}
+
+fn normal(log: CleanupLog): void {
+  defer append(log, 1);
+  defer append(log, 2);
+}
+
+fn earlyReturn(log: CleanupLog): int {
+  defer append(log, 3);
+  return 7;
+}
+
+fn nested(log: CleanupLog): void {
+  defer append(log, 4);
+  {
+    defer append(log, 5);
+    defer append(log, 6);
+  }
+}
+
+fn loopTransfers(log: CleanupLog): void {
+  let index: int = 0;
+  while index < 4 {
+    defer append(log, index + 1);
+    index += 1;
+    if index == 1 { continue; }
+    if index == 3 { break; }
+    append(log, 9);
+  }
+}
+
+fn capturesArguments(log: CleanupLog): void {
+  let digit: int = 7;
+  defer append(log, digit);
+  digit = 8;
+}
+
+fn interfaceCall(value: Cleanup): void {
+  defer value.append(8);
+}
+
+fn fails(): Result<int, CleanupError> {
+  return Err(CleanupError.Failed);
+}
+
+fn questionMarkExit(log: CleanupLog): Result<int, CleanupError> {
+  defer append(log, 9);
+  const value = fails()?;
+  return Ok(value);
+}
+
+fn observesQuestionMarkExit(log: CleanupLog): bool {
+  return match questionMarkExit(log) {
+    case Ok(_) => false;
+    case Err(_) => true;
+  };
+}
+
+fn cleanupPanics(): void {
+  panic("cleanup");
+}
+
+fn earlierCleanupPanics(): void {
+  panic("earlier");
+}
+
+fn bodyPanic(): void {
+  defer cleanupPanics();
+  panic("body");
+}
+
+fn cleanupPanicReplacesReturn(): void {
+  defer cleanupPanics();
+}
+
+fn twoCleanupPanics(): void {
+  defer earlierCleanupPanics();
+  defer cleanupPanics();
+}
+
+fn main(): int {
+  const log = CleanupLog { value: 0 };
+  normal(log);
+  if earlyReturn(log) != 7 { return -1; }
+  nested(log);
+  loopTransfers(log);
+  capturesArguments(log);
+  interfaceCall(log);
+  if !observesQuestionMarkExit(log) { return -2; }
+  return log.value;
+}

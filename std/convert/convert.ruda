@@ -1,0 +1,2 @@
+public extern "c" fn formatF32(value: f32): string;
+public extern "c" fn formatF64(value: f64): string;

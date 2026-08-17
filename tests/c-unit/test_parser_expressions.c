@@ -122,6 +122,7 @@ void ruda_test_parser_expression_grammar(void) {
         "  const postfix = service.member<Result<int, Error>>(a)[b]?.next;\n"
         "  const values = [0, 1.5, \"s\", r\"\\\\\", b\"x\", 'x', true, false, $\"x {a}\"];\n"
         "  const grouped = (a + b);\n"
+        "  const converted = a as u64;\n"
         "  const empty = [];\n"
         "  const record = pkg.Item {};\n"
         "  const closure = (value: int): int => { return value; };\n"
@@ -144,6 +145,12 @@ void ruda_test_parser_expression_grammar(void) {
             "fn after(): void {}",
             RUDA_SYNTAX_BINARY_EXPRESSION,
             RUDA_DIAGNOSTIC_UNEXPECTED_TOKEN
+        },
+        {
+            "fn broken(value: int): void { const x = value as; } "
+            "fn after(): void {}",
+            RUDA_SYNTAX_CONVERSION_EXPRESSION,
+            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "fn broken(): void { const x = (); } fn after(): void {}",
@@ -202,6 +209,10 @@ void ruda_test_parser_expression_grammar(void) {
         RUDA_EXPECT(ruda_syntax_count_kind(
             fixture.parsed.tree.root,
             RUDA_SYNTAX_CLOSURE_EXPRESSION
+        ) == 1);
+        RUDA_EXPECT(ruda_syntax_count_kind(
+            fixture.parsed.tree.root,
+            RUDA_SYNTAX_CONVERSION_EXPRESSION
         ) == 1);
         ruda_parse_fixture_dispose(&fixture);
     }

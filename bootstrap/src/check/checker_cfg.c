@@ -1,5 +1,6 @@
 #include "checker_cfg_api.h"
 #include "checker_core_api.h"
+#include "checker_defer_api.h"
 #include "checker_expr_scalar_api.h"
 #include "checker_lookup_api.h"
 #include "checker_match_lower_api.h"
@@ -125,6 +126,7 @@
     const RudaAstNode *block
 ) {
     size_t local_count = function->locals.length;
+    size_t defer_count = function->defers.length;
     size_t previous_depth = function->scope_depth;
     bool compiled = false;
     if (block == NULL || previous_depth == SIZE_MAX) {
@@ -138,6 +140,12 @@
     }
     function->scope_depth = previous_depth + 1;
     compiled = ruda_checker_private_compile_block(function, block);
+    if (compiled && !function->terminated) {
+        compiled = ruda_checker_private_emit_defers_from(
+            function, defer_count
+        );
+    }
+    function->defers.length = defer_count;
     function->locals.length = local_count;
     function->scope_depth = previous_depth;
     return compiled;
@@ -424,6 +432,7 @@ cleanup:
     }
     loop.break_target = exit_block;
     loop.continue_target = condition_block;
+    loop.scope_depth = function->scope_depth;
     if (function->loops.length >= function->mir.options.max_blocks) {
         ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
         goto cleanup;
@@ -626,6 +635,7 @@ cleanup:
     }
     loop.break_target = exit_block;
     loop.continue_target = step_block;
+    loop.scope_depth = function->scope_depth;
     if (function->loops.length >= function->mir.options.max_blocks) {
         ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
         goto cleanup;
@@ -730,7 +740,9 @@ cleanup:
     target = keyword->kind == RUDA_TOKEN_KW_BREAK
         ? loop->break_target
         : loop->continue_target;
-    if (!ruda_checker_private_function_set_goto(
+    if (!ruda_checker_private_emit_defers_deeper_than(
+            function, loop->scope_depth
+        ) || !ruda_checker_private_function_set_goto(
             function,
             function->block,
             target,
@@ -758,6 +770,9 @@ cleanup:
     }
     if (statement->kind == RUDA_SYNTAX_RETURN_STATEMENT) {
         return ruda_checker_private_compile_return(function, statement);
+    }
+    if (statement->kind == RUDA_SYNTAX_DEFER_STATEMENT) {
+        return ruda_checker_private_compile_defer(function, statement);
     }
     if (statement->kind == RUDA_SYNTAX_YIELD_STATEMENT) {
         return ruda_checker_private_compile_yield(function, statement);

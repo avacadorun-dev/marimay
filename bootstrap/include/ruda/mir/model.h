@@ -1,10 +1,9 @@
 #ifndef RUDA_MIR_MODEL_H
 #define RUDA_MIR_MODEL_H
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
+#include "ruda/types/model.h"
 typedef uint32_t RudaMirRegister;
 typedef uint32_t RudaMirBlockId;
 typedef uint32_t RudaMirCallId;
@@ -17,7 +16,6 @@ typedef uint32_t RudaMirArrayId;
 typedef uint32_t RudaMirArrayConstructionId;
 typedef uint32_t RudaMirInterfaceId;
 typedef uint32_t RudaMirInterfaceConstructionId;
-
 #define RUDA_MIR_NO_REGISTER UINT32_MAX
 #define RUDA_MIR_NO_BLOCK UINT32_MAX
 #define RUDA_MIR_NO_CALL UINT32_MAX
@@ -30,7 +28,6 @@ typedef uint32_t RudaMirInterfaceConstructionId;
 #define RUDA_MIR_NO_ARRAY_CONSTRUCTION UINT32_MAX
 #define RUDA_MIR_NO_INTERFACE UINT32_MAX
 #define RUDA_MIR_NO_INTERFACE_CONSTRUCTION UINT32_MAX
-
 typedef struct RudaMirSpan {
     size_t start;
     size_t end;
@@ -90,9 +87,30 @@ typedef enum RudaMirInstructionKind {
     RUDA_MIR_ARRAY_SET,
     RUDA_MIR_ARRAY_PUSH,
     RUDA_MIR_INTERFACE_NEW,
-    RUDA_MIR_CALL_INTERFACE
+    RUDA_MIR_CALL_INTERFACE,
+    RUDA_MIR_INTEGER_POLICY,
+    RUDA_MIR_INTEGER_CONVERT,
+    RUDA_MIR_FORMAT_F32,
+    RUDA_MIR_FORMAT_F64,
+    RUDA_MIR_DEFER_REGISTER,
+    RUDA_MIR_DEFER_CALL
 } RudaMirInstructionKind;
 
+typedef enum RudaMirIntegerPolicy {
+    RUDA_MIR_INTEGER_CHECKED_OPTION,
+    RUDA_MIR_INTEGER_WRAPPING,
+    RUDA_MIR_INTEGER_SATURATING
+} RudaMirIntegerPolicy;
+typedef enum RudaMirIntegerOperation {
+    RUDA_MIR_POLICY_ADD,
+    RUDA_MIR_POLICY_SUBTRACT,
+    RUDA_MIR_POLICY_MULTIPLY,
+    RUDA_MIR_POLICY_DIVIDE,
+    RUDA_MIR_POLICY_REMAINDER,
+    RUDA_MIR_POLICY_NEGATE,
+    RUDA_MIR_POLICY_SHIFT_LEFT,
+    RUDA_MIR_POLICY_SHIFT_RIGHT
+} RudaMirIntegerOperation;
 typedef struct RudaMirInstruction {
     RudaMirInstructionKind kind;
     RudaMirRegister target;
@@ -109,6 +127,9 @@ typedef struct RudaMirInstruction {
     RudaMirArrayConstructionId array_construction;
     RudaMirInterfaceId interface_id;
     RudaMirInterfaceConstructionId interface_construction;
+    RudaMirIntegerPolicy integer_policy;
+    RudaMirIntegerOperation integer_operation;
+    RudaTypeId integer_target_type;
     size_t variant;
     size_t field;
     int64_t integer;

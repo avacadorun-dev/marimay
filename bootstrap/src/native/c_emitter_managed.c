@@ -11,7 +11,7 @@ static RudaTypeId ruda_native_c_register_type(
     return type != NULL ? *type : RUDA_TYPE_INVALID;
 }
 
-static bool ruda_native_c_write_to_cell(
+bool ruda_native_c_write_to_managed_cell(
     RudaNativeCBuffer *buffer,
     RudaTypeId type,
     RudaMirRegister register_id
@@ -23,11 +23,12 @@ static bool ruda_native_c_write_to_cell(
             register_id, register_id, register_id, register_id, register_id
         );
     }
-    if (type == RUDA_TYPE_I64) {
-        return ruda_native_c_write(
+    if (type >= RUDA_TYPE_I8 && type <= RUDA_TYPE_U64) {
+        const char *kind = ruda_native_c_integer_kind_name(type);
+        return kind != NULL && ruda_native_c_write(
             buffer,
-            "ruda_g_cell.f64_bits = (uint64_t)ruda_g_v_%u",
-            register_id
+            "{ RudaIntegerValue ruda_g_cell_value = {%s, (uint64_t)ruda_g_v_%u}; unsigned int ruda_g_cell_width = ruda_integer_bit_width(%s); ruda_g_cell.f64_bits = ruda_g_cell_value.bits & (ruda_g_cell_width == 64U ? UINT64_MAX : (UINT64_C(1) << ruda_g_cell_width) - UINT64_C(1)); }",
+            kind, register_id, kind
         );
     }
     if (type == RUDA_TYPE_BOOL) {
@@ -47,7 +48,7 @@ static bool ruda_native_c_write_to_cell(
     );
 }
 
-static bool ruda_native_c_write_from_cell(
+bool ruda_native_c_write_from_managed_cell(
     RudaNativeCBuffer *buffer,
     RudaTypeId type,
     RudaMirRegister target
@@ -59,11 +60,13 @@ static bool ruda_native_c_write_from_cell(
             target, target, target, target
         );
     }
-    if (type == RUDA_TYPE_I64) {
-        return ruda_native_c_write(
+    if (type >= RUDA_TYPE_I8 && type <= RUDA_TYPE_U64) {
+        const char *kind = ruda_native_c_integer_kind_name(type);
+        const char *convert = ruda_native_c_integer_conversion_name(type);
+        return kind != NULL && convert != NULL && ruda_native_c_write(
             buffer,
-            "ruda_g_v_%u = ruda_i64_from_twos_complement(ruda_g_cell.f64_bits)",
-            target
+            "{ RudaIntegerValue ruda_g_cell_value = {%s, ruda_g_cell.f64_bits}; if (!%s(ruda_g_cell_value, &ruda_g_v_%u)) { ruda_g_s = 7; goto ruda_g_cleanup; } }",
+            kind, convert, target
         );
     }
     if (type == RUDA_TYPE_BOOL) {
@@ -110,7 +113,7 @@ static bool ruda_native_c_emit_cells(
             || !ruda_native_c_write(
                 buffer,
                 "    { RudaManagedCell ruda_g_cell; memset(&ruda_g_cell, 0, sizeof(ruda_g_cell)); "
-            ) || !ruda_native_c_write_to_cell(buffer, type, source)
+            ) || !ruda_native_c_write_to_managed_cell(buffer, type, source)
             || !ruda_native_c_write(
                 buffer,
                 "; ruda_g_nominal_cells[%zu] = ruda_g_cell; }\n", index
@@ -206,7 +209,7 @@ static bool ruda_native_c_emit_interface_new(
     return true;
 }
 
-static bool ruda_native_c_method_possible(
+bool ruda_native_c_method_possible(
     const RudaMirFunction *const *functions,
     size_t count,
     RudaTypeId interface_type,
@@ -289,9 +292,16 @@ static bool ruda_native_c_emit_interface_call(
                     buffer, ", ruda_g_v_%u", argument->register_id
                 )) return false;
         }
-        if (!ruda_native_c_write(
-            buffer, ", &ruda_g_v_%u, ruda_g_start, ruda_g_end); break;\n",
-            instruction->target)) return false;
+        if (!(call->result_type == RUDA_TYPE_VOID
+                ? ruda_native_c_write(
+                    buffer,
+                    ", ruda_g_start, ruda_g_end); break;\n"
+                )
+                : ruda_native_c_write(
+                    buffer,
+                    ", &ruda_g_v_%u, ruda_g_start, ruda_g_end); break;\n",
+                    instruction->target
+                ))) return false;
     }
     if (!ruda_native_c_write(
             buffer, "    default: ruda_g_s = 7; break; } }\n"
@@ -319,7 +329,7 @@ bool ruda_native_c_emit_managed_instruction(
                 buffer,
                 "  { RudaManagedCell ruda_g_cell; ruda_g_m = ruda_managed_record_get(&ruda_g_x->heap, ruda_g_v_%u, %zu, &ruda_g_cell); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } ",
                 instruction->first, instruction->field
-            ) || !ruda_native_c_write_from_cell(
+            ) || !ruda_native_c_write_from_managed_cell(
                 buffer, type, instruction->target
             ) || !ruda_native_c_write(buffer, "; }\n")) return false;
             return true;
@@ -328,7 +338,7 @@ bool ruda_native_c_emit_managed_instruction(
                 buffer,
                 "  { RudaManagedCell ruda_g_cell; ruda_g_m = ruda_managed_enum_get_payload(&ruda_g_x->heap, ruda_g_v_%u, %zu, %zu, &ruda_g_cell); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } ",
                 instruction->first, instruction->variant, instruction->field
-            ) || !ruda_native_c_write_from_cell(
+            ) || !ruda_native_c_write_from_managed_cell(
                 buffer, type, instruction->target
             ) || !ruda_native_c_write(buffer, "; }\n")) return false;
             return true;
@@ -336,7 +346,7 @@ bool ruda_native_c_emit_managed_instruction(
             return ruda_native_c_write(
                 buffer,
                 "  { RudaManagedCell ruda_g_cell; memset(&ruda_g_cell, 0, sizeof(ruda_g_cell)); "
-            ) && ruda_native_c_write_to_cell(
+            ) && ruda_native_c_write_to_managed_cell(
                 buffer, ruda_native_c_register_type(function, instruction->second),
                 instruction->second
             ) && ruda_native_c_write(

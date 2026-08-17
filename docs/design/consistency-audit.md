@@ -113,6 +113,11 @@ No provisional item permits an implementation to silently substitute source-leve
     `formatF64` spellings, `"io.stdout"` is a named capability, published bytes
     are UTF-8 plus one LF, and the internal `ok:f64:` harness is not a public
     API.
+44. Closed integer policy and conversion syntax through D047: the eight exact
+    integer primitives share one checked/wrapping/saturating function family,
+    invalid operands have explicit Option-versus-panic behavior, and
+    `value as Target` is either total or loss-detecting without implicit,
+    wrapping, saturating, or integer/float conversion.
 
 ## Automated structural checks performed
 

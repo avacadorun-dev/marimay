@@ -9,6 +9,7 @@
 #include "checker_generic_types_api.h"
 #include "checker_expr_prelude_api.h"
 #include "checker_expr_map_error_api.h"
+#include "checker_expr_numeric_api.h"
 
 
 
@@ -938,6 +939,8 @@ cleanup:
     bool interface_resolved = false;
     bool prelude_resolved = false;
     bool map_error_resolved = false;
+    bool numeric_resolved = false;
+    bool convert_format_resolved = false;
     const RudaAstNode *member_callee = ruda_checker_private_check_child_node(
         node,
         RUDA_SYNTAX_MEMBER_EXPRESSION,
@@ -950,6 +953,24 @@ cleanup:
             RUDA_TOKEN_IDENTIFIER,
             0
         );
+    if (!ruda_checker_private_compile_numeric_call(
+            function, node, expected, &numeric_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (numeric_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_checker_private_compile_convert_format_call(
+            function, node, expected, &convert_format_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (convert_format_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
     if (length_token != NULL && !length_token->synthetic
         && ruda_checker_private_check_text_equal(
             function->checker,

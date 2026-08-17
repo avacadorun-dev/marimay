@@ -56,3 +56,33 @@
 54	CALL_INTERFACE	call_interface	destination:register,call:call	may_panic	Dispatch an interface method through the boxed method table to a D003 callee.
 55	ARRAY_PUSH	array_push	array:register,value:register	may_panic	Append one exact element to a managed array with failure-atomic growth.
 56	CONST_INTEGER	const_integer	destination:register,value:u64	none	Load an exact-width integer bit pattern into a typed integer register.
+57	INTEGER_CHECKED_ADD	integer_checked_add	destination:register,left:register,right:register	may_panic	Return Some(sum) or None for checked integer failure.
+58	INTEGER_CHECKED_SUBTRACT	integer_checked_subtract	destination:register,left:register,right:register	may_panic	Return Some(difference) or None for checked integer failure.
+59	INTEGER_CHECKED_MULTIPLY	integer_checked_multiply	destination:register,left:register,right:register	may_panic	Return Some(product) or None for checked integer failure.
+60	INTEGER_CHECKED_DIVIDE	integer_checked_divide	destination:register,left:register,right:register	may_panic	Return Some(quotient) or None for checked integer failure.
+61	INTEGER_CHECKED_REMAINDER	integer_checked_remainder	destination:register,left:register,right:register	may_panic	Return Some(remainder) or None for checked integer failure.
+62	INTEGER_CHECKED_NEGATE	integer_checked_negate	destination:register,source:register	may_panic	Return Some(negated value) or None for checked integer failure.
+63	INTEGER_CHECKED_SHIFT_LEFT	integer_checked_shift_left	destination:register,left:register,right:register	may_panic	Return Some(left shift) or None for checked integer failure.
+64	INTEGER_CHECKED_SHIFT_RIGHT	integer_checked_shift_right	destination:register,left:register,right:register	may_panic	Return Some(right shift) or None for an invalid count.
+65	INTEGER_WRAPPING_ADD	integer_wrapping_add	destination:register,left:register,right:register	none	Add exact-width integers modulo their bit width.
+66	INTEGER_WRAPPING_SUBTRACT	integer_wrapping_subtract	destination:register,left:register,right:register	none	Subtract exact-width integers modulo their bit width.
+67	INTEGER_WRAPPING_MULTIPLY	integer_wrapping_multiply	destination:register,left:register,right:register	none	Multiply exact-width integers modulo their bit width.
+68	INTEGER_WRAPPING_DIVIDE	integer_wrapping_divide	destination:register,left:register,right:register	may_panic	Divide with D047 wrapping overflow and zero-divisor policy.
+69	INTEGER_WRAPPING_REMAINDER	integer_wrapping_remainder	destination:register,left:register,right:register	may_panic	Compute remainder with D047 wrapping overflow and zero-divisor policy.
+70	INTEGER_WRAPPING_NEGATE	integer_wrapping_negate	destination:register,source:register	none	Negate exact-width integers modulo their bit width.
+71	INTEGER_WRAPPING_SHIFT_LEFT	integer_wrapping_shift_left	destination:register,left:register,right:register	may_panic	Shift left modulo the bit width after validating the count.
+72	INTEGER_WRAPPING_SHIFT_RIGHT	integer_wrapping_shift_right	destination:register,left:register,right:register	may_panic	Shift right under D035 after validating the count.
+73	INTEGER_SATURATING_ADD	integer_saturating_add	destination:register,left:register,right:register	none	Add and clamp to the exact integer range.
+74	INTEGER_SATURATING_SUBTRACT	integer_saturating_subtract	destination:register,left:register,right:register	none	Subtract and clamp to the exact integer range.
+75	INTEGER_SATURATING_MULTIPLY	integer_saturating_multiply	destination:register,left:register,right:register	none	Multiply and clamp to the exact integer range.
+76	INTEGER_SATURATING_DIVIDE	integer_saturating_divide	destination:register,left:register,right:register	may_panic	Divide with D047 saturation and zero-divisor policy.
+77	INTEGER_SATURATING_REMAINDER	integer_saturating_remainder	destination:register,left:register,right:register	may_panic	Compute remainder with D047 saturation and zero-divisor policy.
+78	INTEGER_SATURATING_NEGATE	integer_saturating_negate	destination:register,source:register	none	Negate and clamp to the exact integer range.
+79	INTEGER_SATURATING_SHIFT_LEFT	integer_saturating_shift_left	destination:register,left:register,right:register	may_panic	Shift left and clamp after validating the count.
+80	INTEGER_SATURATING_SHIFT_RIGHT	integer_saturating_shift_right	destination:register,left:register,right:register	may_panic	Shift right under D035 after validating the count.
+81	INTEGER_CONVERT_TOTAL	integer_convert_total	destination:register,source:register	none	Apply a range-preserving explicit integer conversion.
+82	INTEGER_CONVERT_OPTION	integer_convert_option	destination:register,source:register	may_panic	Return Some(converted) or None for a loss-detecting integer conversion.
+83	FORMAT_F32	format_f32	destination:register,source:register	may_panic	Format exact raw binary32 bits as the D046 string spelling.
+84	FORMAT_F64	format_f64	destination:register,source:register	may_panic	Format exact raw binary64 bits as the D046 string spelling.
+85	DEFER_REGISTER	defer_register	marker:register,call:call	none	Register one captured void call for lexical cleanup.
+86	DEFER_CALL	defer_call	marker:register,call:call	may_panic	Pop and invoke the most recently registered lexical cleanup.

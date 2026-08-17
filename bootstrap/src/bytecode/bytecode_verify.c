@@ -53,6 +53,7 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
     size_t work_limit = 0;
     bool has_checked_index_operations = false;
     bool has_required_variant_operations = false;
+    bool has_defer_operations = false;
     RudaBytecodeVerifyStatus status = RUDA_BYTECODE_VERIFY_OK;
     if (work_used == NULL) {
         return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
@@ -381,6 +382,10 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
                 || instruction->opcode == RUDA_OPCODE_ENUM_GET_PAYLOAD) {
                 has_required_variant_operations = true;
             }
+            if (instruction->opcode == RUDA_OPCODE_DEFER_REGISTER
+                || instruction->opcode == RUDA_OPCODE_DEFER_CALL) {
+                has_defer_operations = true;
+            }
             if (((metadata->flags & RUDA_OPCODE_FLAG_TERMINATOR) != 0)
                 != should_terminate) {
                 status = RUDA_BYTECODE_VERIFY_INVALID_CONTROL_FLOW;
@@ -502,6 +507,16 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
     if (instruction_total != function->instruction_count) {
         status = RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
         goto cleanup;
+    }
+    if (has_defer_operations) {
+        size_t defer_work = 0;
+        status = ruda_bytecode_verify_defer_control_flow(
+            function, work_limit - work, &defer_work
+        );
+        if (status != RUDA_BYTECODE_VERIFY_OK) {
+            goto cleanup;
+        }
+        work += defer_work;
     }
     predecessor_offsets = ruda_allocate_array(
         &function->allocator,

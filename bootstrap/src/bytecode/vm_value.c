@@ -234,7 +234,11 @@ bool ruda_bytecode_panic_init(RudaBytecodePanic *panic, RudaAllocator allocator)
     memset(panic, 0, sizeof(*panic));
     if (!ruda_vector_init(
             &panic->frames, allocator, sizeof(RudaBytecodePanicFrame)
+        ) || !ruda_vector_init(
+            &panic->suppressed, allocator,
+            sizeof(RudaBytecodeSuppressedPanic)
         )) {
+        ruda_vector_dispose(&panic->frames);
         return false;
     }
     panic->initialized = true;
@@ -242,11 +246,22 @@ bool ruda_bytecode_panic_init(RudaBytecodePanic *panic, RudaAllocator allocator)
 }
 
 void ruda_bytecode_panic_dispose(RudaBytecodePanic *panic) {
+    size_t index = 0;
     if (panic == NULL) {
         return;
     }
     ruda_owned_bytes_dispose(&panic->message);
+    for (index = 0; index < panic->suppressed.length; index += 1) {
+        RudaBytecodeSuppressedPanic *suppressed = ruda_vector_at(
+            &panic->suppressed, index
+        );
+        if (suppressed != NULL) {
+            ruda_owned_bytes_dispose(&suppressed->message);
+            ruda_vector_dispose(&suppressed->frames);
+        }
+    }
     ruda_vector_dispose(&panic->frames);
+    ruda_vector_dispose(&panic->suppressed);
     memset(panic, 0, sizeof(*panic));
 }
 
@@ -256,6 +271,15 @@ const RudaBytecodePanicFrame *ruda_bytecode_panic_frame(
 ) {
     return panic != NULL && panic->initialized
         ? ruda_vector_at_const(&panic->frames, index)
+        : NULL;
+}
+
+const RudaBytecodeSuppressedPanic *ruda_bytecode_panic_suppressed(
+    const RudaBytecodePanic *panic,
+    size_t index
+) {
+    return panic != NULL && panic->initialized
+        ? ruda_vector_at_const(&panic->suppressed, index)
         : NULL;
 }
 
@@ -472,6 +496,17 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
     size_t *bounds_length
 ) {
     size_t target = (size_t)instruction->operands[0].unsigned_value;
+    if (ruda_bytecode_opcode_is_numeric(instruction->opcode)) {
+        return ruda_bytecode_run_numeric_instruction(
+            instruction, registers, execution, function
+        );
+    }
+    if (instruction->opcode == RUDA_OPCODE_FORMAT_F32
+        || instruction->opcode == RUDA_OPCODE_FORMAT_F64) {
+        return ruda_bytecode_run_format_instruction(
+            instruction, registers, execution
+        );
+    }
     switch (instruction->opcode) {
         case RUDA_OPCODE_CONST_I64:
             registers[target].as.i64 = instruction->operands[1].signed_value;
@@ -1083,6 +1118,8 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
         case RUDA_OPCODE_CALL_DIRECT_VOID:
         case RUDA_OPCODE_CALL_DIRECT_NEVER:
         case RUDA_OPCODE_PANIC_STRING:
+        case RUDA_OPCODE_DEFER_REGISTER:
+        case RUDA_OPCODE_DEFER_CALL:
             return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
         case RUDA_OPCODE_RECORD_NEW:
         case RUDA_OPCODE_RECORD_GET:
@@ -1101,6 +1138,40 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             );
         case RUDA_OPCODE_CALL_INTERFACE:
             return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        case RUDA_OPCODE_INTEGER_CHECKED_ADD:
+        case RUDA_OPCODE_INTEGER_CHECKED_SUBTRACT:
+        case RUDA_OPCODE_INTEGER_CHECKED_MULTIPLY:
+        case RUDA_OPCODE_INTEGER_CHECKED_DIVIDE:
+        case RUDA_OPCODE_INTEGER_CHECKED_REMAINDER:
+        case RUDA_OPCODE_INTEGER_CHECKED_NEGATE:
+        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_LEFT:
+        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_RIGHT:
+        case RUDA_OPCODE_INTEGER_WRAPPING_ADD:
+        case RUDA_OPCODE_INTEGER_WRAPPING_SUBTRACT:
+        case RUDA_OPCODE_INTEGER_WRAPPING_MULTIPLY:
+        case RUDA_OPCODE_INTEGER_WRAPPING_DIVIDE:
+        case RUDA_OPCODE_INTEGER_WRAPPING_REMAINDER:
+        case RUDA_OPCODE_INTEGER_WRAPPING_NEGATE:
+        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_LEFT:
+        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_RIGHT:
+        case RUDA_OPCODE_INTEGER_SATURATING_ADD:
+        case RUDA_OPCODE_INTEGER_SATURATING_SUBTRACT:
+        case RUDA_OPCODE_INTEGER_SATURATING_MULTIPLY:
+        case RUDA_OPCODE_INTEGER_SATURATING_DIVIDE:
+        case RUDA_OPCODE_INTEGER_SATURATING_REMAINDER:
+        case RUDA_OPCODE_INTEGER_SATURATING_NEGATE:
+        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_LEFT:
+        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_RIGHT:
+        case RUDA_OPCODE_INTEGER_CONVERT_TOTAL:
+        case RUDA_OPCODE_INTEGER_CONVERT_OPTION:
+            return ruda_bytecode_run_numeric_instruction(
+                instruction, registers, execution, function
+            );
+        case RUDA_OPCODE_FORMAT_F32:
+        case RUDA_OPCODE_FORMAT_F64:
+            return ruda_bytecode_run_format_instruction(
+                instruction, registers, execution
+            );
     }
     return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
 }

@@ -766,6 +766,59 @@ static void ruda_checker_import_mir_allocation_failures(void) {
     ruda_checker_import_fixture_dispose(&fixture);
 }
 
+static void ruda_checker_import_std_convert(void) {
+    static const RudaTestImportSource sources[] = {
+        {
+            "app", "app.ruda",
+            "import { formatF64, formatF32 as binary32 } from \"std/convert\";\n"
+            "fn rendered(): string { return formatF64(415.0); }\n"
+            "fn rendered32(value: f32): string { return binary32(value); }\n"
+        },
+        {
+            "std/convert", "std/convert/convert.ruda",
+            "public extern \"c\" fn formatF32(value: f32): string;\n"
+            "public extern \"c\" fn formatF64(value: f64): string;\n"
+        }
+    };
+    RudaCheckerImportFixture fixture;
+    RudaCheckResult checked;
+    const RudaCheckedFunction *rendered = NULL;
+    const RudaCheckedFunction *rendered32 = NULL;
+    memset(&fixture, 0, sizeof(fixture));
+    memset(&checked, 0, sizeof(checked));
+    RUDA_EXPECT(ruda_checker_import_fixture_init(
+        &fixture, sources, sizeof(sources) / sizeof(sources[0])
+    ));
+    RUDA_EXPECT(ruda_checker_import_fixture_check(
+        &fixture, "app", ruda_system_allocator(),
+        ruda_check_graph_default_options(), &checked
+    ) == RUDA_CHECK_OK);
+    RUDA_EXPECT(checked.initialized);
+    if (checked.initialized) {
+        RUDA_EXPECT(checked.diagnostics.length == 0);
+        rendered = ruda_checker_import_function(&checked, "rendered", NULL);
+        rendered32 = ruda_checker_import_function(&checked, "rendered32", NULL);
+        RUDA_EXPECT(rendered != NULL);
+        RUDA_EXPECT(rendered32 != NULL);
+        if (rendered != NULL) {
+            RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+                &rendered->mir, RUDA_MIR_FORMAT_F64
+            ) == 1);
+            RUDA_EXPECT(rendered->mir.calls.length == 0);
+            RUDA_EXPECT(ruda_mir_verify(&rendered->mir) == RUDA_MIR_VERIFY_OK);
+        }
+        if (rendered32 != NULL) {
+            RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+                &rendered32->mir, RUDA_MIR_FORMAT_F32
+            ) == 1);
+            RUDA_EXPECT(rendered32->mir.calls.length == 0);
+            RUDA_EXPECT(ruda_mir_verify(&rendered32->mir) == RUDA_MIR_VERIFY_OK);
+        }
+        ruda_check_result_dispose(&checked);
+    }
+    ruda_checker_import_fixture_dispose(&fixture);
+}
+
 void ruda_test_checker_imports(void) {
     ruda_checker_import_forms();
     ruda_checker_import_diagnostics();
@@ -777,4 +830,5 @@ void ruda_test_checker_imports(void) {
     ruda_checker_import_allocation_failures();
     ruda_checker_import_diagnostic_allocation_failures();
     ruda_checker_import_mir_allocation_failures();
+    ruda_checker_import_std_convert();
 }

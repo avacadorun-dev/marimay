@@ -191,11 +191,13 @@ bool ruda_native_c_program_type_supported(
         || type == RUDA_TYPE_I16 || type == RUDA_TYPE_I32
         || type == RUDA_TYPE_I64 || type == RUDA_TYPE_U8
         || type == RUDA_TYPE_U16 || type == RUDA_TYPE_U32
-        || type == RUDA_TYPE_U64 || type == RUDA_TYPE_F64
+        || type == RUDA_TYPE_U64 || type == RUDA_TYPE_F32
+        || type == RUDA_TYPE_F64
         || type == RUDA_TYPE_STRING) {
         return true;
     }
-    if (result && (type == RUDA_TYPE_VOID || type == RUDA_TYPE_NEVER)) {
+    if (type == RUDA_TYPE_VOID
+        || (result && type == RUDA_TYPE_NEVER)) {
         return true;
     }
     if (!ruda_native_c_find_managed_layout(functions, count, type, &layout)) {

@@ -9,6 +9,11 @@ type Pair {
   second: int;
 }
 
+type NumericWidths {
+  signed: i8;
+  unsigned: u64;
+}
+
 enum Inner {
   Some(int),
   Text(string),
@@ -106,6 +111,15 @@ fn namedEnumSourceOrderIsObservable(): bool {
   };
 }
 
+fn numericNominalRoundTrip(): bool {
+  const value = NumericWidths {
+    signed: -128,
+    unsigned: 18446744073709551615,
+  };
+  return value.signed == -128
+    && value.unsigned == 18446744073709551615;
+}
+
 fn main(): int {
   if !recordMutationAndIdentity() { return -1; }
   if !identityOperandsAreOrdered() { return -2; }
@@ -113,5 +127,6 @@ fn main(): int {
   if !sourceOrderIsObservable() { return -4; }
   if !namedEnumSourceOrderIsObservable() { return -5; }
   if nestedExhaustive(Envelope.Value(Inner.Text("ruda"))) != 7 { return -6; }
+  if !numericNominalRoundTrip() { return -7; }
   return nestedExhaustive(Envelope.Value(Inner.Some(7)));
 }

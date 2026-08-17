@@ -99,6 +99,9 @@ const char *ruda_native_c_type(
     if (type == RUDA_TYPE_U64) {
         return "uint64_t";
     }
+    if (type == RUDA_TYPE_F32) {
+        return "uint32_t";
+    }
     if (type == RUDA_TYPE_F64) {
         return "uint64_t";
     }
@@ -106,6 +109,34 @@ const char *ruda_native_c_type(
         return "RudaManagedReference";
     }
     return "int64_t";
+}
+
+const char *ruda_native_c_integer_kind_name(RudaTypeId type) {
+    switch (type) {
+        case RUDA_TYPE_I8: return "RUDA_INTEGER_I8";
+        case RUDA_TYPE_I16: return "RUDA_INTEGER_I16";
+        case RUDA_TYPE_I32: return "RUDA_INTEGER_I32";
+        case RUDA_TYPE_I64: return "RUDA_INTEGER_I64";
+        case RUDA_TYPE_U8: return "RUDA_INTEGER_U8";
+        case RUDA_TYPE_U16: return "RUDA_INTEGER_U16";
+        case RUDA_TYPE_U32: return "RUDA_INTEGER_U32";
+        case RUDA_TYPE_U64: return "RUDA_INTEGER_U64";
+        default: return NULL;
+    }
+}
+
+const char *ruda_native_c_integer_conversion_name(RudaTypeId type) {
+    switch (type) {
+        case RUDA_TYPE_I8: return "ruda_integer_to_i8";
+        case RUDA_TYPE_I16: return "ruda_integer_to_i16";
+        case RUDA_TYPE_I32: return "ruda_integer_to_i32";
+        case RUDA_TYPE_I64: return "ruda_integer_to_i64";
+        case RUDA_TYPE_U8: return "ruda_integer_to_u8";
+        case RUDA_TYPE_U16: return "ruda_integer_to_u16";
+        case RUDA_TYPE_U32: return "ruda_integer_to_u32";
+        case RUDA_TYPE_U64: return "ruda_integer_to_u64";
+        default: return NULL;
+    }
 }
 
 bool ruda_native_c_buffer_append(
@@ -474,7 +505,34 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
                 case RUDA_MIR_ENUM_NEW: case RUDA_MIR_ENUM_IS_VARIANT:
                 case RUDA_MIR_ENUM_REQUIRE_VARIANT:
                 case RUDA_MIR_ENUM_GET_PAYLOAD: case RUDA_MIR_INTERFACE_NEW:
+                case RUDA_MIR_INTEGER_POLICY:
+                case RUDA_MIR_INTEGER_CONVERT:
+                case RUDA_MIR_FORMAT_F32:
+                case RUDA_MIR_FORMAT_F64:
                     break;
+                case RUDA_MIR_DEFER_REGISTER:
+                case RUDA_MIR_DEFER_CALL: {
+                    const RudaMirCall *call = ruda_native_c_call(
+                        function, instruction->call
+                    );
+                    bool supported = call != NULL
+                        && call->result_type == RUDA_TYPE_VOID;
+                    if (supported && call->interface_slot == UINT32_MAX) {
+                        supported = ruda_native_c_call_supported(
+                            function, instruction->call, functions, count,
+                            RUDA_TYPE_VOID
+                        );
+                    } else if (supported) {
+                        supported = ruda_native_c_interface_call_supported(
+                            function, instruction->call, functions, count,
+                            RUDA_TYPE_VOID
+                        );
+                    }
+                    if (!supported) {
+                        return RUDA_NATIVE_C_EMIT_UNSUPPORTED_CALL;
+                    }
+                    break;
+                }
                 case RUDA_MIR_CALL: {
                     const RudaMirCall *call = ruda_native_c_call(function, instruction->call);
                     if (call == NULL
@@ -597,8 +655,17 @@ bool ruda_native_c_has_cycle(
                         frame->instruction_index
                     );
                     if (instruction != NULL
-                        && instruction->kind == RUDA_MIR_CALL) {
-                        call_id = instruction->call;
+                        && (instruction->kind == RUDA_MIR_CALL
+                            || instruction->kind == RUDA_MIR_DEFER_CALL)) {
+                        const RudaMirCall *candidate = ruda_native_c_call(
+                            function, instruction->call
+                        );
+                        if (candidate == NULL) {
+                            return true;
+                        }
+                        if (candidate->interface_slot == UINT32_MAX) {
+                            call_id = instruction->call;
+                        }
                     }
                 } else {
                     call_id = block->terminator.call;

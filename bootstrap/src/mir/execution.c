@@ -172,13 +172,6 @@ RudaMirInterpretOptions ruda_mir_interpret_default_options(void) {
     options.panic = NULL;
     return options;
 }
-void ruda_mir_panic_dispose(RudaMirPanic *panic) {
-    if (panic == NULL) {
-        return;
-    }
-    ruda_owned_bytes_dispose(&panic->message);
-    memset(panic, 0, sizeof(*panic));
-}
 static bool ruda_mir_uses_f64(const RudaMirFunction *function) {
     size_t index = 0;
     if (function == NULL || function->result_type == RUDA_TYPE_F64) {
@@ -282,7 +275,7 @@ static RudaMirInterpretStatus ruda_mir_array_bounds_panic(
     panic->span = instruction->span;
     return RUDA_MIR_INTERPRET_PANIC;
 }
-static RudaMirInterpretStatus ruda_mir_invoke_call(
+RudaMirInterpretStatus ruda_mir_invoke_call(
     const RudaMirFunction *function,
     RudaMirCallId call_id,
     const RudaMirValue *registers,
@@ -389,6 +382,16 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         third = &registers[instruction->third];
     }
     switch (instruction->kind) {
+        case RUDA_MIR_INTEGER_POLICY:
+        case RUDA_MIR_INTEGER_CONVERT:
+            return ruda_mir_execute_numeric_instruction(
+                function, instruction, first, second, target, options
+            );
+        case RUDA_MIR_FORMAT_F32:
+        case RUDA_MIR_FORMAT_F64:
+            return ruda_mir_execute_format_instruction(
+                instruction, first, target, options
+            );
         case RUDA_MIR_CONSTANT_I64:
             target->as.i64 = instruction->integer;
             return RUDA_MIR_INTERPRET_OK;
@@ -1222,9 +1225,13 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             *target = call_result;
             return RUDA_MIR_INTERPRET_OK;
         }
+        case RUDA_MIR_DEFER_REGISTER:
+        case RUDA_MIR_DEFER_CALL:
+            return RUDA_MIR_INTERPRET_INVALID_MIR;
     }
     return RUDA_MIR_INTERPRET_INVALID_MIR;
 }
+
 RudaMirInterpretStatus ruda_mir_interpret(
     const RudaMirFunction *function,
     const RudaMirValue *arguments,
@@ -1235,7 +1242,10 @@ RudaMirInterpretStatus ruda_mir_interpret(
 ) {
     RudaMirVerifyStatus verify_status;
     RudaMirValue *registers = NULL;
+    RudaMirCallId *defer_stack = NULL;
     size_t register_bytes = 0;
+    size_t defer_bytes = 0;
+    size_t defer_count = 0;
     size_t register_count = 0;
     size_t index = 0;
     size_t steps = 0;
@@ -1290,6 +1300,19 @@ RudaMirInterpretStatus ruda_mir_interpret(
     if (registers == NULL) {
         return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
     }
+    if (function->calls.length != 0) {
+        if (!ruda_size_multiply(
+                function->calls.length, sizeof(*defer_stack), &defer_bytes
+            )) {
+            ruda_deallocate(&allocator, registers, register_bytes);
+            return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        }
+        defer_stack = ruda_allocate(&allocator, defer_bytes);
+        if (defer_stack == NULL) {
+            ruda_deallocate(&allocator, registers, register_bytes);
+            return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        }
+    }
     memset(registers, 0, register_bytes);
     for (index = 0; index < register_count; index += 1) {
         registers[index].type = ruda_mir_register_type(
@@ -1324,14 +1347,32 @@ RudaMirInterpretStatus ruda_mir_interpret(
             if (options.remaining_shared_steps != NULL) {
                 *options.remaining_shared_steps -= 1;
             }
-            status = ruda_mir_execute_instruction(
-                function,
-                instruction,
-                registers,
-                register_count,
-                &allocator,
-                options
-            );
+            if (instruction->kind == RUDA_MIR_DEFER_REGISTER) {
+                if (defer_count >= function->calls.length) {
+                    status = RUDA_MIR_INTERPRET_INVALID_MIR;
+                    goto cleanup;
+                }
+                defer_stack[defer_count] = instruction->call;
+                defer_count += 1;
+                registers[instruction->target].as.boolean = true;
+                status = RUDA_MIR_INTERPRET_OK;
+            } else if (instruction->kind == RUDA_MIR_DEFER_CALL) {
+                if (defer_count == 0
+                    || defer_stack[defer_count - 1] != instruction->call) {
+                    status = RUDA_MIR_INTERPRET_INVALID_MIR;
+                    goto cleanup;
+                }
+                defer_count -= 1;
+                status = ruda_mir_invoke_deferred_call(
+                    function, instruction->call, registers, register_count,
+                    &allocator, options
+                );
+            } else {
+                status = ruda_mir_execute_instruction(
+                    function, instruction, registers, register_count,
+                    &allocator, options
+                );
+            }
             if (status != RUDA_MIR_INTERPRET_OK) {
                 goto cleanup;
             }
@@ -1416,6 +1457,41 @@ RudaMirInterpretStatus ruda_mir_interpret(
         }
     }
 cleanup:
+    while (defer_count != 0) {
+        RudaMirInterpretStatus cleanup_status;
+        RudaMirPanic primary;
+        bool preserve_primary = status == RUDA_MIR_INTERPRET_PANIC
+            && options.panic != NULL;
+        memset(&primary, 0, sizeof(primary));
+        if (preserve_primary) {
+            primary = *options.panic;
+            memset(options.panic, 0, sizeof(*options.panic));
+        }
+        defer_count -= 1;
+        cleanup_status = ruda_mir_invoke_deferred_call(
+            function, defer_stack[defer_count], registers, register_count,
+            &allocator, options
+        );
+        if (preserve_primary) {
+            if (cleanup_status == RUDA_MIR_INTERPRET_PANIC
+                && !ruda_mir_panic_append_suppressed(
+                    &primary, options.panic, allocator
+                )) {
+                cleanup_status = RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+            }
+            ruda_mir_panic_dispose(options.panic);
+            *options.panic = primary;
+            if (cleanup_status == RUDA_MIR_INTERPRET_ALLOCATION_FAILED) {
+                status = cleanup_status;
+            }
+        } else if (cleanup_status == RUDA_MIR_INTERPRET_PANIC) {
+            status = RUDA_MIR_INTERPRET_PANIC;
+        } else if (status == RUDA_MIR_INTERPRET_OK
+            && cleanup_status != RUDA_MIR_INTERPRET_OK) {
+            status = cleanup_status;
+        }
+    }
+    ruda_deallocate(&allocator, defer_stack, defer_bytes);
     ruda_deallocate(&allocator, registers, register_bytes);
     return status;
 }

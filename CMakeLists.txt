@@ -94,8 +94,10 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_codec_nominal.c
   bootstrap/src/bytecode/bytecode_codec_nominal_values.c
   bootstrap/src/bytecode/bytecode_verify.c
+  bootstrap/src/bytecode/bytecode_verify_defer.c
   bootstrap/src/bytecode/bytecode_verify_instructions.c
   bootstrap/src/bytecode/bytecode_verify_nominal.c
+  bootstrap/src/bytecode/bytecode_verify_numeric.c
   bootstrap/src/bytecode/bytecode_verify_provenance.c
   bootstrap/src/bytecode/program.c
   bootstrap/src/bytecode/program_limits.c
@@ -103,13 +105,17 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/mir_lower.c
   bootstrap/src/bytecode/mir_lower_nominal.c
   bootstrap/src/bytecode/vm.c
+  bootstrap/src/bytecode/vm_defer.c
   bootstrap/src/bytecode/vm_interface.c
+  bootstrap/src/bytecode/vm_format.c
   bootstrap/src/bytecode/vm_nominal.c
+  bootstrap/src/bytecode/vm_numeric.c
   bootstrap/src/bytecode/vm_prepare.c
   bootstrap/src/bytecode/vm_value.c
   bootstrap/src/check/array.c
   bootstrap/src/check/checker.c
   bootstrap/src/check/checker_cfg.c
+  bootstrap/src/check/checker_defer.c
   bootstrap/src/check/checker_core.c
   bootstrap/src/check/checker_declaration_constants.c
   bootstrap/src/check/checker_declaration_enums.c
@@ -123,6 +129,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/checker_expr_prelude.c
   bootstrap/src/check/checker_expr_try.c
   bootstrap/src/check/checker_expr_map_error.c
+  bootstrap/src/check/checker_expr_numeric.c
   bootstrap/src/check/checker_expr_interfaces.c
   bootstrap/src/check/checker_generic_types.c
   bootstrap/src/check/checker_generic_specialization.c
@@ -164,17 +171,25 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/manifest/manifest_format.c
   bootstrap/src/manifest/manifest_parse.c
   bootstrap/src/mir/execution.c
+  bootstrap/src/mir/execution_defer.c
+  bootstrap/src/mir/execution_format.c
   bootstrap/src/mir/execution_heap.c
+  bootstrap/src/mir/execution_numeric.c
   bootstrap/src/mir/mir.c
   bootstrap/src/mir/mir_interfaces.c
   bootstrap/src/mir/verify.c
   bootstrap/src/mir/verify_interfaces.c
   bootstrap/src/mir/verify_managed.c
+  bootstrap/src/mir/verify_numeric.c
+  bootstrap/src/mir/verify_defer.c
   bootstrap/src/mir/verify_support.c
   bootstrap/src/native/c_emitter.c
   bootstrap/src/native/c_emitter_descriptors.c
+  bootstrap/src/native/c_emitter_defer.c
   bootstrap/src/native/c_emitter_emit.c
+  bootstrap/src/native/c_emitter_format.c
   bootstrap/src/native/c_emitter_managed.c
+  bootstrap/src/native/c_emitter_numeric.c
   bootstrap/src/native/c_emitter_validate.c
   bootstrap/src/parse/parser.c
   bootstrap/src/parse/parser_declaration.c

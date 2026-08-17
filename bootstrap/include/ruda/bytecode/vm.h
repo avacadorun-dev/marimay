@@ -4,7 +4,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
-
 #include "ruda/base/allocator.h"
 #include "ruda/base/map.h"
 #include "ruda/base/owned_bytes.h"
@@ -12,11 +11,8 @@
 #include "ruda/bytecode/bytecode.h"
 #include "ruda/bytecode/program.h"
 #include "ruda/runtime/managed.h"
-
 typedef uint32_t RudaBytecodeReference;
-
 #define RUDA_BYTECODE_INVALID_REFERENCE UINT32_MAX
-
 typedef struct RudaBytecodeValue {
     RudaBytecodeType type;
     union {
@@ -27,13 +23,11 @@ typedef struct RudaBytecodeValue {
         RudaManagedReference managed_reference;
     } as;
 } RudaBytecodeValue;
-
 typedef struct RudaBytecodeExecutionOptions {
     size_t max_strings;
     size_t max_total_string_bytes;
     RudaManagedHeapOptions managed_heap;
 } RudaBytecodeExecutionOptions;
-
 typedef struct RudaBytecodeExecution {
     RudaAllocator allocator;
     /* Owns RudaOwnedBytes values indexed by RudaBytecodeReference. */
@@ -54,7 +48,6 @@ typedef struct RudaBytecodeExecution {
     bool array_descriptor_allocation_failed;
     bool initialized;
 } RudaBytecodeExecution;
-
 /*
  * Managed values are bound to this execution's heap. Active VM frames root
  * every exact managed register. A returned value remains usable until an
@@ -67,21 +60,26 @@ typedef struct RudaBytecodePanicFrame {
     RudaSymbolId symbol;
     RudaBytecodeSpan call_span;
 } RudaBytecodePanicFrame;
-
+typedef struct RudaBytecodeSuppressedPanic {
+    const char *code;
+    RudaOwnedBytes message;
+    RudaSymbolId symbol;
+    RudaBytecodeSpan span;
+    RudaVector frames;
+} RudaBytecodeSuppressedPanic;
 typedef struct RudaBytecodePanic {
     const char *code;
     RudaOwnedBytes message;
     RudaSymbolId symbol;
     RudaBytecodeSpan span;
     RudaVector frames;
+    RudaVector suppressed;
     bool initialized;
 } RudaBytecodePanic;
-
 typedef struct RudaBytecodeTrap {
     RudaBytecodeSpan span;
     bool has_span;
 } RudaBytecodeTrap;
-
 typedef struct RudaBytecodeRunOptions {
     /* Per frame, matching the MIR oracle's max_steps_per_function. */
     size_t max_steps;
@@ -93,7 +91,6 @@ typedef struct RudaBytecodeRunOptions {
     /* Optional caller-owned output, reset before execution. */
     RudaBytecodeTrap *trap;
 } RudaBytecodeRunOptions;
-
 typedef enum RudaBytecodeRunStatus {
     RUDA_BYTECODE_RUN_OK,
     RUDA_BYTECODE_RUN_INVALID_ARGUMENT,
@@ -108,7 +105,6 @@ typedef enum RudaBytecodeRunStatus {
     RUDA_BYTECODE_RUN_INVALID_REFERENCE,
     RUDA_BYTECODE_RUN_UNSUPPORTED_HOST
 } RudaBytecodeRunStatus;
-
 RudaBytecodeRunOptions ruda_bytecode_run_default_options(void);
 RudaBytecodeExecutionOptions ruda_bytecode_execution_default_options(void);
 bool ruda_bytecode_execution_init(
@@ -126,6 +122,10 @@ bool ruda_bytecode_execution_string_bytes(
 bool ruda_bytecode_panic_init(RudaBytecodePanic *panic, RudaAllocator allocator);
 void ruda_bytecode_panic_dispose(RudaBytecodePanic *panic);
 const RudaBytecodePanicFrame *ruda_bytecode_panic_frame(
+    const RudaBytecodePanic *panic,
+    size_t index
+);
+const RudaBytecodeSuppressedPanic *ruda_bytecode_panic_suppressed(
     const RudaBytecodePanic *panic,
     size_t index
 );

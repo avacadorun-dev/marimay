@@ -116,7 +116,77 @@ void ruda_test_bytecode_metadata(void) {
         {RUDA_OPCODE_ARRAY_PUSH, 55, "array_push", 2,
             {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_MAY_PANIC},
         {RUDA_OPCODE_CONST_INTEGER, 56, "const_integer", 2,
-            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_U64, RUDA_BYTECODE_OPERAND_NONE}, 0}
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_U64, RUDA_BYTECODE_OPERAND_NONE}, 0},
+#define RUDA_NUMERIC_BINARY(opcode, wire, mnemonic, flags) \
+        {opcode, wire, mnemonic, 3, \
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER}, flags}
+#define RUDA_NUMERIC_UNARY(opcode, wire, mnemonic, flags) \
+        {opcode, wire, mnemonic, 2, \
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_NONE}, flags}
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_CHECKED_ADD, 57,
+            "integer_checked_add", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_CHECKED_SUBTRACT, 58,
+            "integer_checked_subtract", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_CHECKED_MULTIPLY, 59,
+            "integer_checked_multiply", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_CHECKED_DIVIDE, 60,
+            "integer_checked_divide", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_CHECKED_REMAINDER, 61,
+            "integer_checked_remainder", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_UNARY(RUDA_OPCODE_INTEGER_CHECKED_NEGATE, 62,
+            "integer_checked_negate", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_CHECKED_SHIFT_LEFT, 63,
+            "integer_checked_shift_left", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_CHECKED_SHIFT_RIGHT, 64,
+            "integer_checked_shift_right", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_WRAPPING_ADD, 65,
+            "integer_wrapping_add", 0),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_WRAPPING_SUBTRACT, 66,
+            "integer_wrapping_subtract", 0),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_WRAPPING_MULTIPLY, 67,
+            "integer_wrapping_multiply", 0),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_WRAPPING_DIVIDE, 68,
+            "integer_wrapping_divide", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_WRAPPING_REMAINDER, 69,
+            "integer_wrapping_remainder", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_UNARY(RUDA_OPCODE_INTEGER_WRAPPING_NEGATE, 70,
+            "integer_wrapping_negate", 0),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_LEFT, 71,
+            "integer_wrapping_shift_left", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_RIGHT, 72,
+            "integer_wrapping_shift_right", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_SATURATING_ADD, 73,
+            "integer_saturating_add", 0),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_SATURATING_SUBTRACT, 74,
+            "integer_saturating_subtract", 0),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_SATURATING_MULTIPLY, 75,
+            "integer_saturating_multiply", 0),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_SATURATING_DIVIDE, 76,
+            "integer_saturating_divide", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_SATURATING_REMAINDER, 77,
+            "integer_saturating_remainder", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_UNARY(RUDA_OPCODE_INTEGER_SATURATING_NEGATE, 78,
+            "integer_saturating_negate", 0),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_SATURATING_SHIFT_LEFT, 79,
+            "integer_saturating_shift_left", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_BINARY(RUDA_OPCODE_INTEGER_SATURATING_SHIFT_RIGHT, 80,
+            "integer_saturating_shift_right", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_UNARY(RUDA_OPCODE_INTEGER_CONVERT_TOTAL, 81,
+            "integer_convert_total", 0),
+        RUDA_NUMERIC_UNARY(RUDA_OPCODE_INTEGER_CONVERT_OPTION, 82,
+            "integer_convert_option", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_UNARY(RUDA_OPCODE_FORMAT_F32, 83,
+            "format_f32", RUDA_OPCODE_FLAG_MAY_PANIC),
+        RUDA_NUMERIC_UNARY(RUDA_OPCODE_FORMAT_F64, 84,
+            "format_f64", RUDA_OPCODE_FLAG_MAY_PANIC),
+        {RUDA_OPCODE_DEFER_REGISTER, 85, "defer_register", 2,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_CALL,
+                RUDA_BYTECODE_OPERAND_NONE}, 0},
+        {RUDA_OPCODE_DEFER_CALL, 86, "defer_call", 2,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_CALL,
+                RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_MAY_PANIC}
+#undef RUDA_NUMERIC_UNARY
+#undef RUDA_NUMERIC_BINARY
     };
     size_t index = 0;
 
@@ -176,6 +246,11 @@ void ruda_test_bytecode_metadata(void) {
     RUDA_EXPECT(RUDA_OPCODE_INTERFACE_NEW == 53);
     RUDA_EXPECT(RUDA_OPCODE_CALL_INTERFACE == 54);
     RUDA_EXPECT(RUDA_OPCODE_CONST_INTEGER == 56);
+    RUDA_EXPECT(RUDA_OPCODE_INTEGER_CHECKED_ADD == 57);
+    RUDA_EXPECT(RUDA_OPCODE_INTEGER_CONVERT_OPTION == 82);
+    RUDA_EXPECT(RUDA_OPCODE_FORMAT_F64 == 84);
+    RUDA_EXPECT(RUDA_OPCODE_DEFER_REGISTER == 85);
+    RUDA_EXPECT(RUDA_OPCODE_DEFER_CALL == 86);
     RUDA_EXPECT(RUDA_OPCODE_COUNT == sizeof(expected) / sizeof(expected[0]));
     for (index = 0; index < sizeof(expected) / sizeof(expected[0]); index += 1) {
         const RudaOpcodeMetadata *metadata = ruda_opcode_metadata(expected[index].opcode);

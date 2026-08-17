@@ -16,6 +16,11 @@ uint32_t ruda_mir_bytecode_layout_for_type(
     RudaTypeId type
 );
 
+bool ruda_bytecode_numeric_option_symbol(
+    RudaBytecodeType payload_type,
+    RudaSymbolId *symbol
+);
+
 RudaMirBytecodeLowerStatus ruda_mir_bytecode_lower_nominals(
     const RudaMirFunction *input,
     RudaBytecodeFunction *output,

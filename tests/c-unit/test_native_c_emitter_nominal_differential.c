@@ -132,7 +132,7 @@ static void ruda_test_native_nominal_source_differential(void) {
     }
     checked_initialized = true;
     RUDA_EXPECT(checked.diagnostics.length == 0);
-    RUDA_EXPECT(checked.records.length == 2);
+    RUDA_EXPECT(checked.records.length == 3);
     RUDA_EXPECT(checked.enums.length == 3);
     RUDA_EXPECT(checked.interfaces.length == 1);
     RUDA_EXPECT(checked.functions.length <= sizeof(functions) / sizeof(functions[0]));

@@ -18,6 +18,18 @@ static const RudaBytecodeType *ruda_bytecode_register_type(
     );
 }
 
+static RudaBytecodeVerifyStatus ruda_bytecode_require_assigned(
+    const unsigned char *assigned,
+    size_t register_count,
+    uint64_t register_id
+);
+static bool ruda_bytecode_register_matches(
+    const RudaBytecodeFunction *function,
+    uint64_t register_id,
+    RudaBytecodeType expected,
+    uint32_t expected_layout
+);
+
 const RudaBytecodeInstruction *ruda_bytecode_block_terminator(
     const RudaBytecodeBlock *block
 ) {
@@ -31,6 +43,9 @@ const RudaBytecodeInstruction *ruda_bytecode_block_terminator(
 }
 
 bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
+    if (ruda_bytecode_opcode_is_numeric(opcode)) {
+        return true;
+    }
     switch (opcode) {
         case RUDA_OPCODE_CONST_I64:
         case RUDA_OPCODE_CONST_INTEGER:
@@ -78,6 +93,36 @@ bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_ENUM_GET_PAYLOAD:
         case RUDA_OPCODE_INTERFACE_NEW:
         case RUDA_OPCODE_CALL_INTERFACE:
+        case RUDA_OPCODE_INTEGER_CHECKED_ADD:
+        case RUDA_OPCODE_INTEGER_CHECKED_SUBTRACT:
+        case RUDA_OPCODE_INTEGER_CHECKED_MULTIPLY:
+        case RUDA_OPCODE_INTEGER_CHECKED_DIVIDE:
+        case RUDA_OPCODE_INTEGER_CHECKED_REMAINDER:
+        case RUDA_OPCODE_INTEGER_CHECKED_NEGATE:
+        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_LEFT:
+        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_RIGHT:
+        case RUDA_OPCODE_INTEGER_WRAPPING_ADD:
+        case RUDA_OPCODE_INTEGER_WRAPPING_SUBTRACT:
+        case RUDA_OPCODE_INTEGER_WRAPPING_MULTIPLY:
+        case RUDA_OPCODE_INTEGER_WRAPPING_DIVIDE:
+        case RUDA_OPCODE_INTEGER_WRAPPING_REMAINDER:
+        case RUDA_OPCODE_INTEGER_WRAPPING_NEGATE:
+        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_LEFT:
+        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_RIGHT:
+        case RUDA_OPCODE_INTEGER_SATURATING_ADD:
+        case RUDA_OPCODE_INTEGER_SATURATING_SUBTRACT:
+        case RUDA_OPCODE_INTEGER_SATURATING_MULTIPLY:
+        case RUDA_OPCODE_INTEGER_SATURATING_DIVIDE:
+        case RUDA_OPCODE_INTEGER_SATURATING_REMAINDER:
+        case RUDA_OPCODE_INTEGER_SATURATING_NEGATE:
+        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_LEFT:
+        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_RIGHT:
+        case RUDA_OPCODE_INTEGER_CONVERT_TOTAL:
+        case RUDA_OPCODE_INTEGER_CONVERT_OPTION:
+        case RUDA_OPCODE_FORMAT_F32:
+        case RUDA_OPCODE_FORMAT_F64:
+        case RUDA_OPCODE_DEFER_REGISTER:
+        case RUDA_OPCODE_DEFER_CALL:
             return true;
         case RUDA_OPCODE_INVALID:
         case RUDA_OPCODE_JUMP:
@@ -93,6 +138,64 @@ bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
             return false;
     }
     return false;
+}
+
+static RudaBytecodeVerifyStatus ruda_bytecode_verify_defer_instruction(
+    const RudaBytecodeFunction *function,
+    const RudaBytecodeInstruction *instruction,
+    unsigned char *assigned
+) {
+    uint64_t marker = instruction->operands[0].unsigned_value;
+    uint64_t call_wire = instruction->operands[1].unsigned_value;
+    const RudaBytecodeCall *call = call_wire < function->calls.length
+        ? ruda_bytecode_call(function, (RudaBytecodeCallId)call_wire)
+        : NULL;
+    const RudaBytecodeType *marker_type = ruda_bytecode_register_type(
+        function, marker
+    );
+    size_t argument_index = 0;
+    if (call == NULL || marker_type == NULL
+        || *marker_type != RUDA_BYTECODE_TYPE_BOOL
+        || call->result_type != RUDA_BYTECODE_TYPE_VOID) {
+        return marker_type == NULL
+            ? RUDA_BYTECODE_VERIFY_INVALID_REGISTER
+            : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
+    if (call->interface_slot != UINT32_MAX) {
+        const RudaBytecodeCallArgument *receiver = call->argument_count != 0
+            ? ruda_bytecode_call_argument(function, call->argument_start)
+            : NULL;
+        const RudaBytecodeInterfaceLayout *layout = receiver != NULL
+                && receiver->type == RUDA_BYTECODE_TYPE_INTERFACE
+            ? ruda_bytecode_interface_layout(function, receiver->layout)
+            : NULL;
+        if (layout == NULL || call->interface_slot >= layout->method_count) {
+            return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        }
+    }
+    for (argument_index = 0; argument_index < call->argument_count;
+        argument_index += 1) {
+        const RudaBytecodeCallArgument *argument = ruda_bytecode_call_argument(
+            function, call->argument_start + argument_index
+        );
+        RudaBytecodeVerifyStatus status = argument != NULL
+            ? ruda_bytecode_require_assigned(
+                assigned, function->register_types.length,
+                argument->register_id
+            )
+            : RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        if (status != RUDA_BYTECODE_VERIFY_OK) {
+            return status;
+        }
+        if (!ruda_bytecode_register_matches(
+                function, argument->register_id,
+                argument->type, argument->layout
+            )) {
+            return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        }
+    }
+    assigned[(size_t)marker] = 1;
+    return RUDA_BYTECODE_VERIFY_OK;
 }
 
 void ruda_bytecode_transfer_assignments(
@@ -685,6 +788,11 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
             assigned
         );
     }
+    if (ruda_bytecode_opcode_is_numeric(instruction->opcode)) {
+        return ruda_bytecode_verify_numeric_instruction(
+            function, instruction, assigned
+        );
+    }
     if (instruction->opcode == RUDA_OPCODE_ARRAY_PUSH) {
         uint64_t array = instruction->operands[0].unsigned_value;
         uint64_t value = instruction->operands[1].unsigned_value;
@@ -732,6 +840,12 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
             function,
             instruction,
             assigned
+        );
+    }
+    if (instruction->opcode == RUDA_OPCODE_DEFER_REGISTER
+        || instruction->opcode == RUDA_OPCODE_DEFER_CALL) {
+        return ruda_bytecode_verify_defer_instruction(
+            function, instruction, assigned
         );
     }
     if (instruction->opcode == RUDA_OPCODE_ARRAY_SET) {
@@ -994,6 +1108,24 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 ? RUDA_BYTECODE_VERIFY_OK
                 : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
+        case RUDA_OPCODE_FORMAT_F32:
+        case RUDA_OPCODE_FORMAT_F64:
+            first = instruction->operands[1].unsigned_value;
+            status = ruda_bytecode_require_assigned(
+                assigned, function->register_types.length, first
+            );
+            if (status != RUDA_BYTECODE_VERIFY_OK) {
+                return status;
+            }
+            first_type = ruda_bytecode_register_type(function, first);
+            status = first_type != NULL
+                    && *target_type == RUDA_BYTECODE_TYPE_STRING
+                    && *first_type == (instruction->opcode
+                            == RUDA_OPCODE_FORMAT_F32
+                        ? RUDA_BYTECODE_TYPE_F32 : RUDA_BYTECODE_TYPE_F64)
+                ? RUDA_BYTECODE_VERIFY_OK
+                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            break;
         case RUDA_OPCODE_BOOL_NOT:
             first = instruction->operands[1].unsigned_value;
             status = ruda_bytecode_require_assigned(
@@ -1124,6 +1256,34 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
         case RUDA_OPCODE_ENUM_GET_PAYLOAD:
         case RUDA_OPCODE_INTERFACE_NEW:
         case RUDA_OPCODE_CALL_INTERFACE:
+        case RUDA_OPCODE_INTEGER_CHECKED_ADD:
+        case RUDA_OPCODE_INTEGER_CHECKED_SUBTRACT:
+        case RUDA_OPCODE_INTEGER_CHECKED_MULTIPLY:
+        case RUDA_OPCODE_INTEGER_CHECKED_DIVIDE:
+        case RUDA_OPCODE_INTEGER_CHECKED_REMAINDER:
+        case RUDA_OPCODE_INTEGER_CHECKED_NEGATE:
+        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_LEFT:
+        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_RIGHT:
+        case RUDA_OPCODE_INTEGER_WRAPPING_ADD:
+        case RUDA_OPCODE_INTEGER_WRAPPING_SUBTRACT:
+        case RUDA_OPCODE_INTEGER_WRAPPING_MULTIPLY:
+        case RUDA_OPCODE_INTEGER_WRAPPING_DIVIDE:
+        case RUDA_OPCODE_INTEGER_WRAPPING_REMAINDER:
+        case RUDA_OPCODE_INTEGER_WRAPPING_NEGATE:
+        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_LEFT:
+        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_RIGHT:
+        case RUDA_OPCODE_INTEGER_SATURATING_ADD:
+        case RUDA_OPCODE_INTEGER_SATURATING_SUBTRACT:
+        case RUDA_OPCODE_INTEGER_SATURATING_MULTIPLY:
+        case RUDA_OPCODE_INTEGER_SATURATING_DIVIDE:
+        case RUDA_OPCODE_INTEGER_SATURATING_REMAINDER:
+        case RUDA_OPCODE_INTEGER_SATURATING_NEGATE:
+        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_LEFT:
+        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_RIGHT:
+        case RUDA_OPCODE_INTEGER_CONVERT_TOTAL:
+        case RUDA_OPCODE_INTEGER_CONVERT_OPTION:
+        case RUDA_OPCODE_DEFER_REGISTER:
+        case RUDA_OPCODE_DEFER_CALL:
             return RUDA_BYTECODE_VERIFY_INVALID_OPCODE;
     }
     if (status == RUDA_BYTECODE_VERIFY_OK) {
