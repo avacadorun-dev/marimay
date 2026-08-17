@@ -72,10 +72,12 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/base/allocator.c
   bootstrap/src/base/arena.c
   bootstrap/src/base/checked_i64.c
+  bootstrap/src/base/checked_integer.c
   bootstrap/src/base/f64.c
   bootstrap/src/base/f64_runtime.c
   bootstrap/src/base/hash.c
   bootstrap/src/base/map.c
+  bootstrap/src/base/number_format.c
   bootstrap/src/base/owned_bytes.c
   bootstrap/src/base/path.c
   bootstrap/src/base/provenance.c

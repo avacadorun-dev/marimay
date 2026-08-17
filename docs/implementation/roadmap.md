@@ -45,6 +45,13 @@ closes the checker-backed D006 compile fixture with a signature-only external
 differential; it does not verify I2 or claim a runtime filesystem
 implementation.
 
+Preview checkpoint 6 evidence: [numeric widths, explicit conversions,
+strings, and D046 formatters](evidence/cp6-numeric-widths-2026-08-17.md).
+This locally closes the numeric/text preview slice across checker, MIR, VM,
+bytecode, and native C17, including malformed bytecode and O0/O2 differential
+coverage. I2–I5 remain `in-progress`; I6 remains `not-started`, and this
+evidence does not claim `std/io`, `ruda run`, or public stdout.
+
 ## Immediate execution priority: V0 engine-equivalence spine
 
 Checkpoint A0 is locally complete and its initial pushed Linux x86_64 matrix is

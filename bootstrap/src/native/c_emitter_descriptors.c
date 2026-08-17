@@ -187,8 +187,12 @@ bool ruda_native_c_program_type_supported(
     bool result
 ) {
     RudaNativeCManagedLayout layout;
-    if (type == RUDA_TYPE_BOOL || type == RUDA_TYPE_I64
-        || type == RUDA_TYPE_F64 || type == RUDA_TYPE_STRING) {
+    if (type == RUDA_TYPE_BOOL || type == RUDA_TYPE_I8
+        || type == RUDA_TYPE_I16 || type == RUDA_TYPE_I32
+        || type == RUDA_TYPE_I64 || type == RUDA_TYPE_U8
+        || type == RUDA_TYPE_U16 || type == RUDA_TYPE_U32
+        || type == RUDA_TYPE_U64 || type == RUDA_TYPE_F64
+        || type == RUDA_TYPE_STRING) {
         return true;
     }
     if (result && (type == RUDA_TYPE_VOID || type == RUDA_TYPE_NEVER)) {

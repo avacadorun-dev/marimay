@@ -7,6 +7,7 @@ void ruda_test_bytecode(void) {
     ruda_test_bytecode_f64_codec_and_verifier();
     ruda_test_bytecode_decode_rejections();
     ruda_test_bytecode_verifier_rejections();
+    ruda_test_bytecode_integer_widths();
     ruda_test_bytecode_calls_and_program();
     ruda_test_bytecode_string_pool();
     ruda_test_bytecode_string_verifier_rejections();

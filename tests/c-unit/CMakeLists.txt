@@ -2,6 +2,7 @@ add_executable(ruda_c_unit
   test_allocator.c
   test_ast.c
   test_base.c
+  test_checked_integer.c
   test_bytecode.c
   test_bytecode_support.c
   test_bytecode_model.c
@@ -61,6 +62,7 @@ add_executable(ruda_c_unit
   test_manifest.c
   test_managed.c
   test_managed_objects.c
+  test_number_format.c
   test_mir_calls.c
   test_mir.c
   test_mir_arrays.c

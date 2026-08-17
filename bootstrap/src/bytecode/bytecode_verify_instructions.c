@@ -33,6 +33,7 @@ const RudaBytecodeInstruction *ruda_bytecode_block_terminator(
 bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
     switch (opcode) {
         case RUDA_OPCODE_CONST_I64:
+        case RUDA_OPCODE_CONST_INTEGER:
         case RUDA_OPCODE_CONST_F64:
         case RUDA_OPCODE_CONST_BOOL:
         case RUDA_OPCODE_COPY:
@@ -810,6 +811,11 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 ? RUDA_BYTECODE_VERIFY_OK
                 : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
+        case RUDA_OPCODE_CONST_INTEGER:
+            status = ruda_bytecode_type_is_integer(*target_type)
+                ? RUDA_BYTECODE_VERIFY_OK
+                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            break;
         case RUDA_OPCODE_CONST_F64:
             status = *target_type == RUDA_BYTECODE_TYPE_F64
                 ? RUDA_BYTECODE_VERIFY_OK
@@ -966,8 +972,10 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
             }
             first_type = ruda_bytecode_register_type(function, first);
             status = first_type != NULL
-                    && *target_type == RUDA_BYTECODE_TYPE_I64
-                    && *first_type == RUDA_BYTECODE_TYPE_I64
+                    && *target_type == *first_type
+                    && ruda_bytecode_type_is_integer(*target_type)
+                    && (instruction->opcode == RUDA_OPCODE_I64_BITWISE_NOT
+                        || ruda_bytecode_type_is_signed_integer(*target_type))
                 ? RUDA_BYTECODE_VERIFY_OK
                 : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
@@ -1063,8 +1071,8 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 || instruction->opcode == RUDA_OPCODE_I64_LESS_EQUAL) {
                 status = first_type != NULL && second_type != NULL
                         && *target_type == RUDA_BYTECODE_TYPE_BOOL
-                        && *first_type == RUDA_BYTECODE_TYPE_I64
-                        && *second_type == RUDA_BYTECODE_TYPE_I64
+                        && ruda_bytecode_type_is_integer(*first_type)
+                        && *first_type == *second_type
                     ? RUDA_BYTECODE_VERIFY_OK
                     : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             } else if (instruction->opcode == RUDA_OPCODE_F64_EQUAL
@@ -1088,9 +1096,9 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                     : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             } else {
                 status = first_type != NULL && second_type != NULL
-                        && *target_type == RUDA_BYTECODE_TYPE_I64
-                        && *first_type == RUDA_BYTECODE_TYPE_I64
-                        && *second_type == RUDA_BYTECODE_TYPE_I64
+                        && *target_type == *first_type
+                        && *first_type == *second_type
+                        && ruda_bytecode_type_is_integer(*target_type)
                     ? RUDA_BYTECODE_VERIFY_OK
                     : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             }

@@ -21,6 +21,7 @@
  bool ruda_checker_private_compile_unary(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     RudaExpressionValue *result
 );
  bool ruda_checker_private_binary_parts(
@@ -41,6 +42,7 @@
  bool ruda_checker_private_compile_binary(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     RudaExpressionValue *result
 );
 #endif

@@ -2,6 +2,8 @@
 #include "checker_core_api.h"
 #include "checker_lookup_api.h"
 
+#include <limits.h>
+#include <string.h>
 
 
 
@@ -36,6 +38,13 @@
     }
     if (token->kind == RUDA_TOKEN_INTEGER) {
         uint64_t magnitude = 0;
+        RudaTypeId integer_type = expected == RUDA_TYPE_INVALID
+            ? RUDA_TYPE_I64 : expected;
+        uint64_t limit = UINT64_MAX;
+        bool signed_integer = integer_type >= RUDA_TYPE_I8
+            && integer_type <= RUDA_TYPE_I64;
+        bool integer = integer_type >= RUDA_TYPE_I8
+            && integer_type <= RUDA_TYPE_U64;
         if (expected == RUDA_TYPE_STRING) {
             (void)ruda_checker_add_diagnostic(
                 checker,
@@ -46,30 +55,62 @@
             );
             return false;
         }
-        if (expected != RUDA_TYPE_INVALID && expected != RUDA_TYPE_I64) {
-            ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+        if (!integer) {
+            (void)ruda_checker_add_diagnostic(
+                checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "integer literal requires an integer type",
+                token->start, token->end
+            );
             return false;
         }
+        if (signed_integer) {
+            unsigned int width = integer_type == RUDA_TYPE_I8 ? 8U
+                : integer_type == RUDA_TYPE_I16 ? 16U
+                : integer_type == RUDA_TYPE_I32 ? 32U : 64U;
+            limit = width == 64U ? (uint64_t)INT64_MAX
+                : (UINT64_C(1) << (width - 1U)) - UINT64_C(1);
+        } else {
+            unsigned int width = integer_type == RUDA_TYPE_U8 ? 8U
+                : integer_type == RUDA_TYPE_U16 ? 16U
+                : integer_type == RUDA_TYPE_U32 ? 32U : 64U;
+            limit = width == 64U ? UINT64_MAX
+                : (UINT64_C(1) << width) - UINT64_C(1);
+        }
         if (!ruda_checker_private_integer_magnitude(
-                checker,
-                token,
-                (uint64_t)INT64_MAX,
+                checker, token, limit,
                 &magnitude
             )) {
             return false;
         }
-        return ruda_function_emit_instruction(
-            function,
-            RUDA_MIR_CONSTANT_I64,
-            RUDA_TYPE_I64,
-            RUDA_MIR_NO_REGISTER,
-            RUDA_MIR_NO_REGISTER,
-            (int64_t)magnitude,
-            false,
-            token->start,
-            token->end,
-            result
-        );
+        if (integer_type == RUDA_TYPE_I64) {
+            return ruda_function_emit_instruction(
+                function, RUDA_MIR_CONSTANT_I64, RUDA_TYPE_I64,
+                RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER,
+                (int64_t)magnitude, false, token->start, token->end, result
+            );
+        }
+        {
+            RudaMirInstruction instruction;
+            RudaMirRegister target = RUDA_MIR_NO_REGISTER;
+            if (!ruda_function_add_register(function, integer_type, &target)) {
+                return false;
+            }
+            memset(&instruction, 0, sizeof(instruction));
+            instruction.kind = RUDA_MIR_CONSTANT_INTEGER;
+            instruction.target = target;
+            instruction.first = RUDA_MIR_NO_REGISTER;
+            instruction.second = RUDA_MIR_NO_REGISTER;
+            instruction.integer_bits = magnitude;
+            instruction.span.start = token->start;
+            instruction.span.end = token->end;
+            if (!ruda_function_append_instruction(function, &instruction)) {
+                return false;
+            }
+            result->type = integer_type;
+            result->register_id = target;
+            result->valid = true;
+            return true;
+        }
     }
     if (token->kind == RUDA_TOKEN_FLOAT) {
         uint64_t bits = 0;
@@ -243,6 +284,30 @@
                     result
                 );
             }
+            if (ruda_checker_private_type_is_integer(constant->value.type)) {
+                RudaMirInstruction instruction;
+                RudaMirRegister target = RUDA_MIR_NO_REGISTER;
+                if (!ruda_function_add_register(
+                        function, constant->value.type, &target
+                    )) {
+                    return false;
+                }
+                memset(&instruction, 0, sizeof(instruction));
+                instruction.kind = RUDA_MIR_CONSTANT_INTEGER;
+                instruction.target = target;
+                instruction.first = RUDA_MIR_NO_REGISTER;
+                instruction.second = RUDA_MIR_NO_REGISTER;
+                instruction.integer_bits = constant->value.as.integer_bits;
+                instruction.span.start = token->start;
+                instruction.span.end = token->end;
+                if (!ruda_function_append_instruction(function, &instruction)) {
+                    return false;
+                }
+                result->type = constant->value.type;
+                result->register_id = target;
+                result->valid = true;
+                return true;
+            }
             if (constant->value.type == RUDA_TYPE_BOOL) {
                 return ruda_function_emit_instruction(
                     function,
@@ -339,6 +404,7 @@
  bool ruda_checker_private_compile_unary(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     RudaExpressionValue *result
 ) {
     const RudaSyntaxToken *operator_token = ruda_checker_private_check_first_token(node);
@@ -356,14 +422,50 @@
         && operand->kind == RUDA_SYNTAX_LITERAL_EXPRESSION) {
         const RudaSyntaxToken *literal = ruda_checker_private_check_first_token(operand);
         uint64_t magnitude = 0;
+        RudaTypeId negative_type = expected;
+        unsigned int negative_width = 64U;
+        uint64_t negative_limit = (uint64_t)INT64_MAX + UINT64_C(1);
+        if (!(negative_type >= RUDA_TYPE_I8
+                && negative_type <= RUDA_TYPE_I64)) {
+            negative_type = RUDA_TYPE_I64;
+        }
+        negative_width = negative_type == RUDA_TYPE_I8 ? 8U
+            : negative_type == RUDA_TYPE_I16 ? 16U
+            : negative_type == RUDA_TYPE_I32 ? 32U : 64U;
+        if (negative_width != 64U) {
+            negative_limit = UINT64_C(1) << (negative_width - 1U);
+        }
         if (literal != NULL && literal->kind == RUDA_TOKEN_INTEGER
             && ruda_checker_private_integer_magnitude(
                 function->checker,
                 literal,
-                (uint64_t)INT64_MAX + UINT64_C(1),
+                negative_limit,
                 &magnitude
             )) {
-            if (magnitude == (uint64_t)INT64_MAX + UINT64_C(1)) {
+            if (magnitude == negative_limit) {
+                if (negative_type != RUDA_TYPE_I64) {
+                    RudaMirInstruction instruction;
+                    RudaMirRegister target = RUDA_MIR_NO_REGISTER;
+                    uint64_t mask = (UINT64_C(1) << negative_width) - 1U;
+                    if (!ruda_function_add_register(
+                            function, negative_type, &target
+                        )) return false;
+                    memset(&instruction, 0, sizeof(instruction));
+                    instruction.kind = RUDA_MIR_CONSTANT_INTEGER;
+                    instruction.target = target;
+                    instruction.first = RUDA_MIR_NO_REGISTER;
+                    instruction.second = RUDA_MIR_NO_REGISTER;
+                    instruction.integer_bits = (UINT64_C(0) - magnitude) & mask;
+                    instruction.span.start = node->start;
+                    instruction.span.end = node->end;
+                    if (!ruda_function_append_instruction(function, &instruction)) {
+                        return false;
+                    }
+                    result->type = negative_type;
+                    result->register_id = target;
+                    result->valid = true;
+                    return true;
+                }
                 return ruda_function_emit_instruction(
                     function,
                     RUDA_MIR_CONSTANT_I64,
@@ -416,10 +518,15 @@
         operand_type = RUDA_TYPE_BOOL;
         kind = RUDA_MIR_NOT_BOOL;
     } else if (operator_token->kind == RUDA_TOKEN_MINUS) {
-        operand_type = RUDA_TYPE_INVALID;
+        operand_type = expected;
+        if (!(operand_type >= RUDA_TYPE_I8 && operand_type <= RUDA_TYPE_I64)
+            && operand_type != RUDA_TYPE_F64) {
+            operand_type = RUDA_TYPE_INVALID;
+        }
         kind = RUDA_MIR_NEGATE_CHECKED_I64;
     } else if (operator_token->kind == RUDA_TOKEN_TILDE) {
-        operand_type = RUDA_TYPE_I64;
+        operand_type = (expected >= RUDA_TYPE_I8 && expected <= RUDA_TYPE_U64)
+            ? expected : RUDA_TYPE_INVALID;
         kind = RUDA_MIR_BITWISE_NOT_I64;
     } else {
         ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
@@ -433,7 +540,8 @@
         return true;
     }
     if (operator_token->kind == RUDA_TOKEN_MINUS
-        && (value.type == RUDA_TYPE_I64 || value.type == RUDA_TYPE_F64)) {
+        && ((value.type >= RUDA_TYPE_I8 && value.type <= RUDA_TYPE_I64)
+            || value.type == RUDA_TYPE_F64)) {
         operand_type = value.type;
         kind = value.type == RUDA_TYPE_F64
             ? RUDA_MIR_NEGATE_F64
@@ -444,7 +552,6 @@
                 && (value.type == RUDA_TYPE_I8
                     || value.type == RUDA_TYPE_I16
                     || value.type == RUDA_TYPE_I32
-                    || value.type == RUDA_TYPE_F32
                     || value.type == RUDA_TYPE_F64))
             || (operator_token->kind == RUDA_TOKEN_TILDE
                 && ruda_checker_private_type_is_integer(value.type))) {
@@ -663,6 +770,7 @@
  bool ruda_checker_private_compile_binary(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    RudaTypeId expected,
     RudaExpressionValue *result
 ) {
     const RudaAstNode *left_node = NULL;
@@ -779,9 +887,9 @@
             return false;
     }
     if (!ruda_compile_expression(
-            function,
-            left_node,
-            RUDA_TYPE_INVALID,
+            function, left_node,
+            (expected >= RUDA_TYPE_I8 && expected <= RUDA_TYPE_U64)
+                || expected == RUDA_TYPE_F64 ? expected : RUDA_TYPE_INVALID,
             &left
         )) {
         return false;
@@ -823,7 +931,7 @@
         );
         return false;
     }
-    if (operand_type != RUDA_TYPE_I64
+    if (!(operand_type >= RUDA_TYPE_I8 && operand_type <= RUDA_TYPE_U64)
         && operand_type != RUDA_TYPE_F64
         && !(equality_operator && operand_type == RUDA_TYPE_BOOL)) {
         if ((numeric_operator || comparison_operator)
@@ -899,7 +1007,8 @@
     if (equality_operator) {
         if (operand_type == RUDA_TYPE_BOOL) {
             kind = RUDA_MIR_EQUAL_BOOL;
-        } else if (operand_type == RUDA_TYPE_I64) {
+        } else if (operand_type >= RUDA_TYPE_I8
+            && operand_type <= RUDA_TYPE_U64) {
             kind = RUDA_MIR_EQUAL_I64;
         }
     }

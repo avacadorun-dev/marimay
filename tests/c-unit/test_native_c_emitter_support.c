@@ -120,6 +120,7 @@ void ruda_test_native_compile_and_run_configured(
     char include_argument[1024];
     char runtime_include_argument[1024];
     char checked_source_path[1024];
+    char checked_integer_source_path[1024];
     char f64_source_path[1024];
     char allocator_source_path[1024];
     char provenance_source_path[1024];
@@ -171,6 +172,17 @@ void ruda_test_native_compile_and_run_configured(
         RUDA_TEST_SOURCE_DIR
     );
     if (written < 0 || (size_t)written >= sizeof(checked_source_path)) {
+        RUDA_EXPECT(false);
+        goto cleanup;
+    }
+    written = snprintf(
+        checked_integer_source_path,
+        sizeof(checked_integer_source_path),
+        "%s/bootstrap/src/base/checked_integer.c",
+        RUDA_TEST_SOURCE_DIR
+    );
+    if (written < 0
+        || (size_t)written >= sizeof(checked_integer_source_path)) {
         RUDA_EXPECT(false);
         goto cleanup;
     }
@@ -263,7 +275,7 @@ void ruda_test_native_compile_and_run_configured(
     for (optimization_index = 0;
         optimization_index < sizeof(optimizations) / sizeof(optimizations[0]);
         optimization_index += 1) {
-        const char *arguments[33];
+        const char *arguments[36];
         size_t argument_count = 0;
         written = snprintf(
             executable_path,
@@ -300,6 +312,7 @@ void ruda_test_native_compile_and_run_configured(
         arguments[argument_count++] = runtime_include_argument;
         arguments[argument_count++] = source_path;
         arguments[argument_count++] = checked_source_path;
+        arguments[argument_count++] = checked_integer_source_path;
         arguments[argument_count++] = f64_source_path;
         arguments[argument_count++] = allocator_source_path;
         arguments[argument_count++] = provenance_source_path;

@@ -54,6 +54,7 @@ void ruda_test_bytecode_codec(void);
 void ruda_test_bytecode_f64_codec_and_verifier(void);
 void ruda_test_bytecode_decode_rejections(void);
 void ruda_test_bytecode_verifier_rejections(void);
+void ruda_test_bytecode_integer_widths(void);
 void ruda_test_bytecode_calls_and_program(void);
 void ruda_test_bytecode_string_pool(void);
 void ruda_test_bytecode_string_verifier_rejections(void);

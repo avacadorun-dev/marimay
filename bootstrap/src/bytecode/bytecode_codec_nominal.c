@@ -430,7 +430,8 @@ static RudaBytecodeCodecStatus ruda_bytecode_nominal_decode_type_layout(
     if (status != RUDA_BYTECODE_CODEC_OK) {
         return status;
     }
-    if (value > RUDA_BYTECODE_TYPE_INTERFACE
+    if ((value > RUDA_BYTECODE_TYPE_INTERFACE
+        && !ruda_bytecode_type_is_extended_scalar((RudaBytecodeType)value))
         || !ruda_bytecode_type_is_register((RudaBytecodeType)value)) {
         return RUDA_BYTECODE_CODEC_INVALID_ENCODING;
     }

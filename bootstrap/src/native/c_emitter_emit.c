@@ -2,6 +2,121 @@
 
 #include <string.h>
 
+static RudaTypeId ruda_native_c_register_type(
+    const RudaMirFunction *function,
+    RudaMirRegister register_id
+) {
+    const RudaTypeId *type = function != NULL
+        ? ruda_vector_at_const(&function->register_types, register_id) : NULL;
+    return type != NULL ? *type : RUDA_TYPE_INVALID;
+}
+
+static const char *ruda_native_c_integer_kind(RudaTypeId type) {
+    switch (type) {
+        case RUDA_TYPE_I8: return "RUDA_INTEGER_I8";
+        case RUDA_TYPE_I16: return "RUDA_INTEGER_I16";
+        case RUDA_TYPE_I32: return "RUDA_INTEGER_I32";
+        case RUDA_TYPE_I64: return "RUDA_INTEGER_I64";
+        case RUDA_TYPE_U8: return "RUDA_INTEGER_U8";
+        case RUDA_TYPE_U16: return "RUDA_INTEGER_U16";
+        case RUDA_TYPE_U32: return "RUDA_INTEGER_U32";
+        case RUDA_TYPE_U64: return "RUDA_INTEGER_U64";
+        default: return NULL;
+    }
+}
+
+static const char *ruda_native_c_integer_to(RudaTypeId type) {
+    switch (type) {
+        case RUDA_TYPE_I8: return "ruda_integer_to_i8";
+        case RUDA_TYPE_I16: return "ruda_integer_to_i16";
+        case RUDA_TYPE_I32: return "ruda_integer_to_i32";
+        case RUDA_TYPE_I64: return "ruda_integer_to_i64";
+        case RUDA_TYPE_U8: return "ruda_integer_to_u8";
+        case RUDA_TYPE_U16: return "ruda_integer_to_u16";
+        case RUDA_TYPE_U32: return "ruda_integer_to_u32";
+        case RUDA_TYPE_U64: return "ruda_integer_to_u64";
+        default: return NULL;
+    }
+}
+
+static const char *ruda_native_c_integer_operation(RudaMirInstructionKind kind) {
+    switch (kind) {
+        case RUDA_MIR_ADD_CHECKED_I64: return "ruda_checked_integer_add";
+        case RUDA_MIR_SUBTRACT_CHECKED_I64:
+            return "ruda_checked_integer_subtract";
+        case RUDA_MIR_MULTIPLY_CHECKED_I64:
+            return "ruda_checked_integer_multiply";
+        case RUDA_MIR_DIVIDE_CHECKED_I64:
+            return "ruda_checked_integer_divide";
+        case RUDA_MIR_REMAINDER_CHECKED_I64:
+            return "ruda_checked_integer_remainder";
+        case RUDA_MIR_SHIFT_LEFT_CHECKED_I64:
+            return "ruda_checked_integer_shift_left";
+        case RUDA_MIR_SHIFT_RIGHT_I64:
+            return "ruda_checked_integer_shift_right";
+        case RUDA_MIR_NEGATE_CHECKED_I64:
+            return "ruda_checked_integer_negate";
+        default: return NULL;
+    }
+}
+
+static bool ruda_native_c_emit_generic_integer(
+    RudaNativeCBuffer *buffer,
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction
+) {
+    RudaTypeId type = ruda_native_c_register_type(function, instruction->target);
+    const char *kind = ruda_native_c_integer_kind(type);
+    const char *convert = ruda_native_c_integer_to(type);
+    const char *operation = ruda_native_c_integer_operation(instruction->kind);
+    if (kind == NULL || convert == NULL || operation == NULL) {
+        return false;
+    }
+    if (instruction->kind == RUDA_MIR_NEGATE_CHECKED_I64) {
+        return ruda_native_c_write(
+            buffer,
+            "  { RudaIntegerValue ruda_g_left = {%s, (uint64_t)ruda_g_v_%u}; RudaIntegerValue ruda_g_out_value = {%s, 0}; ruda_g_s = (int)%s(ruda_g_left, &ruda_g_out_value); if (ruda_g_s == 0 && !%s(ruda_g_out_value, &ruda_g_v_%u)) ruda_g_s = 1; if (ruda_g_s != 0) { *ruda_g_start = %zu; *ruda_g_end = %zu; goto ruda_g_cleanup; } }\n",
+            kind, instruction->first, kind, operation, convert,
+            instruction->target, instruction->span.start, instruction->span.end
+        );
+    }
+    return ruda_native_c_write(
+        buffer,
+        "  { RudaIntegerValue ruda_g_left = {%s, (uint64_t)ruda_g_v_%u}; RudaIntegerValue ruda_g_right = {%s, (uint64_t)ruda_g_v_%u}; RudaIntegerValue ruda_g_out_value = {%s, 0}; ruda_g_s = (int)%s(ruda_g_left, ruda_g_right, &ruda_g_out_value); if (ruda_g_s == 0 && !%s(ruda_g_out_value, &ruda_g_v_%u)) ruda_g_s = 1; if (ruda_g_s != 0) { *ruda_g_start = %zu; *ruda_g_end = %zu; goto ruda_g_cleanup; } }\n",
+        kind, instruction->first, kind, instruction->second, kind, operation,
+        convert, instruction->target, instruction->span.start,
+        instruction->span.end
+    );
+}
+
+static bool ruda_native_c_emit_generic_bitwise(
+    RudaNativeCBuffer *buffer,
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    const char *operator_text
+) {
+    RudaTypeId type = ruda_native_c_register_type(function, instruction->target);
+    const char *kind = ruda_native_c_integer_kind(type);
+    const char *convert = ruda_native_c_integer_to(type);
+    if (kind == NULL || convert == NULL || operator_text == NULL) {
+        return false;
+    }
+    if (instruction->second == RUDA_MIR_NO_REGISTER) {
+        return ruda_native_c_write(
+            buffer,
+            "  { RudaIntegerValue ruda_g_left = {%s, (uint64_t)ruda_g_v_%u}; RudaIntegerValue ruda_g_out_value = {%s, 0}; ruda_g_out_value.bits = (%s ruda_g_left.bits) & ((ruda_integer_bit_width(%s) == 64U) ? UINT64_MAX : (UINT64_C(1) << ruda_integer_bit_width(%s)) - UINT64_C(1)); if (!%s(ruda_g_out_value, &ruda_g_v_%u)) { ruda_g_s = 1; goto ruda_g_cleanup; } }\n",
+            kind, instruction->first, kind, operator_text, kind, kind,
+            convert, instruction->target
+        );
+    }
+    return ruda_native_c_write(
+        buffer,
+        "  { RudaIntegerValue ruda_g_left = {%s, (uint64_t)ruda_g_v_%u}; RudaIntegerValue ruda_g_right = {%s, (uint64_t)ruda_g_v_%u}; RudaIntegerValue ruda_g_out_value = {%s, 0}; ruda_g_out_value.bits = (ruda_g_left.bits %s ruda_g_right.bits) & ((ruda_integer_bit_width(%s) == 64U) ? UINT64_MAX : (UINT64_C(1) << ruda_integer_bit_width(%s)) - UINT64_C(1)); if (!%s(ruda_g_out_value, &ruda_g_v_%u)) { ruda_g_s = 1; goto ruda_g_cleanup; } }\n",
+        kind, instruction->first, kind, instruction->second, kind,
+        operator_text, kind, kind, convert, instruction->target
+    );
+}
+
 bool ruda_native_c_emit_signature(
     RudaNativeCBuffer *buffer, const RudaMirFunction *function, bool prototype
 ) {
@@ -187,6 +302,25 @@ bool ruda_native_c_emit_function(
                 case RUDA_MIR_CONSTANT_I64:
                     if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = ruda_i64_from_twos_complement(UINT64_C(0x%016llx));\n", i->target, (unsigned long long)(uint64_t)i->integer)) return false;
                     break;
+                case RUDA_MIR_CONSTANT_INTEGER: {
+                    RudaTypeId type = ruda_native_c_register_type(
+                        function, i->target
+                    );
+                    const char *kind = ruda_native_c_integer_kind(type);
+                    const char *convert = ruda_native_c_integer_to(type);
+                    if (kind == NULL || convert == NULL) return false;
+                    if (!ruda_native_c_write(
+                            buffer,
+                            "  { RudaIntegerValue ruda_g_integer_value = {%s, UINT64_C(0x%016llx)}; if (!%s(ruda_g_integer_value, &ruda_g_v_%u)) { ruda_g_s = 1; *ruda_g_start = %zu; *ruda_g_end = %zu; goto ruda_g_cleanup; } }\n",
+                            kind,
+                            (unsigned long long)i->integer_bits,
+                            convert,
+                            i->target,
+                            i->span.start,
+                            i->span.end
+                        )) return false;
+                    break;
+                }
                 case RUDA_MIR_CONSTANT_F64:
                     if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = UINT64_C(0x%016llx);\n", i->target, (unsigned long long)i->f64_bits)) return false;
                     break;
@@ -395,10 +529,24 @@ bool ruda_native_c_emit_function(
                         )) return false;
                     break;
                 }
-                case RUDA_MIR_BITWISE_NOT_I64: if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = ruda_i64_bitwise_not(ruda_g_v_%u);\n", i->target, i->first)) return false; break;
+                case RUDA_MIR_BITWISE_NOT_I64:
+                    if (ruda_native_c_register_type(function, i->target)
+                            != RUDA_TYPE_I64) {
+                        if (!ruda_native_c_emit_generic_bitwise(
+                                buffer, function, i, "~"
+                            )) return false;
+                    } else if (!ruda_native_c_write(buffer, "  ruda_g_v_%u = ruda_i64_bitwise_not(ruda_g_v_%u);\n", i->target, i->first)) return false;
+                    break;
                 case RUDA_MIR_BITWISE_AND_I64: case RUDA_MIR_BITWISE_XOR_I64: case RUDA_MIR_BITWISE_OR_I64: {
                     const char *name = i->kind == RUDA_MIR_BITWISE_AND_I64 ? "and" : i->kind == RUDA_MIR_BITWISE_XOR_I64 ? "xor" : "or";
-                    if (!ruda_native_c_write(
+                    const char *operator_text = i->kind == RUDA_MIR_BITWISE_AND_I64
+                        ? "&" : i->kind == RUDA_MIR_BITWISE_XOR_I64 ? "^" : "|";
+                    if (ruda_native_c_register_type(function, i->target)
+                            != RUDA_TYPE_I64) {
+                        if (!ruda_native_c_emit_generic_bitwise(
+                                buffer, function, i, operator_text
+                            )) return false;
+                    } else if (!ruda_native_c_write(
                             buffer,
                             "  ruda_g_v_%u = ruda_i64_bitwise_%s(ruda_g_v_%u, ruda_g_v_%u);\n",
                             i->target,
@@ -451,6 +599,14 @@ bool ruda_native_c_emit_function(
                         )) return false;
                     break;
                 default: return false;
+            }
+            if (helper != NULL
+                && ruda_native_c_register_type(function, i->target)
+                    != RUDA_TYPE_I64) {
+                if (!ruda_native_c_emit_generic_integer(buffer, function, i)) {
+                    return false;
+                }
+                helper = NULL;
             }
             if (helper != NULL) {
                 if (i->kind == RUDA_MIR_NEGATE_CHECKED_I64) {

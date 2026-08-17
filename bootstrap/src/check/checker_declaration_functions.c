@@ -10,6 +10,7 @@
 #include "checker_statement_api.h"
 #include "checker_generic_types_api.h"
 
+
  bool ruda_checker_private_collect_function_signature(
     RudaChecker *checker,
     const RudaAstNode *node
@@ -640,6 +641,7 @@ cleanup:
     }
     if (declaration.type != RUDA_TYPE_INVALID
         && declaration.type != RUDA_TYPE_I64
+        && !ruda_checker_private_type_is_integer(declaration.type)
         && declaration.type != RUDA_TYPE_F64
         && declaration.type != RUDA_TYPE_BOOL) {
         ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);

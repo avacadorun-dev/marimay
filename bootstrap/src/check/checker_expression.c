@@ -49,10 +49,10 @@ bool ruda_checker_private_compile_expression_raw(
         return ruda_compile_array_index(function, node, result);
     }
     if (node->kind == RUDA_SYNTAX_UNARY_EXPRESSION) {
-        return ruda_checker_private_compile_unary(function, node, result);
+        return ruda_checker_private_compile_unary(function, node, expected, result);
     }
     if (node->kind == RUDA_SYNTAX_BINARY_EXPRESSION) {
-        return ruda_checker_private_compile_binary(function, node, result);
+        return ruda_checker_private_compile_binary(function, node, expected, result);
     }
     if (node->kind == RUDA_SYNTAX_CALL_EXPRESSION) {
         return ruda_checker_private_compile_call(

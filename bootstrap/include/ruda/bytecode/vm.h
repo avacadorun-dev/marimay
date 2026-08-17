@@ -20,7 +20,7 @@ typedef uint32_t RudaBytecodeReference;
 typedef struct RudaBytecodeValue {
     RudaBytecodeType type;
     union {
-        int64_t i64;
+        int64_t i64; uint64_t integer_bits;
         uint64_t f64_bits;
         bool boolean;
         RudaBytecodeReference reference;

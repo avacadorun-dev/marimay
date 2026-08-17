@@ -1,6 +1,14 @@
 #include "mir_internal.h"
 #include <limits.h>
 #include <string.h>
+
+static bool ruda_mir_type_is_integer(RudaTypeId type) {
+    return type >= RUDA_TYPE_I8 && type <= RUDA_TYPE_U64;
+}
+
+static bool ruda_mir_type_is_signed_integer(RudaTypeId type) {
+    return type >= RUDA_TYPE_I8 && type <= RUDA_TYPE_I64;
+}
 RudaMirVerifyStatus ruda_mir_validate_instruction_types(
     const RudaMirFunction *function,
     const RudaMirInstruction *instruction,
@@ -24,6 +32,10 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
     switch (instruction->kind) {
         case RUDA_MIR_CONSTANT_I64:
             return target_type == RUDA_TYPE_I64
+                ? RUDA_MIR_VERIFY_OK
+                : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+        case RUDA_MIR_CONSTANT_INTEGER:
+            return ruda_mir_type_is_integer(target_type)
                 ? RUDA_MIR_VERIFY_OK
                 : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         case RUDA_MIR_CONSTANT_F64:
@@ -79,9 +91,9 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
                     ? RUDA_MIR_VERIFY_OK
                     : RUDA_MIR_VERIFY_TYPE_MISMATCH;
             }
-            return target_type == RUDA_TYPE_I64
-                    && first_type == RUDA_TYPE_I64
-                    && second_type == RUDA_TYPE_I64
+            return ruda_mir_type_is_integer(target_type)
+                    && target_type == first_type
+                    && target_type == second_type
                 ? RUDA_MIR_VERIFY_OK
                 : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         case RUDA_MIR_NEGATE_CHECKED_I64:
@@ -89,8 +101,10 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             if (first_type == RUDA_TYPE_INVALID) {
                 return RUDA_MIR_VERIFY_INVALID_REGISTER;
             }
-            return target_type == RUDA_TYPE_I64
-                    && first_type == RUDA_TYPE_I64
+            return ruda_mir_type_is_integer(target_type)
+                    && target_type == first_type
+                    && (instruction->kind == RUDA_MIR_BITWISE_NOT_I64
+                        || ruda_mir_type_is_signed_integer(target_type))
                 ? RUDA_MIR_VERIFY_OK
                 : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         case RUDA_MIR_NEGATE_F64:
@@ -116,8 +130,8 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
                 return RUDA_MIR_VERIFY_INVALID_REGISTER;
             }
             return target_type == RUDA_TYPE_BOOL
-                    && first_type == RUDA_TYPE_I64
-                    && second_type == RUDA_TYPE_I64
+                    && ruda_mir_type_is_integer(first_type)
+                    && first_type == second_type
                 ? RUDA_MIR_VERIFY_OK
                 : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         case RUDA_MIR_EQUAL_F64:
@@ -597,7 +611,9 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
     return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
 }
 bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind) {
-    return kind != RUDA_MIR_CONSTANT_I64 && kind != RUDA_MIR_CONSTANT_F64
+    return kind != RUDA_MIR_CONSTANT_I64
+        && kind != RUDA_MIR_CONSTANT_INTEGER
+        && kind != RUDA_MIR_CONSTANT_F64
         && kind != RUDA_MIR_CONSTANT_BOOL
         && kind != RUDA_MIR_CONSTANT_STRING && kind != RUDA_MIR_RECORD_NEW
         && kind != RUDA_MIR_ENUM_NEW && kind != RUDA_MIR_ARRAY_NEW
@@ -636,6 +652,7 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_ARRAY_PUSH:
             return true;
         case RUDA_MIR_CONSTANT_I64:
+        case RUDA_MIR_CONSTANT_INTEGER:
         case RUDA_MIR_CONSTANT_F64:
         case RUDA_MIR_CONSTANT_BOOL:
         case RUDA_MIR_CONSTANT_STRING:

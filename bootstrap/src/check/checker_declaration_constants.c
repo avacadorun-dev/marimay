@@ -9,6 +9,7 @@
 
 
 
+
  bool ruda_checker_private_evaluate_constant(
     RudaChecker *checker,
     RudaCheckConstantDeclaration *declaration,
@@ -76,7 +77,9 @@
     }
     if (declaration->type == RUDA_TYPE_INVALID) {
         declaration->type = inferred_type;
-    } else if (declaration->type != inferred_type) {
+    } else if (declaration->type != inferred_type
+        && !(ruda_checker_private_type_is_integer(declaration->type)
+            && inferred_type == RUDA_TYPE_I64)) {
         (void)ruda_checker_add_diagnostic(
             checker,
             RUDA_DIAGNOSTIC_TYPE_MISMATCH,
@@ -87,6 +90,7 @@
         goto cleanup;
     }
     if (declaration->type != RUDA_TYPE_I64
+        && !ruda_checker_private_type_is_integer(declaration->type)
         && declaration->type != RUDA_TYPE_F64
         && declaration->type != RUDA_TYPE_BOOL) {
         ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);

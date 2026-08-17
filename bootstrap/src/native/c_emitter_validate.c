@@ -78,6 +78,27 @@ const char *ruda_native_c_type(
     if (type == RUDA_TYPE_STRING) {
         return "ruda_g_string";
     }
+    if (type == RUDA_TYPE_I8) {
+        return "int8_t";
+    }
+    if (type == RUDA_TYPE_I16) {
+        return "int16_t";
+    }
+    if (type == RUDA_TYPE_I32) {
+        return "int32_t";
+    }
+    if (type == RUDA_TYPE_U8) {
+        return "uint8_t";
+    }
+    if (type == RUDA_TYPE_U16) {
+        return "uint16_t";
+    }
+    if (type == RUDA_TYPE_U32) {
+        return "uint32_t";
+    }
+    if (type == RUDA_TYPE_U64) {
+        return "uint64_t";
+    }
     if (type == RUDA_TYPE_F64) {
         return "uint64_t";
     }
@@ -427,7 +448,8 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
                 return RUDA_NATIVE_C_EMIT_INVALID_MIR;
             }
             switch (instruction->kind) {
-                case RUDA_MIR_CONSTANT_I64: case RUDA_MIR_CONSTANT_BOOL:
+                case RUDA_MIR_CONSTANT_I64: case RUDA_MIR_CONSTANT_INTEGER:
+                case RUDA_MIR_CONSTANT_BOOL:
                 case RUDA_MIR_CONSTANT_F64:
                 case RUDA_MIR_COPY: case RUDA_MIR_ADD_CHECKED_I64:
                 case RUDA_MIR_SUBTRACT_CHECKED_I64: case RUDA_MIR_MULTIPLY_CHECKED_I64:

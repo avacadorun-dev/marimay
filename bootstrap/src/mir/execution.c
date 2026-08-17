@@ -1,10 +1,167 @@
 #include "mir_internal.h"
 #include "ruda/base/checked_i64.h"
+#include "ruda/base/checked_integer.h"
 #include "ruda/base/f64.h"
 #include "ruda/base/map.h"
 #include "ruda/base/utf8.h"
 #include <limits.h>
 #include <string.h>
+
+typedef enum RudaMirIntegerBinaryOperation {
+    RUDA_MIR_INTEGER_ADD,
+    RUDA_MIR_INTEGER_SUBTRACT,
+    RUDA_MIR_INTEGER_MULTIPLY,
+    RUDA_MIR_INTEGER_DIVIDE,
+    RUDA_MIR_INTEGER_REMAINDER,
+    RUDA_MIR_INTEGER_SHIFT_LEFT,
+    RUDA_MIR_INTEGER_SHIFT_RIGHT
+} RudaMirIntegerBinaryOperation;
+
+static bool ruda_mir_integer_kind(
+    RudaTypeId type,
+    RudaIntegerKind *result
+) {
+    if (result == NULL) {
+        return false;
+    }
+    if (type >= RUDA_TYPE_I8 && type <= RUDA_TYPE_I64) {
+        *result = (RudaIntegerKind)(type - RUDA_TYPE_I8);
+        return true;
+    }
+    if (type >= RUDA_TYPE_U8 && type <= RUDA_TYPE_U64) {
+        *result = (RudaIntegerKind)(type - RUDA_TYPE_U8 + RUDA_INTEGER_U8);
+        return true;
+    }
+    return false;
+}
+
+static uint64_t ruda_mir_integer_mask(RudaIntegerKind kind) {
+    unsigned int width = ruda_integer_bit_width(kind);
+    return width == 64U ? UINT64_MAX : (UINT64_C(1) << width) - UINT64_C(1);
+}
+
+static RudaIntegerValue ruda_mir_integer_value(const RudaMirValue *value) {
+    RudaIntegerKind kind = RUDA_INTEGER_I64;
+    RudaIntegerValue result;
+    (void)ruda_mir_integer_kind(value->type, &kind);
+    result.kind = kind;
+    result.bits = value->as.integer_bits & ruda_mir_integer_mask(kind);
+    return result;
+}
+
+static RudaMirInterpretStatus ruda_mir_integer_status(
+    RudaCheckedIntegerStatus status
+) {
+    switch (status) {
+        case RUDA_CHECKED_INTEGER_OK:
+            return RUDA_MIR_INTERPRET_OK;
+        case RUDA_CHECKED_INTEGER_OVERFLOW:
+            return RUDA_MIR_INTERPRET_OVERFLOW;
+        case RUDA_CHECKED_INTEGER_DIVISION_BY_ZERO:
+            return RUDA_MIR_INTERPRET_DIVISION_BY_ZERO;
+        case RUDA_CHECKED_INTEGER_INVALID_SHIFT:
+            return RUDA_MIR_INTERPRET_INVALID_SHIFT;
+    }
+    return RUDA_MIR_INTERPRET_INVALID_MIR;
+}
+
+static RudaMirInterpretStatus ruda_mir_integer_binary(
+    RudaMirIntegerBinaryOperation operation,
+    const RudaMirValue *first,
+    const RudaMirValue *second,
+    RudaMirValue *target
+) {
+    RudaIntegerValue left = ruda_mir_integer_value(first);
+    RudaIntegerValue right = ruda_mir_integer_value(second);
+    RudaIntegerValue output = {left.kind, 0};
+    RudaCheckedIntegerStatus status = RUDA_CHECKED_INTEGER_OVERFLOW;
+    switch (operation) {
+        case RUDA_MIR_INTEGER_ADD:
+            status = ruda_checked_integer_add(left, right, &output);
+            break;
+        case RUDA_MIR_INTEGER_SUBTRACT:
+            status = ruda_checked_integer_subtract(left, right, &output);
+            break;
+        case RUDA_MIR_INTEGER_MULTIPLY:
+            status = ruda_checked_integer_multiply(left, right, &output);
+            break;
+        case RUDA_MIR_INTEGER_DIVIDE:
+            status = ruda_checked_integer_divide(left, right, &output);
+            break;
+        case RUDA_MIR_INTEGER_REMAINDER:
+            status = ruda_checked_integer_remainder(left, right, &output);
+            break;
+        case RUDA_MIR_INTEGER_SHIFT_LEFT:
+            status = ruda_checked_integer_shift_left(left, right, &output);
+            break;
+        case RUDA_MIR_INTEGER_SHIFT_RIGHT:
+            status = ruda_checked_integer_shift_right(left, right, &output);
+            break;
+    }
+    if (status == RUDA_CHECKED_INTEGER_OK) {
+        target->as.integer_bits = output.bits;
+    }
+    return ruda_mir_integer_status(status);
+}
+
+static RudaMirInterpretStatus ruda_mir_integer_negate(
+    const RudaMirValue *first,
+    RudaMirValue *target
+) {
+    RudaIntegerValue input = ruda_mir_integer_value(first);
+    RudaIntegerValue output = {input.kind, 0};
+    RudaCheckedIntegerStatus status = ruda_checked_integer_negate(
+        input, &output
+    );
+    if (status == RUDA_CHECKED_INTEGER_OK) {
+        target->as.integer_bits = output.bits;
+    }
+    return ruda_mir_integer_status(status);
+}
+
+static void ruda_mir_integer_bitwise(
+    const RudaMirValue *first,
+    const RudaMirValue *second,
+    RudaMirValue *target,
+    unsigned int operation
+) {
+    RudaIntegerValue left = ruda_mir_integer_value(first);
+    uint64_t bits = left.bits;
+    uint64_t mask = ruda_mir_integer_mask(left.kind);
+    if (second != NULL) {
+        uint64_t right = ruda_mir_integer_value(second).bits;
+        bits = operation == 0U ? left.bits & right
+            : operation == 1U ? left.bits ^ right : left.bits | right;
+    } else {
+        bits = ~bits;
+    }
+    target->as.integer_bits = bits & mask;
+}
+
+static bool ruda_mir_integer_less(
+    const RudaMirValue *first,
+    const RudaMirValue *second,
+    bool equal_allowed
+) {
+    RudaIntegerValue left = ruda_mir_integer_value(first);
+    RudaIntegerValue right = ruda_mir_integer_value(second);
+    if (ruda_integer_kind_is_signed(left.kind)) {
+        int64_t left_value = 0;
+        int64_t right_value = 0;
+        (void)ruda_integer_to_i64(left, &left_value);
+        (void)ruda_integer_to_i64(right, &right_value);
+        return equal_allowed ? left_value <= right_value
+            : left_value < right_value;
+    }
+    {
+        uint64_t left_value = 0;
+        uint64_t right_value = 0;
+        (void)ruda_integer_to_u64(left, &left_value);
+        (void)ruda_integer_to_u64(right, &right_value);
+        return equal_allowed ? left_value <= right_value
+            : left_value < right_value;
+    }
+}
 RudaMirInterpretOptions ruda_mir_interpret_default_options(void) {
     RudaMirInterpretOptions options;
     options.max_steps = 10000000;
@@ -235,6 +392,9 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         case RUDA_MIR_CONSTANT_I64:
             target->as.i64 = instruction->integer;
             return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_CONSTANT_INTEGER:
+            target->as.integer_bits = instruction->integer_bits;
+            return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_CONSTANT_F64:
             target->as.f64_bits = instruction->f64_bits;
             return RUDA_MIR_INTERPRET_OK;
@@ -262,6 +422,11 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             *target = *first;
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_ADD_CHECKED_I64:
+            if (first->type != RUDA_TYPE_I64) {
+                return ruda_mir_integer_binary(
+                    RUDA_MIR_INTEGER_ADD, first, second, target
+                );
+            }
             return ruda_checked_i64_add(
                 first->as.i64,
                 second->as.i64,
@@ -270,6 +435,11 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 ? RUDA_MIR_INTERPRET_OK
                 : RUDA_MIR_INTERPRET_OVERFLOW;
         case RUDA_MIR_SUBTRACT_CHECKED_I64:
+            if (first->type != RUDA_TYPE_I64) {
+                return ruda_mir_integer_binary(
+                    RUDA_MIR_INTEGER_SUBTRACT, first, second, target
+                );
+            }
             return ruda_checked_i64_subtract(
                 first->as.i64,
                 second->as.i64,
@@ -278,6 +448,11 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 ? RUDA_MIR_INTERPRET_OK
                 : RUDA_MIR_INTERPRET_OVERFLOW;
         case RUDA_MIR_MULTIPLY_CHECKED_I64:
+            if (first->type != RUDA_TYPE_I64) {
+                return ruda_mir_integer_binary(
+                    RUDA_MIR_INTEGER_MULTIPLY, first, second, target
+                );
+            }
             return ruda_checked_i64_multiply(
                 first->as.i64,
                 second->as.i64,
@@ -286,6 +461,11 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 ? RUDA_MIR_INTERPRET_OK
                 : RUDA_MIR_INTERPRET_OVERFLOW;
         case RUDA_MIR_DIVIDE_CHECKED_I64: {
+            if (first->type != RUDA_TYPE_I64) {
+                return ruda_mir_integer_binary(
+                    RUDA_MIR_INTEGER_DIVIDE, first, second, target
+                );
+            }
             RudaCheckedI64Status checked = ruda_checked_i64_divide(
                 first->as.i64,
                 second->as.i64,
@@ -299,6 +479,11 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 : RUDA_MIR_INTERPRET_OVERFLOW;
         }
         case RUDA_MIR_REMAINDER_CHECKED_I64: {
+            if (first->type != RUDA_TYPE_I64) {
+                return ruda_mir_integer_binary(
+                    RUDA_MIR_INTEGER_REMAINDER, first, second, target
+                );
+            }
             RudaCheckedI64Status checked = ruda_checked_i64_remainder(
                 first->as.i64,
                 second->as.i64,
@@ -312,6 +497,9 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 : RUDA_MIR_INTERPRET_OVERFLOW;
         }
         case RUDA_MIR_NEGATE_CHECKED_I64:
+            if (first->type != RUDA_TYPE_I64) {
+                return ruda_mir_integer_negate(first, target);
+            }
             return ruda_checked_i64_negate(
                 first->as.i64,
                 &target->as.i64
@@ -349,27 +537,48 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             target->as.boolean = !first->as.boolean;
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_BITWISE_NOT_I64:
+            if (first->type != RUDA_TYPE_I64) {
+                ruda_mir_integer_bitwise(first, NULL, target, 0U);
+                return RUDA_MIR_INTERPRET_OK;
+            }
             target->as.i64 = ruda_i64_bitwise_not(first->as.i64);
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_BITWISE_AND_I64:
+            if (first->type != RUDA_TYPE_I64) {
+                ruda_mir_integer_bitwise(first, second, target, 0U);
+                return RUDA_MIR_INTERPRET_OK;
+            }
             target->as.i64 = ruda_i64_bitwise_and(
                 first->as.i64,
                 second->as.i64
             );
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_BITWISE_XOR_I64:
+            if (first->type != RUDA_TYPE_I64) {
+                ruda_mir_integer_bitwise(first, second, target, 1U);
+                return RUDA_MIR_INTERPRET_OK;
+            }
             target->as.i64 = ruda_i64_bitwise_xor(
                 first->as.i64,
                 second->as.i64
             );
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_BITWISE_OR_I64:
+            if (first->type != RUDA_TYPE_I64) {
+                ruda_mir_integer_bitwise(first, second, target, 2U);
+                return RUDA_MIR_INTERPRET_OK;
+            }
             target->as.i64 = ruda_i64_bitwise_or(
                 first->as.i64,
                 second->as.i64
             );
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_SHIFT_LEFT_CHECKED_I64: {
+            if (first->type != RUDA_TYPE_I64) {
+                return ruda_mir_integer_binary(
+                    RUDA_MIR_INTEGER_SHIFT_LEFT, first, second, target
+                );
+            }
             RudaCheckedI64Status checked = ruda_checked_i64_shift_left(
                 first->as.i64,
                 second->as.i64,
@@ -383,6 +592,11 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 : RUDA_MIR_INTERPRET_OVERFLOW;
         }
         case RUDA_MIR_SHIFT_RIGHT_I64: {
+            if (first->type != RUDA_TYPE_I64) {
+                return ruda_mir_integer_binary(
+                    RUDA_MIR_INTEGER_SHIFT_RIGHT, first, second, target
+                );
+            }
             RudaCheckedI64Status checked = ruda_checked_i64_shift_right(
                 first->as.i64,
                 second->as.i64,
@@ -396,7 +610,13 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
                 : RUDA_MIR_INTERPRET_OVERFLOW;
         }
         case RUDA_MIR_EQUAL_I64:
-            target->as.boolean = first->as.i64 == second->as.i64;
+            if (first->type != RUDA_TYPE_I64) {
+                target->as.boolean = !ruda_mir_integer_less(
+                    first, second, false
+                ) && !ruda_mir_integer_less(second, first, false);
+            } else {
+                target->as.boolean = first->as.i64 == second->as.i64;
+            }
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_EQUAL_F64:
             target->as.boolean = ruda_f64_equal(
@@ -468,7 +688,9 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             return RUDA_MIR_INTERPRET_OK;
         }
         case RUDA_MIR_LESS_I64:
-            target->as.boolean = first->as.i64 < second->as.i64;
+            target->as.boolean = first->type != RUDA_TYPE_I64
+                ? ruda_mir_integer_less(first, second, false)
+                : first->as.i64 < second->as.i64;
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_LESS_F64:
             target->as.boolean = ruda_f64_less(
@@ -477,7 +699,9 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             );
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_LESS_EQUAL_I64:
-            target->as.boolean = first->as.i64 <= second->as.i64;
+            target->as.boolean = first->type != RUDA_TYPE_I64
+                ? ruda_mir_integer_less(first, second, true)
+                : first->as.i64 <= second->as.i64;
             return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_LESS_EQUAL_F64:
             target->as.boolean = ruda_f64_less_equal(

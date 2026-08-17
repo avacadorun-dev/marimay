@@ -11,12 +11,36 @@
 #include "../generated/opcode_data.inc"
 bool ruda_bytecode_type_is_register(RudaBytecodeType type) {
     return type == RUDA_BYTECODE_TYPE_BOOL || type == RUDA_BYTECODE_TYPE_I64
-        || type == RUDA_BYTECODE_TYPE_F64 || type == RUDA_BYTECODE_TYPE_STRING
+        || type == RUDA_BYTECODE_TYPE_I8 || type == RUDA_BYTECODE_TYPE_I16
+        || type == RUDA_BYTECODE_TYPE_I32 || type == RUDA_BYTECODE_TYPE_U8
+        || type == RUDA_BYTECODE_TYPE_U16 || type == RUDA_BYTECODE_TYPE_U32
+        || type == RUDA_BYTECODE_TYPE_U64
+        || type == RUDA_BYTECODE_TYPE_F64 || type == RUDA_BYTECODE_TYPE_F32
+        || type == RUDA_BYTECODE_TYPE_STRING
         || type == RUDA_BYTECODE_TYPE_ARRAY_F64
         || type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64
         || type == RUDA_BYTECODE_TYPE_ARRAY
         || type == RUDA_BYTECODE_TYPE_RECORD || type == RUDA_BYTECODE_TYPE_ENUM
         || type == RUDA_BYTECODE_TYPE_INTERFACE;
+}
+
+bool ruda_bytecode_type_is_integer(RudaBytecodeType type) {
+    return type == RUDA_BYTECODE_TYPE_I64
+        || type == RUDA_BYTECODE_TYPE_I8 || type == RUDA_BYTECODE_TYPE_I16
+        || type == RUDA_BYTECODE_TYPE_I32 || type == RUDA_BYTECODE_TYPE_U8
+        || type == RUDA_BYTECODE_TYPE_U16 || type == RUDA_BYTECODE_TYPE_U32
+        || type == RUDA_BYTECODE_TYPE_U64;
+}
+
+bool ruda_bytecode_type_is_signed_integer(RudaBytecodeType type) {
+    return type == RUDA_BYTECODE_TYPE_I64
+        || type == RUDA_BYTECODE_TYPE_I8 || type == RUDA_BYTECODE_TYPE_I16
+        || type == RUDA_BYTECODE_TYPE_I32;
+}
+
+bool ruda_bytecode_type_is_extended_scalar(RudaBytecodeType type) {
+    return ruda_bytecode_type_is_integer(type)
+        || type == RUDA_BYTECODE_TYPE_F32;
 }
 
 bool ruda_bytecode_type_is_array(RudaBytecodeType type) {
@@ -82,8 +106,24 @@ const char *ruda_bytecode_type_name(RudaBytecodeType type) {
             return "bool";
         case RUDA_BYTECODE_TYPE_I64:
             return "i64";
+        case RUDA_BYTECODE_TYPE_I8:
+            return "i8";
+        case RUDA_BYTECODE_TYPE_I16:
+            return "i16";
+        case RUDA_BYTECODE_TYPE_I32:
+            return "i32";
+        case RUDA_BYTECODE_TYPE_U8:
+            return "u8";
+        case RUDA_BYTECODE_TYPE_U16:
+            return "u16";
+        case RUDA_BYTECODE_TYPE_U32:
+            return "u32";
+        case RUDA_BYTECODE_TYPE_U64:
+            return "u64";
         case RUDA_BYTECODE_TYPE_F64:
             return "f64";
+        case RUDA_BYTECODE_TYPE_F32:
+            return "f32";
         case RUDA_BYTECODE_TYPE_VOID:
             return "void";
         case RUDA_BYTECODE_TYPE_STRING:

@@ -114,7 +114,9 @@ void ruda_test_bytecode_metadata(void) {
         {RUDA_OPCODE_CALL_INTERFACE, 54, "call_interface", 2,
             {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_CALL, RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_MAY_PANIC},
         {RUDA_OPCODE_ARRAY_PUSH, 55, "array_push", 2,
-            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_MAY_PANIC}
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_MAY_PANIC},
+        {RUDA_OPCODE_CONST_INTEGER, 56, "const_integer", 2,
+            {RUDA_BYTECODE_OPERAND_REGISTER, RUDA_BYTECODE_OPERAND_U64, RUDA_BYTECODE_OPERAND_NONE}, 0}
     };
     size_t index = 0;
 
@@ -173,6 +175,7 @@ void ruda_test_bytecode_metadata(void) {
     RUDA_EXPECT(RUDA_OPCODE_ENUM_GET_PAYLOAD == 52);
     RUDA_EXPECT(RUDA_OPCODE_INTERFACE_NEW == 53);
     RUDA_EXPECT(RUDA_OPCODE_CALL_INTERFACE == 54);
+    RUDA_EXPECT(RUDA_OPCODE_CONST_INTEGER == 56);
     RUDA_EXPECT(RUDA_OPCODE_COUNT == sizeof(expected) / sizeof(expected[0]));
     for (index = 0; index < sizeof(expected) / sizeof(expected[0]); index += 1) {
         const RudaOpcodeMetadata *metadata = ruda_opcode_metadata(expected[index].opcode);
@@ -748,4 +751,89 @@ void ruda_test_bytecode_verifier_rejections(void) {
     RUDA_EXPECT(ruda_bytecode_verify(&function)
         == RUDA_BYTECODE_VERIFY_LIMIT_REACHED);
     ruda_bytecode_function_dispose(&function);
+}
+
+void ruda_test_bytecode_integer_widths(void) {
+    static const RudaBytecodeType types[] = {
+        RUDA_BYTECODE_TYPE_I8, RUDA_BYTECODE_TYPE_I16,
+        RUDA_BYTECODE_TYPE_I32, RUDA_BYTECODE_TYPE_I64,
+        RUDA_BYTECODE_TYPE_U8, RUDA_BYTECODE_TYPE_U16,
+        RUDA_BYTECODE_TYPE_U32, RUDA_BYTECODE_TYPE_U64
+    };
+    static const uint64_t bits[] = {
+        UINT64_C(0x80), UINT64_C(0x8000), UINT64_C(0x80000000),
+        UINT64_C(0x8000000000000000), UINT64_C(0xff),
+        UINT64_C(0xffff), UINT64_C(0xffffffff), UINT64_MAX
+    };
+    size_t index = 0;
+    for (index = 0; index < sizeof(types) / sizeof(types[0]); index += 1) {
+        RudaBytecodeFunction function;
+        RudaBytecodeFunction decoded;
+        RudaBytecodeInstruction instruction;
+        RudaBytecodeInstruction *decoded_instruction = NULL;
+        RudaOwnedBytes encoded;
+        uint32_t register_id = UINT32_MAX;
+        uint32_t block = UINT32_MAX;
+        memset(&function, 0, sizeof(function));
+        memset(&decoded, 0, sizeof(decoded));
+        memset(&encoded, 0, sizeof(encoded));
+        RUDA_EXPECT(ruda_bytecode_function_init(
+            &function,
+            ruda_system_allocator(),
+            types[index],
+            1,
+            NULL,
+            0,
+            ruda_bytecode_function_default_options()
+        ));
+        RUDA_EXPECT(ruda_bytecode_add_register(
+            &function, types[index], &register_id
+        ));
+        RUDA_EXPECT(ruda_bytecode_add_block(&function, &block));
+        instruction = ruda_test_bytecode_instruction(
+            RUDA_OPCODE_CONST_INTEGER, register_id, bits[index], 0, 10
+        );
+        RUDA_EXPECT(ruda_bytecode_append_instruction(
+            &function, block, &instruction
+        ));
+        instruction = ruda_test_bytecode_instruction(
+            RUDA_OPCODE_RETURN, register_id, 0, 0, 11
+        );
+        RUDA_EXPECT(ruda_bytecode_append_instruction(
+            &function, block, &instruction
+        ));
+        RUDA_EXPECT(ruda_bytecode_verify(&function) == RUDA_BYTECODE_VERIFY_OK);
+        RUDA_EXPECT(ruda_bytecode_encode_function(
+            &function, ruda_system_allocator(), &encoded
+        ) == RUDA_BYTECODE_CODEC_OK);
+        RUDA_EXPECT(ruda_bytecode_decode_function(
+            encoded.data,
+            encoded.length,
+            ruda_system_allocator(),
+            ruda_bytecode_function_default_options(),
+            &decoded
+        ) == RUDA_BYTECODE_CODEC_OK);
+        RUDA_EXPECT(ruda_bytecode_verify(&decoded) == RUDA_BYTECODE_VERIFY_OK);
+        decoded_instruction = ruda_test_bytecode_at(&decoded, 0, 0);
+        RUDA_EXPECT(decoded_instruction != NULL);
+        if (decoded_instruction != NULL) {
+            RUDA_EXPECT(decoded_instruction->opcode == RUDA_OPCODE_CONST_INTEGER);
+            RUDA_EXPECT(decoded_instruction->operands[1].unsigned_value
+                == bits[index]);
+        }
+        if (decoded.register_types.data != NULL) {
+            RudaBytecodeType *register_type = ruda_vector_at(
+                &decoded.register_types, 0
+            );
+            RUDA_EXPECT(register_type != NULL);
+            if (register_type != NULL) {
+                *register_type = RUDA_BYTECODE_TYPE_BOOL;
+                RUDA_EXPECT(ruda_bytecode_verify(&decoded)
+                    == RUDA_BYTECODE_VERIFY_TYPE_MISMATCH);
+            }
+        }
+        ruda_owned_bytes_dispose(&encoded);
+        ruda_bytecode_function_dispose(&decoded);
+        ruda_bytecode_function_dispose(&function);
+    }
 }

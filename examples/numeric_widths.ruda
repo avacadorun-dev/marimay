@@ -1,0 +1,42 @@
+import { formatF64, formatF32 } from "std/convert";
+
+fn summarize(
+  signed8: i8,
+  signed16: i16,
+  signed32: i32,
+  signed64: i64,
+  unsigned8: u8,
+  unsigned16: u16,
+  unsigned32: u32,
+  unsigned64: u64,
+): string {
+  const checked = signed8 + 1;
+  const wrapped = unsigned32 << 1;
+  const quotient = signed64 / 2;
+  const remainder = unsigned64 % 3;
+  const f32Text = formatF32(1.0e-4);
+  const f64Text = formatF64(415.0);
+  use(signed16);
+  use(signed32);
+  use(unsigned8);
+  use(unsigned16);
+  use(checked);
+  use(wrapped);
+  use(quotient);
+  use(remainder);
+  use(f32Text);
+  return f64Text;
+}
+
+fn main(): string {
+  return summarize(
+    -128,
+    -32768,
+    42,
+    -9223372036854775808,
+    255,
+    65535,
+    4294967295,
+    18446744073709551615,
+  );
+}

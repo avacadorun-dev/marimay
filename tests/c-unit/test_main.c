@@ -5,6 +5,7 @@
 void ruda_test_allocator(void);
 void ruda_test_ast(void);
 void ruda_test_base(void);
+void ruda_test_checked_integer(void);
 void ruda_test_bytecode(void);
 void ruda_test_bytecode_vm(void);
 void ruda_test_checker(void);
@@ -29,6 +30,7 @@ void ruda_test_hash_map(void);
 void ruda_test_lexer(void);
 void ruda_test_manifest(void);
 void ruda_test_managed(void);
+void ruda_test_number_format(void);
 void ruda_test_mir(void);
 void ruda_test_mir_interface_execution(void);
 void ruda_test_mir_interfaces(void);
@@ -54,6 +56,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_allocator();
     ruda_test_ast();
     ruda_test_base();
+    ruda_test_checked_integer();
     ruda_test_bytecode();
     ruda_test_bytecode_vm();
     ruda_test_checker();
@@ -77,6 +80,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_lexer();
     ruda_test_manifest();
     ruda_test_managed();
+    ruda_test_number_format();
     ruda_test_mir();
     ruda_test_mir_interface_execution();
     ruda_test_mir_interfaces();

@@ -43,8 +43,40 @@ bool ruda_mir_bytecode_type(
         *output = RUDA_BYTECODE_TYPE_I64;
         return true;
     }
+    if (input == RUDA_TYPE_I8) {
+        *output = RUDA_BYTECODE_TYPE_I8;
+        return true;
+    }
+    if (input == RUDA_TYPE_I16) {
+        *output = RUDA_BYTECODE_TYPE_I16;
+        return true;
+    }
+    if (input == RUDA_TYPE_I32) {
+        *output = RUDA_BYTECODE_TYPE_I32;
+        return true;
+    }
+    if (input == RUDA_TYPE_U8) {
+        *output = RUDA_BYTECODE_TYPE_U8;
+        return true;
+    }
+    if (input == RUDA_TYPE_U16) {
+        *output = RUDA_BYTECODE_TYPE_U16;
+        return true;
+    }
+    if (input == RUDA_TYPE_U32) {
+        *output = RUDA_BYTECODE_TYPE_U32;
+        return true;
+    }
+    if (input == RUDA_TYPE_U64) {
+        *output = RUDA_BYTECODE_TYPE_U64;
+        return true;
+    }
     if (input == RUDA_TYPE_F64) {
         *output = RUDA_BYTECODE_TYPE_F64;
+        return true;
+    }
+    if (input == RUDA_TYPE_F32) {
+        *output = RUDA_BYTECODE_TYPE_F32;
         return true;
     }
     if (input == RUDA_TYPE_STRING) {

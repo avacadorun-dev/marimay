@@ -3,6 +3,8 @@
 #include <inttypes.h>
 #include <string.h>
 
+#include "ruda/base/checked_integer.h"
+
 typedef enum RudaTestNativeScalarOutcome {
     RUDA_TEST_NATIVE_SCALAR_I64,
     RUDA_TEST_NATIVE_SCALAR_BOOL,
@@ -502,8 +504,544 @@ static void ruda_test_native_f64_direct_call(void) {
     ruda_mir_function_dispose(&entry); ruda_mir_function_dispose(&callee);
 }
 
+static RudaTypeId ruda_test_native_integer_type(RudaIntegerKind kind) {
+    static const RudaTypeId types[] = {
+        RUDA_TYPE_I8, RUDA_TYPE_I16, RUDA_TYPE_I32, RUDA_TYPE_I64,
+        RUDA_TYPE_U8, RUDA_TYPE_U16, RUDA_TYPE_U32, RUDA_TYPE_U64
+    };
+    return kind <= RUDA_INTEGER_U64 ? types[kind] : RUDA_TYPE_INVALID;
+}
+
+static RudaBytecodeType ruda_test_native_bytecode_integer_type(
+    RudaIntegerKind kind
+) {
+    static const RudaBytecodeType types[] = {
+        RUDA_BYTECODE_TYPE_I8, RUDA_BYTECODE_TYPE_I16,
+        RUDA_BYTECODE_TYPE_I32, RUDA_BYTECODE_TYPE_I64,
+        RUDA_BYTECODE_TYPE_U8, RUDA_BYTECODE_TYPE_U16,
+        RUDA_BYTECODE_TYPE_U32, RUDA_BYTECODE_TYPE_U64
+    };
+    return kind <= RUDA_INTEGER_U64 ? types[kind] : RUDA_BYTECODE_TYPE_INVALID;
+}
+
+static RudaMirInstruction ruda_test_native_integer_constant(
+    RudaMirRegister target,
+    uint64_t bits,
+    size_t span
+) {
+    RudaMirInstruction instruction;
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_CONSTANT_INTEGER;
+    instruction.target = target;
+    instruction.first = RUDA_MIR_NO_REGISTER;
+    instruction.second = RUDA_MIR_NO_REGISTER;
+    instruction.integer_bits = bits;
+    instruction.span.start = span;
+    instruction.span.end = span + 1;
+    return instruction;
+}
+
+static bool ruda_test_native_build_integer_widths(
+    RudaMirFunction *function,
+    RudaSymbolId symbol,
+    RudaIntegerKind kind
+) {
+    RudaTypeId type = ruda_test_native_integer_type(kind);
+    RudaMirRegister constants[4] = {RUDA_MIR_NO_REGISTER};
+    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirInstruction instruction;
+    static const uint64_t constant_bits[] = {6, 1, 2, 3};
+    static const RudaMirInstructionKind operations[] = {
+        RUDA_MIR_ADD_CHECKED_I64,
+        RUDA_MIR_SUBTRACT_CHECKED_I64,
+        RUDA_MIR_MULTIPLY_CHECKED_I64,
+        RUDA_MIR_DIVIDE_CHECKED_I64,
+        RUDA_MIR_REMAINDER_CHECKED_I64,
+        RUDA_MIR_BITWISE_AND_I64,
+        RUDA_MIR_BITWISE_XOR_I64,
+        RUDA_MIR_BITWISE_OR_I64,
+        RUDA_MIR_SHIFT_LEFT_CHECKED_I64,
+        RUDA_MIR_SHIFT_RIGHT_I64
+    };
+    static const RudaMirRegister operation_right[] = {
+        1, 1, 2, 1, 3, 3, 3, 1, 1, 1
+    };
+    size_t index = 0;
+    if (type == RUDA_TYPE_INVALID) {
+        return false;
+    }
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol,
+            NULL, 0, type, ruda_mir_function_default_options())
+        || !ruda_mir_add_block(function, &block)
+        || !ruda_mir_add_register(function, type, &constants[0])
+        || !ruda_mir_add_register(function, type, &constants[1])
+        || !ruda_mir_add_register(function, type, &constants[2])
+        || !ruda_mir_add_register(function, type, &constants[3])
+        || !ruda_mir_add_register(function, type, &result)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    for (index = 0; index < 4; index += 1) {
+        instruction = ruda_test_native_integer_constant(
+            constants[index], constant_bits[index], index + 10
+        );
+        if (!ruda_mir_append_instruction(function, block, &instruction)) {
+            ruda_mir_function_dispose(function);
+            return false;
+        }
+    }
+    for (index = 0; index < sizeof(operations) / sizeof(operations[0]);
+        index += 1) {
+        instruction = ruda_test_native_instruction(
+            operations[index], result, result == RUDA_MIR_NO_REGISTER
+                ? constants[0] : result,
+            operation_right[index], 0, false, 20 + index
+        );
+        if (index == 0) {
+            instruction.first = constants[0];
+        }
+        if (!ruda_mir_append_instruction(function, block, &instruction)) {
+            ruda_mir_function_dispose(function);
+            return false;
+        }
+    }
+    if (!ruda_mir_set_terminator(function, block,
+            ruda_test_native_terminator(RUDA_MIR_RETURN, result,
+                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 40))) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static bool ruda_test_native_build_integer_comparison(
+    RudaMirFunction *function,
+    RudaSymbolId symbol,
+    RudaIntegerKind kind,
+    RudaMirInstructionKind operation,
+    uint64_t left_bits,
+    uint64_t right_bits
+) {
+    RudaTypeId type = ruda_test_native_integer_type(kind);
+    RudaMirRegister left = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister right = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirInstruction instruction;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol,
+            NULL, 0, RUDA_TYPE_BOOL, ruda_mir_function_default_options())
+        || !ruda_mir_add_register(function, type, &left)
+        || !ruda_mir_add_register(function, type, &right)
+        || !ruda_mir_add_register(function, RUDA_TYPE_BOOL, &result)
+        || !ruda_mir_add_block(function, &block)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_native_integer_constant(left, left_bits, 50);
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_native_integer_constant(right, right_bits, 51);
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_native_instruction(
+        operation, result, left, right, 0, false, 52
+    );
+    if (!ruda_mir_append_instruction(function, block, &instruction)
+        || !ruda_mir_set_terminator(function, block,
+            ruda_test_native_terminator(RUDA_MIR_RETURN, result,
+                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 53))) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static void ruda_test_native_integer_comparisons(void) {
+    static const RudaIntegerKind kinds[] = {
+        RUDA_INTEGER_I8, RUDA_INTEGER_I16, RUDA_INTEGER_I32, RUDA_INTEGER_I64,
+        RUDA_INTEGER_U8, RUDA_INTEGER_U16, RUDA_INTEGER_U32, RUDA_INTEGER_U64
+    };
+    static const RudaMirInstructionKind operations[] = {
+        RUDA_MIR_EQUAL_I64, RUDA_MIR_LESS_I64
+    };
+    const RudaSymbolId symbol = {{0x63}};
+    size_t kind_index = 0;
+    size_t operation_index = 0;
+    for (kind_index = 0; kind_index < sizeof(kinds) / sizeof(kinds[0]);
+        kind_index += 1) {
+        RudaIntegerKind kind = kinds[kind_index];
+        unsigned int width = ruda_integer_bit_width(kind);
+        uint64_t sign_bit = UINT64_C(1) << (width - 1U);
+        const uint64_t left_bits[] = {sign_bit, sign_bit};
+        const uint64_t right_bits[] = {sign_bit, 1};
+        for (operation_index = 0; operation_index < 2; operation_index += 1) {
+            RudaMirFunction function;
+            RudaMirValue mir_result;
+            RudaBytecodeFunction bytecode;
+            RudaBytecodeValue bytecode_result;
+            RudaOwnedBytes source;
+            RudaNativeCProgram program;
+            const RudaMirFunction *functions[1];
+            bool expected = operation_index == 0
+                ? true : ruda_integer_kind_is_signed(kind);
+            char expected_output[64];
+            memset(&function, 0, sizeof(function));
+            memset(&mir_result, 0, sizeof(mir_result));
+            memset(&bytecode, 0, sizeof(bytecode));
+            memset(&bytecode_result, 0, sizeof(bytecode_result));
+            memset(&source, 0, sizeof(source));
+            RUDA_EXPECT(ruda_test_native_build_integer_comparison(
+                &function, symbol, kind, operations[operation_index],
+                left_bits[operation_index], right_bits[operation_index]
+            ));
+            RUDA_EXPECT(ruda_mir_verify(&function) == RUDA_MIR_VERIFY_OK);
+            RUDA_EXPECT(ruda_mir_interpret(
+                &function, NULL, 0, ruda_system_allocator(),
+                ruda_mir_interpret_default_options(), &mir_result
+            ) == RUDA_MIR_INTERPRET_OK);
+            RUDA_EXPECT(mir_result.type == RUDA_TYPE_BOOL
+                && mir_result.as.boolean == expected);
+            RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+                &function, ruda_system_allocator(),
+                ruda_mir_bytecode_lower_default_options(), &bytecode
+            ) == RUDA_MIR_BYTECODE_LOWER_OK);
+            bytecode_result.type = RUDA_BYTECODE_TYPE_BOOL;
+            RUDA_EXPECT(ruda_bytecode_run(
+                &bytecode, NULL, 0, ruda_system_allocator(),
+                ruda_bytecode_run_default_options(), &bytecode_result
+            ) == RUDA_BYTECODE_RUN_OK);
+            RUDA_EXPECT(bytecode_result.as.boolean == expected);
+            functions[0] = &function;
+            program.functions = functions;
+            program.function_count = 1;
+            program.entry_symbol = symbol;
+            RUDA_EXPECT(ruda_native_c_emit_program(
+                &program, ruda_system_allocator(),
+                ruda_native_c_emit_default_options(), &source
+            ) == RUDA_NATIVE_C_EMIT_OK);
+            (void)snprintf(expected_output, sizeof(expected_output),
+                "ok:bool:%s\n", expected ? "true" : "false");
+#if !defined(_WIN32)
+            ruda_test_native_compile_and_run(&source, expected_output, 0);
+#endif
+            ruda_owned_bytes_dispose(&source);
+            ruda_bytecode_function_dispose(&bytecode);
+            ruda_mir_function_dispose(&function);
+        }
+    }
+}
+
+static bool ruda_test_native_build_integer_fault(
+    RudaMirFunction *function,
+    RudaSymbolId symbol,
+    RudaIntegerKind kind,
+    RudaMirInstructionKind operation,
+    uint64_t left_bits,
+    uint64_t right_bits,
+    size_t span
+) {
+    RudaTypeId type = ruda_test_native_integer_type(kind);
+    RudaMirRegister left = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister right = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirInstruction instruction;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol,
+            NULL, 0, type, ruda_mir_function_default_options())
+        || !ruda_mir_add_register(function, type, &left)
+        || !ruda_mir_add_register(function, type, &right)
+        || !ruda_mir_add_register(function, type, &result)
+        || !ruda_mir_add_block(function, &block)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_native_integer_constant(left, left_bits, span);
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_native_integer_constant(right, right_bits, span + 1);
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    instruction = ruda_test_native_instruction(
+        operation, result, left, right, 0, false, span + 2
+    );
+    if (!ruda_mir_append_instruction(function, block, &instruction)
+        || !ruda_mir_set_terminator(function, block,
+            ruda_test_native_terminator(RUDA_MIR_RETURN, result,
+                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, span + 3))) {
+        ruda_mir_function_dispose(function);
+        return false;
+    }
+    return true;
+}
+
+static uint64_t ruda_test_native_integer_mask(RudaIntegerKind kind) {
+    unsigned int width = ruda_integer_bit_width(kind);
+    return width == 64U ? UINT64_MAX
+        : (UINT64_C(1) << width) - UINT64_C(1);
+}
+
+static void ruda_test_native_integer_faults(void) {
+    static const RudaIntegerKind kinds[] = {
+        RUDA_INTEGER_I8, RUDA_INTEGER_I16, RUDA_INTEGER_I32, RUDA_INTEGER_I64,
+        RUDA_INTEGER_U8, RUDA_INTEGER_U16, RUDA_INTEGER_U32, RUDA_INTEGER_U64
+    };
+    static const RudaMirInstructionKind overflow_operations[] = {
+        RUDA_MIR_ADD_CHECKED_I64,
+        RUDA_MIR_DIVIDE_CHECKED_I64,
+        RUDA_MIR_SHIFT_LEFT_CHECKED_I64
+    };
+    static const RudaMirInterpretStatus overflow_statuses[] = {
+        RUDA_MIR_INTERPRET_OVERFLOW,
+        RUDA_MIR_INTERPRET_DIVISION_BY_ZERO,
+        RUDA_MIR_INTERPRET_INVALID_SHIFT
+    };
+    const RudaSymbolId symbol = {{0x62}};
+    size_t kind_index = 0;
+    size_t case_index = 0;
+    for (kind_index = 0; kind_index < sizeof(kinds) / sizeof(kinds[0]);
+        kind_index += 1) {
+        RudaIntegerKind kind = kinds[kind_index];
+        uint64_t mask = ruda_test_native_integer_mask(kind);
+        uint64_t width = ruda_integer_bit_width(kind);
+        const uint64_t left_bits[] = {
+            ruda_integer_kind_is_signed(kind)
+                ? (UINT64_C(1) << (width - 1U)) - UINT64_C(1)
+                : mask,
+            1,
+            1
+        };
+        const uint64_t right_bits[] = {1, 0, width};
+        for (case_index = 0;
+            case_index < sizeof(overflow_operations)
+                / sizeof(overflow_operations[0]);
+            case_index += 1) {
+            RudaMirFunction function;
+            RudaMirValue mir_result;
+            RudaBytecodeFunction bytecode;
+            RudaBytecodeValue bytecode_result;
+            RudaBytecodeTrap trap;
+            RudaBytecodeRunOptions options;
+            RudaOwnedBytes source;
+            RudaNativeCProgram program;
+            const RudaMirFunction *functions[1];
+            char expected[64];
+            RudaMirInterpretStatus mir_status;
+            RudaBytecodeRunStatus bytecode_status;
+            RudaBytecodeType bytecode_type =
+                ruda_test_native_bytecode_integer_type(kind);
+            memset(&function, 0, sizeof(function));
+            memset(&mir_result, 0, sizeof(mir_result));
+            memset(&bytecode, 0, sizeof(bytecode));
+            memset(&bytecode_result, 0, sizeof(bytecode_result));
+            memset(&trap, 0, sizeof(trap));
+            memset(&source, 0, sizeof(source));
+            RUDA_EXPECT(ruda_test_native_build_integer_fault(
+                &function, symbol, kind, overflow_operations[case_index],
+                left_bits[case_index], right_bits[case_index], 70
+            ));
+            mir_status = ruda_mir_interpret(
+                &function, NULL, 0, ruda_system_allocator(),
+                ruda_mir_interpret_default_options(), &mir_result
+            );
+            RUDA_EXPECT(mir_status == overflow_statuses[case_index]);
+            RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+                &function, ruda_system_allocator(),
+                ruda_mir_bytecode_lower_default_options(), &bytecode
+            ) == RUDA_MIR_BYTECODE_LOWER_OK);
+            bytecode_result.type = bytecode_type;
+            bytecode_result.as.integer_bits = UINT64_C(0xfeed);
+            options = ruda_bytecode_run_default_options();
+            options.trap = &trap;
+            bytecode_status = ruda_bytecode_run(
+                &bytecode, NULL, 0, ruda_system_allocator(), options,
+                &bytecode_result
+            );
+            RUDA_EXPECT((case_index == 0
+                ? bytecode_status == RUDA_BYTECODE_RUN_OVERFLOW
+                : case_index == 1
+                    ? bytecode_status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
+                    : bytecode_status == RUDA_BYTECODE_RUN_INVALID_SHIFT));
+            functions[0] = &function;
+            program.functions = functions;
+            program.function_count = 1;
+            program.entry_symbol = symbol;
+            RUDA_EXPECT(ruda_native_c_emit_program(
+                &program, ruda_system_allocator(),
+                ruda_native_c_emit_default_options(), &source
+            ) == RUDA_NATIVE_C_EMIT_OK);
+            (void)snprintf(expected, sizeof(expected), "trap:%d:72:73\n",
+                case_index == 0 ? 1 : case_index == 1 ? 2 : 3);
+#if !defined(_WIN32)
+            ruda_test_native_compile_and_run(&source, expected, 1);
+#endif
+            ruda_owned_bytes_dispose(&source);
+            ruda_bytecode_function_dispose(&bytecode);
+            ruda_mir_function_dispose(&function);
+        }
+        if (ruda_integer_kind_is_signed(kind)) {
+            const RudaMirInstructionKind signed_operations[] = {
+                RUDA_MIR_DIVIDE_CHECKED_I64,
+                RUDA_MIR_REMAINDER_CHECKED_I64
+            };
+            for (case_index = 0; case_index < 2; case_index += 1) {
+                RudaMirFunction function;
+                RudaMirValue mir_result;
+                RudaBytecodeFunction bytecode;
+                RudaBytecodeValue bytecode_result;
+                RudaBytecodeTrap trap;
+                RudaBytecodeRunOptions options;
+                RudaOwnedBytes source;
+                RudaNativeCProgram program;
+                const RudaMirFunction *functions[1];
+                char expected[64];
+                RudaBytecodeRunStatus bytecode_status;
+                RudaBytecodeType bytecode_type =
+                    ruda_test_native_bytecode_integer_type(kind);
+                memset(&function, 0, sizeof(function));
+                memset(&mir_result, 0, sizeof(mir_result));
+                memset(&bytecode, 0, sizeof(bytecode));
+                memset(&bytecode_result, 0, sizeof(bytecode_result));
+                memset(&trap, 0, sizeof(trap));
+                memset(&source, 0, sizeof(source));
+                RUDA_EXPECT(ruda_test_native_build_integer_fault(
+                    &function, symbol, kind, signed_operations[case_index],
+                    UINT64_C(1) << (width - 1U), mask, 80
+                ));
+                RUDA_EXPECT(ruda_mir_interpret(
+                    &function, NULL, 0, ruda_system_allocator(),
+                    ruda_mir_interpret_default_options(), &mir_result
+                ) == RUDA_MIR_INTERPRET_OVERFLOW);
+                RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+                    &function, ruda_system_allocator(),
+                    ruda_mir_bytecode_lower_default_options(), &bytecode
+                ) == RUDA_MIR_BYTECODE_LOWER_OK);
+                bytecode_result.type = bytecode_type;
+                options = ruda_bytecode_run_default_options();
+                options.trap = &trap;
+                bytecode_status = ruda_bytecode_run(
+                    &bytecode, NULL, 0, ruda_system_allocator(), options,
+                    &bytecode_result
+                );
+                RUDA_EXPECT(bytecode_status == RUDA_BYTECODE_RUN_OVERFLOW);
+                functions[0] = &function;
+                program.functions = functions;
+                program.function_count = 1;
+                program.entry_symbol = symbol;
+                RUDA_EXPECT(ruda_native_c_emit_program(
+                    &program, ruda_system_allocator(),
+                    ruda_native_c_emit_default_options(), &source
+                ) == RUDA_NATIVE_C_EMIT_OK);
+                (void)snprintf(expected, sizeof(expected), "trap:1:82:83\n");
+#if !defined(_WIN32)
+                ruda_test_native_compile_and_run(&source, expected, 1);
+#endif
+                ruda_owned_bytes_dispose(&source);
+                ruda_bytecode_function_dispose(&bytecode);
+                ruda_mir_function_dispose(&function);
+            }
+        }
+    }
+}
+
+static void ruda_test_native_integer_widths(void) {
+    static const RudaIntegerKind kinds[] = {
+        RUDA_INTEGER_I8, RUDA_INTEGER_I16, RUDA_INTEGER_I32, RUDA_INTEGER_I64,
+        RUDA_INTEGER_U8, RUDA_INTEGER_U16, RUDA_INTEGER_U32, RUDA_INTEGER_U64
+    };
+    const RudaSymbolId symbol = {{0x61}};
+    size_t index = 0;
+    for (index = 0; index < sizeof(kinds) / sizeof(kinds[0]); index += 1) {
+        RudaMirFunction function;
+        RudaMirValue mir_result;
+        RudaBytecodeFunction bytecode;
+        RudaBytecodeValue bytecode_result;
+        RudaOwnedBytes source;
+        RudaNativeCProgram program;
+        const RudaMirFunction *functions[1];
+        char expected[64];
+        RudaTypeId type = ruda_test_native_integer_type(kinds[index]);
+        RudaBytecodeType bytecode_type =
+            ruda_test_native_bytecode_integer_type(kinds[index]);
+        int64_t signed_result = 0;
+        uint64_t unsigned_result = 0;
+        memset(&function, 0, sizeof(function));
+        memset(&mir_result, 0, sizeof(mir_result));
+        memset(&bytecode, 0, sizeof(bytecode));
+        memset(&bytecode_result, 0, sizeof(bytecode_result));
+        memset(&source, 0, sizeof(source));
+        RUDA_EXPECT(ruda_test_native_build_integer_widths(
+            &function, symbol, kinds[index]
+        ));
+        RUDA_EXPECT(ruda_mir_verify(&function) == RUDA_MIR_VERIFY_OK);
+        RUDA_EXPECT(ruda_mir_interpret(
+            &function, NULL, 0, ruda_system_allocator(),
+            ruda_mir_interpret_default_options(), &mir_result
+        ) == RUDA_MIR_INTERPRET_OK);
+        RUDA_EXPECT(mir_result.type == type);
+        RUDA_EXPECT(mir_result.as.integer_bits == UINT64_C(3));
+        RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+            &function, ruda_system_allocator(),
+            ruda_mir_bytecode_lower_default_options(), &bytecode
+        ) == RUDA_MIR_BYTECODE_LOWER_OK);
+        bytecode_result.type = bytecode_type;
+        bytecode_result.as.integer_bits = UINT64_MAX;
+        RUDA_EXPECT(ruda_bytecode_run(
+            &bytecode, NULL, 0, ruda_system_allocator(),
+            ruda_bytecode_run_default_options(), &bytecode_result
+        ) == RUDA_BYTECODE_RUN_OK);
+        RUDA_EXPECT(bytecode_result.type == bytecode_type);
+        RUDA_EXPECT(bytecode_result.as.integer_bits == UINT64_C(3));
+        functions[0] = &function;
+        program.functions = functions;
+        program.function_count = 1;
+        program.entry_symbol = symbol;
+        RUDA_EXPECT(ruda_native_c_emit_program(
+            &program, ruda_system_allocator(),
+            ruda_native_c_emit_default_options(), &source
+        ) == RUDA_NATIVE_C_EMIT_OK);
+        if (ruda_integer_kind_is_signed(kinds[index])) {
+            RUDA_EXPECT(ruda_integer_to_i64(
+                (RudaIntegerValue){kinds[index], 3}, &signed_result
+            ));
+            (void)snprintf(expected, sizeof(expected), "ok:%s:%lld\n",
+                index == 0 ? "i8" : index == 1 ? "i16"
+                    : index == 2 ? "i32" : "i64",
+                (long long)signed_result);
+        } else {
+            RUDA_EXPECT(ruda_integer_to_u64(
+                (RudaIntegerValue){kinds[index], 3}, &unsigned_result
+            ));
+            (void)snprintf(expected, sizeof(expected), "ok:%s:%llu\n",
+                index == 4 ? "u8" : index == 5 ? "u16"
+                    : index == 6 ? "u32" : "u64",
+                (unsigned long long)unsigned_result);
+        }
+#if !defined(_WIN32)
+        ruda_test_native_compile_and_run(&source, expected, 0);
+#endif
+        ruda_owned_bytes_dispose(&source);
+        ruda_bytecode_function_dispose(&bytecode);
+        ruda_mir_function_dispose(&function);
+    }
+}
+
 
 void ruda_test_native_scalar_f64(void) {
+    ruda_test_native_integer_widths();
+    ruda_test_native_integer_comparisons();
+    ruda_test_native_integer_faults();
     ruda_test_native_scalar_differential();
     ruda_test_native_f64_differential();
     ruda_test_native_f64_direct_call();

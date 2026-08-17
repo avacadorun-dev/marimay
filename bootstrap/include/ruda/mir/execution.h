@@ -26,6 +26,7 @@ typedef struct RudaMirValue {
     RudaTypeId type;
     union {
         int64_t i64;
+        uint64_t integer_bits;
         uint64_t f64_bits;
         bool boolean;
         RudaMirReference reference;

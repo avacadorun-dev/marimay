@@ -77,6 +77,10 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->opcode = RUDA_OPCODE_CONST_I64;
             output->operands[1].signed_value = input->integer;
             break;
+        case RUDA_MIR_CONSTANT_INTEGER:
+            output->opcode = RUDA_OPCODE_CONST_INTEGER;
+            output->operands[1].unsigned_value = input->integer_bits;
+            break;
         case RUDA_MIR_CONSTANT_BOOL:
             output->opcode = RUDA_OPCODE_CONST_BOOL;
             output->operands[1].unsigned_value = input->boolean ? 1U : 0U;

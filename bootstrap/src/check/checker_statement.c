@@ -143,7 +143,7 @@ bool ruda_compound_assignment_kind(
     if (kind == NULL) {
         return false;
     }
-    if (type == RUDA_TYPE_I64) {
+    if (type >= RUDA_TYPE_I8 && type <= RUDA_TYPE_U64) {
         switch (operator_kind) {
             case RUDA_TOKEN_PLUS_EQUAL:
                 *kind = RUDA_MIR_ADD_CHECKED_I64;

@@ -1,0 +1,51 @@
+import { formatF64, formatF32 } from "std/convert";
+
+fn numericWidths(
+  i8Value: i8,
+  i16Value: i16,
+  i32Value: i32,
+  i64Value: i64,
+  u8Value: u8,
+  u16Value: u16,
+  u32Value: u32,
+  u64Value: u64,
+): string {
+  const signed8: i8 = -128;
+  const signed16: i16 = -32768;
+  const signed32: i32 = -2147483648;
+  const signed64: i64 = -9223372036854775808;
+  const unsigned8: u8 = 255;
+  const unsigned16: u16 = 65535;
+  const unsigned32: u32 = 4294967295;
+  const unsigned64: u64 = 18446744073709551615;
+  const add8 = i8Value + 1;
+  const subtract16 = i16Value - 1;
+  const multiply32 = i32Value * 2;
+  const divide64 = i64Value / 2;
+  const remainder8 = u8Value % 2;
+  const bits16 = u16Value & 1 | 2 ^ 4;
+  const shift32 = u32Value << 1;
+  const shift64 = u64Value >> 1;
+  const float32 = formatF32(1.0e-4);
+  const float64 = formatF64(415.0);
+  const scientific = formatF64(1.25e-8);
+  use(signed8);
+  use(signed16);
+  use(signed32);
+  use(signed64);
+  use(unsigned8);
+  use(unsigned16);
+  use(unsigned32);
+  use(unsigned64);
+  use(add8);
+  use(subtract16);
+  use(multiply32);
+  use(divide64);
+  use(remainder8);
+  use(bits16);
+  use(shift32);
+  use(shift64);
+  use(float32);
+  use(scientific);
+  return float64;
+}

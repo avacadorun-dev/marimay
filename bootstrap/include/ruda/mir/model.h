@@ -38,6 +38,7 @@ typedef struct RudaMirSpan {
 
 typedef enum RudaMirInstructionKind {
     RUDA_MIR_CONSTANT_I64,
+    RUDA_MIR_CONSTANT_INTEGER,
     RUDA_MIR_CONSTANT_BOOL,
     RUDA_MIR_CONSTANT_STRING,
     RUDA_MIR_COPY,
@@ -111,6 +112,7 @@ typedef struct RudaMirInstruction {
     size_t variant;
     size_t field;
     int64_t integer;
+    uint64_t integer_bits;
     uint64_t f64_bits;
     bool boolean;
     RudaMirSpan span;

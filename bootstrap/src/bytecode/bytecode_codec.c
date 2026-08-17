@@ -560,9 +560,10 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
     if (status != RUDA_BYTECODE_CODEC_OK) {
         return status;
     }
-    if (value > ((features & RUDA_BYTECODE_FEATURE_NOMINAL) != 0
+    if ((value > ((features & RUDA_BYTECODE_FEATURE_NOMINAL) != 0
             ? RUDA_BYTECODE_TYPE_INTERFACE
             : RUDA_BYTECODE_TYPE_ARRAY)
+            && !ruda_bytecode_type_is_extended_scalar((RudaBytecodeType)value))
         || !ruda_bytecode_type_is_result((RudaBytecodeType)value)) {
         return RUDA_BYTECODE_CODEC_INVALID_ENCODING;
     }
@@ -633,9 +634,10 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
         if (status != RUDA_BYTECODE_CODEC_OK) {
             goto cleanup;
         }
-        if (value > ((features & RUDA_BYTECODE_FEATURE_NOMINAL) != 0
+        if ((value > ((features & RUDA_BYTECODE_FEATURE_NOMINAL) != 0
                 ? RUDA_BYTECODE_TYPE_INTERFACE
                 : RUDA_BYTECODE_TYPE_ARRAY)
+                && !ruda_bytecode_type_is_extended_scalar((RudaBytecodeType)value))
             || !ruda_bytecode_type_is_local((RudaBytecodeType)value)
             || (index < function.parameter_count
                 && !ruda_bytecode_type_is_register((RudaBytecodeType)value))) {
@@ -679,7 +681,10 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
             uint32_t array_layout = UINT32_MAX;
             status = ruda_bytecode_codec_decode_u64(&cursor, &value);
             if (status != RUDA_BYTECODE_CODEC_OK
-                || value > RUDA_BYTECODE_TYPE_ARRAY
+                || (value > RUDA_BYTECODE_TYPE_ARRAY
+                    && !ruda_bytecode_type_is_extended_scalar(
+                        (RudaBytecodeType)value
+                    ))
                 || !ruda_bytecode_type_is_register(
                     (RudaBytecodeType)value
                 )) {
@@ -837,9 +842,10 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
             if (status != RUDA_BYTECODE_CODEC_OK) {
                 goto cleanup;
             }
-            if (value > ((features & RUDA_BYTECODE_FEATURE_NOMINAL) != 0
+            if ((value > ((features & RUDA_BYTECODE_FEATURE_NOMINAL) != 0
                     ? RUDA_BYTECODE_TYPE_INTERFACE
                     : RUDA_BYTECODE_TYPE_ARRAY)
+                    && !ruda_bytecode_type_is_extended_scalar((RudaBytecodeType)value))
                 || !ruda_bytecode_type_is_result((RudaBytecodeType)value)) {
                 status = RUDA_BYTECODE_CODEC_INVALID_ENCODING;
                 goto cleanup;
@@ -907,9 +913,10 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
                 if (status != RUDA_BYTECODE_CODEC_OK) {
                     break;
                 }
-                if (value > ((features & RUDA_BYTECODE_FEATURE_NOMINAL) != 0
+                if ((value > ((features & RUDA_BYTECODE_FEATURE_NOMINAL) != 0
                         ? RUDA_BYTECODE_TYPE_INTERFACE
                         : RUDA_BYTECODE_TYPE_ARRAY)
+                        && !ruda_bytecode_type_is_extended_scalar((RudaBytecodeType)value))
                     || !ruda_bytecode_type_is_register(
                         (RudaBytecodeType)value
                     )) {

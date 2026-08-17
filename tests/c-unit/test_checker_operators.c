@@ -164,8 +164,120 @@ void ruda_test_checker_bitwise(void) {
         ruda_system_allocator(),
         ruda_check_default_options(),
         &checked
-    ) == RUDA_CHECK_INCOMPLETE_LANGUAGE);
-    RUDA_EXPECT(!checked.initialized);
+    ) == RUDA_CHECK_OK);
+    RUDA_EXPECT(checked.initialized);
+    ruda_checker_fixture_dispose(&fixture);
+}
+
+void ruda_test_checker_numeric_widths(void) {
+    static const char source[] =
+        "const i8MinValue: i8 = -128;\n"
+        "const i16MinValue: i16 = -32768;\n"
+        "const i32MinValue: i32 = -2147483648;\n"
+        "const i64MinValue: i64 = -9223372036854775808;\n"
+        "const u8MaxValue: u8 = 255;\n"
+        "const u16MaxValue: u16 = 65535;\n"
+        "const u32MaxValue: u32 = 4294967295;\n"
+        "const u64MaxValue: u64 = 18446744073709551615;\n"
+        "fn i8Ops(value: i8): i8 {\n"
+        "  let x: i8 = value; x += 1; x -= 1; x *= 2; x /= 2; x %= 3;\n"
+        "  x &= 15; x ^= 3; x |= 1; x <<= 1; x >>= 1; return x;\n"
+        "}\n"
+        "fn i16Ops(value: i16): i16 {\n"
+        "  let x: i16 = value; x += 1; x -= 1; x *= 2; x /= 2; x %= 3;\n"
+        "  x &= 15; x ^= 3; x |= 1; x <<= 1; x >>= 1; return x;\n"
+        "}\n"
+        "fn i32Ops(value: i32): i32 {\n"
+        "  let x: i32 = value; x += 1; x -= 1; x *= 2; x /= 2; x %= 3;\n"
+        "  x &= 15; x ^= 3; x |= 1; x <<= 1; x >>= 1; return x;\n"
+        "}\n"
+        "fn i64Ops(value: i64): i64 {\n"
+        "  let x: i64 = value; x += 1; x -= 1; x *= 2; x /= 2; x %= 3;\n"
+        "  x &= 15; x ^= 3; x |= 1; x <<= 1; x >>= 1; return x;\n"
+        "}\n"
+        "fn u8Ops(value: u8): u8 {\n"
+        "  let x: u8 = value; x += 1; x -= 1; x *= 2; x /= 2; x %= 3;\n"
+        "  x &= 15; x ^= 3; x |= 1; x <<= 1; x >>= 1; return x;\n"
+        "}\n"
+        "fn u16Ops(value: u16): u16 {\n"
+        "  let x: u16 = value; x += 1; x -= 1; x *= 2; x /= 2; x %= 3;\n"
+        "  x &= 15; x ^= 3; x |= 1; x <<= 1; x >>= 1; return x;\n"
+        "}\n"
+        "fn u32Ops(value: u32): u32 {\n"
+        "  let x: u32 = value; x += 1; x -= 1; x *= 2; x /= 2; x %= 3;\n"
+        "  x &= 15; x ^= 3; x |= 1; x <<= 1; x >>= 1; return x;\n"
+        "}\n"
+        "fn u64Ops(value: u64): u64 {\n"
+        "  let x: u64 = value; x += 1; x -= 1; x *= 2; x /= 2; x %= 3;\n"
+        "  x &= 15; x ^= 3; x |= 1; x <<= 1; x >>= 1; return x;\n"
+        "}\n"
+        "fn i8Min(): i8 { return i8MinValue; }\n"
+        "fn i16Min(): i16 { return i16MinValue; }\n"
+        "fn i32Min(): i32 { return i32MinValue; }\n"
+        "fn i64Min(): i64 { return i64MinValue; }\n"
+        "fn u8Max(): u8 { return u8MaxValue; }\n"
+        "fn u16Max(): u16 { return u16MaxValue; }\n"
+        "fn u32Max(): u32 { return u32MaxValue; }\n"
+        "fn u64Max(): u64 { return u64MaxValue; }\n";
+    static const RudaTypeId types[] = {
+        RUDA_TYPE_I8, RUDA_TYPE_I16, RUDA_TYPE_I32, RUDA_TYPE_I64,
+        RUDA_TYPE_U8, RUDA_TYPE_U16, RUDA_TYPE_U32, RUDA_TYPE_U64
+    };
+    static const uint64_t minimum_bits[] = {
+        UINT64_C(0x80), UINT64_C(0x8000), UINT64_C(0x80000000),
+        UINT64_C(0x8000000000000000), UINT64_C(0), UINT64_C(0),
+        UINT64_C(0), UINT64_C(0)
+    };
+    static const uint64_t maximum_bits[] = {
+        UINT64_C(0), UINT64_C(0), UINT64_C(0), UINT64_C(0),
+        UINT64_C(0xff), UINT64_C(0xffff), UINT64_C(0xffffffff),
+        UINT64_C(0xffffffffffffffff)
+    };
+    RudaCheckerFixture fixture;
+    RudaCheckResult checked;
+    RudaCheckStatus status;
+    size_t index = 0;
+    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
+    status = ruda_check_ast(
+        &fixture.ast,
+        "test/numeric-widths",
+        ruda_system_allocator(),
+        ruda_check_default_options(),
+        &checked
+    );
+    RUDA_EXPECT(status == RUDA_CHECK_OK);
+    if (checked.initialized) {
+        RUDA_EXPECT(checked.diagnostics.length == 0);
+        RUDA_EXPECT(checked.constants.length == 8);
+        RUDA_EXPECT(checked.functions.length == 16);
+        for (index = 0; index < 16; index += 1) {
+            const RudaCheckedFunction *function = ruda_checked_function(
+                &checked, index
+            );
+            RudaMirValue argument;
+            RudaMirValue result;
+            uint64_t expected_bits = index < 8 ? UINT64_C(3)
+                : (index < 12 ? minimum_bits[index - 8]
+                               : maximum_bits[index - 8]);
+            RUDA_EXPECT(function != NULL);
+            if (function == NULL) {
+                continue;
+            }
+            argument.type = types[index < 8 ? index : index - 8];
+            argument.as.integer_bits = UINT64_C(6);
+            RUDA_EXPECT(ruda_mir_interpret(
+                &function->mir,
+                index < 8 ? &argument : NULL,
+                index < 8 ? 1 : 0,
+                ruda_system_allocator(),
+                ruda_mir_interpret_default_options(),
+                &result
+            ) == RUDA_MIR_INTERPRET_OK);
+            RUDA_EXPECT(result.type == types[index < 8 ? index : index - 8]);
+            RUDA_EXPECT(result.as.integer_bits == expected_bits);
+        }
+        ruda_check_result_dispose(&checked);
+    }
     ruda_checker_fixture_dispose(&fixture);
 }
 
@@ -312,8 +424,8 @@ void ruda_test_checker_shifts(void) {
         ruda_system_allocator(),
         ruda_check_default_options(),
         &checked
-    ) == RUDA_CHECK_INCOMPLETE_LANGUAGE);
-    RUDA_EXPECT(!checked.initialized);
+    ) == RUDA_CHECK_OK);
+    RUDA_EXPECT(checked.initialized);
     ruda_checker_fixture_dispose(&fixture);
 }
 
