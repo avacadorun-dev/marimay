@@ -4,6 +4,132 @@
 #include <limits.h>
 #include <string.h>
 
+static bool ruda_test_native_build_generic_array(
+    RudaMirFunction *function,
+    RudaSymbolId symbol
+) {
+    const RudaTypeId array_type = RUDA_TYPE_FIRST_DYNAMIC + 130;
+    RudaMirRegister one = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister two = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister three = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister array_value = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister index = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister fetched = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister length = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister pushed = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
+    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
+    RudaMirArrayId array = RUDA_MIR_NO_ARRAY;
+    RudaMirArrayConstructionId construction = RUDA_MIR_NO_ARRAY_CONSTRUCTION;
+    RudaMirArrayArgument arguments[2];
+    RudaMirInstruction instruction;
+    memset(function, 0, sizeof(*function));
+    if (!ruda_mir_function_init(
+            function, ruda_system_allocator(), symbol, NULL, 0,
+            RUDA_TYPE_I64, ruda_mir_function_default_options()
+        ) || !ruda_mir_add_register(function, RUDA_TYPE_I64, &one)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &two)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &three)
+        || !ruda_mir_add_register(function, array_type, &array_value)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &index)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &fetched)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &length)
+        || !ruda_mir_add_register(function, array_type, &pushed)
+        || !ruda_mir_add_register(function, RUDA_TYPE_I64, &result)
+        || !ruda_mir_add_array(function, array_type, RUDA_TYPE_I64, &array)
+        || !ruda_mir_add_block(function, &block)) {
+        goto failure;
+    }
+    arguments[0].register_id = one;
+    arguments[0].type = RUDA_TYPE_I64;
+    arguments[1].register_id = two;
+    arguments[1].type = RUDA_TYPE_I64;
+    if (!ruda_mir_add_array_construction(
+            function, array, arguments, 2, &construction
+        )) {
+        goto failure;
+    }
+    instruction = ruda_test_native_instruction(
+        RUDA_MIR_CONSTANT_I64, one, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 1, false, 1300
+    );
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_native_instruction(
+        RUDA_MIR_CONSTANT_I64, two, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 2, false, 1301
+    );
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_native_instruction(
+        RUDA_MIR_ARRAY_NEW, array_value, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 0, false, 1302
+    );
+    instruction.array = array;
+    instruction.array_construction = construction;
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_native_instruction(
+        RUDA_MIR_CONSTANT_I64, three, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 3, false, 1303
+    );
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_native_instruction(
+        RUDA_MIR_ARRAY_PUSH, pushed, array_value, three,
+        0, false, 1304
+    );
+    instruction.array = array;
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_native_instruction(
+        RUDA_MIR_CONSTANT_I64, index, RUDA_MIR_NO_REGISTER,
+        RUDA_MIR_NO_REGISTER, 2, false, 1305
+    );
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_native_instruction(
+        RUDA_MIR_ARRAY_GET, fetched, array_value, index,
+        0, false, 1306
+    );
+    instruction.array = array;
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_native_instruction(
+        RUDA_MIR_ARRAY_LENGTH, length, array_value, RUDA_MIR_NO_REGISTER,
+        0, false, 1307
+    );
+    instruction.array = array;
+    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        goto failure;
+    }
+    instruction = ruda_test_native_instruction(
+        RUDA_MIR_ADD_CHECKED_I64, result, fetched, length,
+        0, false, 1308
+    );
+    if (!ruda_mir_append_instruction(function, block, &instruction)
+        || !ruda_mir_set_terminator(
+            function, block, ruda_test_native_terminator(
+                RUDA_MIR_RETURN, result, RUDA_MIR_NO_BLOCK,
+                RUDA_MIR_NO_BLOCK, 1309
+            )
+        )) {
+        goto failure;
+    }
+    return true;
+
+failure:
+    ruda_mir_function_dispose(function);
+    return false;
+}
+
 static bool ruda_test_native_build_array(
     RudaMirFunction *function,
     RudaSymbolId symbol,
@@ -860,8 +986,116 @@ static void ruda_test_native_array_rhs_ordering(void) {
     }
 }
 
+static void ruda_test_native_generic_array(void) {
+    const RudaSymbolId symbol = {{0x77}};
+    RudaMirFunction function;
+    RudaMirExecution mir_execution;
+    RudaMirInterpretOptions mir_options;
+    RudaMirValue mir_result;
+    RudaBytecodeFunction lowered;
+    RudaBytecodeExecution vm_execution;
+    RudaBytecodeExecutionOptions vm_execution_options;
+    RudaBytecodeRunOptions vm_options;
+    RudaBytecodeValue vm_result;
+    RudaNativeCProgram program;
+    RudaOwnedBytes source;
+    const RudaMirFunction *functions[1];
+    memset(&function, 0, sizeof(function));
+    memset(&mir_execution, 0, sizeof(mir_execution));
+    memset(&mir_result, 0, sizeof(mir_result));
+    memset(&lowered, 0, sizeof(lowered));
+    memset(&vm_execution, 0, sizeof(vm_execution));
+    memset(&vm_result, 0, sizeof(vm_result));
+    memset(&program, 0, sizeof(program));
+    memset(&source, 0, sizeof(source));
+    RUDA_EXPECT(ruda_test_native_build_generic_array(&function, symbol));
+    RUDA_EXPECT(ruda_mir_verify(&function) == RUDA_MIR_VERIFY_OK);
+    RUDA_EXPECT(ruda_mir_execution_init(
+        &mir_execution, ruda_system_allocator(),
+        ruda_mir_execution_default_options()
+    ));
+    mir_options = ruda_mir_interpret_default_options();
+    mir_options.execution = &mir_execution;
+    RUDA_EXPECT(ruda_mir_interpret(
+        &function, NULL, 0, ruda_system_allocator(), mir_options, &mir_result
+    ) == RUDA_MIR_INTERPRET_OK);
+    RUDA_EXPECT(mir_result.type == RUDA_TYPE_I64 && mir_result.as.i64 == 6);
+    RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+        &function, ruda_system_allocator(),
+        ruda_mir_bytecode_lower_default_options(), &lowered
+    ) == RUDA_MIR_BYTECODE_LOWER_OK);
+    RUDA_EXPECT(lowered.array_types.length == 1);
+    RUDA_EXPECT(ruda_bytecode_verify(&lowered) == RUDA_BYTECODE_VERIFY_OK);
+    vm_execution_options = ruda_bytecode_execution_default_options();
+    vm_execution_options.managed_heap.collect_before_allocation = true;
+    RUDA_EXPECT(ruda_bytecode_execution_init(
+        &vm_execution, ruda_system_allocator(), vm_execution_options
+    ));
+    vm_options = ruda_bytecode_run_default_options();
+    vm_options.execution = &vm_execution;
+    RUDA_EXPECT(ruda_bytecode_run(
+        &lowered, NULL, 0, ruda_system_allocator(), vm_options, &vm_result
+    ) == RUDA_BYTECODE_RUN_OK);
+    RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_I64
+        && vm_result.as.i64 == 6);
+    {
+        bool reached_success = false;
+        size_t failure_index = 0;
+        for (failure_index = 0; failure_index < 64 && !reached_success;
+            failure_index += 1) {
+            RudaFailAllocator state;
+            RudaBytecodeExecution failed_execution;
+            RudaBytecodeRunStatus status;
+            memset(&failed_execution, 0, sizeof(failed_execution));
+            ruda_fail_allocator_init(
+                &state, ruda_system_allocator(), SIZE_MAX
+            );
+            RUDA_EXPECT(ruda_bytecode_execution_init(
+                &failed_execution, ruda_fail_allocator(&state),
+                vm_execution_options
+            ));
+            state.failure_index = state.attempts + failure_index;
+            vm_options.execution = &failed_execution;
+            status = ruda_bytecode_run(
+                &lowered, NULL, 0, ruda_fail_allocator(&state),
+                vm_options, &vm_result
+            );
+            if (status == RUDA_BYTECODE_RUN_OK) {
+                reached_success = true;
+            } else {
+                RUDA_EXPECT(status == RUDA_BYTECODE_RUN_ALLOCATION_FAILED);
+            }
+            ruda_bytecode_execution_dispose(&failed_execution);
+            RUDA_EXPECT(state.live_allocations == 0);
+            RUDA_EXPECT(state.live_bytes == 0);
+        }
+        RUDA_EXPECT(reached_success);
+    }
+    vm_options.execution = &vm_execution;
+    functions[0] = &function;
+    program.functions = functions;
+    program.function_count = 1;
+    program.entry_symbol = symbol;
+    RUDA_EXPECT(ruda_native_c_emit_program(
+        &program, ruda_system_allocator(),
+        ruda_native_c_emit_default_options(), &source
+    ) == RUDA_NATIVE_C_EMIT_OK);
+    RUDA_EXPECT(ruda_test_native_contains(&source, "ruda_g_ad_"));
+    RUDA_EXPECT(ruda_test_native_contains(&source, "ruda_managed_array_push"));
+    RUDA_EXPECT(!ruda_test_native_contains(&source, "RudaTypeId"));
+#if !defined(_WIN32)
+    ruda_test_native_compile_and_run(&source, "ok:i64:6\n", 0);
+#endif
+    ruda_owned_bytes_dispose(&source);
+    ruda_bytecode_execution_dispose(&vm_execution);
+    ruda_bytecode_function_dispose(&lowered);
+    ruda_mir_execution_dispose(&mir_execution);
+    ruda_mir_function_dispose(&function);
+}
+
 
 void ruda_test_native_arrays(void) {
+    ruda_test_native_generic_array();
     ruda_test_native_array_rhs_ordering();
     ruda_test_native_arrays_differential();
 }

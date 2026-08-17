@@ -670,6 +670,21 @@ observable. Allocator exhaustion and a configured VM/isolate heap ceiling keep
 their execution-specification fatal/runtime-limit behavior; they are not
 silently converted into a recoverable collection error.
 
+The normative iteration spelling for arrays is the existing D033 form
+`for const item of array`. It obtains one iterator for the expression, exposes
+an immutable `item` of the exact element type, and closes the iterator on normal
+completion, `break`, `continue`, panic, or return. Mutation of the iterated
+array is rejected by the standard iterator generation check unless an iterator
+operation explicitly owns that mutation. Indexed `for let` loops remain a
+separate, valid way to traverse an array when mutation is intentional.
+
+When a bytecode bundle contains a generic array, its portable representation
+uses a canonical array-type table. Each row contains the element bytecode type
+tag and, for a managed element, the referenced layout-table index; array
+instructions refer to the row rather than serializing a source `TypeId` or a
+host pointer. The fixed `Array<f64>` preview tags remain a decoder-compatible
+legacy form only for old f64-only bundles.
+
 Reason: array construction, indexing, mutation, panic identity, and resource
 failure must agree in the MIR oracle, VM, and native engine. Leaving the index
 type, bounds span, assignment order, or growth failure implicit would make a

@@ -65,3 +65,4 @@ Stage 0 codec.
 | 52 | `enum_get_payload` | `destination:register`, `enum:register`, `selector:i64` | — | Read one enum payload field after a matching ENUM_REQUIRE_VARIANT. |
 | 53 | `interface_new` | `destination:register`, `construction:interface_construction` | `may_panic` | Box a conforming payload with a compiler-generated method table. |
 | 54 | `call_interface` | `destination:register`, `call:call` | `may_panic` | Dispatch an interface method through the boxed method table to a D003 callee. |
+| 55 | `array_push` | `array:register`, `value:register` | `may_panic` | Append one exact element to a managed array with failure-atomic growth. |

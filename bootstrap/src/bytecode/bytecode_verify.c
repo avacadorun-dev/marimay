@@ -120,13 +120,23 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
                     function,
                     (RudaBytecodeArrayConstructionId)construction_index
                 );
+            uint32_t element_layout = RUDA_BYTECODE_NO_LAYOUT;
             RudaBytecodeType element_type = construction != NULL
-                ? ruda_bytecode_array_element_type(construction->array_type)
+                ? ruda_bytecode_function_array_element_type(
+                    function,
+                    construction->array_type,
+                    construction->array_layout,
+                    &element_layout
+                )
                 : RUDA_BYTECODE_TYPE_INVALID;
             size_t argument_end = 0;
             size_t argument_index = 0;
             if (construction == NULL
                 || element_type == RUDA_BYTECODE_TYPE_INVALID
+                || !ruda_bytecode_type_layout_is_valid(
+                    function, construction->array_type,
+                    construction->array_layout
+                )
                 || construction->argument_start != expected_argument_start
                 || !ruda_size_add(
                     construction->argument_start,
@@ -150,7 +160,12 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
                     : NULL;
                 if (argument == NULL || register_type == NULL
                     || argument->type != element_type
-                    || *register_type != element_type) {
+                    || *register_type != element_type
+                    || (construction->array_type == RUDA_BYTECODE_TYPE_ARRAY
+                        && (argument->layout != element_layout
+                            || ruda_bytecode_register_layout(
+                                function, argument->register_id
+                            ) != element_layout))) {
                     return register_type == NULL
                         ? RUDA_BYTECODE_VERIFY_INVALID_REGISTER
                         : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;

@@ -19,6 +19,9 @@ bool ruda_bytecode_type_layout_is_valid(
     if (type == RUDA_BYTECODE_TYPE_INTERFACE) {
         return layout < function->interface_layouts.length;
     }
+    if (type == RUDA_BYTECODE_TYPE_ARRAY) {
+        return layout < function->array_types.length;
+    }
     return layout == RUDA_BYTECODE_NO_LAYOUT;
 }
 

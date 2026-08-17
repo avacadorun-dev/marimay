@@ -145,6 +145,14 @@ at most `int::MAX` initialized elements. Hitting that logical limit returns
 `ArrayGrowthError.LengthLimit`; exceeding a configured isolate heap limit is a
 runtime-limit outcome under the execution specification instead.
 
+The normative array iteration spelling is `for const item of values`. The
+iterator is obtained once, yields each initialized element in ascending index
+order, and is closed on every control-flow exit. `item` is immutable and has
+the exact `T` type. A generation check rejects mutation of `values` while its
+iterator is active unless the iterator operation explicitly owns that mutation.
+Indexed `for let` loops remain available for algorithms that intentionally
+mutate an array.
+
 Map/set iteration is insertion-ordered. Updating retains position; delete then reinsert appends. Hash seeding may be process-randomized for attack resistance without changing visible order.
 
 Collection APIs use checked sizes and return `Result` for recoverable logical

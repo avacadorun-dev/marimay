@@ -562,6 +562,59 @@ bool ruda_native_c_emit_managed_descriptors(
 ) {
     size_t function_index = 0;
     RudaNativeCManagedKind kind = RUDA_NATIVE_C_MANAGED_RECORD;
+    for (function_index = 0; function_index < count; function_index += 1) {
+        const RudaMirFunction *function = functions[function_index];
+        size_t index = 0;
+        for (index = 0; index < function->arrays.length; index += 1) {
+            const RudaMirArray *array = ruda_vector_at_const(
+                &function->arrays, index
+            );
+            RudaNativeCManagedLayout layout = {
+                function, RUDA_NATIVE_C_MANAGED_ARRAY, index
+            };
+            if (array != NULL && ruda_native_c_layout_is_canonical(
+                    functions, count, layout, array->type
+                ) && ruda_native_c_array_kind(function, array->type)
+                    == RUDA_NATIVE_C_ARRAY_GENERIC
+                && (!ruda_native_c_write(
+                    buffer,
+                    "static const RudaManagedArrayDescriptor ruda_g_ad_%u;\n",
+                    (unsigned int)array->type
+                ))) return false;
+        }
+    }
+    for (function_index = 0; function_index < count; function_index += 1) {
+        const RudaMirFunction *function = functions[function_index];
+        size_t index = 0;
+        for (index = 0; index < function->arrays.length; index += 1) {
+            const RudaMirArray *array = ruda_vector_at_const(
+                &function->arrays, index
+            );
+            RudaNativeCManagedLayout layout = {
+                function, RUDA_NATIVE_C_MANAGED_ARRAY, index
+            };
+            if (array != NULL && ruda_native_c_layout_is_canonical(
+                    functions, count, layout, array->type
+                ) && ruda_native_c_array_kind(function, array->type)
+                    == RUDA_NATIVE_C_ARRAY_GENERIC) {
+                bool reference = array->element_type >= RUDA_TYPE_FIRST_DYNAMIC;
+                if (!ruda_native_c_write(
+                        buffer,
+                        "static const RudaManagedArrayDescriptor ruda_g_ad_%u = {%s, ",
+                        (unsigned int)array->type,
+                        reference ? "RUDA_MANAGED_CELL_REFERENCE"
+                            : "RUDA_MANAGED_CELL_RAW64"
+                    )) return false;
+                if (reference && !ruda_native_c_write(
+                        buffer, "&ruda_g_ad_%u", (unsigned int)array->element_type
+                    )) return false;
+                if (!reference && !ruda_native_c_write(buffer, "NULL")) {
+                    return false;
+                }
+                if (!ruda_native_c_write(buffer, "};\n")) return false;
+            }
+        }
+    }
     for (kind = RUDA_NATIVE_C_MANAGED_RECORD;
         kind <= RUDA_NATIVE_C_MANAGED_INTERFACE; kind += 1) {
         for (function_index = 0; function_index < count; function_index += 1) {

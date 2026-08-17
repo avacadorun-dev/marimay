@@ -14,13 +14,15 @@ bool ruda_bytecode_type_is_register(RudaBytecodeType type) {
         || type == RUDA_BYTECODE_TYPE_F64 || type == RUDA_BYTECODE_TYPE_STRING
         || type == RUDA_BYTECODE_TYPE_ARRAY_F64
         || type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64
+        || type == RUDA_BYTECODE_TYPE_ARRAY
         || type == RUDA_BYTECODE_TYPE_RECORD || type == RUDA_BYTECODE_TYPE_ENUM
         || type == RUDA_BYTECODE_TYPE_INTERFACE;
 }
 
 bool ruda_bytecode_type_is_array(RudaBytecodeType type) {
     return type == RUDA_BYTECODE_TYPE_ARRAY_F64
-        || type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64;
+        || type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64
+        || type == RUDA_BYTECODE_TYPE_ARRAY;
 }
 
 bool ruda_bytecode_type_is_managed(RudaBytecodeType type) {
@@ -40,6 +42,29 @@ RudaBytecodeType ruda_bytecode_array_element_type(
         return RUDA_BYTECODE_TYPE_ARRAY_F64;
     }
     return RUDA_BYTECODE_TYPE_INVALID;
+}
+
+RudaBytecodeType ruda_bytecode_function_array_element_type(
+    const RudaBytecodeFunction *function,
+    RudaBytecodeType array_type,
+    uint32_t array_layout,
+    uint32_t *element_layout
+) {
+    const RudaBytecodeArrayType *entry = NULL;
+    if (element_layout != NULL) {
+        *element_layout = RUDA_BYTECODE_NO_LAYOUT;
+    }
+    if (array_type == RUDA_BYTECODE_TYPE_ARRAY) {
+        entry = ruda_bytecode_array_type(function, array_layout);
+        if (entry == NULL) {
+            return RUDA_BYTECODE_TYPE_INVALID;
+        }
+        if (element_layout != NULL) {
+            *element_layout = entry->element_layout;
+        }
+        return entry->element_type;
+    }
+    return ruda_bytecode_array_element_type(array_type);
 }
 
 bool ruda_bytecode_type_is_result(RudaBytecodeType type) {
@@ -69,6 +94,8 @@ const char *ruda_bytecode_type_name(RudaBytecodeType type) {
             return "Array<f64>";
         case RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64:
             return "Array<Array<f64>>";
+        case RUDA_BYTECODE_TYPE_ARRAY:
+            return "Array<T>";
         case RUDA_BYTECODE_TYPE_RECORD:
             return "record";
         case RUDA_BYTECODE_TYPE_ENUM:
@@ -314,6 +341,10 @@ bool ruda_bytecode_function_init(
             &function->array_arguments,
             allocator,
             sizeof(RudaBytecodeArrayArgument)
+        ) || !ruda_vector_init(
+            &function->array_types,
+            allocator,
+            sizeof(RudaBytecodeArrayType)
         ) || !ruda_vector_init(&function->register_layouts, allocator, sizeof(uint32_t))
         || !ruda_vector_init(&function->record_layouts, allocator, sizeof(RudaBytecodeRecordLayout))
         || !ruda_vector_init(&function->record_fields, allocator, sizeof(RudaBytecodeRecordField))
@@ -368,6 +399,7 @@ void ruda_bytecode_function_dispose(RudaBytecodeFunction *function) {
     }
     ruda_vector_dispose(&function->string_constants);
     ruda_vector_dispose(&function->array_arguments);
+    ruda_vector_dispose(&function->array_types);
     ruda_vector_dispose(&function->array_constructions);
     ruda_vector_dispose(&function->register_layouts);
     ruda_vector_dispose(&function->record_arguments);
@@ -599,83 +631,6 @@ const RudaBytecodeStringConstant *ruda_bytecode_string_constant(
 ) {
     return function != NULL && function->initialized
         ? ruda_vector_at_const(&function->string_constants, string_id)
-        : NULL;
-}
-
-bool ruda_bytecode_add_array_construction(
-    RudaBytecodeFunction *function,
-    RudaBytecodeType array_type,
-    const RudaBytecodeArrayArgument *arguments,
-    size_t argument_count,
-    RudaBytecodeArrayConstructionId *result
-) {
-    RudaBytecodeArrayConstruction construction;
-    RudaBytecodeType element_type = ruda_bytecode_array_element_type(array_type);
-    size_t next_argument_count = 0;
-    size_t index = 0;
-    if (function == NULL || !function->initialized || result == NULL
-        || element_type == RUDA_BYTECODE_TYPE_INVALID
-        || (arguments == NULL && argument_count != 0)
-        || function->array_constructions.length
-            >= function->options.max_array_constructions
-        || function->array_constructions.length >= UINT32_MAX
-        || !ruda_size_add(function->array_arguments.length, argument_count,
-            &next_argument_count)
-        || next_argument_count > function->options.max_array_arguments) {
-        return false;
-    }
-    for (index = 0; index < argument_count; index += 1) {
-        const RudaBytecodeType *type = arguments[index].register_id
-                < function->register_types.length
-            ? ruda_vector_at_const(
-                &function->register_types, arguments[index].register_id
-            )
-            : NULL;
-        if (type == NULL || arguments[index].type != element_type
-            || *type != element_type) {
-            return false;
-        }
-    }
-    if (!ruda_vector_reserve(
-            &function->array_constructions,
-            function->array_constructions.length + 1
-        ) || !ruda_vector_reserve(
-            &function->array_arguments, next_argument_count
-        )) {
-        return false;
-    }
-    construction.array_type = array_type;
-    construction.argument_start = function->array_arguments.length;
-    construction.argument_count = argument_count;
-    if (!ruda_vector_append(
-            &function->array_arguments, arguments, argument_count
-        ) || !ruda_vector_push(
-            &function->array_constructions, &construction
-        )) {
-        function->array_arguments.length = construction.argument_start;
-        return false;
-    }
-    *result = (RudaBytecodeArrayConstructionId)(
-        function->array_constructions.length - 1
-    );
-    return true;
-}
-
-const RudaBytecodeArrayConstruction *ruda_bytecode_array_construction(
-    const RudaBytecodeFunction *function,
-    RudaBytecodeArrayConstructionId construction
-) {
-    return function != NULL && function->initialized
-        ? ruda_vector_at_const(&function->array_constructions, construction)
-        : NULL;
-}
-
-const RudaBytecodeArrayArgument *ruda_bytecode_array_argument(
-    const RudaBytecodeFunction *function,
-    size_t index
-) {
-    return function != NULL && function->initialized
-        ? ruda_vector_at_const(&function->array_arguments, index)
         : NULL;
 }
 

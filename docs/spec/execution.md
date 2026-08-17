@@ -99,6 +99,21 @@ All integers in the file format use a specified little-endian variable-length en
 
 A portable `.rudab` contains no native machine code. An FFI import marks a bundle platform-constrained; the loader validates ABI, library identity, and granted capability before linking it.
 
+#### 4.2.1 Generic array type table
+
+New bundles that contain `Array<T>` use a canonical array-type table in the
+program type section. Each row stores the bytecode element type tag and either
+`NO_LAYOUT` for scalar elements or the index of the exact managed layout for a
+reference element. Array construction, access, and growth instructions carry
+the row index through their verified function metadata. A source `RudaTypeId`,
+allocator address, descriptor pointer, or other host pointer is never written
+to the wire. The loader rejects an out-of-range row, a mismatched element
+layout, or a row that claims a scalar element with a managed layout.
+
+The two fixed f64 array tags are retained only as a compatibility decoder path
+for legacy f64-only preview bundles. They are not the representation of a new
+generic array bundle.
+
 ### 4.3 Verification
 
 The loader verifies a bundle before any module code becomes executable. Verification checks at least section bounds and overflow, UTF-8, symbol identity, control-flow targets, register definite assignment and types, call signatures, enum consistency, root maps, task-scope nesting, unsafe opcode placement, capabilities, and resource limits.

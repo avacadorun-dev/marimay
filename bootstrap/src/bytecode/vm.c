@@ -37,6 +37,9 @@ RudaBytecodeRunStatus ruda_bytecode_run(
         || (options.panic != NULL && !options.panic->initialized)) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
+    if (options.execution != NULL) {
+        options.execution->array_descriptor_allocation_failed = false;
+    }
     ruda_bytecode_run_reset_panic(options.panic);
     {
         RudaBytecodeVerifyStatus verify_status = ruda_bytecode_verify(function);
@@ -138,8 +141,9 @@ RudaBytecodeRunStatus ruda_bytecode_run(
                     goto cleanup;
                 }
                 if (ruda_bytecode_type_is_array(completed.type)
-                    && !ruda_bytecode_managed_value_valid(
-                        options.execution, completed
+                    && !ruda_bytecode_managed_value_valid_for(
+                        options.execution, function, completed,
+                        function->result_layout
                     )) {
                     status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
                     goto cleanup;
@@ -449,6 +453,9 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         || (options.panic != NULL && !options.panic->initialized)) {
         return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
     }
+    if (options.execution != NULL) {
+        options.execution->array_descriptor_allocation_failed = false;
+    }
     ruda_bytecode_run_reset_panic(options.panic);
     status = ruda_bytecode_run_program_verify_status(
         ruda_bytecode_program_verify(program)
@@ -550,8 +557,8 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 goto cleanup;
             }
             if (ruda_bytecode_type_is_array(completed.type)
-                && !ruda_bytecode_managed_value_valid(
-                    options.execution, completed
+                && !ruda_bytecode_managed_value_valid_for(
+                    options.execution, body, completed, body->result_layout
                 )) {
                 status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
                 goto cleanup;

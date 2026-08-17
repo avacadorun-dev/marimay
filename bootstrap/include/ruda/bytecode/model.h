@@ -56,6 +56,8 @@ typedef enum RudaBytecodeType {
     RUDA_BYTECODE_TYPE_F64,
     RUDA_BYTECODE_TYPE_ARRAY_F64,
     RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64,
+    /* Generic managed array; its exact element is in the array type table. */
+    RUDA_BYTECODE_TYPE_ARRAY,
     RUDA_BYTECODE_TYPE_RECORD,
     RUDA_BYTECODE_TYPE_ENUM,
     RUDA_BYTECODE_TYPE_INTERFACE
@@ -115,10 +117,17 @@ typedef struct RudaBytecodeCall {
 typedef struct RudaBytecodeArrayArgument {
     uint32_t register_id;
     RudaBytecodeType type;
+    uint32_t layout;
 } RudaBytecodeArrayArgument;
+
+typedef struct RudaBytecodeArrayType {
+    RudaBytecodeType element_type;
+    uint32_t element_layout;
+} RudaBytecodeArrayType;
 
 typedef struct RudaBytecodeArrayConstruction {
     RudaBytecodeType array_type;
+    uint32_t array_layout;
     size_t argument_start;
     size_t argument_count;
 } RudaBytecodeArrayConstruction;

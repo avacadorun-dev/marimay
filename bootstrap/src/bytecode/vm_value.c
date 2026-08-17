@@ -34,12 +34,17 @@ bool ruda_bytecode_execution_init(
         ) || !ruda_managed_heap_init(
             &execution->managed_heap, allocator, options.managed_heap
         ) || !ruda_bytecode_nominal_cache_init(execution, allocator)
-        || !ruda_vector_init(&execution->owned_interface_tables, allocator, sizeof(void *))) {
+        || !ruda_vector_init(&execution->owned_interface_tables, allocator, sizeof(void *))
+        || !ruda_vector_init(
+            &execution->array_descriptors, allocator,
+            sizeof(RudaBytecodeArrayDescriptorEntry *)
+        )) {
         ruda_managed_heap_dispose(&execution->managed_heap);
         ruda_map_dispose(&execution->string_index);
         ruda_vector_dispose(&execution->strings);
         ruda_bytecode_nominal_cache_dispose(execution);
         ruda_vector_dispose(&execution->owned_interface_tables);
+        ruda_vector_dispose(&execution->array_descriptors);
         return false;
     }
     execution->allocator = allocator;
@@ -64,6 +69,21 @@ void ruda_bytecode_execution_dispose(RudaBytecodeExecution *execution) {
     ruda_managed_heap_dispose(&execution->managed_heap);
     ruda_bytecode_nominal_cache_dispose(execution);
     ruda_bytecode_run_interface_tables_dispose(execution);
+    for (index = 0; index < execution->array_descriptors.length; index += 1) {
+        RudaBytecodeArrayDescriptorEntry **entry = ruda_vector_at(
+            &execution->array_descriptors, index
+        );
+        if (entry != NULL && *entry != NULL) {
+            ruda_deallocate(
+                &execution->allocator, (*entry)->descriptor,
+                sizeof(*(*entry)->descriptor)
+            );
+            ruda_deallocate(
+                &execution->allocator, *entry, sizeof(**entry)
+            );
+        }
+    }
+    ruda_vector_dispose(&execution->array_descriptors);
     memset(execution, 0, sizeof(*execution));
 }
 
@@ -86,6 +106,100 @@ bool ruda_bytecode_managed_value_valid(
     const RudaManagedArrayDescriptor *actual = NULL;
     const RudaManagedArrayDescriptor *expected =
         ruda_bytecode_array_descriptor(value.type);
+    return execution != NULL && execution->initialized && expected != NULL
+        && ruda_managed_array_describe(
+            &execution->managed_heap, value.as.managed_reference, &actual
+        ) == RUDA_MANAGED_OK && actual == expected;
+}
+
+const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function,
+    RudaBytecodeType type,
+    uint32_t layout
+) {
+    const RudaBytecodeArrayType *array_type = NULL;
+    size_t index = 0;
+    RudaBytecodeArrayDescriptorEntry *entry = NULL;
+    RudaManagedArrayDescriptor *descriptor = NULL;
+    RudaBytecodeType element_type = RUDA_BYTECODE_TYPE_INVALID;
+    uint32_t element_layout = RUDA_BYTECODE_NO_LAYOUT;
+    if (type != RUDA_BYTECODE_TYPE_ARRAY) {
+        return ruda_bytecode_array_descriptor(type);
+    }
+    if (execution == NULL || !execution->initialized || function == NULL) {
+        return NULL;
+    }
+    array_type = ruda_bytecode_array_type(function, layout);
+    if (array_type == NULL) {
+        return NULL;
+    }
+    element_type = array_type->element_type;
+    element_layout = array_type->element_layout;
+    for (index = 0; index < execution->array_descriptors.length; index += 1) {
+        RudaBytecodeArrayDescriptorEntry **stored = ruda_vector_at(
+            &execution->array_descriptors, index
+        );
+        if (stored != NULL && *stored != NULL
+            && (*stored)->element_type == element_type
+            && (*stored)->element_layout == element_layout) {
+            return (*stored)->descriptor;
+        }
+    }
+    entry = ruda_allocate(
+        &execution->allocator, sizeof(*entry)
+    );
+    descriptor = ruda_allocate(
+        &execution->allocator, sizeof(*descriptor)
+    );
+    if (entry == NULL || descriptor == NULL) {
+        execution->array_descriptor_allocation_failed = true;
+        ruda_deallocate(&execution->allocator, descriptor, sizeof(*descriptor));
+        ruda_deallocate(&execution->allocator, entry, sizeof(*entry));
+        return NULL;
+    }
+    memset(entry, 0, sizeof(*entry));
+    memset(descriptor, 0, sizeof(*descriptor));
+    entry->element_type = element_type;
+    entry->element_layout = element_layout;
+    entry->descriptor = descriptor;
+    if (ruda_bytecode_type_is_array(element_type)) {
+        descriptor->cell_kind = RUDA_MANAGED_CELL_REFERENCE;
+        descriptor->reference_type = ruda_bytecode_array_descriptor_for(
+            execution, function, element_type, element_layout
+        );
+    } else if (element_type < RUDA_BYTECODE_TYPE_STRING
+        || element_type == RUDA_BYTECODE_TYPE_F64) {
+        descriptor->cell_kind = RUDA_MANAGED_CELL_RAW64;
+    } else {
+        /* String/nominal reference encodings need a managed host value. */
+        descriptor->cell_kind = RUDA_MANAGED_CELL_REFERENCE;
+        descriptor->reference_type = NULL;
+    }
+    if ((descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE
+            && descriptor->reference_type == NULL)
+        || !ruda_vector_push(&execution->array_descriptors, &entry)) {
+        execution->array_descriptor_allocation_failed = true;
+        ruda_deallocate(
+            &execution->allocator, descriptor, sizeof(*descriptor)
+        );
+        ruda_deallocate(&execution->allocator, entry, sizeof(*entry));
+        return NULL;
+    }
+    return descriptor;
+}
+
+bool ruda_bytecode_managed_value_valid_for(
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function,
+    RudaBytecodeValue value,
+    uint32_t layout
+) {
+    const RudaManagedArrayDescriptor *actual = NULL;
+    const RudaManagedArrayDescriptor *expected =
+        ruda_bytecode_array_descriptor_for(
+            execution, function, value.type, layout
+        );
     return execution != NULL && execution->initialized && expected != NULL
         && ruda_managed_array_describe(
             &execution->managed_heap, value.as.managed_reference, &actual
@@ -294,7 +408,10 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                         instruction->operands[1].unsigned_value
                 );
             const RudaManagedArrayDescriptor *descriptor = construction != NULL
-                ? ruda_bytecode_array_descriptor(construction->array_type)
+                ? ruda_bytecode_array_descriptor_for(
+                    execution, function, construction->array_type,
+                    construction->array_layout
+                )
                 : NULL;
             RudaManagedCell *cells = NULL;
             size_t cell_bytes = 0;
@@ -308,7 +425,10 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                     &cell_bytes
                 )) {
                 return descriptor == NULL
-                    ? RUDA_BYTECODE_RUN_INVALID_BYTECODE
+                    ? (execution != NULL
+                        && execution->array_descriptor_allocation_failed
+                        ? RUDA_BYTECODE_RUN_ALLOCATION_FAILED
+                        : RUDA_BYTECODE_RUN_INVALID_BYTECODE)
                     : RUDA_BYTECODE_RUN_LIMIT_REACHED;
             }
             if (cell_bytes != 0) {
@@ -330,7 +450,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                     ruda_deallocate(&allocator, cells, cell_bytes);
                     return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
                 }
-                if (construction->array_type == RUDA_BYTECODE_TYPE_ARRAY_F64) {
+                if (descriptor->cell_kind == RUDA_MANAGED_CELL_RAW64) {
                     cells[index].f64_bits =
                         registers[argument->register_id].as.f64_bits;
                 } else {
@@ -346,13 +466,50 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             ruda_deallocate(&allocator, cells, cell_bytes);
             return ruda_bytecode_run_managed_status(managed_status);
         }
+        case RUDA_OPCODE_ARRAY_PUSH: {
+            size_t array = (size_t)instruction->operands[0].unsigned_value;
+            size_t value = (size_t)instruction->operands[1].unsigned_value;
+            const RudaManagedArrayDescriptor *descriptor =
+                ruda_bytecode_array_descriptor_for(
+                    execution, function, registers[array].type,
+                    ruda_bytecode_register_layout(function, (uint32_t)array)
+                );
+            RudaManagedCell cell;
+            RudaManagedStatus managed_status;
+            if (descriptor == NULL
+                || !ruda_bytecode_managed_value_valid_for(
+                    execution, function, registers[array],
+                    ruda_bytecode_register_layout(function, (uint32_t)array)
+                )) {
+                return descriptor == NULL && execution != NULL
+                        && execution->array_descriptor_allocation_failed
+                    ? RUDA_BYTECODE_RUN_ALLOCATION_FAILED
+                    : RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+            }
+            memset(&cell, 0, sizeof(cell));
+            if (descriptor->cell_kind == RUDA_MANAGED_CELL_RAW64) {
+                cell.f64_bits = registers[value].as.f64_bits;
+            } else {
+                cell.reference = registers[value].as.managed_reference;
+            }
+            managed_status = ruda_managed_array_push(
+                &execution->managed_heap,
+                registers[array].as.managed_reference,
+                cell
+            );
+            return ruda_bytecode_run_managed_status(managed_status);
+        }
         case RUDA_OPCODE_ARRAY_LENGTH: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;
             size_t length = 0;
-            if (!ruda_bytecode_managed_value_valid(
-                    execution, registers[first]
+            if (!ruda_bytecode_managed_value_valid_for(
+                    execution, function, registers[first],
+                    ruda_bytecode_register_layout(function, (uint32_t)first)
                 )) {
-                return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                return execution != NULL
+                        && execution->array_descriptor_allocation_failed
+                    ? RUDA_BYTECODE_RUN_ALLOCATION_FAILED
+                    : RUDA_BYTECODE_RUN_INVALID_REFERENCE;
             }
             RudaManagedStatus managed_status = execution != NULL
                 ? ruda_managed_array_length(
@@ -377,10 +534,14 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             RudaManagedCell cell;
             size_t length = 0;
             int64_t index = registers[second].as.i64;
-            if (!ruda_bytecode_managed_value_valid(
-                    execution, registers[first]
+            if (!ruda_bytecode_managed_value_valid_for(
+                    execution, function, registers[first],
+                    ruda_bytecode_register_layout(function, (uint32_t)first)
                 )) {
-                return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                return execution != NULL
+                        && execution->array_descriptor_allocation_failed
+                    ? RUDA_BYTECODE_RUN_ALLOCATION_FAILED
+                    : RUDA_BYTECODE_RUN_INVALID_REFERENCE;
             }
             RudaManagedStatus managed_status = execution != NULL
                 ? ruda_managed_array_get(
@@ -405,7 +566,10 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             }
             if (instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_INDEX) {
                 registers[target] = registers[first];
-            } else if (registers[target].type == RUDA_BYTECODE_TYPE_F64) {
+            } else if (ruda_bytecode_array_descriptor_for(
+                    execution, function, registers[first].type,
+                    ruda_bytecode_register_layout(function, (uint32_t)first)
+                )->cell_kind == RUDA_MANAGED_CELL_RAW64) {
                 registers[target].as.f64_bits = cell.f64_bits;
             } else {
                 registers[target].as.managed_reference = cell.reference;
@@ -422,12 +586,24 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             int64_t index = registers[index_register].as.i64;
             RudaManagedStatus managed_status;
             memset(&cell, 0, sizeof(cell));
-            if (!ruda_bytecode_managed_value_valid(
-                    execution, registers[array]
+            const RudaManagedArrayDescriptor *descriptor =
+                ruda_bytecode_array_descriptor_for(
+                    execution, function, registers[array].type,
+                    ruda_bytecode_register_layout(function, (uint32_t)array)
+                );
+            if (!ruda_bytecode_managed_value_valid_for(
+                    execution, function, registers[array],
+                    ruda_bytecode_register_layout(function, (uint32_t)array)
                 )) {
-                return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                return execution != NULL
+                        && execution->array_descriptor_allocation_failed
+                    ? RUDA_BYTECODE_RUN_ALLOCATION_FAILED
+                    : RUDA_BYTECODE_RUN_INVALID_REFERENCE;
             }
-            if (registers[value].type == RUDA_BYTECODE_TYPE_F64) {
+            if (descriptor == NULL) {
+                return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+            }
+            if (descriptor->cell_kind == RUDA_MANAGED_CELL_RAW64) {
                 cell.f64_bits = registers[value].as.f64_bits;
             } else {
                 cell.reference = registers[value].as.managed_reference;

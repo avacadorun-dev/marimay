@@ -291,6 +291,17 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             }
             return RUDA_MIR_VERIFY_OK;
         }
+        case RUDA_MIR_ARRAY_PUSH: {
+            const RudaMirArray *array = ruda_mir_array(
+                function, instruction->array
+            );
+            if (array == NULL || first_type != array->type
+                || second_type != array->element_type
+                || target_type != array->type) {
+                return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            return RUDA_MIR_VERIFY_OK;
+        }
         case RUDA_MIR_ARRAY_LENGTH:
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
         case RUDA_MIR_ARRAY_GET:
@@ -622,6 +633,7 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_ARRAY_GET:
         case RUDA_MIR_ARRAY_SET:
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+        case RUDA_MIR_ARRAY_PUSH:
             return true;
         case RUDA_MIR_CONSTANT_I64:
         case RUDA_MIR_CONSTANT_F64:

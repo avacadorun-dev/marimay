@@ -43,6 +43,8 @@ typedef struct RudaBytecodeFunction {
     RudaVector string_constants;
     RudaVector array_constructions;
     RudaVector array_arguments;
+    /* Canonical serialized type table for generic Array<T> descriptors. */
+    RudaVector array_types;
     RudaVector register_layouts;
     RudaVector record_layouts;
     RudaVector record_fields;
@@ -61,7 +63,6 @@ typedef struct RudaBytecodeFunction {
     RudaBytecodeFunctionOptions options;
     bool initialized;
 } RudaBytecodeFunction;
-
 RudaBytecodeFunctionOptions ruda_bytecode_function_default_options(void);
 
 bool ruda_bytecode_function_init(
@@ -121,6 +122,24 @@ bool ruda_bytecode_add_array_construction(
     size_t argument_count,
     RudaBytecodeArrayConstructionId *result
 );
+bool ruda_bytecode_add_array_type(
+    RudaBytecodeFunction *function,
+    RudaBytecodeType element_type,
+    uint32_t element_layout,
+    uint32_t *result
+);
+const RudaBytecodeArrayType *ruda_bytecode_array_type(
+    const RudaBytecodeFunction *function,
+    uint32_t layout
+);
+bool ruda_bytecode_add_array_construction_with_layout(
+    RudaBytecodeFunction *function,
+    RudaBytecodeType array_type,
+    uint32_t array_layout,
+    const RudaBytecodeArrayArgument *arguments,
+    size_t argument_count,
+    RudaBytecodeArrayConstructionId *result
+);
 const RudaBytecodeArrayConstruction *ruda_bytecode_array_construction(
     const RudaBytecodeFunction *function,
     RudaBytecodeArrayConstructionId construction
@@ -138,5 +157,4 @@ uint32_t ruda_bytecode_register_layout(
     const RudaBytecodeFunction *function,
     uint32_t register_id
 );
-
 #endif

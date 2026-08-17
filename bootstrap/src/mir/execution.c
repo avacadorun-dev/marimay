@@ -562,7 +562,8 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         case RUDA_MIR_ARRAY_LENGTH:
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
         case RUDA_MIR_ARRAY_GET:
-        case RUDA_MIR_ARRAY_SET: {
+        case RUDA_MIR_ARRAY_SET:
+        case RUDA_MIR_ARRAY_PUSH: {
             const RudaMirArray *layout = ruda_mir_array(
                 function,
                 instruction->array
@@ -587,6 +588,16 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             if (instruction->kind == RUDA_MIR_ARRAY_LENGTH) {
                 target->as.i64 = (int64_t)array->length;
                 return RUDA_MIR_INTERPRET_OK;
+            }
+            if (instruction->kind == RUDA_MIR_ARRAY_PUSH) {
+                RudaMirInterpretStatus push_status =
+                    ruda_mir_execution_array_push(
+                        options.execution, layout, *first, *second
+                    );
+                if (push_status == RUDA_MIR_INTERPRET_OK) {
+                    *target = *first;
+                }
+                return push_status;
             }
             if (second->as.i64 < 0
                 || (uint64_t)second->as.i64 >= (uint64_t)array->length) {

@@ -127,6 +127,12 @@ bool ruda_compile_array_literal(
     RudaTypeId expected,
     RudaExpressionValue *result
 );
+bool ruda_compile_array_builtin_call(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node,
+    bool *resolved,
+    RudaExpressionValue *result
+);
 bool ruda_compile_array_index(
     RudaFunctionChecker *function,
     const RudaAstNode *node,

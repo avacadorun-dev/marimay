@@ -55,10 +55,16 @@ RudaNativeCArrayKind ruda_native_c_array_kind(
     if (array->element_type == RUDA_TYPE_F64) {
         return RUDA_NATIVE_C_ARRAY_F64;
     }
+    if (array->element_type == RUDA_TYPE_STRING) {
+        return RUDA_NATIVE_C_ARRAY_UNSUPPORTED;
+    }
     element = ruda_native_c_array(function, array->element_type);
+    if (array->element_type >= RUDA_TYPE_FIRST_DYNAMIC && element == NULL) {
+        return RUDA_NATIVE_C_ARRAY_UNSUPPORTED;
+    }
     return element != NULL && element->element_type == RUDA_TYPE_F64
         ? RUDA_NATIVE_C_ARRAY_ARRAY_F64
-        : RUDA_NATIVE_C_ARRAY_UNSUPPORTED;
+        : RUDA_NATIVE_C_ARRAY_GENERIC;
 }
 
 const char *ruda_native_c_type(
@@ -216,6 +222,13 @@ const char *ruda_native_c_array_descriptor(
             return "&ruda_managed_array_f64_descriptor";
         case RUDA_NATIVE_C_ARRAY_ARRAY_F64:
             return "&ruda_managed_array_array_f64_descriptor";
+        case RUDA_NATIVE_C_ARRAY_GENERIC: {
+            static char name[64];
+            (void)snprintf(
+                name, sizeof(name), "&ruda_g_ad_%u", (unsigned int)type
+            );
+            return name;
+        }
         case RUDA_NATIVE_C_ARRAY_NONE:
         case RUDA_NATIVE_C_ARRAY_UNSUPPORTED:
             return "NULL";
@@ -433,6 +446,7 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
                 case RUDA_MIR_ARRAY_NEW: case RUDA_MIR_ARRAY_LENGTH:
                 case RUDA_MIR_ARRAY_REQUIRE_INDEX: case RUDA_MIR_ARRAY_GET:
                 case RUDA_MIR_ARRAY_SET:
+                case RUDA_MIR_ARRAY_PUSH:
                 case RUDA_MIR_RECORD_NEW: case RUDA_MIR_RECORD_GET:
                 case RUDA_MIR_RECORD_SET: case RUDA_MIR_RECORD_IDENTITY_SAME:
                 case RUDA_MIR_ENUM_NEW: case RUDA_MIR_ENUM_IS_VARIANT:

@@ -934,6 +934,7 @@ cleanup:
     bool identity_resolved = false;
     bool length_resolved = false;
     bool length_available = false;
+    bool array_builtin_resolved = false;
     bool interface_resolved = false;
     bool prelude_resolved = false;
     bool map_error_resolved = false;
@@ -1015,6 +1016,15 @@ cleanup:
         goto cleanup;
     }
     if (length_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_compile_array_builtin_call(
+            function, node, &array_builtin_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (array_builtin_resolved) {
         accepted = true;
         goto cleanup;
     }

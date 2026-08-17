@@ -2,6 +2,28 @@
 
 #include <string.h>
 
+static bool ruda_mir_bytecode_array_is_generic(
+    const RudaMirFunction *function,
+    const RudaMirArray *array
+) {
+    size_t index = 0;
+    if (function == NULL || array == NULL || array->element_type == RUDA_TYPE_F64) {
+        return false;
+    }
+    if (array->element_type < RUDA_TYPE_FIRST_DYNAMIC) {
+        return true;
+    }
+    for (index = 0; index < function->arrays.length; index += 1) {
+        const RudaMirArray *nested = ruda_vector_at_const(
+            &function->arrays, index
+        );
+        if (nested != NULL && nested->type == array->element_type) {
+            return nested->element_type != RUDA_TYPE_F64;
+        }
+    }
+    return true;
+}
+
 bool ruda_mir_bytecode_type(
     const RudaMirFunction *function,
     RudaTypeId input,
@@ -48,17 +70,18 @@ bool ruda_mir_bytecode_type(
         if (array == NULL || array->type != input) {
             continue;
         }
-        if (array->element_type == RUDA_TYPE_F64) {
+        if (!ruda_mir_bytecode_array_is_generic(function, array)
+            && array->element_type == RUDA_TYPE_F64) {
             *output = RUDA_BYTECODE_TYPE_ARRAY_F64;
             return true;
         }
-        {
+        if (!ruda_mir_bytecode_array_is_generic(function, array)
+            && array->element_type >= RUDA_TYPE_FIRST_DYNAMIC) {
             size_t nested_index = 0;
             for (nested_index = 0; nested_index < function->arrays.length;
                 nested_index += 1) {
                 const RudaMirArray *nested = ruda_vector_at_const(
-                    &function->arrays,
-                    nested_index
+                    &function->arrays, nested_index
                 );
                 if (nested != NULL && nested->type == array->element_type
                     && nested->element_type == RUDA_TYPE_F64) {
@@ -67,7 +90,8 @@ bool ruda_mir_bytecode_type(
                 }
             }
         }
-        return false;
+        *output = RUDA_BYTECODE_TYPE_ARRAY;
+        return true;
     }
     for (index = 0; index < function->records.length; index += 1) {
         const RudaMirRecord *record = ruda_vector_at_const(
@@ -109,6 +133,15 @@ uint32_t ruda_mir_bytecode_layout_for_type(
     size_t index = 0;
     if (function == NULL || type < RUDA_TYPE_FIRST_DYNAMIC) {
         return RUDA_BYTECODE_NO_LAYOUT;
+    }
+    for (index = 0; index < function->arrays.length; index += 1) {
+        const RudaMirArray *array = ruda_vector_at_const(
+            &function->arrays, index
+        );
+        if (array != NULL && array->type == type && index <= UINT32_MAX
+            && ruda_mir_bytecode_array_is_generic(function, array)) {
+            return (uint32_t)index;
+        }
     }
     for (index = 0; index < function->records.length; index += 1) {
         const RudaMirRecord *record = ruda_vector_at_const(

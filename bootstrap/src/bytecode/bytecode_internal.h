@@ -12,6 +12,12 @@ bool ruda_bytecode_type_is_register(RudaBytecodeType type);
 bool ruda_bytecode_type_is_array(RudaBytecodeType type);
 bool ruda_bytecode_type_is_managed(RudaBytecodeType type);
 RudaBytecodeType ruda_bytecode_array_element_type(RudaBytecodeType array_type);
+RudaBytecodeType ruda_bytecode_function_array_element_type(
+    const RudaBytecodeFunction *function,
+    RudaBytecodeType array_type,
+    uint32_t array_layout,
+    uint32_t *element_layout
+);
 bool ruda_bytecode_type_is_result(RudaBytecodeType type);
 bool ruda_bytecode_type_is_local(RudaBytecodeType type);
 const char *ruda_bytecode_type_name(RudaBytecodeType type);

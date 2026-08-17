@@ -327,8 +327,8 @@ RudaBytecodeRunStatus ruda_bytecode_run_arguments_validate(
             return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
         }
         if (ruda_bytecode_type_is_array(*expected)
-            && !ruda_bytecode_managed_value_valid(
-                execution, arguments[index]
+            && !ruda_bytecode_managed_value_valid_for(
+                execution, function, arguments[index], layout
             )) {
             return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
         }

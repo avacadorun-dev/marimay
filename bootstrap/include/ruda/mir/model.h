@@ -87,6 +87,7 @@ typedef enum RudaMirInstructionKind {
     RUDA_MIR_ARRAY_REQUIRE_INDEX,
     RUDA_MIR_ARRAY_GET,
     RUDA_MIR_ARRAY_SET,
+    RUDA_MIR_ARRAY_PUSH,
     RUDA_MIR_INTERFACE_NEW,
     RUDA_MIR_CALL_INTERFACE
 } RudaMirInstructionKind;

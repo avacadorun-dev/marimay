@@ -259,6 +259,12 @@ RudaMirInterpretStatus ruda_mir_execution_new_array(
     size_t length,
     RudaMirReference *result
 );
+RudaMirInterpretStatus ruda_mir_execution_array_push(
+    RudaMirExecution *execution,
+    const RudaMirArray *layout,
+    RudaMirValue array,
+    RudaMirValue element
+);
 RudaMirInterpretStatus ruda_mir_execution_new_interface(
     RudaMirExecution *execution,
     RudaTypeId type,

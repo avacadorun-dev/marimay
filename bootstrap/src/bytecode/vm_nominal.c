@@ -234,7 +234,7 @@ static const void *ruda_bytecode_nominal_reference_descriptor(
             layout
         );
     }
-    return ruda_bytecode_array_descriptor(type);
+    return ruda_bytecode_array_descriptor_for(execution, function, type, layout);
 }
 
 static bool ruda_bytecode_nominal_field_descriptor(

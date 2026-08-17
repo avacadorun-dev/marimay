@@ -7,6 +7,9 @@
 
 #include "ruda/ast/ast.h"
 #include "ruda/base/allocator.h"
+#include "ruda/base/owned_bytes.h"
+#include "ruda/bytecode/mir_lower.h"
+#include "ruda/bytecode/vm.h"
 #include "ruda/check/checker.h"
 #include "ruda/generated/diagnostic_codes.h"
 #include "ruda/lex/lexer.h"
@@ -207,11 +210,22 @@ static void ruda_checker_arrays_expect_status(
     RudaCheckResult checked;
     memset(&checked, 0, sizeof(checked));
     RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    {
+        RudaCheckStatus actual = ruda_check_ast(
         &fixture.ast, "test/checker-array-status", ruda_system_allocator(),
         ruda_check_default_options(), &checked
-    ) == expected);
-    RUDA_EXPECT(!checked.initialized);
+        );
+        RUDA_EXPECT(actual == expected);
+    }
+    if (expected == RUDA_CHECK_OK) {
+        RUDA_EXPECT(checked.initialized);
+        if (checked.initialized) {
+            RUDA_EXPECT(checked.diagnostics.length == 0);
+            ruda_check_result_dispose(&checked);
+        }
+    } else {
+        RUDA_EXPECT(!checked.initialized);
+    }
     ruda_checker_arrays_fixture_dispose(&fixture);
 }
 
@@ -237,12 +251,45 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
         "    }\n"
         "  }\n"
         "  return result[0][0] + result[0][1] + result[1][0] + result[1][1];\n"
+        "}\n"
+        "fn generic(): int {\n"
+        "  let values = arrayOf(1, 2);\n"
+        "  let pushed: Result<void, ArrayGrowthError> = values.push(3);\n"
+        "  values[1] += 4;\n"
+        "  let empty = arrayOf<int>();\n"
+        "  empty.push(9);\n"
+        "  let nested: Array<Array<int>> = [[7, 8]];\n"
+        "  nested[0].push(9);\n"
+        "  return values[2] + values.length() + empty[0] + nested[0][2];\n"
+        "}\n"
+        "fn sorting(): int {\n"
+        "  let values: Array<int> = [3, 1, 2];\n"
+        "  for let pass = 0; pass < 3; pass += 1 {\n"
+        "    for let index = 0; index < 2; index += 1 {\n"
+        "      if values[index] > values[index + 1] {\n"
+        "        let temporary = values[index];\n"
+        "        values[index] = values[index + 1];\n"
+        "        values[index + 1] = temporary;\n"
+        "      }\n"
+        "    }\n"
+        "  }\n"
+        "  let found = 0;\n"
+        "  while found < values.length() && values[found] != 2 { found += 1; }\n"
+        "  return values[found];\n"
         "}\n";
     RudaCheckerArraysFixture fixture;
     RudaCheckResult checked;
     RudaMirValue result;
+    RudaBytecodeFunction lowered;
+    RudaBytecodeFunction decoded;
+    RudaBytecodeExecution execution;
+    RudaOwnedBytes encoded;
+    RudaBytecodeValue vm_result;
+    RudaBytecodeRunOptions run_options;
     const RudaCheckedFunction *surface = NULL;
     const RudaCheckedFunction *matrix = NULL;
+    const RudaCheckedFunction *generic = NULL;
+    const RudaCheckedFunction *sorting = NULL;
     const RudaTypeId *first_parameter = NULL;
     const RudaTypeId *second_parameter = NULL;
     RudaTypeId inner = RUDA_TYPE_INVALID;
@@ -254,6 +301,11 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
     bool compound = false;
     memset(&checked, 0, sizeof(checked));
     memset(&result, 0, sizeof(result));
+    memset(&lowered, 0, sizeof(lowered));
+    memset(&decoded, 0, sizeof(decoded));
+    memset(&execution, 0, sizeof(execution));
+    memset(&encoded, 0, sizeof(encoded));
+    memset(&vm_result, 0, sizeof(vm_result));
     RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
     RUDA_EXPECT(ruda_check_ast(
         &fixture.ast, "test/checker-arrays", ruda_system_allocator(),
@@ -262,9 +314,13 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
     if (checked.initialized) {
         surface = ruda_checker_arrays_function(&checked, "surface");
         matrix = ruda_checker_arrays_function(&checked, "matrix");
+        generic = ruda_checker_arrays_function(&checked, "generic");
+        sorting = ruda_checker_arrays_function(&checked, "sorting");
         RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(surface != NULL && matrix != NULL);
-        if (surface != NULL && matrix != NULL) {
+        RUDA_EXPECT(surface != NULL && matrix != NULL && generic != NULL
+            && sorting != NULL);
+        if (surface != NULL && matrix != NULL && generic != NULL
+            && sorting != NULL) {
             first_parameter = ruda_vector_at_const(&surface->mir.register_types, 0);
             second_parameter = ruda_vector_at_const(&surface->mir.register_types, 1);
             RUDA_EXPECT(first_parameter != NULL && second_parameter != NULL);
@@ -314,6 +370,86 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
             RUDA_EXPECT(ruda_checker_arrays_has_checked_store(&matrix->mir, NULL));
             RUDA_EXPECT(ruda_mir_verify(&surface->mir) == RUDA_MIR_VERIFY_OK);
             RUDA_EXPECT(ruda_mir_verify(&matrix->mir) == RUDA_MIR_VERIFY_OK);
+            RUDA_EXPECT(ruda_mir_verify(&generic->mir) == RUDA_MIR_VERIFY_OK);
+            RUDA_EXPECT(ruda_mir_verify(&sorting->mir) == RUDA_MIR_VERIFY_OK);
+            RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+                &generic->mir, ruda_system_allocator(),
+                ruda_mir_bytecode_lower_default_options(), &lowered
+            ) == RUDA_MIR_BYTECODE_LOWER_OK);
+            RUDA_EXPECT(lowered.array_types.length == 2);
+            RUDA_EXPECT(ruda_bytecode_verify(&lowered) == RUDA_BYTECODE_VERIFY_OK);
+            RUDA_EXPECT(ruda_bytecode_encode_function(
+                &lowered, ruda_system_allocator(), &encoded
+            ) == RUDA_BYTECODE_CODEC_OK);
+            RUDA_EXPECT(ruda_bytecode_decode_function(
+                encoded.data, encoded.length, ruda_system_allocator(),
+                ruda_bytecode_function_default_options(), &decoded
+            ) == RUDA_BYTECODE_CODEC_OK);
+            RUDA_EXPECT(ruda_bytecode_verify(&decoded) == RUDA_BYTECODE_VERIFY_OK);
+            {
+                RudaBytecodeArrayConstruction *construction = ruda_vector_at(
+                    &decoded.array_constructions, 0
+                );
+                RudaBytecodeArrayType *array_type = ruda_vector_at(
+                    &decoded.array_types, 0
+                );
+                RudaBytecodeInstruction *push = NULL;
+                size_t block_index = 0;
+                size_t instruction_index = 0;
+                for (block_index = 0; block_index < decoded.blocks.length;
+                    block_index += 1) {
+                    RudaBytecodeBlock *block = ruda_vector_at(
+                        &decoded.blocks, block_index
+                    );
+                    for (instruction_index = 0; block != NULL
+                        && instruction_index < block->instructions.length;
+                        instruction_index += 1) {
+                        RudaBytecodeInstruction *candidate = ruda_vector_at(
+                            &block->instructions, instruction_index
+                        );
+                        if (candidate != NULL
+                            && candidate->opcode == RUDA_OPCODE_ARRAY_PUSH) {
+                            push = candidate;
+                        }
+                    }
+                }
+                if (construction != NULL) {
+                    uint32_t saved_layout = construction->array_layout;
+                    construction->array_layout = UINT32_MAX;
+                    RUDA_EXPECT(ruda_bytecode_verify(&decoded)
+                        != RUDA_BYTECODE_VERIFY_OK);
+                    construction->array_layout = saved_layout;
+                }
+                if (array_type != NULL) {
+                    uint32_t saved_layout = array_type->element_layout;
+                    array_type->element_layout = 0;
+                    RUDA_EXPECT(ruda_bytecode_verify(&decoded)
+                        != RUDA_BYTECODE_VERIFY_OK);
+                    array_type->element_layout = saved_layout;
+                }
+                if (push != NULL) {
+                    uint64_t saved_value = push->operands[1].unsigned_value;
+                    push->operands[1].unsigned_value =
+                        push->operands[0].unsigned_value;
+                    RUDA_EXPECT(ruda_bytecode_verify(&decoded)
+                        != RUDA_BYTECODE_VERIFY_OK);
+                    push->operands[1].unsigned_value = saved_value;
+                }
+                RUDA_EXPECT(ruda_bytecode_verify(&decoded)
+                    == RUDA_BYTECODE_VERIFY_OK);
+            }
+            RUDA_EXPECT(ruda_bytecode_execution_init(
+                &execution, ruda_system_allocator(),
+                ruda_bytecode_execution_default_options()
+            ));
+            run_options = ruda_bytecode_run_default_options();
+            run_options.execution = &execution;
+            RUDA_EXPECT(ruda_bytecode_run(
+                &decoded, NULL, 0, ruda_system_allocator(),
+                run_options, &vm_result
+            ) == RUDA_BYTECODE_RUN_OK);
+            RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_I64
+                && vm_result.as.i64 == 24);
             index = ruda_checker_arrays_function_index(&checked, "matrix");
             RUDA_EXPECT(index != SIZE_MAX);
             if (index != SIZE_MAX) {
@@ -324,6 +460,38 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
                 RUDA_EXPECT(result.type == RUDA_TYPE_F64
                     && result.as.f64_bits == UINT64_C(0x4079f00000000000));
             }
+            index = ruda_checker_arrays_function_index(&checked, "generic");
+            RUDA_EXPECT(index != SIZE_MAX);
+            if (index != SIZE_MAX) {
+                memset(&result, 0, sizeof(result));
+                RUDA_EXPECT(ruda_check_interpret_function(
+                    &checked, index, NULL, 0, ruda_system_allocator(),
+                    ruda_check_interpret_default_options(), &result
+                ) == RUDA_MIR_INTERPRET_OK);
+                RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 24);
+            }
+            index = ruda_checker_arrays_function_index(&checked, "sorting");
+            RUDA_EXPECT(index != SIZE_MAX);
+            if (index != SIZE_MAX) {
+                memset(&result, 0, sizeof(result));
+                RUDA_EXPECT(ruda_check_interpret_function(
+                    &checked, index, NULL, 0, ruda_system_allocator(),
+                    ruda_check_interpret_default_options(), &result
+                ) == RUDA_MIR_INTERPRET_OK);
+                RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 2);
+            }
+        }
+        if (execution.initialized) {
+            ruda_bytecode_execution_dispose(&execution);
+        }
+        if (decoded.initialized) {
+            ruda_bytecode_function_dispose(&decoded);
+        }
+        if (lowered.initialized) {
+            ruda_bytecode_function_dispose(&lowered);
+        }
+        if (encoded.data != NULL) {
+            ruda_owned_bytes_dispose(&encoded);
         }
         ruda_check_result_dispose(&checked);
     }
@@ -403,19 +571,19 @@ static void ruda_test_checker_arrays_d045_and_diagnostics(void) {
     );
     ruda_checker_arrays_expect_status(
         "fn deferred(): void { let values = arrayOf(1); }\n",
-        RUDA_CHECK_INCOMPLETE_LANGUAGE
+        RUDA_CHECK_OK
     );
     ruda_checker_arrays_expect_status(
         "fn deferred(): void { let values = arrayOf<int>(); }\n",
-        RUDA_CHECK_INCOMPLETE_LANGUAGE
+        RUDA_CHECK_OK
     );
     ruda_checker_arrays_expect_status(
         "fn deferred(): void { let values = [1]; push(values, 2); }\n",
-        RUDA_CHECK_INCOMPLETE_LANGUAGE
+        RUDA_CHECK_OK
     );
     ruda_checker_arrays_expect_status(
         "fn deferred(): void { let values = [1]; values.push(2); }\n",
-        RUDA_CHECK_INCOMPLETE_LANGUAGE
+        RUDA_CHECK_OK
     );
 }
 
@@ -452,12 +620,13 @@ static void ruda_test_checker_arrays_length_shadow(void) {
 
 static void ruda_test_checker_arrays_allocation_failures(void) {
     static const char source[] =
-        "fn arrays(): f64 {\n"
-        "  let values: Array<Array<f64>> = [[1.0, 2.0]];\n"
-        "  let empty: Array<f64> = [];\n"
-        "  let count = length(empty);\n"
-        "  values[0][0] += 2.0;\n"
-        "  return values[0][0];\n"
+        "fn arrays(): int {\n"
+        "  let values = arrayOf(1, 2);\n"
+        "  let empty = arrayOf<int>();\n"
+        "  values.push(3);\n"
+        "  values[0] += 2;\n"
+        "  empty.push(4);\n"
+        "  return values[0] + empty[0];\n"
         "}\n";
     RudaCheckerArraysFixture fixture;
     size_t failure_index = 0;

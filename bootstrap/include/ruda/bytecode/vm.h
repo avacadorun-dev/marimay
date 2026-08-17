@@ -49,6 +49,9 @@ typedef struct RudaBytecodeExecution {
     RudaVector interned_enum_variants;
     RudaVector interned_enum_payloads;
     RudaVector owned_interface_tables;
+    /* Owned descriptors for generic Array<T>; entries are private VM state. */
+    RudaVector array_descriptors;
+    bool array_descriptor_allocation_failed;
     bool initialized;
 } RudaBytecodeExecution;
 
@@ -126,7 +129,6 @@ const RudaBytecodePanicFrame *ruda_bytecode_panic_frame(
     const RudaBytecodePanic *panic,
     size_t index
 );
-
 /*
  * Verifies the complete function before allocating its register frame or
  * dispatching any instruction. Each instruction, including a terminator,
@@ -142,7 +144,6 @@ RudaBytecodeRunStatus ruda_bytecode_run(
     RudaBytecodeRunOptions options,
     RudaBytecodeValue *result
 );
-
 /*
  * Verifies the complete program before allocating execution frames. Direct
  * calls use an explicit heap frame stack, never C recursion. The entry result
@@ -156,5 +157,4 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
     RudaBytecodeRunOptions options,
     RudaBytecodeValue *result
 );
-
 #endif

@@ -284,6 +284,11 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->operands[1].unsigned_value = input->second;
             output->operands[2].unsigned_value = input->third;
             break;
+        case RUDA_MIR_ARRAY_PUSH:
+            output->opcode = RUDA_OPCODE_ARRAY_PUSH;
+            output->operands[0].unsigned_value = input->first;
+            output->operands[1].unsigned_value = input->second;
+            break;
         case RUDA_MIR_CALL: {
             const RudaMirCall *call = input->call < function->calls.length
                 ? ruda_vector_at_const(&function->calls, input->call)
@@ -370,6 +375,7 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
     size_t lowered_instruction_count = 0;
     size_t array_set_count = 0;
     size_t index = 0;
+    bool generic_arrays = false;
     RudaMirBytecodeLowerStatus status = RUDA_MIR_BYTECODE_LOWER_OK;
     if (output == NULL) {
         return RUDA_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
@@ -505,6 +511,44 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
         status = RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
         goto cleanup;
     }
+    for (index = 0; index < input->arrays.length; index += 1) {
+        const RudaMirArray *array = ruda_vector_at_const(
+            &input->arrays, index
+        );
+        RudaBytecodeType array_type = RUDA_BYTECODE_TYPE_INVALID;
+        if (array == NULL || !ruda_mir_bytecode_type(
+                input, array->type, false, false, &array_type
+            )) {
+            status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            goto cleanup;
+        }
+        if (array_type == RUDA_BYTECODE_TYPE_ARRAY) {
+            generic_arrays = true;
+        }
+    }
+    for (index = 0; index < input->arrays.length; index += 1) {
+        const RudaMirArray *array = ruda_vector_at_const(
+            &input->arrays, index
+        );
+        RudaBytecodeType element_type = RUDA_BYTECODE_TYPE_INVALID;
+        uint32_t array_layout = RUDA_BYTECODE_NO_LAYOUT;
+        uint32_t stored_layout = UINT32_MAX;
+        if (!generic_arrays) {
+            continue;
+        }
+        if (array == NULL || !ruda_mir_bytecode_type(
+                input, array->element_type, false, false, &element_type
+            ) || (element_type == RUDA_BYTECODE_TYPE_ARRAY
+                && (array_layout = ruda_mir_bytecode_layout_for_type(
+                    input, array->element_type
+                )) == RUDA_BYTECODE_NO_LAYOUT)
+            || !ruda_bytecode_add_array_type(
+                &lowered, element_type, array_layout, &stored_layout
+            ) || stored_layout != index) {
+            status = RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            goto cleanup;
+        }
+    }
     lowered.result_layout = ruda_mir_bytecode_layout_for_type(
         input,
         input->result_type
@@ -630,10 +674,18 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
                 break;
             }
             arguments[argument_index].register_id = argument->register_id;
+            arguments[argument_index].layout = ruda_mir_bytecode_layout_for_type(
+                input, argument->type
+            );
         }
         if (status == RUDA_MIR_BYTECODE_LOWER_OK
-            && !ruda_bytecode_add_array_construction(
-                &lowered, array_type, arguments,
+            && !ruda_bytecode_add_array_construction_with_layout(
+                &lowered,
+                array_type,
+                array_type == RUDA_BYTECODE_TYPE_ARRAY
+                    ? ruda_mir_bytecode_layout_for_type(input, array->type)
+                    : RUDA_BYTECODE_NO_LAYOUT,
+                arguments,
                 construction->argument_count, &construction_id
             )) {
             status = RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;

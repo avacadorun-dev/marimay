@@ -156,6 +156,10 @@ void ruda_test_formatter_fixture_file(void) {
             "format/matrix-arrays.expected.ruda"
         },
         {
+            "format/array-checkpoint.input.ruda",
+            "format/array-checkpoint.expected.ruda"
+        },
+        {
             "format/stdout-preview.input.ruda",
             "format/stdout-preview.expected.ruda"
         },

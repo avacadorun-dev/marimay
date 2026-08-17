@@ -11,10 +11,22 @@ typedef struct RudaBytecodeManagedRoots {
     size_t location_bytes;
 } RudaBytecodeManagedRoots;
 
+typedef struct RudaBytecodeArrayDescriptorEntry {
+    RudaBytecodeType element_type;
+    uint32_t element_layout;
+    RudaManagedArrayDescriptor *descriptor;
+} RudaBytecodeArrayDescriptorEntry;
+
 bool ruda_bytecode_managed_value_valid(RudaBytecodeExecution *execution,
     RudaBytecodeValue value);
+bool ruda_bytecode_managed_value_valid_for(
+    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
+    RudaBytecodeValue value, uint32_t layout);
 const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor(
     RudaBytecodeType type);
+const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(
+    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
+    RudaBytecodeType type, uint32_t layout);
 RudaBytecodeRunStatus ruda_bytecode_run_managed_status(
     RudaManagedStatus status);
 RudaBytecodeRunStatus ruda_bytecode_execution_intern(

@@ -87,6 +87,7 @@ bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_PANIC_STRING:
         case RUDA_OPCODE_CALL_DIRECT_NEVER:
         case RUDA_OPCODE_ARRAY_SET:
+        case RUDA_OPCODE_ARRAY_PUSH:
         case RUDA_OPCODE_RECORD_SET:
             return false;
     }
@@ -683,6 +684,41 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
             assigned
         );
     }
+    if (instruction->opcode == RUDA_OPCODE_ARRAY_PUSH) {
+        uint64_t array = instruction->operands[0].unsigned_value;
+        uint64_t value = instruction->operands[1].unsigned_value;
+        const RudaBytecodeType *array_type = NULL;
+        const RudaBytecodeType *value_type = NULL;
+        uint32_t element_layout = RUDA_BYTECODE_NO_LAYOUT;
+        RudaBytecodeType element_type = RUDA_BYTECODE_TYPE_INVALID;
+        status = ruda_bytecode_require_assigned(
+            assigned, function->register_types.length, array
+        );
+        if (status == RUDA_BYTECODE_VERIFY_OK) {
+            status = ruda_bytecode_require_assigned(
+                assigned, function->register_types.length, value
+            );
+        }
+        if (status != RUDA_BYTECODE_VERIFY_OK) {
+            return status;
+        }
+        array_type = ruda_bytecode_register_type(function, array);
+        value_type = ruda_bytecode_register_type(function, value);
+        if (array_type != NULL) {
+            element_type = ruda_bytecode_function_array_element_type(
+                function, *array_type,
+                ruda_bytecode_register_layout(function, (uint32_t)array),
+                &element_layout
+            );
+        }
+        return array_type != NULL && value_type != NULL
+                && ruda_bytecode_type_is_array(*array_type)
+                && *value_type == element_type
+                && ruda_bytecode_register_layout(function, (uint32_t)value)
+                    == element_layout
+            ? RUDA_BYTECODE_VERIFY_OK
+            : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
     if (instruction->opcode == RUDA_OPCODE_INTERFACE_NEW) {
         return ruda_bytecode_verify_interface_new(
             function,
@@ -723,12 +759,26 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
         array_type = ruda_bytecode_register_type(function, array);
         index_type = ruda_bytecode_register_type(function, index);
         value_type = ruda_bytecode_register_type(function, value);
-        return array_type != NULL && index_type != NULL && value_type != NULL
+        {
+            uint32_t element_layout = RUDA_BYTECODE_NO_LAYOUT;
+            RudaBytecodeType element_type = array_type != NULL
+                ? ruda_bytecode_function_array_element_type(
+                    function,
+                    *array_type,
+                    ruda_bytecode_register_layout(function, (uint32_t)array),
+                    &element_layout
+                ) : RUDA_BYTECODE_TYPE_INVALID;
+            return array_type != NULL && index_type != NULL
+                && value_type != NULL
                 && ruda_bytecode_type_is_array(*array_type)
                 && *index_type == RUDA_BYTECODE_TYPE_I64
-                && *value_type == ruda_bytecode_array_element_type(*array_type)
-            ? RUDA_BYTECODE_VERIFY_OK
-            : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                && *value_type == element_type
+                && ruda_bytecode_register_layout(
+                    function, (uint32_t)value
+                ) == element_layout
+                ? RUDA_BYTECODE_VERIFY_OK
+                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        }
     }
     if (instruction->opcode == RUDA_OPCODE_RECORD_NEW
         || instruction->opcode == RUDA_OPCODE_RECORD_GET
@@ -793,7 +843,10 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 : NULL;
             size_t argument_index = 0;
             if (construction == NULL
-                || *target_type != construction->array_type) {
+                || *target_type != construction->array_type
+                || ruda_bytecode_register_layout(
+                    function, (uint32_t)target
+                ) != construction->array_layout) {
                 return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
             for (argument_index = 0;
@@ -811,6 +864,15 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                     : RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
                 if (status != RUDA_BYTECODE_VERIFY_OK) {
                     return status;
+                }
+                if (argument->type != ruda_bytecode_function_array_element_type(
+                        function, construction->array_type,
+                        construction->array_layout, NULL
+                    ) || (construction->array_type == RUDA_BYTECODE_TYPE_ARRAY
+                        && argument->layout != ruda_bytecode_array_type(
+                            function, construction->array_layout
+                        )->element_layout)) {
+                    return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
                 }
             }
             break;
@@ -842,15 +904,31 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 return status;
             }
             second_type = ruda_bytecode_register_type(function, second);
-            status = first_type != NULL && second_type != NULL
+            {
+                uint32_t element_layout = RUDA_BYTECODE_NO_LAYOUT;
+                RudaBytecodeType element_type = first_type != NULL
+                    ? ruda_bytecode_function_array_element_type(
+                        function, *first_type,
+                        ruda_bytecode_register_layout(function, (uint32_t)first),
+                        &element_layout
+                    ) : RUDA_BYTECODE_TYPE_INVALID;
+                status = first_type != NULL && second_type != NULL
                     && ruda_bytecode_type_is_array(*first_type)
                     && *second_type == RUDA_BYTECODE_TYPE_I64
                     && (instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_INDEX
                         ? *target_type == *first_type
-                        : *target_type
-                            == ruda_bytecode_array_element_type(*first_type))
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                            && ruda_bytecode_register_layout(
+                                function, (uint32_t)target
+                            ) == ruda_bytecode_register_layout(
+                                function, (uint32_t)first
+                            )
+                        : *target_type == element_type
+                            && ruda_bytecode_register_layout(
+                                function, (uint32_t)target
+                            ) == element_layout)
+                    ? RUDA_BYTECODE_VERIFY_OK
+                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            }
             break;
         }
         case RUDA_OPCODE_COPY:
@@ -1027,6 +1105,7 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
         case RUDA_OPCODE_PANIC_STRING:
         case RUDA_OPCODE_CALL_DIRECT_NEVER:
         case RUDA_OPCODE_ARRAY_SET:
+        case RUDA_OPCODE_ARRAY_PUSH:
         case RUDA_OPCODE_RECORD_NEW:
         case RUDA_OPCODE_RECORD_GET:
         case RUDA_OPCODE_RECORD_SET:
