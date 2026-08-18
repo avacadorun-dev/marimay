@@ -135,4 +135,13 @@ RudaFileStatus ruda_file_replace_atomic(
     size_t length
 );
 
+/* Atomically publishes a compiler-created executable sibling. */
+RudaFileStatus ruda_file_replace_executable(
+    RudaAllocator allocator,
+    const char *temporary_path,
+    size_t temporary_path_length,
+    const char *destination_path,
+    size_t destination_path_length
+);
+
 #endif

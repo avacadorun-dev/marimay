@@ -61,11 +61,62 @@ set(RUDA_BYTECODE_VERSION "unavailable")
 set(RUDA_STANDARD_LIBRARY_VERSION "unavailable")
 set(RUDA_BOOTSTRAP_STAGE 0)
 
+set(RUDA_NATIVE_C_SANITIZER_FLAG "")
+if(MSVC AND RUDA_ENABLE_ADDRESS_SANITIZER)
+  set(RUDA_NATIVE_C_SANITIZER_FLAG "/fsanitize=address")
+elseif(NOT MSVC)
+  set(ruda_native_c_sanitizers "")
+  if(RUDA_ENABLE_ADDRESS_SANITIZER)
+    list(APPEND ruda_native_c_sanitizers "address")
+  endif()
+  if(RUDA_ENABLE_UNDEFINED_SANITIZER)
+    list(APPEND ruda_native_c_sanitizers "undefined")
+  endif()
+  if(RUDA_ENABLE_THREAD_SANITIZER)
+    list(APPEND ruda_native_c_sanitizers "thread")
+  endif()
+  if(ruda_native_c_sanitizers)
+    list(JOIN ruda_native_c_sanitizers "," ruda_native_c_sanitizer_list)
+    set(RUDA_NATIVE_C_SANITIZER_FLAG
+      "-fsanitize=${ruda_native_c_sanitizer_list}"
+    )
+  endif()
+endif()
+
 configure_file(
   cmake/ruda_build_config.h.in
   "${CMAKE_CURRENT_BINARY_DIR}/generated/ruda/build_config.h"
   @ONLY
 )
+
+add_library(ruda_native_runtime STATIC
+  bootstrap/src/base/allocator.c
+  bootstrap/src/base/checked_i64.c
+  bootstrap/src/base/checked_integer.c
+  bootstrap/src/base/f64_runtime.c
+  bootstrap/src/base/number_format.c
+  bootstrap/src/base/provenance.c
+  runtime/common/managed.c
+  runtime/common/managed_internal.c
+  runtime/common/managed_string.c
+  runtime/common/managed_record.c
+  runtime/common/managed_enum.c
+  runtime/common/managed_interface.c
+)
+target_include_directories(ruda_native_runtime PRIVATE
+  bootstrap/include
+  runtime/include
+)
+if(MSVC)
+  target_compile_options(ruda_native_runtime PRIVATE /fp:strict)
+else()
+  target_compile_options(ruda_native_runtime PRIVATE
+    -fno-fast-math -frounding-math -ffp-contract=off
+    -fexcess-precision=standard
+  )
+endif()
+ruda_target_warnings(ruda_native_runtime)
+ruda_target_sanitizers(ruda_native_runtime)
 
 add_library(ruda_bootstrap STATIC
   bootstrap/src/ast/ast.c
@@ -162,6 +213,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/service.c
   bootstrap/src/check/service_queries.c
   bootstrap/src/cli/cli.c
+  bootstrap/src/cli/cli_build_program.c
     bootstrap/src/cli/cli_check.c
     bootstrap/src/cli/cli_compile_report.c
     bootstrap/src/cli/cli_run_program.c
@@ -195,9 +247,11 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/mir/verify_numeric.c
   bootstrap/src/mir/verify_defer.c
   bootstrap/src/mir/verify_support.c
+  bootstrap/src/native/build.c
   bootstrap/src/native/c_emitter.c
   bootstrap/src/native/c_emitter_descriptors.c
   bootstrap/src/native/c_emitter_defer.c
+  bootstrap/src/native/c_emitter_entry.c
   bootstrap/src/native/c_emitter_emit.c
     bootstrap/src/native/c_emitter_format.c
     bootstrap/src/native/c_emitter_io.c
@@ -229,6 +283,9 @@ target_include_directories(ruda_bootstrap
     bootstrap/include
     runtime/include
 )
+target_compile_definitions(ruda_bootstrap PRIVATE
+  RUDA_NATIVE_RUNTIME_ARCHIVE="$<TARGET_FILE:ruda_native_runtime>"
+)
 if(UNIX)
   target_link_libraries(ruda_bootstrap PUBLIC m)
 endif()
@@ -250,6 +307,7 @@ endif()
 
 add_executable(ruda bootstrap/main.c)
 target_link_libraries(ruda PRIVATE ruda_bootstrap)
+add_dependencies(ruda ruda_native_runtime)
 ruda_target_warnings(ruda)
 ruda_target_sanitizers(ruda)
 

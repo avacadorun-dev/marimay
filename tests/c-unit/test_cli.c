@@ -124,7 +124,7 @@ void ruda_test_cli(void) {
     const char *version_arguments[] = {"ruda", "version", "--json"};
     const char *unknown_arguments[] = {"ruda", "buid"};
     const char *unknown_json_arguments[] = {"ruda", "buid", "--diagnostic", "json"};
-    const char *planned_arguments[] = {"ruda", "build"};
+    const char *planned_arguments[] = {"ruda", "test"};
     const char *task_help_arguments[] = {"ruda", "build", "--help"};
     const char *unknown_option_arguments[] = {"ruda", "--diagostic"};
     const char *quoted_unknown_arguments[] = {"ruda", "ba'd"};
@@ -202,7 +202,7 @@ void ruda_test_cli(void) {
     result = ruda_run_cli(&session, 3, task_help_arguments, &output, &error);
     RUDA_EXPECT(result == RUDA_EXIT_SUCCESS);
     RUDA_EXPECT(strstr(output.bytes, "Usage: ruda build") != NULL);
-    RUDA_EXPECT(strstr(output.bytes, "not implemented") != NULL);
+    RUDA_EXPECT(strstr(output.bytes, "not implemented") == NULL);
 
     {
         const char *format_help_arguments[] = {"ruda", "fmt", "--help"};

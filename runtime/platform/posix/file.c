@@ -5,10 +5,12 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
 #include "ruda/base/owned_bytes.h"
+#include "ruda/base/utf8.h"
 
 static RudaFileStatus ruda_posix_owned_path(
     RudaAllocator allocator,
@@ -217,4 +219,45 @@ RudaFileReadOps ruda_platform_file_read_ops(void) {
     ops.read = ruda_posix_read;
     ops.close = ruda_posix_close;
     return ops;
+}
+
+RudaFileStatus ruda_file_replace_executable(
+    RudaAllocator allocator,
+    const char *temporary_path,
+    size_t temporary_path_length,
+    const char *destination_path,
+    size_t destination_path_length
+) {
+    RudaOwnedBytes temporary = {0};
+    RudaOwnedBytes destination = {0};
+    struct stat information;
+    RudaFileStatus status;
+    if (temporary_path == NULL || temporary_path_length == 0
+        || destination_path == NULL || destination_path_length == 0
+        || memchr(temporary_path, 0, temporary_path_length) != NULL
+        || memchr(destination_path, 0, destination_path_length) != NULL) {
+        return RUDA_FILE_INVALID_ARGUMENT;
+    }
+    if (!ruda_utf8_validate(temporary_path, temporary_path_length, NULL)
+        || !ruda_utf8_validate(
+            destination_path, destination_path_length, NULL
+        )) return RUDA_FILE_INVALID_UTF8;
+    status = ruda_posix_owned_path(
+        allocator, temporary_path, temporary_path_length, &temporary
+    );
+    if (status == RUDA_FILE_OK) status = ruda_posix_owned_path(
+        allocator, destination_path, destination_path_length, &destination
+    );
+    if (status == RUDA_FILE_OK
+        && (stat((const char *)temporary.data, &information) != 0
+            || !S_ISREG(information.st_mode)
+            || chmod((const char *)temporary.data,
+                information.st_mode | S_IXUSR | S_IXGRP | S_IXOTH) != 0
+            || rename((const char *)temporary.data,
+                (const char *)destination.data) != 0)) {
+        status = RUDA_FILE_IO_FAILED;
+    }
+    ruda_owned_bytes_dispose(&destination);
+    ruda_owned_bytes_dispose(&temporary);
+    return status;
 }

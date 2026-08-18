@@ -16,6 +16,9 @@ typedef struct RudaNativeCProgram {
 typedef struct RudaNativeCEmitOptions {
     size_t max_functions;
     size_t max_generated_bytes;
+    bool executable_entry;
+    bool executable_returns_result;
+    RudaSymbolId error_message_symbol;
 } RudaNativeCEmitOptions;
 
 typedef enum RudaNativeCEmitStatus {

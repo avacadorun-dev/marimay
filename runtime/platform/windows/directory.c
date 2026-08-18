@@ -8,6 +8,8 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "ruda/base/utf8.h"
+
 typedef struct RudaWindowsDirectoryState {
     RudaAllocator allocator;
     HANDLE search;
@@ -360,4 +362,36 @@ RudaDirectoryOps ruda_platform_directory_ops(void) {
     ops.next = ruda_windows_directory_next;
     ops.close = ruda_windows_directory_close;
     return ops;
+}
+
+RudaFileStatus ruda_directory_create(
+    RudaAllocator allocator,
+    const char *path,
+    size_t path_length
+) {
+    wchar_t *wide = NULL;
+    size_t allocation_size = 0;
+    DWORD attributes = 0;
+    RudaFileStatus status;
+    if (path == NULL || path_length == 0
+        || memchr(path, 0, path_length) != NULL) {
+        return RUDA_FILE_INVALID_ARGUMENT;
+    }
+    if (!ruda_utf8_validate(path, path_length, NULL)) {
+        return RUDA_FILE_INVALID_UTF8;
+    }
+    status = ruda_windows_directory_wide_path(
+        allocator, path, path_length, &wide, &allocation_size, NULL
+    );
+    if (status != RUDA_FILE_OK) return status;
+    if (!CreateDirectoryW(wide, NULL)) {
+        DWORD create_error = GetLastError();
+        attributes = GetFileAttributesW(wide);
+        status = create_error == ERROR_ALREADY_EXISTS
+            && attributes != INVALID_FILE_ATTRIBUTES
+            && (attributes & FILE_ATTRIBUTE_DIRECTORY) != 0
+            ? RUDA_FILE_OK : RUDA_FILE_IO_FAILED;
+    }
+    ruda_deallocate(&allocator, wide, allocation_size);
+    return status;
 }

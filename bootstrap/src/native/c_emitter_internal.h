@@ -146,5 +146,19 @@ bool ruda_native_c_emit_runtime(
     RudaNativeCBuffer *buffer, size_t max_frames, size_t max_suppressed);
 bool ruda_native_c_emit_keep_assets(RudaNativeCBuffer *buffer,
     const RudaMirFunction *const *functions, size_t count);
+RudaNativeCEmitStatus ruda_native_c_validate_executable_entry(
+    const RudaMirFunction *entry,
+    const RudaMirFunction *const *functions,
+    size_t count,
+    const RudaNativeCEmitOptions *options
+);
+bool ruda_native_c_emit_public_helpers(RudaNativeCBuffer *buffer);
+bool ruda_native_c_emit_executable_entry(
+    RudaNativeCBuffer *buffer,
+    const RudaMirFunction *entry,
+    const RudaMirFunction *const *functions,
+    size_t count,
+    const RudaNativeCEmitOptions *options
+);
 
 #endif

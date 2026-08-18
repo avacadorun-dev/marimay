@@ -6,6 +6,9 @@
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+
+#include "ruda/base/utf8.h"
 
 static RudaFileStatus ruda_windows_owned_path(
     RudaAllocator allocator,
@@ -289,4 +292,47 @@ RudaFileReadOps ruda_platform_file_read_ops(void) {
     ops.read = ruda_windows_read;
     ops.close = ruda_windows_close;
     return ops;
+}
+
+RudaFileStatus ruda_file_replace_executable(
+    RudaAllocator allocator,
+    const char *temporary_path,
+    size_t temporary_path_length,
+    const char *destination_path,
+    size_t destination_path_length
+) {
+    wchar_t *temporary = NULL;
+    wchar_t *destination = NULL;
+    size_t temporary_bytes = 0;
+    size_t destination_bytes = 0;
+    RudaFileStatus status;
+    if (temporary_path == NULL || temporary_path_length == 0
+        || destination_path == NULL || destination_path_length == 0
+        || memchr(temporary_path, 0, temporary_path_length) != NULL
+        || memchr(destination_path, 0, destination_path_length) != NULL) {
+        return RUDA_FILE_INVALID_ARGUMENT;
+    }
+    if (!ruda_utf8_validate(temporary_path, temporary_path_length, NULL)
+        || !ruda_utf8_validate(
+            destination_path, destination_path_length, NULL
+        )) return RUDA_FILE_INVALID_UTF8;
+    status = ruda_windows_owned_path(
+        allocator, temporary_path, temporary_path_length,
+        &temporary, &temporary_bytes
+    );
+    if (status == RUDA_FILE_OK) status = ruda_windows_owned_path(
+        allocator, destination_path, destination_path_length,
+        &destination, &destination_bytes
+    );
+    if (status == RUDA_FILE_OK && !MoveFileExW(
+            temporary, destination,
+            MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH
+        )) status = RUDA_FILE_IO_FAILED;
+    if (destination != NULL) {
+        ruda_deallocate(&allocator, destination, destination_bytes);
+    }
+    if (temporary != NULL) {
+        ruda_deallocate(&allocator, temporary, temporary_bytes);
+    }
+    return status;
 }

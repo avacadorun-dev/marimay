@@ -18,6 +18,7 @@ void ruda_test_checker_generics_imports(void);
 void ruda_test_checker_resolution(void);
 void ruda_test_check_entry(void);
 void ruda_test_cli(void);
+void ruda_test_cli_build(void);
 void ruda_test_cli_check(void);
 void ruda_test_cli_run(void);
 void ruda_test_compiler_service(void);
@@ -109,6 +110,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_source_manager();
     ruda_test_types();
     ruda_test_cli();
+    ruda_test_cli_build();
     ruda_test_cli_check();
     ruda_test_cli_run();
     if (ruda_test_failure_count() != 0) {

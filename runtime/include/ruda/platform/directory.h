@@ -97,6 +97,13 @@ RudaFileStatus ruda_directory_kind(
     RudaDirectoryEntryKind *kind
 );
 
+/* Creates one directory, succeeding when that exact directory exists. */
+RudaFileStatus ruda_directory_create(
+    RudaAllocator allocator,
+    const char *path,
+    size_t path_length
+);
+
 RudaFileStatus ruda_directory_open_with_ops(
     RudaDirectoryOps ops,
     RudaAllocator allocator,

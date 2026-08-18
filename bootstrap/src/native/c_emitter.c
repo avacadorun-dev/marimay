@@ -183,12 +183,13 @@ bool ruda_native_c_emit_keep_assets(
     }
     return ruda_native_c_write(
         buffer,
-        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_append_suppressed_panic;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n  (void)&ruda_g_io_println;\n  ruda_g_keep_managed();\n}\n\n"
+        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_append_suppressed_panic;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n  (void)&ruda_g_io_println;\n  (void)&ruda_g_print_panic;\n  ruda_g_keep_managed();\n}\n\n"
     );
 }
 
 RudaNativeCEmitOptions ruda_native_c_emit_default_options(void) {
     RudaNativeCEmitOptions options;
+    memset(&options, 0, sizeof(options));
     options.max_functions = 100000;
     options.max_generated_bytes = 64U * 1024U * 1024U;
     return options;
@@ -302,6 +303,12 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
         status = RUDA_NATIVE_C_EMIT_INVALID_MIR;
         goto cleanup;
     }
+    if (options.executable_entry) {
+        status = ruda_native_c_validate_executable_entry(
+            entry, ordered, program->function_count, &options
+        );
+        if (status != RUDA_NATIVE_C_EMIT_OK) goto cleanup;
+    }
     if (ruda_native_c_array_kind(entry, entry->result_type)
             == RUDA_NATIVE_C_ARRAY_F64
         || ruda_native_c_array_kind(entry, entry->result_type)
@@ -309,7 +316,7 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
         status = RUDA_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
         goto cleanup;
     }
-    if (entry->result_type != RUDA_TYPE_VOID
+    if (!options.executable_entry && entry->result_type != RUDA_TYPE_VOID
         && entry->result_type != RUDA_TYPE_NEVER
         && entry->result_type != RUDA_TYPE_I8
         && entry->result_type != RUDA_TYPE_I16
@@ -366,15 +373,27 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_signature(&buffer, ordered[index], true)) goto emit_fail;
     if (!ruda_native_c_write(&buffer, "\n")) goto emit_fail;
     for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_function(&buffer, ordered[index], ordered, program->function_count)) goto emit_fail;
+    if (options.executable_entry
+        && !ruda_native_c_emit_public_helpers(&buffer)) goto emit_fail;
     if (!ruda_native_c_write(&buffer, "int main(void) { size_t ruda_g_start = 0, ruda_g_end = 0; int ruda_g_s; static ruda_g_frame ruda_g_frames[RUDA_G_MAX_FRAMES]; static ruda_g_suppressed_panic ruda_g_suppressed[RUDA_G_MAX_SUPPRESSED]; ruda_g_panic ruda_g_p = {0}; ruda_g_execution ruda_g_x = {0}; RudaManagedHeapOptions ruda_g_heap_options; ")) goto emit_fail;
     for (index = 0; index < program->function_count; index += 1) {
         if (!ruda_native_c_write(&buffer, "(void)&")
             || !ruda_native_c_symbol(&buffer, ordered[index]->symbol)
             || !ruda_native_c_write(&buffer, "; ")) goto emit_fail;
     }
-    if (uses_f64 && !ruda_native_c_write(&buffer, "if (!ruda_f64_binary64_supported()) { fputs(\"unsupported:f64\\n\", stderr); return 2; } ")) goto emit_fail;
-    if (!ruda_native_c_write(&buffer, "ruda_g_keep_assets(); ruda_g_p.frames = ruda_g_frames; ruda_g_p.frame_capacity = RUDA_G_MAX_FRAMES; ruda_g_p.suppressed = ruda_g_suppressed; ruda_g_p.suppressed_capacity = RUDA_G_MAX_SUPPRESSED; ruda_g_x.allocator = ruda_g_make_allocator(&ruda_g_x.fail_allocator); ruda_g_heap_options = ruda_managed_heap_default_options(); ruda_g_heap_options.collect_before_allocation = RUDA_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)RUDA_G_MAX_OBJECTS < ruda_g_heap_options.max_objects) ruda_g_heap_options.max_objects = (size_t)RUDA_G_MAX_OBJECTS; if (!ruda_managed_heap_init(&ruda_g_x.heap, ruda_g_x.allocator, ruda_g_heap_options)) { fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
-    if (entry->result_type >= RUDA_TYPE_I8
+    if (uses_f64 && !ruda_native_c_write(&buffer, options.executable_entry
+            ? "if (!ruda_f64_binary64_supported()) { fputs(\"error[I0002]: native target does not provide strict binary64\\n\", stderr); return 70; } "
+            : "if (!ruda_f64_binary64_supported()) { fputs(\"unsupported:f64\\n\", stderr); return 2; } ")) goto emit_fail;
+    if (!ruda_native_c_write(&buffer, "ruda_g_keep_assets(); ruda_g_p.frames = ruda_g_frames; ruda_g_p.frame_capacity = RUDA_G_MAX_FRAMES; ruda_g_p.suppressed = ruda_g_suppressed; ruda_g_p.suppressed_capacity = RUDA_G_MAX_SUPPRESSED; ruda_g_x.allocator = ruda_g_make_allocator(&ruda_g_x.fail_allocator); ruda_g_heap_options = ruda_managed_heap_default_options(); ruda_g_heap_options.collect_before_allocation = RUDA_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)RUDA_G_MAX_OBJECTS < ruda_g_heap_options.max_objects) ruda_g_heap_options.max_objects = (size_t)RUDA_G_MAX_OBJECTS; if (!ruda_managed_heap_init(&ruda_g_x.heap, ruda_g_x.allocator, ruda_g_heap_options)) { ")) goto emit_fail;
+    if (!ruda_native_c_write(&buffer, options.executable_entry
+            ? "fputs(\"error[I0002]: native runtime allocation failed\\n\", stderr); return 70; } "
+            : "fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
+    if (options.executable_entry) {
+        if (!ruda_native_c_emit_executable_entry(
+                &buffer, entry, ordered, program->function_count, &options
+            )) goto emit_fail;
+    }
+    else if (entry->result_type >= RUDA_TYPE_I8
         && entry->result_type <= RUDA_TYPE_U64
         && entry->result_type != RUDA_TYPE_I64) {
         if (!ruda_native_c_emit_integer_entry(&buffer, entry)) goto emit_fail;

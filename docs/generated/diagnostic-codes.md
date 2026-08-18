@@ -7,6 +7,11 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | Code | Component | Meaning |
 |---|---|---|
 | `B0001` | run | Run pipeline could not lower, encode, decode, or verify canonical typed MIR. |
+| `B0002` | build | Supported host C toolchain is unavailable. |
+| `B0003` | build | Canonical typed MIR could not lower to portable C17. |
+| `B0004` | build | Supported host C compiler rejected compiler-generated C. |
+| `B0005` | build | Build cache or requested output could not be published atomically. |
+| `B0006` | build | Host target cannot preserve required native semantics. |
 | `F0001` | formatter | Formatter could not read the selected source input. |
 | `F0002` | formatter | Formatter could not write or transactionally replace canonical output. |
 | `F0003` | formatter | Formatter exhausted a defensive input, nesting, work, or output limit. |

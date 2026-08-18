@@ -826,6 +826,15 @@ RudaCliCheckTargetStatus ruda_cli_check_target_build(
             if (!ruda_cli_source_path((const char *)selected.data)) {
                 status = RUDA_CLI_CHECK_TARGET_INPUT_ERROR;
             } else {
+                if (!ruda_check_path_copy(
+                        &target->root_directory, target->allocator,
+                        selected.data, selected.length
+                    )) {
+                    status = RUDA_CLI_CHECK_TARGET_ALLOCATION_FAILED;
+                    goto cleanup;
+                }
+                status = ruda_check_path_parent(&target->root_directory);
+                if (status != RUDA_CLI_CHECK_TARGET_OK) goto cleanup;
                 status = ruda_check_build_standalone(target, &selected);
                 if (status == RUDA_CLI_CHECK_TARGET_OK) {
                     status = ruda_cli_standard_packages_add(target);
@@ -875,6 +884,13 @@ RudaCliCheckTargetStatus ruda_cli_check_target_build(
     if (status != RUDA_CLI_CHECK_TARGET_OK) {
         goto cleanup;
     }
+    if (!ruda_check_path_copy(
+            &target->root_directory, target->allocator,
+            module_root.data, module_root.length
+        )) {
+        status = RUDA_CLI_CHECK_TARGET_ALLOCATION_FAILED;
+        goto cleanup;
+    }
     if (!ruda_vector_init(&paths, target->allocator, sizeof(RudaCliCheckPath))) {
         status = RUDA_CLI_CHECK_TARGET_ALLOCATION_FAILED;
         goto cleanup;
@@ -921,6 +937,7 @@ void ruda_cli_check_target_dispose(RudaCliCheckTarget *target) {
         ruda_source_manager_dispose(&target->manifest_sources);
     }
     ruda_owned_bytes_dispose(&target->selected_import_path);
+    ruda_owned_bytes_dispose(&target->root_directory);
     if (target->compiler_packages_initialized) {
         ruda_vector_dispose(&target->compiler_packages);
     }

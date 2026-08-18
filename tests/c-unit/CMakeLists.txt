@@ -46,6 +46,7 @@ add_executable(ruda_c_unit
   test_checker_resolution.c
   test_check_entry.c
   test_cli.c
+  test_cli_build.c
   test_cli_check.c
   test_cli_run.c
   test_compiler_service.c

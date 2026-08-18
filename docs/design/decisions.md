@@ -963,3 +963,47 @@ encode/decode verification boundary, and every process outcome would make the
 CLI itself a second semantics engine. One closed VM path gives acceptance
 programs real stdout and stable failures while preserving D046, D045, and the
 later native-build sequencing.
+
+## D050 — Checkpoint-10 native builds publish one content-addressed C17 artifact
+
+Status: accepted.
+
+The Stage 0 checkpoint-10 `ruda build` path reuses D048 target discovery,
+D049 entry selection, and the authoritative verified typed MIR. Native is the
+only public build engine in this checkpoint. `--release`, `--output`, and
+`--emit c` are accepted; `--engine vm` and `--emit mir` remain `U0005` staging
+errors, while cross-target packs remain outside this checkpoint.
+
+The native owner emits one portable C17 translation unit plus a compiler-owned
+entry adapter, links the version-matched runtime archive, and invokes the
+CMake-selected supported host compiler directly with an argv vector. It never
+uses a command shell, consults `CC`, or accesses the network. The compiler
+identity and runtime locations are distribution metadata rather than project
+configuration. A missing compiler is detected by a bounded preflight before C
+generation and is `B0002`/exit `1`, with one platform installation action.
+
+The default artifact lives below
+`.ruda/build/native/{debug|release}/{sha256}/app` (`app.exe` on Windows), and
+`ruda build` writes that path followed by LF on success unless `--quiet` is
+set. The SHA-256 key covers generated C, compiler/runtime/language versions,
+host compiler identity, target host identity, profile, and the versioned
+backend flag contract; absolute workspace paths do not enter it. A regular
+artifact at that exact path is a cache hit. `--output` additionally compiles
+and atomically replaces the exact requested sibling output. `--emit c`
+atomically publishes the public-entry translation unit instead of invoking the
+host compiler. Failed checking or code generation never executes or publishes
+a stale temporary artifact.
+
+Debug uses strict C17 at `-O0` (or `/Od`), release uses `-O2` (or `/O2`), and
+both retain checked Ruda overflow, division, shift, bounds, panic, and root
+cleanup semantics. The public native entry emits no internal `ok:*`/`trap:*`
+harness envelope. `void` and `Ok()` exit `0`; `Err`, `G4000`, `G4001`, and
+`G4002` retain D049 messages and exit `1`; runtime integrity/resource failures
+are `I0002` and exit `70`. Every initialized managed heap is disposed on all
+normal, expected-error, panic, and internal exits.
+
+Reason: generated-C execution was already a semantic oracle, but a user-facing
+build needs a single owner for toolchain discovery, flags, runtime linkage,
+cache identity, atomic publication, and process outcomes. Fixing those details
+together prevents the CLI, backend, and host compiler wrapper from becoming
+three competing native semantics paths.

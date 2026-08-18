@@ -372,6 +372,30 @@ For a supported host target, D030 makes native-toolchain provisioning part of th
 
 Build cache keys include source/content hashes, public and behavior interfaces, compiler/runtime version, language version, target, profile, backend options, C compiler identity, and relevant environment explicitly admitted by the tool. Absolute workspace paths and undeclared environment values do not affect semantic outputs.
 
+Under D050, checkpoint 10 exposes the host-native subset of this contract.
+The accepted options are `--engine native`, `--release`, `--output PATH`, and
+`--emit c`; native is the default. `--engine vm` and `--emit mir` are `U0005`
+until their portable serialization owners land, and cross-target options are
+not inferred. A successful build writes the artifact path and LF to tool
+stdout unless `--quiet` is selected.
+
+Without `--output`, the executable is
+`.ruda/build/native/{debug|release}/{sha256}/app` (`app.exe` on Windows) below
+the discovered script or module root. The key hashes the portable generated C,
+compiler/runtime/language versions, host target, host compiler identity, build
+profile, and versioned backend flag contract. A regular file at the exact key
+is reused. `--output` atomically replaces the exact requested executable only
+after a successful host link. `--emit c` atomically writes the same
+public-entry translation unit and performs no compiler invocation. These paths
+never access the network or read a project-selected `CC` value.
+
+The distribution-selected compiler is preflighted before C generation.
+Unavailable tooling is `B0002`; compiler-owned C emission failure is `B0003`;
+host rejection of generated C is `B0004`; cache/output publication failure is
+`B0005`; and an unsupported semantic host is `B0006`. Raw compiler/linker
+output is bounded and retained for controlled debugging, not substituted for
+the stable primary diagnostic.
+
 ### 6.4 `ruda exec`
 
 ```sh

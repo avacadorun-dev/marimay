@@ -277,3 +277,32 @@ RudaDirectoryOps ruda_platform_directory_ops(void) {
     ops.close = ruda_posix_directory_close;
     return ops;
 }
+
+RudaFileStatus ruda_directory_create(
+    RudaAllocator allocator,
+    const char *path,
+    size_t path_length
+) {
+    RudaOwnedBytes owned = {0};
+    struct stat information;
+    RudaFileStatus status;
+    if (path == NULL || path_length == 0
+        || memchr(path, 0, path_length) != NULL) {
+        return RUDA_FILE_INVALID_ARGUMENT;
+    }
+    if (!ruda_utf8_validate(path, path_length, NULL)) {
+        return RUDA_FILE_INVALID_UTF8;
+    }
+    status = ruda_posix_directory_owned_path(
+        allocator, path, path_length, &owned
+    );
+    if (status != RUDA_FILE_OK) return status;
+    if (mkdir((const char *)owned.data, 0700) != 0) {
+        status = errno == EEXIST
+            && stat((const char *)owned.data, &information) == 0
+            && S_ISDIR(information.st_mode)
+            ? RUDA_FILE_OK : RUDA_FILE_IO_FAILED;
+    }
+    ruda_owned_bytes_dispose(&owned);
+    return status;
+}

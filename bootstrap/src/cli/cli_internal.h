@@ -34,6 +34,12 @@ typedef struct RudaCliOptions {
     size_t check_all_targets_index;
     const char *run_engine;
     size_t run_engine_index;
+    const char *build_output;
+    size_t build_output_index;
+    const char *build_emit;
+    size_t build_emit_index;
+    bool build_release;
+    size_t build_release_index;
     size_t program_argument_start;
     size_t program_argument_count;
     bool quiet;
@@ -85,6 +91,8 @@ int ruda_cli_format_target(RudaSession *session, const RudaCliOptions *options,
 int ruda_cli_check(RudaSession *session, const RudaCliOptions *options,
     RudaWriter standard_output, RudaWriter standard_error);
 int ruda_cli_run_program(RudaSession *session, const RudaCliOptions *options,
+    RudaWriter standard_output, RudaWriter standard_error);
+int ruda_cli_build_program(RudaSession *session, const RudaCliOptions *options,
     RudaWriter standard_output, RudaWriter standard_error);
 
 #endif

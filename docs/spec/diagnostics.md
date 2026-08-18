@@ -286,6 +286,16 @@ typed-MIR program is `B0001`. A post-verification VM resource, integrity, or
 unsupported-host failure is `I0002`. Both are internal failures and exit `70`;
 neither may be rendered as a program panic or written to program stdout.
 
+For D050 native construction, `B0002` means the distribution-selected host C
+toolchain could not be started or did not pass its preflight; it is an expected
+build failure and exits `1`. `B0003` means verified typed MIR could not emit
+the compiler-owned C17 unit, and `B0004` means a supported compiler rejected
+that generated unit; both are internal failures and exit `70`. `B0005` is a
+bounded cache/path/atomic-publication failure and exits `1`. `B0006` rejects a
+host that cannot preserve the required native semantics and exits `1` before
+publishing an artifact. Compiler output is bounded diagnostic evidence, never
+an unstructured replacement for these primary codes.
+
 ## 14. Verification
 
 Every diagnostic rule has:

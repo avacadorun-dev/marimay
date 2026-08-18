@@ -23,7 +23,7 @@ static const RudaTaskHelp ruda_tasks[] = {
     {"add", "Add a package dependency.", "add module[@version]", "ruda add ruda-lang.example/postgres@1.4", false},
     {"audit", "Audit dependencies, capabilities, unsafe code, and provenance.", "audit", "ruda audit", false},
     {"bench", "Run first-party benchmarks.", "bench [filter]", "ruda bench --compare base.json", false},
-    {"build", "Build a native executable by default.", "build [target] [options]", "ruda build --release", false},
+    {"build", "Build a native executable by default.", "build [target] [options]", "ruda build --release", true},
     {"check", "Run the complete frontend and MIR verifier.", "check [target] [--all-targets]", "ruda check --all-targets", true},
     {"doc", "Build or check package documentation.", "doc [options]", "ruda doc --check", false},
     {"exec", "Verify and execute a portable .rudab bundle.", "exec bundle.rudab [options]", "ruda exec app.rudab", false},
@@ -54,7 +54,10 @@ static const char *const ruda_global_options[] = {
     "--diff",
     "--engine",
     "--help",
+    "--output",
     "--quiet",
+    "--release",
+    "--emit",
     "--stdin",
     "--verbose",
     "--version",
@@ -348,6 +351,12 @@ static int ruda_parse_options(
     options->check_all_targets_index = 0;
     options->run_engine = "vm";
     options->run_engine_index = 0;
+    options->build_output = NULL;
+    options->build_output_index = 0;
+    options->build_emit = NULL;
+    options->build_emit_index = 0;
+    options->build_release = false;
+    options->build_release_index = 0;
     options->program_argument_start = 0;
     options->program_argument_count = 0;
     options->quiet = false;
@@ -366,7 +375,12 @@ static int ruda_parse_options(
             || strcmp(argument, "--color") == 0
             || (strcmp(argument, "--engine") == 0
                 && options->command != NULL
-                && strcmp(options->command, "run") == 0)) {
+                && (strcmp(options->command, "run") == 0
+                    || strcmp(options->command, "build") == 0))
+            || ((strcmp(argument, "--output") == 0
+                    || strcmp(argument, "--emit") == 0)
+                && options->command != NULL
+                && strcmp(options->command, "build") == 0)) {
             if (index + 1 >= argument_count) {
                 char message[160];
                 int length = snprintf(message, sizeof(message), "option '%s' requires a value", argument);
@@ -403,16 +417,34 @@ static int ruda_parse_options(
                     "--color expects auto, always, or never"
                 );
             } else if (strcmp(argument, "--engine") == 0) {
-                if (strcmp(value, "vm") != 0) {
+                const char *expected = strcmp(options->command, "run") == 0
+                    ? "vm" : "native";
+                if (strcmp(value, expected) != 0) {
                     return ruda_option_value_error(
                         error_writer, options->diagnostic_style,
                         RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
                         (size_t)index,
-                        "checkpoint 9 ruda run supports --engine vm"
+                        strcmp(options->command, "run") == 0
+                            ? "checkpoint 9 ruda run supports --engine vm"
+                            : "checkpoint 10 ruda build supports --engine native"
                     );
                 }
                 options->run_engine = value;
                 options->run_engine_index = (size_t)index;
+            } else if (strcmp(argument, "--output") == 0) {
+                options->build_output = value;
+                options->build_output_index = (size_t)index;
+            } else if (strcmp(argument, "--emit") == 0) {
+                if (strcmp(value, "c") != 0) {
+                    return ruda_option_value_error(
+                        error_writer, options->diagnostic_style,
+                        RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                        (size_t)index,
+                        "checkpoint 10 ruda build supports --emit c"
+                    );
+                }
+                options->build_emit = value;
+                options->build_emit_index = (size_t)index;
             }
         } else if (ruda_starts_with(argument, "--diagnostic=")) {
             value = argument + strlen("--diagnostic=");
@@ -438,18 +470,44 @@ static int ruda_parse_options(
             }
         } else if (ruda_starts_with(argument, "--engine=")
             && options->command != NULL
-            && strcmp(options->command, "run") == 0) {
+            && (strcmp(options->command, "run") == 0
+                || strcmp(options->command, "build") == 0)) {
             value = argument + strlen("--engine=");
-            if (strcmp(value, "vm") != 0) {
+            {
+                const char *expected = strcmp(options->command, "run") == 0
+                    ? "vm" : "native";
+                if (strcmp(value, expected) != 0) {
+                    return ruda_option_value_error(
+                        error_writer, options->diagnostic_style,
+                        RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                        (size_t)index,
+                        strcmp(options->command, "run") == 0
+                            ? "checkpoint 9 ruda run supports --engine vm"
+                            : "checkpoint 10 ruda build supports --engine native"
+                    );
+                }
+            }
+            options->run_engine = value;
+            options->run_engine_index = (size_t)index;
+        } else if (ruda_starts_with(argument, "--output=")
+            && options->command != NULL
+            && strcmp(options->command, "build") == 0) {
+            options->build_output = argument + strlen("--output=");
+            options->build_output_index = (size_t)index;
+        } else if (ruda_starts_with(argument, "--emit=")
+            && options->command != NULL
+            && strcmp(options->command, "build") == 0) {
+            value = argument + strlen("--emit=");
+            if (strcmp(value, "c") != 0) {
                 return ruda_option_value_error(
                     error_writer, options->diagnostic_style,
                     RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
                     (size_t)index,
-                    "checkpoint 9 ruda run supports --engine vm"
+                    "checkpoint 10 ruda build supports --emit c"
                 );
             }
-            options->run_engine = value;
-            options->run_engine_index = (size_t)index;
+            options->build_emit = value;
+            options->build_emit_index = (size_t)index;
         } else if (strcmp(argument, "--quiet") == 0) {
             options->quiet = true;
         } else if (strcmp(argument, "--verbose") == 0) {
@@ -487,6 +545,11 @@ static int ruda_parse_options(
             && strcmp(argument, "--all-targets") == 0) {
             options->check_all_targets = true;
             options->check_all_targets_index = (size_t)index;
+        } else if (options->command != NULL
+            && strcmp(options->command, "build") == 0
+            && strcmp(argument, "--release") == 0) {
+            options->build_release = true;
+            options->build_release_index = (size_t)index;
         } else if (argument[0] == '-') {
             return ruda_unknown_option(
                 error_writer,
@@ -502,7 +565,8 @@ static int ruda_parse_options(
             options->help_target_index = (size_t)index;
         } else if ((strcmp(options->command, "fmt") == 0
                 || strcmp(options->command, "check") == 0
-                || strcmp(options->command, "run") == 0)
+                || strcmp(options->command, "run") == 0
+                || strcmp(options->command, "build") == 0)
             && options->target == NULL) {
             options->target = argument;
             options->target_index = (size_t)index;
@@ -752,6 +816,11 @@ int ruda_cli_run(
     }
     if (strcmp(task->name, "run") == 0) {
         return ruda_cli_run_program(
+            session, &options, standard_output, standard_error
+        );
+    }
+    if (strcmp(task->name, "build") == 0) {
+        return ruda_cli_build_program(
             session, &options, standard_output, standard_error
         );
     }

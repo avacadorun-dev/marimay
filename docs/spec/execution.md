@@ -198,6 +198,23 @@ Conservative scanning of arbitrary C stack bytes is not a conforming primary str
 
 `ruda build --emit c` may emit human-readable C for compiler debugging and bootstrap inspection. Symbol names, file partitioning, helper signatures, and formatting are unstable. User code must use the documented C FFI surface instead of including generated headers.
 
+### 5.5 Native executable entry
+
+D050's public executable adapter is distinct from the internal backend test
+harness. It accepts only the D049 checked `main` forms and calls only symbols
+from the same canonical verified typed-MIR program. It grants D046 stdout,
+prints no `ok:*` or `trap:*` envelope, and maps `void`, `Result`, panic, and
+internal runtime outcomes to the same stdout bytes, stderr diagnostic identity,
+and exit status as the VM contract.
+
+For `Result.Err`, the adapter keeps both the returned `Result` and extracted
+error payload in exact managed roots while it calls the checker-selected
+`message(E): string`. It writes counted message bytes, including embedded NUL,
+before popping roots. Root frames are balanced and the managed heap is disposed
+on success, expected error, panic, allocation/resource failure, invalid runtime
+layout, and host-rejection edges. A release optimizer may remove a check only
+after proving it redundant under Ruda semantics.
+
 ## 6. Direct-style suspension
 
 ### 6.1 Source rule

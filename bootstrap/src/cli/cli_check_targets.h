@@ -27,6 +27,7 @@ typedef struct RudaCliCheckTarget {
     RudaVector packages;
     RudaVector compiler_packages;
     RudaOwnedBytes selected_import_path;
+    RudaOwnedBytes root_directory;
     RudaSourceManager manifest_sources;
     RudaManifestParseResult manifest;
     const RudaSourceSnapshot *problem_source;

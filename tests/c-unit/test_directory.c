@@ -4,6 +4,14 @@
 #include <stddef.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#include <direct.h>
+#define ruda_test_remove_directory _rmdir
+#else
+#include <unistd.h>
+#define ruda_test_remove_directory rmdir
+#endif
+
 #include "ruda/base/allocator.h"
 #include "ruda/platform/directory.h"
 
@@ -178,7 +186,38 @@ static void ruda_test_directory_allocation_failures(void) {
     }
 }
 
+static void ruda_test_directory_create_owner(void) {
+    static const char path[] = "ruda-directory-create-test";
+    size_t failure_index = 0;
+    bool reached_success = false;
+    (void)ruda_test_remove_directory(path);
+    for (failure_index = 0; failure_index < 8; failure_index += 1) {
+        RudaFailAllocator state;
+        RudaFileStatus status;
+        ruda_fail_allocator_init(
+            &state, ruda_system_allocator(), failure_index
+        );
+        status = ruda_directory_create(
+            ruda_fail_allocator(&state), path, sizeof(path) - 1
+        );
+        if (status == RUDA_FILE_OK) reached_success = true;
+        else RUDA_EXPECT(status == RUDA_FILE_ALLOCATION_FAILED);
+        RUDA_EXPECT(state.live_allocations == 0);
+        RUDA_EXPECT(state.live_bytes == 0);
+        if (reached_success) break;
+    }
+    RUDA_EXPECT(reached_success);
+    RUDA_EXPECT(ruda_directory_create(
+        ruda_system_allocator(), path, sizeof(path) - 1
+    ) == RUDA_FILE_OK);
+    RUDA_EXPECT(ruda_directory_create(
+        ruda_system_allocator(), NULL, 0
+    ) == RUDA_FILE_INVALID_ARGUMENT);
+    RUDA_EXPECT(ruda_test_remove_directory(path) == 0);
+}
+
 void ruda_test_directory(void) {
     ruda_test_directory_real_adapter();
     ruda_test_directory_allocation_failures();
+    ruda_test_directory_create_owner();
 }

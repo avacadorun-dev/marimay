@@ -589,9 +589,77 @@ static void ruda_test_real_file_adapter(void) {
     (void)remove(destination_path);
 }
 
+static void ruda_test_executable_publication(void) {
+    static const char temporary[] = "ruda-executable.tmp";
+    static const char destination[] = "ruda-executable.out";
+    static const unsigned char original[] = "old";
+    static const unsigned char replacement[] = "new executable";
+    size_t failure_index = 0;
+    bool reached_success = false;
+    (void)remove(temporary);
+    (void)remove(destination);
+    for (failure_index = 0; failure_index < 8; failure_index += 1) {
+        RudaFailAllocator state;
+        RudaFileStatus status;
+        unsigned char observed[32];
+        size_t observed_length = 0;
+        FILE *file = NULL;
+        RUDA_EXPECT(ruda_test_write_file(
+            temporary, replacement, sizeof(replacement) - 1
+        ));
+        RUDA_EXPECT(ruda_test_write_file(
+            destination, original, sizeof(original) - 1
+        ));
+        ruda_fail_allocator_init(
+            &state, ruda_system_allocator(), failure_index
+        );
+        status = ruda_file_replace_executable(
+            ruda_fail_allocator(&state),
+            temporary, sizeof(temporary) - 1,
+            destination, sizeof(destination) - 1
+        );
+        if (status == RUDA_FILE_OK) {
+            reached_success = true;
+        } else {
+            RUDA_EXPECT(status == RUDA_FILE_ALLOCATION_FAILED);
+            file = fopen(destination, "rb");
+            RUDA_EXPECT(file != NULL);
+            if (file != NULL) {
+                observed_length = fread(
+                    observed, 1, sizeof(observed), file
+                );
+                RUDA_EXPECT(fclose(file) == 0);
+                RUDA_EXPECT(observed_length == sizeof(original) - 1);
+                RUDA_EXPECT(memcmp(
+                    observed, original, sizeof(original) - 1
+                ) == 0);
+            }
+        }
+        RUDA_EXPECT(state.live_allocations == 0);
+        RUDA_EXPECT(state.live_bytes == 0);
+        (void)remove(temporary);
+        if (reached_success) break;
+    }
+    RUDA_EXPECT(reached_success);
+#if !defined(_WIN32)
+    {
+        struct stat information;
+        RUDA_EXPECT(stat(destination, &information) == 0);
+        RUDA_EXPECT((information.st_mode & 0111) != 0);
+    }
+#endif
+    RUDA_EXPECT(ruda_file_replace_executable(
+        ruda_system_allocator(), NULL, 0,
+        destination, sizeof(destination) - 1
+    ) == RUDA_FILE_INVALID_ARGUMENT);
+    (void)remove(temporary);
+    RUDA_EXPECT(remove(destination) == 0);
+}
+
 void ruda_test_file(void) {
     ruda_test_file_failure_atomicity();
     ruda_test_file_validation();
     ruda_test_file_read_all();
     ruda_test_real_file_adapter();
+    ruda_test_executable_publication();
 }
