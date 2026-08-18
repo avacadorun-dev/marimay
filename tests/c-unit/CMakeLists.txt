@@ -128,17 +128,9 @@ target_compile_definitions(ruda_c_unit PRIVATE
   RUDA_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
   RUDA_TEST_NATIVE_RUNTIME_ARCHIVE="$<TARGET_FILE:ruda_native_runtime>"
 )
-if(NOT MSVC AND (RUDA_ENABLE_ADDRESS_SANITIZER OR RUDA_ENABLE_UNDEFINED_SANITIZER))
-  set(ruda_test_native_sanitizers "")
-  if(RUDA_ENABLE_ADDRESS_SANITIZER)
-    list(APPEND ruda_test_native_sanitizers "address")
-  endif()
-  if(RUDA_ENABLE_UNDEFINED_SANITIZER)
-    list(APPEND ruda_test_native_sanitizers "undefined")
-  endif()
-  list(JOIN ruda_test_native_sanitizers "," ruda_test_native_sanitizer_list)
+if(RUDA_NATIVE_C_SANITIZER_FLAG)
   target_compile_definitions(ruda_c_unit PRIVATE
-    RUDA_TEST_C_SANITIZER="-fsanitize=${ruda_test_native_sanitizer_list}"
+    RUDA_TEST_C_SANITIZER="${RUDA_NATIVE_C_SANITIZER_FLAG}"
   )
 endif()
 ruda_target_warnings(ruda_c_unit)
