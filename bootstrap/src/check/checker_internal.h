@@ -121,6 +121,11 @@ bool ruda_function_ensure_array_layout(
     RudaFunctionChecker *function,
     RudaTypeId type
 );
+bool ruda_array_layout(
+    RudaFunctionChecker *function,
+    RudaTypeId type,
+    RudaMirArrayId *result
+);
 bool ruda_compile_array_literal(
     RudaFunctionChecker *function,
     const RudaAstNode *node,

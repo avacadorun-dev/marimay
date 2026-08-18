@@ -53,6 +53,13 @@ RudaCompilerStatus ruda_compiler_service_check_graph(
     size_t root_import_path_length,
     RudaCompilerResult *result
 );
+/* Checks all packages in one exact module graph, including disconnected roots. */
+RudaCompilerStatus ruda_compiler_service_check_module_graph(
+    const RudaCompilerService *service,
+    const RudaCompilerPackage *packages,
+    size_t package_count,
+    RudaCompilerResult *result
+);
 bool ruda_compiler_result_is_current(
     const RudaCompilerService *service,
     const RudaCompilerResult *result

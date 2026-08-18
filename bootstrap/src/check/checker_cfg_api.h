@@ -41,6 +41,10 @@
     RudaFunctionChecker *function,
     const RudaAstNode *node
 );
+ bool ruda_checker_private_compile_array_for(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node
+);
  bool ruda_checker_private_compile_loop_control(
     RudaFunctionChecker *function,
     const RudaAstNode *statement

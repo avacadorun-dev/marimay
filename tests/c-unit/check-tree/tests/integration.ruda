@@ -1,0 +1,3 @@
+fn integration(): int {
+  return alsoMissing;
+}

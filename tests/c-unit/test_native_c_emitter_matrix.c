@@ -23,10 +23,13 @@ static void ruda_test_native_source_matrix_differential(void) {
         "      }\n"
         "    }\n"
         "  }\n"
-        "  return result[0][0] + result[0][1] + result[1][0] + result[1][1];\n"
+        "  let adjustment = 0.0;\n"
+        "  for const value of [1.0, 2.0, 3.0] { adjustment += value; }\n"
+        "  return result[0][0] + result[0][1] + result[1][0] + result[1][1]\n"
+        "    + adjustment;\n"
         "}\n"
         "fn bounds(): f64 { let values = [1.0]; values[3] = panic(\"rhs\"); }\n";
-    static const uint64_t expected_bits = UINT64_C(0x4079f00000000000);
+    static const uint64_t expected_bits = UINT64_C(0x407a500000000000);
     RudaSourceManager sources;
     const RudaSourceSnapshot *snapshot = NULL;
     RudaLexResult lexed;
@@ -212,7 +215,7 @@ static void ruda_test_native_source_matrix_differential(void) {
     if (generated.data != NULL) {
         ruda_test_native_compile_and_run(
             &generated,
-            "ok:f64:4079f00000000000\n",
+            "ok:f64:407a500000000000\n",
             0
         );
     }

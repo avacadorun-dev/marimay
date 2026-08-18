@@ -185,7 +185,7 @@ cleanup:
     return result->valid && !ruda_checker_has_failed(function->checker);
 }
 
-static bool ruda_array_layout(
+bool ruda_array_layout(
     RudaFunctionChecker *function,
     RudaTypeId type,
     RudaMirArrayId *result

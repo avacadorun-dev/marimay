@@ -84,6 +84,13 @@ const RudaManifestDiagnostic *ruda_manifest_diagnostic(
     const RudaManifestParseResult *result,
     size_t index
 );
+/* Decodes one validated JSON-compatible string span into owned UTF-8 bytes. */
+bool ruda_manifest_decode_string(
+    const RudaManifestParseResult *parsed,
+    RudaManifestSpan span,
+    RudaAllocator allocator,
+    RudaOwnedBytes *output
+);
 
 typedef struct RudaManifestFormatOptions {
     size_t max_decoded_bytes;

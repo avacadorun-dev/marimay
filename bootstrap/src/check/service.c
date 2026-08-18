@@ -10,6 +10,7 @@ typedef struct RudaCompilerSemanticTarget {
     const char *root_import_path;
     size_t root_import_path_length;
     bool is_graph;
+    bool all_packages;
 } RudaCompilerSemanticTarget;
 
 static bool ruda_compiler_allocator_valid(RudaAllocator allocator) {
@@ -211,8 +212,8 @@ static bool ruda_compiler_graph_target_valid(
     if (service == NULL || target == NULL || target->packages == NULL
         || target->package_count == 0
         || target->package_count > graph_options.max_packages
-        || target->root_import_path == NULL
-        || target->root_import_path_length == 0) {
+        || (!target->all_packages && (target->root_import_path == NULL
+            || target->root_import_path_length == 0))) {
         return false;
     }
     for (package_index = 0; package_index < target->package_count;
@@ -327,15 +328,23 @@ static RudaCompilerStatus ruda_compiler_check_graph_semantics(
         }
     }
     options.package_options = service->options.check_options;
-    status = ruda_check_package_graph(
-        graph_inputs.data,
-        graph_inputs.length,
-        target->root_import_path,
-        target->root_import_path_length,
-        service->allocator,
-        options,
-        &built->checked
-    );
+    status = target->all_packages
+        ? ruda_check_module_graph(
+            graph_inputs.data,
+            graph_inputs.length,
+            service->allocator,
+            options,
+            &built->checked
+        )
+        : ruda_check_package_graph(
+            graph_inputs.data,
+            graph_inputs.length,
+            target->root_import_path,
+            target->root_import_path_length,
+            service->allocator,
+            options,
+            &built->checked
+        );
     ruda_vector_dispose(&graph_inputs);
     ruda_vector_dispose(&graph_asts);
     return ruda_compiler_check_status(status);
@@ -990,6 +999,26 @@ RudaCompilerStatus ruda_compiler_service_check_graph(
         package_count,
         root_import_path,
         root_import_path_length,
+        NULL,
+        result
+    );
+}
+
+RudaCompilerStatus ruda_compiler_service_check_module_graph(
+    const RudaCompilerService *service,
+    const RudaCompilerPackage *packages,
+    size_t package_count,
+    RudaCompilerResult *result
+) {
+    RudaCompilerSemanticTarget target;
+    memset(&target, 0, sizeof(target));
+    target.packages = packages;
+    target.package_count = package_count;
+    target.is_graph = true;
+    target.all_packages = true;
+    return ruda_compiler_service_check_target_request(
+        service,
+        &target,
         NULL,
         result
     );

@@ -813,11 +813,12 @@ bool ruda_check_graph_options_valid(
         && ruda_check_options_valid(allocator, options.package_options);
 }
 
-RudaCheckStatus ruda_check_package_graph(
+static RudaCheckStatus ruda_check_graph(
     const RudaCheckPackageInput *inputs,
     size_t package_count,
     const char *root_import_path,
     size_t root_import_path_length,
+    bool all_packages,
     RudaAllocator allocator,
     RudaCheckGraphOptions options,
     RudaCheckResult *result
@@ -831,8 +832,10 @@ RudaCheckStatus ruda_check_package_graph(
         return RUDA_CHECK_INVALID_ARGUMENT;
     }
     memset(result, 0, sizeof(*result));
-    if (inputs == NULL || package_count == 0 || root_import_path == NULL
-        || root_import_path_length == 0 || package_count > options.max_packages
+    if (inputs == NULL || package_count == 0
+        || (!all_packages && (root_import_path == NULL
+            || root_import_path_length == 0))
+        || package_count > options.max_packages
         || !ruda_check_graph_options_valid(allocator, options)) {
         return package_count > options.max_packages
             ? RUDA_CHECK_LIMIT_REACHED : RUDA_CHECK_INVALID_ARGUMENT;
@@ -891,7 +894,7 @@ RudaCheckStatus ruda_check_package_graph(
             return RUDA_CHECK_INVALID_ARGUMENT;
         }
     }
-    root_index = ruda_graph_find_package(
+    root_index = all_packages ? 0 : ruda_graph_find_package(
         &graph, root_import_path, root_import_path_length
     );
     if (root_index == SIZE_MAX) {
@@ -900,6 +903,13 @@ RudaCheckStatus ruda_check_package_graph(
     }
     root_ast = ruda_graph_first_ast(((const RudaCheckGraphPackage *)
         graph.packages.data)[root_index].input);
+    if (all_packages) {
+        const RudaCheckGraphPackage *root = ruda_vector_at_const(
+            &graph.packages, root_index
+        );
+        root_import_path = root->input->import_path;
+        root_import_path_length = root->input->import_path_length;
+    }
     if (!ruda_check_result_init(result, allocator, options.package_options,
             root_ast->snapshot, root_import_path, root_import_path_length)) {
         ruda_graph_dispose(&graph);
@@ -923,7 +933,18 @@ RudaCheckStatus ruda_check_package_graph(
             goto fail;
         }
     }
-    if (!ruda_graph_visit(&graph, root_index, 1)) {
+    if (all_packages) {
+        for (package_index = 0; package_index < graph.packages.length;
+            package_index += 1) {
+            RudaCheckGraphPackage *package = ruda_vector_at(
+                &graph.packages, package_index
+            );
+            if (package->state == 0
+                && !ruda_graph_visit(&graph, package_index, 1)) {
+                goto fail;
+            }
+        }
+    } else if (!ruda_graph_visit(&graph, root_index, 1)) {
         goto fail;
     }
     if (result->diagnostics.length != 0) {
@@ -1003,4 +1024,31 @@ fail:
         return graph.failure;
     }
     return RUDA_CHECK_OK;
+}
+
+RudaCheckStatus ruda_check_package_graph(
+    const RudaCheckPackageInput *inputs,
+    size_t package_count,
+    const char *root_import_path,
+    size_t root_import_path_length,
+    RudaAllocator allocator,
+    RudaCheckGraphOptions options,
+    RudaCheckResult *result
+) {
+    return ruda_check_graph(
+        inputs, package_count, root_import_path, root_import_path_length,
+        false, allocator, options, result
+    );
+}
+
+RudaCheckStatus ruda_check_module_graph(
+    const RudaCheckPackageInput *inputs,
+    size_t package_count,
+    RudaAllocator allocator,
+    RudaCheckGraphOptions options,
+    RudaCheckResult *result
+) {
+    return ruda_check_graph(
+        inputs, package_count, NULL, 0, true, allocator, options, result
+    );
 }

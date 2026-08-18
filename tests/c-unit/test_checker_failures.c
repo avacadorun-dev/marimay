@@ -31,8 +31,16 @@ void ruda_test_checker_unsupported_is_explicit(void) {
         ruda_system_allocator(),
         ruda_check_default_options(),
         &checked
-    ) == RUDA_CHECK_INCOMPLETE_LANGUAGE);
-    RUDA_EXPECT(!checked.initialized);
+    ) == RUDA_CHECK_OK);
+    RUDA_EXPECT(checked.initialized);
+    if (checked.initialized) {
+        RUDA_EXPECT(checked.diagnostics.length == 1);
+        RUDA_EXPECT(strcmp(
+            ruda_check_diagnostic(&checked, 0)->code,
+            RUDA_DIAGNOSTIC_TYPE_MISMATCH
+        ) == 0);
+        ruda_check_result_dispose(&checked);
+    }
     ruda_checker_fixture_dispose(&fixture);
 
     RUDA_EXPECT(ruda_checker_fixture_init(

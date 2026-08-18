@@ -2,7 +2,7 @@
 
 Status: I0 implementation instructions.
 
-The current slice builds the `ruda` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces also include the typed MIR oracle and the initial verified scalar bytecode VM. The CLI exposes formatting; `ruda check`, `ruda run`, and `ruda build` are not implemented yet.
+The current slice builds the `ruda` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces also include the typed MIR oracle and the initial verified scalar bytecode VM. The CLI exposes formatting and authoritative batch `ruda check` for the checker-backed preview surface; `ruda run` and `ruda build` are not implemented yet.
 
 ## Prerequisites
 
@@ -154,4 +154,15 @@ build/debug/ruda version --json
 build/debug/ruda --diagnostic json buid
 ```
 
-Help names the specified top-level workflows. Commands beyond `help`, `version`, and `fmt` return the stable `U0003` bootstrap-stage diagnostic until their roadmap slice lands. `ruda fmt` accepts stdin, an explicit `.ruda`/`ruda.mod`/`ruda.work` file, an explicit directory tree, or no target. With no target it discovers the nearest module and any enclosing workspace manifest. Tree traversal is bounded and deterministic, ignores `.git` and `.ruda`, does not follow symbolic links, and does not cross into nested modules. `--check` and `--diff` are non-writing modes. Invalid input is diagnosed without write-back; each in-place update uses a flushed, permission-preserving sibling temporary followed by atomic replacement. Per-file replacement is transactional, while a multi-file invocation may have committed earlier files before a later failure. The frontend and formatter do not imply that `ruda check`, `ruda run`, or `ruda build` accepts Ruda programs yet.
+Help names the specified top-level workflows. Commands beyond `help`, `version`, `fmt`, and `check` return the stable `U0003` bootstrap-stage diagnostic until their roadmap slice lands. `ruda fmt` accepts stdin, an explicit `.ruda`/`ruda.mod`/`ruda.work` file, an explicit directory tree, or no target. With no target it discovers the nearest module and any enclosing workspace manifest. Tree traversal is bounded and deterministic, ignores `.git` and `.ruda`, does not follow symbolic links, and does not cross into nested modules. `--check` and `--diff` are non-writing modes. Invalid input is diagnosed without write-back; each in-place update uses a flushed, permission-preserving sibling temporary followed by atomic replacement. Per-file replacement is transactional, while a multi-file invocation may have committed earlier files before a later failure.
+
+`ruda check [target] [--all-targets]` uses a fresh compiler service and immutable
+disk snapshots. With no target it discovers the nearest module root and checks
+the complete module graph; a descendant directory selects its package; an
+explicit `.ruda` file selects standalone script checking. The D048 minimal
+manifest identity names local packages. Default discovery excludes
+`_test.ruda` and the root `tests/` tree, while `--all-targets` includes them.
+Diagnostics use the central human/short/NDJSON renderer on stderr, success is
+silent, and accepted-but-unimplemented source exits 70 with `I0001` rather
+than reporting a false clean result. This surface does not imply that
+`ruda run` or `ruda build` accepts Ruda programs yet.

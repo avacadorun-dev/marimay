@@ -27,7 +27,7 @@ blank-line     = horizontal-space line-end ;
 line-end       = horizontal-space (newline | EOF) ;
 ```
 
-Known directive names cannot be reused as metadata namespace parts without a dot. A metadata directive has exactly one string value. `module`/`language` cardinality, duplicate dependency/capability entries, version-constraint meaning, capability meaning, and metadata recognition are I7 semantic checks; the I1 parser retains syntactically valid repetitions so the formatter and later semantic layer consume one tree.
+Known directive names cannot be reused as metadata namespace parts without a dot. A metadata directive has exactly one string value. Under D048, commands that construct a local module graph require exactly one `module` directive and exactly one `language` directive, with nonempty NUL-free decoded values; violations use `K0005`. Duplicate dependency/capability entries, version-constraint meaning, capability meaning, and metadata recognition remain I7 semantic checks. The I1 parser still retains syntactically valid repetitions so the formatter and later semantic layers consume one lossless tree.
 
 At most one `require` group and at most one `capability` group may appear in a `ruda.mod` file. Repeating either group is a syntactic error because canonical formatting cannot preserve two distinct group boundaries. Entries inside the single group may repeat; duplicate-entry meaning remains an I7 semantic check.
 

@@ -24,7 +24,7 @@ static const RudaTaskHelp ruda_tasks[] = {
     {"audit", "Audit dependencies, capabilities, unsafe code, and provenance.", "audit", "ruda audit", false},
     {"bench", "Run first-party benchmarks.", "bench [filter]", "ruda bench --compare base.json", false},
     {"build", "Build a native executable by default.", "build [target] [options]", "ruda build --release", false},
-    {"check", "Run the complete frontend and MIR verifier.", "check [target] [options]", "ruda check --all-targets", false},
+    {"check", "Run the complete frontend and MIR verifier.", "check [target] [--all-targets]", "ruda check --all-targets", true},
     {"doc", "Build or check package documentation.", "doc [options]", "ruda doc --check", false},
     {"exec", "Verify and execute a portable .rudab bundle.", "exec bundle.rudab [options]", "ruda exec app.rudab", false},
     {"explain", "Explain a diagnostic or inferred compiler behavior.", "explain code|topic", "ruda explain suspension loadDashboard", false},
@@ -48,6 +48,7 @@ static const RudaTaskHelp ruda_tasks[] = {
 
 static const char *const ruda_global_options[] = {
     "--check",
+    "--all-targets",
     "--color",
     "--diagnostic",
     "--diff",
@@ -342,6 +343,8 @@ static int ruda_parse_options(
     options->format_diff_index = 0;
     options->format_stdin = false;
     options->format_stdin_index = 0;
+    options->check_all_targets = false;
+    options->check_all_targets_index = 0;
     options->quiet = false;
     options->verbose = false;
 
@@ -438,6 +441,11 @@ static int ruda_parse_options(
             && strcmp(argument, "--stdin") == 0) {
             options->format_stdin = true;
             options->format_stdin_index = (size_t)index;
+        } else if (options->command != NULL
+            && strcmp(options->command, "check") == 0
+            && strcmp(argument, "--all-targets") == 0) {
+            options->check_all_targets = true;
+            options->check_all_targets_index = (size_t)index;
         } else if (argument[0] == '-') {
             return ruda_unknown_option(
                 error_writer,
@@ -451,7 +459,8 @@ static int ruda_parse_options(
         } else if (strcmp(options->command, "help") == 0 && options->help_target == NULL) {
             options->help_target = argument;
             options->help_target_index = (size_t)index;
-        } else if (strcmp(options->command, "fmt") == 0
+        } else if ((strcmp(options->command, "fmt") == 0
+                || strcmp(options->command, "check") == 0)
             && options->target == NULL) {
             options->target = argument;
             options->target_index = (size_t)index;
@@ -685,6 +694,14 @@ int ruda_cli_run(
     }
     if (strcmp(task->name, "fmt") == 0) {
         return ruda_cli_format_target(
+            session,
+            &options,
+            standard_output,
+            standard_error
+        );
+    }
+    if (strcmp(task->name, "check") == 0) {
+        return ruda_cli_check(
             session,
             &options,
             standard_output,

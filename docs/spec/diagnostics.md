@@ -29,6 +29,14 @@ Codes are never silently reused for a semantically unrelated condition. Splittin
 
 Formatter workflow failures use `F0001` when an input cannot be read, `F0002` when canonical bytes cannot be written or atomically committed, `F0003` when a documented defensive limit is exhausted, and `F0004` when `ruda fmt --check` finds non-canonical input. Lexical and parser failures discovered while formatting retain their original `Lxxxx` or `Pxxxx` identities and source spans; the formatter does not collapse them into a generic `Fxxxx` error.
 
+Batch checker discovery, read, or defensive traversal/source-limit failures use
+`K0004`. A syntactically valid manifest that lacks exactly one usable,
+nonempty, NUL-free `module` and `language` identity uses `K0005`. Lexical, parser, resolver, type,
+match, and effect failures discovered by `ruda check` retain their originating
+codes and exact source spans. If accepted syntax reaches an unimplemented
+checker path, `ruda check` emits `I0001` and exits 70; it must never turn that
+condition into a successful or diagnostic-free check.
+
 The allocated codes and summaries are published in the generated [diagnostic code registry](../generated/diagnostic-codes.md).
 
 `ruda explain T1234` prints the rule, minimal bad/good examples, common causes, and links to the installed version-matched reference. Explanations are available offline.

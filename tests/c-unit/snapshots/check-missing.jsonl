@@ -1,0 +1,1 @@
+{"schema":"ruda.diagnostic/1","code":"K0004","severity":"error","message":"cannot discover or read the selected checker target","primary":null,"labels":[],"notes":[],"fixes":[]}

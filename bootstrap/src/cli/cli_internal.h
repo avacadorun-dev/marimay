@@ -30,6 +30,8 @@ typedef struct RudaCliOptions {
     size_t format_diff_index;
     bool format_stdin;
     size_t format_stdin_index;
+    bool check_all_targets;
+    size_t check_all_targets_index;
     bool quiet;
     bool verbose;
 } RudaCliOptions;
@@ -75,6 +77,8 @@ int ruda_cli_format_stdin(RudaSession *session, const RudaCliOptions *options,
 int ruda_cli_format_file(RudaSession *session, const RudaCliOptions *options,
     RudaWriter standard_output, RudaWriter standard_error);
 int ruda_cli_format_target(RudaSession *session, const RudaCliOptions *options,
+    RudaWriter standard_output, RudaWriter standard_error);
+int ruda_cli_check(RudaSession *session, const RudaCliOptions *options,
     RudaWriter standard_output, RudaWriter standard_error);
 
 #endif

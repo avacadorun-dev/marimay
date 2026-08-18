@@ -45,6 +45,7 @@ add_executable(ruda_c_unit
   test_checker_facts.c
   test_checker_resolution.c
   test_cli.c
+  test_cli_check.c
   test_compiler_service.c
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
@@ -141,6 +142,15 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../syntax" DESTINATION "${CMAKE_CURRENT_B
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../format" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/format-tree" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../../examples" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-tree" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-manifest" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity-nul" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY
+  "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"
+  DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
+)
 configure_file(
   snapshots/version.json.in
   "${CMAKE_CURRENT_BINARY_DIR}/snapshots/version.json"

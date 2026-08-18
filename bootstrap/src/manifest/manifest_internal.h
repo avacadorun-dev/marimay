@@ -31,8 +31,6 @@ typedef struct RudaManifestOutput {
 } RudaManifestOutput;
 
 RudaManifestParseStatus ruda_manifest_parse_content(RudaManifestParser *parser);
-bool ruda_manifest_decode_string(const RudaManifestParseResult *parsed,
-    RudaManifestSpan span, RudaAllocator allocator, RudaOwnedBytes *output);
 bool ruda_manifest_first_parent(const RudaOwnedBytes *path);
 
 #endif

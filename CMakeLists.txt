@@ -158,6 +158,8 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/service.c
   bootstrap/src/check/service_queries.c
   bootstrap/src/cli/cli.c
+  bootstrap/src/cli/cli_check.c
+  bootstrap/src/cli/cli_check_targets.c
   bootstrap/src/cli/cli_format.c
   bootstrap/src/cli/cli_format_targets.c
   bootstrap/src/diagnostic/diagnostic.c

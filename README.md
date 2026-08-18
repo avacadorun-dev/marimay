@@ -8,7 +8,7 @@ Latin spelling: **Ruda**. Cyrillic spelling: **Ру́да**, pronounced «ру́
 
 The name means ore: source material transformed by a clear language, strict types, and a cohesive toolchain into reliable native software.
 
-This is the canonical positioning of the intended product, not a claim that every subsystem is implemented today. The current portable C17 Stage 0 builds the `ruda` executable and provides help/version output, a lossless frontend, and canonical formatting. Type checking, VM execution, native builds, networking, and desktop support remain gated roadmap work. [D001](docs/design/decisions.md) accepts the repository identity; [N0](docs/design/naming-audit.md) still blocks public distribution until legal review and external domains, accounts, namespaces, signing identity, and command/PATH coexistence have evidence. None of those external identities is claimed or reserved here.
+This is the canonical positioning of the intended product, not a claim that every subsystem is implemented today. The current portable C17 Stage 0 builds the `ruda` executable and provides help/version output, a lossless frontend, canonical formatting, and authoritative batch `ruda check` for the checker-backed preview surface. VM execution, native builds, networking, and desktop support remain gated roadmap work. [D001](docs/design/decisions.md) accepts the repository identity; [N0](docs/design/naming-audit.md) still blocks public distribution until legal review and external domains, accounts, namespaces, signing identity, and command/PATH coexistence have evidence. None of those external identities is claimed or reserved here.
 
 Ruda is not a dialect or a collage of borrowed keywords. It uses a compact C-family surface, but has its own semantic center:
 
@@ -80,9 +80,10 @@ ruda build --engine vm             # portable .rudab bytecode bundle
 ruda test                          # fast VM test loop
 ruda test --engine both            # VM/native semantic conformance
 ruda fmt                           # canonical formatting
+ruda check                         # authoritative batch type checking
 ```
 
-These commands are the normative product workflow. In the current bootstrap, only `ruda fmt` (plus help/version inspection) is implemented; the roadmap gates the remaining commands. Once present, the VM is not a looser or dynamically typed version of the language: both engines run code that passed the same parser, resolver, type checker, exhaustiveness checker, and typed MIR verifier.
+These commands are the normative product workflow. In the current bootstrap, `ruda fmt` and `ruda check` (plus help/version inspection) are implemented; the roadmap gates the remaining commands. `ruda check` refuses success when accepted source reaches a checker path that is not implemented yet. Once present, the VM is not a looser or dynamically typed version of the language: both engines run code that passed the same parser, resolver, type checker, exhaustiveness checker, and typed MIR verifier.
 
 ## Repository map
 

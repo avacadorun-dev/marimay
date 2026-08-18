@@ -85,7 +85,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | TOOL-005 | tests need no external framework/config and are isolated/deterministic | toolchain §5 | I8 |
 | TOOL-006 | `ruda test --engine both` detects semantic divergence | toolchain §5.5 | I4 |
 | TOOL-007 | unit/integration/doc/property/fuzz use one first-party harness | toolchain §5 | I8 |
-| TOOL-008 | `ruda check` runs full frontend/MIR verification without backend | toolchain §6.1 | I2 |
+| TOOL-008 | `ruda check` runs the authoritative frontend/checker/MIR verification without a backend, checks a deterministic complete local module graph under D048, is unaffected by editor overlays, and cannot report success for checker-incomplete accepted syntax | toolchain §§1.1,6.1; manifest; diagnostics; D048 | I2 |
 | TOOL-009 | `ruda run` defaults VM; `ruda build` defaults native | toolchain §§6.2–6.3 | I4 |
 | TOOL-010 | diagnostics have stable codes, spans, fixes, JSON, and offline explanations | diagnostics; toolchain §§2,8 | I0–I8 |
 | TOOL-011 | manifest/lock resolution is deterministic and offline reproducible | toolchain §§3,7 | I7 |

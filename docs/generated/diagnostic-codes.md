@@ -10,9 +10,12 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `F0002` | formatter | Formatter could not write or transactionally replace canonical output. |
 | `F0003` | formatter | Formatter exhausted a defensive input, nesting, work, or output limit. |
 | `F0004` | formatter | Source input does not match canonical formatting. |
+| `I0001` | compiler | Compiler does not implement an accepted language construct. |
 | `K0001` | manifest | Manifest directive or grouping syntax is invalid. |
 | `K0002` | manifest | Manifest contains an invalid JSON-compatible string. |
 | `K0003` | manifest | Workspace use path is not a canonical relative path within the workspace root. |
+| `K0004` | check | Checker could not discover or read the selected source target. |
+| `K0005` | manifest | Module manifest does not provide one usable module and language identity. |
 | `L0001` | lexer | Source contains malformed UTF-8. |
 | `L0002` | lexer | Source contains a character that cannot begin a token. |
 | `L0003` | lexer | Reserved word cannot be used as an identifier. |

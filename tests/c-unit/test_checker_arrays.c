@@ -177,6 +177,32 @@ static bool ruda_checker_arrays_has_checked_store(
     return found;
 }
 
+static size_t ruda_checker_arrays_instruction_count(
+    const RudaMirFunction *function,
+    RudaMirInstructionKind kind
+) {
+    size_t block_index = 0;
+    size_t count = 0;
+    for (block_index = 0; function != NULL
+        && block_index < function->blocks.length; block_index += 1) {
+        const RudaMirBlock *block = ruda_vector_at_const(
+            &function->blocks, block_index
+        );
+        size_t instruction_index = 0;
+        for (instruction_index = 0; block != NULL
+            && instruction_index < block->instructions.length;
+            instruction_index += 1) {
+            const RudaMirInstruction *instruction = ruda_vector_at_const(
+                &block->instructions, instruction_index
+            );
+            if (instruction != NULL && instruction->kind == kind) {
+                count += 1;
+            }
+        }
+    }
+    return count;
+}
+
 static void ruda_checker_arrays_expect_type_diagnostic(const char *source) {
     RudaCheckerArraysFixture fixture;
     RudaCheckResult checked;
@@ -618,6 +644,85 @@ static void ruda_test_checker_arrays_length_shadow(void) {
     ruda_checker_arrays_fixture_dispose(&fixture);
 }
 
+static void ruda_test_checker_arrays_for_of(void) {
+    static const char source[] =
+        "fn iterate(): int {\n"
+        "  let total = 0;\n"
+        "  for const value of [1, 2, 3, 4] {\n"
+        "    if value == 2 { continue; }\n"
+        "    total += value;\n"
+        "    if value == 3 { break; }\n"
+        "  }\n"
+        "  return total;\n"
+        "}\n";
+    RudaCheckerArraysFixture fixture;
+    RudaCheckResult checked;
+    RudaBytecodeFunction lowered;
+    RudaBytecodeExecution execution;
+    RudaBytecodeRunOptions run_options;
+    RudaBytecodeValue vm_result;
+    RudaMirValue mir_result;
+    const RudaCheckedFunction *function = NULL;
+    size_t index = SIZE_MAX;
+    memset(&checked, 0, sizeof(checked));
+    memset(&lowered, 0, sizeof(lowered));
+    memset(&execution, 0, sizeof(execution));
+    memset(&vm_result, 0, sizeof(vm_result));
+    memset(&mir_result, 0, sizeof(mir_result));
+    RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
+    RUDA_EXPECT(ruda_check_ast(
+        &fixture.ast, "test/checker-array-for-of", ruda_system_allocator(),
+        ruda_check_default_options(), &checked
+    ) == RUDA_CHECK_OK);
+    if (checked.initialized) {
+        RUDA_EXPECT(checked.diagnostics.length == 0);
+        function = ruda_checker_arrays_function(&checked, "iterate");
+        index = ruda_checker_arrays_function_index(&checked, "iterate");
+        RUDA_EXPECT(function != NULL && index != SIZE_MAX);
+        if (function != NULL && index != SIZE_MAX) {
+            RUDA_EXPECT(ruda_mir_verify(&function->mir) == RUDA_MIR_VERIFY_OK);
+            RUDA_EXPECT(ruda_checker_arrays_instruction_count(
+                &function->mir, RUDA_MIR_ARRAY_LENGTH
+            ) == 1);
+            RUDA_EXPECT(ruda_checker_arrays_instruction_count(
+                &function->mir, RUDA_MIR_ARRAY_GET
+            ) == 1);
+            RUDA_EXPECT(ruda_check_interpret_function(
+                &checked, index, NULL, 0, ruda_system_allocator(),
+                ruda_check_interpret_default_options(), &mir_result
+            ) == RUDA_MIR_INTERPRET_OK);
+            RUDA_EXPECT(mir_result.type == RUDA_TYPE_I64
+                && mir_result.as.i64 == 4);
+            RUDA_EXPECT(ruda_mir_lower_bytecode_function(
+                &function->mir, ruda_system_allocator(),
+                ruda_mir_bytecode_lower_default_options(), &lowered
+            ) == RUDA_MIR_BYTECODE_LOWER_OK);
+            if (lowered.initialized) {
+                RUDA_EXPECT(ruda_bytecode_verify(&lowered)
+                    == RUDA_BYTECODE_VERIFY_OK);
+                RUDA_EXPECT(ruda_bytecode_execution_init(
+                    &execution, ruda_system_allocator(),
+                    ruda_bytecode_execution_default_options()
+                ));
+                if (execution.initialized) {
+                    run_options = ruda_bytecode_run_default_options();
+                    run_options.execution = &execution;
+                    RUDA_EXPECT(ruda_bytecode_run(
+                        &lowered, NULL, 0, ruda_system_allocator(),
+                        run_options, &vm_result
+                    ) == RUDA_BYTECODE_RUN_OK);
+                    RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_I64
+                        && vm_result.as.i64 == 4);
+                    ruda_bytecode_execution_dispose(&execution);
+                }
+                ruda_bytecode_function_dispose(&lowered);
+            }
+        }
+        ruda_check_result_dispose(&checked);
+    }
+    ruda_checker_arrays_fixture_dispose(&fixture);
+}
+
 static void ruda_test_checker_arrays_allocation_failures(void) {
     static const char source[] =
         "fn arrays(): int {\n"
@@ -712,6 +817,7 @@ void ruda_test_checker_arrays(void) {
     ruda_test_checker_arrays_surface_and_matrix();
     ruda_test_checker_arrays_d045_and_diagnostics();
     ruda_test_checker_arrays_length_shadow();
+    ruda_test_checker_arrays_for_of();
     ruda_test_checker_arrays_allocation_failures();
     ruda_test_checker_arrays_limits();
 }

@@ -20,5 +20,9 @@ These examples are executable specification fixtures once the parser exists. Unt
   function aliases, namespace qualification, direct dot calls, and structural
   interface conformance all resolve behavior owned by the imported nominal
   package.
+- `array_checkpoint.ruda` checks the D045 array surface, including construction,
+  mutation, checked indexed compound assignment, and nonmutating
+  `for const item of array` traversal. The broader mutation-generation
+  invalidation gate remains open.
 
 An implementation change that makes an example invalid must update the normative spec and corresponding decision in the same change. After I2, all examples are compiled by `ruda check`; after I6, they run under `ruda test --engine both` with deterministic service fixtures.

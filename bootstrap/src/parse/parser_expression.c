@@ -1104,7 +1104,11 @@ void ruda_parse_type_until(
     RudaTokenKind third
 ) {
     RudaMarker marker = ruda_parser_start(parser);
-    RudaTokenKind current = ruda_parser_current(parser);
+    RudaTokenKind current;
+    if (!marker.valid || parser->allocation_failed || parser->limit_reached) {
+        return;
+    }
+    current = ruda_parser_current(parser);
     if (ruda_parser_type_at_stop(parser, first, second, third)) {
         ruda_parser_expect_identifier(parser, "expected type");
     } else if (ruda_parser_at_identifier(parser)) {
@@ -1140,7 +1144,9 @@ void ruda_parse_type_until(
             RUDA_TOKEN_FAT_ARROW,
             "expected '=>' in function type"
         );
-        ruda_parse_type_until(parser, first, second, third);
+        if (!parser->allocation_failed && !parser->limit_reached) {
+            ruda_parse_type_until(parser, first, second, third);
+        }
     } else {
         ruda_parser_expect_identifier(parser, "expected type");
         if (!ruda_parser_type_at_stop(parser, first, second, third)

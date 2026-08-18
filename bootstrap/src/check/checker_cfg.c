@@ -707,6 +707,309 @@ cleanup:
     return accepted && !ruda_checker_has_failed(function->checker);
 }
 
+ bool ruda_checker_private_compile_array_for(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node
+) {
+    const RudaAstNode *header = ruda_checker_private_check_child_node(
+        node,
+        RUDA_SYNTAX_FOR_HEADER,
+        0
+    );
+    const RudaAstNode *body = ruda_checker_private_check_child_node(
+        node,
+        RUDA_SYNTAX_BLOCK,
+        0
+    );
+    const RudaSyntaxToken *const_token = ruda_checker_private_check_child_token(
+        header,
+        RUDA_TOKEN_KW_CONST,
+        0
+    );
+    const RudaSyntaxToken *of_token = ruda_checker_private_check_child_token(
+        header,
+        RUDA_TOKEN_KW_OF,
+        0
+    );
+    const RudaSyntaxToken *name_token = ruda_checker_private_check_child_token(
+        header,
+        RUDA_TOKEN_IDENTIFIER,
+        0
+    );
+    const RudaAstNode *iterable_node = ruda_checker_private_check_child_node(
+        header,
+        RUDA_SYNTAX_EXPRESSION,
+        0
+    );
+    RudaExpressionValue iterable;
+    RudaExpressionValue zero;
+    RudaExpressionValue one;
+    RudaExpressionValue condition;
+    RudaExpressionValue next;
+    RudaTypeId element_type = RUDA_TYPE_INVALID;
+    RudaMirArrayId array = RUDA_MIR_NO_ARRAY;
+    RudaMirRegister length = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister item_value = RUDA_MIR_NO_REGISTER;
+    RudaCheckName name;
+    RudaCheckLocal *item = NULL;
+    RudaInitializationSnapshot initial_state;
+    RudaLoopContext loop;
+    RudaMirBlockId entry = RUDA_MIR_NO_BLOCK;
+    RudaMirBlockId condition_block = RUDA_MIR_NO_BLOCK;
+    RudaMirBlockId body_block = RUDA_MIR_NO_BLOCK;
+    RudaMirBlockId step_block = RUDA_MIR_NO_BLOCK;
+    RudaMirBlockId exit_block = RUDA_MIR_NO_BLOCK;
+    RudaMirBlockId body_end = RUDA_MIR_NO_BLOCK;
+    RudaMirInstruction instruction;
+    size_t outer_local_count = function->locals.length;
+    size_t previous_depth = function->scope_depth;
+    bool scope_entered = false;
+    bool initial_state_initialized = false;
+    bool loop_pushed = false;
+    bool body_continues = false;
+    bool accepted = false;
+    memset(&iterable, 0, sizeof(iterable));
+    memset(&zero, 0, sizeof(zero));
+    memset(&one, 0, sizeof(one));
+    memset(&condition, 0, sizeof(condition));
+    memset(&next, 0, sizeof(next));
+    memset(&initial_state, 0, sizeof(initial_state));
+    if (header == NULL || body == NULL || const_token == NULL
+        || of_token == NULL || name_token == NULL || name_token->synthetic
+        || iterable_node == NULL || previous_depth == SIZE_MAX) {
+        ruda_checker_fail(
+            function->checker,
+            previous_depth == SIZE_MAX
+                ? RUDA_CHECK_LIMIT_REACHED
+                : RUDA_CHECK_INVALID_ARGUMENT
+        );
+        goto cleanup;
+    }
+    if (!ruda_compile_expression(
+            function,
+            iterable_node,
+            RUDA_TYPE_INVALID,
+            &iterable
+        )) {
+        goto cleanup;
+    }
+    if (ruda_expression_is_never(function, &iterable)) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_type_array_element(
+            &function->checker->result->types,
+            iterable.type,
+            &element_type
+        )) {
+        (void)ruda_checker_add_diagnostic(
+            function->checker,
+            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            "for-of expression must have type Array<T>",
+            iterable_node->start,
+            iterable_node->end
+        );
+        goto cleanup;
+    }
+    if (!ruda_array_layout(function, iterable.type, &array)
+        || !ruda_function_add_register(function, RUDA_TYPE_I64, &length)) {
+        goto cleanup;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_LENGTH;
+    instruction.target = length;
+    instruction.first = iterable.register_id;
+    instruction.second = RUDA_MIR_NO_REGISTER;
+    instruction.third = RUDA_MIR_NO_REGISTER;
+    instruction.array = array;
+    instruction.span.start = iterable_node->start;
+    instruction.span.end = iterable_node->end;
+    if (!ruda_function_append_instruction(function, &instruction)
+        || !ruda_function_emit_instruction(
+            function,
+            RUDA_MIR_CONSTANT_I64,
+            RUDA_TYPE_I64,
+            RUDA_MIR_NO_REGISTER,
+            RUDA_MIR_NO_REGISTER,
+            0,
+            false,
+            header->start,
+            header->start,
+            &zero
+        ) || !ruda_function_emit_instruction(
+            function,
+            RUDA_MIR_CONSTANT_I64,
+            RUDA_TYPE_I64,
+            RUDA_MIR_NO_REGISTER,
+            RUDA_MIR_NO_REGISTER,
+            1,
+            false,
+            header->start,
+            header->start,
+            &one
+        )) {
+        goto cleanup;
+    }
+    function->scope_depth = previous_depth + 1;
+    scope_entered = true;
+    name.snapshot = function->checker->ast->snapshot;
+    name.start = name_token->start;
+    name.end = name_token->end;
+    if (!ruda_checker_private_function_add_local(
+            function,
+            name,
+            element_type,
+            false,
+            true,
+            &item
+        ) || item == NULL) {
+        goto cleanup;
+    }
+    entry = function->block;
+    initial_state_initialized = ruda_checker_private_initialization_snapshot_init(
+        function,
+        outer_local_count,
+        &initial_state
+    );
+    if (!initial_state_initialized
+        || !ruda_checker_private_function_add_block(function, &condition_block)
+        || !ruda_checker_private_function_add_block(function, &body_block)
+        || !ruda_checker_private_function_add_block(function, &step_block)
+        || !ruda_checker_private_function_add_block(function, &exit_block)
+        || !ruda_checker_private_function_set_goto(
+            function,
+            entry,
+            condition_block,
+            node->start,
+            node->start
+        )) {
+        goto cleanup;
+    }
+    function->block = condition_block;
+    function->terminated = false;
+    if (!ruda_function_emit_instruction(
+            function,
+            RUDA_MIR_LESS_I64,
+            RUDA_TYPE_BOOL,
+            zero.register_id,
+            length,
+            0,
+            false,
+            iterable_node->start,
+            iterable_node->end,
+            &condition
+        ) || !ruda_checker_private_function_set_branch(
+            function,
+            function->block,
+            condition.register_id,
+            body_block,
+            exit_block,
+            iterable_node->start,
+            iterable_node->end
+        )) {
+        goto cleanup;
+    }
+    loop.break_target = exit_block;
+    loop.continue_target = step_block;
+    loop.scope_depth = function->scope_depth;
+    if (function->loops.length >= function->mir.options.max_blocks) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        goto cleanup;
+    }
+    if (!ruda_vector_push(&function->loops, &loop)) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_ALLOCATION_FAILED);
+        goto cleanup;
+    }
+    loop_pushed = true;
+    function->block = body_block;
+    function->terminated = false;
+    if (!ruda_function_add_register(function, element_type, &item_value)) {
+        goto cleanup;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_GET;
+    instruction.target = item_value;
+    instruction.first = iterable.register_id;
+    instruction.second = zero.register_id;
+    instruction.third = RUDA_MIR_NO_REGISTER;
+    instruction.array = array;
+    instruction.span.start = header->start;
+    instruction.span.end = header->end;
+    if (!ruda_function_append_instruction(function, &instruction)
+        || !ruda_checker_private_function_emit_copy(
+            function,
+            item->register_id,
+            item_value,
+            name_token->start,
+            name_token->end
+        ) || !ruda_checker_private_compile_scoped_block(function, body)) {
+        goto cleanup;
+    }
+    body_continues = !function->terminated;
+    body_end = function->block;
+    function->loops.length -= 1;
+    loop_pushed = false;
+    if (body_continues && !ruda_checker_private_function_set_goto(
+            function,
+            body_end,
+            step_block,
+            body->end,
+            body->end
+        )) {
+        goto cleanup;
+    }
+    function->block = step_block;
+    function->terminated = false;
+    if (!ruda_function_emit_instruction(
+            function,
+            RUDA_MIR_ADD_CHECKED_I64,
+            RUDA_TYPE_I64,
+            zero.register_id,
+            one.register_id,
+            0,
+            false,
+            header->start,
+            header->end,
+            &next
+        ) || !ruda_checker_private_function_emit_copy(
+            function,
+            zero.register_id,
+            next.register_id,
+            header->start,
+            header->end
+        ) || !ruda_checker_private_function_set_goto(
+            function,
+            function->block,
+            condition_block,
+            header->end,
+            header->end
+        ) || !ruda_checker_private_initialization_snapshot_restore(
+            function,
+            &initial_state
+        )) {
+        goto cleanup;
+    }
+    function->locals.length = outer_local_count;
+    function->scope_depth = previous_depth;
+    scope_entered = false;
+    function->block = exit_block;
+    function->terminated = false;
+    accepted = true;
+
+cleanup:
+    if (loop_pushed) {
+        function->loops.length -= 1;
+    }
+    if (initial_state_initialized) {
+        ruda_checker_private_initialization_snapshot_dispose(&initial_state);
+    }
+    if (scope_entered) {
+        function->locals.length = outer_local_count;
+        function->scope_depth = previous_depth;
+    }
+    return accepted && !ruda_checker_has_failed(function->checker);
+}
+
  bool ruda_checker_private_compile_loop_control(
     RudaFunctionChecker *function,
     const RudaAstNode *statement
@@ -787,7 +1090,18 @@ cleanup:
         return ruda_checker_private_compile_while(function, statement);
     }
     if (statement->kind == RUDA_SYNTAX_FOR_STATEMENT) {
-        return ruda_checker_private_compile_c_for(function, statement);
+        const RudaAstNode *header = ruda_checker_private_check_child_node(
+            statement,
+            RUDA_SYNTAX_FOR_HEADER,
+            0
+        );
+        return ruda_checker_private_check_child_token(
+                header,
+                RUDA_TOKEN_KW_CONST,
+                0
+            ) != NULL
+            ? ruda_checker_private_compile_array_for(function, statement)
+            : ruda_checker_private_compile_c_for(function, statement);
     }
     if (statement->kind == RUDA_SYNTAX_BREAK_STATEMENT
         || statement->kind == RUDA_SYNTAX_CONTINUE_STATEMENT) {

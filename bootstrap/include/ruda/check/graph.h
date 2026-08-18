@@ -49,4 +49,13 @@ RudaCheckStatus ruda_check_package_graph(
     RudaCheckResult *result
 );
 
+/* Checks every supplied package, including disconnected module packages. */
+RudaCheckStatus ruda_check_module_graph(
+    const RudaCheckPackageInput *packages,
+    size_t package_count,
+    RudaAllocator allocator,
+    RudaCheckGraphOptions options,
+    RudaCheckResult *result
+);
+
 #endif

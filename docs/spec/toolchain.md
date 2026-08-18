@@ -43,6 +43,41 @@ ruda run ./cmd/admin -- --repair account-42
 
 A standalone `.ruda` file without `ruda.mod` can be checked, formatted, tested, or run in script mode. Script mode has no third-party dependencies and receives no filesystem/network/process capability unless explicitly granted. D046 capability `"io.stdout"` is granted by default for `ruda run` of a local module or script and for a native executable from `ruda build`; it is not a filesystem, network, or process grant.
 
+### 1.1 Batch check discovery
+
+```sh
+ruda check
+ruda check ./path/to/package
+ruda check file.ruda
+ruda check --all-targets
+```
+
+With no target, discovery starts at the physical current directory, finds the
+nearest ancestor `ruda.mod`, and checks its whole module even when invoked from
+a descendant package. An explicit directory equal to that root selects the
+whole module; another directory within it selects the corresponding package.
+An explicit regular `.ruda` file is a standalone one-file check. Other file
+kinds, unreadable targets, a missing module root for a directory target, or an
+empty selected graph report `K0004`.
+
+A module check requires the D048 minimal manifest identity: exactly one
+nonempty `module` value and exactly one nonempty `language` value. The root
+package uses the decoded module path, and source-bearing descendant directories
+append their relative `/`-separated path. All discovered packages, including
+disconnected packages, are checked in canonical import-path order; files are
+ordered by normalized path. The default source set excludes `_test.ruda` files
+and the root `tests/` directory. `--all-targets` includes them. Traversal does
+not follow symbolic links, enter `.git` or `.ruda`, or cross a nested module,
+and it has fixed defensive limits.
+
+Every invocation creates a fresh compiler service from immutable disk
+snapshots. Editor overlays and results from earlier invocations cannot affect a
+batch result. A successful check emits no stdout or stderr. Source diagnostics
+use exit 1, invalid invocation uses exit 2, cancellation uses exit 130, and an
+accepted but checker-incomplete construct reports `I0001` and exits 70. Human,
+short, and versioned newline-delimited JSON diagnostics are written only to
+stderr in deterministic order.
+
 ## 2. Global behavior
 
 Every command supports:

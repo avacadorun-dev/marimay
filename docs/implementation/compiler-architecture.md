@@ -235,8 +235,11 @@ persistent semantic cache.
 
 The present occurrence universe covers stable top-level type, constant, and
 resolved call references. Local bindings, record fields, enum variants,
-generic instantiations, effect metadata, production indexing/LSP transport,
-and public `ruda check` remain later I2/I8 work.
+generic instantiations, effect metadata, and production indexing/LSP transport
+remain later I2/I8 work. Public `ruda check` now owns fresh disk-snapshot target
+discovery and delegates the authoritative selected graph to this service; it
+reports an internal failure instead of success for a checker-incomplete
+accepted construct.
 
 ### Test owners
 

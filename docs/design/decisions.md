@@ -861,3 +861,40 @@ conversion syntax. A closed primitive family keeps inference decidable without
 inventing a public numeric constraint, makes every information-losing result
 visible in the type, and gives MIR, bytecode, VM, and native C17 one portable
 contract at signed overflow boundaries.
+
+## D048 — Batch checking owns minimal module identity before package resolution
+
+Status: accepted.
+
+The manifest parser continues to retain repeated syntactically valid
+`module` and `language` directives for formatting. A command that constructs a
+local module graph, beginning with `ruda check`, additionally requires exactly
+one of each directive and requires both decoded values to be nonempty and
+NUL-free. Failure is `K0005`. This is the minimum identity boundary needed to
+name local packages; versions, dependencies, capabilities, metadata,
+workspaces, and all other package-resolution semantics remain owned by I7.
+
+Within one module, the root directory has the exact decoded module import path.
+A source-bearing descendant directory is a package whose import path appends
+its `/`-separated relative directory path. Whole-module checking visits every
+discovered package in canonical import-path order, including packages not
+reachable from the root package. Source files within each package are ordered
+by exact normalized path before the authoritative compiler service runs.
+
+Default batch checking excludes files ending `_test.ruda` and the module-root
+`tests/` tree. `ruda check --all-targets` includes both. Traversal does not
+follow symbolic links, enter `.git` or `.ruda`, or cross a nested `ruda.mod`,
+and it is bounded by documented path, depth, entry, file-count, and source-byte
+limits. Batch requests never consume editor overlays or persistent semantic
+caches: each invocation loads immutable disk snapshots into a fresh compiler
+service and checks the complete selected graph.
+
+An accepted source construct that has not reached the authoritative checker
+cannot produce a successful `ruda check`. The command reports `I0001` and exits
+70 rather than treating an incomplete compiler status as a clean program.
+
+Reason: checkpoint 8 cannot truthfully expose complete, deterministic module
+checking without a stable local package identity, while moving dependency and
+supply-chain policy ahead of I7 would couple an otherwise local compiler
+command to unfinished resolution semantics. This narrow exception resolves
+that boundary without changing the lossless manifest tree used by I1.
