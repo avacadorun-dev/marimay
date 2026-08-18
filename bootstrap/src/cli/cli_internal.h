@@ -13,6 +13,7 @@
 #include "ruda/platform/file.h"
 
 typedef struct RudaCliOptions {
+    const char *tool_executable_path;
     RudaDiagnosticStyle diagnostic_style;
     const char *command;
     size_t command_index;

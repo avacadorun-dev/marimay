@@ -98,6 +98,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | TOOL-018 | official Tier 1 host installation makes native `ruda build` usable without per-project/manual C compiler, linker, or SDK selection | toolchain §6.3; D030 | I4/I9 |
 | TOOL-019 | language/product name, command, domains, module/registry namespace, artifact identity, and installer collisions are evidence-audited and controlled before public distribution | D001; naming audit; roadmap N0 | N0 |
 | TOOL-020 | formatter uses D031 width-sensitive braces for import/record/pattern/payload lists while keeping executable and declaration bodies structurally multiline | toolchain §4.2; D031 | I1 |
+| TOOL-021 | `ruda build` selects and validates a version-matched runtime for the requested debug/release output profile independently of the compiler's own build configuration, remains relocatable when installed, and hashes runtime content into the build cache key | toolchain §6.3; execution §5.6; D052 | I4 |
 
 ## Standard library
 

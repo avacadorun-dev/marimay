@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.25)
 project(Ruda VERSION 0.0.0 LANGUAGES C)
 
 include(CTest)
+include(GNUInstallDirs)
 include(cmake/RudaWarnings.cmake)
 include(cmake/RudaSanitizers.cmake)
 
@@ -61,6 +62,37 @@ set(RUDA_BYTECODE_VERSION "unavailable")
 set(RUDA_STANDARD_LIBRARY_VERSION "unavailable")
 set(RUDA_BOOTSTRAP_STAGE 0)
 
+set(RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY
+  "${CMAKE_CURRENT_BINARY_DIR}/native-runtime/debug"
+)
+set(RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY
+  "${CMAKE_CURRENT_BINARY_DIR}/native-runtime/release"
+)
+set(RUDA_NATIVE_RUNTIME_DEBUG_ARCHIVE
+  "${RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}ruda_native_runtime_debug${CMAKE_STATIC_LIBRARY_SUFFIX}"
+)
+set(RUDA_NATIVE_RUNTIME_RELEASE_ARCHIVE
+  "${RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}ruda_native_runtime_release${CMAKE_STATIC_LIBRARY_SUFFIX}"
+)
+set(RUDA_NATIVE_RUNTIME_DEBUG_MANIFEST
+  "${RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY}/ruda-native-runtime.manifest"
+)
+set(RUDA_NATIVE_RUNTIME_RELEASE_MANIFEST
+  "${RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY}/ruda-native-runtime.manifest"
+)
+set(RUDA_NATIVE_INSTALLED_RUNTIME_RELATIVE
+  "../${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native"
+)
+set(RUDA_NATIVE_INSTALLED_INCLUDE_RELATIVE
+  "../${CMAKE_INSTALL_INCLUDEDIR}"
+)
+set(RUDA_NATIVE_RUNTIME_DEBUG_FILENAME
+  "${CMAKE_STATIC_LIBRARY_PREFIX}ruda_native_runtime_debug${CMAKE_STATIC_LIBRARY_SUFFIX}"
+)
+set(RUDA_NATIVE_RUNTIME_RELEASE_FILENAME
+  "${CMAKE_STATIC_LIBRARY_PREFIX}ruda_native_runtime_release${CMAKE_STATIC_LIBRARY_SUFFIX}"
+)
+
 set(RUDA_NATIVE_C_SANITIZER_FLAG "")
 if(MSVC AND RUDA_ENABLE_ADDRESS_SANITIZER)
   set(RUDA_NATIVE_C_SANITIZER_FLAG "/fsanitize=address")
@@ -89,7 +121,24 @@ configure_file(
   @ONLY
 )
 
-add_library(ruda_native_runtime STATIC
+file(MAKE_DIRECTORY
+  "${RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY}"
+  "${RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY}"
+)
+set(RUDA_NATIVE_RUNTIME_MANIFEST_PROFILE debug)
+configure_file(
+  cmake/ruda_native_runtime.manifest.in
+  "${RUDA_NATIVE_RUNTIME_DEBUG_MANIFEST}"
+  @ONLY
+)
+set(RUDA_NATIVE_RUNTIME_MANIFEST_PROFILE release)
+configure_file(
+  cmake/ruda_native_runtime.manifest.in
+  "${RUDA_NATIVE_RUNTIME_RELEASE_MANIFEST}"
+  @ONLY
+)
+
+set(RUDA_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/allocator.c
   bootstrap/src/base/checked_i64.c
   bootstrap/src/base/checked_integer.c
@@ -105,22 +154,58 @@ add_library(ruda_native_runtime STATIC
   runtime/common/managed_record.c
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
+  runtime/common/profile.c
   runtime/common/test_output.c
 )
-target_include_directories(ruda_native_runtime PRIVATE
-  bootstrap/include
-  runtime/include
-)
-if(MSVC)
-  target_compile_options(ruda_native_runtime PRIVATE /fp:strict)
-else()
-  target_compile_options(ruda_native_runtime PRIVATE
-    -fno-fast-math -frounding-math -ffp-contract=off
-    -fexcess-precision=standard
+
+function(ruda_add_native_runtime target profile optimization output_directory)
+  add_library(${target} STATIC ${RUDA_NATIVE_RUNTIME_SOURCES})
+  target_include_directories(${target} PRIVATE
+    bootstrap/include
+    runtime/include
   )
+  target_compile_definitions(${target} PRIVATE
+    RUDA_RUNTIME_BUILD_PROFILE="${profile}"
+    RUDA_RUNTIME_BUILD_VERSION="${RUDA_RUNTIME_VERSION}"
+  )
+  set_target_properties(${target} PROPERTIES
+    OUTPUT_NAME "${target}"
+    ARCHIVE_OUTPUT_DIRECTORY "${output_directory}"
+  )
+  foreach(ruda_config DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+    set_target_properties(${target} PROPERTIES
+      ARCHIVE_OUTPUT_DIRECTORY_${ruda_config} "${output_directory}"
+    )
+  endforeach()
+  if(MSVC)
+    target_compile_options(${target} PRIVATE /fp:strict "${optimization}")
+  else()
+    target_compile_options(${target} PRIVATE
+      -fno-fast-math -frounding-math -ffp-contract=off
+      -fexcess-precision=standard "${optimization}"
+    )
+  endif()
+  ruda_target_warnings(${target})
+  ruda_target_sanitizers(${target})
+endfunction()
+
+if(MSVC)
+  set(RUDA_NATIVE_RUNTIME_DEBUG_OPTIMIZATION /Od)
+  set(RUDA_NATIVE_RUNTIME_RELEASE_OPTIMIZATION /O2)
+else()
+  set(RUDA_NATIVE_RUNTIME_DEBUG_OPTIMIZATION -O0)
+  set(RUDA_NATIVE_RUNTIME_RELEASE_OPTIMIZATION -O2)
 endif()
-ruda_target_warnings(ruda_native_runtime)
-ruda_target_sanitizers(ruda_native_runtime)
+ruda_add_native_runtime(
+  ruda_native_runtime_debug debug
+  "${RUDA_NATIVE_RUNTIME_DEBUG_OPTIMIZATION}"
+  "${RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY}"
+)
+ruda_add_native_runtime(
+  ruda_native_runtime_release release
+  "${RUDA_NATIVE_RUNTIME_RELEASE_OPTIMIZATION}"
+  "${RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY}"
+)
 
 add_library(ruda_bootstrap STATIC
   bootstrap/src/ast/ast.c
@@ -254,6 +339,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/mir/verify_defer.c
   bootstrap/src/mir/verify_support.c
   bootstrap/src/native/build.c
+  bootstrap/src/native/runtime_artifact.c
   bootstrap/src/native/c_emitter.c
   bootstrap/src/native/c_emitter_descriptors.c
   bootstrap/src/native/c_emitter_defer.c
@@ -290,9 +376,6 @@ target_include_directories(ruda_bootstrap
     bootstrap/include
     runtime/include
 )
-target_compile_definitions(ruda_bootstrap PRIVATE
-  RUDA_NATIVE_RUNTIME_ARCHIVE="$<TARGET_FILE:ruda_native_runtime>"
-)
 if(UNIX)
   target_link_libraries(ruda_bootstrap PUBLIC m)
 endif()
@@ -314,9 +397,34 @@ endif()
 
 add_executable(ruda bootstrap/main.c)
 target_link_libraries(ruda PRIVATE ruda_bootstrap)
-add_dependencies(ruda ruda_native_runtime)
+add_dependencies(ruda
+  ruda_native_runtime_debug
+  ruda_native_runtime_release
+)
 ruda_target_warnings(ruda)
 ruda_target_sanitizers(ruda)
+
+install(TARGETS ruda RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(TARGETS ruda_native_runtime_debug
+  ARCHIVE DESTINATION
+    "${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native/debug"
+)
+install(TARGETS ruda_native_runtime_release
+  ARCHIVE DESTINATION
+    "${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native/release"
+)
+install(FILES "${RUDA_NATIVE_RUNTIME_DEBUG_MANIFEST}"
+  DESTINATION
+    "${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native/debug"
+)
+install(FILES "${RUDA_NATIVE_RUNTIME_RELEASE_MANIFEST}"
+  DESTINATION
+    "${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native/release"
+)
+install(DIRECTORY bootstrap/include/ruda runtime/include/ruda
+  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
+  FILES_MATCHING PATTERN "*.h"
+)
 
 if(BUILD_TESTING)
   add_subdirectory(tests/c-unit)

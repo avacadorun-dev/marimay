@@ -11,10 +11,6 @@
 #include "ruda/platform/file.h"
 #include "ruda/platform/process.h"
 
-#ifndef RUDA_NATIVE_RUNTIME_ARCHIVE
-#define RUDA_NATIVE_RUNTIME_ARCHIVE ""
-#endif
-
 enum {
     RUDA_NATIVE_BUILD_MAX_PATH = 32768,
     RUDA_NATIVE_BUILD_MAX_SOURCE = 64 * 1024 * 1024,
@@ -153,9 +149,11 @@ cleanup:
 static bool ruda_native_build_hash(
     const RudaOwnedBytes *source,
     const RudaNativeBuildRequest *request,
+    const RudaNativeRuntimeArtifact *runtime,
     char output[65]
 ) {
-    static const char contract[] = "ruda-native-build-cache-v1";
+    static const char contract[] = "ruda-native-build-cache-v2";
+    static const char emit_only[] = "emit-c-without-linked-runtime";
     RudaSha256 hash;
     unsigned char digest[32];
     ruda_sha256_init(&hash);
@@ -177,6 +175,11 @@ static bool ruda_native_build_hash(
             sizeof(RUDA_HOST_PROCESSOR) - 1)
         || !ruda_sha256_update(&hash, RUDA_NATIVE_C_SANITIZER_FLAG,
             sizeof(RUDA_NATIVE_C_SANITIZER_FLAG) - 1)
+        || !ruda_sha256_update(
+            &hash,
+            runtime != NULL ? runtime->content_hash : emit_only,
+            runtime != NULL ? 64 : sizeof(emit_only) - 1
+        )
         || !ruda_sha256_update(&hash,
             request->release ? "release" : "debug",
             request->release ? 7 : 5)) return false;
@@ -285,6 +288,7 @@ static RudaNativeBuildStatus ruda_native_build_output_parent(
 static RudaNativeBuildStatus ruda_native_build_compile(
     RudaAllocator allocator,
     const RudaNativeBuildRequest *request,
+    const RudaNativeRuntimeArtifact *runtime,
     const RudaOwnedBytes *source_path,
     const char *destination,
     RudaOwnedBytes *tool_output
@@ -317,10 +321,10 @@ static RudaNativeBuildStatus ruda_native_build_compile(
     memset(&process, 0, sizeof(process));
 #if defined(_WIN32)
     written = snprintf(bootstrap_include, sizeof(bootstrap_include),
-        "/I%s", RUDA_NATIVE_BOOTSTRAP_INCLUDE);
+        "/I%s", (const char *)runtime->bootstrap_include.data);
     if (written < 0 || (size_t)written >= sizeof(bootstrap_include)) goto limit;
     written = snprintf(runtime_include, sizeof(runtime_include),
-        "/I%s", RUDA_NATIVE_RUNTIME_INCLUDE);
+        "/I%s", (const char *)runtime->runtime_include.data);
     if (written < 0 || (size_t)written >= sizeof(runtime_include)) goto limit;
     arguments[argument_count++] = compiler;
     arguments[argument_count++] = "/nologo";
@@ -335,17 +339,17 @@ static RudaNativeBuildStatus ruda_native_build_compile(
     arguments[argument_count++] = bootstrap_include;
     arguments[argument_count++] = runtime_include;
     arguments[argument_count++] = (const char *)source_path->data;
-    arguments[argument_count++] = RUDA_NATIVE_RUNTIME_ARCHIVE;
+    arguments[argument_count++] = (const char *)runtime->archive.data;
     written = snprintf(executable_argument, sizeof(executable_argument),
         "/Fe:%s", (const char *)temporary.data);
     if (written < 0 || (size_t)written >= sizeof(executable_argument)) goto limit;
     arguments[argument_count++] = executable_argument;
 #else
     written = snprintf(bootstrap_include, sizeof(bootstrap_include),
-        "-I%s", RUDA_NATIVE_BOOTSTRAP_INCLUDE);
+        "-I%s", (const char *)runtime->bootstrap_include.data);
     if (written < 0 || (size_t)written >= sizeof(bootstrap_include)) goto limit;
     written = snprintf(runtime_include, sizeof(runtime_include),
-        "-I%s", RUDA_NATIVE_RUNTIME_INCLUDE);
+        "-I%s", (const char *)runtime->runtime_include.data);
     if (written < 0 || (size_t)written >= sizeof(runtime_include)) goto limit;
     arguments[argument_count++] = compiler;
     arguments[argument_count++] = "-std=c17";
@@ -366,7 +370,7 @@ static RudaNativeBuildStatus ruda_native_build_compile(
     arguments[argument_count++] = bootstrap_include;
     arguments[argument_count++] = runtime_include;
     arguments[argument_count++] = (const char *)source_path->data;
-    arguments[argument_count++] = RUDA_NATIVE_RUNTIME_ARCHIVE;
+    arguments[argument_count++] = (const char *)runtime->archive.data;
     arguments[argument_count++] = "-lm";
     arguments[argument_count++] = "-o";
     arguments[argument_count++] = (const char *)temporary.data;
@@ -412,6 +416,27 @@ cleanup:
     return status;
 }
 
+static RudaNativeBuildStatus ruda_native_build_runtime_status(
+    RudaNativeRuntimeArtifactStatus status
+) {
+    if (status == RUDA_NATIVE_RUNTIME_ARTIFACT_ALLOCATION_FAILED) {
+        return RUDA_NATIVE_BUILD_ALLOCATION_FAILED;
+    }
+    if (status == RUDA_NATIVE_RUNTIME_ARTIFACT_LIMIT_REACHED) {
+        return RUDA_NATIVE_BUILD_LIMIT_REACHED;
+    }
+    if (status == RUDA_NATIVE_RUNTIME_ARTIFACT_MISSING) {
+        return RUDA_NATIVE_BUILD_RUNTIME_MISSING;
+    }
+    if (status == RUDA_NATIVE_RUNTIME_ARTIFACT_INCOMPATIBLE) {
+        return RUDA_NATIVE_BUILD_RUNTIME_INCOMPATIBLE;
+    }
+    if (status == RUDA_NATIVE_RUNTIME_ARTIFACT_IO_FAILED) {
+        return RUDA_NATIVE_BUILD_IO_FAILED;
+    }
+    return RUDA_NATIVE_BUILD_INVALID_ARGUMENT;
+}
+
 RudaNativeBuildStatus ruda_native_build(
     RudaAllocator allocator,
     const RudaNativeBuildRequest *request,
@@ -420,6 +445,8 @@ RudaNativeBuildStatus ruda_native_build(
     RudaNativeCProgram program;
     RudaNativeCEmitOptions emit_options;
     RudaNativeCEmitStatus emit_status;
+    RudaNativeRuntimeArtifact runtime = {0};
+    RudaNativeRuntimeArtifactStatus runtime_status;
     RudaOwnedBytes source = {0};
     RudaOwnedBytes directory = {0};
     RudaOwnedBytes source_path = {0};
@@ -435,6 +462,19 @@ RudaNativeBuildStatus ruda_native_build(
         return RUDA_NATIVE_BUILD_INVALID_ARGUMENT;
     }
     if (!request->emit_c) {
+        runtime_status = ruda_native_runtime_artifact_select(
+            allocator,
+            request->release
+                ? RUDA_NATIVE_RUNTIME_RELEASE
+                : RUDA_NATIVE_RUNTIME_DEBUG,
+            request->tool_executable_path,
+            request->runtime_paths,
+            &runtime
+        );
+        if (runtime_status != RUDA_NATIVE_RUNTIME_ARTIFACT_OK) {
+            status = ruda_native_build_runtime_status(runtime_status);
+            goto cleanup;
+        }
         status = ruda_native_build_probe(
             allocator,
             request->compiler_path != NULL
@@ -465,7 +505,9 @@ RudaNativeBuildStatus ruda_native_build(
                     : RUDA_NATIVE_BUILD_EMIT_FAILED;
         goto cleanup;
     }
-    if (!ruda_native_build_hash(&source, request, hash)) {
+    if (!ruda_native_build_hash(
+            &source, request, request->emit_c ? NULL : &runtime, hash
+        )) {
         status = RUDA_NATIVE_BUILD_LIMIT_REACHED;
         goto cleanup;
     }
@@ -528,14 +570,14 @@ RudaNativeBuildStatus ruda_native_build(
         goto cleanup;
     } else {
         status = ruda_native_build_compile(
-            allocator, request, &source_path,
+            allocator, request, &runtime, &source_path,
             (const char *)cache_artifact.data, &result->tool_output
         );
         if (status != RUDA_NATIVE_BUILD_OK) goto cleanup;
     }
     if (request->output_path != NULL) {
         status = ruda_native_build_compile(
-            allocator, request, &source_path, request->output_path,
+            allocator, request, &runtime, &source_path, request->output_path,
             &result->tool_output
         );
         if (status != RUDA_NATIVE_BUILD_OK) goto cleanup;
@@ -547,13 +589,21 @@ RudaNativeBuildStatus ruda_native_build(
         result->artifact_path = cache_artifact;
         memset(&cache_artifact, 0, sizeof(cache_artifact));
     }
+    result->runtime_path = runtime.archive;
+    memset(&runtime.archive, 0, sizeof(runtime.archive));
+    memcpy(result->runtime_hash, runtime.content_hash, 65);
+    result->runtime_installed = runtime.installed;
 cleanup:
+    ruda_native_runtime_artifact_dispose(&runtime);
     ruda_owned_bytes_dispose(&cache_artifact);
     ruda_owned_bytes_dispose(&source_path);
     ruda_owned_bytes_dispose(&directory);
     ruda_owned_bytes_dispose(&source);
     if (status != RUDA_NATIVE_BUILD_OK) {
         ruda_owned_bytes_dispose(&result->artifact_path);
+        ruda_owned_bytes_dispose(&result->runtime_path);
+        memset(result->runtime_hash, 0, sizeof(result->runtime_hash));
+        result->runtime_installed = false;
     }
     return status;
 }
@@ -561,7 +611,10 @@ cleanup:
 void ruda_native_build_result_dispose(RudaNativeBuildResult *result) {
     if (result != NULL) {
         ruda_owned_bytes_dispose(&result->artifact_path);
+        ruda_owned_bytes_dispose(&result->runtime_path);
         ruda_owned_bytes_dispose(&result->tool_output);
+        memset(result->runtime_hash, 0, sizeof(result->runtime_hash));
         result->cache_hit = false;
+        result->runtime_installed = false;
     }
 }

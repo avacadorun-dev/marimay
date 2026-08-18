@@ -6,6 +6,7 @@ B0004	NATIVE_COMPILE_FAILED	build	Supported host C compiler rejected compiler-ge
 B0005	BUILD_OUTPUT_IO	build	Build cache or requested output could not be published atomically.
 B0006	NATIVE_HOST_UNSUPPORTED	build	Host target cannot preserve required native semantics.
 B0007	ENGINE_DIVERGENCE	test	VM and native test observations differ.
+B0008	NATIVE_RUNTIME_INCOMPATIBLE	build	Version-matched native runtime artifact is missing or incompatible.
 F0001	FORMAT_INPUT_IO	formatter	Formatter could not read the selected source input.
 F0002	FORMAT_OUTPUT_IO	formatter	Formatter could not write or transactionally replace canonical output.
 F0003	FORMAT_LIMIT	formatter	Formatter exhausted a defensive input, nesting, work, or output limit.

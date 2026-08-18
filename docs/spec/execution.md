@@ -215,6 +215,22 @@ on success, expected error, panic, allocation/resource failure, invalid runtime
 layout, and host-rejection edges. A release optimizer may remove a check only
 after proving it redundant under Ruda semantics.
 
+### 5.6 Native runtime profiles
+
+Under D052, debug and release native outputs link distinct version-matched
+runtime archives. Debug runtime objects use `-O0` or `/Od`; release runtime
+objects use `-O2` or `/O2`. These profile flags apply to every first-party
+runtime translation unit independently of the build configuration of the
+invoking compiler. Both profiles preserve the same checked arithmetic, bounds,
+panic, floating-point, rooting, cleanup, and D046 behavior.
+
+The toolchain validates the selected archive's manifest and embedded profile
+and runtime-version markers before C emission. It hashes the archive contents
+into the native cache key. An archive path is distribution metadata, not a
+semantic cache input, so a complete installed toolchain remains relocatable.
+Missing, stale, partial, or wrong-profile runtime artifacts are rejected before
+host linking and cannot be reclassified as a generated-C failure.
+
 ## 6. Direct-style suspension
 
 ### 6.1 Source rule

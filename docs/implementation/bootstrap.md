@@ -2,7 +2,7 @@
 
 Status: I0 implementation instructions.
 
-The current slice builds the `ruda` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces include the verified typed MIR oracle, bytecode VM, portable C17 emitter, and version-matched native runtime archive. The CLI exposes formatting, authoritative batch `ruda check`, local VM-default `ruda run`, host-native `ruda build`, and deterministic VM/default or VM/native `ruda test` for the checker-backed local/private preview surface.
+The current slice builds the `ruda` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces include the verified typed MIR oracle, bytecode VM, portable C17 emitter, and version-matched debug/release native runtime archives. The CLI exposes formatting, authoritative batch `ruda check`, local VM-default `ruda run`, host-native `ruda build`, and deterministic VM/default or VM/native `ruda test` for the checker-backed local/private preview surface.
 
 ## Prerequisites
 
@@ -28,6 +28,16 @@ ctest --preset debug
 cmake --preset release
 cmake --build --preset release --parallel
 ctest --preset release
+```
+
+Each configuration builds both output-profile runtimes. Consequently,
+`build/debug/ruda build --release` and `build/release/ruda build` select the
+requested output profile rather than inheriting the compiler executable's
+configuration. A relocatable local installation can be exercised with:
+
+```sh
+cmake --install build/debug --prefix build/ruda-install
+build/ruda-install/bin/ruda build examples/matrix.ruda --release
 ```
 
 Clang and GCC environments can run the current memory/undefined-behavior preset:
@@ -90,6 +100,7 @@ corpus entries and crash artifacts do not mutate repository fixtures.
 OS APIs live under `runtime/platform/`; common code does not select or include an OS API directly. The current adapters provide:
 
 - direct child-process execution from an argv vector, without a command shell, with bounded combined output;
+- current-executable path discovery for relocatable installed tool metadata;
 - current-directory lookup, non-following file-kind inspection, and deterministic directory iteration inputs;
 - exclusive temporary-file creation and complete writes;
 - content sync followed by atomic replacement of a sibling destination;
@@ -171,10 +182,12 @@ silent, and accepted-but-unimplemented source exits 70 with `I0001` rather
 than reporting a false clean result.
 
 `ruda build [target]` reuses that target owner and exact D049 entry selection,
-emits a public-entry portable C17 unit, links the CMake-selected host runtime,
+emits a public-entry portable C17 unit, links the validated profile-specific
+host runtime,
 and publishes a content-addressed executable under `.ruda/build/native`.
 `--release`, `--output`, and `--emit c` are implemented. Build invokes the host
 compiler directly without a shell or network access, diagnoses missing or
-rejecting tools with `B0002`–`B0006`, and never publishes a failed temporary.
+rejecting tools with `B0002`–`B0006`, rejecting missing/stale/wrong-profile
+runtime artifacts with `B0008`, and never publishing a failed temporary.
 Portable `.rudab`, cross-target packs, `--emit mir`, and native `ruda run`
 remain later slices.

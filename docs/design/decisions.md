@@ -1039,3 +1039,40 @@ captured output, and backend equivalence share one compiler-owned observation
 contract. Staging the deterministic core now avoids creating separate VM and
 native notions of a passing test while leaving scheduler/cache policy to their
 ordered owners.
+
+## D052 — Native output profile selects a validated runtime artifact
+
+Status: accepted.
+
+`ruda build` treats the requested output profile as authoritative for every
+first-party native object. Each Stage 0 toolchain build and official host
+installation contains separate debug and release runtime archives. The debug
+archive is compiled with the debug optimization contract (`-O0` or `/Od`); the
+release archive is compiled with the release optimization contract (`-O2` or
+`/O2`). Which configuration was used to compile the invoking `ruda` executable
+does not affect this selection.
+
+Before generated-C emission, the native artifact owner selects the requested
+archive and validates a versioned manifest plus embedded runtime-version and
+profile markers. A missing, stale, partial, or wrong-profile artifact is
+`B0008`/exit `1` and never falls through to an opaque host linker failure. An
+installed tool first resolves `../lib/ruda/{runtime-version}/native/{profile}`
+and `../include` relative to the invoked `ruda` path. A partially present
+installed candidate is an error; only the absence of the complete installed
+candidate permits the development build-tree metadata fallback. Relocating a
+complete installed prefix therefore preserves native builds without retaining
+a dependency on the original build tree.
+
+The content-addressed build key hashes the selected runtime archive bytes,
+profile, version, host/compiler identity, generated C, and backend flag
+contract. It does not hash the archive's absolute path. Changing runtime bytes
+invalidates the cache; moving the same complete installation does not. `--emit
+c` links no runtime and remains available without validating an unused archive.
+Neither artifact lookup nor validation consults project configuration, `CC`, or
+the network.
+
+Reason: release flags applied only to generated C cannot make a release
+executable when a debug runtime archive was inherited from the compiler's own
+build directory. Profile-specific shipped artifacts make the output request
+deterministic, while manifests, embedded markers, relative installed lookup,
+and content hashing prevent silent mismatch and stale cache reuse.

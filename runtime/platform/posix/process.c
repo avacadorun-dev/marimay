@@ -14,9 +14,50 @@
 #include <sys/wait.h>
 #include <unistd.h>
 
+#if defined(__APPLE__)
+#include <mach-o/dyld.h>
+#endif
+
 #include "ruda/base/vector.h"
 
 extern char **environ;
+
+RudaProcessStatus ruda_process_executable_path(
+    RudaAllocator allocator,
+    size_t max_path,
+    RudaOwnedBytes *path
+) {
+    char buffer[32769];
+    size_t length = 0;
+    if (path == NULL || max_path == 0) {
+        return RUDA_PROCESS_INVALID_ARGUMENT;
+    }
+    memset(path, 0, sizeof(*path));
+#if defined(__APPLE__)
+    {
+        uint32_t capacity = (uint32_t)sizeof(buffer);
+        if (_NSGetExecutablePath(buffer, &capacity) != 0) {
+            return RUDA_PROCESS_OUTPUT_LIMIT;
+        }
+        length = strlen(buffer);
+    }
+#elif defined(__linux__)
+    {
+        ssize_t count = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
+        if (count < 0) return RUDA_PROCESS_IO_FAILED;
+        length = (size_t)count;
+        buffer[length] = 0;
+    }
+#else
+    (void)allocator;
+    return RUDA_PROCESS_IO_FAILED;
+#endif
+    if (length == 0 || length > max_path) {
+        return RUDA_PROCESS_OUTPUT_LIMIT;
+    }
+    return ruda_owned_bytes_copy(path, allocator, buffer, length)
+        ? RUDA_PROCESS_OK : RUDA_PROCESS_ALLOCATION_FAILED;
+}
 
 static void ruda_process_result_init(RudaProcessResult *result, RudaAllocator allocator) {
     result->output.allocator = allocator;

@@ -227,6 +227,15 @@ Launch the real `ruda` binary in disposable directories. Cover root discovery, s
 
 Native-install fixtures start from clean Tier 1 images and assert the D030 path: official installation/preflight, machine-readable `ruda doctor`, native `ruda build` without user-selected compiler/linker/SDK variables, offline repeat build, and a single actionable diagnostic when a platform-owned prerequisite is genuinely unavailable.
 
+D052 profile fixtures build each output profile from both debug- and
+release-built compiler executables. They inspect an archive-owned profile
+marker, relocate a complete installed prefix, and cover paths with spaces,
+missing/partial/stale/wrong-profile manifests and archives, content-hash cache
+invalidation, `--emit c`, requested outputs, and bounded diagnostics that do
+not leak raw linker output. Runtime artifact discovery and hashing are swept
+through every deterministic allocation failure with zero live allocations and
+bytes after disposal.
+
 ### 2.9 Compiler service and editor fixtures
 
 Versioned overlay tests edit files without disk writes and assert cancellation, stale-version rejection, deterministic diagnostics, definition, symbol search, and completion. For every nominal type fixture, dot completion is compared directly with the checker-owned eligible first-parameter function set under imports, visibility, same-name candidates, generics, and incomplete syntax. Each item exposes its owning package and equivalent free-call spelling. I8 protocol/LSP tests wrap this owner API and cannot maintain independent lookup logic.

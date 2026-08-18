@@ -330,6 +330,7 @@ static int ruda_parse_options(
     RudaCliOptions *options
 ) {
     int index = 0;
+    options->tool_executable_path = NULL;
     options->diagnostic_style = RUDA_DIAGNOSTIC_HUMAN;
     options->command = NULL;
     options->command_index = 0;
@@ -743,6 +744,7 @@ int ruda_cli_run(
     if (parse_result != RUDA_EXIT_SUCCESS) {
         return parse_result;
     }
+    options.tool_executable_path = arguments[0];
     if (options.top_level_help || options.command == NULL) {
         return ruda_write_top_help(standard_output) ? RUDA_EXIT_SUCCESS : RUDA_EXIT_INTERNAL;
     }

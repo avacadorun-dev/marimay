@@ -294,8 +294,10 @@ bootstrap/src/bytecode/    model/builders, codec, verifier orchestration,
                            instruction verifier, CFG provenance verifier, MIR
                            lowering, VM coordinator, VM preflight, and VM value
                            operations
-bootstrap/src/native/      public/descriptor coordinator, validation, and
-                           instruction/function emission
+bootstrap/src/native/      C-emission coordinators and focused instruction/
+                           descriptor owners; native build orchestration;
+                           profile-specific runtime artifact discovery,
+                           validation, and content identity
 bootstrap/src/cli/         dispatch/options/help, format actions, and target
                            discovery/traversal
 bootstrap/src/lex/         public result lifecycle and scanner/tokenization

@@ -33,6 +33,13 @@ typedef struct RudaProcessCaptureResult {
     uint32_t signal_code;
 } RudaProcessCaptureResult;
 
+/* Returns the current process executable path for relocatable tool lookup. */
+RudaProcessStatus ruda_process_executable_path(
+    RudaAllocator allocator,
+    size_t max_path,
+    RudaOwnedBytes *path
+);
+
 /*
  * Runs a null-terminated argv vector directly without a command shell.
  * stdout/stderr are combined in program write order and bounded by max_output.

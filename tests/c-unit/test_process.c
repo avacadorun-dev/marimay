@@ -17,6 +17,7 @@ void ruda_test_process(void) {
     const char *missing_arguments[2] = {"ruda-definitely-missing-i0", NULL};
     RudaProcessResult result;
     RudaProcessCaptureResult capture;
+    RudaOwnedBytes executable_path = {0};
     RudaProcessStatus status;
     size_t failure_index = 0;
     bool reached_success = false;
@@ -25,6 +26,34 @@ void ruda_test_process(void) {
     if (executable == NULL) {
         return;
     }
+    RUDA_EXPECT(ruda_process_executable_path(
+        ruda_system_allocator(), 32768, &executable_path
+    ) == RUDA_PROCESS_OK);
+    RUDA_EXPECT(executable_path.data != NULL && executable_path.length != 0);
+    ruda_owned_bytes_dispose(&executable_path);
+    RUDA_EXPECT(ruda_process_executable_path(
+        ruda_system_allocator(), 1, &executable_path
+    ) == RUDA_PROCESS_OUTPUT_LIMIT);
+    for (failure_index = 0; failure_index < 4; failure_index += 1) {
+        RudaFailAllocator state;
+        ruda_fail_allocator_init(
+            &state, ruda_system_allocator(), failure_index
+        );
+        status = ruda_process_executable_path(
+            ruda_fail_allocator(&state), 32768, &executable_path
+        );
+        if (status == RUDA_PROCESS_OK) {
+            reached_success = true;
+            ruda_owned_bytes_dispose(&executable_path);
+        } else {
+            RUDA_EXPECT(status == RUDA_PROCESS_ALLOCATION_FAILED);
+        }
+        RUDA_EXPECT(state.live_allocations == 0);
+        RUDA_EXPECT(state.live_bytes == 0);
+        if (reached_success) break;
+    }
+    RUDA_EXPECT(reached_success);
+    reached_success = false;
     version_arguments[0] = executable;
     version_arguments[1] = "version";
     version_arguments[2] = "--json";

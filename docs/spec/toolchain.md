@@ -419,6 +419,20 @@ host rejection of generated C is `B0004`; cache/output publication failure is
 output is bounded and retained for controlled debugging, not substituted for
 the stable primary diagnostic.
 
+Under D052, `--release` selects the version-matched release runtime archive
+even when the invoking `ruda` executable was built in a debug configuration;
+the default profile selects the debug archive even for a release-built
+compiler. Both profile artifacts are part of the toolchain distribution and
+are validated before C generation by an exact manifest plus embedded
+profile/version markers. Installed lookup is relative to the invoked `ruda`
+path and remains valid when the complete installation prefix is relocated.
+
+The cache key includes the SHA-256 of the selected runtime archive bytes, not
+its absolute location. Missing, partial, stale, or wrong-profile distribution
+artifacts produce `B0008`/exit `1` with a reinstall action and never expose raw
+linker output. `--emit c` does not link or require a runtime artifact. No
+profile lookup reads project configuration, `CC`, or the network.
+
 ### 6.4 `ruda exec`
 
 ```sh

@@ -12,6 +12,53 @@
 #include "ruda/base/utf8.h"
 #include "ruda/base/vector.h"
 
+RudaProcessStatus ruda_process_executable_path(
+    RudaAllocator allocator,
+    size_t max_path,
+    RudaOwnedBytes *path
+) {
+    wchar_t wide_path[32768];
+    DWORD wide_length = 0;
+    int byte_count = 0;
+    size_t allocation_size = 0;
+    unsigned char *bytes = NULL;
+    if (path == NULL || max_path == 0) {
+        return RUDA_PROCESS_INVALID_ARGUMENT;
+    }
+    memset(path, 0, sizeof(*path));
+    wide_length = GetModuleFileNameW(
+        NULL, wide_path, (DWORD)(sizeof(wide_path) / sizeof(wide_path[0]))
+    );
+    if (wide_length == 0) return RUDA_PROCESS_IO_FAILED;
+    if ((size_t)wide_length
+        >= sizeof(wide_path) / sizeof(wide_path[0])) {
+        return RUDA_PROCESS_OUTPUT_LIMIT;
+    }
+    byte_count = WideCharToMultiByte(
+        CP_UTF8, WC_ERR_INVALID_CHARS, wide_path, (int)wide_length,
+        NULL, 0, NULL, NULL
+    );
+    if (byte_count <= 0) return RUDA_PROCESS_IO_FAILED;
+    if ((size_t)byte_count > max_path
+        || !ruda_size_add((size_t)byte_count, 1, &allocation_size)) {
+        return RUDA_PROCESS_OUTPUT_LIMIT;
+    }
+    bytes = ruda_allocate(&allocator, allocation_size);
+    if (bytes == NULL) return RUDA_PROCESS_ALLOCATION_FAILED;
+    if (WideCharToMultiByte(
+            CP_UTF8, WC_ERR_INVALID_CHARS, wide_path, (int)wide_length,
+            (char *)bytes, byte_count, NULL, NULL
+        ) != byte_count) {
+        ruda_deallocate(&allocator, bytes, allocation_size);
+        return RUDA_PROCESS_IO_FAILED;
+    }
+    bytes[byte_count] = 0;
+    path->allocator = allocator;
+    path->data = bytes;
+    path->length = (size_t)byte_count;
+    return RUDA_PROCESS_OK;
+}
+
 static void ruda_process_result_init(RudaProcessResult *result, RudaAllocator allocator) {
     result->output.allocator = allocator;
     result->output.data = NULL;

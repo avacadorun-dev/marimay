@@ -13,6 +13,7 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `B0005` | build | Build cache or requested output could not be published atomically. |
 | `B0006` | build | Host target cannot preserve required native semantics. |
 | `B0007` | test | VM and native test observations differ. |
+| `B0008` | build | Version-matched native runtime artifact is missing or incompatible. |
 | `F0001` | formatter | Formatter could not read the selected source input. |
 | `F0002` | formatter | Formatter could not write or transactionally replace canonical output. |
 | `F0003` | formatter | Formatter exhausted a defensive input, nesting, work, or output limit. |

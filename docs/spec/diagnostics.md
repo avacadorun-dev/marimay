@@ -310,6 +310,13 @@ bytes. It is emitted once for the first source-ordered divergent test and exits
 `B0007`; it is an ordinary failed test and exits `1` after deterministic
 reporting. Test-pipeline integrity/resource failures remain `I0002`/exit `70`.
 
+For D052 runtime-profile selection, `B0008` means the distribution's selected
+native runtime archive or manifest is missing, partial, stale, or incompatible
+with the requested profile, runtime version, host, or compiler identity. It is
+an expected toolchain-installation failure and exits `1` before C emission or
+host linking. The primary diagnostic gives one reinstall action; raw linker
+output cannot replace it.
+
 ## 14. Verification
 
 Every diagnostic rule has:

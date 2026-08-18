@@ -25,6 +25,14 @@ static int ruda_cli_build_status_error(
         message = "supported host C toolchain is unavailable; install the platform Clang or GCC C17 development tools and retry";
 #endif
         exit_code = RUDA_EXIT_SOURCE_FAILURE;
+    } else if (status == RUDA_NATIVE_BUILD_RUNTIME_MISSING) {
+        code = RUDA_DIAGNOSTIC_NATIVE_RUNTIME_INCOMPATIBLE;
+        message = "the version-matched native runtime artifact is missing; reinstall the Ruda toolchain";
+        exit_code = RUDA_EXIT_SOURCE_FAILURE;
+    } else if (status == RUDA_NATIVE_BUILD_RUNTIME_INCOMPATIBLE) {
+        code = RUDA_DIAGNOSTIC_NATIVE_RUNTIME_INCOMPATIBLE;
+        message = "the selected native runtime has a stale version or wrong build profile; reinstall the Ruda toolchain";
+        exit_code = RUDA_EXIT_SOURCE_FAILURE;
     } else if (status == RUDA_NATIVE_BUILD_IO_FAILED) {
         code = RUDA_DIAGNOSTIC_BUILD_OUTPUT_IO;
         message = "cannot atomically write the native build cache or requested output";
@@ -98,6 +106,7 @@ static int ruda_cli_build_execute(
     request.root_directory = (const char *)target->root_directory.data;
     request.root_directory_length = target->root_directory.length;
     request.output_path = options->build_output;
+    request.tool_executable_path = options->tool_executable_path;
     request.returns_result = entry->returns_result;
     request.release = options->build_release;
     request.emit_c = options->build_emit != NULL;
