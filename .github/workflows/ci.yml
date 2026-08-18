@@ -173,7 +173,7 @@ jobs:
         target: [bytecode, frontend, formatter]
     env:
       CC: clang
-      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:quarantine_size_mb=64
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - name: Check out source
@@ -191,3 +191,14 @@ jobs:
           -timeout=10
           -print_final_stats=1
           tests/fuzz/corpus/${{ matrix.target }}
+      - name: Preserve fuzz failure inputs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-${{ matrix.target }}-failure-inputs
+          path: |
+            crash-*
+            timeout-*
+            oom-*
+            leak-*
+          if-no-files-found: ignore

@@ -798,6 +798,30 @@ RudaBytecodeDisassembleStatus ruda_bytecode_disassemble(
                         instruction->operands[operand_index].unsigned_value
                     );
                 } else if (metadata->operands[operand_index]
+                    == RUDA_BYTECODE_OPERAND_RECORD_CONSTRUCTION) {
+                    wrote = ruda_bytecode_writef(
+                        writer,
+                        "%src%" PRIu64,
+                        separator,
+                        instruction->operands[operand_index].unsigned_value
+                    );
+                } else if (metadata->operands[operand_index]
+                    == RUDA_BYTECODE_OPERAND_ENUM_CONSTRUCTION) {
+                    wrote = ruda_bytecode_writef(
+                        writer,
+                        "%sec%" PRIu64,
+                        separator,
+                        instruction->operands[operand_index].unsigned_value
+                    );
+                } else if (metadata->operands[operand_index]
+                    == RUDA_BYTECODE_OPERAND_INTERFACE_CONSTRUCTION) {
+                    wrote = ruda_bytecode_writef(
+                        writer,
+                        "%sic%" PRIu64,
+                        separator,
+                        instruction->operands[operand_index].unsigned_value
+                    );
+                } else if (metadata->operands[operand_index]
                     == RUDA_BYTECODE_OPERAND_I64) {
                     wrote = ruda_bytecode_writef(
                         writer,
@@ -822,6 +846,14 @@ RudaBytecodeDisassembleStatus ruda_bytecode_disassemble(
                         instruction->operands[operand_index].unsigned_value == 0
                             ? "false"
                             : "true"
+                    );
+                } else if (metadata->operands[operand_index]
+                    == RUDA_BYTECODE_OPERAND_U64) {
+                    wrote = ruda_bytecode_writef(
+                        writer,
+                        "%s%" PRIu64,
+                        separator,
+                        instruction->operands[operand_index].unsigned_value
                     );
                 }
                 if (!wrote) {

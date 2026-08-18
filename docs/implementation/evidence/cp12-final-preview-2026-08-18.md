@@ -100,6 +100,7 @@ Environment: macOS Darwin 25.3.0, arm64; Apple Clang 17.0.0; CMake 4.4.2.
 | `ctest --preset release --output-on-failure` | 0 | 1/1 passed, 179.19 s |
 | `cmake --preset asan-ubsan` + build | 0 | instrumented Stage 0 and native runtime |
 | strict ASan+UBSan CTest | 0 | 1/1 passed, 243.41 s; no sanitizer finding |
+| `TSAN_OPTIONS=halt_on_error=1 ctest --preset tsan --output-on-failure` | 0 | 1/1 passed, 250.39 s; no race finding |
 | all repository documentation/architecture/generated gates | 0 | clean |
 | `git diff --check` | 0 | clean |
 

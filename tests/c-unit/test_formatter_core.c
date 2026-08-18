@@ -178,6 +178,10 @@ void ruda_test_formatter_fixture_file(void) {
         {
             "format/test-output.input.ruda",
             "format/test-output.expected.ruda"
+        },
+        {
+            "format/fuzz-regression.input.ruda",
+            "format/fuzz-regression.expected.ruda"
         }
     };
     unsigned char input[32768];

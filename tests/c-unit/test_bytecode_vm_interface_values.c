@@ -265,6 +265,7 @@ static void ruda_test_vm_nested_interface_path(bool through_enum) {
         ruda_bytecode_execution_default_options();
     RudaBytecodeRunOptions run_options = ruda_bytecode_run_default_options();
     RudaBytecodeValue result = ruda_test_vm_i64(-1);
+    RudaTestBuffer disassembly;
     bool reached_success = false;
     size_t failure_index = 0;
     memset(&function, 0, sizeof(function));
@@ -274,6 +275,12 @@ static void ruda_test_vm_nested_interface_path(bool through_enum) {
         through_enum
     ));
     RUDA_EXPECT(ruda_bytecode_verify(&function) == RUDA_BYTECODE_VERIFY_OK);
+    ruda_test_buffer_init(&disassembly);
+    RUDA_EXPECT(ruda_bytecode_disassemble(
+        &function,
+        ruda_test_buffer_writer(&disassembly)
+    ) == RUDA_BYTECODE_DISASSEMBLE_OK);
+    RUDA_EXPECT(strstr(disassembly.bytes, "interface_new r2, ic0") != NULL);
     execution_options.managed_heap.collect_before_allocation = true;
     RUDA_EXPECT(ruda_bytecode_execution_init(
         &execution,

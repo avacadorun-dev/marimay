@@ -783,11 +783,24 @@ static void ruda_test_vm_nominal_round_trip(
 
 void ruda_test_vm_nominal_codec(void) {
     RudaBytecodeFunction function;
+    RudaTestBuffer disassembly;
     RUDA_EXPECT(ruda_test_vm_build_record_mutation(&function));
+    ruda_test_buffer_init(&disassembly);
+    RUDA_EXPECT(ruda_bytecode_disassemble(
+        &function,
+        ruda_test_buffer_writer(&disassembly)
+    ) == RUDA_BYTECODE_DISASSEMBLE_OK);
+    RUDA_EXPECT(strstr(disassembly.bytes, "record_new r1, rc0") != NULL);
     ruda_test_vm_nominal_round_trip(&function);
     ruda_bytecode_function_dispose(&function);
 
     RUDA_EXPECT(ruda_test_vm_build_enum_payload(&function));
+    ruda_test_buffer_init(&disassembly);
+    RUDA_EXPECT(ruda_bytecode_disassemble(
+        &function,
+        ruda_test_buffer_writer(&disassembly)
+    ) == RUDA_BYTECODE_DISASSEMBLE_OK);
+    RUDA_EXPECT(strstr(disassembly.bytes, "enum_new r1, ec0") != NULL);
     ruda_test_vm_nominal_round_trip(&function);
     ruda_bytecode_function_dispose(&function);
 

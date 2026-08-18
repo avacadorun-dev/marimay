@@ -290,6 +290,19 @@ void ruda_test_bytecode_metadata(void) {
 }
 
 void ruda_test_bytecode_valid_and_disassembly(void) {
+    static const unsigned char fuzz_regression[] = {
+        0x52, 0x55, 0x44, 0x41, 0x42, 0x43, 0x46, 0x00, 0x01, 0x00,
+        0x01, 0x63, 0x12, 0x12, 0x13, 0x01, 0x01, 0x01, 0x01, 0x01,
+        0x12, 0x12, 0x12, 0x12, 0x13, 0x12, 0x12, 0x12, 0x12, 0x01,
+        0x01, 0x01, 0x01, 0x0b, 0x0b, 0x03, 0x0b, 0x0b, 0x0b, 0x0b,
+        0x0b, 0x50, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x38, 0x0b,
+        0x0b, 0x0b, 0x0b, 0x0b, 0x18, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b,
+        0x0b, 0x0b, 0x0f, 0x0b, 0x0b, 0x0b, 0x0b, 0xeb, 0x0e, 0x13,
+        0x0b, 0x0b, 0x0b, 0x0b, 0x27, 0x15, 0x0b, 0x0b, 0x0b, 0x0b,
+        0x0b, 0xeb, 0x0e, 0x13, 0x0b, 0x0b, 0x0b, 0x0b, 0x27, 0x15,
+        0x0b, 0x0b, 0x09, 0x0b, 0x0b, 0x0f, 0x0b, 0x0f, 0x0b, 0x0b,
+        0x1b, 0x01, 0x2a, 0x10, 0x01, 0x00, 0x00, 0x00, 0x01, 0x0f
+    };
     static const char expected_disassembly[] =
         "bytecode function v1 result=i64 sources=1 parameters=0 registers=21 blocks=3\n"
         "registers r0:i64 r1:i64 r2:i64 r3:i64 r4:i64 r5:i64 r6:i64 r7:i64 r8:i64 r9:i64 r10:bool r11:bool r12:bool r13:bool r14:bool r15:i64 r16:i64 r17:i64 r18:i64 r19:i64 r20:i64\n"
@@ -321,8 +334,26 @@ void ruda_test_bytecode_valid_and_disassembly(void) {
         "block b2:\n"
         "  jump b1 @s0:23..24\n";
     RudaBytecodeFunction function;
+    RudaBytecodeFunction decoded_regression;
     RudaBytecodeFunction void_function;
     RudaTestBuffer buffer;
+
+    memset(&decoded_regression, 0, sizeof(decoded_regression));
+    RUDA_EXPECT(ruda_bytecode_decode_function(
+        fuzz_regression,
+        sizeof(fuzz_regression),
+        ruda_system_allocator(),
+        ruda_bytecode_function_default_options(),
+        &decoded_regression
+    ) == RUDA_BYTECODE_CODEC_OK);
+    RUDA_EXPECT(ruda_bytecode_verify(&decoded_regression)
+        == RUDA_BYTECODE_VERIFY_OK);
+    ruda_test_buffer_init(&buffer);
+    RUDA_EXPECT(ruda_bytecode_disassemble(
+        &decoded_regression,
+        ruda_test_buffer_writer(&buffer)
+    ) == RUDA_BYTECODE_DISASSEMBLE_OK);
+    ruda_bytecode_function_dispose(&decoded_regression);
 
     RUDA_EXPECT(ruda_test_bytecode_build_full(&function, ruda_system_allocator()));
     RUDA_EXPECT(ruda_bytecode_verify(&function) == RUDA_BYTECODE_VERIFY_OK);
@@ -862,6 +893,7 @@ void ruda_test_bytecode_integer_widths(void) {
         RudaBytecodeInstruction instruction;
         RudaBytecodeInstruction *decoded_instruction = NULL;
         RudaOwnedBytes encoded;
+        RudaTestBuffer disassembly;
         uint32_t register_id = UINT32_MAX;
         uint32_t block = UINT32_MAX;
         memset(&function, 0, sizeof(function));
@@ -893,6 +925,17 @@ void ruda_test_bytecode_integer_widths(void) {
             &function, block, &instruction
         ));
         RUDA_EXPECT(ruda_bytecode_verify(&function) == RUDA_BYTECODE_VERIFY_OK);
+        if (types[index] == RUDA_BYTECODE_TYPE_U64) {
+            ruda_test_buffer_init(&disassembly);
+            RUDA_EXPECT(ruda_bytecode_disassemble(
+                &function,
+                ruda_test_buffer_writer(&disassembly)
+            ) == RUDA_BYTECODE_DISASSEMBLE_OK);
+            RUDA_EXPECT(strstr(
+                disassembly.bytes,
+                "const_integer r0, 18446744073709551615"
+            ) != NULL);
+        }
         RUDA_EXPECT(ruda_bytecode_encode_function(
             &function, ruda_system_allocator(), &encoded
         ) == RUDA_BYTECODE_CODEC_OK);
