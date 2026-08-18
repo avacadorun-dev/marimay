@@ -2,7 +2,7 @@
 
 Status: I0 implementation instructions.
 
-The current slice builds the `ruda` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces include the verified typed MIR oracle, bytecode VM, portable C17 emitter, and version-matched native runtime archive. The CLI exposes formatting, authoritative batch `ruda check`, local VM-default `ruda run`, and host-native `ruda build` for the checker-backed preview surface.
+The current slice builds the `ruda` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces include the verified typed MIR oracle, bytecode VM, portable C17 emitter, and version-matched native runtime archive. The CLI exposes formatting, authoritative batch `ruda check`, local VM-default `ruda run`, host-native `ruda build`, and deterministic VM/default or VM/native `ruda test` for the checker-backed local/private preview surface.
 
 ## Prerequisites
 

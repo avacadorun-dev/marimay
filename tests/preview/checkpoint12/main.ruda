@@ -1,0 +1,178 @@
+import { Error as IoError, println } from "std/io";
+
+import { evaluateNamed } from "example/checkpoint12/eval_named";
+import { evaluateNamespace } from "example/checkpoint12/eval_namespace";
+import { evaluateTypeOnly } from "example/checkpoint12/eval_type";
+import { makeUser } from "example/checkpoint12/store";
+
+type Counter {
+  mutable value: int;
+}
+
+type Pair {
+  first: int;
+  second: int;
+}
+
+enum Envelope {
+  Value(int),
+  Empty,
+}
+
+enum InputError {
+  Bad,
+}
+
+enum OutputError {
+  Config,
+}
+
+fn fibonacci(limit: int): int {
+  let index = 0;
+  let previous = 0;
+  let current = 1;
+  while index < limit {
+    const next = previous + current;
+    previous = current;
+    current = next;
+    index += 1;
+  }
+  return previous;
+}
+
+fn factorial(limit: int): int {
+  let index = 2;
+  let product = 1;
+  while index <= limit {
+    product *= index;
+    index += 1;
+  }
+  return product;
+}
+
+fn sortedIndex(needle: int): int {
+  let values: Array<int> = [9, 3, 7, 1, 5];
+  for let pass = 0; pass < values.length(); pass += 1 {
+    for let index = 0; index + 1 < values.length(); index += 1 {
+      if values[index] > values[index + 1] {
+        const temporary = values[index];
+        values[index] = values[index + 1];
+        values[index + 1] = temporary;
+      }
+    }
+  }
+  let low = 0;
+  let high = values.length() - 1;
+  while low <= high {
+    const middle = low + (high - low) / 2;
+    if values[middle] == needle {
+      return middle;
+    }
+    if values[middle] < needle {
+      low = middle + 1;
+    } else {
+      high = middle - 1;
+    }
+  }
+  return -1;
+}
+
+fn algorithmsAreCorrect(): bool {
+  return 6 * 7 == 42 && fibonacci(10) == 55 && factorial(10) == 3628800 && sortedIndex(1) == 0 && sortedIndex(
+    7,
+  ) == 3 && sortedIndex(8) == -1;
+}
+
+fn genericIdentity<T>(value: T): T {
+  return value;
+}
+
+fn mapInputError(error: InputError): OutputError {
+  return OutputError.Config;
+}
+
+fn goodResult(): Result<int, InputError> {
+  return Ok(4);
+}
+
+fn badResult(): Result<int, InputError> {
+  return Err(InputError.Bad);
+}
+
+fn mappedGood(): Result<int, OutputError> {
+  const value = goodResult().mapError(mapInputError)?;
+  return Ok(value + 1);
+}
+
+fn mappedBad(): Result<int, OutputError> {
+  const value = badResult().mapError(mapInputError)?;
+  return Ok(value);
+}
+
+fn genericsAreCorrect(): bool {
+  const option: Option<int> = Some(genericIdentity(7));
+  const optionValue = match option {
+    case Some(value) => value;
+    case None => 0;
+  };
+  const goodValue = match mappedGood() {
+    case Ok(value) => value;
+    case Err(_) => 0;
+  };
+  const badValue = match mappedBad() {
+    case Ok(_) => 0;
+    case Err(Config) => 1;
+  };
+  return optionValue == 7 && goodValue == 5 && badValue == 1;
+}
+
+fn next(counter: Counter): int {
+  counter.value += 1;
+  return counter.value;
+}
+
+fn append(counter: Counter, digit: int): void {
+  counter.value = counter.value * 10 + digit;
+}
+
+fn cleanupOrder(counter: Counter): void {
+  defer append(counter, 1);
+  defer append(counter, 2);
+}
+
+fn exhaustiveValue(value: Envelope): int {
+  return match value {
+    case Value(number) => number;
+    case Empty => 0;
+  };
+}
+
+fn nominalSemanticsAreCorrect(): bool {
+  const counter = Counter { value: 0 };
+  const alias = counter;
+  counter.value += 1;
+  const order = Counter { value: 0 };
+  const pair = Pair { second: next(order), first: next(order) };
+  const cleanup = Counter { value: 0 };
+  cleanupOrder(cleanup);
+  return identity.same(counter, alias) && counter.value == 1 && pair.first == 2 && pair.second == 1 && cleanup.value == 21 && exhaustiveValue(
+    Envelope.Value(9),
+  ) == 9 && exhaustiveValue(Envelope.Empty) == 0;
+}
+
+fn importedBehaviorIsCorrect(): bool {
+  const user = makeUser(4);
+  return evaluateTypeOnly(user) == 8 && evaluateNamed(user) == 12 && evaluateNamespace(user) == 12;
+}
+
+fn previewIsCorrect(): bool {
+  return algorithmsAreCorrect() && genericsAreCorrect() && nominalSemanticsAreCorrect() && importedBehaviorIsCorrect();
+}
+
+fn main(): Result<void, IoError> {
+  if !previewIsCorrect() {
+    panic("checkpoint 12 preview integration failed");
+  }
+  println("checkpoint12 ok")?;
+  return Ok();
+}

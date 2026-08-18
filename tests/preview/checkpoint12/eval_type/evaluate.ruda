@@ -1,0 +1,13 @@
+import { User } from "example/checkpoint12/store";
+
+interface Scored {
+  score(): int;
+}
+
+fn throughInterface(value: Scored): int {
+  return value.score();
+}
+
+public fn evaluateTypeOnly(user: User): int {
+  return throughInterface(user) + user.score();
+}

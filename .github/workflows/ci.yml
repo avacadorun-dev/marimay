@@ -163,3 +163,31 @@ jobs:
         run: cmake --build --preset asan --parallel
       - name: Test
         run: ctest --preset asan
+
+  fuzz:
+    name: Linux x86_64 fuzz / ${{ matrix.target }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [bytecode, frontend, formatter]
+    env:
+      CC: clang
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Configure
+        run: cmake --preset fuzz
+      - name: Build target
+        run: cmake --build build/fuzz --target ruda_fuzz_${{ matrix.target }} --parallel
+      - name: Run sustained campaign
+        run: >-
+          ./build/fuzz/tests/fuzz/ruda_fuzz_${{ matrix.target }}
+          -max_total_time=600
+          -timeout=10
+          -print_final_stats=1
+          tests/fuzz/corpus/${{ matrix.target }}

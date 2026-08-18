@@ -84,6 +84,38 @@ jobs:
       - name: Test
         run: ctest --preset asan-ubsan --output-on-failure
 
+  fuzz:
+    name: Linux x86_64 fuzz / ${{ matrix.target }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [bytecode, frontend, formatter]
+    env:
+      CC: clang
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:symbolize=1:allow_addr2line=1
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Install fuzz toolchain
+        run: |
+          apt-get update
+          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev llvm-18 python3
+      - name: Configure
+        run: cmake --preset fuzz
+      - name: Build target
+        run: cmake --build build/fuzz --target ruda_fuzz_${{ matrix.target }} --parallel
+      - name: Run sustained campaign
+        run: >-
+          ./build/fuzz/tests/fuzz/ruda_fuzz_${{ matrix.target }}
+          -max_total_time=600
+          -timeout=10
+          -print_final_stats=1
+          tests/fuzz/corpus/${{ matrix.target }}
+
   thread-sanitizer:
     name: Linux x86_64 TSan
     runs-on: ubuntu-latest

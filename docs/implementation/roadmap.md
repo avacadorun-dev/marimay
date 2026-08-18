@@ -30,8 +30,8 @@ A gate is `verified` only with linked command output and artifacts satisfying ev
 | P3 — 1.0 release candidate | `not-started` | none |
 | P4 — production 1.0 | `not-started` | none |
 
-Latest I4 evidence: [preview checkpoint 11 exposes the built-in isolated test
-loop and exact VM/native observation comparison](evidence/cp11-ruda-test-2026-08-18.md).
+Latest I4 evidence: [preview checkpoint 12 executes the final local/private
+preview process matrix and exact VM/native observation comparison](evidence/cp12-final-preview-2026-08-18.md).
 I2–I5 remain
 `in-progress`; this is not the complete language gate, package management,
 workspace resolution, production LSP, native `ruda run`, or the production I8
@@ -95,6 +95,14 @@ diffs, and explicit staging diagnostics for filters/watch/cache. I2–I5 remain
 `in-progress`; I6 remains `not-started`, and the production I8 cache,
 concurrency, filters, watch mode, and test event protocol are not claimed.
 
+Preview checkpoint 12 evidence: [final local/private developer-preview
+integration](evidence/cp12-final-preview-2026-08-18.md). A clean checkout now
+executes the canonical formatter/check/run/test/build/native matrix over one
+multi-package corpus, while process tests compare Debug/Release and sanitizer
+VM/native observations for the acceptance program, f64 matrix, and panic
+classes. Sustained fuzz campaigns are explicit CI jobs. I2–I5 remain
+`in-progress`, I6 remains `not-started`, and no public 0.1.0 is claimed.
+
 ## Immediate execution priority: V0 engine-equivalence spine
 
 Checkpoint A0 is locally complete and its initial pushed Linux x86_64 matrix is
@@ -131,11 +139,11 @@ generated C17; the configured Linux x86_64 matrix is green in
 checkpoint 2 established deterministic local packages and D043 invariance;
 preview checkpoint 3 now publishes bounded occurrence facts and exact
 resolver-owned dot completion through generation/snapshot-safe query APIs.
-Preview checkpoints 4–11 now cover constrained generics, generic arrays,
+Preview checkpoints 4–12 now cover constrained generics, generic arrays,
 numeric/text primitives, lexical cleanup, authoritative batch checking, local
 verified VM execution, D046 stdout, content-addressed native builds, and the
-built-in deterministic test loop. The next ordered preview checkpoint is final
-preview integration. Production
+built-in deterministic test loop through final local/private integration.
+Production
 LSP transport and later execution/runtime work remain out of scope until their
 ordered checkpoints.
 

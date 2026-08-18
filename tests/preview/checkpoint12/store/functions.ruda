@@ -1,0 +1,7 @@
+public fn makeUser(value: int): User {
+  return User { scoreValue: value };
+}
+
+public fn score(user: User): int {
+  return user.scoreValue;
+}

@@ -1,0 +1,44 @@
+import { println } from "std/io";
+
+fn printCleanup(): void {
+  println("cleanup");
+}
+
+@test
+fn scalarAlgorithmsAndArrays(): void {
+  if !algorithmsAreCorrect() {
+    panic("scalar, Fibonacci, factorial, sorting, or search changed");
+  }
+}
+
+@test
+fn genericOptionResultMapErrorAndTry(): void {
+  if !genericsAreCorrect() {
+    panic("generic Option/Result/mapError/? changed");
+  }
+}
+
+@test
+fn recordsIdentityConstructionMatchAndCleanup(): void {
+  if !nominalSemanticsAreCorrect() {
+    panic("record, identity, D040, match, or D041 changed");
+  }
+}
+
+@test
+fn importFormsDotCallsAndInterfaces(): void {
+  if !importedBehaviorIsCorrect() {
+    panic("multi-file D043 behavior changed");
+  }
+}
+
+@test
+fn exactOutputIncludesLexicalCleanup(): void {
+  expect.output(
+    "body\ncleanup\n",
+    (): void => {
+      defer printCleanup();
+      println("body");
+    },
+  );
+}

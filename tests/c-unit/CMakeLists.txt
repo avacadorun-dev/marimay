@@ -61,6 +61,7 @@ add_executable(ruda_c_unit
   test_doc_examples.c
   test_document.c
   test_file.c
+  test_final_preview.c
   test_formatter.c
   test_formatter_support.c
   test_formatter_core.c
@@ -152,6 +153,7 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-manifest" DESTINATION "${CM
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity-nul" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../run" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../preview/checkpoint12" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY
   "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
   "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"

@@ -33,6 +33,7 @@ void ruda_test_directory(void);
 void ruda_test_doc_examples(void);
 void ruda_test_document(void);
 void ruda_test_file(void);
+void ruda_test_final_preview(void);
 void ruda_test_formatter(void);
 void ruda_test_hash_map(void);
 void ruda_test_lexer(void);
@@ -90,6 +91,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_doc_examples();
     ruda_test_document();
     ruda_test_file();
+    ruda_test_final_preview();
     ruda_test_formatter();
     ruda_test_hash_map();
     ruda_test_lexer();
