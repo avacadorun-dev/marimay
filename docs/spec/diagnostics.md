@@ -195,6 +195,15 @@ string bytes as its message, and names the complete call expression as its
 primary source location. Compiler/runtime-generated failures use distinct codes;
 they are not collapsed into `G4000`.
 
+Under D049, checked integer overflow, division or remainder by zero, and an
+invalid shift count use `G4001`. Their locale-independent messages are
+respectively `integer overflow`, `integer division by zero`, and
+`integer shift count is outside width`. A root `Result.Err(error)` is the
+expected-program diagnostic `G4003`, whose message is the exact counted string
+returned by the selected structural `message(error)` function. Both classes
+exit `1` and write only stderr. An invalid executable entry uses `T0017` and
+exit `1`.
+
 ```text
 panic[G4002]: array index 8 is outside length 4
   at selectUser (src/users.ruda:42:17)
@@ -271,6 +280,11 @@ An internal compiler/runtime failure uses an `Ixxxx` code, concise invariant, to
 Where safe, `ruda` writes a minimized reproduction bundle containing only explicitly approved source/config. Automatic network upload is opt-in. Secrets and absolute user paths are redacted.
 
 Internal failures exit `70`; source errors remain `1`.
+
+For D049 execution, failure to lower, encode, decode, or verify the canonical
+typed-MIR program is `B0001`. A post-verification VM resource, integrity, or
+unsupported-host failure is `I0002`. Both are internal failures and exit `70`;
+neither may be rendered as a program panic or written to program stdout.
 
 ## 14. Verification
 

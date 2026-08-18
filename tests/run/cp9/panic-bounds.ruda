@@ -1,0 +1,4 @@
+fn main(): void {
+  let values = [1];
+  const value = values[2];
+}

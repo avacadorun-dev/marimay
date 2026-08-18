@@ -1,0 +1,8 @@
+import { Error as IoError, println as line } from "std/io";
+
+fn main(): Result<void, IoError> {
+  line("")?;
+  line("a\0b")?;
+  line("a\nb")?;
+  return Ok();
+}

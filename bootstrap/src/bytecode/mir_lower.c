@@ -378,6 +378,10 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
                 ? RUDA_OPCODE_FORMAT_F32 : RUDA_OPCODE_FORMAT_F64;
             output->operands[1].unsigned_value = input->first;
             break;
+        case RUDA_MIR_IO_PRINTLN:
+            output->opcode = RUDA_OPCODE_IO_PRINTLN;
+            output->operands[1].unsigned_value = input->first;
+            break;
     }
     return RUDA_MIR_BYTECODE_LOWER_OK;
 }

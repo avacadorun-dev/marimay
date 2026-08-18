@@ -547,14 +547,23 @@ bool ruda_compound_assignment_kind(
         ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
         return false;
     }
-    if (inner->kind == RUDA_SYNTAX_CALL_EXPRESSION) {
+    if (inner->kind == RUDA_SYNTAX_CALL_EXPRESSION
+        || inner->kind == RUDA_SYNTAX_TRY_EXPRESSION) {
         memset(&value, 0, sizeof(value));
-        return ruda_compile_expression(
-            function,
-            inner,
-            RUDA_TYPE_INVALID,
-            &value
-        );
+        if (!ruda_compile_expression(
+                function, inner, RUDA_TYPE_INVALID, &value
+            )) return false;
+        if (inner->kind == RUDA_SYNTAX_TRY_EXPRESSION
+            && value.type != RUDA_TYPE_VOID
+            && !ruda_expression_is_never(function, &value)) {
+            (void)ruda_checker_add_diagnostic(
+                function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "a standalone postfix '?' expression must produce void",
+                inner->start, inner->end
+            );
+            return false;
+        }
+        return true;
     }
     if (inner->kind == RUDA_SYNTAX_NAME_EXPRESSION) {
         const RudaSyntaxToken *token = ruda_checker_private_check_child_token(

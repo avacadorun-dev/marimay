@@ -1,9 +1,15 @@
 # code	symbol	component	summary
+B0001	RUN_PIPELINE	run	Run pipeline could not lower, encode, decode, or verify canonical typed MIR.
 F0001	FORMAT_INPUT_IO	formatter	Formatter could not read the selected source input.
 F0002	FORMAT_OUTPUT_IO	formatter	Formatter could not write or transactionally replace canonical output.
 F0003	FORMAT_LIMIT	formatter	Formatter exhausted a defensive input, nesting, work, or output limit.
 F0004	FORMAT_CHECK_FAILED	formatter	Source input does not match canonical formatting.
+G4000	EXPLICIT_PANIC	runtime	Program executed an explicit source panic.
+G4001	ARITHMETIC_PANIC	runtime	Checked integer arithmetic panicked.
+G4002	BOUNDS_PANIC	runtime	Array indexing panicked on an out-of-bounds index.
+G4003	PROGRAM_ERROR	runtime	Root main returned an expected error.
 I0001	COMPILER_INCOMPLETE	compiler	Compiler does not implement an accepted language construct.
+I0002	RUNTIME_FAILURE	runtime	Runtime could not complete because of an internal resource or integrity failure.
 K0001	MANIFEST_SYNTAX	manifest	Manifest directive or grouping syntax is invalid.
 K0002	MANIFEST_STRING	manifest	Manifest contains an invalid JSON-compatible string.
 K0003	WORKSPACE_PATH	manifest	Workspace use path is not a canonical relative path within the workspace root.
@@ -55,6 +61,7 @@ T0013	NON_EXHAUSTIVE_MATCH	type checker	Match over a closed domain does not cove
 T0014	REDUNDANT_PATTERN	type checker	Match arm pattern is redundant or unreachable after earlier arms.
 T0015	YIELD_OUTSIDE_MATCH_ARM	type checker	Yield appears outside a block match arm.
 T0016	MISSING_MATCH_YIELD	type checker	A reachable path through a block match arm does not yield a value.
+T0017	INVALID_ENTRY_POINT	run	Executable root does not declare an accepted main entry point.
 U0001	UNKNOWN_COMMAND	command line	Unknown top-level command or help target.
 U0002	UNKNOWN_OPTION	command line	Unknown command-line option.
 U0003	UNAVAILABLE_COMMAND	command line	Specified command is not present in this bootstrap stage.

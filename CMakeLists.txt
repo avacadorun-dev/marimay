@@ -96,6 +96,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_verify.c
   bootstrap/src/bytecode/bytecode_verify_defer.c
   bootstrap/src/bytecode/bytecode_verify_instructions.c
+  bootstrap/src/bytecode/bytecode_verify_io.c
   bootstrap/src/bytecode/bytecode_verify_nominal.c
   bootstrap/src/bytecode/bytecode_verify_numeric.c
   bootstrap/src/bytecode/bytecode_verify_provenance.c
@@ -107,6 +108,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/vm.c
   bootstrap/src/bytecode/vm_defer.c
   bootstrap/src/bytecode/vm_interface.c
+  bootstrap/src/bytecode/vm_io.c
   bootstrap/src/bytecode/vm_format.c
   bootstrap/src/bytecode/vm_nominal.c
   bootstrap/src/bytecode/vm_numeric.c
@@ -131,6 +133,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/checker_expr_map_error.c
   bootstrap/src/check/checker_expr_numeric.c
   bootstrap/src/check/checker_expr_interfaces.c
+  bootstrap/src/check/checker_expr_io.c
   bootstrap/src/check/checker_generic_types.c
   bootstrap/src/check/checker_generic_specialization.c
   bootstrap/src/check/checker_prelude.c
@@ -150,6 +153,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/checker_match_witness.c
   bootstrap/src/check/checker_publication.c
   bootstrap/src/check/checker_statement.c
+  bootstrap/src/check/entry.c
   bootstrap/src/check/facts.c
   bootstrap/src/check/package_graph.c
   bootstrap/src/check/queries.c
@@ -158,8 +162,12 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/service.c
   bootstrap/src/check/service_queries.c
   bootstrap/src/cli/cli.c
-  bootstrap/src/cli/cli_check.c
+    bootstrap/src/cli/cli_check.c
+    bootstrap/src/cli/cli_compile_report.c
+    bootstrap/src/cli/cli_run_program.c
+    bootstrap/src/cli/cli_run_report.c
   bootstrap/src/cli/cli_check_targets.c
+  bootstrap/src/cli/cli_standard_packages.c
   bootstrap/src/cli/cli_format.c
   bootstrap/src/cli/cli_format_targets.c
   bootstrap/src/diagnostic/diagnostic.c
@@ -175,12 +183,14 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/mir/execution.c
   bootstrap/src/mir/execution_defer.c
   bootstrap/src/mir/execution_format.c
+  bootstrap/src/mir/execution_io.c
   bootstrap/src/mir/execution_heap.c
   bootstrap/src/mir/execution_numeric.c
   bootstrap/src/mir/mir.c
   bootstrap/src/mir/mir_interfaces.c
   bootstrap/src/mir/verify.c
   bootstrap/src/mir/verify_interfaces.c
+  bootstrap/src/mir/verify_io.c
   bootstrap/src/mir/verify_managed.c
   bootstrap/src/mir/verify_numeric.c
   bootstrap/src/mir/verify_defer.c
@@ -189,7 +199,8 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/native/c_emitter_descriptors.c
   bootstrap/src/native/c_emitter_defer.c
   bootstrap/src/native/c_emitter_emit.c
-  bootstrap/src/native/c_emitter_format.c
+    bootstrap/src/native/c_emitter_format.c
+    bootstrap/src/native/c_emitter_io.c
   bootstrap/src/native/c_emitter_managed.c
   bootstrap/src/native/c_emitter_numeric.c
   bootstrap/src/native/c_emitter_validate.c
@@ -202,6 +213,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/types/type.c
   runtime/common/directory.c
   runtime/common/file.c
+  runtime/common/io_stdout.c
   runtime/common/managed.c
   runtime/common/managed_internal.c
   runtime/common/managed_string.c

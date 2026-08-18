@@ -37,7 +37,7 @@ static const RudaTaskHelp ruda_tasks[] = {
     {"list", "List package dependencies.", "list", "ruda list", false},
     {"outdated", "Report available dependency updates.", "outdated", "ruda outdated", false},
     {"remove", "Remove a package dependency.", "remove module", "ruda remove ruda-lang.example/postgres", false},
-    {"run", "Run with the bytecode VM by default.", "run [target] [-- arguments]", "ruda run .", false},
+    {"run", "Run with the bytecode VM by default.", "run [target] [-- arguments]", "ruda run .", true},
     {"test", "Run built-in tests with the VM by default.", "test [filter|target] [options]", "ruda test --engine both", false},
     {"update", "Update locked package versions.", "update [module]", "ruda update", false},
     {"vendor", "Vendor immutable locked dependencies.", "vendor", "ruda vendor", false},
@@ -52,6 +52,7 @@ static const char *const ruda_global_options[] = {
     "--color",
     "--diagnostic",
     "--diff",
+    "--engine",
     "--help",
     "--quiet",
     "--stdin",
@@ -345,13 +346,27 @@ static int ruda_parse_options(
     options->format_stdin_index = 0;
     options->check_all_targets = false;
     options->check_all_targets_index = 0;
+    options->run_engine = "vm";
+    options->run_engine_index = 0;
+    options->program_argument_start = 0;
+    options->program_argument_count = 0;
     options->quiet = false;
     options->verbose = false;
 
     for (index = 1; index < argument_count; index += 1) {
         const char *argument = arguments[index];
         const char *value = NULL;
-        if (strcmp(argument, "--diagnostic") == 0 || strcmp(argument, "--color") == 0) {
+        if (strcmp(argument, "--") == 0 && options->command != NULL
+            && strcmp(options->command, "run") == 0) {
+            options->program_argument_start = (size_t)index + 1;
+            options->program_argument_count = (size_t)argument_count
+                - options->program_argument_start;
+            break;
+        } else if (strcmp(argument, "--diagnostic") == 0
+            || strcmp(argument, "--color") == 0
+            || (strcmp(argument, "--engine") == 0
+                && options->command != NULL
+                && strcmp(options->command, "run") == 0)) {
             if (index + 1 >= argument_count) {
                 char message[160];
                 int length = snprintf(message, sizeof(message), "option '%s' requires a value", argument);
@@ -378,7 +393,8 @@ static int ruda_parse_options(
                         "--diagnostic expects human, short, or json"
                     );
                 }
-            } else if (!ruda_valid_color(value)) {
+            } else if (strcmp(argument, "--color") == 0
+                && !ruda_valid_color(value)) {
                 return ruda_option_value_error(
                     error_writer,
                     options->diagnostic_style,
@@ -386,6 +402,17 @@ static int ruda_parse_options(
                     (size_t)index,
                     "--color expects auto, always, or never"
                 );
+            } else if (strcmp(argument, "--engine") == 0) {
+                if (strcmp(value, "vm") != 0) {
+                    return ruda_option_value_error(
+                        error_writer, options->diagnostic_style,
+                        RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                        (size_t)index,
+                        "checkpoint 9 ruda run supports --engine vm"
+                    );
+                }
+                options->run_engine = value;
+                options->run_engine_index = (size_t)index;
             }
         } else if (ruda_starts_with(argument, "--diagnostic=")) {
             value = argument + strlen("--diagnostic=");
@@ -409,6 +436,20 @@ static int ruda_parse_options(
                     "--color expects auto, always, or never"
                 );
             }
+        } else if (ruda_starts_with(argument, "--engine=")
+            && options->command != NULL
+            && strcmp(options->command, "run") == 0) {
+            value = argument + strlen("--engine=");
+            if (strcmp(value, "vm") != 0) {
+                return ruda_option_value_error(
+                    error_writer, options->diagnostic_style,
+                    RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                    (size_t)index,
+                    "checkpoint 9 ruda run supports --engine vm"
+                );
+            }
+            options->run_engine = value;
+            options->run_engine_index = (size_t)index;
         } else if (strcmp(argument, "--quiet") == 0) {
             options->quiet = true;
         } else if (strcmp(argument, "--verbose") == 0) {
@@ -460,7 +501,8 @@ static int ruda_parse_options(
             options->help_target = argument;
             options->help_target_index = (size_t)index;
         } else if ((strcmp(options->command, "fmt") == 0
-                || strcmp(options->command, "check") == 0)
+                || strcmp(options->command, "check") == 0
+                || strcmp(options->command, "run") == 0)
             && options->target == NULL) {
             options->target = argument;
             options->target_index = (size_t)index;
@@ -706,6 +748,11 @@ int ruda_cli_run(
             &options,
             standard_output,
             standard_error
+        );
+    }
+    if (strcmp(task->name, "run") == 0) {
+        return ruda_cli_run_program(
+            session, &options, standard_output, standard_error
         );
     }
     {

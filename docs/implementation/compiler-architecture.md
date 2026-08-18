@@ -147,8 +147,10 @@ bootstrap/src/mir/
   verify_support.c      type/dataflow verifier primitives
   verify_managed.c      string/record/enum/array layout verification
   verify_interfaces.c   interface metadata and nominal payload verification
+  verify_io.c           exact D046 stdout instruction/layout verification
   execution.c           oracle graph and interpreter
   execution_heap.c      execution state and managed allocations
+  execution_io.c        D046 oracle publication and Result construction
 ```
 
 `ruda_mir_verify` and `ruda_mir_interpret` retain their public signatures. No
@@ -175,6 +177,7 @@ bootstrap/src/check/
                         and publication phases
   checker_expression.c  expression dispatcher only
   checker_expr_*.c      scalar, call, nominal, and record expression owners
+  checker_expr_io.c     exact imported std/io.println recognition and lowering
   checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
                         and lowering
   checker_cfg.c         block/edge/value-state ownership
@@ -191,6 +194,7 @@ bootstrap/src/check/
   service.c             snapshots, package-graph checks, frontend lifetimes
   service_queries.c     generation/snapshot-safe compiler-service queries
   array.c               D045 type/literal/access/assignment lowering
+  entry.c               root main and structural Error-contract selection
 ```
 
 `ruda_check_package` remains the single-package coordinator;
@@ -265,6 +269,10 @@ tests/c-unit/
                          support}.c
   test_parser_{core,declarations,expressions,incremental,support}.c
   test_formatter_{core,trivia,failures,support}.c
+  test_check_entry.c
+  test_cp9_io_pipeline.c
+  test_cli_run.c
+  test_runtime_io.c
 ```
 
 The existing `ruda_test_mir` and `ruda_test_checker` aggregators retain their

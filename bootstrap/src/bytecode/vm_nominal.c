@@ -175,6 +175,7 @@ static RudaManagedCellKind ruda_bytecode_nominal_cell_kind(
 ) {
     return ruda_bytecode_type_is_integer(type)
             || type == RUDA_BYTECODE_TYPE_BOOL || type == RUDA_BYTECODE_TYPE_F64
+            || type == RUDA_BYTECODE_TYPE_VOID
         ? RUDA_MANAGED_CELL_RAW64
         : RUDA_MANAGED_CELL_REFERENCE;
 }

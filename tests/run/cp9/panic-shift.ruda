@@ -1,0 +1,7 @@
+fn shift(left: int, right: int): int {
+  return left << right;
+}
+
+fn main(): void {
+  const value = shift(1, 64);
+}

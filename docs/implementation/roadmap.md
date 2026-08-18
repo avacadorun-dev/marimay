@@ -30,13 +30,13 @@ A gate is `verified` only with linked command output and artifacts satisfying ev
 | P3 — 1.0 release candidate | `not-started` | none |
 | P4 — production 1.0 | `not-started` | none |
 
-Latest I2 evidence: [preview checkpoint 8 exposes authoritative batch
-`ruda check` over fresh disk snapshots and a deterministic complete local
-module graph](evidence/cp8-authoritative-check-2026-08-18.md). I2 remains
-`in-progress`; this is not the complete language gate, package management,
-workspace resolution, or production LSP. Accepted [D046](../design/decisions.md) closes the 0.1-dev user
-stdout contract; [the documentation checkpoint](evidence/d046-stdout-preview-2026-08-14.md)
-does not implement `std/io` or engine writes.
+Latest I2 evidence: [preview checkpoint 9 exposes local `ruda run`, exact
+`std/io` stdout bytes, and verified VM execution](evidence/cp9-ruda-run-stdout-2026-08-18.md).
+I2–I5 remain `in-progress`; this is not the complete language gate, package
+management, workspace resolution, production LSP, or native `ruda build`.
+I6 remains `not-started`. Accepted [D046](../design/decisions.md) defines the
+0.1-dev user stdout contract and accepted [D049](../design/decisions.md)
+records the checkpoint-9 entry and execution contract.
 
 Preview checkpoint 4 evidence: [generic `Option`/`Result`/`?`/`mapError`
 vertical slice](evidence/i2-generics-checkpoint-4-2026-08-17.md). The slice
@@ -69,6 +69,14 @@ fail-closed incomplete-language handling](evidence/cp8-authoritative-check-2026-
 The command is now available for the checker-backed preview surface. I2 remains
 `in-progress`; I7 manifest/dependency/workspace semantics and I8's remaining
 developer loop are not claimed.
+
+Preview checkpoint 9 evidence: [local `ruda run`, exact D046 stdout, canonical
+entry selection, and verified VM execution](evidence/cp9-ruda-run-stdout-2026-08-18.md).
+The slice covers success, expected `Result` failure, runtime panics, invalid
+entry points, malformed MIR/bytecode, denied capabilities, writer failures,
+allocation-failure cleanup, and generated C17 differential execution. I2–I5
+remain `in-progress`; I6 remains `not-started`, and native `ruda build` is the
+next ordered preview checkpoint rather than a checkpoint-9 claim.
 
 ## Immediate execution priority: V0 engine-equivalence spine
 
@@ -106,10 +114,11 @@ generated C17; the configured Linux x86_64 matrix is green in
 checkpoint 2 established deterministic local packages and D043 invariance;
 preview checkpoint 3 now publishes bounded occurrence facts and exact
 resolver-owned dot completion through generation/snapshot-safe query APIs.
-Preview checkpoints 4–8 now cover constrained generics, generic arrays,
-numeric/text primitives, lexical cleanup, and authoritative batch checking.
-The next ordered preview checkpoint is `ruda run` and D046 stdout. Production LSP transport and later
-execution/I/O work remain out of scope until their ordered checkpoints.
+Preview checkpoints 4–9 now cover constrained generics, generic arrays,
+numeric/text primitives, lexical cleanup, authoritative batch checking, local
+verified VM execution, and D046 stdout. The next ordered preview checkpoint is
+native `ruda build`. Production LSP transport and later execution/runtime work
+remain out of scope until their ordered checkpoints.
 
 I2, I3, and I4 are intentionally overlapped after the minimally useful pure
 subset exists. The next execution release blocker is the first complete V0

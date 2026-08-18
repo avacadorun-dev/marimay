@@ -898,3 +898,68 @@ checking without a stable local package identity, while moving dependency and
 supply-chain policy ahead of I7 would couple an otherwise local compiler
 command to unfinished resolution semantics. This narrow exception resolves
 that boundary without changing the lossless manifest tree used by I1.
+
+## D049 — Local `ruda run` has one verified VM boundary and closed outcomes
+
+Status: accepted.
+
+`ruda run` uses the D048 local target and root-package discovery rules. A
+standalone `.ruda` target is the root `script` package. A module target selects
+the canonical package represented by that target; no-target and an explicit
+module-root target select the module root package. Only a function named
+exactly `main` in that root package can be the entry symbol. It must be a
+non-external, non-test, non-fuzz function with no parameters and one of these
+exact return types:
+
+```ruda
+fn main(): void;
+fn main(): Result<void, E>;
+```
+
+For the second form, the root-visible D003 dot-call set for `E` must contain
+one non-external exact `message(error: E): string` function. A private
+function is visible for this contract only when it is owned by the root
+package; another package must publish it. This is the preview structural
+`Error` contract. Entry selection does not accept an unrelated nominal named
+`Result`, a non-`void` `Ok` payload, parameters, or a same-named `main` in
+another package.
+
+After the authoritative checker succeeds, `run` consumes only its verified
+typed MIR. It lowers every checked non-external function to the canonical
+bytecode program, encodes that program, decodes the produced bytes into a new
+program, verifies the complete decoded program, and only then enters the VM.
+VM is the default engine. Failure of this internal integrity chain is `B0001`
+and exit `70`; a VM resource, integrity, or unsupported-host failure is
+`I0002` and exit `70`. An invalid entry is `T0017` and exit `1`.
+
+A `void` return or `Result.Ok()` exits `0`. `Result.Err(error)` invokes the
+selected `message(error)` function, renders `G4003` with those exact counted
+string bytes on stderr, and exits `1`. D046 `io.stdout` denial and write
+failure remain recoverable `std/io.Error` values; if `?` propagates either to
+root `main`, the resulting `G4003` is an expected program failure, not the
+tool-level sandbox exit `4`.
+
+Runtime panics write no tool envelope to program stdout and exit `1`.
+Explicit source panic remains `G4000`; D045 bounds panic remains `G4002` with
+its exact bounds message. Checked integer overflow, division/remainder by
+zero, and invalid shift use `G4001` with respectively `integer overflow`,
+`integer division by zero`, and `integer shift count is outside width`.
+Human rendering is `panic[code]: message`; short and JSON styles retain their
+ordinary stable diagnostic forms. All compiler, expected-error, panic, and
+internal diagnostics go only to stderr. Successful program bytes go only to
+the D046 stdout owner; the internal `ok:f64:` trace is never emitted by
+`ruda run`.
+
+The D046 capability `io.stdout` is granted by default for this local command.
+The argument boundary is exact: arguments after the first `--` are program
+arguments and are not parsed as tool options. The preview has no source API
+for reading them yet, so retaining the bounded slice is intentionally
+unobservable. Checkpoint 9's Stage 0 command accepts only `--engine vm` and
+rejects other values with `U0005`/exit `2`; checkpoint 10 supplies the native
+artifact path before the final toolchain contract exposes native run.
+
+Reason: exposing source execution before fixing entry ownership, the
+encode/decode verification boundary, and every process outcome would make the
+CLI itself a second semantics engine. One closed VM path gives acceptance
+programs real stdout and stable failures while preserving D046, D045, and the
+later native-build sequencing.

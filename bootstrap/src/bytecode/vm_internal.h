@@ -59,7 +59,16 @@ RudaBytecodeRunStatus ruda_bytecode_run_format_instruction(
 RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
     const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
     RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaAllocator allocator, int64_t *bounds_index, size_t *bounds_length);
+    RudaAllocator allocator, const RudaIoStdout *stdout_sink,
+    int64_t *bounds_index, size_t *bounds_length);
+RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
+    const RudaBytecodeInstruction *instruction,
+    RudaBytecodeValue *registers,
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function,
+    RudaAllocator allocator,
+    const RudaIoStdout *stdout_sink
+);
 
 bool ruda_bytecode_run_consume_step(size_t *steps,
     RudaBytecodeRunOptions options);

@@ -17,6 +17,7 @@ typedef struct RudaCheckInterpretOptions {
      * omitted, the interpreter owns a temporary execution for internal values.
      */
     RudaMirExecution *execution;
+    const RudaIoStdout *stdout_sink;
     /* Optional caller-owned runtime-panic observation for the MIR oracle. */
     RudaMirPanic *panic;
 } RudaCheckInterpretOptions;

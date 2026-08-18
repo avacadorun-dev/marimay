@@ -6,11 +6,17 @@ The committed registry is the source of stable diagnostic identities. Later gate
 
 | Code | Component | Meaning |
 |---|---|---|
+| `B0001` | run | Run pipeline could not lower, encode, decode, or verify canonical typed MIR. |
 | `F0001` | formatter | Formatter could not read the selected source input. |
 | `F0002` | formatter | Formatter could not write or transactionally replace canonical output. |
 | `F0003` | formatter | Formatter exhausted a defensive input, nesting, work, or output limit. |
 | `F0004` | formatter | Source input does not match canonical formatting. |
+| `G4000` | runtime | Program executed an explicit source panic. |
+| `G4001` | runtime | Checked integer arithmetic panicked. |
+| `G4002` | runtime | Array indexing panicked on an out-of-bounds index. |
+| `G4003` | runtime | Root main returned an expected error. |
 | `I0001` | compiler | Compiler does not implement an accepted language construct. |
+| `I0002` | runtime | Runtime could not complete because of an internal resource or integrity failure. |
 | `K0001` | manifest | Manifest directive or grouping syntax is invalid. |
 | `K0002` | manifest | Manifest contains an invalid JSON-compatible string. |
 | `K0003` | manifest | Workspace use path is not a canonical relative path within the workspace root. |
@@ -62,6 +68,7 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `T0014` | type checker | Match arm pattern is redundant or unreachable after earlier arms. |
 | `T0015` | type checker | Yield appears outside a block match arm. |
 | `T0016` | type checker | A reachable path through a block match arm does not yield a value. |
+| `T0017` | run | Executable root does not declare an accepted main entry point. |
 | `U0001` | command line | Unknown top-level command or help target. |
 | `U0002` | command line | Unknown command-line option. |
 | `U0003` | command line | Specified command is not present in this bootstrap stage. |

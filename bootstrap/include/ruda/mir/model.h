@@ -32,7 +32,6 @@ typedef struct RudaMirSpan {
     size_t start;
     size_t end;
 } RudaMirSpan;
-
 typedef enum RudaMirInstructionKind {
     RUDA_MIR_CONSTANT_I64,
     RUDA_MIR_CONSTANT_INTEGER,
@@ -92,10 +91,10 @@ typedef enum RudaMirInstructionKind {
     RUDA_MIR_INTEGER_CONVERT,
     RUDA_MIR_FORMAT_F32,
     RUDA_MIR_FORMAT_F64,
+    RUDA_MIR_IO_PRINTLN,
     RUDA_MIR_DEFER_REGISTER,
     RUDA_MIR_DEFER_CALL
 } RudaMirInstructionKind;
-
 typedef enum RudaMirIntegerPolicy {
     RUDA_MIR_INTEGER_CHECKED_OPTION,
     RUDA_MIR_INTEGER_WRAPPING,

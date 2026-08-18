@@ -47,6 +47,10 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_numeric_instruction(
     const RudaBytecodeInstruction *instruction,
     unsigned char *assigned
 );
+RudaBytecodeVerifyStatus ruda_bytecode_verify_io_instruction(
+    const RudaBytecodeFunction *function,
+    const RudaBytecodeInstruction *instruction
+);
 void ruda_bytecode_transfer_assignments(
     const RudaBytecodeBlock *block,
     unsigned char *assigned,

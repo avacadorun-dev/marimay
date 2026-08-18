@@ -97,3 +97,4 @@ Stage 0 codec.
 | 84 | `format_f64` | `destination:register`, `source:register` | `may_panic` | Format exact raw binary64 bits as the D046 string spelling. |
 | 85 | `defer_register` | `marker:register`, `call:call` | — | Register one captured void call for lexical cleanup. |
 | 86 | `defer_call` | `marker:register`, `call:call` | `may_panic` | Pop and invoke the most recently registered lexical cleanup. |
+| 87 | `io_println` | `destination:register`, `text:register` | `may_panic` | Publish one D046 stdout line and return Result<void, std/io.Error>. |

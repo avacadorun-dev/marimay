@@ -191,11 +191,11 @@ RudaBytecodeRunStatus ruda_bytecode_run(
                 int64_t bounds_index = 0;
                 size_t bounds_length = 0;
                 status = ruda_bytecode_run_value_instruction(
-                instruction,
-                registers,
+                instruction, registers,
                 options.execution,
                 function,
                 allocator,
+                options.stdout_sink,
                 &bounds_index,
                 &bounds_length
                 );
@@ -821,7 +821,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
             size_t bounds_length = 0;
             status = ruda_bytecode_run_value_instruction(
                 instruction, frame->registers, options.execution, body,
-                allocator, &bounds_index, &bounds_length
+                allocator, options.stdout_sink, &bounds_index, &bounds_length
             );
             if (status == RUDA_BYTECODE_RUN_PANIC) {
                 size_t panic_index = frame_count - 1;

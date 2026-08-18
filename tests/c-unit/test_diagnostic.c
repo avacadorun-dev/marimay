@@ -65,6 +65,21 @@ void ruda_test_diagnostic(void) {
     }
 
     {
+        static const char counted[] = {'a', '\0', 'b'};
+        diagnostic.message = counted;
+        diagnostic.message_length = sizeof(counted);
+        diagnostic.message_is_counted = true;
+        ruda_test_buffer_init(&buffer);
+        RUDA_EXPECT(ruda_diagnostic_render(
+            ruda_test_buffer_writer(&buffer),
+            RUDA_DIAGNOSTIC_JSON,
+            &diagnostic
+        ));
+        RUDA_EXPECT(strstr(buffer.bytes, "a\\u0000b") != NULL);
+        diagnostic.message_is_counted = false;
+    }
+
+    {
         static const char source_bytes[] = "const = 1;\r\n";
         RudaSourceManager sources;
         const RudaSourceSnapshot *source = NULL;

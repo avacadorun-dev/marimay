@@ -20,7 +20,11 @@ fn main(): void;
 fn main(): Result<void, E>;
 ```
 
-`E` must satisfy the prelude `Error` interface for the second form. Returning `Err` writes the standard diagnostic form to stderr and exits with status `1`. A panic exits according to the runtime panic policy and is not an expected-error path.
+Under D049, `E` satisfies the preview structural `Error` contract when its
+root-visible D003 dot-call set contains an exact non-external
+`message(error: E): string`. Returning `Err` writes `G4003` with those exact
+counted message bytes to stderr and exits with status `1`. A panic exits
+according to the runtime panic policy and is not an expected-error path.
 
 User program stdout is not a language primitive. The 0.1-dev write surface is
 `std/io.println(text: string): Result<void, io.Error>` under D046. It is not in

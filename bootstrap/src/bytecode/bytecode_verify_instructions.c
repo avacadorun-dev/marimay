@@ -121,6 +121,7 @@ bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_INTEGER_CONVERT_OPTION:
         case RUDA_OPCODE_FORMAT_F32:
         case RUDA_OPCODE_FORMAT_F64:
+        case RUDA_OPCODE_IO_PRINTLN:
         case RUDA_OPCODE_DEFER_REGISTER:
         case RUDA_OPCODE_DEFER_CALL:
             return true;
@@ -1125,6 +1126,18 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                         ? RUDA_BYTECODE_TYPE_F32 : RUDA_BYTECODE_TYPE_F64)
                 ? RUDA_BYTECODE_VERIFY_OK
                 : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            break;
+        case RUDA_OPCODE_IO_PRINTLN:
+            first = instruction->operands[1].unsigned_value;
+            status = ruda_bytecode_require_assigned(
+                assigned, function->register_types.length, first
+            );
+            if (status != RUDA_BYTECODE_VERIFY_OK) {
+                return status;
+            }
+            status = ruda_bytecode_verify_io_instruction(
+                function, instruction
+            );
             break;
         case RUDA_OPCODE_BOOL_NOT:
             first = instruction->operands[1].unsigned_value;

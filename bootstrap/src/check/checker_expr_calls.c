@@ -10,6 +10,7 @@
 #include "checker_expr_prelude_api.h"
 #include "checker_expr_map_error_api.h"
 #include "checker_expr_numeric_api.h"
+#include "checker_expr_io_api.h"
 
 
 
@@ -941,6 +942,7 @@ cleanup:
     bool map_error_resolved = false;
     bool numeric_resolved = false;
     bool convert_format_resolved = false;
+    bool io_resolved = false;
     const RudaAstNode *member_callee = ruda_checker_private_check_child_node(
         node,
         RUDA_SYNTAX_MEMBER_EXPRESSION,
@@ -968,6 +970,15 @@ cleanup:
         goto cleanup;
     }
     if (convert_format_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!ruda_checker_private_compile_io_call(
+            function, node, expected, &io_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (io_resolved) {
         accepted = true;
         goto cleanup;
     }

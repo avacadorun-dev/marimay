@@ -333,6 +333,7 @@ RudaBytecodeRunOptions ruda_bytecode_run_default_options(void) {
     options.max_call_depth = 1024;
     options.remaining_shared_steps = NULL;
     options.execution = NULL;
+    options.stdout_sink = NULL;
     options.panic = NULL;
     options.trap = NULL;
     return options;
@@ -492,6 +493,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
     RudaBytecodeExecution *execution,
     const RudaBytecodeFunction *function,
     RudaAllocator allocator,
+    const RudaIoStdout *stdout_sink,
     int64_t *bounds_index,
     size_t *bounds_length
 ) {
@@ -1171,6 +1173,11 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
         case RUDA_OPCODE_FORMAT_F64:
             return ruda_bytecode_run_format_instruction(
                 instruction, registers, execution
+            );
+        case RUDA_OPCODE_IO_PRINTLN:
+            return ruda_bytecode_run_io_instruction(
+                instruction, registers, execution, function,
+                allocator, stdout_sink
             );
     }
     return RUDA_BYTECODE_RUN_INVALID_BYTECODE;

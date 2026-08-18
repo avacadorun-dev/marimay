@@ -20,9 +20,13 @@ static const char *ruda_severity_name(RudaSeverity severity) {
     return "error";
 }
 
-static bool ruda_json_string(RudaWriter writer, const char *text) {
-    const unsigned char *cursor = (const unsigned char *)text;
-    size_t remaining = strlen(text);
+static bool ruda_json_bytes(
+    RudaWriter writer,
+    const unsigned char *text,
+    size_t length
+) {
+    const unsigned char *cursor = text;
+    size_t remaining = length;
     char escape[7];
     if (!ruda_writer_write_cstr(writer, "\"")) {
         return false;
@@ -55,8 +59,11 @@ static bool ruda_json_string(RudaWriter writer, const char *text) {
                 return false;
             }
         } else if (byte < 0x20U) {
-            int length = snprintf(escape, sizeof(escape), "\\u%04x", (unsigned int)byte);
-            if (length != 6 || !ruda_writer_write(writer, escape, 6)) {
+            int escaped_length = snprintf(
+                escape, sizeof(escape), "\\u%04x", (unsigned int)byte
+            );
+            if (escaped_length != 6
+                || !ruda_writer_write(writer, escape, 6)) {
                 return false;
             }
         } else if (byte < 0x80U) {
@@ -81,6 +88,29 @@ static bool ruda_json_string(RudaWriter writer, const char *text) {
         remaining -= 1;
     }
     return ruda_writer_write_cstr(writer, "\"");
+}
+
+static bool ruda_json_string(RudaWriter writer, const char *text) {
+    return ruda_json_bytes(
+        writer, (const unsigned char *)text, strlen(text)
+    );
+}
+
+static size_t ruda_diagnostic_message_length(
+    const RudaDiagnostic *diagnostic
+) {
+    return diagnostic->message_is_counted
+        ? diagnostic->message_length : strlen(diagnostic->message);
+}
+
+static bool ruda_diagnostic_write_message(
+    RudaWriter writer,
+    const RudaDiagnostic *diagnostic
+) {
+    return ruda_writer_write(
+        writer, diagnostic->message,
+        ruda_diagnostic_message_length(diagnostic)
+    );
 }
 
 static bool ruda_write_size(RudaWriter writer, size_t value) {
@@ -395,7 +425,10 @@ static bool ruda_diagnostic_render_json(RudaWriter writer, const RudaDiagnostic 
         || !ruda_writer_write_cstr(writer, ",\"severity\":")
         || !ruda_json_string(writer, ruda_severity_name(diagnostic->severity))
         || !ruda_writer_write_cstr(writer, ",\"message\":")
-        || !ruda_json_string(writer, diagnostic->message)
+        || !ruda_json_bytes(
+            writer, (const unsigned char *)diagnostic->message,
+            ruda_diagnostic_message_length(diagnostic)
+        )
         || !ruda_writer_write_cstr(writer, ",\"primary\":")
         || !ruda_diagnostic_write_json_primary(writer, diagnostic)
         || !ruda_writer_write_cstr(
@@ -452,14 +485,14 @@ bool ruda_diagnostic_render(
             && ruda_writer_write_cstr(writer, ":")
             && ruda_writer_write_cstr(writer, severity)
             && ruda_writer_write_cstr(writer, ":")
-            && ruda_writer_write_cstr(writer, diagnostic->message)
+            && ruda_diagnostic_write_message(writer, diagnostic)
             && ruda_writer_write_cstr(writer, "\n");
     }
     if (!ruda_writer_write_cstr(writer, severity)
         || !ruda_writer_write_cstr(writer, "[")
         || !ruda_writer_write_cstr(writer, diagnostic->code)
         || !ruda_writer_write_cstr(writer, "]: ")
-        || !ruda_writer_write_cstr(writer, diagnostic->message)
+        || !ruda_diagnostic_write_message(writer, diagnostic)
         || !ruda_writer_write_cstr(writer, "\n")) {
         return false;
     }

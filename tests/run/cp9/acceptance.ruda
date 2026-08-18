@@ -1,0 +1,106 @@
+import { Error as IoError, println } from "std/io";
+
+type Pair {
+  left: int;
+  right: int;
+}
+
+enum Choice {
+  PairValue(Pair),
+  Missing,
+}
+
+enum AppError {
+  Invalid,
+}
+
+fn fibonacci(limit: int): int {
+  let index = 0;
+  let previous = 0;
+  let current = 1;
+  while index < limit {
+    const next = previous + current;
+    previous = current;
+    current = next;
+    index += 1;
+  }
+  return previous;
+}
+
+fn factorial(limit: int): int {
+  let index = 2;
+  let product = 1;
+  while index <= limit {
+    product *= index;
+    index += 1;
+  }
+  return product;
+}
+
+fn sortedMiddle(): int {
+  let values: Array<int> = [3, 1, 2];
+  for let pass = 0; pass < 3; pass += 1 {
+    for let index = 0; index < 2; index += 1 {
+      if values[index] > values[index + 1] {
+        let temporary = values[index];
+        values[index] = values[index + 1];
+        values[index + 1] = temporary;
+      }
+    }
+  }
+  return values[1];
+}
+
+fn optionValue(): int {
+  const value: Option<int> = Some(7);
+  return match value {
+    case Some(item) => item;
+    case None => 0;
+  };
+}
+
+fn resultValue(): Result<int, AppError> {
+  return Ok(9);
+}
+
+fn propagatedValue(): Result<int, AppError> {
+  const value = resultValue()?;
+  return Ok(value + 1);
+}
+
+fn nominalValue(): int {
+  const choice = Choice.PairValue(Pair { right: 4, left: 3 });
+  return match choice {
+    case PairValue(pair) => pair.left + pair.right;
+    case Missing => 0;
+  };
+}
+
+fn main(): Result<void, IoError> {
+  if 6 * 7 != 42 {
+    panic("scalar arithmetic failed");
+  }
+  if fibonacci(10) != 55 {
+    panic("fibonacci failed");
+  }
+  if factorial(10) != 3628800 {
+    panic("factorial failed");
+  }
+  if sortedMiddle() != 2 {
+    panic("array sorting failed");
+  }
+  if nominalValue() != 7 {
+    panic("nominal value failed");
+  }
+  if optionValue() != 7 {
+    panic("Option failed");
+  }
+  if match propagatedValue() {
+    case Ok(value) => value;
+    case Err(_) => 0;
+  } != 10 {
+    panic("Result propagation failed");
+  }
+  println("cp9 acceptance ok")?;
+  return Ok();
+}

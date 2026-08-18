@@ -599,6 +599,11 @@ bool ruda_native_c_emit_function(
                         return false;
                     }
                     break;
+                case RUDA_MIR_IO_PRINTLN:
+                    if (!ruda_native_c_emit_io_instruction(
+                            buffer, function, i
+                        )) return false;
+                    break;
                 case RUDA_MIR_DEFER_REGISTER:
                 case RUDA_MIR_DEFER_CALL:
                     if (!ruda_native_c_emit_defer_instruction(

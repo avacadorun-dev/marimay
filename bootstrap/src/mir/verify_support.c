@@ -44,6 +44,8 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
                     && first_type == (instruction->kind == RUDA_MIR_FORMAT_F32
                         ? RUDA_TYPE_F32 : RUDA_TYPE_F64)
                 ? RUDA_MIR_VERIFY_OK : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+        case RUDA_MIR_IO_PRINTLN:
+            return ruda_mir_verify_io_instruction(function, instruction);
         case RUDA_MIR_CONSTANT_I64:
             return target_type == RUDA_TYPE_I64
                 ? RUDA_MIR_VERIFY_OK
@@ -722,6 +724,7 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_INTEGER_CONVERT:
         case RUDA_MIR_FORMAT_F32:
         case RUDA_MIR_FORMAT_F64:
+        case RUDA_MIR_IO_PRINTLN:
         case RUDA_MIR_DEFER_REGISTER:
         case RUDA_MIR_DEFER_CALL:
             return false;

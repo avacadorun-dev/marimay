@@ -44,11 +44,14 @@ add_executable(ruda_c_unit
   test_checker_arrays.c
   test_checker_facts.c
   test_checker_resolution.c
+  test_check_entry.c
   test_cli.c
   test_cli_check.c
+  test_cli_run.c
   test_compiler_service.c
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
+  test_cp9_io_pipeline.c
   test_diagnostic.c
   test_defer_cp7.c
   test_directory.c
@@ -103,6 +106,7 @@ add_executable(ruda_c_unit
   test_parser_expressions.c
   test_parser_incremental.c
   test_process.c
+  test_runtime_io.c
   test_source_manager.c
   test_types.c
   test_support.c
@@ -146,6 +150,7 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-tree" DESTINATION "${CMAKE_CURRENT_
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-manifest" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity-nul" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../run" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY
   "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
   "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"

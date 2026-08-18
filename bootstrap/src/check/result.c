@@ -38,6 +38,7 @@ RudaCheckInterpretOptions ruda_check_interpret_default_options(void) {
     options.max_total_steps = 100000000;
     options.max_call_depth = 1024;
     options.execution = NULL;
+    options.stdout_sink = NULL;
     options.panic = NULL;
     return options;
 }

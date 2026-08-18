@@ -1,0 +1,7 @@
+fn divide(left: int, right: int): int {
+  return left / right;
+}
+
+fn main(): void {
+  const value = divide(1, 0);
+}

@@ -1,4 +1,5 @@
 #include "cli_check_targets.h"
+#include "cli_standard_packages.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -691,8 +692,8 @@ static RudaCliCheckTargetStatus ruda_check_build_package_views(
         if (!ruda_vector_push(&target->compiler_packages, &view)) {
             return RUDA_CLI_CHECK_TARGET_ALLOCATION_FAILED;
         }
-        if (!target->module_wide
-            && ruda_check_path_equal(&package->directory, selected_directory)) {
+        if (ruda_check_path_equal(&package->directory, selected_directory)) {
+            ruda_owned_bytes_dispose(&target->selected_import_path);
             if (!ruda_owned_bytes_copy(
                     &target->selected_import_path,
                     target->allocator,
@@ -715,14 +716,12 @@ static RudaCliCheckTargetStatus ruda_check_build_standalone(
     static const char package_name[] = "script";
     RudaOwnedBytes source = {0};
     RudaCliCheckPackage package;
-    RudaCompilerPackage view;
     RudaFileId file_id = 0;
     RudaCliCheckTargetStatus status = ruda_check_file_status(ruda_file_read_all(
         target->allocator, (const char *)path->data, path->length,
         RUDA_CLI_CHECK_MAX_SOURCE_BYTES, &source
     ));
     memset(&package, 0, sizeof(package));
-    memset(&view, 0, sizeof(view));
     if (status == RUDA_CLI_CHECK_TARGET_OK) {
         status = ruda_check_compiler_status(ruda_compiler_service_add_document(
             &target->service, (const char *)path->data, path->length, 1,
@@ -749,20 +748,6 @@ static RudaCliCheckTargetStatus ruda_check_build_standalone(
         return status;
     }
     memset(&package, 0, sizeof(package));
-    {
-        RudaCliCheckPackage *stored = ruda_vector_at(&target->packages, 0);
-        view.import_path = (const char *)stored->import_path.data;
-        view.import_path_length = stored->import_path.length;
-        view.file_ids = stored->file_ids.data;
-        view.file_count = stored->file_ids.length;
-        if (!ruda_vector_push(&target->compiler_packages, &view)
-            || !ruda_owned_bytes_copy(
-                &target->selected_import_path, target->allocator,
-                package_name, sizeof(package_name) - 1
-            )) {
-            status = RUDA_CLI_CHECK_TARGET_ALLOCATION_FAILED;
-        }
-    }
     ruda_owned_bytes_dispose(&source);
     return status;
 }
@@ -842,6 +827,14 @@ RudaCliCheckTargetStatus ruda_cli_check_target_build(
                 status = RUDA_CLI_CHECK_TARGET_INPUT_ERROR;
             } else {
                 status = ruda_check_build_standalone(target, &selected);
+                if (status == RUDA_CLI_CHECK_TARGET_OK) {
+                    status = ruda_cli_standard_packages_add(target);
+                }
+                if (status == RUDA_CLI_CHECK_TARGET_OK) {
+                    status = ruda_check_build_package_views(
+                        target, &selected
+                    );
+                }
             }
             goto cleanup;
         }
@@ -865,6 +858,17 @@ RudaCliCheckTargetStatus ruda_cli_check_target_build(
     }
     target->module_wide = options->target == NULL
         || ruda_check_path_equal(&selected_directory, &module_root);
+    if (target->module_wide
+        && !ruda_check_path_equal(&selected_directory, &module_root)) {
+        ruda_owned_bytes_dispose(&selected_directory);
+        if (!ruda_check_path_copy(
+                &selected_directory, target->allocator,
+                module_root.data, module_root.length
+            )) {
+            status = RUDA_CLI_CHECK_TARGET_ALLOCATION_FAILED;
+            goto cleanup;
+        }
+    }
     status = ruda_check_manifest_identity(
         target, &module_root, &module_path
     );
@@ -886,6 +890,9 @@ RudaCliCheckTargetStatus ruda_cli_check_target_build(
         status = ruda_check_load_sources(
             target, &module_root, &module_path, &paths
         );
+    }
+    if (status == RUDA_CLI_CHECK_TARGET_OK) {
+        status = ruda_cli_standard_packages_add(target);
     }
     if (status == RUDA_CLI_CHECK_TARGET_OK) {
         status = ruda_check_build_package_views(

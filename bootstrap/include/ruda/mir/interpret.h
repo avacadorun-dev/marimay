@@ -4,6 +4,7 @@
 #include "ruda/base/owned_bytes.h"
 #include "ruda/mir/execution.h"
 #include "ruda/mir/function.h"
+#include "ruda/runtime/io.h"
 
 typedef enum RudaMirInterpretStatus {
     RUDA_MIR_INTERPRET_OK,
@@ -50,6 +51,7 @@ typedef struct RudaMirInterpretOptions {
     void *call_context;
     RudaMirCallHandler call;
     RudaMirExecution *execution;
+    const RudaIoStdout *stdout_sink;
     /* Optional caller-owned zero-initialized output; prior content is disposed. */
     RudaMirPanic *panic;
 } RudaMirInterpretOptions;

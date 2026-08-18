@@ -24,6 +24,8 @@ typedef struct RudaDiagnostic {
     const char *code;
     RudaSeverity severity;
     const char *message;
+    size_t message_length;
+    bool message_is_counted;
     bool has_command_argument;
     size_t command_argument;
     const RudaSourceSnapshot *source;

@@ -509,6 +509,7 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
                 case RUDA_MIR_INTEGER_CONVERT:
                 case RUDA_MIR_FORMAT_F32:
                 case RUDA_MIR_FORMAT_F64:
+                case RUDA_MIR_IO_PRINTLN:
                     break;
                 case RUDA_MIR_DEFER_REGISTER:
                 case RUDA_MIR_DEFER_CALL: {

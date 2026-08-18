@@ -152,9 +152,21 @@ RudaMirVerifyStatus ruda_mir_verify_numeric_instruction(
     const RudaMirFunction *function,
     const RudaMirInstruction *instruction
 );
+RudaMirVerifyStatus ruda_mir_verify_io_instruction(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction
+);
 RudaMirInterpretStatus ruda_mir_execute_format_instruction(
     const RudaMirInstruction *instruction, const RudaMirValue *source,
     RudaMirValue *target, RudaMirInterpretOptions options);
+RudaMirInterpretStatus ruda_mir_execute_io_instruction(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    const RudaMirValue *source,
+    RudaMirValue *target,
+    const RudaAllocator *allocator,
+    RudaMirInterpretOptions options
+);
 bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind);
 bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind);
 bool ruda_mir_instruction_uses_third(RudaMirInstructionKind kind);

@@ -168,7 +168,7 @@ RudaMirInterpretOptions ruda_mir_interpret_default_options(void) {
     options.remaining_shared_steps = NULL;
     options.call_context = NULL;
     options.call = NULL;
-    options.execution = NULL;
+    options.execution = NULL; options.stdout_sink = NULL;
     options.panic = NULL;
     return options;
 }
@@ -392,6 +392,9 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
             return ruda_mir_execute_format_instruction(
                 instruction, first, target, options
             );
+        case RUDA_MIR_IO_PRINTLN:
+            return ruda_mir_execute_io_instruction(function, instruction,
+                first, target, allocator, options);
         case RUDA_MIR_CONSTANT_I64:
             target->as.i64 = instruction->integer;
             return RUDA_MIR_INTERPRET_OK;

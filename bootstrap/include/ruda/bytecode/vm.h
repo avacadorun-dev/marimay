@@ -1,6 +1,5 @@
 #ifndef RUDA_BYTECODE_VM_H
 #define RUDA_BYTECODE_VM_H
-
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -11,6 +10,7 @@
 #include "ruda/bytecode/bytecode.h"
 #include "ruda/bytecode/program.h"
 #include "ruda/runtime/managed.h"
+#include "ruda/runtime/io.h"
 typedef uint32_t RudaBytecodeReference;
 #define RUDA_BYTECODE_INVALID_REFERENCE UINT32_MAX
 typedef struct RudaBytecodeValue {
@@ -43,7 +43,6 @@ typedef struct RudaBytecodeExecution {
     RudaVector interned_enum_variants;
     RudaVector interned_enum_payloads;
     RudaVector owned_interface_tables;
-    /* Owned descriptors for generic Array<T>; entries are private VM state. */
     RudaVector array_descriptors;
     bool array_descriptor_allocation_failed;
     bool initialized;
@@ -87,6 +86,7 @@ typedef struct RudaBytecodeRunOptions {
     size_t max_call_depth;
     size_t *remaining_shared_steps;
     RudaBytecodeExecution *execution;
+    const RudaIoStdout *stdout_sink;
     RudaBytecodePanic *panic;
     /* Optional caller-owned output, reset before execution. */
     RudaBytecodeTrap *trap;

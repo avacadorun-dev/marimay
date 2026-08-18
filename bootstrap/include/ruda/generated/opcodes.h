@@ -91,9 +91,10 @@ typedef enum RudaOpcode {
     RUDA_OPCODE_FORMAT_F32 = 83,
     RUDA_OPCODE_FORMAT_F64 = 84,
     RUDA_OPCODE_DEFER_REGISTER = 85,
-    RUDA_OPCODE_DEFER_CALL = 86
+    RUDA_OPCODE_DEFER_CALL = 86,
+    RUDA_OPCODE_IO_PRINTLN = 87
 } RudaOpcode;
 
-#define RUDA_OPCODE_COUNT ((size_t)87)
+#define RUDA_OPCODE_COUNT ((size_t)88)
 
 #endif

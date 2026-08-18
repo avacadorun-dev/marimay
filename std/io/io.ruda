@@ -1,0 +1,13 @@
+public enum Error {
+  CapabilityDenied { capability: string; },
+  WriteFailed,
+}
+
+public fn message(error: Error): string {
+  return match error {
+    case CapabilityDenied { capability } => "capability io.stdout is not granted";
+    case WriteFailed => "stdout write failed";
+  };
+}
+
+public extern "c" fn println(text: string): Result<void, Error>;

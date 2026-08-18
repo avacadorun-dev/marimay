@@ -1,0 +1,7 @@
+fn add(left: int, right: int): int {
+  return left + right;
+}
+
+fn main(): void {
+  const value = add(9223372036854775807, 1);
+}

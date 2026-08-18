@@ -86,6 +86,7 @@ static RudaMirInterpretStatus ruda_check_interpret_checked(
     options.call_context = context;
     options.call = ruda_check_interpret_call;
     options.execution = context->execution;
+    options.stdout_sink = context->options.stdout_sink;
     options.panic = context->options.panic;
     return ruda_mir_interpret(
         &function->mir,

@@ -335,6 +335,24 @@ ruda run . -- program arguments
 
 VM is default. Native run uses the ordinary content-addressed build cache and then executes the artifact. Program arguments begin only after `--`. Source errors never leave or execute a stale binary.
 
+Under D049, local VM execution first completes the authoritative checker and
+selects the exact root-package `main`. It accepts only `fn main(): void` or
+`fn main(): Result<void, E>` with the root-visible structural Error contract.
+It then lowers canonical verified typed MIR, encodes the complete bytecode
+program, decodes it into a new program, verifies that program, and only then
+executes it. The Stage 0 checkpoint-9 command accepts `vm` only; `native` is a
+`U0005` invalid option until the checkpoint-10 build/cache path exists. This
+staging restriction does not change the final native-run contract above.
+
+Successful `void` and `Ok()` returns exit `0`. Root `Err` is `G4003` on stderr
+and exit `1`; explicit, arithmetic, and bounds panics are respectively
+`G4000`, `G4001`, and `G4002` on stderr and exit `1`. Invalid entry is `T0017`
+and exit `1`. Bytecode pipeline failure `B0001` and runtime integrity/resource
+failure `I0002` exit `70`. Program stdout contains only D046 bytes and never an
+internal engine-result envelope. `io.stdout` is the sole default local grant.
+Arguments after the first `--` are retained as program arguments; until a
+source argument API is accepted they have no observable language value.
+
 ### 6.3 `ruda build`
 
 ```sh

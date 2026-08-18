@@ -1,0 +1,13 @@
+enum AppError {
+  Failed,
+}
+
+fn message(error: AppError): string {
+  return match error {
+    case Failed => "application failed";
+  };
+}
+
+fn main(): Result<void, AppError> {
+  return Err(AppError.Failed);
+}
