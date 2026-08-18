@@ -182,6 +182,14 @@ void ruda_test_formatter_fixture_file(void) {
         {
             "format/fuzz-regression.input.ruda",
             "format/fuzz-regression.expected.ruda"
+        },
+        {
+            "format/fuzz-parenthesized-regression.input.ruda",
+            "format/fuzz-parenthesized-regression.expected.ruda"
+        },
+        {
+            "format/fuzz-index-regression.input.ruda",
+            "format/fuzz-index-regression.expected.ruda"
         }
     };
     unsigned char input[32768];

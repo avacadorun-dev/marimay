@@ -508,9 +508,13 @@ static bool ruda_formatter_operator_spaced(const RudaFormatToken *token) {
         || kind == RUDA_TOKEN_SHIFT_RIGHT_EQUAL;
 }
 
-static bool ruda_formatter_open_group_needs_space(const RudaFormatter *formatter) {
+static bool ruda_formatter_open_group_needs_space(
+    const RudaFormatter *formatter,
+    const RudaFormatToken *token
+) {
     return formatter->pending_space
-        && (!formatter->has_previous_code
+        && (token->parent_kind == RUDA_SYNTAX_PAREN_GROUP
+            || !formatter->has_previous_code
             || !ruda_formatter_postfix_predecessor(
                 formatter->previous_code_kind
             ));
@@ -520,8 +524,6 @@ static bool ruda_formatter_trailing_comma_kind(RudaSyntaxKind parent_kind) {
     return parent_kind == RUDA_SYNTAX_ARGUMENTS
         || parent_kind == RUDA_SYNTAX_PARAMETERS
         || parent_kind == RUDA_SYNTAX_ARRAY_EXPRESSION
-        || parent_kind == RUDA_SYNTAX_PAREN_GROUP
-        || parent_kind == RUDA_SYNTAX_BRACKET_GROUP
         || parent_kind == RUDA_SYNTAX_IMPORT_CLAUSE
         || parent_kind == RUDA_SYNTAX_POSITIONAL_PATTERN
         || parent_kind == RUDA_SYNTAX_TUPLE_PATTERN
@@ -579,7 +581,7 @@ static void ruda_formatter_open_group(
         ? RUDA_TOKEN_RIGHT_PAREN
         : RUDA_TOKEN_RIGHT_BRACKET;
     bool empty = next != NULL && next->token.kind == expected_close;
-    if (ruda_formatter_open_group_needs_space(formatter)) {
+    if (ruda_formatter_open_group_needs_space(formatter, token)) {
         ruda_formatter_space(formatter);
     } else {
         formatter->pending_space = false;

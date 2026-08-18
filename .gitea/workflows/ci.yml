@@ -115,18 +115,6 @@ jobs:
           -timeout=10
           -print_final_stats=1
           tests/fuzz/corpus/${{ matrix.target }}
-      - name: Preserve fuzz failure inputs
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fuzz-${{ matrix.target }}-failure-inputs
-          path: |
-            crash-*
-            timeout-*
-            oom-*
-            leak-*
-          if-no-files-found: ignore
-
   thread-sanitizer:
     name: Linux x86_64 TSan
     runs-on: ubuntu-latest

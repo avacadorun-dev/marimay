@@ -1,7 +1,9 @@
 # Final local/private developer preview integration — checkpoint 12 — 2026-08-18
 
-Checkpoint status: local implementation and validation complete; pushed Tier 1,
-Linux leak, TSan, and sustained-fuzz evidence pending. I2–I5 remain
+Checkpoint status: local implementation and validation complete through the
+second pushed fuzz audit. Gitea run 46 is green for documentation, Clang/GCC,
+Linux ASan+UBSan+LSan, bytecode fuzz, and TSan; final pushed confirmation of
+the formatter and frontend regression fixes is pending. I2–I5 remain
 `in-progress`; I6 remains `not-started`. This checkpoint does not announce,
 package, sign, or publish Ruda 0.1.0.
 
@@ -95,20 +97,56 @@ Environment: macOS Darwin 25.3.0, arm64; Apple Clang 17.0.0; CMake 4.4.2.
 | Command | Exit | Result |
 |---|---:|---|
 | `cmake --preset debug` + build | 0 | strict C17 build |
-| `ctest --preset debug --output-on-failure` | 0 | 1/1 passed, 190.43 s |
+| `ctest --preset debug --output-on-failure` | 0 | 1/1 passed, 170.17 s |
 | `cmake --preset release` + build | 0 | optimized strict C17 build |
-| `ctest --preset release --output-on-failure` | 0 | 1/1 passed, 179.19 s |
+| `ctest --preset release --output-on-failure` | 0 | 1/1 passed, 175.42 s |
 | `cmake --preset asan-ubsan` + build | 0 | instrumented Stage 0 and native runtime |
-| strict ASan+UBSan CTest | 0 | 1/1 passed, 243.41 s; no sanitizer finding |
-| `TSAN_OPTIONS=halt_on_error=1 ctest --preset tsan --output-on-failure` | 0 | 1/1 passed, 250.39 s; no race finding |
+| strict ASan+UBSan CTest | 0 | 1/1 passed, 254.06 s; no sanitizer finding |
+| `TSAN_OPTIONS=halt_on_error=1 ctest --preset tsan --output-on-failure` | 0 | 1/1 passed, 242.32 s; no race finding |
 | all repository documentation/architecture/generated gates | 0 | clean |
 | `git diff --check` | 0 | clean |
 
 The local fuzz configure attempt failed before compilation because the installed
 Apple Clang distribution has no libFuzzer runtime. No fuzz-success claim is
 made from this host. The sustained campaigns and Linux leak evidence are owned
-by the pushed CI jobs described above; this section will be amended with their
-run link and outcomes before the checkpoint is reported complete.
+by the pushed CI jobs described below.
+
+## Pushed CI fuzz audit
+
+[Gitea run 45](http://ci.example:3000/OS/Ruda/actions/runs/45) passed
+documentation/architecture, Clang and GCC Debug/Release, Linux
+ASan+UBSan+LSan, and TSan. Its three new sustained jobs then found one bytecode
+disassembler defect, one formatter round-trip defect, and one frontend parser
+timeout.
+
+The bytecode input is retained byte-for-byte in `test_bytecode_model.c`. It
+proved that decoded and verified record, enum, interface, and `u64` operands
+were not printable. The disassembler now covers all four operand kinds, with
+focused nominal/interface/maximum-`u64` assertions.
+
+[Gitea run 46](http://ci.example:3000/OS/Ruda/actions/runs/46) independently
+passed documentation (33 s), Clang Debug/Release (3 m 24 s / 3 m 26 s), GCC
+Debug/Release (3 m 12 s / 3 m 16 s), Linux ASan+UBSan+LSan (5 m 27 s), the
+full bytecode campaign (11 m 6 s), and TSan (3 m 56 s). It then supplied exact
+Base64 inputs for the two remaining failures:
+
+- formatter input `crash-f17e644abdfedc5475a707dd08609dc54963c06f`
+  showed that a wrapped ordinary parenthesized expression received a trailing
+  comma and failed reparse. Ordinary parenthesized and index groups no longer
+  synthesize commas; binary-operator grouping retains required whitespace.
+  The exact 137-byte source is a committed fuzz seed and formatter fixture.
+- frontend input `timeout-640f364180fde0a6d5f53c20e456c3962f8827ab`
+  reached the diagnostic limit in a dotted type name. `ruda_parser_eat` and
+  `ruda_parser_eat_identifier` previously reported success after the terminal
+  parser state had stopped cursor movement, so the dotted-name loop could not
+  progress. Both helpers now report success only after real consumption. The
+  exact 254-byte binary input, including its embedded NUL bytes, is reconstructed
+  in the parser limit test; a minimized diagnostic-limit case and sustained
+  corpus seed cover the same progress invariant.
+
+The final pushed run must keep the seven already-green Linux jobs green and
+complete both repaired formatter/frontend 600-second campaigns before this
+checkpoint is reported complete.
 
 ## Remaining boundary
 

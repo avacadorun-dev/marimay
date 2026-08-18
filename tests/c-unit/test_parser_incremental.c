@@ -307,7 +307,8 @@ void ruda_test_parser_limits_and_allocation(void) {
     options = ruda_parse_default_options();
     options.max_diagnostics = 1;
     {
-        static const char diagnostic_source[] = "a; b; c;";
+        static const char diagnostic_source[] =
+            "fn broken(value: Name...): void {}";
         RudaSourceManager diagnostic_sources;
         const RudaSourceSnapshot *diagnostic_snapshot = NULL;
         RudaLexResult diagnostic_lexed;
@@ -338,6 +339,68 @@ void ruda_test_parser_limits_and_allocation(void) {
         RUDA_EXPECT(!parsed.initialized);
         ruda_lex_result_dispose(&diagnostic_lexed);
         ruda_source_manager_dispose(&diagnostic_sources);
+    }
+
+    {
+        static const unsigned char fuzz_prefix[] =
+            "fn broken(valu, broken(v";
+        static const unsigned char fuzz_suffix[] = "e int): Res";
+        static const unsigned char import_prefix[] = "import ";
+        unsigned char fuzz_regression[254];
+        size_t offset = 0;
+        RudaSourceManager fuzz_sources;
+        const RudaSourceSnapshot *fuzz_snapshot = NULL;
+        RudaLexResult fuzz_lexed;
+        memcpy(fuzz_regression + offset, fuzz_prefix, sizeof(fuzz_prefix) - 1);
+        offset += sizeof(fuzz_prefix) - 1;
+        memset(fuzz_regression + offset, '.', 128);
+        offset += 128;
+        memset(fuzz_regression + offset, ',', 57);
+        offset += 57;
+        memcpy(fuzz_regression + offset, fuzz_suffix, sizeof(fuzz_suffix) - 1);
+        offset += sizeof(fuzz_suffix) - 1;
+        memset(fuzz_regression + offset, 0, 25);
+        offset += 25;
+        memcpy(
+            fuzz_regression + offset,
+            import_prefix,
+            sizeof(import_prefix) - 1
+        );
+        offset += sizeof(import_prefix) - 1;
+        memset(fuzz_regression + offset, 0, 2);
+        offset += 2;
+        RUDA_EXPECT(offset == sizeof(fuzz_regression));
+        RUDA_EXPECT(ruda_source_manager_init(
+            &fuzz_sources,
+            ruda_system_allocator()
+        ));
+        RUDA_EXPECT(ruda_source_manager_add(
+            &fuzz_sources,
+            "frontend-fuzz-regression.ruda",
+            strlen("frontend-fuzz-regression.ruda"),
+            fuzz_regression,
+            sizeof(fuzz_regression),
+            &fuzz_snapshot
+        ) == RUDA_SOURCE_OK);
+        RUDA_EXPECT(ruda_lex_snapshot(
+            fuzz_snapshot,
+            ruda_system_allocator(),
+            ruda_lex_default_options(),
+            &fuzz_lexed
+        ) == RUDA_LEX_OK);
+        options = ruda_parse_default_options();
+        options.max_events = 400000;
+        options.max_diagnostics = 128;
+        options.max_nesting = 128;
+        RUDA_EXPECT(ruda_parse_file(
+            &fuzz_lexed,
+            ruda_system_allocator(),
+            options,
+            &parsed
+        ) == RUDA_PARSE_LIMIT_REACHED);
+        RUDA_EXPECT(!parsed.initialized);
+        ruda_lex_result_dispose(&fuzz_lexed);
+        ruda_source_manager_dispose(&fuzz_sources);
     }
 
     for (failure_index = 0; failure_index < 128; failure_index += 1) {

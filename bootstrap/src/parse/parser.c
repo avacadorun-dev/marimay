@@ -319,19 +319,23 @@ void ruda_parser_bump(RudaParser *parser) {
 }
 
 bool ruda_parser_eat_identifier(RudaParser *parser) {
-    if (!ruda_parser_at_identifier(parser)) {
+    size_t before = parser->raw_index;
+    if (parser->allocation_failed || parser->limit_reached
+        || !ruda_parser_at_identifier(parser)) {
         return false;
     }
     ruda_parser_bump_as(parser, RUDA_TOKEN_IDENTIFIER);
-    return true;
+    return parser->raw_index > before;
 }
 
 bool ruda_parser_eat(RudaParser *parser, RudaTokenKind kind) {
-    if (!ruda_parser_at(parser, kind)) {
+    size_t before = parser->raw_index;
+    if (parser->allocation_failed || parser->limit_reached
+        || !ruda_parser_at(parser, kind)) {
         return false;
     }
     ruda_parser_bump(parser);
-    return true;
+    return parser->raw_index > before;
 }
 
 static void ruda_parser_emit_leading_trivia(RudaParser *parser) {
