@@ -188,6 +188,14 @@ void ruda_test_bytecode_metadata(void) {
         {RUDA_OPCODE_IO_PRINTLN, 87, "io_println", 2,
             {RUDA_BYTECODE_OPERAND_REGISTER,
                 RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_MAY_PANIC},
+        {RUDA_OPCODE_TEST_OUTPUT_BEGIN, 88, "test_output_begin", 2,
+            {RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_MAY_PANIC},
+        {RUDA_OPCODE_TEST_OUTPUT_END, 89, "test_output_end", 2,
+            {RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_REGISTER,
                 RUDA_BYTECODE_OPERAND_NONE}, RUDA_OPCODE_FLAG_MAY_PANIC}
 #undef RUDA_NUMERIC_UNARY
 #undef RUDA_NUMERIC_BINARY
@@ -256,6 +264,8 @@ void ruda_test_bytecode_metadata(void) {
     RUDA_EXPECT(RUDA_OPCODE_DEFER_REGISTER == 85);
     RUDA_EXPECT(RUDA_OPCODE_DEFER_CALL == 86);
     RUDA_EXPECT(RUDA_OPCODE_IO_PRINTLN == 87);
+    RUDA_EXPECT(RUDA_OPCODE_TEST_OUTPUT_BEGIN == 88);
+    RUDA_EXPECT(RUDA_OPCODE_TEST_OUTPUT_END == 89);
     RUDA_EXPECT(RUDA_OPCODE_COUNT == sizeof(expected) / sizeof(expected[0]));
     for (index = 0; index < sizeof(expected) / sizeof(expected[0]); index += 1) {
         const RudaOpcodeMetadata *metadata = ruda_opcode_metadata(expected[index].opcode);

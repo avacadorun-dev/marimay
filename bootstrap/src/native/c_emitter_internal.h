@@ -137,6 +137,9 @@ bool ruda_native_c_emit_io_runtime(RudaNativeCBuffer *buffer);
 bool ruda_native_c_emit_io_instruction(
     RudaNativeCBuffer *buffer, const RudaMirFunction *function,
     const RudaMirInstruction *instruction);
+bool ruda_native_c_emit_test_output_instruction(
+    RudaNativeCBuffer *buffer, const RudaMirFunction *function,
+    const RudaMirInstruction *instruction);
 bool ruda_native_c_emit_function(RudaNativeCBuffer *buffer,
     const RudaMirFunction *function, const RudaMirFunction *const *functions,
     size_t count);

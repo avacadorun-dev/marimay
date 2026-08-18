@@ -1,0 +1,6 @@
+@test
+fn packagePrivateBoundary(): void {
+  if privateTriple(3) != 9 {
+    panic("package-private helper was not visible to its package test");
+  }
+}

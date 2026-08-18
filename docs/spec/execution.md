@@ -564,6 +564,18 @@ invalid rather than continue with a fabricated value.
 
 Tests intentionally exercising real nondeterminism may opt out of byte-for-byte trace comparison but must assert properties independently on both engines. An opt-out cannot hide deterministic core-language coverage.
 
+D051's checkpoint-11 implementation applies this contract to the currently
+executable deterministic subset before the I6 scheduler, clock, random, and
+temporary-filesystem surfaces exist. Its record is the exact termination
+classification plus separate counted stdout and stderr byte streams. Every VM
+test receives a new bytecode execution and managed heap; every native test is
+a separately invoked process. Both executions consume the same verified typed
+MIR symbol and fixed D046 capture grant. A native signal, exit-code difference,
+stdout byte difference, or panic/stderr byte difference is `B0007`; matching
+panics and expectation failures are ordinary test failures rather than
+divergence. Later task/capability event fields extend this record without
+weakening these byte-exact fields.
+
 ### 13.3 Compiler differential testing
 
 The implementation suite additionally interprets unoptimized MIR as a reference oracle, compares optimized/unoptimized MIR, compares bytecode/generated C, varies supported C compilers and optimization levels, fuzz-generates well-typed programs, and minimizes divergences into checked fixtures.

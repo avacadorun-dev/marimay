@@ -1,0 +1,3 @@
+fn privateValue(): int {
+  return 1;
+}

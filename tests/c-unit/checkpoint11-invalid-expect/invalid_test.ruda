@@ -1,0 +1,14 @@
+@test
+fn wrongExpectedType(): void {
+  expect.output(1, (): void => {});
+}
+
+@test
+fn wrongClosureType(): void {
+  expect.output("", (value: int): void => {});
+}
+
+@test
+fn wrongArity(): void {
+  expect.output("");
+}

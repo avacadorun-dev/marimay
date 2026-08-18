@@ -6,7 +6,6 @@
 #include "ruda/base/utf8.h"
 #include <limits.h>
 #include <string.h>
-
 typedef enum RudaMirIntegerBinaryOperation {
     RUDA_MIR_INTEGER_ADD,
     RUDA_MIR_INTEGER_SUBTRACT,
@@ -16,7 +15,6 @@ typedef enum RudaMirIntegerBinaryOperation {
     RUDA_MIR_INTEGER_SHIFT_LEFT,
     RUDA_MIR_INTEGER_SHIFT_RIGHT
 } RudaMirIntegerBinaryOperation;
-
 static bool ruda_mir_integer_kind(
     RudaTypeId type,
     RudaIntegerKind *result
@@ -34,12 +32,10 @@ static bool ruda_mir_integer_kind(
     }
     return false;
 }
-
 static uint64_t ruda_mir_integer_mask(RudaIntegerKind kind) {
     unsigned int width = ruda_integer_bit_width(kind);
     return width == 64U ? UINT64_MAX : (UINT64_C(1) << width) - UINT64_C(1);
 }
-
 static RudaIntegerValue ruda_mir_integer_value(const RudaMirValue *value) {
     RudaIntegerKind kind = RUDA_INTEGER_I64;
     RudaIntegerValue result;
@@ -48,7 +44,6 @@ static RudaIntegerValue ruda_mir_integer_value(const RudaMirValue *value) {
     result.bits = value->as.integer_bits & ruda_mir_integer_mask(kind);
     return result;
 }
-
 static RudaMirInterpretStatus ruda_mir_integer_status(
     RudaCheckedIntegerStatus status
 ) {
@@ -395,6 +390,11 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         case RUDA_MIR_IO_PRINTLN:
             return ruda_mir_execute_io_instruction(function, instruction,
                 first, target, allocator, options);
+        case RUDA_MIR_TEST_OUTPUT_BEGIN:
+        case RUDA_MIR_TEST_OUTPUT_END:
+            return ruda_mir_execute_test_output_instruction(
+                function, instruction, first, target, allocator, options
+            );
         case RUDA_MIR_CONSTANT_I64:
             target->as.i64 = instruction->integer;
             return RUDA_MIR_INTERPRET_OK;

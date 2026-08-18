@@ -94,5 +94,7 @@ int ruda_cli_run_program(RudaSession *session, const RudaCliOptions *options,
     RudaWriter standard_output, RudaWriter standard_error);
 int ruda_cli_build_program(RudaSession *session, const RudaCliOptions *options,
     RudaWriter standard_output, RudaWriter standard_error);
+int ruda_cli_test_program(RudaSession *session, const RudaCliOptions *options,
+    RudaWriter standard_output, RudaWriter standard_error);
 
 #endif

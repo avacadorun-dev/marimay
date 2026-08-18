@@ -121,7 +121,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
     size_t line_length = 0;
     unsigned char *line = NULL;
     RudaBytecodeRunStatus status;
-    RudaIoStdoutStatus io_status;
+    RudaTestOutputStatus output_status;
     if (execution == NULL || !execution->initialized || stdout_sink == NULL
         || result_layout == NULL || error_payload == NULL
         || error_payload->type != RUDA_BYTECODE_TYPE_ENUM) {
@@ -151,12 +151,6 @@ RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
     if (status != RUDA_BYTECODE_RUN_OK) {
         return status;
     }
-    if (!stdout_sink->capability_granted) {
-        return ruda_bytecode_run_io_error(
-            execution, result_descriptor_raw, error_descriptor_raw,
-            RUDA_IO_STDOUT_CAPABILITY_DENIED, &registers[target_index]
-        );
-    }
     if (!ruda_bytecode_execution_string_bytes(
             execution, registers[text_index], &text, &text_length
         )) {
@@ -173,16 +167,86 @@ RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
         memcpy(line, text, text_length);
     }
     line[text_length] = '\n';
-    io_status = ruda_io_stdout_publish_line(stdout_sink, line, line_length);
+    output_status = ruda_test_output_publish(
+        &execution->test_output, stdout_sink, line, line_length
+    );
     ruda_deallocate(&allocator, line, line_length);
-    if (io_status == RUDA_IO_STDOUT_OK) {
+    if (output_status == RUDA_TEST_OUTPUT_OK) {
         return RUDA_BYTECODE_RUN_OK;
     }
-    if (io_status != RUDA_IO_STDOUT_WRITE_FAILED) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    if (output_status == RUDA_TEST_OUTPUT_ALLOCATION_FAILED) {
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    if (output_status == RUDA_TEST_OUTPUT_LIMIT_REACHED) {
+        return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+    }
+    if (output_status != RUDA_TEST_OUTPUT_CAPABILITY_DENIED
+        && output_status != RUDA_TEST_OUTPUT_WRITE_FAILED) {
+        return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
     }
     return ruda_bytecode_run_io_error(
         execution, result_descriptor_raw, error_descriptor_raw,
-        io_status, &registers[target_index]
+        output_status == RUDA_TEST_OUTPUT_CAPABILITY_DENIED
+            ? RUDA_IO_STDOUT_CAPABILITY_DENIED
+            : RUDA_IO_STDOUT_WRITE_FAILED,
+        &registers[target_index]
     );
+}
+
+RudaBytecodeRunStatus ruda_bytecode_run_test_output_instruction(
+    const RudaBytecodeInstruction *instruction,
+    RudaBytecodeValue *registers,
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function,
+    RudaAllocator allocator,
+    RudaBytecodePanic *panic,
+    RudaSymbolId symbol
+) {
+    size_t target = (size_t)instruction->operands[0].unsigned_value;
+    size_t source = (size_t)instruction->operands[1].unsigned_value;
+    const unsigned char *expected = NULL;
+    const RudaOwnedBytes *failure = NULL;
+    size_t expected_length = 0;
+    RudaTestOutputStatus output_status;
+    if (execution == NULL || !execution->initialized || function == NULL) {
+        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
+    if (instruction->opcode == RUDA_OPCODE_TEST_OUTPUT_BEGIN) {
+        if (!ruda_bytecode_execution_string_bytes(
+                execution, registers[source], &expected, &expected_length
+            )) {
+            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        }
+        output_status = ruda_test_output_begin(
+            &execution->test_output, allocator, expected, expected_length
+        );
+        if (output_status == RUDA_TEST_OUTPUT_OK) {
+            registers[target].as.boolean = true;
+            return RUDA_BYTECODE_RUN_OK;
+        }
+    } else {
+        if (!registers[source].as.boolean) {
+            return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        }
+        output_status = ruda_test_output_end(&execution->test_output);
+        if (output_status == RUDA_TEST_OUTPUT_OK) {
+            return RUDA_BYTECODE_RUN_OK;
+        }
+        if (output_status == RUDA_TEST_OUTPUT_MISMATCH) {
+            failure = ruda_test_output_failure(&execution->test_output);
+            return failure == NULL
+                ? RUDA_BYTECODE_RUN_INVALID_BYTECODE
+                : ruda_bytecode_run_begin_test_panic(
+                    panic, allocator, failure->data, failure->length,
+                    symbol, instruction->span
+                );
+        }
+    }
+    if (output_status == RUDA_TEST_OUTPUT_ALLOCATION_FAILED) {
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    if (output_status == RUDA_TEST_OUTPUT_LIMIT_REACHED) {
+        return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+    }
+    return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
 }

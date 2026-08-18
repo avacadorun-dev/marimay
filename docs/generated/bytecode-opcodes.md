@@ -98,3 +98,5 @@ Stage 0 codec.
 | 85 | `defer_register` | `marker:register`, `call:call` | — | Register one captured void call for lexical cleanup. |
 | 86 | `defer_call` | `marker:register`, `call:call` | `may_panic` | Pop and invoke the most recently registered lexical cleanup. |
 | 87 | `io_println` | `destination:register`, `text:register` | `may_panic` | Publish one D046 stdout line and return Result<void, std/io.Error>. |
+| 88 | `test_output_begin` | `destination:register`, `expected:register` | `may_panic` | Begin exact-byte stdout capture for a compiler-known test expectation. |
+| 89 | `test_output_end` | `destination:register`, `marker:register` | `may_panic` | End exact-byte stdout capture and panic with G4004 on mismatch. |

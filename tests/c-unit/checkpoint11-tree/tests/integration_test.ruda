@@ -1,0 +1,8 @@
+import { publicDouble } from "example/checkpoint11/lib";
+
+@test
+fn integrationUsesPublicSurface(): void {
+  if publicDouble(4) != 8 {
+    panic("integration import changed");
+  }
+}

@@ -49,10 +49,12 @@ add_executable(ruda_c_unit
   test_cli_build.c
   test_cli_check.c
   test_cli_run.c
+  test_cli_test.c
   test_compiler_service.c
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
   test_cp9_io_pipeline.c
+  test_cp11_test_pipeline.c
   test_diagnostic.c
   test_defer_cp7.c
   test_directory.c
@@ -124,6 +126,7 @@ target_include_directories(ruda_c_unit PRIVATE
 target_compile_definitions(ruda_c_unit PRIVATE
   RUDA_TEST_C_COMPILER="${CMAKE_C_COMPILER}"
   RUDA_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+  RUDA_TEST_NATIVE_RUNTIME_ARCHIVE="$<TARGET_FILE:ruda_native_runtime>"
 )
 if(NOT MSVC AND (RUDA_ENABLE_ADDRESS_SANITIZER OR RUDA_ENABLE_UNDEFINED_SANITIZER))
   set(ruda_test_native_sanitizers "")
@@ -140,7 +143,7 @@ if(NOT MSVC AND (RUDA_ENABLE_ADDRESS_SANITIZER OR RUDA_ENABLE_UNDEFINED_SANITIZE
 endif()
 ruda_target_warnings(ruda_c_unit)
 ruda_target_sanitizers(ruda_c_unit)
-add_dependencies(ruda_c_unit ruda)
+add_dependencies(ruda_c_unit ruda ruda_native_runtime)
 
 file(COPY snapshots DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../syntax" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
@@ -148,6 +151,11 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../format" DESTINATION "${CMAKE_CURRENT_B
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/format-tree" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../../examples" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-tree" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-tree" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-mismatch" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-private" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-alloc" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-invalid-expect" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-manifest" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity-nul" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

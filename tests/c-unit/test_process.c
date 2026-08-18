@@ -16,6 +16,7 @@ void ruda_test_process(void) {
     const char *invalid_arguments[2];
     const char *missing_arguments[2] = {"ruda-definitely-missing-i0", NULL};
     RudaProcessResult result;
+    RudaProcessCaptureResult capture;
     RudaProcessStatus status;
     size_t failure_index = 0;
     bool reached_success = false;
@@ -53,6 +54,19 @@ void ruda_test_process(void) {
     RUDA_EXPECT(strstr((const char *)result.output.data, "\"schema\":\"ruda.version/1\"")
         != NULL);
     ruda_process_result_dispose(&result);
+
+    memset(&capture, 0, sizeof(capture));
+    status = ruda_process_run_capture(
+        ruda_system_allocator(), unknown_arguments, 2, 16384, 16384,
+        &capture
+    );
+    RUDA_EXPECT(status == RUDA_PROCESS_OK);
+    RUDA_EXPECT(capture.exit_code == 2 && !capture.signaled);
+    RUDA_EXPECT(capture.standard_output.length == 0);
+    RUDA_EXPECT(strstr(
+        (const char *)capture.standard_error.data, "error[U0001]"
+    ) != NULL);
+    ruda_process_capture_result_dispose(&capture);
 
     status = ruda_process_run(
         ruda_system_allocator(),
@@ -126,6 +140,33 @@ void ruda_test_process(void) {
         if (reached_success) {
             break;
         }
+    }
+    RUDA_EXPECT(reached_success);
+
+    reached_success = false;
+    for (failure_index = 0; failure_index < 64; failure_index += 1) {
+        RudaFailAllocator state;
+        RudaAllocator allocator;
+        ruda_fail_allocator_init(
+            &state, ruda_system_allocator(), failure_index
+        );
+        allocator = ruda_fail_allocator(&state);
+        memset(&capture, 0, sizeof(capture));
+        status = ruda_process_run_capture(
+            allocator, version_arguments, 3, 16384, 16384, &capture
+        );
+        if (status == RUDA_PROCESS_OK) {
+            reached_success = true;
+            RUDA_EXPECT(capture.exit_code == 0);
+            ruda_process_capture_result_dispose(&capture);
+        } else {
+            RUDA_EXPECT(status == RUDA_PROCESS_ALLOCATION_FAILED);
+            RUDA_EXPECT(capture.standard_output.data == NULL);
+            RUDA_EXPECT(capture.standard_error.data == NULL);
+        }
+        RUDA_EXPECT(state.live_allocations == 0);
+        RUDA_EXPECT(state.live_bytes == 0);
+        if (reached_success) break;
     }
     RUDA_EXPECT(reached_success);
 }

@@ -38,7 +38,7 @@ static const RudaTaskHelp ruda_tasks[] = {
     {"outdated", "Report available dependency updates.", "outdated", "ruda outdated", false},
     {"remove", "Remove a package dependency.", "remove module", "ruda remove ruda-lang.example/postgres", false},
     {"run", "Run with the bytecode VM by default.", "run [target] [-- arguments]", "ruda run .", true},
-    {"test", "Run built-in tests with the VM by default.", "test [filter|target] [options]", "ruda test --engine both", false},
+    {"test", "Run built-in tests with the VM by default.", "test [target] [--engine vm|native|both]", "ruda test --engine both", true},
     {"update", "Update locked package versions.", "update [module]", "ruda update", false},
     {"vendor", "Vendor immutable locked dependencies.", "vendor", "ruda vendor", false},
     {"version", "Show compiler and runtime build identity.", "version [--json]", "ruda version --json", true},
@@ -376,7 +376,8 @@ static int ruda_parse_options(
             || (strcmp(argument, "--engine") == 0
                 && options->command != NULL
                 && (strcmp(options->command, "run") == 0
-                    || strcmp(options->command, "build") == 0))
+                    || strcmp(options->command, "build") == 0
+                    || strcmp(options->command, "test") == 0))
             || ((strcmp(argument, "--output") == 0
                     || strcmp(argument, "--emit") == 0)
                 && options->command != NULL
@@ -417,14 +418,20 @@ static int ruda_parse_options(
                     "--color expects auto, always, or never"
                 );
             } else if (strcmp(argument, "--engine") == 0) {
-                const char *expected = strcmp(options->command, "run") == 0
-                    ? "vm" : "native";
-                if (strcmp(value, expected) != 0) {
+                bool valid = strcmp(options->command, "test") == 0
+                    ? strcmp(value, "vm") == 0
+                        || strcmp(value, "native") == 0
+                        || strcmp(value, "both") == 0
+                    : strcmp(value, strcmp(options->command, "run") == 0
+                        ? "vm" : "native") == 0;
+                if (!valid) {
                     return ruda_option_value_error(
                         error_writer, options->diagnostic_style,
                         RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
                         (size_t)index,
-                        strcmp(options->command, "run") == 0
+                        strcmp(options->command, "test") == 0
+                            ? "ruda test --engine expects vm, native, or both"
+                            : strcmp(options->command, "run") == 0
                             ? "checkpoint 9 ruda run supports --engine vm"
                             : "checkpoint 10 ruda build supports --engine native"
                     );
@@ -471,17 +478,24 @@ static int ruda_parse_options(
         } else if (ruda_starts_with(argument, "--engine=")
             && options->command != NULL
             && (strcmp(options->command, "run") == 0
-                || strcmp(options->command, "build") == 0)) {
+                || strcmp(options->command, "build") == 0
+                || strcmp(options->command, "test") == 0)) {
             value = argument + strlen("--engine=");
             {
-                const char *expected = strcmp(options->command, "run") == 0
-                    ? "vm" : "native";
-                if (strcmp(value, expected) != 0) {
+                bool valid = strcmp(options->command, "test") == 0
+                    ? strcmp(value, "vm") == 0
+                        || strcmp(value, "native") == 0
+                        || strcmp(value, "both") == 0
+                    : strcmp(value, strcmp(options->command, "run") == 0
+                        ? "vm" : "native") == 0;
+                if (!valid) {
                     return ruda_option_value_error(
                         error_writer, options->diagnostic_style,
                         RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
                         (size_t)index,
-                        strcmp(options->command, "run") == 0
+                        strcmp(options->command, "test") == 0
+                            ? "ruda test --engine expects vm, native, or both"
+                            : strcmp(options->command, "run") == 0
                             ? "checkpoint 9 ruda run supports --engine vm"
                             : "checkpoint 10 ruda build supports --engine native"
                     );
@@ -550,6 +564,19 @@ static int ruda_parse_options(
             && strcmp(argument, "--release") == 0) {
             options->build_release = true;
             options->build_release_index = (size_t)index;
+        } else if (options->command != NULL
+            && strcmp(options->command, "test") == 0
+            && (strcmp(argument, "--watch") == 0
+                || strcmp(argument, "--no-cache") == 0
+                || strcmp(argument, "--filter") == 0
+                || strcmp(argument, "--exact") == 0
+                || ruda_starts_with(argument, "--filter=")
+                || ruda_starts_with(argument, "--exact="))) {
+            return ruda_option_value_error(
+                error_writer, options->diagnostic_style,
+                RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE, (size_t)index,
+                "checkpoint 11 ruda test does not yet support filters, watch, or cache options"
+            );
         } else if (argument[0] == '-') {
             return ruda_unknown_option(
                 error_writer,
@@ -566,7 +593,8 @@ static int ruda_parse_options(
         } else if ((strcmp(options->command, "fmt") == 0
                 || strcmp(options->command, "check") == 0
                 || strcmp(options->command, "run") == 0
-                || strcmp(options->command, "build") == 0)
+                || strcmp(options->command, "build") == 0
+                || strcmp(options->command, "test") == 0)
             && options->target == NULL) {
             options->target = argument;
             options->target_index = (size_t)index;
@@ -821,6 +849,11 @@ int ruda_cli_run(
     }
     if (strcmp(task->name, "build") == 0) {
         return ruda_cli_build_program(
+            session, &options, standard_output, standard_error
+        );
+    }
+    if (strcmp(task->name, "test") == 0) {
+        return ruda_cli_test_program(
             session, &options, standard_output, standard_error
         );
     }

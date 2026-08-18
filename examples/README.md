@@ -6,6 +6,9 @@ These examples are executable specification fixtures once the parser exists. Unt
 - `concurrency.ruda` exercises direct-style I/O, `Result`, explicit error mapping, scoped `spawn`, and cancellation by early `?`.
 - `service.ruda` sketches a production HTTP handler without async-colored signatures.
 - `tour_test.ruda` shows the built-in test syntax.
+- `testing_checkpoint_test.ruda` is the runnable checkpoint-11 test example:
+  package-local `@test` discovery, record identity, D041 cleanup, and exact
+  D046 `expect.output` capture. It runs with VM, native, or `--engine both`.
 - `nominal_cp1.ruda` is the focused nominal-engine example: record mutation and
   `identity.same` (including once-only left-to-right operand evaluation),
   nested enum matching, D040 record and named-enum field evaluation order, and
@@ -14,8 +17,7 @@ These examples are executable specification fixtures once the parser exists. Unt
 - `matrix.ruda` is the first source-checkable D045 array kernel: a loop-based
   2-by-3 times 3-by-2 `f64` multiplication whose checksum is `415.0`. Under
   D046 it writes that checksum with `println(formatF64(...))?`, which must
-  publish `415.0\n` on VM, native, and test capture once `std/io` is
-  implemented. Engine writes remain a later checkpoint.
+  publish `415.0\n` on VM, native, and test capture.
 - `local_packages.ruda` shows the D043 local-package surface: named type and
   function aliases, namespace qualification, direct dot calls, and structural
   interface conformance all resolve behavior owned by the imported nominal

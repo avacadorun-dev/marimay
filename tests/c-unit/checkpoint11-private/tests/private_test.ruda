@@ -1,0 +1,8 @@
+import { privateValue } from "example/checkpoint11-private/lib";
+
+@test
+fn cannotImportPrivateValue(): void {
+  if privateValue() != 1 {
+    panic("unreachable");
+  }
+}

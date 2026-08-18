@@ -292,3 +292,191 @@ void ruda_process_result_dispose(RudaProcessResult *result) {
         result->signal_code = 0;
     }
 }
+
+static RudaProcessStatus ruda_windows_capture_available(
+    HANDLE handle,
+    RudaVector *bytes,
+    size_t limit,
+    bool *progress
+) {
+    unsigned char chunk[4096];
+    DWORD available = 0;
+    DWORD count = 0;
+    DWORD requested = 0;
+    if (!PeekNamedPipe(handle, NULL, 0, NULL, &available, NULL)) {
+        return GetLastError() == ERROR_BROKEN_PIPE
+            ? RUDA_PROCESS_OK : RUDA_PROCESS_IO_FAILED;
+    }
+    if (available == 0) return RUDA_PROCESS_OK;
+    requested = available < (DWORD)sizeof(chunk)
+        ? available : (DWORD)sizeof(chunk);
+    if (!ReadFile(handle, chunk, requested, &count, NULL)) {
+        return RUDA_PROCESS_IO_FAILED;
+    }
+    if (bytes->length > limit || (size_t)count > limit - bytes->length) {
+        return RUDA_PROCESS_OUTPUT_LIMIT;
+    }
+    if (!ruda_vector_append(bytes, chunk, (size_t)count)) {
+        return RUDA_PROCESS_ALLOCATION_FAILED;
+    }
+    *progress = count != 0;
+    return RUDA_PROCESS_OK;
+}
+
+RudaProcessStatus ruda_process_run_capture(
+    RudaAllocator allocator,
+    const char *const arguments[],
+    size_t argument_count,
+    size_t max_output,
+    size_t max_error,
+    RudaProcessCaptureResult *result
+) {
+    SECURITY_ATTRIBUTES security;
+    HANDLE output_read = INVALID_HANDLE_VALUE;
+    HANDLE output_write = INVALID_HANDLE_VALUE;
+    HANDLE error_read = INVALID_HANDLE_VALUE;
+    HANDLE error_write = INVALID_HANDLE_VALUE;
+    STARTUPINFOW startup;
+    PROCESS_INFORMATION process;
+    wchar_t *command = NULL;
+    size_t command_size = 0;
+    RudaVector output;
+    RudaVector error;
+    RudaProcessStatus status = RUDA_PROCESS_OK;
+    bool process_started = false;
+    size_t index = 0;
+    memset(&output, 0, sizeof(output));
+    memset(&error, 0, sizeof(error));
+    if (result == NULL) return RUDA_PROCESS_INVALID_ARGUMENT;
+    memset(result, 0, sizeof(*result));
+    result->standard_output.allocator = allocator;
+    result->standard_error.allocator = allocator;
+    if (arguments == NULL || argument_count == 0 || arguments[0] == NULL
+        || arguments[argument_count] != NULL) {
+        return RUDA_PROCESS_INVALID_ARGUMENT;
+    }
+    for (index = 0; index < argument_count; index += 1) {
+        if (arguments[index] == NULL || !ruda_utf8_validate(
+                arguments[index], strlen(arguments[index]), NULL
+            )) return RUDA_PROCESS_INVALID_ARGUMENT;
+    }
+    if (!ruda_vector_init(&output, allocator, sizeof(unsigned char))
+        || !ruda_vector_init(&error, allocator, sizeof(unsigned char))) {
+        status = RUDA_PROCESS_ALLOCATION_FAILED;
+        goto cleanup;
+    }
+    if (!ruda_windows_command_line(
+            allocator, arguments, argument_count,
+            &command, &command_size
+        )) {
+        status = RUDA_PROCESS_ALLOCATION_FAILED;
+        goto cleanup;
+    }
+    ZeroMemory(&security, sizeof(security));
+    security.nLength = (DWORD)sizeof(security);
+    security.bInheritHandle = TRUE;
+    if (!CreatePipe(&output_read, &output_write, &security, 0)
+        || !SetHandleInformation(output_read, HANDLE_FLAG_INHERIT, 0)
+        || !CreatePipe(&error_read, &error_write, &security, 0)
+        || !SetHandleInformation(error_read, HANDLE_FLAG_INHERIT, 0)) {
+        status = RUDA_PROCESS_SPAWN_FAILED;
+        goto cleanup;
+    }
+    ZeroMemory(&startup, sizeof(startup));
+    startup.cb = (DWORD)sizeof(startup);
+    startup.dwFlags = STARTF_USESTDHANDLES;
+    startup.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    startup.hStdOutput = output_write;
+    startup.hStdError = error_write;
+    ZeroMemory(&process, sizeof(process));
+    if (!CreateProcessW(
+            NULL, command, NULL, NULL, TRUE, CREATE_NO_WINDOW,
+            NULL, NULL, &startup, &process
+        )) {
+        status = RUDA_PROCESS_SPAWN_FAILED;
+        goto cleanup;
+    }
+    process_started = true;
+    CloseHandle(output_write);
+    output_write = INVALID_HANDLE_VALUE;
+    CloseHandle(error_write);
+    error_write = INVALID_HANDLE_VALUE;
+    for (;;) {
+        bool progress = false;
+        DWORD wait_status;
+        status = ruda_windows_capture_available(
+            output_read, &output, max_output, &progress
+        );
+        if (status != RUDA_PROCESS_OK) goto terminate;
+        status = ruda_windows_capture_available(
+            error_read, &error, max_error, &progress
+        );
+        if (status != RUDA_PROCESS_OK) goto terminate;
+        wait_status = WaitForSingleObject(process.hProcess, 0);
+        if (wait_status == WAIT_FAILED) {
+            status = RUDA_PROCESS_WAIT_FAILED;
+            goto terminate;
+        }
+        if (wait_status == WAIT_OBJECT_0 && !progress) {
+            DWORD output_available = 0;
+            DWORD error_available = 0;
+            if ((!PeekNamedPipe(
+                    output_read, NULL, 0, NULL, &output_available, NULL
+                ) && GetLastError() != ERROR_BROKEN_PIPE)
+                || (!PeekNamedPipe(
+                    error_read, NULL, 0, NULL, &error_available, NULL
+                ) && GetLastError() != ERROR_BROKEN_PIPE)) {
+                status = RUDA_PROCESS_IO_FAILED;
+                goto terminate;
+            }
+            if (output_available == 0 && error_available == 0) break;
+        }
+        if (!progress) Sleep(1);
+    }
+    {
+        DWORD exit_code = 0;
+        if (!GetExitCodeProcess(process.hProcess, &exit_code)) {
+            status = RUDA_PROCESS_WAIT_FAILED;
+            goto cleanup;
+        }
+        result->exit_code = (uint32_t)exit_code;
+    }
+    if (!ruda_owned_bytes_copy(
+            &result->standard_output, allocator,
+            output.data, output.length
+        ) || !ruda_owned_bytes_copy(
+            &result->standard_error, allocator,
+            error.data, error.length
+        )) {
+        status = RUDA_PROCESS_ALLOCATION_FAILED;
+    }
+    goto cleanup;
+terminate:
+    (void)TerminateProcess(process.hProcess, 70U);
+    (void)WaitForSingleObject(process.hProcess, INFINITE);
+cleanup:
+    if (process_started) {
+        CloseHandle(process.hThread);
+        CloseHandle(process.hProcess);
+    }
+    if (output_read != INVALID_HANDLE_VALUE) CloseHandle(output_read);
+    if (output_write != INVALID_HANDLE_VALUE) CloseHandle(output_write);
+    if (error_read != INVALID_HANDLE_VALUE) CloseHandle(error_read);
+    if (error_write != INVALID_HANDLE_VALUE) CloseHandle(error_write);
+    if (command != NULL) ruda_deallocate(&allocator, command, command_size);
+    ruda_vector_dispose(&output);
+    ruda_vector_dispose(&error);
+    if (status != RUDA_PROCESS_OK) {
+        ruda_process_capture_result_dispose(result);
+    }
+    return status;
+}
+
+void ruda_process_capture_result_dispose(RudaProcessCaptureResult *result) {
+    if (result == NULL) return;
+    ruda_owned_bytes_dispose(&result->standard_output);
+    ruda_owned_bytes_dispose(&result->standard_error);
+    result->exit_code = 0;
+    result->signaled = false;
+    result->signal_code = 0;
+}

@@ -7,6 +7,7 @@
 
 #include "ruda/base/allocator.h"
 #include "ruda/base/vector.h"
+#include "ruda/runtime/test_output.h"
 #include "ruda/types/type.h"
 
 /*
@@ -56,6 +57,7 @@ typedef struct RudaMirExecution {
     RudaVector arrays;
     /* Oracle-owned immutable interface payloads and selected method tables. */
     RudaVector interface_values;
+    RudaTestOutput test_output;
     RudaMirExecutionOptions options;
     size_t total_fields;
     size_t total_string_bytes;

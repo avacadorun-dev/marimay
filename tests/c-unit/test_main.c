@@ -21,10 +21,12 @@ void ruda_test_cli(void);
 void ruda_test_cli_build(void);
 void ruda_test_cli_check(void);
 void ruda_test_cli_run(void);
+void ruda_test_cli_test(void);
 void ruda_test_compiler_service(void);
 void ruda_test_compiler_service_incremental(void);
 void ruda_test_compiler_service_queries(void);
 void ruda_test_cp9_io_pipeline(void);
+void ruda_test_cp11_test_pipeline(void);
 void ruda_test_diagnostic(void);
 void ruda_test_defer_cp7(void);
 void ruda_test_directory(void);
@@ -82,6 +84,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_compiler_service_incremental();
     ruda_test_compiler_service_queries();
     ruda_test_cp9_io_pipeline();
+    ruda_test_cp11_test_pipeline();
     ruda_test_diagnostic();
     ruda_test_directory();
     ruda_test_doc_examples();
@@ -113,6 +116,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_cli_build();
     ruda_test_cli_check();
     ruda_test_cli_run();
+    ruda_test_cli_test();
     if (ruda_test_failure_count() != 0) {
         fprintf(stderr, "ruda_c_unit: %d failure(s)\n", ruda_test_failure_count());
         return 1;

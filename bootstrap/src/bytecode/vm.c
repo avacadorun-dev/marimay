@@ -195,11 +195,13 @@ RudaBytecodeRunStatus ruda_bytecode_run(
                 options.execution,
                 function,
                 allocator,
-                options.stdout_sink,
+                options.stdout_sink, options.panic,
+                (RudaSymbolId){{0}},
                 &bounds_index,
                 &bounds_length
                 );
-                if (status == RUDA_BYTECODE_RUN_PANIC) {
+                if (status == RUDA_BYTECODE_RUN_PANIC
+                    && (options.panic == NULL || options.panic->code == NULL)) {
                     status = ruda_bytecode_run_begin_bounds_panic(
                         options.panic, allocator, bounds_index, bounds_length,
                         (RudaSymbolId){{0}}, instruction->span
@@ -222,7 +224,6 @@ RudaBytecodeRunStatus ruda_bytecode_run(
             break;
         }
     }
-
 cleanup:
     ruda_bytecode_run_roots_dispose(
         &managed_roots, options.execution, allocator
@@ -268,7 +269,6 @@ static void ruda_bytecode_run_frame_dispose(
         memset(frame, 0, sizeof(*frame));
     }
 }
-
 static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
     RudaBytecodeRunFrame *frame,
     const RudaBytecodeProgramFunction *function,
@@ -374,7 +374,6 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_roots_init(
     }
     return status;
 }
-
 static RudaBytecodeRunStatus ruda_bytecode_run_program_verify_status(
     RudaBytecodeProgramVerifyStatus status
 ) {
@@ -389,7 +388,6 @@ static RudaBytecodeRunStatus ruda_bytecode_run_program_verify_status(
     }
     return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
 }
-
 static bool ruda_bytecode_run_frames_reserve(
     RudaBytecodeRunFrame **frames,
     size_t *capacity,
@@ -442,7 +440,6 @@ static bool ruda_bytecode_run_frames_reserve(
     *capacity = next_capacity;
     return true;
 }
-
 RudaBytecodeRunStatus ruda_bytecode_run_program(
     const RudaBytecodeProgram *program,
     const RudaBytecodeValue *arguments,
@@ -821,14 +818,18 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
             size_t bounds_length = 0;
             status = ruda_bytecode_run_value_instruction(
                 instruction, frame->registers, options.execution, body,
-                allocator, options.stdout_sink, &bounds_index, &bounds_length
+                allocator, options.stdout_sink, options.panic,
+                frame->function->symbol,
+                &bounds_index, &bounds_length
             );
             if (status == RUDA_BYTECODE_RUN_PANIC) {
                 size_t panic_index = frame_count - 1;
-                status = ruda_bytecode_run_begin_bounds_panic(
-                    options.panic, allocator, bounds_index, bounds_length,
-                    frame->function->symbol, instruction->span
-                );
+                if (options.panic == NULL || options.panic->code == NULL) {
+                    status = ruda_bytecode_run_begin_bounds_panic(
+                        options.panic, allocator, bounds_index, bounds_length,
+                        frame->function->symbol, instruction->span
+                    );
+                }
                 while (status == RUDA_BYTECODE_RUN_PANIC
                     && panic_index != 0) {
                     RudaBytecodeRunFrame *callee = &frames[panic_index];
@@ -851,7 +852,6 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         }
         frame->instruction += 1;
     }
-
 cleanup:
     while (frame_count != 0) {
         RudaBytecodeRunFrame *frame = &frames[frame_count - 1];

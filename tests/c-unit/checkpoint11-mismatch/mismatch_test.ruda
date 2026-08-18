@@ -1,0 +1,24 @@
+import { println } from "std/io";
+
+@test
+fn exactMismatch(): void {
+  expect.output("expected\n", (): void => {
+    println("actual");
+  });
+}
+
+@test
+fn explicitPanicParity(): void {
+  panic("boom");
+}
+
+@test
+fn cleanupExpectation(): void {
+  expect.output("", (): void => {});
+}
+
+@test
+fn mismatchSurvivesCleanupExpectation(): void {
+  defer cleanupExpectation();
+  expect.output("kept", (): void => {});
+}

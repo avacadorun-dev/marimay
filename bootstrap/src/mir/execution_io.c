@@ -90,7 +90,7 @@ RudaMirInterpretStatus ruda_mir_execute_io_instruction(
     unsigned char *line = NULL;
     size_t line_length = 0;
     RudaMirInterpretStatus status;
-    RudaIoStdoutStatus io_status;
+    RudaTestOutputStatus output_status;
     if (result_layout == NULL || error_layout == NULL || text == NULL
         || options.stdout_sink == NULL || options.execution == NULL
         || !ruda_size_add(text->length, 1, &line_length)) {
@@ -105,12 +105,6 @@ RudaMirInterpretStatus ruda_mir_execute_io_instruction(
     if (status != RUDA_MIR_INTERPRET_OK) {
         return status;
     }
-    if (!options.stdout_sink->capability_granted) {
-        return ruda_mir_execute_io_error(
-            function, result_layout, error_layout,
-            RUDA_IO_STDOUT_CAPABILITY_DENIED, options.execution, target
-        );
-    }
     line = ruda_allocate(allocator, line_length);
     if (line == NULL) {
         return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
@@ -119,19 +113,93 @@ RudaMirInterpretStatus ruda_mir_execute_io_instruction(
         memcpy(line, text->bytes, text->length);
     }
     line[text->length] = '\n';
-    io_status = ruda_io_stdout_publish_line(
-        options.stdout_sink, line, line_length
+    output_status = ruda_test_output_publish(
+        &options.execution->test_output,
+        options.stdout_sink,
+        line,
+        line_length
     );
     ruda_deallocate(allocator, line, line_length);
-    if (io_status == RUDA_IO_STDOUT_OK) {
+    if (output_status == RUDA_TEST_OUTPUT_OK) {
         return RUDA_MIR_INTERPRET_OK;
     }
-    if (io_status != RUDA_IO_STDOUT_CAPABILITY_DENIED
-        && io_status != RUDA_IO_STDOUT_WRITE_FAILED) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+    if (output_status == RUDA_TEST_OUTPUT_ALLOCATION_FAILED) {
+        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    }
+    if (output_status == RUDA_TEST_OUTPUT_LIMIT_REACHED) {
+        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+    }
+    if (output_status != RUDA_TEST_OUTPUT_CAPABILITY_DENIED
+        && output_status != RUDA_TEST_OUTPUT_WRITE_FAILED) {
+        return RUDA_MIR_INTERPRET_INVALID_MIR;
     }
     return ruda_mir_execute_io_error(
-        function, result_layout, error_layout, io_status,
+        function, result_layout, error_layout,
+        output_status == RUDA_TEST_OUTPUT_CAPABILITY_DENIED
+            ? RUDA_IO_STDOUT_CAPABILITY_DENIED
+            : RUDA_IO_STDOUT_WRITE_FAILED,
         options.execution, target
     );
+}
+
+RudaMirInterpretStatus ruda_mir_execute_test_output_instruction(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    const RudaMirValue *source,
+    RudaMirValue *target,
+    const RudaAllocator *allocator,
+    RudaMirInterpretOptions options
+) {
+    const RudaMirManagedString *expected = NULL;
+    const RudaOwnedBytes *failure = NULL;
+    RudaTestOutputStatus output_status;
+    if (function == NULL || instruction == NULL || source == NULL
+        || target == NULL || allocator == NULL || options.execution == NULL) {
+        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+    }
+    if (instruction->kind == RUDA_MIR_TEST_OUTPUT_BEGIN) {
+        expected = ruda_mir_execution_string_value(
+            options.execution, *source
+        );
+        if (expected == NULL) return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+        output_status = ruda_test_output_begin(
+            &options.execution->test_output, *allocator,
+            expected->bytes, expected->length
+        );
+        if (output_status == RUDA_TEST_OUTPUT_OK) {
+            target->as.boolean = true;
+            return RUDA_MIR_INTERPRET_OK;
+        }
+    } else {
+        if (!source->as.boolean) return RUDA_MIR_INTERPRET_INVALID_MIR;
+        output_status = ruda_test_output_end(
+            &options.execution->test_output
+        );
+        if (output_status == RUDA_TEST_OUTPUT_OK) {
+            return RUDA_MIR_INTERPRET_OK;
+        }
+        if (output_status == RUDA_TEST_OUTPUT_MISMATCH) {
+            if (options.panic == NULL) return RUDA_MIR_INTERPRET_PANIC;
+            failure = ruda_test_output_failure(
+                &options.execution->test_output
+            );
+            if (failure == NULL || !ruda_owned_bytes_copy(
+                    &options.panic->message, *allocator,
+                    failure->data, failure->length
+                )) {
+                return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+            }
+            options.panic->code = "G4004";
+            options.panic->symbol = function->symbol;
+            options.panic->span = instruction->span;
+            return RUDA_MIR_INTERPRET_PANIC;
+        }
+    }
+    if (output_status == RUDA_TEST_OUTPUT_ALLOCATION_FAILED) {
+        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    }
+    if (output_status == RUDA_TEST_OUTPUT_LIMIT_REACHED) {
+        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+    }
+    return RUDA_MIR_INTERPRET_INVALID_MIR;
 }

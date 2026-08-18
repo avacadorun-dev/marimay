@@ -25,6 +25,14 @@ typedef struct RudaProcessResult {
     uint32_t signal_code;
 } RudaProcessResult;
 
+typedef struct RudaProcessCaptureResult {
+    RudaOwnedBytes standard_output;
+    RudaOwnedBytes standard_error;
+    uint32_t exit_code;
+    bool signaled;
+    uint32_t signal_code;
+} RudaProcessCaptureResult;
+
 /*
  * Runs a null-terminated argv vector directly without a command shell.
  * stdout/stderr are combined in program write order and bounded by max_output.
@@ -37,6 +45,17 @@ RudaProcessStatus ruda_process_run(
     RudaProcessResult *result
 );
 
+/* Runs argv directly and captures stdout and stderr in separate bounded buffers. */
+RudaProcessStatus ruda_process_run_capture(
+    RudaAllocator allocator,
+    const char *const arguments[],
+    size_t argument_count,
+    size_t max_output,
+    size_t max_error,
+    RudaProcessCaptureResult *result
+);
+
 void ruda_process_result_dispose(RudaProcessResult *result);
+void ruda_process_capture_result_dispose(RudaProcessCaptureResult *result);
 
 #endif

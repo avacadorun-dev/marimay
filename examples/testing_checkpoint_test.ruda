@@ -1,0 +1,30 @@
+import { println } from "std/io";
+
+type Counter {
+  mutable value: int;
+}
+
+fn cleanup(): void {
+  println("cleanup");
+}
+
+@test
+fn mutationAndIdentity(): void {
+  const counter = Counter { value: 1 };
+  const same = counter;
+  counter.value += 1;
+  if counter.value != 2 || !identity.same(counter, same) {
+    panic("record semantics changed");
+  }
+}
+
+@test
+fn exactOutputIncludesCleanup(): void {
+  expect.output(
+    "body\ncleanup\n",
+    (): void => {
+      defer cleanup();
+      println("body");
+    },
+  );
+}

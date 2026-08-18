@@ -85,6 +85,7 @@ void ruda_bytecode_execution_dispose(RudaBytecodeExecution *execution) {
         }
     }
     ruda_vector_dispose(&execution->array_descriptors);
+    ruda_test_output_dispose(&execution->test_output);
     memset(execution, 0, sizeof(*execution));
 }
 
@@ -494,6 +495,8 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
     const RudaBytecodeFunction *function,
     RudaAllocator allocator,
     const RudaIoStdout *stdout_sink,
+    RudaBytecodePanic *panic,
+    RudaSymbolId symbol,
     int64_t *bounds_index,
     size_t *bounds_length
 ) {
@@ -1178,6 +1181,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             return ruda_bytecode_run_io_instruction(
                 instruction, registers, execution, function,
                 allocator, stdout_sink
+            );
+        case RUDA_OPCODE_TEST_OUTPUT_BEGIN:
+        case RUDA_OPCODE_TEST_OUTPUT_END:
+            return ruda_bytecode_run_test_output_instruction(
+                instruction, registers, execution, function,
+                allocator, panic, symbol
             );
     }
     return RUDA_BYTECODE_RUN_INVALID_BYTECODE;

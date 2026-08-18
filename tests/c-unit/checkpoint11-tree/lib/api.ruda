@@ -1,0 +1,7 @@
+public fn publicDouble(value: int): int {
+  return value * 2;
+}
+
+fn privateTriple(value: int): int {
+  return value * 3;
+}

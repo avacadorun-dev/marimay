@@ -5,6 +5,7 @@ B0003	NATIVE_EMIT_FAILED	build	Canonical typed MIR could not lower to portable C
 B0004	NATIVE_COMPILE_FAILED	build	Supported host C compiler rejected compiler-generated C.
 B0005	BUILD_OUTPUT_IO	build	Build cache or requested output could not be published atomically.
 B0006	NATIVE_HOST_UNSUPPORTED	build	Host target cannot preserve required native semantics.
+B0007	ENGINE_DIVERGENCE	test	VM and native test observations differ.
 F0001	FORMAT_INPUT_IO	formatter	Formatter could not read the selected source input.
 F0002	FORMAT_OUTPUT_IO	formatter	Formatter could not write or transactionally replace canonical output.
 F0003	FORMAT_LIMIT	formatter	Formatter exhausted a defensive input, nesting, work, or output limit.
@@ -13,6 +14,7 @@ G4000	EXPLICIT_PANIC	runtime	Program executed an explicit source panic.
 G4001	ARITHMETIC_PANIC	runtime	Checked integer arithmetic panicked.
 G4002	BOUNDS_PANIC	runtime	Array indexing panicked on an out-of-bounds index.
 G4003	PROGRAM_ERROR	runtime	Root main returned an expected error.
+G4004	TEST_EXPECTATION	test	A compiler-known test expectation observed a mismatching value or byte stream.
 I0001	COMPILER_INCOMPLETE	compiler	Compiler does not implement an accepted language construct.
 I0002	RUNTIME_FAILURE	runtime	Runtime could not complete because of an internal resource or integrity failure.
 K0001	MANIFEST_SYNTAX	manifest	Manifest directive or grouping syntax is invalid.

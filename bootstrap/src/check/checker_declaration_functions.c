@@ -856,6 +856,7 @@ cleanup:
     function.block = RUDA_MIR_NO_BLOCK;
     function.result_type = declaration->result_type;
     function.unsafe_context = declaration->is_unsafe;
+    function.test_context = declaration->is_test || declaration->is_fuzz;
     function.type_parameters = &declaration->type_parameters;
     function.type_arguments = declaration->is_instance
         ? &declaration->generic_arguments : NULL;

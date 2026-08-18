@@ -288,6 +288,29 @@ Failures are not reused across source changes. `--no-cache` bypasses reads and w
 
 `ruda test --engine both` uses the execution specification's record/replay harness. A mismatch exits `5` and reports result/output/panic/task/capability trace divergence. Passing the same assertion independently is not sufficient if deterministic observable traces disagree.
 
+Under D051, preview checkpoint 11 exposes the deterministic core of this
+contract. `ruda test [target]` discovers `@test fn(): void` only in
+`*_test.ruda`, includes module-root `tests/` as public-surface integration
+packages, and executes each discovered symbol in a fresh VM execution or
+native process. VM is the default; `--engine native` and `--engine both` are
+accepted. Reports are sorted by package, canonical source path, declaration
+span, and symbol name. A test's stdout and stderr are retained in separate
+bounded byte buffers and are emitted only with that test's failure, so output
+from different tests cannot interleave.
+
+For `both`, the VM run produces one observation record containing termination,
+exact D046 stdout bytes, and exact panic/stderr bytes. Native execution replays
+the same canonical typed-MIR test symbol under the same fixed default
+capability configuration and is compared to that record. Any difference is
+`B0007` and exit `5`; an ordinary matching panic or `G4004` expectation failure
+is a test failure and exit `1`. Success exits `0`, command misuse exits `2`,
+and an internal compiler/runtime test-pipeline failure exits `70`.
+
+Checkpoint 11 does not implement filters, watch mode, or a test-result cache.
+`--filter`, `--exact`, `--watch`, and `--no-cache` are rejected explicitly with
+`U0005`/exit `2`; they are never accepted and ignored. The broader command
+surface above remains the I8 completion contract.
+
 ### 5.6 Fuzz and property tests
 
 Fuzz targets are ordinary typed declarations in `_test.ruda`:

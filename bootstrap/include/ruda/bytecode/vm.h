@@ -11,6 +11,7 @@
 #include "ruda/bytecode/program.h"
 #include "ruda/runtime/managed.h"
 #include "ruda/runtime/io.h"
+#include "ruda/runtime/test_output.h"
 typedef uint32_t RudaBytecodeReference;
 #define RUDA_BYTECODE_INVALID_REFERENCE UINT32_MAX
 typedef struct RudaBytecodeValue {
@@ -24,8 +25,7 @@ typedef struct RudaBytecodeValue {
     } as;
 } RudaBytecodeValue;
 typedef struct RudaBytecodeExecutionOptions {
-    size_t max_strings;
-    size_t max_total_string_bytes;
+    size_t max_strings; size_t max_total_string_bytes;
     RudaManagedHeapOptions managed_heap;
 } RudaBytecodeExecutionOptions;
 typedef struct RudaBytecodeExecution {
@@ -35,8 +35,7 @@ typedef struct RudaBytecodeExecution {
     /* Exact UTF-8 bytes to RudaBytecodeReference. */
     RudaMap string_index;
     RudaBytecodeExecutionOptions options;
-    size_t total_string_bytes;
-    RudaManagedHeap managed_heap;
+    size_t total_string_bytes; RudaManagedHeap managed_heap;
     RudaVector interned_record_descriptors;
     RudaVector interned_record_fields;
     RudaVector interned_enum_descriptors;
@@ -44,6 +43,7 @@ typedef struct RudaBytecodeExecution {
     RudaVector interned_enum_payloads;
     RudaVector owned_interface_tables;
     RudaVector array_descriptors;
+    RudaTestOutput test_output;
     bool array_descriptor_allocation_failed;
     bool initialized;
 } RudaBytecodeExecution;

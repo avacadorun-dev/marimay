@@ -27,7 +27,7 @@ static bool ruda_native_c_emit_integer_entry(
         && ruda_native_c_symbol(buffer, entry->symbol)
         && ruda_native_c_write(
             buffer,
-            "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:%s:%%%s\\n\", (%s)ruda_g_result); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n",
+            "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_g_execution_dispose(&ruda_g_x); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_g_execution_dispose(&ruda_g_x); return 1; } printf(\"ok:%s:%%%s\\n\", (%s)ruda_g_result); ruda_g_execution_dispose(&ruda_g_x); return 0; }\n",
             label, format, cast
         );
 }
@@ -108,7 +108,8 @@ bool ruda_native_c_emit_runtime(
         )
         && ruda_native_c_write(buffer,
         "typedef struct { RudaAllocator delegate; size_t attempts; size_t failure_index; } ruda_g_fail_allocator;\n"
-        "typedef struct { RudaAllocator allocator; RudaManagedHeap heap; ruda_g_fail_allocator fail_allocator; } ruda_g_execution;\n")
+        "typedef struct { RudaAllocator allocator; RudaManagedHeap heap; RudaTestOutput test_output; ruda_g_fail_allocator fail_allocator; } ruda_g_execution;\n"
+        "static void ruda_g_execution_dispose(ruda_g_execution *x) { if (x == NULL) return; ruda_test_output_dispose(&x->test_output); ruda_managed_heap_dispose(&x->heap); }\n")
         && ruda_native_c_write(buffer,
             "#ifndef RUDA_G_COLLECT_BEFORE_ALLOCATION\n#define RUDA_G_COLLECT_BEFORE_ALLOCATION 0\n#endif\n"
             "#ifndef RUDA_G_FAIL_ALLOCATION_AT\n#define RUDA_G_FAIL_ALLOCATION_AT SIZE_MAX\n#endif\n"
@@ -118,8 +119,8 @@ bool ruda_native_c_emit_runtime(
         && ruda_native_c_write(buffer,
             "typedef struct { const unsigned char *symbol; size_t start; size_t end; } ruda_g_frame;\n")
         && ruda_native_c_write(buffer,
-            "typedef struct { const char *code; ruda_g_string message; unsigned char message_storage[96]; const unsigned char *symbol; size_t start; size_t end; ruda_g_frame frames[RUDA_G_MAX_FRAMES]; size_t frame_count; } ruda_g_suppressed_panic;\n"
-            "typedef struct { const char *code; ruda_g_string message; unsigned char message_storage[96]; const unsigned char *symbol; size_t start; size_t end; ruda_g_frame *frames; size_t frame_count; size_t frame_capacity; ruda_g_suppressed_panic *suppressed; size_t suppressed_count; size_t suppressed_capacity; } ruda_g_panic;\n")
+            "typedef struct { const char *code; ruda_g_string message; unsigned char message_storage[256]; const unsigned char *symbol; size_t start; size_t end; ruda_g_frame frames[RUDA_G_MAX_FRAMES]; size_t frame_count; } ruda_g_suppressed_panic;\n"
+            "typedef struct { const char *code; ruda_g_string message; unsigned char message_storage[256]; const unsigned char *symbol; size_t start; size_t end; ruda_g_frame *frames; size_t frame_count; size_t frame_capacity; ruda_g_suppressed_panic *suppressed; size_t suppressed_count; size_t suppressed_capacity; } ruda_g_panic;\n")
         && ruda_native_c_write(buffer,
             "static bool ruda_g_string_equal(ruda_g_string a, ruda_g_string b) { return a.length == b.length && (a.length == 0 || memcmp(a.data, b.data, a.length) == 0); }\n")
         && ruda_native_c_write(buffer,
@@ -183,7 +184,7 @@ bool ruda_native_c_emit_keep_assets(
     }
     return ruda_native_c_write(
         buffer,
-        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_append_suppressed_panic;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n  (void)&ruda_g_io_println;\n  (void)&ruda_g_print_panic;\n  ruda_g_keep_managed();\n}\n\n"
+        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_append_suppressed_panic;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n  (void)&ruda_g_io_println;\n  (void)&ruda_g_test_output_begin;\n  (void)&ruda_g_test_output_end;\n  (void)&ruda_g_print_panic;\n  ruda_g_keep_managed();\n}\n\n"
     );
 }
 
@@ -347,7 +348,7 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     }
     memset(&buffer, 0, sizeof(buffer)); buffer.limit = options.max_generated_bytes;
     if (!ruda_vector_init(&buffer.bytes, allocator, sizeof(char))) { status = RUDA_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup; }
-    if (!ruda_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"ruda/base/checked_i64.h\"\n#include \"ruda/base/allocator.h\"\n#include \"ruda/runtime/managed.h\"\n#include \"ruda/runtime/string.h\"\n")
+    if (!ruda_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"ruda/base/checked_i64.h\"\n#include \"ruda/base/allocator.h\"\n#include \"ruda/runtime/managed.h\"\n#include \"ruda/runtime/string.h\"\n#include \"ruda/runtime/test_output.h\"\n")
         || !ruda_native_c_write(&buffer, "#include \"ruda/base/checked_integer.h\"\n")
         || !ruda_native_c_write(&buffer, "#include \"ruda/base/number_format.h\"\n")
         || (uses_f64 && !ruda_native_c_write(
@@ -398,11 +399,11 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
         && entry->result_type != RUDA_TYPE_I64) {
         if (!ruda_native_c_emit_integer_entry(&buffer, entry)) goto emit_fail;
     }
-    else if (entry->result_type == RUDA_TYPE_I64) { if (!ruda_native_c_write(&buffer, "int64_t ruda_g_result = 0; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:i64:%%lld\\n\", (long long)ruda_g_result); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
-    else if (entry->result_type == RUDA_TYPE_F64) { if (!ruda_native_c_write(&buffer, "uint64_t ruda_g_result = UINT64_C(0); ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:f64:%%016llx\\n\", (unsigned long long)ruda_g_result); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
-    else if (entry->result_type == RUDA_TYPE_BOOL) { if (!ruda_native_c_write(&buffer, "bool ruda_g_result = false; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:bool:%%s\\n\", ruda_g_result ? \"true\" : \"false\"); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
-    else if (entry->result_type == RUDA_TYPE_STRING) { if (!ruda_native_c_write(&buffer, "ruda_g_string ruda_g_result = {0}; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } printf(\"ok:string:%%zu:\", ruda_g_result.length); ruda_g_print_hex(ruda_g_result.data, ruda_g_result.length); putchar('\\n'); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
-    else { if (!ruda_native_c_write(&buffer, "ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_managed_heap_dispose(&ruda_g_x.heap); return 1; } puts(\"ok:void\"); ruda_managed_heap_dispose(&ruda_g_x.heap); return 0; }\n")) goto emit_fail; }
+    else if (entry->result_type == RUDA_TYPE_I64) { if (!ruda_native_c_write(&buffer, "int64_t ruda_g_result = 0; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_g_execution_dispose(&ruda_g_x); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_g_execution_dispose(&ruda_g_x); return 1; } printf(\"ok:i64:%%lld\\n\", (long long)ruda_g_result); ruda_g_execution_dispose(&ruda_g_x); return 0; }\n")) goto emit_fail; }
+    else if (entry->result_type == RUDA_TYPE_F64) { if (!ruda_native_c_write(&buffer, "uint64_t ruda_g_result = UINT64_C(0); ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_g_execution_dispose(&ruda_g_x); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_g_execution_dispose(&ruda_g_x); return 1; } printf(\"ok:f64:%%016llx\\n\", (unsigned long long)ruda_g_result); ruda_g_execution_dispose(&ruda_g_x); return 0; }\n")) goto emit_fail; }
+    else if (entry->result_type == RUDA_TYPE_BOOL) { if (!ruda_native_c_write(&buffer, "bool ruda_g_result = false; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_g_execution_dispose(&ruda_g_x); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_g_execution_dispose(&ruda_g_x); return 1; } printf(\"ok:bool:%%s\\n\", ruda_g_result ? \"true\" : \"false\"); ruda_g_execution_dispose(&ruda_g_x); return 0; }\n")) goto emit_fail; }
+    else if (entry->result_type == RUDA_TYPE_STRING) { if (!ruda_native_c_write(&buffer, "ruda_g_string ruda_g_result = {0}; ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_g_execution_dispose(&ruda_g_x); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_g_execution_dispose(&ruda_g_x); return 1; } printf(\"ok:string:%%zu:\", ruda_g_result.length); ruda_g_print_hex(ruda_g_result.data, ruda_g_result.length); putchar('\\n'); ruda_g_execution_dispose(&ruda_g_x); return 0; }\n")) goto emit_fail; }
+    else { if (!ruda_native_c_write(&buffer, "ruda_g_s = ") || !ruda_native_c_symbol(&buffer, entry->symbol) || !ruda_native_c_write(&buffer, "(&ruda_g_x, &ruda_g_p, &ruda_g_start, &ruda_g_end); if (ruda_g_s == 4) { ruda_g_print_panic(&ruda_g_p); ruda_g_execution_dispose(&ruda_g_x); return 1; } if (ruda_g_s) { printf(\"trap:%%d:%%zu:%%zu\\n\", ruda_g_s, ruda_g_start, ruda_g_end); ruda_g_execution_dispose(&ruda_g_x); return 1; } puts(\"ok:void\"); ruda_g_execution_dispose(&ruda_g_x); return 0; }\n")) goto emit_fail; }
     if (!ruda_owned_bytes_copy(output, allocator, buffer.bytes.data, buffer.bytes.length)) { status = RUDA_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup_buffer; }
     goto cleanup_buffer;
 emit_fail:

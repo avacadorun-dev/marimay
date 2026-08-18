@@ -1,0 +1,73 @@
+import { println } from "std/io";
+
+type Counter {
+  mutable value: int;
+}
+
+type Pair {
+  first: int;
+  second: int;
+}
+
+enum CheckError {
+  Broken,
+}
+
+fn privateAnswer(): int {
+  return 42;
+}
+
+fn printCleanup(): void {
+  println("cleanup");
+}
+
+fn next(counter: Counter): int {
+  counter.value += 1;
+  return counter.value;
+}
+
+@test
+fn sourceOrderFirst(): void {
+  if privateAnswer() != 42 {
+    panic("private test helper was not visible");
+  }
+}
+
+@test
+fn recordsOptionsResultsAndMatch(): void {
+  const counter = Counter { value: 1 };
+  const same = counter;
+  counter.value += 1;
+  if counter.value != 2 || !identity.same(counter, same) {
+    panic("record mutation or identity changed");
+  }
+  const order = Counter { value: 0 };
+  const pair = Pair { second: next(order), first: next(order) };
+  if pair.second != 1 || pair.first != 2 {
+    panic("D040 source-order construction changed");
+  }
+  const option: Option<int> = Some(7);
+  const optionValue = match option {
+    case Some(value) => value;
+    case None => 0;
+  };
+  const result: Result<int, CheckError> = Ok(9);
+  const resultValue = match result {
+    case Ok(value) => value;
+    case Err(_) => 0;
+  };
+  if optionValue != 7 || resultValue != 9 {
+    panic("Option, Result, or match changed");
+  }
+}
+
+@test
+fn exactOutputAndCleanup(): void {
+  expect.output("body\ncleanup\n", (): void => {
+    defer printCleanup();
+    println("body");
+  });
+  expect.output("a\0b\n", (): void => {
+    println("a\0b");
+  });
+}

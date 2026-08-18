@@ -12,6 +12,7 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `B0004` | build | Supported host C compiler rejected compiler-generated C. |
 | `B0005` | build | Build cache or requested output could not be published atomically. |
 | `B0006` | build | Host target cannot preserve required native semantics. |
+| `B0007` | test | VM and native test observations differ. |
 | `F0001` | formatter | Formatter could not read the selected source input. |
 | `F0002` | formatter | Formatter could not write or transactionally replace canonical output. |
 | `F0003` | formatter | Formatter exhausted a defensive input, nesting, work, or output limit. |
@@ -20,6 +21,7 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `G4001` | runtime | Checked integer arithmetic panicked. |
 | `G4002` | runtime | Array indexing panicked on an out-of-bounds index. |
 | `G4003` | runtime | Root main returned an expected error. |
+| `G4004` | test | A compiler-known test expectation observed a mismatching value or byte stream. |
 | `I0001` | compiler | Compiler does not implement an accepted language construct. |
 | `I0002` | runtime | Runtime could not complete because of an internal resource or integrity failure. |
 | `K0001` | manifest | Manifest directive or grouping syntax is invalid. |

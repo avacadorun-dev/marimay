@@ -60,6 +60,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
     const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
     RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
     RudaAllocator allocator, const RudaIoStdout *stdout_sink,
+    RudaBytecodePanic *panic, RudaSymbolId symbol,
     int64_t *bounds_index, size_t *bounds_length);
 RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
     const RudaBytecodeInstruction *instruction,
@@ -68,6 +69,20 @@ RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
     const RudaBytecodeFunction *function,
     RudaAllocator allocator,
     const RudaIoStdout *stdout_sink
+);
+RudaBytecodeRunStatus ruda_bytecode_run_test_output_instruction(
+    const RudaBytecodeInstruction *instruction,
+    RudaBytecodeValue *registers,
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function,
+    RudaAllocator allocator,
+    RudaBytecodePanic *panic,
+    RudaSymbolId symbol
+);
+RudaBytecodeRunStatus ruda_bytecode_run_begin_test_panic(
+    RudaBytecodePanic *panic, RudaAllocator allocator,
+    const unsigned char *message, size_t message_length,
+    RudaSymbolId symbol, RudaBytecodeSpan span
 );
 
 bool ruda_bytecode_run_consume_step(size_t *steps,

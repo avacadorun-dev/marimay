@@ -1007,3 +1007,35 @@ build needs a single owner for toolchain discovery, flags, runtime linkage,
 cache identity, atomic publication, and process outcomes. Fixing those details
 together prevents the CLI, backend, and host compiler wrapper from becoming
 three competing native semantics paths.
+
+## D051 — Checkpoint-11 tests compare one captured execution record
+
+Status: accepted.
+
+The Stage 0 checkpoint-11 `ruda test` path discovers only ordinary
+`@test fn(): void` declarations in `*_test.ruda`. Package tests retain their
+package-private visibility; module-root `tests/` packages are checked against
+public imports. Discovery and reporting use the stable checked symbol and are
+ordered by package, canonical source path, declaration span, and name.
+
+Each test owns a fresh execution state. VM is the default engine; native uses a
+fresh process. Both grant a captured D046 sink, keep stdout and stderr in
+separate bounded buffers, and publish those bytes only as part of that test's
+failure report. `expect.output` is compiler-known in test context and brackets
+one zero-parameter `void` block closure. It compares the closure's exact D046
+bytes, including embedded zero and LF bytes, and reports a deterministic
+bounded `G4004` mismatch after lexical D041 cleanup.
+
+`--engine both` is a record/replay comparison, not two independent assertions.
+The VM supplies termination, exact stdout, and exact panic/stderr bytes; native
+replays the same verified typed-MIR test symbol with the same fixed capture
+grant. Exit, signal, stdout, or panic/stderr disagreement is `B0007`/exit `5`.
+A matching panic or expectation failure is an ordinary failed test/exit `1`.
+Filters, watch mode, and test-result caching remain I8 work and their named
+checkpoint-11 options are rejected with `U0005` rather than ignored.
+
+Reason: a built-in loop is only trustworthy if discovery boundaries, isolation,
+captured output, and backend equivalence share one compiler-owned observation
+contract. Staging the deterministic core now avoids creating separate VM and
+native notions of a passing test while leaving scheduler/cache policy to their
+ordered owners.

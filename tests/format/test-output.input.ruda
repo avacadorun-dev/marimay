@@ -1,0 +1,2 @@
+import{println,}from"std/io";
+@test fn output():void{expect.output("line\n",():void=>{println("line");});}

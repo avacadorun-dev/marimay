@@ -83,7 +83,7 @@ bool ruda_native_c_emit_executable_entry(
         return ruda_native_c_write(buffer, "ruda_g_s = ")
             && ruda_native_c_symbol(buffer, entry->symbol)
             && ruda_native_c_write(buffer,
-                "(&ruda_g_x, &ruda_g_p, &ruda_g_start, &ruda_g_end); { int ruda_g_exit = ruda_g_s == 0 ? 0 : ruda_g_public_status(ruda_g_s, &ruda_g_p); ruda_managed_heap_dispose(&ruda_g_x.heap); return ruda_g_exit; } }\n"
+                "(&ruda_g_x, &ruda_g_p, &ruda_g_start, &ruda_g_end); { int ruda_g_exit = ruda_g_s == 0 ? 0 : ruda_g_public_status(ruda_g_s, &ruda_g_p); ruda_g_execution_dispose(&ruda_g_x); return ruda_g_exit; } }\n"
             );
     }
     if (!ruda_native_c_find_managed_layout(
@@ -104,6 +104,6 @@ bool ruda_native_c_emit_executable_entry(
             ") { ruda_g_exit = ruda_g_public_status(7, &ruda_g_p); goto ruda_g_public_root_cleanup; } if (ruda_g_variant == 0) { ruda_g_exit = 0; goto ruda_g_public_root_cleanup; } if (ruda_g_variant != 1 || ruda_managed_enum_get_payload(&ruda_g_x.heap, ruda_g_result, 1, 0, &ruda_g_cell) != RUDA_MANAGED_OK) { ruda_g_exit = ruda_g_public_status(7, &ruda_g_p); goto ruda_g_public_root_cleanup; } ruda_g_error = ruda_g_cell.reference; ruda_g_s = "
         ) && ruda_native_c_symbol(buffer, message->symbol)
         && ruda_native_c_write(buffer,
-            "(&ruda_g_x, &ruda_g_p, ruda_g_error, &ruda_g_error_message, &ruda_g_start, &ruda_g_end); if (ruda_g_s != 0) ruda_g_exit = ruda_g_public_status(ruda_g_s, &ruda_g_p); else ruda_g_exit = ruda_g_public_message(\"error\", \"G4003\", ruda_g_error_message.data, ruda_g_error_message.length, 1); ruda_g_public_root_cleanup: if (ruda_managed_root_pop(&ruda_g_x.heap, &ruda_g_root_frame) != RUDA_MANAGED_OK) ruda_g_exit = ruda_g_public_status(7, &ruda_g_p); ruda_g_public_cleanup: ruda_managed_heap_dispose(&ruda_g_x.heap); return ruda_g_exit; }\n"
+            "(&ruda_g_x, &ruda_g_p, ruda_g_error, &ruda_g_error_message, &ruda_g_start, &ruda_g_end); if (ruda_g_s != 0) ruda_g_exit = ruda_g_public_status(ruda_g_s, &ruda_g_p); else ruda_g_exit = ruda_g_public_message(\"error\", \"G4003\", ruda_g_error_message.data, ruda_g_error_message.length, 1); ruda_g_public_root_cleanup: if (ruda_managed_root_pop(&ruda_g_x.heap, &ruda_g_root_frame) != RUDA_MANAGED_OK) ruda_g_exit = ruda_g_public_status(7, &ruda_g_p); ruda_g_public_cleanup: ruda_g_execution_dispose(&ruda_g_x); return ruda_g_exit; }\n"
         );
 }

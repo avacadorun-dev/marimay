@@ -174,6 +174,10 @@ void ruda_test_formatter_fixture_file(void) {
         {
             "format/defer.input.ruda",
             "format/defer.expected.ruda"
+        },
+        {
+            "format/test-output.input.ruda",
+            "format/test-output.expected.ruda"
         }
     };
     unsigned char input[32768];

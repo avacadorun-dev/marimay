@@ -131,6 +131,38 @@ RudaBytecodeRunStatus ruda_bytecode_run_begin_panic(
     return RUDA_BYTECODE_RUN_PANIC;
 }
 
+RudaBytecodeRunStatus ruda_bytecode_run_begin_test_panic(
+    RudaBytecodePanic *panic,
+    RudaAllocator allocator,
+    const unsigned char *message,
+    size_t message_length,
+    RudaSymbolId symbol,
+    RudaBytecodeSpan span
+) {
+    RudaBytecodePanicFrame frame;
+    if (message == NULL && message_length != 0) {
+        return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+    }
+    if (panic == NULL) return RUDA_BYTECODE_RUN_PANIC;
+    ruda_bytecode_run_reset_panic(panic);
+    if (!ruda_owned_bytes_copy(
+            &panic->message, allocator, message, message_length
+        )) {
+        ruda_bytecode_run_reset_panic(panic);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    panic->code = "G4004";
+    panic->symbol = symbol;
+    panic->span = span;
+    frame.symbol = symbol;
+    frame.call_span = span;
+    if (!ruda_vector_push(&panic->frames, &frame)) {
+        ruda_bytecode_run_reset_panic(panic);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    return RUDA_BYTECODE_RUN_PANIC;
+}
+
 static size_t ruda_bytecode_append_decimal_u64(
     unsigned char *buffer,
     size_t offset,

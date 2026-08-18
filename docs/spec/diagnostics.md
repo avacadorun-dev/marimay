@@ -204,6 +204,13 @@ returned by the selected structural `message(error)` function. Both classes
 exit `1` and write only stderr. An invalid executable entry uses `T0017` and
 exit `1`.
 
+Within an `@test` function, a failed compiler-known expectation uses `G4004`.
+For `expect.output`, its counted message contains a bounded deterministic
+expected/actual byte diff; the captured bytes do not escape to program stdout.
+The test runner classifies this as a failed expectation rather than an engine
+divergence. VM and native must preserve the same code, message, assertion span,
+and cleanup behavior.
+
 ```text
 panic[G4002]: array index 8 is outside length 4
   at selectUser (src/users.ruda:42:17)
@@ -295,6 +302,13 @@ bounded cache/path/atomic-publication failure and exits `1`. `B0006` rejects a
 host that cannot preserve the required native semantics and exits `1` before
 publishing an artifact. Compiler output is bounded diagnostic evidence, never
 an unstructured replacement for these primary codes.
+
+For D051 engine-equivalence testing, `B0007` means the VM observation and the
+native replay differ in termination, exact D046 stdout, or exact panic/stderr
+bytes. It is emitted once for the first source-ordered divergent test and exits
+`5`. A matching nonzero test result, including `G4000` or `G4004`, is not
+`B0007`; it is an ordinary failed test and exits `1` after deterministic
+reporting. Test-pipeline integrity/resource failures remain `I0002`/exit `70`.
 
 ## 14. Verification
 

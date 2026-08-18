@@ -220,6 +220,7 @@ void ruda_mir_execution_dispose(RudaMirExecution *execution) {
     ruda_vector_dispose(&execution->strings);
     ruda_vector_dispose(&execution->enums);
     ruda_vector_dispose(&execution->objects);
+    ruda_test_output_dispose(&execution->test_output);
     memset(execution, 0, sizeof(*execution));
 }
 const RudaMirManagedEnum *ruda_mir_execution_enum_value(

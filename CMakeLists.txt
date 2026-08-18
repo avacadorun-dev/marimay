@@ -95,13 +95,17 @@ add_library(ruda_native_runtime STATIC
   bootstrap/src/base/checked_integer.c
   bootstrap/src/base/f64_runtime.c
   bootstrap/src/base/number_format.c
+  bootstrap/src/base/owned_bytes.c
   bootstrap/src/base/provenance.c
+  bootstrap/src/base/vector.c
+  runtime/common/io_stdout.c
   runtime/common/managed.c
   runtime/common/managed_internal.c
   runtime/common/managed_string.c
   runtime/common/managed_record.c
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
+  runtime/common/test_output.c
 )
 target_include_directories(ruda_native_runtime PRIVATE
   bootstrap/include
@@ -185,6 +189,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/checker_expr_numeric.c
   bootstrap/src/check/checker_expr_interfaces.c
   bootstrap/src/check/checker_expr_io.c
+  bootstrap/src/check/checker_expr_test.c
   bootstrap/src/check/checker_generic_types.c
   bootstrap/src/check/checker_generic_specialization.c
   bootstrap/src/check/checker_prelude.c
@@ -217,6 +222,7 @@ add_library(ruda_bootstrap STATIC
     bootstrap/src/cli/cli_check.c
     bootstrap/src/cli/cli_compile_report.c
     bootstrap/src/cli/cli_run_program.c
+    bootstrap/src/cli/cli_test_program.c
     bootstrap/src/cli/cli_run_report.c
   bootstrap/src/cli/cli_check_targets.c
   bootstrap/src/cli/cli_standard_packages.c
@@ -268,6 +274,7 @@ add_library(ruda_bootstrap STATIC
   runtime/common/directory.c
   runtime/common/file.c
   runtime/common/io_stdout.c
+  runtime/common/test_output.c
   runtime/common/managed.c
   runtime/common/managed_internal.c
   runtime/common/managed_string.c

@@ -335,6 +335,7 @@ void ruda_test_native_compile_and_run_configured(
         arguments[argument_count++] = managed_record_source_path;
         arguments[argument_count++] = managed_enum_source_path;
         arguments[argument_count++] = managed_interface_source_path;
+        arguments[argument_count++] = RUDA_TEST_NATIVE_RUNTIME_ARCHIVE;
         arguments[argument_count++] = "-lm";
         arguments[argument_count++] = "-o";
         arguments[argument_count++] = executable_path;

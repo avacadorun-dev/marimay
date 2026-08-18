@@ -92,6 +92,8 @@ typedef enum RudaMirInstructionKind {
     RUDA_MIR_FORMAT_F32,
     RUDA_MIR_FORMAT_F64,
     RUDA_MIR_IO_PRINTLN,
+    RUDA_MIR_TEST_OUTPUT_BEGIN,
+    RUDA_MIR_TEST_OUTPUT_END,
     RUDA_MIR_DEFER_REGISTER,
     RUDA_MIR_DEFER_CALL
 } RudaMirInstructionKind;
@@ -137,7 +139,6 @@ typedef struct RudaMirInstruction {
     bool boolean;
     RudaMirSpan span;
 } RudaMirInstruction;
-
 typedef enum RudaMirTerminatorKind {
     RUDA_MIR_TERMINATOR_UNSET,
     RUDA_MIR_RETURN,

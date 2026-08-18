@@ -124,7 +124,7 @@ void ruda_test_cli(void) {
     const char *version_arguments[] = {"ruda", "version", "--json"};
     const char *unknown_arguments[] = {"ruda", "buid"};
     const char *unknown_json_arguments[] = {"ruda", "buid", "--diagnostic", "json"};
-    const char *planned_arguments[] = {"ruda", "test"};
+    const char *planned_arguments[] = {"ruda", "audit"};
     const char *task_help_arguments[] = {"ruda", "build", "--help"};
     const char *unknown_option_arguments[] = {"ruda", "--diagostic"};
     const char *quoted_unknown_arguments[] = {"ruda", "ba'd"};
