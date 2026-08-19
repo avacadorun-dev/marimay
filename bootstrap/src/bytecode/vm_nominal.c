@@ -79,8 +79,10 @@ static void ruda_bytecode_enum_cache_entry_dispose(
 static void ruda_bytecode_nominal_cache_rollback(
     RudaBytecodeExecution *execution,
     size_t record_length,
-    size_t enum_length
+    size_t enum_length,
+    size_t array_length
 ) {
+    ruda_bytecode_array_cache_rollback(execution, array_length);
     while (execution->interned_enum_descriptors.length > enum_length) {
         size_t index = execution->interned_enum_descriptors.length - 1;
         ruda_bytecode_enum_cache_entry_dispose(
@@ -180,7 +182,7 @@ static RudaManagedCellKind ruda_bytecode_nominal_cell_kind(
         : RUDA_MANAGED_CELL_REFERENCE;
 }
 
-static RudaManagedObjectKind ruda_bytecode_nominal_object_kind(
+RudaManagedObjectKind ruda_bytecode_nominal_object_kind(
     RudaBytecodeType type
 ) {
     if (type == RUDA_BYTECODE_TYPE_STRING) {
@@ -213,7 +215,7 @@ static const RudaManagedEnumDescriptor *ruda_bytecode_enum_descriptor(
     RudaBytecodeEnumId enum_id
 );
 
-static const void *ruda_bytecode_nominal_reference_descriptor(
+const void *ruda_bytecode_nominal_reference_descriptor(
     RudaBytecodeExecution *execution,
     const RudaBytecodeFunction *function,
     RudaBytecodeType type,
@@ -312,6 +314,7 @@ static const RudaManagedRecordDescriptor *ruda_bytecode_record_descriptor(
     RudaManagedFieldDescriptor *fields = NULL;
     size_t record_cache_start = 0;
     size_t enum_cache_start = 0;
+    size_t array_cache_start = 0;
     size_t entry_index = 0;
     size_t field_bytes = 0;
     size_t field_index = 0;
@@ -328,6 +331,7 @@ static const RudaManagedRecordDescriptor *ruda_bytecode_record_descriptor(
     }
     record_cache_start = execution->interned_record_descriptors.length;
     enum_cache_start = execution->interned_enum_descriptors.length;
+    array_cache_start = execution->array_descriptors.length;
     descriptor = ruda_allocate(&execution->allocator, sizeof(*descriptor));
     if (descriptor == NULL) {
         return NULL;
@@ -365,7 +369,8 @@ static const RudaManagedRecordDescriptor *ruda_bytecode_record_descriptor(
                 field->is_mutable, &fields[field_index]
             )) {
             ruda_bytecode_nominal_cache_rollback(
-                execution, record_cache_start, enum_cache_start
+                execution, record_cache_start, enum_cache_start,
+                array_cache_start
             );
             return NULL;
         }
@@ -375,7 +380,8 @@ static const RudaManagedRecordDescriptor *ruda_bytecode_record_descriptor(
     );
     if (existing == NULL) {
         ruda_bytecode_nominal_cache_rollback(
-            execution, record_cache_start, enum_cache_start
+            execution, record_cache_start, enum_cache_start,
+            array_cache_start
         );
         return NULL;
     }
@@ -399,6 +405,7 @@ static const RudaManagedEnumDescriptor *ruda_bytecode_enum_descriptor(
     RudaManagedFieldDescriptor *payloads = NULL;
     size_t record_cache_start = 0;
     size_t enum_cache_start = 0;
+    size_t array_cache_start = 0;
     size_t entry_index = 0;
     size_t variant_bytes = 0;
     size_t payload_bytes = 0;
@@ -419,6 +426,7 @@ static const RudaManagedEnumDescriptor *ruda_bytecode_enum_descriptor(
     }
     record_cache_start = execution->interned_record_descriptors.length;
     enum_cache_start = execution->interned_enum_descriptors.length;
+    array_cache_start = execution->array_descriptors.length;
     descriptor = ruda_allocate(&execution->allocator, sizeof(*descriptor));
     if (descriptor == NULL) {
         return NULL;
@@ -470,7 +478,8 @@ static const RudaManagedEnumDescriptor *ruda_bytecode_enum_descriptor(
                 &payloads[payload_index]
             )) {
             ruda_bytecode_nominal_cache_rollback(
-                execution, record_cache_start, enum_cache_start
+                execution, record_cache_start, enum_cache_start,
+                array_cache_start
             );
             return NULL;
         }
@@ -484,7 +493,8 @@ static const RudaManagedEnumDescriptor *ruda_bytecode_enum_descriptor(
             || variant->payload_count
                 > layout->payload_count - variant->payload_start) {
             ruda_bytecode_nominal_cache_rollback(
-                execution, record_cache_start, enum_cache_start
+                execution, record_cache_start, enum_cache_start,
+                array_cache_start
             );
             return NULL;
         }
@@ -498,7 +508,8 @@ static const RudaManagedEnumDescriptor *ruda_bytecode_enum_descriptor(
     );
     if (existing == NULL) {
         ruda_bytecode_nominal_cache_rollback(
-            execution, record_cache_start, enum_cache_start
+            execution, record_cache_start, enum_cache_start,
+            array_cache_start
         );
         return NULL;
     }
@@ -579,7 +590,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_nominal_value_validate(
         : RUDA_BYTECODE_RUN_INVALID_REFERENCE;
 }
 
-static RudaBytecodeRunStatus ruda_bytecode_value_to_nominal_cell(
+RudaBytecodeRunStatus ruda_bytecode_value_to_managed_cell(
     RudaBytecodeExecution *execution,
     const RudaBytecodeValue *value,
     RudaManagedCell *cell
@@ -610,7 +621,7 @@ static RudaBytecodeRunStatus ruda_bytecode_value_to_nominal_cell(
     return RUDA_BYTECODE_RUN_OK;
 }
 
-static RudaBytecodeRunStatus ruda_bytecode_nominal_cell_to_value(
+RudaBytecodeRunStatus ruda_bytecode_managed_cell_to_value(
     RudaBytecodeExecution *execution,
     RudaManagedCell cell,
     RudaBytecodeValue *value
@@ -658,7 +669,7 @@ RudaBytecodeRunStatus ruda_bytecode_execution_new_numeric_option(
     }
     memset(&cell, 0, sizeof(cell));
     if (some) {
-        status = ruda_bytecode_value_to_nominal_cell(
+        status = ruda_bytecode_value_to_managed_cell(
             execution, &payload, &cell
         );
         if (status != RUDA_BYTECODE_RUN_OK) {
@@ -789,7 +800,7 @@ static RudaBytecodeRunStatus ruda_bytecode_prepare_temporary_cells(
             : ((const RudaBytecodeEnumArgument *)ruda_vector_at_const(
                 &function->enum_arguments, argument_start + index
             ))->register_id;
-        RudaBytecodeRunStatus status = ruda_bytecode_value_to_nominal_cell(
+        RudaBytecodeRunStatus status = ruda_bytecode_value_to_managed_cell(
             execution, &registers[register_id], &temporary->cells[index]
         );
         if (status != RUDA_BYTECODE_RUN_OK) {
@@ -866,13 +877,13 @@ RudaBytecodeRunStatus ruda_bytecode_run_nominal_instruction(
             if (managed_status != RUDA_MANAGED_OK) {
                 return ruda_bytecode_run_managed_status(managed_status);
             }
-            return ruda_bytecode_nominal_cell_to_value(
+            return ruda_bytecode_managed_cell_to_value(
                 execution, cell, &registers[target]
             );
         }
         case RUDA_OPCODE_RECORD_SET: {
             RudaManagedCell cell;
-            RudaBytecodeRunStatus status = ruda_bytecode_value_to_nominal_cell(
+            RudaBytecodeRunStatus status = ruda_bytecode_value_to_managed_cell(
                 execution, &registers[target], &cell
             );
             if (status != RUDA_BYTECODE_RUN_OK) {
@@ -983,7 +994,7 @@ RudaBytecodeRunStatus ruda_bytecode_run_nominal_instruction(
             if (managed_status != RUDA_MANAGED_OK) {
                 return ruda_bytecode_run_managed_status(managed_status);
             }
-            return ruda_bytecode_nominal_cell_to_value(
+            return ruda_bytecode_managed_cell_to_value(
                 execution, cell, &registers[target]
             );
         }

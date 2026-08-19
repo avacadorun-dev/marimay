@@ -674,6 +674,12 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
             status = RUDA_BYTECODE_CODEC_LIMIT_REACHED;
             goto cleanup;
         }
+        if (generic_arrays && !ruda_vector_reserve(
+                &function.array_types, array_type_count
+            )) {
+            status = RUDA_BYTECODE_CODEC_ALLOCATION_FAILED;
+            goto cleanup;
+        }
         for (index = 0; generic_arrays && index < array_type_count;
             index += 1) {
             RudaBytecodeType element_type;
@@ -681,10 +687,6 @@ RudaBytecodeCodecStatus ruda_bytecode_decode_function(
             uint32_t array_layout = UINT32_MAX;
             status = ruda_bytecode_codec_decode_u64(&cursor, &value);
             if (status != RUDA_BYTECODE_CODEC_OK
-                || (value > RUDA_BYTECODE_TYPE_ARRAY
-                    && !ruda_bytecode_type_is_extended_scalar(
-                        (RudaBytecodeType)value
-                    ))
                 || !ruda_bytecode_type_is_register(
                     (RudaBytecodeType)value
                 )) {

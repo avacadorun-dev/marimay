@@ -18,6 +18,8 @@ typedef struct RudaCheckedRecord {
     RudaOwnedBytes name;
     RudaSymbolId symbol;
     RudaTypeId type;
+    /* Declaration-order generic parameter TypeIds for imported substitution. */
+    RudaVector type_parameters;
     RudaVector fields;
     bool is_public;
 } RudaCheckedRecord;
@@ -44,6 +46,8 @@ typedef struct RudaCheckedEnum {
     RudaOwnedBytes name;
     RudaSymbolId symbol;
     RudaTypeId type;
+    /* Declaration-order generic parameter TypeIds for imported substitution. */
+    RudaVector type_parameters;
     RudaVector variants;
     bool is_public;
 } RudaCheckedEnum;

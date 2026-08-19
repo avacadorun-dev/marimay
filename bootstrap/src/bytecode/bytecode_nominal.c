@@ -2,6 +2,13 @@
 
 #include "bytecode_internal.h"
 
+bool ruda_bytecode_type_requires_layout(RudaBytecodeType type) {
+    return type == RUDA_BYTECODE_TYPE_ARRAY
+        || type == RUDA_BYTECODE_TYPE_RECORD
+        || type == RUDA_BYTECODE_TYPE_ENUM
+        || type == RUDA_BYTECODE_TYPE_INTERFACE;
+}
+
 bool ruda_bytecode_type_layout_is_valid(
     const RudaBytecodeFunction *function,
     RudaBytecodeType type,

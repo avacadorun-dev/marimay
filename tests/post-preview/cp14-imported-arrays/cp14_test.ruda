@@ -1,0 +1,42 @@
+import {
+  aliasedArraysWork,
+  directArraysWork,
+  namespaceArraysWork,
+  relayArraysWork,
+  sameNamesStayDistinct,
+} from "example/cp14-imported-arrays/consumer";
+
+@test
+fn directImportsPreserveArrays(): void {
+  if !directArraysWork() {
+    panic("direct imported arrays changed");
+  }
+}
+
+@test
+fn namespaceImportsPreserveArrays(): void {
+  if !namespaceArraysWork() {
+    panic("namespace imported arrays changed");
+  }
+}
+
+@test
+fn aliasedImportsPreserveArrays(): void {
+  if !aliasedArraysWork() {
+    panic("aliased imported arrays changed");
+  }
+}
+
+@test
+fn publicAliasRelayPreservesArrays(): void {
+  if !relayArraysWork() {
+    panic("relayed imported arrays changed");
+  }
+}
+
+@test
+fn qualifiedSameNamesStayDistinct(): void {
+  if !sameNamesStayDistinct() {
+    panic("qualified imported array layouts collided");
+  }
+}

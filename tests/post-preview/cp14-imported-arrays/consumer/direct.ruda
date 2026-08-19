@@ -1,0 +1,28 @@
+import {
+  Scores,
+  makeBoxes,
+  makeMatrix,
+  makeScores,
+  makeUsers,
+  mutateBoxes,
+  mutateMatrix,
+  mutateScores,
+  mutateUsers,
+  scoreTotal,
+} from "example/cp14-imported-arrays/producer";
+
+public fn directArraysWork(): bool {
+  const scores: Scores = makeScores();
+  const scoreAlias = scores;
+  const changedScores = mutateScores(scores);
+  const matrix = mutateMatrix(makeMatrix());
+  const users = mutateUsers(makeUsers());
+  const userAlias = users[0];
+  const boxes = mutateBoxes(makeBoxes());
+  userAlias.value += 1;
+  return scoreAlias[0] == changedScores[0] && scores.length() == 3 && scores[0] == 11 && scoreTotal(
+    scores,
+  ) == 16 && matrix[0][1] == 5 && matrix[1].length() == 3 && users.length() == 3 && users[0].value == 19 && users[
+    2
+  ].value == 19 && boxes[0].value == 14;
+}

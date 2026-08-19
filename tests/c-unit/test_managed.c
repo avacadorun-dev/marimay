@@ -11,11 +11,13 @@ void ruda_test_managed_objects(void);
 
 static const RudaManagedArrayDescriptor ruda_test_managed_i64_descriptor = {
     RUDA_MANAGED_CELL_RAW64,
+    RUDA_MANAGED_OBJECT_INVALID,
     NULL
 };
 
 static const RudaManagedArrayDescriptor ruda_test_managed_recursive_descriptor = {
     RUDA_MANAGED_CELL_REFERENCE,
+    RUDA_MANAGED_OBJECT_ARRAY,
     &ruda_test_managed_recursive_descriptor
 };
 

@@ -229,7 +229,10 @@ bool ruda_checker_private_compile_io_call(
     );
     if (error_enum == NULL || result_enum == NULL
         || !ruda_checker_private_imported_enum_layout(
-            function, error_enum, &error_layout
+            function,
+            error_enum,
+            result_descriptor->arguments[1],
+            &error_layout
         )) {
         ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;

@@ -70,6 +70,23 @@ bool ruda_bytecode_program_same_type(
     if (left_type != right_type) {
         return false;
     }
+    if (left_type == RUDA_BYTECODE_TYPE_ARRAY) {
+        const RudaBytecodeArrayType *left = ruda_bytecode_array_type(
+            left_function, left_layout
+        );
+        const RudaBytecodeArrayType *right = ruda_bytecode_array_type(
+            right_function, right_layout
+        );
+        return left != NULL && right != NULL
+            && ruda_bytecode_program_same_type(
+                left_function,
+                left->element_type,
+                left->element_layout,
+                right_function,
+                right->element_type,
+                right->element_layout
+            );
+    }
     if (!nominal) {
         return left_layout == RUDA_BYTECODE_NO_LAYOUT
             && right_layout == RUDA_BYTECODE_NO_LAYOUT;

@@ -1,0 +1,7 @@
+@test
+fn privatePackageArrayFunctionWorks(): void {
+  const values = privateAdjust(makeScores());
+  if values[1] != 22 {
+    panic("private package array function changed");
+  }
+}

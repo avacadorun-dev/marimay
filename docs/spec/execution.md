@@ -103,12 +103,20 @@ A portable `.rudab` contains no native machine code. An FFI import marks a bundl
 
 New bundles that contain `Array<T>` use a canonical array-type table in the
 program type section. Each row stores the bytecode element type tag and either
-`NO_LAYOUT` for scalar elements or the index of the exact managed layout for a
-reference element. Array construction, access, and growth instructions carry
+`NO_LAYOUT` for scalar elements and the built-in canonical string descriptor,
+or the index of the exact array, record, enum, or interface layout for another
+managed reference element. Array construction, access, and growth instructions carry
 the row index through their verified function metadata. A source `RudaTypeId`,
 allocator address, descriptor pointer, or other host pointer is never written
 to the wire. The loader rejects an out-of-range row, a mismatched element
-layout, or a row that claims a scalar element with a managed layout.
+layout, a nominal/reference row without its required exact layout, or a row
+that claims a scalar or string element with a layout-table index.
+
+The row and every referenced nominal layout denote the same canonical,
+fully-qualified instantiated type in every function that transports it. A
+package call, result, public alias, or forwarding wrapper does not create a
+fresh array representation. Verification compares the complete recursive
+element/layout identity across call boundaries before execution.
 
 The two fixed f64 array tags are retained only as a compatibility decoder path
 for legacy f64-only preview bundles. They are not the representation of a new

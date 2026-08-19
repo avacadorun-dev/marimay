@@ -1,0 +1,5 @@
+import { readOutside } from "example/cp14-imported-arrays-bounds/producer";
+
+fn main(): void {
+  readOutside([1, 2]);
+}

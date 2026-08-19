@@ -680,10 +680,17 @@ separate, valid way to traverse an array when mutation is intentional.
 
 When a bytecode bundle contains a generic array, its portable representation
 uses a canonical array-type table. Each row contains the element bytecode type
-tag and, for a managed element, the referenced layout-table index; array
+tag and, for an array, record, enum, or interface element, the referenced
+layout-table index. The built-in canonical string descriptor uses `NO_LAYOUT`,
+as do scalar elements; array
 instructions refer to the row rather than serializing a source `TypeId` or a
 host pointer. The fixed `Array<f64>` preview tags remain a decoder-compatible
 legacy form only for old f64-only bundles.
+
+Across package calls, results, public aliases, and forwarding wrappers, the
+array row denotes the same fully-qualified instantiated element type and exact
+recursive managed layout. No package-boundary conversion or local nominal
+substitute is permitted.
 
 Reason: array construction, indexing, mutation, panic identity, and resource
 failure must agree in the MIR oracle, VM, and native engine. Leaving the index

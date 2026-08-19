@@ -271,7 +271,7 @@ bool ruda_checker_private_maybe_box_interface(
         } else if (imported_record != NULL) {
             RudaMirRecordId imported_layout = RUDA_MIR_NO_RECORD;
             if (!ruda_checker_private_imported_record_layout(
-                    function, imported_record, &imported_layout
+                    function, imported_record, result->type, &imported_layout
                 )) {
                 ruda_deallocate(&function->checker->result->allocator,
                     methods, bytes);
@@ -280,7 +280,7 @@ bool ruda_checker_private_maybe_box_interface(
         } else if (imported_enum != NULL) {
             RudaMirEnumId imported_layout = RUDA_MIR_NO_ENUM;
             if (!ruda_checker_private_imported_enum_layout(
-                    function, imported_enum, &imported_layout
+                    function, imported_enum, result->type, &imported_layout
                 )) {
                 ruda_deallocate(&function->checker->result->allocator,
                     methods, bytes);

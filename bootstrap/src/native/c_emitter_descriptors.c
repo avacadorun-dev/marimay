@@ -214,6 +214,14 @@ static bool ruda_native_c_layout_fields_supported(
     size_t count
 ) {
     size_t index = 0;
+    if (layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
+        const RudaMirArray *array = ruda_vector_at_const(
+            &layout.function->arrays, layout.index
+        );
+        return array != NULL && ruda_native_c_program_type_supported(
+            functions, count, array->element_type, false
+        );
+    }
     if (layout.kind == RUDA_NATIVE_C_MANAGED_RECORD) {
         const RudaMirRecord *record = ruda_vector_at_const(
             &layout.function->records, layout.index
@@ -413,6 +421,93 @@ static bool ruda_native_c_layout_is_canonical(
         && canonical.kind == layout.kind && canonical.index == layout.index;
 }
 
+static bool ruda_native_c_emit_array_element_descriptor(
+    RudaNativeCBuffer *buffer,
+    const RudaMirFunction *const *functions,
+    size_t count,
+    const RudaMirArray *array
+) {
+    RudaNativeCManagedLayout layout;
+    if (array == NULL) return false;
+    if (array->element_type == RUDA_TYPE_STRING) {
+        return ruda_native_c_write(
+            buffer,
+            "RUDA_MANAGED_CELL_REFERENCE, RUDA_MANAGED_OBJECT_STRING, NULL"
+        );
+    }
+    if (array->element_type < RUDA_TYPE_FIRST_DYNAMIC) {
+        return ruda_native_c_write(
+            buffer,
+            "RUDA_MANAGED_CELL_RAW64, RUDA_MANAGED_OBJECT_INVALID, NULL"
+        );
+    }
+    if (!ruda_native_c_find_managed_layout(
+            functions, count, array->element_type, &layout
+        )) return false;
+    if (layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
+        return ruda_native_c_write(
+            buffer,
+            "RUDA_MANAGED_CELL_REFERENCE, RUDA_MANAGED_OBJECT_ARRAY, %s",
+            ruda_native_c_array_descriptor(
+                layout.function, array->element_type
+            )
+        );
+    }
+    if (!ruda_native_c_write(
+            buffer,
+            "RUDA_MANAGED_CELL_REFERENCE, %s, &",
+            layout.kind == RUDA_NATIVE_C_MANAGED_RECORD
+                ? "RUDA_MANAGED_OBJECT_RECORD"
+                : (layout.kind == RUDA_NATIVE_C_MANAGED_ENUM
+                    ? "RUDA_MANAGED_OBJECT_ENUM"
+                    : "RUDA_MANAGED_OBJECT_INTERFACE")
+        ) || !ruda_native_c_write_descriptor_name(
+            buffer, layout.kind, array->element_type
+        )) return false;
+    return true;
+}
+
+static bool ruda_native_c_emit_nominal_forward_declarations(
+    RudaNativeCBuffer *buffer,
+    const RudaMirFunction *const *functions,
+    size_t count
+) {
+    RudaNativeCManagedKind kind = RUDA_NATIVE_C_MANAGED_RECORD;
+    size_t function_index = 0;
+    for (kind = RUDA_NATIVE_C_MANAGED_RECORD;
+        kind <= RUDA_NATIVE_C_MANAGED_INTERFACE; kind += 1) {
+        for (function_index = 0; function_index < count; function_index += 1) {
+            const RudaMirFunction *function = functions[function_index];
+            const RudaVector *layouts = kind == RUDA_NATIVE_C_MANAGED_RECORD
+                ? &function->records : (kind == RUDA_NATIVE_C_MANAGED_ENUM
+                    ? &function->enums : &function->interfaces);
+            size_t index = 0;
+            for (index = 0; index < layouts->length; index += 1) {
+                RudaTypeId type = kind == RUDA_NATIVE_C_MANAGED_RECORD
+                    ? ((const RudaMirRecord *)ruda_vector_at_const(
+                        layouts, index))->type
+                    : (kind == RUDA_NATIVE_C_MANAGED_ENUM
+                        ? ((const RudaMirEnum *)ruda_vector_at_const(
+                            layouts, index))->type
+                        : ((const RudaMirInterface *)ruda_vector_at_const(
+                            layouts, index))->type);
+                RudaNativeCManagedLayout layout = {function, kind, index};
+                const char *name = kind == RUDA_NATIVE_C_MANAGED_RECORD
+                    ? "Record" : (kind == RUDA_NATIVE_C_MANAGED_ENUM
+                        ? "Enum" : "Interface");
+                if (ruda_native_c_layout_is_canonical(
+                        functions, count, layout, type
+                    ) && (!ruda_native_c_write(
+                        buffer, "static const RudaManaged%sDescriptor ", name
+                    ) || !ruda_native_c_write_descriptor_name(
+                        buffer, kind, type
+                    ) || !ruda_native_c_write(buffer, ";\n"))) return false;
+            }
+        }
+    }
+    return true;
+}
+
 static bool ruda_native_c_emit_record_descriptor(
     RudaNativeCBuffer *buffer,
     const RudaMirFunction *const *functions,
@@ -567,7 +662,6 @@ bool ruda_native_c_emit_managed_descriptors(
     size_t count
 ) {
     size_t function_index = 0;
-    RudaNativeCManagedKind kind = RUDA_NATIVE_C_MANAGED_RECORD;
     for (function_index = 0; function_index < count; function_index += 1) {
         const RudaMirFunction *function = functions[function_index];
         size_t index = 0;
@@ -589,6 +683,9 @@ bool ruda_native_c_emit_managed_descriptors(
                 ))) return false;
         }
     }
+    if (!ruda_native_c_emit_nominal_forward_declarations(
+            buffer, functions, count
+        )) return false;
     for (function_index = 0; function_index < count; function_index += 1) {
         const RudaMirFunction *function = functions[function_index];
         size_t index = 0;
@@ -603,48 +700,14 @@ bool ruda_native_c_emit_managed_descriptors(
                     functions, count, layout, array->type
                 ) && ruda_native_c_array_kind(function, array->type)
                     == RUDA_NATIVE_C_ARRAY_GENERIC) {
-                bool reference = array->element_type >= RUDA_TYPE_FIRST_DYNAMIC;
                 if (!ruda_native_c_write(
                         buffer,
-                        "static const RudaManagedArrayDescriptor ruda_g_ad_%u = {%s, ",
-                        (unsigned int)array->type,
-                        reference ? "RUDA_MANAGED_CELL_REFERENCE"
-                            : "RUDA_MANAGED_CELL_RAW64"
+                        "static const RudaManagedArrayDescriptor ruda_g_ad_%u = {",
+                        (unsigned int)array->type
+                    ) || !ruda_native_c_emit_array_element_descriptor(
+                        buffer, functions, count, array
                     )) return false;
-                if (reference && !ruda_native_c_write(
-                        buffer, "&ruda_g_ad_%u", (unsigned int)array->element_type
-                    )) return false;
-                if (!reference && !ruda_native_c_write(buffer, "NULL")) {
-                    return false;
-                }
                 if (!ruda_native_c_write(buffer, "};\n")) return false;
-            }
-        }
-    }
-    for (kind = RUDA_NATIVE_C_MANAGED_RECORD;
-        kind <= RUDA_NATIVE_C_MANAGED_INTERFACE; kind += 1) {
-        for (function_index = 0; function_index < count; function_index += 1) {
-            const RudaMirFunction *function = functions[function_index];
-            const RudaVector *layouts = kind == RUDA_NATIVE_C_MANAGED_RECORD
-                ? &function->records : (kind == RUDA_NATIVE_C_MANAGED_ENUM
-                    ? &function->enums : &function->interfaces);
-            size_t index = 0;
-            for (index = 0; index < layouts->length; index += 1) {
-                RudaTypeId type = kind == RUDA_NATIVE_C_MANAGED_RECORD
-                    ? ((const RudaMirRecord *)ruda_vector_at_const(layouts, index))->type
-                    : (kind == RUDA_NATIVE_C_MANAGED_ENUM
-                        ? ((const RudaMirEnum *)ruda_vector_at_const(layouts, index))->type
-                        : ((const RudaMirInterface *)ruda_vector_at_const(layouts, index))->type);
-                RudaNativeCManagedLayout layout = {function, kind, index};
-                const char *name = kind == RUDA_NATIVE_C_MANAGED_RECORD
-                    ? "Record" : (kind == RUDA_NATIVE_C_MANAGED_ENUM
-                        ? "Enum" : "Interface");
-                if (ruda_native_c_layout_is_canonical(
-                        functions, count, layout, type
-                    ) && (!ruda_native_c_write(
-                        buffer, "static const RudaManaged%sDescriptor ", name
-                    ) || !ruda_native_c_write_descriptor_name(buffer, kind, type)
-                    || !ruda_native_c_write(buffer, ";\n"))) return false;
             }
         }
     }

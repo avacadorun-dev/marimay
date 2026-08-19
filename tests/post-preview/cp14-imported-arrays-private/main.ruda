@@ -1,0 +1,5 @@
+import { privateAdjust } from "example/cp14-imported-arrays-private/producer";
+
+fn main(): void {
+  privateAdjust([1, 2]);
+}

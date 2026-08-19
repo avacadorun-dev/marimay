@@ -21,7 +21,9 @@ These examples are executable specification fixtures once the parser exists. Unt
 - `local_packages.ruda` shows the D043 local-package surface: named type and
   function aliases, namespace qualification, direct dot calls, and structural
   interface conformance all resolve behavior owned by the imported nominal
-  package.
+  package. Its public `ImportedUsers` and `ImportedUserRows` aliases also show
+  canonical `Array<User>` transport through a package-owned wrapper without a
+  boundary conversion.
 - `array_checkpoint.ruda` checks the D045 array surface, including construction,
   mutation, checked indexed compound assignment, and nonmutating
   `for const item of array` traversal. The broader mutation-generation

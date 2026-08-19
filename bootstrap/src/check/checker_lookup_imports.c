@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "checker_core_api.h"
+#include "checker_generic_types_api.h"
 #include "checker_package_context.h"
 #include "ruda/generated/diagnostic_codes.h"
 
@@ -84,6 +85,7 @@ static bool ruda_import_surface_type(
     size_t name_length,
     RudaTypeId *type,
     RudaSymbolId *symbol,
+    size_t *generic_arity,
     bool *exists_private
 ) {
     size_t index = 0;
@@ -98,6 +100,7 @@ static bool ruda_import_surface_type(
             if (item->is_public) {
                 *type = item->type;
                 *symbol = item->symbol;
+                *generic_arity = item->type_parameters.length;
                 return true;
             }
             return false;
@@ -113,6 +116,7 @@ static bool ruda_import_surface_type(
             if (item->is_public) {
                 *type = item->type;
                 *symbol = item->symbol;
+                *generic_arity = item->type_parameters.length;
                 return true;
             }
             return false;
@@ -128,6 +132,7 @@ static bool ruda_import_surface_type(
             if (item->is_public) {
                 *type = item->type;
                 *symbol = item->symbol;
+                *generic_arity = 0;
                 return true;
             }
             return false;
@@ -143,12 +148,75 @@ static bool ruda_import_surface_type(
             if (item->is_public) {
                 *type = item->target_type;
                 *symbol = item->symbol;
+                *generic_arity = 0;
                 return true;
             }
             return false;
         }
     }
     return false;
+}
+
+static bool ruda_import_specialize_type(
+    RudaChecker *checker,
+    const RudaAstNode *type_node,
+    RudaSymbolId symbol,
+    size_t generic_arity,
+    RudaTypeId *type
+) {
+    const RudaAstNode *type_arguments =
+        ruda_checker_private_check_child_node(
+            type_node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0
+        );
+    RudaVector arguments;
+    bool initialized = false;
+    memset(&arguments, 0, sizeof(arguments));
+    if (type_arguments == NULL) {
+        if (generic_arity == 0) return true;
+        (void)ruda_checker_add_diagnostic(
+            checker,
+            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            "generic record or enum type requires explicit type arguments",
+            type_node->start,
+            type_node->end
+        );
+        *type = RUDA_TYPE_INVALID;
+        return !ruda_checker_has_failed(checker);
+    }
+    *type = RUDA_TYPE_INVALID;
+    if (!ruda_vector_init(
+            &arguments, checker->result->allocator, sizeof(RudaTypeId)
+        )) {
+        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        return false;
+    }
+    initialized = true;
+    if (!ruda_checker_private_parse_type_arguments(
+            checker, type_arguments, &arguments
+        )) goto cleanup;
+    if (generic_arity == 0 || arguments.length != generic_arity) {
+        (void)ruda_checker_add_diagnostic(
+            checker,
+            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            generic_arity == 0
+                ? "type does not accept generic arguments"
+                : "generic type argument count does not match its declaration",
+            type_node->start,
+            type_node->end
+        );
+        *type = RUDA_TYPE_INVALID;
+        goto cleanup;
+    }
+    if (!ruda_checker_private_intern_generic_nominal(
+            checker,
+            RUDA_TYPE_KIND_NOMINAL,
+            symbol,
+            &arguments,
+            type
+        )) goto cleanup;
+cleanup:
+    if (initialized) ruda_vector_dispose(&arguments);
+    return !ruda_checker_has_failed(checker) && *type != RUDA_TYPE_INVALID;
 }
 
 bool ruda_check_import_type(
@@ -166,6 +234,7 @@ bool ruda_check_import_type(
     const RudaCheckImportBinding *binding = NULL;
     const RudaCheckPackageSurface *surface = NULL;
     RudaSymbolId symbol;
+    size_t generic_arity = 0;
     bool exists_private = false;
     if (checker == NULL || type_node == NULL || type == NULL
         || resolved == NULL || checker->ast == NULL) {
@@ -199,10 +268,13 @@ bool ruda_check_import_type(
                 binding->original_length,
                 type,
                 &symbol,
+                &generic_arity,
                 &exists_private
             )) {
             *resolved = true;
-            return ruda_check_record_occurrence(
+            return ruda_import_specialize_type(
+                    checker, type_node, symbol, generic_arity, type
+                ) && ruda_check_record_occurrence(
                 checker,
                 (RudaCheckName){checker->ast->snapshot, first->start, first->end},
                 symbol
@@ -225,9 +297,12 @@ bool ruda_check_import_type(
             second_length,
             type,
             &symbol,
+            &generic_arity,
             &exists_private
         )) {
-        return ruda_check_record_occurrence(
+        return ruda_import_specialize_type(
+                checker, type_node, symbol, generic_arity, type
+            ) && ruda_check_record_occurrence(
             checker,
             (RudaCheckName){checker->ast->snapshot, second->start, second->end},
             symbol
@@ -284,7 +359,13 @@ bool ruda_check_imported_nominal(
                 const RudaCheckedRecord *item = ruda_checked_record(
                     checker->result, surface->record_start + index
                 );
-                if (item != NULL && item->is_public && item->type == type) {
+                if (item != NULL && item->is_public
+                    && ruda_checker_private_type_matches_nominal(
+                        checker,
+                        type,
+                        item->symbol,
+                        item->type_parameters.length
+                    )) {
                     *symbol = descriptor->symbol;
                     return true;
                 }
@@ -293,7 +374,13 @@ bool ruda_check_imported_nominal(
                 const RudaCheckedEnum *item = ruda_checked_enum(
                     checker->result, surface->enum_start + index
                 );
-                if (item != NULL && item->is_public && item->type == type) {
+                if (item != NULL && item->is_public
+                    && ruda_checker_private_type_matches_nominal(
+                        checker,
+                        type,
+                        item->symbol,
+                        item->type_parameters.length
+                    )) {
                     *symbol = descriptor->symbol;
                     return true;
                 }
@@ -503,7 +590,13 @@ const RudaCheckedRecord *ruda_check_imported_record_by_type(
             const RudaCheckedRecord *record = ruda_checked_record(
                 checker->result, surface->record_start + index
             );
-            if (record != NULL && record->is_public && record->type == type) {
+            if (record != NULL && record->is_public
+                && ruda_checker_private_type_matches_nominal(
+                    checker,
+                    type,
+                    record->symbol,
+                    record->type_parameters.length
+                )) {
                 return record;
             }
         }
@@ -529,7 +622,12 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_type(
                 checker->result, surface->enum_start + index
             );
             if (enum_value != NULL && enum_value->is_public
-                && enum_value->type == type) {
+                && ruda_checker_private_type_matches_nominal(
+                    checker,
+                    type,
+                    enum_value->symbol,
+                    enum_value->type_parameters.length
+                )) {
                 return enum_value;
             }
         }

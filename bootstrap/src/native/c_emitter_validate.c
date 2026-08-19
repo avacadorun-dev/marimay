@@ -55,13 +55,7 @@ RudaNativeCArrayKind ruda_native_c_array_kind(
     if (array->element_type == RUDA_TYPE_F64) {
         return RUDA_NATIVE_C_ARRAY_F64;
     }
-    if (array->element_type == RUDA_TYPE_STRING) {
-        return RUDA_NATIVE_C_ARRAY_UNSUPPORTED;
-    }
     element = ruda_native_c_array(function, array->element_type);
-    if (array->element_type >= RUDA_TYPE_FIRST_DYNAMIC && element == NULL) {
-        return RUDA_NATIVE_C_ARRAY_UNSUPPORTED;
-    }
     return element != NULL && element->element_type == RUDA_TYPE_F64
         ? RUDA_NATIVE_C_ARRAY_ARRAY_F64
         : RUDA_NATIVE_C_ARRAY_GENERIC;

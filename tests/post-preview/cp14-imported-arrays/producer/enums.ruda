@@ -1,0 +1,20 @@
+public enum Mark {
+  Low,
+  High(int),
+}
+
+public fn makeMarks(): Array<Mark> {
+  return [Mark.Low, Mark.High(13)];
+}
+
+public fn mutateAndScoreMarks(marks: Array<Mark>): int {
+  marks[0] = Mark.High(5);
+  return scoreMark(marks[0]) + scoreMark(marks[1]);
+}
+
+fn scoreMark(mark: Mark): int {
+  return match mark {
+    case Low => 0;
+    case High(value) => value;
+  };
+}

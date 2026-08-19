@@ -8,6 +8,7 @@ void ruda_test_native_baseline(void);
 void ruda_test_native_nominal_boundary(void);
 void ruda_test_native_nominal_differential(void);
 void ruda_test_native_import_differential(void);
+void ruda_test_native_imported_arrays(void);
 
 void ruda_test_native_c_emitter(void) {
     ruda_test_native_scalar_f64();
@@ -18,4 +19,5 @@ void ruda_test_native_c_emitter(void) {
     ruda_test_native_nominal_boundary();
     ruda_test_native_nominal_differential();
     ruda_test_native_import_differential();
+    ruda_test_native_imported_arrays();
 }

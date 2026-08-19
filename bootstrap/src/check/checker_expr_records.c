@@ -507,7 +507,7 @@ cleanup:
     }
     if (imported_record != NULL) {
         return ruda_checker_private_imported_record_layout(
-            function, imported_record, record
+            function, imported_record, receiver->type, record
         );
     }
     if ((*record_declaration)->is_generic) {
@@ -575,17 +575,31 @@ cleanup:
             )) {
             return false;
         }
-    return ruda_checker_private_function_emit_record_access(
-        function,
-        RUDA_MIR_RECORD_GET,
-        field_type,
-        receiver.register_id,
-        RUDA_MIR_NO_REGISTER,
-        record,
-        field_index,
-        node->start,
-        node->end,
-        result
-    );
+        if (imported_field != NULL) {
+            const RudaCheckedRecord *imported_record =
+                ruda_check_imported_record_by_type(
+                    function->checker, receiver.type
+                );
+            if (imported_record == NULL
+                || !ruda_checker_private_substitute_nominal_member_type(
+                    function,
+                    receiver.type,
+                    &imported_record->type_parameters,
+                    field_type,
+                    &field_type
+                )) return false;
+        }
+        return ruda_checker_private_function_emit_record_access(
+            function,
+            RUDA_MIR_RECORD_GET,
+            field_type,
+            receiver.register_id,
+            RUDA_MIR_NO_REGISTER,
+            record,
+            field_index,
+            node->start,
+            node->end,
+            result
+        );
     }
 }

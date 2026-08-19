@@ -36,10 +36,7 @@ bool ruda_bytecode_execution_init(
             &execution->managed_heap, allocator, options.managed_heap
         ) || !ruda_bytecode_nominal_cache_init(execution, allocator)
         || !ruda_vector_init(&execution->owned_interface_tables, allocator, sizeof(void *))
-        || !ruda_vector_init(
-            &execution->array_descriptors, allocator,
-            sizeof(RudaBytecodeArrayDescriptorEntry *)
-        )) {
+        || !ruda_bytecode_array_cache_init(execution, allocator)) {
         ruda_managed_heap_dispose(&execution->managed_heap);
         ruda_map_dispose(&execution->string_index);
         ruda_vector_dispose(&execution->strings);
@@ -70,142 +67,9 @@ void ruda_bytecode_execution_dispose(RudaBytecodeExecution *execution) {
     ruda_managed_heap_dispose(&execution->managed_heap);
     ruda_bytecode_nominal_cache_dispose(execution);
     ruda_bytecode_run_interface_tables_dispose(execution);
-    for (index = 0; index < execution->array_descriptors.length; index += 1) {
-        RudaBytecodeArrayDescriptorEntry **entry = ruda_vector_at(
-            &execution->array_descriptors, index
-        );
-        if (entry != NULL && *entry != NULL) {
-            ruda_deallocate(
-                &execution->allocator, (*entry)->descriptor,
-                sizeof(*(*entry)->descriptor)
-            );
-            ruda_deallocate(
-                &execution->allocator, *entry, sizeof(**entry)
-            );
-        }
-    }
-    ruda_vector_dispose(&execution->array_descriptors);
+    ruda_bytecode_array_cache_dispose(execution);
     ruda_test_output_dispose(&execution->test_output);
     memset(execution, 0, sizeof(*execution));
-}
-
-const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor(
-    RudaBytecodeType type
-) {
-    if (type == RUDA_BYTECODE_TYPE_ARRAY_F64) {
-        return &ruda_managed_array_f64_descriptor;
-    }
-    if (type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64) {
-        return &ruda_managed_array_array_f64_descriptor;
-    }
-    return NULL;
-}
-
-bool ruda_bytecode_managed_value_valid(
-    RudaBytecodeExecution *execution,
-    RudaBytecodeValue value
-) {
-    const RudaManagedArrayDescriptor *actual = NULL;
-    const RudaManagedArrayDescriptor *expected =
-        ruda_bytecode_array_descriptor(value.type);
-    return execution != NULL && execution->initialized && expected != NULL
-        && ruda_managed_array_describe(
-            &execution->managed_heap, value.as.managed_reference, &actual
-        ) == RUDA_MANAGED_OK && actual == expected;
-}
-
-const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    RudaBytecodeType type,
-    uint32_t layout
-) {
-    const RudaBytecodeArrayType *array_type = NULL;
-    size_t index = 0;
-    RudaBytecodeArrayDescriptorEntry *entry = NULL;
-    RudaManagedArrayDescriptor *descriptor = NULL;
-    RudaBytecodeType element_type = RUDA_BYTECODE_TYPE_INVALID;
-    uint32_t element_layout = RUDA_BYTECODE_NO_LAYOUT;
-    if (type != RUDA_BYTECODE_TYPE_ARRAY) {
-        return ruda_bytecode_array_descriptor(type);
-    }
-    if (execution == NULL || !execution->initialized || function == NULL) {
-        return NULL;
-    }
-    array_type = ruda_bytecode_array_type(function, layout);
-    if (array_type == NULL) {
-        return NULL;
-    }
-    element_type = array_type->element_type;
-    element_layout = array_type->element_layout;
-    for (index = 0; index < execution->array_descriptors.length; index += 1) {
-        RudaBytecodeArrayDescriptorEntry **stored = ruda_vector_at(
-            &execution->array_descriptors, index
-        );
-        if (stored != NULL && *stored != NULL
-            && (*stored)->element_type == element_type
-            && (*stored)->element_layout == element_layout) {
-            return (*stored)->descriptor;
-        }
-    }
-    entry = ruda_allocate(
-        &execution->allocator, sizeof(*entry)
-    );
-    descriptor = ruda_allocate(
-        &execution->allocator, sizeof(*descriptor)
-    );
-    if (entry == NULL || descriptor == NULL) {
-        execution->array_descriptor_allocation_failed = true;
-        ruda_deallocate(&execution->allocator, descriptor, sizeof(*descriptor));
-        ruda_deallocate(&execution->allocator, entry, sizeof(*entry));
-        return NULL;
-    }
-    memset(entry, 0, sizeof(*entry));
-    memset(descriptor, 0, sizeof(*descriptor));
-    entry->element_type = element_type;
-    entry->element_layout = element_layout;
-    entry->descriptor = descriptor;
-    if (ruda_bytecode_type_is_array(element_type)) {
-        descriptor->cell_kind = RUDA_MANAGED_CELL_REFERENCE;
-        descriptor->reference_type = ruda_bytecode_array_descriptor_for(
-            execution, function, element_type, element_layout
-        );
-    } else if (element_type < RUDA_BYTECODE_TYPE_STRING
-        || element_type == RUDA_BYTECODE_TYPE_F64) {
-        descriptor->cell_kind = RUDA_MANAGED_CELL_RAW64;
-    } else {
-        /* String/nominal reference encodings need a managed host value. */
-        descriptor->cell_kind = RUDA_MANAGED_CELL_REFERENCE;
-        descriptor->reference_type = NULL;
-    }
-    if ((descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE
-            && descriptor->reference_type == NULL)
-        || !ruda_vector_push(&execution->array_descriptors, &entry)) {
-        execution->array_descriptor_allocation_failed = true;
-        ruda_deallocate(
-            &execution->allocator, descriptor, sizeof(*descriptor)
-        );
-        ruda_deallocate(&execution->allocator, entry, sizeof(*entry));
-        return NULL;
-    }
-    return descriptor;
-}
-
-bool ruda_bytecode_managed_value_valid_for(
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    RudaBytecodeValue value,
-    uint32_t layout
-) {
-    const RudaManagedArrayDescriptor *actual = NULL;
-    const RudaManagedArrayDescriptor *expected =
-        ruda_bytecode_array_descriptor_for(
-            execution, function, value.type, layout
-        );
-    return execution != NULL && execution->initialized && expected != NULL
-        && ruda_managed_array_describe(
-            &execution->managed_heap, value.as.managed_reference, &actual
-        ) == RUDA_MANAGED_OK && actual == expected;
 }
 
 bool ruda_bytecode_execution_string_bytes(
@@ -568,9 +432,14 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                 )
                 : NULL;
             RudaManagedCell *cells = NULL;
+            RudaManagedReference **cell_locations = NULL;
+            RudaManagedRootFrame cell_roots;
             size_t cell_bytes = 0;
+            size_t location_bytes = 0;
             size_t index = 0;
             RudaManagedStatus managed_status;
+            bool cells_rooted = false;
+            memset(&cell_roots, 0, sizeof(cell_roots));
             if (execution == NULL || descriptor == NULL
                 || construction->argument_count
                     > execution->options.managed_heap.max_array_length
@@ -595,21 +464,73 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             if (construction->argument_count != 0 && cells == NULL) {
                 return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
             }
+            if (descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE
+                && construction->argument_count != 0) {
+                if (!ruda_size_multiply(
+                        construction->argument_count,
+                        sizeof(*cell_locations),
+                        &location_bytes
+                    )) {
+                    ruda_deallocate(&allocator, cells, cell_bytes);
+                    return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+                }
+                cell_locations = ruda_allocate(&allocator, location_bytes);
+                if (cell_locations == NULL) {
+                    ruda_deallocate(&allocator, cells, cell_bytes);
+                    return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+                }
+                for (index = 0; index < construction->argument_count;
+                    index += 1) {
+                    cells[index].reference = ruda_managed_invalid_reference();
+                    cell_locations[index] = &cells[index].reference;
+                }
+                managed_status = ruda_managed_root_push(
+                    &execution->managed_heap,
+                    &cell_roots,
+                    cell_locations,
+                    construction->argument_count
+                );
+                if (managed_status != RUDA_MANAGED_OK) {
+                    ruda_deallocate(
+                        &allocator, cell_locations, location_bytes
+                    );
+                    ruda_deallocate(&allocator, cells, cell_bytes);
+                    return ruda_bytecode_run_managed_status(managed_status);
+                }
+                cells_rooted = true;
+            }
             for (index = 0; index < construction->argument_count; index += 1) {
                 const RudaBytecodeArrayArgument *argument =
                     ruda_bytecode_array_argument(
                         function, construction->argument_start + index
                     );
                 if (argument == NULL) {
+                    if (cells_rooted) (void)ruda_managed_root_pop(
+                        &execution->managed_heap, &cell_roots
+                    );
+                    ruda_deallocate(
+                        &allocator, cell_locations, location_bytes
+                    );
                     ruda_deallocate(&allocator, cells, cell_bytes);
                     return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
                 }
-                if (descriptor->cell_kind == RUDA_MANAGED_CELL_RAW64) {
-                    cells[index].f64_bits =
-                        registers[argument->register_id].as.f64_bits;
-                } else {
-                    cells[index].reference =
-                        registers[argument->register_id].as.managed_reference;
+                {
+                    RudaBytecodeRunStatus cell_status =
+                        ruda_bytecode_value_to_managed_cell(
+                            execution,
+                            &registers[argument->register_id],
+                            &cells[index]
+                        );
+                    if (cell_status != RUDA_BYTECODE_RUN_OK) {
+                        if (cells_rooted) (void)ruda_managed_root_pop(
+                            &execution->managed_heap, &cell_roots
+                        );
+                        ruda_deallocate(
+                            &allocator, cell_locations, location_bytes
+                        );
+                        ruda_deallocate(&allocator, cells, cell_bytes);
+                        return cell_status;
+                    }
                 }
             }
             managed_status = ruda_managed_array_new(
@@ -617,6 +538,15 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                 construction->argument_count,
                 &registers[target].as.managed_reference
             );
+            if (cells_rooted) {
+                RudaManagedStatus pop_status = ruda_managed_root_pop(
+                    &execution->managed_heap, &cell_roots
+                );
+                if (managed_status == RUDA_MANAGED_OK) {
+                    managed_status = pop_status;
+                }
+            }
+            ruda_deallocate(&allocator, cell_locations, location_bytes);
             ruda_deallocate(&allocator, cells, cell_bytes);
             return ruda_bytecode_run_managed_status(managed_status);
         }
@@ -640,11 +570,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                     ? RUDA_BYTECODE_RUN_ALLOCATION_FAILED
                     : RUDA_BYTECODE_RUN_INVALID_REFERENCE;
             }
-            memset(&cell, 0, sizeof(cell));
-            if (descriptor->cell_kind == RUDA_MANAGED_CELL_RAW64) {
-                cell.f64_bits = registers[value].as.f64_bits;
-            } else {
-                cell.reference = registers[value].as.managed_reference;
+            {
+                RudaBytecodeRunStatus cell_status =
+                    ruda_bytecode_value_to_managed_cell(
+                        execution, &registers[value], &cell
+                    );
+                if (cell_status != RUDA_BYTECODE_RUN_OK) return cell_status;
             }
             managed_status = ruda_managed_array_push(
                 &execution->managed_heap,
@@ -720,13 +651,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             }
             if (instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_INDEX) {
                 registers[target] = registers[first];
-            } else if (ruda_bytecode_array_descriptor_for(
-                    execution, function, registers[first].type,
-                    ruda_bytecode_register_layout(function, (uint32_t)first)
-                )->cell_kind == RUDA_MANAGED_CELL_RAW64) {
-                registers[target].as.f64_bits = cell.f64_bits;
             } else {
-                registers[target].as.managed_reference = cell.reference;
+                RudaBytecodeRunStatus cell_status =
+                    ruda_bytecode_managed_cell_to_value(
+                        execution, cell, &registers[target]
+                    );
+                if (cell_status != RUDA_BYTECODE_RUN_OK) return cell_status;
             }
             return RUDA_BYTECODE_RUN_OK;
         }
@@ -757,10 +687,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             if (descriptor == NULL) {
                 return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
             }
-            if (descriptor->cell_kind == RUDA_MANAGED_CELL_RAW64) {
-                cell.f64_bits = registers[value].as.f64_bits;
-            } else {
-                cell.reference = registers[value].as.managed_reference;
+            {
+                RudaBytecodeRunStatus cell_status =
+                    ruda_bytecode_value_to_managed_cell(
+                        execution, &registers[value], &cell
+                    );
+                if (cell_status != RUDA_BYTECODE_RUN_OK) return cell_status;
             }
             managed_status = execution != NULL
                 ? ruda_managed_array_set(

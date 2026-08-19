@@ -1,6 +1,7 @@
 #include "checker_declaration_lifecycle_api.h"
 #include "package_imports_api.h"
 #include "checker_core_api.h"
+#include "checker_generic_types_api.h"
 
  void ruda_checker_private_function_declaration_dispose(
     RudaCheckFunctionDeclaration *declaration
@@ -301,6 +302,13 @@ void ruda_checker_private_interface_declaration_dispose(
         RUDA_SYNTAX_TYPE_ARGUMENTS,
         0
     );
+    if (ruda_checker_private_find_type_parameter(checker, name) != NULL) {
+        if (type_arguments != NULL) {
+            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            return false;
+        }
+        return true;
+    }
     if (ruda_checker_private_check_text_equal(
             checker,
             name.start,

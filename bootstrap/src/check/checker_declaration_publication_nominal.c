@@ -30,6 +30,13 @@
             return false;
         }
         if (!ruda_vector_init(
+                &record.type_parameters,
+                checker->result->allocator,
+                sizeof(RudaTypeId)
+            ) || !ruda_vector_reserve(
+                &record.type_parameters,
+                declaration->type_parameters.length
+            ) || !ruda_vector_init(
                 &record.fields,
                 checker->result->allocator,
                 sizeof(RudaCheckedRecordField)
@@ -47,6 +54,21 @@
         record.symbol = declaration->symbol;
         record.type = declaration->type;
         record.is_public = declaration->is_public;
+        for (field_index = 0;
+            field_index < declaration->type_parameters.length;
+            field_index += 1) {
+            const RudaCheckTypeParameterDeclaration *parameter =
+                ruda_vector_at_const(
+                    &declaration->type_parameters, field_index
+                );
+            if (parameter == NULL || !ruda_vector_push(
+                    &record.type_parameters, &parameter->type
+                )) {
+                ruda_checked_record_value_dispose(&record);
+                ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+                return false;
+            }
+        }
         for (field_index = 0; field_index < declaration->fields.length;
             field_index += 1) {
             RudaCheckRecordFieldDeclaration *source = ruda_vector_at(
@@ -108,6 +130,13 @@
             return false;
         }
         if (!ruda_vector_init(
+                &enum_value.type_parameters,
+                checker->result->allocator,
+                sizeof(RudaTypeId)
+            ) || !ruda_vector_reserve(
+                &enum_value.type_parameters,
+                declaration->type_parameters.length
+            ) || !ruda_vector_init(
                 &enum_value.variants,
                 checker->result->allocator,
                 sizeof(RudaCheckedEnumVariant)
@@ -125,6 +154,21 @@
         enum_value.symbol = declaration->symbol;
         enum_value.type = declaration->type;
         enum_value.is_public = declaration->is_public;
+        for (variant_index = 0;
+            variant_index < declaration->type_parameters.length;
+            variant_index += 1) {
+            const RudaCheckTypeParameterDeclaration *parameter =
+                ruda_vector_at_const(
+                    &declaration->type_parameters, variant_index
+                );
+            if (parameter == NULL || !ruda_vector_push(
+                    &enum_value.type_parameters, &parameter->type
+                )) {
+                ruda_checked_enum_value_dispose(&enum_value);
+                ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+                return false;
+            }
+        }
         for (variant_index = 0; variant_index < declaration->variants.length;
             variant_index += 1) {
             RudaCheckEnumVariantDeclaration *source_variant = ruda_vector_at(

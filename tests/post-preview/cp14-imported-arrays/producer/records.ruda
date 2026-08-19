@@ -1,0 +1,28 @@
+public type User {
+  public mutable value: int;
+}
+
+public type Box<T> {
+  public mutable value: T;
+}
+
+public type Users = Array<User>;
+
+public fn makeUsers(): Users {
+  return [User { value: 7 }, User { value: 11 }];
+}
+
+public fn mutateUsers(users: Users): Users {
+  users[0].value += users[1].value;
+  users.push(users[0]);
+  return users;
+}
+
+public fn makeBoxes(): Array<Box<int>> {
+  return [Box { value: 5 }, Box { value: 9 }];
+}
+
+public fn mutateBoxes(boxes: Array<Box<int>>): Array<Box<int>> {
+  boxes[0].value += boxes[1].value;
+  return boxes;
+}

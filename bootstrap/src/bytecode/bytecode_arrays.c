@@ -29,8 +29,10 @@ bool ruda_bytecode_add_array_type(
     size_t index = 0;
     if (function == NULL || !function->initialized || result == NULL
         || !ruda_bytecode_type_is_register(element_type)
-        || (ruda_bytecode_type_is_array(element_type)
-            ? element_layout >= function->array_types.length
+        || (element_type == RUDA_BYTECODE_TYPE_ARRAY
+            && element_layout >= function->array_types.length)
+        || (ruda_bytecode_type_requires_layout(element_type)
+            ? element_layout == RUDA_BYTECODE_NO_LAYOUT
             : element_layout != RUDA_BYTECODE_NO_LAYOUT)
         || function->array_types.length >= UINT32_MAX) {
         return false;

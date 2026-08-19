@@ -7,6 +7,7 @@ void ruda_test_mir_calls_arithmetic(RudaSymbolId symbol);
 void ruda_test_mir_records_identity(RudaSymbolId symbol);
 void ruda_test_mir_enums_projection(RudaSymbolId symbol);
 void ruda_test_mir_strings_f64(RudaSymbolId symbol);
+void ruda_test_mir_imported_arrays(void);
 
 void ruda_test_mir(void) {
     RudaSymbolId symbol;
@@ -24,4 +25,5 @@ void ruda_test_mir(void) {
     ruda_test_mir_enums_projection(symbol);
     ruda_test_mir_strings_f64(symbol);
     ruda_test_mir_arrays(symbol);
+    ruda_test_mir_imported_arrays();
 }

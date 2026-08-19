@@ -1,0 +1,15 @@
+import { Scores, makeScores, mutateScores } from "example/cp14-imported-arrays/producer";
+
+public type RelayedScores = Scores;
+
+public fn makeRelayedScores(): RelayedScores {
+  return makeScores();
+}
+
+public fn relay(values: RelayedScores): RelayedScores {
+  return values;
+}
+
+public fn mutateRelayed(values: RelayedScores): RelayedScores {
+  return mutateScores(relay(values));
+}

@@ -52,5 +52,6 @@ void ruda_test_checker_limits_are_failure_atomic(void);
 void ruda_test_checker_allocation_failures(void);
 void ruda_test_checker_package_allocation_failures(void);
 void ruda_test_checker_witness_allocation_failures(void);
+void ruda_test_checker_imported_arrays(void);
 
 #endif

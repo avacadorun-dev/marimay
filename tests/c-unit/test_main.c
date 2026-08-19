@@ -23,6 +23,7 @@ void ruda_test_cli_build_profiles(void);
 void ruda_test_cli_check(void);
 void ruda_test_cli_run(void);
 void ruda_test_cli_test(void);
+void ruda_test_cli_cp14_imported_arrays(void);
 void ruda_test_compiler_service(void);
 void ruda_test_compiler_service_incremental(void);
 void ruda_test_compiler_service_queries(void);
@@ -121,6 +122,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_cli_check();
     ruda_test_cli_run();
     ruda_test_cli_test();
+    ruda_test_cli_cp14_imported_arrays();
     if (ruda_test_failure_count() != 0) {
         fprintf(stderr, "ruda_c_unit: %d failure(s)\n", ruda_test_failure_count());
         return 1;

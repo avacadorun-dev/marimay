@@ -1,0 +1,9 @@
+public type Row {
+  public mutable right: string;
+}
+
+public type Rows = Array<Row>;
+
+public fn makeRows(): Rows {
+  return [Row { right: "beta" }];
+}

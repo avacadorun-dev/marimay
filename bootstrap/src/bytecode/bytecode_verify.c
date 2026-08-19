@@ -111,6 +111,26 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
     register_count = function->register_types.length;
     block_count = function->blocks.length;
     {
+        size_t array_index = 0;
+        for (array_index = 0; array_index < function->array_types.length;
+            array_index += 1) {
+            const RudaBytecodeArrayType *array_type =
+                ruda_bytecode_array_type(function, (uint32_t)array_index);
+            if (array_type == NULL
+                || !ruda_bytecode_type_layout_is_valid(
+                    function,
+                    array_type->element_type,
+                    array_type->element_layout
+                ) || (array_type->element_type == RUDA_BYTECODE_TYPE_ARRAY
+                    && array_type->element_layout >= array_index)) {
+                return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+            }
+            if (!ruda_bytecode_consume_verify_work(&work, 1, work_limit)) {
+                return RUDA_BYTECODE_VERIFY_LIMIT_REACHED;
+            }
+        }
+    }
+    {
         size_t construction_index = 0;
         size_t expected_argument_start = 0;
         for (construction_index = 0;

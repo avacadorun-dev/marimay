@@ -7,11 +7,13 @@
 
 const RudaManagedArrayDescriptor ruda_managed_array_f64_descriptor = {
     RUDA_MANAGED_CELL_RAW64,
+    RUDA_MANAGED_OBJECT_INVALID,
     NULL
 };
 
 const RudaManagedArrayDescriptor ruda_managed_array_array_f64_descriptor = {
     RUDA_MANAGED_CELL_REFERENCE,
+    RUDA_MANAGED_OBJECT_ARRAY,
     &ruda_managed_array_f64_descriptor
 };
 
@@ -421,25 +423,33 @@ static RudaManagedStatus ruda_managed_validate_cells(
     const RudaManagedCell *cells,
     size_t length
 ) {
+    RudaManagedFieldDescriptor element;
     size_t index = 0;
     if (descriptor == NULL
         || (descriptor->cell_kind != RUDA_MANAGED_CELL_RAW64
             && descriptor->cell_kind != RUDA_MANAGED_CELL_REFERENCE)
         || (descriptor->cell_kind == RUDA_MANAGED_CELL_RAW64
-            && descriptor->reference_type != NULL)
+            && (descriptor->reference_kind != RUDA_MANAGED_OBJECT_INVALID
+                || descriptor->reference_descriptor != NULL))
         || (descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE
-            && descriptor->reference_type == NULL)) {
+            && (descriptor->reference_kind == RUDA_MANAGED_OBJECT_INVALID
+                || (descriptor->reference_kind
+                        == RUDA_MANAGED_OBJECT_STRING
+                    ? descriptor->reference_descriptor != NULL
+                    : descriptor->reference_descriptor == NULL)))) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
     if (cells == NULL && length != 0) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
     if (descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
+        element.cell_kind = descriptor->cell_kind;
+        element.is_mutable = true;
+        element.reference_kind = descriptor->reference_kind;
+        element.reference_descriptor = descriptor->reference_descriptor;
         for (index = 0; index < length; index += 1) {
-            RudaManagedStatus status = ruda_managed_reference_status(
-                heap,
-                cells[index].reference,
-                descriptor->reference_type
+            RudaManagedStatus status = ruda_managed_validate_field(
+                heap, &element, cells[index]
             );
             if (status != RUDA_MANAGED_OK) {
                 return status;
@@ -742,11 +752,13 @@ RudaManagedStatus ruda_managed_array_set(
     }
     resolved = ruda_managed_resolve(heap, array)->as.array;
     if (resolved->descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
-        status = ruda_managed_reference_status(
-            heap,
-            value.reference,
-            resolved->descriptor->reference_type
-        );
+        RudaManagedFieldDescriptor element = {
+            RUDA_MANAGED_CELL_REFERENCE,
+            true,
+            resolved->descriptor->reference_kind,
+            resolved->descriptor->reference_descriptor
+        };
+        status = ruda_managed_validate_field(heap, &element, value);
         if (status != RUDA_MANAGED_OK) {
             return status;
         }
@@ -800,11 +812,13 @@ RudaManagedStatus ruda_managed_array_push(
     }
     resolved = slot->as.array;
     if (resolved->descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
-        status = ruda_managed_reference_status(
-            heap,
-            value.reference,
-            resolved->descriptor->reference_type
-        );
+        RudaManagedFieldDescriptor element = {
+            RUDA_MANAGED_CELL_REFERENCE,
+            true,
+            resolved->descriptor->reference_kind,
+            resolved->descriptor->reference_descriptor
+        };
+        status = ruda_managed_validate_field(heap, &element, value);
         if (status != RUDA_MANAGED_OK) {
             return status;
         }

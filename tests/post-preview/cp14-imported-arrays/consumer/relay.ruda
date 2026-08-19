@@ -1,0 +1,7 @@
+import { RelayedScores, makeRelayedScores, mutateRelayed } from "example/cp14-imported-arrays/relay";
+
+public fn relayArraysWork(): bool {
+  const scores: RelayedScores = makeRelayedScores();
+  const changed = mutateRelayed(scores);
+  return scores[0] == changed[0] && changed[0] == 11 && changed.length() == 3;
+}

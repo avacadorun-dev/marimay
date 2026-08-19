@@ -1,6 +1,7 @@
 #include "ruda/bytecode/mir_lower.h"
 
 #include "mir_lower_internal.h"
+#include "bytecode_internal.h"
 
 #include <limits.h>
 #include <stdlib.h>
@@ -601,6 +602,12 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
             generic_arrays = true;
         }
     }
+    if (generic_arrays && !ruda_vector_reserve(
+            &lowered.array_types, input->arrays.length
+        )) {
+        status = RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+        goto cleanup;
+    }
     for (index = 0; index < input->arrays.length; index += 1) {
         const RudaMirArray *array = ruda_vector_at_const(
             &input->arrays, index
@@ -613,7 +620,7 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
         }
         if (array == NULL || !ruda_mir_bytecode_type(
                 input, array->element_type, false, false, &element_type
-            ) || (element_type == RUDA_BYTECODE_TYPE_ARRAY
+            ) || (ruda_bytecode_type_requires_layout(element_type)
                 && (array_layout = ruda_mir_bytecode_layout_for_type(
                     input, array->element_type
                 )) == RUDA_BYTECODE_NO_LAYOUT)

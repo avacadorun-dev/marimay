@@ -1,0 +1,21 @@
+import { Error as IoError, println } from "std/io";
+
+import {
+  aliasedArraysWork,
+  directArraysWork,
+  namespaceArraysWork,
+  relayArraysWork,
+  sameNamesStayDistinct,
+} from "example/cp14-imported-arrays/consumer";
+
+fn importedArraysWork(): bool {
+  return directArraysWork() && namespaceArraysWork() && aliasedArraysWork() && relayArraysWork() && sameNamesStayDistinct();
+}
+
+fn main(): Result<void, IoError> {
+  if !importedArraysWork() {
+    panic("checkpoint 14 imported arrays changed");
+  }
+  println("cp14 imported arrays ok")?;
+  return Ok();
+}

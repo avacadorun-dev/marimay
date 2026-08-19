@@ -15,6 +15,7 @@ add_executable(ruda_c_unit
   test_bytecode_program_nominal.c
   test_bytecode_verify_provenance.c
   test_bytecode_verify_nominal_matrix.c
+  test_bytecode_imported_arrays.c
   test_bytecode_vm.c
   test_bytecode_vm_support.c
   test_bytecode_vm_scalar.c
@@ -37,6 +38,8 @@ add_executable(ruda_c_unit
   test_checker_generics.c
   test_checker_generics_imports.c
   test_checker_imports_support.c
+  test_checker_imported_arrays.c
+  test_imported_arrays_support.c
   test_checker_nested_patterns.c
   test_checker_enum_match.c
   test_checker_match_scalar.c
@@ -56,6 +59,7 @@ add_executable(ruda_c_unit
   test_cli_check.c
   test_cli_run.c
   test_cli_test.c
+  test_cli_cp14_imported_arrays.c
   test_compiler_service.c
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
@@ -83,6 +87,7 @@ add_executable(ruda_c_unit
   test_mir.c
   test_mir_arrays.c
   test_mir_arrays_rhs.c
+  test_mir_imported_arrays.c
   test_mir_bytecode.c
   test_mir_bytecode_model.c
   test_mir_bytecode_programs.c
@@ -101,6 +106,7 @@ add_executable(ruda_c_unit
   test_native_c_emitter_generics.c
   test_native_c_emitter_nominal_differential.c
   test_native_c_emitter_imports.c
+  test_native_c_emitter_imported_arrays.c
   test_native_c_emitter_scalar.c
   test_native_c_emitter_strings.c
   test_native_c_emitter_support.c
@@ -170,6 +176,9 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity" DESTINATION "${CM
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity-nul" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../run" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../preview/checkpoint12" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays-private" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays-bounds" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY
   "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
   "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"

@@ -1,6 +1,18 @@
 import { Level, User, score as scoreFree } from "acme/store";
 import * as store from "acme/store";
 
+public type ImportedUsers = Array<User>;
+
+public type ImportedUserRows = Array<Array<User>>;
+
+public fn relayUsers(users: ImportedUsers): ImportedUsers {
+  return users;
+}
+
+public fn relayUserRows(rows: ImportedUserRows): ImportedUserRows {
+  return rows;
+}
+
 interface Scored {
   score(): int;
 }

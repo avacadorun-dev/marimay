@@ -11,12 +11,6 @@ typedef struct RudaBytecodeManagedRoots {
     size_t location_bytes;
 } RudaBytecodeManagedRoots;
 
-typedef struct RudaBytecodeArrayDescriptorEntry {
-    RudaBytecodeType element_type;
-    uint32_t element_layout;
-    RudaManagedArrayDescriptor *descriptor;
-} RudaBytecodeArrayDescriptorEntry;
-
 bool ruda_bytecode_managed_value_valid(RudaBytecodeExecution *execution,
     RudaBytecodeValue value);
 bool ruda_bytecode_managed_value_valid_for(
@@ -25,6 +19,16 @@ bool ruda_bytecode_managed_value_valid_for(
 const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor(
     RudaBytecodeType type);
 const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(
+    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
+    RudaBytecodeType type, uint32_t layout);
+bool ruda_bytecode_array_cache_init(
+    RudaBytecodeExecution *execution, RudaAllocator allocator);
+void ruda_bytecode_array_cache_dispose(RudaBytecodeExecution *execution);
+void ruda_bytecode_array_cache_rollback(
+    RudaBytecodeExecution *execution, size_t length);
+RudaManagedObjectKind ruda_bytecode_nominal_object_kind(
+    RudaBytecodeType type);
+const void *ruda_bytecode_nominal_reference_descriptor(
     RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
     RudaBytecodeType type, uint32_t layout);
 RudaBytecodeRunStatus ruda_bytecode_run_managed_status(
@@ -42,6 +46,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_nominal_descriptor(
 RudaBytecodeRunStatus ruda_bytecode_run_nominal_value_validate(
     RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
     RudaBytecodeValue value, RudaBytecodeType type, uint32_t layout);
+RudaBytecodeRunStatus ruda_bytecode_value_to_managed_cell(
+    RudaBytecodeExecution *execution, const RudaBytecodeValue *value,
+    RudaManagedCell *cell);
+RudaBytecodeRunStatus ruda_bytecode_managed_cell_to_value(
+    RudaBytecodeExecution *execution, RudaManagedCell cell,
+    RudaBytecodeValue *value);
 RudaBytecodeRunStatus ruda_bytecode_run_nominal_instruction(
     const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
     RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,

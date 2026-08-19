@@ -1,0 +1,7 @@
+import { Scores as ImportedScores, makeScores as createScores, mutateScores as amendScores } from "example/cp14-imported-arrays/producer";
+
+public fn aliasedArraysWork(): bool {
+  const scores: ImportedScores = createScores();
+  const amended = amendScores(scores);
+  return scores[0] == amended[0] && amended[0] == 11 && amended.length() == 3;
+}

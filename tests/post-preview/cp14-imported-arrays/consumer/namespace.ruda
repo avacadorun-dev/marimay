@@ -1,0 +1,7 @@
+import * as producer from "example/cp14-imported-arrays/producer";
+
+public fn namespaceArraysWork(): bool {
+  const marks = producer.makeMarks();
+  const names = producer.extendNames(producer.makeNames());
+  return producer.mutateAndScoreMarks(marks) == 18 && marks.length() == 2 && names.length() == 3;
+}

@@ -268,10 +268,19 @@ static bool ruda_checker_private_substitution_lookup(
         return false;
     }
     for (index = 0; index < parameters->length; index += 1) {
-        const RudaCheckTypeParameterDeclaration *parameter =
-            ruda_vector_at_const(parameters, index);
+        const void *parameter = ruda_vector_at_const(parameters, index);
         const RudaTypeId *argument = ruda_vector_at_const(arguments, index);
-        if (parameter != NULL && argument != NULL && parameter->type == type) {
+        RudaTypeId parameter_type = RUDA_TYPE_INVALID;
+        if (parameter != NULL
+            && parameters->element_size == sizeof(RudaTypeId)) {
+            parameter_type = *(const RudaTypeId *)parameter;
+        } else if (parameter != NULL
+            && parameters->element_size
+                == sizeof(RudaCheckTypeParameterDeclaration)) {
+            parameter_type =
+                ((const RudaCheckTypeParameterDeclaration *)parameter)->type;
+        }
+        if (argument != NULL && parameter_type == type) {
             *result = *argument;
             return true;
         }

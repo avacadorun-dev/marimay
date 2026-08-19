@@ -1,12 +1,14 @@
 #include "checker_imported_nominal_api.h"
 
 #include "checker_core_api.h"
+#include "checker_generic_types_api.h"
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
 
 bool ruda_checker_private_imported_record_layout(
     RudaFunctionChecker *function,
     const RudaCheckedRecord *record,
+    RudaTypeId type,
     RudaMirRecordId *layout
 ) {
     RudaMirRecordField *fields = NULL;
@@ -38,11 +40,21 @@ bool ruda_checker_private_imported_record_layout(
             ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
             return false;
         }
-        fields[index].type = field->type;
+        if (!ruda_checker_private_substitute_nominal_member_type(
+                function,
+                type,
+                &record->type_parameters,
+                field->type,
+                &fields[index].type
+            )) {
+            ruda_deallocate(&function->checker->result->allocator,
+                fields, bytes);
+            return false;
+        }
         fields[index].is_mutable = field->is_mutable;
     }
     if (!ruda_mir_add_record(
-            &function->mir, record->type, fields, record->fields.length, layout
+            &function->mir, type, fields, record->fields.length, layout
         )) {
         ruda_deallocate(&function->checker->result->allocator, fields, bytes);
         ruda_checker_fail(function->checker, RUDA_CHECK_ALLOCATION_FAILED);
@@ -55,6 +67,7 @@ bool ruda_checker_private_imported_record_layout(
 bool ruda_checker_private_imported_enum_layout(
     RudaFunctionChecker *function,
     const RudaCheckedEnum *enum_value,
+    RudaTypeId type,
     RudaMirEnumId *layout
 ) {
     RudaMirEnumVariant *variants = NULL;
@@ -136,12 +149,18 @@ bool ruda_checker_private_imported_enum_layout(
                     RUDA_CHECK_INTERNAL_ERROR);
                 goto cleanup;
             }
-            payloads[payload_cursor].type = item->type;
+            if (!ruda_checker_private_substitute_nominal_member_type(
+                    function,
+                    type,
+                    &enum_value->type_parameters,
+                    item->type,
+                    &payloads[payload_cursor].type
+                )) goto cleanup;
             payload_cursor += 1;
         }
     }
     if (!ruda_mir_add_enum_with_symbol(
-            &function->mir, enum_value->symbol, enum_value->type, variants,
+            &function->mir, enum_value->symbol, type, variants,
             enum_value->variants.length, payloads, payload_count, layout
         )) {
         ruda_checker_fail(function->checker, RUDA_CHECK_ALLOCATION_FAILED);
@@ -156,10 +175,26 @@ cleanup:
     return accepted;
 }
 
-static bool ruda_checker_private_function_ensure_nominal_type(
-    RudaFunctionChecker *function,
+static bool ruda_checker_private_layout_is_visiting(
+    const RudaVector *visiting,
     RudaTypeId type
 ) {
+    size_t index = 0;
+    for (index = 0; visiting != NULL && index < visiting->length; index += 1) {
+        const RudaTypeId *item = ruda_vector_at_const(visiting, index);
+        if (item != NULL && *item == type) return true;
+    }
+    return false;
+}
+
+static bool ruda_checker_private_ensure_layout_closure(
+    RudaFunctionChecker *function,
+    RudaTypeId type,
+    RudaVector *visiting
+) {
+    const RudaTypeDescriptor *descriptor = ruda_type_descriptor(
+        &function->checker->result->types, type
+    );
     RudaCheckRecordDeclaration *record =
         ruda_checker_private_checker_find_record_by_type(
             function->checker, type
@@ -174,60 +209,151 @@ static bool ruda_checker_private_function_ensure_nominal_type(
     const RudaCheckedEnum *imported_enum = record == NULL
             && enum_value == NULL && imported_record == NULL
         ? ruda_check_imported_enum_by_type(function->checker, type) : NULL;
+    bool accepted = true;
+    if (type < RUDA_TYPE_FIRST_DYNAMIC) return true;
+    if (descriptor == NULL) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        return false;
+    }
+    if (ruda_checker_private_layout_is_visiting(visiting, type)) return true;
+    if (!ruda_vector_push(visiting, &type)) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_ALLOCATION_FAILED);
+        return false;
+    }
+    if (descriptor->kind == RUDA_TYPE_KIND_ARRAY) {
+        RudaMirArrayId layout = RUDA_MIR_NO_ARRAY;
+        if (descriptor->argument_count != 1
+            || !ruda_array_layout(function, type, &layout)
+            || !ruda_checker_private_ensure_layout_closure(
+                function, descriptor->arguments[0], visiting
+            )) accepted = false;
+        goto cleanup;
+    }
     if (record != NULL) {
         RudaMirRecordId layout = RUDA_MIR_NO_RECORD;
-        return ruda_checker_private_function_record_layout(
-            function, record, &layout
-        );
-    }
-    if (enum_value != NULL) {
+        RudaCheckRecordDeclaration concrete = *record;
+        const RudaMirRecord *mir_record = NULL;
+        size_t field_index = 0;
+        if (record->is_generic) concrete.type = type;
+        if (!ruda_checker_private_function_record_layout(
+                function, &concrete, &layout
+            )) accepted = false;
+        mir_record = accepted
+            ? ruda_vector_at_const(&function->mir.records, layout) : NULL;
+        for (field_index = 0; accepted && mir_record != NULL
+            && field_index < mir_record->field_count; field_index += 1) {
+            const RudaMirRecordField *field = ruda_vector_at_const(
+                &function->mir.record_fields,
+                mir_record->field_start + field_index
+            );
+            if (field == NULL || !ruda_checker_private_ensure_layout_closure(
+                    function, field->type, visiting
+                )) accepted = false;
+        }
+    } else if (enum_value != NULL) {
         RudaMirEnumId layout = RUDA_MIR_NO_ENUM;
         RudaCheckEnumDeclaration concrete = *enum_value;
+        const RudaMirEnum *mir_enum = NULL;
+        size_t payload_index = 0;
         if (enum_value->is_generic) {
             concrete.type = type;
         }
-        return ruda_checker_private_function_enum_layout(
-            function, &concrete, &layout
-        );
-    }
-    if (imported_record != NULL) {
+        if (!ruda_checker_private_function_enum_layout(
+                function, &concrete, &layout
+            )) accepted = false;
+        mir_enum = accepted
+            ? ruda_vector_at_const(&function->mir.enums, layout) : NULL;
+        for (payload_index = 0; accepted && mir_enum != NULL
+            && payload_index < mir_enum->payload_count; payload_index += 1) {
+            const RudaMirEnumPayload *payload = ruda_vector_at_const(
+                &function->mir.enum_payloads,
+                mir_enum->payload_start + payload_index
+            );
+            if (payload == NULL || !ruda_checker_private_ensure_layout_closure(
+                    function, payload->type, visiting
+                )) accepted = false;
+        }
+    } else if (imported_record != NULL) {
         RudaMirRecordId layout = RUDA_MIR_NO_RECORD;
-        return ruda_checker_private_imported_record_layout(
-            function, imported_record, &layout
-        );
-    }
-    if (imported_enum != NULL) {
+        const RudaMirRecord *mir_record = NULL;
+        size_t field_index = 0;
+        if (!ruda_checker_private_imported_record_layout(
+                function, imported_record, type, &layout
+            )) accepted = false;
+        mir_record = accepted
+            ? ruda_vector_at_const(&function->mir.records, layout) : NULL;
+        for (field_index = 0; accepted && mir_record != NULL
+            && field_index < mir_record->field_count; field_index += 1) {
+            const RudaMirRecordField *field = ruda_vector_at_const(
+                &function->mir.record_fields,
+                mir_record->field_start + field_index
+            );
+            if (field == NULL || !ruda_checker_private_ensure_layout_closure(
+                    function, field->type, visiting
+                )) accepted = false;
+        }
+    } else if (imported_enum != NULL) {
         RudaMirEnumId layout = RUDA_MIR_NO_ENUM;
-        return ruda_checker_private_imported_enum_layout(
-            function, imported_enum, &layout
-        );
+        const RudaMirEnum *mir_enum = NULL;
+        size_t payload_index = 0;
+        if (!ruda_checker_private_imported_enum_layout(
+                function, imported_enum, type, &layout
+            )) accepted = false;
+        mir_enum = accepted
+            ? ruda_vector_at_const(&function->mir.enums, layout) : NULL;
+        for (payload_index = 0; accepted && mir_enum != NULL
+            && payload_index < mir_enum->payload_count; payload_index += 1) {
+            const RudaMirEnumPayload *payload = ruda_vector_at_const(
+                &function->mir.enum_payloads,
+                mir_enum->payload_start + payload_index
+            );
+            if (payload == NULL || !ruda_checker_private_ensure_layout_closure(
+                    function, payload->type, visiting
+                )) accepted = false;
+        }
     }
-    return true;
+cleanup:
+    visiting->length -= 1;
+    return accepted;
 }
 
 bool ruda_checker_private_function_ensure_nominal_layouts(
     RudaFunctionChecker *function
 ) {
+    RudaVector visiting;
     size_t index = 0;
-    if (function == NULL || !function->mir.initialized
-        || !ruda_checker_private_function_ensure_nominal_type(
-            function, function->mir.result_type
-        )) {
+    bool accepted = false;
+    memset(&visiting, 0, sizeof(visiting));
+    if (function == NULL || !function->mir.initialized) {
         return false;
     }
+    if (!ruda_vector_init(
+            &visiting,
+            function->checker->result->allocator,
+            sizeof(RudaTypeId)
+        )) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_ALLOCATION_FAILED);
+        return false;
+    }
+    if (!ruda_checker_private_ensure_layout_closure(
+            function, function->mir.result_type, &visiting
+        )) goto cleanup;
     for (index = 0; index < function->mir.register_types.length; index += 1) {
         const RudaTypeId *type = ruda_vector_at_const(
             &function->mir.register_types, index
         );
-        if (type == NULL || !ruda_checker_private_function_ensure_nominal_type(
-                function, *type
+        if (type == NULL || !ruda_checker_private_ensure_layout_closure(
+                function, *type, &visiting
             )) {
             if (type == NULL) {
                 ruda_checker_fail(function->checker,
                     RUDA_CHECK_INTERNAL_ERROR);
             }
-            return false;
+            goto cleanup;
         }
     }
-    return true;
+    accepted = true;
+cleanup:
+    ruda_vector_dispose(&visiting);
+    return accepted;
 }

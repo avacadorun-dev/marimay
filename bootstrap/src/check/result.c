@@ -196,6 +196,7 @@ void ruda_checked_record_value_dispose(RudaCheckedRecord *record) {
         }
     }
     ruda_vector_dispose(&record->fields);
+    ruda_vector_dispose(&record->type_parameters);
     ruda_owned_bytes_dispose(&record->name);
     memset(record, 0, sizeof(*record));
 }
@@ -236,6 +237,7 @@ void ruda_checked_enum_value_dispose(RudaCheckedEnum *enum_value) {
         ruda_checked_enum_variant_value_dispose(variant);
     }
     ruda_vector_dispose(&enum_value->variants);
+    ruda_vector_dispose(&enum_value->type_parameters);
     ruda_owned_bytes_dispose(&enum_value->name);
     memset(enum_value, 0, sizeof(*enum_value));
 }

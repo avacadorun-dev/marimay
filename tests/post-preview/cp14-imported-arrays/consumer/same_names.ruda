@@ -1,0 +1,10 @@
+import * as alpha from "example/cp14-imported-arrays/alpha";
+import * as beta from "example/cp14-imported-arrays/beta";
+
+public fn sameNamesStayDistinct(): bool {
+  const alphaRows: alpha.Rows = alpha.makeRows();
+  const betaRows: beta.Rows = beta.makeRows();
+  alphaRows[0].left += 4;
+  betaRows[0].right = "distinct";
+  return alphaRows[0].left == 7 && betaRows.length() == 1;
+}

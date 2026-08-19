@@ -6,13 +6,16 @@
 /*
  * Exact array type identity is the descriptor address. Descriptors are
  * immutable and must outlive every heap object created from them. Reference
- * descriptors name the one exact array type accepted by each element; this
- * represents arbitrary nested and recursive Array<T> graphs without teaching
- * the collector one enum value per source type.
+ * descriptors name the one exact managed object type accepted by each
+ * element. Strings use kind STRING and a null descriptor; every other
+ * reference kind carries the exact child descriptor address. This represents
+ * arbitrary nested and recursive Array<T> graphs without teaching the
+ * collector one enum value per source type.
  */
 typedef struct RudaManagedArrayDescriptor {
     RudaManagedCellKind cell_kind;
-    const struct RudaManagedArrayDescriptor *reference_type;
+    RudaManagedObjectKind reference_kind;
+    const void *reference_descriptor;
 } RudaManagedArrayDescriptor;
 
 /* Canonical descriptors used by the f64 preview surface. */

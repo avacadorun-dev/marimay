@@ -246,6 +246,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/mir_lower.c
   bootstrap/src/bytecode/mir_lower_nominal.c
   bootstrap/src/bytecode/vm.c
+  bootstrap/src/bytecode/vm_array.c
   bootstrap/src/bytecode/vm_defer.c
   bootstrap/src/bytecode/vm_interface.c
   bootstrap/src/bytecode/vm_io.c

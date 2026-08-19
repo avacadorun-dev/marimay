@@ -147,6 +147,14 @@ public fn findUser(id: int): Result<User, StoreError> {
 
 Record fields are package-private unless marked `public`. Interface call signatures are public by definition. A public declaration must not expose a package-private type in its signature.
 
+A type in a public signature crosses a package boundary as the same canonical,
+fully qualified type after aliases are resolved. Generic arguments are part of
+that identity. In particular, `Array<T>` in an imported parameter or result
+retains the exact canonical `T` and its recursive managed layout; the caller
+and callee do not insert package-specific array or element conversions. A
+public alias may expose another spelling of that same type, and a public
+wrapper may forward it, but an import does not itself re-export a name.
+
 Importing a package does not execute initialization code. Top-level values are immutable `const` declarations whose initializers must be compile-time constant expressions. Runtime initialization is explicit in functions.
 
 ## 4. Bindings and assignment

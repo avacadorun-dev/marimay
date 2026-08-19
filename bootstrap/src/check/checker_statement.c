@@ -3,8 +3,10 @@
 #include "checker_defer_api.h"
 #include "checker_expr_records_api.h"
 #include "checker_expr_scalar_api.h"
+#include "checker_generic_types_api.h"
 #include "checker_lookup_api.h"
 #include "checker_match_pattern_api.h"
+#include "package_imports_api.h"
 
 
 
@@ -245,9 +247,30 @@ bool ruda_compound_assignment_kind(
         return true;
     }
     (void)receiver_node;
-    (void)record_declaration;
     field_type = field_declaration != NULL ? field_declaration->type
         : imported_field->type;
+    if (record_declaration != NULL && record_declaration->is_generic
+        && !ruda_checker_private_substitute_nominal_member_type(
+            function,
+            receiver.type,
+            &record_declaration->type_parameters,
+            field_type,
+            &field_type
+        )) return false;
+    if (imported_field != NULL) {
+        const RudaCheckedRecord *imported_record =
+            ruda_check_imported_record_by_type(
+                function->checker, receiver.type
+            );
+        if (imported_record == NULL
+            || !ruda_checker_private_substitute_nominal_member_type(
+                function,
+                receiver.type,
+                &imported_record->type_parameters,
+                field_type,
+                &field_type
+            )) return false;
+    }
     if ((field_declaration != NULL && !field_declaration->is_mutable)
         || (imported_field != NULL && !imported_field->is_mutable)) {
         (void)ruda_checker_add_diagnostic(

@@ -14,6 +14,7 @@ bool ruda_bytecode_type_is_signed_integer(RudaBytecodeType type);
 bool ruda_bytecode_type_is_extended_scalar(RudaBytecodeType type);
 bool ruda_bytecode_type_is_array(RudaBytecodeType type);
 bool ruda_bytecode_type_is_managed(RudaBytecodeType type);
+bool ruda_bytecode_type_requires_layout(RudaBytecodeType type);
 RudaBytecodeType ruda_bytecode_array_element_type(RudaBytecodeType array_type);
 RudaBytecodeType ruda_bytecode_function_array_element_type(
     const RudaBytecodeFunction *function,

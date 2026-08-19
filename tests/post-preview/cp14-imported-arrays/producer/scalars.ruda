@@ -1,0 +1,36 @@
+public type Scores = Array<int>;
+
+public type Matrix = Array<Array<int>>;
+
+public fn makeScores(): Scores {
+  return [1, 2];
+}
+
+public fn mutateScores(values: Scores): Scores {
+  values[0] += 10;
+  values.push(3);
+  return values;
+}
+
+public fn scoreTotal(values: Scores): int {
+  let total = 0;
+  for const value of values {
+    total += value;
+  }
+  return total;
+}
+
+public fn makeMatrix(): Matrix {
+  return [[1, 2], [3, 4]];
+}
+
+public fn mutateMatrix(values: Matrix): Matrix {
+  values[0][1] += values[1][0];
+  values[1].push(5);
+  return values;
+}
+
+fn privateAdjust(values: Scores): Scores {
+  values[1] += 20;
+  return values;
+}
