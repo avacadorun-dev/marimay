@@ -420,7 +420,7 @@ RudaNativeRuntimeArtifactStatus ruda_native_runtime_artifact_select(
 ) {
     RudaNativeRuntimePaths configured;
     RudaNativeRuntimePaths installed_paths;
-    RudaOwnedBytes installed_owned[6] = {{0}};
+    RudaOwnedBytes installed_owned[6];
     bool present = false;
     RudaNativeRuntimeArtifactStatus status;
     if (artifact == NULL || (profile != RUDA_NATIVE_RUNTIME_DEBUG
@@ -428,6 +428,7 @@ RudaNativeRuntimeArtifactStatus ruda_native_runtime_artifact_select(
         return RUDA_NATIVE_RUNTIME_ARTIFACT_INVALID_ARGUMENT;
     }
     memset(artifact, 0, sizeof(*artifact));
+    memset(installed_owned, 0, sizeof(installed_owned));
     if (override_paths != NULL) {
         if (override_paths->archive == NULL
             || override_paths->manifest == NULL
