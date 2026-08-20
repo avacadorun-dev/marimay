@@ -1,0 +1,3 @@
+enum Choice<T>{None,Some(T),}
+enum Problem{Missing,}
+fn nested(values:Array<int>):Result<Choice<Array<int>>,Problem>{return Ok(Choice.Some(values));}

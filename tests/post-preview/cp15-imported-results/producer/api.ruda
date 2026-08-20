@@ -1,0 +1,29 @@
+public enum Choice<T> {
+  None,
+  Some(T),
+}
+
+public enum Problem {
+  Missing,
+  Rejected(int),
+}
+
+public fn some(values: Array<int>): Result<Choice<Array<int>>, Problem> {
+  return Ok<Choice<Array<int>>, Problem>(Choice.Some(values));
+}
+
+public fn none(): Result<Choice<Array<int>>, Problem> {
+  return Ok(Choice.None);
+}
+
+public fn failure(): Result<Choice<Array<int>>, Problem> {
+  return Err<Choice<Array<int>>, Problem>(Problem.Rejected(9));
+}
+
+public fn nestedSome(values: Array<int>): Result<Option<Array<int>>, Problem> {
+  return Ok<Option<Array<int>>, Problem>(Some(values));
+}
+
+public fn nestedNone(): Result<Option<Array<int>>, Problem> {
+  return Ok(None<Array<int>>());
+}

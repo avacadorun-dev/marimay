@@ -1,0 +1,37 @@
+import { namespaceShadowingWorks } from "example/cp15-imported-results/collision";
+import { directResultsWork, errorPropagationWorks, namespaceResultsWork, relayedResultsWork } from "example/cp15-imported-results/consumer";
+
+@test
+fn importedGenericEnumsWork(): void {
+  if !directResultsWork() {
+    panic("imported generic enum test changed");
+  }
+}
+
+@test
+fn importedErrorPropagationWorks(): void {
+  if !errorPropagationWorks() {
+    panic("imported result error propagation changed");
+  }
+}
+
+@test
+fn namespaceGenericEnumsWork(): void {
+  if !namespaceResultsWork() {
+    panic("namespace imported generic enum test changed");
+  }
+}
+
+@test
+fn namespaceShadowingDoesNotCaptureEnum(): void {
+  if !namespaceShadowingWorks() {
+    panic("qualified imported enum resolved through a local short name");
+  }
+}
+
+@test
+fn relayedGenericEnumsWork(): void {
+  if !relayedResultsWork() {
+    panic("relayed imported generic enum test changed");
+  }
+}

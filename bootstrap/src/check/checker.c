@@ -9,6 +9,7 @@
 #include "checker_declaration_records_api.h"
 #include "checker_publication_api.h"
 #include "checker_prelude_api.h"
+#include "checker_imported_enums_api.h"
 #include "package_imports_api.h"
 
  int ruda_checker_private_check_compare_ast_paths(const void *left, const void *right) {
@@ -265,7 +266,8 @@ RudaCheckStatus ruda_checker_check_package_unit(
         || !record_declarations_initialized
         || !enum_declarations_initialized || !interface_declarations_initialized
         || !top_level_index_initialized || !local_nominal_index_initialized
-        || !callable_index_initialized) {
+        || !callable_index_initialized
+        || !ruda_checker_private_imported_enums_init(&checker)) {
         ruda_checker_private_checker_dispose_declarations(&checker);
         ruda_check_result_dispose(result);
         ruda_vector_dispose(&sorted_asts);

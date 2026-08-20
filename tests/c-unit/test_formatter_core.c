@@ -168,6 +168,10 @@ void ruda_test_formatter_fixture_file(void) {
             "format/generics.expected.ruda"
         },
         {
+            "format/nested-generics.input.ruda",
+            "format/nested-generics.expected.ruda"
+        },
+        {
             "format/numeric-widths.input.ruda",
             "format/numeric-widths.expected.ruda"
         },

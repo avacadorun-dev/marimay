@@ -57,6 +57,33 @@
     ));
 }
 
+static bool ruda_checker_private_match_witness_append_declared_name(
+    RudaChecker *checker,
+    RudaVector *buffer,
+    RudaCheckName name,
+    const RudaOwnedBytes *owned_name
+) {
+    const unsigned char *bytes = NULL;
+    size_t length = 0;
+    size_t displayed = 0;
+    if (ruda_checker_private_check_name_bytes(name, &bytes, &length)) {
+        return ruda_checker_private_match_witness_append_name(
+            checker, buffer, name
+        );
+    }
+    if (owned_name == NULL || owned_name->data == NULL) {
+        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        return false;
+    }
+    displayed = owned_name->length < 64 ? owned_name->length : 64;
+    return ruda_checker_private_match_witness_append(
+        checker, buffer, owned_name->data, displayed
+    ) && (displayed == owned_name->length
+        || ruda_checker_private_match_witness_append_text(
+            checker, buffer, "..."
+        ));
+}
+
  bool ruda_checker_private_match_witness_append_size(
     RudaChecker *checker,
     RudaVector *buffer,
@@ -106,10 +133,12 @@
 ) {
     size_t payload_index = 0;
     size_t displayed_payloads = 0;
-    if (variant == NULL || !ruda_checker_private_match_witness_append_name(
+    if (variant == NULL
+        || !ruda_checker_private_match_witness_append_declared_name(
             checker,
             buffer,
-            variant->name
+            variant->name,
+            &variant->owned_name
         )) {
         if (variant == NULL) {
             ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
@@ -163,10 +192,11 @@
                     checker,
                     buffer,
                     ", "
-                )) || !ruda_checker_private_match_witness_append_name(
+                )) || !ruda_checker_private_match_witness_append_declared_name(
                     checker,
                     buffer,
-                    payload->name
+                    payload->name,
+                    &payload->owned_name
                 ) || !ruda_checker_private_match_witness_append_text(
                     checker,
                     buffer,

@@ -3,6 +3,7 @@
 #include "checker_expr_records_api.h"
 #include "checker_lookup_api.h"
 #include "checker_generic_types_api.h"
+#include "package_imports_api.h"
 
 
 
@@ -12,6 +13,7 @@
  bool ruda_checker_private_resolve_enum_member(
     RudaFunctionChecker *function,
     const RudaAstNode *member_node,
+    RudaTypeId expected,
     RudaCheckEnumDeclaration **enum_declaration,
     RudaCheckEnumVariantDeclaration **variant_declaration,
     size_t *variant_index,
@@ -23,6 +25,11 @@
     RudaCheckTypeAliasDeclaration *alias = NULL;
     RudaCheckName type_name;
     RudaCheckName variant_name;
+    RudaCheckName namespace_name;
+    const RudaCheckedEnum *imported = NULL;
+    bool has_namespace = false;
+    bool import_resolved = false;
+    bool exists_private = false;
     if (function == NULL || enum_declaration == NULL
         || variant_declaration == NULL || variant_index == NULL
         || resolved == NULL) {
@@ -35,16 +42,43 @@
     *variant_declaration = NULL;
     *variant_index = 0;
     *resolved = false;
-    if (!ruda_checker_private_member_parts(member_node, &receiver_node, &variant_token)
-        || receiver_node == NULL
-        || receiver_node->kind != RUDA_SYNTAX_NAME_EXPRESSION) {
+    if (!ruda_checker_private_member_parts(
+            member_node, &receiver_node, &variant_token
+        ) || receiver_node == NULL) {
         return true;
     }
-    type_token = ruda_checker_private_check_child_token(
-        receiver_node,
-        RUDA_TOKEN_IDENTIFIER,
-        0
-    );
+    memset(&namespace_name, 0, sizeof(namespace_name));
+    if (receiver_node->kind == RUDA_SYNTAX_NAME_EXPRESSION) {
+        type_token = ruda_checker_private_check_child_token(
+            receiver_node, RUDA_TOKEN_IDENTIFIER, 0
+        );
+    } else if (receiver_node->kind == RUDA_SYNTAX_MEMBER_EXPRESSION) {
+        const RudaAstNode *namespace_node = NULL;
+        if (!ruda_checker_private_member_parts(
+                receiver_node, &namespace_node, &type_token
+            ) || namespace_node == NULL
+            || namespace_node->kind != RUDA_SYNTAX_NAME_EXPRESSION) {
+            return true;
+        }
+        {
+            const RudaSyntaxToken *namespace_token =
+                ruda_checker_private_check_child_token(
+                    namespace_node, RUDA_TOKEN_IDENTIFIER, 0
+                );
+            if (namespace_token == NULL || namespace_token->synthetic) {
+                ruda_checker_fail(
+                    function->checker, RUDA_CHECK_INVALID_ARGUMENT
+                );
+                return false;
+            }
+            namespace_name.snapshot = function->checker->ast->snapshot;
+            namespace_name.start = namespace_token->start;
+            namespace_name.end = namespace_token->end;
+            has_namespace = true;
+        }
+    } else {
+        return true;
+    }
     if (type_token == NULL || type_token->synthetic || variant_token == NULL
         || variant_token->synthetic) {
         ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
@@ -53,14 +87,19 @@
     type_name.snapshot = function->checker->ast->snapshot;
     type_name.start = type_token->start;
     type_name.end = type_token->end;
-    if (ruda_checker_private_function_find_local(function, type_name) != NULL) {
+    if (!has_namespace
+        && ruda_checker_private_function_find_local(
+            function, type_name
+        ) != NULL) {
         return true;
     }
-    *enum_declaration = ruda_checker_private_checker_find_enum(
-        function->checker,
-        type_name
-    );
-    if (*enum_declaration == NULL) {
+    if (!has_namespace) {
+        *enum_declaration = ruda_checker_private_checker_find_enum(
+            function->checker,
+            type_name
+        );
+    }
+    if (!has_namespace && *enum_declaration == NULL) {
         alias = ruda_checker_private_checker_find_type_alias(function->checker, type_name);
         if (alias != NULL && ruda_checker_private_evaluate_type_alias(
                 function->checker,
@@ -75,7 +114,75 @@
         }
     }
     if (*enum_declaration == NULL) {
-        return !ruda_checker_has_failed(function->checker);
+        imported = ruda_check_imported_enum_by_name(
+            function->checker,
+            namespace_name,
+            has_namespace,
+            type_name,
+            &import_resolved,
+            &exists_private
+        );
+        if (import_resolved && imported == NULL) {
+            *resolved = true;
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                exists_private ? RUDA_DIAGNOSTIC_PRIVATE_IMPORT
+                    : RUDA_DIAGNOSTIC_UNKNOWN_IMPORT,
+                exists_private ? "imported enum type is package-private"
+                    : "unknown public enum type in imported package",
+                type_name.start,
+                type_name.end
+            );
+            return false;
+        }
+        if (imported == NULL) {
+            return !ruda_checker_has_failed(function->checker);
+        }
+        if (imported->type_parameters.length != 0) {
+            const RudaTypeDescriptor *descriptor = expected == RUDA_TYPE_INVALID
+                ? NULL : ruda_type_descriptor(
+                    &function->checker->result->types, expected
+                );
+            if (descriptor == NULL
+                || descriptor->kind != RUDA_TYPE_KIND_NOMINAL
+                || !ruda_symbol_id_equal(descriptor->symbol, imported->symbol)
+                || descriptor->argument_count
+                    != imported->type_parameters.length) {
+                *resolved = true;
+                (void)ruda_checker_add_diagnostic(
+                    function->checker,
+                    RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                    "generic imported enum constructor requires an expected concrete enum type",
+                    type_name.start,
+                    type_name.end
+                );
+                return false;
+            }
+        } else if (expected != RUDA_TYPE_INVALID
+            && expected != imported->type) {
+            *resolved = true;
+            (void)ruda_checker_add_diagnostic(
+                function->checker,
+                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                "imported enum constructor result type does not match the expected type",
+                type_name.start,
+                type_name.end
+            );
+            return false;
+        }
+        *enum_declaration =
+            ruda_checker_private_checker_find_enum_by_type(
+                function->checker,
+                imported->type_parameters.length != 0 ? expected : imported->type
+            );
+        if (*enum_declaration == NULL) {
+            if (!ruda_checker_has_failed(function->checker)) {
+                ruda_checker_fail(
+                    function->checker, RUDA_CHECK_INTERNAL_ERROR
+                );
+            }
+            return false;
+        }
     }
     *resolved = true;
     variant_name.snapshot = function->checker->ast->snapshot;
@@ -277,6 +384,7 @@ static bool ruda_checker_private_concrete_enum(
     if (!ruda_checker_private_resolve_enum_member(
             function,
             node,
+            expected,
             &enum_declaration,
             &variant,
             &variant_index,
@@ -353,6 +461,7 @@ static bool ruda_checker_private_concrete_enum(
     if (!ruda_checker_private_resolve_enum_member(
             function,
             member_node,
+            expected,
             &enum_declaration,
             &variant,
             &variant_index,
@@ -556,6 +665,7 @@ cleanup:
     if (!ruda_checker_private_resolve_enum_member(
             function,
             member_node,
+            expected,
             &enum_declaration,
             &variant,
             &variant_index,

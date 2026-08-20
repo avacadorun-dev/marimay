@@ -1,6 +1,7 @@
 #include "test_bytecode_support.h"
 
 void ruda_test_bytecode_imported_arrays(void);
+void ruda_test_bytecode_imported_results(void);
 
 void ruda_test_bytecode(void) {
     ruda_test_bytecode_metadata();
@@ -18,4 +19,5 @@ void ruda_test_bytecode(void) {
     ruda_test_bytecode_nominal_verifier_matrix();
     ruda_test_bytecode_nominal_program_schemas();
     ruda_test_bytecode_imported_arrays();
+    ruda_test_bytecode_imported_results();
 }

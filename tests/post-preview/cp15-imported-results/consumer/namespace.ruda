@@ -1,0 +1,14 @@
+import * as producer from "example/cp15-imported-results/producer";
+
+fn namespaceScore(choice: producer.Choice<Array<int>>): int {
+  return match choice {
+    case producer.None => 0;
+    case producer.Some(values) => values[0] + values.length();
+  };
+}
+
+public fn namespaceResultsWork(): bool {
+  const made: producer.Choice<Array<int>> = producer.Choice.Some([20]);
+  const empty: producer.Choice<Array<int>> = producer.Choice.None;
+  return namespaceScore(made) == 21 && namespaceScore(empty) == 0;
+}

@@ -15,6 +15,7 @@ void ruda_test_checker_imports(void);
 void ruda_test_checker_import_determinism(void);
 void ruda_test_checker_generics(void);
 void ruda_test_checker_generics_imports(void);
+void ruda_test_checker_imported_results(void);
 void ruda_test_checker_resolution(void);
 void ruda_test_check_entry(void);
 void ruda_test_cli(void);
@@ -24,6 +25,7 @@ void ruda_test_cli_check(void);
 void ruda_test_cli_run(void);
 void ruda_test_cli_test(void);
 void ruda_test_cli_cp14_imported_arrays(void);
+void ruda_test_cli_cp15_imported_results(void);
 void ruda_test_compiler_service(void);
 void ruda_test_compiler_service_incremental(void);
 void ruda_test_compiler_service_queries(void);
@@ -81,6 +83,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_checker_import_determinism();
     ruda_test_checker_generics();
     ruda_test_checker_generics_imports();
+    ruda_test_checker_imported_results();
     ruda_test_checker_resolution();
     ruda_test_check_entry();
     ruda_test_compiler_service();
@@ -123,6 +126,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_cli_run();
     ruda_test_cli_test();
     ruda_test_cli_cp14_imported_arrays();
+    ruda_test_cli_cp15_imported_results();
     if (ruda_test_failure_count() != 0) {
         fprintf(stderr, "ruda_c_unit: %d failure(s)\n", ruda_test_failure_count());
         return 1;

@@ -1,0 +1,14 @@
+import { RelayedChoice, relayChoice } from "example/cp15-imported-results/relay";
+
+fn relayScore(choice: RelayedChoice): int {
+  return match choice {
+    case None => 0;
+    case Some(values) => values[0] + values.length();
+  };
+}
+
+public fn relayedResultsWork(): bool {
+  const made: RelayedChoice = relayChoice(RelayedChoice.Some([30]));
+  const empty: RelayedChoice = relayChoice(RelayedChoice.None);
+  return relayScore(made) == 31 && relayScore(empty) == 0;
+}

@@ -7,6 +7,7 @@
  bool ruda_checker_private_resolve_enum_member(
     RudaFunctionChecker *function,
     const RudaAstNode *member_node,
+    RudaTypeId expected,
     RudaCheckEnumDeclaration **enum_declaration,
     RudaCheckEnumVariantDeclaration **variant_declaration,
     size_t *variant_index,

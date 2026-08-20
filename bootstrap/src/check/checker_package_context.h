@@ -27,7 +27,9 @@ typedef struct RudaChecker {
     const RudaVector *active_type_parameters;
     const RudaVector *active_type_arguments;
     RudaVector prelude_enums;
+    RudaVector imported_enums;
     bool prelude_enums_initialized;
+    bool imported_enums_initialized;
     RudaCheckStatus failure;
 } RudaChecker;
 

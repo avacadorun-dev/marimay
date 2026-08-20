@@ -16,6 +16,7 @@
 #include "ruda/base/f64.h"
 #include "ruda/base/string_literal.h"
 #include "checker_generic_types_api.h"
+#include "checker_imported_enums_api.h"
 
 
  bool ruda_checker_private_evaluate_constant(
@@ -343,7 +344,9 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
             return declaration;
         }
     }
-    return NULL;
+    return ruda_checker_private_imported_enum_declaration_by_type(
+        checker, type
+    );
 }
 
  RudaCheckInterfaceDeclaration *ruda_checker_private_checker_find_interface(
@@ -397,8 +400,7 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
         size_t length = 0;
         bool same_name = variant != NULL
             && ruda_checker_private_check_names_equal(checker, variant->name, name);
-        if (enum_declaration != NULL && enum_declaration->is_builtin
-            && variant != NULL
+        if (variant != NULL && !same_name
             && ruda_checker_private_check_name_bytes(name, &bytes, &length)) {
             same_name = variant->owned_name.length == length
                 && memcmp(variant->owned_name.data, bytes, length) == 0;
@@ -426,8 +428,18 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
             &variant->payload,
             index
         );
-        if (payload != NULL && payload->has_name
-            && ruda_checker_private_check_names_equal(checker, payload->name, name)) {
+        const unsigned char *bytes = NULL;
+        size_t length = 0;
+        bool same_name = payload != NULL && payload->has_name
+            && ruda_checker_private_check_names_equal(
+                checker, payload->name, name
+            );
+        if (payload != NULL && payload->has_name && !same_name
+            && ruda_checker_private_check_name_bytes(name, &bytes, &length)) {
+            same_name = payload->owned_name.length == length
+                && memcmp(payload->owned_name.data, bytes, length) == 0;
+        }
+        if (same_name) {
             if (payload_index != NULL) {
                 *payload_index = index;
             }

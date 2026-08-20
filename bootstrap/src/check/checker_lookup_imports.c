@@ -78,6 +78,55 @@ bool ruda_check_import_namespace_exists(
     return ruda_import_binding(checker, name, name_length, true) != NULL;
 }
 
+bool ruda_check_import_namespace_owns_enum(
+    const RudaChecker *checker,
+    RudaCheckName namespace_name,
+    RudaTypeId type
+) {
+    const unsigned char *namespace_bytes = NULL;
+    size_t namespace_length = 0;
+    const RudaCheckImportBinding *binding = NULL;
+    const RudaCheckPackageSurface *surface = NULL;
+    size_t index = 0;
+    if (checker == NULL || type == RUDA_TYPE_INVALID
+        || !ruda_import_name(
+            namespace_name, &namespace_bytes, &namespace_length
+        )) {
+        return false;
+    }
+    binding = ruda_import_binding(
+        checker, namespace_bytes, namespace_length, true
+    );
+    surface = ruda_import_surface(checker, binding);
+    if (surface == NULL) {
+        return false;
+    }
+    for (index = 0; index < surface->enum_count; index += 1) {
+        const RudaCheckedEnum *enum_value = ruda_checked_enum(
+            checker->result, surface->enum_start + index
+        );
+        if (enum_value != NULL && enum_value->is_public
+            && ruda_checker_private_type_matches_nominal(
+                checker,
+                type,
+                enum_value->symbol,
+                enum_value->type_parameters.length
+            )) {
+            return true;
+        }
+    }
+    for (index = 0; index < surface->type_alias_count; index += 1) {
+        const RudaCheckedTypeAlias *alias = ruda_checked_type_alias(
+            checker->result, surface->type_alias_start + index
+        );
+        if (alias != NULL && alias->is_public
+            && alias->target_type == type) {
+            return true;
+        }
+    }
+    return false;
+}
+
 static bool ruda_import_surface_type(
     const RudaChecker *checker,
     const RudaCheckPackageSurface *surface,
@@ -631,6 +680,126 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_type(
                 return enum_value;
             }
         }
+        for (index = 0; index < surface->type_alias_count; index += 1) {
+            const RudaCheckedTypeAlias *alias = ruda_checked_type_alias(
+                checker->result, surface->type_alias_start + index
+            );
+            size_t enum_index = 0;
+            if (alias == NULL || !alias->is_public
+                || alias->target_type != type) {
+                continue;
+            }
+            for (enum_index = 0;
+                enum_index < checker->result->enums.length;
+                enum_index += 1) {
+                const RudaCheckedEnum *enum_value = ruda_checked_enum(
+                    checker->result, enum_index
+                );
+                if (enum_value != NULL
+                    && ruda_checker_private_type_matches_nominal(
+                        checker,
+                        type,
+                        enum_value->symbol,
+                        enum_value->type_parameters.length
+                    )) {
+                    return enum_value;
+                }
+            }
+        }
+    }
+    return NULL;
+}
+
+const RudaCheckedEnum *ruda_check_imported_enum_by_name(
+    const RudaChecker *checker,
+    RudaCheckName namespace_name,
+    bool has_namespace,
+    RudaCheckName enum_name,
+    bool *resolved,
+    bool *exists_private
+) {
+    const unsigned char *namespace_bytes = NULL;
+    const unsigned char *enum_bytes = NULL;
+    size_t namespace_length = 0;
+    size_t enum_length = 0;
+    const RudaCheckImportBinding *binding = NULL;
+    const RudaCheckPackageSurface *surface = NULL;
+    size_t index = 0;
+    if (checker == NULL || resolved == NULL || exists_private == NULL
+        || !ruda_import_name(enum_name, &enum_bytes, &enum_length)
+        || (has_namespace && !ruda_import_name(
+            namespace_name, &namespace_bytes, &namespace_length
+        ))) {
+        return NULL;
+    }
+    *resolved = false;
+    *exists_private = false;
+    binding = ruda_import_binding(
+        checker,
+        has_namespace ? namespace_bytes : enum_bytes,
+        has_namespace ? namespace_length : enum_length,
+        has_namespace
+    );
+    if (binding == NULL || (!has_namespace && binding->is_namespace)) {
+        return NULL;
+    }
+    *resolved = true;
+    surface = ruda_import_surface(checker, binding);
+    if (surface == NULL) {
+        return NULL;
+    }
+    if (!has_namespace) {
+        enum_bytes = binding->original;
+        enum_length = binding->original_length;
+    }
+    for (index = 0; index < surface->enum_count; index += 1) {
+        const RudaCheckedEnum *enum_value = ruda_checked_enum(
+            checker->result, surface->enum_start + index
+        );
+        if (enum_value != NULL && ruda_import_equal(
+                enum_value->name.data,
+                enum_value->name.length,
+                enum_bytes,
+                enum_length
+            )) {
+            *exists_private = !enum_value->is_public;
+            return enum_value->is_public ? enum_value : NULL;
+        }
+    }
+    for (index = 0; index < surface->type_alias_count; index += 1) {
+        const RudaCheckedTypeAlias *alias = ruda_checked_type_alias(
+            checker->result, surface->type_alias_start + index
+        );
+        size_t enum_index = 0;
+        if (alias == NULL || !ruda_import_equal(
+                alias->name.data,
+                alias->name.length,
+                enum_bytes,
+                enum_length
+            )) {
+            continue;
+        }
+        *exists_private = !alias->is_public;
+        if (!alias->is_public) {
+            return NULL;
+        }
+        for (enum_index = 0;
+            enum_index < checker->result->enums.length;
+            enum_index += 1) {
+            const RudaCheckedEnum *enum_value = ruda_checked_enum(
+                checker->result, enum_index
+            );
+            if (enum_value != NULL
+                && ruda_checker_private_type_matches_nominal(
+                    checker,
+                    alias->target_type,
+                    enum_value->symbol,
+                    enum_value->type_parameters.length
+                )) {
+                return enum_value;
+            }
+        }
+        return NULL;
     }
     return NULL;
 }

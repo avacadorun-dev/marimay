@@ -1,5 +1,6 @@
 #include "checker_publication_api.h"
 #include "checker_declaration_lifecycle_api.h"
+#include "checker_imported_enums_api.h"
 
 
 
@@ -57,6 +58,7 @@
         ruda_vector_dispose(&checker->prelude_enums);
         checker->prelude_enums_initialized = false;
     }
+    ruda_checker_private_imported_enums_dispose(checker);
     ruda_map_dispose(&checker->top_level_index);
     ruda_map_dispose(&checker->local_nominal_index);
     ruda_map_dispose(&checker->callable_index);

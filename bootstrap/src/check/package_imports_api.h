@@ -62,6 +62,11 @@ bool ruda_check_import_namespace_exists(
     const unsigned char *name,
     size_t name_length
 );
+bool ruda_check_import_namespace_owns_enum(
+    const RudaChecker *checker,
+    RudaCheckName namespace_name,
+    RudaTypeId type
+);
 bool ruda_check_import_type(
     RudaChecker *checker,
     const RudaAstNode *type_node,
@@ -95,6 +100,14 @@ const RudaCheckedRecord *ruda_check_imported_record_by_type(
 const RudaCheckedEnum *ruda_check_imported_enum_by_type(
     const RudaChecker *checker,
     RudaTypeId type
+);
+const RudaCheckedEnum *ruda_check_imported_enum_by_name(
+    const RudaChecker *checker,
+    RudaCheckName namespace_name,
+    bool has_namespace,
+    RudaCheckName enum_name,
+    bool *resolved,
+    bool *exists_private
 );
 
 #endif

@@ -1,7 +1,7 @@
 # Ruda Stage 0 compiler architecture
 
 Status: implementation architecture for the C17 bootstrap.
-Last reviewed: 2026-08-17.
+Last reviewed: 2026-08-20.
 
 This document maps the normative compiler and execution contracts to physical
 owners. It changes no language semantics. When it conflicts with `docs/spec/`
@@ -172,6 +172,8 @@ bootstrap/src/check/
                         file-local imported names and D043 owned lookup
   checker_imported_nominal.c
                         imported record/enum MIR layout adaptation
+  checker_imported_enums.c
+                        concrete imported-enum checker views and payload metadata
   checker_declaration_*.c
                         lifecycle, constants, functions, nominal families,
                         and publication phases

@@ -342,7 +342,8 @@ static void ruda_parse_type_arguments(RudaParser *parser) {
             RUDA_TOKEN_GREATER,
             RUDA_TOKEN_SHIFT_RIGHT
         );
-        if (!ruda_parser_eat(parser, RUDA_TOKEN_COMMA)) {
+        if (ruda_parser_type_at_greater(parser)
+            || !ruda_parser_eat(parser, RUDA_TOKEN_COMMA)) {
             break;
         }
     }

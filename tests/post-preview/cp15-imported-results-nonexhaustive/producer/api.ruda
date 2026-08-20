@@ -1,0 +1,4 @@
+public enum Choice<T> {
+  Empty,
+  Value(T),
+}

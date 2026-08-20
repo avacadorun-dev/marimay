@@ -1,0 +1,7 @@
+import { Choice } from "example/cp15-imported-results/producer";
+
+public type RelayedChoice = Choice<Array<int>>;
+
+public fn relayChoice(value: RelayedChoice): RelayedChoice {
+  return value;
+}

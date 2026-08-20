@@ -1,0 +1,5 @@
+import { Hidden } from "example/cp15-imported-results-private/producer";
+
+fn main(): int {
+  return 0;
+}
