@@ -556,6 +556,7 @@ RudaCheckCallResolution ruda_check_resolve_imported_call(
     size_t namespace_length = 0;
     size_t index = 0;
     bool name_seen = false;
+    bool private_name_seen = false;
     if (checker == NULL || callable == NULL
         || !ruda_import_name(name, &name_bytes, &name_length)
         || (has_namespace && !ruda_import_name(
@@ -613,12 +614,16 @@ RudaCheckCallResolution ruda_check_resolve_imported_call(
         if (resolution == RUDA_CHECK_CALL_FOUND) {
             return resolution;
         }
-        if (resolution != RUDA_CHECK_CALL_UNKNOWN_NAME
-            && resolution != RUDA_CHECK_CALL_PRIVATE_IMPORT) {
+        if (resolution == RUDA_CHECK_CALL_PRIVATE_IMPORT) {
+            private_name_seen = true;
+        } else if (resolution != RUDA_CHECK_CALL_UNKNOWN_NAME) {
             name_seen = true;
         }
     }
-    return name_seen ? RUDA_CHECK_CALL_OTHER_NOMINAL
+    if (name_seen) {
+        return RUDA_CHECK_CALL_OTHER_NOMINAL;
+    }
+    return private_name_seen ? RUDA_CHECK_CALL_PRIVATE_IMPORT
         : RUDA_CHECK_CALL_UNKNOWN_NAME;
 }
 

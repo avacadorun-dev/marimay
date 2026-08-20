@@ -169,6 +169,16 @@ Dot-call lookup failures distinguish:
 
 Diagnostics state that `value.method(args)` and `method(value,args)` are one symbol; they never suggest creating an `impl` block.
 
+For a name shared by package-owned nominal behavior and a compiler-known
+collection operation, diagnostics use the exact static receiver candidate
+set. They do not report an `Array<T>` mismatch merely because `push` or
+`length` is also a compiler-known name. If no exact candidate exists, the
+primary error distinguishes a hidden exact declaration, a visible declaration
+for another nominal receiver, and an unknown name; an approximate spelling
+does not silently select a different collection operation. Named type-only,
+named function, and namespace imports retain the same D043 dot-call
+diagnostics, while only their available free spelling differs.
+
 ## 8. Suspension and task diagnostics
 
 When a non-suspending boundary rejects a call, print the shortest inferred path to a suspension primitive:

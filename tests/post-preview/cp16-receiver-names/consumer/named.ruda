@@ -1,0 +1,11 @@
+import { Stack, clear as clearStack, length as stackLength, pop as popStack, push as pushStack } from "example/cp16-receiver-names/collections";
+
+public fn namedStack(stack: Stack): int {
+  pushStack(stack, 11);
+  stack.push(13);
+  const before = stackLength(stack) + stack.length();
+  const first = popStack(stack);
+  const second = stack.pop();
+  clearStack(stack);
+  return before * 1000 + first * 10 + second + stack.length();
+}

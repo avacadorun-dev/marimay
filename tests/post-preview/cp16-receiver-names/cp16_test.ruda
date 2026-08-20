@@ -1,0 +1,18 @@
+import { interfaceStackScore, newHeap, newQueue, newStack } from "example/cp16-receiver-names/collections";
+import { namedStack, namespaceQueue, typeOnlyHeap, typeOnlyQueue, typeOnlyStack } from "example/cp16-receiver-names/consumer";
+
+@test
+fn receiverCollectionNamesWork(): void {
+  if typeOnlyStack(newStack()) != 170 || typeOnlyQueue(newQueue()) != 180 || typeOnlyHeap(newHeap()) != 190 || namedStack(
+    newStack(),
+  ) != 4141 || namespaceQueue(newQueue()) != 4188 {
+    panic("receiver collection names changed");
+  }
+}
+
+@test
+fn receiverCollectionInterfaceWorks(): void {
+  if interfaceStackScore() != 290 {
+    panic("receiver collection interface changed");
+  }
+}

@@ -15,6 +15,13 @@
     const RudaAstNode *node,
     RudaExpressionValue *result
 );
+bool ruda_checker_private_compile_ordinary_call_with_receiver(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node,
+    const RudaAstNode *receiver_node,
+    const RudaExpressionValue *receiver,
+    RudaExpressionValue *result
+);
 bool ruda_checker_private_compile_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,

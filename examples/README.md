@@ -28,5 +28,9 @@ These examples are executable specification fixtures once the parser exists. Unt
   mutation, checked indexed compound assignment, and nonmutating
   `for const item of array` traversal. The broader mutation-generation
   invalidation gate remains open.
+- `receiver_collection_names.ruda` demonstrates receiver-directed resolution
+  when ordinary `Stack` functions and compiler-known `Array<T>` operations
+  share `push` and `length`: free and dot forms preserve one symbol per exact
+  receiver and neither spelling receives reserved precedence.
 
 An implementation change that makes an example invalid must update the normative spec and corresponding decision in the same change. After I2, all examples are compiled by `ruda check`; after I6, they run under `ruda test --engine both` with deterministic service fixtures.

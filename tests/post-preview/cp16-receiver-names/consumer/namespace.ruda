@@ -1,0 +1,11 @@
+import * as collections from "example/cp16-receiver-names/collections";
+
+public fn namespaceQueue(queue: collections.Queue): int {
+  collections.push(queue, 17);
+  queue.push(18);
+  const before = collections.length(queue) + queue.length();
+  const first = collections.pop(queue);
+  const second = queue.pop();
+  collections.clear(queue);
+  return before * 1000 + first * 10 + second + queue.length();
+}

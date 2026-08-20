@@ -4,6 +4,7 @@
 #include "checker_expr_nominal_api.h"
 #include "checker_generic_types_api.h"
 #include "checker_lookup_api.h"
+#include "package_imports_api.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -511,6 +512,8 @@ cleanup:
 bool ruda_compile_array_builtin_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    const RudaAstNode *precompiled_receiver_node,
+    const RudaExpressionValue *precompiled_receiver,
     bool *resolved,
     RudaExpressionValue *result
 ) {
@@ -545,6 +548,20 @@ bool ruda_compile_array_builtin_call(
                 callee, &receiver_node, &name
             )) {
             dot_call = true;
+            if (receiver_node->kind == RUDA_SYNTAX_NAME_EXPRESSION) {
+                const RudaSyntaxToken *namespace_token =
+                    ruda_array_child_token(
+                        receiver_node, RUDA_TOKEN_IDENTIFIER, 0
+                    );
+                if (namespace_token != NULL && !namespace_token->synthetic
+                    && ruda_check_import_namespace_exists(
+                        function->checker,
+                        function->checker->source + namespace_token->start,
+                        namespace_token->end - namespace_token->start
+                    )) {
+                    return true;
+                }
+            }
         }
     }
     if (!ruda_array_text_equal(function->checker, name, "arrayOf")
@@ -555,12 +572,13 @@ bool ruda_compile_array_builtin_call(
         ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
         return false;
     }
-    if (ruda_checker_private_function_find_local(function, (RudaCheckName){
+    if (precompiled_receiver == NULL
+        && (ruda_checker_private_function_find_local(function, (RudaCheckName){
             function->checker->ast->snapshot, name->start, name->end
         }) != NULL || ruda_checker_private_checker_find_top_level(
             function->checker,
             (RudaCheckName){function->checker->ast->snapshot, name->start, name->end}
-        ) != NULL) {
+        ) != NULL)) {
         return true;
     }
     if (ruda_array_text_equal(function->checker, name, "push")) {
@@ -600,8 +618,21 @@ bool ruda_compile_array_builtin_call(
                     break;
                 }
             }
-            if (!ruda_compile_expression(function, receiver_node, RUDA_TYPE_INVALID, &receiver)
-                || !ruda_type_array_element(
+            if (precompiled_receiver != NULL) {
+                if (precompiled_receiver_node != receiver_node
+                    || !precompiled_receiver->valid) {
+                    ruda_checker_fail(
+                        function->checker, RUDA_CHECK_INVALID_ARGUMENT
+                    );
+                    return false;
+                }
+                receiver = *precompiled_receiver;
+            } else if (!ruda_compile_expression(
+                    function, receiver_node, RUDA_TYPE_INVALID, &receiver
+                )) {
+                return false;
+            }
+            if (!ruda_type_array_element(
                     &function->checker->result->types, receiver.type, &element
                 ) || !ruda_compile_expression(function, argument, element, &value)) {
                 return false;
@@ -617,8 +648,21 @@ bool ruda_compile_array_builtin_call(
                     else second = item->as.node;
                 }
             }
-            if (!ruda_compile_expression(function, first, RUDA_TYPE_INVALID, &receiver)
-                || !ruda_type_array_element(
+            if (precompiled_receiver != NULL) {
+                if (precompiled_receiver_node != first
+                    || !precompiled_receiver->valid) {
+                    ruda_checker_fail(
+                        function->checker, RUDA_CHECK_INVALID_ARGUMENT
+                    );
+                    return false;
+                }
+                receiver = *precompiled_receiver;
+            } else if (!ruda_compile_expression(
+                    function, first, RUDA_TYPE_INVALID, &receiver
+                )) {
+                return false;
+            }
+            if (!ruda_type_array_element(
                     &function->checker->result->types, receiver.type, &element
                 ) || !ruda_compile_expression(function, second, element, &value)) {
                 return false;
@@ -993,6 +1037,8 @@ bool ruda_compile_array_length_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
     bool builtin_available,
+    const RudaAstNode *precompiled_receiver_node,
+    const RudaExpressionValue *precompiled_receiver,
     bool *resolved,
     RudaExpressionValue *result
 ) {
@@ -1034,6 +1080,19 @@ bool ruda_compile_array_length_call(
         && callee->kind == RUDA_SYNTAX_MEMBER_EXPRESSION
         && ruda_array_member_parts(callee, &receiver_node, &name)) {
         dot_call = true;
+        if (receiver_node->kind == RUDA_SYNTAX_NAME_EXPRESSION) {
+            const RudaSyntaxToken *namespace_token = ruda_array_child_token(
+                receiver_node, RUDA_TOKEN_IDENTIFIER, 0
+            );
+            if (namespace_token != NULL && !namespace_token->synthetic
+                && ruda_check_import_namespace_exists(
+                    function->checker,
+                    function->checker->source + namespace_token->start,
+                    namespace_token->end - namespace_token->start
+                )) {
+                return true;
+            }
+        }
     }
     if (!ruda_array_text_equal(function->checker, name, "length")) {
         return true;
@@ -1092,13 +1151,22 @@ bool ruda_compile_array_length_call(
     }
     memset(&receiver, 0, sizeof(receiver));
     receiver.register_id = RUDA_MIR_NO_REGISTER;
-    if (!ruda_compile_expression(
-            function,
-            receiver_node,
-            RUDA_TYPE_INVALID,
-            &receiver
-        )) {
-        return false;
+    if (precompiled_receiver != NULL) {
+        if (precompiled_receiver_node != receiver_node
+            || !precompiled_receiver->valid) {
+            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            return false;
+        }
+        receiver = *precompiled_receiver;
+    } else {
+        if (!ruda_compile_expression(
+                function,
+                receiver_node,
+                RUDA_TYPE_INVALID,
+                &receiver
+            )) {
+            return false;
+        }
     }
     if (ruda_expression_is_never(function, &receiver)) {
         *result = receiver;

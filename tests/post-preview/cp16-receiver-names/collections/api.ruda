@@ -1,0 +1,117 @@
+public type Stack {
+  mutable values: Array<int>;
+  mutable size: int;
+}
+
+public type Queue {
+  mutable values: Array<int>;
+  mutable start: int;
+  mutable size: int;
+}
+
+public type Heap {
+  mutable values: Array<int>;
+  mutable size: int;
+}
+
+public interface Collection {
+  push(value: int): void;
+  pop(): int;
+  length(): int;
+  clear(): void;
+}
+
+public fn newStack(): Stack {
+  return Stack { values: [], size: 0 };
+}
+
+public fn newQueue(): Queue {
+  return Queue { values: [], start: 0, size: 0 };
+}
+
+public fn newHeap(): Heap {
+  return Heap { values: [], size: 0 };
+}
+
+public fn push(stack: Stack, value: int): void {
+  push(stack.values, value);
+  stack.size += 1;
+}
+
+public fn push(queue: Queue, value: int): void {
+  queue.values.push(value);
+  queue.size += 1;
+}
+
+public fn push(heap: Heap, value: int): void {
+  heap.values.push(value);
+  heap.size += 1;
+}
+
+public fn pop(stack: Stack): int {
+  stack.size -= 1;
+  return stack.values[stack.size];
+}
+
+public fn pop(queue: Queue): int {
+  const value = queue.values[queue.start];
+  queue.start += 1;
+  queue.size -= 1;
+  return value;
+}
+
+public fn pop(heap: Heap): int {
+  heap.size -= 1;
+  return heap.values[heap.size];
+}
+
+public fn length(stack: Stack): int {
+  const capacity = length(stack.values);
+  if capacity < stack.size {
+    panic("stack backing array changed");
+  }
+  return stack.size;
+}
+
+public fn length(queue: Queue): int {
+  const capacity = queue.values.length();
+  if capacity < queue.start + queue.size {
+    panic("queue backing array changed");
+  }
+  return queue.size;
+}
+
+public fn length(heap: Heap): int {
+  const capacity = heap.values.length();
+  if capacity < heap.size {
+    panic("heap backing array changed");
+  }
+  return heap.size;
+}
+
+public fn clear(stack: Stack): void {
+  stack.size = 0;
+}
+
+public fn clear(queue: Queue): void {
+  queue.start = 0;
+  queue.size = 0;
+}
+
+public fn clear(heap: Heap): void {
+  heap.size = 0;
+}
+
+public fn interfaceScore(value: Collection): int {
+  const before = value.length();
+  const taken = value.pop();
+  return before * 100 + taken * 10;
+}
+
+public fn interfaceStackScore(): int {
+  const stack = newStack();
+  stack.push(19);
+  const score = interfaceScore(stack);
+  stack.clear();
+  return score + stack.length();
+}

@@ -135,6 +135,8 @@ bool ruda_compile_array_literal(
 bool ruda_compile_array_builtin_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    const RudaAstNode *precompiled_receiver_node,
+    const RudaExpressionValue *precompiled_receiver,
     bool *resolved,
     RudaExpressionValue *result
 );
@@ -147,6 +149,8 @@ bool ruda_compile_array_length_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
     bool builtin_available,
+    const RudaAstNode *precompiled_receiver_node,
+    const RudaExpressionValue *precompiled_receiver,
     bool *resolved,
     RudaExpressionValue *result
 );

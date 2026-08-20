@@ -269,6 +269,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/checker_declaration_publication_nominal.c
   bootstrap/src/check/checker_declaration_records.c
   bootstrap/src/check/checker_expr_calls.c
+  bootstrap/src/check/checker_receiver_calls.c
   bootstrap/src/check/checker_expr_prelude.c
   bootstrap/src/check/checker_expr_try.c
   bootstrap/src/check/checker_expr_map_error.c

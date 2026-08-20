@@ -191,6 +191,8 @@ bootstrap/src/check/
   facts.c               canonical definition/reference fact publication
   queries.c             result-scoped definition/search/completion queries
   resolution.c          shared D003/D043 resolver and exact completion facts
+  checker_receiver_calls.c
+                        receiver-directed package/prelude collection dispatch
   package_graph.c       bounded deterministic local-package graph coordinator
   package_imports_api.h narrow graph/checker import contract
   service.c             snapshots, package-graph checks, frontend lifetimes
@@ -238,6 +240,15 @@ package-graph check, while `service_queries.c` rejects both older result
 generations and snapshots outside the supplied current result. Full semantic
 rechecking provides public/private/import-aware invalidation without a hidden
 persistent semantic cache.
+
+`checker_receiver_calls.c` owns the narrow collision boundary between ordinary
+D003/D043 collection names and compiler-known `Array<T>` operations. It parses
+only receiver-bearing `push` and `length` calls, compiles the receiver once,
+asks the live resolver for an exact nominal candidate, and dispatches either to
+ordinary call lowering or to `array.c`. Namespace-qualified calls remain with
+the import resolver. `array.c` therefore owns only the selected D045 operation;
+it does not shadow ordinary functions by spelling, and neither VM nor native
+lowering repairs source-level candidate selection.
 
 The present occurrence universe covers stable top-level type, constant, and
 resolved call references. Local bindings, record fields, enum variants,
@@ -440,7 +451,8 @@ checkpoint:
 | `bootstrap/src/check/checker.c` | 14,299 | 14,246 | owner-private checker/function/expression contexts moved to the sibling-module contract |
 | `bootstrap/src/check/checker_internal.h` | 21 | 121 | result lifecycle plus minimal expression-lowering context and helper boundary |
 | `bootstrap/src/check/checker.c` | 14,246 | 14,481 | `Array<T>` type/signature integration and expression/call/assignment dispatch remain in the coordinator |
-| `bootstrap/src/check/array.c` | 0 | 912 | D045 layout, literal, index, `length`, and checked-store lowering behind the private boundary |
+| `bootstrap/src/check/array.c` | 0 | 1,371 | D045 layout, literal, index, selected `length`/`push`, and checked-store lowering behind the private boundary |
+| `bootstrap/src/check/checker_receiver_calls.c` | 0 | 210 | exact receiver-directed ordinary/Array candidate dispatch with once-only receiver evaluation |
 | `bootstrap/src/check/checker_internal.h` | 121 | 153 | bounded D045 sibling-module contract; still uninstalled and owner-private |
 | `tests/c-unit/test_checker_arrays.c` | 0 | 548 | source array typing, matrix oracle, G4002, diagnostics, limits, and allocation-failure ownership |
 | `bootstrap/src/check/service.c` | 0 | 839 | versioned snapshots, exact edit proofs, request-local parse reuse, phase-boundary cancellation, canonical package recheck, and transactional teardown |
@@ -453,6 +465,9 @@ checkpoint:
 | `bootstrap/src/check/queries.c` | 0 | 168 | allocation-free result-scoped occurrence, definition, prefix-search, and completion access |
 | `bootstrap/src/check/service_queries.c` | 0 | 171 | current-generation and exact-snapshot validation around result queries |
 | `tests/c-unit/test_compiler_service_queries.c` | 0 | 839 | import-form completion/resolver equivalence, reverse order, overlays, stale safety, cancellation, limits, and fail-every-allocation cleanup |
+| `tests/c-unit/test_receiver_collection_names.c` | 0 | 373 | same-name nominal/Array behavior, diagnostics, MIR/backend selection, and fail-every-allocation cleanup |
+| `tests/c-unit/test_receiver_collection_service.c` | 0 | 419 | import-form completion/free-spelling/reference identity and compiler-service allocation cleanup |
+| `tests/c-unit/test_cli_cp16_receiver_names.c` | 0 | 107 | public fmt/check/run/test-both/build/artifact acceptance for the checkpoint-16 corpus |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `ruda_test_mir` registration. The service checkpoint

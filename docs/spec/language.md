@@ -512,6 +512,21 @@ Rules:
 - taking the value of a same-name overloaded function requires qualification or an expected function type that selects one declaration;
 - there is no `impl` declaration.
 
+Candidate collection for these calls is directed by the receiver's exact
+static type, not by a reserved spelling. When an ordinary package-owned
+function and a compiler-known library operation have the same name, an exact
+owned nominal receiver selects the ordinary function and an exact
+compiler-known receiver selects the library operation. For example,
+`push(stack, value)`/`stack.push(value)` resolve to the package symbol owned by
+`Stack`, while `push(values, value)`/`values.push(value)` resolve to the
+`Array<T>` operation when `values` is an array. The same rule applies to
+`length`; the compiler-known prelude has no name-only priority over visible
+package candidates. A namespace-qualified free call is resolved only through
+that namespace. Candidate collection does not evaluate the receiver; after a
+candidate is selected, the receiver expression is still evaluated exactly
+once in source order as required above. These rules refine D003 and D043 and
+do not introduce general overloads or extension methods.
+
 A dot-call-eligible function can mutate only fields declared `mutable` and visible to its package. Mutation does not require a special parameter mode because tasks sharing an isolate cannot execute in parallel. Cross-isolate sharing rules are defined in the execution specification.
 
 ### 6.3 Closures

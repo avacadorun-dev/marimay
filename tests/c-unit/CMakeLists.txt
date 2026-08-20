@@ -55,6 +55,8 @@ add_executable(ruda_c_unit
   test_checker_arrays.c
   test_checker_facts.c
   test_checker_resolution.c
+  test_receiver_collection_names.c
+  test_receiver_collection_service.c
   test_check_entry.c
   test_cli.c
   test_cli_build.c
@@ -64,6 +66,7 @@ add_executable(ruda_c_unit
   test_cli_test.c
   test_cli_cp14_imported_arrays.c
   test_cli_cp15_imported_results.c
+  test_cli_cp16_receiver_names.c
   test_compiler_service.c
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
@@ -189,6 +192,7 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays-boun
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results-private" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results-nonexhaustive" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp16-receiver-names" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY
   "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
   "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"

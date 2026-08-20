@@ -1,4 +1,5 @@
 #include "checker_expr_calls_api.h"
+#include "checker_receiver_calls_api.h"
 #include "checker_core_api.h"
 #include "checker_expr_nominal_api.h"
 #include "checker_expr_interfaces_api.h"
@@ -224,9 +225,11 @@
     return true;
 }
 
- bool ruda_checker_private_compile_ordinary_call(
+bool ruda_checker_private_compile_ordinary_call_with_receiver(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
+    const RudaAstNode *precompiled_receiver_node,
+    const RudaExpressionValue *precompiled_receiver,
     RudaExpressionValue *result
 ) {
     const RudaAstNode *callee_node = ruda_checker_private_check_child_node(
@@ -284,6 +287,10 @@
     memset(&declaration, 0, sizeof(declaration));
     memset(&namespace_name, 0, sizeof(namespace_name));
     receiver.register_id = RUDA_MIR_NO_REGISTER;
+    if ((precompiled_receiver_node == NULL) != (precompiled_receiver == NULL)) {
+        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        goto cleanup;
+    }
     if (callee_node != NULL) {
         name_token = ruda_checker_private_check_child_token(
             callee_node,
@@ -425,13 +432,24 @@
         }
     } else if (dot_call) {
         resolution_receiver_node = receiver_node;
-        if (!ruda_compile_expression(
-                function,
-                receiver_node,
-                RUDA_TYPE_INVALID,
-                &receiver
-            )) {
-            goto cleanup;
+        if (precompiled_receiver != NULL) {
+            if (precompiled_receiver_node != receiver_node
+                || !precompiled_receiver->valid) {
+                ruda_checker_fail(
+                    function->checker, RUDA_CHECK_INVALID_ARGUMENT
+                );
+                goto cleanup;
+            }
+            receiver = *precompiled_receiver;
+        } else {
+            if (!ruda_compile_expression(
+                    function,
+                    receiver_node,
+                    RUDA_TYPE_INVALID,
+                    &receiver
+                )) {
+                goto cleanup;
+            }
         }
         if (ruda_expression_is_never(function, &receiver)) {
             *result = receiver;
@@ -446,14 +464,47 @@
             &declaration
         );
     } else {
-        resolution = ruda_check_resolve_call(
-            function->checker,
-            name,
-            false,
-            RUDA_TYPE_INVALID,
-            &declaration
-        );
-        if (resolution == RUDA_CHECK_CALL_RECEIVER_REQUIRED) {
+        if (precompiled_receiver != NULL) {
+            const RudaAstNode *first_argument = NULL;
+            for (index = 0; index < arguments_node->child_count; index += 1) {
+                const RudaAstElement *element = ruda_ast_child(
+                    arguments_node,
+                    index
+                );
+                if (element != NULL
+                    && element->kind == RUDA_AST_ELEMENT_NODE) {
+                    first_argument = element->as.node;
+                    break;
+                }
+            }
+            if (first_argument == NULL
+                || first_argument != precompiled_receiver_node
+                || !precompiled_receiver->valid) {
+                ruda_checker_fail(
+                    function->checker, RUDA_CHECK_INVALID_ARGUMENT
+                );
+                goto cleanup;
+            }
+            resolution_receiver_node = first_argument;
+            receiver = *precompiled_receiver;
+            first_argument_compiled = true;
+            resolution = ruda_check_resolve_free_call(
+                function->checker,
+                name,
+                receiver.type,
+                &declaration
+            );
+        } else {
+            resolution = ruda_check_resolve_call(
+                function->checker,
+                name,
+                false,
+                RUDA_TYPE_INVALID,
+                &declaration
+            );
+        }
+        if (precompiled_receiver == NULL
+            && resolution == RUDA_CHECK_CALL_RECEIVER_REQUIRED) {
             const RudaAstNode *first_argument = NULL;
             for (index = 0; index < arguments_node->child_count; index += 1) {
                 const RudaAstElement *element = ruda_ast_child(
@@ -910,6 +961,16 @@ cleanup:
     return accepted && !ruda_checker_has_failed(function->checker);
 }
 
+bool ruda_checker_private_compile_ordinary_call(
+    RudaFunctionChecker *function,
+    const RudaAstNode *node,
+    RudaExpressionValue *result
+) {
+    return ruda_checker_private_compile_ordinary_call_with_receiver(
+        function, node, NULL, NULL, result
+    );
+}
+
  bool ruda_checker_private_compile_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,
@@ -938,6 +999,7 @@ cleanup:
     bool length_resolved = false;
     bool length_available = false;
     bool array_builtin_resolved = false;
+    bool receiver_collection_resolved = false;
     bool interface_resolved = false;
     bool prelude_resolved = false;
     bool map_error_resolved = false;
@@ -1049,10 +1111,24 @@ cleanup:
         accepted = true;
         goto cleanup;
     }
+    if (!ruda_checker_private_compile_receiver_collection_call(
+            function,
+            node,
+            &receiver_collection_resolved,
+            result
+        )) {
+        goto cleanup;
+    }
+    if (receiver_collection_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
     if (!ruda_compile_array_length_call(
             function,
             node,
             length_available,
+            NULL,
+            NULL,
             &length_resolved,
             result
         )) {
@@ -1063,7 +1139,7 @@ cleanup:
         goto cleanup;
     }
     if (!ruda_compile_array_builtin_call(
-            function, node, &array_builtin_resolved, result
+            function, node, NULL, NULL, &array_builtin_resolved, result
         )) {
         goto cleanup;
     }
@@ -1079,19 +1155,15 @@ cleanup:
                 RUDA_TOKEN_IDENTIFIER,
                 0
             );
-        bool is_deferred_array_builtin = array_builtin_token != NULL
+        bool is_deferred_array_builtin = name_token != NULL
+            && array_builtin_token != NULL
             && !array_builtin_token->synthetic
-            && (ruda_checker_private_check_text_equal(
-                    function->checker,
-                    array_builtin_token->start,
-                    array_builtin_token->end,
-                    "push"
-                ) || (name_token != NULL && ruda_checker_private_check_text_equal(
+            && ruda_checker_private_check_text_equal(
                     function->checker,
                     array_builtin_token->start,
                     array_builtin_token->end,
                     "arrayOf"
-                )));
+                );
         if (is_deferred_array_builtin) {
             RudaCheckName builtin_name;
             builtin_name.snapshot = function->checker->ast->snapshot;
