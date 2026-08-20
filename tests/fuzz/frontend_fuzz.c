@@ -1,5 +1,6 @@
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #include "ruda/lex/lexer.h"
@@ -58,12 +59,22 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             }
             ruda_parse_result_dispose(&parsed);
         } else if (parse_status != RUDA_PARSE_LIMIT_REACHED) {
+            (void)fprintf(
+                stderr,
+                "unexpected parser status: %d\n",
+                (int)parse_status
+            );
             abort();
         }
         ruda_lex_result_dispose(&lexed);
     } else if (lex_status == RUDA_LEX_LIMIT_REACHED) {
         ruda_lex_result_dispose(&lexed);
     } else {
+        (void)fprintf(
+            stderr,
+            "unexpected lexer status: %d\n",
+            (int)lex_status
+        );
         abort();
     }
     ruda_source_manager_dispose(&sources);
