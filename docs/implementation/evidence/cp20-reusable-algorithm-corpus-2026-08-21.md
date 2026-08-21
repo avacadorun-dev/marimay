@@ -1,7 +1,7 @@
 # Post-preview checkpoint 20: reusable algorithm corpus — 2026-08-21
 
-Gate: cross-gate reference-workload evidence. Checkpoint status: locally
-complete. I2, I3, I4, and I5 remain `in-progress`; I6 and P0 remain
+Gate: cross-gate reference-workload evidence. Checkpoint status: complete and
+published. I2, I3, I4, and I5 remain `in-progress`; I6 and P0 remain
 `not-started`. This checkpoint changes no Ruda source semantics and introduces
 no performance budget or speed claim.
 
@@ -10,11 +10,12 @@ Sibling implementation commit: `033f17e9225d5760d40181ce13903bcda4decba3`.
 Sibling smoke-evidence commit: `7183fdf387bee71575e87231a137f81044f3ccf2`.
 
 The sibling repository arrived on an unborn `main`: every source file was
-untracked, there was no parent commit, and no remote was configured. Its first
-commit therefore records the complete reviewed corpus instead of fabricating a
-pre-checkpoint history. The two local sibling commits cannot be pushed until a
-remote is supplied. The Ruda repository retains its existing independent
-history.
+untracked and there was no parent commit. Its first commit therefore records
+the complete reviewed corpus instead of fabricating a pre-checkpoint history.
+Both commits are published on `main` at
+`https://code.example/benchmark-corpus.git`; the remote head is the
+pinned smoke-evidence commit. The Ruda repository retains its existing
+independent history.
 
 Authority: accepted import, D003/D043 call-resolution, D045/D053 managed-array,
 Option/Result, toolchain execution-equivalence, and implementation test-strategy
@@ -133,8 +134,8 @@ Go 1.26.4; Rust 1.96.0.
 | `./tools/check-syntax-coverage` | 0 | 75 syntax kinds and 116 grammar productions covered |
 | `./tools/check-example-syntax` | 0 | user-facing Ruda examples accepted |
 | `git diff --check` in both repositories | 0 | no whitespace errors |
+| `git ls-remote --heads origin main` in sibling | 0 | remote `main` is `7183fdf387bee71575e87231a137f81044f3ccf2` |
 
-Checkpoint 20 closes reusable workload fidelity locally. It does not close the
-Tier 1 performance protocol, introduce hard timing budgets, optimize native
-arrays, verify any roadmap gate, or start P0. The only incomplete delivery
-mechanic is the sibling push, which has no configured destination.
+Checkpoint 20 closes and publishes reusable workload fidelity. It does not
+close the Tier 1 performance protocol, introduce hard timing budgets, optimize
+native arrays, verify any roadmap gate, or start P0.
