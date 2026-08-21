@@ -1,4 +1,4 @@
-fn privateAdjust(values: Array<int>): Array<int> {
+fn privateAdjust(values: []int): []int {
   values[0] += 1;
   return values;
 }

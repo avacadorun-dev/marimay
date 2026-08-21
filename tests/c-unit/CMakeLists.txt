@@ -55,6 +55,7 @@ add_executable(ruda_c_unit
   test_checker_failures.c
   test_checker_arrays.c
   test_checker_array_mutation.c
+  test_checker_array_types.c
   test_mir_array_mutation.c
   test_checker_facts.c
   test_checker_resolution.c
@@ -71,7 +72,9 @@ add_executable(ruda_c_unit
   test_cli_cp15_imported_results.c
   test_cli_cp16_receiver_names.c
   test_cli_cp17_array_mutation.c
+  test_cli_cp18_array_spelling.c
   test_compiler_service.c
+  test_compiler_service_array_types.c
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
   test_cp9_io_pipeline.c
@@ -86,6 +89,7 @@ add_executable(ruda_c_unit
   test_formatter.c
   test_formatter_support.c
   test_formatter_core.c
+  test_formatter_array_types.c
   test_formatter_trivia.c
   test_formatter_failures.c
   test_hash_map.c
@@ -136,6 +140,7 @@ add_executable(ruda_c_unit
   test_parser_declarations.c
   test_parser_expressions.c
   test_parser_nested_generics.c
+  test_parser_array_types.c
   test_parser_incremental.c
   test_process.c
   test_runtime_io.c
@@ -201,6 +206,8 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results-non
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp16-receiver-names" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-mutation" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-iterator-invalidated" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling-bounds" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY
   "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
   "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"

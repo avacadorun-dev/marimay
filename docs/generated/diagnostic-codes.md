@@ -78,6 +78,7 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `T0015` | type checker | Yield appears outside a block match arm. |
 | `T0016` | type checker | A reachable path through a block match arm does not yield a value. |
 | `T0017` | run | Executable root does not declare an accepted main entry point. |
+| `T0018` | type checker | Prelude managed-array source uses the removed Array<T> spelling instead of canonical []T. |
 | `U0001` | command line | Unknown top-level command or help target. |
 | `U0002` | command line | Unknown command-line option. |
 | `U0003` | command line | Specified command is not present in this bootstrap stage. |

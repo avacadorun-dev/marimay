@@ -2,7 +2,7 @@ public type Row {
   public mutable left: int;
 }
 
-public type Rows = Array<Row>;
+public type Rows = []Row;
 
 public fn makeRows(): Rows {
   return [Row { left: 3 }];

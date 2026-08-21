@@ -1,0 +1,7 @@
+fn readOutside(rows: [][]int): int {
+  return rows[0][2];
+}
+
+fn main(): void {
+  readOutside([[1]]);
+}

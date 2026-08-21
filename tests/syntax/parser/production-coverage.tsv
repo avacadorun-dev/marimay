@@ -35,6 +35,7 @@ parameters	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-prod
 parameter_list	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-productions.ruda	c:ruda_test_parser_exact_delimited_grammar	c:ruda_test_parser_exact_delimited_grammar	c:ruda_test_parser_exact_delimited_grammar	covered
 parameter	tests/syntax/parser/all-productions.ruda	tests/syntax/parser/all-productions.ruda	c:ruda_test_parser_exact_delimited_grammar	c:ruda_test_parser_exact_delimited_grammar	c:ruda_test_parser_exact_delimited_grammar	covered
 type	tests/format/types.expected.ruda	tests/format/types.expected.ruda	c:ruda_test_parser_type_grammar	c:ruda_test_parser_type_grammar	c:ruda_test_parser_type_grammar	covered
+array_type	tests/format/types.expected.ruda	tests/format/types.expected.ruda	c:ruda_test_parser_array_type_spelling	c:ruda_test_parser_array_type_spelling	c:ruda_test_parser_array_type_spelling	covered
 nominal_type	tests/format/types.expected.ruda	tests/format/types.expected.ruda	c:ruda_test_parser_type_grammar	c:ruda_test_parser_type_grammar	c:ruda_test_parser_type_grammar	covered
 qualified_ident	tests/format/types.expected.ruda	tests/format/types.expected.ruda	c:ruda_test_parser_type_grammar	c:ruda_test_parser_type_grammar	c:ruda_test_parser_type_grammar	covered
 type_arguments	tests/format/types.expected.ruda	tests/format/types.expected.ruda	c:ruda_test_parser_type_grammar	c:ruda_test_parser_type_grammar	c:ruda_test_parser_type_grammar	covered

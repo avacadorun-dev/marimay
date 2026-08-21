@@ -2,11 +2,11 @@
 
 void ruda_test_parser_nested_generic_boundaries(void) {
     static const char source[] =
-        "type First = Result<Choice<Array<int>>, Problem>;\n"
-        "type Second = Result<Option<Array<int>>, Problem>;\n"
+        "type First = Result<Choice<[]int>, Problem>;\n"
+        "type Second = Result<Option<[]int>, Problem>;\n"
         "type Third = Outer<Middle<Inner<int>>, Sibling<string>>;\n"
-        "fn nested(value: Result<Choice<Array<int>>, Problem>): "
-        "Result<Option<Array<int>>, Problem> { return value; }\n";
+        "fn nested(value: Result<Choice<[]int>, Problem>): "
+        "Result<Option<[]int>, Problem> { return value; }\n";
     RudaParseFixture fixture;
     bool initialized = ruda_parse_fixture_init(&fixture, source);
     RUDA_EXPECT(initialized);
@@ -19,6 +19,6 @@ void ruda_test_parser_nested_generic_boundaries(void) {
     RUDA_EXPECT(ruda_syntax_count_kind(
         fixture.parsed.tree.root,
         RUDA_SYNTAX_TYPE_ARGUMENTS
-    ) == 16);
+    ) == 12);
     ruda_parse_fixture_dispose(&fixture);
 }

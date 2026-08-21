@@ -18,7 +18,7 @@ static void ruda_test_checker_array_mutation_surface(void) {
         "type Stack {}\n"
         "fn pop(stack: Stack): int { return 1; }\n"
         "fn collision(stack: Stack): int { return stack.pop(); }\n"
-        "fn iterate(values: Array<int>): void { for const item of values { let copy = item; } }\n";
+        "fn iterate(values: []int): void { for const item of values { let copy = item; } }\n";
     RudaCheckerFixture fixture;
     RudaCheckResult checked;
     size_t index = 0;
@@ -70,18 +70,18 @@ static void ruda_test_checker_array_mutation_surface(void) {
 
 static void ruda_test_checker_array_mutation_diagnostics(void) {
     ruda_checker_expect_one_diagnostic(
-        "fn invalid(values: Array<int>): void { values.truncate(true); }\n",
+        "fn invalid(values: []int): void { values.truncate(true); }\n",
         RUDA_DIAGNOSTIC_TYPE_MISMATCH, "true", 0
     );
     ruda_checker_expect_one_diagnostic(
-        "fn invalid(values: Array<int>): void { values.reserve(); }\n",
+        "fn invalid(values: []int): void { values.reserve(); }\n",
         RUDA_DIAGNOSTIC_CALL_ARITY, "()", 0
     );
 }
 
 static void ruda_test_checker_array_mutation_allocation_failures(void) {
     static const char source[] =
-        "fn mutate(values: Array<int>): void {\n"
+        "fn mutate(values: []int): void {\n"
         "  values.push(1); values.pop(); values.truncate(0);\n"
         "  values.reserve(8); values.clear();\n"
         "  for const value of values { let copy = value; }\n"

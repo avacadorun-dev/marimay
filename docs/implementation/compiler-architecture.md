@@ -193,10 +193,12 @@ bootstrap/src/check/
   resolution.c          shared D003/D043 resolver and exact completion facts
   checker_receiver_calls.c
                         receiver-directed package/prelude collection dispatch
+  checker_array_types.c D054 prefix-type recognition and existing array interning
   package_graph.c       bounded deterministic local-package graph coordinator
   package_imports_api.h narrow graph/checker import contract
   service.c             snapshots, package-graph checks, frontend lifetimes
   service_queries.c     generation/snapshot-safe compiler-service queries
+  type_spelling.c       bounded canonical checked-type display ownership
   array.c               D045 type/literal/access/assignment lowering
   entry.c               root main and structural Error-contract selection
 ```
@@ -242,13 +244,22 @@ rechecking provides public/private/import-aware invalidation without a hidden
 persistent semantic cache.
 
 `checker_receiver_calls.c` owns the narrow collision boundary between ordinary
-D003/D043 collection names and compiler-known `Array<T>` operations. It parses
+D003/D043 collection names and compiler-known `[]T` operations. It parses
 only receiver-bearing `push` and `length` calls, compiles the receiver once,
 asks the live resolver for an exact nominal candidate, and dispatches either to
 ordinary call lowering or to `array.c`. Namespace-qualified calls remain with
 the import resolver. `array.c` therefore owns only the selected D045 operation;
 it does not shadow ordinary functions by spelling, and neither VM nor native
 lowering repairs source-level candidate selection.
+
+`checker_array_types.c` owns recognition of the D054 `[]T` AST prefix and
+interns the unchanged D045 array descriptor. Public-signature visibility
+recurses through that element node rather than treating `Array` as reserved.
+`type_spelling.c` renders result-local checked types for compiler-service
+hover/signature consumers with explicit depth/byte limits and caller-owned
+output; `service_queries.c` supplies current-generation validation. The
+formatter adjacency predicate lives in `formatter_types.c`; none of these
+owners changes MIR, bytecode, runtime layout, or ABI.
 
 The present occurrence universe covers stable top-level type, constant, and
 resolved call references. Local bindings, record fields, enum variants,
@@ -281,7 +292,12 @@ tests/c-unit/
   test_native_c_emitter_{baseline,arrays,scalar,matrix,strings,imports,
                          support}.c
   test_parser_{core,declarations,expressions,incremental,support}.c
+  test_parser_array_types.c
   test_formatter_{core,trivia,failures,support}.c
+  test_formatter_array_types.c
+  test_checker_array_types.c
+  test_compiler_service_array_types.c
+  test_cli_cp18_array_spelling.c
   test_check_entry.c
   test_cp9_io_pipeline.c
   test_cli_run.c
@@ -450,7 +466,7 @@ checkpoint:
 | `bootstrap/src/check/result.c` | 0 | 263 | defaults, nested published-value cleanup, rollback helpers, public dispose, and const accessors |
 | `bootstrap/src/check/checker.c` | 14,299 | 14,246 | owner-private checker/function/expression contexts moved to the sibling-module contract |
 | `bootstrap/src/check/checker_internal.h` | 21 | 121 | result lifecycle plus minimal expression-lowering context and helper boundary |
-| `bootstrap/src/check/checker.c` | 14,246 | 14,481 | `Array<T>` type/signature integration and expression/call/assignment dispatch remain in the coordinator |
+| `bootstrap/src/check/checker.c` | 14,246 | 14,481 | `[]T` type/signature integration and expression/call/assignment dispatch remain in the coordinator |
 | `bootstrap/src/check/array.c` | 0 | 1,371 | D045 layout, literal, index, selected `length`/`push`, and checked-store lowering behind the private boundary |
 | `bootstrap/src/check/checker_receiver_calls.c` | 0 | 210 | exact receiver-directed ordinary/Array candidate dispatch with once-only receiver evaluation |
 | `bootstrap/src/check/checker_internal.h` | 121 | 153 | bounded D045 sibling-module contract; still uninstalled and owner-private |
@@ -478,6 +494,13 @@ checkpoint:
 | `tests/c-unit/test_bytecode_vm_array_mutation.c` | 0 | 264 | malformed/round-trip/state/G4005 bytecode and VM allocation coverage |
 | `tests/c-unit/test_native_c_emitter_array_mutation.c` | 0 | 115 | emitted runtime calls, strict-C execution, and allocation cleanup |
 | `tests/c-unit/runtime/test_managed_mutation.c` | 0 | 361 | raw/reference/nested tracing, capacity, generation, and resize-failure coverage |
+| `bootstrap/src/check/checker_array_types.c` | 0 | 73 | D054 prefix AST recognition and existing managed-array type interning |
+| `bootstrap/src/format/formatter_types.c` | 0 | 15 | canonical D054 prefix adjacency without semantic rewriting |
+| `bootstrap/src/check/type_spelling.c` | 0 | 253 | bounded canonical checked-type spelling for compiler-service consumers |
+| `bootstrap/src/check/service_queries.c` | 171 | 214 | current-generation wrapper and status mapping for owned canonical type spelling |
+| `tests/c-unit/test_checker_array_types.c` | 0 | 216 | identity, contextual empty arrays, migration diagnostics, nominal-name coexistence, and allocation cleanup |
+| `tests/c-unit/test_compiler_service_array_types.c` | 0 | 194 | canonical nested/generic signatures, stale results, limits, and output allocation cleanup |
+| `tests/c-unit/test_cli_cp18_array_spelling.c` | 0 | 132 | public fmt/check/run/test-both/build/G4002 differential acceptance |
 | `tests/c-unit/test_cli_cp17_array_mutation.c` | 0 | 135 | public fmt/check/run/test-both/build/artifact and VM/native G4005 acceptance |
 
 The earlier mechanical split preserves assertion order within the array suite

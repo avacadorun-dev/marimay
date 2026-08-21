@@ -15,8 +15,8 @@
 
 static const char ruda_receiver_names_source[] =
     "type Counter { mutable value: int; }\n"
-    "type Stack { values: Array<int>; mutable size: int; }\n"
-    "type Queue { values: Array<int>; mutable size: int; }\n"
+    "type Stack { values: []int; mutable size: int; }\n"
+    "type Queue { values: []int; mutable size: int; }\n"
     "fn push(stack: Stack, value: int): void {\n"
     "  stack.values.push(value); stack.size += 1;\n"
     "}\n"

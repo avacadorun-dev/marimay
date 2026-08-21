@@ -357,7 +357,7 @@ bool ruda_compile_array_literal(
         (void)ruda_array_report(
             function,
             RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-            "empty array literal requires an expected Array<T> type",
+            "empty array literal requires an expected []T type",
             node->start,
             node->end
         );
@@ -673,7 +673,7 @@ bool ruda_compile_array_builtin_call(
             || !ruda_function_add_register(function, receiver.type, &target)) {
             (void)ruda_array_report(
                 function, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-                "push requires Array<T> and an exact T value",
+                "push requires []T and an exact T value",
                 node->start, node->end
             );
             return false;
@@ -908,7 +908,7 @@ static bool ruda_array_resolve_access(
         (void)ruda_array_report(
             function,
             RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-            "indexing requires an Array<T> receiver",
+            "indexing requires a []T receiver",
             receiver_node->start,
             receiver_node->end
         );
@@ -1180,7 +1180,7 @@ bool ruda_compile_array_length_call(
         (void)ruda_array_report(
             function,
             RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-            "length requires an Array<T> value",
+            "length requires a []T value",
             receiver_node->start,
             receiver_node->end
         );

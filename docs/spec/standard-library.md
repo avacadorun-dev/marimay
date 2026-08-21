@@ -24,7 +24,7 @@ The prelude is imported implicitly and intentionally small. It contains primitiv
 Option, Some, None
 Result, Ok, Err
 Error
-Array, ArrayGrowthError, ArrayTruncateError, Map, Set, Bytes
+ArrayGrowthError, ArrayTruncateError, Map, Set, Bytes
 Iterator
 Task
 expect          # @test/@fuzz functions only
@@ -136,12 +136,12 @@ stable strings `capability io.stdout is not granted` and `stdout write failed`.
 
 ## 4. Collections and iteration
 
-`Array<T>`, `Map<K,V>`, and `Set<T>` are mutable managed containers. An
+`[]T`, `Map<K,V>`, and `Set<T>` are mutable managed containers. An
 iterator detects an intervening invalidating mutation through a runtime
 generation check with a stable panic unless the iterator API explicitly owns
 that mutation.
 
-D045 fixes the initial `Array<T>` core surface to compiler-known
+D045 fixes the initial `[]T` core surface to compiler-known
 `arrayOf(...)`, ordinary free/dot-call `length`, checked indexing and indexed
 assignment, and `push` returning `Result<void,ArrayGrowthError>`. Arrays contain
 at most `int::MAX` initialized elements. Hitting that logical limit returns

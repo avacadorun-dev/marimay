@@ -1,0 +1,7 @@
+public type Edge {
+  public mutable weight: int;
+}
+
+public fn edge(weight: int): Edge {
+  return Edge { weight: weight };
+}

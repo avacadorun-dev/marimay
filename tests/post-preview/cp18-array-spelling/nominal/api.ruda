@@ -1,0 +1,11 @@
+public type Array<T> {
+  public value: T;
+}
+
+public fn make(): Array<int> {
+  return Array { value: 9 };
+}
+
+public fn read(value: Array<int>): int {
+  return value.value;
+}

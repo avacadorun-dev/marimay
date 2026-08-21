@@ -3,6 +3,7 @@
 
 #include "ruda/check/queries.h"
 #include "ruda/check/service_types.h"
+#include "ruda/check/type_spelling.h"
 
 /*
  * Borrowed result-scoped facts. Wrappers reject older result generations and
@@ -29,6 +30,18 @@ RudaCompilerStatus ruda_compiler_service_symbol_search(
     size_t prefix_length,
     size_t match_index,
     const RudaCheckedSymbol **symbol
+);
+/*
+ * Current-result canonical type text for hover, signature, or completion
+ * detail. spelling must be zero-initialized and is caller-owned on success.
+ */
+RudaCompilerStatus ruda_compiler_service_symbol_type_spelling(
+    const RudaCompilerService *service,
+    const RudaCompilerResult *result,
+    RudaSymbolId symbol,
+    RudaAllocator allocator,
+    RudaTypeSpellingOptions options,
+    RudaOwnedBytes *spelling
 );
 RudaCompilerStatus ruda_compiler_service_completion_count(
     const RudaCompilerService *service,

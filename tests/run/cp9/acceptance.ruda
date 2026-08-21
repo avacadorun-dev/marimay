@@ -38,7 +38,7 @@ fn factorial(limit: int): int {
 }
 
 fn sortedMiddle(): int {
-  let values: Array<int> = [3, 1, 2];
+  let values: []int = [3, 1, 2];
   for let pass = 0; pass < 3; pass += 1 {
     for let index = 0; index < 2; index += 1 {
       if values[index] > values[index + 1] {

@@ -1,4 +1,5 @@
 #include "checker_lookup_api.h"
+#include "checker_array_types_api.h"
 #include "checker_cfg_api.h"
 #include "checker_core_api.h"
 #include "checker_expr_records_api.h"
@@ -22,19 +23,27 @@
     RudaCheckEnumDeclaration *enum_declaration = NULL;
     RudaCheckInterfaceDeclaration *interface_declaration = NULL;
     const RudaAstNode *type_arguments = NULL;
-    const RudaAstNode *argument_type = NULL;
-    RudaTypeId element_type = RUDA_TYPE_INVALID;
-    size_t argument_count = 0;
-    size_t index = 0;
     bool import_resolved = false;
     const RudaCheckTypeParameterDeclaration *type_parameter = NULL;
     RudaTypeId active_type_parameter = RUDA_TYPE_INVALID;
     RudaVector generic_arguments;
     bool generic_arguments_initialized = false;
+    bool array_type_resolved = false;
     memset(&generic_arguments, 0, sizeof(generic_arguments));
     if (node == NULL || result == NULL || node->kind != RUDA_SYNTAX_TYPE) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
+    }
+    if (!ruda_checker_private_resolve_array_type(
+            checker,
+            node,
+            result,
+            &array_type_resolved
+        )) {
+        return false;
+    }
+    if (array_type_resolved) {
+        return *result != RUDA_TYPE_INVALID;
     }
     name = ruda_checker_private_check_child_token(node, RUDA_TOKEN_IDENTIFIER, 0);
     if (name == NULL || name->synthetic
@@ -75,73 +84,6 @@
         *result = active_type_parameter;
         return true;
     }
-    if (ruda_checker_private_check_text_equal(
-            checker,
-            name->start,
-            name->end,
-            "Array"
-        )) {
-        if (type_arguments != NULL) {
-            for (index = 0; index < type_arguments->child_count; index += 1) {
-                const RudaAstElement *element = ruda_ast_child(
-                    type_arguments,
-                    index
-                );
-                if (element == NULL) {
-                    ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
-                    return false;
-                }
-                if (element->kind == RUDA_AST_ELEMENT_NODE) {
-                    if (element->as.node == NULL
-                        || element->as.node->kind != RUDA_SYNTAX_TYPE
-                        || argument_count == SIZE_MAX) {
-                        ruda_checker_fail(
-                            checker,
-                            RUDA_CHECK_INVALID_ARGUMENT
-                        );
-                        return false;
-                    }
-                    argument_type = element->as.node;
-                    argument_count += 1;
-                } else if (element->as.token.synthetic) {
-                    ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
-                    return false;
-                }
-            }
-        }
-        if (type_arguments == NULL || argument_count != 1
-            || argument_type == NULL) {
-            (void)ruda_checker_add_diagnostic(
-                checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-                "Array requires exactly one type argument",
-                node->start,
-                node->end
-            );
-            *result = RUDA_TYPE_INVALID;
-            return false;
-        }
-        if (!ruda_checker_private_check_exact_type(checker, argument_type, &element_type)) {
-            *result = RUDA_TYPE_INVALID;
-            return false;
-        }
-        if (!ruda_type_intern_array(
-                &checker->result->types,
-                element_type,
-                result
-            )) {
-            ruda_checker_fail(
-                checker,
-                checker->result->types.descriptors.length
-                        >= checker->options.type_options.max_types
-                            - RUDA_TYPE_FIRST_DYNAMIC
-                    ? RUDA_CHECK_LIMIT_REACHED
-                    : RUDA_CHECK_ALLOCATION_FAILED
-            );
-            return false;
-        }
-        return true;
-    }
     if (!ruda_check_import_type(
             checker, node, result, &import_resolved
         )) {
@@ -151,6 +93,27 @@
         return *result != RUDA_TYPE_INVALID;
     }
     if (type_arguments != NULL) {
+        record = ruda_checker_private_checker_find_record(checker, declared_name);
+        enum_declaration = ruda_checker_private_checker_find_enum(
+            checker, declared_name
+        );
+        if (record == NULL && enum_declaration == NULL
+            && ruda_checker_private_check_text_equal(
+                checker,
+                name->start,
+                name->end,
+                "Array"
+            )) {
+            (void)ruda_checker_add_diagnostic(
+                checker,
+                RUDA_DIAGNOSTIC_ARRAY_TYPE_SPELLING,
+                "prelude managed arrays use '[]T'; replace 'Array<T>' with '[]T'",
+                node->start,
+                node->end
+            );
+            *result = RUDA_TYPE_INVALID;
+            return false;
+        }
         if (!ruda_vector_init(
                 &generic_arguments,
                 checker->result->allocator,
@@ -165,10 +128,6 @@
             )) {
             goto generic_cleanup;
         }
-        record = ruda_checker_private_checker_find_record(checker, declared_name);
-        enum_declaration = ruda_checker_private_checker_find_enum(
-            checker, declared_name
-        );
         if (record != NULL || enum_declaration != NULL) {
             size_t expected_count = record != NULL
                 ? record->type_parameters.length

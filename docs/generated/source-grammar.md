@@ -46,7 +46,8 @@ type_constraints             = type { "&" type } ;
 parameters                   = "(" [ parameter_list ] ")" ;
 parameter_list               = parameter { "," parameter } [ "," ] ;
 parameter                    = IDENTIFIER ":" type ;
-type                         = nominal_type | tuple_type | function_type ;
+type                         = array_type | nominal_type | tuple_type | function_type ;
+array_type                   = "[" "]" type ;
 nominal_type                 = qualified_ident [ type_arguments ] ;
 qualified_ident              = IDENTIFIER { "." IDENTIFIER } ;
 type_arguments               = "<" type_list [ "," ] ">" ;
@@ -165,7 +166,8 @@ pattern_field                = IDENTIFIER [ ":" pattern ] ;
 | `parameters` | list | baseline | `"(" [ parameter_list ] ")"` |
 | `parameter_list` | list | baseline | `parameter { "," parameter } [ "," ]` |
 | `parameter` | declaration | baseline | `IDENTIFIER ":" type` |
-| `type` | type | baseline | `nominal_type \| tuple_type \| function_type` |
+| `type` | type | baseline | `array_type \| nominal_type \| tuple_type \| function_type` |
+| `array_type` | type | baseline | `"[" "]" type` |
 | `nominal_type` | type | baseline | `qualified_ident [ type_arguments ]` |
 | `qualified_ident` | type | baseline | `IDENTIFIER { "." IDENTIFIER }` |
 | `type_arguments` | list | baseline | `"<" type_list [ "," ] ">"` |

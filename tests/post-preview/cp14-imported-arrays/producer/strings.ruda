@@ -1,8 +1,8 @@
-public fn makeNames(): Array<string> {
+public fn makeNames(): []string {
   return ["ada", "grace"];
 }
 
-public fn extendNames(names: Array<string>): Array<string> {
+public fn extendNames(names: []string): []string {
   names.push("linus");
   return names;
 }

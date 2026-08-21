@@ -137,6 +137,13 @@ A machine-applicable fix includes description, applicability, source snapshot ha
 
 Type errors display the expected and actual type at the relevant boundary, followed by the first structural mismatch. Interface failures list missing or incompatible dot-call signatures and the eligible first-parameter function location when one nearly matches.
 
+Managed-array types are displayed with canonical D054 `[]T` spelling in every
+expected/actual type, note, and candidate signature. If `Array<T>` does not
+resolve to a visible user/package nominal declaration, the complete type span
+receives `T0018` with exact message `prelude managed arrays use '[]T'; replace
+'Array<T>' with '[]T'`. This targeted migration error is not emitted for an
+ordinary resolved nominal type named `Array`.
+
 Example shape:
 
 ```text
@@ -171,7 +178,7 @@ Diagnostics state that `value.method(args)` and `method(value,args)` are one sym
 
 For a name shared by package-owned nominal behavior and a compiler-known
 collection operation, diagnostics use the exact static receiver candidate
-set. They do not report an `Array<T>` mismatch merely because `push` or
+set. They do not report an `[]T` mismatch merely because `push` or
 `length` is also a compiler-known name. If no exact candidate exists, the
 primary error distinguishes a hidden exact declaration, a visible declaration
 for another nominal receiver, and an unknown name; an approximate spelling

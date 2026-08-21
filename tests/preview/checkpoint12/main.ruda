@@ -51,7 +51,7 @@ fn factorial(limit: int): int {
 }
 
 fn sortedIndex(needle: int): int {
-  let values: Array<int> = [9, 3, 7, 1, 5];
+  let values: []int = [9, 3, 7, 1, 5];
   for let pass = 0; pass < values.length(); pass += 1 {
     for let index = 0; index + 1 < values.length(); index += 1 {
       if values[index] > values[index + 1] {

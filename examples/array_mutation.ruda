@@ -1,8 +1,8 @@
-fn consumeLast(rows: Array<Array<int>>): Option<Array<int>> {
+fn consumeLast(rows: [][]int): Option<[]int> {
   return rows.pop();
 }
 
-fn prepare(values: Array<int>): Result<bool, ArrayGrowthError> {
+fn prepare(values: []int): Result<bool, ArrayGrowthError> {
   values.reserve(16)?;
   values.push(7)?;
   return Ok(true);

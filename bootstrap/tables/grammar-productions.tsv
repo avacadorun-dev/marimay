@@ -34,7 +34,8 @@ type_constraints	type	baseline	type { "&" type }
 parameters	list	baseline	"(" [ parameter_list ] ")"
 parameter_list	list	baseline	parameter { "," parameter } [ "," ]
 parameter	declaration	baseline	IDENTIFIER ":" type
-type	type	baseline	nominal_type | tuple_type | function_type
+type	type	baseline	array_type | nominal_type | tuple_type | function_type
+array_type	type	baseline	"[" "]" type
 nominal_type	type	baseline	qualified_ident [ type_arguments ]
 qualified_ident	type	baseline	IDENTIFIER { "." IDENTIFIER }
 type_arguments	list	baseline	"<" type_list [ "," ] ">"

@@ -8,7 +8,7 @@ fn consumerError(error: Problem): ConsumerError {
   return ConsumerError.Producer(error);
 }
 
-fn score(choice: Choice<Array<int>>): int {
+fn score(choice: Choice<[]int>): int {
   return match choice {
     case None => 0;
     case Some(values) => values[0] + values.length();
@@ -16,14 +16,14 @@ fn score(choice: Choice<Array<int>>): int {
 }
 
 fn directResults(): Result<bool, ConsumerError> {
-  const made: Choice<Array<int>> = Choice.Some([40]);
-  const empty: Choice<Array<int>> = Choice.None;
+  const made: Choice<[]int> = Choice.Some([40]);
+  const empty: Choice<[]int> = Choice.None;
   const first = some([39]).mapError(consumerError)?;
   const second = none().mapError(consumerError)?;
   const nestedPresent = nestedSome([10]).mapError(consumerError)?;
   const nestedAbsent = nestedNone().mapError(consumerError)?;
-  const explicit: Option<Array<int>> = Some<Array<int>>([5]);
-  const inferred: Option<Array<int>> = Some([6]);
+  const explicit: Option<[]int> = Some<[]int>([5]);
+  const inferred: Option<[]int> = Some([6]);
   const nestedScore = match nestedPresent {
     case Some(values) => values[0];
     case None => 0;
@@ -52,7 +52,7 @@ fn directResults(): Result<bool, ConsumerError> {
   );
 }
 
-fn propagatedFailure(): Result<Choice<Array<int>>, ConsumerError> {
+fn propagatedFailure(): Result<Choice<[]int>, ConsumerError> {
   return Ok(failure().mapError(consumerError)?);
 }
 

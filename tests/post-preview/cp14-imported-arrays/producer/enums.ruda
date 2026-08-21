@@ -3,11 +3,11 @@ public enum Mark {
   High(int),
 }
 
-public fn makeMarks(): Array<Mark> {
+public fn makeMarks(): []Mark {
   return [Mark.Low, Mark.High(13)];
 }
 
-public fn mutateAndScoreMarks(marks: Array<Mark>): int {
+public fn mutateAndScoreMarks(marks: []Mark): int {
   marks[0] = Mark.High(5);
   return scoreMark(marks[0]) + scoreMark(marks[1]);
 }

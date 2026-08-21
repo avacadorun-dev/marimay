@@ -259,6 +259,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/vm_value.c
   bootstrap/src/check/array.c
   bootstrap/src/check/checker_array_mutation.c
+  bootstrap/src/check/checker_array_types.c
   bootstrap/src/check/checker.c
   bootstrap/src/check/checker_cfg.c
   bootstrap/src/check/checker_defer.c
@@ -308,6 +309,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/result.c
   bootstrap/src/check/service.c
   bootstrap/src/check/service_queries.c
+  bootstrap/src/check/type_spelling.c
   bootstrap/src/cli/cli.c
   bootstrap/src/cli/cli_build_program.c
     bootstrap/src/cli/cli_check.c
@@ -323,6 +325,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/format/document.c
   bootstrap/src/format/formatter.c
   bootstrap/src/format/formatter_collect.c
+  bootstrap/src/format/formatter_types.c
   bootstrap/src/lex/lexer.c
   bootstrap/src/lex/lexer_scan.c
   bootstrap/src/lex/token.c

@@ -74,5 +74,9 @@ bool ruda_format_collect_node(RudaFormatCollector *collector,
     bool in_record_expression);
 RudaFormatStatus ruda_format_order_imports(RudaVector *tokens,
     const unsigned char *source, size_t source_length, RudaAllocator allocator);
+bool ruda_formatter_type_prefix_is_adjacent(
+    const RudaFormatDelimiter *delimiter,
+    const RudaFormatToken *close,
+    const RudaFormatToken *next);
 
 #endif

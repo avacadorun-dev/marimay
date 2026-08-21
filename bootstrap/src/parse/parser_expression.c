@@ -1123,13 +1123,19 @@ void ruda_parse_type_until(
     } else if (current == RUDA_TOKEN_LEFT_BRACKET) {
         size_t open_offset = ruda_parser_current_offset(parser);
         ruda_parser_bump(parser);
-        ruda_parse_type_list(parser, RUDA_TOKEN_RIGHT_BRACKET, false);
-        ruda_parser_expect_closing_delimiter(
-            parser,
-            RUDA_TOKEN_RIGHT_BRACKET,
-            open_offset,
-            "expected ']' after tuple type"
-        );
+        if (ruda_parser_eat(parser, RUDA_TOKEN_RIGHT_BRACKET)) {
+            if (!parser->allocation_failed && !parser->limit_reached) {
+                ruda_parse_type_until(parser, first, second, third);
+            }
+        } else {
+            ruda_parse_type_list(parser, RUDA_TOKEN_RIGHT_BRACKET, false);
+            ruda_parser_expect_closing_delimiter(
+                parser,
+                RUDA_TOKEN_RIGHT_BRACKET,
+                open_offset,
+                "expected ']' after tuple type"
+            );
+        }
     } else if (current == RUDA_TOKEN_LEFT_PAREN) {
         size_t open_offset = ruda_parser_current_offset(parser);
         ruda_parser_bump(parser);

@@ -53,5 +53,6 @@ void ruda_test_checker_allocation_failures(void);
 void ruda_test_checker_package_allocation_failures(void);
 void ruda_test_checker_witness_allocation_failures(void);
 void ruda_test_checker_imported_arrays(void);
+void ruda_test_checker_array_type_spelling(void);
 
 #endif

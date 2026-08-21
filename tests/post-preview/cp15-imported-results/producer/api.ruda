@@ -8,22 +8,22 @@ public enum Problem {
   Rejected(int),
 }
 
-public fn some(values: Array<int>): Result<Choice<Array<int>>, Problem> {
-  return Ok<Choice<Array<int>>, Problem>(Choice.Some(values));
+public fn some(values: []int): Result<Choice<[]int>, Problem> {
+  return Ok<Choice<[]int>, Problem>(Choice.Some(values));
 }
 
-public fn none(): Result<Choice<Array<int>>, Problem> {
+public fn none(): Result<Choice<[]int>, Problem> {
   return Ok(Choice.None);
 }
 
-public fn failure(): Result<Choice<Array<int>>, Problem> {
-  return Err<Choice<Array<int>>, Problem>(Problem.Rejected(9));
+public fn failure(): Result<Choice<[]int>, Problem> {
+  return Err<Choice<[]int>, Problem>(Problem.Rejected(9));
 }
 
-public fn nestedSome(values: Array<int>): Result<Option<Array<int>>, Problem> {
-  return Ok<Option<Array<int>>, Problem>(Some(values));
+public fn nestedSome(values: []int): Result<Option<[]int>, Problem> {
+  return Ok<Option<[]int>, Problem>(Some(values));
 }
 
-public fn nestedNone(): Result<Option<Array<int>>, Problem> {
-  return Ok(None<Array<int>>());
+public fn nestedNone(): Result<Option<[]int>, Problem> {
+  return Ok(None<[]int>());
 }

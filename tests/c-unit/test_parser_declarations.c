@@ -9,7 +9,7 @@ void ruda_test_parser_declarations(void) {
         "interface Reader<T> { read(buffer: T): Result<int, Error>; Close; }\n"
         "@link(\"c\") extern \"c\" fn call(value: i32): i32;\n"
         "const answer: int = 42;\n"
-        "@fuzz fn fuzzBytes(input: Array<byte>): void { const _ = input; }\n"
+        "@fuzz fn fuzzBytes(input: []byte): void { const _ = input; }\n"
         "@test fn ok(): void { expect.equal(answer, 42); }\n";
     RudaParseFixture fixture;
     RUDA_EXPECT(ruda_parse_fixture_init(&fixture, source));
@@ -398,7 +398,7 @@ void ruda_test_parser_type_grammar(void) {
     static const char valid[] =
         "type Scalar = int;\n"
         "type Qualified = pkg.User;\n"
-        "type Nested = Map<string, Array<Result<int, Error>>>;\n"
+        "type Nested = Map<string, []Result<int, Error>>;\n"
         "type Tuple = [string, int];\n"
         "type Callback = (string, int) => Result<void, Error>;\n"
         "fn maximum<T: Ordered<T> & Hash<T>>(value: T): T { return value; }\n";
@@ -431,11 +431,11 @@ void ruda_test_parser_type_grammar(void) {
             RUDA_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
-            "type MissingClose = Map<string, Array<int>; fn after(): void {}",
+            "type MissingClose = Map<string, []int; fn after(): void {}",
             RUDA_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
-            "type ExtraClose = Array<int>>; fn after(): void {}",
+            "type ExtraClose = []int>; fn after(): void {}",
             RUDA_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
@@ -464,7 +464,7 @@ void ruda_test_parser_type_grammar(void) {
         RUDA_EXPECT(ruda_syntax_count_kind(
             fixture.parsed.tree.root,
             RUDA_SYNTAX_TYPE_ARGUMENTS
-        ) >= 6);
+        ) >= 5);
         ruda_parse_fixture_dispose(&fixture);
     }
     for (index = 0; index < sizeof(invalid) / sizeof(invalid[0]); index += 1) {

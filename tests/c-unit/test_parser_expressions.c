@@ -679,7 +679,7 @@ void ruda_test_parser_exact_delimited_grammar(void) {
 
 void ruda_test_parser_statement_forms(void) {
     static const char source[] =
-        "fn nested(value: Option<Array<Result<int, Error>>>): Option<Array<int>> {\n"
+        "fn nested(value: Option<[]Result<int, Error>>): Option<[]int> {\n"
         "  let delayed: int;\n"
         "  let _ = 0;\n"
         "  const _ = 0;\n"

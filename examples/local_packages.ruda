@@ -1,9 +1,9 @@
 import { Level, User, score as scoreFree } from "acme/store";
 import * as store from "acme/store";
 
-public type ImportedUsers = Array<User>;
+public type ImportedUsers = []User;
 
-public type ImportedUserRows = Array<Array<User>>;
+public type ImportedUserRows = [][]User;
 
 public fn relayUsers(users: ImportedUsers): ImportedUsers {
   return users;

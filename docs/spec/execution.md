@@ -101,7 +101,7 @@ A portable `.rudab` contains no native machine code. An FFI import marks a bundl
 
 #### 4.2.1 Generic array type table
 
-New bundles that contain `Array<T>` use a canonical array-type table in the
+New bundles that contain `[]T` use a canonical array-type table in the
 program type section. Each row stores the bytecode element type tag and either
 `NO_LAYOUT` for scalar elements and the built-in canonical string descriptor,
 or the index of the exact array, record, enum, or interface layout for another

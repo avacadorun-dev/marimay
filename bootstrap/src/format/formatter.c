@@ -610,6 +610,7 @@ static void ruda_formatter_close_group(
 ) {
     static const unsigned char comma[] = ",";
     RudaFormatDelimiter *delimiter = ruda_formatter_top_delimiter(formatter);
+    bool type_prefix_adjacent = false;
     if (delimiter == NULL
         || !ruda_formatter_delimiter_matches(
             delimiter->open,
@@ -618,6 +619,11 @@ static void ruda_formatter_close_group(
         formatter->status = RUDA_FORMAT_SOURCE_INVALID;
         return;
     }
+    type_prefix_adjacent = ruda_formatter_type_prefix_is_adjacent(
+        delimiter,
+        token,
+        next
+    );
     if (!delimiter->empty) {
         if (delimiter->trailing_comma
             && formatter->has_previous_code
@@ -635,7 +641,7 @@ static void ruda_formatter_close_group(
         && !ruda_formatter_next_comment_same_line(formatter, token, next)) {
         ruda_formatter_ensure_hardlines(formatter, 1);
     } else {
-        formatter->pending_space = next != NULL;
+        formatter->pending_space = next != NULL && !type_prefix_adjacent;
     }
 }
 

@@ -2,10 +2,10 @@ import { Error as IoError, println } from "std/io";
 
 type OrderState {
   mutable trace: int;
-  values: Array<int>;
+  values: []int;
 }
 
-fn orderedValues(state: OrderState): Array<int> {
+fn orderedValues(state: OrderState): []int {
   state.trace = state.trace * 10 + 1;
   return state.values;
 }
@@ -21,28 +21,28 @@ fn evaluationOrderWorks(): bool {
   return state.trace == 12;
 }
 
-fn grow(values: Array<int>): Result<bool, ArrayGrowthError> {
+fn grow(values: []int): Result<bool, ArrayGrowthError> {
   values.reserve(6)?;
   values.push(9)?;
   return Ok(true);
 }
 
-fn shrink(values: Array<int>): Result<bool, ArrayTruncateError> {
+fn shrink(values: []int): Result<bool, ArrayTruncateError> {
   values.truncate(1)?;
   return Ok(true);
 }
 
-fn invalidShrink(values: Array<int>): Result<bool, ArrayTruncateError> {
+fn invalidShrink(values: []int): Result<bool, ArrayTruncateError> {
   values.truncate(3)?;
   return Ok(false);
 }
 
-fn negativeGrowth(values: Array<int>): Result<bool, ArrayGrowthError> {
+fn negativeGrowth(values: []int): Result<bool, ArrayGrowthError> {
   values.reserve(-4)?;
   return Ok(false);
 }
 
-fn excessiveGrowth(values: Array<int>): Result<bool, ArrayGrowthError> {
+fn excessiveGrowth(values: []int): Result<bool, ArrayGrowthError> {
   values.reserve(9223372036854775807)?;
   return Ok(false);
 }

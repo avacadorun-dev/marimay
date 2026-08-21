@@ -7,6 +7,6 @@ enum Problem {
   Missing,
 }
 
-fn nested(values: Array<int>): Result<Choice<Array<int>>, Problem> {
+fn nested(values: []int): Result<Choice<[]int>, Problem> {
   return Ok(Choice.Some(values));
 }

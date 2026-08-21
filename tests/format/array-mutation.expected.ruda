@@ -1,4 +1,4 @@
-fn mutate(values: Array<int>): void {
+fn mutate(values: []int): void {
   values.push(1);
   values.pop();
   values.truncate(0);

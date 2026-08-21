@@ -53,4 +53,5 @@ void ruda_test_checker(void) {
     ruda_test_checker_package_allocation_failures();
     ruda_test_checker_witness_allocation_failures();
     ruda_test_checker_imported_arrays();
+    ruda_test_checker_array_type_spelling();
 }

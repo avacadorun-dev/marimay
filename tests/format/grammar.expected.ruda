@@ -23,7 +23,7 @@ extern "c" fn call(value: i32): i32;
 const answer: int = 42;
 
 @fuzz
-fn fuzzBytes(input: Array<byte>): void {
+fn fuzzBytes(input: []byte): void {
   const _ = input;
 }
 
@@ -63,7 +63,7 @@ fn scope(break: int, continue: int, unsafe: int): int {
   return break + continue + unsafe;
 }
 
-fn nested(value: Option<Array<Result<int, Error>>>): Option<Array<int>> {
+fn nested(value: Option<[]Result<int, Error>>): Option<[]int> {
   for const item of value {
     use(item);
   }

@@ -808,7 +808,7 @@ cleanup:
         (void)ruda_checker_add_diagnostic(
             function->checker,
             RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-            "for-of expression must have type Array<T>",
+            "for-of expression must have type []T",
             iterable_node->start,
             iterable_node->end
         );

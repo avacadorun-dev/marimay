@@ -71,6 +71,7 @@ T0014	REDUNDANT_PATTERN	type checker	Match arm pattern is redundant or unreachab
 T0015	YIELD_OUTSIDE_MATCH_ARM	type checker	Yield appears outside a block match arm.
 T0016	MISSING_MATCH_YIELD	type checker	A reachable path through a block match arm does not yield a value.
 T0017	INVALID_ENTRY_POINT	run	Executable root does not declare an accepted main entry point.
+T0018	ARRAY_TYPE_SPELLING	type checker	Prelude managed-array source uses the removed Array<T> spelling instead of canonical []T.
 U0001	UNKNOWN_COMMAND	command line	Unknown top-level command or help target.
 U0002	UNKNOWN_OPTION	command line	Unknown command-line option.
 U0003	UNAVAILABLE_COMMAND	command line	Specified command is not present in this bootstrap stage.

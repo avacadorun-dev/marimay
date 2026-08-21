@@ -296,7 +296,7 @@ bool ruda_checker_private_compile_array_mutation_call(
     if (!ruda_type_array_element(&function->checker->result->types, receiver.type, &element)
         || !ruda_array_layout(function, receiver.type, &array)) {
         (void)ruda_checker_add_diagnostic(function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-            "Array mutation requires an Array<T> receiver", receiver_node->start, receiver_node->end);
+            "array mutation requires a []T receiver", receiver_node->start, receiver_node->end);
         return false;
     }
     memset(&value, 0, sizeof(value)); value.register_id = RUDA_MIR_NO_REGISTER;

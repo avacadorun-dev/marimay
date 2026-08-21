@@ -13,7 +13,7 @@ enum {
     RUDA_BYTECODE_FEATURE_F64 = 1U << 2,
     RUDA_BYTECODE_FEATURE_ARRAYS = 1U << 3,
     RUDA_BYTECODE_FEATURE_NOMINAL = 1U << 4,
-    /* The extended envelope carries canonical Array<T> descriptors. */
+    /* The extended envelope carries canonical []T descriptors. */
     RUDA_BYTECODE_FEATURE_ARRAY_TYPES = 1U << 5
 };
 

@@ -5,7 +5,7 @@ enum Maybe<T>{None,Some(T),Named{value:T;},}
 interface Reader<T>{read(buffer:T):Result<int,Error>;Close;}
 @link("c") extern "c" fn call(value:i32):i32;
 const answer:int=42;
-@fuzz fn fuzzBytes(input:Array<byte>):void{const _=input;}
+@fuzz fn fuzzBytes(input:[]byte):void{const _=input;}
 @test fn ok():void{expect.equal(answer,42);}
 fn expressions(a:int,b:int,c:int):void{
 const precedence=a+b*c;
@@ -26,7 +26,7 @@ const textMatched=match text{case "ready"=>1;case _=>0;};
 const pointMatched=match point{case Point{x,y}=>x+y;};
 }
 fn scope(break:int,continue:int,unsafe:int):int{return break+continue+unsafe;}
-fn nested(value:Option<Array<Result<int,Error>>>):Option<Array<int>>{
+fn nested(value:Option<[]Result<int,Error>>):Option<[]int>{
 for const item of value{use(item);}
 for let index=0;index<3;index+=1{if index==1{continue;}else if false{break;}else{use(index);}}
 while false{break;}

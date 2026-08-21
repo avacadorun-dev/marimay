@@ -9,7 +9,7 @@
  * descriptors name the one exact managed object type accepted by each
  * element. Strings use kind STRING and a null descriptor; every other
  * reference kind carries the exact child descriptor address. This represents
- * arbitrary nested and recursive Array<T> graphs without teaching the
+ * arbitrary nested and recursive []T graphs without teaching the
  * collector one enum value per source type.
  */
 typedef struct RudaManagedArrayDescriptor {

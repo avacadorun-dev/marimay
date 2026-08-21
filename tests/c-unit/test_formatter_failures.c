@@ -186,8 +186,8 @@ void ruda_test_formatter_rejects_invalid_types(void) {
         "type EmptyTuple = []; fn after(): void {}",
         "type NotFunction = (int); fn after(): void {}",
         "type Extra = int string; fn after(): void {}",
-        "type MissingClose = Map<string, Array<int>; fn after(): void {}",
-        "type ExtraClose = Array<int>>; fn after(): void {}",
+        "type MissingClose = Map<string, []int; fn after(): void {}",
+        "type ExtraClose = []int>; fn after(): void {}",
         "fn emptyParameters<>(value: int): int { return value; }",
         "fn missingConstraint<T: >(value: T): T { return value; }"
     };

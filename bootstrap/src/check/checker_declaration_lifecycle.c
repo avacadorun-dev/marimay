@@ -2,6 +2,7 @@
 #include "package_imports_api.h"
 #include "checker_core_api.h"
 #include "checker_generic_types_api.h"
+#include "checker_array_types_api.h"
 
  void ruda_checker_private_function_declaration_dispose(
     RudaCheckFunctionDeclaration *declaration
@@ -254,7 +255,7 @@ void ruda_checker_private_interface_declaration_dispose(
     static const char *const names[] = {
         "bool", "i8", "i16", "i32", "i64", "int", "u8", "byte",
         "u16", "u32", "u64", "uint", "f32", "f64", "float", "rune",
-        "string", "void", "never", "Array"
+        "string", "void", "never"
     };
     size_t index = 0;
     for (index = 0; index < sizeof(names) / sizeof(names[0]); index += 1) {
@@ -281,7 +282,7 @@ void ruda_checker_private_interface_declaration_dispose(
     RudaCheckInterfaceDeclaration *interface_declaration = NULL;
     RudaCheckTypeAliasDeclaration *alias = NULL;
     const RudaAstNode *type_arguments = NULL;
-    const RudaAstNode *argument_type = NULL;
+    const RudaAstNode *array_element = NULL;
     bool is_public = false;
     bool import_resolved = false;
     RudaTypeId imported_type = RUDA_TYPE_INVALID;
@@ -289,8 +290,41 @@ void ruda_checker_private_interface_declaration_dispose(
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
     }
+    array_element = ruda_checker_private_array_type_element(node);
+    if (array_element != NULL) {
+        return ruda_checker_private_check_public_type_reference(
+            checker, array_element
+        );
+    }
     name_token = ruda_checker_private_check_child_token(node, RUDA_TOKEN_IDENTIFIER, 0);
-    if (name_token == NULL || name_token->synthetic) {
+    if (name_token == NULL) {
+        size_t child_index = 0;
+        bool found_type = false;
+        bool all_public = true;
+        for (child_index = 0; child_index < node->child_count;
+            child_index += 1) {
+            const RudaAstElement *child = ruda_ast_child(node, child_index);
+            if (child != NULL && child->kind == RUDA_AST_ELEMENT_NODE
+                && child->as.node != NULL
+                && child->as.node->kind == RUDA_SYNTAX_TYPE) {
+                found_type = true;
+                if (!ruda_checker_private_check_public_type_reference(
+                        checker, child->as.node
+                    )) {
+                    all_public = false;
+                    if (ruda_checker_has_failed(checker)) {
+                        return false;
+                    }
+                }
+            }
+        }
+        if (found_type) {
+            return all_public;
+        }
+        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        return false;
+    }
+    if (name_token->synthetic) {
         ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
         return false;
     }
@@ -308,33 +342,6 @@ void ruda_checker_private_interface_declaration_dispose(
             return false;
         }
         return true;
-    }
-    if (ruda_checker_private_check_text_equal(
-            checker,
-            name.start,
-            name.end,
-            "Array"
-        )) {
-        type_arguments = ruda_checker_private_check_child_node(
-            node,
-            RUDA_SYNTAX_TYPE_ARGUMENTS,
-            0
-        );
-        argument_type = ruda_checker_private_check_child_node(
-            type_arguments,
-            RUDA_SYNTAX_TYPE,
-            0
-        );
-        if (type_arguments == NULL || argument_type == NULL
-            || ruda_checker_private_check_child_node(
-                type_arguments,
-                RUDA_SYNTAX_TYPE,
-                1
-            ) != NULL) {
-            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
-            return false;
-        }
-        return ruda_checker_private_check_public_type_reference(checker, argument_type);
     }
     if (!ruda_check_import_type(
             checker, node, &imported_type, &import_resolved

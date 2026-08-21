@@ -24,7 +24,7 @@ extern "c" fn foreign(value: i32): i32;
 const answer: int = 42;
 
 @fuzz
-fn fuzzBytes(input: Array<byte>): void {
+fn fuzzBytes(input: []byte): void {
   const _ = input;
 }
 

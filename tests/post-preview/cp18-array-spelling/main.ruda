@@ -1,0 +1,44 @@
+import { Error as IoError, println } from "std/io";
+
+import { Edge, edge } from "example/cp18-array-spelling/model";
+import * as model from "example/cp18-array-spelling/model";
+import { Array, make, read } from "example/cp18-array-spelling/nominal";
+
+type Rows = [][]int;
+
+type QualifiedEdges = []model.Edge;
+
+type DirectEdges = []Edge;
+
+type OptionalRows = Option<Rows>;
+
+fn buildRows(): Rows {
+  let rows: [][]int = [];
+  rows.push([1, 2]);
+  const alias = rows;
+  alias[0][1] = 7;
+  return rows;
+}
+
+fn arraySpellingWorks(): bool {
+  const rows = buildRows();
+  const edges: QualifiedEdges = [model.edge(5)];
+  const direct: DirectEdges = [edge(6)];
+  const ordinary: Array<int> = make();
+  const optional: OptionalRows = Some(rows);
+  const optionalWorks = match optional {
+    case Some(value) => value[0][1] == 7;
+    case None => false;
+  };
+  return rows.length() == 1 && rows[0].length() == 2 && rows[0][1] == 7 && edges[0].weight == 5 && direct[
+    0
+  ].weight == 6 && read(ordinary) == 9 && optionalWorks;
+}
+
+fn main(): Result<void, IoError> {
+  if !arraySpellingWorks() {
+    panic("checkpoint 18 array spelling changed");
+  }
+  println("cp18 array spelling ok")?;
+  return Ok();
+}

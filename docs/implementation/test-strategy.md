@@ -68,6 +68,13 @@ out of declaration order with effectful initializers. Formatting may reflow the
 brace group but must preserve the exact field sequence; no formatter test may
 use semantic name resolution to justify a reorder.
 
+D054 fixtures cover scalar, nested, qualified, generic, tuple, and function
+element types; incomplete `[]`, `[][]`, `[][`, and generic-element input;
+comment preservation; canonical prefix adjacency; semantic round trip; and
+second-pass formatter byte identity. Checker tests separately cover contextual
+empty literals, aliases/imports, the targeted legacy diagnostic, and an
+ordinary local/imported nominal type named `Array`.
+
 Fixture families cover valid edge cases, one-token deletions/insertions, delimiter nesting, Unicode, CRLF, empty files, maximum limits, and recovery followed by valid declarations.
 
 `tests/syntax/parser/coverage.tsv` is indexed one-for-one by the generated

@@ -257,9 +257,9 @@ static void ruda_checker_arrays_expect_status(
 
 static void ruda_test_checker_arrays_surface_and_matrix(void) {
     static const char source[] =
-        "fn surface(values: Array<f64>, matrices: Array<Array<f64>>): int {\n"
+        "fn surface(values: []f64, matrices: [][]f64): int {\n"
         "  let inferred = [1.0, 2.0];\n"
-        "  let contextual: Array<f64> = [];\n"
+        "  let contextual: []f64 = [];\n"
         "  let writable = [0.0, 0.0];\n"
         "  writable[0] = inferred[1];\n"
         "  writable[0] += values[0];\n"
@@ -284,12 +284,12 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
         "  values[1] += 4;\n"
         "  let empty = arrayOf<int>();\n"
         "  empty.push(9);\n"
-        "  let nested: Array<Array<int>> = [[7, 8]];\n"
+        "  let nested: [][]int = [[7, 8]];\n"
         "  nested[0].push(9);\n"
         "  return values[2] + values.length() + empty[0] + nested[0][2];\n"
         "}\n"
         "fn sorting(): int {\n"
-        "  let values: Array<int> = [3, 1, 2];\n"
+        "  let values: []int = [3, 1, 2];\n"
         "  for let pass = 0; pass < 3; pass += 1 {\n"
         "    for let index = 0; index < 2; index += 1 {\n"
         "      if values[index] > values[index + 1] {\n"
@@ -587,13 +587,7 @@ static void ruda_test_checker_arrays_d045_and_diagnostics(void) {
         "fn bad(): void { let values = [1]; values[0] = true; }\n"
     );
     ruda_checker_arrays_expect_type_diagnostic(
-        "fn bad(values: Array<f64, int>): void {}\n"
-    );
-    ruda_checker_arrays_expect_type_diagnostic(
         "fn bad(): void { let values = []; }\n"
-    );
-    ruda_checker_arrays_expect_type_diagnostic(
-        "fn bad(values: Array): void {}\n"
     );
     ruda_checker_arrays_expect_status(
         "fn deferred(): void { let values = arrayOf(1); }\n",
@@ -777,7 +771,7 @@ static void ruda_test_checker_arrays_allocation_failures(void) {
 
 static void ruda_test_checker_arrays_limits(void) {
     static const char source[] =
-        "fn arrays(): Array<Array<f64>> { return [[1.0, 2.0]]; }\n";
+        "fn arrays(): [][]f64 { return [[1.0, 2.0]]; }\n";
     RudaCheckerArraysFixture fixture;
     RudaCheckOptions options;
     RudaCheckResult checked;

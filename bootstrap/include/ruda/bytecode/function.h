@@ -43,7 +43,7 @@ typedef struct RudaBytecodeFunction {
     RudaVector string_constants;
     RudaVector array_constructions;
     RudaVector array_arguments;
-    /* Canonical serialized type table for generic Array<T> descriptors. */
+    /* Canonical serialized type table for generic []T descriptors. */
     RudaVector array_types;
     RudaVector register_layouts;
     RudaVector record_layouts;

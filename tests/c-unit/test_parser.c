@@ -20,6 +20,7 @@ void ruda_test_parser(void) {
     ruda_test_parser_statement_forms();
     ruda_test_parser_statement_recovery();
     ruda_test_parser_type_grammar();
+    ruda_test_parser_array_type_spelling();
     ruda_test_parser_nested_generic_boundaries();
     ruda_test_parser_incremental_reuse();
     ruda_test_parser_limits_and_allocation();

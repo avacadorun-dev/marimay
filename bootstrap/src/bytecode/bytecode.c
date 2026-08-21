@@ -131,11 +131,11 @@ const char *ruda_bytecode_type_name(RudaBytecodeType type) {
         case RUDA_BYTECODE_TYPE_NEVER:
             return "never";
         case RUDA_BYTECODE_TYPE_ARRAY_F64:
-            return "Array<f64>";
+            return "[]f64";
         case RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64:
-            return "Array<Array<f64>>";
+            return "[][]f64";
         case RUDA_BYTECODE_TYPE_ARRAY:
-            return "Array<T>";
+            return "[]T";
         case RUDA_BYTECODE_TYPE_RECORD:
             return "record";
         case RUDA_BYTECODE_TYPE_ENUM:

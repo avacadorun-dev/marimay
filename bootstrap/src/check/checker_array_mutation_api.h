@@ -4,7 +4,7 @@
 #include "checker_internal.h"
 #include "checker_function_context.h"
 
-/* Selected D053 Array<T> mutations after receiver-directed resolution. */
+/* Selected D053 []T mutations after receiver-directed resolution. */
 bool ruda_checker_private_compile_array_mutation_call(
     RudaFunctionChecker *function,
     const RudaAstNode *node,

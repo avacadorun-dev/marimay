@@ -5,7 +5,7 @@ enum Choice<T> {
 }
 
 public fn namespaceShadowingWorks(): bool {
-  const value: producer.Choice<Array<int>> = producer.Choice.Some([11]);
+  const value: producer.Choice<[]int> = producer.Choice.Some([11]);
   return match value {
     case producer.None => false;
     case producer.Some(values) => values[0] == 11;

@@ -22,7 +22,7 @@ These examples are executable specification fixtures once the parser exists. Unt
   function aliases, namespace qualification, direct dot calls, and structural
   interface conformance all resolve behavior owned by the imported nominal
   package. Its public `ImportedUsers` and `ImportedUserRows` aliases also show
-  canonical `Array<User>` transport through a package-owned wrapper without a
+  canonical `[]User` transport through a package-owned wrapper without a
   boundary conversion.
 - `array_checkpoint.ruda` checks the D045 array surface, including construction,
   mutation, checked indexed compound assignment, and nonmutating
@@ -31,7 +31,7 @@ These examples are executable specification fixtures once the parser exists. Unt
   `reserve` surface over scalar and nested managed arrays. Iteration mutation
   is rejected through the separate exact-G4005 acceptance corpus.
 - `receiver_collection_names.ruda` demonstrates receiver-directed resolution
-  when ordinary `Stack` functions and compiler-known `Array<T>` operations
+  when ordinary `Stack` functions and compiler-known `[]T` operations
   share `push` and `length`: free and dot forms preserve one symbol per exact
   receiver and neither spelling receives reserved precedence.
 

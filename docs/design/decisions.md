@@ -643,11 +643,11 @@ compare exact result bits without making `printf`, host parsers, or a future
 
 Status: accepted.
 
-`Array<T>` is a managed mutable container with stable reference identity.
+`[]T` is a managed mutable container with stable reference identity.
 `arrayOf(...)` is a compiler-known variadic prelude function whose arguments
 are evaluated once from left to right and must have one exact element type.
 An empty `arrayOf<T>()` supplies that type explicitly; an empty array literal
-requires an expected `Array<T>` type. Non-empty literals infer one exact common
+requires an expected `[]T` type. Non-empty literals infer one exact common
 element type without implicit conversion.
 
 The ordinary prelude function `length(array): int` is dot-call eligible as
@@ -684,7 +684,7 @@ tag and, for an array, record, enum, or interface element, the referenced
 layout-table index. The built-in canonical string descriptor uses `NO_LAYOUT`,
 as do scalar elements; array
 instructions refer to the row rather than serializing a source `TypeId` or a
-host pointer. The fixed `Array<f64>` preview tags remain a decoder-compatible
+host pointer. The fixed `[]f64` preview tags remain a decoder-compatible
 legacy form only for old f64-only bundles.
 
 Across package calls, results, public aliases, and forwarding wrappers, the
@@ -1093,14 +1093,14 @@ ordinary generic functions, with free and dot forms resolving to the same
 operation after exact receiver-directed D003/D043 candidate selection:
 
 ```ruda
-public fn pop<T>(values: Array<T>): Option<T>;
+public fn pop<T>(values: []T): Option<T>;
 public fn truncate<T>(
-  values: Array<T>,
+  values: []T,
   newLength: int,
 ): Result<void, ArrayTruncateError>;
-public fn clear<T>(values: Array<T>): void;
+public fn clear<T>(values: []T): void;
 public fn reserve<T>(
-  values: Array<T>,
+  values: []T,
   additional: int,
 ): Result<void, ArrayGrowthError>;
 
@@ -1166,3 +1166,37 @@ and a generation snapshot detects structural mutation without exposing
 capacity or requiring iterator lifetime syntax. These operations extend D045;
 they do not add slices, a deque, a capacity getter, implicit shrinking, or a
 general collection-method declaration mechanism.
+
+## D054 — Managed arrays use prefix `[]T` source spelling
+
+Status: accepted.
+
+The canonical source spelling of the existing D045 managed array type is
+`[]T`. Prefixes associate to the right, so `[][]int` is an array whose elements
+are `[]int`. The element may be a qualified, generic, tuple, or function type.
+An empty expression literal remains `[]`; type position is determined by the
+grammar context. This decision changes source spelling only: the canonical
+type identity, managed-reference identity, typed MIR, bytecode descriptors,
+runtime layout, tracing, VM behavior, native behavior, and ABI remain those of
+D045 and D053.
+
+This is a pre-1.0 replacement, not a compatibility alias. The prelude no
+longer exposes a nominal `Array` type name. An otherwise unresolved
+`Array<T>` type reports `T0018` over the complete type with the exact message
+`prelude managed arrays use '[]T'; replace 'Array<T>' with '[]T'`. A local or
+imported user declaration named `Array` remains an ordinary nominal type and
+is never rewritten by the formatter. The distinct `Slice<T>` nominal type
+retains its non-owning, scope-bounded semantics and is not denoted by `[]T`.
+
+The formatter emits adjacent prefixes (`[]T`, `[][]T`) while preserving
+comments. Diagnostics, hover/signature text, completion detail, generated
+documentation, and other compiler-owned type displays use the same canonical
+spelling. Existing D045/D053 references to a semantic managed-array identity
+are read under this replacement; their operation and failure contracts are
+unchanged.
+
+Reason: managed arrays are pervasive in signatures and algorithms, and a
+compact recursive spelling makes nested element structure visible without
+introducing a second collection. Removing the old prelude spelling before 1.0
+avoids a permanent alias and leaves package-owned names under ordinary lexical
+resolution.

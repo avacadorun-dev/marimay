@@ -25,7 +25,7 @@ type Order {
 
 type Dashboard {
   public user: User;
-  public orders: Array<Order>;
+  public orders: []Order;
 }
 
 fn loadUser(id: int): Result<User, AppError> {
@@ -39,11 +39,11 @@ fn loadUser(id: int): Result<User, AppError> {
   );
 }
 
-fn loadOrders(id: int): Result<Array<Order>, AppError> {
+fn loadOrders(id: int): Result<[]Order, AppError> {
   const response = http.get($"/users/{id}/orders").mapError(
     (error: http.Error): AppError => AppError.Network(error),
   )?;
-  return json.decode<Array<Order>>(response.body).mapError(
+  return json.decode<[]Order>(response.body).mapError(
     (error: json.Error): AppError => AppError.Decode(error),
   );
 }

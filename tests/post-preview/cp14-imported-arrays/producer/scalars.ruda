@@ -1,6 +1,6 @@
-public type Scores = Array<int>;
+public type Scores = []int;
 
-public type Matrix = Array<Array<int>>;
+public type Matrix = [][]int;
 
 public fn makeScores(): Scores {
   return [1, 2];

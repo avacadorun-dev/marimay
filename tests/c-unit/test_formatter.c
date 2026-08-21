@@ -8,4 +8,5 @@ void ruda_test_formatter(void) {
     ruda_test_formatter_trivia_property();
     ruda_test_formatter_rejection_limits_and_allocation();
     ruda_test_formatter_rejects_invalid_types();
+    ruda_test_formatter_array_type_spelling();
 }

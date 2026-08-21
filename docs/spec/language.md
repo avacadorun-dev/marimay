@@ -149,7 +149,7 @@ Record fields are package-private unless marked `public`. Interface call signatu
 
 A type in a public signature crosses a package boundary as the same canonical,
 fully qualified type after aliases are resolved. Generic arguments are part of
-that identity. In particular, `Array<T>` in an imported parameter or result
+that identity. In particular, `[]T` in an imported parameter or result
 retains the exact canonical `T` and its recursive managed layout; the caller
 and callee do not insert package-specific array or element conversions. A
 public alias may expose another spelling of that same type, and a public
@@ -268,7 +268,20 @@ Any nominal type whose dot-call set contains an exact visible `message(): string
 
 When a positional enum variant's instantiated payload type is `void`, its constructor takes no argument. Thus a function returning `Result<void,E>` completes with `Ok()`.
 
-`Array<T>` is an ordered mutable managed-reference collection under D045.
+`[]T` is an ordered mutable managed-reference collection under D045. The
+prefix associates to the right: `[][]int` is an array of `[]int`. Its element
+may be a qualified (`[]pkg.Item`), generic (`[]Option<int>`), tuple (for
+example, an array of `[int, string]`), or function (for example, an array whose
+element is `(int) => string`) type.
+In grammar terms,
+`array_type` is `"[" "]" type`; expression context continues to parse `[]` as
+an empty array literal. `let rows: [][]int = []` therefore uses the annotation
+as the expected type of the literal.
+
+The formatter emits adjacent prefixes and never rewrites a nominal name based
+on resolution. The prelude does not define `Array`; unresolved legacy
+`Array<T>` source is rejected under D054, while a package-owned declaration
+with that name is ordinary nominal syntax. `Slice<T>` remains distinct.
 `Map<K,V>` preserves insertion iteration order and requires keys supporting
 equality and hashing. Updating an existing key retains its position; deleting
 and reinserting appends it. `Set<T>` follows the same order rule. `Slice<T>` is
@@ -366,29 +379,29 @@ Tuple types use brackets in type position and values use brackets with a fixed a
 const pair: [string, int] = ["port", 8080];
 ```
 
-`Array<T>` construction uses the compiler-known variadic prelude
+`[]T` construction uses the compiler-known variadic prelude
 `arrayOf(...)` function or a contextual array literal. This avoids inventing
 static methods on types and avoids treating arbitrary heterogeneous values as
 an array. Arguments evaluate once from left to right and require one exact
 element type. `arrayOf<T>()` constructs an empty array with an explicit element
-type. An empty literal requires an expected `Array<T>` type; a non-empty
+type. An empty literal requires an expected `[]T` type; a non-empty
 literal infers one exact common element type and performs no implicit numeric
 or user conversion.
 
-The prelude exposes ordinary free functions whose exact first `Array<T>`
+The prelude exposes ordinary free functions whose exact first `[]T`
 parameter makes them dot-call eligible:
 
 ```ruda
-public fn length<T>(values: Array<T>): int;
-public fn push<T>(values: Array<T>, value: T): Result<void, ArrayGrowthError>;
-public fn pop<T>(values: Array<T>): Option<T>;
+public fn length<T>(values: []T): int;
+public fn push<T>(values: []T, value: T): Result<void, ArrayGrowthError>;
+public fn pop<T>(values: []T): Option<T>;
 public fn truncate<T>(
-  values: Array<T>,
+  values: []T,
   newLength: int,
 ): Result<void, ArrayTruncateError>;
-public fn clear<T>(values: Array<T>): void;
+public fn clear<T>(values: []T): void;
 public fn reserve<T>(
-  values: Array<T>,
+  values: []T,
   additional: int,
 ): Result<void, ArrayGrowthError>;
 
@@ -434,11 +447,11 @@ Parameter types are invariant for interface and function compatibility in 1.0. R
 Generic parameters are declared with angle brackets and may have interface constraints:
 
 ```ruda
-fn first<T>(values: Array<T>): Option<T> {
+fn first<T>(values: []T): Option<T> {
   // ...
 }
 
-fn maximum<T: Ordered<T>>(values: Array<T>): Option<T> {
+fn maximum<T: Ordered<T>>(values: []T): Option<T> {
   // ...
 }
 ```
@@ -545,7 +558,7 @@ owned nominal receiver selects the ordinary function and an exact
 compiler-known receiver selects the library operation. For example,
 `push(stack, value)`/`stack.push(value)` resolve to the package symbol owned by
 `Stack`, while `push(values, value)`/`values.push(value)` resolve to the
-`Array<T>` operation when `values` is an array. The same rule applies to
+`[]T` operation when `values` is an array. The same rule applies to
 `length`, `pop`, `truncate`, `clear`, and `reserve`; the compiler-known prelude
 has no name-only priority over visible package candidates. A
 namespace-qualified free call is resolved only through that namespace.

@@ -1,16 +1,16 @@
 public type Stack {
-  mutable values: Array<int>;
+  mutable values: []int;
   mutable size: int;
 }
 
 public type Queue {
-  mutable values: Array<int>;
+  mutable values: []int;
   mutable start: int;
   mutable size: int;
 }
 
 public type Heap {
-  mutable values: Array<int>;
+  mutable values: []int;
   mutable size: int;
 }
 
