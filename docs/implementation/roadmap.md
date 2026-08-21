@@ -47,6 +47,11 @@ evidence](evidence/cp15-imported-results-2026-08-20.md)
 transports imported generic enum constructors, patterns, nested
 `Option`/`Result`, and postfix `?` through canonical MIR identity, verified
 encoded bytecode, VM, and native C17.
+[Post-preview checkpoint 20 evidence](evidence/cp20-reusable-algorithm-corpus-2026-08-21.md)
+records the first machine-validated reusable sorting/structure/graph workload
+shared by Ruda, Go, and Rust, plus exact Ruda fmt/check/VM/test-both/debug and
+release native regression coverage. It is workload-fidelity evidence only:
+no compiler semantics, performance budget, or roadmap gate state changes.
 Latest earlier I4 process evidence: [preview checkpoint 12 executes the final
 local/private preview process matrix and exact VM/native observation
 comparison](evidence/cp12-final-preview-2026-08-18.md).
@@ -175,13 +180,17 @@ generated C17; the configured Linux x86_64 matrix is green in
 checkpoint 2 established deterministic local packages and D043 invariance;
 preview checkpoint 3 now publishes bounded occurrence facts and exact
 resolver-owned dot completion through generation/snapshot-safe query APIs.
-Preview checkpoints 4–12 and post-preview checkpoints 13–17 now cover constrained generics, generic arrays,
+Preview checkpoints 4–12 and post-preview checkpoints 13–20 now cover constrained generics, generic arrays,
 numeric/text primitives, lexical cleanup, authoritative batch checking, local
 verified VM execution, D046 stdout, content-addressed native builds, and the
 built-in deterministic test loop through final local/private integration,
 profile-coherent native runtime selection, canonical instantiated managed
 arrays, imported generic enum/result flows across local-package boundaries,
 receiver-directed collection names, and the D053 array-mutation contract.
+The checkpoint-20 sibling corpus now routes all eight timed workloads through
+the same reusable package families and machine-validates LCG, operation,
+representation, selected-check, and checksum contracts before measurement;
+performance baseline and budgets remain checkpoint-21 work.
 Production
 LSP transport and later execution/runtime work remain out of scope until their
 ordered checkpoints.

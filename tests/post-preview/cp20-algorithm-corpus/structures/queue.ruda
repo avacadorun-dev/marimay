@@ -1,0 +1,36 @@
+public type Queue {
+  values: []int;
+  mutable head: int;
+}
+
+public fn newQueue(): Queue {
+  return Queue { values: [], head: 0 };
+}
+
+public fn enqueue(queue: Queue, value: int): void {
+  queue.values.push(value);
+}
+
+public fn dequeue(queue: Queue): Option<int> {
+  if queue.head == queue.values.length() {
+    return None<int>();
+  }
+  const value = queue.values[queue.head];
+  queue.head += 1;
+  return Some(value);
+}
+
+public fn front(queue: Queue): Option<int> {
+  if queue.head == queue.values.length() {
+    return None<int>();
+  }
+  return Some(queue.values[queue.head]);
+}
+
+public fn length(queue: Queue): int {
+  return queue.values.length() - queue.head;
+}
+
+public fn empty(queue: Queue): bool {
+  return queue.head == queue.values.length();
+}

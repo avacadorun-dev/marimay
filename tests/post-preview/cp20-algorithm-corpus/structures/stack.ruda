@@ -1,0 +1,30 @@
+public type Stack {
+  values: []int;
+}
+
+public fn newStack(): Stack {
+  return Stack { values: [] };
+}
+
+public fn push(stack: Stack, value: int): void {
+  stack.values.push(value);
+}
+
+public fn pop(stack: Stack): Option<int> {
+  return stack.values.pop();
+}
+
+public fn top(stack: Stack): Option<int> {
+  if stack.values.length() == 0 {
+    return None<int>();
+  }
+  return Some(stack.values[stack.values.length() - 1]);
+}
+
+public fn length(stack: Stack): int {
+  return stack.values.length();
+}
+
+public fn empty(stack: Stack): bool {
+  return stack.values.length() == 0;
+}

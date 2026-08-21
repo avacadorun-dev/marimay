@@ -74,6 +74,7 @@ add_executable(ruda_c_unit
   test_cli_cp16_receiver_names.c
   test_cli_cp17_array_mutation.c
   test_cli_cp18_array_spelling.c
+  test_cli_cp20_algorithm_corpus.c
   test_compiler_service.c
   test_compiler_service_array_types.c
   test_compiler_service_incremental.c
@@ -211,6 +212,7 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-iterator-inval
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling-bounds" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp19-resource-limits" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp20-algorithm-corpus" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY
   "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
   "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"

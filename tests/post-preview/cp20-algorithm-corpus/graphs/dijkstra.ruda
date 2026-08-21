@@ -1,0 +1,49 @@
+public type Edge {
+  public to: int;
+  public weight: int;
+}
+
+public type WeightedAdjacency = [][]Edge;
+
+public fn edge(to: int, weight: int): Edge {
+  return Edge { to, weight };
+}
+
+public fn dijkstra(adjacency: WeightedAdjacency, start: int): Option<[]int> {
+  const nodeCount = adjacency.length();
+  if start < 0 || start >= nodeCount {
+    return None<[]int>();
+  }
+  const infinity = 1_000_000_000;
+  let distances: []int = [];
+  let visited: []bool = [];
+  for let index = 0; index < nodeCount; index += 1 {
+    distances.push(infinity);
+    visited.push(false);
+  }
+  distances[start] = 0;
+  for let iteration = 0; iteration < nodeCount; iteration += 1 {
+    let selected = -1;
+    for let node = 0; node < nodeCount; node += 1 {
+      if !visited[node] && distances[node] < infinity && (
+        selected == -1 || distances[node] < distances[selected]
+      ) {
+        selected = node;
+      }
+    }
+    if selected == -1 {
+      return Some(distances);
+    }
+    visited[selected] = true;
+    for const currentEdge of adjacency[selected] {
+      if currentEdge.to < 0 || currentEdge.to >= nodeCount || currentEdge.weight < 0 {
+        return None<[]int>();
+      }
+      const candidate = distances[selected] + currentEdge.weight;
+      if candidate < distances[currentEdge.to] {
+        distances[currentEdge.to] = candidate;
+      }
+    }
+  }
+  return Some(distances);
+}

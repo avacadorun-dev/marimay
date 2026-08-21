@@ -1,0 +1,11 @@
+import { Error as IoError, println } from "std/io";
+
+import { corpusWorks, invalidInputsAreRejected } from "test/cp20-algorithms/validation";
+
+fn main(): Result<void, IoError> {
+  if !corpusWorks() || !invalidInputsAreRejected() {
+    panic("checkpoint 20 algorithm corpus failed");
+  }
+  println("cp20 algorithm corpus ok")?;
+  return Ok();
+}

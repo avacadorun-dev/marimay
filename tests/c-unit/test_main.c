@@ -34,6 +34,7 @@ void ruda_test_cli_cp15_imported_results(void);
 void ruda_test_cli_cp16_receiver_names(void);
 void ruda_test_cli_cp17_array_mutation(void);
 void ruda_test_cli_cp18_array_spelling(void);
+void ruda_test_cli_cp20_algorithm_corpus(void);
 void ruda_test_compiler_service(void);
 void ruda_test_compiler_service_array_types(void);
 void ruda_test_compiler_service_incremental(void);
@@ -151,6 +152,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_cli_cp16_receiver_names();
     ruda_test_cli_cp17_array_mutation();
     ruda_test_cli_cp18_array_spelling();
+    ruda_test_cli_cp20_algorithm_corpus();
     if (ruda_test_failure_count() != 0) {
         fprintf(stderr, "ruda_c_unit: %d failure(s)\n", ruda_test_failure_count());
         return 1;

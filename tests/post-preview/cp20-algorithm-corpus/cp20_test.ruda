@@ -1,0 +1,15 @@
+import { corpusWorks, invalidInputsAreRejected } from "test/cp20-algorithms/validation";
+
+@test
+fn allReusableAlgorithmsWork(): void {
+  if !corpusWorks() {
+    panic("reusable algorithm corpus failed");
+  }
+}
+
+@test
+fn invalidGraphInputsAreRejected(): void {
+  if !invalidInputsAreRejected() {
+    panic("invalid graph input was accepted");
+  }
+}

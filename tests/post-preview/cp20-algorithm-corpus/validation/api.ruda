@@ -1,0 +1,100 @@
+import * as graphs from "test/cp20-algorithms/graphs";
+import * as sorting from "test/cp20-algorithms/sorting";
+import * as structures from "test/cp20-algorithms/structures";
+
+fn sortingWorks(): bool {
+  let insertionValues = [5, -1, 5, 3, 0];
+  sorting.insertionSort(insertionValues);
+  let heapValues = [9, 4, 7, 1, -2, 6, 5];
+  sorting.heapSort(heapValues);
+  return insertionValues[0] == -1 && insertionValues[1] == 0 && insertionValues[4] == 5 && heapValues[
+    0
+  ] == -2 && heapValues[6] == 9;
+}
+
+fn structuresWork(): bool {
+  const stack = structures.newStack();
+  stack.push(10);
+  stack.push(20);
+  stack.push(30);
+  const stackValue = match stack.pop() {
+    case Some(value) => value;
+    case None => -1;
+  };
+  const queue = structures.newQueue();
+  queue.enqueue(10);
+  queue.enqueue(20);
+  queue.enqueue(30);
+  const queueValue = match queue.dequeue() {
+    case Some(value) => value;
+    case None => -1;
+  };
+  const heap = structures.newMinHeap();
+  heap.push(7);
+  heap.push(2);
+  heap.push(9);
+  heap.push(1);
+  heap.push(5);
+  const minimum = match heap.pop() {
+    case Some(value) => value;
+    case None => -1;
+  };
+  const dsu = structures.newDsu(6);
+  dsu.union(0, 1);
+  dsu.union(1, 2);
+  dsu.union(3, 4);
+  return stackValue == 30 && stack.length() == 2 && queueValue == 10 && queue.length() == 2 && minimum == 1 && !heap.empty() && dsu.connected(
+    0,
+    2,
+  ) && !dsu.connected(0, 3) && dsu.components() == 3;
+}
+
+fn graphsWork(): bool {
+  const adjacency: graphs.IntAdjacency = [[1, 2], [0, 3], [0, 3, 4], [1, 2, 4], [2, 3]];
+  const distances = match graphs.bfs(adjacency, 0) {
+    case Some(values) => values;
+    case None => {
+      return false;
+    }
+  };
+  const weighted: graphs.WeightedAdjacency = [
+    [graphs.edge(1, 4), graphs.edge(2, 1)],
+    [graphs.edge(3, 1)],
+    [graphs.edge(1, 2), graphs.edge(3, 5)],
+    [graphs.edge(4, 3)],
+    [],
+  ];
+  const shortest = match graphs.dijkstra(weighted, 0) {
+    case Some(values) => values;
+    case None => {
+      return false;
+    }
+  };
+  return distances[0] == 0 && distances[4] == 2 && shortest[1] == 3 && shortest[4] == 7;
+}
+
+public fn corpusWorks(): bool {
+  return sortingWorks() && structuresWork() && graphsWork();
+}
+
+public fn invalidInputsAreRejected(): bool {
+  const invalidNeighbor: graphs.IntAdjacency = [[1], [2]];
+  const invalidEndpoint: graphs.WeightedAdjacency = [[graphs.edge(2, 1)], []];
+  const negativeWeight: graphs.WeightedAdjacency = [[graphs.edge(1, -1)], []];
+  return match graphs.bfs([], -1) {
+    case Some(_) => false;
+    case None => true;
+  } && match graphs.bfs(invalidNeighbor, 0) {
+    case Some(_) => false;
+    case None => true;
+  } && match graphs.dijkstra([], -1) {
+    case Some(_) => false;
+    case None => true;
+  } && match graphs.dijkstra(invalidEndpoint, 0) {
+    case Some(_) => false;
+    case None => true;
+  } && match graphs.dijkstra(negativeWeight, 0) {
+    case Some(_) => false;
+    case None => true;
+  };
+}

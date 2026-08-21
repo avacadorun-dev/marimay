@@ -1,0 +1,56 @@
+public type Dsu {
+  parent: []int;
+  rank: []int;
+  mutable componentsValue: int;
+}
+
+public fn newDsu(size: int): Dsu {
+  let parent: []int = [];
+  let rank: []int = [];
+  for let index = 0; index < size; index += 1 {
+    parent.push(index);
+    rank.push(0);
+  }
+  return Dsu { parent, rank, componentsValue: size };
+}
+
+public fn find(dsu: Dsu, value: int): int {
+  let root = value;
+  while dsu.parent[root] != root {
+    root = dsu.parent[root];
+  }
+  let current = value;
+  while dsu.parent[current] != current {
+    const next = dsu.parent[current];
+    dsu.parent[current] = root;
+    current = next;
+  }
+  return root;
+}
+
+public fn union(dsu: Dsu, left: int, right: int): bool {
+  let leftRoot = dsu.find(left);
+  let rightRoot = dsu.find(right);
+  if leftRoot == rightRoot {
+    return false;
+  }
+  if dsu.rank[leftRoot] < dsu.rank[rightRoot] {
+    const temporary = leftRoot;
+    leftRoot = rightRoot;
+    rightRoot = temporary;
+  }
+  dsu.parent[rightRoot] = leftRoot;
+  if dsu.rank[leftRoot] == dsu.rank[rightRoot] {
+    dsu.rank[leftRoot] += 1;
+  }
+  dsu.componentsValue -= 1;
+  return true;
+}
+
+public fn connected(dsu: Dsu, left: int, right: int): bool {
+  return dsu.find(left) == dsu.find(right);
+}
+
+public fn components(dsu: Dsu): int {
+  return dsu.componentsValue;
+}

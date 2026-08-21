@@ -1,0 +1,72 @@
+public type MinHeap {
+  values: []int;
+}
+
+public fn newMinHeap(): MinHeap {
+  return MinHeap { values: [] };
+}
+
+public fn push(heap: MinHeap, value: int): void {
+  heap.values.push(value);
+  let index = heap.values.length() - 1;
+  while index > 0 {
+    const parent = (index - 1) / 2;
+    if heap.values[parent] <= heap.values[index] {
+      return;
+    }
+    const temporary = heap.values[parent];
+    heap.values[parent] = heap.values[index];
+    heap.values[index] = temporary;
+    index = parent;
+  }
+}
+
+fn siftDown(heap: MinHeap, start: int): void {
+  let index = start;
+  while index * 2 + 1 < heap.values.length() {
+    const left = index * 2 + 1;
+    const right = left + 1;
+    let smallest = left;
+    if right < heap.values.length() && heap.values[right] < heap.values[left] {
+      smallest = right;
+    }
+    if heap.values[index] <= heap.values[smallest] {
+      return;
+    }
+    const temporary = heap.values[index];
+    heap.values[index] = heap.values[smallest];
+    heap.values[smallest] = temporary;
+    index = smallest;
+  }
+}
+
+public fn pop(heap: MinHeap): Option<int> {
+  if heap.values.length() == 0 {
+    return None<int>();
+  }
+  const minimum = heap.values[0];
+  const last = match heap.values.pop() {
+    case Some(value) => value;
+    case None => panic("non-empty heap lost its last value");
+  };
+  if heap.values.length() > 0 {
+    heap.values[0] = last;
+    siftDown(heap, 0);
+  }
+  return Some(minimum);
+}
+
+public fn minimum(heap: MinHeap): Option<int> {
+  if heap.values.length() == 0 {
+    return None<int>();
+  }
+  return Some(heap.values[0]);
+}
+
+public fn length(heap: MinHeap): int {
+  return heap.values.length();
+}
+
+public fn empty(heap: MinHeap): bool {
+  return heap.values.length() == 0;
+}

@@ -1,0 +1,38 @@
+fn siftDown(values: []int, start: int, size: int): void {
+  let root = start;
+  while root * 2 + 1 < size {
+    const left = root * 2 + 1;
+    const right = left + 1;
+    let largest = left;
+    if right < size && values[right] > values[left] {
+      largest = right;
+    }
+    if values[root] >= values[largest] {
+      return;
+    }
+    const temporary = values[root];
+    values[root] = values[largest];
+    values[largest] = temporary;
+    root = largest;
+  }
+}
+
+public fn heapSort(values: []int): void {
+  const size = values.length();
+  if size < 2 {
+    return;
+  }
+  let root = size / 2;
+  while root > 0 {
+    root -= 1;
+    siftDown(values, root, size);
+  }
+  let end = size - 1;
+  while end > 0 {
+    const temporary = values[0];
+    values[0] = values[end];
+    values[end] = temporary;
+    siftDown(values, 0, end);
+    end -= 1;
+  }
+}
