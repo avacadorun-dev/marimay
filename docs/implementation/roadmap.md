@@ -53,13 +53,13 @@ shared by Ruda, Go, and Rust, plus exact Ruda fmt/check/VM/test-both/debug and
 release native regression coverage. It is workload-fidelity evidence only:
 no compiler semantics, performance budget, or roadmap gate state changes.
 [Post-preview checkpoint 21 evidence](evidence/cp21-array-performance-baseline-2026-08-22.md)
-accepts D056 and adds strict raw-result schemas, nine focused array/native
+accepts D056/D057 and adds strict raw-result schemas, nine focused array/native
 probes, balanced 11/3 measurement, artifact/toolchain/resource hashes, exact
 checksum validation, median/MAD/IQR noise envelopes, and reviewed
-workload-local Ruda budgets for the macOS arm64 Apple M2 and dedicated Linux
-x86_64 runners. The aggregate machine gate records both and still rejects the
-missing Linux arm64, macOS x86_64, and Windows x86_64 baselines; no optimization
-or semantic change is included.
+workload-local Ruda budgets for the dedicated Linux x86_64 runner. The earlier
+macOS arm64 Apple M2 report remains supplemental. A separate machine gate still
+rejects the missing Linux arm64, macOS x86_64, and Windows x86_64 baselines for
+public-alpha preparation; no optimization or semantic change is included.
 Latest earlier I4 process evidence: [preview checkpoint 12 executes the final
 local/private preview process matrix and exact VM/native observation
 comparison](evidence/cp12-final-preview-2026-08-18.md).
@@ -82,6 +82,9 @@ embedding contract.
 Accepted [D056](../design/decisions.md) records the checkpoint-21 raw
 measurement, compatibility, dispersion, workload-budget, and one-retry
 adjudication contract.
+Accepted [D057](../design/decisions.md) closes checkpoint 21 on the reviewed
+Linux x86_64 algorithm/probe baseline while retaining all five targets as a
+separate public-alpha performance gate.
 
 Preview checkpoint 4 evidence: [generic `Option`/`Result`/`?`/`mapError`
 vertical slice](evidence/i2-generics-checkpoint-4-2026-08-17.md). The slice
@@ -202,10 +205,10 @@ The checkpoint-20 sibling corpus now routes all eight timed workloads through
 the same reusable package families and machine-validates LCG, operation,
 representation, selected-check, and checksum contracts before measurement;
 checkpoint 21 adds the first strict focused-probe and faithful-corpus baseline,
-raw schema, noise envelope, and reviewed macOS arm64 workload budgets. The
-same protocol now has reviewed Linux x86_64 workload budgets from a green
-Gitea Actions run. Linux arm64, macOS x86_64, and Windows x86_64 remain required
-before this gate becomes a complete cross-platform release-performance claim.
+raw schema, noise envelope, and reviewed Linux x86_64 workload budgets from a
+green Gitea Actions run. The supplemental macOS arm64 report is preserved.
+Linux arm64, macOS x86_64, and Windows x86_64 remain required by the separate
+public-alpha cross-platform release-performance gate.
 Production
 LSP transport and later execution/runtime work remain out of scope until their
 ordered checkpoints.
@@ -656,6 +659,9 @@ Deliver:
 
 Gate:
 
+- the D057 public-alpha performance registry has compatible, reviewed,
+  post-optimization reports for Linux x86_64, Linux arm64, macOS arm64,
+  macOS x86_64, and Windows x86_64;
 - external pilot developers complete defined tasks and findings are recorded;
 - readability hypotheses for `fn`/`scope`, match, first-parameter dot calls, and direct suspension are evaluated;
 - compiler crash-free rate and diagnostic task-completion measurements meet alpha targets;

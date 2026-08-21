@@ -1306,3 +1306,35 @@ metadata, and cross-language ratios cannot distinguish compiler regressions
 from host noise or workload drift. Raw compatible distributions and narrow
 platform-local budgets create an auditable gate without promising universal
 language speed.
+
+## D057 — Checkpoint 21 uses a Linux reference baseline before public-alpha Tier 1 closure
+
+Status: accepted.
+
+Checkpoint 21 is complete when one dedicated Linux x86_64 runner has produced
+and passed the D056 protocol for both the nine focused array/native probes and
+the faithful eight-workload algorithm corpus with the full Ruda, Go, and Rust
+participant matrix. The result must use release Ruda artifacts, retain at
+least three warmups and eleven measured samples, pass exact schema, checksum,
+artifact, manifest, metadata, and noise validation, and have reviewed
+platform/workload Ruda budgets. Other platform reports may be retained as
+supplemental evidence but do not widen this checkpoint's completion gate.
+
+Preparation for the public alpha owns the separate full Tier 1 performance
+gate. It requires compatible reviewed baselines for Linux x86_64, Linux arm64,
+macOS arm64, macOS x86_64, and Windows x86_64 and must revalidate or replace
+earlier reports after intervening optimization work. A machine-readable
+registry exposes distinct `checkpoint-21` and `public-alpha` gates; passing the
+former must not make the latter pass or permit a complete Tier 1 claim.
+
+This decision resolves the sequencing conflict with the original
+post-preview checkpoint-21 completion sentence, which required all five Tier 1
+runners before checkpoint 22. It supersedes only that sequencing requirement.
+D056's measurement, review, retry, and regression rules and the Tier 1 target
+set remain unchanged.
+
+Reason: the Linux algorithm baseline is sufficient to choose and evaluate the
+ordered pre-alpha optimization work, while obtaining every release-platform
+reference runner is deployment preparation. Keeping a separate failing
+public-alpha gate preserves the cross-platform obligation without blocking the
+measurement-driven implementation sequence on unavailable runner hardware.

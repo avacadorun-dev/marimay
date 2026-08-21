@@ -450,6 +450,13 @@ blocks only when both distributions exceed the same threshold. Debug archives,
 three-sample local results, cross-language ratios, and automatic reruns are not
 release-budget evidence.
 
+D057 separates sequencing without weakening that contract. Checkpoint 21 uses
+the dedicated Linux x86_64 report for all nine probes and the complete
+eight-workload Ruda/Go/Rust corpus. A distinct public-alpha registry gate still
+requires compatible reviewed reports for all five Tier 1 targets in the table
+below and must be revalidated after intervening optimization work. Supplemental
+platform reports do not change either target list.
+
 ## 11. Platform matrix
 
 Tier 1 target intent for 1.0:

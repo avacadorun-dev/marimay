@@ -1,8 +1,9 @@
 # Post-preview checkpoint 21: array performance baseline — 2026-08-22
 
 Gate: pre-optimization measurement and regression policy. Checkpoint status:
-incomplete. Measurement and evidence are complete on two reviewed Tier 1
-runners, macOS arm64 and Linux x86_64; the remaining runner baselines are not
+complete under accepted D057. The required Linux x86_64 algorithm/probe
+baseline is reviewed; the macOS arm64 report remains supplemental evidence.
+Full Tier 1 closure is explicitly deferred to the public-alpha gate and is not
 claimed by this record.
 I2, I3, I4, and I5 remain `in-progress`; I6 and P0 remain `not-started`. This
 checkpoint changes no Ruda source semantics, MIR, VM, native runtime, or
@@ -15,14 +16,17 @@ checkpoint's documentation, not the measured compiler/runtime implementation.
 Sibling protocol/probe commit: `57ad442f62ee644c82bd48243913c55cf0d27dac`.
 The macOS raw-evidence commit is `b326784`; the Actions-produced Linux raw
 evidence is `88d03f4df3b21d3f34256e76253e650488daaae9`, reviewed and registered by
-`ed4a220aa1b88c2eb30b494bf33470a73762a12c`. These commits are published on
-`origin/main` at
+`ed4a220aa1b88c2eb30b494bf33470a73762a12c`. Sibling commit
+`23149703506ea395136aff1bdac2152fbbb72f7b` separates the completed Linux
+checkpoint gate from the deferred five-platform public-alpha gate. These
+commits are published on `origin/main` at
 `https://code.example/benchmark-corpus.git`.
 
-Authority: accepted D056 plus the implementation test-strategy performance and
-Tier 1 platform contracts. D052 supplies release-runtime artifact identity;
-D055 supplies the fixed managed-heap byte budget. The post-preview checkpoint
-plan supplies sequencing and scope but does not override those authorities.
+Authority: accepted D056 and D057 plus the implementation test-strategy
+performance and Tier 1 platform contracts. D052 supplies release-runtime
+artifact identity; D055 supplies the fixed managed-heap byte budget. D057
+resolves the original checkpoint-plan sequencing conflict while preserving the
+full public-alpha Tier 1 obligation.
 
 ## Accepted measurement contract
 
@@ -47,7 +51,9 @@ plan supplies sequencing and scope but does not override those authorities.
   threshold, and neither raw distribution is discarded.
 
 Accepted D056 records these rules before checkpoints 22–27 change measured
-implementation paths. The protocol SHA-256 is
+implementation paths. D057 requires this complete protocol on Linux x86_64
+for checkpoint 21 and leaves all five targets to the public-alpha gate. The
+protocol SHA-256 is
 `0b43886b4e02ee72e8ea4be8eca6c3fb228336bcf525522723a4b40c3b862b19`.
 
 ## Focused probes and schema coverage
@@ -78,8 +84,8 @@ duplicate JSON values, summary drift, current-source/manifest drift,
 incompatible compiler/runtime/resource/platform/protocol baselines,
 unreviewed budgets, workload-set mismatch, and over-budget medians.
 
-Twenty-eight Python unit/negative tests cover the checkpoint-21 owners; the
-sibling total is 37 when the checkpoint-20 equivalence tests are included.
+Thirty Python unit/negative tests cover the checkpoint-21 owners; the sibling
+total is 39 when the checkpoint-20 equivalence tests are included.
 They include exact Tier 1 system/architecture normalization, unsupported and
 inconsistent platform metadata, MSVC discovery fallback, Windows `.lib`
 runtime discovery, unavailable tool metadata, logical and file checksum drift,
@@ -89,7 +95,7 @@ No allocation-capable C API or production C path changed, so existing aggregate
 fail-every-allocation and zero-counter tests remain the applicable memory
 coverage and run in every main-repository preset.
 
-## Reviewed macOS arm64 observations
+## Supplemental reviewed macOS arm64 observations
 
 Environment: macOS Darwin 25.3.0 arm64, Apple M2, Apple Clang 17.0.0, Python
 3.9.6, Go 1.26.4, Rust 1.96.0. Low-power mode was disabled; the recorded
@@ -196,21 +202,21 @@ file hashes, Ruda and corpus revisions, protocol, and both manifests.
 
 | Command | Exit | Result |
 |---|---:|---|
-| `RUDA=../Ma/build/release/ruda ./verify.sh` in sibling | 0 | 37 Python tests; exact Ruda fmt/check/VM/test-both/Debug+Release native, Go vet/tests, Rust fmt/Clippy/tests |
+| `RUDA=../Ma/build/release/ruda ./verify.sh` in sibling | 0 | 39 Python tests; checkpoint registry gate; exact Ruda fmt/check/VM/test-both/Debug+Release native, Go vet/tests, Rust fmt/Clippy/tests |
 | `RUDA=../Ma/build/release/ruda ./benchmarks/probes.py --samples 11 --warmups 3 --output benchmarks/results/cp21-probes-macos-arm64-apple-m2.json` | 0 | 9 probes × 3 warmups + 11 retained samples; exact checksums |
 | `RUDA=../Ma/build/release/ruda ./benchmarks/run.py --languages ruda,go,rust --samples 11 --warmups 3 --output benchmarks/results/cp21-algorithms-macos-arm64-apple-m2.md` | 0 | 8 workloads × 3 languages × 3 warmups + 11 retained samples; exact checksums |
 | Gitea Actions sibling run [`#81`](http://ci.example:3000/OS/ruda-algotithms/actions/runs/81) | 0 | checkout, pinned toolchains, Release Ruda build, full corpus verify, 9 probes, 8 × 3 algorithms, schema/budget candidate, raw artifact, and evidence branch all succeeded |
 | `./benchmarks/validate_results.py ...cp21-probes...json ...cp21-algorithms...json` on each recorded platform | 0 | compatible release artifacts; macOS arm64 and Linux x86_64 each have 9 probes and 8 algorithms within reviewed budgets |
-| partial `validate_tier1_registry(..., require_complete=False)` | 0 | exact reviewed registry entries are `linux-x86_64` and `macos-arm64` |
-| `make benchmark-validate` | 2 (expected) | aggregate release gate rejects the incomplete registry and names `linux-arm64`, `macos-x86_64`, and `windows-x86_64` |
-| `python3 -m unittest discover -s benchmarks -p 'test_*.py'` | 0 | 37/37 tests passed |
+| `make benchmark-validate` | 0 | D057 checkpoint gate accepts the exact reviewed Linux x86_64 baseline; supplemental macOS evidence remains valid |
+| `make benchmark-validate-public-alpha` | 2 (expected) | deferred aggregate gate rejects the incomplete registry and names `linux-arm64`, `macos-x86_64`, and `windows-x86_64` |
+| `python3 -m unittest discover -s benchmarks -p 'test_*.py'` | 0 | 39/39 tests passed, including positive checkpoint and negative public-alpha gate contracts |
 | `git diff --check` in sibling | 0 | clean evidence commits |
-| `git push origin main` in sibling | 0 | raw Linux evidence and its reviewed registry advanced `origin/main` to `ed4a220` |
+| `git push origin main` in sibling | 0 | split checkpoint/public-alpha gates advanced `origin/main` to `2314970` |
 | `./tools/check-architecture` | 0 | focused C ownership, dependencies, registration, and line budgets clean |
 | `./tools/check-c-memory-policy` | 0 | central production allocator boundary clean |
 | `./tools/check-generated` | 0 | bytecode, diagnostic, Unicode, and syntax artifacts current |
 | `./tools/check-doc-links` | 0 | evidence, roadmap, decision, and sibling links valid |
-| `./tools/check-spec-terms` | 0 | D056 decision index and normative terminology clean |
+| `./tools/check-spec-terms` | 0 | D056/D057 decision index and normative terminology clean |
 | `./tools/check-syntax-coverage` | 0 | 75 syntax kinds and 116 grammar productions covered |
 | `./tools/check-example-syntax` | 0 | public Ruda examples accepted |
 | `cmake --build --preset debug --parallel && ctest --preset debug --output-on-failure` | 0 | 2/2 passed in 270.15 seconds; C-unit 267.94 seconds |
@@ -218,9 +224,9 @@ file hashes, Ruda and corpus revisions, protocol, and both manifests.
 | `cmake --build --preset asan-ubsan --parallel && ctest --preset asan-ubsan --output-on-failure` | 0 | 2/2 passed in 359.71 seconds; C-unit 356.72 seconds; no sanitizer findings |
 | `git diff --check` in main repository | 0 | checkpoint files have no whitespace errors; unrelated user work preserved |
 
-This checkpoint establishes measurement infrastructure and two reviewed Tier 1
-baselines before optimization. It does not yet prove complete cross-platform
-performance, rank Ruda against another language, widen a semantic contract, or
-start checkpoint 22. Linux arm64, macOS x86_64, and Windows x86_64 raw
-baselines and engineering review remain required before the Tier 1 performance
-gate is complete.
+This checkpoint establishes the D056 measurement infrastructure and the D057
+reviewed Linux x86_64 algorithm/probe baseline before optimization. It does not
+claim complete cross-platform performance, rank Ruda against another language,
+or widen a source-semantic contract. Checkpoint 22 may proceed. Linux arm64,
+macOS x86_64, and Windows x86_64 raw baselines plus post-optimization review
+remain explicit prerequisites of the separate public-alpha Tier 1 gate.
