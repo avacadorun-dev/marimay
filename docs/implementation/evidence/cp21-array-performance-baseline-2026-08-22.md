@@ -1,16 +1,22 @@
 # Post-preview checkpoint 21: array performance baseline — 2026-08-22
 
-Gate: pre-optimization measurement and regression policy. Checkpoint
-implementation status: locally complete with one reviewed macOS arm64 runner.
-The remaining Tier 1 runner baselines are not claimed by this local record.
+Gate: pre-optimization measurement and regression policy. Checkpoint status:
+incomplete. Measurement and evidence are complete on two reviewed Tier 1
+runners, macOS arm64 and Linux x86_64; the remaining runner baselines are not
+claimed by this record.
 I2, I3, I4, and I5 remain `in-progress`; I6 and P0 remain `not-started`. This
 checkpoint changes no Ruda source semantics, MIR, VM, native runtime, or
 managed-array representation and performs no optimization.
 
-Baseline Ruda commit: `d6afbe792685ef12fe1ce9e6e053ad9758ddce8d`
-(`Publish checkpoint 20 corpus evidence`). Sibling protocol/probe commit:
-`57ad442f62ee644c82bd48243913c55cf0d27dac`. Sibling raw-evidence commit:
-`b326784`. Both sibling commits are published on `origin/main` at
+The macOS baseline uses Ruda commit
+`d6afbe792685ef12fe1ce9e6e053ad9758ddce8d`; the Linux baseline uses Ruda
+commit `ae039188fa22b05a119a4dc5464f2a7f91d5deed`. The latter changes only this
+checkpoint's documentation, not the measured compiler/runtime implementation.
+Sibling protocol/probe commit: `57ad442f62ee644c82bd48243913c55cf0d27dac`.
+The macOS raw-evidence commit is `b326784`; the Actions-produced Linux raw
+evidence is `88d03f4df3b21d3f34256e76253e650488daaae9`, reviewed and registered by
+`ed4a220aa1b88c2eb30b494bf33470a73762a12c`. These commits are published on
+`origin/main` at
 `https://code.example/benchmark-corpus.git`.
 
 Authority: accepted D056 plus the implementation test-strategy performance and
@@ -72,8 +78,12 @@ duplicate JSON values, summary drift, current-source/manifest drift,
 incompatible compiler/runtime/resource/platform/protocol baselines,
 unreviewed budgets, workload-set mismatch, and over-budget medians.
 
-Eighteen new Python unit/negative tests cover those owners; the sibling total
-is 27 when the checkpoint-20 equivalence tests are included. Ruda formatter
+Twenty-eight Python unit/negative tests cover the checkpoint-21 owners; the
+sibling total is 37 when the checkpoint-20 equivalence tests are included.
+They include exact Tier 1 system/architecture normalization, unsupported and
+inconsistent platform metadata, MSVC discovery fallback, Windows `.lib`
+runtime discovery, unavailable tool metadata, logical and file checksum drift,
+and missing/duplicate/escaped/mismatched Tier 1 registry entries. Ruda formatter
 and checker validation covers all nine entrypoints plus their shared core.
 No allocation-capable C API or production C path changed, so existing aggregate
 fail-every-allocation and zero-counter tests remain the applicable memory
@@ -128,17 +138,74 @@ the algorithm JSON SHA-256 is
 The sibling evidence commit preserves both reports, the Markdown summary, and
 the reviewed budget.
 
+## Reviewed Linux x86_64 observations
+
+The dedicated Gitea Actions runner completed run
+[`#81`](http://ci.example:3000/OS/ruda-algotithms/actions/runs/81) from
+commit `22be069a00c563f3261d0dd79759b6a7eb48dd2d`. Environment: Linux
+6.12.57+deb13-amd64 x86_64, four logical CPUs reported as QEMU Virtual CPU
+2.5+, Clang 18.1.3, Python 3.12.3, Go 1.26.6, and Rust 1.96.0. The runner
+recorded load at both suite boundaries and retained every sample. The largest
+Ruda noise fraction was 3.77% (`checked-loop`); the largest fraction anywhere
+in the complete Ruda/Go/Rust matrix was 12.82%, both below the 30% rejection
+limit. All 17 Ruda workloads therefore use the reviewed 10% budget floor.
+
+Ruda compiler SHA-256:
+`da467ede4b7e1520ea1977d44ef504458e8ef1ce999ce4dc075bdd5209ff08c1`.
+Release runtime SHA-256:
+`4ffaec1d42470bbaf946ca90d83f8f35cba836448417d4428119b32a82b034b1`;
+manifest SHA-256:
+`22303dcb35ea4b0dc5094b06a1f01ca167b3fd0a11aec746a10fc8d419692e90`.
+The runtime manifest says `profile=release`, `host=Linux`,
+`processor=x86_64`, and `compiler=Clang-18.1.3`. Generated C used
+`/usr/bin/clang`, `-std=c17 -O2`, the complete warning-as-error set, strict
+floating-point flags, and `-lm`; both raw reports retain the exact vector.
+
+| Ruda workload | Median ms | Noise | Reviewed max median ms |
+|---|---:|---:|---:|
+| scalar-get | 167.897 | 3.76% | 184.687 |
+| scalar-set | 229.951 | 2.00% | 252.946 |
+| proven-bounds | 424.440 | 2.00% | 466.884 |
+| unproven-bounds | 392.307 | 2.00% | 431.538 |
+| growth | 140.729 | 2.43% | 154.802 |
+| reserved-growth | 140.747 | 3.54% | 154.821 |
+| density | 694.539 | 2.00% | 763.993 |
+| nested-traversal | 383.643 | 2.95% | 422.008 |
+| checked-loop | 475.486 | 3.77% | 523.034 |
+| insertion | 6999.182 | 2.00% | 7699.100 |
+| heap-sort | 1790.068 | 2.28% | 1969.074 |
+| stack | 522.080 | 2.00% | 574.288 |
+| queue | 588.694 | 2.15% | 647.564 |
+| min-heap | 3760.088 | 2.00% | 4136.097 |
+| DSU | 3188.845 | 2.00% | 3507.730 |
+| BFS | 4541.519 | 2.00% | 4995.671 |
+| Dijkstra O(V²) | 1727.676 | 2.04% | 1900.443 |
+
+The reviewed budget document SHA-256 is
+`59b79ac0ae40c4beda7de4c271110235c49f9856f9e9611bb8afcdc2324ea521`.
+The raw probe JSON SHA-256 is
+`af228120917b32f81a7e9dbdcfb435ae3d780269406d278180c9c56fce4716d4`;
+the algorithm JSON SHA-256 is
+`b1ad60853ea0c8ee1accdd34cf00b960fb2f8a4f409964a7c03314bf0d2f7e4b`;
+the generated Markdown SHA-256 is
+`abcd5675b2153078af7f9e98d30723619f0035b0163c7212e6c7cc6caddccf79`.
+The registry validator binds the reviewed budget to those exact result paths,
+file hashes, Ruda and corpus revisions, protocol, and both manifests.
+
 ## Exact local validation
 
 | Command | Exit | Result |
 |---|---:|---|
-| `RUDA=../Ma/build/release/ruda ./verify.sh` in sibling | 0 | 27 Python tests; exact Ruda fmt/check/VM/test-both/Debug+Release native, Go vet/tests, Rust fmt/Clippy/tests |
+| `RUDA=../Ma/build/release/ruda ./verify.sh` in sibling | 0 | 37 Python tests; exact Ruda fmt/check/VM/test-both/Debug+Release native, Go vet/tests, Rust fmt/Clippy/tests |
 | `RUDA=../Ma/build/release/ruda ./benchmarks/probes.py --samples 11 --warmups 3 --output benchmarks/results/cp21-probes-macos-arm64-apple-m2.json` | 0 | 9 probes × 3 warmups + 11 retained samples; exact checksums |
 | `RUDA=../Ma/build/release/ruda ./benchmarks/run.py --languages ruda,go,rust --samples 11 --warmups 3 --output benchmarks/results/cp21-algorithms-macos-arm64-apple-m2.md` | 0 | 8 workloads × 3 languages × 3 warmups + 11 retained samples; exact checksums |
-| `./benchmarks/validate_results.py ...cp21-probes...json ...cp21-algorithms...json` | 0 | compatible release artifacts; 9 probes and 8 algorithms within reviewed budgets |
-| `python3 -m unittest discover -s benchmarks -p 'test_*.py'` | 0 | 27/27 tests passed |
+| Gitea Actions sibling run [`#81`](http://ci.example:3000/OS/ruda-algotithms/actions/runs/81) | 0 | checkout, pinned toolchains, Release Ruda build, full corpus verify, 9 probes, 8 × 3 algorithms, schema/budget candidate, raw artifact, and evidence branch all succeeded |
+| `./benchmarks/validate_results.py ...cp21-probes...json ...cp21-algorithms...json` on each recorded platform | 0 | compatible release artifacts; macOS arm64 and Linux x86_64 each have 9 probes and 8 algorithms within reviewed budgets |
+| partial `validate_tier1_registry(..., require_complete=False)` | 0 | exact reviewed registry entries are `linux-x86_64` and `macos-arm64` |
+| `make benchmark-validate` | 2 (expected) | aggregate release gate rejects the incomplete registry and names `linux-arm64`, `macos-x86_64`, and `windows-x86_64` |
+| `python3 -m unittest discover -s benchmarks -p 'test_*.py'` | 0 | 37/37 tests passed |
 | `git diff --check` in sibling | 0 | clean evidence commits |
-| `git push origin main` in sibling | 0 | remote advanced from `7183fdf` to `b326784` |
+| `git push origin main` in sibling | 0 | raw Linux evidence and its reviewed registry advanced `origin/main` to `ed4a220` |
 | `./tools/check-architecture` | 0 | focused C ownership, dependencies, registration, and line budgets clean |
 | `./tools/check-c-memory-policy` | 0 | central production allocator boundary clean |
 | `./tools/check-generated` | 0 | bytecode, diagnostic, Unicode, and syntax artifacts current |
@@ -151,8 +218,9 @@ the reviewed budget.
 | `cmake --build --preset asan-ubsan --parallel && ctest --preset asan-ubsan --output-on-failure` | 0 | 2/2 passed in 359.71 seconds; C-unit 356.72 seconds; no sanitizer findings |
 | `git diff --check` in main repository | 0 | checkpoint files have no whitespace errors; unrelated user work preserved |
 
-This checkpoint establishes measurement infrastructure and one reviewed local
-baseline before optimization. It does not prove cross-platform performance,
-rank Ruda against another language, widen a semantic contract, or start
-checkpoint 22. Linux x86_64/arm64, macOS x86_64, and Windows x86_64 baseline
-artifacts remain required before the Tier 1 performance gate is complete.
+This checkpoint establishes measurement infrastructure and two reviewed Tier 1
+baselines before optimization. It does not yet prove complete cross-platform
+performance, rank Ruda against another language, widen a semantic contract, or
+start checkpoint 22. Linux arm64, macOS x86_64, and Windows x86_64 raw
+baselines and engineering review remain required before the Tier 1 performance
+gate is complete.

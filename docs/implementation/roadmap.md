@@ -56,9 +56,10 @@ no compiler semantics, performance budget, or roadmap gate state changes.
 accepts D056 and adds strict raw-result schemas, nine focused array/native
 probes, balanced 11/3 measurement, artifact/toolchain/resource hashes, exact
 checksum validation, median/MAD/IQR noise envelopes, and reviewed
-workload-local Ruda budgets for the macOS arm64 Apple M2 runner. Other Tier 1
-platform baselines remain required before a cross-platform performance gate is
-claimed; no optimization or semantic change is included.
+workload-local Ruda budgets for the macOS arm64 Apple M2 and dedicated Linux
+x86_64 runners. The aggregate machine gate records both and still rejects the
+missing Linux arm64, macOS x86_64, and Windows x86_64 baselines; no optimization
+or semantic change is included.
 Latest earlier I4 process evidence: [preview checkpoint 12 executes the final
 local/private preview process matrix and exact VM/native observation
 comparison](evidence/cp12-final-preview-2026-08-18.md).
@@ -202,8 +203,9 @@ the same reusable package families and machine-validates LCG, operation,
 representation, selected-check, and checksum contracts before measurement;
 checkpoint 21 adds the first strict focused-probe and faithful-corpus baseline,
 raw schema, noise envelope, and reviewed macOS arm64 workload budgets. The
-remaining Tier 1 platform baselines are still required before this local gate
-becomes a cross-platform release-performance claim.
+same protocol now has reviewed Linux x86_64 workload budgets from a green
+Gitea Actions run. Linux arm64, macOS x86_64, and Windows x86_64 remain required
+before this gate becomes a complete cross-platform release-performance claim.
 Production
 LSP transport and later execution/runtime work remain out of scope until their
 ordered checkpoints.
