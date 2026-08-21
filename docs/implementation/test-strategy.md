@@ -196,6 +196,13 @@ Run fixtures record typed result, stdout, stderr, exit, panic, source frames, ca
   `INT64_MIN`/`INT64_MAX`, exact G4002 bytes/spans/frames, and D045 indexed-RHS
   ordering. A loop-based rectangular f64 matrix fixture must agree bit-for-bit
   in the MIR oracle, encoded VM, and optimized/unoptimized native output;
+- D053 array mutation covers raw/reference/nested arrays; empty and nonempty
+  `pop`; valid, negative, expanding, equal, partial, and full `truncate`;
+  empty/nonempty `clear`; zero/below/equal/above/negative/overflowing
+  `reserve`; alias identity; removed-reference reachability; non-wrapping
+  generation changes; `G4005` iterator invalidation; failure-atomic storage
+  growth; every deterministic allocation/resize failure; and exact MIR,
+  encoded VM, generated-C debug/release, stdout/stderr/exit/panic equivalence;
 - left-to-right evaluation with side effects;
 - strings, Unicode, collection ordering, equality/hash laws;
 - nominal-record identity: aliases compare equal, distinct allocations with

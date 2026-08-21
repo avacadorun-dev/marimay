@@ -314,6 +314,33 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->operands[0].unsigned_value = input->first;
             output->operands[1].unsigned_value = input->second;
             break;
+        case RUDA_MIR_ARRAY_POP:
+            output->opcode = RUDA_OPCODE_ARRAY_POP;
+            output->operands[1].unsigned_value = input->first;
+            break;
+        case RUDA_MIR_ARRAY_TRUNCATE:
+            output->opcode = RUDA_OPCODE_ARRAY_TRUNCATE;
+            output->operands[0].unsigned_value = input->first;
+            output->operands[1].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_ARRAY_CLEAR:
+            output->opcode = RUDA_OPCODE_ARRAY_CLEAR;
+            output->operands[0].unsigned_value = input->first;
+            break;
+        case RUDA_MIR_ARRAY_RESERVE:
+            output->opcode = RUDA_OPCODE_ARRAY_RESERVE;
+            output->operands[0].unsigned_value = input->first;
+            output->operands[1].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_ARRAY_GENERATION:
+            output->opcode = RUDA_OPCODE_ARRAY_GENERATION;
+            output->operands[1].unsigned_value = input->first;
+            break;
+        case RUDA_MIR_ARRAY_REQUIRE_GENERATION:
+            output->opcode = RUDA_OPCODE_ARRAY_REQUIRE_GENERATION;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case RUDA_MIR_CALL: {
             const RudaMirCall *call = input->call < function->calls.length
                 ? ruda_vector_at_const(&function->calls, input->call)

@@ -1,0 +1,104 @@
+import { Error as IoError, println } from "std/io";
+
+type OrderState {
+  mutable trace: int;
+  values: Array<int>;
+}
+
+fn orderedValues(state: OrderState): Array<int> {
+  state.trace = state.trace * 10 + 1;
+  return state.values;
+}
+
+fn orderedAdditional(state: OrderState): int {
+  state.trace = state.trace * 10 + 2;
+  return 0;
+}
+
+fn evaluationOrderWorks(): bool {
+  const state = OrderState { trace: 0, values: [1] };
+  orderedValues(state).reserve(orderedAdditional(state));
+  return state.trace == 12;
+}
+
+fn grow(values: Array<int>): Result<bool, ArrayGrowthError> {
+  values.reserve(6)?;
+  values.push(9)?;
+  return Ok(true);
+}
+
+fn shrink(values: Array<int>): Result<bool, ArrayTruncateError> {
+  values.truncate(1)?;
+  return Ok(true);
+}
+
+fn invalidShrink(values: Array<int>): Result<bool, ArrayTruncateError> {
+  values.truncate(3)?;
+  return Ok(false);
+}
+
+fn negativeGrowth(values: Array<int>): Result<bool, ArrayGrowthError> {
+  values.reserve(-4)?;
+  return Ok(false);
+}
+
+fn excessiveGrowth(values: Array<int>): Result<bool, ArrayGrowthError> {
+  values.reserve(9223372036854775807)?;
+  return Ok(false);
+}
+
+fn arrayMutationWorks(): bool {
+  let values = [1, 2, 3];
+  const popped = match values.pop() {
+    case Some(value) => value;
+    case None => 0;
+  };
+  const truncated = match shrink(values) {
+    case Ok(value) => value;
+    case Err(_) => false;
+  };
+  const grown = match grow(values) {
+    case Ok(value) => value;
+    case Err(_) => false;
+  };
+  let total = 0;
+  for const value of values {
+    values.reserve(2);
+    total += value;
+  }
+  const invalidTruncate = match invalidShrink(values) {
+    case Ok(value) => value;
+    case Err(InvalidLength { requested, length }) => requested == 3 && length == 2;
+    case Err(_) => false;
+  };
+  const negativeReserve = match negativeGrowth(values) {
+    case Ok(value) => value;
+    case Err(NegativeAdditional { additional }) => additional == -4;
+    case Err(_) => false;
+  };
+  const excessiveReserve = match excessiveGrowth(values) {
+    case Ok(value) => value;
+    case Err(LengthLimit { limit }) => limit == 9223372036854775807;
+    case Err(_) => false;
+  };
+  let nested = [[1], [2]];
+  const nestedPop = match nested.pop() {
+    case Some(row) => row.length() == 1 && row[0] == 2;
+    case None => false;
+  };
+  nested.clear();
+  values.clear();
+  const empty = match values.pop() {
+    case Some(_) => false;
+    case None => true;
+  };
+  return popped == 3 && grown && truncated && total == 10 && invalidTruncate && negativeReserve && excessiveReserve && nestedPop && nested.length() == 0 && empty && values.length() == 0 && evaluationOrderWorks();
+}
+
+fn main(): Result<void, IoError> {
+  if !arrayMutationWorks() {
+    panic("checkpoint 17 array mutation changed");
+  }
+  println("cp17 array mutation ok")?;
+  return Ok();
+}

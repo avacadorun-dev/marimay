@@ -1,0 +1,20 @@
+@test
+fn arrayMutationOperationsWork(): void {
+  let values = [4, 5];
+  if match values.pop() {
+    case Some(value) => value;
+    case None => 0;
+  } != 5 {
+    panic("pop changed");
+  }
+  values.reserve(4);
+  values.push(6);
+  values.truncate(1);
+  if values.length() != 1 || values[0] != 4 {
+    panic("size/capacity operation changed");
+  }
+  values.clear();
+  if values.length() != 0 {
+    panic("clear changed");
+  }
+}

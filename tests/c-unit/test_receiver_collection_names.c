@@ -181,7 +181,7 @@ static void ruda_test_receiver_names_behavior(void) {
         ) == 2);
         RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
             &probe->mir, RUDA_MIR_ARRAY_LENGTH
-        ) == 2);
+        ) == 4);
         RUDA_EXPECT(ruda_check_interpret_function(
             &checked,
             probe_index,

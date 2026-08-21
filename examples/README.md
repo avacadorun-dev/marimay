@@ -26,8 +26,10 @@ These examples are executable specification fixtures once the parser exists. Unt
   boundary conversion.
 - `array_checkpoint.ruda` checks the D045 array surface, including construction,
   mutation, checked indexed compound assignment, and nonmutating
-  `for const item of array` traversal. The broader mutation-generation
-  invalidation gate remains open.
+  `for const item of array` traversal.
+- `array_mutation.ruda` shows the D053 typed `pop`, `truncate`, `clear`, and
+  `reserve` surface over scalar and nested managed arrays. Iteration mutation
+  is rejected through the separate exact-G4005 acceptance corpus.
 - `receiver_collection_names.ruda` demonstrates receiver-directed resolution
   when ordinary `Stack` functions and compiler-known `Array<T>` operations
   share `push` and `length`: free and dot forms preserve one symbol per exact

@@ -16,6 +16,7 @@ G4001	ARITHMETIC_PANIC	runtime	Checked integer arithmetic panicked.
 G4002	BOUNDS_PANIC	runtime	Array indexing panicked on an out-of-bounds index.
 G4003	PROGRAM_ERROR	runtime	Root main returned an expected error.
 G4004	TEST_EXPECTATION	test	A compiler-known test expectation observed a mismatching value or byte stream.
+G4005	ARRAY_ITERATOR_INVALIDATED	runtime	An array iterator observed an intervening initialized-sequence mutation.
 I0001	COMPILER_INCOMPLETE	compiler	Compiler does not implement an accepted language construct.
 I0002	RUNTIME_FAILURE	runtime	Runtime could not complete because of an internal resource or integrity failure.
 K0001	MANIFEST_SYNTAX	manifest	Manifest directive or grouping syntax is invalid.

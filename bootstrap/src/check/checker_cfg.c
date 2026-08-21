@@ -1,4 +1,5 @@
 #include "checker_cfg_api.h"
+#include "checker_array_mutation_api.h"
 #include "checker_core_api.h"
 #include "checker_defer_api.h"
 #include "checker_expr_scalar_api.h"
@@ -748,6 +749,8 @@ cleanup:
     RudaExpressionValue next;
     RudaTypeId element_type = RUDA_TYPE_INVALID;
     RudaMirArrayId array = RUDA_MIR_NO_ARRAY;
+    RudaMirRegister generation = RUDA_MIR_NO_REGISTER;
+    RudaMirRegister generation_checked = RUDA_MIR_NO_REGISTER;
     RudaMirRegister length = RUDA_MIR_NO_REGISTER;
     RudaMirRegister item_value = RUDA_MIR_NO_REGISTER;
     RudaCheckName name;
@@ -812,10 +815,13 @@ cleanup:
         goto cleanup;
     }
     if (!ruda_array_layout(function, iterable.type, &array)
+        || !ruda_checker_private_array_capture_generation(
+            function, array, iterable.register_id, node->start, header->end,
+            &generation
+        )
         || !ruda_function_add_register(function, RUDA_TYPE_I64, &length)) {
         goto cleanup;
     }
-    memset(&instruction, 0, sizeof(instruction));
     instruction.kind = RUDA_MIR_ARRAY_LENGTH;
     instruction.target = length;
     instruction.first = iterable.register_id;
@@ -887,6 +893,12 @@ cleanup:
     }
     function->block = condition_block;
     function->terminated = false;
+    if (!ruda_checker_private_array_require_generation(
+            function, array, iterable.type, iterable.register_id, generation,
+            node->start, header->end, &generation_checked
+        )) {
+        goto cleanup;
+    }
     if (!ruda_function_emit_instruction(
             function,
             RUDA_MIR_LESS_I64,
@@ -926,14 +938,20 @@ cleanup:
     if (!ruda_function_add_register(function, element_type, &item_value)) {
         goto cleanup;
     }
+    if (!ruda_checker_private_array_require_generation(
+            function, array, iterable.type, iterable.register_id, generation,
+            node->start, header->end, &generation_checked
+        )) {
+        goto cleanup;
+    }
     memset(&instruction, 0, sizeof(instruction));
     instruction.kind = RUDA_MIR_ARRAY_GET;
     instruction.target = item_value;
-    instruction.first = iterable.register_id;
+    instruction.first = generation_checked;
     instruction.second = zero.register_id;
     instruction.third = RUDA_MIR_NO_REGISTER;
     instruction.array = array;
-    instruction.span.start = header->start;
+    instruction.span.start = node->start;
     instruction.span.end = header->end;
     if (!ruda_function_append_instruction(function, &instruction)
         || !ruda_checker_private_function_emit_copy(

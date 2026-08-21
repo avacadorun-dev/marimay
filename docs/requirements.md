@@ -47,6 +47,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | LANG-037 | managed `Array<T>` construction, exact `int` indexing, mutation order, `length`, `push` growth result, and G4002 bounds identity follow D045 across MIR, VM, and native execution | language §§5.2,5.6,7; execution §§5.1,9; diagnostics §9; D045 | I2/I3/I4/I5 |
 | LANG-038 | user stdout is not a language primitive or implicit conversion; `println` accepts only `string` and interpolation is not the D046 write contract | language §§1,2.5; standard library §3.1; D046 | I5 |
 | LANG-039 | all eight integer primitives expose one closed checked/wrapping/saturating policy family, and `value as Target` is the only loss-detecting explicit integer conversion form; invalid divisors and shifts retain the D035/D042 panic rules | language §§5.1,7; D035/D042/D047 | I2/I4 |
+| LANG-040 | managed arrays expose typed pop/truncate/clear/reserve operations, precisely release removed reference elements, keep capacity unobservable, and invalidate iteration through the non-wrapping D053 mutation generation | language §§5.6,8; standard library §4; execution §§9,13; D053 | I2/I3/I4/I5 |
 
 ## Execution and concurrency
 

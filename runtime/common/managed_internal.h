@@ -7,6 +7,7 @@ typedef struct RudaManagedArray {
     const RudaManagedArrayDescriptor *descriptor;
     size_t length;
     size_t capacity;
+    uint64_t mutation_generation;
     RudaManagedCell *cells;
 } RudaManagedArray;
 typedef struct RudaManagedString {
@@ -44,8 +45,16 @@ typedef struct RudaManagedSlot {
 } RudaManagedSlot;
 
 bool ruda_managed_heap_valid(const RudaManagedHeap *heap);
+size_t ruda_managed_language_max_array_length(void);
 size_t ruda_managed_array_cell_bytes(const RudaManagedArray *array);
 void ruda_managed_array_dispose(RudaManagedHeap *heap, RudaManagedArray *array);
+RudaManagedStatus ruda_managed_array_index(
+    const RudaManagedHeap *heap,
+    RudaManagedReference reference,
+    int64_t index,
+    const RudaManagedArray **array,
+    size_t *current_length
+);
 RudaManagedSlot *ruda_managed_resolve(RudaManagedHeap *heap, RudaManagedReference reference);
 const RudaManagedSlot *ruda_managed_resolve_const(const RudaManagedHeap *heap, RudaManagedReference reference);
 RudaManagedStatus ruda_managed_reference_status(const RudaManagedHeap *heap, RudaManagedReference reference, const RudaManagedArrayDescriptor *expected);

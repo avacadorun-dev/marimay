@@ -72,5 +72,39 @@ RudaManagedStatus ruda_managed_array_push(
     RudaManagedReference array,
     RudaManagedCell value
 );
+/* Successful initialized-sequence mutations advance this non-wrapping value. */
+RudaManagedStatus ruda_managed_array_mutation_generation(
+    const RudaManagedHeap *heap,
+    RudaManagedReference array,
+    uint64_t *generation
+);
+RudaManagedStatus ruda_managed_array_check_mutation_generation(
+    const RudaManagedHeap *heap,
+    RudaManagedReference array,
+    uint64_t expected_generation
+);
+/* On an empty array, popped is false and result is zeroed. */
+RudaManagedStatus ruda_managed_array_pop(
+    RudaManagedHeap *heap,
+    RudaManagedReference array,
+    RudaManagedCell *result,
+    bool *popped
+);
+/* new_length is signed so callers can preserve the source error distinction. */
+RudaManagedStatus ruda_managed_array_truncate(
+    RudaManagedHeap *heap,
+    RudaManagedReference array,
+    int64_t new_length
+);
+RudaManagedStatus ruda_managed_array_clear(
+    RudaManagedHeap *heap,
+    RudaManagedReference array
+);
+/* additional is signed so a negative request is not silently converted. */
+RudaManagedStatus ruda_managed_array_reserve(
+    RudaManagedHeap *heap,
+    RudaManagedReference array,
+    int64_t additional
+);
 
 #endif

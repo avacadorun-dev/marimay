@@ -239,6 +239,13 @@ use the same primary span and source-first caller frames.
 
 The same controlled program yields equivalent source frames under VM/native. Raw native addresses are available only in a separate debug section and cannot replace source information.
 
+Under D053, use of an array iterator after an initialized-sequence mutation
+panics with `G4005` and the exact locale-independent message `array iterator
+invalidated by mutation`. The primary span is the complete
+`for const name of expression` header. `reserve` cannot produce this panic;
+empty/no-op/error mutation paths do not change the generation. VM and native
+preserve the same code, message, span, and caller frames.
+
 Cancellation is normally not printed as an error. Unexpected forced shutdown, cleanup panic, or leaked resource receives a runtime diagnostic with allocation/open and owning task spans.
 
 Under D041 an already-active panic remains primary while cleanup panics are

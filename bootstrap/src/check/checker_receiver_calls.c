@@ -1,6 +1,7 @@
 #include "checker_receiver_calls_api.h"
 
 #include "checker_core_api.h"
+#include "checker_array_mutation_api.h"
 #include "checker_expr_calls_api.h"
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
@@ -32,9 +33,11 @@ static bool ruda_receiver_is_collection_name(
     if (checker == NULL || token == NULL || token->synthetic) {
         return false;
     }
-    if (ruda_checker_private_check_text_equal(
-            checker, token->start, token->end, "push"
-        )) {
+    if (ruda_checker_private_check_text_equal(checker, token->start, token->end, "push")
+        || ruda_checker_private_check_text_equal(checker, token->start, token->end, "pop")
+        || ruda_checker_private_check_text_equal(checker, token->start, token->end, "truncate")
+        || ruda_checker_private_check_text_equal(checker, token->start, token->end, "clear")
+        || ruda_checker_private_check_text_equal(checker, token->start, token->end, "reserve")) {
         return true;
     }
     if (ruda_checker_private_check_text_equal(
@@ -198,6 +201,14 @@ bool ruda_checker_private_compile_receiver_collection_call(
             &array_resolved,
             result
         );
+    }
+    if (!ruda_checker_private_compile_array_mutation_call(
+            function, node, receiver_node, &receiver, &array_resolved, result
+        )) {
+        return false;
+    }
+    if (array_resolved) {
+        return true;
     }
     return ruda_compile_array_builtin_call(
         function,

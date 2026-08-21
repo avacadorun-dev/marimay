@@ -381,9 +381,24 @@ parameter makes them dot-call eligible:
 ```ruda
 public fn length<T>(values: Array<T>): int;
 public fn push<T>(values: Array<T>, value: T): Result<void, ArrayGrowthError>;
+public fn pop<T>(values: Array<T>): Option<T>;
+public fn truncate<T>(
+  values: Array<T>,
+  newLength: int,
+): Result<void, ArrayTruncateError>;
+public fn clear<T>(values: Array<T>): void;
+public fn reserve<T>(
+  values: Array<T>,
+  additional: int,
+): Result<void, ArrayGrowthError>;
 
 public enum ArrayGrowthError {
   LengthLimit { limit: int; },
+  NegativeAdditional { additional: int; },
+}
+
+public enum ArrayTruncateError {
+  InvalidLength { requested: int; length: int; },
 }
 ```
 
@@ -393,6 +408,17 @@ the same call. `push` returns `Err(ArrayGrowthError.LengthLimit { limit })`
 only when adding an element would exceed the semantic maximum `int::MAX`.
 Capacity is unobservable. Runtime heap ceilings and process allocation failure
 remain execution outcomes rather than recoverable array values.
+
+Under D053, `pop` returns `None` without mutation when the array is empty and
+otherwise removes and returns the last initialized element. `truncate` accepts
+only a nonnegative length no greater than the current length; another value
+returns `ArrayTruncateError.InvalidLength` without mutation. `clear` removes
+all initialized elements. Neither removal operation shrinks capacity.
+`reserve(values, additional)` reserves space for a nonnegative number of
+additional elements. A negative count returns `NegativeAdditional`, and a
+requested total above `int::MAX` returns `LengthLimit`; heap limits and process
+allocation failure retain their execution-level classification. Capacity and
+whether a reservation allocated are not observable.
 
 Function types use arrow notation:
 
@@ -520,12 +546,13 @@ compiler-known receiver selects the library operation. For example,
 `push(stack, value)`/`stack.push(value)` resolve to the package symbol owned by
 `Stack`, while `push(values, value)`/`values.push(value)` resolve to the
 `Array<T>` operation when `values` is an array. The same rule applies to
-`length`; the compiler-known prelude has no name-only priority over visible
-package candidates. A namespace-qualified free call is resolved only through
-that namespace. Candidate collection does not evaluate the receiver; after a
-candidate is selected, the receiver expression is still evaluated exactly
-once in source order as required above. These rules refine D003 and D043 and
-do not introduce general overloads or extension methods.
+`length`, `pop`, `truncate`, `clear`, and `reserve`; the compiler-known prelude
+has no name-only priority over visible package candidates. A
+namespace-qualified free call is resolved only through that namespace.
+Candidate collection does not evaluate the receiver; after a candidate is
+selected, the receiver expression is still evaluated exactly once in source
+order as required above. These rules refine D003 and D043 and do not introduce
+general overloads or extension methods.
 
 A dot-call-eligible function can mutate only fields declared `mutable` and visible to its package. Mutation does not require a special parameter mode because tasks sharing an isolate cannot execute in parallel. Cross-isolate sharing rules are defined in the execution specification.
 
@@ -620,6 +647,12 @@ existing iterator-cleanup or control-flow semantics.
 loop is a compile error. Labels are not supported in 1.0. A `for-of` loop
 obtains an iterator once and guarantees its cleanup through the standard
 resource protocol.
+
+For an array, that iterator also captures the D053 mutation generation. It
+checks the snapshot before every subsequent loop test or element yield. A
+mismatch panics with `G4005` at the complete loop header. `reserve` does not
+invalidate an iterator because it changes no initialized element; an iterator
+therefore cannot depend on a stable raw storage address.
 
 ## 9. Pattern matching
 

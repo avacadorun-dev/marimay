@@ -17,7 +17,7 @@ const RudaManagedArrayDescriptor ruda_managed_array_array_f64_descriptor = {
     &ruda_managed_array_f64_descriptor
 };
 
-static size_t ruda_managed_language_max_array_length(void) {
+size_t ruda_managed_language_max_array_length(void) {
 #if SIZE_MAX > INT64_MAX
     return (size_t)INT64_MAX;
 #else
@@ -669,7 +669,7 @@ RudaManagedStatus ruda_managed_array_describe(
     return RUDA_MANAGED_OK;
 }
 
-static RudaManagedStatus ruda_managed_array_index(
+RudaManagedStatus ruda_managed_array_index(
     const RudaManagedHeap *heap,
     RudaManagedReference reference,
     int64_t index,
@@ -728,199 +728,6 @@ RudaManagedStatus ruda_managed_array_get(
         return status;
     }
     *result = resolved->cells[(size_t)index];
-    return RUDA_MANAGED_OK;
-}
-
-RudaManagedStatus ruda_managed_array_set(
-    RudaManagedHeap *heap,
-    RudaManagedReference array,
-    int64_t index,
-    RudaManagedCell value,
-    size_t *current_length
-) {
-    const RudaManagedArray *resolved_const = NULL;
-    RudaManagedArray *resolved = NULL;
-    RudaManagedStatus status = ruda_managed_array_index(
-        heap,
-        array,
-        index,
-        &resolved_const,
-        current_length
-    );
-    if (status != RUDA_MANAGED_OK) {
-        return status;
-    }
-    resolved = ruda_managed_resolve(heap, array)->as.array;
-    if (resolved->descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
-        RudaManagedFieldDescriptor element = {
-            RUDA_MANAGED_CELL_REFERENCE,
-            true,
-            resolved->descriptor->reference_kind,
-            resolved->descriptor->reference_descriptor
-        };
-        status = ruda_managed_validate_field(heap, &element, value);
-        if (status != RUDA_MANAGED_OK) {
-            return status;
-        }
-    }
-    (void)resolved_const;
-    resolved->cells[(size_t)index] = value;
-    return RUDA_MANAGED_OK;
-}
-
-static RudaManagedStatus ruda_managed_collect_for_push(
-    RudaManagedHeap *heap,
-    RudaManagedReference array,
-    const RudaManagedArray *resolved,
-    RudaManagedCell value
-) {
-    RudaManagedReference roots[2];
-    size_t count = 1;
-    roots[0] = array;
-    if (resolved->descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
-        roots[1] = value.reference;
-        count = 2;
-    }
-    return ruda_managed_collect_internal(heap, roots, count, NULL, 0);
-}
-
-RudaManagedStatus ruda_managed_array_push(
-    RudaManagedHeap *heap,
-    RudaManagedReference array,
-    RudaManagedCell value
-) {
-    RudaManagedSlot *slot = NULL;
-    RudaManagedArray *resolved = NULL;
-    RudaManagedStatus status;
-    size_t next_length = 0;
-    size_t next_capacity = 0;
-    size_t old_bytes = 0;
-    size_t new_bytes = 0;
-    size_t added_bytes = 0;
-    size_t next_live_bytes = 0;
-    RudaManagedCell *resized = NULL;
-    bool collected = false;
-    if (!ruda_managed_heap_valid(heap)) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
-    }
-    slot = ruda_managed_resolve(heap, array);
-    if (slot == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
-    }
-    if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY || slot->as.array == NULL) {
-        return RUDA_MANAGED_TYPE_MISMATCH;
-    }
-    resolved = slot->as.array;
-    if (resolved->descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
-        RudaManagedFieldDescriptor element = {
-            RUDA_MANAGED_CELL_REFERENCE,
-            true,
-            resolved->descriptor->reference_kind,
-            resolved->descriptor->reference_descriptor
-        };
-        status = ruda_managed_validate_field(heap, &element, value);
-        if (status != RUDA_MANAGED_OK) {
-            return status;
-        }
-    }
-    if (resolved->length >= ruda_managed_language_max_array_length()) {
-        return RUDA_MANAGED_LENGTH_LIMIT;
-    }
-    if (!ruda_size_add(resolved->length, 1, &next_length)) {
-        return RUDA_MANAGED_LENGTH_LIMIT;
-    }
-    if (next_length > heap->options.max_array_length) {
-        return RUDA_MANAGED_LIMIT_REACHED;
-    }
-    if (next_length <= resolved->capacity) {
-        resolved->cells[resolved->length] = value;
-        resolved->length = next_length;
-        return RUDA_MANAGED_OK;
-    }
-retry:
-    if (heap->options.collect_before_allocation && !collected) {
-        status = ruda_managed_collect_for_push(heap, array, resolved, value);
-        if (status != RUDA_MANAGED_OK) {
-            return status;
-        }
-        collected = true;
-        slot = ruda_managed_resolve(heap, array);
-        if (slot == NULL) {
-            return RUDA_MANAGED_INVALID_REFERENCE;
-        }
-        if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY
-            || slot->as.array == NULL) {
-            return RUDA_MANAGED_TYPE_MISMATCH;
-        }
-        resolved = slot->as.array;
-    }
-    next_capacity = resolved->capacity == 0 ? 4 : resolved->capacity;
-    while (next_capacity < next_length) {
-        size_t doubled = 0;
-        if (!ruda_size_multiply(next_capacity, 2, &doubled)
-            || doubled > heap->options.max_array_length) {
-            next_capacity = heap->options.max_array_length;
-            break;
-        }
-        next_capacity = doubled;
-    }
-    if (next_capacity < next_length
-        || !ruda_size_multiply(
-            resolved->capacity,
-            sizeof(RudaManagedCell),
-            &old_bytes
-        ) || !ruda_size_multiply(
-            next_capacity,
-            sizeof(RudaManagedCell),
-            &new_bytes
-        )) {
-        return RUDA_MANAGED_LIMIT_REACHED;
-    }
-    added_bytes = new_bytes - old_bytes;
-    if (!ruda_managed_add_within_limit(
-            heap->live_byte_count,
-            added_bytes,
-            heap->options.max_live_bytes,
-            &next_live_bytes
-        )) {
-        if (!collected) {
-            status = ruda_managed_collect_for_push(
-                heap,
-                array,
-                resolved,
-                value
-            );
-            if (status != RUDA_MANAGED_OK) {
-                return status;
-            }
-            collected = true;
-            slot = ruda_managed_resolve(heap, array);
-            if (slot == NULL) {
-                return RUDA_MANAGED_INVALID_REFERENCE;
-            }
-            if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY
-                || slot->as.array == NULL) {
-                return RUDA_MANAGED_TYPE_MISMATCH;
-            }
-            resolved = slot->as.array;
-            goto retry;
-        }
-        return RUDA_MANAGED_LIMIT_REACHED;
-    }
-    resized = ruda_resize(
-        &heap->allocator,
-        resolved->cells,
-        old_bytes,
-        new_bytes
-    );
-    if (resized == NULL) {
-        return RUDA_MANAGED_ALLOCATION_FAILED;
-    }
-    resolved->cells = resized;
-    resolved->capacity = next_capacity;
-    resolved->cells[resolved->length] = value;
-    resolved->length = next_length;
-    heap->live_byte_count = next_live_bytes;
     return RUDA_MANAGED_OK;
 }
 

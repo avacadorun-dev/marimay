@@ -113,6 +113,7 @@ REQUIRED_DECISIONS = {
     "D050",
     "D051",
     "D052",
+    "D053",
 }
 
 VALID_DECISION_STATES = {"accepted", "provisional", "deferred", "rejected"}
@@ -644,7 +645,9 @@ def check_spec_terms() -> List[Finding]:
         if domain not in evidence:
             findings.append(Finding(evidence_path, 1, f"missing primary-source domain: {domain}"))
 
-    source_surfaces = sorted((ROOT / "examples").glob("*.ruda"))
+    source_surfaces = sorted(
+        path for path in (ROOT / "examples").glob("*.ruda") if path.is_file()
+    )
     for markdown in _markdown_files():
         for start_line, block in _fenced_blocks(markdown, "ruda"):
             tokens, scan_findings = _scan(markdown, block)
@@ -669,7 +672,9 @@ def check_spec_terms() -> List[Finding]:
 
 def check_example_syntax() -> List[Finding]:
     findings: List[Finding] = []
-    examples = sorted((ROOT / "examples").glob("*.ruda"))
+    examples = sorted(
+        path for path in (ROOT / "examples").glob("*.ruda") if path.is_file()
+    )
     if not examples:
         return [Finding(ROOT / "examples", 1, "no .ruda examples found")]
 

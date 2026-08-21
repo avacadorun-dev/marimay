@@ -149,6 +149,7 @@ set(RUDA_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/vector.c
   runtime/common/io_stdout.c
   runtime/common/managed.c
+  runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c
   runtime/common/managed_string.c
   runtime/common/managed_record.c
@@ -247,6 +248,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/mir_lower_nominal.c
   bootstrap/src/bytecode/vm.c
   bootstrap/src/bytecode/vm_array.c
+  bootstrap/src/bytecode/vm_array_mutation.c
   bootstrap/src/bytecode/vm_defer.c
   bootstrap/src/bytecode/vm_interface.c
   bootstrap/src/bytecode/vm_io.c
@@ -256,6 +258,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/vm_prepare.c
   bootstrap/src/bytecode/vm_value.c
   bootstrap/src/check/array.c
+  bootstrap/src/check/checker_array_mutation.c
   bootstrap/src/check/checker.c
   bootstrap/src/check/checker_cfg.c
   bootstrap/src/check/checker_defer.c
@@ -327,6 +330,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/manifest/manifest_format.c
   bootstrap/src/manifest/manifest_parse.c
   bootstrap/src/mir/execution.c
+  bootstrap/src/mir/execution_array.c
   bootstrap/src/mir/execution_defer.c
   bootstrap/src/mir/execution_format.c
   bootstrap/src/mir/execution_io.c
@@ -344,6 +348,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/native/build.c
   bootstrap/src/native/runtime_artifact.c
   bootstrap/src/native/c_emitter.c
+  bootstrap/src/native/c_emitter_array_mutation.c
   bootstrap/src/native/c_emitter_descriptors.c
   bootstrap/src/native/c_emitter_defer.c
   bootstrap/src/native/c_emitter_entry.c
@@ -365,6 +370,7 @@ add_library(ruda_bootstrap STATIC
   runtime/common/io_stdout.c
   runtime/common/test_output.c
   runtime/common/managed.c
+  runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c
   runtime/common/managed_string.c
   runtime/common/managed_record.c

@@ -494,6 +494,12 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
                 case RUDA_MIR_ARRAY_REQUIRE_INDEX: case RUDA_MIR_ARRAY_GET:
                 case RUDA_MIR_ARRAY_SET:
                 case RUDA_MIR_ARRAY_PUSH:
+                case RUDA_MIR_ARRAY_POP:
+                case RUDA_MIR_ARRAY_TRUNCATE:
+                case RUDA_MIR_ARRAY_CLEAR:
+                case RUDA_MIR_ARRAY_RESERVE:
+                case RUDA_MIR_ARRAY_GENERATION:
+                case RUDA_MIR_ARRAY_REQUIRE_GENERATION:
                 case RUDA_MIR_RECORD_NEW: case RUDA_MIR_RECORD_GET:
                 case RUDA_MIR_RECORD_SET: case RUDA_MIR_RECORD_IDENTITY_SAME:
                 case RUDA_MIR_ENUM_NEW: case RUDA_MIR_ENUM_IS_VARIANT:

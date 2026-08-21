@@ -468,6 +468,20 @@ and a collection attempt precedes a heap-limit outcome when reclaimable
 objects could satisfy the operation. Capacity and collection timing remain
 unobservable.
 
+Under D053, pop/truncate/clear remove cells from the initialized prefix and
+from precise tracing before a following collection can observe the array.
+Reserve roots the array across collection/reallocation and is failure-atomic:
+an unsuccessful operation changes neither cells, length, reserved storage, nor
+mutation generation. Capacity remains unobservable and is never serialized in
+portable bytecode.
+
+Each array carries a non-wrapping internal mutation generation. VM and native
+increment it only after a successful initialized-sequence mutation commits.
+Array iteration captures it once and checks it before every later loop test or
+yield. A mismatch produces the exact `G4005` panic contract. Iterators resolve
+the array handle for each check/access and do not retain a raw cell pointer,
+so a successful `reserve` neither invalidates them nor exposes relocation.
+
 ### 9.3 Resource lifetime
 
 Garbage collection is not resource management. Safe APIs for files, sockets, transactions, and foreign handles expose explicit `close`/`finish` operations intended for lexical `defer`. User-defined finalizers are not supported in 1.0. Internal emergency cleanup for leaked OS handles must be reported and cannot define correctness.
@@ -542,6 +556,11 @@ With the same source, dependency graph, language version, input capabilities, an
 - standard-library requests and responses;
 - task creation tree, explicit waits, cancellation, and cleanup events;
 - capability denials and resource-limit classification.
+
+For D053 arrays this agreement includes `Option`/`Result` removal and sizing
+cases, exact post-operation length/elements, mutation-generation invalidation,
+removed-reference reachability, reserve failure atomicity, and `G4005` panic
+identity.
 
 Addresses, GC timing, backend helper frames, native symbol names, throughput, and independent-task scheduling are not observable guarantees.
 

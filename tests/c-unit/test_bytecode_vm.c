@@ -12,6 +12,7 @@ void ruda_test_bytecode_vm(void) {
     ruda_test_vm_array_feature_call_metadata();
     ruda_test_vm_checked_index_cfg();
     ruda_test_vm_array_rhs_ordering();
+    ruda_test_vm_array_mutation();
     ruda_test_vm_managed_array_calls();
     ruda_test_vm_managed_array_provenance();
     ruda_test_vm_managed_array_panic_frames();

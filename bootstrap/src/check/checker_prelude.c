@@ -73,6 +73,7 @@ static bool ruda_checker_private_prelude_variant(
     const char *name,
     RudaCheckedEnumVariantKind kind,
     RudaTypeId payload_type,
+    const char *payload_name,
     RudaCheckEnumVariantDeclaration *result
 ) {
     RudaCheckEnumPayloadItemDeclaration payload;
@@ -97,7 +98,16 @@ static bool ruda_checker_private_prelude_variant(
     result->kind = kind;
     if (payload_type != RUDA_TYPE_INVALID) {
         payload.type = payload_type;
+        payload.has_name = payload_name != NULL;
+        if (payload_name != NULL && !ruda_checker_private_prelude_name(
+                checker, &payload.owned_name, payload_name
+            )) {
+            ruda_checker_private_enum_variant_declaration_dispose(result);
+            return false;
+        }
+        payload.name_initialized = payload_name != NULL;
         if (!ruda_vector_push(&result->payload, &payload)) {
+            ruda_owned_bytes_dispose(&payload.owned_name);
             ruda_checker_private_enum_variant_declaration_dispose(result);
             return false;
         }
@@ -176,7 +186,7 @@ static bool ruda_checker_private_prelude_enum(
             0,
             &declaration.type
         ) || !ruda_checker_private_prelude_variant(
-            checker, first_variant, first_kind, parameter_types[0], &variant
+            checker, first_variant, first_kind, parameter_types[0], NULL, &variant
         ) || !ruda_vector_push(&declaration.variants, &variant)) {
         ruda_checker_private_enum_variant_declaration_dispose(&variant);
         ruda_checker_private_enum_declaration_dispose(&declaration);
@@ -189,6 +199,7 @@ static bool ruda_checker_private_prelude_enum(
             second_kind,
             second_kind == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
                 ? parameter_types[parameter_count - 1] : RUDA_TYPE_INVALID,
+            NULL,
             &variant
         ) || !ruda_vector_push(&declaration.variants, &variant)) {
         ruda_checker_private_enum_variant_declaration_dispose(&variant);
@@ -258,17 +269,146 @@ static bool ruda_checker_private_prelude_array_growth_error(
     if (!ruda_checker_private_prelude_variant(
             checker,
             "LengthLimit",
-            RUDA_CHECKED_ENUM_VARIANT_POSITIONAL,
+            RUDA_CHECKED_ENUM_VARIANT_NAMED,
             RUDA_TYPE_I64,
+            "limit",
             &variant
-        ) || !ruda_vector_push(&declaration.variants, &variant)
-        || !ruda_vector_push(&checker->prelude_enums, &declaration)) {
+        ) || !ruda_vector_push(&declaration.variants, &variant)) {
         ruda_checker_private_enum_variant_declaration_dispose(&variant);
         ruda_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
+    memset(&variant, 0, sizeof(variant));
+    if (!ruda_checker_private_prelude_variant(
+            checker,
+            "NegativeAdditional",
+            RUDA_CHECKED_ENUM_VARIANT_NAMED,
+            RUDA_TYPE_I64,
+            "additional",
+            &variant
+        ) || !ruda_vector_push(&declaration.variants, &variant)) {
+        ruda_checker_private_enum_variant_declaration_dispose(&variant);
+        ruda_checker_private_enum_declaration_dispose(&declaration);
+        return false;
+    }
+    memset(&variant, 0, sizeof(variant));
+    if (!ruda_vector_push(&checker->prelude_enums, &declaration)) {
+        ruda_checker_private_enum_declaration_dispose(&declaration);
+        return false;
+    }
+    memset(&declaration, 0, sizeof(declaration));
+    return true;
+}
+
+static bool ruda_checker_private_prelude_error_enum(
+    RudaChecker *checker,
+    const char *name,
+    const char *variant_name,
+    const char *const *payload_names,
+    size_t payload_count
+) {
+    RudaCheckEnumDeclaration declaration;
+    RudaCheckEnumVariantDeclaration variant;
+    RudaSymbolId symbol;
+    size_t index = 0;
     memset(&declaration, 0, sizeof(declaration));
     memset(&variant, 0, sizeof(variant));
+    if (checker == NULL || name == NULL || variant_name == NULL
+        || (payload_names == NULL && payload_count != 0)) {
+        return false;
+    }
+    if (!ruda_checker_private_prelude_name(
+            checker, &declaration.owned_name, name
+        )) {
+        return false;
+    }
+    declaration.name_initialized = true;
+    if (!ruda_checker_private_prelude_symbol(name, &symbol)
+        || !ruda_vector_init(
+            &declaration.type_parameters,
+            checker->result->allocator,
+            sizeof(RudaCheckTypeParameterDeclaration)
+        )) {
+        ruda_checker_private_enum_declaration_dispose(&declaration);
+        return false;
+    }
+    declaration.type_parameters_initialized = true;
+    if (!ruda_vector_init(
+            &declaration.variants,
+            checker->result->allocator,
+            sizeof(RudaCheckEnumVariantDeclaration)
+        )) {
+        ruda_checker_private_enum_declaration_dispose(&declaration);
+        return false;
+    }
+    declaration.variants_initialized = true;
+    if (!ruda_checker_private_prelude_name(
+            checker, &variant.owned_name, variant_name
+        )) {
+        ruda_checker_private_enum_declaration_dispose(&declaration);
+        return false;
+    }
+    variant.name_initialized = true;
+    if (!ruda_vector_init(
+            &variant.payload,
+            checker->result->allocator,
+            sizeof(RudaCheckEnumPayloadItemDeclaration)
+        )) {
+        ruda_checker_private_enum_variant_declaration_dispose(&variant);
+        ruda_checker_private_enum_declaration_dispose(&declaration);
+        return false;
+    }
+    declaration.symbol = symbol;
+    declaration.declaration_valid = true;
+    declaration.variants_resolved = true;
+    declaration.is_builtin = true;
+    declaration.is_public = true;
+    variant.payload_initialized = true;
+    variant.kind = RUDA_CHECKED_ENUM_VARIANT_NAMED;
+    if (!ruda_type_intern_nominal(
+            &checker->result->types,
+            RUDA_TYPE_KIND_NOMINAL,
+            symbol,
+            NULL,
+            0,
+            &declaration.type
+        )) {
+        ruda_checker_private_enum_variant_declaration_dispose(&variant);
+        ruda_checker_private_enum_declaration_dispose(&declaration);
+        return false;
+    }
+    for (index = 0; index < payload_count; index += 1) {
+        RudaCheckEnumPayloadItemDeclaration payload;
+        memset(&payload, 0, sizeof(payload));
+        if (!ruda_checker_private_prelude_name(
+                checker, &payload.owned_name, payload_names[index]
+            )) {
+            ruda_checker_private_enum_variant_declaration_dispose(&variant);
+            ruda_checker_private_enum_declaration_dispose(&declaration);
+            return false;
+        }
+        payload.type = RUDA_TYPE_I64;
+        payload.name_initialized = true;
+        payload.has_name = true;
+        if (!ruda_vector_push(&variant.payload, &payload)) {
+            ruda_owned_bytes_dispose(&payload.owned_name);
+            ruda_checker_private_enum_variant_declaration_dispose(&variant);
+            ruda_checker_private_enum_declaration_dispose(&declaration);
+            return false;
+        }
+        memset(&payload, 0, sizeof(payload));
+    }
+    if (!ruda_vector_push(&declaration.variants, &variant)) {
+        ruda_checker_private_enum_variant_declaration_dispose(&variant);
+        ruda_checker_private_enum_declaration_dispose(&declaration);
+        return false;
+    }
+    memset(&variant, 0, sizeof(variant));
+    if (!ruda_vector_push(&checker->prelude_enums, &declaration)) {
+        ruda_checker_private_enum_declaration_dispose(&declaration);
+        return false;
+    }
+    memset(&declaration, 0, sizeof(declaration));
     return true;
 }
 
@@ -279,7 +419,7 @@ bool ruda_checker_private_prelude_init(RudaChecker *checker) {
         return false;
     }
     original_max_types = checker->options.type_options.max_types;
-    prelude_max_types = RUDA_TYPE_FIRST_DYNAMIC + 6;
+    prelude_max_types = RUDA_TYPE_FIRST_DYNAMIC + 7;
     if (prelude_max_types < original_max_types) {
         prelude_max_types = original_max_types;
     }
@@ -296,7 +436,9 @@ bool ruda_checker_private_prelude_init(RudaChecker *checker) {
         return false;
     }
     checker->prelude_enums_initialized = true;
-    if (!ruda_checker_private_prelude_enum(
+    {
+        static const char *const invalid_length[] = {"requested", "length"};
+        if (!ruda_checker_private_prelude_enum(
         checker, "Option", "T", NULL, "Some", "None",
             RUDA_CHECKED_ENUM_VARIANT_POSITIONAL,
             RUDA_CHECKED_ENUM_VARIANT_UNIT
@@ -304,7 +446,11 @@ bool ruda_checker_private_prelude_init(RudaChecker *checker) {
             checker, "Result", "T", "E", "Ok", "Err",
             RUDA_CHECKED_ENUM_VARIANT_POSITIONAL,
             RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
-        ) || !ruda_checker_private_prelude_array_growth_error(checker)) {
+        ) || !ruda_checker_private_prelude_array_growth_error(checker)
+        || !ruda_checker_private_prelude_error_enum(
+            checker, "ArrayTruncateError", "InvalidLength",
+            invalid_length, 2
+        )) {
         ruda_checker_fail(
             checker,
             RUDA_CHECK_ALLOCATION_FAILED
@@ -312,6 +458,7 @@ bool ruda_checker_private_prelude_init(RudaChecker *checker) {
         checker->options.type_options.max_types = original_max_types;
         checker->result->types.options.max_types = original_max_types;
         return false;
+    }
     }
     checker->options.type_options.max_types = original_max_types;
     checker->result->types.options.max_types = original_max_types;

@@ -67,6 +67,7 @@ void ruda_test_vm_managed_arrays(void);
 void ruda_test_vm_array_feature_call_metadata(void);
 void ruda_test_vm_checked_index_cfg(void);
 void ruda_test_vm_array_rhs_ordering(void);
+void ruda_test_vm_array_mutation(void);
 void ruda_test_vm_managed_array_calls(void);
 void ruda_test_vm_managed_array_provenance(void);
 void ruda_test_vm_managed_array_panic_frames(void);

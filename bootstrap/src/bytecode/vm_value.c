@@ -345,6 +345,11 @@ RudaBytecodeRunStatus ruda_bytecode_run_managed_status(
             return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
         case RUDA_MANAGED_BOUNDS:
             return RUDA_BYTECODE_RUN_PANIC;
+        case RUDA_MANAGED_TRUNCATE_INVALID_LENGTH:
+        case RUDA_MANAGED_NEGATIVE_ADDITIONAL:
+            return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        case RUDA_MANAGED_ITERATOR_INVALIDATED:
+            return RUDA_BYTECODE_RUN_PANIC;
         case RUDA_MANAGED_INVALID_ARGUMENT:
         case RUDA_MANAGED_TYPE_MISMATCH:
             return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
@@ -365,6 +370,15 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
     size_t *bounds_length
 ) {
     size_t target = (size_t)instruction->operands[0].unsigned_value;
+    bool array_mutation_handled = false;
+    RudaBytecodeRunStatus array_mutation_status =
+        ruda_bytecode_run_array_mutation_instruction(
+            instruction, registers, execution, function, allocator, panic,
+            symbol, &array_mutation_handled
+        );
+    if (array_mutation_handled) {
+        return array_mutation_status;
+    }
     if (ruda_bytecode_opcode_is_numeric(instruction->opcode)) {
         return ruda_bytecode_run_numeric_instruction(
             instruction, registers, execution, function
@@ -1057,6 +1071,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
         case RUDA_OPCODE_PANIC_STRING:
         case RUDA_OPCODE_DEFER_REGISTER:
         case RUDA_OPCODE_DEFER_CALL:
+        case RUDA_OPCODE_ARRAY_POP:
+        case RUDA_OPCODE_ARRAY_TRUNCATE:
+        case RUDA_OPCODE_ARRAY_CLEAR:
+        case RUDA_OPCODE_ARRAY_RESERVE:
+        case RUDA_OPCODE_ARRAY_GENERATION:
+        case RUDA_OPCODE_ARRAY_REQUIRE_GENERATION:
             return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
         case RUDA_OPCODE_RECORD_NEW:
         case RUDA_OPCODE_RECORD_GET:

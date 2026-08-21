@@ -297,6 +297,17 @@ RudaMirManagedArray *ruda_mir_execution_array_value_mutable(
     RudaMirExecution *execution,
     RudaMirValue value
 ) {
+    RudaMirManagedArray **stored = ruda_mir_execution_array_slot(
+        execution, value
+    );
+    return stored != NULL && *stored != NULL && (*stored)->type == value.type
+        ? *stored
+        : NULL;
+}
+RudaMirManagedArray **ruda_mir_execution_array_slot(
+    RudaMirExecution *execution,
+    RudaMirValue value
+) {
     size_t index = 0;
     RudaMirManagedArray **stored = execution != NULL && execution->initialized
             && ruda_mir_reference_decode(
@@ -307,9 +318,7 @@ RudaMirManagedArray *ruda_mir_execution_array_value_mutable(
             )
         ? ruda_vector_at(&execution->arrays, index)
         : NULL;
-    return stored != NULL && *stored != NULL && (*stored)->type == value.type
-        ? *stored
-        : NULL;
+    return stored;
 }
 const RudaMirManagedArray *ruda_mir_execution_array_value(
     const RudaMirExecution *execution,
@@ -970,6 +979,8 @@ RudaMirInterpretStatus ruda_mir_execution_new_array(
     value->element_type = layout->element_type;
     value->allocation_size = allocation_size;
     value->length = length;
+    value->capacity = length;
+    value->mutation_generation = 0;
     if (length != 0) {
         memcpy(value->elements, elements, element_bytes);
     }
@@ -988,72 +999,6 @@ RudaMirInterpretStatus ruda_mir_execution_new_array(
         : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
 }
 
-RudaMirInterpretStatus ruda_mir_execution_array_push(
-    RudaMirExecution *execution,
-    const RudaMirArray *layout,
-    RudaMirValue array_value,
-    RudaMirValue element
-) {
-    RudaMirManagedArray *array = NULL;
-    size_t next_length = 0;
-    size_t element_bytes = 0;
-    size_t next_allocation = 0;
-    size_t next_total = 0;
-    RudaMirInterpretStatus status = RUDA_MIR_INTERPRET_OK;
-    if (execution == NULL || !execution->initialized || layout == NULL
-        || element.type != layout->element_type) {
-        return RUDA_MIR_INTERPRET_INVALID_MIR;
-    }
-    array = ruda_mir_execution_array_value_mutable(execution, array_value);
-    if (array == NULL || !ruda_mir_managed_array_matches_layout(layout, array)) {
-        return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
-    }
-    if (ruda_mir_type_is_managed(element.type)
-        && !ruda_mir_execution_owns_reference(execution, element)) {
-        return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
-    }
-    if (array->length >= execution->options.max_array_length
-        || array->length >= (size_t)INT64_MAX
-        || !ruda_size_add(array->length, 1, &next_length)
-        || !ruda_size_add(
-            execution->total_array_elements - array->length,
-            next_length,
-            &next_total
-        ) || next_total > execution->options.max_total_array_elements
-        || !ruda_size_multiply(
-            next_length, sizeof(RudaMirValue), &element_bytes
-        ) || !ruda_size_add(
-            offsetof(RudaMirManagedArray, elements), element_bytes,
-            &next_allocation
-        )) {
-        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
-    }
-    if (next_allocation > array->allocation_size) {
-        RudaMirManagedArray *resized = ruda_resize(
-            &execution->allocator, array, array->allocation_size,
-            next_allocation
-        );
-        if (resized == NULL) {
-            return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
-        }
-        array = resized;
-        array->allocation_size = next_allocation;
-        {
-            RudaMirManagedArray **stored = ruda_vector_at(
-                &execution->arrays, array_value.as.reference.slot
-                    & RUDA_MIR_REFERENCE_INDEX_MASK
-            );
-            if (stored == NULL) {
-                return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
-            }
-            *stored = array;
-        }
-    }
-    array->elements[array->length] = element;
-    array->length = next_length;
-    execution->total_array_elements = next_total;
-    return status;
-}
 RudaMirInterpretStatus ruda_mir_execution_new_interface(
     RudaMirExecution *execution,
     RudaTypeId type,

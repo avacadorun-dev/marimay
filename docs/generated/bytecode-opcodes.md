@@ -100,3 +100,9 @@ Stage 0 codec.
 | 87 | `io_println` | `destination:register`, `text:register` | `may_panic` | Publish one D046 stdout line and return Result<void, std/io.Error>. |
 | 88 | `test_output_begin` | `destination:register`, `expected:register` | `may_panic` | Begin exact-byte stdout capture for a compiler-known test expectation. |
 | 89 | `test_output_end` | `destination:register`, `marker:register` | `may_panic` | End exact-byte stdout capture and panic with G4004 on mismatch. |
+| 90 | `array_pop` | `destination:register`, `array:register` | `may_panic` | Remove and return the final initialized managed-array element. |
+| 91 | `array_truncate` | `array:register`, `length:register` | `may_panic` | Remove initialized managed-array elements after one exact target length. |
+| 92 | `array_clear` | `array:register` | `may_panic` | Remove every initialized managed-array element. |
+| 93 | `array_reserve` | `array:register`, `additional:register` | `may_panic` | Reserve capacity for additional managed-array elements without changing length. |
+| 94 | `array_generation` | `destination:register`, `array:register` | — | Read the exact managed-array mutation generation as u64. |
+| 95 | `array_require_generation` | `destination:register`, `array:register`, `generation:register` | `may_panic` | Copy the array only if its mutation generation still matches the captured value. |

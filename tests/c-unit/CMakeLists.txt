@@ -22,6 +22,7 @@ add_executable(ruda_c_unit
   test_bytecode_vm_scalar.c
   test_bytecode_vm_arithmetic.c
   test_bytecode_vm_arrays.c
+  test_bytecode_vm_array_mutation.c
   test_bytecode_vm_interface_support.c
   test_bytecode_vm_interfaces.c
   test_bytecode_vm_interface_values.c
@@ -53,6 +54,8 @@ add_executable(ruda_c_unit
   test_checker_control.c
   test_checker_failures.c
   test_checker_arrays.c
+  test_checker_array_mutation.c
+  test_mir_array_mutation.c
   test_checker_facts.c
   test_checker_resolution.c
   test_receiver_collection_names.c
@@ -67,6 +70,7 @@ add_executable(ruda_c_unit
   test_cli_cp14_imported_arrays.c
   test_cli_cp15_imported_results.c
   test_cli_cp16_receiver_names.c
+  test_cli_cp17_array_mutation.c
   test_compiler_service.c
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
@@ -88,6 +92,7 @@ add_executable(ruda_c_unit
   test_lexer.c
   test_manifest.c
   test_managed.c
+  runtime/test_managed_mutation.c
   test_managed_objects.c
   test_number_format.c
   test_mir_calls.c
@@ -108,6 +113,7 @@ add_executable(ruda_c_unit
   test_mir_support.c
   test_native_c_emitter.c
   test_native_c_emitter_arrays.c
+  test_native_c_emitter_array_mutation.c
   test_native_c_emitter_baseline.c
   test_native_c_emitter_matrix.c
   test_native_c_emitter_nominal.c
@@ -193,6 +199,8 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results" DE
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results-private" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results-nonexhaustive" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp16-receiver-names" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-mutation" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-iterator-invalidated" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY
   "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
   "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"

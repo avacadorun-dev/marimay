@@ -1,0 +1,20 @@
+fn consumeLast(rows: Array<Array<int>>): Option<Array<int>> {
+  return rows.pop();
+}
+
+fn prepare(values: Array<int>): Result<bool, ArrayGrowthError> {
+  values.reserve(16)?;
+  values.push(7)?;
+  return Ok(true);
+}
+
+fn arrayMutationExample(): bool {
+  let values = [1, 2, 3];
+  const last = values.pop();
+  values.truncate(1);
+  values.clear();
+  return match last {
+    case Some(value) => value == 3 && values.length() == 0;
+    case None => false;
+  };
+}

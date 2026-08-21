@@ -160,6 +160,10 @@ void ruda_test_formatter_fixture_file(void) {
             "format/array-checkpoint.expected.ruda"
         },
         {
+            "format/array-mutation.input.ruda",
+            "format/array-mutation.expected.ruda"
+        },
+        {
             "format/stdout-preview.input.ruda",
             "format/stdout-preview.expected.ruda"
         },
@@ -427,6 +431,7 @@ void ruda_test_formatter_long_list(void) {
 void ruda_test_formatter_example_corpus(void) {
     static const char *paths[] = {
         "examples/concurrency.ruda",
+        "examples/array_mutation.ruda",
         "examples/defer_cp7.ruda",
         "examples/nominal_cp1.ruda",
         "examples/numeric_cp6.ruda",

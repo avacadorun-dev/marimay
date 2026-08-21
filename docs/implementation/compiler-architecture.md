@@ -468,6 +468,17 @@ checkpoint:
 | `tests/c-unit/test_receiver_collection_names.c` | 0 | 373 | same-name nominal/Array behavior, diagnostics, MIR/backend selection, and fail-every-allocation cleanup |
 | `tests/c-unit/test_receiver_collection_service.c` | 0 | 419 | import-form completion/free-spelling/reference identity and compiler-service allocation cleanup |
 | `tests/c-unit/test_cli_cp16_receiver_names.c` | 0 | 107 | public fmt/check/run/test-both/build/artifact acceptance for the checkpoint-16 corpus |
+| `bootstrap/src/check/checker_array_mutation.c` | 0 | 522 | D053 typed mutation results, guards, and iterator-generation MIR lowering |
+| `bootstrap/src/mir/execution_array.c` | 0 | 371 | alias-safe array capacity/mutation oracle and exact G4002/G4005 panics |
+| `bootstrap/src/bytecode/vm_array_mutation.c` | 0 | 162 | verified mutation/generation opcode execution and G4005 mapping |
+| `bootstrap/src/native/c_emitter_array_mutation.c` | 0 | 152 | portable-C mutation/generation emission and exact G4005 runtime helper |
+| `runtime/common/managed_array_mutation.c` | 0 | 397 | failure-atomic storage mutation, reservation, generation, and precise slot release |
+| `tests/c-unit/test_checker_array_mutation.c` | 0 | 130 | typed surface/MIR shape, diagnostics, and fail-every-allocation cleanup |
+| `tests/c-unit/test_mir_array_mutation.c` | 0 | 110 | aliased MIR state plus exact iterator-invalidated message/span |
+| `tests/c-unit/test_bytecode_vm_array_mutation.c` | 0 | 264 | malformed/round-trip/state/G4005 bytecode and VM allocation coverage |
+| `tests/c-unit/test_native_c_emitter_array_mutation.c` | 0 | 115 | emitted runtime calls, strict-C execution, and allocation cleanup |
+| `tests/c-unit/runtime/test_managed_mutation.c` | 0 | 361 | raw/reference/nested tracing, capacity, generation, and resize-failure coverage |
+| `tests/c-unit/test_cli_cp17_array_mutation.c` | 0 | 135 | public fmt/check/run/test-both/build/artifact and VM/native G4005 acceptance |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `ruda_test_mir` registration. The service checkpoint

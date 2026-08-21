@@ -346,6 +346,50 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             }
             return RUDA_MIR_VERIFY_OK;
         }
+        case RUDA_MIR_ARRAY_POP:
+        case RUDA_MIR_ARRAY_TRUNCATE:
+        case RUDA_MIR_ARRAY_CLEAR:
+        case RUDA_MIR_ARRAY_RESERVE:
+        case RUDA_MIR_ARRAY_GENERATION:
+        case RUDA_MIR_ARRAY_REQUIRE_GENERATION: {
+            const RudaMirArray *array = ruda_mir_array(
+                function, instruction->array
+            );
+            if (array == NULL) {
+                return RUDA_MIR_VERIFY_INVALID_ARGUMENT;
+            }
+            if (first_type == RUDA_TYPE_INVALID
+                || ((instruction->kind == RUDA_MIR_ARRAY_TRUNCATE
+                        || instruction->kind == RUDA_MIR_ARRAY_RESERVE
+                        || instruction->kind
+                            == RUDA_MIR_ARRAY_REQUIRE_GENERATION)
+                    && second_type == RUDA_TYPE_INVALID)) {
+                return RUDA_MIR_VERIFY_INVALID_REGISTER;
+            }
+            if (first_type != array->type) {
+                return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == RUDA_MIR_ARRAY_POP) {
+                return target_type == array->element_type
+                    ? RUDA_MIR_VERIFY_OK : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == RUDA_MIR_ARRAY_GENERATION) {
+                return target_type == RUDA_TYPE_U64
+                    ? RUDA_MIR_VERIFY_OK : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_GENERATION) {
+                return second_type == RUDA_TYPE_U64
+                        && target_type == array->type
+                    ? RUDA_MIR_VERIFY_OK : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if ((instruction->kind == RUDA_MIR_ARRAY_TRUNCATE
+                    || instruction->kind == RUDA_MIR_ARRAY_RESERVE)
+                && second_type != RUDA_TYPE_I64) {
+                return RUDA_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            return target_type == array->type
+                ? RUDA_MIR_VERIFY_OK : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+        }
         case RUDA_MIR_ARRAY_LENGTH:
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
         case RUDA_MIR_ARRAY_GET:
@@ -712,6 +756,9 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_ARRAY_SET:
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
         case RUDA_MIR_ARRAY_PUSH:
+        case RUDA_MIR_ARRAY_TRUNCATE:
+        case RUDA_MIR_ARRAY_RESERVE:
+        case RUDA_MIR_ARRAY_REQUIRE_GENERATION:
         case RUDA_MIR_INTEGER_POLICY:
             return true;
         case RUDA_MIR_CONSTANT_I64:
@@ -728,6 +775,9 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_RECORD_GET:
         case RUDA_MIR_ARRAY_NEW:
         case RUDA_MIR_ARRAY_LENGTH:
+        case RUDA_MIR_ARRAY_POP:
+        case RUDA_MIR_ARRAY_CLEAR:
+        case RUDA_MIR_ARRAY_GENERATION:
         case RUDA_MIR_ENUM_NEW:
         case RUDA_MIR_ENUM_IS_VARIANT:
         case RUDA_MIR_ENUM_REQUIRE_VARIANT:
@@ -784,6 +834,15 @@ void ruda_mir_transfer_checked_index_instruction(
     size_t register_index = 0;
     if (instruction == NULL || checked == NULL
         || instruction->target >= register_count) {
+        return;
+    }
+    if (instruction->kind == RUDA_MIR_ARRAY_POP
+        || instruction->kind == RUDA_MIR_ARRAY_TRUNCATE
+        || instruction->kind == RUDA_MIR_ARRAY_CLEAR) {
+        for (register_index = 0; register_index < register_count;
+            register_index += 1) {
+            checked[register_index] = ruda_mir_checked_index_none;
+        }
         return;
     }
     for (register_index = 0; register_index < register_count;

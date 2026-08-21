@@ -30,11 +30,14 @@ A gate is `verified` only with linked command output and artifacts satisfying ev
 | P3 — 1.0 release candidate | `not-started` | none |
 | P4 — production 1.0 | `not-started` | none |
 
-Latest cross-gate I2/I3/I4/I5 evidence: [post-preview checkpoint 16 resolves
-ordinary collection names and compiler-known `Array<T>` operations by exact
-receiver across free/dot and all import forms, with checker-backed facts and
-VM/native differential execution](evidence/cp16-receiver-collection-names-2026-08-20.md).
-[Earlier checkpoint 15 evidence](evidence/cp15-imported-results-2026-08-20.md)
+Latest cross-gate I2/I3/I4/I5 evidence: [post-preview checkpoint 17 adds
+typed array removal, truncation, clearing, reservation, and mutation-safe
+iteration across the MIR oracle, verified bytecode VM, and native
+C17](evidence/cp17-array-mutation-2026-08-21.md).
+[Earlier checkpoint 16 evidence](evidence/cp16-receiver-collection-names-2026-08-20.md)
+resolves ordinary collection names and compiler-known `Array<T>` operations by
+exact receiver across free/dot and all import forms. [Checkpoint 15
+evidence](evidence/cp15-imported-results-2026-08-20.md)
 transports imported generic enum constructors, patterns, nested
 `Option`/`Result`, and postfix `?` through canonical MIR identity, verified
 encoded bytecode, VM, and native C17.
@@ -50,6 +53,8 @@ workspace resolution, production LSP, native `ruda run`, or the production I8
 test surface. I6 remains `not-started`. Accepted
 [D051](../design/decisions.md) records checkpoint-11 discovery, isolation,
 capture, expectation, and engine-equivalence semantics.
+Accepted [D053](../design/decisions.md) records the checkpoint-17 array
+mutation, failure-atomic reservation, and iterator-generation contract.
 
 Preview checkpoint 4 evidence: [generic `Option`/`Result`/`?`/`mapError`
 vertical slice](evidence/i2-generics-checkpoint-4-2026-08-17.md). The slice
@@ -159,12 +164,13 @@ generated C17; the configured Linux x86_64 matrix is green in
 checkpoint 2 established deterministic local packages and D043 invariance;
 preview checkpoint 3 now publishes bounded occurrence facts and exact
 resolver-owned dot completion through generation/snapshot-safe query APIs.
-Preview checkpoints 4–12 and post-preview checkpoints 13–15 now cover constrained generics, generic arrays,
+Preview checkpoints 4–12 and post-preview checkpoints 13–17 now cover constrained generics, generic arrays,
 numeric/text primitives, lexical cleanup, authoritative batch checking, local
 verified VM execution, D046 stdout, content-addressed native builds, and the
 built-in deterministic test loop through final local/private integration,
 profile-coherent native runtime selection, canonical instantiated managed
-arrays, and imported generic enum/result flows across local-package boundaries.
+arrays, imported generic enum/result flows across local-package boundaries,
+receiver-directed collection names, and the D053 array-mutation contract.
 Production
 LSP transport and later execution/runtime work remain out of scope until their
 ordered checkpoints.

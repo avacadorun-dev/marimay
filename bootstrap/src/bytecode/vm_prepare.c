@@ -239,6 +239,37 @@ RudaBytecodeRunStatus ruda_bytecode_run_begin_bounds_panic(
     return RUDA_BYTECODE_RUN_PANIC;
 }
 
+RudaBytecodeRunStatus ruda_bytecode_run_begin_iterator_invalidated_panic(
+    RudaBytecodePanic *panic,
+    RudaAllocator allocator,
+    RudaSymbolId symbol,
+    RudaBytecodeSpan span
+) {
+    static const unsigned char message[] =
+        "array iterator invalidated by mutation";
+    RudaBytecodePanicFrame frame;
+    if (panic == NULL) {
+        return RUDA_BYTECODE_RUN_PANIC;
+    }
+    ruda_bytecode_run_reset_panic(panic);
+    if (!ruda_owned_bytes_copy(
+            &panic->message, allocator, message, sizeof(message) - 1
+        )) {
+        ruda_bytecode_run_reset_panic(panic);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    panic->code = "G4005";
+    panic->symbol = symbol;
+    panic->span = span;
+    frame.symbol = symbol;
+    frame.call_span = span;
+    if (!ruda_vector_push(&panic->frames, &frame)) {
+        ruda_bytecode_run_reset_panic(panic);
+        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    return RUDA_BYTECODE_RUN_PANIC;
+}
+
 RudaBytecodeRunStatus ruda_bytecode_run_append_panic_frame(
     RudaBytecodePanic *panic,
     RudaSymbolId symbol,

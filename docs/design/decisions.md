@@ -1083,3 +1083,86 @@ executable when a debug runtime archive was inherited from the compiler's own
 build directory. Profile-specific shipped artifacts make the output request
 deterministic, while manifests, embedded markers, relative installed lookup,
 and content hashing prevent silent mismatch and stale cache reuse.
+
+## D053 — Array removal, truncation, reservation, and iterator generations
+
+Status: accepted.
+
+The compiler-known prelude collection surface additionally contains these
+ordinary generic functions, with free and dot forms resolving to the same
+operation after exact receiver-directed D003/D043 candidate selection:
+
+```ruda
+public fn pop<T>(values: Array<T>): Option<T>;
+public fn truncate<T>(
+  values: Array<T>,
+  newLength: int,
+): Result<void, ArrayTruncateError>;
+public fn clear<T>(values: Array<T>): void;
+public fn reserve<T>(
+  values: Array<T>,
+  additional: int,
+): Result<void, ArrayGrowthError>;
+
+public enum ArrayGrowthError {
+  LengthLimit { limit: int; },
+  NegativeAdditional { additional: int; },
+}
+
+public enum ArrayTruncateError {
+  InvalidLength { requested: int; length: int; },
+}
+```
+
+`pop` on an empty array returns `None` and changes nothing. Otherwise it
+removes the last initialized element and returns that exact value in `Some`.
+The removed slot is no longer part of the array's initialized or traced
+storage; a managed reference returned by `Some` remains rooted by the result.
+
+`truncate` succeeds only when `0 <= newLength <= length(values)`. An equal
+length is a successful no-op. A negative or expanding request returns
+`Err(ArrayTruncateError.InvalidLength { requested, length })` without changing
+the array. A successful shrink removes the complete suffix beginning at
+`newLength`; `clear` removes the same suffix beginning at zero and is a no-op
+for an already empty array. Neither operation implicitly shrinks capacity.
+
+`reserve(values, additional)` requires a nonnegative additional element count.
+A negative count returns `Err(ArrayGrowthError.NegativeAdditional {
+additional })`. When `length(values) + additional` is greater than
+`int::MAX`, it returns `Err(ArrayGrowthError.LengthLimit { limit: int::MAX })`.
+Otherwise success guarantees storage for that many further `push` operations
+without another array-storage growth, unless an intervening operation changes
+the initialized sequence. The implementation may reserve more storage, and
+neither capacity nor whether a request reused existing storage is observable.
+Configured heap ceilings and process allocation failure retain their D045
+runtime-limit/fatal classification rather than becoming an enum case.
+
+Receiver and explicit arguments are evaluated exactly once from left to right.
+Every resource, checked-size, validation, and allocation failure is atomic:
+the initialized elements, logical length, reserved storage, and mutation
+generation remain as they were before the operation. A collection attempt may
+occur before a runtime-limit result; collection timing is unobservable.
+
+Each array has an internal unsigned mutation generation. Construction starts
+at zero. A successful `push`, nonempty `pop`, shrinking `truncate`, nonempty
+`clear`, or indexed assignment increments it exactly once after the operation
+commits. Empty/no-op/error paths and `reserve` do not increment it. Generation
+never wraps: exhaustion is a runtime resource-limit outcome and the mutation
+does not occur.
+
+An array iterator captures the generation once. Before every iteration test or
+element yield it compares that snapshot with the array. A mismatch panics with
+`G4005`, message `array iterator invalidated by mutation`, and the complete
+`for const ... of ...` header as primary span. Breaking, returning, or
+panicking closes the iterator without another generation check. `reserve` is
+permitted during iteration because it changes no initialized element and does
+not change the generation; implementations must therefore not retain a raw
+cell-storage pointer in an iterator.
+
+Reason: real stack, queue, and heap implementations need removal and bounded
+capacity planning without shadow logical sizes or stale traced elements.
+`Option` represents empty removal, typed errors keep invalid sizing visible,
+and a generation snapshot detects structural mutation without exposing
+capacity or requiring iterator lifetime syntax. These operations extend D045;
+they do not add slices, a deque, a capacity getter, implicit shrinking, or a
+general collection-method declaration mechanism.

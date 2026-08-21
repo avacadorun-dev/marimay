@@ -76,15 +76,17 @@ typedef enum RudaMirInstructionKind {
     RUDA_MIR_LESS_EQUAL_F64,
     RUDA_MIR_ARRAY_NEW,
     RUDA_MIR_ARRAY_LENGTH,
-    /*
-     * Bounds-check barrier used before evaluating an indexed assignment RHS.
-     * On success it copies the array handle into target; on failure it raises
-     * G4002 at this instruction's full access span.
-     */
+    /* Bounds-check barrier before an indexed assignment RHS; failure is G4002. */
     RUDA_MIR_ARRAY_REQUIRE_INDEX,
     RUDA_MIR_ARRAY_GET,
     RUDA_MIR_ARRAY_SET,
     RUDA_MIR_ARRAY_PUSH,
+    RUDA_MIR_ARRAY_POP,
+    RUDA_MIR_ARRAY_TRUNCATE,
+    RUDA_MIR_ARRAY_CLEAR,
+    RUDA_MIR_ARRAY_RESERVE,
+    RUDA_MIR_ARRAY_GENERATION,
+    RUDA_MIR_ARRAY_REQUIRE_GENERATION,
     RUDA_MIR_INTERFACE_NEW,
     RUDA_MIR_CALL_INTERFACE,
     RUDA_MIR_INTEGER_POLICY,
@@ -147,7 +149,6 @@ typedef enum RudaMirTerminatorKind {
     RUDA_MIR_PANIC,
     RUDA_MIR_CALL_NEVER
 } RudaMirTerminatorKind;
-
 typedef struct RudaMirTerminator {
     RudaMirTerminatorKind kind;
     RudaMirRegister value;
@@ -156,5 +157,4 @@ typedef struct RudaMirTerminator {
     RudaMirBlockId otherwise;
     RudaMirSpan span;
 } RudaMirTerminator;
-
 #endif

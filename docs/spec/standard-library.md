@@ -24,7 +24,7 @@ The prelude is imported implicitly and intentionally small. It contains primitiv
 Option, Some, None
 Result, Ok, Err
 Error
-Array, ArrayGrowthError, Map, Set, Bytes
+Array, ArrayGrowthError, ArrayTruncateError, Map, Set, Bytes
 Iterator
 Task
 expect          # @test/@fuzz functions only
@@ -136,7 +136,10 @@ stable strings `capability io.stdout is not granted` and `stdout write failed`.
 
 ## 4. Collections and iteration
 
-`Array<T>`, `Map<K,V>`, and `Set<T>` are mutable managed containers. Mutation while an iterator over the same container is active is rejected by a runtime generation check with a stable panic, unless the iterator API explicitly owns the mutation operation.
+`Array<T>`, `Map<K,V>`, and `Set<T>` are mutable managed containers. An
+iterator detects an intervening invalidating mutation through a runtime
+generation check with a stable panic unless the iterator API explicitly owns
+that mutation.
 
 D045 fixes the initial `Array<T>` core surface to compiler-known
 `arrayOf(...)`, ordinary free/dot-call `length`, checked indexing and indexed
@@ -145,11 +148,21 @@ at most `int::MAX` initialized elements. Hitting that logical limit returns
 `ArrayGrowthError.LengthLimit`; exceeding a configured isolate heap limit is a
 runtime-limit outcome under the execution specification instead.
 
+D053 adds ordinary free/dot-call `pop`, `truncate`, `clear`, and `reserve`.
+Their exact signatures and error enums are the language specification's
+collection declarations. Empty `pop` is `None`; `truncate` rejects negative or
+expanding lengths with `ArrayTruncateError`; `clear` is infallible; and
+`reserve` accepts a nonnegative additional-element count and shares
+`ArrayGrowthError` with `push`. Removal never implicitly shrinks storage, and
+reservation never exposes capacity. Removed reference elements cease to be
+traced through the array.
+
 The normative array iteration spelling is `for const item of values`. The
 iterator is obtained once, yields each initialized element in ascending index
 order, and is closed on every control-flow exit. `item` is immutable and has
-the exact `T` type. A generation check rejects mutation of `values` while its
-iterator is active unless the iterator operation explicitly owns that mutation.
+the exact `T` type. It captures the D053 mutation generation and checks it
+before every subsequent loop test or yield. A mismatch panics with `G4005`;
+`reserve` does not invalidate because initialized values do not change.
 Indexed `for let` loops remain available for algorithms that intentionally
 mutate an array.
 

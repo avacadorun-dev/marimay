@@ -46,6 +46,8 @@ typedef struct RudaMirManagedArray {
     RudaTypeId element_type;
     size_t allocation_size;
     size_t length;
+    size_t capacity;
+    uint64_t mutation_generation;
     RudaMirValue elements[];
 } RudaMirManagedArray;
 typedef struct RudaMirManagedInterface {
@@ -226,6 +228,10 @@ RudaMirManagedArray *ruda_mir_execution_array_value_mutable(
     RudaMirExecution *execution,
     RudaMirValue value
 );
+RudaMirManagedArray **ruda_mir_execution_array_slot(
+    RudaMirExecution *execution,
+    RudaMirValue value
+);
 const RudaMirManagedArray *ruda_mir_execution_array_value(
     const RudaMirExecution *execution,
     RudaMirValue value
@@ -303,6 +309,16 @@ RudaMirInterpretStatus ruda_mir_execution_array_push(
     const RudaMirArray *layout,
     RudaMirValue array,
     RudaMirValue element
+);
+RudaMirInterpretStatus ruda_mir_execute_array_instruction(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    const RudaMirValue *first,
+    const RudaMirValue *second,
+    const RudaMirValue *third,
+    RudaMirValue *target,
+    const RudaAllocator *allocator,
+    RudaMirInterpretOptions options
 );
 RudaMirInterpretStatus ruda_mir_execution_new_interface(
     RudaMirExecution *execution,

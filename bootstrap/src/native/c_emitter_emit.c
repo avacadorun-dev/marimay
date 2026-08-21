@@ -413,11 +413,21 @@ bool ruda_native_c_emit_function(
                             buffer, array->element_type, i->second
                         ) || !ruda_native_c_write(
                             buffer,
-                            "; ruda_g_m = ruda_managed_array_push(&ruda_g_x->heap, ruda_g_v_%u, ruda_g_cell); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } }\n",
-                            i->first
+                            "; ruda_g_m = ruda_managed_array_push(&ruda_g_x->heap, ruda_g_v_%u, ruda_g_cell); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } ruda_g_v_%u = ruda_g_v_%u; }\n",
+                            i->first, i->target, i->first
                         )) return false;
                     break;
                 }
+                case RUDA_MIR_ARRAY_POP:
+                case RUDA_MIR_ARRAY_TRUNCATE:
+                case RUDA_MIR_ARRAY_CLEAR:
+                case RUDA_MIR_ARRAY_RESERVE:
+                case RUDA_MIR_ARRAY_GENERATION:
+                case RUDA_MIR_ARRAY_REQUIRE_GENERATION:
+                    if (!ruda_native_c_emit_array_mutation_instruction(
+                            buffer, function, i
+                        )) return false;
+                    break;
                 case RUDA_MIR_ARRAY_LENGTH:
                     if (!ruda_native_c_write(
                             buffer,

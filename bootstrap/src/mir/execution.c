@@ -183,93 +183,6 @@ static bool ruda_mir_uses_f64(const RudaMirFunction *function) {
     }
     return false;
 }
-static size_t ruda_mir_append_decimal_size(
-    unsigned char *buffer,
-    size_t offset,
-    size_t value
-) {
-    unsigned char digits[3 * sizeof(size_t)];
-    size_t count = 0;
-    do {
-        digits[count] = (unsigned char)('0' + value % 10);
-        count += 1;
-        value /= 10;
-    } while (value != 0);
-    while (count != 0) {
-        count -= 1;
-        buffer[offset] = digits[count];
-        offset += 1;
-    }
-    return offset;
-}
-static size_t ruda_mir_append_decimal_i64(
-    unsigned char *buffer,
-    size_t offset,
-    int64_t value
-) {
-    uint64_t magnitude = (uint64_t)value;
-    unsigned char digits[3 * sizeof(uint64_t)];
-    size_t count = 0;
-    if (value < 0) {
-        buffer[offset] = '-';
-        offset += 1;
-        magnitude = UINT64_C(0) - magnitude;
-    }
-    do {
-        digits[count] = (unsigned char)('0' + magnitude % UINT64_C(10));
-        count += 1;
-        magnitude /= UINT64_C(10);
-    } while (magnitude != 0);
-    while (count != 0) {
-        count -= 1;
-        buffer[offset] = digits[count];
-        offset += 1;
-    }
-    return offset;
-}
-static RudaMirInterpretStatus ruda_mir_array_bounds_panic(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    int64_t index,
-    size_t length,
-    const RudaAllocator *allocator,
-    RudaMirPanic *panic
-) {
-    static const unsigned char prefix[] = "array index ";
-    static const unsigned char suffix[] = " is outside length ";
-    unsigned char message[sizeof(prefix) + sizeof(suffix)
-        + 3 * sizeof(uint64_t) + 3 * sizeof(size_t)];
-    size_t message_length = 0;
-    if (panic == NULL) {
-        return RUDA_MIR_INTERPRET_PANIC;
-    }
-    memcpy(message + message_length, prefix, sizeof(prefix) - 1);
-    message_length += sizeof(prefix) - 1;
-    message_length = ruda_mir_append_decimal_i64(
-        message,
-        message_length,
-        index
-    );
-    memcpy(message + message_length, suffix, sizeof(suffix) - 1);
-    message_length += sizeof(suffix) - 1;
-    message_length = ruda_mir_append_decimal_size(
-        message,
-        message_length,
-        length
-    );
-    if (!ruda_owned_bytes_copy(
-            &panic->message,
-            *allocator,
-            message,
-            message_length
-        )) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
-    }
-    panic->code = "G4002";
-    panic->symbol = function->symbol;
-    panic->span = instruction->span;
-    return RUDA_MIR_INTERPRET_PANIC;
-}
 RudaMirInterpretStatus ruda_mir_invoke_call(
     const RudaMirFunction *function,
     RudaMirCallId call_id,
@@ -793,73 +706,17 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
         case RUDA_MIR_ARRAY_GET:
         case RUDA_MIR_ARRAY_SET:
-        case RUDA_MIR_ARRAY_PUSH: {
-            const RudaMirArray *layout = ruda_mir_array(
-                function,
-                instruction->array
+        case RUDA_MIR_ARRAY_PUSH:
+        case RUDA_MIR_ARRAY_POP:
+        case RUDA_MIR_ARRAY_TRUNCATE:
+        case RUDA_MIR_ARRAY_CLEAR:
+        case RUDA_MIR_ARRAY_RESERVE:
+        case RUDA_MIR_ARRAY_GENERATION:
+        case RUDA_MIR_ARRAY_REQUIRE_GENERATION:
+            return ruda_mir_execute_array_instruction(
+                function, instruction, first, second, third, target,
+                allocator, options
             );
-            RudaMirManagedArray *array = options.execution != NULL
-                ? ruda_mir_execution_array_value_mutable(
-                    options.execution,
-                    *first
-                )
-                : NULL;
-            size_t index = 0;
-            if (options.execution == NULL) {
-                return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
-            }
-            if (array == NULL) {
-                return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
-            }
-            if (layout == NULL
-                || !ruda_mir_managed_array_matches_layout(layout, array)) {
-                return RUDA_MIR_INTERPRET_INVALID_MIR;
-            }
-            if (instruction->kind == RUDA_MIR_ARRAY_LENGTH) {
-                target->as.i64 = (int64_t)array->length;
-                return RUDA_MIR_INTERPRET_OK;
-            }
-            if (instruction->kind == RUDA_MIR_ARRAY_PUSH) {
-                RudaMirInterpretStatus push_status =
-                    ruda_mir_execution_array_push(
-                        options.execution, layout, *first, *second
-                    );
-                if (push_status == RUDA_MIR_INTERPRET_OK) {
-                    *target = *first;
-                }
-                return push_status;
-            }
-            if (second->as.i64 < 0
-                || (uint64_t)second->as.i64 >= (uint64_t)array->length) {
-                return ruda_mir_array_bounds_panic(
-                    function,
-                    instruction,
-                    second->as.i64,
-                    array->length,
-                    allocator,
-                    options.panic
-                );
-            }
-            index = (size_t)second->as.i64;
-            if (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX) {
-                *target = *first;
-                return RUDA_MIR_INTERPRET_OK;
-            }
-            if (instruction->kind == RUDA_MIR_ARRAY_SET) {
-                if (ruda_mir_type_is_managed(third->type)
-                    && !ruda_mir_execution_owns_reference(
-                        options.execution,
-                        *third
-                    )) {
-                    return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
-                }
-                array->elements[index] = *third;
-                *target = *third;
-                return RUDA_MIR_INTERPRET_OK;
-            }
-            *target = array->elements[index];
-            return RUDA_MIR_INTERPRET_OK;
-        }
         case RUDA_MIR_RECORD_NEW: {
             const RudaMirRecordConstruction *construction =
                 ruda_mir_record_construction(

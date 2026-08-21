@@ -144,6 +144,7 @@ bool ruda_native_c_emit_runtime(
             "static int ruda_g_managed_status(RudaManagedStatus status) { if (status == RUDA_MANAGED_OK) return 0; if (status == RUDA_MANAGED_ALLOCATION_FAILED) return 5; if (status == RUDA_MANAGED_LIMIT_REACHED || status == RUDA_MANAGED_LENGTH_LIMIT) return 6; if (status == RUDA_MANAGED_INVALID_REFERENCE || status == RUDA_MANAGED_TYPE_MISMATCH) return 7; return 5; }\n")
         && ruda_native_c_write(buffer,
             "static RudaManagedStatus ruda_g_array_check(const RudaManagedHeap *heap, RudaManagedReference array, const RudaManagedArrayDescriptor *expected, int64_t index, size_t *length) { const RudaManagedArrayDescriptor *actual = NULL; RudaManagedStatus status = ruda_managed_array_describe(heap, array, &actual); if (status != RUDA_MANAGED_OK) return status; if (actual != expected) return RUDA_MANAGED_TYPE_MISMATCH; status = ruda_managed_array_length(heap, array, length); if (status != RUDA_MANAGED_OK) return status; return index < 0 || (uint64_t)index >= (uint64_t)*length ? RUDA_MANAGED_BOUNDS : RUDA_MANAGED_OK; }\n")
+        && ruda_native_c_emit_array_mutation_runtime(buffer)
         && ruda_native_c_emit_io_runtime(buffer)
         && ruda_native_c_write(buffer,
             "static void ruda_g_print_hex(const unsigned char *data, size_t length) { size_t i; for (i = 0; i < length; i += 1) printf(\"%%02x\", (unsigned int)data[i]); }\n")
@@ -184,7 +185,7 @@ bool ruda_native_c_emit_keep_assets(
     }
     return ruda_native_c_write(
         buffer,
-        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_append_suppressed_panic;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n  (void)&ruda_g_io_println;\n  (void)&ruda_g_test_output_begin;\n  (void)&ruda_g_test_output_end;\n  (void)&ruda_g_print_panic;\n  ruda_g_keep_managed();\n}\n\n"
+        "  (void)&ruda_g_string_equal;\n  (void)&ruda_g_begin_panic;\n  (void)&ruda_g_begin_bounds;\n  (void)&ruda_g_begin_array_iterator_mutation;\n  (void)&ruda_g_append_suppressed_panic;\n  (void)&ruda_g_managed_status;\n  (void)&ruda_g_array_check;\n  (void)&ruda_g_io_println;\n  (void)&ruda_g_test_output_begin;\n  (void)&ruda_g_test_output_end;\n  (void)&ruda_g_print_panic;\n  ruda_g_keep_managed();\n}\n\n"
     );
 }
 
