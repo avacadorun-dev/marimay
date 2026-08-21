@@ -52,6 +52,13 @@ records the first machine-validated reusable sorting/structure/graph workload
 shared by Ruda, Go, and Rust, plus exact Ruda fmt/check/VM/test-both/debug and
 release native regression coverage. It is workload-fidelity evidence only:
 no compiler semantics, performance budget, or roadmap gate state changes.
+[Post-preview checkpoint 21 evidence](evidence/cp21-array-performance-baseline-2026-08-22.md)
+accepts D056 and adds strict raw-result schemas, nine focused array/native
+probes, balanced 11/3 measurement, artifact/toolchain/resource hashes, exact
+checksum validation, median/MAD/IQR noise envelopes, and reviewed
+workload-local Ruda budgets for the macOS arm64 Apple M2 runner. Other Tier 1
+platform baselines remain required before a cross-platform performance gate is
+claimed; no optimization or semantic change is included.
 Latest earlier I4 process evidence: [preview checkpoint 12 executes the final
 local/private preview process matrix and exact VM/native observation
 comparison](evidence/cp12-final-preview-2026-08-18.md).
@@ -71,6 +78,9 @@ managed-array source-spelling replacement and nominal-name boundary.
 Accepted [D055](../design/decisions.md) records the checkpoint-19 managed-heap
 byte budget, failure precedence, exact diagnostics, test isolation, and native
 embedding contract.
+Accepted [D056](../design/decisions.md) records the checkpoint-21 raw
+measurement, compatibility, dispersion, workload-budget, and one-retry
+adjudication contract.
 
 Preview checkpoint 4 evidence: [generic `Option`/`Result`/`?`/`mapError`
 vertical slice](evidence/i2-generics-checkpoint-4-2026-08-17.md). The slice
@@ -180,7 +190,7 @@ generated C17; the configured Linux x86_64 matrix is green in
 checkpoint 2 established deterministic local packages and D043 invariance;
 preview checkpoint 3 now publishes bounded occurrence facts and exact
 resolver-owned dot completion through generation/snapshot-safe query APIs.
-Preview checkpoints 4–12 and post-preview checkpoints 13–20 now cover constrained generics, generic arrays,
+Preview checkpoints 4–12 and post-preview checkpoints 13–21 now cover constrained generics, generic arrays,
 numeric/text primitives, lexical cleanup, authoritative batch checking, local
 verified VM execution, D046 stdout, content-addressed native builds, and the
 built-in deterministic test loop through final local/private integration,
@@ -190,7 +200,10 @@ receiver-directed collection names, and the D053 array-mutation contract.
 The checkpoint-20 sibling corpus now routes all eight timed workloads through
 the same reusable package families and machine-validates LCG, operation,
 representation, selected-check, and checksum contracts before measurement;
-performance baseline and budgets remain checkpoint-21 work.
+checkpoint 21 adds the first strict focused-probe and faithful-corpus baseline,
+raw schema, noise envelope, and reviewed macOS arm64 workload budgets. The
+remaining Tier 1 platform baselines are still required before this local gate
+becomes a cross-platform release-performance claim.
 Production
 LSP transport and later execution/runtime work remain out of scope until their
 ordered checkpoints.

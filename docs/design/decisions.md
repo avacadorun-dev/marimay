@@ -1261,3 +1261,48 @@ documented sandbox, a recoverable source-level collection bound, or actual
 host memory pressure. A byte-exact, engine-independent policy makes local VM
 execution, isolated tests, and published native artifacts reproducible without
 changing the existing 64 MiB default or redesigning collection.
+
+## D056 — Performance baselines are raw, platform-specific regression contracts
+
+Status: accepted.
+
+An optimization checkpoint establishes its measurement contract before it
+changes the implementation being measured. A Tier 1 array/native baseline uses
+a dedicated runner, a monotonic nanosecond clock, at least three warmup rounds,
+at least eleven odd-count measured rounds, a fixed per-process timeout, and a
+deterministic balanced rotation of workload and participant order. Compilation
+is completed before timing. Every valid sample is retained; result selection,
+silent outlier deletion, and best-of-N reporting are forbidden.
+
+Each run records the exact source/corpus revisions, workload-manifest and
+protocol hashes, platform/CPU/load/power metadata, command, managed-heap
+budget, Ruda compiler path/hash/version, selected release-runtime
+path/hash/manifest/profile, and generated-C compiler/linker paths, versions,
+and flags. A timed process must have the exact expected stdout/checksum, empty
+stderr, successful exit, and no timeout. Debug or unclassified runtime
+artifacts, incomplete metadata, non-finite timing values, insufficient samples,
+and incompatible schemas/baselines are rejected rather than downgraded to
+exploratory evidence.
+
+Reports publish every raw sample and execution-order event plus median, median
+absolute deviation, Tukey-hinge interquartile range, min, max, and the workload
+noise fraction. The noise fraction is the maximum of 2%, three MAD divided by
+the median, and IQR divided by the median. A baseline with more than 30% noise
+is not eligible for a budget. The reviewed per-platform, per-workload Ruda
+regression limit is the baseline median multiplied by one plus the greater of
+10% and that noise fraction. Cross-language ratios remain exploratory and do
+not become Ruda release budgets.
+
+A median above budget triggers exactly one complete run after cool-down using
+the same schema and artifacts. A regression is confirmed only when the
+original and retry medians both exceed the same reviewed workload budget; both
+raw reports remain evidence. The retry cannot erase a flaky failure or replace
+the original distribution. Budget changes require a new reviewed baseline or
+an accepted decision naming the user benefit; an optimization may not widen a
+threshold merely to make its own result pass.
+
+Reason: small sample counts, profile-incoherent runtime archives, partial
+metadata, and cross-language ratios cannot distinguish compiler regressions
+from host noise or workload drift. Raw compatible distributions and narrow
+platform-local budgets create an auditable gate without promising universal
+language speed.

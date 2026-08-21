@@ -435,6 +435,21 @@ E0 usability evidence is quantitative where possible but not reduced to benchmar
 
 Use fixed reference hardware plus noisy public CI trends. Store raw distributions and environment metadata. A statistically meaningful regression over budget blocks release unless an accepted decision records the user benefit and new budget.
 
+D056 is the checkpoint-21 array/native measurement contract. Its focused
+probes separately cover cache-hot scalar get/set, sequential proven and dynamic
+unproven bounds, growth with and without `reserve`, dense scalar traversal,
+nested-array traversal, and checked integer loops. The faithful reusable
+algorithm corpus is measured separately. Tier 1 reports retain every sample and
+order event, use at least 3 warmups and 11 odd-count measured rounds, publish
+median/MAD/Tukey-IQR/min/max/noise, and carry compiler/runtime/source/schema/
+toolchain/resource hashes and metadata. Validators reject profile, checksum,
+sample-count, metadata, finite-number, source-manifest, platform, and baseline
+incompatibility. Reviewed budgets apply only to Ruda medians for one workload
+and platform; a candidate regression receives one complete cool-down retry and
+blocks only when both distributions exceed the same threshold. Debug archives,
+three-sample local results, cross-language ratios, and automatic reruns are not
+release-budget evidence.
+
 ## 11. Platform matrix
 
 Tier 1 target intent for 1.0:
