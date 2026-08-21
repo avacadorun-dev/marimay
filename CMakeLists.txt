@@ -311,6 +311,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/service_queries.c
   bootstrap/src/check/type_spelling.c
   bootstrap/src/cli/cli.c
+  bootstrap/src/cli/cli_display.c
   bootstrap/src/cli/cli_build_program.c
     bootstrap/src/cli/cli_check.c
     bootstrap/src/cli/cli_compile_report.c
