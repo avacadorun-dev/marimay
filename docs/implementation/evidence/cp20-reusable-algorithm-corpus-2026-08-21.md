@@ -75,7 +75,11 @@ mirroring the eight package owners without importing or depending on the
 sibling checkout. It exercises all eight algorithms and negative graph inputs
 through public Ruda commands.
 
-`tests/c-unit/test_cli_cp20_algorithm_corpus.c` is the 122-line focused CLI
+`examples/README.md` routes users to the full sibling module and to the
+independent main-repository executable mirror, while this evidence pins both
+sibling revisions and the exact validation commands.
+
+`tests/c-unit/test_cli_cp20_algorithm_corpus.c` is the 121-line focused CLI
 owner. It runs canonical format checking, authoritative checking, VM execution,
 VM/native record-replay tests, Debug native build/run, and Release native
 build/run. The artifact helper captures stdout and stderr separately and
@@ -118,13 +122,13 @@ Go 1.26.4; Rust 1.96.0.
 | `build/debug/ruda run tests/post-preview/cp20-algorithm-corpus` | 0 | exact success stdout |
 | `build/debug/ruda test tests/post-preview/cp20-algorithm-corpus --engine both` | 0 | 2/2 exact VM/native records |
 | Debug and Release focused `ruda build` plus artifact execution | 0 | byte-identical stdout/stderr/exit observations |
-| `ctest --preset debug -R '^ruda_c_unit$' --output-on-failure` | 0 | focused integration in aggregate, 1/1 in 216.83 seconds |
-| `cmake --preset debug && cmake --build --preset debug --parallel && ctest --preset debug --output-on-failure` | 0 | 2/2 in 207.24 seconds; C-unit 205.37 seconds |
-| `cmake --preset release && cmake --build --preset release --parallel && ctest --preset release --output-on-failure` | 0 | 2/2 in 205.98 seconds; C-unit 204.15 seconds |
-| `cmake --preset asan-ubsan && cmake --build --preset asan-ubsan --parallel && ctest --preset asan-ubsan --output-on-failure` | 0 | 2/2 in 304.01 seconds; C-unit 301.20 seconds; no sanitizer findings |
+| `cmake --build --preset debug --parallel && ctest --preset debug --output-on-failure` | 0 | final byte-exact owner, 2/2 in 211.28 seconds; C-unit 209.31 seconds |
+| `cmake --build --preset release --parallel && ctest --preset release --output-on-failure` | 0 | final byte-exact owner, 2/2 in 208.30 seconds; C-unit 206.38 seconds |
+| `cmake --build --preset asan-ubsan --parallel && ctest --preset asan-ubsan --output-on-failure` | 0 | final byte-exact owner, 2/2 in 308.41 seconds; C-unit 305.44 seconds; no sanitizer findings |
 | `./tools/check-architecture` | 0 | focused owner registration, dependencies, and line budgets clean |
 | `./tools/check-c-memory-policy` | 0 | central allocator policy clean |
 | `./tools/check-generated` | 0 | bytecode, diagnostic, Unicode, and syntax artifacts current |
+| `./tools/check-doc-links` | 0 | roadmap, evidence, and user-facing example links valid |
 | `./tools/check-spec-terms` | 0 | normative terminology clean |
 | `./tools/check-syntax-coverage` | 0 | 75 syntax kinds and 116 grammar productions covered |
 | `./tools/check-example-syntax` | 0 | user-facing Ruda examples accepted |

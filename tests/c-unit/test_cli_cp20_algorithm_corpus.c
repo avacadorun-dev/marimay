@@ -60,6 +60,10 @@ void ruda_test_cli_cp20_algorithm_corpus(void) {
     static const char debug_artifact[] = "cp20-algorithm-corpus-debug";
     static const char release_artifact[] = "cp20-algorithm-corpus-release";
     static const char expected[] = "cp20 algorithm corpus ok\n";
+    static const char expected_test[] =
+        "test test/cp20-algorithms.allReusableAlgorithmsWork ... ok\n"
+        "test test/cp20-algorithms.invalidGraphInputsAreRejected ... ok\n"
+        "test result: ok. 2 passed; 0 failed\n";
     const char *format[] = {"ruda", "fmt", corpus, "--check"};
     const char *check[] = {"ruda", "check", corpus};
     const char *run[] = {"ruda", "run", corpus};
@@ -97,13 +101,8 @@ void ruda_test_cli_cp20_algorithm_corpus(void) {
     RUDA_EXPECT(ruda_cli_cp20_run(
         &session, 5, test, &output, &error
     ) == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(strstr(output.bytes, "2 passed; 0 failed") != NULL);
-    RUDA_EXPECT(strstr(
-        output.bytes, "allReusableAlgorithmsWork ... ok"
-    ) != NULL);
-    RUDA_EXPECT(strstr(
-        output.bytes, "invalidGraphInputsAreRejected ... ok"
-    ) != NULL);
+    RUDA_EXPECT(output.length == strlen(expected_test));
+    RUDA_EXPECT(strcmp(output.bytes, expected_test) == 0);
     RUDA_EXPECT(error.length == 0);
 
     RUDA_EXPECT(ruda_cli_cp20_run(

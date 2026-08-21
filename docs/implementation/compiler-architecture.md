@@ -508,7 +508,7 @@ checkpoint:
 | `runtime/common/managed_resource.c` | 0 | 53 | deterministic managed budget/host failure publication and read-only inspection |
 | `tests/c-unit/runtime/test_managed_resource.c` | 0 | 262 | D055 exact boundary, raw/reference growth, semantic precedence, host-failure sweep, and zero-counter cleanup |
 | `tests/c-unit/test_cli_heap.c` | 0 | 259 | D055 CLI range/help/JSON, test isolation, embedding/cache identity, and VM/native exact observations |
-| `tests/c-unit/test_cli_cp20_algorithm_corpus.c` | 0 | 122 | reusable eight-algorithm fmt/check/VM/test-both/debug/release native acceptance with exact output parity |
+| `tests/c-unit/test_cli_cp20_algorithm_corpus.c` | 0 | 121 | reusable eight-algorithm fmt/check/VM/test-both/debug/release native acceptance with exact output parity |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `ruda_test_mir` registration. The service checkpoint

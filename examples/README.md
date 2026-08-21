@@ -34,5 +34,12 @@ These examples are executable specification fixtures once the parser exists. Unt
   when ordinary `Stack` functions and compiler-known `[]T` operations
   share `push` and `length`: free and dot forms preserve one symbol per exact
   receiver and neither spelling receives reserved precedence.
+- The checkpoint-20 reusable algorithm example is the sibling
+  `../ruda-algotithms/ruda` module. Its sorting, stack, queue, min-heap, DSU,
+  BFS, and O(V²) Dijkstra package owners run through `fmt`, `check`, VM,
+  `test --engine both`, and Debug/Release native builds. The main repository's
+  independent executable mirror is
+  `tests/post-preview/cp20-algorithm-corpus`; exact commands and linked corpus
+  revisions are recorded in the checkpoint-20 evidence.
 
 An implementation change that makes an example invalid must update the normative spec and corresponding decision in the same change. After I2, all examples are compiled by `ruda check`; after I6, they run under `ruda test --engine both` with deterministic service fixtures.
