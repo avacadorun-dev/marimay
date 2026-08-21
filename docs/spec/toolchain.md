@@ -259,6 +259,7 @@ ruda test --shuffle 42
 ruda test --repeat 100
 ruda test --no-cache
 ruda test --diagnostic json
+ruda test --max-heap-bytes 67108864
 ```
 
 No test-framework dependency or configuration file is required. Test arguments after `--` are not supported by the built-in harness; tests receive explicit fixtures rather than ambient CLI state.
@@ -266,6 +267,13 @@ No test-framework dependency or configuration file is required. Test arguments a
 ### 5.3 Isolation, scheduling, and output
 
 Each test runs in a fresh root task with a deterministic scheduler, clock, random seed, temporary filesystem, captured output, task limit, heap limit, and timeout. Package tests may share compiled code but never mutable runtime state.
+
+D055 makes that heap limit configurable with one decimal
+`--max-heap-bytes`. Each VM execution and native process receives the selected
+ceiling with a fresh live-byte counter and failure record. `--engine both`
+applies the identical value to both observations. A resource failure is an
+`I0002` command failure/exit `70`, not an ordinary failed assertion, and no
+later test observes the failed execution's heap state.
 
 Tests execute concurrently across runtime isolates by default. Results are printed in deterministic package/source order. On failure, captured stdout/stderr for that test is printed without interleaving.
 
@@ -352,6 +360,7 @@ ruda run .
 ruda run file.ruda
 ruda run --engine vm .
 ruda run --engine native .
+ruda run . --max-heap-bytes 67108864
 ruda run --allow-read ./data file.ruda
 ruda run . -- program arguments
 ```
@@ -375,6 +384,9 @@ failure `I0002` exit `70`. Program stdout contains only D046 bytes and never an
 internal engine-result envelope. `io.stdout` is the sole default local grant.
 Arguments after the first `--` are retained as program arguments; until a
 source argument API is accepted they have no observable language value.
+`--max-heap-bytes N` and `--max-heap-bytes=N` apply D055's decimal byte budget
+to the fresh VM execution. The option occurs at most once and is parsed before
+program arguments; the default is `67108864`.
 
 ### 6.3 `ruda build`
 
@@ -387,6 +399,7 @@ ruda build --output ./dist/orders
 ruda build --target x86_64-linux-gnu
 ruda build --emit c
 ruda build --emit mir
+ruda build --max-heap-bytes 67108864
 ```
 
 Native is default. Development builds retain checked semantics and source diagnostics; release builds optimize but do not remove overflow/bounds checks unless proven redundant. `--engine vm` emits a `.rudab` bundle. Cross-compilation requires a supported target runtime and target pack; target support is explicit, never guessed.
@@ -401,6 +414,14 @@ The accepted options are `--engine native`, `--release`, `--output PATH`, and
 until their portable serialization owners land, and cross-target options are
 not inferred. A successful build writes the artifact path and LF to tool
 stdout unless `--quiet` is selected.
+
+Checkpoint 19 additionally accepts one D055 `--max-heap-bytes` option for
+`run`, `test`, and `build`. Native build always emits an explicit decimal
+`max_live_bytes` assignment, including `67108864` when the option is absent.
+That emitted value participates in the generated-source cache key and is not
+overridden by the environment at build or execution time. `--emit c` contains
+the same assignment, so compiling the published C preserves the selected
+budget.
 
 Without `--output`, the executable is
 `.ruda/build/native/{debug|release}/{sha256}/app` (`app.exe` on Windows) below

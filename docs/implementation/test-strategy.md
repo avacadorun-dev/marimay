@@ -75,6 +75,17 @@ second-pass formatter byte identity. Checker tests separately cover contextual
 empty literals, aliases/imports, the targeted legacy diagnostic, and an
 ordinary local/imported nominal type named `Array`.
 
+D055 resource-policy coverage calibrates accounted object/slot/cell bytes,
+permits the exact configured boundary, rejects one byte beyond it before a
+host allocation, and exercises raw, reference, and nested array construction,
+`push`, `reserve`, collection retry, and failure atomicity. Separate
+fail-every-allocation sweeps classify host exhaustion and assert both allocator
+counters return to zero. CLI tests cover both option spellings, min/max,
+zero/sign/empty/non-decimal/overflow/duplicate/missing negatives, argument
+locations, help, human/JSON schemas, default/selected native embedding and
+cache separation, fresh test heaps, and byte-exact VM/native stderr/exit
+observations.
+
 Fixture families cover valid edge cases, one-token deletions/insertions, delimiter nesting, Unicode, CRLF, empty files, maximum limits, and recovery followed by valid declarations.
 
 `tests/syntax/parser/coverage.tsv` is indexed one-for-one by the generated

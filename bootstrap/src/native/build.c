@@ -492,6 +492,9 @@ RudaNativeBuildStatus ruda_native_build(
     emit_options.executable_entry = true;
     emit_options.executable_returns_result = request->returns_result;
     emit_options.error_message_symbol = request->error_message_symbol;
+    if (request->max_heap_bytes != 0) {
+        emit_options.max_heap_bytes = request->max_heap_bytes;
+    }
     emit_status = ruda_native_c_emit_program(
         &program, allocator, emit_options, &source
     );

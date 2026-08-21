@@ -25,6 +25,7 @@ RudaManagedStatus ruda_managed_enum_new(
         || variant >= descriptor->variant_count) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
+    ruda_managed_resource_failure_clear(heap);
     selected = &descriptor->variants[variant];
     if (selected->payload_count != payload_count
         || (selected->payloads == NULL && payload_count != 0)
@@ -50,14 +51,14 @@ RudaManagedStatus ruda_managed_enum_new(
     }
     value = ruda_allocate(&heap->allocator, sizeof(*value));
     if (value == NULL) {
-        return RUDA_MANAGED_ALLOCATION_FAILED;
+        return ruda_managed_resource_host_failure(heap, sizeof(*value));
     }
     memset(value, 0, sizeof(*value));
     if (payload_bytes != 0) {
         value->payload = ruda_allocate(&heap->allocator, payload_bytes);
         if (value->payload == NULL) {
             ruda_deallocate(&heap->allocator, value, sizeof(*value));
-            return RUDA_MANAGED_ALLOCATION_FAILED;
+            return ruda_managed_resource_host_failure(heap, payload_bytes);
         }
         memcpy(value->payload, payload, payload_bytes);
     }
@@ -89,7 +90,7 @@ RudaManagedStatus ruda_managed_enum_new(
                 ))) {
             ruda_deallocate(&heap->allocator, roots, root_bytes);
             ruda_managed_enum_dispose(heap, value);
-            return RUDA_MANAGED_ALLOCATION_FAILED;
+            return ruda_managed_resource_host_failure(heap, root_bytes);
         }
         status = ruda_managed_publish_object(
             heap,

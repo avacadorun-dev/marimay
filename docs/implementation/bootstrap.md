@@ -2,7 +2,7 @@
 
 Status: I0 implementation instructions.
 
-The current slice builds the `ruda` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces include the verified typed MIR oracle, bytecode VM, portable C17 emitter, and version-matched debug/release native runtime archives. The CLI exposes formatting, authoritative batch `ruda check`, local VM-default `ruda run`, host-native `ruda build`, and deterministic VM/default or VM/native `ruda test` for the checker-backed local/private preview surface.
+The current slice builds the `ruda` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces include the verified typed MIR oracle, bytecode VM, portable C17 emitter, and version-matched debug/release native runtime archives. The CLI exposes formatting, authoritative batch `ruda check`, local VM-default `ruda run`, host-native `ruda build`, deterministic VM/default or VM/native `ruda test`, and D055 `--max-heap-bytes` propagation for the checker-backed local/private preview surface.
 
 ## Prerequisites
 
@@ -167,6 +167,7 @@ build/debug/ruda run examples/matrix.ruda
 build/debug/ruda build examples/matrix.ruda --output ./matrix
 build/debug/ruda build examples/matrix.ruda --release
 build/debug/ruda build examples/matrix.ruda --emit c
+build/debug/ruda run examples/matrix.ruda --max-heap-bytes 67108864
 ```
 
 Help names the specified top-level workflows. Commands beyond `help`, `version`, `fmt`, `check`, `run`, and `build` return the stable `U0003` bootstrap-stage diagnostic until their roadmap slice lands. `ruda fmt` accepts stdin, an explicit `.ruda`/`ruda.mod`/`ruda.work` file, an explicit directory tree, or no target. With no target it discovers the nearest module and any enclosing workspace manifest. Tree traversal is bounded and deterministic, ignores `.git` and `.ruda`, does not follow symbolic links, and does not cross into nested modules. `--check` and `--diff` are non-writing modes. Invalid input is diagnosed without write-back; each in-place update uses a flushed, permission-preserving sibling temporary followed by atomic replacement. Per-file replacement is transactional, while a multi-file invocation may have committed earlier files before a later failure.

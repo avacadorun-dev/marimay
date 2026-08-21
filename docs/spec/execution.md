@@ -488,7 +488,29 @@ Garbage collection is not resource management. Safe APIs for files, sockets, tra
 
 ### 9.4 Limits and allocation failure
 
-VM runs may set heap, task, instruction, and wall-time limits. Exceeding a sandbox limit terminates the affected root task or isolate with a runtime-limit diagnostic after bounded cleanup when possible. Process-level out-of-memory that prevents runtime bookkeeping is fatal and not catchable.
+VM runs may set heap, task, instruction, and wall-time limits. D055's
+managed-heap byte budget counts published managed object payloads, reserved
+array cell storage, and managed slot-table storage. It does not count compiler
+or VM metadata, bytecode/native code, call stacks, capture buffers, or OS
+resources, which remain bounded by their own owners. The default is exactly
+`67108864` bytes per root execution/native process.
+
+All accounting arithmetic is checked. `live + requested == limit` succeeds.
+Before a budget result, the heap performs the D045/D053 collection attempt and
+recomputes `live` and the net additional accounted `requested`; a final
+`live + requested > limit` rejects the operation atomically without attempting
+that host allocation. The result is `I0002`/exit `70` and records those three
+byte counts without an address. A host allocator failure after successful
+preflight is the distinct host-allocation `I0002`/exit `70`. Source-semantic
+array growth checks precede both and retain `ArrayGrowthError.LengthLimit` or
+`NegativeAdditional` rather than becoming execution failures.
+
+Every test and isolate starts with a fresh counter and failure record. A future
+child isolate inherits the configured ceiling value, not its parent's live
+usage, unless an explicit isolate API selects another ceiling. Exceeding another
+sandbox limit terminates the affected root task or isolate with a classified
+runtime-limit diagnostic after bounded cleanup when possible. Process-level
+out-of-memory that prevents runtime bookkeeping is fatal and not catchable.
 
 ## 10. I/O runtime
 

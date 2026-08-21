@@ -446,6 +446,32 @@ static bool ruda_diagnostic_render_json(RudaWriter writer, const RudaDiagnostic 
             || !ruda_writer_write_cstr(writer, "}")) {
             return false;
         }
+    } else if (diagnostic->runtime_resource
+        == RUDA_RUNTIME_RESOURCE_MANAGED_HEAP_BUDGET) {
+        if (!ruda_writer_write_cstr(
+                writer,
+                ",\"context\":{\"kind\":\"runtime-resource\","
+                "\"resource\":\"managed-heap\","
+                "\"classification\":\"budget-exceeded\",\"liveBytes\":"
+            )
+            || !ruda_write_size(writer, diagnostic->resource_live_bytes)
+            || !ruda_writer_write_cstr(writer, ",\"requestedBytes\":")
+            || !ruda_write_size(writer, diagnostic->resource_requested_bytes)
+            || !ruda_writer_write_cstr(writer, ",\"limitBytes\":")
+            || !ruda_write_size(writer, diagnostic->resource_limit_bytes)
+            || !ruda_writer_write_cstr(writer, "}")) {
+            return false;
+        }
+    } else if (diagnostic->runtime_resource
+        == RUDA_RUNTIME_RESOURCE_HOST_ALLOCATION) {
+        if (!ruda_writer_write_cstr(
+                writer,
+                ",\"context\":{\"kind\":\"runtime-resource\","
+                "\"resource\":\"host-memory\","
+                "\"classification\":\"allocation-failed\"}"
+            )) {
+            return false;
+        }
     }
     return ruda_writer_write_cstr(writer, "}\n");
 }

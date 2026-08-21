@@ -1,5 +1,6 @@
 #include "cli_compile_report.h"
 #include "cli_internal.h"
+#include "cli_resource_report.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -100,6 +101,16 @@ static bool ruda_cli_test_capture_publish(
         && ruda_vector_append(&capture->bytes, bytes, length);
 }
 
+static bool ruda_cli_test_capture_write(
+    void *context,
+    const char *bytes,
+    size_t length
+) {
+    return ruda_cli_test_capture_publish(
+        context, (const unsigned char *)bytes, length
+    );
+}
+
 static bool ruda_cli_test_append(
     RudaVector *bytes,
     const void *data,
@@ -145,16 +156,20 @@ static bool ruda_cli_test_vm(
     RudaBytecodeProgram decoded;
     RudaOwnedBytes encoded;
     RudaBytecodeExecution execution;
+    RudaBytecodeExecutionOptions execution_options;
     RudaBytecodePanic panic;
     RudaBytecodeValue result;
     RudaBytecodeRunOptions run_options;
     RudaCliTestCapture capture;
+    RudaCliTestCapture error_capture;
+    RudaWriter error_writer;
     RudaIoStdout sink;
     RudaMirBytecodeLowerStatus lower_status;
     RudaBytecodeCodecStatus codec_status;
     RudaBytecodeRunStatus run_status;
     bool execution_ready = false;
     bool panic_ready = false;
+    bool error_capture_ready = false;
     bool accepted = false;
     memset(&lowered, 0, sizeof(lowered));
     memset(&decoded, 0, sizeof(decoded));
@@ -163,6 +178,7 @@ static bool ruda_cli_test_vm(
     memset(&panic, 0, sizeof(panic));
     memset(&result, 0, sizeof(result));
     memset(&capture, 0, sizeof(capture));
+    memset(&error_capture, 0, sizeof(error_capture));
     memset(observation, 0, sizeof(*observation));
     if (!ruda_vector_init(
             &capture.bytes, context->session->allocator,
@@ -185,9 +201,11 @@ static bool ruda_cli_test_vm(
     if (codec_status != RUDA_BYTECODE_CODEC_OK
         || ruda_bytecode_program_verify(&decoded)
             != RUDA_BYTECODE_PROGRAM_VERIFY_OK) goto cleanup;
+    execution_options = ruda_bytecode_execution_default_options();
+    execution_options.managed_heap.max_live_bytes =
+        context->options->max_heap_bytes;
     if (!ruda_bytecode_execution_init(
-            &execution, context->session->allocator,
-            ruda_bytecode_execution_default_options()
+            &execution, context->session->allocator, execution_options
         )) goto cleanup;
     execution_ready = true;
     if (!ruda_bytecode_panic_init(
@@ -215,7 +233,24 @@ static bool ruda_cli_test_vm(
                 &observation->standard_error
             )) goto cleanup;
     } else {
-        goto cleanup;
+        bool classified = false;
+        if (!ruda_vector_init(
+                &error_capture.bytes, context->session->allocator,
+                sizeof(unsigned char)
+            )) goto cleanup;
+        error_capture_ready = true;
+        error_writer.context = &error_capture;
+        error_writer.write = ruda_cli_test_capture_write;
+        if (!ruda_cli_resource_render(
+                RUDA_DIAGNOSTIC_HUMAN, run_status,
+                &execution.managed_heap, error_writer, &classified
+            ) || !classified
+            || !ruda_owned_bytes_copy(
+                &observation->standard_error,
+                context->session->allocator,
+                error_capture.bytes.data, error_capture.bytes.length
+            )) goto cleanup;
+        observation->exit_code = RUDA_EXIT_INTERNAL;
     }
     if (!ruda_owned_bytes_copy(
             &observation->standard_output, context->session->allocator,
@@ -230,6 +265,7 @@ cleanup:
     if (!accepted) ruda_cli_test_observation_dispose(observation);
     if (panic_ready) ruda_bytecode_panic_dispose(&panic);
     if (execution_ready) ruda_bytecode_execution_dispose(&execution);
+    if (error_capture_ready) ruda_vector_dispose(&error_capture.bytes);
     ruda_vector_dispose(&capture.bytes);
     ruda_bytecode_program_dispose(&decoded);
     ruda_owned_bytes_dispose(&encoded);
@@ -258,6 +294,7 @@ static bool ruda_cli_test_native(
     request.entry_symbol = test->function->mir.symbol;
     request.root_directory = (const char *)context->target->root_directory.data;
     request.root_directory_length = context->target->root_directory.length;
+    request.max_heap_bytes = context->options->max_heap_bytes;
     *build_status = ruda_native_build(
         context->session->allocator, &request, &build
     );
@@ -297,6 +334,29 @@ static bool ruda_cli_test_observations_equal(
         ) == 0 && ruda_cli_test_bytes_compare(
             &left->standard_error, &right->standard_error
         ) == 0;
+}
+
+static bool ruda_cli_test_resource_failure(
+    const RudaCliTestObservation *observation
+) {
+    static const unsigned char host[] =
+        "error[I0002]: runtime host allocation failed\n";
+    static const unsigned char budget[] =
+        "error[I0002]: managed heap budget exceeded: live=";
+    return observation != NULL
+        && observation->exit_code == RUDA_EXIT_INTERNAL
+        && !observation->signaled
+        && observation->standard_output.length == 0
+        && ((observation->standard_error.length == sizeof(host) - 1
+                && memcmp(
+                    observation->standard_error.data, host, sizeof(host) - 1
+                ) == 0)
+            || (observation->standard_error.length > sizeof(budget) - 1
+                && memcmp(
+                    observation->standard_error.data,
+                    budget,
+                    sizeof(budget) - 1
+                ) == 0));
 }
 
 static bool ruda_cli_test_write_name(
@@ -419,7 +479,8 @@ static int ruda_cli_test_execute(
                 "test execution pipeline failed"
             );
         }
-        if (use_native && native.exit_code == RUDA_EXIT_INTERNAL) {
+        if (use_native && native.exit_code == RUDA_EXIT_INTERNAL
+            && !ruda_cli_test_resource_failure(&native)) {
             ruda_cli_test_observation_dispose(&native);
             ruda_cli_test_observation_dispose(&vm);
             return ruda_cli_test_pipeline_error(
@@ -444,6 +505,16 @@ static int ruda_cli_test_execute(
             );
         }
         observed = use_vm ? &vm : &native;
+        if (observed->exit_code == RUDA_EXIT_INTERNAL) {
+            bool wrote = ruda_writer_write(
+                standard_error, (const char *)observed->standard_error.data,
+                observed->standard_error.length
+            );
+            ruda_cli_test_observation_dispose(&native);
+            ruda_cli_test_observation_dispose(&vm);
+            if (!wrote) return RUDA_EXIT_INTERNAL;
+            return RUDA_EXIT_INTERNAL;
+        }
         if (!context->options->quiet) {
             if (!ruda_writer_write_cstr(standard_output, "test ")
                 || !ruda_cli_test_write_name(standard_output, test)

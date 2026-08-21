@@ -173,6 +173,14 @@ growth limits documented by that API. Configured VM/isolate heap ceilings and
 process allocation failure remain execution outcomes. Collections never expose
 capacity bytes as initialized elements.
 
+D055 fixes the execution boundary for those outcomes. A configured
+managed-heap budget counts the collection's managed object, its reserved cell
+storage, and managed slot bookkeeping. Exact-boundary growth succeeds;
+post-collection over-budget growth is an `I0002` execution failure with
+live/requested/limit bytes, while a later host allocator failure is a distinct
+`I0002`. Neither adds an `ArrayGrowthError` case or changes D053's
+failure-atomic logical state.
+
 Iterators are pull-based direct calls. A separate `Stream<T,E>` protocol models suspending sequences without source-level futures:
 
 ```ruda

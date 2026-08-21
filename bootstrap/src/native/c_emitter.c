@@ -141,7 +141,7 @@ bool ruda_native_c_emit_runtime(
         && ruda_native_c_write(buffer,
             "static int ruda_g_begin_bounds(ruda_g_panic *p, int64_t index, size_t length, const unsigned char *symbol, size_t start, size_t end) { static const unsigned char prefix[] = \"array index \"; static const unsigned char suffix[] = \" is outside length \"; size_t at = 0; if (p == NULL) return 4; memcpy(p->message_storage + at, prefix, sizeof(prefix) - 1); at += sizeof(prefix) - 1; at = ruda_g_decimal_i64(p->message_storage, at, index); memcpy(p->message_storage + at, suffix, sizeof(suffix) - 1); at += sizeof(suffix) - 1; at = ruda_g_decimal_u64(p->message_storage, at, (uint64_t)length); p->code = \"G4002\"; p->message.data = p->message_storage; p->message.length = at; p->symbol = symbol; p->start = start; p->end = end; p->frame_count = 0; p->suppressed_count = 0; return ruda_g_append_frame(p, symbol, start, end) ? 4 : 5; }\n")
         && ruda_native_c_write(buffer,
-            "static int ruda_g_managed_status(RudaManagedStatus status) { if (status == RUDA_MANAGED_OK) return 0; if (status == RUDA_MANAGED_ALLOCATION_FAILED) return 5; if (status == RUDA_MANAGED_LIMIT_REACHED || status == RUDA_MANAGED_LENGTH_LIMIT) return 6; if (status == RUDA_MANAGED_INVALID_REFERENCE || status == RUDA_MANAGED_TYPE_MISMATCH) return 7; return 5; }\n")
+            "static int ruda_g_managed_status(RudaManagedStatus status) { if (status == RUDA_MANAGED_OK) return 0; if (status == RUDA_MANAGED_ALLOCATION_FAILED) return 5; if (status == RUDA_MANAGED_LIMIT_REACHED) return 6; return 7; }\n")
         && ruda_native_c_write(buffer,
             "static RudaManagedStatus ruda_g_array_check(const RudaManagedHeap *heap, RudaManagedReference array, const RudaManagedArrayDescriptor *expected, int64_t index, size_t *length) { const RudaManagedArrayDescriptor *actual = NULL; RudaManagedStatus status = ruda_managed_array_describe(heap, array, &actual); if (status != RUDA_MANAGED_OK) return status; if (actual != expected) return RUDA_MANAGED_TYPE_MISMATCH; status = ruda_managed_array_length(heap, array, length); if (status != RUDA_MANAGED_OK) return status; return index < 0 || (uint64_t)index >= (uint64_t)*length ? RUDA_MANAGED_BOUNDS : RUDA_MANAGED_OK; }\n")
         && ruda_native_c_emit_array_mutation_runtime(buffer)
@@ -194,6 +194,7 @@ RudaNativeCEmitOptions ruda_native_c_emit_default_options(void) {
     memset(&options, 0, sizeof(options));
     options.max_functions = 100000;
     options.max_generated_bytes = 64U * 1024U * 1024U;
+    options.max_heap_bytes = 64U * 1024U * 1024U;
     return options;
 }
 
@@ -216,7 +217,8 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     memset(output, 0, sizeof(*output));
     if (program == NULL || program->functions == NULL || program->function_count == 0
         || options.max_functions == 0
-        || options.max_generated_bytes == 0 || allocator.allocate == NULL
+        || options.max_generated_bytes == 0 || options.max_heap_bytes == 0
+        || allocator.allocate == NULL
         || allocator.resize == NULL || allocator.deallocate == NULL) {
         return RUDA_NATIVE_C_EMIT_INVALID_ARGUMENT;
     }
@@ -386,9 +388,9 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     if (uses_f64 && !ruda_native_c_write(&buffer, options.executable_entry
             ? "if (!ruda_f64_binary64_supported()) { fputs(\"error[I0002]: native target does not provide strict binary64\\n\", stderr); return 70; } "
             : "if (!ruda_f64_binary64_supported()) { fputs(\"unsupported:f64\\n\", stderr); return 2; } ")) goto emit_fail;
-    if (!ruda_native_c_write(&buffer, "ruda_g_keep_assets(); ruda_g_p.frames = ruda_g_frames; ruda_g_p.frame_capacity = RUDA_G_MAX_FRAMES; ruda_g_p.suppressed = ruda_g_suppressed; ruda_g_p.suppressed_capacity = RUDA_G_MAX_SUPPRESSED; ruda_g_x.allocator = ruda_g_make_allocator(&ruda_g_x.fail_allocator); ruda_g_heap_options = ruda_managed_heap_default_options(); ruda_g_heap_options.collect_before_allocation = RUDA_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)RUDA_G_MAX_OBJECTS < ruda_g_heap_options.max_objects) ruda_g_heap_options.max_objects = (size_t)RUDA_G_MAX_OBJECTS; if (!ruda_managed_heap_init(&ruda_g_x.heap, ruda_g_x.allocator, ruda_g_heap_options)) { ")) goto emit_fail;
+    if (!ruda_native_c_write(&buffer, "ruda_g_keep_assets(); ruda_g_p.frames = ruda_g_frames; ruda_g_p.frame_capacity = RUDA_G_MAX_FRAMES; ruda_g_p.suppressed = ruda_g_suppressed; ruda_g_p.suppressed_capacity = RUDA_G_MAX_SUPPRESSED; ruda_g_x.allocator = ruda_g_make_allocator(&ruda_g_x.fail_allocator); ruda_g_heap_options = ruda_managed_heap_default_options(); ruda_g_heap_options.max_live_bytes = %zu; ruda_g_heap_options.collect_before_allocation = RUDA_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)RUDA_G_MAX_OBJECTS < ruda_g_heap_options.max_objects) ruda_g_heap_options.max_objects = (size_t)RUDA_G_MAX_OBJECTS; if (!ruda_managed_heap_init(&ruda_g_x.heap, ruda_g_x.allocator, ruda_g_heap_options)) { ", options.max_heap_bytes)) goto emit_fail;
     if (!ruda_native_c_write(&buffer, options.executable_entry
-            ? "fputs(\"error[I0002]: native runtime allocation failed\\n\", stderr); return 70; } "
+            ? "fputs(\"error[I0002]: runtime host allocation failed\\n\", stderr); return 70; } "
             : "fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
     if (options.executable_entry) {
         if (!ruda_native_c_emit_executable_entry(

@@ -79,11 +79,17 @@ ruda build --release               # standalone native executable
 ruda build --engine vm             # portable .rudab bytecode bundle
 ruda test                          # fast VM test loop
 ruda test --engine both            # VM/native semantic conformance
+ruda run . --max-heap-bytes 67108864 # managed live-byte budget
 ruda fmt                           # canonical formatting
 ruda check                         # authoritative batch type checking
 ```
 
 These commands are the normative product workflow. In the current bootstrap, `ruda fmt`, `ruda check`, VM-default `ruda run`, host-native `ruda build`, and deterministic `ruda test` with VM/native comparison (plus help/version inspection) are implemented for the local/private preview surface; the roadmap gates the remaining options and commands. `ruda check` refuses success when accepted source reaches a checker path that is not implemented yet. The VM is not a looser or dynamically typed version of the language: both implemented execution paths consume code that passed the same parser, resolver, type checker, exhaustiveness checker, and typed MIR verifier.
+
+`ruda run`, `ruda test`, and `ruda build` accept one decimal
+`--max-heap-bytes`; the unchanged default is 64 MiB. Native builds embed the
+selected value, and configured-budget versus host-allocation failures have
+distinct `I0002` diagnostics with exit `70`.
 
 ## Repository map
 

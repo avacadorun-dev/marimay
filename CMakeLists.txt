@@ -149,6 +149,7 @@ set(RUDA_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/vector.c
   runtime/common/io_stdout.c
   runtime/common/managed.c
+  runtime/common/managed_resource.c
   runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c
   runtime/common/managed_string.c
@@ -312,12 +313,14 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/check/type_spelling.c
   bootstrap/src/cli/cli.c
   bootstrap/src/cli/cli_display.c
+  bootstrap/src/cli/cli_heap_limit.c
   bootstrap/src/cli/cli_build_program.c
     bootstrap/src/cli/cli_check.c
     bootstrap/src/cli/cli_compile_report.c
     bootstrap/src/cli/cli_run_program.c
     bootstrap/src/cli/cli_test_program.c
     bootstrap/src/cli/cli_run_report.c
+    bootstrap/src/cli/cli_resource_report.c
   bootstrap/src/cli/cli_check_targets.c
   bootstrap/src/cli/cli_standard_packages.c
   bootstrap/src/cli/cli_format.c
@@ -374,6 +377,7 @@ add_library(ruda_bootstrap STATIC
   runtime/common/io_stdout.c
   runtime/common/test_output.c
   runtime/common/managed.c
+  runtime/common/managed_resource.c
   runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c
   runtime/common/managed_string.c

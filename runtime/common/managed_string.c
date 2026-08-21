@@ -20,16 +20,17 @@ RudaManagedStatus ruda_managed_string_new(
         || !ruda_size_add(sizeof(*value), length, &object_bytes)) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
+    ruda_managed_resource_failure_clear(heap);
     value = ruda_allocate(&heap->allocator, sizeof(*value));
     if (value == NULL) {
-        return RUDA_MANAGED_ALLOCATION_FAILED;
+        return ruda_managed_resource_host_failure(heap, sizeof(*value));
     }
     memset(value, 0, sizeof(*value));
     if (length != 0) {
         value->bytes = ruda_allocate(&heap->allocator, length);
         if (value->bytes == NULL) {
             ruda_deallocate(&heap->allocator, value, sizeof(*value));
-            return RUDA_MANAGED_ALLOCATION_FAILED;
+            return ruda_managed_resource_host_failure(heap, length);
         }
         memcpy(value->bytes, bytes, length);
         value->length = length;

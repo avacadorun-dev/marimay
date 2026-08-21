@@ -24,6 +24,7 @@ RudaManagedStatus ruda_managed_record_new(
         || (fields == NULL && field_count != 0)) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
+    ruda_managed_resource_failure_clear(heap);
     for (index = 0; index < field_count; index += 1) {
         status = ruda_managed_validate_field(
             heap,
@@ -40,14 +41,14 @@ RudaManagedStatus ruda_managed_record_new(
     }
     record = ruda_allocate(&heap->allocator, sizeof(*record));
     if (record == NULL) {
-        return RUDA_MANAGED_ALLOCATION_FAILED;
+        return ruda_managed_resource_host_failure(heap, sizeof(*record));
     }
     memset(record, 0, sizeof(*record));
     if (field_bytes != 0) {
         record->fields = ruda_allocate(&heap->allocator, field_bytes);
         if (record->fields == NULL) {
             ruda_deallocate(&heap->allocator, record, sizeof(*record));
-            return RUDA_MANAGED_ALLOCATION_FAILED;
+            return ruda_managed_resource_host_failure(heap, field_bytes);
         }
         memcpy(record->fields, fields, field_bytes);
     }
@@ -78,7 +79,7 @@ RudaManagedStatus ruda_managed_record_new(
                 ))) {
             ruda_deallocate(&heap->allocator, roots, root_bytes);
             ruda_managed_record_dispose(heap, record);
-            return RUDA_MANAGED_ALLOCATION_FAILED;
+            return ruda_managed_resource_host_failure(heap, root_bytes);
         }
         status = ruda_managed_publish_object(
             heap,

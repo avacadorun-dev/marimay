@@ -325,7 +325,24 @@ retry:
             &slot_capacity,
             &slot_added_bytes
         ) || !ruda_size_add(object_bytes, slot_added_bytes, &added_bytes)
-        || !ruda_managed_add_within_limit(
+        ) {
+        if (!collected) {
+            status = ruda_managed_collect_internal(
+                heap,
+                temporary_roots,
+                temporary_root_count,
+                temporary_cells,
+                temporary_cell_count
+            );
+            if (status != RUDA_MANAGED_OK) {
+                return status;
+            }
+            collected = true;
+            goto retry;
+        }
+        return RUDA_MANAGED_LIMIT_REACHED;
+    }
+    if (!ruda_managed_add_within_limit(
             heap->live_byte_count,
             added_bytes,
             heap->options.max_live_bytes,
@@ -345,7 +362,7 @@ retry:
             collected = true;
             goto retry;
         }
-        return RUDA_MANAGED_LIMIT_REACHED;
+        return ruda_managed_resource_budget_failure(heap, added_bytes);
     }
     if (slot_capacity != heap->slot_capacity) {
         size_t old_bytes = heap->slot_capacity * sizeof(RudaManagedSlot);
@@ -357,7 +374,7 @@ retry:
             new_bytes
         );
         if (resized == NULL) {
-            return RUDA_MANAGED_ALLOCATION_FAILED;
+            return ruda_managed_resource_host_failure(heap, new_bytes);
         }
         memset(
             resized + heap->slot_capacity,

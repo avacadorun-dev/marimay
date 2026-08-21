@@ -1200,3 +1200,64 @@ compact recursive spelling makes nested element structure visible without
 introducing a second collection. Removing the old prelude spelling before 1.0
 avoids a permanent alias and leaves package-owned names under ordinary lexical
 resolution.
+
+## D055 — Configurable managed-heap byte budgets and classified `I0002`
+
+Status: accepted.
+
+`ruda run`, `ruda test`, and `ruda build` accept one
+`--max-heap-bytes <positive-decimal>` option; the equivalent
+`--max-heap-bytes=<positive-decimal>` spelling is also accepted. The value is
+an integer number of bytes with no sign, whitespace, separator, or unit suffix.
+The minimum is one. The maximum is the lesser of `int::MAX` and the host's
+`SIZE_MAX`; every Tier 1 host accepts `1..9223372036854775807`. Zero, a sign,
+an empty or non-decimal value, overflow, and a repeated occurrence are `U0005`
+and exit `2`. A separated missing value is `U0004`. A repeated occurrence is
+diagnosed at the second option; an invalid separated value is diagnosed at its
+value argument. The default remains exactly `67108864` bytes. No environment
+variable or undeclared project state overrides either value.
+
+The budget counts live bytes owned by the managed heap: published managed
+object payloads, reserved array cell storage, and heap slot-table storage.
+Compiler/VM metadata, bytecode, native code, call stacks, test-capture buffers,
+and OS resources are not charged to this particular budget and retain their
+own bounded owners. An allocation whose checked `live + requested` equals the
+limit is permitted. If it would exceed the limit, the runtime first performs
+the collection attempt required by D045/D053; the post-collection `live` value
+and the net additional accounted `requested` value determine the outcome.
+Budget rejection is failure-atomic and does not attempt the rejected host
+allocation.
+
+The precedence is source semantics, configured budget, then host allocation:
+negative `reserve` and growth past `int::MAX` retain their typed
+`ArrayGrowthError` cases; a valid operation beyond the configured managed-heap
+budget is a budget-class `I0002`; and an allocator failure after successful
+budget preflight is a host-allocation-class `I0002`. Neither execution failure
+is catchable source control flow. Both write no program stdout and exit `70`
+after bounded cleanup. Human/short diagnostic messages are exactly:
+
+```text
+managed heap budget exceeded: live=L bytes, requested=R bytes, limit=N bytes
+runtime host allocation failed
+```
+
+Budget JSON context is `kind: runtime-resource`, `resource: managed-heap`,
+`classification: budget-exceeded`, with numeric `liveBytes`, `requestedBytes`,
+and `limitBytes`. Host-allocation JSON context uses `resource: host-memory` and
+`classification: allocation-failed`; neither form exposes an address.
+
+`run` applies the selected budget to its fresh VM execution. Every discovered
+test receives a fresh VM execution or native process with the same selected
+budget, so one test never inherits another test's live usage or failure state.
+`build` embeds the selected value, including the default when the option is
+absent, into generated C and the native executable; the generated source and
+therefore the content-addressed cache identity differ when the value differs.
+Future child isolates copy their parent's configured value unless an explicit
+isolate API supplies another value; they inherit neither live usage nor mutable
+failure state, and this decision does not add scheduler/isolate syntax.
+
+Reason: a single broad resource failure hides whether a program hit its
+documented sandbox, a recoverable source-level collection bound, or actual
+host memory pressure. A byte-exact, engine-independent policy makes local VM
+execution, isolated tests, and published native artifacts reproducible without
+changing the existing 64 MiB default or redesigning collection.

@@ -19,6 +19,7 @@ int ruda_cli_run_pipeline_error(
 int ruda_cli_run_runtime_error(
     const RudaCliOptions *options,
     RudaBytecodeRunStatus status,
+    const RudaBytecodeExecution *execution,
     const RudaBytecodePanic *panic,
     RudaWriter standard_error
 );

@@ -132,7 +132,7 @@ static int ruda_cli_run_render_expected(
     );
     if (status != RUDA_BYTECODE_RUN_OK) {
         exit_code = ruda_cli_run_runtime_error(
-            options, status, run_options.panic, standard_error
+            options, status, execution, run_options.panic, standard_error
         );
         goto cleanup_root;
     }
@@ -167,6 +167,7 @@ static int ruda_cli_run_execute(
     RudaBytecodeProgram decoded;
     RudaOwnedBytes encoded;
     RudaBytecodeExecution execution;
+    RudaBytecodeExecutionOptions execution_options;
     RudaBytecodePanic panic;
     RudaBytecodeTrap trap;
     RudaBytecodeValue result;
@@ -240,9 +241,10 @@ static int ruda_cli_run_execute(
         );
         goto cleanup;
     }
+    execution_options = ruda_bytecode_execution_default_options();
+    execution_options.managed_heap.max_live_bytes = options->max_heap_bytes;
     if (!ruda_bytecode_execution_init(
-            &execution, session->allocator,
-            ruda_bytecode_execution_default_options()
+            &execution, session->allocator, execution_options
         )) goto cleanup;
     execution_ready = true;
     if (!ruda_bytecode_panic_init(&panic, session->allocator)) goto cleanup;
@@ -261,7 +263,7 @@ static int ruda_cli_run_execute(
     );
     if (run_status != RUDA_BYTECODE_RUN_OK) {
         exit_code = ruda_cli_run_runtime_error(
-            options, run_status, &panic, standard_error
+            options, run_status, &execution, &panic, standard_error
         );
     } else if (!entry->returns_result) {
         exit_code = result.type == RUDA_BYTECODE_TYPE_VOID

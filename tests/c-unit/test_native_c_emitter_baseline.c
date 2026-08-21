@@ -236,6 +236,10 @@ void ruda_test_native_baseline(void) {
     ruda_test_native_emit(ordered, 2, entry_symbol, options,
         RUDA_NATIVE_C_EMIT_LIMIT_REACHED);
     options = ruda_native_c_emit_default_options();
+    options.max_heap_bytes = 0;
+    ruda_test_native_emit(ordered, 2, entry_symbol, options,
+        RUDA_NATIVE_C_EMIT_INVALID_ARGUMENT);
+    options = ruda_native_c_emit_default_options();
     ruda_test_native_emit(NULL, 0, entry_symbol, options,
         RUDA_NATIVE_C_EMIT_INVALID_ARGUMENT);
     ruda_test_native_emit(permuted, 1, entry_symbol, options,

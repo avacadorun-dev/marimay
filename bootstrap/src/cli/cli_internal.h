@@ -35,6 +35,9 @@ typedef struct RudaCliOptions {
     size_t check_all_targets_index;
     const char *run_engine;
     size_t run_engine_index;
+    size_t max_heap_bytes;
+    size_t max_heap_bytes_index;
+    bool max_heap_bytes_seen;
     const char *build_output;
     size_t build_output_index;
     const char *build_emit;
@@ -78,6 +81,12 @@ enum {
 
 int ruda_cli_plain_error(RudaWriter error_writer, RudaDiagnosticStyle style,
     const char *code, const char *message, int exit_code);
+int ruda_cli_option_value_error(RudaWriter error_writer,
+    RudaDiagnosticStyle style, const char *code, size_t argument_index,
+    const char *message);
+void ruda_cli_heap_limit_default(RudaCliOptions *options);
+int ruda_cli_heap_limit_parse(RudaCliOptions *options, const char *value,
+    size_t option_index, size_t value_index, RudaWriter error_writer);
 void ruda_display_argument(const char *argument, char *output, size_t capacity);
 bool ruda_cli_manifest_kind(const char *path, RudaManifestKind *kind);
 bool ruda_cli_source_path(const char *path);

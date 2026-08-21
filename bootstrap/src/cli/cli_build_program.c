@@ -107,6 +107,7 @@ static int ruda_cli_build_execute(
     request.root_directory_length = target->root_directory.length;
     request.output_path = options->build_output;
     request.tool_executable_path = options->tool_executable_path;
+    request.max_heap_bytes = options->max_heap_bytes;
     request.returns_result = entry->returns_result;
     request.release = options->build_release;
     request.emit_c = options->build_emit != NULL;

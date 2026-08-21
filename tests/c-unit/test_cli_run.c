@@ -226,9 +226,10 @@ static void ruda_cli_run_test_writer_failures(RudaSession *session) {
 }
 
 static void ruda_cli_run_test_allocations(void) {
-    const char *arguments[] = {"ruda", "run", "run/cp9/void.ruda"};
+    const char *arguments[] = {"ruda", "run", "run/cp19-managed.ruda"};
     size_t failure_index = 0;
     bool reached_success = false;
+    bool saw_managed_host_failure = false;
     for (failure_index = 0; failure_index < 4096; failure_index += 1) {
         RudaFailAllocator state;
         RudaSession session;
@@ -247,12 +248,19 @@ static void ruda_cli_run_test_allocations(void) {
             RUDA_EXPECT(output.length == 0 && error.length == 0);
         } else {
             RUDA_EXPECT(status == RUDA_EXIT_INTERNAL);
+            if (strcmp(
+                    error.bytes,
+                    "error[I0002]: runtime host allocation failed\n"
+                ) == 0) {
+                saw_managed_host_failure = true;
+            }
         }
         RUDA_EXPECT(state.live_allocations == 0);
         RUDA_EXPECT(state.live_bytes == 0);
         if (reached_success) break;
     }
     RUDA_EXPECT(reached_success);
+    RUDA_EXPECT(saw_managed_host_failure);
 }
 
 static void ruda_cli_run_test_process(void) {

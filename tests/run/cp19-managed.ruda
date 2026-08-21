@@ -1,0 +1,6 @@
+fn main(): void {
+  let values = [1, 2, 3];
+  if values.length() != 3 {
+    panic("managed allocation changed");
+  }
+}

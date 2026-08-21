@@ -208,7 +208,7 @@ static void ruda_cli_build_test_cache_and_emit(RudaSession *session) {
 #if !defined(_WIN32)
     ruda_test_native_compile_and_run_configured(
         &source,
-        "error[I0002]: native runtime allocation failed\n",
+        "error[I0002]: runtime host allocation failed\n",
         70,
         "-DRUDA_G_FAIL_ALLOCATION_AT=0"
     );

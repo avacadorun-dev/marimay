@@ -20,6 +20,12 @@ typedef enum RudaSeverity {
     RUDA_SEVERITY_HELP
 } RudaSeverity;
 
+typedef enum RudaRuntimeResourceClass {
+    RUDA_RUNTIME_RESOURCE_NONE,
+    RUDA_RUNTIME_RESOURCE_MANAGED_HEAP_BUDGET,
+    RUDA_RUNTIME_RESOURCE_HOST_ALLOCATION
+} RudaRuntimeResourceClass;
+
 typedef struct RudaDiagnostic {
     const char *code;
     RudaSeverity severity;
@@ -28,6 +34,10 @@ typedef struct RudaDiagnostic {
     bool message_is_counted;
     bool has_command_argument;
     size_t command_argument;
+    RudaRuntimeResourceClass runtime_resource;
+    size_t resource_live_bytes;
+    size_t resource_requested_bytes;
+    size_t resource_limit_bytes;
     const RudaSourceSnapshot *source;
     size_t source_start;
     size_t source_end;

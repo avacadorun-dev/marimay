@@ -22,7 +22,7 @@ static const RudaTaskHelp ruda_tasks[] = {
     {"add", "Add a package dependency.", "add module[@version]", "ruda add ruda-lang.example/postgres@1.4", false},
     {"audit", "Audit dependencies, capabilities, unsafe code, and provenance.", "audit", "ruda audit", false},
     {"bench", "Run first-party benchmarks.", "bench [filter]", "ruda bench --compare base.json", false},
-    {"build", "Build a native executable by default.", "build [target] [options]", "ruda build --release", true},
+    {"build", "Build a native executable by default.", "build [target] [--max-heap-bytes bytes] [options]", "ruda build --max-heap-bytes 67108864 --release", true},
     {"check", "Run the complete frontend and MIR verifier.", "check [target] [--all-targets]", "ruda check --all-targets", true},
     {"doc", "Build or check package documentation.", "doc [options]", "ruda doc --check", false},
     {"exec", "Verify and execute a portable .rudab bundle.", "exec bundle.rudab [options]", "ruda exec app.rudab", false},
@@ -36,8 +36,8 @@ static const RudaTaskHelp ruda_tasks[] = {
     {"list", "List package dependencies.", "list", "ruda list", false},
     {"outdated", "Report available dependency updates.", "outdated", "ruda outdated", false},
     {"remove", "Remove a package dependency.", "remove module", "ruda remove ruda-lang.example/postgres", false},
-    {"run", "Run with the bytecode VM by default.", "run [target] [-- arguments]", "ruda run .", true},
-    {"test", "Run built-in tests with the VM by default.", "test [target] [--engine vm|native|both]", "ruda test --engine both", true},
+    {"run", "Run with the bytecode VM by default.", "run [target] [--max-heap-bytes bytes] [-- arguments]", "ruda run . --max-heap-bytes 67108864", true},
+    {"test", "Run built-in tests with the VM by default.", "test [target] [--engine vm|native|both] [--max-heap-bytes bytes]", "ruda test --engine both --max-heap-bytes 67108864", true},
     {"update", "Update locked package versions.", "update [module]", "ruda update", false},
     {"vendor", "Vendor immutable locked dependencies.", "vendor", "ruda vendor", false},
     {"version", "Show compiler and runtime build identity.", "version [--json]", "ruda version --json", true},
@@ -53,6 +53,7 @@ static const char *const ruda_global_options[] = {
     "--diff",
     "--engine",
     "--help",
+    "--max-heap-bytes",
     "--output",
     "--quiet",
     "--release",
@@ -256,7 +257,7 @@ static bool ruda_valid_color(const char *value) {
         || strcmp(value, "never") == 0;
 }
 
-static int ruda_option_value_error(
+int ruda_cli_option_value_error(
     RudaWriter error_writer,
     RudaDiagnosticStyle style,
     const char *code,
@@ -265,6 +266,8 @@ static int ruda_option_value_error(
 ) {
     return ruda_cli_diagnostic(error_writer, style, code, argument_index, message);
 }
+
+#define ruda_option_value_error ruda_cli_option_value_error
 
 static int ruda_parse_options(
     int argument_count,
@@ -295,6 +298,7 @@ static int ruda_parse_options(
     options->check_all_targets_index = 0;
     options->run_engine = "vm";
     options->run_engine_index = 0;
+    ruda_cli_heap_limit_default(options);
     options->build_output = NULL;
     options->build_output_index = 0;
     options->build_emit = NULL;
@@ -318,6 +322,11 @@ static int ruda_parse_options(
         } else if (strcmp(argument, "--diagnostic") == 0
             || strcmp(argument, "--color") == 0
             || (strcmp(argument, "--engine") == 0
+                && options->command != NULL
+                && (strcmp(options->command, "run") == 0
+                    || strcmp(options->command, "build") == 0
+                    || strcmp(options->command, "test") == 0))
+            || (strcmp(argument, "--max-heap-bytes") == 0
                 && options->command != NULL
                 && (strcmp(options->command, "run") == 0
                     || strcmp(options->command, "build") == 0
@@ -396,6 +405,12 @@ static int ruda_parse_options(
                 }
                 options->build_emit = value;
                 options->build_emit_index = (size_t)index;
+            } else if (strcmp(argument, "--max-heap-bytes") == 0) {
+                int heap_result = ruda_cli_heap_limit_parse(
+                    options, value, (size_t)index - 1, (size_t)index,
+                    error_writer
+                );
+                if (heap_result != RUDA_EXIT_SUCCESS) return heap_result;
             }
         } else if (ruda_starts_with(argument, "--diagnostic=")) {
             value = argument + strlen("--diagnostic=");
@@ -447,6 +462,16 @@ static int ruda_parse_options(
             }
             options->run_engine = value;
             options->run_engine_index = (size_t)index;
+        } else if (ruda_starts_with(argument, "--max-heap-bytes=")
+            && options->command != NULL
+            && (strcmp(options->command, "run") == 0
+                || strcmp(options->command, "build") == 0
+                || strcmp(options->command, "test") == 0)) {
+            int heap_result = ruda_cli_heap_limit_parse(
+                options, argument + strlen("--max-heap-bytes="),
+                (size_t)index, (size_t)index, error_writer
+            );
+            if (heap_result != RUDA_EXIT_SUCCESS) return heap_result;
         } else if (ruda_starts_with(argument, "--output=")
             && options->command != NULL
             && strcmp(options->command, "build") == 0) {

@@ -69,6 +69,11 @@ RudaManagedStatus ruda_managed_mark_reference(
 RudaManagedStatus ruda_managed_trace_slot(RudaManagedHeap *heap, RudaManagedSlot *slot, uint32_t *gray_head);
 RudaManagedStatus ruda_managed_collect_internal(RudaManagedHeap *heap, const RudaManagedReference *temporary_roots, size_t temporary_root_count, const RudaManagedCell *temporary_cells, size_t temporary_cell_count);
 bool ruda_managed_add_within_limit(size_t current, size_t amount, size_t limit, size_t *result);
+void ruda_managed_resource_failure_clear(RudaManagedHeap *heap);
+RudaManagedStatus ruda_managed_resource_budget_failure(
+    RudaManagedHeap *heap, size_t requested_bytes);
+RudaManagedStatus ruda_managed_resource_host_failure(
+    RudaManagedHeap *heap, size_t requested_bytes);
 bool ruda_managed_new_slot_capacity(const RudaManagedHeap *heap, size_t *capacity, size_t *added_bytes);
 RudaManagedStatus ruda_managed_publish_object(RudaManagedHeap *heap, RudaManagedObjectKind kind, void *object, size_t object_bytes, const RudaManagedReference *temporary_roots, size_t temporary_root_count, const RudaManagedCell *temporary_cells, size_t temporary_cell_count, RudaManagedReference *result);
 size_t ruda_managed_count_reference_fields(const RudaManagedFieldDescriptor *fields, size_t count);

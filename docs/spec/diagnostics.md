@@ -317,6 +317,19 @@ typed-MIR program is `B0001`. A post-verification VM resource, integrity, or
 unsupported-host failure is `I0002`. Both are internal failures and exit `70`;
 neither may be rendered as a program panic or written to program stdout.
 
+Under D055, configured managed-heap exhaustion renders exact message
+`managed heap budget exceeded: live=L bytes, requested=R bytes, limit=N bytes`.
+Its JSON `context` is `{"kind":"runtime-resource","resource":"managed-heap",`
+`"classification":"budget-exceeded","liveBytes":L,"requestedBytes":R,`
+`"limitBytes":N}`. Host allocator exhaustion renders exact message
+`runtime host allocation failed` and JSON context
+`{"kind":"runtime-resource","resource":"host-memory",`
+`"classification":"allocation-failed"}`. Both use `I0002`, write stderr only,
+and exit `70`; addresses and allocator-dependent text are forbidden. A native
+executable uses the same human message and exit. Unclassified integrity or
+other resource failures may retain a narrower generic `I0002`, but cannot be
+used for either classified case.
+
 For D050 native construction, `B0002` means the distribution-selected host C
 toolchain could not be started or did not pass its preflight; it is an expected
 build failure and exits `1`. `B0003` means verified typed MIR could not emit

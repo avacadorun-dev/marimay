@@ -160,11 +160,11 @@ retry:
             }
             goto retry;
         }
-        return RUDA_MANAGED_LIMIT_REACHED;
+        return ruda_managed_resource_budget_failure(heap, added_bytes);
     }
     resized = ruda_resize(&heap->allocator, resolved->cells, old_bytes, new_bytes);
     if (resized == NULL) {
-        return RUDA_MANAGED_ALLOCATION_FAILED;
+        return ruda_managed_resource_host_failure(heap, new_bytes);
     }
     resolved->cells = resized;
     resolved->capacity = next_capacity;
@@ -214,6 +214,9 @@ RudaManagedStatus ruda_managed_array_push(
     RudaManagedArray *resolved = NULL;
     RudaManagedStatus status;
     size_t next_length = 0;
+    if (ruda_managed_heap_valid(heap)) {
+        ruda_managed_resource_failure_clear(heap);
+    }
     status = ruda_managed_array_resolve_mutable(heap, array, &resolved);
     if (status != RUDA_MANAGED_OK) {
         return status;
@@ -379,6 +382,9 @@ RudaManagedStatus ruda_managed_array_reserve(
     RudaManagedArray *resolved = NULL;
     RudaManagedStatus status;
     size_t minimum_capacity = 0;
+    if (ruda_managed_heap_valid(heap)) {
+        ruda_managed_resource_failure_clear(heap);
+    }
     status = ruda_managed_array_resolve_mutable(heap, array, &resolved);
     if (status != RUDA_MANAGED_OK) {
         return status;

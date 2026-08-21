@@ -20,6 +20,8 @@ typedef struct RudaNativeBuildRequest {
     const char *compiler_path;
     const char *tool_executable_path;
     const RudaNativeRuntimePaths *runtime_paths;
+    /* Zero selects the documented 64 MiB default. */
+    size_t max_heap_bytes;
     bool returns_result;
     bool release;
     bool emit_c;

@@ -10,12 +10,26 @@
 
 typedef struct RudaManagedHeapOptions {
     size_t max_objects;
+    /* Maximum live managed object, reserved cell, and slot-table bytes. */
     size_t max_live_bytes;
-    /* A configured resource ceiling; reaching it reports LIMIT_REACHED. */
+    /* Configured array-length ceiling; reaching it reports LIMIT_REACHED. */
     size_t max_array_length;
     /* Collect before every operation that may allocate or grow storage. */
     bool collect_before_allocation;
 } RudaManagedHeapOptions;
+
+typedef enum RudaManagedResourceFailureClass {
+    RUDA_MANAGED_RESOURCE_FAILURE_NONE,
+    RUDA_MANAGED_RESOURCE_FAILURE_BUDGET,
+    RUDA_MANAGED_RESOURCE_FAILURE_HOST_ALLOCATION
+} RudaManagedResourceFailureClass;
+
+typedef struct RudaManagedResourceFailure {
+    RudaManagedResourceFailureClass classification;
+    size_t live_bytes;
+    size_t requested_bytes;
+    size_t limit_bytes;
+} RudaManagedResourceFailure;
 
 struct RudaManagedSlot;
 struct RudaManagedRootFrame;
@@ -49,6 +63,7 @@ typedef struct RudaManagedHeap {
     uint64_t provenance;
     RudaManagedRootFrame *roots;
     RudaManagedHeapOptions options;
+    RudaManagedResourceFailure last_resource_failure;
     bool collecting;
     bool initialized;
 } RudaManagedHeap;
@@ -76,6 +91,10 @@ RudaManagedStatus ruda_managed_heap_collect(RudaManagedHeap *heap);
 /* Read-only deterministic inspection for limits, diagnostics, and tests. */
 size_t ruda_managed_heap_live_objects(const RudaManagedHeap *heap);
 size_t ruda_managed_heap_live_bytes(const RudaManagedHeap *heap);
+bool ruda_managed_heap_last_resource_failure(
+    const RudaManagedHeap *heap,
+    RudaManagedResourceFailure *failure
+);
 RudaManagedStatus ruda_managed_object_kind(
     const RudaManagedHeap *heap,
     RudaManagedReference reference,

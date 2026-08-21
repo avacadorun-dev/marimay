@@ -1,0 +1,17 @@
+@test
+fn firstIsolateGetsConfiguredBudget(): void {
+  let values = [1, 2, 3];
+  values.reserve(8);
+  if values.length() != 3 {
+    panic("first test isolate changed");
+  }
+}
+
+@test
+fn secondIsolateGetsFreshConfiguredBudget(): void {
+  let nested = [[1], [2]];
+  nested.push([3]);
+  if nested.length() != 3 || nested[2][0] != 3 {
+    panic("second test isolate inherited live usage");
+  }
+}

@@ -75,6 +75,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | EXEC-019 | structured race cancels/joins owned losers and readiness selection unregisters losing waits without detached work | execution §7.7; D029 | I6 |
 | EXEC-020 | the C17 backend assigns injective compiler-owned identifiers and never copies user names into C keyword, implementation-reserved, library, runtime-helper, or case-folded collision namespaces; explicit foreign link names remain separately validated ABI contracts | execution §5.1.1; D039 | I4/I9 |
 | EXEC-021 | VM, native, and test-capture agree on D046 stdout bytes, `Result` classification, and `io.stdout` denial; internal `ok:f64:` traces are not user stdout | execution §§10.1,13.1; toolchain §§5.3,6.4; D046 | I4/I5/I8 |
+| EXEC-022 | each VM/native root execution applies the D055 managed live-byte budget with exact-boundary success, collection-before-budget rejection, and distinct configured-budget versus host-allocation `I0002` classifications | execution §9.4; diagnostics §13; D055 | I3/I4/I5 |
 
 ## Toolchain and ecosystem
 
@@ -101,6 +102,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | TOOL-019 | language/product name, command, domains, module/registry namespace, artifact identity, and installer collisions are evidence-audited and controlled before public distribution | D001; naming audit; roadmap N0 | N0 |
 | TOOL-020 | formatter uses D031 width-sensitive braces for import/record/pattern/payload lists while keeping executable and declaration bodies structurally multiline | toolchain §4.2; D031 | I1 |
 | TOOL-021 | `ruda build` selects and validates a version-matched runtime for the requested debug/release output profile independently of the compiler's own build configuration, remains relocatable when installed, and hashes runtime content into the build cache key | toolchain §6.3; execution §5.6; D052 | I4 |
+| TOOL-022 | `run`, `test`, and `build` accept one documented decimal `--max-heap-bytes`; default/selected native values are embedded and cache-identifying, tests receive fresh counters, and no hidden environment override exists | toolchain §§5–6; D055 | I3/I4/I8 |
 
 ## Standard library
 

@@ -19,12 +19,13 @@ RudaManagedStatus ruda_managed_interface_new(
         || descriptor == NULL) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
+    ruda_managed_resource_failure_clear(heap);
     if (ruda_managed_resolve_const(heap, payload) == NULL) {
         return RUDA_MANAGED_INVALID_REFERENCE;
     }
     value = ruda_allocate(&heap->allocator, sizeof(*value));
     if (value == NULL) {
-        return RUDA_MANAGED_ALLOCATION_FAILED;
+        return ruda_managed_resource_host_failure(heap, sizeof(*value));
     }
     memset(value, 0, sizeof(*value));
     value->descriptor = descriptor;

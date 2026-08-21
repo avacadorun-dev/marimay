@@ -66,6 +66,7 @@ add_executable(ruda_c_unit
   test_cli_build.c
   test_cli_build_profiles.c
   test_cli_check.c
+  test_cli_heap.c
   test_cli_run.c
   test_cli_test.c
   test_cli_cp14_imported_arrays.c
@@ -96,6 +97,7 @@ add_executable(ruda_c_unit
   test_lexer.c
   test_manifest.c
   test_managed.c
+  runtime/test_managed_resource.c
   runtime/test_managed_mutation.c
   test_managed_objects.c
   test_number_format.c
@@ -208,6 +210,7 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-mutation" DEST
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-iterator-invalidated" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling-bounds" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp19-resource-limits" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY
   "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
   "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"

@@ -1,4 +1,5 @@
 #include "cli_run_report.h"
+#include "cli_resource_report.h"
 
 #include <string.h>
 
@@ -65,6 +66,7 @@ int ruda_cli_run_pipeline_error(
 int ruda_cli_run_runtime_error(
     const RudaCliOptions *options,
     RudaBytecodeRunStatus status,
+    const RudaBytecodeExecution *execution,
     const RudaBytecodePanic *panic,
     RudaWriter standard_error
 ) {
@@ -73,7 +75,7 @@ int ruda_cli_run_runtime_error(
     static const unsigned char shift[] = "integer shift count is outside width";
     const unsigned char *message = NULL;
     size_t message_length = 0;
-    (void)options;
+    bool classified = false;
     if (status == RUDA_BYTECODE_RUN_PANIC && panic != NULL
         && panic->initialized && panic->code != NULL) {
         return ruda_cli_run_write_panic(
@@ -99,6 +101,14 @@ int ruda_cli_run_runtime_error(
             message, message_length
         ) ? RUDA_EXIT_SOURCE_FAILURE : RUDA_EXIT_INTERNAL;
     }
+    if (!ruda_cli_resource_render(
+            options->diagnostic_style, status,
+            execution == NULL ? NULL : &execution->managed_heap,
+            standard_error, &classified
+        )) {
+        return RUDA_EXIT_INTERNAL;
+    }
+    if (classified) return RUDA_EXIT_INTERNAL;
     return ruda_cli_plain_error(
         standard_error, options->diagnostic_style,
         RUDA_DIAGNOSTIC_RUNTIME_FAILURE,

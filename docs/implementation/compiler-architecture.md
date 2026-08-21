@@ -502,6 +502,12 @@ checkpoint:
 | `tests/c-unit/test_compiler_service_array_types.c` | 0 | 194 | canonical nested/generic signatures, stale results, limits, and output allocation cleanup |
 | `tests/c-unit/test_cli_cp18_array_spelling.c` | 0 | 132 | public fmt/check/run/test-both/build/G4002 differential acceptance |
 | `tests/c-unit/test_cli_cp17_array_mutation.c` | 0 | 135 | public fmt/check/run/test-both/build/artifact and VM/native G4005 acceptance |
+| `bootstrap/src/cli/cli_display.c` | 0 | 61 | bounded UTF-8-safe command-argument display escaping shared by diagnostics and formatter reporting |
+| `bootstrap/src/cli/cli_heap_limit.c` | 0 | 83 | D055 decimal range, default, duplicate, and argument-location policy |
+| `bootstrap/src/cli/cli_resource_report.c` | 0 | 48 | D055 classified human/short/JSON runtime-resource rendering shared by run and test |
+| `runtime/common/managed_resource.c` | 0 | 53 | deterministic managed budget/host failure publication and read-only inspection |
+| `tests/c-unit/runtime/test_managed_resource.c` | 0 | 262 | D055 exact boundary, raw/reference growth, semantic precedence, host-failure sweep, and zero-counter cleanup |
+| `tests/c-unit/test_cli_heap.c` | 0 | 259 | D055 CLI range/help/JSON, test isolation, embedding/cache identity, and VM/native exact observations |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `ruda_test_mir` registration. The service checkpoint

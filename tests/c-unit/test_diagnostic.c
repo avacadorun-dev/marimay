@@ -132,6 +132,34 @@ void ruda_test_diagnostic(void) {
         diagnostic.source = NULL;
     }
 
+    memset(&diagnostic, 0, sizeof(diagnostic));
+    diagnostic.code = RUDA_DIAGNOSTIC_RUNTIME_FAILURE;
+    diagnostic.severity = RUDA_SEVERITY_ERROR;
+    diagnostic.message = "managed heap budget exceeded: live=8 bytes, requested=16 bytes, limit=20 bytes";
+    diagnostic.runtime_resource = RUDA_RUNTIME_RESOURCE_MANAGED_HEAP_BUDGET;
+    diagnostic.resource_live_bytes = 8;
+    diagnostic.resource_requested_bytes = 16;
+    diagnostic.resource_limit_bytes = 20;
+    ruda_test_buffer_init(&buffer);
+    RUDA_EXPECT(ruda_diagnostic_render(
+        ruda_test_buffer_writer(&buffer), RUDA_DIAGNOSTIC_JSON, &diagnostic
+    ));
+    RUDA_EXPECT(strstr(
+        buffer.bytes,
+        "\"context\":{\"kind\":\"runtime-resource\",\"resource\":\"managed-heap\",\"classification\":\"budget-exceeded\",\"liveBytes\":8,\"requestedBytes\":16,\"limitBytes\":20}"
+    ) != NULL);
+
+    diagnostic.message = "runtime host allocation failed";
+    diagnostic.runtime_resource = RUDA_RUNTIME_RESOURCE_HOST_ALLOCATION;
+    ruda_test_buffer_init(&buffer);
+    RUDA_EXPECT(ruda_diagnostic_render(
+        ruda_test_buffer_writer(&buffer), RUDA_DIAGNOSTIC_JSON, &diagnostic
+    ));
+    RUDA_EXPECT(strstr(
+        buffer.bytes,
+        "\"context\":{\"kind\":\"runtime-resource\",\"resource\":\"host-memory\",\"classification\":\"allocation-failed\"}"
+    ) != NULL);
+
     ruda_test_buffer_init(&buffer);
     buffer.failure_index = 0;
     RUDA_EXPECT(!ruda_diagnostic_render(

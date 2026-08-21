@@ -495,6 +495,7 @@ RudaManagedStatus ruda_managed_array_new(
     if (!ruda_managed_heap_valid(heap) || result == NULL) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
+    ruda_managed_resource_failure_clear(heap);
     if (initial_length > ruda_managed_language_max_array_length()) {
         return RUDA_MANAGED_LENGTH_LIMIT;
     }
@@ -541,7 +542,23 @@ retry:
             object_bytes,
             slot_added_bytes,
             &added_bytes
-        ) || !ruda_managed_add_within_limit(
+        )) {
+        if (!collected) {
+            status = ruda_managed_collect_for_cells(
+                heap,
+                descriptor,
+                initial_cells,
+                initial_length
+            );
+            if (status != RUDA_MANAGED_OK) {
+                return status;
+            }
+            collected = true;
+            goto retry;
+        }
+        return RUDA_MANAGED_LIMIT_REACHED;
+    }
+    if (!ruda_managed_add_within_limit(
             heap->live_byte_count,
             added_bytes,
             heap->options.max_live_bytes,
@@ -560,18 +577,18 @@ retry:
             collected = true;
             goto retry;
         }
-        return RUDA_MANAGED_LIMIT_REACHED;
+        return ruda_managed_resource_budget_failure(heap, added_bytes);
     }
     array = ruda_allocate(&heap->allocator, sizeof(*array));
     if (array == NULL) {
-        return RUDA_MANAGED_ALLOCATION_FAILED;
+        return ruda_managed_resource_host_failure(heap, sizeof(*array));
     }
     memset(array, 0, sizeof(*array));
     if (cell_bytes != 0) {
         array->cells = ruda_allocate(&heap->allocator, cell_bytes);
         if (array->cells == NULL) {
             ruda_deallocate(&heap->allocator, array, sizeof(*array));
-            return RUDA_MANAGED_ALLOCATION_FAILED;
+            return ruda_managed_resource_host_failure(heap, cell_bytes);
         }
         memcpy(array->cells, initial_cells, cell_bytes);
     }
@@ -587,7 +604,7 @@ retry:
         if (resized == NULL) {
             ruda_deallocate(&heap->allocator, array->cells, cell_bytes);
             ruda_deallocate(&heap->allocator, array, sizeof(*array));
-            return RUDA_MANAGED_ALLOCATION_FAILED;
+            return ruda_managed_resource_host_failure(heap, new_bytes);
         }
         memset(
             resized + heap->slot_capacity,
