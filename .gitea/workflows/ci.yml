@@ -109,18 +109,12 @@ jobs:
       - name: Build target
         run: cmake --build build/fuzz --target ruda_fuzz_${{ matrix.target }} --parallel
       - name: Run sustained campaign
-        shell: bash
-        run: |
-          fuzz_seed_args=()
-          if [[ "${{ matrix.target }}" == "frontend" ]]; then
-            fuzz_seed_args=(-seed=793532076)
-          fi
-          ./build/fuzz/tests/fuzz/ruda_fuzz_${{ matrix.target }} \
-            "${fuzz_seed_args[@]}" \
-            -max_total_time=600 \
-            -timeout=10 \
-            -print_final_stats=1 \
-            tests/fuzz/corpus/${{ matrix.target }}
+        run: >-
+          ./build/fuzz/tests/fuzz/ruda_fuzz_${{ matrix.target }}
+          -max_total_time=600
+          -timeout=10
+          -print_final_stats=1
+          tests/fuzz/corpus/${{ matrix.target }}
       - name: Preserve fuzz failure inputs
         if: always()
         uses: actions/upload-artifact@v3
