@@ -58,14 +58,58 @@ per source indexing operation unless a literal or true-edge range fact proves
 it unnecessary, and replaces the following matching get/store with the
 in-bounds helper. A generated array acceptance program has seven barriers and
 seven in-bounds helpers; the `proven-bounds` generated program has five dynamic
-barriers and seven in-bounds loads. The 11/3 supplemental Apple M2 probe report is
-`../ruda-algotithms/benchmarks/results/cp22-bounds-macos-arm64-apple-m2.json`:
-`proven-bounds` median improved from 264.163 ms (CP21) to 207.477 ms (CP22),
-or 21.46%. The old algorithm-repository validator still requires a paired
-algorithm report with the identical compiler hash, so it correctly rejects
-mixing this CP22 probe report with the CP21 algorithm report; no unsupported
-budget-pass claim is made here.
+barriers and seven in-bounds loads.
 
-D057 still requires the reviewed Linux x86_64 performance result and the
-separate public-alpha Tier 1 registry. This document records local evidence
-only and does not claim either external gate as verified.
+## Pushed CI and Linux performance evidence
+
+Ruda commit `1d728451612f5ad4d6cfb78a5785b2e57605af26` is published on
+`origin/main`. Gitea Actions [run #86](http://ci.example:3000/OS/Ruda/actions/runs/86)
+completed 10/10 jobs: documentation/architecture, Linux x86_64 GCC and Clang
+Debug/Release, ASan+UBSan+LSan, TSan, and bytecode, formatter, and frontend
+fuzzing.
+
+The sibling benchmark [run #87](http://ci.example:3000/OS/ruda-algotithms/actions/runs/87)
+used that exact release compiler in paired 11-sample/3-warmup probe and
+Ruda/Go/Rust algorithm reports. Attempt 1 began at load average 14.78 on the
+four-CPU runner and transiently exceeded five old probe budgets. D056 therefore
+required one complete cool-down retry with unchanged compiler, runtime,
+protocol, manifests, source tree, resource budget, and sample schedule. The
+[retry job](http://ci.example:3000/OS/ruda-algotithms/actions/runs/87/jobs/695)
+passed every previous reviewed budget; none of the five exceedances reproduced.
+Attempt 1 remains preserved by sibling commit `2bf4f73395b84eac123ccf14d45733f3d5b6ab75`.
+The reviewed retry and both merge parents are published on sibling `origin/main`
+at `a05a1ff`.
+
+| Probe | CP21 median ms | CP22 retry median ms | Change |
+|---|---:|---:|---:|
+| `scalar-get` | 167.897 | 170.798 | +1.73% |
+| `scalar-set` | 229.951 | 167.280 | -27.25% |
+| `proven-bounds` | 424.440 | 345.294 | -18.65% |
+| `unproven-bounds` | 392.307 | 403.390 | +2.83% |
+| `growth` | 140.729 | 142.287 | +1.11% |
+| `reserved-growth` | 140.747 | 142.273 | +1.08% |
+| `density` | 694.539 | 577.399 | -16.87% |
+| `nested-traversal` | 383.643 | 313.333 | -18.33% |
+| `checked-loop` | 475.486 | 478.304 | +0.59% |
+
+The faithful algorithm corpus also remained within every old budget:
+insertion sort improved 13.72%, heap sort 7.81%, stack 1.31%, min-heap 12.43%,
+and BFS 1.37%; queue and DSU moved by less than 1.5%, while Dijkstra was 6.80%
+slower but remained below its reviewed 10% limit. The maximum retained Ruda
+noise fraction was 4.93%; the maximum in the complete Ruda/Go/Rust matrix was
+17.03%, below the D056 30% rejection threshold. All new Ruda budgets retain
+the 10% floor rather than widening a threshold for this optimization.
+
+The retry probe JSON SHA-256 is
+`819b702bc3f3c5ca382d9f957f7ed812c7b99c67afe53aaae2970c10ed704caf`;
+the paired algorithm JSON SHA-256 is
+`0bccbbfdb24ca6d5fd5f405183b021deea667d0952505f094ebb6a069cb4f7dd`;
+the reviewed budget SHA-256 is
+`0fb2f24863cf7a4c4f5483ed7c245db9d7ec594965a3b624aea84939502d4df9`.
+The supplemental Apple M2 report remains useful corroboration:
+`proven-bounds` improved from 264.163 ms to 207.477 ms, or 21.46%.
+
+Checkpoint 22 is therefore verified under D057's Linux checkpoint gate. The
+separate public-alpha registry still requires Linux arm64, macOS x86_64, and
+Windows x86_64 baselines and later post-optimization revalidation; that
+deferred release gate is not claimed here and does not block checkpoint 23.

@@ -62,8 +62,10 @@ rejects the missing Linux arm64, macOS x86_64, and Windows x86_64 baselines for
 public-alpha preparation; no optimization or semantic change is included.
 [Post-preview checkpoint 22 range-proof evidence](evidence/cp22-mir-range-proofs-2026-08-22.md)
 records the internal D058 checked-capability rewrite, hostile-bytecode proof
-rejection, and VM/native lowering coverage. It is local implementation evidence
-until the required Linux performance and Tier 1 sanitizer reports are linked.
+rejection, VM/native lowering coverage, a 10/10 pushed Linux sanitizer/fuzz CI
+matrix, and the reviewed D056 cool-down performance retry. Checkpoint 22 is
+verified under D057's Linux gate; the distinct five-platform public-alpha
+performance registry remains deferred and is not claimed complete.
 Latest earlier I4 process evidence: [preview checkpoint 12 executes the final
 local/private preview process matrix and exact VM/native observation
 comparison](evidence/cp12-final-preview-2026-08-18.md).
