@@ -899,7 +899,17 @@ cleanup:
         )) {
         goto cleanup;
     }
-    if (!ruda_function_emit_instruction(
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_LENGTH;
+    instruction.target = length;
+    instruction.first = iterable.register_id;
+    instruction.second = RUDA_MIR_NO_REGISTER;
+    instruction.third = RUDA_MIR_NO_REGISTER;
+    instruction.array = array;
+    instruction.span.start = iterable_node->start;
+    instruction.span.end = iterable_node->end;
+    if (!ruda_function_append_instruction(function, &instruction)
+        || !ruda_function_emit_instruction(
             function,
             RUDA_MIR_LESS_I64,
             RUDA_TYPE_BOOL,
@@ -938,14 +948,20 @@ cleanup:
     if (!ruda_function_add_register(function, element_type, &item_value)) {
         goto cleanup;
     }
-    if (!ruda_checker_private_array_require_generation(
-            function, array, iterable.type, iterable.register_id, generation,
-            node->start, header->end, &generation_checked
-        )) {
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_ASSUME_INDEX;
+    instruction.target = generation_checked;
+    instruction.first = iterable.register_id;
+    instruction.second = zero.register_id;
+    instruction.third = RUDA_MIR_NO_REGISTER;
+    instruction.array = array;
+    instruction.span.start = node->start;
+    instruction.span.end = header->end;
+    if (!ruda_function_append_instruction(function, &instruction)) {
         goto cleanup;
     }
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_ARRAY_GET;
+    instruction.kind = RUDA_MIR_ARRAY_GET_IN_BOUNDS;
     instruction.target = item_value;
     instruction.first = generation_checked;
     instruction.second = zero.register_id;

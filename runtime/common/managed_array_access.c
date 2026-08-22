@@ -88,6 +88,131 @@ static RudaManagedArray *ruda_managed_array_view_resolve(
     return (RudaManagedArray *)ruda_managed_array_view_resolve_const(view);
 }
 
+static RudaManagedStatus ruda_managed_array_child_object(
+    RudaManagedHeap *heap,
+    const RudaManagedArrayDescriptor *descriptor,
+    RudaManagedReference reference,
+    void **object
+) {
+    RudaManagedSlot *slot = NULL;
+    if (object != NULL) *object = NULL;
+    if (object == NULL || descriptor == NULL) {
+        return RUDA_MANAGED_INVALID_ARGUMENT;
+    }
+    slot = ruda_managed_resolve(heap, reference);
+    if (slot == NULL) return RUDA_MANAGED_INVALID_REFERENCE;
+    if (slot->kind != descriptor->reference_kind) {
+        return RUDA_MANAGED_TYPE_MISMATCH;
+    }
+    if (slot->kind == RUDA_MANAGED_OBJECT_ARRAY) {
+        if (slot->as.array == NULL
+            || slot->as.array->descriptor
+                != descriptor->reference_descriptor) {
+            return RUDA_MANAGED_TYPE_MISMATCH;
+        }
+        *object = slot->as.array;
+        return RUDA_MANAGED_OK;
+    }
+    if (slot->kind == RUDA_MANAGED_OBJECT_RECORD) {
+        if (slot->as.record == NULL
+            || slot->as.record->descriptor
+                != descriptor->reference_descriptor) {
+            return RUDA_MANAGED_TYPE_MISMATCH;
+        }
+        *object = slot->as.record;
+        return RUDA_MANAGED_OK;
+    }
+    return RUDA_MANAGED_TYPE_MISMATCH;
+}
+
+RudaManagedStatus ruda_managed_array_generated_cache_children(
+    RudaManagedHeap *heap,
+    RudaManagedReference reference,
+    RudaManagedArrayGeneratedView *view
+) {
+    RudaManagedSlot *slot = NULL;
+    RudaManagedArray *array = NULL;
+    RudaManagedArrayGeneratedChildren *resized = NULL;
+    size_t old_bytes = 0, new_bytes = 0, object_bytes = 0;
+    size_t added_bytes = 0;
+    size_t next_live_bytes = 0, index = 0;
+    RudaManagedStatus status;
+    if (view == NULL) return RUDA_MANAGED_INVALID_ARGUMENT;
+    if (!ruda_managed_heap_valid(heap) || view->object == NULL) {
+        return RUDA_MANAGED_INVALID_ARGUMENT;
+    }
+    ruda_managed_resource_failure_clear(heap);
+    slot = ruda_managed_resolve(heap, reference);
+    if (slot == NULL) return RUDA_MANAGED_INVALID_REFERENCE;
+    if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY
+        || slot->as.array != view->object) {
+        return RUDA_MANAGED_TYPE_MISMATCH;
+    }
+    array = slot->as.array;
+    if (!ruda_managed_array_descriptor_valid(array->descriptor)
+        || array->descriptor->storage_kind
+            != RUDA_MANAGED_ARRAY_STORAGE_CELL
+        || (array->descriptor->reference_kind != RUDA_MANAGED_OBJECT_ARRAY
+            && array->descriptor->reference_kind
+                != RUDA_MANAGED_OBJECT_RECORD)) {
+        return RUDA_MANAGED_TYPE_MISMATCH;
+    }
+    if (array->generated_children != NULL
+        && array->generated_children->generation
+            == array->mutation_generation
+        && array->generated_children->count == array->length) {
+        return RUDA_MANAGED_OK;
+    }
+    if (array->length == 0) return RUDA_MANAGED_OK;
+    if (array->generated_children == NULL
+        || array->generated_children->capacity < array->length) {
+        old_bytes = ruda_managed_array_child_cache_bytes(array);
+        if (!ruda_size_multiply(
+                array->length,
+                sizeof(*array->generated_children->entries), &object_bytes
+            ) || !ruda_size_add(
+                sizeof(*array->generated_children), object_bytes, &new_bytes
+            )) return RUDA_MANAGED_LIMIT_REACHED;
+        added_bytes = new_bytes - old_bytes;
+        if (!ruda_managed_add_within_limit(
+                heap->live_byte_count, added_bytes,
+                heap->options.max_live_bytes, &next_live_bytes
+            )) return ruda_managed_resource_budget_failure(
+                heap, added_bytes
+            );
+        resized = ruda_resize(
+            &heap->allocator, array->generated_children,
+            old_bytes, new_bytes
+        );
+        if (resized == NULL) {
+            return ruda_managed_resource_host_failure(heap, new_bytes);
+        }
+        memset((unsigned char *)resized + old_bytes, 0,
+            new_bytes - old_bytes);
+        array->generated_children = resized;
+        array->generated_children->capacity = array->length;
+        heap->live_byte_count = next_live_bytes;
+    }
+    for (index = 0; index < array->length; index += 1) {
+        RudaManagedCell child;
+        void *object = NULL;
+        ruda_managed_array_storage_read_unchecked(array, index, &child);
+        status = ruda_managed_array_child_object(
+            heap, array->descriptor, child.reference, &object
+        );
+        if (status != RUDA_MANAGED_OK) return status;
+        array->generated_children->entries[index].object = object;
+        if (array->descriptor->reference_kind
+            == RUDA_MANAGED_OBJECT_ARRAY) {
+            array->generated_children->entries[index].array_snapshot =
+                *(RudaManagedArray *)object;
+        }
+    }
+    array->generated_children->count = array->length;
+    array->generated_children->generation = array->mutation_generation;
+    return RUDA_MANAGED_OK;
+}
+
 RudaManagedStatus ruda_managed_array_view_bind(
     RudaManagedHeap *heap,
     RudaManagedReference reference,
@@ -110,8 +235,16 @@ RudaManagedStatus ruda_managed_array_view_bind(
     view->descriptor = expected;
     view->object = array;
     view->length = &array->length;
+    view->capacity = &array->capacity;
     view->mutation_generation = &array->mutation_generation;
     view->storage = &array->storage;
+    heap->cached_array_reference = reference;
+    heap->cached_array_descriptor = expected;
+    heap->cached_array_object = view->object;
+    heap->cached_array_length = view->length;
+    heap->cached_array_capacity = view->capacity;
+    heap->cached_array_mutation_generation = view->mutation_generation;
+    heap->cached_array_storage = view->storage;
     return RUDA_MANAGED_OK;
 }
 

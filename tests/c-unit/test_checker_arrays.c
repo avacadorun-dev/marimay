@@ -759,9 +759,9 @@ static void ruda_test_checker_arrays_for_of(void) {
             RUDA_EXPECT(ruda_mir_verify(&function->mir) == RUDA_MIR_VERIFY_OK);
             RUDA_EXPECT(ruda_checker_arrays_instruction_count(
                 &function->mir, RUDA_MIR_ARRAY_LENGTH
-            ) == 1);
+            ) == 2);
             RUDA_EXPECT(ruda_checker_arrays_instruction_count(
-                &function->mir, RUDA_MIR_ARRAY_GET
+                &function->mir, RUDA_MIR_ARRAY_GET_IN_BOUNDS
             ) == 1);
             RUDA_EXPECT(ruda_check_interpret_function(
                 &checked, index, NULL, 0, ruda_system_allocator(),

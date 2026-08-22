@@ -117,5 +117,12 @@ RudaManagedStatus ruda_managed_array_reserve(
     RudaManagedReference array,
     int64_t additional
 );
+/* Internal generated-code primitive for a verified repeated RAW64 push loop. */
+RudaManagedStatus ruda_managed_array_fill_raw64_pushes(
+    RudaManagedHeap *heap,
+    RudaManagedReference array,
+    size_t count,
+    uint64_t bits
+);
 
 #endif

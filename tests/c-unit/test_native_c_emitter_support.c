@@ -374,6 +374,15 @@ void ruda_test_native_compile_and_run_configured(
                 expected_output,
                 process.output.length
             ) != 0) {
+            (void)fprintf(
+                stderr,
+                "native generated program mismatch at %s: exit=%u signal=%d output-bytes=%zu expected-bytes=%zu\n",
+                optimizations[optimization_index],
+                process.exit_code,
+                process.signaled ? 1 : 0,
+                process.output.length,
+                strlen(expected_output)
+            );
             (void)fwrite(process.output.data, 1, process.output.length, stderr);
         }
         ruda_process_result_dispose(&process);

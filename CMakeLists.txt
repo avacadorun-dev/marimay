@@ -365,6 +365,10 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/native/build.c
   bootstrap/src/native/runtime_artifact.c
   bootstrap/src/native/c_emitter.c
+  bootstrap/src/native/c_emitter_array_fill.c
+  bootstrap/src/native/c_emitter_bounds.c
+  bootstrap/src/native/c_emitter_relations.c
+  bootstrap/src/native/c_emitter_value_ranges.c
   bootstrap/src/native/c_emitter_array_mutation.c
   bootstrap/src/native/c_emitter_descriptors.c
   bootstrap/src/native/c_emitter_defer.c
@@ -373,6 +377,7 @@ add_library(ruda_bootstrap STATIC
     bootstrap/src/native/c_emitter_format.c
     bootstrap/src/native/c_emitter_io.c
   bootstrap/src/native/c_emitter_managed.c
+  bootstrap/src/native/c_emitter_roots.c
   bootstrap/src/native/c_emitter_range.c
   bootstrap/src/native/c_emitter_numeric.c
   bootstrap/src/native/c_emitter_validate.c

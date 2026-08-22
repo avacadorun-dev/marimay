@@ -284,7 +284,7 @@ static void ruda_test_native_nominal_boundary_cases(void) {
         program.functions = functions;
         program.function_count = function_count;
         program.entry_symbol = main->mir.symbol;
-        for (index = 0; index < 32; index += 1) {
+        for (index = 0; index < 4096; index += 1) {
             RudaFailAllocator state;
             RudaOwnedBytes output;
             RudaNativeCEmitStatus status;
@@ -320,13 +320,13 @@ static void ruda_test_native_nominal_boundary_cases(void) {
             &generated
         ) == RUDA_NATIVE_C_EMIT_OK);
         RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "RudaManagedRecordView ruda_g_rv_0 = {0};"
+            &generated, "RudaManagedRecordGeneratedView ruda_g_rv_0 = {0};"
         ));
         RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "ruda_managed_record_view_bind("
+            &generated, "ruda_managed_record_generated_bind("
         ));
         RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "ruda_g_rv_0.fields["
+            &generated, "ruda_g_rv_0.object->fields["
         ));
         RUDA_EXPECT(ruda_test_native_contains(
             &generated, "RudaManagedReference *ruda_g_location_storage["

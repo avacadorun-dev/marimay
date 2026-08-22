@@ -75,6 +75,19 @@ const RudaMirArrayArgument *ruda_native_c_array_argument(
 const char *ruda_native_c_array_descriptor(const RudaMirFunction *function,
     RudaTypeId type);
 size_t ruda_native_c_managed_register_count(const RudaMirFunction *function);
+bool ruda_native_c_function_requires_roots(
+    const RudaMirFunction *function,
+    const RudaMirFunction *const *functions,
+    size_t count,
+    size_t depth);
+bool ruda_native_c_plan_root_registers(
+    const RudaMirFunction *function,
+    const RudaMirFunction *const *functions,
+    size_t count,
+    RudaAllocator allocator,
+    unsigned char **registers,
+    size_t *register_bytes,
+    size_t *root_count);
 bool ruda_native_c_find_managed_layout(
     const RudaMirFunction *const *functions, size_t count, RudaTypeId type,
     RudaNativeCManagedLayout *result);
@@ -105,9 +118,11 @@ bool ruda_native_c_function_index(const RudaMirFunction *const *functions,
 bool ruda_native_c_has_cycle(const RudaMirFunction *const *functions,
     size_t count, unsigned char *states, RudaNativeCCycleFrame *stack);
 bool ruda_native_c_emit_signature(RudaNativeCBuffer *buffer,
-    const RudaMirFunction *function, bool prototype);
+    const RudaMirFunction *function,
+    const RudaMirFunction *const *functions, size_t count, bool prototype);
 bool ruda_native_c_emit_call_arguments(
     RudaNativeCBuffer *buffer, const RudaMirFunction *function,
+    const RudaMirFunction *const *functions, size_t count,
     const RudaMirCall *call);
 bool ruda_native_c_emit_propagate_call(
     RudaNativeCBuffer *buffer, RudaSymbolId symbol, RudaMirSpan span,
@@ -125,10 +140,81 @@ bool ruda_native_c_emit_array_mutation_instruction(
 bool ruda_native_c_emit_range_instruction(
     RudaNativeCBuffer *buffer,
     const RudaMirFunction *function,
+    const RudaMirFunction *const *functions,
+    size_t function_count,
     const RudaMirBlock *block,
     size_t instruction_index,
     const RudaMirInstruction *instruction
 );
+bool ruda_native_c_batch_scalar_mutation(
+    const RudaMirFunction *function);
+bool ruda_native_c_array_register_unmodified(
+    const RudaMirFunction *function,
+    RudaMirRegister register_id);
+bool ruda_native_c_array_register_origin(
+    const RudaMirFunction *function,
+    RudaMirRegister register_id,
+    RudaMirRegister *origin);
+bool ruda_native_c_array_view_known(
+    const RudaMirFunction *function,
+    RudaMirRegister register_id);
+bool ruda_native_c_array_children_parameter(
+    const RudaMirFunction *function,
+    const RudaMirFunction *const *functions,
+    size_t function_count,
+    RudaMirRegister parameter);
+bool ruda_native_c_array_generation_unobserved(
+    const RudaMirFunction *function,
+    RudaMirRegister register_id);
+bool ruda_native_c_array_fill_plan(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    RudaMirRegister *count,
+    RudaMirRegister *index,
+    uint64_t *bits,
+    RudaMirBlockId *exit_block);
+bool ruda_native_c_array_fill_count(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    RudaMirRegister array_register,
+    RudaMirRegister *count);
+bool ruda_native_c_array_filled_index_proven(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    RudaMirRegister array_register,
+    RudaMirRegister index_register);
+bool ruda_native_c_array_guarded_index_proven(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction,
+    RudaMirRegister array_register,
+    RudaMirRegister index_register);
+bool ruda_native_c_array_relational_index_proven(
+    const RudaMirFunction *function,
+    const RudaMirFunction *const *functions,
+    size_t function_count,
+    const RudaMirInstruction *instruction,
+    RudaMirRegister array_register,
+    RudaMirRegister index_register);
+bool ruda_native_c_array_loaded_index_proven(
+    const RudaMirFunction *function,
+    const RudaMirFunction *const *functions,
+    size_t function_count,
+    const RudaMirInstruction *instruction,
+    RudaMirRegister array_register,
+    RudaMirRegister index_register);
+bool ruda_native_c_subtract_one_proven(
+    const RudaMirFunction *function,
+    const RudaMirFunction *const *functions,
+    size_t function_count,
+    const RudaMirInstruction *instruction);
+bool ruda_native_c_add_one_proven(
+    const RudaMirFunction *function,
+    const RudaMirFunction *const *functions,
+    size_t function_count,
+    const RudaMirInstruction *instruction);
+bool ruda_native_c_negate_proven(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction);
 bool ruda_native_c_method_possible(
     const RudaMirFunction *const *functions, size_t count,
     RudaTypeId interface_type, uint32_t slot, size_t target);
@@ -143,6 +229,15 @@ bool ruda_native_c_write_from_managed_cell(
     RudaNativeCBuffer *buffer, RudaTypeId type, RudaMirRegister target);
 bool ruda_native_c_write_to_managed_cell(
     RudaNativeCBuffer *buffer, RudaTypeId type, RudaMirRegister source);
+bool ruda_native_c_enum_construction_immediate(
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction
+);
+bool ruda_native_c_immediate_enum_id(
+    const RudaMirFunction *const *functions,
+    size_t count,
+    RudaTypeId type,
+    uint32_t *result);
 bool ruda_native_c_emit_numeric_instruction(
     RudaNativeCBuffer *buffer, const RudaMirFunction *function,
     const RudaMirInstruction *instruction);
@@ -157,7 +252,7 @@ bool ruda_native_c_emit_test_output_instruction(
     const RudaMirInstruction *instruction);
 bool ruda_native_c_emit_function(RudaNativeCBuffer *buffer,
     const RudaMirFunction *function, const RudaMirFunction *const *functions,
-    size_t count);
+    size_t count, const unsigned char *root_registers, size_t root_count);
 bool ruda_native_c_emit_symbol_and_strings(RudaNativeCBuffer *buffer,
     const RudaMirFunction *function);
 bool ruda_native_c_emit_runtime(

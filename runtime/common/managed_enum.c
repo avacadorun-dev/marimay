@@ -3,6 +3,183 @@
 #include <limits.h>
 #include <string.h>
 
+static bool ruda_managed_enum_variant_is_immediate(
+    const RudaManagedEnumDescriptor *descriptor,
+    size_t variant
+) {
+    const RudaManagedEnumVariantDescriptor *selected = NULL;
+    if (descriptor == NULL || descriptor->variant_count != 2
+        || descriptor->variants == NULL || variant >= 2) {
+        return false;
+    }
+    selected = &descriptor->variants[variant];
+    if (selected->payload_count == 0) {
+        return selected->payloads == NULL;
+    }
+    return selected->payload_count == 1 && selected->payloads != NULL
+        && selected->payloads[0].cell_kind == RUDA_MANAGED_CELL_RAW64
+        && !selected->payloads[0].is_mutable
+        && selected->payloads[0].reference_kind == RUDA_MANAGED_OBJECT_INVALID
+        && selected->payloads[0].reference_descriptor == NULL;
+}
+
+static RudaManagedStatus ruda_managed_immediate_enum_descriptor_id(
+    RudaManagedHeap *heap,
+    const RudaManagedEnumDescriptor *descriptor,
+    uint32_t *result
+) {
+    size_t index = 0;
+    size_t old_bytes = 0;
+    size_t new_bytes = 0;
+    size_t capacity = 0;
+    const RudaManagedEnumDescriptor **resized = NULL;
+    if (heap->immediate_enum_last_descriptor == descriptor
+        && heap->immediate_enum_last_id != 0) {
+        *result = heap->immediate_enum_last_id;
+        return RUDA_MANAGED_OK;
+    }
+    for (index = 0; index < heap->immediate_enum_descriptor_count;
+        index += 1) {
+        if (heap->immediate_enum_descriptors[index] == descriptor) {
+            *result = (uint32_t)index + UINT32_C(1);
+            heap->immediate_enum_last_descriptor = descriptor;
+            heap->immediate_enum_last_id = *result;
+            return RUDA_MANAGED_OK;
+        }
+    }
+    if (heap->immediate_enum_descriptor_count
+        >= RUDA_MANAGED_IMMEDIATE_DESCRIPTOR_MAX) {
+        return RUDA_MANAGED_LIMIT_REACHED;
+    }
+    if (heap->immediate_enum_descriptor_count
+        == heap->immediate_enum_descriptor_capacity) {
+        capacity = heap->immediate_enum_descriptor_capacity == 0
+            ? 8 : heap->immediate_enum_descriptor_capacity * 2;
+        if (capacity < heap->immediate_enum_descriptor_capacity
+            || capacity > RUDA_MANAGED_IMMEDIATE_DESCRIPTOR_MAX
+            || !ruda_size_multiply(
+                heap->immediate_enum_descriptor_capacity,
+                sizeof(*heap->immediate_enum_descriptors),
+                &old_bytes
+            ) || !ruda_size_multiply(
+                capacity,
+                sizeof(*heap->immediate_enum_descriptors),
+                &new_bytes
+            )) {
+            return RUDA_MANAGED_LIMIT_REACHED;
+        }
+        resized = ruda_resize(
+            &heap->allocator,
+            heap->immediate_enum_descriptors,
+            old_bytes,
+            new_bytes
+        );
+        if (resized == NULL) {
+            return ruda_managed_resource_host_failure(heap, new_bytes);
+        }
+        heap->immediate_enum_descriptors = resized;
+        heap->immediate_enum_descriptor_capacity = capacity;
+    }
+    index = heap->immediate_enum_descriptor_count;
+    heap->immediate_enum_descriptors[index] = descriptor;
+    heap->immediate_enum_descriptor_count += 1;
+    *result = (uint32_t)index + UINT32_C(1);
+    heap->immediate_enum_last_descriptor = descriptor;
+    heap->immediate_enum_last_id = *result;
+    return RUDA_MANAGED_OK;
+}
+
+RudaManagedStatus ruda_managed_enum_register_immediate_descriptor(
+    RudaManagedHeap *heap,
+    const RudaManagedEnumDescriptor *descriptor,
+    uint32_t *descriptor_id
+) {
+    size_t variant = 0;
+    bool eligible = false;
+    if (!ruda_managed_heap_valid(heap) || descriptor == NULL
+        || descriptor_id == NULL || descriptor->variant_count != 2
+        || descriptor->variants == NULL) {
+        return RUDA_MANAGED_INVALID_ARGUMENT;
+    }
+    for (variant = 0; variant < descriptor->variant_count; variant += 1) {
+        eligible = eligible
+            || ruda_managed_enum_variant_is_immediate(descriptor, variant);
+    }
+    return eligible
+        ? ruda_managed_immediate_enum_descriptor_id(
+            heap, descriptor, descriptor_id
+        )
+        : RUDA_MANAGED_INVALID_ARGUMENT;
+}
+
+static RudaManagedStatus ruda_managed_immediate_enum_new(
+    RudaManagedHeap *heap,
+    const RudaManagedEnumDescriptor *descriptor,
+    size_t variant,
+    const RudaManagedCell *payload,
+    size_t payload_count,
+    RudaManagedReference *result
+) {
+    uint32_t descriptor_id = 0;
+    uint64_t payload_bits = payload_count == 0 ? 0 : payload[0].f64_bits;
+    RudaManagedStatus status = ruda_managed_immediate_enum_descriptor_id(
+        heap, descriptor, &descriptor_id
+    );
+    if (status != RUDA_MANAGED_OK) {
+        return status;
+    }
+    result->heap_provenance = heap->provenance
+        | (uint64_t)(descriptor_id << RUDA_MANAGED_IMMEDIATE_DESCRIPTOR_SHIFT)
+        | (uint64_t)((uint32_t)variant
+            << RUDA_MANAGED_IMMEDIATE_VARIANT_SHIFT)
+        | RUDA_MANAGED_IMMEDIATE_TAG;
+    result->slot = (uint32_t)payload_bits;
+    result->generation = (uint32_t)(payload_bits >> 32U);
+    return RUDA_MANAGED_OK;
+}
+
+bool ruda_managed_immediate_enum_decode(
+    const RudaManagedHeap *heap,
+    RudaManagedReference reference,
+    const RudaManagedEnumDescriptor **descriptor,
+    size_t *variant,
+    uint64_t *payload_bits
+) {
+    uint32_t tag = (uint32_t)reference.heap_provenance;
+    uint32_t descriptor_id = tag >> RUDA_MANAGED_IMMEDIATE_DESCRIPTOR_SHIFT;
+    if (!ruda_managed_heap_valid(heap)
+        || (reference.heap_provenance
+            & RUDA_MANAGED_IMMEDIATE_PROVENANCE_MASK) != heap->provenance
+        || (tag & RUDA_MANAGED_IMMEDIATE_TAG) == 0
+        || descriptor_id == 0
+        || descriptor_id > heap->immediate_enum_descriptor_count
+        || heap->immediate_enum_descriptors == NULL
+        || heap->immediate_enum_descriptors[descriptor_id - 1] == NULL) {
+        return false;
+    }
+    if (descriptor != NULL) {
+        *descriptor = heap->immediate_enum_descriptors[descriptor_id - 1];
+    }
+    if (variant != NULL) {
+        *variant = (tag >> RUDA_MANAGED_IMMEDIATE_VARIANT_SHIFT) & UINT32_C(1);
+    }
+    if (payload_bits != NULL) {
+        *payload_bits = (uint64_t)reference.slot
+            | ((uint64_t)reference.generation << 32U);
+    }
+    return true;
+}
+
+bool ruda_managed_reference_valid(
+    const RudaManagedHeap *heap,
+    RudaManagedReference reference
+) {
+    return ruda_managed_resolve_const(heap, reference) != NULL
+        || ruda_managed_immediate_enum_decode(
+            heap, reference, NULL, NULL, NULL
+        );
+}
+
 RudaManagedStatus ruda_managed_enum_new(
     RudaManagedHeap *heap,
     const RudaManagedEnumDescriptor *descriptor,
@@ -41,6 +218,11 @@ RudaManagedStatus ruda_managed_enum_new(
         if (status != RUDA_MANAGED_OK) {
             return status;
         }
+    }
+    if (ruda_managed_enum_variant_is_immediate(descriptor, variant)) {
+        return ruda_managed_immediate_enum_new(
+            heap, descriptor, variant, payload, payload_count, result
+        );
     }
     if (!ruda_size_multiply(
             payload_count,
@@ -127,6 +309,11 @@ RudaManagedStatus ruda_managed_enum_describe(
         || variant == NULL) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
+    if (ruda_managed_immediate_enum_decode(
+            heap, value, descriptor, variant, NULL
+        )) {
+        return RUDA_MANAGED_OK;
+    }
     slot = ruda_managed_resolve_const(heap, value);
     if (slot == NULL) {
         return RUDA_MANAGED_INVALID_REFERENCE;
@@ -152,6 +339,15 @@ RudaManagedStatus ruda_managed_enum_is_variant(
     }
     if (!ruda_managed_heap_valid(heap) || result == NULL) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
+    }
+    {
+        size_t actual_variant = 0;
+        if (ruda_managed_immediate_enum_decode(
+                heap, value, NULL, &actual_variant, NULL
+            )) {
+            *result = actual_variant == variant;
+            return RUDA_MANAGED_OK;
+        }
     }
     slot = ruda_managed_resolve_const(heap, value);
     if (slot == NULL) {
@@ -179,6 +375,25 @@ RudaManagedStatus ruda_managed_enum_get_payload(
     }
     if (!ruda_managed_heap_valid(heap) || result == NULL) {
         return RUDA_MANAGED_INVALID_ARGUMENT;
+    }
+    {
+        const RudaManagedEnumDescriptor *descriptor = NULL;
+        size_t actual_variant = 0;
+        uint64_t payload_bits = 0;
+        if (ruda_managed_immediate_enum_decode(
+                heap, value, &descriptor, &actual_variant, &payload_bits
+            )) {
+            if (actual_variant != variant
+                || variant >= descriptor->variant_count) {
+                return RUDA_MANAGED_TYPE_MISMATCH;
+            }
+            selected = &descriptor->variants[variant];
+            if (field >= selected->payload_count) {
+                return RUDA_MANAGED_BOUNDS;
+            }
+            result->f64_bits = payload_bits;
+            return RUDA_MANAGED_OK;
+        }
     }
     slot = ruda_managed_resolve_const(heap, value);
     if (slot == NULL) {

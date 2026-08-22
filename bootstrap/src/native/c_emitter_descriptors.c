@@ -430,6 +430,117 @@ static bool ruda_native_c_layout_is_canonical(
         && canonical.kind == layout.kind && canonical.index == layout.index;
 }
 
+static bool ruda_native_c_enum_has_immediate_variant(
+    const RudaMirFunction *function, const RudaMirEnum *enumeration
+) {
+    size_t index = 0;
+    if (function == NULL || enumeration == NULL
+        || enumeration->variant_count != 2) return false;
+    for (index = 0; index < enumeration->variant_count; index += 1) {
+        const RudaMirEnumVariant *variant = ruda_vector_at_const(
+            &function->enum_variants, enumeration->variant_start + index
+        );
+        const RudaMirEnumPayload *payload = variant != NULL
+                && variant->payload_count == 1
+            ? ruda_vector_at_const(
+                &function->enum_payloads, variant->payload_start
+            ) : NULL;
+        if (variant != NULL && (variant->payload_count == 0
+            || (variant->payload_count == 1 && payload != NULL
+                && payload->type > RUDA_TYPE_INVALID
+                && payload->type < RUDA_TYPE_FIRST_DYNAMIC
+                && payload->type != RUDA_TYPE_STRING
+                && payload->type != RUDA_TYPE_VOID
+                && payload->type != RUDA_TYPE_NEVER))) return true;
+    }
+    return false;
+}
+
+bool ruda_native_c_immediate_enum_id(
+    const RudaMirFunction *const *functions,
+    size_t count,
+    RudaTypeId type,
+    uint32_t *result
+) {
+    size_t function_index = 0;
+    uint32_t next = 0;
+    if (functions == NULL || result == NULL) return false;
+    for (function_index = 0; function_index < count; function_index += 1) {
+        const RudaMirFunction *function = functions[function_index];
+        size_t index = 0;
+        for (index = 0; function != NULL && index < function->enums.length;
+            index += 1) {
+            const RudaMirEnum *enumeration = ruda_vector_at_const(
+                &function->enums, index
+            );
+            RudaNativeCManagedLayout layout = {
+                function, RUDA_NATIVE_C_MANAGED_ENUM, index
+            };
+            if (enumeration != NULL
+                && ruda_native_c_layout_is_canonical(
+                    functions, count, layout, enumeration->type
+                ) && ruda_native_c_enum_has_immediate_variant(
+                    function, enumeration
+                )) {
+                if (next == UINT32_C(0x3fffffff)) {
+                    return false;
+                }
+                next += UINT32_C(1);
+                if (enumeration->type == type) {
+                    *result = next;
+                    return true;
+                }
+            }
+        }
+    }
+    return false;
+}
+
+static bool ruda_native_c_emit_immediate_enum_registration(
+    RudaNativeCBuffer *buffer,
+    const RudaMirFunction *const *functions,
+    size_t count
+) {
+    size_t function_index = 0;
+    uint32_t expected = 0;
+    if (!ruda_native_c_write(
+            buffer,
+            "static RudaManagedStatus ruda_g_register_immediate_enums(RudaManagedHeap *ruda_g_heap) { RudaManagedStatus ruda_g_status = RUDA_MANAGED_OK; uint32_t ruda_g_id = 0; (void)ruda_g_heap; (void)ruda_g_status; (void)ruda_g_id;\n"
+        )) return false;
+    for (function_index = 0; function_index < count; function_index += 1) {
+        const RudaMirFunction *function = functions[function_index];
+        size_t index = 0;
+        for (index = 0; function != NULL && index < function->enums.length;
+            index += 1) {
+            const RudaMirEnum *enumeration = ruda_vector_at_const(
+                &function->enums, index
+            );
+            RudaNativeCManagedLayout layout = {
+                function, RUDA_NATIVE_C_MANAGED_ENUM, index
+            };
+            if (enumeration != NULL
+                && ruda_native_c_layout_is_canonical(
+                    functions, count, layout, enumeration->type
+                ) && ruda_native_c_enum_has_immediate_variant(
+                    function, enumeration
+                )) {
+                expected += UINT32_C(1);
+                if (!ruda_native_c_write(
+                        buffer,
+                        "  ruda_g_status = ruda_managed_enum_register_immediate_descriptor(ruda_g_heap, &"
+                    ) || !ruda_native_c_write_descriptor_name(
+                        buffer, layout.kind, enumeration->type
+                    ) || !ruda_native_c_write(
+                        buffer,
+                        ", &ruda_g_id); if (ruda_g_status != RUDA_MANAGED_OK || ruda_g_id != UINT32_C(%u)) return ruda_g_status == RUDA_MANAGED_OK ? RUDA_MANAGED_TYPE_MISMATCH : ruda_g_status;\n",
+                        (unsigned int)expected
+                    )) return false;
+            }
+        }
+    }
+    return ruda_native_c_write(buffer, "  return RUDA_MANAGED_OK; }\n\n");
+}
+
 static bool ruda_native_c_emit_array_element_descriptor(
     RudaNativeCBuffer *buffer,
     const RudaMirFunction *const *functions,
@@ -791,6 +902,9 @@ bool ruda_native_c_emit_managed_descriptors(
         }
     }
     if (!ruda_native_c_emit_interface_tables(buffer, functions, count)
+        || !ruda_native_c_emit_immediate_enum_registration(
+            buffer, functions, count
+        )
         || !ruda_native_c_write(
             buffer, "static void ruda_g_keep_managed(void) {\n"
         )) return false;
@@ -831,6 +945,40 @@ bool ruda_native_c_emit_managed_descriptors(
     return ruda_native_c_write(buffer, "}\n\n");
 }
 
+static bool ruda_native_c_record_array_field_used(
+    const RudaMirFunction *function,
+    RudaMirRegister parameter,
+    size_t field
+) {
+    size_t block_index = 0;
+    if (function == NULL) return false;
+    for (block_index = 0; block_index < function->blocks.length;
+        block_index += 1) {
+        const RudaMirBlock *block = ruda_vector_at_const(
+            &function->blocks, block_index
+        );
+        size_t instruction_index = 0;
+        if (block == NULL) return false;
+        for (instruction_index = 0;
+            instruction_index < block->instructions.length;
+            instruction_index += 1) {
+            const RudaMirInstruction *instruction = ruda_vector_at_const(
+                &block->instructions, instruction_index
+            );
+            if (instruction != NULL
+                && instruction->kind == RUDA_MIR_RECORD_GET
+                && instruction->first == parameter
+                && instruction->field == field
+                && ruda_native_c_register_array(
+                    function, instruction->target
+                ) != NULL) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 bool ruda_native_c_emit_managed_parameter_check(
     RudaNativeCBuffer *buffer,
     const RudaMirFunction *function,
@@ -851,7 +999,7 @@ bool ruda_native_c_emit_managed_parameter_check(
     if (layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
         return ruda_native_c_write(
             buffer,
-            "  ruda_g_m = ruda_managed_array_view_bind(&ruda_g_x->heap, ruda_g_v_%zu, %s, &ruda_g_av_%zu); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n",
+            "  ruda_g_m = ruda_managed_array_generated_bind(&ruda_g_x->heap, ruda_g_v_%zu, %s, &ruda_g_av_%zu); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n",
             parameter,
             ruda_native_c_array_descriptor(layout.function, *type),
             parameter
@@ -863,7 +1011,8 @@ bool ruda_native_c_emit_managed_parameter_check(
         size_t field_index = 0;
         if (!ruda_native_c_write(
                 buffer,
-                "  ruda_g_m = ruda_managed_record_view_bind(&ruda_g_x->heap, ruda_g_v_%zu, &",
+                "  if (ruda_g_ro_%zu != NULL) { ruda_g_rv_%zu.reference = ruda_g_v_%zu; ruda_g_rv_%zu.object = ruda_g_ro_%zu; ruda_g_m = ruda_g_ro_%zu->descriptor == &",
+                parameter, parameter, parameter, parameter, parameter,
                 parameter
             ) || !ruda_native_c_write_descriptor_name(
                 buffer, layout.kind, *type
@@ -872,7 +1021,13 @@ bool ruda_native_c_emit_managed_parameter_check(
         }
         if (!ruda_native_c_write(
                 buffer,
-                ", &ruda_g_rv_%zu); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n",
+                " ? RUDA_MANAGED_OK : RUDA_MANAGED_TYPE_MISMATCH; } else { ruda_g_m = ruda_managed_record_generated_bind(&ruda_g_x->heap, ruda_g_v_%zu, &",
+                parameter
+            ) || !ruda_native_c_write_descriptor_name(
+                buffer, layout.kind, *type
+            ) || !ruda_native_c_write(
+                buffer,
+                ", &ruda_g_rv_%zu); } if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n",
                 parameter
             ) || record == NULL) {
             return false;
@@ -884,12 +1039,22 @@ bool ruda_native_c_emit_managed_parameter_check(
                 record->field_start + field_index
             );
             RudaNativeCManagedLayout field_layout;
-            if (field != NULL && ruda_native_c_find_managed_layout(
+            if (field != NULL
+                && ruda_native_c_record_array_field_used(
+                    function, (RudaMirRegister)parameter, field_index
+                ) && ruda_native_c_find_managed_layout(
                     functions, count, field->type, &field_layout
                 ) && field_layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY
                 && !ruda_native_c_write(
                     buffer,
-                    "  ruda_g_m = ruda_managed_array_view_bind(&ruda_g_x->heap, ruda_g_rv_%zu.fields[%zu].reference, %s, &ruda_g_rv_%zu_f_%zu); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n",
+                    "  if (ruda_g_ro_%zu_f_%zu != NULL) { ruda_g_rv_%zu_f_%zu.object = ruda_g_ro_%zu_f_%zu; ruda_g_m = ruda_g_ro_%zu_f_%zu->descriptor == %s ? RUDA_MANAGED_OK : RUDA_MANAGED_TYPE_MISMATCH; } else { ruda_g_m = ruda_managed_array_generated_bind(&ruda_g_x->heap, ruda_g_rv_%zu.object->fields[%zu].reference, %s, &ruda_g_rv_%zu_f_%zu); } if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n",
+                    parameter, field_index,
+                    parameter, field_index,
+                    parameter, field_index,
+                    parameter, field_index,
+                    ruda_native_c_array_descriptor(
+                        field_layout.function, field->type
+                    ),
                     parameter, field_index,
                     ruda_native_c_array_descriptor(
                         field_layout.function, field->type

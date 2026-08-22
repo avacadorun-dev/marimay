@@ -22,6 +22,7 @@ typedef struct RudaManagedArrayView {
     const RudaManagedArrayDescriptor *descriptor;
     void *object;
     size_t *length;
+    size_t *capacity;
     uint64_t *mutation_generation;
     unsigned char **storage;
 } RudaManagedArrayView;

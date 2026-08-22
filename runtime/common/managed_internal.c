@@ -110,6 +110,7 @@ size_t ruda_managed_slot_object_bytes(const RudaManagedSlot *slot) {
             return slot->as.array != NULL
                 ? sizeof(RudaManagedArray)
                     + ruda_managed_array_storage_bytes(slot->as.array)
+                    + ruda_managed_array_child_cache_bytes(slot->as.array)
                 : 0;
         case RUDA_MANAGED_OBJECT_STRING:
             return slot->as.string != NULL
@@ -494,6 +495,16 @@ RudaManagedStatus ruda_managed_validate_field(
     if (ruda_managed_reference_is_invalid(value.reference)) {
         return RUDA_MANAGED_INVALID_REFERENCE;
     }
+    if (field->reference_kind == RUDA_MANAGED_OBJECT_ENUM) {
+        const RudaManagedEnumDescriptor *descriptor = NULL;
+        if (ruda_managed_immediate_enum_decode(
+                heap, value.reference, &descriptor, NULL, NULL
+            )) {
+            return field->reference_descriptor == descriptor
+                ? RUDA_MANAGED_OK
+                : RUDA_MANAGED_TYPE_MISMATCH;
+        }
+    }
     slot = ruda_managed_resolve_const(heap, value.reference);
     if (slot == NULL) {
         return RUDA_MANAGED_INVALID_REFERENCE;
@@ -554,6 +565,12 @@ RudaManagedStatus ruda_managed_object_kind(
     }
     slot = ruda_managed_resolve_const(heap, reference);
     if (slot == NULL) {
+        if (ruda_managed_immediate_enum_decode(
+                heap, reference, NULL, NULL, NULL
+            )) {
+            *kind = RUDA_MANAGED_OBJECT_ENUM;
+            return RUDA_MANAGED_OK;
+        }
         return RUDA_MANAGED_INVALID_REFERENCE;
     }
     *kind = slot->kind;

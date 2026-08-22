@@ -181,13 +181,13 @@ static void ruda_test_native_access_case(
         &generated, "ruda_managed_array_access_set("
     ) == 0);
     RUDA_EXPECT(ruda_test_native_contains(
-        &generated, "ruda_managed_array_view_bind("
+        &generated, "ruda_managed_array_generated_bind("
     ));
     RUDA_EXPECT(ruda_test_native_contains(
-        &generated, "memcpy(&ruda_g_bits, *ruda_g_av_"
+        &generated, "ruda_managed_array_generated_get_scalar("
     ));
     RUDA_EXPECT(ruda_test_native_contains(
-        &generated, "memcpy(*ruda_g_av_"
+        &generated, "ruda_managed_array_generated_set_scalar_untracked("
     ));
     RUDA_EXPECT(!ruda_test_native_contains(
         &generated, "ruda_managed_array_view_get_raw64_fast("
@@ -195,7 +195,7 @@ static void ruda_test_native_access_case(
     RUDA_EXPECT(!ruda_test_native_contains(
         &generated, "ruda_managed_array_view_set_raw64_fast("
     ));
-    RUDA_EXPECT(ruda_test_native_contains(
+    RUDA_EXPECT(!ruda_test_native_contains(
         &generated, "RudaManagedReference *ruda_g_location_storage["
     ));
     RUDA_EXPECT(ruda_test_native_contains(

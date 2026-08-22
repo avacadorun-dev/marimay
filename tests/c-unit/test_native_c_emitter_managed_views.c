@@ -82,26 +82,27 @@ void ruda_test_native_c_emitter_managed_views(void) {
             ruda_native_c_emit_default_options(), &generated
         ) == RUDA_NATIVE_C_EMIT_OK);
         RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "RudaManagedRecordView ruda_g_rv_0 = {0};"
+            &generated, "RudaManagedRecordGeneratedView ruda_g_rv_0 = {0};"
         ));
         RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "RudaManagedArrayView ruda_g_rv_0_f_0 = {0};"
+            &generated,
+            "RudaManagedArrayGeneratedView ruda_g_rv_0_f_0 = {0};"
         ));
         RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "ruda_g_rv_0.fields[0].reference"
+            &generated, "ruda_g_rv_0.object->fields[0].reference"
         ));
         RUDA_EXPECT(ruda_test_native_contains(
             &generated, "&ruda_g_rv_0_f_0"
         ));
         RUDA_EXPECT(ruda_test_native_contains(
             &generated,
-            "ruda_managed_reference_equal(ruda_g_rv_0.fields[0].reference"
+            "ruda_managed_array_generated_bind(&ruda_g_x->heap, ruda_g_rv_0.object->fields[0].reference"
         ));
         RUDA_EXPECT(ruda_test_native_contains(
             &generated, "= ruda_g_rv_0_f_0;"
         ));
         RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "memcpy(&ruda_g_bits, *ruda_g_av_"
+            &generated, "ruda_managed_array_generated_get_scalar("
         ));
         RUDA_EXPECT(ruda_test_native_contains(
             &generated,

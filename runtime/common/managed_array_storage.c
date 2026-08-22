@@ -96,6 +96,18 @@ size_t ruda_managed_array_storage_bytes(const RudaManagedArray *array) {
         ) ? bytes : 0;
 }
 
+size_t ruda_managed_array_child_cache_bytes(const RudaManagedArray *array) {
+    size_t object_bytes = 0, bytes = 0;
+    return array != NULL && array->generated_children != NULL
+            && ruda_size_multiply(
+                array->generated_children->capacity,
+                sizeof(*array->generated_children->entries), &object_bytes
+            ) && ruda_size_add(
+                sizeof(*array->generated_children), object_bytes, &bytes
+            )
+        ? bytes : 0;
+}
+
 static bool ruda_managed_array_raw_value_valid(
     const RudaManagedArrayDescriptor *descriptor,
     RudaManagedCell value
@@ -182,6 +194,8 @@ void ruda_managed_array_dispose(
         return;
     }
     ruda_deallocate(&heap->allocator, array->storage, storage_bytes);
+    ruda_deallocate(&heap->allocator, array->generated_children,
+        ruda_managed_array_child_cache_bytes(array));
     ruda_deallocate(&heap->allocator, array, sizeof(*array));
 }
 

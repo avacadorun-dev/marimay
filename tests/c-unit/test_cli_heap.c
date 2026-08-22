@@ -95,7 +95,7 @@ static void ruda_cli_heap_help_and_success(RudaSession *session) {
     };
     const char *test[] = {
         "ruda", "test", "cp19-resource-limits", "--engine", "both",
-        "--max-heap-bytes=600"
+        "--max-heap-bytes=1024"
     };
     const char *maximum[] = {
         "ruda", "run", "cp19-resource-limits",
@@ -126,13 +126,13 @@ static void ruda_cli_heap_help_and_success(RudaSession *session) {
 
 static void ruda_cli_heap_budget_diagnostics(RudaSession *session) {
     static const char expected[] =
-        "error[I0002]: managed heap budget exceeded: live=0 bytes, requested=320 bytes, limit=1 bytes\n";
+        "error[I0002]: managed heap budget exceeded: live=0 bytes, requested=328 bytes, limit=1 bytes\n";
     static const char expected_json[] =
         "{\"schema\":\"ruda.diagnostic/1\",\"code\":\"I0002\",\"severity\":\"error\","
-        "\"message\":\"managed heap budget exceeded: live=0 bytes, requested=320 bytes, limit=1 bytes\","
+        "\"message\":\"managed heap budget exceeded: live=0 bytes, requested=328 bytes, limit=1 bytes\","
         "\"primary\":null,\"labels\":[],\"notes\":[],\"fixes\":[],"
         "\"context\":{\"kind\":\"runtime-resource\",\"resource\":\"managed-heap\","
-        "\"classification\":\"budget-exceeded\",\"liveBytes\":0,\"requestedBytes\":320,\"limitBytes\":1}}\n";
+        "\"classification\":\"budget-exceeded\",\"liveBytes\":0,\"requestedBytes\":328,\"limitBytes\":1}}\n";
     const char *run[] = {
         "ruda", "run", "cp19-resource-limits", "--max-heap-bytes", "1"
     };
@@ -160,13 +160,13 @@ static void ruda_cli_heap_budget_diagnostics(RudaSession *session) {
     RUDA_EXPECT(output.length == 0);
     RUDA_EXPECT(strcmp(
         error.bytes,
-        "error[I0002]: managed heap budget exceeded: live=0 bytes, requested=320 bytes, limit=1 bytes\n"
+        "error[I0002]: managed heap budget exceeded: live=0 bytes, requested=328 bytes, limit=1 bytes\n"
     ) == 0);
 }
 
 static void ruda_cli_heap_native_and_embedding(RudaSession *session) {
     static const char expected[] =
-        "error[I0002]: managed heap budget exceeded: live=0 bytes, requested=320 bytes, limit=1 bytes\n";
+        "error[I0002]: managed heap budget exceeded: live=0 bytes, requested=328 bytes, limit=1 bytes\n";
     const char *build[] = {
         "ruda", "build", "cp19-resource-limits", "--max-heap-bytes", "1",
         "--output", "cp19-resource-artifact"

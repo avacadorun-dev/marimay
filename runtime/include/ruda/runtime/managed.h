@@ -8,5 +8,10 @@
 #include "ruda/runtime/interface.h"
 #include "ruda/runtime/record.h"
 #include "ruda/runtime/string.h"
+#include "ruda/runtime/generated_array.h"
+#include "ruda/runtime/generated_enum.h"
+#include "ruda/runtime/generated_record.h"
+#include "ruda/runtime/generated_roots.h"
+#include "ruda/runtime/generated_slots.h"
 
 #endif

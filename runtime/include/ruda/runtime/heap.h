@@ -33,6 +33,7 @@ typedef struct RudaManagedResourceFailure {
 
 struct RudaManagedSlot;
 struct RudaManagedRootFrame;
+struct RudaManagedEnumDescriptor;
 
 /*
  * Caller-owned exact root frame. Each entry points to one live reference
@@ -62,6 +63,25 @@ typedef struct RudaManagedHeap {
     uint32_t free_slot;
     uint64_t provenance;
     RudaManagedRootFrame *roots;
+    const struct RudaManagedEnumDescriptor **immediate_enum_descriptors;
+    size_t immediate_enum_descriptor_count;
+    size_t immediate_enum_descriptor_capacity;
+    const struct RudaManagedEnumDescriptor *immediate_enum_last_descriptor;
+    uint32_t immediate_enum_last_id;
+    RudaManagedReference cached_record_reference;
+    const void *cached_record_descriptor;
+    void *cached_record_object;
+    RudaManagedCell *cached_record_fields;
+    RudaManagedReference cached_array_reference;
+    const void *cached_array_descriptor;
+    void *cached_array_object;
+    size_t *cached_array_length;
+    size_t *cached_array_capacity;
+    uint64_t *cached_array_mutation_generation;
+    unsigned char **cached_array_storage;
+    RudaManagedReference cached_array_second_reference;
+    const void *cached_array_second_descriptor;
+    void *cached_array_second_object;
     RudaManagedHeapOptions options;
     RudaManagedResourceFailure last_resource_failure;
     bool collecting;

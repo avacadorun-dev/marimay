@@ -49,6 +49,26 @@ bool ruda_managed_heap_valid(const RudaManagedHeap *heap) {
         && heap->provenance != UINT64_MAX;
 }
 
+void ruda_managed_view_cache_clear(RudaManagedHeap *heap) {
+    if (heap == NULL) {
+        return;
+    }
+    heap->cached_record_reference = ruda_managed_invalid_reference();
+    heap->cached_record_descriptor = NULL;
+    heap->cached_record_object = NULL;
+    heap->cached_record_fields = NULL;
+    heap->cached_array_reference = ruda_managed_invalid_reference();
+    heap->cached_array_descriptor = NULL;
+    heap->cached_array_object = NULL;
+    heap->cached_array_length = NULL;
+    heap->cached_array_capacity = NULL;
+    heap->cached_array_mutation_generation = NULL;
+    heap->cached_array_storage = NULL;
+    heap->cached_array_second_reference = ruda_managed_invalid_reference();
+    heap->cached_array_second_descriptor = NULL;
+    heap->cached_array_second_object = NULL;
+}
+
 bool ruda_managed_heap_init(
     RudaManagedHeap *heap,
     RudaAllocator allocator,
@@ -68,12 +88,14 @@ bool ruda_managed_heap_init(
     heap->provenance = provenance;
     heap->options = options;
     heap->initialized = true;
+    ruda_managed_view_cache_clear(heap);
     return true;
 }
 
 void ruda_managed_heap_dispose(RudaManagedHeap *heap) {
     size_t index = 0;
     size_t slot_bytes = 0;
+    size_t descriptor_bytes = 0;
     RudaManagedRootFrame *frame = NULL;
     if (!ruda_managed_heap_valid(heap)) {
         return;
@@ -93,6 +115,16 @@ void ruda_managed_heap_dispose(RudaManagedHeap *heap) {
         &slot_bytes
     );
     ruda_deallocate(&heap->allocator, heap->slots, slot_bytes);
+    (void)ruda_size_multiply(
+        heap->immediate_enum_descriptor_capacity,
+        sizeof(*heap->immediate_enum_descriptors),
+        &descriptor_bytes
+    );
+    ruda_deallocate(
+        &heap->allocator,
+        heap->immediate_enum_descriptors,
+        descriptor_bytes
+    );
     memset(heap, 0, sizeof(*heap));
 }
 
@@ -139,7 +171,11 @@ RudaManagedStatus ruda_managed_reference_status(
 ) {
     const RudaManagedSlot *slot = ruda_managed_resolve_const(heap, reference);
     if (slot == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
+        return ruda_managed_immediate_enum_decode(
+                heap, reference, NULL, NULL, NULL
+            )
+            ? RUDA_MANAGED_TYPE_MISMATCH
+            : RUDA_MANAGED_INVALID_REFERENCE;
     }
     return expected == NULL
             || (slot->kind == RUDA_MANAGED_OBJECT_ARRAY
@@ -163,10 +199,9 @@ RudaManagedStatus ruda_managed_root_push(
     for (index = 0; index < location_count; index += 1) {
         if (locations[index] == NULL
             || (!ruda_managed_reference_is_invalid(*locations[index])
-                && ruda_managed_resolve_const(
-                    heap,
-                    *locations[index]
-                ) == NULL)) {
+                && !ruda_managed_reference_valid(
+                    heap, *locations[index]
+                ))) {
             return locations[index] == NULL
                 ? RUDA_MANAGED_INVALID_ARGUMENT
                 : RUDA_MANAGED_INVALID_REFERENCE;
@@ -212,6 +247,11 @@ RudaManagedStatus ruda_managed_mark_reference(
     if (ruda_managed_reference_is_invalid(reference)) {
         return RUDA_MANAGED_OK;
     }
+    if (ruda_managed_immediate_enum_decode(
+            heap, reference, NULL, NULL, NULL
+        )) {
+        return RUDA_MANAGED_OK;
+    }
     slot = ruda_managed_resolve(heap, reference);
     if (slot == NULL) {
         return RUDA_MANAGED_INVALID_REFERENCE;
@@ -242,6 +282,7 @@ RudaManagedStatus ruda_managed_collect_internal(
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
     heap->collecting = true;
+    ruda_managed_view_cache_clear(heap);
     ruda_managed_clear_marks(heap);
     for (frame = heap->roots; frame != NULL; frame = frame->previous) {
         if (!frame->linked || frame->heap_provenance != heap->provenance

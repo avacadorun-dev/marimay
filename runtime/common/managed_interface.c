@@ -20,7 +20,7 @@ RudaManagedStatus ruda_managed_interface_new(
         return RUDA_MANAGED_INVALID_ARGUMENT;
     }
     ruda_managed_resource_failure_clear(heap);
-    if (ruda_managed_resolve_const(heap, payload) == NULL) {
+    if (!ruda_managed_reference_valid(heap, payload)) {
         return RUDA_MANAGED_INVALID_REFERENCE;
     }
     value = ruda_allocate(&heap->allocator, sizeof(*value));

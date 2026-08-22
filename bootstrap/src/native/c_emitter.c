@@ -115,6 +115,10 @@ bool ruda_native_c_emit_runtime(
             "#ifndef RUDA_G_FAIL_ALLOCATION_AT\n#define RUDA_G_FAIL_ALLOCATION_AT SIZE_MAX\n#endif\n"
             "#ifndef RUDA_G_MAX_OBJECTS\n#define RUDA_G_MAX_OBJECTS SIZE_MAX\n#endif\n")
         && ruda_native_c_write(buffer,
+            "#if defined(__clang__) || defined(__GNUC__)\n"
+            "#define RUDA_G_ALWAYS_INLINE inline __attribute__((always_inline))\n"
+            "#else\n#define RUDA_G_ALWAYS_INLINE inline\n#endif\n")
+        && ruda_native_c_write(buffer,
         "typedef struct { const unsigned char *data; size_t length; RudaManagedReference managed; } ruda_g_string;\n")
         && ruda_native_c_write(buffer,
             "typedef struct { const unsigned char *symbol; size_t start; size_t end; } ruda_g_frame;\n")
@@ -209,6 +213,9 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     size_t cycle_stack_bytes = 0;
     size_t max_suppressed = 1;
     size_t index = 0;
+    unsigned char *root_registers = NULL;
+    size_t root_register_bytes = 0;
+    size_t root_count = 0;
     const RudaMirFunction *entry = NULL;
     bool uses_f64 = false;
     if (output == NULL) return RUDA_NATIVE_C_EMIT_INVALID_ARGUMENT;
@@ -372,9 +379,20 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
             ordered,
             program->function_count
         )) goto emit_fail;
-    for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_signature(&buffer, ordered[index], true)) goto emit_fail;
+    for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_signature(&buffer, ordered[index], ordered, program->function_count, true)) goto emit_fail;
     if (!ruda_native_c_write(&buffer, "\n")) goto emit_fail;
-    for (index = 0; index < program->function_count; index += 1) if (!ruda_native_c_emit_function(&buffer, ordered[index], ordered, program->function_count)) goto emit_fail;
+    for (index = 0; index < program->function_count; index += 1) {
+        if (!ruda_native_c_plan_root_registers(
+                ordered[index], ordered, program->function_count, allocator,
+                &root_registers, &root_register_bytes, &root_count
+            ) || !ruda_native_c_emit_function(
+                &buffer, ordered[index], ordered, program->function_count,
+                root_registers, root_count
+            )) goto emit_fail;
+        ruda_deallocate(&allocator, root_registers, root_register_bytes);
+        root_registers = NULL;
+        root_register_bytes = 0;
+    }
     if (options.executable_entry
         && !ruda_native_c_emit_public_helpers(&buffer)) goto emit_fail;
     if (!ruda_native_c_write(&buffer, "int main(void) { size_t ruda_g_start = 0, ruda_g_end = 0; int ruda_g_s; static ruda_g_frame ruda_g_frames[RUDA_G_MAX_FRAMES]; static ruda_g_suppressed_panic ruda_g_suppressed[RUDA_G_MAX_SUPPRESSED]; ruda_g_panic ruda_g_p = {0}; ruda_g_execution ruda_g_x = {0}; RudaManagedHeapOptions ruda_g_heap_options; ")) goto emit_fail;
@@ -390,6 +408,9 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     if (!ruda_native_c_write(&buffer, options.executable_entry
             ? "fputs(\"error[I0002]: runtime host allocation failed\\n\", stderr); return 70; } "
             : "fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
+    if (!ruda_native_c_write(&buffer, options.executable_entry
+            ? "if (ruda_g_register_immediate_enums(&ruda_g_x.heap) != RUDA_MANAGED_OK) { ruda_g_execution_dispose(&ruda_g_x); fputs(\"error[I0002]: runtime host allocation failed\\n\", stderr); return 70; } "
+            : "if (ruda_g_register_immediate_enums(&ruda_g_x.heap) != RUDA_MANAGED_OK) { ruda_g_execution_dispose(&ruda_g_x); fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
     if (options.executable_entry) {
         if (!ruda_native_c_emit_executable_entry(
                 &buffer, entry, ordered, program->function_count, &options
@@ -410,6 +431,7 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
 emit_fail:
     status = buffer.limited ? RUDA_NATIVE_C_EMIT_LIMIT_REACHED : RUDA_NATIVE_C_EMIT_ALLOCATION_FAILED;
 cleanup_buffer:
+    ruda_deallocate(&allocator, root_registers, root_register_bytes);
     ruda_vector_dispose(&buffer.bytes);
 cleanup:
     ruda_deallocate(&allocator, states, program != NULL ? program->function_count : 0);

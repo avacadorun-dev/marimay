@@ -3,48 +3,19 @@
 
 #include "ruda/runtime/managed.h"
 
-typedef struct RudaManagedArray {
-    const RudaManagedArrayDescriptor *descriptor;
-    size_t length;
-    size_t capacity;
-    uint64_t mutation_generation;
-    unsigned char *storage;
-} RudaManagedArray;
-typedef struct RudaManagedString {
-    size_t length;
-    unsigned char *bytes;
-} RudaManagedString;
-typedef struct RudaManagedRecord {
-    const RudaManagedRecordDescriptor *descriptor;
-    RudaManagedCell *fields;
-} RudaManagedRecord;
-typedef struct RudaManagedEnum {
-    const RudaManagedEnumDescriptor *descriptor;
-    size_t variant;
-    RudaManagedCell *payload;
-} RudaManagedEnum;
-typedef struct RudaManagedInterface {
-    const RudaManagedInterfaceDescriptor *descriptor;
-    RudaManagedReference payload;
-    const void *method_table;
-} RudaManagedInterface;
-typedef struct RudaManagedSlot {
-    RudaManagedObjectKind kind;
-    union {
-        RudaManagedArray *array;
-        RudaManagedString *string;
-        RudaManagedRecord *record;
-        RudaManagedEnum *enumeration;
-        RudaManagedInterface *iface;
-    } as;
-    uint32_t generation;
-    uint32_t next_free;
-    uint32_t next_gray;
-    bool marked;
-    bool retired;
-} RudaManagedSlot;
-
 bool ruda_managed_heap_valid(const RudaManagedHeap *heap);
+void ruda_managed_view_cache_clear(RudaManagedHeap *heap);
+bool ruda_managed_immediate_enum_decode(
+    const RudaManagedHeap *heap,
+    RudaManagedReference reference,
+    const RudaManagedEnumDescriptor **descriptor,
+    size_t *variant,
+    uint64_t *payload_bits
+);
+bool ruda_managed_reference_valid(
+    const RudaManagedHeap *heap,
+    RudaManagedReference reference
+);
 size_t ruda_managed_language_max_array_length(void);
 bool ruda_managed_array_descriptor_valid(
     const RudaManagedArrayDescriptor *descriptor
@@ -58,6 +29,7 @@ bool ruda_managed_array_storage_bytes_for_capacity(
     size_t *bytes
 );
 size_t ruda_managed_array_storage_bytes(const RudaManagedArray *array);
+size_t ruda_managed_array_child_cache_bytes(const RudaManagedArray *array);
 void ruda_managed_array_dispose(RudaManagedHeap *heap, RudaManagedArray *array);
 RudaManagedStatus ruda_managed_array_storage_load(
     const RudaManagedArray *array,

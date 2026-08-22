@@ -29,6 +29,10 @@ RudaManagedStatus ruda_managed_record_view_bind(
     view->descriptor = expected;
     view->object = slot->as.record;
     view->fields = slot->as.record->fields;
+    heap->cached_record_reference = reference;
+    heap->cached_record_descriptor = expected;
+    heap->cached_record_object = view->object;
+    heap->cached_record_fields = view->fields;
     return RUDA_MANAGED_OK;
 }
 

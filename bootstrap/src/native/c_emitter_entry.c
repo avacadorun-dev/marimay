@@ -95,7 +95,7 @@ bool ruda_native_c_emit_executable_entry(
     );
     return ruda_native_c_write(
             buffer,
-            "RudaManagedReference ruda_g_result = ruda_managed_invalid_reference(), ruda_g_error = ruda_managed_invalid_reference(); RudaManagedReference *ruda_g_roots[2] = {&ruda_g_result, &ruda_g_error}; RudaManagedRootFrame ruda_g_root_frame = {0}; const RudaManagedEnumDescriptor *ruda_g_descriptor = NULL; size_t ruda_g_variant = 0; RudaManagedCell ruda_g_cell; ruda_g_string ruda_g_error_message = {0}; int ruda_g_exit = 70; ruda_g_s = "
+            "RudaManagedReference ruda_g_result = ruda_managed_invalid_reference_generated(), ruda_g_error = ruda_managed_invalid_reference_generated(); RudaManagedReference *ruda_g_roots[2] = {&ruda_g_result, &ruda_g_error}; RudaManagedRootFrame ruda_g_root_frame = {0}; const RudaManagedEnumDescriptor *ruda_g_descriptor = NULL; size_t ruda_g_variant = 0; RudaManagedCell ruda_g_cell; ruda_g_string ruda_g_error_message = {0}; int ruda_g_exit = 70; ruda_g_s = "
         ) && ruda_native_c_symbol(buffer, entry->symbol)
         && ruda_native_c_write(buffer,
             "(&ruda_g_x, &ruda_g_p, &ruda_g_result, &ruda_g_start, &ruda_g_end); if (ruda_g_s != 0) { ruda_g_exit = ruda_g_public_status(ruda_g_s, &ruda_g_p, &ruda_g_x.heap); goto ruda_g_public_cleanup; } if (ruda_managed_root_push(&ruda_g_x.heap, &ruda_g_root_frame, ruda_g_roots, 2) != RUDA_MANAGED_OK) { ruda_g_exit = ruda_g_public_status(7, &ruda_g_p, &ruda_g_x.heap); goto ruda_g_public_cleanup; } if (ruda_managed_enum_describe(&ruda_g_x.heap, ruda_g_result, &ruda_g_descriptor, &ruda_g_variant) != RUDA_MANAGED_OK || ruda_g_descriptor != &"

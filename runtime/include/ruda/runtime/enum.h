@@ -13,6 +13,13 @@ typedef struct RudaManagedEnumDescriptor {
     const RudaManagedEnumVariantDescriptor *variants;
 } RudaManagedEnumDescriptor;
 
+/* Compiler runtime integration; source programs do not call this API. */
+RudaManagedStatus ruda_managed_enum_register_immediate_descriptor(
+    RudaManagedHeap *heap,
+    const RudaManagedEnumDescriptor *descriptor,
+    uint32_t *descriptor_id
+);
+
 RudaManagedStatus ruda_managed_enum_new(
     RudaManagedHeap *heap,
     const RudaManagedEnumDescriptor *descriptor,

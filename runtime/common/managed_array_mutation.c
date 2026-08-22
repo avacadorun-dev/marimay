@@ -264,3 +264,62 @@ RudaManagedStatus ruda_managed_array_reserve(
         heap, array, minimum_capacity, NULL, &resolved
     );
 }
+
+RudaManagedStatus ruda_managed_array_fill_raw64_pushes(
+    RudaManagedHeap *heap,
+    RudaManagedReference array,
+    size_t count,
+    uint64_t bits
+) {
+    RudaManagedArray *resolved = NULL;
+    RudaManagedStatus status;
+    size_t final_length = 0;
+    size_t index = 0;
+    unsigned char byte = (unsigned char)bits;
+    bool repeated_byte = true;
+    if (ruda_managed_heap_valid(heap)) {
+        ruda_managed_resource_failure_clear(heap);
+    }
+    status = ruda_managed_array_resolve_mutable(heap, array, &resolved);
+    if (status != RUDA_MANAGED_OK) return status;
+    if (resolved->descriptor->storage_kind
+            != RUDA_MANAGED_ARRAY_STORAGE_RAW64
+        || resolved->descriptor->storage_stride != sizeof(bits)) {
+        return RUDA_MANAGED_TYPE_MISMATCH;
+    }
+    if (count > ruda_managed_language_max_array_length() - resolved->length
+        || !ruda_size_add(resolved->length, count, &final_length)) {
+        return RUDA_MANAGED_LENGTH_LIMIT;
+    }
+    if ((uint64_t)count > UINT64_MAX - resolved->mutation_generation) {
+        return RUDA_MANAGED_LIMIT_REACHED;
+    }
+    while (resolved->capacity < final_length) {
+        size_t minimum = resolved->capacity == 0
+            ? resolved->length + 1 : resolved->capacity + 1;
+        status = ruda_managed_array_ensure_capacity(
+            heap, array, minimum, NULL, &resolved
+        );
+        if (status != RUDA_MANAGED_OK) return status;
+    }
+    for (index = 1; index < sizeof(bits); index += 1) {
+        repeated_byte = repeated_byte
+            && (unsigned char)(bits >> (index * CHAR_BIT)) == byte;
+    }
+    if (repeated_byte) {
+        memset(
+            resolved->storage + resolved->length * sizeof(bits), byte,
+            count * sizeof(bits)
+        );
+    } else {
+        for (index = resolved->length; index < final_length; index += 1) {
+            memcpy(
+                resolved->storage + index * sizeof(bits),
+                &bits, sizeof(bits)
+            );
+        }
+    }
+    resolved->length = final_length;
+    resolved->mutation_generation += (uint64_t)count;
+    return RUDA_MANAGED_OK;
+}

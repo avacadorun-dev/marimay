@@ -100,6 +100,10 @@ records D063's remaining native fast paths and the 11/3 macOS arm64
 Ruda/Go/Rust rebaseline. It reports the material algorithm improvements and
 the still-large Option/enum-allocation and cross-language gaps without
 claiming the unrun five-platform public-alpha gate.
+[Post-integration checkpoint 28 release hardening](evidence/cp28-release-hardening-2026-08-23.md)
+records the completed native algorithm parity pass, three correctness defects
+found by the full regression, child-cache allocation-failure ownership, and
+the final debug/release/ASan+UBSan validation before runner verification.
 Latest earlier I4 process evidence: [preview checkpoint 12 executes the final
 local/private preview process matrix and exact VM/native observation
 comparison](evidence/cp12-final-preview-2026-08-18.md).
