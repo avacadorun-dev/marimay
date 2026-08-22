@@ -38,6 +38,18 @@ int64_t ruda_i64_bitwise_or(int64_t left, int64_t right) {
     );
 }
 
+int64_t ruda_i64_add_proven(int64_t left, int64_t right) {
+    return ruda_i64_from_twos_complement((uint64_t)left + (uint64_t)right);
+}
+
+int64_t ruda_i64_subtract_proven(int64_t left, int64_t right) {
+    return ruda_i64_from_twos_complement((uint64_t)left - (uint64_t)right);
+}
+
+int64_t ruda_i64_multiply_proven(int64_t left, int64_t right) {
+    return ruda_i64_from_twos_complement((uint64_t)left * (uint64_t)right);
+}
+
 static int64_t ruda_i64_shift_right_valid(int64_t value, unsigned int count) {
     uint64_t bits = (uint64_t)value;
     if (count == 0) {

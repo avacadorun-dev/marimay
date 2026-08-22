@@ -12,8 +12,19 @@
  * arbitrary nested and recursive []T graphs without teaching the
  * collector one enum value per source type.
  */
+typedef enum RudaManagedArrayStorageKind {
+    RUDA_MANAGED_ARRAY_STORAGE_INVALID,
+    RUDA_MANAGED_ARRAY_STORAGE_RAW8,
+    RUDA_MANAGED_ARRAY_STORAGE_RAW16,
+    RUDA_MANAGED_ARRAY_STORAGE_RAW32,
+    RUDA_MANAGED_ARRAY_STORAGE_RAW64,
+    RUDA_MANAGED_ARRAY_STORAGE_CELL
+} RudaManagedArrayStorageKind;
+
 typedef struct RudaManagedArrayDescriptor {
     RudaManagedCellKind cell_kind;
+    RudaManagedArrayStorageKind storage_kind;
+    size_t storage_stride;
     RudaManagedObjectKind reference_kind;
     const void *reference_descriptor;
 } RudaManagedArrayDescriptor;

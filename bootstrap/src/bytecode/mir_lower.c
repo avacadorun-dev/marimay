@@ -123,13 +123,28 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
             break;
+        case RUDA_MIR_ADD_PROVEN_I64:
+            output->opcode = RUDA_OPCODE_I64_ADD_PROVEN;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case RUDA_MIR_SUBTRACT_CHECKED_I64:
             output->opcode = RUDA_OPCODE_I64_SUBTRACT_CHECKED;
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
             break;
+        case RUDA_MIR_SUBTRACT_PROVEN_I64:
+            output->opcode = RUDA_OPCODE_I64_SUBTRACT_PROVEN;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case RUDA_MIR_MULTIPLY_CHECKED_I64:
             output->opcode = RUDA_OPCODE_I64_MULTIPLY_CHECKED;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case RUDA_MIR_MULTIPLY_PROVEN_I64:
+            output->opcode = RUDA_OPCODE_I64_MULTIPLY_PROVEN;
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
             break;

@@ -150,6 +150,8 @@ set(RUDA_NATIVE_RUNTIME_SOURCES
   runtime/common/io_stdout.c
   runtime/common/managed.c
   runtime/common/managed_array_access.c
+  runtime/common/managed_array_capacity.c
+  runtime/common/managed_array_storage.c
   runtime/common/managed_resource.c
   runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c
@@ -219,6 +221,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/base/f64.c
   bootstrap/src/base/f64_runtime.c
   bootstrap/src/base/hash.c
+  bootstrap/src/base/integer_range.c
   bootstrap/src/base/map.c
   bootstrap/src/base/number_format.c
   bootstrap/src/base/owned_bytes.c
@@ -239,6 +242,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_verify.c
   bootstrap/src/bytecode/bytecode_verify_defer.c
   bootstrap/src/bytecode/bytecode_verify_instructions.c
+  bootstrap/src/bytecode/bytecode_verify_integer_range.c
   bootstrap/src/bytecode/bytecode_verify_io.c
   bootstrap/src/bytecode/bytecode_verify_nominal.c
   bootstrap/src/bytecode/bytecode_verify_numeric.c
@@ -348,6 +352,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/mir/execution_numeric.c
   bootstrap/src/mir/mir.c
   bootstrap/src/mir/mir_interfaces.c
+  bootstrap/src/mir/integer_range.c
   bootstrap/src/mir/range.c
   bootstrap/src/mir/verify.c
   bootstrap/src/mir/verify_range.c
@@ -384,6 +389,8 @@ add_library(ruda_bootstrap STATIC
   runtime/common/test_output.c
   runtime/common/managed.c
   runtime/common/managed_array_access.c
+  runtime/common/managed_array_capacity.c
+  runtime/common/managed_array_storage.c
   runtime/common/managed_resource.c
   runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c

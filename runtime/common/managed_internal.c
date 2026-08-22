@@ -109,7 +109,7 @@ size_t ruda_managed_slot_object_bytes(const RudaManagedSlot *slot) {
         case RUDA_MANAGED_OBJECT_ARRAY:
             return slot->as.array != NULL
                 ? sizeof(RudaManagedArray)
-                    + ruda_managed_array_cell_bytes(slot->as.array)
+                    + ruda_managed_array_storage_bytes(slot->as.array)
                 : 0;
         case RUDA_MANAGED_OBJECT_STRING:
             return slot->as.string != NULL
@@ -169,18 +169,22 @@ void ruda_managed_slot_dispose_object(
 }
 
 
-static RudaManagedStatus ruda_managed_trace_cells(
+static RudaManagedStatus ruda_managed_trace_array(
     RudaManagedHeap *heap,
-    const RudaManagedCell *cells,
-    size_t count,
+    const RudaManagedArray *array,
     uint32_t *gray_head
 ) {
     size_t index = 0;
-    for (index = 0; index < count; index += 1) {
-        RudaManagedStatus status = ruda_managed_mark_reference(
-            heap,
-            cells[index].reference,
-            gray_head
+    for (index = 0; index < array->length; index += 1) {
+        RudaManagedCell cell;
+        RudaManagedStatus status = ruda_managed_array_storage_load(
+            array, index, &cell
+        );
+        if (status != RUDA_MANAGED_OK) {
+            return status;
+        }
+        status = ruda_managed_mark_reference(
+            heap, cell.reference, gray_head
         );
         if (status != RUDA_MANAGED_OK) {
             return status;
@@ -200,18 +204,18 @@ RudaManagedStatus ruda_managed_trace_slot(
     }
     switch (slot->kind) {
         case RUDA_MANAGED_OBJECT_ARRAY:
-            if (slot->as.array == NULL || slot->as.array->descriptor == NULL) {
+            if (slot->as.array == NULL
+                || !ruda_managed_array_descriptor_valid(
+                    slot->as.array->descriptor
+                )) {
                 return RUDA_MANAGED_INVALID_REFERENCE;
             }
             if (slot->as.array->descriptor->cell_kind
                 != RUDA_MANAGED_CELL_REFERENCE) {
                 return RUDA_MANAGED_OK;
             }
-            return ruda_managed_trace_cells(
-                heap,
-                slot->as.array->cells,
-                slot->as.array->length,
-                gray_head
+            return ruda_managed_trace_array(
+                heap, slot->as.array, gray_head
             );
         case RUDA_MANAGED_OBJECT_STRING:
             return RUDA_MANAGED_OK;

@@ -44,6 +44,8 @@ int ruda_native_c_symbol_compare(RudaSymbolId left, RudaSymbolId right);
 int ruda_native_c_function_pointer_compare(const void *left, const void *right);
 const RudaMirArray *ruda_native_c_array(const RudaMirFunction *function,
     RudaTypeId type);
+const RudaMirArray *ruda_native_c_register_array(
+    const RudaMirFunction *function, RudaMirRegister register_id);
 RudaNativeCArrayKind ruda_native_c_array_kind(const RudaMirFunction *function,
     RudaTypeId type);
 bool ruda_native_c_program_type_supported(

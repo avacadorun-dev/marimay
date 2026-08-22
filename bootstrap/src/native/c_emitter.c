@@ -349,7 +349,7 @@ RudaNativeCEmitStatus ruda_native_c_emit_program(
     }
     memset(&buffer, 0, sizeof(buffer)); buffer.limit = options.max_generated_bytes;
     if (!ruda_vector_init(&buffer.bytes, allocator, sizeof(char))) { status = RUDA_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup; }
-    if (!ruda_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"ruda/base/checked_i64.h\"\n#include \"ruda/base/allocator.h\"\n#include \"ruda/runtime/managed.h\"\n#include \"ruda/runtime/string.h\"\n#include \"ruda/runtime/test_output.h\"\n")
+    if (!ruda_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"ruda/base/checked_i64_fast.h\"\n#include \"ruda/base/allocator.h\"\n#include \"ruda/runtime/managed.h\"\n#include \"ruda/runtime/string.h\"\n#include \"ruda/runtime/test_output.h\"\n")
         || !ruda_native_c_write(&buffer, "#include \"ruda/base/checked_integer.h\"\n")
         || !ruda_native_c_write(&buffer, "#include \"ruda/base/number_format.h\"\n")
         || (uses_f64 && !ruda_native_c_write(

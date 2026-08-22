@@ -1,7 +1,7 @@
 #ifndef RUDA_RUNTIME_ARRAY_ACCESS_H
 #define RUDA_RUNTIME_ARRAY_ACCESS_H
 
-#include "ruda/runtime/array.h"
+#include "ruda/runtime/array_view.h"
 
 /*
  * Internal generated-C/VM boundary for exact array access. CHECKED validates
@@ -9,14 +9,45 @@
  * accepted only after the MIR or bytecode verifier has established the exact
  * array/index capability with no intervening invalidation.
  *
- * Every operation resolves the managed handle exactly once, validates the
- * immutable descriptor at that resolve, and retains no runtime pointer after
- * returning. The caller keeps the array reference rooted for the whole call.
+ * Legacy access operations resolve the managed handle exactly once per call.
+ * A bound view validates the same descriptor once and may retain non-moving
+ * object-field locations for one generated activation while the exact array
+ * remains precisely reachable.
  */
-typedef enum RudaManagedArrayAccessMode {
-    RUDA_MANAGED_ARRAY_ACCESS_CHECKED,
-    RUDA_MANAGED_ARRAY_ACCESS_IN_BOUNDS
-} RudaManagedArrayAccessMode;
+RudaManagedStatus ruda_managed_array_view_length(
+    const RudaManagedArrayView *view,
+    size_t *length
+);
+RudaManagedStatus ruda_managed_array_view_require(
+    const RudaManagedArrayView *view,
+    int64_t index,
+    size_t *current_length
+);
+RudaManagedStatus ruda_managed_array_view_get(
+    const RudaManagedArrayView *view,
+    int64_t index,
+    RudaManagedArrayAccessMode mode,
+    RudaManagedCell *result,
+    size_t *current_length
+);
+RudaManagedStatus ruda_managed_array_view_set(
+    RudaManagedHeap *heap,
+    const RudaManagedArrayView *view,
+    int64_t index,
+    RudaManagedArrayAccessMode mode,
+    RudaManagedCell value,
+    size_t *current_length
+);
+RudaManagedStatus ruda_managed_array_view_push(
+    RudaManagedHeap *heap,
+    const RudaManagedArrayView *view,
+    RudaManagedCell value
+);
+RudaManagedStatus ruda_managed_array_view_pop(
+    const RudaManagedArrayView *view,
+    RudaManagedCell *result,
+    bool *popped
+);
 
 RudaManagedStatus ruda_managed_array_access_length(
     const RudaManagedHeap *heap,

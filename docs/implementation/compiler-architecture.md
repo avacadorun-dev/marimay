@@ -148,6 +148,7 @@ bootstrap/src/mir/
   verify_managed.c      string/record/enum/array layout verification
   verify_range.c        verified array proof-capability validation
   range.c               transactional checked-to-in-bounds MIR rewrite
+  integer_range.c       MIR adapter, transactional arithmetic rewrite, proof validation
   verify_interfaces.c   interface metadata and nominal payload verification
   verify_io.c           exact D046 stdout instruction/layout verification
   execution.c           oracle graph and interpreter dispatch
@@ -348,6 +349,56 @@ barrier spans. The runtime owner resolves and validates one exact access; it
 does not expose mutable heap state or retain a cell pointer. VM range dispatch
 uses the same exact API after obtaining its verified program descriptor.
 
+D060 assigns array representation, descriptor/stride validation, dense raw
+packing, zero-initialized growth, and exact storage-byte accounting to
+`runtime/common/managed_array_storage.c`. Its narrow owner-private
+`managed_array_storage_internal.h` provides the checked-callers-only inlined
+byte-copy primitive so the separately linked D059 boundary does not add a
+second hot runtime call. The heap core owns slot publication and collection
+coordination, access owns the D059 call boundary, and mutation owns D053
+sequencing; none duplicates descriptor selection or raw/reference semantics.
+`bootstrap/src/native/c_emitter_descriptors.c` and
+`bootstrap/src/bytecode/vm_array.c` map their already verified scalar element
+types to the same closed runtime layout tags without changing MIR or bytecode
+wire identity. Focused storage tests inspect private layout/accounting while
+native descriptor tests prove the emitted mapping.
+
+D061 assigns capacity rounding, checked maximum clamping, rooted collection
+retry, resize accounting, and failure-atomic commit to
+`runtime/common/managed_array_capacity.c`. Construction remains in the storage
+owner and deliberately bypasses this planner when its final count is known.
+Mutation supplies only the requested minimum and any temporary reference root;
+it does not duplicate rounding or retain resolved storage. Bytecode and native
+construction/reserve paths converge on the same runtime owners, so neither
+backend owns a shadow capacity policy.
+
+D062 assigns representation-independent interval lattice math, branch
+refinement, and bounded widening to `bootstrap/src/base/integer_range.c` behind
+the narrow `ruda/base/integer_range.h` owner API. MIR adaptation,
+checked-to-proven transactional rewrites, and MIR proof validation live in
+`bootstrap/src/mir/integer_range.c`; hostile serialized-opcode reconstruction
+lives separately in
+`bootstrap/src/bytecode/bytecode_verify_integer_range.c`. The bytecode and MIR
+owners translate their own models but share every arithmetic transfer/proof
+rule. VM/MIR/native execution only consumes already verified proven forms and
+uses the portable unsigned-domain helpers in `checked_i64.c`; no backend grants
+or repairs a proof.
+
+D063 assigns activation-view declaration and companion-state emission to
+`bootstrap/src/native/c_emitter_emit.c`, array access use to
+`bootstrap/src/native/c_emitter_range.c`, array mutation use to
+`bootstrap/src/native/c_emitter_array_mutation.c`, and record projection use to
+`bootstrap/src/native/c_emitter_managed.c`. The runtime bind/access owners are
+`runtime/common/managed_array_access.c` behind the narrow
+`ruda/runtime/array_view.h` contract and `runtime/common/managed_record.c`
+behind `ruda/runtime/record.h`. Views contain no copied storage address and do
+not own memory. The emitter coordinator owns the conservative transitive
+safepoint predicate and root-location placement because those are activation
+construction decisions; runtime owners do not infer compiler liveness.
+`ruda/base/checked_i64_fast.h` is a header-only emission boundary mirroring the
+portable checked/proven implementation, not a second semantic arithmetic
+owner.
+
 The exact filenames may follow the stable concepts already present in the
 code, but responsibility boundaries and dependency direction are fixed. A
 single broad `util.c` or `support.c` that merely relocates unrelated code is
@@ -526,6 +577,22 @@ checkpoint:
 | `bootstrap/src/native/c_emitter_range.c` | 42 | 225 | D059 barrier/access fusion, exact ABI emission, and G4002 span preservation |
 | `tests/c-unit/runtime/test_managed_array_access.c` | 0 | 202 | D059 raw/reference, bounds, alias, stale-handle, safepoint, and no-allocation runtime coverage |
 | `tests/c-unit/test_native_c_emitter_array_access.c` | 0 | 225 | D059 direct/checked-proof/static-proof generated-C inspection and O0/O2 execution |
+| `runtime/common/managed_array_storage.c` | 0 | 540 | D060 descriptor validation, exact allocation/accounting, publication, and failure-atomic dense growth |
+| `runtime/common/managed_array_storage_internal.h` | 0 | 82 | D060 C17 inline byte-copy primitive used only after descriptor/value/index validation |
+| `runtime/common/managed_array_access.c` | 207 | 210 | D060 dense exact-access transfer while preserving the D059 one-resolve ABI |
+| `runtime/common/managed_array_mutation.c` | 397 | 266 | D060 dense mutation transfer and no-op-capacity fast path without changing growth policy |
+| `tests/c-unit/runtime/test_managed_array_storage.c` | 0 | 407 | D060 layout/bits/alignment/accounting/tracing/corruption/failure-atomic storage coverage |
+| `tests/c-unit/test_bytecode_vm_array_storage.c` | 0 | 168 | unchanged generic-array wire round trip plus VM descriptor/bit mapping |
+| `tests/c-unit/test_native_c_emitter_array_storage.c` | 0 | 185 | every raw stride, canonical f64, reference fallback, and strict-C execution |
+| `runtime/include/ruda/runtime/array_view.h` | 0 | 148 | D063 non-escaping array-view ABI and validated C17 inline RAW64 access primitives |
+| `bootstrap/include/ruda/base/checked_i64_fast.h` | 0 | 156 | D063 portable inline mirror of checked/proven i64 emission helpers |
+| `runtime/common/managed_array_access.c` | 417 | 428 | D063 exact view bind plus growth-aware access and mutation without copied storage addresses |
+| `runtime/common/managed_record.c` | 186 | 215 | D063 exact non-moving record-view bind |
+| `bootstrap/src/native/c_emitter_emit.c` | 588 | 879 | D063 companion-view declarations, conservative transitive safepoint proof, and root-location placement |
+| `bootstrap/src/native/c_emitter_managed.c` | 383 | 520 | D063 record-view projection plus mutation-capability-scoped identity guard for alias-replaced array fields |
+| `tests/c-unit/runtime/test_managed_array_access.c` | 202 | 300 | D063 rooted collection, growth, allocation-free view, atomic failure, and stale/descriptor coverage |
+| `tests/c-unit/runtime/test_managed_record_view.c` | 0 | 95 | D063 exact record view, rooted collection, no-allocation, wrong-type, and stale-handle coverage |
+| `tests/c-unit/test_native_c_emitter_managed_views.c` | 0 | 118 | D063 nested record-array view, alias replacement, direct RAW64, rootless emission, and O0/O2 execution |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `ruda_test_mir` registration. The service checkpoint

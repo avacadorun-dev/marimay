@@ -114,6 +114,8 @@ static bool ruda_bytecode_build_array_element_descriptor(
     uint32_t layout = array_type->element_layout;
     if (type == RUDA_BYTECODE_TYPE_STRING) {
         descriptor->cell_kind = RUDA_MANAGED_CELL_REFERENCE;
+        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_CELL;
+        descriptor->storage_stride = sizeof(RudaManagedCell);
         descriptor->reference_kind = RUDA_MANAGED_OBJECT_STRING;
         return true;
     }
@@ -122,6 +124,8 @@ static bool ruda_bytecode_build_array_element_descriptor(
         || type == RUDA_BYTECODE_TYPE_ENUM
         || type == RUDA_BYTECODE_TYPE_INTERFACE) {
         descriptor->cell_kind = RUDA_MANAGED_CELL_REFERENCE;
+        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_CELL;
+        descriptor->storage_stride = sizeof(RudaManagedCell);
         descriptor->reference_kind = ruda_bytecode_nominal_object_kind(type);
         descriptor->reference_descriptor =
             ruda_bytecode_nominal_reference_descriptor(
@@ -131,8 +135,29 @@ static bool ruda_bytecode_build_array_element_descriptor(
             && descriptor->reference_descriptor != NULL;
     }
     descriptor->cell_kind = RUDA_MANAGED_CELL_RAW64;
+    if (type == RUDA_BYTECODE_TYPE_BOOL || type == RUDA_BYTECODE_TYPE_I8
+        || type == RUDA_BYTECODE_TYPE_U8) {
+        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_RAW8;
+        descriptor->storage_stride = sizeof(uint8_t);
+    } else if (type == RUDA_BYTECODE_TYPE_I16
+        || type == RUDA_BYTECODE_TYPE_U16) {
+        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_RAW16;
+        descriptor->storage_stride = sizeof(uint16_t);
+    } else if (type == RUDA_BYTECODE_TYPE_I32
+        || type == RUDA_BYTECODE_TYPE_U32
+        || type == RUDA_BYTECODE_TYPE_F32) {
+        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_RAW32;
+        descriptor->storage_stride = sizeof(uint32_t);
+    } else if (type == RUDA_BYTECODE_TYPE_I64
+        || type == RUDA_BYTECODE_TYPE_U64
+        || type == RUDA_BYTECODE_TYPE_F64) {
+        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_RAW64;
+        descriptor->storage_stride = sizeof(uint64_t);
+    } else {
+        return false;
+    }
     descriptor->reference_kind = RUDA_MANAGED_OBJECT_INVALID;
-    return ruda_bytecode_type_is_register(type);
+    return true;
 }
 
 const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(

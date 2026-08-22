@@ -1405,11 +1405,11 @@ following matching `ARRAY_GET_IN_BOUNDS` or `ARRAY_SET_IN_BOUNDS`. The fused
 access uses checked mode and retains the barrier's G4002 source span. A
 non-adjacent or otherwise observable barrier remains an explicit `require`
 call; subsequent verified consumers use in-bounds mode. An
-`ARRAY_ASSUME_INDEX` emits no runtime bounds check. In every case the array
-reference remains in the native shadow-root frame for the call, and the ABI
-retains no resolved slot, array, cell pointer, capacity, or length after
-returning. Calls, allocation, collection, growth, and initialized-sequence
-mutation therefore continue to invalidate D058 capabilities conservatively.
+`ARRAY_ASSUME_INDEX` emits no runtime bounds check. On this call-ABI path the
+array reference remains in the native shadow-root frame for the call, and the
+ABI retains no resolved slot, array, cell pointer, capacity, or length after
+returning. D063 later adds a separately constrained activation-scoped view
+path; it does not weaken D058 proof invalidation.
 
 Whole-program or archive LTO is not the selected boundary. The released
 runtime is a relocatable, version-matched C17 archive that must work with the
@@ -1417,9 +1417,205 @@ distribution-selected compiler on every Tier 1 platform. LTO objects and
 linker-plugin contracts are compiler-family and version coupled, are not
 uniform across Clang/GCC/MSVC archives, and would make the access path depend
 on the host/profile combination. The measured D059 prototype comparison is
-recorded in checkpoint-23 evidence; the exact ABI is the sole retained path,
-and the former generated helper plus describe/length/get-set chain is removed.
+recorded in checkpoint-23 evidence; the exact ABI remains the stable runtime
+fallback and VM boundary, and the former generated helper plus
+describe/length/get-set chain is removed. D063 may bypass a repeated native
+call only through the same version-matched C17 headers and runtime archive.
 
 Reason: one stable C17 ABI call removes repeated handle, descriptor, length,
 bounds, status, and cell-boundary work without exposing representation or
 letting a linker-dependent optimization mode choose source-observable safety.
+
+## D060 — Raw scalar arrays use descriptor-selected dense native storage
+
+Status: accepted.
+
+The immutable runtime array descriptor selects one of five internal storage
+layouts: `RAW8`, `RAW16`, `RAW32`, `RAW64`, or `CELL`. `bool`, `i8`, and `u8`
+use `RAW8`; `i16` and `u16` use `RAW16`; `i32`, `u32`, and the raw binary32
+formatter input use `RAW32`; `i64`, `u64`, and `f64` use `RAW64`. Managed
+reference elements use `CELL`. Each descriptor carries the exact byte stride,
+which must be respectively 1, 2, 4, 8, or `sizeof(RudaManagedCell)` and must
+agree with its existing raw/reference cell class. An invalid tag, stride, or
+raw/reference combination is rejected before storage is published or accessed.
+
+Raw payload storage is byte-addressed. Loads and stores copy through an aligned
+fixed-width local integer with `memcpy`; generated C and the VM continue to
+transport the canonical low payload bits in one `RudaManagedCell` at the D059
+boundary. This gives raw storage an alignment requirement of one without
+creating an unaligned typed pointer or violating C17 effective-type/aliasing
+rules. `CELL` storage retains the allocator alignment required by
+`RudaManagedCell`. Newly reserved bytes are zero-initialized, growth copies the
+complete initialized prefix, and truncation clears the removed byte range.
+`f64` preserves every binary64 pattern, including signed zero and NaN payloads;
+the narrower layouts preserve exactly their low 8, 16, or 32 payload bits.
+
+Only the initialized prefix of `CELL` arrays is precisely traced. Every raw
+layout is skipped without interpreting payload bits as references. Managed
+live-byte accounting charges `capacity * descriptor.stride`, using checked size
+arithmetic before budget preflight, allocation, resize, or address arithmetic.
+Growth remains failure-atomic and preserves the array reference, descriptor,
+length, capacity, mutation generation, initialized bits, and accounting on
+every rejected budget or host-allocation path.
+
+This is a version-matched internal runtime-layout change, not D013 source-level
+specialization. Array source identity, stable non-moving references, D045/D053
+semantics, D058 proofs, D059 calls, and bytecode array-table rows are unchanged.
+Portable bundles serialize the same element type and layout index as before;
+the VM/native runtime descriptor is derived only after verification. There is
+no packed-bool layout, public stride/capacity observation, moving storage, or
+raw-scalar union-cell compatibility fallback.
+
+Reason: a reference-width transport union is an appropriate ABI value but an
+unnecessarily sparse backing representation for homogeneous raw scalars. A
+closed descriptor/stride contract improves cache density and the number of
+elements admitted by the same managed-heap budget while keeping all observable
+semantics and portable artifacts unchanged.
+
+## D061 — Managed-array capacity planning preserves the established resource boundary
+
+Status: accepted.
+
+Construction with a statically or dynamically known element count allocates
+exactly that many descriptor-stride storage bytes and publishes capacity equal
+to logical length, including zero. It does not pass through the unknown-size
+growth planner. This applies equally to literals, `arrayOf`, decoded VM
+construction, and generated native calls because all converge on the same
+managed-array constructor.
+
+Unknown-size growth uses one focused capacity planner. A zero-capacity array
+starts at four slots; otherwise the current capacity is doubled until it can
+hold the requested minimum. If doubling overflows or crosses the configured
+maximum array length, the planner tries that maximum once. `push` asks for the
+next logical length. `reserve(values, additional)` computes the D053 minimum
+`length + additional` first and invokes the same planner once, so a successful
+reservation performs at most one storage resize and guarantees the subsequent
+pushes promised by D053. A request already covered by current capacity is an
+allocation-free no-op. There is no hidden shrink, capacity getter, or separate
+VM/native rounding rule.
+
+The planner uses checked capacity and D060 stride multiplication before budget
+preflight or allocator entry. Collection may invalidate resolved addresses, so
+growth roots the array and temporary reference element, re-resolves the handle,
+and recomputes the deterministic plan before commit. The resize is
+failure-atomic and zeroes only the newly reserved byte suffix. Live accounting
+charges the same net added bytes as D055.
+
+This decision makes the already established capacity policy explicit; it does
+not change its rounding, managed-heap success threshold, `requestedBytes`,
+host-allocation request, failure precedence, mutation generation, evaluation
+order, or bytecode identity. In particular, exact construction and geometric
+unknown-size growth are different internal policies by design. A future policy
+change that affects the D055 resource boundary requires a separate decision.
+
+Reason: known-size construction should not pay unused geometric slack, while
+unknown producers need amortized growth and `reserve` needs one deterministic
+plan. A single owner prevents VM/native drift and preserves the existing
+observable resource and failure contracts while making allocation-count and
+capacity-boundary testing precise.
+
+## D062 — Checked integer elimination requires reconstructed interval proof
+
+Status: accepted.
+
+The MIR optimizer may replace checked `i64` addition, subtraction, or
+multiplication with the corresponding proven operation only when a bounded
+interval analysis proves that every mathematical result fits in
+`int::MIN..int::MAX`. The lattice tracks signed ranges and the representable
+nonnegative ranges of `u8`, `u16`, and `u32`; constants, copies,
+range-preserving conversions, array lengths, checked arithmetic, and remainder
+by a positive singleton have explicit transfer rules. True/false integer
+comparison edges refine intervals. Joins take the convex hull, and a loop bound
+that expands after two updates widens to its declared type range before branch
+refinement. After the widening fixed point, one monotone narrowing phase
+recomputes branch-constrained loop inputs without widening so finite guards can
+recover safe body ranges. Unsupported `u64` values, unknown writes, ambiguous
+conversions, or an exhausted analysis budget conservatively retain checked
+operations.
+
+`ADD_PROVEN_I64`, `SUBTRACT_PROVEN_I64`, and `MULTIPLY_PROVEN_I64` are distinct
+typed MIR instructions. Portable bytecode appends the matching wire opcodes
+`i64_add_proven`, `i64_subtract_proven`, and `i64_multiply_proven`; they carry
+the same destination/left/right registers and no forgeable numeric bounds.
+Both the MIR verifier and hostile-bytecode verifier independently reconstruct
+the interval analysis at every proven operation. A missing, widened, corrupt,
+wrong-type, or over-budget proof rejects the optimized artifact. An optimizer
+allocation/work failure leaves those operations checked; it is not a reason to
+accept an unproved instruction.
+
+Execution of a verified proven operation converts both operands to `uint64_t`,
+performs the corresponding unsigned add/subtract/multiply, and converts the
+two's-complement result with the portable D035 helper. The proof guarantees the
+mathematical result is representable, while unsigned evaluation ensures the C17
+implementation itself never evaluates overflowing signed arithmetic. MIR,
+VM, and generated native C use the same helpers. The proven opcodes are not
+panic sites; all operations not rewritten retain the original checked helper,
+overflow span, first-failure order, and release/debug behavior.
+
+This decision does not cover division, remainder elimination, shifts,
+wrapping/saturating APIs, `u64` proof carriers, width changes, or fast math.
+Conversions contribute safe input ranges but are not themselves replaced in
+this checkpoint. There is no source syntax or source semantic change.
+
+Reason: source-level checked overflow cannot be weakened by a backend hunch or
+benchmark invariant. Reconstructed proofs preserve hostile-artifact safety and
+VM/native equivalence, while focused interval and verifier owners keep the
+arithmetic rule out of execution coordinators.
+
+## D063 — Native managed views are activation-scoped and safepoint-aware
+
+Status: accepted.
+
+Generated native C may bind an exact managed array or record reference once
+and retain a non-escaping view for the current function activation. Binding
+resolves the handle and validates the immutable descriptor before publishing
+the view. Managed objects are non-moving. An array view retains addresses of
+the object's `length`, mutation-generation, and storage-pointer fields, not a
+copy of the current element-storage pointer, so successful growth updates what
+later accesses observe. A record view retains its fixed field-array address.
+No view is serialized, returned, stored in managed memory, or exposed to Ruda.
+
+Every managed register has a companion-view invariant. Copying the exact
+reference copies its proven companion; any instruction that can define a new
+reference without that identity proof clears the destination companion.
+Parameter records may bind exact array-valued fields eagerly after the record
+descriptor check. An activation containing a call or array-valued record write
+checks the current field identity before reuse; call-free/read-only activations
+cannot replace that field and omit the guard. A view is usable only while the referenced object is
+precisely reachable: normally its register is in the activation's shadow-root
+frame, while an array obtained through a rooted record field is retained by
+that record's trace edge. Calls and mutations still invalidate D058 bounds
+capabilities; a cached view grants identity and layout only, never bounds.
+
+For verified `RAW64` arrays, generated C may load or store with `memcpy`
+through the bound storage field. Checked accesses perform the same signed
+G4002 comparison at the same span; proven accesses require the same D058
+capability. Stores check the non-wrapping D053 generation before writing and
+increment it only after the write is known to commit. Other layouts and
+reference-valued elements use the validated view ABI, including reference
+type checks and rooted growth. Iterator generation reads use the same bound
+field and preserve G4005 behavior.
+
+A native function may omit shadow-root linkage only when a conservative
+transitive analysis proves that neither it nor any direct callee can allocate,
+collect, suspend, call an interface, publish output, or otherwise reach a
+managed safepoint. Unknown callees, recursion, strings, and unsupported MIR
+forms require roots. Normal generated builds keep up to 64 root-location
+pointers in fixed activation storage; larger frames allocate them. Builds with
+deterministic allocation injection retain the former allocation and root-link
+path exactly so every established failure index remains testable. Thus root
+elision never permits collection while an unlinked view is live.
+
+Generated C also uses portable static-inline `i64` helpers at the emission
+boundary. Checked helpers test overflow before signed evaluation, and proven
+helpers evaluate in the unsigned domain before the D035 two's-complement
+conversion. This changes neither D062 proof authority nor overflow,
+division-by-zero, span, or first-failure behavior. It does not require LTO,
+compiler intrinsics, signed-overflow assumptions, or fast math.
+
+Reason: the checkpoint-26 nested and checkpoint-28 algorithm profiles showed
+that repeated stable-handle resolution, record projection, root-location heap
+allocation, and separately linked arithmetic calls dominated the already
+dense storage path. Activation-scoped views remove that repeated work without
+creating a moving/raw-pointer contract or allowing a backend to invent safety
+facts.

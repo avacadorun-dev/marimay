@@ -479,6 +479,53 @@ Access itself performs no allocation; a fail allocator armed at the next index
 must observe no attempt, and full heap teardown returns both live counters to
 zero.
 
+D060 storage tests cover every 1/2/4/8-byte raw layout at minimum/maximum and
+alternating bit patterns, binary64 signed zero and NaN payloads, odd lengths,
+alignment, zero-initialized reserve growth, alias-visible set/get/pop, and the
+maximum successful elements under one fixed byte budget. Reference and nested
+arrays prove that only initialized `CELL` payloads trace; raw payloads that
+look like handles do not. Invalid tag/stride/class descriptors are rejected.
+Construction and resize allocation sweeps prove failure atomicity, exact live
+accounting, and zero allocator counters after teardown. Generated-C descriptor
+inspection covers every scalar-to-layout mapping; bytecode round trips and
+VM/native differential fixtures prove unchanged wire identity, results,
+panics, and exits.
+
+D061 capacity tests cover exact construction counts 0, 1, 3, 4, 5, and powers
+of two for raw, reference, and nested elements; unknown growth and reserve
+rounding at the same boundaries; covered no-op requests; maximum clamping and
+overflow; and exact allocation/resize counts. Budget and host-allocation
+fail-index sweeps preserve the pre-existing classification, requested bytes,
+array contents, reservation, generation, and zero allocator counters after
+teardown. Bytecode round trips plus VM/native differentials cover aliases,
+iterator stability, source evaluation order, and huge/negative reserve paths.
+
+D062 arithmetic-proof tests cover constants and type extrema, positive and
+negative intervals, signed/unsigned widening conversions, remainder-derived
+ranges, true/false branches, joins, widening loops, nested loops, and retained
+overflow cases for add/subtract/multiply. Every rewritten MIR instruction is
+compared with its checked form in the oracle, encoded/decoded, independently
+verified, run in the VM, and emitted/executed as native C at O0 and O2. Forged
+proven opcodes, wrong types, widened facts, altered branches, and work/allocation
+failures must be rejected or retain checked MIR. Tests assert the generated C
+uses unsigned-domain helpers, exact overflow message/span/order remains on
+retained operations, and all fail-index sweeps end with zero allocator counters.
+
+D063 activation-view tests bind exact raw/reference arrays and records, reject
+wrong descriptors and stale handles, and keep views valid through rooted
+collection and array storage growth. They cover alias-visible access,
+generation commit, checked lower/upper bounds, nested record-array fields,
+companion copy/reset, iterator mutation, and allocation-free bind/get.
+Generated-C inspection requires direct C17 `RAW64` byte copies, eager exact
+record-field views, fixed small root-location storage, and transitive
+no-safepoint root elision; it rejects the former per-element exact-access calls
+on the selected path. O0/O2 execution preserves checksums, G4002/G4005 spans,
+alias-driven record-field replacement forces a rebind, checked numeric Option
+construction remains a safepoint, and fail-injection builds preserve the
+allocating root path. Inline checked and proven `i64` helpers are compared at
+extrema with the out-of-line semantic owner, including overflow and
+division-by-zero results.
+
 ## 11. Platform matrix
 
 Tier 1 target intent for 1.0:

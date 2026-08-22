@@ -52,9 +52,9 @@ bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_CONST_F64:
         case RUDA_OPCODE_CONST_BOOL:
         case RUDA_OPCODE_COPY:
-        case RUDA_OPCODE_I64_ADD_CHECKED:
-        case RUDA_OPCODE_I64_SUBTRACT_CHECKED:
-        case RUDA_OPCODE_I64_MULTIPLY_CHECKED:
+        case RUDA_OPCODE_I64_ADD_CHECKED: case RUDA_OPCODE_I64_ADD_PROVEN:
+        case RUDA_OPCODE_I64_SUBTRACT_CHECKED: case RUDA_OPCODE_I64_SUBTRACT_PROVEN:
+        case RUDA_OPCODE_I64_MULTIPLY_CHECKED: case RUDA_OPCODE_I64_MULTIPLY_PROVEN:
         case RUDA_OPCODE_I64_DIVIDE_CHECKED:
         case RUDA_OPCODE_I64_REMAINDER_CHECKED:
         case RUDA_OPCODE_I64_NEGATE_CHECKED:
@@ -1252,9 +1252,9 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
                 ? RUDA_BYTECODE_VERIFY_OK
                 : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_I64_ADD_CHECKED:
-        case RUDA_OPCODE_I64_SUBTRACT_CHECKED:
-        case RUDA_OPCODE_I64_MULTIPLY_CHECKED:
+        case RUDA_OPCODE_I64_ADD_CHECKED: case RUDA_OPCODE_I64_ADD_PROVEN:
+        case RUDA_OPCODE_I64_SUBTRACT_CHECKED: case RUDA_OPCODE_I64_SUBTRACT_PROVEN:
+        case RUDA_OPCODE_I64_MULTIPLY_CHECKED: case RUDA_OPCODE_I64_MULTIPLY_PROVEN:
         case RUDA_OPCODE_I64_DIVIDE_CHECKED:
         case RUDA_OPCODE_I64_REMAINDER_CHECKED:
         case RUDA_OPCODE_I64_BITWISE_AND:
@@ -1293,7 +1293,16 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
             }
             first_type = ruda_bytecode_register_type(function, first);
             second_type = ruda_bytecode_register_type(function, second);
-            if (instruction->opcode == RUDA_OPCODE_BOOL_EQUAL) {
+            if (instruction->opcode == RUDA_OPCODE_I64_ADD_PROVEN
+                || instruction->opcode == RUDA_OPCODE_I64_SUBTRACT_PROVEN
+                || instruction->opcode == RUDA_OPCODE_I64_MULTIPLY_PROVEN) {
+                status = first_type != NULL && second_type != NULL
+                        && *target_type == RUDA_BYTECODE_TYPE_I64
+                        && *first_type == RUDA_BYTECODE_TYPE_I64
+                        && *second_type == RUDA_BYTECODE_TYPE_I64
+                    ? RUDA_BYTECODE_VERIFY_OK
+                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            } else if (instruction->opcode == RUDA_OPCODE_BOOL_EQUAL) {
                 status = first_type != NULL && second_type != NULL
                         && *target_type == RUDA_BYTECODE_TYPE_BOOL
                         && *first_type == RUDA_BYTECODE_TYPE_BOOL

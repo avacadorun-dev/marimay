@@ -93,6 +93,17 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             return target_type == first_type
                 ? RUDA_MIR_VERIFY_OK
                 : RUDA_MIR_VERIFY_TYPE_MISMATCH;
+        case RUDA_MIR_ADD_PROVEN_I64:
+        case RUDA_MIR_SUBTRACT_PROVEN_I64:
+        case RUDA_MIR_MULTIPLY_PROVEN_I64:
+            if (first_type == RUDA_TYPE_INVALID
+                || second_type == RUDA_TYPE_INVALID) {
+                return RUDA_MIR_VERIFY_INVALID_REGISTER;
+            }
+            return target_type == RUDA_TYPE_I64
+                    && first_type == RUDA_TYPE_I64
+                    && second_type == RUDA_TYPE_I64
+                ? RUDA_MIR_VERIFY_OK : RUDA_MIR_VERIFY_TYPE_MISMATCH;
         case RUDA_MIR_ADD_CHECKED_I64:
         case RUDA_MIR_SUBTRACT_CHECKED_I64:
         case RUDA_MIR_MULTIPLY_CHECKED_I64:
@@ -735,8 +746,11 @@ bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind) {
 bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
     switch (kind) {
         case RUDA_MIR_ADD_CHECKED_I64:
+        case RUDA_MIR_ADD_PROVEN_I64:
         case RUDA_MIR_SUBTRACT_CHECKED_I64:
+        case RUDA_MIR_SUBTRACT_PROVEN_I64:
         case RUDA_MIR_MULTIPLY_CHECKED_I64:
+        case RUDA_MIR_MULTIPLY_PROVEN_I64:
         case RUDA_MIR_DIVIDE_CHECKED_I64:
         case RUDA_MIR_REMAINDER_CHECKED_I64:
         case RUDA_MIR_BITWISE_AND_I64:

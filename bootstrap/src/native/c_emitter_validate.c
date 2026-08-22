@@ -477,7 +477,10 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
                 case RUDA_MIR_CONSTANT_BOOL:
                 case RUDA_MIR_CONSTANT_F64:
                 case RUDA_MIR_COPY: case RUDA_MIR_ADD_CHECKED_I64:
+                case RUDA_MIR_ADD_PROVEN_I64:
                 case RUDA_MIR_SUBTRACT_CHECKED_I64: case RUDA_MIR_MULTIPLY_CHECKED_I64:
+                case RUDA_MIR_SUBTRACT_PROVEN_I64:
+                case RUDA_MIR_MULTIPLY_PROVEN_I64:
                 case RUDA_MIR_DIVIDE_CHECKED_I64: case RUDA_MIR_REMAINDER_CHECKED_I64:
                 case RUDA_MIR_NEGATE_CHECKED_I64: case RUDA_MIR_NOT_BOOL:
                 case RUDA_MIR_BITWISE_NOT_I64: case RUDA_MIR_BITWISE_AND_I64:

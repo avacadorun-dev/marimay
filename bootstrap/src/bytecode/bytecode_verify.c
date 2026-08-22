@@ -848,6 +848,16 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
             goto cleanup;
         }
     }
+    {
+        size_t integer_range_work = 0;
+        status = ruda_bytecode_verify_integer_range_proofs(
+            function, work_limit - work, &integer_range_work
+        );
+        if (status != RUDA_BYTECODE_VERIFY_OK) {
+            goto cleanup;
+        }
+        work += integer_range_work;
+    }
 
 cleanup:
     ruda_bytecode_provenance_dispose(provenance);

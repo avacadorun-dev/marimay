@@ -1081,7 +1081,9 @@ static void ruda_test_native_generic_array(void) {
         ruda_native_c_emit_default_options(), &source
     ) == RUDA_NATIVE_C_EMIT_OK);
     RUDA_EXPECT(ruda_test_native_contains(&source, "ruda_g_ad_"));
-    RUDA_EXPECT(ruda_test_native_contains(&source, "ruda_managed_array_push"));
+    RUDA_EXPECT(ruda_test_native_contains(
+        &source, "ruda_managed_array_view_push"
+    ));
     RUDA_EXPECT(!ruda_test_native_contains(&source, "RudaTypeId"));
 #if !defined(_WIN32)
     ruda_test_native_compile_and_run(&source, "ok:i64:6\n", 0);

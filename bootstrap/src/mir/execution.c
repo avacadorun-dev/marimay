@@ -340,6 +340,21 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         case RUDA_MIR_COPY:
             *target = *first;
             return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_ADD_PROVEN_I64:
+            target->as.i64 = ruda_i64_add_proven(
+                first->as.i64, second->as.i64
+            );
+            return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_SUBTRACT_PROVEN_I64:
+            target->as.i64 = ruda_i64_subtract_proven(
+                first->as.i64, second->as.i64
+            );
+            return RUDA_MIR_INTERPRET_OK;
+        case RUDA_MIR_MULTIPLY_PROVEN_I64:
+            target->as.i64 = ruda_i64_multiply_proven(
+                first->as.i64, second->as.i64
+            );
+            return RUDA_MIR_INTERPRET_OK;
         case RUDA_MIR_ADD_CHECKED_I64:
             if (first->type != RUDA_TYPE_I64) {
                 return ruda_mir_integer_binary(

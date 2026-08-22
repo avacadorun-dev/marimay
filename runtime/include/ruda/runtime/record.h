@@ -8,6 +8,21 @@ typedef struct RudaManagedRecordDescriptor {
     const RudaManagedFieldDescriptor *fields;
 } RudaManagedRecordDescriptor;
 
+/* Non-escaping exact record view; see D063's rooting/safepoint lifetime. */
+typedef struct RudaManagedRecordView {
+    RudaManagedReference reference;
+    const RudaManagedRecordDescriptor *descriptor;
+    void *object;
+    RudaManagedCell *fields;
+} RudaManagedRecordView;
+
+RudaManagedStatus ruda_managed_record_view_bind(
+    RudaManagedHeap *heap,
+    RudaManagedReference record,
+    const RudaManagedRecordDescriptor *expected,
+    RudaManagedRecordView *view
+);
+
 RudaManagedStatus ruda_managed_record_new(
     RudaManagedHeap *heap,
     const RudaManagedRecordDescriptor *descriptor,

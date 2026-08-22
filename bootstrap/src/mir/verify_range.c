@@ -71,6 +71,7 @@ static bool ruda_mir_range_nonnegative_transfer(
                     && facts[instruction->first] != 0;
                 break;
             case RUDA_MIR_ADD_CHECKED_I64:
+            case RUDA_MIR_ADD_PROVEN_I64:
                 nonnegative = instruction->first < register_count
                     && instruction->second < register_count
                     && facts[instruction->first] != 0
@@ -349,6 +350,7 @@ static bool ruda_mir_range_nonnegative_at(
                         && analysis->scratch[instruction->first] != 0;
                 break;
             case RUDA_MIR_ADD_CHECKED_I64:
+            case RUDA_MIR_ADD_PROVEN_I64:
                 analysis->scratch[instruction->target] =
                     instruction->first < register_count
                         && instruction->second < register_count

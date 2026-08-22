@@ -97,3 +97,6 @@
 95	ARRAY_REQUIRE_GENERATION	array_require_generation	destination:register,array:register,generation:register	may_panic	Copy the array only if its mutation generation still matches the captured value.
 96	ARRAY_GET_IN_BOUNDS	array_get_in_bounds	destination:register,array:register,index:register	none	Load through a verifier-proven array/index token.
 97	ARRAY_SET_IN_BOUNDS	array_set_in_bounds	array:register,index:register,value:register	none	Store through a verifier-proven array/index token.
+98	I64_ADD_PROVEN	i64_add_proven	destination:register,left:register,right:register	none	Add i64 operands under a verifier-proven no-overflow interval fact.
+99	I64_SUBTRACT_PROVEN	i64_subtract_proven	destination:register,left:register,right:register	none	Subtract i64 operands under a verifier-proven no-overflow interval fact.
+100	I64_MULTIPLY_PROVEN	i64_multiply_proven	destination:register,left:register,right:register	none	Multiply i64 operands under a verifier-proven no-overflow interval fact.

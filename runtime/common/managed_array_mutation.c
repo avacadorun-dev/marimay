@@ -1,49 +1,8 @@
 #include "managed_internal.h"
+#include "managed_array_storage_internal.h"
 
 #include <limits.h>
 #include <string.h>
-
-RudaManagedStatus ruda_managed_array_resolve_mutable(
-    RudaManagedHeap *heap,
-    RudaManagedReference reference,
-    RudaManagedArray **array
-) {
-    RudaManagedSlot *slot = NULL;
-    if (array != NULL) {
-        *array = NULL;
-    }
-    if (!ruda_managed_heap_valid(heap) || array == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
-    }
-    slot = ruda_managed_resolve(heap, reference);
-    if (slot == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
-    }
-    if (slot->kind != RUDA_MANAGED_OBJECT_ARRAY || slot->as.array == NULL) {
-        return RUDA_MANAGED_TYPE_MISMATCH;
-    }
-    *array = slot->as.array;
-    return RUDA_MANAGED_OK;
-}
-
-RudaManagedStatus ruda_managed_array_validate_value(
-    const RudaManagedHeap *heap,
-    const RudaManagedArray *array,
-    RudaManagedCell value
-) {
-    RudaManagedFieldDescriptor element;
-    if (array == NULL || array->descriptor == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
-    }
-    if (array->descriptor->cell_kind != RUDA_MANAGED_CELL_REFERENCE) {
-        return RUDA_MANAGED_OK;
-    }
-    element.cell_kind = RUDA_MANAGED_CELL_REFERENCE;
-    element.is_mutable = true;
-    element.reference_kind = array->descriptor->reference_kind;
-    element.reference_descriptor = array->descriptor->reference_descriptor;
-    return ruda_managed_validate_field(heap, &element, value);
-}
 
 RudaManagedStatus ruda_managed_array_check_mutation_commit(
     const RudaManagedArray *array
@@ -58,119 +17,6 @@ RudaManagedStatus ruda_managed_array_check_mutation_commit(
 
 void ruda_managed_array_commit_mutation(RudaManagedArray *array) {
     array->mutation_generation += UINT64_C(1);
-}
-
-static RudaManagedStatus ruda_managed_array_collect_for_growth(
-    RudaManagedHeap *heap,
-    RudaManagedReference array,
-    const RudaManagedArray *resolved,
-    const RudaManagedCell *temporary_value
-) {
-    RudaManagedReference roots[2];
-    size_t count = 1;
-    if (resolved == NULL || resolved->descriptor == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
-    }
-    roots[0] = array;
-    if (temporary_value != NULL
-        && resolved->descriptor->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
-        roots[1] = temporary_value->reference;
-        count = 2;
-    }
-    return ruda_managed_collect_internal(heap, roots, count, NULL, 0);
-}
-
-static RudaManagedStatus ruda_managed_array_ensure_capacity(
-    RudaManagedHeap *heap,
-    RudaManagedReference array,
-    size_t minimum_capacity,
-    const RudaManagedCell *temporary_value,
-    RudaManagedArray **result
-) {
-    RudaManagedArray *resolved = NULL;
-    RudaManagedStatus status;
-    size_t next_capacity = 0;
-    size_t old_bytes = 0;
-    size_t new_bytes = 0;
-    size_t added_bytes = 0;
-    size_t next_live_bytes = 0;
-    RudaManagedCell *resized = NULL;
-    bool collected = false;
-    status = ruda_managed_array_resolve_mutable(heap, array, &resolved);
-    if (status != RUDA_MANAGED_OK) {
-        return status;
-    }
-    if (minimum_capacity <= resolved->capacity) {
-        *result = resolved;
-        return RUDA_MANAGED_OK;
-    }
-    if (minimum_capacity > heap->options.max_array_length) {
-        return RUDA_MANAGED_LIMIT_REACHED;
-    }
-retry:
-    if (heap->options.collect_before_allocation && !collected) {
-        status = ruda_managed_array_collect_for_growth(
-            heap, array, resolved, temporary_value
-        );
-        if (status != RUDA_MANAGED_OK) {
-            return status;
-        }
-        collected = true;
-        status = ruda_managed_array_resolve_mutable(heap, array, &resolved);
-        if (status != RUDA_MANAGED_OK) {
-            return status;
-        }
-    }
-    next_capacity = resolved->capacity == 0 ? 4 : resolved->capacity;
-    while (next_capacity < minimum_capacity) {
-        size_t doubled = 0;
-        if (!ruda_size_multiply(next_capacity, 2, &doubled)
-            || doubled > heap->options.max_array_length) {
-            next_capacity = heap->options.max_array_length;
-            break;
-        }
-        next_capacity = doubled;
-    }
-    if (next_capacity < minimum_capacity
-        || !ruda_size_multiply(
-            resolved->capacity, sizeof(RudaManagedCell), &old_bytes
-        ) || !ruda_size_multiply(
-            next_capacity, sizeof(RudaManagedCell), &new_bytes
-        )) {
-        return RUDA_MANAGED_LIMIT_REACHED;
-    }
-    added_bytes = new_bytes - old_bytes;
-    if (!ruda_managed_add_within_limit(
-            heap->live_byte_count,
-            added_bytes,
-            heap->options.max_live_bytes,
-            &next_live_bytes
-        )) {
-        if (!collected) {
-            status = ruda_managed_array_collect_for_growth(
-                heap, array, resolved, temporary_value
-            );
-            if (status != RUDA_MANAGED_OK) {
-                return status;
-            }
-            collected = true;
-            status = ruda_managed_array_resolve_mutable(heap, array, &resolved);
-            if (status != RUDA_MANAGED_OK) {
-                return status;
-            }
-            goto retry;
-        }
-        return ruda_managed_resource_budget_failure(heap, added_bytes);
-    }
-    resized = ruda_resize(&heap->allocator, resolved->cells, old_bytes, new_bytes);
-    if (resized == NULL) {
-        return ruda_managed_resource_host_failure(heap, new_bytes);
-    }
-    resolved->cells = resized;
-    resolved->capacity = next_capacity;
-    heap->live_byte_count = next_live_bytes;
-    *result = resolved;
-    return RUDA_MANAGED_OK;
 }
 
 RudaManagedStatus ruda_managed_array_set(
@@ -201,7 +47,9 @@ RudaManagedStatus ruda_managed_array_set(
         return status;
     }
     (void)resolved_const;
-    resolved->cells[(size_t)index] = value;
+    ruda_managed_array_storage_write_unchecked(
+        resolved, (size_t)index, value
+    );
     ruda_managed_array_commit_mutation(resolved);
     return RUDA_MANAGED_OK;
 }
@@ -236,13 +84,17 @@ RudaManagedStatus ruda_managed_array_push(
     if (status != RUDA_MANAGED_OK) {
         return status;
     }
-    status = ruda_managed_array_ensure_capacity(
-        heap, array, next_length, &value, &resolved
-    );
-    if (status != RUDA_MANAGED_OK) {
-        return status;
+    if (next_length > resolved->capacity) {
+        status = ruda_managed_array_ensure_capacity(
+            heap, array, next_length, &value, &resolved
+        );
+        if (status != RUDA_MANAGED_OK) {
+            return status;
+        }
     }
-    resolved->cells[resolved->length] = value;
+    ruda_managed_array_storage_write_unchecked(
+        resolved, resolved->length, value
+    );
     resolved->length = next_length;
     ruda_managed_array_commit_mutation(resolved);
     return RUDA_MANAGED_OK;
@@ -288,14 +140,20 @@ RudaManagedStatus ruda_managed_array_check_mutation_generation(
         : RUDA_MANAGED_ITERATOR_INVALIDATED;
 }
 
-static void ruda_managed_array_remove_suffix(
+static RudaManagedStatus ruda_managed_array_remove_suffix(
     RudaManagedArray *array,
     size_t new_length
 ) {
     size_t removed = array->length - new_length;
-    memset(array->cells + new_length, 0, removed * sizeof(*array->cells));
+    RudaManagedStatus status = ruda_managed_array_storage_clear(
+        array, new_length, removed
+    );
+    if (status != RUDA_MANAGED_OK) {
+        return status;
+    }
     array->length = new_length;
     ruda_managed_array_commit_mutation(array);
+    return RUDA_MANAGED_OK;
 }
 
 RudaManagedStatus ruda_managed_array_pop(
@@ -323,8 +181,15 @@ RudaManagedStatus ruda_managed_array_pop(
     if (status != RUDA_MANAGED_OK) {
         return status;
     }
-    *result = resolved->cells[resolved->length - 1];
-    ruda_managed_array_remove_suffix(resolved, resolved->length - 1);
+    ruda_managed_array_storage_read_unchecked(
+        resolved, resolved->length - 1, result
+    );
+    status = ruda_managed_array_remove_suffix(
+        resolved, resolved->length - 1
+    );
+    if (status != RUDA_MANAGED_OK) {
+        return status;
+    }
     *popped = true;
     return RUDA_MANAGED_OK;
 }
@@ -351,8 +216,7 @@ RudaManagedStatus ruda_managed_array_truncate(
     if (status != RUDA_MANAGED_OK) {
         return status;
     }
-    ruda_managed_array_remove_suffix(resolved, (size_t)new_length);
-    return RUDA_MANAGED_OK;
+    return ruda_managed_array_remove_suffix(resolved, (size_t)new_length);
 }
 
 RudaManagedStatus ruda_managed_array_clear(
@@ -370,8 +234,7 @@ RudaManagedStatus ruda_managed_array_clear(
     if (status != RUDA_MANAGED_OK) {
         return status;
     }
-    ruda_managed_array_remove_suffix(resolved, 0);
-    return RUDA_MANAGED_OK;
+    return ruda_managed_array_remove_suffix(resolved, 0);
 }
 
 RudaManagedStatus ruda_managed_array_reserve(

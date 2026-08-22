@@ -90,7 +90,7 @@ void ruda_test_native_c_emitter_array_mutation(void) {
             &generated
         ) == RUDA_NATIVE_C_EMIT_OK);
         RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "ruda_managed_array_pop"
+            &generated, "ruda_managed_array_view_pop"
         ));
         RUDA_EXPECT(ruda_test_native_contains(
             &generated, "ruda_managed_array_truncate"
@@ -102,7 +102,7 @@ void ruda_test_native_c_emitter_array_mutation(void) {
             &generated, "ruda_managed_array_reserve"
         ));
         RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "ruda_managed_array_check_mutation_generation"
+            &generated, ".mutation_generation"
         ));
 #if !defined(_WIN32)
         ruda_test_native_compile_and_run(&generated, "ok:i64:415\n", 0);

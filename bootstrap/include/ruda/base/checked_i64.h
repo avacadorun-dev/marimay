@@ -15,6 +15,9 @@ int64_t ruda_i64_bitwise_not(int64_t value);
 int64_t ruda_i64_bitwise_and(int64_t left, int64_t right);
 int64_t ruda_i64_bitwise_xor(int64_t left, int64_t right);
 int64_t ruda_i64_bitwise_or(int64_t left, int64_t right);
+int64_t ruda_i64_add_proven(int64_t left, int64_t right);
+int64_t ruda_i64_subtract_proven(int64_t left, int64_t right);
+int64_t ruda_i64_multiply_proven(int64_t left, int64_t right);
 
 RudaCheckedI64Status ruda_checked_i64_add(
     int64_t left,

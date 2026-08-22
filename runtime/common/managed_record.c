@@ -3,6 +3,35 @@
 #include <limits.h>
 #include <string.h>
 
+RudaManagedStatus ruda_managed_record_view_bind(
+    RudaManagedHeap *heap,
+    RudaManagedReference reference,
+    const RudaManagedRecordDescriptor *expected,
+    RudaManagedRecordView *view
+) {
+    RudaManagedSlot *slot = NULL;
+    if (view == NULL) {
+        return RUDA_MANAGED_INVALID_ARGUMENT;
+    }
+    memset(view, 0, sizeof(*view));
+    if (!ruda_managed_heap_valid(heap) || expected == NULL) {
+        return RUDA_MANAGED_INVALID_ARGUMENT;
+    }
+    slot = ruda_managed_resolve(heap, reference);
+    if (slot == NULL) {
+        return RUDA_MANAGED_INVALID_REFERENCE;
+    }
+    if (slot->kind != RUDA_MANAGED_OBJECT_RECORD || slot->as.record == NULL
+        || slot->as.record->descriptor != expected) {
+        return RUDA_MANAGED_TYPE_MISMATCH;
+    }
+    view->reference = reference;
+    view->descriptor = expected;
+    view->object = slot->as.record;
+    view->fields = slot->as.record->fields;
+    return RUDA_MANAGED_OK;
+}
+
 RudaManagedStatus ruda_managed_record_new(
     RudaManagedHeap *heap,
     const RudaManagedRecordDescriptor *descriptor,

@@ -8,6 +8,7 @@ add_executable(ruda_c_unit
   test_ast.c
   test_base.c
   test_checked_integer.c
+  test_integer_range.c
   test_bytecode.c
   test_bytecode_support.c
   test_bytecode_model.c
@@ -22,6 +23,7 @@ add_executable(ruda_c_unit
   test_bytecode_vm_scalar.c
   test_bytecode_vm_arithmetic.c
   test_bytecode_vm_arrays.c
+  test_bytecode_vm_array_storage.c
   test_bytecode_vm_array_mutation.c
   test_bytecode_vm_interface_support.c
   test_bytecode_vm_interfaces.c
@@ -100,6 +102,10 @@ add_executable(ruda_c_unit
   test_managed.c
   runtime/test_managed_resource.c
   runtime/test_managed_array_access.c
+  runtime/test_managed_array_capacity.c
+  runtime/test_managed_array_nested.c
+  runtime/test_managed_array_storage.c
+  runtime/test_managed_record_view.c
   runtime/test_managed_mutation.c
   test_managed_objects.c
   test_number_format.c
@@ -108,6 +114,7 @@ add_executable(ruda_c_unit
   test_mir_arrays.c
   test_mir_arrays_rhs.c
   test_mir_range.c
+  test_mir_integer_range.c
   test_mir_imported_arrays.c
   test_mir_imported_results.c
   test_mir_bytecode.c
@@ -123,6 +130,8 @@ add_executable(ruda_c_unit
   test_native_c_emitter.c
   test_native_c_emitter_arrays.c
   test_native_c_emitter_array_access.c
+  test_native_c_emitter_array_storage.c
+  test_native_c_emitter_managed_views.c
   test_native_c_emitter_array_mutation.c
   test_native_c_emitter_baseline.c
   test_native_c_emitter_matrix.c

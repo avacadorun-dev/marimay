@@ -129,6 +129,18 @@ The loader verifies a bundle before any module code becomes executable. Verifica
 
 Verification failure is a loader diagnostic and must not crash or partially initialize the runtime. The bytecode verifier is fuzzed as an untrusted-input boundary. An encoded in-bounds array operation is accepted only when verification reconstructs a matching dominating `ARRAY_REQUIRE_INDEX` capability for the same carrier and index. MIR-only static range assumptions lower to that checked bytecode barrier rather than claiming a serialized range fact. Calls, interface calls, stores, and every array mutation/resize operation invalidate capabilities. A verifier allocation or work-limit failure rejects the bundle; it never treats a missing proof as trusted.
 
+Under D062, wire opcodes 98 `i64_add_proven`, 99
+`i64_subtract_proven`, and 100 `i64_multiply_proven` have
+`destination`, `left`, and `right` register operands and no `may_panic` flag.
+All three registers must be exact `i64`. Before accepting any such opcode, the
+verifier reconstructs the bounded signed/unsigned interval dataflow, including
+join, loop-header widening followed by bounded narrowing, conversion,
+remainder, and comparison-edge rules, and proves the result representable at
+that exact instruction. Serialized bounds
+or producer trust cannot substitute for reconstruction. Missing proof,
+allocation failure, or work-limit exhaustion rejects the bundle before VM
+execution.
+
 ## 5. C17 AOT contract
 
 ### 5.1 Generated C safety
@@ -136,6 +148,9 @@ Verification failure is a loader diagnostic and must not crash or partially init
 Generated C must not depend on C undefined behavior to implement safe Ruda. In particular:
 
 - checked signed arithmetic uses range checks or unsigned-domain techniques before conversion;
+- verifier-proven D062 `i64` add/subtract/multiply uses unsigned-domain
+  evaluation followed by portable two's-complement conversion and can execute
+  only after the same interval proof is reconstructed;
 - signed division and remainder implement D042 truncation-toward-zero and
   dividend-sign remainder rules, checking zero and `MIN / -1` or `MIN % -1`
   before evaluating any host C division or remainder operator;
@@ -496,6 +511,61 @@ consumer remains observable at its original point. Neither mode retains a
 resolved runtime pointer, length, or capacity after the call, and the caller's
 shadow-root frame owns the array reference for the complete call.
 
+Under D060, a verified raw scalar element type selects dense byte-addressed
+array storage with an exact 1-, 2-, 4-, or 8-byte stride; reference elements
+retain `RudaManagedCell` stride. The runtime validates the descriptor tag,
+stride, and raw/reference class before publishing or accessing storage. Raw
+loads and stores use byte copies through aligned fixed-width locals, preserve
+the canonical low payload bits, and are never traced as references. Newly
+reserved storage is zero-initialized, only the initialized reference prefix is
+traced, and live-byte accounting charges the exact reserved stride bytes.
+Checked size arithmetic and budget preflight precede allocation, resizing, and
+address calculation, and a failed operation leaves identity, contents, length,
+capacity, mutation generation, and accounting unchanged. This internal layout
+does not change the portable bytecode array-type table or expose stride or
+capacity to source code.
+
+Under D061, managed-array construction whose element count is known allocates
+exactly `count * descriptor.stride` storage bytes and publishes capacity equal
+to count. Unknown-size growth uses the single runtime capacity planner: zero
+capacity starts at four and later capacity doubles, clamped once to the
+configured maximum. `reserve` submits `length + additional` to that planner
+once; a covered request performs no allocation. All checked planning and
+stride arithmetic precede D055 budget preflight and host allocation, and a
+collection-triggered retry re-resolves the rooted handle and recomputes the
+same plan. VM and native use this identical path. These rules neither expose
+capacity nor change the established budget bytes, allocation request, failure
+precedence, mutation generation, or portable bytecode.
+
+Under D063, generated native C may bind an exact array or record reference to
+a non-escaping activation view after validating its managed handle and
+immutable descriptor. Managed objects do not move. Array views retain field
+locations for length, mutation generation, and the current storage pointer;
+they do not retain the storage pointer value across growth. Record views retain
+the fixed field-array location. Copying an exact reference copies its companion
+view, while every other reference-producing definition clears it. Exact array
+fields of a descriptor-checked record parameter may be bound eagerly and are
+kept alive through the rooted record trace edge. Activations containing a call
+or array-valued record write compare the current field identity before reuse;
+call-free/read-only activations cannot replace that field and omit the guard.
+
+A view is not a bounds proof. Checked native access still performs the signed
+G4002 check at the original source span, and unchecked access still requires a
+D058 verifier capability with the same invalidation rules. `RAW64` native
+loads and stores may use C17 `memcpy` directly through the bound storage field;
+stores preserve D053 generation saturation and commit order. Reference layouts
+retain exact type validation, and nested aliases, collection, growth, iterator
+G4005 behavior, panic identity, and VM observations are unchanged.
+
+Generated native code links a precise shadow-root frame whenever the function
+or any reachable direct callee may allocate, collect, suspend, dispatch through
+an unknown interface, or otherwise reach a managed safepoint. A conservative
+transitive proof may omit that frame only when no such event is reachable.
+Normal builds keep small root-location tables in fixed activation storage;
+deterministic allocation-injection builds preserve the allocating path and its
+failure order. Portable static-inline checked/proven `i64` helpers may remove a
+separately linked call but retain D035/D062 arithmetic and panic semantics.
+
 ### 9.3 Resource lifetime
 
 Garbage collection is not resource management. Safe APIs for files, sockets, transactions, and foreign handles expose explicit `close`/`finish` operations intended for lexical `defer`. User-defined finalizers are not supported in 1.0. Internal emergency cleanup for leaked OS handles must be reported and cannot define correctness.
@@ -603,6 +673,11 @@ primary span, observed failing index and length, result bits, alias-visible
 mutation, and stale/wrong-descriptor rejection as the checked VM path. Link
 mode, runtime archive profile, or availability of LTO cannot select a different
 native safety boundary.
+
+D060 dense raw storage additionally preserves exact integer/floating payload
+bits, live-byte failure classification, reference tracing, mutation generation,
+and VM/native observations. Storage tag, stride, padding, and backing addresses
+are not safe-source observations and are absent from portable bytecode.
 
 Addresses, GC timing, backend helper frames, native symbol names, throughput, and independent-task scheduling are not observable guarantees.
 

@@ -8,6 +8,8 @@
 
 static const RudaManagedArrayDescriptor ruda_test_resource_recursive = {
     RUDA_MANAGED_CELL_REFERENCE,
+    RUDA_MANAGED_ARRAY_STORAGE_CELL,
+    sizeof(RudaManagedCell),
     RUDA_MANAGED_OBJECT_ARRAY,
     &ruda_test_resource_recursive
 };
@@ -94,7 +96,7 @@ static void ruda_test_resource_growth_and_semantic_precedence(void) {
     RudaManagedResourceFailure failure;
     RudaManagedCell initial = ruda_test_resource_raw(UINT64_C(7));
     size_t live = 0;
-    size_t growth = 4 * sizeof(RudaManagedCell) - sizeof(RudaManagedCell);
+    size_t growth = 4 * sizeof(uint64_t) - sizeof(uint64_t);
     RUDA_EXPECT(ruda_test_resource_init(
         &heap, ruda_system_allocator(), 64U * 1024U
     ));
@@ -245,7 +247,7 @@ static void ruda_test_resource_reserve_host_failure(void) {
     RUDA_EXPECT(ruda_managed_heap_last_resource_failure(&heap, &failure));
     RUDA_EXPECT(failure.classification
         == RUDA_MANAGED_RESOURCE_FAILURE_HOST_ALLOCATION);
-    RUDA_EXPECT(failure.requested_bytes == 4 * sizeof(RudaManagedCell));
+    RUDA_EXPECT(failure.requested_bytes == 4 * sizeof(uint64_t));
     RUDA_EXPECT(ruda_managed_array_length(&heap, array, &length)
         == RUDA_MANAGED_OK && length == 0);
     ruda_managed_heap_dispose(&heap);

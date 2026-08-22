@@ -73,7 +73,7 @@ static bool ruda_mir_range_has_candidate(const RudaMirFunction *function) {
     return false;
 }
 
-RudaMirRangeOptimizeStatus ruda_mir_optimize_ranges(
+static RudaMirRangeOptimizeStatus ruda_mir_optimize_array_ranges(
     RudaMirFunction *function
 ) {
     RudaMirRangeFact *facts = NULL;
@@ -206,4 +206,14 @@ RudaMirRangeOptimizeStatus ruda_mir_optimize_ranges(
     ruda_deallocate(&function->allocator, facts, fact_bytes);
     ruda_deallocate(&function->allocator, rewrites, rewrite_bytes);
     return ruda_mir_range_status(verify_status);
+}
+
+RudaMirRangeOptimizeStatus ruda_mir_optimize_ranges(
+    RudaMirFunction *function
+) {
+    RudaMirRangeOptimizeStatus status = ruda_mir_optimize_array_ranges(
+        function
+    );
+    return status == RUDA_MIR_RANGE_OPTIMIZE_OK
+        ? ruda_mir_optimize_integer_ranges(function) : status;
 }

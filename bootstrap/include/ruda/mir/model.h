@@ -99,7 +99,9 @@ typedef enum RudaMirInstructionKind {
     RUDA_MIR_TEST_OUTPUT_BEGIN,
     RUDA_MIR_TEST_OUTPUT_END,
     RUDA_MIR_DEFER_REGISTER,
-    RUDA_MIR_DEFER_CALL
+    RUDA_MIR_DEFER_CALL,
+    RUDA_MIR_ADD_PROVEN_I64, RUDA_MIR_SUBTRACT_PROVEN_I64,
+    RUDA_MIR_MULTIPLY_PROVEN_I64
 } RudaMirInstructionKind;
 typedef enum RudaMirIntegerPolicy {
     RUDA_MIR_INTEGER_CHECKED_OPTION,
@@ -152,8 +154,7 @@ typedef struct RudaMirTerminator {
     RudaMirTerminatorKind kind;
     RudaMirRegister value;
     RudaMirCallId call;
-    RudaMirBlockId target;
-    RudaMirBlockId otherwise;
+    RudaMirBlockId target, otherwise;
     RudaMirSpan span;
 } RudaMirTerminator;
 #endif

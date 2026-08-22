@@ -602,6 +602,8 @@ RudaBytecodeRunStatus ruda_bytecode_value_to_managed_cell(
         cell->f64_bits = value->as.boolean ? 1 : 0;
     } else if (value->type == RUDA_BYTECODE_TYPE_F64) {
         cell->f64_bits = value->as.f64_bits;
+    } else if (value->type == RUDA_BYTECODE_TYPE_F32) {
+        cell->f64_bits = value->as.integer_bits;
     } else if (value->type == RUDA_BYTECODE_TYPE_STRING) {
         const unsigned char *bytes = NULL;
         size_t length = 0;
@@ -632,6 +634,8 @@ RudaBytecodeRunStatus ruda_bytecode_managed_cell_to_value(
         value->as.boolean = cell.f64_bits != 0;
     } else if (value->type == RUDA_BYTECODE_TYPE_F64) {
         value->as.f64_bits = cell.f64_bits;
+    } else if (value->type == RUDA_BYTECODE_TYPE_F32) {
+        value->as.integer_bits = cell.f64_bits;
     } else if (value->type == RUDA_BYTECODE_TYPE_STRING) {
         const unsigned char *bytes = NULL;
         size_t length = 0;

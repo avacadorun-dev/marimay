@@ -11,6 +11,57 @@ static RudaTypeId ruda_native_c_register_type(
     return type != NULL ? *type : RUDA_TYPE_INVALID;
 }
 
+static bool ruda_native_c_record_array_view_needs_identity_guard(
+    const RudaMirFunction *function
+) {
+    size_t block_index = 0;
+    if (function == NULL || function->calls.length != 0) {
+        return true;
+    }
+    for (block_index = 0; block_index < function->blocks.length;
+        block_index += 1) {
+        const RudaMirBlock *block = ruda_vector_at_const(
+            &function->blocks, block_index
+        );
+        size_t instruction_index = 0;
+        if (block == NULL) {
+            return true;
+        }
+        for (instruction_index = 0;
+            instruction_index < block->instructions.length;
+            instruction_index += 1) {
+            const RudaMirInstruction *candidate = ruda_vector_at_const(
+                &block->instructions, instruction_index
+            );
+            if (candidate == NULL) {
+                return true;
+            }
+            if (candidate->kind == RUDA_MIR_RECORD_SET
+                && ruda_native_c_register_array(
+                    function, candidate->second
+                ) != NULL) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+static bool ruda_native_c_record_parameter_view(
+    const RudaMirFunction *function,
+    const RudaMirFunction *const *functions,
+    size_t count,
+    RudaMirRegister register_id
+) {
+    RudaTypeId type = ruda_native_c_register_type(function, register_id);
+    RudaNativeCManagedLayout layout;
+    return register_id < function->parameter_count
+        && type >= RUDA_TYPE_FIRST_DYNAMIC
+        && ruda_native_c_find_managed_layout(
+            functions, count, type, &layout
+        ) && layout.kind == RUDA_NATIVE_C_MANAGED_RECORD;
+}
+
 bool ruda_native_c_write_to_managed_cell(
     RudaNativeCBuffer *buffer,
     RudaTypeId type,
@@ -39,6 +90,11 @@ bool ruda_native_c_write_to_managed_cell(
         );
     }
     if (type == RUDA_TYPE_F64) {
+        return ruda_native_c_write(
+            buffer, "ruda_g_cell.f64_bits = ruda_g_v_%u", register_id
+        );
+    }
+    if (type == RUDA_TYPE_F32) {
         return ruda_native_c_write(
             buffer, "ruda_g_cell.f64_bits = ruda_g_v_%u", register_id
         );
@@ -77,6 +133,11 @@ bool ruda_native_c_write_from_managed_cell(
     if (type == RUDA_TYPE_F64) {
         return ruda_native_c_write(
             buffer, "ruda_g_v_%u = ruda_g_cell.f64_bits", target
+        );
+    }
+    if (type == RUDA_TYPE_F32) {
+        return ruda_native_c_write(
+            buffer, "ruda_g_v_%u = (uint32_t)ruda_g_cell.f64_bits", target
         );
     }
     return type >= RUDA_TYPE_FIRST_DYNAMIC && ruda_native_c_write(
@@ -308,6 +369,14 @@ static bool ruda_native_c_emit_interface_call(
         ) || !ruda_native_c_emit_propagate_call(
             buffer, function->symbol, instruction->span, false
         )) return false;
+    if (ruda_native_c_register_array(function, instruction->target) != NULL
+        && !ruda_native_c_write(
+            buffer,
+            "  ruda_g_av_%u = (RudaManagedArrayView){0};\n",
+            instruction->target
+        )) {
+        return false;
+    }
     return true;
 }
 
@@ -325,13 +394,52 @@ bool ruda_native_c_emit_managed_instruction(
         case RUDA_MIR_RECORD_NEW:
             return ruda_native_c_emit_record_new(buffer, function, instruction);
         case RUDA_MIR_RECORD_GET:
+            if (ruda_native_c_record_parameter_view(
+                    function, functions, count, instruction->first
+                )) {
+                bool array_target = ruda_native_c_register_array(
+                    function, instruction->target
+                ) != NULL;
+                bool identity_guard = array_target
+                    && ruda_native_c_record_array_view_needs_identity_guard(
+                        function
+                    );
+                if (!ruda_native_c_write(
+                        buffer,
+                        "  { RudaManagedCell ruda_g_cell = ruda_g_rv_%u.fields[%zu]; ",
+                        instruction->first, instruction->field
+                    ) || !ruda_native_c_write_from_managed_cell(
+                        buffer, type, instruction->target
+                    ) || (identity_guard && !ruda_native_c_write(
+                        buffer,
+                        "; ruda_g_av_%u = ruda_managed_reference_equal(ruda_g_rv_%u.fields[%zu].reference, ruda_g_rv_%u_f_%zu.reference) ? ruda_g_rv_%u_f_%zu : (RudaManagedArrayView){0}",
+                        instruction->target, instruction->first,
+                        instruction->field,
+                        instruction->first, instruction->field,
+                        instruction->first, instruction->field
+                    )) || (array_target && !identity_guard
+                        && !ruda_native_c_write(
+                            buffer,
+                            "; ruda_g_av_%u = ruda_g_rv_%u_f_%zu",
+                            instruction->target, instruction->first,
+                            instruction->field
+                    )) || !ruda_native_c_write(buffer, "; }\n")) {
+                    return false;
+                }
+                return true;
+            }
             if (!ruda_native_c_write(
                 buffer,
                 "  { RudaManagedCell ruda_g_cell; ruda_g_m = ruda_managed_record_get(&ruda_g_x->heap, ruda_g_v_%u, %zu, &ruda_g_cell); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } ",
                 instruction->first, instruction->field
             ) || !ruda_native_c_write_from_managed_cell(
                 buffer, type, instruction->target
-            ) || !ruda_native_c_write(buffer, "; }\n")) return false;
+            ) || (ruda_native_c_register_array(function, instruction->target)
+                != NULL && !ruda_native_c_write(
+                    buffer,
+                    "; ruda_g_av_%u = (RudaManagedArrayView){0}",
+                    instruction->target
+                )) || !ruda_native_c_write(buffer, "; }\n")) return false;
             return true;
         case RUDA_MIR_ENUM_GET_PAYLOAD:
             if (!ruda_native_c_write(
@@ -340,9 +448,36 @@ bool ruda_native_c_emit_managed_instruction(
                 instruction->first, instruction->variant, instruction->field
             ) || !ruda_native_c_write_from_managed_cell(
                 buffer, type, instruction->target
-            ) || !ruda_native_c_write(buffer, "; }\n")) return false;
+            ) || (ruda_native_c_register_array(function, instruction->target)
+                != NULL && !ruda_native_c_write(
+                    buffer,
+                    "; ruda_g_av_%u = (RudaManagedArrayView){0}",
+                    instruction->target
+                )) || !ruda_native_c_write(buffer, "; }\n")) return false;
             return true;
         case RUDA_MIR_RECORD_SET:
+            if (ruda_native_c_record_parameter_view(
+                    function, functions, count, instruction->first
+                ) && ruda_native_c_register_type(
+                    function, instruction->second
+                ) < RUDA_TYPE_FIRST_DYNAMIC
+                && ruda_native_c_register_type(
+                    function, instruction->second
+                ) != RUDA_TYPE_STRING) {
+                return ruda_native_c_write(
+                    buffer,
+                    "  { RudaManagedCell ruda_g_cell; memset(&ruda_g_cell, 0, sizeof(ruda_g_cell)); "
+                ) && ruda_native_c_write_to_managed_cell(
+                    buffer,
+                    ruda_native_c_register_type(function, instruction->second),
+                    instruction->second
+                ) && ruda_native_c_write(
+                    buffer,
+                    "; ruda_g_rv_%u.fields[%zu] = ruda_g_cell; ruda_g_v_%u = ruda_g_v_%u; }\n",
+                    instruction->first, instruction->field,
+                    instruction->target, instruction->second
+                );
+            }
             return ruda_native_c_write(
                 buffer,
                 "  { RudaManagedCell ruda_g_cell; memset(&ruda_g_cell, 0, sizeof(ruda_g_cell)); "

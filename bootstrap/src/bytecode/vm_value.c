@@ -748,6 +748,14 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                 &registers[target].as.i64
             ));
         }
+        case RUDA_OPCODE_I64_ADD_PROVEN: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.i64 = ruda_i64_add_proven(
+                registers[first].as.i64, registers[second].as.i64
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
         case RUDA_OPCODE_I64_SUBTRACT_CHECKED: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;
             size_t second = (size_t)instruction->operands[2].unsigned_value;
@@ -763,6 +771,14 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                 &registers[target].as.i64
             ));
         }
+        case RUDA_OPCODE_I64_SUBTRACT_PROVEN: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.i64 = ruda_i64_subtract_proven(
+                registers[first].as.i64, registers[second].as.i64
+            );
+            return RUDA_BYTECODE_RUN_OK;
+        }
         case RUDA_OPCODE_I64_MULTIPLY_CHECKED: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;
             size_t second = (size_t)instruction->operands[2].unsigned_value;
@@ -777,6 +793,14 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
                 registers[second].as.i64,
                 &registers[target].as.i64
             ));
+        }
+        case RUDA_OPCODE_I64_MULTIPLY_PROVEN: {
+            size_t first = (size_t)instruction->operands[1].unsigned_value;
+            size_t second = (size_t)instruction->operands[2].unsigned_value;
+            registers[target].as.i64 = ruda_i64_multiply_proven(
+                registers[first].as.i64, registers[second].as.i64
+            );
+            return RUDA_BYTECODE_RUN_OK;
         }
         case RUDA_OPCODE_I64_DIVIDE_CHECKED: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;

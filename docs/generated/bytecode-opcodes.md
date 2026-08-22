@@ -108,3 +108,6 @@ Stage 0 codec.
 | 95 | `array_require_generation` | `destination:register`, `array:register`, `generation:register` | `may_panic` | Copy the array only if its mutation generation still matches the captured value. |
 | 96 | `array_get_in_bounds` | `destination:register`, `array:register`, `index:register` | — | Load through a verifier-proven array/index token. |
 | 97 | `array_set_in_bounds` | `array:register`, `index:register`, `value:register` | — | Store through a verifier-proven array/index token. |
+| 98 | `i64_add_proven` | `destination:register`, `left:register`, `right:register` | — | Add i64 operands under a verifier-proven no-overflow interval fact. |
+| 99 | `i64_subtract_proven` | `destination:register`, `left:register`, `right:register` | — | Subtract i64 operands under a verifier-proven no-overflow interval fact. |
+| 100 | `i64_multiply_proven` | `destination:register`, `left:register`, `right:register` | — | Multiply i64 operands under a verifier-proven no-overflow interval fact. |

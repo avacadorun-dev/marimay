@@ -118,3 +118,16 @@ The following are hypotheses, not facts, and must be validated with prototypes a
 - shape sharing provides acceptable generic performance while controlling compile time and artifact size.
 
 Each hypothesis has a gate in the implementation roadmap. Failure of a hypothesis requires a recorded design revision, not quiet semantic drift.
+
+## Local algorithm experiment
+
+The 2026-08-18 Ruda/Go/Rust algorithm repository adds local evidence about
+native array-heavy workloads, runtime resource limits, benchmark comparability,
+and release-profile selection. The observations and optimization hypotheses are
+recorded in
+[`algorithm-benchmark-findings.md`](algorithm-benchmark-findings.md).
+
+The same exercise exposed recurring source verbosity for nested managed arrays.
+The non-normative `[][]int` design proposal and its interaction with tuple
+types, `Slice<T>`, formatting, and migration are recorded separately in
+[`array-type-shorthand-proposal.md`](../design/array-type-shorthand-proposal.md).

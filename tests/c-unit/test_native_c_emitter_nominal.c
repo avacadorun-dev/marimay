@@ -319,6 +319,23 @@ static void ruda_test_native_nominal_boundary_cases(void) {
             ruda_native_c_emit_default_options(),
             &generated
         ) == RUDA_NATIVE_C_EMIT_OK);
+        RUDA_EXPECT(ruda_test_native_contains(
+            &generated, "RudaManagedRecordView ruda_g_rv_0 = {0};"
+        ));
+        RUDA_EXPECT(ruda_test_native_contains(
+            &generated, "ruda_managed_record_view_bind("
+        ));
+        RUDA_EXPECT(ruda_test_native_contains(
+            &generated, "ruda_g_rv_0.fields["
+        ));
+        RUDA_EXPECT(ruda_test_native_contains(
+            &generated, "RudaManagedReference *ruda_g_location_storage["
+        ));
+        RUDA_EXPECT(ruda_test_native_contains(
+            &generated,
+            "#if RUDA_G_FAIL_ALLOCATION_AT != SIZE_MAX\n"
+            "#if RUDA_G_FAIL_ALLOCATION_AT != SIZE_MAX\n"
+        ));
 #if !defined(_WIN32)
         if (generated.data != NULL) {
             ruda_test_native_compile_and_run(

@@ -77,6 +77,11 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_defer_control_flow(
     size_t available_work,
     size_t *work_used
 );
+RudaBytecodeVerifyStatus ruda_bytecode_verify_integer_range_proofs(
+    const RudaBytecodeFunction *function,
+    size_t available_work,
+    size_t *work_used
+);
 
 /* Internal entry point for composing a function verifier into a shared budget. */
 RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(

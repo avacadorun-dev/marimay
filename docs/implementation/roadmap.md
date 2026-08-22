@@ -74,6 +74,32 @@ LTO prototype. The 11/3 Apple M2 report improves scalar-get by 18.18% and
 unproven-bounds by 14.26% from CP22 while every probe remains below its reviewed
 local ceiling; it is supplemental and does not satisfy the five-platform
 public-alpha registry.
+[Post-preview checkpoint 24 dense-storage evidence](evidence/cp24-dense-array-storage-2026-08-22.md)
+accepts D060 and replaces 16-byte transport cells in homogeneous raw scalar
+array backing storage with descriptor-selected 1/2/4/8-byte strides. Exact
+payload bits, stable handles, reference tracing, failure atomicity, bytecode
+wire identity, and VM/native observations remain covered. The final Apple M2
+11/3 report is below every reviewed CP21 local ceiling; it also records the
+pre-optimization growth candidate and retained retry rather than discarding
+them. The report is supplemental and does not complete the distinct
+five-platform public-alpha registry.
+[Post-preview checkpoint 25 capacity evidence](evidence/cp25-array-capacity-2026-08-22.md)
+accepts D061 and centralizes exact known-count construction plus the single
+stride-aware geometric growth/reserve planner, including no-op, clamp,
+accounting, allocation-failure, and VM/native parity coverage.
+[Post-preview checkpoint 26 nested-view evidence](evidence/cp26-nested-array-views-2026-08-22.md)
+accepts the managed-view portion of D063 after nested/graph profiling and
+records activation-scoped array/record views, outer-field replacement guards,
+rooted growth/collection coverage, and the faithful BFS/Dijkstra change.
+[Post-preview checkpoint 27 integer-proof evidence](evidence/cp27-integer-proofs-2026-08-22.md)
+accepts D062, appends independently verified proven i64 MIR/bytecode forms,
+and records loop-header widening plus narrowing, transactional fallback,
+hostile-artifact rejection, and checked-loop measurements.
+[Post-preview checkpoint 28 integration evidence](evidence/cp28-release-rebaseline-2026-08-22.md)
+records D063's remaining native fast paths and the 11/3 macOS arm64
+Ruda/Go/Rust rebaseline. It reports the material algorithm improvements and
+the still-large Option/enum-allocation and cross-language gaps without
+claiming the unrun five-platform public-alpha gate.
 Latest earlier I4 process evidence: [preview checkpoint 12 executes the final
 local/private preview process matrix and exact VM/native observation
 comparison](evidence/cp12-final-preview-2026-08-18.md).
@@ -102,6 +128,20 @@ separate public-alpha performance gate.
 Accepted [D059](../design/decisions.md) selects the versioned portable-C17
 exact array-access ABI and rejects compiler/version-coupled archive LTO as the
 permanent native boundary.
+Accepted [D060](../design/decisions.md) selects closed dense raw scalar storage
+tags and exact strides while retaining transport cells only at ABI/reference
+boundaries and leaving portable bytecode unchanged.
+Accepted [D061](../design/decisions.md) fixes exact known-count construction and
+the single established geometric unknown-size/reserve planner without changing
+the observable D055 resource boundary.
+Accepted [D062](../design/decisions.md) permits only verifier-reconstructed
+interval proofs to select appended non-panicking i64 add/subtract/multiply MIR
+and bytecode forms, with checked fallback on optimizer resource failure.
+Accepted [D063](../design/decisions.md) permits activation-scoped exact
+array/record views, direct portable RAW64 byte copies, fixed small
+root-location storage, and transitive no-safepoint root elision while retaining
+D058 bounds authority, precise reachability, deterministic failure injection,
+and D035/D062 arithmetic semantics.
 
 Preview checkpoint 4 evidence: [generic `Option`/`Result`/`?`/`mapError`
 vertical slice](evidence/i2-generics-checkpoint-4-2026-08-17.md). The slice

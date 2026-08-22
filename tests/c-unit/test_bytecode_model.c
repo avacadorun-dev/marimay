@@ -229,6 +229,18 @@ void ruda_test_bytecode_metadata(void) {
         {RUDA_OPCODE_ARRAY_SET_IN_BOUNDS, 97, "array_set_in_bounds", 3,
             {RUDA_BYTECODE_OPERAND_REGISTER,
                 RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_REGISTER}, 0},
+        {RUDA_OPCODE_I64_ADD_PROVEN, 98, "i64_add_proven", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_REGISTER}, 0},
+        {RUDA_OPCODE_I64_SUBTRACT_PROVEN, 99, "i64_subtract_proven", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_REGISTER}, 0},
+        {RUDA_OPCODE_I64_MULTIPLY_PROVEN, 100, "i64_multiply_proven", 3,
+            {RUDA_BYTECODE_OPERAND_REGISTER,
+                RUDA_BYTECODE_OPERAND_REGISTER,
                 RUDA_BYTECODE_OPERAND_REGISTER}, 0}
 #undef RUDA_NUMERIC_UNARY
 #undef RUDA_NUMERIC_BINARY
@@ -307,6 +319,9 @@ void ruda_test_bytecode_metadata(void) {
     RUDA_EXPECT(RUDA_OPCODE_ARRAY_REQUIRE_GENERATION == 95);
     RUDA_EXPECT(RUDA_OPCODE_ARRAY_GET_IN_BOUNDS == 96);
     RUDA_EXPECT(RUDA_OPCODE_ARRAY_SET_IN_BOUNDS == 97);
+    RUDA_EXPECT(RUDA_OPCODE_I64_ADD_PROVEN == 98);
+    RUDA_EXPECT(RUDA_OPCODE_I64_SUBTRACT_PROVEN == 99);
+    RUDA_EXPECT(RUDA_OPCODE_I64_MULTIPLY_PROVEN == 100);
     RUDA_EXPECT(RUDA_OPCODE_COUNT == sizeof(expected) / sizeof(expected[0]));
     for (index = 0; index < sizeof(expected) / sizeof(expected[0]); index += 1) {
         const RudaOpcodeMetadata *metadata = ruda_opcode_metadata(expected[index].opcode);

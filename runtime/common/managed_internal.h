@@ -8,7 +8,7 @@ typedef struct RudaManagedArray {
     size_t length;
     size_t capacity;
     uint64_t mutation_generation;
-    RudaManagedCell *cells;
+    unsigned char *storage;
 } RudaManagedArray;
 typedef struct RudaManagedString {
     size_t length;
@@ -46,8 +46,34 @@ typedef struct RudaManagedSlot {
 
 bool ruda_managed_heap_valid(const RudaManagedHeap *heap);
 size_t ruda_managed_language_max_array_length(void);
-size_t ruda_managed_array_cell_bytes(const RudaManagedArray *array);
+bool ruda_managed_array_descriptor_valid(
+    const RudaManagedArrayDescriptor *descriptor
+);
+size_t ruda_managed_array_storage_alignment(
+    const RudaManagedArrayDescriptor *descriptor
+);
+bool ruda_managed_array_storage_bytes_for_capacity(
+    const RudaManagedArrayDescriptor *descriptor,
+    size_t capacity,
+    size_t *bytes
+);
+size_t ruda_managed_array_storage_bytes(const RudaManagedArray *array);
 void ruda_managed_array_dispose(RudaManagedHeap *heap, RudaManagedArray *array);
+RudaManagedStatus ruda_managed_array_storage_load(
+    const RudaManagedArray *array,
+    size_t index,
+    RudaManagedCell *result
+);
+RudaManagedStatus ruda_managed_array_storage_store(
+    RudaManagedArray *array,
+    size_t index,
+    RudaManagedCell value
+);
+RudaManagedStatus ruda_managed_array_storage_clear(
+    RudaManagedArray *array,
+    size_t start,
+    size_t count
+);
 RudaManagedStatus ruda_managed_array_index(
     const RudaManagedHeap *heap,
     RudaManagedReference reference,
@@ -69,6 +95,19 @@ RudaManagedStatus ruda_managed_array_check_mutation_commit(
     const RudaManagedArray *array
 );
 void ruda_managed_array_commit_mutation(RudaManagedArray *array);
+bool ruda_managed_array_plan_capacity(
+    size_t current_capacity,
+    size_t minimum_capacity,
+    size_t maximum_capacity,
+    size_t *planned_capacity
+);
+RudaManagedStatus ruda_managed_array_ensure_capacity(
+    RudaManagedHeap *heap,
+    RudaManagedReference array,
+    size_t minimum_capacity,
+    const RudaManagedCell *temporary_value,
+    RudaManagedArray **result
+);
 RudaManagedSlot *ruda_managed_resolve(RudaManagedHeap *heap, RudaManagedReference reference);
 const RudaManagedSlot *ruda_managed_resolve_const(const RudaManagedHeap *heap, RudaManagedReference reference);
 RudaManagedStatus ruda_managed_reference_status(const RudaManagedHeap *heap, RudaManagedReference reference, const RudaManagedArrayDescriptor *expected);

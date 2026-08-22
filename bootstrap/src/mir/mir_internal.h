@@ -220,6 +220,13 @@ RudaMirVerifyStatus ruda_mir_verify_range_proofs(
     const RudaMirFunction *function,
     size_t *work
 );
+RudaMirVerifyStatus ruda_mir_verify_integer_range_proofs(
+    const RudaMirFunction *function,
+    size_t *work
+);
+RudaMirRangeOptimizeStatus ruda_mir_optimize_integer_ranges(
+    RudaMirFunction *function
+);
 typedef struct RudaMirRangeAnalysis {
     const RudaMirFunction *function;
     unsigned char *incoming_nonnegative;

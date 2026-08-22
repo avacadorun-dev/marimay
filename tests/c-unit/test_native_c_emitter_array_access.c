@@ -176,10 +176,31 @@ static void ruda_test_native_access_case(
     ) == RUDA_NATIVE_C_EMIT_OK);
     RUDA_EXPECT(ruda_test_native_access_count(
         &generated, "ruda_managed_array_access_get("
-    ) == 1);
+    ) == 0);
     RUDA_EXPECT(ruda_test_native_access_count(
         &generated, "ruda_managed_array_access_set("
-    ) == 1);
+    ) == 0);
+    RUDA_EXPECT(ruda_test_native_contains(
+        &generated, "ruda_managed_array_view_bind("
+    ));
+    RUDA_EXPECT(ruda_test_native_contains(
+        &generated, "memcpy(&ruda_g_bits, *ruda_g_av_"
+    ));
+    RUDA_EXPECT(ruda_test_native_contains(
+        &generated, "memcpy(*ruda_g_av_"
+    ));
+    RUDA_EXPECT(!ruda_test_native_contains(
+        &generated, "ruda_managed_array_view_get_raw64_fast("
+    ));
+    RUDA_EXPECT(!ruda_test_native_contains(
+        &generated, "ruda_managed_array_view_set_raw64_fast("
+    ));
+    RUDA_EXPECT(ruda_test_native_contains(
+        &generated, "RudaManagedReference *ruda_g_location_storage["
+    ));
+    RUDA_EXPECT(ruda_test_native_contains(
+        &generated, "ruda/base/checked_i64_fast.h"
+    ));
     RUDA_EXPECT(!ruda_test_native_contains(&generated, "ruda_g_array_check"));
     RUDA_EXPECT(!ruda_test_native_contains(
         &generated, "ruda_managed_array_get_in_bounds"
@@ -192,22 +213,16 @@ static void ruda_test_native_access_case(
             &generated, "ruda_managed_array_access_require("
         ) == 0);
         RUDA_EXPECT(ruda_test_native_access_count(
-            &generated, "RUDA_MANAGED_ARRAY_ACCESS_CHECKED"
-        ) == 1);
-        RUDA_EXPECT(ruda_test_native_access_count(
-            &generated, "RUDA_MANAGED_ARRAY_ACCESS_IN_BOUNDS"
-        ) == 1);
+            &generated, "ruda_g_begin_bounds("
+        ) > 1);
     } else if (kind == RUDA_TEST_NATIVE_ACCESS_STATIC_PROOF) {
         RUDA_EXPECT(ruda_test_native_access_count(
-            &generated, "RUDA_MANAGED_ARRAY_ACCESS_CHECKED"
-        ) == 0);
-        RUDA_EXPECT(ruda_test_native_access_count(
-            &generated, "RUDA_MANAGED_ARRAY_ACCESS_IN_BOUNDS"
-        ) == 2);
+            &generated, "ruda_g_begin_bounds("
+        ) == 1);
     } else {
         RUDA_EXPECT(ruda_test_native_access_count(
-            &generated, "RUDA_MANAGED_ARRAY_ACCESS_CHECKED"
-        ) == 2);
+            &generated, "ruda_g_begin_bounds("
+        ) > 1);
     }
 #if !defined(_WIN32)
     ruda_test_native_compile_and_run(

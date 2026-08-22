@@ -157,6 +157,14 @@ expanding lengths with `ArrayTruncateError`; `clear` is infallible; and
 reservation never exposes capacity. Removed reference elements cease to be
 traced through the array.
 
+D061 fixes the shared internal planning policy without adding an API:
+known-count construction reserves exactly the initialized element count,
+whereas unknown-size push growth starts at four and doubles. `reserve` applies
+that planner once to `length + additional`; a request already covered by the
+current reservation is allocation-free. The policy is identical in VM and
+native execution and preserves D055's established resource and failure
+boundary.
+
 The normative array iteration spelling is `for const item of values`. The
 iterator is obtained once, yields each initialized element in ascending index
 order, and is closed on every control-flow exit. `item` is immutable and has

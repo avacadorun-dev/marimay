@@ -10,6 +10,8 @@
 
 static const RudaManagedArrayDescriptor ruda_test_mutation_recursive = {
     RUDA_MANAGED_CELL_REFERENCE,
+    RUDA_MANAGED_ARRAY_STORAGE_CELL,
+    sizeof(RudaManagedCell),
     RUDA_MANAGED_OBJECT_ARRAY,
     &ruda_test_mutation_recursive
 };
