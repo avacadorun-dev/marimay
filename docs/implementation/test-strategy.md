@@ -468,6 +468,17 @@ in-bounds bytecode sequence must be rejected before VM execution; optimizer
 allocation failures retain checked MIR and all failure sweeps leave allocator
 counters at zero after teardown.
 
+D059 exact-access tests cover raw and reference cells, aliases, negative and
+upper indices, wrong descriptors, stale/reused handles, collection, growth,
+mutation generations, and the checked/in-bounds status boundary. Generated-C
+inspection asserts one retained exact-access call for a fused barrier/consumer
+and absence of the former describe/length/get-set helper chain. Separate direct,
+checked-proof, and static-proof programs execute at `-O0` and `-O2`; VM/native
+fixtures retain exact result, stderr/exit, G4002 span, and mutation behavior.
+Access itself performs no allocation; a fail allocator armed at the next index
+must observe no attempt, and full heap teardown returns both live counters to
+zero.
+
 ## 11. Platform matrix
 
 Tier 1 target intent for 1.0:

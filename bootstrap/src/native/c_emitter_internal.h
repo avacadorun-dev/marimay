@@ -123,6 +123,8 @@ bool ruda_native_c_emit_array_mutation_instruction(
 bool ruda_native_c_emit_range_instruction(
     RudaNativeCBuffer *buffer,
     const RudaMirFunction *function,
+    const RudaMirBlock *block,
+    size_t instruction_index,
     const RudaMirInstruction *instruction
 );
 bool ruda_native_c_method_possible(

@@ -485,6 +485,17 @@ yield. A mismatch produces the exact `G4005` panic contract. Iterators resolve
 the array handle for each check/access and do not retain a raw cell pointer,
 so a successful `reserve` neither invalidates them nor exposes relocation.
 
+Under D059, generated C performs exact managed-array length and scalar-cell
+access through the version-matched runtime array-access ABI. One ABI call
+resolves the handle once and validates its immutable descriptor; checked mode
+also observes the length and performs the signed D045 bounds comparison,
+while in-bounds mode consumes a D058 verifier capability. An immediately
+matching checked barrier may be fused into that access only when its G4002
+span and evaluation point are preserved. A barrier separated from its
+consumer remains observable at its original point. Neither mode retains a
+resolved runtime pointer, length, or capacity after the call, and the caller's
+shadow-root frame owns the array reference for the complete call.
+
 ### 9.3 Resource lifetime
 
 Garbage collection is not resource management. Safe APIs for files, sockets, transactions, and foreign handles expose explicit `close`/`finish` operations intended for lexical `defer`. User-defined finalizers are not supported in 1.0. Internal emergency cleanup for leaked OS handles must be reported and cannot define correctness.
@@ -586,6 +597,12 @@ For D053 arrays this agreement includes `Option`/`Result` removal and sizing
 cases, exact post-operation length/elements, mutation-generation invalidation,
 removed-reference reachability, reserve failure atomicity, and `G4005` panic
 identity.
+
+D058/D059 optimized accesses additionally preserve the same G4002 code,
+primary span, observed failing index and length, result bits, alias-visible
+mutation, and stale/wrong-descriptor rejection as the checked VM path. Link
+mode, runtime archive profile, or availability of LTO cannot select a different
+native safety boundary.
 
 Addresses, GC timing, backend helper frames, native symbol names, throughput, and independent-task scheduling are not observable guarantees.
 

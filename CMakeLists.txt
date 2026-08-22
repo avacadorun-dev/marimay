@@ -149,7 +149,7 @@ set(RUDA_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/vector.c
   runtime/common/io_stdout.c
   runtime/common/managed.c
-  runtime/common/managed_array_in_bounds.c
+  runtime/common/managed_array_access.c
   runtime/common/managed_resource.c
   runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c
@@ -383,7 +383,7 @@ add_library(ruda_bootstrap STATIC
   runtime/common/io_stdout.c
   runtime/common/test_output.c
   runtime/common/managed.c
-  runtime/common/managed_array_in_bounds.c
+  runtime/common/managed_array_access.c
   runtime/common/managed_resource.c
   runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c

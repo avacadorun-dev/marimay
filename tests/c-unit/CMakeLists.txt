@@ -99,6 +99,7 @@ add_executable(ruda_c_unit
   test_manifest.c
   test_managed.c
   runtime/test_managed_resource.c
+  runtime/test_managed_array_access.c
   runtime/test_managed_mutation.c
   test_managed_objects.c
   test_number_format.c
@@ -121,6 +122,7 @@ add_executable(ruda_c_unit
   test_mir_support.c
   test_native_c_emitter.c
   test_native_c_emitter_arrays.c
+  test_native_c_emitter_array_access.c
   test_native_c_emitter_array_mutation.c
   test_native_c_emitter_baseline.c
   test_native_c_emitter_matrix.c

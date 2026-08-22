@@ -54,6 +54,7 @@ void ruda_test_lexer(void);
 void ruda_test_manifest(void);
 void ruda_test_managed(void);
 void ruda_test_managed_resource(void);
+void ruda_test_managed_array_access(void);
 void ruda_test_managed_mutation(void);
 void ruda_test_number_format(void);
 void ruda_test_mir(void);
@@ -122,6 +123,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_manifest();
     ruda_test_managed();
     ruda_test_managed_resource();
+    ruda_test_managed_array_access();
     ruda_test_managed_mutation();
     ruda_test_number_format();
     ruda_test_mir();

@@ -1385,3 +1385,41 @@ MIR and serialized bytecode. Invalidating conservatively prevents an aliased
 array shrink or call from turning a previously checked index into an unchecked
 memory access, while transactional fallback keeps resource pressure from
 changing source semantics.
+
+## D059 — Native exact array access uses a versioned runtime ABI, not LTO
+
+Status: accepted.
+
+Generated C and the separately shipped native runtime use one narrow exact
+array-access ABI. `length`, `require`, `get`, and `set` receive the expected
+immutable array descriptor. Each call resolves the managed handle once,
+compares the exact descriptor at that resolve, observes the current length,
+and either performs the signed bounds check or consumes a D058 verified
+in-bounds capability. Get/set transport one `RudaManagedCell`; type-directed
+generated C converts that cell exactly once at the call boundary. Set validates
+reference-valued elements and advances the D053 mutation generation only after
+the access is known to succeed.
+
+The native emitter may fuse an `ARRAY_REQUIRE_INDEX` only with its immediately
+following matching `ARRAY_GET_IN_BOUNDS` or `ARRAY_SET_IN_BOUNDS`. The fused
+access uses checked mode and retains the barrier's G4002 source span. A
+non-adjacent or otherwise observable barrier remains an explicit `require`
+call; subsequent verified consumers use in-bounds mode. An
+`ARRAY_ASSUME_INDEX` emits no runtime bounds check. In every case the array
+reference remains in the native shadow-root frame for the call, and the ABI
+retains no resolved slot, array, cell pointer, capacity, or length after
+returning. Calls, allocation, collection, growth, and initialized-sequence
+mutation therefore continue to invalidate D058 capabilities conservatively.
+
+Whole-program or archive LTO is not the selected boundary. The released
+runtime is a relocatable, version-matched C17 archive that must work with the
+distribution-selected compiler on every Tier 1 platform. LTO objects and
+linker-plugin contracts are compiler-family and version coupled, are not
+uniform across Clang/GCC/MSVC archives, and would make the access path depend
+on the host/profile combination. The measured D059 prototype comparison is
+recorded in checkpoint-23 evidence; the exact ABI is the sole retained path,
+and the former generated helper plus describe/length/get-set chain is removed.
+
+Reason: one stable C17 ABI call removes repeated handle, descriptor, length,
+bounds, status, and cell-boundary work without exposing representation or
+letting a linker-dependent optimization mode choose source-observable safety.

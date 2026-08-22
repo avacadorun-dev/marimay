@@ -292,8 +292,9 @@ tests/c-unit/
   test_bytecode_{model,program,support}.c
   test_bytecode_vm_{scalar,arithmetic,arrays,support}.c
   test_mir_bytecode_{model,programs,support}.c
-  test_native_c_emitter_{baseline,arrays,scalar,matrix,strings,imports,
-                         support}.c
+  test_native_c_emitter_{baseline,arrays,array_access,scalar,matrix,strings,
+                         imports,support}.c
+  runtime/test_managed_array_access.c
   test_parser_{core,declarations,expressions,incremental,support}.c
   test_parser_array_types.c
   test_formatter_{core,trivia,failures,support}.c
@@ -337,6 +338,15 @@ bootstrap/src/manifest/    public result lifecycle, parser, and formatter
 runtime/common/            managed heap core and focused object families
 tests/c-unit/              focused suites mirroring those production owners
 ```
+
+D059 assigns the generated-C/runtime array boundary specifically to
+`bootstrap/src/native/c_emitter_range.c`,
+`runtime/common/managed_array_access.c`, and the owner API
+`runtime/include/ruda/runtime/array_access.h`. The emitter owner recognizes
+only verifier-approved checked/in-bounds instruction pairs and preserves
+barrier spans. The runtime owner resolves and validates one exact access; it
+does not expose mutable heap state or retain a cell pointer. VM range dispatch
+uses the same exact API after obtaining its verified program descriptor.
 
 The exact filenames may follow the stable concepts already present in the
 code, but responsibility boundaries and dependency direction are fixed. A
@@ -512,6 +522,10 @@ checkpoint:
 | `tests/c-unit/runtime/test_managed_resource.c` | 0 | 262 | D055 exact boundary, raw/reference growth, semantic precedence, host-failure sweep, and zero-counter cleanup |
 | `tests/c-unit/test_cli_heap.c` | 0 | 259 | D055 CLI range/help/JSON, test isolation, embedding/cache identity, and VM/native exact observations |
 | `tests/c-unit/test_cli_cp20_algorithm_corpus.c` | 0 | 121 | reusable eight-algorithm fmt/check/VM/test-both/debug/release native acceptance with exact output parity |
+| `runtime/common/managed_array_access.c` | 0 | 207 | D059 one-resolve exact descriptor/length/checked-or-proven cell access ABI |
+| `bootstrap/src/native/c_emitter_range.c` | 42 | 225 | D059 barrier/access fusion, exact ABI emission, and G4002 span preservation |
+| `tests/c-unit/runtime/test_managed_array_access.c` | 0 | 202 | D059 raw/reference, bounds, alias, stale-handle, safepoint, and no-allocation runtime coverage |
+| `tests/c-unit/test_native_c_emitter_array_access.c` | 0 | 225 | D059 direct/checked-proof/static-proof generated-C inspection and O0/O2 execution |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `ruda_test_mir` registration. The service checkpoint

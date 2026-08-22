@@ -66,6 +66,14 @@ rejection, VM/native lowering coverage, a 10/10 pushed Linux sanitizer/fuzz CI
 matrix, and the reviewed D056 cool-down performance retry. Checkpoint 22 is
 verified under D057's Linux gate; the distinct five-platform public-alpha
 performance registry remains deferred and is not claimed complete.
+[Post-preview checkpoint 23 native-access evidence](evidence/cp23-native-array-access-2026-08-22.md)
+accepts D059, replaces repeated generated-C/runtime array checks with one
+versioned exact-access ABI, covers raw/reference/alias/stale/safepoint and
+O0/O2 paths, and records both the retained archive ABI and the rejected local
+LTO prototype. The 11/3 Apple M2 report improves scalar-get by 18.18% and
+unproven-bounds by 14.26% from CP22 while every probe remains below its reviewed
+local ceiling; it is supplemental and does not satisfy the five-platform
+public-alpha registry.
 Latest earlier I4 process evidence: [preview checkpoint 12 executes the final
 local/private preview process matrix and exact VM/native observation
 comparison](evidence/cp12-final-preview-2026-08-18.md).
@@ -91,6 +99,9 @@ adjudication contract.
 Accepted [D057](../design/decisions.md) closes checkpoint 21 on the reviewed
 Linux x86_64 algorithm/probe baseline while retaining all five targets as a
 separate public-alpha performance gate.
+Accepted [D059](../design/decisions.md) selects the versioned portable-C17
+exact array-access ABI and rejects compiler/version-coupled archive LTO as the
+permanent native boundary.
 
 Preview checkpoint 4 evidence: [generic `Option`/`Result`/`?`/`mapError`
 vertical slice](evidence/i2-generics-checkpoint-4-2026-08-17.md). The slice

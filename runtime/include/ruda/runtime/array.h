@@ -64,25 +64,6 @@ RudaManagedStatus ruda_managed_array_set(
     size_t *current_length
 );
 /*
- * These helpers are the verifier-to-runtime trust boundary for CP22.  Their
- * callers must have established that `array` is an exact live array and that
- * `index < length` without an intervening call or length-changing mutation.
- * They still validate the managed reference and element value, but deliberately
- * do not repeat the signed-index bounds check.
- */
-RudaManagedStatus ruda_managed_array_get_in_bounds(
-    const RudaManagedHeap *heap,
-    RudaManagedReference array,
-    size_t index,
-    RudaManagedCell *result
-);
-RudaManagedStatus ruda_managed_array_set_in_bounds(
-    RudaManagedHeap *heap,
-    RudaManagedReference array,
-    size_t index,
-    RudaManagedCell value
-);
-/*
  * Push is failure-atomic. For reference elements, value.reference is a
  * temporary root during any collection or allocation performed by this call.
  */

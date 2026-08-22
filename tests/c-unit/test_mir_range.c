@@ -317,11 +317,18 @@ static void ruda_test_mir_range_optimizer(
         ruda_native_c_emit_default_options(), &generated
     ) == RUDA_NATIVE_C_EMIT_OK);
     RUDA_EXPECT(generated.data != NULL && strstr(
-        (const char *)generated.data, "ruda_managed_array_get_in_bounds"
+        (const char *)generated.data, "ruda_managed_array_access_get"
     ) != NULL);
     RUDA_EXPECT(generated.data != NULL && strstr(
-        (const char *)generated.data, "ruda_managed_array_set_in_bounds"
+        (const char *)generated.data, "ruda_managed_array_access_set"
     ) != NULL);
+    RUDA_EXPECT(generated.data != NULL && strstr(
+        (const char *)generated.data,
+        "RUDA_MANAGED_ARRAY_ACCESS_IN_BOUNDS"
+    ) != NULL);
+    RUDA_EXPECT(generated.data != NULL && strstr(
+        (const char *)generated.data, "ruda_g_array_check"
+    ) == NULL);
 #if !defined(_WIN32)
     ruda_test_native_compile_and_run(
         &generated, "ok:f64:4014000000000000\n", 0
