@@ -1,12 +1,12 @@
-# The `ruda` toolchain contract — design baseline 0.1
+# The `mmay` toolchain contract — design baseline 0.1
 
 Status: normative design baseline.
 
-The identity mapping is normative: the language/product name is **Ruda**, the toolchain executable is `ruda`, source files use `.ruda`, bytecode bundles use `.rudab`, module/workspace/lock files are `ruda.mod`, `ruda.work`, and `ruda.lock`, and local tool state uses `.ruda/`. The former `ma`/`.ma`/`ma.*`/`.mab`/`.ma/` names are historical and are not compatibility aliases. D001 records this as a semantics-neutral pre-release rename. N0 still blocks public distribution until legal review, domains, public accounts, package/registry namespaces, signing identity, and command/PATH coexistence have direct evidence; this specification does not claim that any such external identity is available or controlled.
+The identity mapping is normative: the language/product name is **Marimay**, the toolchain executable is `mmay`, source files use `.my`, bytecode bundles use `.myb`, module/workspace/lock files are `mmay.mod`, `mmay.work`, and `mmay.lock`, and local tool state uses `.mmay/`. The former `ma`/`.ma`/`ma.*`/`.mab`/`.ma/` names are historical and are not compatibility aliases. D001 records this as a semantics-neutral pre-release rename. N0 still blocks public distribution until legal review, domains, public accounts, package/registry namespaces, signing identity, and command/PATH coexistence have direct evidence; this specification does not claim that any such external identity is available or controlled.
 
-Installing Ruda installs one user-facing executable named `ruda`. The formatter, test runner, compiler, VM, package resolver, documentation generator, vet checks, fuzz driver, and bootstrap metadata are versioned together.
+Installing Marimay installs one user-facing executable named `mmay`. The formatter, test runner, compiler, VM, package resolver, documentation generator, vet checks, fuzz driver, and bootstrap metadata are versioned together.
 
-This distribution boundary does not make every command part of Ruda source
+This distribution boundary does not make every command part of Marimay source
 semantics. The compiler reports semantic facts; first-party tools consume those
 facts; manifests and runtime grants configure execution; CI decides which
 checks and provenance are required for a release. Source code carries no
@@ -15,48 +15,48 @@ author, agent, trust, coverage, or attestation marker under D034.
 The core promise is literal:
 
 ```sh
-ruda fmt
-ruda test
+mmay fmt
+mmay test
 ```
 
 These commands require no project plugin, task runner, formatter configuration, test configuration, or copied script.
 
 ## 1. Root discovery and targets
 
-Starting from the working directory, `ruda` searches parent directories for `ruda.mod`. The nearest file is the module root. An optional `ruda.work` above it can join multiple local modules without changing their published identity.
+Starting from the working directory, `mmay` searches parent directories for `mmay.mod`. The nearest file is the module root. An optional `mmay.work` above it can join multiple local modules without changing their published identity.
 
 With no explicit target:
 
-- `ruda fmt` formats the entire current module;
-- `ruda check` checks the entire current module;
-- `ruda test` tests the entire current module;
-- `ruda build` builds the root executable package, or reports the available executable packages;
-- `ruda run` runs the root executable package.
+- `mmay fmt` formats the entire current module;
+- `mmay check` checks the entire current module;
+- `mmay test` tests the entire current module;
+- `mmay build` builds the root executable package, or reports the available executable packages;
+- `mmay run` runs the root executable package.
 
 This behavior does not silently change when invoked from a subdirectory. A path or package selector narrows it explicitly:
 
 ```sh
-ruda test ./services/orders
-ruda fmt ./src
-ruda run ./cmd/admin -- --repair account-42
+mmay test ./services/orders
+mmay fmt ./src
+mmay run ./cmd/admin -- --repair account-42
 ```
 
-A standalone `.ruda` file without `ruda.mod` can be checked, formatted, tested, or run in script mode. Script mode has no third-party dependencies and receives no filesystem/network/process capability unless explicitly granted. D046 capability `"io.stdout"` is granted by default for `ruda run` of a local module or script and for a native executable from `ruda build`; it is not a filesystem, network, or process grant.
+A standalone `.my` file without `mmay.mod` can be checked, formatted, tested, or run in script mode. Script mode has no third-party dependencies and receives no filesystem/network/process capability unless explicitly granted. D046 capability `"io.stdout"` is granted by default for `mmay run` of a local module or script and for a native executable from `mmay build`; it is not a filesystem, network, or process grant.
 
 ### 1.1 Batch check discovery
 
 ```sh
-ruda check
-ruda check ./path/to/package
-ruda check file.ruda
-ruda check --all-targets
+mmay check
+mmay check ./path/to/package
+mmay check file.my
+mmay check --all-targets
 ```
 
 With no target, discovery starts at the physical current directory, finds the
-nearest ancestor `ruda.mod`, and checks its whole module even when invoked from
+nearest ancestor `mmay.mod`, and checks its whole module even when invoked from
 a descendant package. An explicit directory equal to that root selects the
 whole module; another directory within it selects the corresponding package.
-An explicit regular `.ruda` file is a standalone one-file check. Other file
+An explicit regular `.my` file is a standalone one-file check. Other file
 kinds, unreadable targets, a missing module root for a directory target, or an
 empty selected graph report `K0004`.
 
@@ -65,9 +65,9 @@ nonempty `module` value and exactly one nonempty `language` value. The root
 package uses the decoded module path, and source-bearing descendant directories
 append their relative `/`-separated path. All discovered packages, including
 disconnected packages, are checked in canonical import-path order; files are
-ordered by normalized path. The default source set excludes `_test.ruda` files
+ordered by normalized path. The default source set excludes `_test.my` files
 and the root `tests/` directory. `--all-targets` includes them. Traversal does
-not follow symbolic links, enter `.git` or `.ruda`, or cross a nested module,
+not follow symbolic links, enter `.git` or `.mmay`, or cross a nested module,
 and it has fixed defensive limits.
 
 Every invocation creates a fresh compiler service from immutable disk
@@ -91,7 +91,7 @@ Every command supports:
 --verbose
 ```
 
-Unknown commands and flags report a spelling suggestion. They use stable diagnostics `U0001` and `U0002` respectively; JSON output follows the nullable-primary rule in the diagnostics specification. `ruda help` lists only top-level user tasks; `ruda help <command>` gives examples before exhaustive flags. The CLI does not automatically execute `ruda-<name>` binaries from `PATH`, preventing typos from invoking untrusted plugins.
+Unknown commands and flags report a spelling suggestion. They use stable diagnostics `U0001` and `U0002` respectively; JSON output follows the nullable-primary rule in the diagnostics specification. `mmay help` lists only top-level user tasks; `mmay help <command>` gives examples before exhaustive flags. The CLI does not automatically execute `mmay-<name>` binaries from `PATH`, preventing typos from invoking untrusted plugins.
 
 Exit statuses are stable:
 
@@ -110,15 +110,15 @@ Human diagnostics go to stderr. Program stdout remains unpolluted. JSON diagnost
 
 ## 3. Project manifest
 
-`ruda.mod` uses the deliberately small, bounded [manifest grammar](manifest.md) so Stage 0 needs no general configuration language:
+`mmay.mod` uses the deliberately small, bounded [manifest grammar](manifest.md) so Stage 0 needs no general configuration language:
 
 ```text
 module "example.com/acme/orders"
 language "0.1"
 
 require (
-  "ruda-lang.example/postgres" "^1.4.0"
-  "ruda-lang.example/telemetry" "~2.3.1"
+  "marimay.example/postgres" "^1.4.0"
+  "marimay.example/telemetry" "~2.3.1"
 )
 
 capability (
@@ -129,40 +129,40 @@ capability (
 )
 ```
 
-Directives and grouping parentheses are fixed by the manifest grammar. Strings use JSON-compatible escapes. Unknown directives are errors unless namespaced as optional metadata. `ruda fmt` also canonicalizes `ruda.mod`.
+Directives and grouping parentheses are fixed by the manifest grammar. Strings use JSON-compatible escapes. Unknown directives are errors unless namespaced as optional metadata. `mmay fmt` also canonicalizes `mmay.mod`.
 
 Libraries may document capabilities they can use, but only the root executable grants them. A dependency cannot broaden the root capability set.
 
-`ruda.lock` is generated, committed, and contains exact versions, transitive dependency edges, source/archive hashes, registry checkpoint, signatures when present, license identifiers, and feature-free build identity. Normal build/test refuses a stale lock in CI mode.
+`mmay.lock` is generated, committed, and contains exact versions, transitive dependency edges, source/archive hashes, registry checkpoint, signatures when present, license identifiers, and feature-free build identity. Normal build/test refuses a stale lock in CI mode.
 
-`ruda.work` contains canonical `use "relative/path"` directives. Workspace replacement never changes published module metadata and is excluded from dependency artifacts.
+`mmay.work` contains canonical `use "relative/path"` directives. Workspace replacement never changes published module metadata and is excluded from dependency artifacts.
 
 ## 4. Formatting
 
 ### 4.1 Commands
 
 ```sh
-ruda fmt                 # format the current module in place
-ruda fmt ./src           # format a selected tree
-ruda fmt file.ruda        # format one file
-ruda fmt --check         # do not write; fail if any file differs
-ruda fmt --diff          # print the canonical diff; do not write
-ruda fmt --stdin         # stdin to stdout, filename supplied optionally
+mmay fmt                 # format the current module in place
+mmay fmt ./src           # format a selected tree
+mmay fmt file.my        # format one file
+mmay fmt --check         # do not write; fail if any file differs
+mmay fmt --diff          # print the canonical diff; do not write
+mmay fmt --stdin         # stdin to stdout, filename supplied optionally
 ```
 
 `--check` emits `F0004` for each non-canonical input and exits `1` without writing. `--diff` writes a deterministic unified diff and exits `0` when every selected input is syntactically valid and successfully formatted, whether or not the diff is empty; callers that need a cleanliness gate use `--check`. Formatter I/O, limit, lexical, or parser failures still make `--diff` exit nonzero.
 
-`ruda fmt` formats `.ruda`, `ruda.mod`, and `ruda.work` files; it never rewrites `ruda.lock` except through dependency commands.
+`mmay fmt` formats `.my`, `mmay.mod`, and `mmay.work` files; it never rewrites `mmay.lock` except through dependency commands.
 
-Target selection follows D028. With no explicit target, the nearest regular `ruda.mod` on the physical working-directory ancestor chain owns the selected module; absence of such a file is a formatter input error. The nearest regular `ruda.work` from that module root upward, when present, is also selected. An explicit regular file must end in `.ruda` or be named exactly `ruda.mod` or `ruda.work`. An explicit directory selects a bounded tree rooted there.
+Target selection follows D028. With no explicit target, the nearest regular `mmay.mod` on the physical working-directory ancestor chain owns the selected module; absence of such a file is a formatter input error. The nearest regular `mmay.work` from that module root upward, when present, is also selected. An explicit regular file must end in `.my` or be named exactly `mmay.mod` or `mmay.work`. An explicit directory selects a bounded tree rooted there.
 
-Tree traversal considers regular recognized files in unsigned UTF-8 normalized-path order. It does not follow symbolic links, does not enter `.git` or `.ruda` tool-state directories, and does not cross into a nested directory containing its own regular `ruda.mod`. An explicitly selected symbolic link or unrecognized file is an input error. Traversal has fixed defensive ceilings for directory depth, directory entries, selected files, and path bytes; exhaustion reports `F0003` before further work.
+Tree traversal considers regular recognized files in unsigned UTF-8 normalized-path order. It does not follow symbolic links, does not enter `.git` or `.mmay` tool-state directories, and does not cross into a nested directory containing its own regular `mmay.mod`. An explicitly selected symbolic link or unrecognized file is an input error. Traversal has fixed defensive ceilings for directory depth, directory entries, selected files, and path bytes; exhaustion reports `F0003` before further work.
 
 If a source file cannot be parsed with bounded recovery, the formatter reports diagnostics and leaves that file untouched. Formatting a tree is transactional per file: no partially written file is possible. Writes use a sibling temporary file, flush, permission preservation, and atomic replacement where supported.
 
 ### 4.2 Canonical style
 
-Ruda 1.x has no formatter configuration. The style is:
+Marimay 1.x has no formatter configuration. The style is:
 
 - two-space indentation, never tabs;
 - LF line endings and one final newline;
@@ -204,9 +204,9 @@ The parser and formatter share the same token definitions. The formatter has gol
 
 ### 5.1 Discovery and syntax
 
-Package-internal tests live in files ending `_test.ruda` and can access package-private declarations. Black-box integration tests live under the module-root `tests/` tree and import only public APIs. Documentation code blocks tagged `ruda test` are compiled and run by default.
+Package-internal tests live in files ending `_test.my` and can access package-private declarations. Black-box integration tests live under the module-root `tests/` tree and import only public APIs. Documentation code blocks tagged `mmay test` are compiled and run by default.
 
-```ruda
+```marimay
 @test
 fn parseAcceptsValidPort(): void {
   const result = parsePort("8080");
@@ -220,7 +220,7 @@ fn parseRejectsOverflow(): void {
 }
 ```
 
-`@test` marks an ordinary package-private `fn(): void` in `_test.ruda`.
+`@test` marks an ordinary package-private `fn(): void` in `_test.my`.
 Test discovery uses its stable fully qualified function symbol; there is no
 second string-named declaration namespace. Test files are compiled only by test
 commands (or an explicit all-targets check). Source order determines reporting
@@ -247,19 +247,19 @@ Expectations report source expressions and a bounded structural diff. Tests use 
 ### 5.2 Commands
 
 ```sh
-ruda test                         # all tests in current module, VM
-ruda test parse                   # substring filter
-ruda test --exact parseRejectsOverflow # exact function test name
-ruda test ./store                 # selected package
-ruda test --engine native
-ruda test --engine both           # required semantic comparison
-ruda test --watch                 # rerun affected tests
-ruda test --list
-ruda test --shuffle 42
-ruda test --repeat 100
-ruda test --no-cache
-ruda test --diagnostic json
-ruda test --max-heap-bytes 67108864
+mmay test                         # all tests in current module, VM
+mmay test parse                   # substring filter
+mmay test --exact parseRejectsOverflow # exact function test name
+mmay test ./store                 # selected package
+mmay test --engine native
+mmay test --engine both           # required semantic comparison
+mmay test --watch                 # rerun affected tests
+mmay test --list
+mmay test --shuffle 42
+mmay test --repeat 100
+mmay test --no-cache
+mmay test --diagnostic json
+mmay test --max-heap-bytes 67108864
 ```
 
 No test-framework dependency or configuration file is required. Test arguments after `--` are not supported by the built-in harness; tests receive explicit fixtures rather than ambient CLI state.
@@ -294,11 +294,11 @@ Failures are not reused across source changes. `--no-cache` bypasses reads and w
 
 ### 5.5 Engine equivalence
 
-`ruda test --engine both` uses the execution specification's record/replay harness. A mismatch exits `5` and reports result/output/panic/task/capability trace divergence. Passing the same assertion independently is not sufficient if deterministic observable traces disagree.
+`mmay test --engine both` uses the execution specification's record/replay harness. A mismatch exits `5` and reports result/output/panic/task/capability trace divergence. Passing the same assertion independently is not sufficient if deterministic observable traces disagree.
 
 Under D051, preview checkpoint 11 exposes the deterministic core of this
-contract. `ruda test [target]` discovers `@test fn(): void` only in
-`*_test.ruda`, includes module-root `tests/` as public-surface integration
+contract. `mmay test [target]` discovers `@test fn(): void` only in
+`*_test.my`, includes module-root `tests/` as public-surface integration
 packages, and executes each discovered symbol in a fresh VM execution or
 native process. VM is the default; `--engine native` and `--engine both` are
 accepted. Reports are sorted by package, canonical source path, declaration
@@ -321,17 +321,17 @@ surface above remains the I8 completion contract.
 
 ### 5.6 Fuzz and property tests
 
-Fuzz targets are ordinary typed declarations in `_test.ruda`:
+Fuzz targets are ordinary typed declarations in `_test.my`:
 
-```ruda
+```marimay
 @fuzz
 fn decoderNeverPanics(input: Bytes): void {
   const _ = decode(input);
 }
 ```
 
-`@fuzz` marks an ordinary package-private function in `_test.ruda` with exactly
-one typed input parameter and a `void` result. `ruda fuzz decoderNeverPanics`
+`@fuzz` marks an ordinary package-private function in `_test.my` with exactly
+one typed input parameter and a `void` result. `mmay fuzz decoderNeverPanics`
 performs coverage-guided mutation in isolated workers, persists minimized
 corpus entries, and writes a reproducible regression fixture on failure. The
 parser, formatter, bytecode verifier, package parser, and runtime protocols
@@ -341,28 +341,28 @@ Property generators and shrinking live in first-party `std/test/property`; they 
 
 ## 6. Check, run, build, and execute
 
-### 6.1 `ruda check`
+### 6.1 `mmay check`
 
 ```sh
-ruda check
-ruda check ./package
-ruda check --all-targets
+mmay check
+mmay check ./package
+mmay check --all-targets
 ```
 
 `check` runs source loading, parsing, resolution, typing, interface/exhaustiveness checks, effect inference, typed MIR construction, and MIR verification without backend code generation. It is the fastest authoritative semantic check; editor diagnostics use the same compiler service.
 
 The reusable compiler service reaches a minimum editor gate with I2 rather than waiting for the complete I8 developer loop. It accepts versioned in-memory overlays and exposes parse/type diagnostics, go-to-definition, symbol search, completion, and canonical checked-symbol type spelling for hover/signature consumers. Managed arrays in that spelling are always `[]T`, including nested arrays and arrays inside generic arguments. Queries reject stale result generations rather than mixing type identities across overlays. Dot completion for a nominal value enumerates every visible eligible first-parameter function, labels its owning package and equivalent free-call spelling, and uses the exact same lookup result as type checking. I8 productionizes the full LSP transport, workspace indexing, cancellation, compatibility, and editor integration; it does not introduce a second completion engine.
 
-### 6.2 `ruda run`
+### 6.2 `mmay run`
 
 ```sh
-ruda run .
-ruda run file.ruda
-ruda run --engine vm .
-ruda run --engine native .
-ruda run . --max-heap-bytes 67108864
-ruda run --allow-read ./data file.ruda
-ruda run . -- program arguments
+mmay run .
+mmay run file.my
+mmay run --engine vm .
+mmay run --engine native .
+mmay run . --max-heap-bytes 67108864
+mmay run --allow-read ./data file.my
+mmay run . -- program arguments
 ```
 
 VM is default. Native run uses the ordinary content-addressed build cache and then executes the artifact. Program arguments begin only after `--`. Source errors never leave or execute a stale binary.
@@ -388,23 +388,23 @@ source argument API is accepted they have no observable language value.
 to the fresh VM execution. The option occurs at most once and is parsed before
 program arguments; the default is `67108864`.
 
-### 6.3 `ruda build`
+### 6.3 `mmay build`
 
 ```sh
-ruda build
-ruda build --release
-ruda build --engine vm
-ruda build --engine native
-ruda build --output ./dist/orders
-ruda build --target x86_64-linux-gnu
-ruda build --emit c
-ruda build --emit mir
-ruda build --max-heap-bytes 67108864
+mmay build
+mmay build --release
+mmay build --engine vm
+mmay build --engine native
+mmay build --output ./dist/orders
+mmay build --target x86_64-linux-gnu
+mmay build --emit c
+mmay build --emit mir
+mmay build --max-heap-bytes 67108864
 ```
 
-Native is default. Development builds retain checked semantics and source diagnostics; release builds optimize but do not remove overflow/bounds checks unless proven redundant. `--engine vm` emits a `.rudab` bundle. Cross-compilation requires a supported target runtime and target pack; target support is explicit, never guessed.
+Native is default. Development builds retain checked semantics and source diagnostics; release builds optimize but do not remove overflow/bounds checks unless proven redundant. `--engine vm` emits a `.myb` bundle. Cross-compilation requires a supported target runtime and target pack; target support is explicit, never guessed.
 
-For a supported host target, D030 makes native-toolchain provisioning part of the official Ruda distribution experience. A fresh user does not select `CC`, linker, SDK paths, or runtime objects per project. Installation either supplies the reviewed version-matched native tools or verifies the platform toolchain and gives one precise platform-owned installation action. `ruda doctor` reports the selected identities and compatibility in human and stable machine-readable form. Once installation succeeds, `ruda build` performs no network access. Missing tools are diagnosed before code generation and never surface as an unexplained raw linker failure.
+For a supported host target, D030 makes native-toolchain provisioning part of the official Marimay distribution experience. A fresh user does not select `CC`, linker, SDK paths, or runtime objects per project. Installation either supplies the reviewed version-matched native tools or verifies the platform toolchain and gives one precise platform-owned installation action. `mmay doctor` reports the selected identities and compatibility in human and stable machine-readable form. Once installation succeeds, `mmay build` performs no network access. Missing tools are diagnosed before code generation and never surface as an unexplained raw linker failure.
 
 Build cache keys include source/content hashes, public and behavior interfaces, compiler/runtime version, language version, target, profile, backend options, C compiler identity, and relevant environment explicitly admitted by the tool. Absolute workspace paths and undeclared environment values do not affect semantic outputs.
 
@@ -424,7 +424,7 @@ the same assignment, so compiling the published C preserves the selected
 budget.
 
 Without `--output`, the executable is
-`.ruda/build/native/{debug|release}/{sha256}/app` (`app.exe` on Windows) below
+`.mmay/build/native/{debug|release}/{sha256}/app` (`app.exe` on Windows) below
 the discovered script or module root. The key hashes the portable generated C,
 compiler/runtime/language versions, host target, host compiler identity, build
 profile, and versioned backend flag contract. A regular file at the exact key
@@ -441,11 +441,11 @@ output is bounded and retained for controlled debugging, not substituted for
 the stable primary diagnostic.
 
 Under D052, `--release` selects the version-matched release runtime archive
-even when the invoking `ruda` executable was built in a debug configuration;
+even when the invoking `mmay` executable was built in a debug configuration;
 the default profile selects the debug archive even for a release-built
 compiler. Both profile artifacts are part of the toolchain distribution and
 are validated before C generation by an exact manifest plus embedded
-profile/version markers. Installed lookup is relative to the invoked `ruda`
+profile/version markers. Installed lookup is relative to the invoked `mmay`
 path and remains valid when the complete installation prefix is relocated.
 
 The cache key includes the SHA-256 of the selected runtime archive bytes, not
@@ -454,12 +454,12 @@ artifacts produce `B0008`/exit `1` with a reinstall action and never expose raw
 linker output. `--emit c` does not link or require a runtime artifact. No
 profile lookup reads project configuration, `CC`, or the network.
 
-### 6.4 `ruda exec`
+### 6.4 `mmay exec`
 
 ```sh
-ruda exec app.rudab
-ruda exec --allow-read ./data app.rudab
-ruda exec --max-memory 256MiB --max-tasks 10000 app.rudab
+mmay exec app.myb
+mmay exec --allow-read ./data app.myb
+mmay exec --max-memory 256MiB --max-tasks 10000 app.myb
 ```
 
 `exec` verifies the entire bundle, resolves declared capabilities, and starts it in the VM. Untrusted bundles receive no ambient capabilities, including `"io.stdout"`. A grant is required before D046 `println` can publish to the invoking process. Verification happens before package initialization or FFI loading.
@@ -469,90 +469,90 @@ ruda exec --max-memory 256MiB --max-tasks 10000 app.rudab
 The dependency workflow stays shallow:
 
 ```sh
-ruda init [path]
-ruda add ruda-lang.example/postgres@1.4
-ruda remove ruda-lang.example/postgres
-ruda update [module]
-ruda list
-ruda why ruda-lang.example/crypto
-ruda outdated
-ruda audit
-ruda vendor
+mmay init [path]
+mmay add marimay.example/postgres@1.4
+mmay remove marimay.example/postgres
+mmay update [module]
+mmay list
+mmay why marimay.example/crypto
+mmay outdated
+mmay audit
+mmay vendor
 ```
 
-There is intentionally no required `ruda mod <subcommand>` hierarchy for common work.
+There is intentionally no required `mmay mod <subcommand>` hierarchy for common work.
 
 ### 7.1 Resolution
 
-Manifest constraints use semantic-version ranges. The resolver chooses one version per module, preferring the newest version satisfying all constraints, and records the exact graph in `ruda.lock`. Locked builds do not re-resolve. Conflicts report the shortest dependency paths and constraints that made the graph impossible.
+Manifest constraints use semantic-version ranges. The resolver chooses one version per module, preferring the newest version satisfying all constraints, and records the exact graph in `mmay.lock`. Locked builds do not re-resolve. Conflicts report the shortest dependency paths and constraints that made the graph impossible.
 
 Published `(module, version)` pairs are immutable. Registry artifacts are content addressed and include source hash, manifest, license metadata, compiler-language range, and provenance signature when available. A changed artifact under the same identity is rejected even if a registry serves it.
 
 ### 7.2 Hermeticity
 
-Dependencies cannot execute install hooks, build scripts, procedural macros, compiler plugins, or arbitrary code during resolution/build. Build and test do not access the network after the explicit fetch phase. `ruda build --offline` fails with a list of missing immutable artifacts rather than attempting access.
+Dependencies cannot execute install hooks, build scripts, procedural macros, compiler plugins, or arbitrary code during resolution/build. Build and test do not access the network after the explicit fetch phase. `mmay build --offline` fails with a list of missing immutable artifacts rather than attempting access.
 
-External generation is an explicit `ruda generate` command driven by reviewed root-module declarations. It is not run by `build` or dependency installation, and generated `.ruda` files are ordinary formatter/checker inputs.
+External generation is an explicit `mmay generate` command driven by reviewed root-module declarations. It is not run by `build` or dependency installation, and generated `.my` files are ordinary formatter/checker inputs.
 
 ### 7.3 Audit
 
-`ruda audit` reports known advisories, yanked versions, source/provenance mismatch, licenses, unsafe packages, FFI libraries, capabilities reachable from the root, duplicate versions if a future resolver permits them, and stale/unmaintained metadata where the registry can support that claim.
+`mmay audit` reports known advisories, yanked versions, source/provenance mismatch, licenses, unsafe packages, FFI libraries, capabilities reachable from the root, duplicate versions if a future resolver permits them, and stale/unmaintained metadata where the registry can support that claim.
 
 Audit output distinguishes cryptographically verified facts from registry/community assertions.
 
 ## 8. Documentation, vetting, benchmarks, and fixes
 
 ```sh
-ruda doc                     # build/open local package documentation
-ruda doc --check             # fail on broken links/examples/public-doc gaps
-ruda vet                     # correctness and maintainability checks
-ruda vet --strict
-ruda fix                     # apply compiler-authored safe migrations
-ruda bench                   # first-party benchmark harness
-ruda bench --compare base.json
-ruda explain T2403
-ruda explain suspension loadDashboard
+mmay doc                     # build/open local package documentation
+mmay doc --check             # fail on broken links/examples/public-doc gaps
+mmay vet                     # correctness and maintainability checks
+mmay vet --strict
+mmay fix                     # apply compiler-authored safe migrations
+mmay bench                   # first-party benchmark harness
+mmay bench --compare base.json
+mmay explain T2403
+mmay explain suspension loadDashboard
 ```
 
-`ruda vet` is first-party and versioned with the compiler. It may warn about ignored `Result`, wildcard matches hiding known enum cases, mutable closure capture, accidental interface conformance, blocking-risk FFI, capability reachability, and suspension in latency-critical call paths. It must not become a configurable style formatter.
+`mmay vet` is first-party and versioned with the compiler. It may warn about ignored `Result`, wildcard matches hiding known enum cases, mutable closure capture, accidental interface conformance, blocking-risk FFI, capability reachability, and suspension in latency-critical call paths. It must not become a configurable style formatter.
 
-`ruda fix` applies only machine-checkable transformations with conflict detection and prints a diff. It never performs a language-version migration implicitly during build.
+`mmay fix` applies only machine-checkable transformations with conflict detection and prints a diff. It never performs a language-version migration implicitly during build.
 
-`ruda explain` reads the installed version-matched diagnostic reference or compiler effect metadata. It works offline and never evaluates project source as code.
+`mmay explain` reads the installed version-matched diagnostic reference or compiler effect metadata. It works offline and never evaluates project source as code.
 
-Benchmark results include environment, engine, compiler/runtime version, sample distribution, allocations, GC/task metrics, and source revision when available. Benchmarks are not ordinary correctness tests and are not run by `ruda test`.
+Benchmark results include environment, engine, compiler/runtime version, sample distribution, allocations, GC/task metrics, and source revision when available. Benchmarks are not ordinary correctness tests and are not run by `mmay test`.
 
 ## 9. Release and CI profiles
 
 The following commands are the minimum project release gate:
 
 ```sh
-ruda fmt --check
-ruda check --all-targets
-ruda test --engine both
-ruda vet --strict
-ruda doc --check
-ruda audit
+mmay fmt --check
+mmay check --all-targets
+mmay test --engine both
+mmay vet --strict
+mmay doc --check
+mmay audit
 ```
 
-The Ruda compiler repository additionally runs C unit tests, generated-code sanitizers, bytecode fuzzing, bootstrap reproducibility, platform conformance, and performance budgets described in the implementation test strategy.
+The Marimay compiler repository additionally runs C unit tests, generated-code sanitizers, bytecode fuzzing, bootstrap reproducibility, platform conformance, and performance budgets described in the implementation test strategy.
 
 `CI=true` makes lock staleness, dirty generated files, and interactive prompts hard errors. It does not silently enable different language semantics.
 
 ## 10. Toolchain versioning and compatibility
 
-`ruda version` prints compiler, runtime, bytecode format, standard library, bootstrap stage, host, and supported target versions. `ruda version --json` is stable machine-readable data.
+`mmay version` prints compiler, runtime, bytecode format, standard library, bootstrap stage, host, and supported target versions. `mmay version --json` is stable machine-readable data.
 
 The `language` directive chooses the accepted source language. A newer toolchain must continue compiling stable source for earlier 1.x language versions. Experimental features require an explicit manifest opt-in and cannot appear in published stable packages.
 
-Formatter changes that alter output are tied to a language/toolchain release and applied explicitly with `ruda fix --language <version>` when migration is needed. Building never rewrites source.
+Formatter changes that alter output are tied to a language/toolchain release and applied explicitly with `mmay fix --language <version>` when migration is needed. Building never rewrites source.
 
 ## 11. Performance budgets are user-facing contracts
 
 Before 1.0, the project publishes and continuously measures:
 
-- cold `ruda run` latency for a one-file program;
-- no-change `ruda check` and `ruda test` latency;
+- cold `mmay run` latency for a one-file program;
+- no-change `mmay check` and `mmay test` latency;
 - clean and one-file incremental builds for the reference service;
 - formatter throughput and peak memory;
 - VM startup and bytecode verification throughput;

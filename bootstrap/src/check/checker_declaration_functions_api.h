@@ -4,25 +4,25 @@
 #include "checker_internal.h"
 #include "checker_function_context.h"
 
- bool ruda_checker_private_collect_function_signature(
-    RudaChecker *checker,
-    const RudaAstNode *node
+ bool mmay_checker_private_collect_function_signature(
+    MarimayChecker *checker,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_collect_constant_declaration(
-    RudaChecker *checker,
-    const RudaAstNode *node
+ bool mmay_checker_private_collect_constant_declaration(
+    MarimayChecker *checker,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_bind_function_parameters(
-    RudaFunctionChecker *function,
-    const RudaCheckFunctionDeclaration *declaration
+ bool mmay_checker_private_bind_function_parameters(
+    MarimayFunctionChecker *function,
+    const MarimayCheckFunctionDeclaration *declaration
 );
- bool ruda_checker_private_check_function_body(
-    RudaChecker *checker,
-    RudaCheckFunctionDeclaration *declaration
+ bool mmay_checker_private_check_function_body(
+    MarimayChecker *checker,
+    MarimayCheckFunctionDeclaration *declaration
 );
- bool ruda_checker_private_infer_constant_expression_type(
-    RudaChecker *checker,
-    const RudaAstNode *node,
-    RudaTypeId *result
+ bool mmay_checker_private_infer_constant_expression_type(
+    MarimayChecker *checker,
+    const MarimayAstNode *node,
+    MarimayTypeId *result
 );
 #endif

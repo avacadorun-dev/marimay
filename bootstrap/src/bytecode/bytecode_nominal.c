@@ -1,39 +1,39 @@
-#include "ruda/bytecode/bytecode.h"
+#include "mmay/bytecode/bytecode.h"
 
 #include "bytecode_internal.h"
 
-bool ruda_bytecode_type_requires_layout(RudaBytecodeType type) {
-    return type == RUDA_BYTECODE_TYPE_ARRAY
-        || type == RUDA_BYTECODE_TYPE_RECORD
-        || type == RUDA_BYTECODE_TYPE_ENUM
-        || type == RUDA_BYTECODE_TYPE_INTERFACE;
+bool mmay_bytecode_type_requires_layout(MarimayBytecodeType type) {
+    return type == MMAY_BYTECODE_TYPE_ARRAY
+        || type == MMAY_BYTECODE_TYPE_RECORD
+        || type == MMAY_BYTECODE_TYPE_ENUM
+        || type == MMAY_BYTECODE_TYPE_INTERFACE;
 }
 
-bool ruda_bytecode_type_layout_is_valid(
-    const RudaBytecodeFunction *function,
-    RudaBytecodeType type,
+bool mmay_bytecode_type_layout_is_valid(
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeType type,
     uint32_t layout
 ) {
     if (function == NULL) {
         return false;
     }
-    if (type == RUDA_BYTECODE_TYPE_RECORD) {
+    if (type == MMAY_BYTECODE_TYPE_RECORD) {
         return layout < function->record_layouts.length;
     }
-    if (type == RUDA_BYTECODE_TYPE_ENUM) {
+    if (type == MMAY_BYTECODE_TYPE_ENUM) {
         return layout < function->enum_layouts.length;
     }
-    if (type == RUDA_BYTECODE_TYPE_INTERFACE) {
+    if (type == MMAY_BYTECODE_TYPE_INTERFACE) {
         return layout < function->interface_layouts.length;
     }
-    if (type == RUDA_BYTECODE_TYPE_ARRAY) {
+    if (type == MMAY_BYTECODE_TYPE_ARRAY) {
         return layout < function->array_types.length;
     }
-    return layout == RUDA_BYTECODE_NO_LAYOUT;
+    return layout == MMAY_BYTECODE_NO_LAYOUT;
 }
 
-bool ruda_bytecode_set_register_layout(
-    RudaBytecodeFunction *function,
+bool mmay_bytecode_set_register_layout(
+    MarimayBytecodeFunction *function,
     uint32_t register_id,
     uint32_t layout
 ) {
@@ -42,7 +42,7 @@ bool ruda_bytecode_set_register_layout(
         || register_id >= function->register_layouts.length) {
         return false;
     }
-    stored = ruda_vector_at(&function->register_layouts, register_id);
+    stored = mmay_vector_at(&function->register_layouts, register_id);
     if (stored == NULL) {
         return false;
     }
@@ -50,63 +50,63 @@ bool ruda_bytecode_set_register_layout(
     return true;
 }
 
-uint32_t ruda_bytecode_register_layout(
-    const RudaBytecodeFunction *function,
+uint32_t mmay_bytecode_register_layout(
+    const MarimayBytecodeFunction *function,
     uint32_t register_id
 ) {
     const uint32_t *stored = function != NULL && function->initialized
             && register_id < function->register_layouts.length
-        ? ruda_vector_at_const(&function->register_layouts, register_id)
+        ? mmay_vector_at_const(&function->register_layouts, register_id)
         : NULL;
-    return stored != NULL ? *stored : RUDA_BYTECODE_NO_LAYOUT;
+    return stored != NULL ? *stored : MMAY_BYTECODE_NO_LAYOUT;
 }
 
-bool ruda_bytecode_add_record_layout(
-    RudaBytecodeFunction *function,
-    RudaSymbolId symbol,
-    const RudaBytecodeRecordField *fields,
+bool mmay_bytecode_add_record_layout(
+    MarimayBytecodeFunction *function,
+    MarimaySymbolId symbol,
+    const MarimayBytecodeRecordField *fields,
     size_t field_count,
-    RudaBytecodeRecordId *result
+    MarimayBytecodeRecordId *result
 ) {
-    RudaBytecodeRecordLayout layout;
+    MarimayBytecodeRecordLayout layout;
     size_t next_fields = 0;
     if (function == NULL || !function->initialized || result == NULL
         || (fields == NULL && field_count != 0)
         || function->record_layouts.length >= function->options.max_record_layouts
         || function->record_layouts.length >= UINT32_MAX
-        || !ruda_size_add(function->record_fields.length, field_count, &next_fields)
+        || !mmay_size_add(function->record_fields.length, field_count, &next_fields)
         || next_fields > function->options.max_record_fields) {
         return false;
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->record_layouts, function->record_layouts.length + 1
-        ) || !ruda_vector_reserve(&function->record_fields, next_fields)) {
+        ) || !mmay_vector_reserve(&function->record_fields, next_fields)) {
         return false;
     }
     layout.symbol = symbol;
     layout.field_start = function->record_fields.length;
     layout.field_count = field_count;
-    if (!ruda_vector_append(&function->record_fields, fields, field_count)
-        || !ruda_vector_push(&function->record_layouts, &layout)) {
+    if (!mmay_vector_append(&function->record_fields, fields, field_count)
+        || !mmay_vector_push(&function->record_layouts, &layout)) {
         function->record_fields.length = layout.field_start;
         return false;
     }
-    *result = (RudaBytecodeRecordId)(function->record_layouts.length - 1);
+    *result = (MarimayBytecodeRecordId)(function->record_layouts.length - 1);
     return true;
 }
 
-bool ruda_bytecode_add_record_construction(
-    RudaBytecodeFunction *function,
-    RudaBytecodeRecordId record,
-    const RudaBytecodeRecordArgument *arguments,
+bool mmay_bytecode_add_record_construction(
+    MarimayBytecodeFunction *function,
+    MarimayBytecodeRecordId record,
+    const MarimayBytecodeRecordArgument *arguments,
     size_t argument_count,
-    RudaBytecodeRecordConstructionId *result
+    MarimayBytecodeRecordConstructionId *result
 ) {
-    const RudaBytecodeRecordLayout *layout = ruda_bytecode_record_layout(
+    const MarimayBytecodeRecordLayout *layout = mmay_bytecode_record_layout(
         function,
         record
     );
-    RudaBytecodeRecordConstruction construction;
+    MarimayBytecodeRecordConstruction construction;
     size_t next_arguments = 0;
     size_t index = 0;
     if (function == NULL || !function->initialized || result == NULL
@@ -114,7 +114,7 @@ bool ruda_bytecode_add_record_construction(
         || (arguments == NULL && argument_count != 0)
         || function->record_constructions.length
             >= function->options.max_record_constructions
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->record_arguments.length,
             argument_count,
             &next_arguments
@@ -122,14 +122,14 @@ bool ruda_bytecode_add_record_construction(
         return false;
     }
     for (index = 0; index < argument_count; index += 1) {
-        const RudaBytecodeRecordField *field = ruda_bytecode_record_field(
+        const MarimayBytecodeRecordField *field = mmay_bytecode_record_field(
             function,
             layout,
             index
         );
-        const RudaBytecodeType *actual = arguments[index].register_id
+        const MarimayBytecodeType *actual = arguments[index].register_id
                 < function->register_types.length
-            ? ruda_vector_at_const(
+            ? mmay_vector_at_const(
                 &function->register_types,
                 arguments[index].register_id
             )
@@ -137,17 +137,17 @@ bool ruda_bytecode_add_record_construction(
         if (field == NULL || arguments[index].type != field->type
             || arguments[index].layout != field->layout || actual == NULL
             || *actual != arguments[index].type
-            || ruda_bytecode_register_layout(
+            || mmay_bytecode_register_layout(
                 function,
                 arguments[index].register_id
             ) != arguments[index].layout) {
             return false;
         }
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->record_constructions,
             function->record_constructions.length + 1
-        ) || !ruda_vector_reserve(
+        ) || !mmay_vector_reserve(
             &function->record_arguments, next_arguments
         )) {
         return false;
@@ -155,60 +155,60 @@ bool ruda_bytecode_add_record_construction(
     construction.record = record;
     construction.argument_start = function->record_arguments.length;
     construction.argument_count = argument_count;
-    if (!ruda_vector_append(
+    if (!mmay_vector_append(
             &function->record_arguments, arguments, argument_count
-        ) || !ruda_vector_push(&function->record_constructions, &construction)) {
+        ) || !mmay_vector_push(&function->record_constructions, &construction)) {
         function->record_arguments.length = construction.argument_start;
         return false;
     }
-    *result = (RudaBytecodeRecordConstructionId)(
+    *result = (MarimayBytecodeRecordConstructionId)(
         function->record_constructions.length - 1
     );
     return true;
 }
 
-const RudaBytecodeRecordLayout *ruda_bytecode_record_layout(
-    const RudaBytecodeFunction *function,
-    RudaBytecodeRecordId record
+const MarimayBytecodeRecordLayout *mmay_bytecode_record_layout(
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeRecordId record
 ) {
     return function != NULL && function->initialized
-        ? ruda_vector_at_const(&function->record_layouts, record)
+        ? mmay_vector_at_const(&function->record_layouts, record)
         : NULL;
 }
 
-const RudaBytecodeRecordField *ruda_bytecode_record_field(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeRecordLayout *layout,
+const MarimayBytecodeRecordField *mmay_bytecode_record_field(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeRecordLayout *layout,
     size_t field
 ) {
     return function != NULL && function->initialized && layout != NULL
             && field < layout->field_count
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->record_fields,
             layout->field_start + field
         )
         : NULL;
 }
 
-const RudaBytecodeRecordConstruction *ruda_bytecode_record_construction(
-    const RudaBytecodeFunction *function,
-    RudaBytecodeRecordConstructionId construction
+const MarimayBytecodeRecordConstruction *mmay_bytecode_record_construction(
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeRecordConstructionId construction
 ) {
     return function != NULL && function->initialized
-        ? ruda_vector_at_const(&function->record_constructions, construction)
+        ? mmay_vector_at_const(&function->record_constructions, construction)
         : NULL;
 }
 
-bool ruda_bytecode_add_enum_layout(
-    RudaBytecodeFunction *function,
-    RudaSymbolId symbol,
-    const RudaBytecodeEnumVariant *variants,
+bool mmay_bytecode_add_enum_layout(
+    MarimayBytecodeFunction *function,
+    MarimaySymbolId symbol,
+    const MarimayBytecodeEnumVariant *variants,
     size_t variant_count,
-    const RudaBytecodeEnumPayload *payloads,
+    const MarimayBytecodeEnumPayload *payloads,
     size_t payload_count,
-    RudaBytecodeEnumId *result
+    MarimayBytecodeEnumId *result
 ) {
-    RudaBytecodeEnumLayout layout;
+    MarimayBytecodeEnumLayout layout;
     size_t next_variants = 0;
     size_t next_payloads = 0;
     size_t index = 0;
@@ -216,18 +216,18 @@ bool ruda_bytecode_add_enum_layout(
         || (variants == NULL && variant_count != 0)
         || (payloads == NULL && payload_count != 0)
         || function->enum_layouts.length >= function->options.max_enum_layouts
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->enum_variants.length, variant_count, &next_variants
         ) || next_variants > function->options.max_enum_variants
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->enum_payloads.length, payload_count, &next_payloads
         ) || next_payloads > function->options.max_enum_payloads) {
         return false;
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->enum_layouts, function->enum_layouts.length + 1
-        ) || !ruda_vector_reserve(&function->enum_variants, next_variants)
-        || !ruda_vector_reserve(&function->enum_payloads, next_payloads)) {
+        ) || !mmay_vector_reserve(&function->enum_variants, next_variants)
+        || !mmay_vector_reserve(&function->enum_payloads, next_payloads)) {
         return false;
     }
     layout.symbol = symbol;
@@ -235,32 +235,32 @@ bool ruda_bytecode_add_enum_layout(
     layout.variant_count = variant_count;
     layout.payload_start = function->enum_payloads.length;
     layout.payload_count = payload_count;
-    if (!ruda_vector_append(&function->enum_payloads, payloads, payload_count)
-        || !ruda_vector_append(&function->enum_variants, variants, variant_count)
-        || !ruda_vector_push(&function->enum_layouts, &layout)) {
+    if (!mmay_vector_append(&function->enum_payloads, payloads, payload_count)
+        || !mmay_vector_append(&function->enum_variants, variants, variant_count)
+        || !mmay_vector_push(&function->enum_layouts, &layout)) {
         function->enum_variants.length = layout.variant_start;
         function->enum_payloads.length = layout.payload_start;
         return false;
     }
     (void)index;
-    *result = (RudaBytecodeEnumId)(function->enum_layouts.length - 1);
+    *result = (MarimayBytecodeEnumId)(function->enum_layouts.length - 1);
     return true;
 }
 
-bool ruda_bytecode_add_enum_construction(
-    RudaBytecodeFunction *function,
-    RudaBytecodeEnumId enum_id,
+bool mmay_bytecode_add_enum_construction(
+    MarimayBytecodeFunction *function,
+    MarimayBytecodeEnumId enum_id,
     size_t variant,
-    const RudaBytecodeEnumArgument *arguments,
+    const MarimayBytecodeEnumArgument *arguments,
     size_t argument_count,
-    RudaBytecodeEnumConstructionId *result
+    MarimayBytecodeEnumConstructionId *result
 ) {
-    const RudaBytecodeEnumLayout *layout = ruda_bytecode_enum_layout(
+    const MarimayBytecodeEnumLayout *layout = mmay_bytecode_enum_layout(
         function,
         enum_id
     );
-    const RudaBytecodeEnumVariant *selected = NULL;
-    RudaBytecodeEnumConstruction construction;
+    const MarimayBytecodeEnumVariant *selected = NULL;
+    MarimayBytecodeEnumConstruction construction;
     size_t next_arguments = 0;
     size_t index = 0;
     if (function == NULL || !function->initialized || result == NULL
@@ -268,12 +268,12 @@ bool ruda_bytecode_add_enum_construction(
         || (arguments == NULL && argument_count != 0)
         || function->enum_constructions.length
             >= function->options.max_enum_constructions
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->enum_arguments.length, argument_count, &next_arguments
         ) || next_arguments > function->options.max_enum_arguments) {
         return false;
     }
-    selected = ruda_vector_at_const(
+    selected = mmay_vector_at_const(
         &function->enum_variants,
         layout->variant_start + variant
     );
@@ -281,13 +281,13 @@ bool ruda_bytecode_add_enum_construction(
         return false;
     }
     for (index = 0; index < argument_count; index += 1) {
-        const RudaBytecodeEnumPayload *payload = ruda_vector_at_const(
+        const MarimayBytecodeEnumPayload *payload = mmay_vector_at_const(
             &function->enum_payloads,
             layout->payload_start + selected->payload_start + index
         );
-        const RudaBytecodeType *actual = arguments[index].register_id
+        const MarimayBytecodeType *actual = arguments[index].register_id
                 < function->register_types.length
-            ? ruda_vector_at_const(
+            ? mmay_vector_at_const(
                 &function->register_types,
                 arguments[index].register_id
             )
@@ -296,60 +296,60 @@ bool ruda_bytecode_add_enum_construction(
             || arguments[index].type != payload->type
             || arguments[index].layout != payload->layout
             || *actual != arguments[index].type
-            || ruda_bytecode_register_layout(
+            || mmay_bytecode_register_layout(
                 function,
                 arguments[index].register_id
             ) != arguments[index].layout) {
             return false;
         }
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->enum_constructions,
             function->enum_constructions.length + 1
-        ) || !ruda_vector_reserve(&function->enum_arguments, next_arguments)) {
+        ) || !mmay_vector_reserve(&function->enum_arguments, next_arguments)) {
         return false;
     }
     construction.enum_id = enum_id;
     construction.variant = variant;
     construction.argument_start = function->enum_arguments.length;
     construction.argument_count = argument_count;
-    if (!ruda_vector_append(
+    if (!mmay_vector_append(
             &function->enum_arguments, arguments, argument_count
-        ) || !ruda_vector_push(&function->enum_constructions, &construction)) {
+        ) || !mmay_vector_push(&function->enum_constructions, &construction)) {
         function->enum_arguments.length = construction.argument_start;
         return false;
     }
-    *result = (RudaBytecodeEnumConstructionId)(
+    *result = (MarimayBytecodeEnumConstructionId)(
         function->enum_constructions.length - 1
     );
     return true;
 }
 
-const RudaBytecodeEnumLayout *ruda_bytecode_enum_layout(
-    const RudaBytecodeFunction *function,
-    RudaBytecodeEnumId enum_id
+const MarimayBytecodeEnumLayout *mmay_bytecode_enum_layout(
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeEnumId enum_id
 ) {
     return function != NULL && function->initialized
-        ? ruda_vector_at_const(&function->enum_layouts, enum_id)
+        ? mmay_vector_at_const(&function->enum_layouts, enum_id)
         : NULL;
 }
 
-const RudaBytecodeEnumConstruction *ruda_bytecode_enum_construction(
-    const RudaBytecodeFunction *function,
-    RudaBytecodeEnumConstructionId construction
+const MarimayBytecodeEnumConstruction *mmay_bytecode_enum_construction(
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeEnumConstructionId construction
 ) {
     return function != NULL && function->initialized
-        ? ruda_vector_at_const(&function->enum_constructions, construction)
+        ? mmay_vector_at_const(&function->enum_constructions, construction)
         : NULL;
 }
 
-bool ruda_bytecode_add_interface_layout(
-    RudaBytecodeFunction *function,
-    RudaSymbolId symbol,
+bool mmay_bytecode_add_interface_layout(
+    MarimayBytecodeFunction *function,
+    MarimaySymbolId symbol,
     size_t method_count,
-    RudaBytecodeInterfaceId *result
+    MarimayBytecodeInterfaceId *result
 ) {
-    RudaBytecodeInterfaceLayout layout;
+    MarimayBytecodeInterfaceLayout layout;
     if (function == NULL || !function->initialized || result == NULL
         || function->interface_layouts.length
             >= function->options.max_interface_layouts
@@ -358,28 +358,28 @@ bool ruda_bytecode_add_interface_layout(
     }
     layout.symbol = symbol;
     layout.method_count = method_count;
-    if (!ruda_vector_push(&function->interface_layouts, &layout)) {
+    if (!mmay_vector_push(&function->interface_layouts, &layout)) {
         return false;
     }
-    *result = (RudaBytecodeInterfaceId)(function->interface_layouts.length - 1);
+    *result = (MarimayBytecodeInterfaceId)(function->interface_layouts.length - 1);
     return true;
 }
 
-bool ruda_bytecode_add_interface_construction(
-    RudaBytecodeFunction *function,
-    RudaBytecodeInterfaceId interface_id,
+bool mmay_bytecode_add_interface_construction(
+    MarimayBytecodeFunction *function,
+    MarimayBytecodeInterfaceId interface_id,
     uint32_t payload_register,
-    RudaBytecodeType payload_type,
+    MarimayBytecodeType payload_type,
     uint32_t payload_layout,
-    const RudaSymbolId *methods,
+    const MarimaySymbolId *methods,
     size_t method_count,
-    RudaBytecodeInterfaceConstructionId *result
+    MarimayBytecodeInterfaceConstructionId *result
 ) {
-    const RudaBytecodeInterfaceLayout *layout = ruda_bytecode_interface_layout(
+    const MarimayBytecodeInterfaceLayout *layout = mmay_bytecode_interface_layout(
         function,
         interface_id
     );
-    RudaBytecodeInterfaceConstruction construction;
+    MarimayBytecodeInterfaceConstruction construction;
     size_t next_methods = 0;
     if (function == NULL || !function->initialized || result == NULL
         || layout == NULL || layout->method_count != method_count
@@ -387,20 +387,20 @@ bool ruda_bytecode_add_interface_construction(
         || payload_register >= function->register_types.length
         || function->interface_constructions.length
             >= function->options.max_interface_constructions
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->interface_methods.length, method_count, &next_methods
         ) || next_methods > function->options.max_interface_methods) {
         return false;
     }
     {
-        const RudaBytecodeType *actual = ruda_vector_at_const(
+        const MarimayBytecodeType *actual = mmay_vector_at_const(
             &function->register_types,
             payload_register
         );
         if (actual == NULL || *actual != payload_type
-            || ruda_bytecode_register_layout(function, payload_register)
+            || mmay_bytecode_register_layout(function, payload_register)
                 != payload_layout
-            || !ruda_bytecode_type_layout_is_valid(
+            || !mmay_bytecode_type_layout_is_valid(
                 function,
                 payload_type,
                 payload_layout
@@ -408,10 +408,10 @@ bool ruda_bytecode_add_interface_construction(
             return false;
         }
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->interface_constructions,
             function->interface_constructions.length + 1
-        ) || !ruda_vector_reserve(
+        ) || !mmay_vector_reserve(
             &function->interface_methods, next_methods
         )) {
         return false;
@@ -422,34 +422,34 @@ bool ruda_bytecode_add_interface_construction(
     construction.payload_type = payload_type;
     construction.method_start = function->interface_methods.length;
     construction.method_count = method_count;
-    if (!ruda_vector_append(
+    if (!mmay_vector_append(
             &function->interface_methods, methods, method_count
-        ) || !ruda_vector_push(
+        ) || !mmay_vector_push(
             &function->interface_constructions, &construction
         )) {
         function->interface_methods.length = construction.method_start;
         return false;
     }
-    *result = (RudaBytecodeInterfaceConstructionId)(
+    *result = (MarimayBytecodeInterfaceConstructionId)(
         function->interface_constructions.length - 1
     );
     return true;
 }
 
-const RudaBytecodeInterfaceLayout *ruda_bytecode_interface_layout(
-    const RudaBytecodeFunction *function,
-    RudaBytecodeInterfaceId interface_id
+const MarimayBytecodeInterfaceLayout *mmay_bytecode_interface_layout(
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeInterfaceId interface_id
 ) {
     return function != NULL && function->initialized
-        ? ruda_vector_at_const(&function->interface_layouts, interface_id)
+        ? mmay_vector_at_const(&function->interface_layouts, interface_id)
         : NULL;
 }
 
-const RudaBytecodeInterfaceConstruction *ruda_bytecode_interface_construction(
-    const RudaBytecodeFunction *function,
-    RudaBytecodeInterfaceConstructionId construction
+const MarimayBytecodeInterfaceConstruction *mmay_bytecode_interface_construction(
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeInterfaceConstructionId construction
 ) {
     return function != NULL && function->initialized
-        ? ruda_vector_at_const(&function->interface_constructions, construction)
+        ? mmay_vector_at_const(&function->interface_constructions, construction)
         : NULL;
 }

@@ -1,19 +1,19 @@
-#include "ruda/check/queries.h"
+#include "mmay/check/queries.h"
 
 #include <string.h>
 
-const RudaCheckedOccurrence *ruda_checked_occurrence(
-    const RudaCheckResult *result,
+const MarimayCheckedOccurrence *mmay_checked_occurrence(
+    const MarimayCheckResult *result,
     size_t index
 ) {
     return result != NULL && result->initialized
-        ? ruda_vector_at_const(&result->occurrences, index)
+        ? mmay_vector_at_const(&result->occurrences, index)
         : NULL;
 }
 
-const RudaCheckedOccurrence *ruda_checked_occurrence_at(
-    const RudaCheckResult *result,
-    const RudaSourceSnapshot *snapshot,
+const MarimayCheckedOccurrence *mmay_checked_occurrence_at(
+    const MarimayCheckResult *result,
+    const MarimaySourceSnapshot *snapshot,
     size_t byte_offset
 ) {
     size_t index = 0;
@@ -21,7 +21,7 @@ const RudaCheckedOccurrence *ruda_checked_occurrence_at(
         return NULL;
     }
     for (index = 0; index < result->occurrences.length; index += 1) {
-        const RudaCheckedOccurrence *occurrence = ruda_vector_at_const(
+        const MarimayCheckedOccurrence *occurrence = mmay_vector_at_const(
             &result->occurrences,
             index
         );
@@ -34,22 +34,22 @@ const RudaCheckedOccurrence *ruda_checked_occurrence_at(
     return NULL;
 }
 
-const RudaCheckedSymbol *ruda_checked_definition_from_reference(
-    const RudaCheckResult *result,
-    const RudaSourceSnapshot *snapshot,
+const MarimayCheckedSymbol *mmay_checked_definition_from_reference(
+    const MarimayCheckResult *result,
+    const MarimaySourceSnapshot *snapshot,
     size_t byte_offset
 ) {
-    const RudaCheckedOccurrence *occurrence = ruda_checked_occurrence_at(
+    const MarimayCheckedOccurrence *occurrence = mmay_checked_occurrence_at(
         result,
         snapshot,
         byte_offset
     );
     return occurrence == NULL ? NULL
-        : ruda_checked_symbol_by_id(result, occurrence->symbol);
+        : mmay_checked_symbol_by_id(result, occurrence->symbol);
 }
 
-static bool ruda_checked_symbol_matches_prefix(
-    const RudaCheckedSymbol *symbol,
+static bool mmay_checked_symbol_matches_prefix(
+    const MarimayCheckedSymbol *symbol,
     const void *prefix,
     size_t prefix_length
 ) {
@@ -58,8 +58,8 @@ static bool ruda_checked_symbol_matches_prefix(
             || memcmp(symbol->name.data, prefix, prefix_length) == 0);
 }
 
-size_t ruda_checked_symbol_search_count(
-    const RudaCheckResult *result,
+size_t mmay_checked_symbol_search_count(
+    const MarimayCheckResult *result,
     const void *prefix,
     size_t prefix_length
 ) {
@@ -70,8 +70,8 @@ size_t ruda_checked_symbol_search_count(
         return 0;
     }
     for (index = 0; index < result->symbols.length; index += 1) {
-        if (ruda_checked_symbol_matches_prefix(
-                ruda_checked_symbol(result, index),
+        if (mmay_checked_symbol_matches_prefix(
+                mmay_checked_symbol(result, index),
                 prefix,
                 prefix_length
             )) {
@@ -81,8 +81,8 @@ size_t ruda_checked_symbol_search_count(
     return count;
 }
 
-const RudaCheckedSymbol *ruda_checked_symbol_search(
-    const RudaCheckResult *result,
+const MarimayCheckedSymbol *mmay_checked_symbol_search(
+    const MarimayCheckResult *result,
     const void *prefix,
     size_t prefix_length,
     size_t match_index
@@ -94,8 +94,8 @@ const RudaCheckedSymbol *ruda_checked_symbol_search(
         return NULL;
     }
     for (index = 0; index < result->symbols.length; index += 1) {
-        const RudaCheckedSymbol *symbol = ruda_checked_symbol(result, index);
-        if (!ruda_checked_symbol_matches_prefix(
+        const MarimayCheckedSymbol *symbol = mmay_checked_symbol(result, index);
+        if (!mmay_checked_symbol_matches_prefix(
                 symbol,
                 prefix,
                 prefix_length
@@ -110,10 +110,10 @@ const RudaCheckedSymbol *ruda_checked_symbol_search(
     return NULL;
 }
 
-size_t ruda_checked_completion_count(
-    const RudaCheckResult *result,
-    const RudaSourceSnapshot *snapshot,
-    RudaSymbolId receiver_symbol
+size_t mmay_checked_completion_count(
+    const MarimayCheckResult *result,
+    const MarimaySourceSnapshot *snapshot,
+    MarimaySymbolId receiver_symbol
 ) {
     size_t index = 0;
     size_t count = 0;
@@ -121,12 +121,12 @@ size_t ruda_checked_completion_count(
         return 0;
     }
     for (index = 0; index < result->completions.length; index += 1) {
-        const RudaCheckedCompletion *completion = ruda_vector_at_const(
+        const MarimayCheckedCompletion *completion = mmay_vector_at_const(
             &result->completions,
             index
         );
         if (completion != NULL && completion->snapshot == snapshot
-            && ruda_symbol_id_equal(
+            && mmay_symbol_id_equal(
                 completion->receiver_symbol,
                 receiver_symbol
             )) {
@@ -136,10 +136,10 @@ size_t ruda_checked_completion_count(
     return count;
 }
 
-const RudaCheckedCompletion *ruda_checked_completion(
-    const RudaCheckResult *result,
-    const RudaSourceSnapshot *snapshot,
-    RudaSymbolId receiver_symbol,
+const MarimayCheckedCompletion *mmay_checked_completion(
+    const MarimayCheckResult *result,
+    const MarimaySourceSnapshot *snapshot,
+    MarimaySymbolId receiver_symbol,
     size_t match_index
 ) {
     size_t index = 0;
@@ -148,12 +148,12 @@ const RudaCheckedCompletion *ruda_checked_completion(
         return NULL;
     }
     for (index = 0; index < result->completions.length; index += 1) {
-        const RudaCheckedCompletion *completion = ruda_vector_at_const(
+        const MarimayCheckedCompletion *completion = mmay_vector_at_const(
             &result->completions,
             index
         );
         if (completion == NULL || completion->snapshot != snapshot
-            || !ruda_symbol_id_equal(
+            || !mmay_symbol_id_equal(
                 completion->receiver_symbol,
                 receiver_symbol
             )) {

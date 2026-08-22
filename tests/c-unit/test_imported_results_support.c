@@ -1,6 +1,6 @@
 #include "test_imported_results_support.h"
 
-static const char ruda_imported_results_producer[] =
+static const char mmay_imported_results_producer[] =
     "public enum Choice<T> { Empty, Value(T), }\n"
     "public enum Problem { Missing, Rejected(int), }\n"
     "public fn choice(value: int): Result<Choice<[]int>, Problem> {\n"
@@ -16,12 +16,12 @@ static const char ruda_imported_results_producer[] =
     "  return Ok<Option<[]int>, Problem>(Some([value]));\n"
     "}\n";
 
-static const char ruda_imported_results_relay[] =
+static const char mmay_imported_results_relay[] =
     "import { Choice } from \"acme/results\";\n"
     "public type RelayedChoice = Choice<[]int>;\n"
     "public fn relay(value: RelayedChoice): RelayedChoice { return value; }\n";
 
-static const char ruda_imported_results_application[] =
+static const char mmay_imported_results_application[] =
     "import { Choice, Problem, choice, failure, nested, noChoice } from \"acme/results\";\n"
     "import * as results from \"acme/results\";\n"
     "import { RelayedChoice, relay } from \"acme/relay\";\n"
@@ -68,47 +68,47 @@ static const char ruda_imported_results_application[] =
     "  };\n"
     "}\n";
 
-bool ruda_test_imported_results_init(
-    RudaTestImportedResults *test,
-    RudaAllocator allocator
+bool mmay_test_imported_results_init(
+    MarimayTestImportedResults *test,
+    MarimayAllocator allocator
 ) {
-    const RudaTestImportSource sources[] = {
-        {"acme/app", "app/main.ruda", ruda_imported_results_application},
-        {"acme/relay", "relay/api.ruda", ruda_imported_results_relay},
-        {"acme/results", "results/api.ruda", ruda_imported_results_producer}
+    const MarimayTestImportSource sources[] = {
+        {"acme/app", "app/main.my", mmay_imported_results_application},
+        {"acme/relay", "relay/api.my", mmay_imported_results_relay},
+        {"acme/results", "results/api.my", mmay_imported_results_producer}
     };
     size_t index = 0;
     memset(test, 0, sizeof(*test));
     test->entry_index = SIZE_MAX;
-    if (!ruda_checker_import_fixture_init(
+    if (!mmay_checker_import_fixture_init(
             &test->fixture, sources, sizeof(sources) / sizeof(sources[0])
-        ) || ruda_checker_import_fixture_check(
+        ) || mmay_checker_import_fixture_check(
             &test->fixture,
             "acme/app",
             allocator,
-            ruda_check_graph_default_options(),
+            mmay_check_graph_default_options(),
             &test->checked
-        ) != RUDA_CHECK_OK || !test->checked.initialized
+        ) != MMAY_CHECK_OK || !test->checked.initialized
         || test->checked.diagnostics.length != 0
         || test->checked.functions.length
-            > RUDA_TEST_IMPORTED_RESULTS_MAX_FUNCTIONS) {
-        ruda_test_imported_results_dispose(test);
+            > MMAY_TEST_IMPORTED_RESULTS_MAX_FUNCTIONS) {
+        mmay_test_imported_results_dispose(test);
         return false;
     }
-    test->entry = ruda_checker_import_function(
+    test->entry = mmay_checker_import_function(
         &test->checked, "main", &test->entry_index
     );
     if (test->entry == NULL) {
-        ruda_test_imported_results_dispose(test);
+        mmay_test_imported_results_dispose(test);
         return false;
     }
     for (index = 0; index < test->checked.functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             &test->checked, index
         );
         if (function == NULL
-            || ruda_mir_verify(&function->mir) != RUDA_MIR_VERIFY_OK) {
-            ruda_test_imported_results_dispose(test);
+            || mmay_mir_verify(&function->mir) != MMAY_MIR_VERIFY_OK) {
+            mmay_test_imported_results_dispose(test);
             return false;
         }
         test->functions[index] = &function->mir;
@@ -117,31 +117,31 @@ bool ruda_test_imported_results_init(
     return true;
 }
 
-void ruda_test_imported_results_dispose(RudaTestImportedResults *test) {
+void mmay_test_imported_results_dispose(MarimayTestImportedResults *test) {
     if (test == NULL) {
         return;
     }
     if (test->checked.initialized) {
-        ruda_check_result_dispose(&test->checked);
+        mmay_check_result_dispose(&test->checked);
     }
-    ruda_checker_import_fixture_dispose(&test->fixture);
+    mmay_checker_import_fixture_dispose(&test->fixture);
     memset(test, 0, sizeof(*test));
 }
 
-RudaMirBytecodeLowerStatus ruda_test_imported_results_lower(
-    const RudaTestImportedResults *test,
-    RudaAllocator allocator,
-    RudaBytecodeProgram *program
+MarimayMirBytecodeLowerStatus mmay_test_imported_results_lower(
+    const MarimayTestImportedResults *test,
+    MarimayAllocator allocator,
+    MarimayBytecodeProgram *program
 ) {
     if (test == NULL || !test->initialized || test->entry == NULL) {
-        return RUDA_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
+        return MMAY_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
     }
-    return ruda_mir_lower_bytecode_program(
+    return mmay_mir_lower_bytecode_program(
         test->functions,
         test->checked.functions.length,
         test->entry->mir.symbol,
         allocator,
-        ruda_mir_bytecode_program_lower_default_options(),
+        mmay_mir_bytecode_program_lower_default_options(),
         program
     );
 }

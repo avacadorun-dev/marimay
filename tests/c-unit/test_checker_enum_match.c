@@ -1,6 +1,6 @@
 #include "test_checker_support.h"
 
-void ruda_test_checker_enum_match(void) {
+void mmay_test_checker_enum_match(void) {
     static const char source[] =
         "enum Message {\n"
         "  Quit,\n"
@@ -58,407 +58,407 @@ void ruda_test_checker_enum_match(void) {
         "    case _ => 2;\n"
         "  };\n"
         "}\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    const RudaCheckedFunction *describe = NULL;
-    RudaMirExecution execution;
-    RudaCheckInterpretOptions options = ruda_check_interpret_default_options();
-    RudaMirValue constructor_arguments[2];
-    RudaMirValue enum_value;
-    RudaMirValue result;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayCheckedFunction *describe = NULL;
+    MarimayMirExecution execution;
+    MarimayCheckInterpretOptions options = mmay_check_interpret_default_options();
+    MarimayMirValue constructor_arguments[2];
+    MarimayMirValue enum_value;
+    MarimayMirValue result;
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/enum-match",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.enums.length == 1);
-        RUDA_EXPECT(checked.functions.length == 12);
-        describe = ruda_checked_function(&checked, 3);
-        RUDA_EXPECT(describe != NULL);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.enums.length == 1);
+        MMAY_EXPECT(checked.functions.length == 12);
+        describe = mmay_checked_function(&checked, 3);
+        MMAY_EXPECT(describe != NULL);
         if (describe != NULL) {
-            RUDA_EXPECT(describe->mir.enums.length == 1);
-            RUDA_EXPECT(describe->mir.enum_constructions.length == 0);
-            RUDA_EXPECT(describe->mir.blocks.length >= 6);
-            RUDA_EXPECT(ruda_mir_verify(&describe->mir) == RUDA_MIR_VERIFY_OK);
+            MMAY_EXPECT(describe->mir.enums.length == 1);
+            MMAY_EXPECT(describe->mir.enum_constructions.length == 0);
+            MMAY_EXPECT(describe->mir.blocks.length >= 6);
+            MMAY_EXPECT(mmay_mir_verify(&describe->mir) == MMAY_MIR_VERIFY_OK);
         }
-        RUDA_EXPECT(ruda_mir_execution_init(
+        MMAY_EXPECT(mmay_mir_execution_init(
             &execution,
-            ruda_system_allocator(),
-            ruda_mir_execution_default_options()
+            mmay_system_allocator(),
+            mmay_mir_execution_default_options()
         ));
         options.execution = &execution;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             0,
             NULL,
             0,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             3,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 0);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 0);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             4,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 1);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 1);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             8,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == -1);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == -1);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             9,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 4);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 4);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             11,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 2);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 2);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             7,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 1);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 1);
 
-        constructor_arguments[0].type = RUDA_TYPE_I64;
+        constructor_arguments[0].type = MMAY_TYPE_I64;
         constructor_arguments[0].as.i64 = 41;
-        constructor_arguments[1].type = RUDA_TYPE_I64;
+        constructor_arguments[1].type = MMAY_TYPE_I64;
         constructor_arguments[1].as.i64 = 99;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             1,
             constructor_arguments,
             2,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             3,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 41);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 41);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             4,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 2);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 2);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             7,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_DIVISION_BY_ZERO);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_DIVISION_BY_ZERO);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             8,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 41);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 41);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             11,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_DIVISION_BY_ZERO);
+        ) == MMAY_MIR_INTERPRET_DIVISION_BY_ZERO);
         constructor_arguments[0].as.i64 = -1;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             1,
             constructor_arguments,
             2,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             8,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
 
         constructor_arguments[0].as.i64 = 10;
         constructor_arguments[1].as.i64 = 20;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             2,
             constructor_arguments,
             2,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             3,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 30);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 30);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             7,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OVERFLOW);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OVERFLOW);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             8,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 20);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 20);
         constructor_arguments[0].as.i64 = 30;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             2,
             constructor_arguments,
             2,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             8,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 30);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 30);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             3,
             &enum_value,
             1,
-            ruda_system_allocator(),
-            ruda_check_interpret_default_options(),
+            mmay_system_allocator(),
+            mmay_check_interpret_default_options(),
             &result
-        ) == RUDA_MIR_INTERPRET_INVALID_ARGUMENT);
-        enum_value.as.reference = RUDA_MIR_INVALID_REFERENCE;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_INVALID_ARGUMENT);
+        enum_value.as.reference = MMAY_MIR_INVALID_REFERENCE;
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             3,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_INVALID_REFERENCE);
-        ruda_mir_execution_dispose(&execution);
-        ruda_check_result_dispose(&checked);
+        ) == MMAY_MIR_INTERPRET_INVALID_REFERENCE);
+        mmay_mir_execution_dispose(&execution);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, Write(int), }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Quit => 0; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
+        MMAY_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
         "match value { case Quit => 0; }",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Quit => 0; case Quit => 1; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+        MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Quit",
         2
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, Write(int), }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case _ => 0; case Quit => 1; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+        MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Quit",
         1
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Write(int), }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Write => 0; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Write",
         1
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Write(int), }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Missing(x) => x; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_UNKNOWN_VARIANT,
+        MMAY_DIAGNOSTIC_UNKNOWN_VARIANT,
         "Missing",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Write(int, int), }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Write(x) => x; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "(x)",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Write(int, int), }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Write(x, x) => x; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_DUPLICATE_NAME,
+        MMAY_DIAGNOSTIC_DUPLICATE_NAME,
         "x",
         1
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, Write(int), }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Quit => 0; case Write(x) => true; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "true",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Move { x: int; y: int; }, }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Move { z } => 0; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_UNKNOWN_FIELD,
+        MMAY_DIAGNOSTIC_UNKNOWN_FIELD,
         "z",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Move { x: int; y: int; }, }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Move { x, x } => 0; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_DUPLICATE_FIELD,
+        MMAY_DIAGNOSTIC_DUPLICATE_FIELD,
         "x",
         2
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Move { x: int; y: int; }, }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Move { x } => x; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_MISSING_FIELD,
+        MMAY_DIAGNOSTIC_MISSING_FIELD,
         "{ x }",
         0
     );
 
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, }\n"
         "fn guarded(value: Message): int {\n"
         "  return match value { case Quit if true => 0; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
+        MMAY_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
         "match value { case Quit if true => 0; }",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Quit if 1 => 0; case _ => 1; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "1",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, }\n"
         "fn bad(value: Message): int {\n"
         "  return match value { case Quit => 0; case Quit if false => 1; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+        MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Quit",
         2
     );
 }
 
 
-void ruda_test_checker_enum_or_patterns(void) {
+void mmay_test_checker_enum_or_patterns(void) {
     static const char source[] =
         "enum Choice {\n"
         "  Idle, Stop, Pause,\n"
@@ -512,275 +512,275 @@ void ruda_test_checker_enum_or_patterns(void) {
         "    case _ => 2;\n"
         "  };\n"
         "}\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaMirExecution execution;
-    RudaCheckInterpretOptions options = ruda_check_interpret_default_options();
-    RudaMirValue arguments[2];
-    RudaMirValue enum_value;
-    RudaMirValue result;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayMirExecution execution;
+    MarimayCheckInterpretOptions options = mmay_check_interpret_default_options();
+    MarimayMirValue arguments[2];
+    MarimayMirValue enum_value;
+    MarimayMirValue result;
     size_t constructor_index = 0;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/enum-or-patterns",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        const RudaCheckedFunction *guard_order = NULL;
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.enums.length == 1);
-        RUDA_EXPECT(checked.functions.length == 13);
-        guard_order = ruda_checked_function(&checked, 12);
-        RUDA_EXPECT(guard_order != NULL);
+        const MarimayCheckedFunction *guard_order = NULL;
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.enums.length == 1);
+        MMAY_EXPECT(checked.functions.length == 13);
+        guard_order = mmay_checked_function(&checked, 12);
+        MMAY_EXPECT(guard_order != NULL);
         if (guard_order != NULL) {
-            RUDA_EXPECT(ruda_mir_verify(&guard_order->mir)
-                == RUDA_MIR_VERIFY_OK);
-            RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+            MMAY_EXPECT(mmay_mir_verify(&guard_order->mir)
+                == MMAY_MIR_VERIFY_OK);
+            MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
                 &guard_order->mir,
-                RUDA_MIR_CALL
+                MMAY_MIR_CALL
             ) == 1);
         }
-        RUDA_EXPECT(ruda_mir_execution_init(
+        MMAY_EXPECT(mmay_mir_execution_init(
             &execution,
-            ruda_system_allocator(),
-            ruda_mir_execution_default_options()
+            mmay_system_allocator(),
+            mmay_mir_execution_default_options()
         ));
         options.execution = &execution;
         for (constructor_index = 0; constructor_index < 3;
             constructor_index += 1) {
-            RUDA_EXPECT(ruda_check_interpret_function(
+            MMAY_EXPECT(mmay_check_interpret_function(
                 &checked,
                 constructor_index,
                 NULL,
                 0,
-                ruda_system_allocator(),
+                mmay_system_allocator(),
                 options,
                 &enum_value
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(ruda_check_interpret_function(
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(mmay_check_interpret_function(
                 &checked,
                 7,
                 &enum_value,
                 1,
-                ruda_system_allocator(),
+                mmay_system_allocator(),
                 options,
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 1);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 1);
         }
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             12,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 2);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 2);
 
-        arguments[0].type = RUDA_TYPE_I64;
+        arguments[0].type = MMAY_TYPE_I64;
         arguments[0].as.i64 = 41;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             3,
             arguments,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             7,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 2);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 2);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             8,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 41);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 41);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             10,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 41);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 41);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             12,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_DIVISION_BY_ZERO);
+        ) == MMAY_MIR_INTERPRET_DIVISION_BY_ZERO);
 
         arguments[0].as.i64 = -7;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             4,
             arguments,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             8,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == -7);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == -7);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             10,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
 
         arguments[0].as.i64 = 3;
-        arguments[1].type = RUDA_TYPE_I64;
+        arguments[1].type = MMAY_TYPE_I64;
         arguments[1].as.i64 = 4;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             5,
             arguments,
             2,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             9,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 34);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 34);
         arguments[0].as.i64 = 5;
         arguments[1].as.i64 = 6;
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             6,
             arguments,
             2,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             9,
             &enum_value,
             1,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 56);
-        ruda_mir_execution_dispose(&execution);
-        ruda_check_result_dispose(&checked);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 56);
+        mmay_mir_execution_dispose(&execution);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Choice { Left(int), Right(int), }\n"
         "fn bad(value: Choice): int {\n"
         "  return match value { case Left(x) | Right(y) => x; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Right(y)",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Choice { Number(int), Flag(bool), }\n"
         "fn bad(value: Choice): int {\n"
         "  return match value { case Number(item) | Flag(item) => 0; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Flag(item)",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Left(int), }\n"
         "fn bad(value: Choice): int {\n"
         "  return match value { case Left(item) | Idle => item; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Idle",
         1
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
         "  return match value { case Idle | Idle => 0; case Stop => 1; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+        MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Idle",
         2
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
         "  return match value { case Idle => 0; case Idle | Stop => 1; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+        MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Idle",
         2
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
         "  return match value { case _ | Idle => 0; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+        MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Idle",
         1
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
         "  return match value { case Idle | _ => 0; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+        MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Idle",
         1
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
         "  return match value { case Idle | Stop if true => 0; };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
+        MMAY_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
         "match value { case Idle | Stop if true => 0; }",
         0
     );

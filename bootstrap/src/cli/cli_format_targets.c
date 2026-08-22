@@ -3,51 +3,51 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ruda/generated/diagnostic_codes.h"
+#include "mmay/generated/diagnostic_codes.h"
 
-#include "ruda/platform/directory.h"
+#include "mmay/platform/directory.h"
 
-static RudaCliFormatTargetStatus ruda_cli_format_target_file_status(
-    RudaFileStatus status
+static MarimayCliFormatTargetStatus mmay_cli_format_target_file_status(
+    MarimayFileStatus status
 ) {
-    if (status == RUDA_FILE_OK) {
-        return RUDA_CLI_FORMAT_TARGET_OK;
+    if (status == MMAY_FILE_OK) {
+        return MMAY_CLI_FORMAT_TARGET_OK;
     }
-    if (status == RUDA_FILE_ALLOCATION_FAILED) {
-        return RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
+    if (status == MMAY_FILE_ALLOCATION_FAILED) {
+        return MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
     }
-    if (status == RUDA_FILE_LIMIT_EXCEEDED) {
-        return RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED;
+    if (status == MMAY_FILE_LIMIT_EXCEEDED) {
+        return MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED;
     }
-    return RUDA_CLI_FORMAT_TARGET_INPUT_ERROR;
+    return MMAY_CLI_FORMAT_TARGET_INPUT_ERROR;
 }
 
-static bool ruda_cli_path_equal(
-    const RudaOwnedBytes *left,
-    const RudaOwnedBytes *right
+static bool mmay_cli_path_equal(
+    const MarimayOwnedBytes *left,
+    const MarimayOwnedBytes *right
 ) {
     return left->length == right->length
         && memcmp(left->data, right->data, left->length) == 0;
 }
 
-static bool ruda_cli_path_copy(
-    RudaOwnedBytes *output,
-    RudaAllocator allocator,
+static bool mmay_cli_path_copy(
+    MarimayOwnedBytes *output,
+    MarimayAllocator allocator,
     const char *path,
     size_t length
 ) {
-    if (length > RUDA_CLI_FORMAT_MAX_PATH_BYTES) {
+    if (length > MMAY_CLI_FORMAT_MAX_PATH_BYTES) {
         return false;
     }
-    return ruda_owned_bytes_copy(output, allocator, path, length);
+    return mmay_owned_bytes_copy(output, allocator, path, length);
 }
 
-static RudaCliFormatTargetStatus ruda_cli_path_join(
-    RudaAllocator allocator,
-    const RudaOwnedBytes *parent,
+static MarimayCliFormatTargetStatus mmay_cli_path_join(
+    MarimayAllocator allocator,
+    const MarimayOwnedBytes *parent,
     const char *name,
     size_t name_length,
-    RudaOwnedBytes *output
+    MarimayOwnedBytes *output
 ) {
     bool separator = parent->length != 0
         && parent->data[parent->length - 1] != '/'
@@ -56,15 +56,15 @@ static RudaCliFormatTargetStatus ruda_cli_path_join(
     size_t allocation_size = 0;
     unsigned char *bytes = NULL;
     memset(output, 0, sizeof(*output));
-    if (!ruda_size_add(parent->length, separator ? 1 : 0, &length)
-        || !ruda_size_add(length, name_length, &length)
-        || length > RUDA_CLI_FORMAT_MAX_PATH_BYTES
-        || !ruda_size_add(length, 1, &allocation_size)) {
-        return RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED;
+    if (!mmay_size_add(parent->length, separator ? 1 : 0, &length)
+        || !mmay_size_add(length, name_length, &length)
+        || length > MMAY_CLI_FORMAT_MAX_PATH_BYTES
+        || !mmay_size_add(length, 1, &allocation_size)) {
+        return MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED;
     }
-    bytes = ruda_allocate(&allocator, allocation_size);
+    bytes = mmay_allocate(&allocator, allocation_size);
     if (bytes == NULL) {
-        return RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
+        return MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
     }
     memcpy(bytes, parent->data, parent->length);
     if (separator) {
@@ -79,10 +79,10 @@ static RudaCliFormatTargetStatus ruda_cli_path_join(
     output->allocator = allocator;
     output->data = bytes;
     output->length = length;
-    return RUDA_CLI_FORMAT_TARGET_OK;
+    return MMAY_CLI_FORMAT_TARGET_OK;
 }
 
-static bool ruda_cli_path_is_root(const RudaOwnedBytes *path) {
+static bool mmay_cli_path_is_root(const MarimayOwnedBytes *path) {
     const unsigned char *bytes = path->data;
     size_t first_share_separator = SIZE_MAX;
     size_t index = 0;
@@ -112,10 +112,10 @@ static bool ruda_cli_path_is_root(const RudaOwnedBytes *path) {
         ) == NULL;
 }
 
-static bool ruda_cli_path_parent(RudaOwnedBytes *path) {
+static bool mmay_cli_path_parent(MarimayOwnedBytes *path) {
     size_t length = path->length;
     size_t separator = SIZE_MAX;
-    if (ruda_cli_path_is_root(path)) {
+    if (mmay_cli_path_is_root(path)) {
         return false;
     }
     while (length > 1 && path->data[length - 1] == '/') {
@@ -142,54 +142,54 @@ static bool ruda_cli_path_parent(RudaOwnedBytes *path) {
     return true;
 }
 
-static RudaCliFormatTargetStatus ruda_cli_format_target_add_owned(
-    RudaVector *targets,
-    RudaOwnedBytes *path
+static MarimayCliFormatTargetStatus mmay_cli_format_target_add_owned(
+    MarimayVector *targets,
+    MarimayOwnedBytes *path
 ) {
-    RudaCliFormatPath target;
-    if (targets->length >= RUDA_CLI_FORMAT_MAX_FILES) {
-        return RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED;
+    MarimayCliFormatPath target;
+    if (targets->length >= MMAY_CLI_FORMAT_MAX_FILES) {
+        return MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED;
     }
     memset(&target, 0, sizeof(target));
     target.path = *path;
-    if (!ruda_vector_push(targets, &target)) {
-        return RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
+    if (!mmay_vector_push(targets, &target)) {
+        return MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
     }
     memset(path, 0, sizeof(*path));
-    return RUDA_CLI_FORMAT_TARGET_OK;
+    return MMAY_CLI_FORMAT_TARGET_OK;
 }
 
-static RudaCliFormatTargetStatus ruda_cli_format_target_add_copy(
-    RudaVector *targets,
-    RudaAllocator allocator,
+static MarimayCliFormatTargetStatus mmay_cli_format_target_add_copy(
+    MarimayVector *targets,
+    MarimayAllocator allocator,
     const char *path,
     size_t length
 ) {
-    RudaOwnedBytes owned = {0};
-    RudaCliFormatTargetStatus status;
-    if (length > RUDA_CLI_FORMAT_MAX_PATH_BYTES) {
-        return RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED;
+    MarimayOwnedBytes owned = {0};
+    MarimayCliFormatTargetStatus status;
+    if (length > MMAY_CLI_FORMAT_MAX_PATH_BYTES) {
+        return MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED;
     }
-    if (!ruda_owned_bytes_copy(&owned, allocator, path, length)) {
-        return RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
+    if (!mmay_owned_bytes_copy(&owned, allocator, path, length)) {
+        return MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
     }
-    status = ruda_cli_format_target_add_owned(targets, &owned);
-    ruda_owned_bytes_dispose(&owned);
+    status = mmay_cli_format_target_add_owned(targets, &owned);
+    mmay_owned_bytes_dispose(&owned);
     return status;
 }
 
-static void ruda_cli_format_targets_dispose(RudaVector *targets) {
+static void mmay_cli_format_targets_dispose(MarimayVector *targets) {
     size_t index = 0;
     for (index = 0; index < targets->length; index += 1) {
-        RudaCliFormatPath *target = ruda_vector_at(targets, index);
-        ruda_owned_bytes_dispose(&target->path);
+        MarimayCliFormatPath *target = mmay_vector_at(targets, index);
+        mmay_owned_bytes_dispose(&target->path);
     }
-    ruda_vector_dispose(targets);
+    mmay_vector_dispose(targets);
 }
 
-static int ruda_cli_format_path_compare(const void *left, const void *right) {
-    const RudaCliFormatPath *first = left;
-    const RudaCliFormatPath *second = right;
+static int mmay_cli_format_path_compare(const void *left, const void *right) {
+    const MarimayCliFormatPath *first = left;
+    const MarimayCliFormatPath *second = right;
     size_t common = first->path.length < second->path.length
         ? first->path.length
         : second->path.length;
@@ -204,31 +204,31 @@ static int ruda_cli_format_path_compare(const void *left, const void *right) {
         : (first->path.length > second->path.length ? 1 : 0);
 }
 
-static void ruda_cli_format_targets_sort_unique(RudaVector *targets) {
+static void mmay_cli_format_targets_sort_unique(MarimayVector *targets) {
     size_t read_index = 0;
     size_t write_index = 0;
     if (targets->length > 1) {
         qsort(
             targets->data,
             targets->length,
-            sizeof(RudaCliFormatPath),
-            ruda_cli_format_path_compare
+            sizeof(MarimayCliFormatPath),
+            mmay_cli_format_path_compare
         );
     }
     for (read_index = 0; read_index < targets->length; read_index += 1) {
-        RudaCliFormatPath *current = ruda_vector_at(targets, read_index);
-        RudaCliFormatPath *previous = write_index == 0
+        MarimayCliFormatPath *current = mmay_vector_at(targets, read_index);
+        MarimayCliFormatPath *previous = write_index == 0
             ? NULL
-            : ruda_vector_at(targets, write_index - 1);
-        if (previous != NULL && ruda_cli_path_equal(
+            : mmay_vector_at(targets, write_index - 1);
+        if (previous != NULL && mmay_cli_path_equal(
                 &previous->path,
                 &current->path
             )) {
-            ruda_owned_bytes_dispose(&current->path);
+            mmay_owned_bytes_dispose(&current->path);
             continue;
         }
         if (write_index != read_index) {
-            RudaCliFormatPath *destination = ruda_vector_at(targets, write_index);
+            MarimayCliFormatPath *destination = mmay_vector_at(targets, write_index);
             *destination = *current;
             memset(current, 0, sizeof(*current));
         }
@@ -237,422 +237,422 @@ static void ruda_cli_format_targets_sort_unique(RudaVector *targets) {
     targets->length = write_index;
 }
 
-static bool ruda_cli_format_ignored_directory(const RudaOwnedBytes *name) {
+static bool mmay_cli_format_ignored_directory(const MarimayOwnedBytes *name) {
     return (name->length == 4 && memcmp(name->data, ".git", 4) == 0)
-        || (name->length == 5 && memcmp(name->data, ".ruda", 5) == 0);
+        || (name->length == 5 && memcmp(name->data, ".mmay", 5) == 0);
 }
 
-static RudaCliFormatTargetStatus ruda_cli_collect_format_tree(
-    RudaAllocator allocator,
-    const RudaOwnedBytes *root,
-    RudaVector *targets
+static MarimayCliFormatTargetStatus mmay_cli_collect_format_tree(
+    MarimayAllocator allocator,
+    const MarimayOwnedBytes *root,
+    MarimayVector *targets
 ) {
-    RudaVector directories;
-    RudaCliFormatDirectory initial;
-    RudaCliFormatTargetStatus status = RUDA_CLI_FORMAT_TARGET_OK;
+    MarimayVector directories;
+    MarimayCliFormatDirectory initial;
+    MarimayCliFormatTargetStatus status = MMAY_CLI_FORMAT_TARGET_OK;
     size_t directory_count = 0;
     size_t entry_count = 0;
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &directories,
             allocator,
-            sizeof(RudaCliFormatDirectory)
+            sizeof(MarimayCliFormatDirectory)
         )) {
-        return RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
+        return MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
     }
     memset(&initial, 0, sizeof(initial));
-    if (!ruda_cli_path_copy(
+    if (!mmay_cli_path_copy(
             &initial.path,
             allocator,
             (const char *)root->data,
             root->length
-        ) || !ruda_vector_push(&directories, &initial)) {
-        ruda_owned_bytes_dispose(&initial.path);
-        ruda_vector_dispose(&directories);
-        return root->length > RUDA_CLI_FORMAT_MAX_PATH_BYTES
-            ? RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED
-            : RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
+        ) || !mmay_vector_push(&directories, &initial)) {
+        mmay_owned_bytes_dispose(&initial.path);
+        mmay_vector_dispose(&directories);
+        return root->length > MMAY_CLI_FORMAT_MAX_PATH_BYTES
+            ? MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED
+            : MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
     }
     while (directories.length != 0
-        && status == RUDA_CLI_FORMAT_TARGET_OK) {
-        RudaCliFormatDirectory directory = *(
-            RudaCliFormatDirectory *
-        )ruda_vector_at(&directories, directories.length - 1);
-        RudaDirectoryIterator iterator;
-        RudaFileStatus file_status;
-        bool root_directory = ruda_cli_path_equal(&directory.path, root);
+        && status == MMAY_CLI_FORMAT_TARGET_OK) {
+        MarimayCliFormatDirectory directory = *(
+            MarimayCliFormatDirectory *
+        )mmay_vector_at(&directories, directories.length - 1);
+        MarimayDirectoryIterator iterator;
+        MarimayFileStatus file_status;
+        bool root_directory = mmay_cli_path_equal(&directory.path, root);
         directories.length -= 1;
         directory_count += 1;
-        if (directory_count > RUDA_CLI_FORMAT_MAX_DIRECTORIES) {
-            ruda_owned_bytes_dispose(&directory.path);
-            status = RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED;
+        if (directory_count > MMAY_CLI_FORMAT_MAX_DIRECTORIES) {
+            mmay_owned_bytes_dispose(&directory.path);
+            status = MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED;
             break;
         }
-        file_status = ruda_directory_open(
+        file_status = mmay_directory_open(
             allocator,
             (const char *)directory.path.data,
             directory.path.length,
             &iterator
         );
-        status = ruda_cli_format_target_file_status(file_status);
-        if (status != RUDA_CLI_FORMAT_TARGET_OK) {
-            ruda_owned_bytes_dispose(&directory.path);
+        status = mmay_cli_format_target_file_status(file_status);
+        if (status != MMAY_CLI_FORMAT_TARGET_OK) {
+            mmay_owned_bytes_dispose(&directory.path);
             break;
         }
         for (;;) {
-            RudaOwnedBytes name = {0};
-            RudaOwnedBytes child = {0};
-            RudaDirectoryEntryKind kind = RUDA_DIRECTORY_ENTRY_MISSING;
+            MarimayOwnedBytes name = {0};
+            MarimayOwnedBytes child = {0};
+            MarimayDirectoryEntryKind kind = MMAY_DIRECTORY_ENTRY_MISSING;
             bool end = false;
-            file_status = ruda_directory_next(
+            file_status = mmay_directory_next(
                 &iterator,
                 allocator,
-                RUDA_CLI_FORMAT_MAX_NAME_BYTES,
+                MMAY_CLI_FORMAT_MAX_NAME_BYTES,
                 &name,
                 &kind,
                 &end
             );
-            status = ruda_cli_format_target_file_status(file_status);
-            if (status != RUDA_CLI_FORMAT_TARGET_OK || end) {
-                ruda_owned_bytes_dispose(&name);
+            status = mmay_cli_format_target_file_status(file_status);
+            if (status != MMAY_CLI_FORMAT_TARGET_OK || end) {
+                mmay_owned_bytes_dispose(&name);
                 break;
             }
             entry_count += 1;
-            if (entry_count > RUDA_CLI_FORMAT_MAX_ENTRIES) {
-                ruda_owned_bytes_dispose(&name);
-                status = RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED;
+            if (entry_count > MMAY_CLI_FORMAT_MAX_ENTRIES) {
+                mmay_owned_bytes_dispose(&name);
+                status = MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED;
                 break;
             }
-            status = ruda_cli_path_join(
+            status = mmay_cli_path_join(
                 allocator,
                 &directory.path,
                 (const char *)name.data,
                 name.length,
                 &child
             );
-            if (status != RUDA_CLI_FORMAT_TARGET_OK) {
-                ruda_owned_bytes_dispose(&name);
+            if (status != MMAY_CLI_FORMAT_TARGET_OK) {
+                mmay_owned_bytes_dispose(&name);
                 break;
             }
-            if (kind == RUDA_DIRECTORY_ENTRY_REGULAR
-                && (ruda_cli_source_path((const char *)child.data)
+            if (kind == MMAY_DIRECTORY_ENTRY_REGULAR
+                && (mmay_cli_source_path((const char *)child.data)
                     || (root_directory
-                        && ruda_cli_manifest_kind(
+                        && mmay_cli_manifest_kind(
                             (const char *)child.data,
-                            &(RudaManifestKind){0}
+                            &(MarimayManifestKind){0}
                         )))) {
-                status = ruda_cli_format_target_add_owned(targets, &child);
-            } else if (kind == RUDA_DIRECTORY_ENTRY_DIRECTORY
-                && !ruda_cli_format_ignored_directory(&name)) {
-                RudaOwnedBytes manifest = {0};
-                RudaDirectoryEntryKind manifest_kind = RUDA_DIRECTORY_ENTRY_MISSING;
-                status = ruda_cli_path_join(
+                status = mmay_cli_format_target_add_owned(targets, &child);
+            } else if (kind == MMAY_DIRECTORY_ENTRY_DIRECTORY
+                && !mmay_cli_format_ignored_directory(&name)) {
+                MarimayOwnedBytes manifest = {0};
+                MarimayDirectoryEntryKind manifest_kind = MMAY_DIRECTORY_ENTRY_MISSING;
+                status = mmay_cli_path_join(
                     allocator,
                     &child,
-                    "ruda.mod",
-                    strlen("ruda.mod"),
+                    "mmay.mod",
+                    strlen("mmay.mod"),
                     &manifest
                 );
-                if (status == RUDA_CLI_FORMAT_TARGET_OK) {
-                    file_status = ruda_directory_kind(
+                if (status == MMAY_CLI_FORMAT_TARGET_OK) {
+                    file_status = mmay_directory_kind(
                         allocator,
                         (const char *)manifest.data,
                         manifest.length,
                         &manifest_kind
                     );
-                    status = ruda_cli_format_target_file_status(file_status);
+                    status = mmay_cli_format_target_file_status(file_status);
                 }
-                ruda_owned_bytes_dispose(&manifest);
-                if (status == RUDA_CLI_FORMAT_TARGET_OK
-                    && manifest_kind != RUDA_DIRECTORY_ENTRY_REGULAR) {
-                    RudaCliFormatDirectory nested;
+                mmay_owned_bytes_dispose(&manifest);
+                if (status == MMAY_CLI_FORMAT_TARGET_OK
+                    && manifest_kind != MMAY_DIRECTORY_ENTRY_REGULAR) {
+                    MarimayCliFormatDirectory nested;
                     memset(&nested, 0, sizeof(nested));
-                    if (directory.depth >= RUDA_CLI_FORMAT_MAX_DEPTH
+                    if (directory.depth >= MMAY_CLI_FORMAT_MAX_DEPTH
                         || directories.length
-                            >= RUDA_CLI_FORMAT_MAX_DIRECTORIES) {
-                        status = RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED;
+                            >= MMAY_CLI_FORMAT_MAX_DIRECTORIES) {
+                        status = MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED;
                     } else {
                         nested.path = child;
                         nested.depth = directory.depth + 1;
-                        if (!ruda_vector_push(&directories, &nested)) {
-                            status = RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
+                        if (!mmay_vector_push(&directories, &nested)) {
+                            status = MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
                         } else {
                             memset(&child, 0, sizeof(child));
                         }
                     }
                 }
             }
-            ruda_owned_bytes_dispose(&child);
-            ruda_owned_bytes_dispose(&name);
-            if (status != RUDA_CLI_FORMAT_TARGET_OK) {
+            mmay_owned_bytes_dispose(&child);
+            mmay_owned_bytes_dispose(&name);
+            if (status != MMAY_CLI_FORMAT_TARGET_OK) {
                 break;
             }
         }
-        file_status = ruda_directory_close(&iterator);
-        if (status == RUDA_CLI_FORMAT_TARGET_OK) {
-            status = ruda_cli_format_target_file_status(file_status);
+        file_status = mmay_directory_close(&iterator);
+        if (status == MMAY_CLI_FORMAT_TARGET_OK) {
+            status = mmay_cli_format_target_file_status(file_status);
         }
-        ruda_owned_bytes_dispose(&directory.path);
+        mmay_owned_bytes_dispose(&directory.path);
     }
     while (directories.length != 0) {
-        RudaCliFormatDirectory *directory = ruda_vector_at(
+        MarimayCliFormatDirectory *directory = mmay_vector_at(
             &directories,
             directories.length - 1
         );
-        ruda_owned_bytes_dispose(&directory->path);
+        mmay_owned_bytes_dispose(&directory->path);
         directories.length -= 1;
     }
-    ruda_vector_dispose(&directories);
+    mmay_vector_dispose(&directories);
     return status;
 }
 
-static RudaCliFormatTargetStatus ruda_cli_discover_format_roots(
-    RudaAllocator allocator,
-    RudaOwnedBytes *module_root,
-    RudaOwnedBytes *workspace_manifest
+static MarimayCliFormatTargetStatus mmay_cli_discover_format_roots(
+    MarimayAllocator allocator,
+    MarimayOwnedBytes *module_root,
+    MarimayOwnedBytes *workspace_manifest
 ) {
-    RudaOwnedBytes cursor = {0};
-    RudaCliFormatTargetStatus status;
-    RudaFileStatus file_status = ruda_directory_current(
+    MarimayOwnedBytes cursor = {0};
+    MarimayCliFormatTargetStatus status;
+    MarimayFileStatus file_status = mmay_directory_current(
         allocator,
-        RUDA_CLI_FORMAT_MAX_PATH_BYTES,
+        MMAY_CLI_FORMAT_MAX_PATH_BYTES,
         &cursor
     );
     memset(module_root, 0, sizeof(*module_root));
     memset(workspace_manifest, 0, sizeof(*workspace_manifest));
-    status = ruda_cli_format_target_file_status(file_status);
-    while (status == RUDA_CLI_FORMAT_TARGET_OK) {
-        RudaOwnedBytes candidate = {0};
-        RudaDirectoryEntryKind kind = RUDA_DIRECTORY_ENTRY_MISSING;
-        status = ruda_cli_path_join(
+    status = mmay_cli_format_target_file_status(file_status);
+    while (status == MMAY_CLI_FORMAT_TARGET_OK) {
+        MarimayOwnedBytes candidate = {0};
+        MarimayDirectoryEntryKind kind = MMAY_DIRECTORY_ENTRY_MISSING;
+        status = mmay_cli_path_join(
             allocator,
             &cursor,
-            "ruda.mod",
-            strlen("ruda.mod"),
+            "mmay.mod",
+            strlen("mmay.mod"),
             &candidate
         );
-        if (status == RUDA_CLI_FORMAT_TARGET_OK) {
-            file_status = ruda_directory_kind(
+        if (status == MMAY_CLI_FORMAT_TARGET_OK) {
+            file_status = mmay_directory_kind(
                 allocator,
                 (const char *)candidate.data,
                 candidate.length,
                 &kind
             );
-            status = ruda_cli_format_target_file_status(file_status);
+            status = mmay_cli_format_target_file_status(file_status);
         }
-        ruda_owned_bytes_dispose(&candidate);
-        if (status != RUDA_CLI_FORMAT_TARGET_OK) {
+        mmay_owned_bytes_dispose(&candidate);
+        if (status != MMAY_CLI_FORMAT_TARGET_OK) {
             break;
         }
-        if (kind == RUDA_DIRECTORY_ENTRY_REGULAR) {
+        if (kind == MMAY_DIRECTORY_ENTRY_REGULAR) {
             *module_root = cursor;
             memset(&cursor, 0, sizeof(cursor));
             break;
         }
-        if (!ruda_cli_path_parent(&cursor)) {
-            status = RUDA_CLI_FORMAT_TARGET_INPUT_ERROR;
+        if (!mmay_cli_path_parent(&cursor)) {
+            status = MMAY_CLI_FORMAT_TARGET_INPUT_ERROR;
             break;
         }
     }
-    ruda_owned_bytes_dispose(&cursor);
-    if (status != RUDA_CLI_FORMAT_TARGET_OK) {
+    mmay_owned_bytes_dispose(&cursor);
+    if (status != MMAY_CLI_FORMAT_TARGET_OK) {
         return status;
     }
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &cursor,
             allocator,
             module_root->data,
             module_root->length
         )) {
-        return RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
+        return MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
     }
     for (;;) {
-        RudaOwnedBytes candidate = {0};
-        RudaDirectoryEntryKind kind = RUDA_DIRECTORY_ENTRY_MISSING;
-        status = ruda_cli_path_join(
+        MarimayOwnedBytes candidate = {0};
+        MarimayDirectoryEntryKind kind = MMAY_DIRECTORY_ENTRY_MISSING;
+        status = mmay_cli_path_join(
             allocator,
             &cursor,
-            "ruda.work",
-            strlen("ruda.work"),
+            "mmay.work",
+            strlen("mmay.work"),
             &candidate
         );
-        if (status == RUDA_CLI_FORMAT_TARGET_OK) {
-            file_status = ruda_directory_kind(
+        if (status == MMAY_CLI_FORMAT_TARGET_OK) {
+            file_status = mmay_directory_kind(
                 allocator,
                 (const char *)candidate.data,
                 candidate.length,
                 &kind
             );
-            status = ruda_cli_format_target_file_status(file_status);
+            status = mmay_cli_format_target_file_status(file_status);
         }
-        if (status != RUDA_CLI_FORMAT_TARGET_OK) {
-            ruda_owned_bytes_dispose(&candidate);
+        if (status != MMAY_CLI_FORMAT_TARGET_OK) {
+            mmay_owned_bytes_dispose(&candidate);
             break;
         }
-        if (kind == RUDA_DIRECTORY_ENTRY_REGULAR) {
+        if (kind == MMAY_DIRECTORY_ENTRY_REGULAR) {
             *workspace_manifest = candidate;
             memset(&candidate, 0, sizeof(candidate));
-            ruda_owned_bytes_dispose(&candidate);
+            mmay_owned_bytes_dispose(&candidate);
             break;
         }
-        ruda_owned_bytes_dispose(&candidate);
-        if (!ruda_cli_path_parent(&cursor)) {
+        mmay_owned_bytes_dispose(&candidate);
+        if (!mmay_cli_path_parent(&cursor)) {
             break;
         }
     }
-    ruda_owned_bytes_dispose(&cursor);
+    mmay_owned_bytes_dispose(&cursor);
     return status;
 }
 
-int ruda_cli_format_target_status_error(
-    const RudaCliOptions *options,
-    RudaCliFormatTargetStatus status,
-    RudaWriter standard_error
+int mmay_cli_format_target_status_error(
+    const MarimayCliOptions *options,
+    MarimayCliFormatTargetStatus status,
+    MarimayWriter standard_error
 ) {
-    if (status == RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED) {
-        return RUDA_EXIT_INTERNAL;
+    if (status == MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED) {
+        return MMAY_EXIT_INTERNAL;
     }
-    return ruda_cli_plain_error(
+    return mmay_cli_plain_error(
         standard_error,
         options->diagnostic_style,
-        status == RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED
-            ? RUDA_DIAGNOSTIC_FORMAT_LIMIT
-            : RUDA_DIAGNOSTIC_FORMAT_INPUT_IO,
-        status == RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED
+        status == MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED
+            ? MMAY_DIAGNOSTIC_FORMAT_LIMIT
+            : MMAY_DIAGNOSTIC_FORMAT_INPUT_IO,
+        status == MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED
             ? "formatter target discovery exhausted a defensive path or tree limit"
             : "cannot discover or traverse the selected formatter target",
-        RUDA_EXIT_SOURCE_FAILURE
+        MMAY_EXIT_SOURCE_FAILURE
     );
 }
 
-static int ruda_cli_format_selected_files(
-    RudaSession *session,
-    const RudaCliOptions *options,
-    RudaVector *targets,
-    RudaWriter standard_output,
-    RudaWriter standard_error
+static int mmay_cli_format_selected_files(
+    MarimaySession *session,
+    const MarimayCliOptions *options,
+    MarimayVector *targets,
+    MarimayWriter standard_output,
+    MarimayWriter standard_error
 ) {
     size_t index = 0;
-    int aggregate = RUDA_EXIT_SUCCESS;
+    int aggregate = MMAY_EXIT_SUCCESS;
     for (index = 0; index < targets->length; index += 1) {
-        const RudaCliFormatPath *target = ruda_vector_at_const(targets, index);
-        RudaCliOptions file_options = *options;
+        const MarimayCliFormatPath *target = mmay_vector_at_const(targets, index);
+        MarimayCliOptions file_options = *options;
         int result;
         file_options.target = (const char *)target->path.data;
-        result = ruda_cli_format_file(
+        result = mmay_cli_format_file(
             session,
             &file_options,
             standard_output,
             standard_error
         );
-        if (result == RUDA_EXIT_INTERNAL) {
+        if (result == MMAY_EXIT_INTERNAL) {
             return result;
         }
-        if (result != RUDA_EXIT_SUCCESS) {
+        if (result != MMAY_EXIT_SUCCESS) {
             aggregate = result;
         }
     }
     return aggregate;
 }
 
-int ruda_cli_format_target(
-    RudaSession *session,
-    const RudaCliOptions *options,
-    RudaWriter standard_output,
-    RudaWriter standard_error
+int mmay_cli_format_target(
+    MarimaySession *session,
+    const MarimayCliOptions *options,
+    MarimayWriter standard_output,
+    MarimayWriter standard_error
 ) {
-    RudaVector targets;
-    RudaCliFormatTargetStatus status = RUDA_CLI_FORMAT_TARGET_OK;
-    RudaOwnedBytes module_root = {0};
-    RudaOwnedBytes workspace_manifest = {0};
-    if (!ruda_vector_init(
+    MarimayVector targets;
+    MarimayCliFormatTargetStatus status = MMAY_CLI_FORMAT_TARGET_OK;
+    MarimayOwnedBytes module_root = {0};
+    MarimayOwnedBytes workspace_manifest = {0};
+    if (!mmay_vector_init(
             &targets,
             session->allocator,
-            sizeof(RudaCliFormatPath)
+            sizeof(MarimayCliFormatPath)
         )) {
-        return RUDA_EXIT_INTERNAL;
+        return MMAY_EXIT_INTERNAL;
     }
     if (options->target == NULL) {
-        status = ruda_cli_discover_format_roots(
+        status = mmay_cli_discover_format_roots(
             session->allocator,
             &module_root,
             &workspace_manifest
         );
-        if (status == RUDA_CLI_FORMAT_TARGET_OK) {
-            status = ruda_cli_collect_format_tree(
+        if (status == MMAY_CLI_FORMAT_TARGET_OK) {
+            status = mmay_cli_collect_format_tree(
                 session->allocator,
                 &module_root,
                 &targets
             );
         }
-        if (status == RUDA_CLI_FORMAT_TARGET_OK
+        if (status == MMAY_CLI_FORMAT_TARGET_OK
             && workspace_manifest.data != NULL) {
-            status = ruda_cli_format_target_add_owned(
+            status = mmay_cli_format_target_add_owned(
                 &targets,
                 &workspace_manifest
             );
         }
     } else {
-        RudaDirectoryEntryKind kind = RUDA_DIRECTORY_ENTRY_MISSING;
-        RudaFileStatus file_status = ruda_directory_kind(
+        MarimayDirectoryEntryKind kind = MMAY_DIRECTORY_ENTRY_MISSING;
+        MarimayFileStatus file_status = mmay_directory_kind(
             session->allocator,
             options->target,
             strlen(options->target),
             &kind
         );
-        status = ruda_cli_format_target_file_status(file_status);
-        if (status == RUDA_CLI_FORMAT_TARGET_OK
-            && kind == RUDA_DIRECTORY_ENTRY_REGULAR
-            && ruda_cli_format_file_path(options->target)) {
-            status = ruda_cli_format_target_add_copy(
+        status = mmay_cli_format_target_file_status(file_status);
+        if (status == MMAY_CLI_FORMAT_TARGET_OK
+            && kind == MMAY_DIRECTORY_ENTRY_REGULAR
+            && mmay_cli_format_file_path(options->target)) {
+            status = mmay_cli_format_target_add_copy(
                 &targets,
                 session->allocator,
                 options->target,
                 strlen(options->target)
             );
-        } else if (status == RUDA_CLI_FORMAT_TARGET_OK
-            && kind == RUDA_DIRECTORY_ENTRY_DIRECTORY) {
-            if (!ruda_cli_path_copy(
+        } else if (status == MMAY_CLI_FORMAT_TARGET_OK
+            && kind == MMAY_DIRECTORY_ENTRY_DIRECTORY) {
+            if (!mmay_cli_path_copy(
                     &module_root,
                     session->allocator,
                     options->target,
                     strlen(options->target)
                 )) {
                 status = strlen(options->target)
-                        > RUDA_CLI_FORMAT_MAX_PATH_BYTES
-                    ? RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED
-                    : RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
+                        > MMAY_CLI_FORMAT_MAX_PATH_BYTES
+                    ? MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED
+                    : MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED;
             } else {
-                status = ruda_cli_collect_format_tree(
+                status = mmay_cli_collect_format_tree(
                     session->allocator,
                     &module_root,
                     &targets
                 );
             }
-        } else if (status == RUDA_CLI_FORMAT_TARGET_OK) {
-            status = RUDA_CLI_FORMAT_TARGET_INPUT_ERROR;
+        } else if (status == MMAY_CLI_FORMAT_TARGET_OK) {
+            status = MMAY_CLI_FORMAT_TARGET_INPUT_ERROR;
         }
     }
-    ruda_owned_bytes_dispose(&workspace_manifest);
-    ruda_owned_bytes_dispose(&module_root);
-    if (status != RUDA_CLI_FORMAT_TARGET_OK) {
-        int result = ruda_cli_format_target_status_error(
+    mmay_owned_bytes_dispose(&workspace_manifest);
+    mmay_owned_bytes_dispose(&module_root);
+    if (status != MMAY_CLI_FORMAT_TARGET_OK) {
+        int result = mmay_cli_format_target_status_error(
             options,
             status,
             standard_error
         );
-        ruda_cli_format_targets_dispose(&targets);
+        mmay_cli_format_targets_dispose(&targets);
         return result;
     }
-    ruda_cli_format_targets_sort_unique(&targets);
+    mmay_cli_format_targets_sort_unique(&targets);
     {
-        int result = ruda_cli_format_selected_files(
+        int result = mmay_cli_format_selected_files(
             session,
             options,
             &targets,
             standard_output,
             standard_error
         );
-        ruda_cli_format_targets_dispose(&targets);
+        mmay_cli_format_targets_dispose(&targets);
         return result;
     }
 }

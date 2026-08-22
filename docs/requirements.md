@@ -1,4 +1,4 @@
-# Ruda requirements and traceability index
+# Marimay requirements and traceability index
 
 Status: authoritative requirement index. Normative details live in the linked specifications; this file prevents scope loss during implementation and release audit.
 
@@ -8,7 +8,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 
 | ID | Requirement | Normative source | First full gate |
 |---|---|---|---|
-| LANG-001 | `.ruda` source is statically checked; no dynamic fallback | language §1 | I2 |
+| LANG-001 | `.my` source is statically checked; no dynamic fallback | language §1 | I2 |
 | LANG-002 | familiar C-family syntax with native record, construction, interpolation, visibility, and control-flow forms | language §§2–8; D002 | I2 |
 | LANG-003 | no null-like value; absence is `Option<T>` | language §5.2; D006 | I2 |
 | LANG-004 | expected failure is `Result<T,E>` with visible postfix `?` | language §10.1; D006 | I2 |
@@ -56,7 +56,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 |---|---|---|---|
 | EXEC-001 | VM and native share typed MIR and one safe semantics | execution §§1–3; D008 | I4 |
 | EXEC-002 | VM is required/default for run/test; native required/default for build | execution §3; toolchain §6 | I4 |
-| EXEC-003 | portable `.rudab` is typed and verified before execution | execution §4 | I3 |
+| EXEC-003 | portable `.myb` is typed and verified before execution | execution §4 | I3 |
 | EXEC-004 | generated C17 avoids C undefined behavior | execution §5 | I4 |
 | EXEC-005 | suspension effect inferred internally; no source `async`/`Future` color | execution §6; D010 | I6 |
 | EXEC-006 | standard I/O parks only current task, not isolate carrier | execution §§6,10 | I6 |
@@ -81,27 +81,27 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 
 | ID | Requirement | Normative source | First full gate |
 |---|---|---|---|
-| TOOL-001 | one executable `ruda` owns first-party workflow | toolchain opening; AGENTS | I0/I8 |
-| TOOL-002 | no-argument `ruda fmt` formats current module source and manifests canonically, with manifest syntax owned by I1 and reused semantically by I7 | toolchain §§1,3–4; manifest; D027 | I1 |
+| TOOL-001 | one executable `mmay` owns first-party workflow | toolchain opening; AGENTS | I0/I8 |
+| TOOL-002 | no-argument `mmay fmt` formats current module source and manifests canonically, with manifest syntax owned by I1 and reused semantically by I7 | toolchain §§1,3–4; manifest; D027 | I1 |
 | TOOL-003 | formatter has no 1.x style configuration, uses the platform-independent D026 column metric, and is idempotent | toolchain §4; D026 | I1 |
-| TOOL-004 | no-argument `ruda test` runs current module in VM | toolchain §§1,5 | I3/I8 |
+| TOOL-004 | no-argument `mmay test` runs current module in VM | toolchain §§1,5 | I3/I8 |
 | TOOL-005 | tests need no external framework/config and are isolated/deterministic | toolchain §5 | I8 |
-| TOOL-006 | `ruda test --engine both` detects semantic divergence | toolchain §5.5 | I4 |
+| TOOL-006 | `mmay test --engine both` detects semantic divergence | toolchain §5.5 | I4 |
 | TOOL-007 | unit/integration/doc/property/fuzz use one first-party harness | toolchain §5 | I8 |
-| TOOL-008 | `ruda check` runs the authoritative frontend/checker/MIR verification without a backend, checks a deterministic complete local module graph under D048, is unaffected by editor overlays, and cannot report success for checker-incomplete accepted syntax | toolchain §§1.1,6.1; manifest; diagnostics; D048 | I2 |
-| TOOL-009 | `ruda run` defaults VM; `ruda build` defaults native | toolchain §§6.2–6.3 | I4 |
+| TOOL-008 | `mmay check` runs the authoritative frontend/checker/MIR verification without a backend, checks a deterministic complete local module graph under D048, is unaffected by editor overlays, and cannot report success for checker-incomplete accepted syntax | toolchain §§1.1,6.1; manifest; diagnostics; D048 | I2 |
+| TOOL-009 | `mmay run` defaults VM; `mmay build` defaults native | toolchain §§6.2–6.3 | I4 |
 | TOOL-010 | diagnostics have stable codes, spans, fixes, JSON, and offline explanations | diagnostics; toolchain §§2,8 | I0–I8 |
 | TOOL-011 | manifest/lock resolution is deterministic and offline reproducible | toolchain §§3,7 | I7 |
 | TOOL-012 | dependencies cannot run install/build/procedural code | toolchain §7.2; D014/D017 | I7 |
 | TOOL-013 | artifacts are immutable, hashed, and provenance/audit aware | toolchain §7 | I7 |
-| TOOL-014 | core dependency commands remain shallow (`ruda add`, not required nested tooling) | toolchain §7 | I7 |
-| TOOL-015 | `ruda doc`, `vet`, `fix`, `bench`, `fuzz`, `audit` are first party | toolchain §§7–8 | I8 |
+| TOOL-014 | core dependency commands remain shallow (`mmay add`, not required nested tooling) | toolchain §7 | I7 |
+| TOOL-015 | `mmay doc`, `vet`, `fix`, `bench`, `fuzz`, `audit` are first party | toolchain §§7–8 | I8 |
 | TOOL-016 | source/language/format/package compatibility is versioned | toolchain §10 | P1 |
 | TOOL-017 | the I2 compiler service owns overlay diagnostics, definition, symbol search, and exact checker-backed dot-call completion; I8 productionizes LSP transport | toolchain §6.1 | I2/I8 |
-| TOOL-018 | official Tier 1 host installation makes native `ruda build` usable without per-project/manual C compiler, linker, or SDK selection | toolchain §6.3; D030 | I4/I9 |
+| TOOL-018 | official Tier 1 host installation makes native `mmay build` usable without per-project/manual C compiler, linker, or SDK selection | toolchain §6.3; D030 | I4/I9 |
 | TOOL-019 | language/product name, command, domains, module/registry namespace, artifact identity, and installer collisions are evidence-audited and controlled before public distribution | D001; naming audit; roadmap N0 | N0 |
 | TOOL-020 | formatter uses D031 width-sensitive braces for import/record/pattern/payload lists while keeping executable and declaration bodies structurally multiline | toolchain §4.2; D031 | I1 |
-| TOOL-021 | `ruda build` selects and validates a version-matched runtime for the requested debug/release output profile independently of the compiler's own build configuration, remains relocatable when installed, and hashes runtime content into the build cache key | toolchain §6.3; execution §5.6; D052 | I4 |
+| TOOL-021 | `mmay build` selects and validates a version-matched runtime for the requested debug/release output profile independently of the compiler's own build configuration, remains relocatable when installed, and hashes runtime content into the build cache key | toolchain §6.3; execution §5.6; D052 | I4 |
 | TOOL-022 | `run`, `test`, and `build` accept one documented decimal `--max-heap-bytes`; default/selected native values are embedded and cache-identifying, tests receive fresh counters, and no hidden environment override exists | toolchain §§5–6; D055 | I3/I4/I8 |
 
 ## Standard library

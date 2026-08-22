@@ -4,30 +4,30 @@
 #include "checker_internal.h"
 #include "checker_function_context.h"
 
- bool ruda_checker_private_compile_record_construction(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaTypeId expected,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_record_construction(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
 );
- bool ruda_checker_private_member_parts(
-    const RudaAstNode *node,
-    const RudaAstNode **receiver,
-    const RudaSyntaxToken **member
+ bool mmay_checker_private_member_parts(
+    const MarimayAstNode *node,
+    const MarimayAstNode **receiver,
+    const MarimaySyntaxToken **member
 );
- bool ruda_checker_private_resolve_record_member(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaExpressionValue *receiver,
-    RudaCheckRecordDeclaration **record_declaration,
-    RudaCheckRecordFieldDeclaration **field_declaration,
-    const RudaCheckedRecordField **imported_field,
-    RudaMirRecordId *record,
+ bool mmay_checker_private_resolve_record_member(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayExpressionValue *receiver,
+    MarimayCheckRecordDeclaration **record_declaration,
+    MarimayCheckRecordFieldDeclaration **field_declaration,
+    const MarimayCheckedRecordField **imported_field,
+    MarimayMirRecordId *record,
     size_t *field_index
 );
- bool ruda_checker_private_compile_record_member(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_record_member(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayExpressionValue *result
 );
 #endif

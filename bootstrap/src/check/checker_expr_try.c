@@ -7,36 +7,36 @@
 #include "checker_lookup_api.h"
 #include "checker_statement_api.h"
 
-bool ruda_checker_private_compile_try_expression(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaTypeId expected,
-    RudaExpressionValue *result
+bool mmay_checker_private_compile_try_expression(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
 ) {
-    const RudaAstNode *operand_node = ruda_checker_private_check_child_node_any(
+    const MarimayAstNode *operand_node = mmay_checker_private_check_child_node_any(
         node, 0
     );
-    RudaExpressionValue operand;
-    RudaCheckEnumDeclaration *result_enum = NULL;
-    RudaCheckEnumDeclaration concrete_result;
-    const RudaTypeDescriptor *operand_descriptor = NULL;
-    const RudaTypeDescriptor *result_descriptor = NULL;
-    RudaMirEnumId enum_id = RUDA_MIR_NO_ENUM;
-    RudaMirBlockId error_block = RUDA_MIR_NO_BLOCK;
-    RudaMirBlockId success_block = RUDA_MIR_NO_BLOCK;
-    RudaExpressionValue is_error;
-    RudaExpressionValue error_value;
-    RudaExpressionValue required_error;
-    RudaExpressionValue propagated;
-    RudaExpressionValue success_value;
-    RudaExpressionValue required_success;
-    RudaMirEnumArgument error_argument;
+    MarimayExpressionValue operand;
+    MarimayCheckEnumDeclaration *result_enum = NULL;
+    MarimayCheckEnumDeclaration concrete_result;
+    const MarimayTypeDescriptor *operand_descriptor = NULL;
+    const MarimayTypeDescriptor *result_descriptor = NULL;
+    MarimayMirEnumId enum_id = MMAY_MIR_NO_ENUM;
+    MarimayMirBlockId error_block = MMAY_MIR_NO_BLOCK;
+    MarimayMirBlockId success_block = MMAY_MIR_NO_BLOCK;
+    MarimayExpressionValue is_error;
+    MarimayExpressionValue error_value;
+    MarimayExpressionValue required_error;
+    MarimayExpressionValue propagated;
+    MarimayExpressionValue success_value;
+    MarimayExpressionValue required_success;
+    MarimayMirEnumArgument error_argument;
     size_t start = node != NULL ? node->start : 0;
     size_t end = node != NULL ? node->end : start;
     (void)expected;
     if (function == NULL || node == NULL || operand_node == NULL || result == NULL) {
         if (function != NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         }
         return false;
     }
@@ -48,40 +48,40 @@ bool ruda_checker_private_compile_try_expression(
     memset(&success_value, 0, sizeof(success_value));
     memset(&required_success, 0, sizeof(required_success));
     memset(&error_argument, 0, sizeof(error_argument));
-    if (!ruda_compile_expression(
-            function, operand_node, RUDA_TYPE_INVALID, &operand
+    if (!mmay_compile_expression(
+            function, operand_node, MMAY_TYPE_INVALID, &operand
         )) {
         return false;
     }
-    if (ruda_expression_is_never(function, &operand)) {
+    if (mmay_expression_is_never(function, &operand)) {
         *result = operand;
         return true;
     }
-    operand_descriptor = ruda_type_descriptor(
+    operand_descriptor = mmay_type_descriptor(
         &function->checker->result->types, operand.type
     );
-    result_descriptor = ruda_type_descriptor(
+    result_descriptor = mmay_type_descriptor(
         &function->checker->result->types, function->result_type
     );
-    result_enum = ruda_checker_private_checker_find_enum_by_type(
+    result_enum = mmay_checker_private_checker_find_enum_by_type(
         function->checker, operand.type
     );
     if (operand_descriptor == NULL || result_descriptor == NULL
         || result_enum == NULL
-        || operand_descriptor->kind != RUDA_TYPE_KIND_NOMINAL
-        || result_descriptor->kind != RUDA_TYPE_KIND_NOMINAL
+        || operand_descriptor->kind != MMAY_TYPE_KIND_NOMINAL
+        || result_descriptor->kind != MMAY_TYPE_KIND_NOMINAL
         || operand_descriptor->argument_count != 2
         || result_descriptor->argument_count != 2
-        || !ruda_symbol_id_equal(
+        || !mmay_symbol_id_equal(
             operand_descriptor->symbol, result_enum->symbol
         )
-        || !ruda_symbol_id_equal(
+        || !mmay_symbol_id_equal(
             result_descriptor->symbol, result_enum->symbol
         )
         || operand_descriptor->arguments[1] != result_descriptor->arguments[1]) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "postfix '?' requires Result<T,E> and an enclosing Result<U,E> with the same E",
             start,
             end
@@ -90,12 +90,12 @@ bool ruda_checker_private_compile_try_expression(
     }
     concrete_result = *result_enum;
     concrete_result.type = operand.type;
-    if (!ruda_checker_private_function_enum_layout(
+    if (!mmay_checker_private_function_enum_layout(
             function, &concrete_result, &enum_id
-        ) || !ruda_checker_private_function_emit_enum_access(
+        ) || !mmay_checker_private_function_emit_enum_access(
             function,
-            RUDA_MIR_ENUM_IS_VARIANT,
-            RUDA_TYPE_BOOL,
+            MMAY_MIR_ENUM_IS_VARIANT,
+            MMAY_TYPE_BOOL,
             operand.register_id,
             enum_id,
             1,
@@ -103,11 +103,11 @@ bool ruda_checker_private_compile_try_expression(
             start,
             end,
             &is_error
-        ) || !ruda_checker_private_function_add_block(
+        ) || !mmay_checker_private_function_add_block(
             function, &error_block
-        ) || !ruda_checker_private_function_add_block(
+        ) || !mmay_checker_private_function_add_block(
             function, &success_block
-        ) || !ruda_checker_private_function_set_branch(
+        ) || !mmay_checker_private_function_set_branch(
             function,
             function->block,
             is_error.register_id,
@@ -120,9 +120,9 @@ bool ruda_checker_private_compile_try_expression(
     }
     function->block = error_block;
     function->terminated = false;
-    if (!ruda_checker_private_function_emit_enum_access(
+    if (!mmay_checker_private_function_emit_enum_access(
             function,
-            RUDA_MIR_ENUM_REQUIRE_VARIANT,
+            MMAY_MIR_ENUM_REQUIRE_VARIANT,
             operand.type,
             operand.register_id,
             enum_id,
@@ -131,9 +131,9 @@ bool ruda_checker_private_compile_try_expression(
             start,
             end,
             &required_error
-        ) || !ruda_checker_private_function_emit_enum_access(
+        ) || !mmay_checker_private_function_emit_enum_access(
             function,
-            RUDA_MIR_ENUM_GET_PAYLOAD,
+            MMAY_MIR_ENUM_GET_PAYLOAD,
             operand_descriptor->arguments[1],
             required_error.register_id,
             enum_id,
@@ -148,7 +148,7 @@ bool ruda_checker_private_compile_try_expression(
     concrete_result.type = function->result_type;
     error_argument.register_id = error_value.register_id;
     error_argument.type = error_value.type;
-    if (!ruda_checker_private_function_emit_enum_construction(
+    if (!mmay_checker_private_function_emit_enum_construction(
             function,
             &concrete_result,
             1,
@@ -157,16 +157,16 @@ bool ruda_checker_private_compile_try_expression(
             start,
             end,
             &propagated
-        ) || !ruda_checker_private_function_set_return(
+        ) || !mmay_checker_private_function_set_return(
             function, propagated.register_id, start, end
         )) {
         return false;
     }
     function->block = success_block;
     function->terminated = false;
-    if (!ruda_checker_private_function_emit_enum_access(
+    if (!mmay_checker_private_function_emit_enum_access(
             function,
-            RUDA_MIR_ENUM_REQUIRE_VARIANT,
+            MMAY_MIR_ENUM_REQUIRE_VARIANT,
             operand.type,
             operand.register_id,
             enum_id,
@@ -178,15 +178,15 @@ bool ruda_checker_private_compile_try_expression(
         )) {
         return false;
     }
-    if (operand_descriptor->arguments[0] == RUDA_TYPE_VOID) {
-        result->type = RUDA_TYPE_VOID;
-        result->register_id = RUDA_MIR_NO_REGISTER;
+    if (operand_descriptor->arguments[0] == MMAY_TYPE_VOID) {
+        result->type = MMAY_TYPE_VOID;
+        result->register_id = MMAY_MIR_NO_REGISTER;
         result->valid = true;
         return true;
     }
-    if (!ruda_checker_private_function_emit_enum_access(
+    if (!mmay_checker_private_function_emit_enum_access(
             function,
-            RUDA_MIR_ENUM_GET_PAYLOAD,
+            MMAY_MIR_ENUM_GET_PAYLOAD,
             operand_descriptor->arguments[0],
             required_success.register_id,
             enum_id,

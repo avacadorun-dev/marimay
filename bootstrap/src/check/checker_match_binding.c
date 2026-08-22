@@ -10,26 +10,26 @@
 
 #include "checker_internal.h"
 
-bool ruda_checker_private_analyze_enum_match_arm(
-    RudaFunctionChecker *function,
-    RudaCheckEnumDeclaration *enum_declaration,
-    RudaTypeId enum_type,
-    const RudaAstNode *arm_node,
+bool mmay_checker_private_analyze_enum_match_arm(
+    MarimayFunctionChecker *function,
+    MarimayCheckEnumDeclaration *enum_declaration,
+    MarimayTypeId enum_type,
+    const MarimayAstNode *arm_node,
     unsigned char *seen_variants,
     bool *covered,
-    RudaCheckEnumMatchArm *arm
+    MarimayCheckEnumMatchArm *arm
 ) {
-    const RudaAstNode *pattern_wrapper = ruda_checker_private_check_child_node(
+    const MarimayAstNode *pattern_wrapper = mmay_checker_private_check_child_node(
         arm_node,
-        RUDA_SYNTAX_PATTERN,
+        MMAY_SYNTAX_PATTERN,
         0
     );
-    const RudaAstNode *pattern = ruda_checker_private_check_child_node_any(
+    const MarimayAstNode *pattern = mmay_checker_private_check_child_node_any(
         pattern_wrapper,
         0
     );
-    RudaVector pattern_nodes;
-    RudaVector alternative_bindings;
+    MarimayVector pattern_nodes;
+    MarimayVector alternative_bindings;
     size_t alternative_index = 0;
     bool pattern_nodes_initialized = false;
     bool alternative_bindings_initialized = false;
@@ -39,35 +39,35 @@ bool ruda_checker_private_analyze_enum_match_arm(
     if (arm == NULL || enum_declaration == NULL || arm_node == NULL
         || pattern_wrapper == NULL || pattern == NULL || covered == NULL
         || (seen_variants == NULL && enum_declaration->variants.length != 0)) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         goto cleanup;
     }
     memset(arm, 0, sizeof(*arm));
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &arm->alternatives,
             function->checker->result->allocator,
-            sizeof(RudaCheckEnumMatchAlternative)
-        ) || !ruda_vector_init(
+            sizeof(MarimayCheckEnumMatchAlternative)
+        ) || !mmay_vector_init(
             &arm->bindings,
             function->checker->result->allocator,
-            sizeof(RudaCheckEnumMatchBinding)
-        ) || !ruda_vector_init(
+            sizeof(MarimayCheckEnumMatchBinding)
+        ) || !mmay_vector_init(
             &pattern_nodes,
             function->checker->result->allocator,
-            sizeof(const RudaAstNode *)
-        ) || !ruda_vector_init(
+            sizeof(const MarimayAstNode *)
+        ) || !mmay_vector_init(
             &alternative_bindings,
             function->checker->result->allocator,
-            sizeof(RudaCheckEnumMatchBinding)
+            sizeof(MarimayCheckEnumMatchBinding)
         )) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         goto cleanup;
     }
     pattern_nodes_initialized = true;
     alternative_bindings_initialized = true;
     arm->node = arm_node;
     arm->pattern = pattern;
-    if (!ruda_checker_private_match_arm_body_parts(
+    if (!mmay_checker_private_match_arm_body_parts(
             function,
             arm_node,
             &arm->guard,
@@ -76,28 +76,28 @@ bool ruda_checker_private_analyze_enum_match_arm(
         )) {
         goto cleanup;
     }
-    if (!ruda_checker_private_match_collect_alternatives(
+    if (!mmay_checker_private_match_collect_alternatives(
             function,
             pattern,
             &pattern_nodes
         ) || pattern_nodes.length == 0) {
         if (pattern_nodes.length == 0
-            && !ruda_checker_has_failed(function->checker)) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            && !mmay_checker_has_failed(function->checker)) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         }
         goto cleanup;
     }
     for (alternative_index = 0;
         alternative_index < pattern_nodes.length;
         alternative_index += 1) {
-        const RudaAstNode *const *alternative_pattern = ruda_vector_at_const(
+        const MarimayAstNode *const *alternative_pattern = mmay_vector_at_const(
             &pattern_nodes,
             alternative_index
         );
-        RudaCheckEnumMatchAlternative alternative;
+        MarimayCheckEnumMatchAlternative alternative;
         alternative_bindings.length = 0;
         if (alternative_pattern == NULL || *alternative_pattern == NULL
-            || !ruda_checker_private_analyze_enum_match_alternative(
+            || !mmay_checker_private_analyze_enum_match_alternative(
                 function,
                 enum_declaration,
                 enum_type,
@@ -111,23 +111,23 @@ bool ruda_checker_private_analyze_enum_match_arm(
             && (seen_variants == NULL
                 || alternative.variant_index
                     >= enum_declaration->variants.length)) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }
         if (alternative.is_catch_all
             && arm->alternatives.length != 0) {
-            const RudaCheckEnumMatchAlternative *subsumed =
-                ruda_vector_at_const(&arm->alternatives, 0);
+            const MarimayCheckEnumMatchAlternative *subsumed =
+                mmay_vector_at_const(&arm->alternatives, 0);
             if (subsumed == NULL) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
             }
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+                MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
                 "match alternative is subsumed by a catch-all in the same OR pattern",
                 subsumed->pattern->start,
                 subsumed->pattern->end
@@ -136,13 +136,13 @@ bool ruda_checker_private_analyze_enum_match_arm(
         }
         if (*covered || (!alternative.is_catch_all
                 && seen_variants[alternative.variant_index] != 0)
-            || ruda_checker_private_enum_match_alternative_redundant(
+            || mmay_checker_private_enum_match_alternative_redundant(
                 arm,
                 &alternative
             )) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+                MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
                 "match alternative is unreachable after earlier patterns",
                 alternative.pattern->start,
                 alternative.pattern->end
@@ -150,35 +150,35 @@ bool ruda_checker_private_analyze_enum_match_arm(
             goto cleanup;
         }
         if (alternative_index == 0) {
-            if (!ruda_vector_append(
+            if (!mmay_vector_append(
                     &arm->bindings,
                     alternative_bindings.data,
                     alternative_bindings.length
                 )) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_ALLOCATION_FAILED
+                    MMAY_CHECK_ALLOCATION_FAILED
                 );
                 goto cleanup;
             }
-        } else if (!ruda_checker_private_enum_match_bindings_equal(
+        } else if (!mmay_checker_private_enum_match_bindings_equal(
                 function,
                 &arm->bindings,
                 &alternative_bindings
             )) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "OR pattern alternatives must bind the same names with identical types",
                 alternative.pattern->start,
                 alternative.pattern->end
             );
             goto cleanup;
         }
-        if (!ruda_vector_push(&arm->alternatives, &alternative)) {
-            ruda_checker_fail(
+        if (!mmay_vector_push(&arm->alternatives, &alternative)) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_ALLOCATION_FAILED
+                MMAY_CHECK_ALLOCATION_FAILED
             );
             goto cleanup;
         }
@@ -187,15 +187,15 @@ bool ruda_checker_private_analyze_enum_match_arm(
         for (alternative_index = 0;
             alternative_index < arm->alternatives.length;
             alternative_index += 1) {
-            const RudaCheckEnumMatchAlternative *alternative =
-                ruda_vector_at_const(
+            const MarimayCheckEnumMatchAlternative *alternative =
+                mmay_vector_at_const(
                     &arm->alternatives,
                     alternative_index
                 );
             if (alternative == NULL) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
             }
@@ -208,9 +208,9 @@ bool ruda_checker_private_analyze_enum_match_arm(
                     < enum_declaration->variants.length) {
                 seen_variants[alternative->variant_index] = 1;
             } else {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
             }
@@ -220,37 +220,37 @@ bool ruda_checker_private_analyze_enum_match_arm(
 
 cleanup:
     if (alternative_bindings_initialized) {
-        ruda_vector_dispose(&alternative_bindings);
+        mmay_vector_dispose(&alternative_bindings);
     }
     if (pattern_nodes_initialized) {
-        ruda_vector_dispose(&pattern_nodes);
+        mmay_vector_dispose(&pattern_nodes);
     }
-    return accepted && !ruda_checker_has_failed(function->checker);
+    return accepted && !mmay_checker_has_failed(function->checker);
 }
 
- bool ruda_checker_private_declare_match_bindings(
-    RudaFunctionChecker *function,
-    const RudaVector *bindings
+ bool mmay_checker_private_declare_match_bindings(
+    MarimayFunctionChecker *function,
+    const MarimayVector *bindings
 ) {
     size_t index = 0;
     if (bindings == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
     for (index = 0; index < bindings->length; index += 1) {
-        const RudaCheckEnumMatchBinding *binding = ruda_vector_at_const(
+        const MarimayCheckEnumMatchBinding *binding = mmay_vector_at_const(
             bindings,
             index
         );
-        RudaCheckLocal *local = NULL;
-        if (binding == NULL || ruda_checker_private_function_find_local_in_current_scope(
+        MarimayCheckLocal *local = NULL;
+        if (binding == NULL || mmay_checker_private_function_find_local_in_current_scope(
                 function,
                 binding->name
             ) != NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
-        if (!ruda_checker_private_function_add_local(
+        if (!mmay_checker_private_function_add_local(
                 function,
                 binding->name,
                 binding->type,
@@ -264,23 +264,23 @@ cleanup:
     return true;
 }
 
- bool ruda_checker_private_assign_match_local(
-    RudaFunctionChecker *function,
-    RudaCheckName name,
-    RudaTypeId type,
-    RudaMirRegister source,
+ bool mmay_checker_private_assign_match_local(
+    MarimayFunctionChecker *function,
+    MarimayCheckName name,
+    MarimayTypeId type,
+    MarimayMirRegister source,
     size_t start,
     size_t end
 ) {
-    const RudaCheckLocal *local = ruda_checker_private_function_find_local_in_current_scope(
+    const MarimayCheckLocal *local = mmay_checker_private_function_find_local_in_current_scope(
         function,
         name
     );
     if (local == NULL || local->type != type) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
-    return ruda_checker_private_function_emit_copy(
+    return mmay_checker_private_function_emit_copy(
         function,
         local->register_id,
         source,
@@ -289,79 +289,79 @@ cleanup:
     );
 }
 
-static bool ruda_checker_private_compile_nested_pattern_cps(
-    RudaFunctionChecker *function,
-    const RudaAstNode *pattern,
-    RudaTypeId type,
-    RudaMirRegister source,
-    RudaMirBlockId success,
-    RudaMirBlockId failure
+static bool mmay_checker_private_compile_nested_pattern_cps(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *pattern,
+    MarimayTypeId type,
+    MarimayMirRegister source,
+    MarimayMirBlockId success,
+    MarimayMirBlockId failure
 );
 
-static bool ruda_checker_private_compile_record_pattern_cps(
-    RudaFunctionChecker *function,
-    const RudaAstNode *pattern,
-    RudaCheckRecordDeclaration *record,
-    RudaMirRegister source,
-    RudaMirBlockId success,
-    RudaMirBlockId failure
+static bool mmay_checker_private_compile_record_pattern_cps(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *pattern,
+    MarimayCheckRecordDeclaration *record,
+    MarimayMirRegister source,
+    MarimayMirBlockId success,
+    MarimayMirBlockId failure
 ) {
-    const RudaAstNode *named = ruda_checker_private_check_child_node(
-        pattern, RUDA_SYNTAX_NAMED_PATTERN, 0
+    const MarimayAstNode *named = mmay_checker_private_check_child_node(
+        pattern, MMAY_SYNTAX_NAMED_PATTERN, 0
     );
-    const RudaAstNode *fields = ruda_checker_private_check_child_node(
-        named, RUDA_SYNTAX_PATTERN_FIELDS, 0
+    const MarimayAstNode *fields = mmay_checker_private_check_child_node(
+        named, MMAY_SYNTAX_PATTERN_FIELDS, 0
     );
-    RudaMirRecordId layout = RUDA_MIR_NO_RECORD;
+    MarimayMirRecordId layout = MMAY_MIR_NO_RECORD;
     size_t ordinal = 0;
     if (named == NULL || fields == NULL
-        || !ruda_checker_private_function_record_layout(function, record, &layout)) {
+        || !mmay_checker_private_function_record_layout(function, record, &layout)) {
         return false;
     }
     for (;;) {
-        const RudaAstNode *field = ruda_checker_private_check_child_node(
-            fields, RUDA_SYNTAX_PATTERN_FIELD, ordinal
+        const MarimayAstNode *field = mmay_checker_private_check_child_node(
+            fields, MMAY_SYNTAX_PATTERN_FIELD, ordinal
         );
-        const RudaSyntaxToken *token = NULL;
-        const RudaAstNode *child = NULL;
-        RudaCheckName name;
-        RudaCheckRecordFieldDeclaration *declaration = NULL;
-        RudaExpressionValue projected;
-        RudaMirBlockId next = success;
+        const MarimaySyntaxToken *token = NULL;
+        const MarimayAstNode *child = NULL;
+        MarimayCheckName name;
+        MarimayCheckRecordFieldDeclaration *declaration = NULL;
+        MarimayExpressionValue projected;
+        MarimayMirBlockId next = success;
         size_t field_index = 0;
         if (field == NULL) {
             break;
         }
         ordinal += 1;
-        token = ruda_checker_private_check_child_token(
-            field, RUDA_TOKEN_IDENTIFIER, 0
+        token = mmay_checker_private_check_child_token(
+            field, MMAY_TOKEN_IDENTIFIER, 0
         );
         if (token == NULL || token->synthetic) {
             return false;
         }
-        name = (RudaCheckName){function->checker->ast->snapshot,
+        name = (MarimayCheckName){function->checker->ast->snapshot,
             token->start, token->end};
-        declaration = ruda_checker_private_checker_find_record_field(
+        declaration = mmay_checker_private_checker_find_record_field(
             function->checker, record, name, &field_index
         );
-        child = ruda_checker_private_check_child_node_any(field, 0);
+        child = mmay_checker_private_check_child_node_any(field, 0);
         if (declaration == NULL || (ordinal < record->fields.length
-                && !ruda_checker_private_function_add_block(function, &next))) {
+                && !mmay_checker_private_function_add_block(function, &next))) {
             return false;
         }
         memset(&projected, 0, sizeof(projected));
-        if (!ruda_checker_private_function_emit_record_access(
-                function, RUDA_MIR_RECORD_GET, declaration->type, source,
-                RUDA_MIR_NO_REGISTER, layout, field_index, field->start,
+        if (!mmay_checker_private_function_emit_record_access(
+                function, MMAY_MIR_RECORD_GET, declaration->type, source,
+                MMAY_MIR_NO_REGISTER, layout, field_index, field->start,
                 field->end, &projected
             ) || (child == NULL
-                ? !ruda_checker_private_assign_match_local(
+                ? !mmay_checker_private_assign_match_local(
                     function, name, declaration->type, projected.register_id,
                     name.start, name.end
-                ) || !ruda_checker_private_function_set_goto(
+                ) || !mmay_checker_private_function_set_goto(
                     function, function->block, next, field->end, field->end
                 )
-                : !ruda_checker_private_compile_nested_pattern_cps(
+                : !mmay_checker_private_compile_nested_pattern_cps(
                     function, child, declaration->type, projected.register_id,
                     next, failure
                 ))) {
@@ -373,103 +373,103 @@ static bool ruda_checker_private_compile_record_pattern_cps(
     return ordinal == record->fields.length;
 }
 
-static bool ruda_checker_private_compile_enum_payloads_cps(
-    RudaFunctionChecker *function,
-    const RudaCheckEnumMatchAlternative *alternative,
-    RudaMirEnumId enum_id,
-    RudaMirRegister receiver,
-    RudaMirBlockId success,
-    RudaMirBlockId failure
+static bool mmay_checker_private_compile_enum_payloads_cps(
+    MarimayFunctionChecker *function,
+    const MarimayCheckEnumMatchAlternative *alternative,
+    MarimayMirEnumId enum_id,
+    MarimayMirRegister receiver,
+    MarimayMirBlockId success,
+    MarimayMirBlockId failure
 ) {
     size_t ordinal = 0;
-    const RudaAstNode *shape = NULL;
-    RudaCheckEnumDeclaration *enum_declaration = NULL;
+    const MarimayAstNode *shape = NULL;
+    MarimayCheckEnumDeclaration *enum_declaration = NULL;
     if (alternative == NULL || alternative->variant == NULL) {
         return false;
     }
-    enum_declaration = ruda_checker_private_checker_find_enum_by_type(
+    enum_declaration = mmay_checker_private_checker_find_enum_by_type(
         function->checker, alternative->enum_type
     );
     if (enum_declaration == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
-    if (alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_UNIT) {
-        return ruda_checker_private_function_set_goto(
+    if (alternative->variant->kind == MMAY_CHECKED_ENUM_VARIANT_UNIT) {
+        return mmay_checker_private_function_set_goto(
             function, function->block, success,
             alternative->pattern->end, alternative->pattern->end
         );
     }
-    shape = ruda_checker_private_check_child_node(
+    shape = mmay_checker_private_check_child_node(
         alternative->pattern,
-        alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
-            ? RUDA_SYNTAX_POSITIONAL_PATTERN : RUDA_SYNTAX_NAMED_PATTERN,
+        alternative->variant->kind == MMAY_CHECKED_ENUM_VARIANT_POSITIONAL
+            ? MMAY_SYNTAX_POSITIONAL_PATTERN : MMAY_SYNTAX_NAMED_PATTERN,
         0
     );
-    shape = alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
-        ? ruda_checker_private_check_child_node(shape, RUDA_SYNTAX_PATTERN_LIST, 0)
-        : ruda_checker_private_check_child_node(shape, RUDA_SYNTAX_PATTERN_FIELDS, 0);
+    shape = alternative->variant->kind == MMAY_CHECKED_ENUM_VARIANT_POSITIONAL
+        ? mmay_checker_private_check_child_node(shape, MMAY_SYNTAX_PATTERN_LIST, 0)
+        : mmay_checker_private_check_child_node(shape, MMAY_SYNTAX_PATTERN_FIELDS, 0);
     if (shape == NULL) {
         return false;
     }
     for (;;) {
-        const RudaAstNode *field = alternative->variant->kind
-                == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
-            ? ruda_checker_private_check_child_node_any(shape, ordinal)
-            : ruda_checker_private_check_child_node(
-                shape, RUDA_SYNTAX_PATTERN_FIELD, ordinal
+        const MarimayAstNode *field = alternative->variant->kind
+                == MMAY_CHECKED_ENUM_VARIANT_POSITIONAL
+            ? mmay_checker_private_check_child_node_any(shape, ordinal)
+            : mmay_checker_private_check_child_node(
+                shape, MMAY_SYNTAX_PATTERN_FIELD, ordinal
             );
-        const RudaAstNode *child = field;
-        const RudaCheckEnumPayloadItemDeclaration *payload = NULL;
-        RudaTypeId payload_type = RUDA_TYPE_INVALID;
-        RudaCheckName name;
-        RudaExpressionValue projected;
-        RudaMirBlockId next = success;
+        const MarimayAstNode *child = field;
+        const MarimayCheckEnumPayloadItemDeclaration *payload = NULL;
+        MarimayTypeId payload_type = MMAY_TYPE_INVALID;
+        MarimayCheckName name;
+        MarimayExpressionValue projected;
+        MarimayMirBlockId next = success;
         size_t payload_index = ordinal;
         if (field == NULL) {
             break;
         }
-        if (alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_NAMED) {
-            const RudaSyntaxToken *token = ruda_checker_private_check_child_token(
-                field, RUDA_TOKEN_IDENTIFIER, 0
+        if (alternative->variant->kind == MMAY_CHECKED_ENUM_VARIANT_NAMED) {
+            const MarimaySyntaxToken *token = mmay_checker_private_check_child_token(
+                field, MMAY_TOKEN_IDENTIFIER, 0
             );
             if (token == NULL || token->synthetic) {
                 return false;
             }
-            name = (RudaCheckName){function->checker->ast->snapshot,
+            name = (MarimayCheckName){function->checker->ast->snapshot,
                 token->start, token->end};
-            payload = ruda_checker_private_checker_find_enum_payload(
+            payload = mmay_checker_private_checker_find_enum_payload(
                 function->checker, alternative->variant, name, &payload_index
             );
-            child = ruda_checker_private_check_child_node_any(field, 0);
+            child = mmay_checker_private_check_child_node_any(field, 0);
         } else {
             memset(&name, 0, sizeof(name));
-            payload = ruda_vector_at_const(&alternative->variant->payload, ordinal);
+            payload = mmay_vector_at_const(&alternative->variant->payload, ordinal);
         }
         ordinal += 1;
-        if (payload == NULL || !ruda_checker_private_enum_match_payload_type(
+        if (payload == NULL || !mmay_checker_private_enum_match_payload_type(
                 function,
                 alternative->enum_type,
                 enum_declaration,
                 payload->type,
                 &payload_type
             ) || (ordinal < alternative->variant->payload.length
-                && !ruda_checker_private_function_add_block(function, &next))) {
+                && !mmay_checker_private_function_add_block(function, &next))) {
             return false;
         }
         memset(&projected, 0, sizeof(projected));
-        if (!ruda_checker_private_function_emit_enum_access(
-                function, RUDA_MIR_ENUM_GET_PAYLOAD, payload_type, receiver,
+        if (!mmay_checker_private_function_emit_enum_access(
+                function, MMAY_MIR_ENUM_GET_PAYLOAD, payload_type, receiver,
                 enum_id, alternative->variant_index, payload_index, field->start,
                 field->end, &projected
             ) || (child == NULL
-                ? (!ruda_checker_private_assign_match_local(
+                ? (!mmay_checker_private_assign_match_local(
                     function, name, payload_type, projected.register_id,
                     name.start, name.end
-                ) || !ruda_checker_private_function_set_goto(
+                ) || !mmay_checker_private_function_set_goto(
                     function, function->block, next, field->end, field->end
                 ))
-                : !ruda_checker_private_compile_nested_pattern_cps(
+                : !mmay_checker_private_compile_nested_pattern_cps(
                     function, child, payload_type, projected.register_id,
                     next, failure
                 ))) {
@@ -481,62 +481,62 @@ static bool ruda_checker_private_compile_enum_payloads_cps(
     return ordinal == alternative->variant->payload.length;
 }
 
-static bool ruda_checker_private_compile_nested_pattern_cps(
-    RudaFunctionChecker *function,
-    const RudaAstNode *pattern,
-    RudaTypeId type,
-    RudaMirRegister source,
-    RudaMirBlockId success,
-    RudaMirBlockId failure
+static bool mmay_checker_private_compile_nested_pattern_cps(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *pattern,
+    MarimayTypeId type,
+    MarimayMirRegister source,
+    MarimayMirBlockId success,
+    MarimayMirBlockId failure
 ) {
-    RudaCheckName name;
-    RudaCheckRecordDeclaration *record = NULL;
-    RudaCheckEnumDeclaration *enum_declaration = NULL;
-    RudaCheckEnumDeclaration concrete_enum;
-    RudaCheckEnumVariantDeclaration *variant = NULL;
-    RudaCheckEnumMatchAlternative alternative;
-    RudaMirEnumId enum_id = RUDA_MIR_NO_ENUM;
-    RudaExpressionValue matched;
-    RudaExpressionValue guarded;
-    RudaMirBlockId matched_block = RUDA_MIR_NO_BLOCK;
+    MarimayCheckName name;
+    MarimayCheckRecordDeclaration *record = NULL;
+    MarimayCheckEnumDeclaration *enum_declaration = NULL;
+    MarimayCheckEnumDeclaration concrete_enum;
+    MarimayCheckEnumVariantDeclaration *variant = NULL;
+    MarimayCheckEnumMatchAlternative alternative;
+    MarimayMirEnumId enum_id = MMAY_MIR_NO_ENUM;
+    MarimayExpressionValue matched;
+    MarimayExpressionValue guarded;
+    MarimayMirBlockId matched_block = MMAY_MIR_NO_BLOCK;
     size_t variant_index = 0;
-    const RudaAstNode *constructor_name = NULL;
+    const MarimayAstNode *constructor_name = NULL;
     if (pattern == NULL) {
         return false;
     }
-    if (pattern->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
-        return ruda_checker_private_function_set_goto(
+    if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
+        return mmay_checker_private_function_set_goto(
             function, function->block, success, pattern->end, pattern->end
         );
     }
-    if (pattern->kind == RUDA_SYNTAX_NAME_PATTERN) {
-        return ruda_checker_private_enum_match_name(function, pattern, &name)
-            && ruda_checker_private_assign_match_local(
+    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
+        return mmay_checker_private_enum_match_name(function, pattern, &name)
+            && mmay_checker_private_assign_match_local(
                 function, name, type, source, pattern->start, pattern->end
-            ) && ruda_checker_private_function_set_goto(
+            ) && mmay_checker_private_function_set_goto(
                 function, function->block, success, pattern->end, pattern->end
             );
     }
-    if (pattern->kind != RUDA_SYNTAX_CONSTRUCTOR_PATTERN) {
+    if (pattern->kind != MMAY_SYNTAX_CONSTRUCTOR_PATTERN) {
         return false;
     }
-    record = ruda_checker_private_checker_find_record_by_type(
+    record = mmay_checker_private_checker_find_record_by_type(
         function->checker, type
     );
     if (record != NULL) {
-        return ruda_checker_private_compile_record_pattern_cps(
+        return mmay_checker_private_compile_record_pattern_cps(
             function, pattern, record, source, success, failure
         );
     }
-    enum_declaration = ruda_checker_private_checker_find_enum_by_type(
+    enum_declaration = mmay_checker_private_checker_find_enum_by_type(
         function->checker, type
     );
-    constructor_name = ruda_checker_private_check_child_node(
-        pattern, RUDA_SYNTAX_NAME_PATTERN, 0
+    constructor_name = mmay_checker_private_check_child_node(
+        pattern, MMAY_SYNTAX_NAME_PATTERN, 0
     );
     if (enum_declaration == NULL
-        || !ruda_checker_private_enum_match_name(function, constructor_name, &name)
-        || (variant = ruda_checker_private_checker_find_enum_variant(
+        || !mmay_checker_private_enum_match_name(function, constructor_name, &name)
+        || (variant = mmay_checker_private_checker_find_enum_variant(
                 function->checker, enum_declaration, name, &variant_index
             )) == NULL
         ) {
@@ -544,17 +544,17 @@ static bool ruda_checker_private_compile_nested_pattern_cps(
     }
     concrete_enum = *enum_declaration;
     concrete_enum.type = type;
-    if (!ruda_checker_private_function_enum_layout(
+    if (!mmay_checker_private_function_enum_layout(
             function, &concrete_enum, &enum_id
-        ) || !ruda_checker_private_function_add_block(function, &matched_block)) {
+        ) || !mmay_checker_private_function_add_block(function, &matched_block)) {
         return false;
     }
     memset(&matched, 0, sizeof(matched));
     memset(&guarded, 0, sizeof(guarded));
-    if (!ruda_checker_private_function_emit_enum_access(
-            function, RUDA_MIR_ENUM_IS_VARIANT, RUDA_TYPE_BOOL, source,
+    if (!mmay_checker_private_function_emit_enum_access(
+            function, MMAY_MIR_ENUM_IS_VARIANT, MMAY_TYPE_BOOL, source,
             enum_id, variant_index, 0, pattern->start, pattern->end, &matched
-        ) || !ruda_checker_private_function_set_branch(
+        ) || !mmay_checker_private_function_set_branch(
             function, function->block, matched.register_id, matched_block,
             failure, pattern->start, pattern->end
         )) {
@@ -562,8 +562,8 @@ static bool ruda_checker_private_compile_nested_pattern_cps(
     }
     function->block = matched_block;
     function->terminated = false;
-    if (!ruda_checker_private_function_emit_enum_access(
-            function, RUDA_MIR_ENUM_REQUIRE_VARIANT, type, source, enum_id,
+    if (!mmay_checker_private_function_emit_enum_access(
+            function, MMAY_MIR_ENUM_REQUIRE_VARIANT, type, source, enum_id,
             variant_index, 0, pattern->start, pattern->end, &guarded
         )) {
         return false;
@@ -573,94 +573,94 @@ static bool ruda_checker_private_compile_nested_pattern_cps(
     alternative.variant = variant;
     alternative.enum_type = type;
     alternative.variant_index = variant_index;
-    return ruda_checker_private_compile_enum_payloads_cps(
+    return mmay_checker_private_compile_enum_payloads_cps(
         function, &alternative, enum_id, guarded.register_id, success, failure
     );
 }
 
- bool ruda_checker_private_compile_enum_match_bindings_cps(
-    RudaFunctionChecker *function,
-    const RudaCheckEnumMatchAlternative *alternative,
-    RudaMirEnumId enum_id,
-    RudaMirRegister receiver,
-    RudaMirBlockId success,
-    RudaMirBlockId failure
+ bool mmay_checker_private_compile_enum_match_bindings_cps(
+    MarimayFunctionChecker *function,
+    const MarimayCheckEnumMatchAlternative *alternative,
+    MarimayMirEnumId enum_id,
+    MarimayMirRegister receiver,
+    MarimayMirBlockId success,
+    MarimayMirBlockId failure
 ) {
     if (alternative == NULL) {
         return false;
     }
     if (alternative->is_catch_all) {
-        const RudaTypeId *type = ruda_vector_at_const(
+        const MarimayTypeId *type = mmay_vector_at_const(
             &function->mir.register_types, receiver
         );
         return type != NULL && (!alternative->has_catch_binding
-            || ruda_checker_private_assign_match_local(
+            || mmay_checker_private_assign_match_local(
                 function, alternative->catch_binding, *type, receiver,
                 alternative->pattern->start, alternative->pattern->end
-            )) && ruda_checker_private_function_set_goto(
+            )) && mmay_checker_private_function_set_goto(
                 function, function->block, success,
                 alternative->pattern->end, alternative->pattern->end
             );
     }
-    return ruda_checker_private_compile_enum_payloads_cps(
+    return mmay_checker_private_compile_enum_payloads_cps(
         function, alternative, enum_id, receiver, success, failure
     );
 }
 
-static bool ruda_checker_compile_nested_record_pattern(
-    RudaFunctionChecker *function,
-    const RudaAstNode *pattern,
-    RudaTypeId type,
-    RudaMirRegister source
+static bool mmay_checker_compile_nested_record_pattern(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *pattern,
+    MarimayTypeId type,
+    MarimayMirRegister source
 ) {
-    RudaCheckName name;
-    RudaCheckRecordDeclaration *record = NULL;
-    RudaMirRecordId layout = RUDA_MIR_NO_RECORD;
-    const RudaAstNode *constructor_name = NULL;
-    const RudaAstNode *named = NULL;
-    const RudaAstNode *fields = NULL;
+    MarimayCheckName name;
+    MarimayCheckRecordDeclaration *record = NULL;
+    MarimayMirRecordId layout = MMAY_MIR_NO_RECORD;
+    const MarimayAstNode *constructor_name = NULL;
+    const MarimayAstNode *named = NULL;
+    const MarimayAstNode *fields = NULL;
     size_t ordinal = 0;
     if (pattern == NULL) {
         return false;
     }
-    if (pattern->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
+    if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
         return true;
     }
-    if (pattern->kind == RUDA_SYNTAX_NAME_PATTERN) {
-        return ruda_checker_private_enum_match_name(function, pattern, &name)
-            && ruda_checker_private_assign_match_local(
+    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
+        return mmay_checker_private_enum_match_name(function, pattern, &name)
+            && mmay_checker_private_assign_match_local(
                 function, name, type, source, pattern->start, pattern->end
             );
     }
-    if (pattern->kind != RUDA_SYNTAX_CONSTRUCTOR_PATTERN) {
-        (void)ruda_checker_add_diagnostic(
-            function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+    if (pattern->kind != MMAY_SYNTAX_CONSTRUCTOR_PATTERN) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "nested pattern does not match the record field type",
             pattern->start, pattern->end
         );
         return false;
     }
-    constructor_name = ruda_checker_private_check_child_node(
-        pattern, RUDA_SYNTAX_NAME_PATTERN, 0
+    constructor_name = mmay_checker_private_check_child_node(
+        pattern, MMAY_SYNTAX_NAME_PATTERN, 0
     );
-    if (!ruda_checker_private_enum_match_name(function, constructor_name, &name)
-        || (record = ruda_checker_private_checker_find_record_by_type(
+    if (!mmay_checker_private_enum_match_name(function, constructor_name, &name)
+        || (record = mmay_checker_private_checker_find_record_by_type(
                 function->checker, type
             )) == NULL
-        || ruda_checker_private_checker_find_record(function->checker, name)
+        || mmay_checker_private_checker_find_record(function->checker, name)
             != record
-        || (named = ruda_checker_private_check_child_node(
-                pattern, RUDA_SYNTAX_NAMED_PATTERN, 0
+        || (named = mmay_checker_private_check_child_node(
+                pattern, MMAY_SYNTAX_NAMED_PATTERN, 0
             )) == NULL
-        || (fields = ruda_checker_private_check_child_node(
-                named, RUDA_SYNTAX_PATTERN_FIELDS, 0
+        || (fields = mmay_checker_private_check_child_node(
+                named, MMAY_SYNTAX_PATTERN_FIELDS, 0
             )) == NULL
-        || !ruda_checker_private_function_record_layout(
+        || !mmay_checker_private_function_record_layout(
             function, record, &layout
         )) {
-        if (!ruda_checker_has_failed(function->checker)) {
-            (void)ruda_checker_add_diagnostic(
-                function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        if (!mmay_checker_has_failed(function->checker)) {
+            (void)mmay_checker_add_diagnostic(
+                function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "nested record pattern constructor does not match its exact field type",
                 pattern->start, pattern->end
             );
@@ -668,46 +668,46 @@ static bool ruda_checker_compile_nested_record_pattern(
         return false;
     }
     for (;;) {
-        const RudaAstNode *field = ruda_checker_private_check_child_node(
-            fields, RUDA_SYNTAX_PATTERN_FIELD, ordinal
+        const MarimayAstNode *field = mmay_checker_private_check_child_node(
+            fields, MMAY_SYNTAX_PATTERN_FIELD, ordinal
         );
-        const RudaSyntaxToken *token = NULL;
-        const RudaAstNode *child = NULL;
-        RudaCheckRecordFieldDeclaration *declaration = NULL;
-        RudaExpressionValue projected;
+        const MarimaySyntaxToken *token = NULL;
+        const MarimayAstNode *child = NULL;
+        MarimayCheckRecordFieldDeclaration *declaration = NULL;
+        MarimayExpressionValue projected;
         size_t field_index = 0;
         if (field == NULL) {
             break;
         }
         ordinal += 1;
-        token = ruda_checker_private_check_child_token(
-            field, RUDA_TOKEN_IDENTIFIER, 0
+        token = mmay_checker_private_check_child_token(
+            field, MMAY_TOKEN_IDENTIFIER, 0
         );
         if (token == NULL || token->synthetic) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
             return false;
         }
-        name = (RudaCheckName){function->checker->ast->snapshot,
+        name = (MarimayCheckName){function->checker->ast->snapshot,
             token->start, token->end};
-        declaration = ruda_checker_private_checker_find_record_field(
+        declaration = mmay_checker_private_checker_find_record_field(
             function->checker, record, name, &field_index
         );
-        child = ruda_checker_private_check_child_node_any(field, 0);
+        child = mmay_checker_private_check_child_node_any(field, 0);
         if (declaration == NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
         memset(&projected, 0, sizeof(projected));
-        if (!ruda_checker_private_function_emit_record_access(
-                function, RUDA_MIR_RECORD_GET, declaration->type, source,
-                RUDA_MIR_NO_REGISTER, layout, field_index,
+        if (!mmay_checker_private_function_emit_record_access(
+                function, MMAY_MIR_RECORD_GET, declaration->type, source,
+                MMAY_MIR_NO_REGISTER, layout, field_index,
                 child != NULL ? child->start : name.start,
                 child != NULL ? child->end : name.end, &projected
             ) || (child == NULL
-                ? !ruda_checker_private_assign_match_local(
+                ? !mmay_checker_private_assign_match_local(
                     function, name, declaration->type, projected.register_id,
                     name.start, name.end
-                ) : !ruda_checker_compile_nested_record_pattern(
+                ) : !mmay_checker_compile_nested_record_pattern(
                     function, child, declaration->type, projected.register_id
                 ))) {
             return false;
@@ -716,35 +716,35 @@ static bool ruda_checker_compile_nested_record_pattern(
     return ordinal == record->fields.length;
 }
 
- bool ruda_checker_private_bind_enum_match_payload(
-    RudaFunctionChecker *function,
-    const RudaCheckEnumMatchAlternative *alternative,
-    RudaMirEnumId enum_id,
-    RudaMirRegister guarded,
+ bool mmay_checker_private_bind_enum_match_payload(
+    MarimayFunctionChecker *function,
+    const MarimayCheckEnumMatchAlternative *alternative,
+    MarimayMirEnumId enum_id,
+    MarimayMirRegister guarded,
     size_t payload_index,
-    const RudaAstNode *binding,
-    RudaCheckName shorthand
+    const MarimayAstNode *binding,
+    MarimayCheckName shorthand
 ) {
-    const RudaCheckEnumPayloadItemDeclaration *payload = ruda_vector_at_const(
+    const MarimayCheckEnumPayloadItemDeclaration *payload = mmay_vector_at_const(
         &alternative->variant->payload,
         payload_index
     );
-    RudaCheckEnumDeclaration *enum_declaration = NULL;
-    RudaTypeId payload_type = RUDA_TYPE_INVALID;
-    RudaExpressionValue projected;
-    RudaCheckName name = shorthand;
-    if (binding != NULL && binding->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
+    MarimayCheckEnumDeclaration *enum_declaration = NULL;
+    MarimayTypeId payload_type = MMAY_TYPE_INVALID;
+    MarimayExpressionValue projected;
+    MarimayCheckName name = shorthand;
+    if (binding != NULL && binding->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
         return true;
     }
     if (payload == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
-    enum_declaration = ruda_checker_private_checker_find_enum_by_type(
+    enum_declaration = mmay_checker_private_checker_find_enum_by_type(
         function->checker, alternative->enum_type
     );
     if (enum_declaration == NULL
-        || !ruda_checker_private_enum_match_payload_type(
+        || !mmay_checker_private_enum_match_payload_type(
             function,
             alternative->enum_type,
             enum_declaration,
@@ -754,9 +754,9 @@ static bool ruda_checker_compile_nested_record_pattern(
         return false;
     }
     memset(&projected, 0, sizeof(projected));
-    if (!ruda_checker_private_function_emit_enum_access(
+    if (!mmay_checker_private_function_emit_enum_access(
             function,
-            RUDA_MIR_ENUM_GET_PAYLOAD,
+            MMAY_MIR_ENUM_GET_PAYLOAD,
             payload_type,
             guarded,
             enum_id,
@@ -769,33 +769,33 @@ static bool ruda_checker_compile_nested_record_pattern(
         return false;
     }
     if (binding == NULL) {
-        return ruda_checker_private_assign_match_local(
+        return mmay_checker_private_assign_match_local(
             function, name, payload_type, projected.register_id,
             name.start, name.end
         );
     }
-    return ruda_checker_compile_nested_record_pattern(
+    return mmay_checker_compile_nested_record_pattern(
         function, binding, payload_type, projected.register_id
     );
 }
 
- bool ruda_checker_private_compile_enum_match_bindings(
-    RudaFunctionChecker *function,
-    const RudaCheckEnumMatchAlternative *alternative,
-    RudaMirEnumId enum_id,
-    RudaMirRegister receiver
+ bool mmay_checker_private_compile_enum_match_bindings(
+    MarimayFunctionChecker *function,
+    const MarimayCheckEnumMatchAlternative *alternative,
+    MarimayMirEnumId enum_id,
+    MarimayMirRegister receiver
 ) {
     if (alternative->is_catch_all) {
-        const RudaTypeId *receiver_type = ruda_vector_at_const(
+        const MarimayTypeId *receiver_type = mmay_vector_at_const(
             &function->mir.register_types,
             receiver
         );
         if (receiver_type == NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
         return !alternative->has_catch_binding
-            || ruda_checker_private_assign_match_local(
+            || mmay_checker_private_assign_match_local(
                 function,
                 alternative->catch_binding,
                 *receiver_type,
@@ -805,33 +805,33 @@ static bool ruda_checker_compile_nested_record_pattern(
             );
     }
     if (alternative->variant == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
-    if (alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_UNIT) {
+    if (alternative->variant->kind == MMAY_CHECKED_ENUM_VARIANT_UNIT) {
         return true;
     }
     if (alternative->variant->kind
-        == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL) {
-        const RudaAstNode *positional = ruda_checker_private_check_child_node(
+        == MMAY_CHECKED_ENUM_VARIANT_POSITIONAL) {
+        const MarimayAstNode *positional = mmay_checker_private_check_child_node(
             alternative->pattern,
-            RUDA_SYNTAX_POSITIONAL_PATTERN,
+            MMAY_SYNTAX_POSITIONAL_PATTERN,
             0
         );
-        const RudaAstNode *list = ruda_checker_private_check_child_node(
+        const MarimayAstNode *list = mmay_checker_private_check_child_node(
             positional,
-            RUDA_SYNTAX_PATTERN_LIST,
+            MMAY_SYNTAX_PATTERN_LIST,
             0
         );
         size_t payload_index = 0;
-        const RudaAstNode *binding = NULL;
-        RudaCheckName no_shorthand;
+        const MarimayAstNode *binding = NULL;
+        MarimayCheckName no_shorthand;
         memset(&no_shorthand, 0, sizeof(no_shorthand));
-        while ((binding = ruda_checker_private_check_child_node_any(
+        while ((binding = mmay_checker_private_check_child_node_any(
                 list,
                 payload_index
             )) != NULL) {
-            if (!ruda_checker_private_bind_enum_match_payload(
+            if (!mmay_checker_private_bind_enum_match_payload(
                     function,
                     alternative,
                     enum_id,
@@ -846,61 +846,61 @@ static bool ruda_checker_compile_nested_record_pattern(
         }
         return payload_index == alternative->variant->payload.length;
     }
-    if (alternative->variant->kind == RUDA_CHECKED_ENUM_VARIANT_NAMED) {
-        const RudaAstNode *named = ruda_checker_private_check_child_node(
+    if (alternative->variant->kind == MMAY_CHECKED_ENUM_VARIANT_NAMED) {
+        const MarimayAstNode *named = mmay_checker_private_check_child_node(
             alternative->pattern,
-            RUDA_SYNTAX_NAMED_PATTERN,
+            MMAY_SYNTAX_NAMED_PATTERN,
             0
         );
-        const RudaAstNode *fields = ruda_checker_private_check_child_node(
+        const MarimayAstNode *fields = mmay_checker_private_check_child_node(
             named,
-            RUDA_SYNTAX_PATTERN_FIELDS,
+            MMAY_SYNTAX_PATTERN_FIELDS,
             0
         );
         size_t field_ordinal = 0;
         for (;;) {
-            const RudaAstNode *field = ruda_checker_private_check_child_node(
+            const MarimayAstNode *field = mmay_checker_private_check_child_node(
                 fields,
-                RUDA_SYNTAX_PATTERN_FIELD,
+                MMAY_SYNTAX_PATTERN_FIELD,
                 field_ordinal
             );
-            const RudaSyntaxToken *field_token = NULL;
-            const RudaAstNode *binding = NULL;
-            RudaCheckName field_name;
+            const MarimaySyntaxToken *field_token = NULL;
+            const MarimayAstNode *binding = NULL;
+            MarimayCheckName field_name;
             size_t payload_index = 0;
             if (field == NULL) {
                 break;
             }
             field_ordinal += 1;
-            field_token = ruda_checker_private_check_child_token(
+            field_token = mmay_checker_private_check_child_token(
                 field,
-                RUDA_TOKEN_IDENTIFIER,
+                MMAY_TOKEN_IDENTIFIER,
                 0
             );
             if (field_token == NULL || field_token->synthetic) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 return false;
             }
             field_name.snapshot = function->checker->ast->snapshot;
             field_name.start = field_token->start;
             field_name.end = field_token->end;
-            if (ruda_checker_private_checker_find_enum_payload(
+            if (mmay_checker_private_checker_find_enum_payload(
                     function->checker,
                     alternative->variant,
                     field_name,
                     &payload_index
                 ) == NULL) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 return false;
             }
-            binding = ruda_checker_private_check_child_node_any(field, 0);
-            if (!ruda_checker_private_bind_enum_match_payload(
+            binding = mmay_checker_private_check_child_node_any(field, 0);
+            if (!mmay_checker_private_bind_enum_match_payload(
                     function,
                     alternative,
                     enum_id,
@@ -914,27 +914,27 @@ static bool ruda_checker_compile_nested_record_pattern(
         }
         return field_ordinal == alternative->variant->payload.length;
     }
-    ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+    mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
     return false;
 }
 
- bool ruda_checker_private_compile_record_match_bindings(
-    RudaFunctionChecker *function,
-    const RudaCheckRecordMatchAlternative *alternative,
-    RudaCheckRecordDeclaration *record_declaration,
-    RudaMirRecordId record,
-    RudaMirRegister receiver
+ bool mmay_checker_private_compile_record_match_bindings(
+    MarimayFunctionChecker *function,
+    const MarimayCheckRecordMatchAlternative *alternative,
+    MarimayCheckRecordDeclaration *record_declaration,
+    MarimayMirRecordId record,
+    MarimayMirRegister receiver
 ) {
-    const RudaAstNode *named = NULL;
-    const RudaAstNode *fields = NULL;
+    const MarimayAstNode *named = NULL;
+    const MarimayAstNode *fields = NULL;
     size_t field_ordinal = 0;
     if (alternative == NULL || record_declaration == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
     if (!alternative->is_record_pattern) {
         return !alternative->has_catch_binding
-            || ruda_checker_private_assign_match_local(
+            || mmay_checker_private_assign_match_local(
                 function,
                 alternative->catch_binding,
                 record_declaration->type,
@@ -943,73 +943,73 @@ static bool ruda_checker_compile_nested_record_pattern(
                 alternative->pattern->end
             );
     }
-    named = ruda_checker_private_check_child_node(
+    named = mmay_checker_private_check_child_node(
         alternative->pattern,
-        RUDA_SYNTAX_NAMED_PATTERN,
+        MMAY_SYNTAX_NAMED_PATTERN,
         0
     );
-    fields = ruda_checker_private_check_child_node(
+    fields = mmay_checker_private_check_child_node(
         named,
-        RUDA_SYNTAX_PATTERN_FIELDS,
+        MMAY_SYNTAX_PATTERN_FIELDS,
         0
     );
     if (named == NULL || fields == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
     for (;;) {
-        const RudaAstNode *field = ruda_checker_private_check_child_node(
+        const MarimayAstNode *field = mmay_checker_private_check_child_node(
             fields,
-            RUDA_SYNTAX_PATTERN_FIELD,
+            MMAY_SYNTAX_PATTERN_FIELD,
             field_ordinal
         );
-        const RudaSyntaxToken *field_token = NULL;
-        const RudaAstNode *binding = NULL;
-        RudaCheckRecordFieldDeclaration *field_declaration = NULL;
-        RudaCheckName field_name;
-        RudaExpressionValue projected;
+        const MarimaySyntaxToken *field_token = NULL;
+        const MarimayAstNode *binding = NULL;
+        MarimayCheckRecordFieldDeclaration *field_declaration = NULL;
+        MarimayCheckName field_name;
+        MarimayExpressionValue projected;
         size_t field_index = 0;
         if (field == NULL) {
             break;
         }
         field_ordinal += 1;
-        field_token = ruda_checker_private_check_child_token(
+        field_token = mmay_checker_private_check_child_token(
             field,
-            RUDA_TOKEN_IDENTIFIER,
+            MMAY_TOKEN_IDENTIFIER,
             0
         );
         if (field_token == NULL || field_token->synthetic) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
         field_name.snapshot = function->checker->ast->snapshot;
         field_name.start = field_token->start;
         field_name.end = field_token->end;
-        binding = ruda_checker_private_check_child_node_any(field, 0);
-        if (binding != NULL && binding->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
+        binding = mmay_checker_private_check_child_node_any(field, 0);
+        if (binding != NULL && binding->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
             continue;
         }
-        field_declaration = ruda_checker_private_checker_find_record_field(
+        field_declaration = mmay_checker_private_checker_find_record_field(
             function->checker,
             record_declaration,
             field_name,
             &field_index
         );
         if (field_declaration == NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
         memset(&projected, 0, sizeof(projected));
-        if (!ruda_checker_private_function_emit_record_access(
-                function, RUDA_MIR_RECORD_GET, field_declaration->type,
-                receiver, RUDA_MIR_NO_REGISTER, record, field_index,
+        if (!mmay_checker_private_function_emit_record_access(
+                function, MMAY_MIR_RECORD_GET, field_declaration->type,
+                receiver, MMAY_MIR_NO_REGISTER, record, field_index,
                 binding != NULL ? binding->start : field_name.start,
                 binding != NULL ? binding->end : field_name.end, &projected
             ) || (binding == NULL
-                ? !ruda_checker_private_assign_match_local(
+                ? !mmay_checker_private_assign_match_local(
                     function, field_name, field_declaration->type,
                     projected.register_id, field_name.start, field_name.end
-                ) : !ruda_checker_compile_nested_record_pattern(
+                ) : !mmay_checker_compile_nested_record_pattern(
                     function, binding, field_declaration->type,
                     projected.register_id
                 ))) {

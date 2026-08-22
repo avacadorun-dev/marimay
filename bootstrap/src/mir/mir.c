@@ -1,19 +1,19 @@
 #include "mir_internal.h"
-#include "ruda/base/utf8.h"
+#include "mmay/base/utf8.h"
 #include <string.h>
-bool ruda_mir_reference_is_invalid(RudaMirReference reference) {
+bool mmay_mir_reference_is_invalid(MarimayMirReference reference) {
     return reference.execution_provenance == UINT64_MAX
         && reference.slot == UINT32_MAX;
 }
-bool ruda_mir_reference_equal(
-    RudaMirReference left,
-    RudaMirReference right
+bool mmay_mir_reference_equal(
+    MarimayMirReference left,
+    MarimayMirReference right
 ) {
     return left.execution_provenance == right.execution_provenance
         && left.slot == right.slot;
 }
-RudaMirFunctionOptions ruda_mir_function_default_options(void) {
-    RudaMirFunctionOptions options;
+MarimayMirFunctionOptions mmay_mir_function_default_options(void) {
+    MarimayMirFunctionOptions options;
     options.max_registers = 100000;
     options.max_blocks = 10000;
     options.max_instructions = 1000000;
@@ -39,14 +39,14 @@ RudaMirFunctionOptions ruda_mir_function_default_options(void) {
     options.max_verify_work = 100000000;
     return options;
 }
-bool ruda_mir_function_init(
-    RudaMirFunction *function,
-    RudaAllocator allocator,
-    RudaSymbolId symbol,
-    const RudaTypeId *parameter_types,
+bool mmay_mir_function_init(
+    MarimayMirFunction *function,
+    MarimayAllocator allocator,
+    MarimaySymbolId symbol,
+    const MarimayTypeId *parameter_types,
     size_t parameter_count,
-    RudaTypeId result_type,
-    RudaMirFunctionOptions options
+    MarimayTypeId result_type,
+    MarimayMirFunctionOptions options
 ) {
     size_t index = 0;
     bool registers_initialized = false;
@@ -74,7 +74,7 @@ bool ruda_mir_function_init(
         || (parameter_types == NULL && parameter_count != 0)
         || parameter_count > options.max_registers
         || parameter_count > UINT32_MAX
-        || result_type == RUDA_TYPE_INVALID || options.max_registers == 0
+        || result_type == MMAY_TYPE_INVALID || options.max_registers == 0
         || options.max_registers > UINT32_MAX || options.max_blocks == 0
         || options.max_blocks > UINT32_MAX || options.max_instructions == 0
         || options.max_calls == 0 || options.max_calls > UINT32_MAX
@@ -109,105 +109,105 @@ bool ruda_mir_function_init(
         return false;
     }
     for (index = 0; index < parameter_count; index += 1) {
-        if (parameter_types[index] == RUDA_TYPE_INVALID) {
+        if (parameter_types[index] == MMAY_TYPE_INVALID) {
             return false;
         }
     }
     memset(function, 0, sizeof(*function));
-    registers_initialized = ruda_vector_init(
+    registers_initialized = mmay_vector_init(
         &function->register_types,
         allocator,
-        sizeof(RudaTypeId)
+        sizeof(MarimayTypeId)
     );
-    blocks_initialized = ruda_vector_init(
+    blocks_initialized = mmay_vector_init(
         &function->blocks,
         allocator,
-        sizeof(RudaMirBlock)
+        sizeof(MarimayMirBlock)
     );
-    calls_initialized = ruda_vector_init(
+    calls_initialized = mmay_vector_init(
         &function->calls,
         allocator,
-        sizeof(RudaMirCall)
+        sizeof(MarimayMirCall)
     );
-    call_arguments_initialized = ruda_vector_init(
+    call_arguments_initialized = mmay_vector_init(
         &function->call_arguments,
         allocator,
-        sizeof(RudaMirCallArgument)
+        sizeof(MarimayMirCallArgument)
     );
-    records_initialized = ruda_vector_init(
+    records_initialized = mmay_vector_init(
         &function->records,
         allocator,
-        sizeof(RudaMirRecord)
+        sizeof(MarimayMirRecord)
     );
-    record_fields_initialized = ruda_vector_init(
+    record_fields_initialized = mmay_vector_init(
         &function->record_fields,
         allocator,
-        sizeof(RudaMirRecordField)
+        sizeof(MarimayMirRecordField)
     );
-    record_constructions_initialized = ruda_vector_init(
+    record_constructions_initialized = mmay_vector_init(
         &function->record_constructions,
         allocator,
-        sizeof(RudaMirRecordConstruction)
+        sizeof(MarimayMirRecordConstruction)
     );
-    record_arguments_initialized = ruda_vector_init(
+    record_arguments_initialized = mmay_vector_init(
         &function->record_arguments,
         allocator,
-        sizeof(RudaMirRecordArgument)
+        sizeof(MarimayMirRecordArgument)
     );
-    enums_initialized = ruda_vector_init(
+    enums_initialized = mmay_vector_init(
         &function->enums,
         allocator,
-        sizeof(RudaMirEnum)
+        sizeof(MarimayMirEnum)
     );
-    enum_variants_initialized = ruda_vector_init(
+    enum_variants_initialized = mmay_vector_init(
         &function->enum_variants,
         allocator,
-        sizeof(RudaMirEnumVariant)
+        sizeof(MarimayMirEnumVariant)
     );
-    enum_payloads_initialized = ruda_vector_init(
+    enum_payloads_initialized = mmay_vector_init(
         &function->enum_payloads,
         allocator,
-        sizeof(RudaMirEnumPayload)
+        sizeof(MarimayMirEnumPayload)
     );
-    enum_constructions_initialized = ruda_vector_init(
+    enum_constructions_initialized = mmay_vector_init(
         &function->enum_constructions,
         allocator,
-        sizeof(RudaMirEnumConstruction)
+        sizeof(MarimayMirEnumConstruction)
     );
-    enum_arguments_initialized = ruda_vector_init(
+    enum_arguments_initialized = mmay_vector_init(
         &function->enum_arguments,
         allocator,
-        sizeof(RudaMirEnumArgument)
+        sizeof(MarimayMirEnumArgument)
     );
-    string_constants_initialized = ruda_vector_init(
+    string_constants_initialized = mmay_vector_init(
         &function->string_constants,
         allocator,
-        sizeof(RudaMirStringConstant)
+        sizeof(MarimayMirStringConstant)
     );
-    arrays_initialized = ruda_vector_init(
+    arrays_initialized = mmay_vector_init(
         &function->arrays,
         allocator,
-        sizeof(RudaMirArray)
+        sizeof(MarimayMirArray)
     );
-    array_constructions_initialized = ruda_vector_init(
+    array_constructions_initialized = mmay_vector_init(
         &function->array_constructions,
         allocator,
-        sizeof(RudaMirArrayConstruction)
+        sizeof(MarimayMirArrayConstruction)
     );
-    array_arguments_initialized = ruda_vector_init(
+    array_arguments_initialized = mmay_vector_init(
         &function->array_arguments,
         allocator,
-        sizeof(RudaMirArrayArgument)
+        sizeof(MarimayMirArrayArgument)
     );
-    interfaces_initialized = ruda_vector_init(
-        &function->interfaces, allocator, sizeof(RudaMirInterface)
+    interfaces_initialized = mmay_vector_init(
+        &function->interfaces, allocator, sizeof(MarimayMirInterface)
     );
-    interface_constructions_initialized = ruda_vector_init(
+    interface_constructions_initialized = mmay_vector_init(
         &function->interface_constructions, allocator,
-        sizeof(RudaMirInterfaceConstruction)
+        sizeof(MarimayMirInterfaceConstruction)
     );
-    interface_methods_initialized = ruda_vector_init(
-        &function->interface_methods, allocator, sizeof(RudaSymbolId)
+    interface_methods_initialized = mmay_vector_init(
+        &function->interface_methods, allocator, sizeof(MarimaySymbolId)
     );
     if (!registers_initialized || !blocks_initialized || !calls_initialized
         || !call_arguments_initialized || !records_initialized
@@ -219,70 +219,70 @@ bool ruda_mir_function_init(
         || !array_constructions_initialized || !array_arguments_initialized
         || !interfaces_initialized || !interface_constructions_initialized
         || !interface_methods_initialized
-        || (parameter_count != 0 && !ruda_vector_append(
+        || (parameter_count != 0 && !mmay_vector_append(
             &function->register_types,
             parameter_types,
             parameter_count
         ))) {
         if (interface_methods_initialized) {
-            ruda_vector_dispose(&function->interface_methods);
+            mmay_vector_dispose(&function->interface_methods);
         }
         if (interface_constructions_initialized) {
-            ruda_vector_dispose(&function->interface_constructions);
+            mmay_vector_dispose(&function->interface_constructions);
         }
         if (interfaces_initialized) {
-            ruda_vector_dispose(&function->interfaces);
+            mmay_vector_dispose(&function->interfaces);
         }
         if (array_arguments_initialized) {
-            ruda_vector_dispose(&function->array_arguments);
+            mmay_vector_dispose(&function->array_arguments);
         }
         if (array_constructions_initialized) {
-            ruda_vector_dispose(&function->array_constructions);
+            mmay_vector_dispose(&function->array_constructions);
         }
         if (arrays_initialized) {
-            ruda_vector_dispose(&function->arrays);
+            mmay_vector_dispose(&function->arrays);
         }
         if (string_constants_initialized) {
-            ruda_vector_dispose(&function->string_constants);
+            mmay_vector_dispose(&function->string_constants);
         }
         if (enum_arguments_initialized) {
-            ruda_vector_dispose(&function->enum_arguments);
+            mmay_vector_dispose(&function->enum_arguments);
         }
         if (enum_constructions_initialized) {
-            ruda_vector_dispose(&function->enum_constructions);
+            mmay_vector_dispose(&function->enum_constructions);
         }
         if (enum_payloads_initialized) {
-            ruda_vector_dispose(&function->enum_payloads);
+            mmay_vector_dispose(&function->enum_payloads);
         }
         if (enum_variants_initialized) {
-            ruda_vector_dispose(&function->enum_variants);
+            mmay_vector_dispose(&function->enum_variants);
         }
         if (enums_initialized) {
-            ruda_vector_dispose(&function->enums);
+            mmay_vector_dispose(&function->enums);
         }
         if (record_arguments_initialized) {
-            ruda_vector_dispose(&function->record_arguments);
+            mmay_vector_dispose(&function->record_arguments);
         }
         if (record_constructions_initialized) {
-            ruda_vector_dispose(&function->record_constructions);
+            mmay_vector_dispose(&function->record_constructions);
         }
         if (record_fields_initialized) {
-            ruda_vector_dispose(&function->record_fields);
+            mmay_vector_dispose(&function->record_fields);
         }
         if (records_initialized) {
-            ruda_vector_dispose(&function->records);
+            mmay_vector_dispose(&function->records);
         }
         if (call_arguments_initialized) {
-            ruda_vector_dispose(&function->call_arguments);
+            mmay_vector_dispose(&function->call_arguments);
         }
         if (calls_initialized) {
-            ruda_vector_dispose(&function->calls);
+            mmay_vector_dispose(&function->calls);
         }
         if (blocks_initialized) {
-            ruda_vector_dispose(&function->blocks);
+            mmay_vector_dispose(&function->blocks);
         }
         if (registers_initialized) {
-            ruda_vector_dispose(&function->register_types);
+            mmay_vector_dispose(&function->register_types);
         }
         memset(function, 0, sizeof(*function));
         return false;
@@ -295,112 +295,112 @@ bool ruda_mir_function_init(
     function->initialized = true;
     return true;
 }
-void ruda_mir_function_dispose(RudaMirFunction *function) {
+void mmay_mir_function_dispose(MarimayMirFunction *function) {
     size_t index = 0;
     if (function == NULL || !function->initialized) {
         return;
     }
     for (index = 0; index < function->blocks.length; index += 1) {
-        RudaMirBlock *block = ruda_vector_at(&function->blocks, index);
+        MarimayMirBlock *block = mmay_vector_at(&function->blocks, index);
         if (block != NULL && block->initialized) {
-            ruda_vector_dispose(&block->instructions);
+            mmay_vector_dispose(&block->instructions);
             memset(block, 0, sizeof(*block));
         }
     }
     for (index = 0; index < function->string_constants.length; index += 1) {
-        RudaMirStringConstant *constant = ruda_vector_at(
+        MarimayMirStringConstant *constant = mmay_vector_at(
             &function->string_constants,
             index
         );
         if (constant != NULL) {
-            ruda_owned_bytes_dispose(&constant->value);
+            mmay_owned_bytes_dispose(&constant->value);
         }
     }
-    ruda_vector_dispose(&function->string_constants);
-    ruda_vector_dispose(&function->interface_methods);
-    ruda_vector_dispose(&function->interface_constructions);
-    ruda_vector_dispose(&function->interfaces);
-    ruda_vector_dispose(&function->array_arguments);
-    ruda_vector_dispose(&function->array_constructions);
-    ruda_vector_dispose(&function->arrays);
-    ruda_vector_dispose(&function->call_arguments);
-    ruda_vector_dispose(&function->calls);
-    ruda_vector_dispose(&function->record_arguments);
-    ruda_vector_dispose(&function->record_constructions);
-    ruda_vector_dispose(&function->record_fields);
-    ruda_vector_dispose(&function->records);
-    ruda_vector_dispose(&function->enum_arguments);
-    ruda_vector_dispose(&function->enum_constructions);
-    ruda_vector_dispose(&function->enum_payloads);
-    ruda_vector_dispose(&function->enum_variants);
-    ruda_vector_dispose(&function->enums);
-    ruda_vector_dispose(&function->blocks);
-    ruda_vector_dispose(&function->register_types);
+    mmay_vector_dispose(&function->string_constants);
+    mmay_vector_dispose(&function->interface_methods);
+    mmay_vector_dispose(&function->interface_constructions);
+    mmay_vector_dispose(&function->interfaces);
+    mmay_vector_dispose(&function->array_arguments);
+    mmay_vector_dispose(&function->array_constructions);
+    mmay_vector_dispose(&function->arrays);
+    mmay_vector_dispose(&function->call_arguments);
+    mmay_vector_dispose(&function->calls);
+    mmay_vector_dispose(&function->record_arguments);
+    mmay_vector_dispose(&function->record_constructions);
+    mmay_vector_dispose(&function->record_fields);
+    mmay_vector_dispose(&function->records);
+    mmay_vector_dispose(&function->enum_arguments);
+    mmay_vector_dispose(&function->enum_constructions);
+    mmay_vector_dispose(&function->enum_payloads);
+    mmay_vector_dispose(&function->enum_variants);
+    mmay_vector_dispose(&function->enums);
+    mmay_vector_dispose(&function->blocks);
+    mmay_vector_dispose(&function->register_types);
     memset(function, 0, sizeof(*function));
 }
-bool ruda_mir_add_register(
-    RudaMirFunction *function,
-    RudaTypeId type,
-    RudaMirRegister *result
+bool mmay_mir_add_register(
+    MarimayMirFunction *function,
+    MarimayTypeId type,
+    MarimayMirRegister *result
 ) {
     if (function == NULL || !function->initialized || result == NULL
-        || type == RUDA_TYPE_INVALID
+        || type == MMAY_TYPE_INVALID
         || function->register_types.length >= function->options.max_registers
         || function->register_types.length >= UINT32_MAX) {
         return false;
     }
-    if (!ruda_vector_push(&function->register_types, &type)) {
+    if (!mmay_vector_push(&function->register_types, &type)) {
         return false;
     }
-    *result = (RudaMirRegister)(function->register_types.length - 1);
+    *result = (MarimayMirRegister)(function->register_types.length - 1);
     return true;
 }
-bool ruda_mir_add_block(RudaMirFunction *function, RudaMirBlockId *result) {
-    RudaMirBlock block;
+bool mmay_mir_add_block(MarimayMirFunction *function, MarimayMirBlockId *result) {
+    MarimayMirBlock block;
     if (function == NULL || !function->initialized || result == NULL
         || function->blocks.length >= function->options.max_blocks
         || function->blocks.length >= UINT32_MAX) {
         return false;
     }
     memset(&block, 0, sizeof(block));
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &block.instructions,
             function->allocator,
-            sizeof(RudaMirInstruction)
+            sizeof(MarimayMirInstruction)
         )) {
         return false;
     }
     block.allocator = function->allocator;
-    block.terminator.kind = RUDA_MIR_TERMINATOR_UNSET;
-    block.terminator.value = RUDA_MIR_NO_REGISTER;
-    block.terminator.call = RUDA_MIR_NO_CALL;
-    block.terminator.target = RUDA_MIR_NO_BLOCK;
-    block.terminator.otherwise = RUDA_MIR_NO_BLOCK;
+    block.terminator.kind = MMAY_MIR_TERMINATOR_UNSET;
+    block.terminator.value = MMAY_MIR_NO_REGISTER;
+    block.terminator.call = MMAY_MIR_NO_CALL;
+    block.terminator.target = MMAY_MIR_NO_BLOCK;
+    block.terminator.otherwise = MMAY_MIR_NO_BLOCK;
     block.initialized = true;
-    if (!ruda_vector_push(&function->blocks, &block)) {
-        ruda_vector_dispose(&block.instructions);
+    if (!mmay_vector_push(&function->blocks, &block)) {
+        mmay_vector_dispose(&block.instructions);
         return false;
     }
-    *result = (RudaMirBlockId)(function->blocks.length - 1);
+    *result = (MarimayMirBlockId)(function->blocks.length - 1);
     return true;
 }
-bool ruda_mir_add_call(
-    RudaMirFunction *function,
-    RudaSymbolId callee,
-    RudaTypeId result_type,
-    const RudaMirCallArgument *arguments,
+bool mmay_mir_add_call(
+    MarimayMirFunction *function,
+    MarimaySymbolId callee,
+    MarimayTypeId result_type,
+    const MarimayMirCallArgument *arguments,
     size_t argument_count,
-    RudaMirCallId *result
+    MarimayMirCallId *result
 ) {
-    RudaMirCall call;
+    MarimayMirCall call;
     size_t new_argument_count = 0;
     size_t index = 0;
     if (function == NULL || !function->initialized || result == NULL
-        || result_type == RUDA_TYPE_INVALID
+        || result_type == MMAY_TYPE_INVALID
         || (arguments == NULL && argument_count != 0)
         || function->calls.length >= function->options.max_calls
         || function->calls.length >= UINT32_MAX
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->call_arguments.length,
             argument_count,
             &new_argument_count
@@ -408,19 +408,19 @@ bool ruda_mir_add_call(
         return false;
     }
     for (index = 0; index < argument_count; index += 1) {
-        const RudaTypeId *actual_type = ruda_vector_at_const(
+        const MarimayTypeId *actual_type = mmay_vector_at_const(
             &function->register_types,
             arguments[index].register_id
         );
-        if (arguments[index].type == RUDA_TYPE_INVALID
+        if (arguments[index].type == MMAY_TYPE_INVALID
             || actual_type == NULL || *actual_type != arguments[index].type) {
             return false;
         }
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->calls,
             function->calls.length + 1
-        ) || !ruda_vector_reserve(
+        ) || !mmay_vector_reserve(
             &function->call_arguments,
             new_argument_count
         )) {
@@ -431,54 +431,54 @@ bool ruda_mir_add_call(
     call.interface_slot = UINT32_MAX;
     call.argument_start = function->call_arguments.length;
     call.argument_count = argument_count;
-    if (!ruda_vector_append(
+    if (!mmay_vector_append(
             &function->call_arguments,
             arguments,
             argument_count
-        ) || !ruda_vector_push(&function->calls, &call)) {
+        ) || !mmay_vector_push(&function->calls, &call)) {
         function->call_arguments.length = call.argument_start;
         return false;
     }
-    *result = (RudaMirCallId)(function->calls.length - 1);
+    *result = (MarimayMirCallId)(function->calls.length - 1);
     return true;
 }
 
-bool ruda_mir_set_call_interface_slot(
-    RudaMirFunction *function,
-    RudaMirCallId call,
+bool mmay_mir_set_call_interface_slot(
+    MarimayMirFunction *function,
+    MarimayMirCallId call,
     uint32_t slot
 ) {
-    RudaMirCall *stored = function != NULL && function->initialized
-        ? ruda_vector_at(&function->calls, call) : NULL;
+    MarimayMirCall *stored = function != NULL && function->initialized
+        ? mmay_vector_at(&function->calls, call) : NULL;
     if (stored == NULL) {
         return false;
     }
     stored->interface_slot = slot;
     return true;
 }
-bool ruda_mir_add_record(
-    RudaMirFunction *function,
-    RudaTypeId type,
-    const RudaMirRecordField *fields,
+bool mmay_mir_add_record(
+    MarimayMirFunction *function,
+    MarimayTypeId type,
+    const MarimayMirRecordField *fields,
     size_t field_count,
-    RudaMirRecordId *result
+    MarimayMirRecordId *result
 ) {
     size_t new_field_count = 0;
     size_t record_index = 0;
     size_t field_index = 0;
-    RudaMirRecord record;
+    MarimayMirRecord record;
     if (function == NULL || !function->initialized || result == NULL
-        || type == RUDA_TYPE_INVALID || (fields == NULL && field_count != 0)) {
+        || type == MMAY_TYPE_INVALID || (fields == NULL && field_count != 0)) {
         return false;
     }
     for (field_index = 0; field_index < field_count; field_index += 1) {
-        if (fields[field_index].type == RUDA_TYPE_INVALID) {
+        if (fields[field_index].type == MMAY_TYPE_INVALID) {
             return false;
         }
     }
     for (record_index = 0; record_index < function->records.length;
         record_index += 1) {
-        const RudaMirRecord *existing = ruda_vector_at_const(
+        const MarimayMirRecord *existing = mmay_vector_at_const(
             &function->records,
             record_index
         );
@@ -488,8 +488,8 @@ bool ruda_mir_add_record(
             }
             for (field_index = 0; field_index < field_count;
                 field_index += 1) {
-                const RudaMirRecordField *existing_field =
-                    ruda_vector_at_const(
+                const MarimayMirRecordField *existing_field =
+                    mmay_vector_at_const(
                         &function->record_fields,
                         existing->field_start + field_index
                     );
@@ -500,13 +500,13 @@ bool ruda_mir_add_record(
                     return false;
                 }
             }
-            *result = (RudaMirRecordId)record_index;
+            *result = (MarimayMirRecordId)record_index;
             return true;
         }
     }
     if (function->records.length >= function->options.max_record_layouts
         || function->records.length >= UINT32_MAX
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->record_fields.length,
             field_count,
             &new_field_count
@@ -516,63 +516,63 @@ bool ruda_mir_add_record(
     record.type = type;
     record.field_start = function->record_fields.length;
     record.field_count = field_count;
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->records,
             function->records.length + 1
-        ) || !ruda_vector_reserve(
+        ) || !mmay_vector_reserve(
             &function->record_fields,
             new_field_count
-        ) || !ruda_vector_append(
+        ) || !mmay_vector_append(
             &function->record_fields,
             fields,
             field_count
         )) {
         return false;
     }
-    if (!ruda_vector_push(&function->records, &record)) {
+    if (!mmay_vector_push(&function->records, &record)) {
         function->record_fields.length = record.field_start;
         return false;
     }
-    *result = (RudaMirRecordId)(function->records.length - 1);
+    *result = (MarimayMirRecordId)(function->records.length - 1);
     return true;
 }
-bool ruda_mir_add_record_construction(
-    RudaMirFunction *function,
-    RudaMirRecordId record_id,
-    const RudaMirRecordArgument *arguments,
+bool mmay_mir_add_record_construction(
+    MarimayMirFunction *function,
+    MarimayMirRecordId record_id,
+    const MarimayMirRecordArgument *arguments,
     size_t argument_count,
-    RudaMirRecordConstructionId *result
+    MarimayMirRecordConstructionId *result
 ) {
-    const RudaMirRecord *record = NULL;
+    const MarimayMirRecord *record = NULL;
     size_t new_argument_count = 0;
     size_t index = 0;
-    RudaMirRecordConstruction construction;
+    MarimayMirRecordConstruction construction;
     if (function == NULL || !function->initialized || result == NULL
         || (arguments == NULL && argument_count != 0)
         || function->record_constructions.length
             >= function->options.max_record_constructions
         || function->record_constructions.length >= UINT32_MAX
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->record_arguments.length,
             argument_count,
             &new_argument_count
         ) || new_argument_count > function->options.max_record_arguments) {
         return false;
     }
-    record = ruda_vector_at_const(&function->records, record_id);
+    record = mmay_vector_at_const(&function->records, record_id);
     if (record == NULL || record->field_count != argument_count) {
         return false;
     }
     for (index = 0; index < argument_count; index += 1) {
-        const RudaTypeId *actual_type = ruda_vector_at_const(
+        const MarimayTypeId *actual_type = mmay_vector_at_const(
             &function->register_types,
             arguments[index].register_id
         );
-        const RudaMirRecordField *field = ruda_vector_at_const(
+        const MarimayMirRecordField *field = mmay_vector_at_const(
             &function->record_fields,
             record->field_start + index
         );
-        if (arguments[index].type == RUDA_TYPE_INVALID || actual_type == NULL
+        if (arguments[index].type == MMAY_TYPE_INVALID || actual_type == NULL
             || field == NULL || *actual_type != arguments[index].type
             || field->type != arguments[index].type) {
             return false;
@@ -581,40 +581,40 @@ bool ruda_mir_add_record_construction(
     construction.record = record_id;
     construction.argument_start = function->record_arguments.length;
     construction.argument_count = argument_count;
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->record_constructions,
             function->record_constructions.length + 1
-        ) || !ruda_vector_reserve(
+        ) || !mmay_vector_reserve(
             &function->record_arguments,
             new_argument_count
-        ) || !ruda_vector_append(
+        ) || !mmay_vector_append(
             &function->record_arguments,
             arguments,
             argument_count
         )) {
         return false;
     }
-    if (!ruda_vector_push(
+    if (!mmay_vector_push(
             &function->record_constructions,
             &construction
         )) {
         function->record_arguments.length = construction.argument_start;
         return false;
     }
-    *result = (RudaMirRecordConstructionId)(
+    *result = (MarimayMirRecordConstructionId)(
         function->record_constructions.length - 1
     );
     return true;
 }
-bool ruda_mir_add_enum_with_symbol(
-    RudaMirFunction *function,
-    RudaSymbolId symbol,
-    RudaTypeId type,
-    const RudaMirEnumVariant *variants,
+bool mmay_mir_add_enum_with_symbol(
+    MarimayMirFunction *function,
+    MarimaySymbolId symbol,
+    MarimayTypeId type,
+    const MarimayMirEnumVariant *variants,
     size_t variant_count,
-    const RudaMirEnumPayload *payloads,
+    const MarimayMirEnumPayload *payloads,
     size_t payload_count,
-    RudaMirEnumId *result
+    MarimayMirEnumId *result
 ) {
     size_t enum_index = 0;
     size_t variant_index = 0;
@@ -622,9 +622,9 @@ bool ruda_mir_add_enum_with_symbol(
     size_t new_variant_count = 0;
     size_t new_payload_count = 0;
     size_t payload_cursor = 0;
-    RudaMirEnum enum_layout;
+    MarimayMirEnum enum_layout;
     if (function == NULL || !function->initialized || result == NULL
-        || type == RUDA_TYPE_INVALID
+        || type == MMAY_TYPE_INVALID
         || (variants == NULL && variant_count != 0)
         || (payloads == NULL && payload_count != 0)) {
         return false;
@@ -632,15 +632,15 @@ bool ruda_mir_add_enum_with_symbol(
     for (variant_index = 0; variant_index < variant_count;
         variant_index += 1) {
         size_t payload_end = 0;
-        if (variants[variant_index].kind < RUDA_MIR_ENUM_VARIANT_UNIT
-            || variants[variant_index].kind > RUDA_MIR_ENUM_VARIANT_NAMED
+        if (variants[variant_index].kind < MMAY_MIR_ENUM_VARIANT_UNIT
+            || variants[variant_index].kind > MMAY_MIR_ENUM_VARIANT_NAMED
             || variants[variant_index].payload_start != payload_cursor
-            || !ruda_size_add(
+            || !mmay_size_add(
                 variants[variant_index].payload_start,
                 variants[variant_index].payload_count,
                 &payload_end
             ) || payload_end > payload_count
-            || (variants[variant_index].kind == RUDA_MIR_ENUM_VARIANT_UNIT
+            || (variants[variant_index].kind == MMAY_MIR_ENUM_VARIANT_UNIT
                 && variants[variant_index].payload_count != 0)) {
             return false;
         }
@@ -651,13 +651,13 @@ bool ruda_mir_add_enum_with_symbol(
     }
     for (payload_index = 0; payload_index < payload_count;
         payload_index += 1) {
-        if (payloads[payload_index].type == RUDA_TYPE_INVALID) {
+        if (payloads[payload_index].type == MMAY_TYPE_INVALID) {
             return false;
         }
     }
     for (enum_index = 0; enum_index < function->enums.length;
         enum_index += 1) {
-        const RudaMirEnum *existing = ruda_vector_at_const(
+        const MarimayMirEnum *existing = mmay_vector_at_const(
             &function->enums,
             enum_index
         );
@@ -671,7 +671,7 @@ bool ruda_mir_add_enum_with_symbol(
         }
         for (variant_index = 0; equal && variant_index < variant_count;
             variant_index += 1) {
-            const RudaMirEnumVariant *existing_variant = ruda_vector_at_const(
+            const MarimayMirEnumVariant *existing_variant = mmay_vector_at_const(
                 &function->enum_variants,
                 existing->variant_start + variant_index
             );
@@ -687,7 +687,7 @@ bool ruda_mir_add_enum_with_symbol(
         }
         for (payload_index = 0; equal && payload_index < payload_count;
             payload_index += 1) {
-            const RudaMirEnumPayload *existing_payload = ruda_vector_at_const(
+            const MarimayMirEnumPayload *existing_payload = mmay_vector_at_const(
                 &function->enum_payloads,
                 existing->payload_start + payload_index
             );
@@ -699,28 +699,28 @@ bool ruda_mir_add_enum_with_symbol(
         if (!equal) {
             return false;
         }
-        *result = (RudaMirEnumId)enum_index;
+        *result = (MarimayMirEnumId)enum_index;
         return true;
     }
     if (function->enums.length >= function->options.max_enum_layouts
         || function->enums.length >= UINT32_MAX
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->enum_variants.length,
             variant_count,
             &new_variant_count
         ) || new_variant_count > function->options.max_enum_variants
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->enum_payloads.length,
             payload_count,
             &new_payload_count
         ) || new_payload_count > function->options.max_enum_payloads
-        || !ruda_vector_reserve(
+        || !mmay_vector_reserve(
             &function->enums,
             function->enums.length + 1
-        ) || !ruda_vector_reserve(
+        ) || !mmay_vector_reserve(
             &function->enum_variants,
             new_variant_count
-        ) || !ruda_vector_reserve(
+        ) || !mmay_vector_reserve(
             &function->enum_payloads,
             new_payload_count
         )) {
@@ -732,7 +732,7 @@ bool ruda_mir_add_enum_with_symbol(
     enum_layout.variant_count = variant_count;
     enum_layout.payload_start = function->enum_payloads.length;
     enum_layout.payload_count = payload_count;
-    if (!ruda_vector_append(
+    if (!mmay_vector_append(
             &function->enum_payloads,
             payloads,
             payload_count
@@ -741,37 +741,37 @@ bool ruda_mir_add_enum_with_symbol(
     }
     for (variant_index = 0; variant_index < variant_count;
         variant_index += 1) {
-        RudaMirEnumVariant stored = variants[variant_index];
+        MarimayMirEnumVariant stored = variants[variant_index];
         stored.payload_start += enum_layout.payload_start;
-        if (!ruda_vector_push(&function->enum_variants, &stored)) {
+        if (!mmay_vector_push(&function->enum_variants, &stored)) {
             function->enum_variants.length = enum_layout.variant_start;
             function->enum_payloads.length = enum_layout.payload_start;
             return false;
         }
     }
-    if (!ruda_vector_push(&function->enums, &enum_layout)) {
+    if (!mmay_vector_push(&function->enums, &enum_layout)) {
         function->enum_variants.length = enum_layout.variant_start;
         function->enum_payloads.length = enum_layout.payload_start;
         return false;
     }
-    *result = (RudaMirEnumId)(function->enums.length - 1);
+    *result = (MarimayMirEnumId)(function->enums.length - 1);
     return true;
 }
 
-bool ruda_mir_add_enum(
-    RudaMirFunction *function,
-    RudaTypeId type,
-    const RudaMirEnumVariant *variants,
+bool mmay_mir_add_enum(
+    MarimayMirFunction *function,
+    MarimayTypeId type,
+    const MarimayMirEnumVariant *variants,
     size_t variant_count,
-    const RudaMirEnumPayload *payloads,
+    const MarimayMirEnumPayload *payloads,
     size_t payload_count,
-    RudaMirEnumId *result
+    MarimayMirEnumId *result
 ) {
-    RudaSymbolId symbol;
+    MarimaySymbolId symbol;
     memset(&symbol, 0, sizeof(symbol));
     memcpy(symbol.bytes, &type, sizeof(type));
     symbol.bytes[sizeof(type)] = 0x45;
-    return ruda_mir_add_enum_with_symbol(
+    return mmay_mir_add_enum_with_symbol(
         function,
         symbol,
         type,
@@ -782,34 +782,34 @@ bool ruda_mir_add_enum(
         result
     );
 }
-bool ruda_mir_add_enum_construction(
-    RudaMirFunction *function,
-    RudaMirEnumId enum_id,
+bool mmay_mir_add_enum_construction(
+    MarimayMirFunction *function,
+    MarimayMirEnumId enum_id,
     size_t variant,
-    const RudaMirEnumArgument *arguments,
+    const MarimayMirEnumArgument *arguments,
     size_t argument_count,
-    RudaMirEnumConstructionId *result
+    MarimayMirEnumConstructionId *result
 ) {
-    const RudaMirEnum *enum_layout = NULL;
-    const RudaMirEnumVariant *variant_layout = NULL;
+    const MarimayMirEnum *enum_layout = NULL;
+    const MarimayMirEnumVariant *variant_layout = NULL;
     size_t new_argument_count = 0;
     size_t index = 0;
-    RudaMirEnumConstruction construction;
+    MarimayMirEnumConstruction construction;
     if (function == NULL || !function->initialized || result == NULL
         || (arguments == NULL && argument_count != 0)
         || function->enum_constructions.length
             >= function->options.max_enum_constructions
         || function->enum_constructions.length >= UINT32_MAX
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->enum_arguments.length,
             argument_count,
             &new_argument_count
         ) || new_argument_count > function->options.max_enum_arguments) {
         return false;
     }
-    enum_layout = ruda_vector_at_const(&function->enums, enum_id);
+    enum_layout = mmay_vector_at_const(&function->enums, enum_id);
     variant_layout = enum_layout != NULL && variant < enum_layout->variant_count
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->enum_variants,
             enum_layout->variant_start + variant
         )
@@ -819,15 +819,15 @@ bool ruda_mir_add_enum_construction(
         return false;
     }
     for (index = 0; index < argument_count; index += 1) {
-        const RudaTypeId *actual_type = ruda_vector_at_const(
+        const MarimayTypeId *actual_type = mmay_vector_at_const(
             &function->register_types,
             arguments[index].register_id
         );
-        const RudaMirEnumPayload *payload = ruda_vector_at_const(
+        const MarimayMirEnumPayload *payload = mmay_vector_at_const(
             &function->enum_payloads,
             variant_layout->payload_start + index
         );
-        if (arguments[index].type == RUDA_TYPE_INVALID || actual_type == NULL
+        if (arguments[index].type == MMAY_TYPE_INVALID || actual_type == NULL
             || payload == NULL || *actual_type != arguments[index].type
             || payload->type != arguments[index].type) {
             return false;
@@ -837,51 +837,51 @@ bool ruda_mir_add_enum_construction(
     construction.variant = variant;
     construction.argument_start = function->enum_arguments.length;
     construction.argument_count = argument_count;
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->enum_constructions,
             function->enum_constructions.length + 1
-        ) || !ruda_vector_reserve(
+        ) || !mmay_vector_reserve(
             &function->enum_arguments,
             new_argument_count
-        ) || !ruda_vector_append(
+        ) || !mmay_vector_append(
             &function->enum_arguments,
             arguments,
             argument_count
         )) {
         return false;
     }
-    if (!ruda_vector_push(
+    if (!mmay_vector_push(
             &function->enum_constructions,
             &construction
         )) {
         function->enum_arguments.length = construction.argument_start;
         return false;
     }
-    *result = (RudaMirEnumConstructionId)(
+    *result = (MarimayMirEnumConstructionId)(
         function->enum_constructions.length - 1
     );
     return true;
 }
-bool ruda_mir_add_string_constant(
-    RudaMirFunction *function,
+bool mmay_mir_add_string_constant(
+    MarimayMirFunction *function,
     const unsigned char *bytes,
     size_t length,
-    RudaMirStringId *result
+    MarimayMirStringId *result
 ) {
-    RudaMirStringConstant constant;
+    MarimayMirStringConstant constant;
     size_t new_total = 0;
     if (function == NULL || !function->initialized || result == NULL
         || (bytes == NULL && length != 0)
-        || !ruda_utf8_validate((const char *)bytes, length, NULL)
+        || !mmay_utf8_validate((const char *)bytes, length, NULL)
         || function->string_constants.length
             >= function->options.max_string_constants
         || function->string_constants.length >= UINT32_MAX
-        || !ruda_size_add(function->string_bytes, length, &new_total)
+        || !mmay_size_add(function->string_bytes, length, &new_total)
         || new_total > function->options.max_string_bytes) {
         return false;
     }
     memset(&constant, 0, sizeof(constant));
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &constant.value,
             function->allocator,
             bytes,
@@ -889,29 +889,29 @@ bool ruda_mir_add_string_constant(
         )) {
         return false;
     }
-    if (!ruda_vector_push(&function->string_constants, &constant)) {
-        ruda_owned_bytes_dispose(&constant.value);
+    if (!mmay_vector_push(&function->string_constants, &constant)) {
+        mmay_owned_bytes_dispose(&constant.value);
         return false;
     }
     function->string_bytes = new_total;
-    *result = (RudaMirStringId)(function->string_constants.length - 1);
+    *result = (MarimayMirStringId)(function->string_constants.length - 1);
     return true;
 }
-bool ruda_mir_add_array(
-    RudaMirFunction *function,
-    RudaTypeId type,
-    RudaTypeId element_type,
-    RudaMirArrayId *result
+bool mmay_mir_add_array(
+    MarimayMirFunction *function,
+    MarimayTypeId type,
+    MarimayTypeId element_type,
+    MarimayMirArrayId *result
 ) {
     size_t index = 0;
-    RudaMirArray array;
+    MarimayMirArray array;
     if (function == NULL || !function->initialized || result == NULL
-        || type < RUDA_TYPE_FIRST_DYNAMIC
-        || element_type == RUDA_TYPE_INVALID) {
+        || type < MMAY_TYPE_FIRST_DYNAMIC
+        || element_type == MMAY_TYPE_INVALID) {
         return false;
     }
     for (index = 0; index < function->arrays.length; index += 1) {
-        const RudaMirArray *existing = ruda_vector_at_const(
+        const MarimayMirArray *existing = mmay_vector_at_const(
             &function->arrays,
             index
         );
@@ -919,7 +919,7 @@ bool ruda_mir_add_array(
             if (existing->element_type != element_type) {
                 return false;
             }
-            *result = (RudaMirArrayId)index;
+            *result = (MarimayMirArrayId)index;
             return true;
         }
     }
@@ -929,21 +929,21 @@ bool ruda_mir_add_array(
     }
     array.type = type;
     array.element_type = element_type;
-    if (!ruda_vector_push(&function->arrays, &array)) {
+    if (!mmay_vector_push(&function->arrays, &array)) {
         return false;
     }
-    *result = (RudaMirArrayId)(function->arrays.length - 1);
+    *result = (MarimayMirArrayId)(function->arrays.length - 1);
     return true;
 }
-bool ruda_mir_add_array_construction(
-    RudaMirFunction *function,
-    RudaMirArrayId array_id,
-    const RudaMirArrayArgument *arguments,
+bool mmay_mir_add_array_construction(
+    MarimayMirFunction *function,
+    MarimayMirArrayId array_id,
+    const MarimayMirArrayArgument *arguments,
     size_t argument_count,
-    RudaMirArrayConstructionId *result
+    MarimayMirArrayConstructionId *result
 ) {
-    const RudaMirArray *array = NULL;
-    RudaMirArrayConstruction construction;
+    const MarimayMirArray *array = NULL;
+    MarimayMirArrayConstruction construction;
     size_t new_argument_count = 0;
     size_t index = 0;
     if (function == NULL || !function->initialized || result == NULL
@@ -951,19 +951,19 @@ bool ruda_mir_add_array_construction(
         || function->array_constructions.length
             >= function->options.max_array_constructions
         || function->array_constructions.length >= UINT32_MAX
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->array_arguments.length,
             argument_count,
             &new_argument_count
         ) || new_argument_count > function->options.max_array_arguments) {
         return false;
     }
-    array = ruda_vector_at_const(&function->arrays, array_id);
+    array = mmay_vector_at_const(&function->arrays, array_id);
     if (array == NULL) {
         return false;
     }
     for (index = 0; index < argument_count; index += 1) {
-        const RudaTypeId *actual = ruda_vector_at_const(
+        const MarimayTypeId *actual = mmay_vector_at_const(
             &function->register_types,
             arguments[index].register_id
         );
@@ -975,214 +975,214 @@ bool ruda_mir_add_array_construction(
     construction.array = array_id;
     construction.argument_start = function->array_arguments.length;
     construction.argument_count = argument_count;
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &function->array_constructions,
             function->array_constructions.length + 1
-        ) || !ruda_vector_reserve(
+        ) || !mmay_vector_reserve(
             &function->array_arguments,
             new_argument_count
-        ) || !ruda_vector_append(
+        ) || !mmay_vector_append(
             &function->array_arguments,
             arguments,
             argument_count
         )) {
         return false;
     }
-    if (!ruda_vector_push(&function->array_constructions, &construction)) {
+    if (!mmay_vector_push(&function->array_constructions, &construction)) {
         function->array_arguments.length = construction.argument_start;
         return false;
     }
-    *result = (RudaMirArrayConstructionId)(
+    *result = (MarimayMirArrayConstructionId)(
         function->array_constructions.length - 1
     );
     return true;
 }
 
-bool ruda_mir_append_instruction(
-    RudaMirFunction *function,
-    RudaMirBlockId block,
-    const RudaMirInstruction *instruction
+bool mmay_mir_append_instruction(
+    MarimayMirFunction *function,
+    MarimayMirBlockId block,
+    const MarimayMirInstruction *instruction
 ) {
-    RudaMirBlock *target = NULL;
+    MarimayMirBlock *target = NULL;
     if (function == NULL || !function->initialized || instruction == NULL
         || block >= function->blocks.length
         || function->instruction_count >= function->options.max_instructions) {
         return false;
     }
-    target = ruda_vector_at(&function->blocks, block);
+    target = mmay_vector_at(&function->blocks, block);
     if (target == NULL || !target->initialized
-        || target->terminator.kind != RUDA_MIR_TERMINATOR_UNSET
-        || !ruda_vector_push(&target->instructions, instruction)) {
+        || target->terminator.kind != MMAY_MIR_TERMINATOR_UNSET
+        || !mmay_vector_push(&target->instructions, instruction)) {
         return false;
     }
     function->instruction_count += 1;
     return true;
 }
-bool ruda_mir_set_terminator(
-    RudaMirFunction *function,
-    RudaMirBlockId block,
-    RudaMirTerminator terminator
+bool mmay_mir_set_terminator(
+    MarimayMirFunction *function,
+    MarimayMirBlockId block,
+    MarimayMirTerminator terminator
 ) {
-    RudaMirBlock *target = NULL;
+    MarimayMirBlock *target = NULL;
     if (function == NULL || !function->initialized
         || block >= function->blocks.length
-        || terminator.kind == RUDA_MIR_TERMINATOR_UNSET) {
+        || terminator.kind == MMAY_MIR_TERMINATOR_UNSET) {
         return false;
     }
-    target = ruda_vector_at(&function->blocks, block);
+    target = mmay_vector_at(&function->blocks, block);
     if (target == NULL || !target->initialized
-        || target->terminator.kind != RUDA_MIR_TERMINATOR_UNSET) {
+        || target->terminator.kind != MMAY_MIR_TERMINATOR_UNSET) {
         return false;
     }
     target->terminator = terminator;
     return true;
 }
-RudaTypeId ruda_mir_register_type(
-    const RudaMirFunction *function,
-    RudaMirRegister register_id
+MarimayTypeId mmay_mir_register_type(
+    const MarimayMirFunction *function,
+    MarimayMirRegister register_id
 ) {
-    const RudaTypeId *type = register_id != RUDA_MIR_NO_REGISTER
-        ? ruda_vector_at_const(&function->register_types, register_id)
+    const MarimayTypeId *type = register_id != MMAY_MIR_NO_REGISTER
+        ? mmay_vector_at_const(&function->register_types, register_id)
         : NULL;
-    return type != NULL ? *type : RUDA_TYPE_INVALID;
+    return type != NULL ? *type : MMAY_TYPE_INVALID;
 }
-bool ruda_mir_register_is(
-    const RudaMirFunction *function,
-    RudaMirRegister register_id,
-    RudaTypeId type
+bool mmay_mir_register_is(
+    const MarimayMirFunction *function,
+    MarimayMirRegister register_id,
+    MarimayTypeId type
 ) {
-    return ruda_mir_register_type(function, register_id) == type;
+    return mmay_mir_register_type(function, register_id) == type;
 }
-const RudaMirCall *ruda_mir_call(
-    const RudaMirFunction *function,
-    RudaMirCallId call_id
+const MarimayMirCall *mmay_mir_call(
+    const MarimayMirFunction *function,
+    MarimayMirCallId call_id
 ) {
-    return call_id != RUDA_MIR_NO_CALL
-        ? ruda_vector_at_const(&function->calls, call_id)
+    return call_id != MMAY_MIR_NO_CALL
+        ? mmay_vector_at_const(&function->calls, call_id)
         : NULL;
 }
-const RudaMirCallArgument *ruda_mir_call_argument(
-    const RudaMirFunction *function,
+const MarimayMirCallArgument *mmay_mir_call_argument(
+    const MarimayMirFunction *function,
     size_t index
 ) {
-    return ruda_vector_at_const(&function->call_arguments, index);
+    return mmay_vector_at_const(&function->call_arguments, index);
 }
-const RudaMirRecord *ruda_mir_record(
-    const RudaMirFunction *function,
-    RudaMirRecordId record_id
+const MarimayMirRecord *mmay_mir_record(
+    const MarimayMirFunction *function,
+    MarimayMirRecordId record_id
 ) {
-    return record_id != RUDA_MIR_NO_RECORD
-        ? ruda_vector_at_const(&function->records, record_id)
+    return record_id != MMAY_MIR_NO_RECORD
+        ? mmay_vector_at_const(&function->records, record_id)
         : NULL;
 }
-const RudaMirRecordField *ruda_mir_record_field(
-    const RudaMirFunction *function,
-    const RudaMirRecord *record,
+const MarimayMirRecordField *mmay_mir_record_field(
+    const MarimayMirFunction *function,
+    const MarimayMirRecord *record,
     size_t field
 ) {
     return record != NULL && field < record->field_count
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->record_fields,
             record->field_start + field
         )
         : NULL;
 }
-const RudaMirRecordConstruction *ruda_mir_record_construction(
-    const RudaMirFunction *function,
-    RudaMirRecordConstructionId construction_id
+const MarimayMirRecordConstruction *mmay_mir_record_construction(
+    const MarimayMirFunction *function,
+    MarimayMirRecordConstructionId construction_id
 ) {
-    return construction_id != RUDA_MIR_NO_RECORD_CONSTRUCTION
-        ? ruda_vector_at_const(
+    return construction_id != MMAY_MIR_NO_RECORD_CONSTRUCTION
+        ? mmay_vector_at_const(
             &function->record_constructions,
             construction_id
         )
         : NULL;
 }
-const RudaMirRecordArgument *ruda_mir_record_argument(
-    const RudaMirFunction *function,
+const MarimayMirRecordArgument *mmay_mir_record_argument(
+    const MarimayMirFunction *function,
     size_t index
 ) {
-    return ruda_vector_at_const(&function->record_arguments, index);
+    return mmay_vector_at_const(&function->record_arguments, index);
 }
-const RudaMirEnum *ruda_mir_enum(
-    const RudaMirFunction *function,
-    RudaMirEnumId enum_id
+const MarimayMirEnum *mmay_mir_enum(
+    const MarimayMirFunction *function,
+    MarimayMirEnumId enum_id
 ) {
-    return enum_id != RUDA_MIR_NO_ENUM
-        ? ruda_vector_at_const(&function->enums, enum_id)
+    return enum_id != MMAY_MIR_NO_ENUM
+        ? mmay_vector_at_const(&function->enums, enum_id)
         : NULL;
 }
-const RudaMirEnumVariant *ruda_mir_enum_variant(
-    const RudaMirFunction *function,
-    const RudaMirEnum *enum_layout,
+const MarimayMirEnumVariant *mmay_mir_enum_variant(
+    const MarimayMirFunction *function,
+    const MarimayMirEnum *enum_layout,
     size_t variant
 ) {
     return enum_layout != NULL && variant < enum_layout->variant_count
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->enum_variants,
             enum_layout->variant_start + variant
         )
         : NULL;
 }
-const RudaMirEnumPayload *ruda_mir_enum_payload(
-    const RudaMirFunction *function,
-    const RudaMirEnumVariant *variant,
+const MarimayMirEnumPayload *mmay_mir_enum_payload(
+    const MarimayMirFunction *function,
+    const MarimayMirEnumVariant *variant,
     size_t payload
 ) {
     return variant != NULL && payload < variant->payload_count
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->enum_payloads,
             variant->payload_start + payload
         )
         : NULL;
 }
-const RudaMirEnumConstruction *ruda_mir_enum_construction(
-    const RudaMirFunction *function,
-    RudaMirEnumConstructionId construction_id
+const MarimayMirEnumConstruction *mmay_mir_enum_construction(
+    const MarimayMirFunction *function,
+    MarimayMirEnumConstructionId construction_id
 ) {
-    return construction_id != RUDA_MIR_NO_ENUM_CONSTRUCTION
-        ? ruda_vector_at_const(
+    return construction_id != MMAY_MIR_NO_ENUM_CONSTRUCTION
+        ? mmay_vector_at_const(
             &function->enum_constructions,
             construction_id
         )
         : NULL;
 }
-const RudaMirEnumArgument *ruda_mir_enum_argument(
-    const RudaMirFunction *function,
+const MarimayMirEnumArgument *mmay_mir_enum_argument(
+    const MarimayMirFunction *function,
     size_t index
 ) {
-    return ruda_vector_at_const(&function->enum_arguments, index);
+    return mmay_vector_at_const(&function->enum_arguments, index);
 }
-const RudaMirStringConstant *ruda_mir_string_constant(
-    const RudaMirFunction *function,
-    RudaMirStringId string_id
+const MarimayMirStringConstant *mmay_mir_string_constant(
+    const MarimayMirFunction *function,
+    MarimayMirStringId string_id
 ) {
-    return string_id != RUDA_MIR_NO_STRING
-        ? ruda_vector_at_const(&function->string_constants, string_id)
+    return string_id != MMAY_MIR_NO_STRING
+        ? mmay_vector_at_const(&function->string_constants, string_id)
         : NULL;
 }
-const RudaMirArray *ruda_mir_array(
-    const RudaMirFunction *function,
-    RudaMirArrayId array_id
+const MarimayMirArray *mmay_mir_array(
+    const MarimayMirFunction *function,
+    MarimayMirArrayId array_id
 ) {
-    return array_id != RUDA_MIR_NO_ARRAY
-        ? ruda_vector_at_const(&function->arrays, array_id)
+    return array_id != MMAY_MIR_NO_ARRAY
+        ? mmay_vector_at_const(&function->arrays, array_id)
         : NULL;
 }
-const RudaMirArrayConstruction *ruda_mir_array_construction(
-    const RudaMirFunction *function,
-    RudaMirArrayConstructionId construction_id
+const MarimayMirArrayConstruction *mmay_mir_array_construction(
+    const MarimayMirFunction *function,
+    MarimayMirArrayConstructionId construction_id
 ) {
-    return construction_id != RUDA_MIR_NO_ARRAY_CONSTRUCTION
-        ? ruda_vector_at_const(
+    return construction_id != MMAY_MIR_NO_ARRAY_CONSTRUCTION
+        ? mmay_vector_at_const(
             &function->array_constructions,
             construction_id
         )
         : NULL;
 }
-const RudaMirArrayArgument *ruda_mir_array_argument(
-    const RudaMirFunction *function,
+const MarimayMirArrayArgument *mmay_mir_array_argument(
+    const MarimayMirFunction *function,
     size_t index
 ) {
-    return ruda_vector_at_const(&function->array_arguments, index);
+    return mmay_vector_at_const(&function->array_arguments, index);
 }

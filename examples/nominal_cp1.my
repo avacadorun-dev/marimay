@@ -1,0 +1,132 @@
+// Checkpoint-1 nominal types: mutation, identity, nested enum matching,
+// source-order construction, and structural interface dispatch.
+type Counter {
+  mutable value: int;
+}
+
+type Pair {
+  first: int;
+  second: int;
+}
+
+type NumericWidths {
+  signed: i8;
+  unsigned: u64;
+}
+
+enum Inner {
+  Some(int),
+  Text(string),
+  None,
+}
+
+enum Envelope {
+  Value(Inner),
+  Empty,
+}
+
+enum Ordered {
+  Pair { first: int; second: int; },
+}
+
+interface Show {
+  show(): int;
+}
+
+fn show(counter: Counter): int {
+  return counter.value;
+}
+
+fn increment(counter: Counter): int {
+  counter.value += 1;
+  return counter.value;
+}
+
+fn next(counter: Counter): int {
+  counter.value += 1;
+  return counter.value;
+}
+
+fn identityOperand(log: Counter, marker: int): Counter {
+  log.value = log.value * 10 + marker;
+  return Counter { value: marker };
+}
+
+fn throughInterface(value: Show): int {
+  return value.show();
+}
+
+fn recordMutationAndIdentity(): bool {
+  const counter = Counter { value: 0 };
+  const alias = counter;
+  counter.increment();
+  const separate = Counter { value: 1 };
+  return identity.same(counter, alias)
+    && !identity.same(counter, separate)
+    && counter.value == 1;
+}
+
+fn identityOperandsAreOrdered(): bool {
+  const log = Counter { value: 0 };
+  const same = identity.same(
+    identityOperand(log, 1),
+    identityOperand(log, 2),
+  );
+  return !same && log.value == 12;
+}
+
+fn freeAndDotAreEquivalent(): bool {
+  const counter = Counter { value: 4 };
+  return show(counter) == counter.show() && throughInterface(counter) == 4;
+}
+
+fn nestedExhaustive(value: Envelope): int {
+  return match value {
+    case Value(Some(item)) if item > 0 => item;
+    case Value(Text(text)) => match text {
+      case "mmay" => 7;
+      case _ => 0;
+    };
+    case Value(_) => 0;
+    case Empty => 0;
+  };
+}
+
+fn sourceOrderIsObservable(): bool {
+  const counter = Counter { value: 0 };
+  // `second` is initialized first, despite Pair declaring `first` first.
+  const pair = Pair { second: next(counter), first: next(counter) };
+  return pair.first == 2 && pair.second == 1;
+}
+
+fn namedEnumSourceOrderIsObservable(): bool {
+  const counter = Counter { value: 0 };
+  // The selected payload slots do not change left-to-right evaluation.
+  const ordered = Ordered.Pair {
+    second: next(counter),
+    first: next(counter),
+  };
+  return match ordered {
+    case Pair { first, second } => first == 2 && second == 1;
+  };
+}
+
+fn numericNominalRoundTrip(): bool {
+  const value = NumericWidths {
+    signed: -128,
+    unsigned: 18446744073709551615,
+  };
+  return value.signed == -128
+    && value.unsigned == 18446744073709551615;
+}
+
+fn main(): int {
+  if !recordMutationAndIdentity() { return -1; }
+  if !identityOperandsAreOrdered() { return -2; }
+  if !freeAndDotAreEquivalent() { return -3; }
+  if !sourceOrderIsObservable() { return -4; }
+  if !namedEnumSourceOrderIsObservable() { return -5; }
+  if nestedExhaustive(Envelope.Value(Inner.Text("mmay"))) != 7 { return -6; }
+  if !numericNominalRoundTrip() { return -7; }
+  return nestedExhaustive(Envelope.Value(Inner.Some(7)));
+}

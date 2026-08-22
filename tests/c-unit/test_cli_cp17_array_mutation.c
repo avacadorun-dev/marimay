@@ -3,60 +3,60 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ruda/base/allocator.h"
-#include "ruda/cli.h"
-#include "ruda/platform/process.h"
-#include "ruda/session.h"
+#include "mmay/base/allocator.h"
+#include "mmay/cli.h"
+#include "mmay/platform/process.h"
+#include "mmay/session.h"
 
-static int ruda_cli_cp17_run(
-    RudaSession *session,
+static int mmay_cli_cp17_run(
+    MarimaySession *session,
     int argument_count,
     const char *const arguments[],
-    RudaTestBuffer *output,
-    RudaTestBuffer *error
+    MarimayTestBuffer *output,
+    MarimayTestBuffer *error
 ) {
-    ruda_test_buffer_init(output);
-    ruda_test_buffer_init(error);
-    return ruda_cli_run(
+    mmay_test_buffer_init(output);
+    mmay_test_buffer_init(error);
+    return mmay_cli_run(
         session,
         argument_count,
         arguments,
-        (RudaReadStream){0},
-        ruda_test_buffer_writer(output),
-        ruda_test_buffer_writer(error)
+        (MarimayReadStream){0},
+        mmay_test_buffer_writer(output),
+        mmay_test_buffer_writer(error)
     );
 }
 
-static void ruda_cli_cp17_expect_artifact(
+static void mmay_cli_cp17_expect_artifact(
     const char *artifact,
     const char *expected,
     uint32_t exit_code
 ) {
     char path[512];
     const char *arguments[2];
-    RudaProcessResult process;
+    MarimayProcessResult process;
     int length = snprintf(path, sizeof(path), "./%s", artifact);
-    RUDA_EXPECT(length > 0 && (size_t)length < sizeof(path));
+    MMAY_EXPECT(length > 0 && (size_t)length < sizeof(path));
     if (length <= 0 || (size_t)length >= sizeof(path)) return;
     arguments[0] = path;
     arguments[1] = NULL;
     memset(&process, 0, sizeof(process));
-    RUDA_EXPECT(ruda_process_run(
-        ruda_system_allocator(), arguments, 1, 65536, &process
-    ) == RUDA_PROCESS_OK);
-    RUDA_EXPECT(!process.signaled);
-    RUDA_EXPECT(process.exit_code == exit_code);
-    RUDA_EXPECT(process.output.length == strlen(expected));
-    RUDA_EXPECT(process.output.data != NULL);
+    MMAY_EXPECT(mmay_process_run(
+        mmay_system_allocator(), arguments, 1, 65536, &process
+    ) == MMAY_PROCESS_OK);
+    MMAY_EXPECT(!process.signaled);
+    MMAY_EXPECT(process.exit_code == exit_code);
+    MMAY_EXPECT(process.output.length == strlen(expected));
+    MMAY_EXPECT(process.output.data != NULL);
     if (process.output.data != NULL) {
-        RUDA_EXPECT(memcmp(
+        MMAY_EXPECT(memcmp(
             process.output.data, expected, strlen(expected)
         ) == 0);
     }
-    ruda_process_result_dispose(&process);
+    mmay_process_result_dispose(&process);
 }
 
-void ruda_test_cli_cp17_array_mutation(void) {
+void mmay_test_cli_cp17_array_mutation(void) {
     static const char corpus[] = "cp17-array-mutation";
     static const char invalidated_corpus[] =
         "cp17-array-iterator-invalidated";
@@ -65,71 +65,71 @@ void ruda_test_cli_cp17_array_mutation(void) {
         "cp17-array-iterator-invalidated-artifact";
     static const char invalidated_panic[] =
         "panic[G4005]: array iterator invalidated by mutation\n";
-    const char *format[] = {"ruda", "fmt", corpus, "--check"};
-    const char *check[] = {"ruda", "check", corpus};
-    const char *run[] = {"ruda", "run", corpus};
+    const char *format[] = {"mmay", "fmt", corpus, "--check"};
+    const char *check[] = {"mmay", "check", corpus};
+    const char *run[] = {"mmay", "run", corpus};
     const char *test[] = {
-        "ruda", "test", corpus, "--engine", "both"
+        "mmay", "test", corpus, "--engine", "both"
     };
     const char *build[] = {
-        "ruda", "build", corpus, "--output", artifact
+        "mmay", "build", corpus, "--output", artifact
     };
     const char *invalidated_run[] = {
-        "ruda", "run", invalidated_corpus
+        "mmay", "run", invalidated_corpus
     };
     const char *invalidated_build[] = {
-        "ruda", "build", invalidated_corpus,
+        "mmay", "build", invalidated_corpus,
         "--output", invalidated_artifact
     };
-    RudaSession session;
-    RudaTestBuffer output;
-    RudaTestBuffer error;
+    MarimaySession session;
+    MarimayTestBuffer output;
+    MarimayTestBuffer error;
     (void)remove(artifact);
     (void)remove(invalidated_artifact);
-    ruda_session_init(&session, ruda_system_allocator());
+    mmay_session_init(&session, mmay_system_allocator());
 
-    RUDA_EXPECT(ruda_cli_cp17_run(
+    MMAY_EXPECT(mmay_cli_cp17_run(
         &session, 4, format, &output, &error
-    ) == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(output.length == 0 && error.length == 0);
-    RUDA_EXPECT(ruda_cli_cp17_run(
+    ) == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(output.length == 0 && error.length == 0);
+    MMAY_EXPECT(mmay_cli_cp17_run(
         &session, 3, check, &output, &error
-    ) == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(output.length == 0 && error.length == 0);
-    RUDA_EXPECT(ruda_cli_cp17_run(
+    ) == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(output.length == 0 && error.length == 0);
+    MMAY_EXPECT(mmay_cli_cp17_run(
         &session, 3, run, &output, &error
-    ) == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(strcmp(output.bytes, "cp17 array mutation ok\n") == 0);
-    RUDA_EXPECT(error.length == 0);
-    RUDA_EXPECT(ruda_cli_cp17_run(
+    ) == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(strcmp(output.bytes, "cp17 array mutation ok\n") == 0);
+    MMAY_EXPECT(error.length == 0);
+    MMAY_EXPECT(mmay_cli_cp17_run(
         &session, 5, test, &output, &error
-    ) == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(strstr(output.bytes, "1 passed; 0 failed") != NULL);
-    RUDA_EXPECT(strstr(
+    ) == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(strstr(output.bytes, "1 passed; 0 failed") != NULL);
+    MMAY_EXPECT(strstr(
         output.bytes, "arrayMutationOperationsWork ... ok"
     ) != NULL);
-    RUDA_EXPECT(error.length == 0);
-    RUDA_EXPECT(ruda_cli_cp17_run(
+    MMAY_EXPECT(error.length == 0);
+    MMAY_EXPECT(mmay_cli_cp17_run(
         &session, 5, build, &output, &error
-    ) == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(error.length == 0);
-    ruda_cli_cp17_expect_artifact(
+    ) == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(error.length == 0);
+    mmay_cli_cp17_expect_artifact(
         artifact, "cp17 array mutation ok\n", 0
     );
 
-    RUDA_EXPECT(ruda_cli_cp17_run(
+    MMAY_EXPECT(mmay_cli_cp17_run(
         &session, 3, invalidated_run, &output, &error
-    ) == RUDA_EXIT_SOURCE_FAILURE);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT(strcmp(error.bytes, invalidated_panic) == 0);
-    RUDA_EXPECT(ruda_cli_cp17_run(
+    ) == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strcmp(error.bytes, invalidated_panic) == 0);
+    MMAY_EXPECT(mmay_cli_cp17_run(
         &session, 5, invalidated_build, &output, &error
-    ) == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(error.length == 0);
-    ruda_cli_cp17_expect_artifact(
+    ) == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(error.length == 0);
+    mmay_cli_cp17_expect_artifact(
         invalidated_artifact, invalidated_panic, 1
     );
 
-    RUDA_EXPECT(remove(artifact) == 0);
-    RUDA_EXPECT(remove(invalidated_artifact) == 0);
+    MMAY_EXPECT(remove(artifact) == 0);
+    MMAY_EXPECT(remove(invalidated_artifact) == 0);
 }

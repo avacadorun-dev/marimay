@@ -4,27 +4,27 @@
 
 #include "program_internal.h"
 
-typedef struct RudaBytecodeArrayDescriptorEntry {
-    const RudaBytecodeFunction *function;
+typedef struct MarimayBytecodeArrayDescriptorEntry {
+    const MarimayBytecodeFunction *function;
     uint32_t layout;
-    RudaManagedArrayDescriptor *descriptor;
+    MarimayManagedArrayDescriptor *descriptor;
     bool building;
     bool complete;
-} RudaBytecodeArrayDescriptorEntry;
+} MarimayBytecodeArrayDescriptorEntry;
 
-bool ruda_bytecode_array_cache_init(
-    RudaBytecodeExecution *execution,
-    RudaAllocator allocator
+bool mmay_bytecode_array_cache_init(
+    MarimayBytecodeExecution *execution,
+    MarimayAllocator allocator
 ) {
-    return execution != NULL && ruda_vector_init(
+    return execution != NULL && mmay_vector_init(
         &execution->array_descriptors,
         allocator,
-        sizeof(RudaBytecodeArrayDescriptorEntry)
+        sizeof(MarimayBytecodeArrayDescriptorEntry)
     );
 }
 
-void ruda_bytecode_array_cache_rollback(
-    RudaBytecodeExecution *execution,
+void mmay_bytecode_array_cache_rollback(
+    MarimayBytecodeExecution *execution,
     size_t length
 ) {
     if (execution == NULL) {
@@ -32,11 +32,11 @@ void ruda_bytecode_array_cache_rollback(
     }
     while (execution->array_descriptors.length > length) {
         size_t index = execution->array_descriptors.length - 1;
-        RudaBytecodeArrayDescriptorEntry *entry = ruda_vector_at(
+        MarimayBytecodeArrayDescriptorEntry *entry = mmay_vector_at(
             &execution->array_descriptors, index
         );
         if (entry != NULL) {
-            ruda_deallocate(
+            mmay_deallocate(
                 &execution->allocator,
                 entry->descriptor,
                 entry->descriptor == NULL ? 0 : sizeof(*entry->descriptor)
@@ -47,55 +47,55 @@ void ruda_bytecode_array_cache_rollback(
     }
 }
 
-void ruda_bytecode_array_cache_dispose(RudaBytecodeExecution *execution) {
+void mmay_bytecode_array_cache_dispose(MarimayBytecodeExecution *execution) {
     if (execution == NULL) {
         return;
     }
-    ruda_bytecode_array_cache_rollback(execution, 0);
-    ruda_vector_dispose(&execution->array_descriptors);
+    mmay_bytecode_array_cache_rollback(execution, 0);
+    mmay_vector_dispose(&execution->array_descriptors);
 }
 
-const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor(
-    RudaBytecodeType type
+const MarimayManagedArrayDescriptor *mmay_bytecode_array_descriptor(
+    MarimayBytecodeType type
 ) {
-    if (type == RUDA_BYTECODE_TYPE_ARRAY_F64) {
-        return &ruda_managed_array_f64_descriptor;
+    if (type == MMAY_BYTECODE_TYPE_ARRAY_F64) {
+        return &mmay_managed_array_f64_descriptor;
     }
-    if (type == RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64) {
-        return &ruda_managed_array_array_f64_descriptor;
+    if (type == MMAY_BYTECODE_TYPE_ARRAY_ARRAY_F64) {
+        return &mmay_managed_array_array_f64_descriptor;
     }
     return NULL;
 }
 
-bool ruda_bytecode_managed_value_valid(
-    RudaBytecodeExecution *execution,
-    RudaBytecodeValue value
+bool mmay_bytecode_managed_value_valid(
+    MarimayBytecodeExecution *execution,
+    MarimayBytecodeValue value
 ) {
-    const RudaManagedArrayDescriptor *actual = NULL;
-    const RudaManagedArrayDescriptor *expected =
-        ruda_bytecode_array_descriptor(value.type);
+    const MarimayManagedArrayDescriptor *actual = NULL;
+    const MarimayManagedArrayDescriptor *expected =
+        mmay_bytecode_array_descriptor(value.type);
     return execution != NULL && execution->initialized && expected != NULL
-        && ruda_managed_array_describe(
+        && mmay_managed_array_describe(
             &execution->managed_heap, value.as.managed_reference, &actual
-        ) == RUDA_MANAGED_OK && actual == expected;
+        ) == MMAY_MANAGED_OK && actual == expected;
 }
 
-static RudaBytecodeArrayDescriptorEntry *ruda_bytecode_find_array_descriptor(
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
+static MarimayBytecodeArrayDescriptorEntry *mmay_bytecode_find_array_descriptor(
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
     uint32_t layout
 ) {
     size_t index = 0;
     for (index = 0; index < execution->array_descriptors.length; index += 1) {
-        RudaBytecodeArrayDescriptorEntry *entry = ruda_vector_at(
+        MarimayBytecodeArrayDescriptorEntry *entry = mmay_vector_at(
             &execution->array_descriptors, index
         );
-        if (entry != NULL && ruda_bytecode_program_same_type(
+        if (entry != NULL && mmay_bytecode_program_same_type(
                 entry->function,
-                RUDA_BYTECODE_TYPE_ARRAY,
+                MMAY_BYTECODE_TYPE_ARRAY,
                 entry->layout,
                 function,
-                RUDA_BYTECODE_TYPE_ARRAY,
+                MMAY_BYTECODE_TYPE_ARRAY,
                 layout
             )) {
             return entry;
@@ -104,85 +104,85 @@ static RudaBytecodeArrayDescriptorEntry *ruda_bytecode_find_array_descriptor(
     return NULL;
 }
 
-static bool ruda_bytecode_build_array_element_descriptor(
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeArrayType *array_type,
-    RudaManagedArrayDescriptor *descriptor
+static bool mmay_bytecode_build_array_element_descriptor(
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeArrayType *array_type,
+    MarimayManagedArrayDescriptor *descriptor
 ) {
-    RudaBytecodeType type = array_type->element_type;
+    MarimayBytecodeType type = array_type->element_type;
     uint32_t layout = array_type->element_layout;
-    if (type == RUDA_BYTECODE_TYPE_STRING) {
-        descriptor->cell_kind = RUDA_MANAGED_CELL_REFERENCE;
-        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_CELL;
-        descriptor->storage_stride = sizeof(RudaManagedCell);
-        descriptor->reference_kind = RUDA_MANAGED_OBJECT_STRING;
+    if (type == MMAY_BYTECODE_TYPE_STRING) {
+        descriptor->cell_kind = MMAY_MANAGED_CELL_REFERENCE;
+        descriptor->storage_kind = MMAY_MANAGED_ARRAY_STORAGE_CELL;
+        descriptor->storage_stride = sizeof(MarimayManagedCell);
+        descriptor->reference_kind = MMAY_MANAGED_OBJECT_STRING;
         return true;
     }
-    if (ruda_bytecode_type_is_array(type)
-        || type == RUDA_BYTECODE_TYPE_RECORD
-        || type == RUDA_BYTECODE_TYPE_ENUM
-        || type == RUDA_BYTECODE_TYPE_INTERFACE) {
-        descriptor->cell_kind = RUDA_MANAGED_CELL_REFERENCE;
-        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_CELL;
-        descriptor->storage_stride = sizeof(RudaManagedCell);
-        descriptor->reference_kind = ruda_bytecode_nominal_object_kind(type);
+    if (mmay_bytecode_type_is_array(type)
+        || type == MMAY_BYTECODE_TYPE_RECORD
+        || type == MMAY_BYTECODE_TYPE_ENUM
+        || type == MMAY_BYTECODE_TYPE_INTERFACE) {
+        descriptor->cell_kind = MMAY_MANAGED_CELL_REFERENCE;
+        descriptor->storage_kind = MMAY_MANAGED_ARRAY_STORAGE_CELL;
+        descriptor->storage_stride = sizeof(MarimayManagedCell);
+        descriptor->reference_kind = mmay_bytecode_nominal_object_kind(type);
         descriptor->reference_descriptor =
-            ruda_bytecode_nominal_reference_descriptor(
+            mmay_bytecode_nominal_reference_descriptor(
                 execution, function, type, layout
             );
-        return descriptor->reference_kind != RUDA_MANAGED_OBJECT_INVALID
+        return descriptor->reference_kind != MMAY_MANAGED_OBJECT_INVALID
             && descriptor->reference_descriptor != NULL;
     }
-    descriptor->cell_kind = RUDA_MANAGED_CELL_RAW64;
-    if (type == RUDA_BYTECODE_TYPE_BOOL || type == RUDA_BYTECODE_TYPE_I8
-        || type == RUDA_BYTECODE_TYPE_U8) {
-        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_RAW8;
+    descriptor->cell_kind = MMAY_MANAGED_CELL_RAW64;
+    if (type == MMAY_BYTECODE_TYPE_BOOL || type == MMAY_BYTECODE_TYPE_I8
+        || type == MMAY_BYTECODE_TYPE_U8) {
+        descriptor->storage_kind = MMAY_MANAGED_ARRAY_STORAGE_RAW8;
         descriptor->storage_stride = sizeof(uint8_t);
-    } else if (type == RUDA_BYTECODE_TYPE_I16
-        || type == RUDA_BYTECODE_TYPE_U16) {
-        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_RAW16;
+    } else if (type == MMAY_BYTECODE_TYPE_I16
+        || type == MMAY_BYTECODE_TYPE_U16) {
+        descriptor->storage_kind = MMAY_MANAGED_ARRAY_STORAGE_RAW16;
         descriptor->storage_stride = sizeof(uint16_t);
-    } else if (type == RUDA_BYTECODE_TYPE_I32
-        || type == RUDA_BYTECODE_TYPE_U32
-        || type == RUDA_BYTECODE_TYPE_F32) {
-        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_RAW32;
+    } else if (type == MMAY_BYTECODE_TYPE_I32
+        || type == MMAY_BYTECODE_TYPE_U32
+        || type == MMAY_BYTECODE_TYPE_F32) {
+        descriptor->storage_kind = MMAY_MANAGED_ARRAY_STORAGE_RAW32;
         descriptor->storage_stride = sizeof(uint32_t);
-    } else if (type == RUDA_BYTECODE_TYPE_I64
-        || type == RUDA_BYTECODE_TYPE_U64
-        || type == RUDA_BYTECODE_TYPE_F64) {
-        descriptor->storage_kind = RUDA_MANAGED_ARRAY_STORAGE_RAW64;
+    } else if (type == MMAY_BYTECODE_TYPE_I64
+        || type == MMAY_BYTECODE_TYPE_U64
+        || type == MMAY_BYTECODE_TYPE_F64) {
+        descriptor->storage_kind = MMAY_MANAGED_ARRAY_STORAGE_RAW64;
         descriptor->storage_stride = sizeof(uint64_t);
     } else {
         return false;
     }
-    descriptor->reference_kind = RUDA_MANAGED_OBJECT_INVALID;
+    descriptor->reference_kind = MMAY_MANAGED_OBJECT_INVALID;
     return true;
 }
 
-const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    RudaBytecodeType type,
+const MarimayManagedArrayDescriptor *mmay_bytecode_array_descriptor_for(
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeType type,
     uint32_t layout
 ) {
-    const RudaBytecodeArrayType *array_type = NULL;
-    RudaBytecodeArrayDescriptorEntry *existing = NULL;
-    RudaBytecodeArrayDescriptorEntry entry;
-    RudaManagedArrayDescriptor *descriptor = NULL;
+    const MarimayBytecodeArrayType *array_type = NULL;
+    MarimayBytecodeArrayDescriptorEntry *existing = NULL;
+    MarimayBytecodeArrayDescriptorEntry entry;
+    MarimayManagedArrayDescriptor *descriptor = NULL;
     size_t cache_start = 0;
     size_t entry_index = 0;
-    if (type != RUDA_BYTECODE_TYPE_ARRAY) {
-        return ruda_bytecode_array_descriptor(type);
+    if (type != MMAY_BYTECODE_TYPE_ARRAY) {
+        return mmay_bytecode_array_descriptor(type);
     }
     if (execution == NULL || !execution->initialized || function == NULL) {
         return NULL;
     }
-    array_type = ruda_bytecode_array_type(function, layout);
+    array_type = mmay_bytecode_array_type(function, layout);
     if (array_type == NULL) {
         return NULL;
     }
-    existing = ruda_bytecode_find_array_descriptor(
+    existing = mmay_bytecode_find_array_descriptor(
         execution, function, layout
     );
     if (existing != NULL) {
@@ -190,7 +190,7 @@ const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(
             ? existing->descriptor : NULL;
     }
     cache_start = execution->array_descriptors.length;
-    descriptor = ruda_allocate(&execution->allocator, sizeof(*descriptor));
+    descriptor = mmay_allocate(&execution->allocator, sizeof(*descriptor));
     if (descriptor == NULL) {
         execution->array_descriptor_allocation_failed = true;
         return NULL;
@@ -201,23 +201,23 @@ const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(
     entry.layout = layout;
     entry.descriptor = descriptor;
     entry.building = true;
-    if (!ruda_vector_push(&execution->array_descriptors, &entry)) {
+    if (!mmay_vector_push(&execution->array_descriptors, &entry)) {
         execution->array_descriptor_allocation_failed = true;
-        ruda_deallocate(&execution->allocator, descriptor, sizeof(*descriptor));
+        mmay_deallocate(&execution->allocator, descriptor, sizeof(*descriptor));
         return NULL;
     }
     entry_index = execution->array_descriptors.length - 1;
-    if (!ruda_bytecode_build_array_element_descriptor(
+    if (!mmay_bytecode_build_array_element_descriptor(
             execution, function, array_type, descriptor
         )) {
         execution->array_descriptor_allocation_failed = true;
-        ruda_bytecode_array_cache_rollback(execution, cache_start);
+        mmay_bytecode_array_cache_rollback(execution, cache_start);
         return NULL;
     }
-    existing = ruda_vector_at(&execution->array_descriptors, entry_index);
+    existing = mmay_vector_at(&execution->array_descriptors, entry_index);
     if (existing == NULL) {
         execution->array_descriptor_allocation_failed = true;
-        ruda_bytecode_array_cache_rollback(execution, cache_start);
+        mmay_bytecode_array_cache_rollback(execution, cache_start);
         return NULL;
     }
     existing->building = false;
@@ -225,19 +225,19 @@ const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(
     return descriptor;
 }
 
-bool ruda_bytecode_managed_value_valid_for(
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    RudaBytecodeValue value,
+bool mmay_bytecode_managed_value_valid_for(
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeValue value,
     uint32_t layout
 ) {
-    const RudaManagedArrayDescriptor *actual = NULL;
-    const RudaManagedArrayDescriptor *expected =
-        ruda_bytecode_array_descriptor_for(
+    const MarimayManagedArrayDescriptor *actual = NULL;
+    const MarimayManagedArrayDescriptor *expected =
+        mmay_bytecode_array_descriptor_for(
             execution, function, value.type, layout
         );
     return execution != NULL && execution->initialized && expected != NULL
-        && ruda_managed_array_describe(
+        && mmay_managed_array_describe(
             &execution->managed_heap, value.as.managed_reference, &actual
-        ) == RUDA_MANAGED_OK && actual == expected;
+        ) == MMAY_MANAGED_OK && actual == expected;
 }

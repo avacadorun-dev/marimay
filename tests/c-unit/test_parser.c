@@ -1,28 +1,28 @@
 #include "test_parser_cases.h"
 
-void ruda_test_parser(void) {
-    ruda_test_parser_snapshot();
-    ruda_test_parser_empty_source();
-    ruda_test_parser_examples();
-    ruda_test_parser_all_productions();
-    ruda_test_parser_recovery();
-    ruda_test_parser_delimiter_recovery();
-    ruda_test_parser_declarations();
-    ruda_test_parser_declaration_grammar();
-    ruda_test_parser_keyword_boundaries();
-    ruda_test_parser_declaration_recovery();
-    ruda_test_parser_pratt_expressions();
-    ruda_test_parser_expression_grammar();
-    ruda_test_parser_expression_recovery();
-    ruda_test_parser_pattern_grammar();
-    ruda_test_parser_record_field_grammar();
-    ruda_test_parser_exact_delimited_grammar();
-    ruda_test_parser_statement_forms();
-    ruda_test_parser_statement_recovery();
-    ruda_test_parser_type_grammar();
-    ruda_test_parser_array_type_spelling();
-    ruda_test_parser_nested_generic_boundaries();
-    ruda_test_parser_incremental_reuse();
-    ruda_test_parser_limits_and_allocation();
-    ruda_test_parser_all_single_bytes();
+void mmay_test_parser(void) {
+    mmay_test_parser_snapshot();
+    mmay_test_parser_empty_source();
+    mmay_test_parser_examples();
+    mmay_test_parser_all_productions();
+    mmay_test_parser_recovery();
+    mmay_test_parser_delimiter_recovery();
+    mmay_test_parser_declarations();
+    mmay_test_parser_declaration_grammar();
+    mmay_test_parser_keyword_boundaries();
+    mmay_test_parser_declaration_recovery();
+    mmay_test_parser_pratt_expressions();
+    mmay_test_parser_expression_grammar();
+    mmay_test_parser_expression_recovery();
+    mmay_test_parser_pattern_grammar();
+    mmay_test_parser_record_field_grammar();
+    mmay_test_parser_exact_delimited_grammar();
+    mmay_test_parser_statement_forms();
+    mmay_test_parser_statement_recovery();
+    mmay_test_parser_type_grammar();
+    mmay_test_parser_array_type_spelling();
+    mmay_test_parser_nested_generic_boundaries();
+    mmay_test_parser_incremental_reuse();
+    mmay_test_parser_limits_and_allocation();
+    mmay_test_parser_all_single_bytes();
 }

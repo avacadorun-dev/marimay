@@ -4,22 +4,22 @@
 #include "checker_internal.h"
 #include "checker_package_context.h"
 
- bool ruda_checker_private_collect_record_declaration(
-    RudaChecker *checker,
-    const RudaAstNode *node
+ bool mmay_checker_private_collect_record_declaration(
+    MarimayChecker *checker,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_collect_enum_declaration(
-    RudaChecker *checker,
-    const RudaAstNode *node
+ bool mmay_checker_private_collect_enum_declaration(
+    MarimayChecker *checker,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_record_field_name_is_duplicate(
-    const RudaChecker *checker,
-    const RudaCheckRecordDeclaration *declaration,
-    RudaCheckName name
+ bool mmay_checker_private_record_field_name_is_duplicate(
+    const MarimayChecker *checker,
+    const MarimayCheckRecordDeclaration *declaration,
+    MarimayCheckName name
 );
- bool ruda_checker_private_resolve_record_fields(
-    RudaChecker *checker,
-    RudaCheckRecordDeclaration *declaration
+ bool mmay_checker_private_resolve_record_fields(
+    MarimayChecker *checker,
+    MarimayCheckRecordDeclaration *declaration
 );
- bool ruda_checker_private_resolve_all_record_fields(RudaChecker *checker);
+ bool mmay_checker_private_resolve_all_record_fields(MarimayChecker *checker);
 #endif

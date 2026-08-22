@@ -1,16 +1,16 @@
-#include "ruda/lex/token.h"
+#include "mmay/lex/token.h"
 
 #include <stdbool.h>
 #include <string.h>
 
-typedef struct RudaKeyword {
+typedef struct MarimayKeyword {
     const char *text;
-    RudaTokenKind kind;
-} RudaKeyword;
+    MarimayTokenKind kind;
+} MarimayKeyword;
 
 #include "../generated/token_data.inc"
 
-static bool ruda_token_text_equal(
+static bool mmay_token_text_equal(
     const unsigned char *bytes,
     size_t length,
     const char *text
@@ -19,28 +19,28 @@ static bool ruda_token_text_equal(
     return length == text_length && memcmp(bytes, text, length) == 0;
 }
 
-const char *ruda_token_kind_name(RudaTokenKind kind) {
+const char *mmay_token_kind_name(MarimayTokenKind kind) {
     size_t index = (size_t)kind;
-    if (index >= sizeof(ruda_token_names) / sizeof(ruda_token_names[0])) {
+    if (index >= sizeof(mmay_token_names) / sizeof(mmay_token_names[0])) {
         return "UNKNOWN";
     }
-    return ruda_token_names[index];
+    return mmay_token_names[index];
 }
 
-RudaTokenKind ruda_token_identifier_kind(const unsigned char *bytes, size_t length) {
+MarimayTokenKind mmay_token_identifier_kind(const unsigned char *bytes, size_t length) {
     static const char *const reserved[] = {
         "null", "undefined"
     };
     size_t index = 0;
-    for (index = 0; index < sizeof(ruda_keywords) / sizeof(ruda_keywords[0]); index += 1) {
-        if (ruda_token_text_equal(bytes, length, ruda_keywords[index].text)) {
-            return ruda_keywords[index].kind;
+    for (index = 0; index < sizeof(mmay_keywords) / sizeof(mmay_keywords[0]); index += 1) {
+        if (mmay_token_text_equal(bytes, length, mmay_keywords[index].text)) {
+            return mmay_keywords[index].kind;
         }
     }
     for (index = 0; index < sizeof(reserved) / sizeof(reserved[0]); index += 1) {
-        if (ruda_token_text_equal(bytes, length, reserved[index])) {
-            return RUDA_TOKEN_RESERVED_WORD;
+        if (mmay_token_text_equal(bytes, length, reserved[index])) {
+            return MMAY_TOKEN_RESERVED_WORD;
         }
     }
-    return RUDA_TOKEN_IDENTIFIER;
+    return MMAY_TOKEN_IDENTIFIER;
 }

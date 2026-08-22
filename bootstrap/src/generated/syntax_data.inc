@@ -1,5 +1,5 @@
 /* Generated from bootstrap/tables/syntax-kinds.tsv. Do not edit by hand. */
-static const char *const ruda_syntax_names[] = {
+static const char *const mmay_syntax_names[] = {
     "ROOT",
     "ERROR",
     "ATTRIBUTE",
@@ -78,6 +78,6 @@ static const char *const ruda_syntax_names[] = {
 };
 
 _Static_assert(
-    sizeof(ruda_syntax_names) / sizeof(ruda_syntax_names[0]) == RUDA_SYNTAX_KIND_COUNT,
+    sizeof(mmay_syntax_names) / sizeof(mmay_syntax_names[0]) == MMAY_SYNTAX_KIND_COUNT,
     "syntax name table must cover every syntax kind"
 );

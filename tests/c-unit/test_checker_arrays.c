@@ -5,93 +5,94 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ruda/ast/ast.h"
-#include "ruda/base/allocator.h"
-#include "ruda/base/owned_bytes.h"
-#include "ruda/bytecode/mir_lower.h"
-#include "ruda/bytecode/vm.h"
-#include "ruda/check/checker.h"
-#include "ruda/generated/diagnostic_codes.h"
-#include "ruda/lex/lexer.h"
-#include "ruda/mir/range.h"
-#include "ruda/parse/parser.h"
-#include "ruda/source/source_manager.h"
+#include "mmay/ast/ast.h"
+#include "mmay/base/allocator.h"
+#include "mmay/base/owned_bytes.h"
+#include "mmay/bytecode/mir_lower.h"
+#include "mmay/bytecode/vm.h"
+#include "mmay/check/checker.h"
+#include "mmay/generated/diagnostic_codes.h"
+#include "mmay/lex/lexer.h"
+#include "mmay/mir/range.h"
+#include "mmay/parse/parser.h"
+#include "mmay/source/source_manager.h"
 
-typedef struct RudaCheckerArraysFixture {
-    RudaSourceManager sources;
-    RudaLexResult lexed;
-    RudaParseResult parsed;
-    RudaAstTree ast;
+typedef struct MarimayCheckerArraysFixture {
+    MarimaySourceManager sources;
+    MarimayLexResult lexed;
+    MarimayParseResult parsed;
+    MarimayAstTree ast;
     bool sources_initialized;
     bool lexed_initialized;
     bool parsed_initialized;
     bool ast_initialized;
-} RudaCheckerArraysFixture;
+} MarimayCheckerArraysFixture;
 
-static bool ruda_checker_arrays_fixture_init(
-    RudaCheckerArraysFixture *fixture,
+static bool mmay_checker_arrays_fixture_init(
+    MarimayCheckerArraysFixture *fixture,
     const char *source
 ) {
-    const RudaSourceSnapshot *snapshot = NULL;
+    const MarimaySourceSnapshot *snapshot = NULL;
     memset(fixture, 0, sizeof(*fixture));
-    if (!ruda_source_manager_init(&fixture->sources, ruda_system_allocator())) {
+    if (!mmay_source_manager_init(&fixture->sources, mmay_system_allocator())) {
         return false;
     }
     fixture->sources_initialized = true;
-    if (ruda_source_manager_add(
-            &fixture->sources, "checker-arrays.ruda", 19, source, strlen(source),
+    if (mmay_source_manager_add(
+            &fixture->sources, "checker-arrays.my",
+            sizeof("checker-arrays.my") - 1, source, strlen(source),
             &snapshot
-        ) != RUDA_SOURCE_OK
-        || ruda_lex_snapshot(
-            snapshot, ruda_system_allocator(), ruda_lex_default_options(),
+        ) != MMAY_SOURCE_OK
+        || mmay_lex_snapshot(
+            snapshot, mmay_system_allocator(), mmay_lex_default_options(),
             &fixture->lexed
-        ) != RUDA_LEX_OK) {
+        ) != MMAY_LEX_OK) {
         return false;
     }
     fixture->lexed_initialized = true;
     if (fixture->lexed.diagnostics.length != 0
-        || ruda_parse_file(
-            &fixture->lexed, ruda_system_allocator(), ruda_parse_default_options(),
+        || mmay_parse_file(
+            &fixture->lexed, mmay_system_allocator(), mmay_parse_default_options(),
             &fixture->parsed
-        ) != RUDA_PARSE_OK) {
+        ) != MMAY_PARSE_OK) {
         return false;
     }
     fixture->parsed_initialized = true;
     if (fixture->parsed.diagnostics.length != 0
-        || ruda_ast_project(
-            &fixture->parsed.tree, ruda_system_allocator(), ruda_ast_default_options(),
+        || mmay_ast_project(
+            &fixture->parsed.tree, mmay_system_allocator(), mmay_ast_default_options(),
             &fixture->ast
-        ) != RUDA_AST_OK) {
+        ) != MMAY_AST_OK) {
         return false;
     }
     fixture->ast_initialized = true;
     return true;
 }
 
-static void ruda_checker_arrays_fixture_dispose(RudaCheckerArraysFixture *fixture) {
+static void mmay_checker_arrays_fixture_dispose(MarimayCheckerArraysFixture *fixture) {
     if (fixture->ast_initialized) {
-        ruda_ast_tree_dispose(&fixture->ast);
+        mmay_ast_tree_dispose(&fixture->ast);
     }
     if (fixture->parsed_initialized) {
-        ruda_parse_result_dispose(&fixture->parsed);
+        mmay_parse_result_dispose(&fixture->parsed);
     }
     if (fixture->lexed_initialized) {
-        ruda_lex_result_dispose(&fixture->lexed);
+        mmay_lex_result_dispose(&fixture->lexed);
     }
     if (fixture->sources_initialized) {
-        ruda_source_manager_dispose(&fixture->sources);
+        mmay_source_manager_dispose(&fixture->sources);
     }
     memset(fixture, 0, sizeof(*fixture));
 }
 
-static const RudaCheckedFunction *ruda_checker_arrays_function(
-    const RudaCheckResult *checked,
+static const MarimayCheckedFunction *mmay_checker_arrays_function(
+    const MarimayCheckResult *checked,
     const char *name
 ) {
     size_t index = 0;
     size_t length = strlen(name);
     for (index = 0; checked != NULL && index < checked->functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(checked, index);
+        const MarimayCheckedFunction *function = mmay_checked_function(checked, index);
         if (function != NULL && function->name.length == length
             && memcmp(function->name.data, name, length) == 0) {
             return function;
@@ -100,14 +101,14 @@ static const RudaCheckedFunction *ruda_checker_arrays_function(
     return NULL;
 }
 
-static size_t ruda_checker_arrays_function_index(
-    const RudaCheckResult *checked,
+static size_t mmay_checker_arrays_function_index(
+    const MarimayCheckResult *checked,
     const char *name
 ) {
     size_t index = 0;
     size_t length = strlen(name);
     for (index = 0; checked != NULL && index < checked->functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(checked, index);
+        const MarimayCheckedFunction *function = mmay_checked_function(checked, index);
         if (function != NULL && function->name.length == length
             && memcmp(function->name.data, name, length) == 0) {
             return index;
@@ -116,18 +117,18 @@ static size_t ruda_checker_arrays_function_index(
     return SIZE_MAX;
 }
 
-static bool ruda_checker_arrays_is_array_of(
-    const RudaCheckResult *checked,
-    RudaTypeId type,
-    RudaTypeId expected_element
+static bool mmay_checker_arrays_is_array_of(
+    const MarimayCheckResult *checked,
+    MarimayTypeId type,
+    MarimayTypeId expected_element
 ) {
-    RudaTypeId element = RUDA_TYPE_INVALID;
-    return ruda_type_array_element(&checked->types, type, &element)
+    MarimayTypeId element = MMAY_TYPE_INVALID;
+    return mmay_type_array_element(&checked->types, type, &element)
         && element == expected_element;
 }
 
-static bool ruda_checker_arrays_has_checked_store(
-    const RudaMirFunction *function,
+static bool mmay_checker_arrays_has_checked_store(
+    const MarimayMirFunction *function,
     bool *compound
 ) {
     size_t block_index = 0;
@@ -137,35 +138,35 @@ static bool ruda_checker_arrays_has_checked_store(
     }
     for (block_index = 0; function != NULL && block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(&function->blocks, block_index);
+        const MarimayMirBlock *block = mmay_vector_at_const(&function->blocks, block_index);
         size_t instruction_index = 0;
         if (block == NULL) {
             return false;
         }
         for (instruction_index = 0; instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *store = ruda_vector_at_const(
+            const MarimayMirInstruction *store = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
             size_t previous_index = 0;
             bool checked = false;
-            if (store == NULL || (store->kind != RUDA_MIR_ARRAY_SET
-                    && store->kind != RUDA_MIR_ARRAY_SET_IN_BOUNDS)) {
+            if (store == NULL || (store->kind != MMAY_MIR_ARRAY_SET
+                    && store->kind != MMAY_MIR_ARRAY_SET_IN_BOUNDS)) {
                 continue;
             }
             for (previous_index = 0; previous_index < instruction_index;
                 previous_index += 1) {
-                const RudaMirInstruction *previous = ruda_vector_at_const(
+                const MarimayMirInstruction *previous = mmay_vector_at_const(
                     &block->instructions, previous_index
                 );
-                if (previous != NULL && previous->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX
+                if (previous != NULL && previous->kind == MMAY_MIR_ARRAY_REQUIRE_INDEX
                     && previous->target == store->first
                     && previous->second == store->second) {
                     checked = true;
                 }
                 if (compound != NULL && previous != NULL
-                    && (previous->kind == RUDA_MIR_ARRAY_GET
-                        || previous->kind == RUDA_MIR_ARRAY_GET_IN_BOUNDS)
+                    && (previous->kind == MMAY_MIR_ARRAY_GET
+                        || previous->kind == MMAY_MIR_ARRAY_GET_IN_BOUNDS)
                     && previous->first == store->first
                     && previous->second == store->second) {
                     *compound = true;
@@ -180,22 +181,22 @@ static bool ruda_checker_arrays_has_checked_store(
     return found;
 }
 
-static size_t ruda_checker_arrays_instruction_count(
-    const RudaMirFunction *function,
-    RudaMirInstructionKind kind
+static size_t mmay_checker_arrays_instruction_count(
+    const MarimayMirFunction *function,
+    MarimayMirInstructionKind kind
 ) {
     size_t block_index = 0;
     size_t count = 0;
     for (block_index = 0; function != NULL
         && block_index < function->blocks.length; block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
         for (instruction_index = 0; block != NULL
             && instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *instruction = ruda_vector_at_const(
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
             if (instruction != NULL && instruction->kind == kind) {
@@ -206,59 +207,59 @@ static size_t ruda_checker_arrays_instruction_count(
     return count;
 }
 
-static void ruda_checker_arrays_expect_type_diagnostic(const char *source) {
-    RudaCheckerArraysFixture fixture;
-    RudaCheckResult checked;
+static void mmay_checker_arrays_expect_type_diagnostic(const char *source) {
+    MarimayCheckerArraysFixture fixture;
+    MarimayCheckResult checked;
     size_t index = 0;
     bool found = false;
     memset(&checked, 0, sizeof(checked));
-    RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
-        &fixture.ast, "test/checker-arrays", ruda_system_allocator(),
-        ruda_check_default_options(), &checked
-    ) == RUDA_CHECK_OK);
+    MMAY_EXPECT(mmay_checker_arrays_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
+        &fixture.ast, "test/checker-arrays", mmay_system_allocator(),
+        mmay_check_default_options(), &checked
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
         for (index = 0; index < checked.diagnostics.length; index += 1) {
-            const RudaCheckDiagnostic *diagnostic = ruda_check_diagnostic(&checked, index);
+            const MarimayCheckDiagnostic *diagnostic = mmay_check_diagnostic(&checked, index);
             if (diagnostic != NULL
-                && strcmp(diagnostic->code, RUDA_DIAGNOSTIC_TYPE_MISMATCH) == 0) {
+                && strcmp(diagnostic->code, MMAY_DIAGNOSTIC_TYPE_MISMATCH) == 0) {
                 found = true;
             }
         }
-        RUDA_EXPECT(found);
-        ruda_check_result_dispose(&checked);
+        MMAY_EXPECT(found);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_arrays_fixture_dispose(&fixture);
+    mmay_checker_arrays_fixture_dispose(&fixture);
 }
 
-static void ruda_checker_arrays_expect_status(
+static void mmay_checker_arrays_expect_status(
     const char *source,
-    RudaCheckStatus expected
+    MarimayCheckStatus expected
 ) {
-    RudaCheckerArraysFixture fixture;
-    RudaCheckResult checked;
+    MarimayCheckerArraysFixture fixture;
+    MarimayCheckResult checked;
     memset(&checked, 0, sizeof(checked));
-    RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_checker_arrays_fixture_init(&fixture, source));
     {
-        RudaCheckStatus actual = ruda_check_ast(
-        &fixture.ast, "test/checker-array-status", ruda_system_allocator(),
-        ruda_check_default_options(), &checked
+        MarimayCheckStatus actual = mmay_check_ast(
+        &fixture.ast, "test/checker-array-status", mmay_system_allocator(),
+        mmay_check_default_options(), &checked
         );
-        RUDA_EXPECT(actual == expected);
+        MMAY_EXPECT(actual == expected);
     }
-    if (expected == RUDA_CHECK_OK) {
-        RUDA_EXPECT(checked.initialized);
+    if (expected == MMAY_CHECK_OK) {
+        MMAY_EXPECT(checked.initialized);
         if (checked.initialized) {
-            RUDA_EXPECT(checked.diagnostics.length == 0);
-            ruda_check_result_dispose(&checked);
+            MMAY_EXPECT(checked.diagnostics.length == 0);
+            mmay_check_result_dispose(&checked);
         }
     } else {
-        RUDA_EXPECT(!checked.initialized);
+        MMAY_EXPECT(!checked.initialized);
     }
-    ruda_checker_arrays_fixture_dispose(&fixture);
+    mmay_checker_arrays_fixture_dispose(&fixture);
 }
 
-static void ruda_test_checker_arrays_surface_and_matrix(void) {
+static void mmay_test_checker_arrays_surface_and_matrix(void) {
     static const char source[] =
         "fn surface(values: []f64, matrices: [][]f64): int {\n"
         "  let inferred = [1.0, 2.0];\n"
@@ -316,25 +317,25 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
         "  }\n"
         "  return total;\n"
         "}\n";
-    RudaCheckerArraysFixture fixture;
-    RudaCheckResult checked;
-    RudaMirValue result;
-    RudaBytecodeFunction lowered;
-    RudaBytecodeFunction decoded;
-    RudaBytecodeExecution execution;
-    RudaOwnedBytes encoded;
-    RudaBytecodeValue vm_result;
-    RudaBytecodeRunOptions run_options;
-    const RudaCheckedFunction *surface = NULL;
-    const RudaCheckedFunction *matrix = NULL;
-    const RudaCheckedFunction *generic = NULL;
-    const RudaCheckedFunction *sorting = NULL;
-    const RudaCheckedFunction *proven_loop = NULL;
-    RudaCheckedFunction *mutable_proven_loop = NULL;
-    const RudaTypeId *first_parameter = NULL;
-    const RudaTypeId *second_parameter = NULL;
-    RudaTypeId inner = RUDA_TYPE_INVALID;
-    RudaTypeId empty_element = RUDA_TYPE_INVALID;
+    MarimayCheckerArraysFixture fixture;
+    MarimayCheckResult checked;
+    MarimayMirValue result;
+    MarimayBytecodeFunction lowered;
+    MarimayBytecodeFunction decoded;
+    MarimayBytecodeExecution execution;
+    MarimayOwnedBytes encoded;
+    MarimayBytecodeValue vm_result;
+    MarimayBytecodeRunOptions run_options;
+    const MarimayCheckedFunction *surface = NULL;
+    const MarimayCheckedFunction *matrix = NULL;
+    const MarimayCheckedFunction *generic = NULL;
+    const MarimayCheckedFunction *sorting = NULL;
+    const MarimayCheckedFunction *proven_loop = NULL;
+    MarimayCheckedFunction *mutable_proven_loop = NULL;
+    const MarimayTypeId *first_parameter = NULL;
+    const MarimayTypeId *second_parameter = NULL;
+    MarimayTypeId inner = MMAY_TYPE_INVALID;
+    MarimayTypeId empty_element = MMAY_TYPE_INVALID;
     size_t index = 0;
     size_t empty_constructions = 0;
     size_t length_instructions = 0;
@@ -349,38 +350,38 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
     memset(&execution, 0, sizeof(execution));
     memset(&encoded, 0, sizeof(encoded));
     memset(&vm_result, 0, sizeof(vm_result));
-    RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
-        &fixture.ast, "test/checker-arrays", ruda_system_allocator(),
-        ruda_check_default_options(), &checked
-    ) == RUDA_CHECK_OK);
+    MMAY_EXPECT(mmay_checker_arrays_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
+        &fixture.ast, "test/checker-arrays", mmay_system_allocator(),
+        mmay_check_default_options(), &checked
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        surface = ruda_checker_arrays_function(&checked, "surface");
-        matrix = ruda_checker_arrays_function(&checked, "matrix");
-        generic = ruda_checker_arrays_function(&checked, "generic");
-        sorting = ruda_checker_arrays_function(&checked, "sorting");
-        proven_loop = ruda_checker_arrays_function(&checked, "provenLoop");
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(surface != NULL && matrix != NULL && generic != NULL
+        surface = mmay_checker_arrays_function(&checked, "surface");
+        matrix = mmay_checker_arrays_function(&checked, "matrix");
+        generic = mmay_checker_arrays_function(&checked, "generic");
+        sorting = mmay_checker_arrays_function(&checked, "sorting");
+        proven_loop = mmay_checker_arrays_function(&checked, "provenLoop");
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(surface != NULL && matrix != NULL && generic != NULL
             && sorting != NULL && proven_loop != NULL);
         if (surface != NULL && matrix != NULL && generic != NULL
             && sorting != NULL && proven_loop != NULL) {
-            first_parameter = ruda_vector_at_const(&surface->mir.register_types, 0);
-            second_parameter = ruda_vector_at_const(&surface->mir.register_types, 1);
-            RUDA_EXPECT(first_parameter != NULL && second_parameter != NULL);
+            first_parameter = mmay_vector_at_const(&surface->mir.register_types, 0);
+            second_parameter = mmay_vector_at_const(&surface->mir.register_types, 1);
+            MMAY_EXPECT(first_parameter != NULL && second_parameter != NULL);
             if (first_parameter != NULL && second_parameter != NULL) {
-                RUDA_EXPECT(ruda_checker_arrays_is_array_of(
-                    &checked, *first_parameter, RUDA_TYPE_F64
+                MMAY_EXPECT(mmay_checker_arrays_is_array_of(
+                    &checked, *first_parameter, MMAY_TYPE_F64
                 ));
-                RUDA_EXPECT(ruda_type_array_element(
+                MMAY_EXPECT(mmay_type_array_element(
                     &checked.types, *second_parameter, &inner
-                ) && ruda_checker_arrays_is_array_of(&checked, inner, RUDA_TYPE_F64));
+                ) && mmay_checker_arrays_is_array_of(&checked, inner, MMAY_TYPE_F64));
             }
             for (index = 0; index < surface->mir.array_constructions.length; index += 1) {
-                const RudaMirArrayConstruction *construction = ruda_vector_at_const(
+                const MarimayMirArrayConstruction *construction = mmay_vector_at_const(
                     &surface->mir.array_constructions, index
                 );
-                const RudaMirArray *array = construction == NULL ? NULL : ruda_vector_at_const(
+                const MarimayMirArray *array = construction == NULL ? NULL : mmay_vector_at_const(
                     &surface->mir.arrays, construction->array
                 );
                 if (construction != NULL && array != NULL && construction->argument_count == 0) {
@@ -389,34 +390,34 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
                 }
                 if (construction != NULL && array != NULL
                     && construction->argument_count == 2
-                    && array->element_type == RUDA_TYPE_F64) {
+                    && array->element_type == MMAY_TYPE_F64) {
                     inferred_f64 = true;
                 }
             }
             for (index = 0; index < surface->mir.blocks.length; index += 1) {
-                const RudaMirBlock *block = ruda_vector_at_const(&surface->mir.blocks, index);
+                const MarimayMirBlock *block = mmay_vector_at_const(&surface->mir.blocks, index);
                 size_t instruction_index = 0;
                 for (instruction_index = 0; block != NULL
                     && instruction_index < block->instructions.length; instruction_index += 1) {
-                    const RudaMirInstruction *instruction = ruda_vector_at_const(
+                    const MarimayMirInstruction *instruction = mmay_vector_at_const(
                         &block->instructions, instruction_index
                     );
-                    if (instruction != NULL && instruction->kind == RUDA_MIR_ARRAY_LENGTH) {
+                    if (instruction != NULL && instruction->kind == MMAY_MIR_ARRAY_LENGTH) {
                         length_instructions += 1;
                     }
                     if (instruction != NULL
-                        && instruction->kind == RUDA_MIR_ARRAY_GET) {
+                        && instruction->kind == MMAY_MIR_ARRAY_GET) {
                         size_t previous_index = 0;
                         for (previous_index = 0;
                             previous_index < instruction_index;
                             previous_index += 1) {
-                            const RudaMirInstruction *previous =
-                                ruda_vector_at_const(
+                            const MarimayMirInstruction *previous =
+                                mmay_vector_at_const(
                                     &block->instructions, previous_index
                                 );
                             if (previous != NULL
                                 && previous->kind
-                                    == RUDA_MIR_ARRAY_REQUIRE_INDEX
+                                    == MMAY_MIR_ARRAY_REQUIRE_INDEX
                                 && previous->target == instruction->first
                                 && previous->second == instruction->second) {
                                 checked_gets += 1;
@@ -426,87 +427,87 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
                     }
                 }
             }
-            RUDA_EXPECT(empty_constructions == 1 && empty_element == RUDA_TYPE_F64);
-            RUDA_EXPECT(inferred_f64);
-            RUDA_EXPECT(length_instructions == 2);
-            RUDA_EXPECT(checked_gets > 0);
-            RUDA_EXPECT(ruda_checker_arrays_has_checked_store(&surface->mir, &compound));
-            RUDA_EXPECT(compound);
-            RUDA_EXPECT(ruda_checker_arrays_has_checked_store(&matrix->mir, NULL));
-            RUDA_EXPECT(ruda_mir_verify(&surface->mir) == RUDA_MIR_VERIFY_OK);
-            RUDA_EXPECT(ruda_mir_verify(&matrix->mir) == RUDA_MIR_VERIFY_OK);
-            RUDA_EXPECT(ruda_mir_verify(&generic->mir) == RUDA_MIR_VERIFY_OK);
-            RUDA_EXPECT(ruda_mir_verify(&sorting->mir) == RUDA_MIR_VERIFY_OK);
-            index = ruda_checker_arrays_function_index(&checked, "provenLoop");
-            mutable_proven_loop = index == SIZE_MAX ? NULL : ruda_vector_at(
+            MMAY_EXPECT(empty_constructions == 1 && empty_element == MMAY_TYPE_F64);
+            MMAY_EXPECT(inferred_f64);
+            MMAY_EXPECT(length_instructions == 2);
+            MMAY_EXPECT(checked_gets > 0);
+            MMAY_EXPECT(mmay_checker_arrays_has_checked_store(&surface->mir, &compound));
+            MMAY_EXPECT(compound);
+            MMAY_EXPECT(mmay_checker_arrays_has_checked_store(&matrix->mir, NULL));
+            MMAY_EXPECT(mmay_mir_verify(&surface->mir) == MMAY_MIR_VERIFY_OK);
+            MMAY_EXPECT(mmay_mir_verify(&matrix->mir) == MMAY_MIR_VERIFY_OK);
+            MMAY_EXPECT(mmay_mir_verify(&generic->mir) == MMAY_MIR_VERIFY_OK);
+            MMAY_EXPECT(mmay_mir_verify(&sorting->mir) == MMAY_MIR_VERIFY_OK);
+            index = mmay_checker_arrays_function_index(&checked, "provenLoop");
+            mutable_proven_loop = index == SIZE_MAX ? NULL : mmay_vector_at(
                 &checked.functions, index
             );
-            RUDA_EXPECT(mutable_proven_loop != NULL);
+            MMAY_EXPECT(mutable_proven_loop != NULL);
             if (mutable_proven_loop != NULL) {
                 size_t block_index = 0;
-                RUDA_EXPECT(ruda_mir_optimize_ranges(&mutable_proven_loop->mir)
-                    == RUDA_MIR_RANGE_OPTIMIZE_OK);
+                MMAY_EXPECT(mmay_mir_optimize_ranges(&mutable_proven_loop->mir)
+                    == MMAY_MIR_RANGE_OPTIMIZE_OK);
                 for (block_index = 0;
                     block_index < mutable_proven_loop->mir.blocks.length;
                     block_index += 1) {
-                    const RudaMirBlock *block = ruda_vector_at_const(
+                    const MarimayMirBlock *block = mmay_vector_at_const(
                         &mutable_proven_loop->mir.blocks, block_index
                     );
                     size_t instruction_index = 0;
                     for (instruction_index = 0; block != NULL
                         && instruction_index < block->instructions.length;
                         instruction_index += 1) {
-                        const RudaMirInstruction *instruction =
-                            ruda_vector_at_const(
+                        const MarimayMirInstruction *instruction =
+                            mmay_vector_at_const(
                                 &block->instructions, instruction_index
                             );
                         if (instruction != NULL && instruction->kind
-                            == RUDA_MIR_ARRAY_ASSUME_INDEX) {
+                            == MMAY_MIR_ARRAY_ASSUME_INDEX) {
                             assumed_ranges += 1;
                         }
                     }
                 }
-                RUDA_EXPECT(assumed_ranges > 0);
-                RUDA_EXPECT(ruda_mir_verify(&mutable_proven_loop->mir)
-                    == RUDA_MIR_VERIFY_OK);
+                MMAY_EXPECT(assumed_ranges > 0);
+                MMAY_EXPECT(mmay_mir_verify(&mutable_proven_loop->mir)
+                    == MMAY_MIR_VERIFY_OK);
             }
-            RUDA_EXPECT(ruda_mir_lower_bytecode_function(
-                &generic->mir, ruda_system_allocator(),
-                ruda_mir_bytecode_lower_default_options(), &lowered
-            ) == RUDA_MIR_BYTECODE_LOWER_OK);
-            RUDA_EXPECT(lowered.array_types.length == 2);
-            RUDA_EXPECT(ruda_bytecode_verify(&lowered) == RUDA_BYTECODE_VERIFY_OK);
-            RUDA_EXPECT(ruda_bytecode_encode_function(
-                &lowered, ruda_system_allocator(), &encoded
-            ) == RUDA_BYTECODE_CODEC_OK);
-            RUDA_EXPECT(ruda_bytecode_decode_function(
-                encoded.data, encoded.length, ruda_system_allocator(),
-                ruda_bytecode_function_default_options(), &decoded
-            ) == RUDA_BYTECODE_CODEC_OK);
-            RUDA_EXPECT(ruda_bytecode_verify(&decoded) == RUDA_BYTECODE_VERIFY_OK);
+            MMAY_EXPECT(mmay_mir_lower_bytecode_function(
+                &generic->mir, mmay_system_allocator(),
+                mmay_mir_bytecode_lower_default_options(), &lowered
+            ) == MMAY_MIR_BYTECODE_LOWER_OK);
+            MMAY_EXPECT(lowered.array_types.length == 2);
+            MMAY_EXPECT(mmay_bytecode_verify(&lowered) == MMAY_BYTECODE_VERIFY_OK);
+            MMAY_EXPECT(mmay_bytecode_encode_function(
+                &lowered, mmay_system_allocator(), &encoded
+            ) == MMAY_BYTECODE_CODEC_OK);
+            MMAY_EXPECT(mmay_bytecode_decode_function(
+                encoded.data, encoded.length, mmay_system_allocator(),
+                mmay_bytecode_function_default_options(), &decoded
+            ) == MMAY_BYTECODE_CODEC_OK);
+            MMAY_EXPECT(mmay_bytecode_verify(&decoded) == MMAY_BYTECODE_VERIFY_OK);
             {
-                RudaBytecodeArrayConstruction *construction = ruda_vector_at(
+                MarimayBytecodeArrayConstruction *construction = mmay_vector_at(
                     &decoded.array_constructions, 0
                 );
-                RudaBytecodeArrayType *array_type = ruda_vector_at(
+                MarimayBytecodeArrayType *array_type = mmay_vector_at(
                     &decoded.array_types, 0
                 );
-                RudaBytecodeInstruction *push = NULL;
+                MarimayBytecodeInstruction *push = NULL;
                 size_t block_index = 0;
                 size_t instruction_index = 0;
                 for (block_index = 0; block_index < decoded.blocks.length;
                     block_index += 1) {
-                    RudaBytecodeBlock *block = ruda_vector_at(
+                    MarimayBytecodeBlock *block = mmay_vector_at(
                         &decoded.blocks, block_index
                     );
                     for (instruction_index = 0; block != NULL
                         && instruction_index < block->instructions.length;
                         instruction_index += 1) {
-                        RudaBytecodeInstruction *candidate = ruda_vector_at(
+                        MarimayBytecodeInstruction *candidate = mmay_vector_at(
                             &block->instructions, instruction_index
                         );
                         if (candidate != NULL
-                            && candidate->opcode == RUDA_OPCODE_ARRAY_PUSH) {
+                            && candidate->opcode == MMAY_OPCODE_ARRAY_PUSH) {
                             push = candidate;
                         }
                     }
@@ -514,213 +515,213 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
                 if (construction != NULL) {
                     uint32_t saved_layout = construction->array_layout;
                     construction->array_layout = UINT32_MAX;
-                    RUDA_EXPECT(ruda_bytecode_verify(&decoded)
-                        != RUDA_BYTECODE_VERIFY_OK);
+                    MMAY_EXPECT(mmay_bytecode_verify(&decoded)
+                        != MMAY_BYTECODE_VERIFY_OK);
                     construction->array_layout = saved_layout;
                 }
                 if (array_type != NULL) {
                     uint32_t saved_layout = array_type->element_layout;
                     array_type->element_layout = 0;
-                    RUDA_EXPECT(ruda_bytecode_verify(&decoded)
-                        != RUDA_BYTECODE_VERIFY_OK);
+                    MMAY_EXPECT(mmay_bytecode_verify(&decoded)
+                        != MMAY_BYTECODE_VERIFY_OK);
                     array_type->element_layout = saved_layout;
                 }
                 if (push != NULL) {
                     uint64_t saved_value = push->operands[1].unsigned_value;
                     push->operands[1].unsigned_value =
                         push->operands[0].unsigned_value;
-                    RUDA_EXPECT(ruda_bytecode_verify(&decoded)
-                        != RUDA_BYTECODE_VERIFY_OK);
+                    MMAY_EXPECT(mmay_bytecode_verify(&decoded)
+                        != MMAY_BYTECODE_VERIFY_OK);
                     push->operands[1].unsigned_value = saved_value;
                 }
-                RUDA_EXPECT(ruda_bytecode_verify(&decoded)
-                    == RUDA_BYTECODE_VERIFY_OK);
+                MMAY_EXPECT(mmay_bytecode_verify(&decoded)
+                    == MMAY_BYTECODE_VERIFY_OK);
             }
-            RUDA_EXPECT(ruda_bytecode_execution_init(
-                &execution, ruda_system_allocator(),
-                ruda_bytecode_execution_default_options()
+            MMAY_EXPECT(mmay_bytecode_execution_init(
+                &execution, mmay_system_allocator(),
+                mmay_bytecode_execution_default_options()
             ));
-            run_options = ruda_bytecode_run_default_options();
+            run_options = mmay_bytecode_run_default_options();
             run_options.execution = &execution;
-            RUDA_EXPECT(ruda_bytecode_run(
-                &decoded, NULL, 0, ruda_system_allocator(),
+            MMAY_EXPECT(mmay_bytecode_run(
+                &decoded, NULL, 0, mmay_system_allocator(),
                 run_options, &vm_result
-            ) == RUDA_BYTECODE_RUN_OK);
-            RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_I64
+            ) == MMAY_BYTECODE_RUN_OK);
+            MMAY_EXPECT(vm_result.type == MMAY_BYTECODE_TYPE_I64
                 && vm_result.as.i64 == 24);
-            index = ruda_checker_arrays_function_index(&checked, "matrix");
-            RUDA_EXPECT(index != SIZE_MAX);
+            index = mmay_checker_arrays_function_index(&checked, "matrix");
+            MMAY_EXPECT(index != SIZE_MAX);
             if (index != SIZE_MAX) {
-                RUDA_EXPECT(ruda_check_interpret_function(
-                    &checked, index, NULL, 0, ruda_system_allocator(),
-                    ruda_check_interpret_default_options(), &result
-                ) == RUDA_MIR_INTERPRET_OK);
-                RUDA_EXPECT(result.type == RUDA_TYPE_F64
+                MMAY_EXPECT(mmay_check_interpret_function(
+                    &checked, index, NULL, 0, mmay_system_allocator(),
+                    mmay_check_interpret_default_options(), &result
+                ) == MMAY_MIR_INTERPRET_OK);
+                MMAY_EXPECT(result.type == MMAY_TYPE_F64
                     && result.as.f64_bits == UINT64_C(0x4079f00000000000));
             }
-            index = ruda_checker_arrays_function_index(&checked, "generic");
-            RUDA_EXPECT(index != SIZE_MAX);
+            index = mmay_checker_arrays_function_index(&checked, "generic");
+            MMAY_EXPECT(index != SIZE_MAX);
             if (index != SIZE_MAX) {
                 memset(&result, 0, sizeof(result));
-                RUDA_EXPECT(ruda_check_interpret_function(
-                    &checked, index, NULL, 0, ruda_system_allocator(),
-                    ruda_check_interpret_default_options(), &result
-                ) == RUDA_MIR_INTERPRET_OK);
-                RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 24);
+                MMAY_EXPECT(mmay_check_interpret_function(
+                    &checked, index, NULL, 0, mmay_system_allocator(),
+                    mmay_check_interpret_default_options(), &result
+                ) == MMAY_MIR_INTERPRET_OK);
+                MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 24);
             }
-            index = ruda_checker_arrays_function_index(&checked, "sorting");
-            RUDA_EXPECT(index != SIZE_MAX);
+            index = mmay_checker_arrays_function_index(&checked, "sorting");
+            MMAY_EXPECT(index != SIZE_MAX);
             if (index != SIZE_MAX) {
                 memset(&result, 0, sizeof(result));
-                RUDA_EXPECT(ruda_check_interpret_function(
-                    &checked, index, NULL, 0, ruda_system_allocator(),
-                    ruda_check_interpret_default_options(), &result
-                ) == RUDA_MIR_INTERPRET_OK);
-                RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 2);
+                MMAY_EXPECT(mmay_check_interpret_function(
+                    &checked, index, NULL, 0, mmay_system_allocator(),
+                    mmay_check_interpret_default_options(), &result
+                ) == MMAY_MIR_INTERPRET_OK);
+                MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 2);
             }
-            index = ruda_checker_arrays_function_index(&checked, "provenLoop");
-            RUDA_EXPECT(index != SIZE_MAX);
+            index = mmay_checker_arrays_function_index(&checked, "provenLoop");
+            MMAY_EXPECT(index != SIZE_MAX);
             if (index != SIZE_MAX) {
                 memset(&result, 0, sizeof(result));
-                RUDA_EXPECT(ruda_check_interpret_function(
-                    &checked, index, NULL, 0, ruda_system_allocator(),
-                    ruda_check_interpret_default_options(), &result
-                ) == RUDA_MIR_INTERPRET_OK);
-                RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 12);
+                MMAY_EXPECT(mmay_check_interpret_function(
+                    &checked, index, NULL, 0, mmay_system_allocator(),
+                    mmay_check_interpret_default_options(), &result
+                ) == MMAY_MIR_INTERPRET_OK);
+                MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 12);
             }
         }
         if (execution.initialized) {
-            ruda_bytecode_execution_dispose(&execution);
+            mmay_bytecode_execution_dispose(&execution);
         }
         if (decoded.initialized) {
-            ruda_bytecode_function_dispose(&decoded);
+            mmay_bytecode_function_dispose(&decoded);
         }
         if (lowered.initialized) {
-            ruda_bytecode_function_dispose(&lowered);
+            mmay_bytecode_function_dispose(&lowered);
         }
         if (encoded.data != NULL) {
-            ruda_owned_bytes_dispose(&encoded);
+            mmay_owned_bytes_dispose(&encoded);
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_arrays_fixture_dispose(&fixture);
+    mmay_checker_arrays_fixture_dispose(&fixture);
 }
 
-static void ruda_test_checker_arrays_d045_and_diagnostics(void) {
+static void mmay_test_checker_arrays_d045_and_diagnostics(void) {
     static const char bounds_source[] =
         "fn bounds(): int { let values = [1]; values[3] = panic(\"rhs\"); }\n";
     static const unsigned char bounds_message[] =
         "array index 3 is outside length 1";
-    RudaCheckerArraysFixture fixture;
-    RudaCheckResult checked;
-    RudaCheckInterpretOptions options = ruda_check_interpret_default_options();
-    RudaMirPanic panic;
-    RudaMirValue result;
-    const RudaCheckedFunction *bounds = NULL;
+    MarimayCheckerArraysFixture fixture;
+    MarimayCheckResult checked;
+    MarimayCheckInterpretOptions options = mmay_check_interpret_default_options();
+    MarimayMirPanic panic;
+    MarimayMirValue result;
+    const MarimayCheckedFunction *bounds = NULL;
     const char *access = strstr(bounds_source, "values[3]");
     size_t index = 0;
     memset(&checked, 0, sizeof(checked));
     memset(&panic, 0, sizeof(panic));
     memset(&result, 0, sizeof(result));
-    RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, bounds_source));
-    RUDA_EXPECT(ruda_check_ast(
-        &fixture.ast, "test/checker-arrays", ruda_system_allocator(),
-        ruda_check_default_options(), &checked
-    ) == RUDA_CHECK_OK);
+    MMAY_EXPECT(mmay_checker_arrays_fixture_init(&fixture, bounds_source));
+    MMAY_EXPECT(mmay_check_ast(
+        &fixture.ast, "test/checker-arrays", mmay_system_allocator(),
+        mmay_check_default_options(), &checked
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        bounds = ruda_checker_arrays_function(&checked, "bounds");
-        index = ruda_checker_arrays_function_index(&checked, "bounds");
-        RUDA_EXPECT(bounds != NULL && index != SIZE_MAX && access != NULL);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        bounds = mmay_checker_arrays_function(&checked, "bounds");
+        index = mmay_checker_arrays_function_index(&checked, "bounds");
+        MMAY_EXPECT(bounds != NULL && index != SIZE_MAX && access != NULL);
         options.panic = &panic;
         if (index != SIZE_MAX) {
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, index, NULL, 0, ruda_system_allocator(), options, &result
-            ) == RUDA_MIR_INTERPRET_PANIC);
-            RUDA_EXPECT(panic.code != NULL && strcmp(panic.code, "G4002") == 0);
-            RUDA_EXPECT(panic.message.length == sizeof(bounds_message) - 1);
-            RUDA_EXPECT(panic.message.data != NULL && memcmp(
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, index, NULL, 0, mmay_system_allocator(), options, &result
+            ) == MMAY_MIR_INTERPRET_PANIC);
+            MMAY_EXPECT(panic.code != NULL && strcmp(panic.code, "G4002") == 0);
+            MMAY_EXPECT(panic.message.length == sizeof(bounds_message) - 1);
+            MMAY_EXPECT(panic.message.data != NULL && memcmp(
                 panic.message.data,
                 bounds_message,
                 sizeof(bounds_message) - 1
             ) == 0);
             if (bounds != NULL && access != NULL) {
-                RUDA_EXPECT(ruda_symbol_id_equal(
+                MMAY_EXPECT(mmay_symbol_id_equal(
                     panic.symbol,
                     bounds->mir.symbol
                 ));
-                RUDA_EXPECT(panic.span.start == (size_t)(access - bounds_source));
-                RUDA_EXPECT(panic.span.end
+                MMAY_EXPECT(panic.span.start == (size_t)(access - bounds_source));
+                MMAY_EXPECT(panic.span.end
                     == (size_t)(access - bounds_source) + strlen("values[3]"));
             }
         }
-        ruda_mir_panic_dispose(&panic);
-        ruda_check_result_dispose(&checked);
+        mmay_mir_panic_dispose(&panic);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_arrays_fixture_dispose(&fixture);
+    mmay_checker_arrays_fixture_dispose(&fixture);
 
-    ruda_checker_arrays_expect_type_diagnostic(
+    mmay_checker_arrays_expect_type_diagnostic(
         "fn bad(): void { let values = [1, true]; }\n"
     );
-    ruda_checker_arrays_expect_type_diagnostic(
+    mmay_checker_arrays_expect_type_diagnostic(
         "fn bad(): void { let values = [1]; values[true] = 2; }\n"
     );
-    ruda_checker_arrays_expect_type_diagnostic(
+    mmay_checker_arrays_expect_type_diagnostic(
         "fn bad(): void { let values = [1]; values[0] = true; }\n"
     );
-    ruda_checker_arrays_expect_type_diagnostic(
+    mmay_checker_arrays_expect_type_diagnostic(
         "fn bad(): void { let values = []; }\n"
     );
-    ruda_checker_arrays_expect_status(
+    mmay_checker_arrays_expect_status(
         "fn deferred(): void { let values = arrayOf(1); }\n",
-        RUDA_CHECK_OK
+        MMAY_CHECK_OK
     );
-    ruda_checker_arrays_expect_status(
+    mmay_checker_arrays_expect_status(
         "fn deferred(): void { let values = arrayOf<int>(); }\n",
-        RUDA_CHECK_OK
+        MMAY_CHECK_OK
     );
-    ruda_checker_arrays_expect_status(
+    mmay_checker_arrays_expect_status(
         "fn deferred(): void { let values = [1]; push(values, 2); }\n",
-        RUDA_CHECK_OK
+        MMAY_CHECK_OK
     );
-    ruda_checker_arrays_expect_status(
+    mmay_checker_arrays_expect_status(
         "fn deferred(): void { let values = [1]; values.push(2); }\n",
-        RUDA_CHECK_OK
+        MMAY_CHECK_OK
     );
 }
 
-static void ruda_test_checker_arrays_length_shadow(void) {
+static void mmay_test_checker_arrays_length_shadow(void) {
     static const char source[] =
         "fn length(value: int): int { return value + 1; }\n"
         "fn use(): int { return length(4); }\n";
-    RudaCheckerArraysFixture fixture;
-    RudaCheckResult checked;
-    RudaMirValue result;
+    MarimayCheckerArraysFixture fixture;
+    MarimayCheckResult checked;
+    MarimayMirValue result;
     size_t index = SIZE_MAX;
     memset(&checked, 0, sizeof(checked));
     memset(&result, 0, sizeof(result));
-    RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
-        &fixture.ast, "test/checker-array-shadow", ruda_system_allocator(),
-        ruda_check_default_options(), &checked
-    ) == RUDA_CHECK_OK);
+    MMAY_EXPECT(mmay_checker_arrays_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
+        &fixture.ast, "test/checker-array-shadow", mmay_system_allocator(),
+        mmay_check_default_options(), &checked
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        index = ruda_checker_arrays_function_index(&checked, "use");
-        RUDA_EXPECT(index != SIZE_MAX);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        index = mmay_checker_arrays_function_index(&checked, "use");
+        MMAY_EXPECT(index != SIZE_MAX);
         if (index != SIZE_MAX) {
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, index, NULL, 0, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 5);
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, index, NULL, 0, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 5);
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_arrays_fixture_dispose(&fixture);
+    mmay_checker_arrays_fixture_dispose(&fixture);
 }
 
-static void ruda_test_checker_arrays_for_of(void) {
+static void mmay_test_checker_arrays_for_of(void) {
     static const char source[] =
         "fn iterate(): int {\n"
         "  let total = 0;\n"
@@ -731,75 +732,75 @@ static void ruda_test_checker_arrays_for_of(void) {
         "  }\n"
         "  return total;\n"
         "}\n";
-    RudaCheckerArraysFixture fixture;
-    RudaCheckResult checked;
-    RudaBytecodeFunction lowered;
-    RudaBytecodeExecution execution;
-    RudaBytecodeRunOptions run_options;
-    RudaBytecodeValue vm_result;
-    RudaMirValue mir_result;
-    const RudaCheckedFunction *function = NULL;
+    MarimayCheckerArraysFixture fixture;
+    MarimayCheckResult checked;
+    MarimayBytecodeFunction lowered;
+    MarimayBytecodeExecution execution;
+    MarimayBytecodeRunOptions run_options;
+    MarimayBytecodeValue vm_result;
+    MarimayMirValue mir_result;
+    const MarimayCheckedFunction *function = NULL;
     size_t index = SIZE_MAX;
     memset(&checked, 0, sizeof(checked));
     memset(&lowered, 0, sizeof(lowered));
     memset(&execution, 0, sizeof(execution));
     memset(&vm_result, 0, sizeof(vm_result));
     memset(&mir_result, 0, sizeof(mir_result));
-    RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
-        &fixture.ast, "test/checker-array-for-of", ruda_system_allocator(),
-        ruda_check_default_options(), &checked
-    ) == RUDA_CHECK_OK);
+    MMAY_EXPECT(mmay_checker_arrays_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
+        &fixture.ast, "test/checker-array-for-of", mmay_system_allocator(),
+        mmay_check_default_options(), &checked
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        function = ruda_checker_arrays_function(&checked, "iterate");
-        index = ruda_checker_arrays_function_index(&checked, "iterate");
-        RUDA_EXPECT(function != NULL && index != SIZE_MAX);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        function = mmay_checker_arrays_function(&checked, "iterate");
+        index = mmay_checker_arrays_function_index(&checked, "iterate");
+        MMAY_EXPECT(function != NULL && index != SIZE_MAX);
         if (function != NULL && index != SIZE_MAX) {
-            RUDA_EXPECT(ruda_mir_verify(&function->mir) == RUDA_MIR_VERIFY_OK);
-            RUDA_EXPECT(ruda_checker_arrays_instruction_count(
-                &function->mir, RUDA_MIR_ARRAY_LENGTH
+            MMAY_EXPECT(mmay_mir_verify(&function->mir) == MMAY_MIR_VERIFY_OK);
+            MMAY_EXPECT(mmay_checker_arrays_instruction_count(
+                &function->mir, MMAY_MIR_ARRAY_LENGTH
             ) == 2);
-            RUDA_EXPECT(ruda_checker_arrays_instruction_count(
-                &function->mir, RUDA_MIR_ARRAY_GET_IN_BOUNDS
+            MMAY_EXPECT(mmay_checker_arrays_instruction_count(
+                &function->mir, MMAY_MIR_ARRAY_GET_IN_BOUNDS
             ) == 1);
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, index, NULL, 0, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &mir_result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(mir_result.type == RUDA_TYPE_I64
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, index, NULL, 0, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &mir_result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(mir_result.type == MMAY_TYPE_I64
                 && mir_result.as.i64 == 4);
-            RUDA_EXPECT(ruda_mir_lower_bytecode_function(
-                &function->mir, ruda_system_allocator(),
-                ruda_mir_bytecode_lower_default_options(), &lowered
-            ) == RUDA_MIR_BYTECODE_LOWER_OK);
+            MMAY_EXPECT(mmay_mir_lower_bytecode_function(
+                &function->mir, mmay_system_allocator(),
+                mmay_mir_bytecode_lower_default_options(), &lowered
+            ) == MMAY_MIR_BYTECODE_LOWER_OK);
             if (lowered.initialized) {
-                RUDA_EXPECT(ruda_bytecode_verify(&lowered)
-                    == RUDA_BYTECODE_VERIFY_OK);
-                RUDA_EXPECT(ruda_bytecode_execution_init(
-                    &execution, ruda_system_allocator(),
-                    ruda_bytecode_execution_default_options()
+                MMAY_EXPECT(mmay_bytecode_verify(&lowered)
+                    == MMAY_BYTECODE_VERIFY_OK);
+                MMAY_EXPECT(mmay_bytecode_execution_init(
+                    &execution, mmay_system_allocator(),
+                    mmay_bytecode_execution_default_options()
                 ));
                 if (execution.initialized) {
-                    run_options = ruda_bytecode_run_default_options();
+                    run_options = mmay_bytecode_run_default_options();
                     run_options.execution = &execution;
-                    RUDA_EXPECT(ruda_bytecode_run(
-                        &lowered, NULL, 0, ruda_system_allocator(),
+                    MMAY_EXPECT(mmay_bytecode_run(
+                        &lowered, NULL, 0, mmay_system_allocator(),
                         run_options, &vm_result
-                    ) == RUDA_BYTECODE_RUN_OK);
-                    RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_I64
+                    ) == MMAY_BYTECODE_RUN_OK);
+                    MMAY_EXPECT(vm_result.type == MMAY_BYTECODE_TYPE_I64
                         && vm_result.as.i64 == 4);
-                    ruda_bytecode_execution_dispose(&execution);
+                    mmay_bytecode_execution_dispose(&execution);
                 }
-                ruda_bytecode_function_dispose(&lowered);
+                mmay_bytecode_function_dispose(&lowered);
             }
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_arrays_fixture_dispose(&fixture);
+    mmay_checker_arrays_fixture_dispose(&fixture);
 }
 
-static void ruda_test_checker_arrays_allocation_failures(void) {
+static void mmay_test_checker_arrays_allocation_failures(void) {
     static const char source[] =
         "fn arrays(): int {\n"
         "  let values = arrayOf(1, 2);\n"
@@ -809,91 +810,91 @@ static void ruda_test_checker_arrays_allocation_failures(void) {
         "  empty.push(4);\n"
         "  return values[0] + empty[0];\n"
         "}\n";
-    RudaCheckerArraysFixture fixture;
+    MarimayCheckerArraysFixture fixture;
     size_t failure_index = 0;
     bool reached_success = false;
-    RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_checker_arrays_fixture_init(&fixture, source));
     for (failure_index = 0; failure_index < 1024; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaAllocator allocator;
-        RudaCheckResult checked;
-        RudaCheckStatus status;
+        MarimayFailAllocator state;
+        MarimayAllocator allocator;
+        MarimayCheckResult checked;
+        MarimayCheckStatus status;
         memset(&checked, 0, sizeof(checked));
-        ruda_fail_allocator_init(
+        mmay_fail_allocator_init(
             &state,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             failure_index
         );
-        allocator = ruda_fail_allocator(&state);
-        status = ruda_check_ast(
+        allocator = mmay_fail_allocator(&state);
+        status = mmay_check_ast(
             &fixture.ast,
             "test/checker-array-allocation",
             allocator,
-            ruda_check_default_options(),
+            mmay_check_default_options(),
             &checked
         );
-        if (status == RUDA_CHECK_OK) {
+        if (status == MMAY_CHECK_OK) {
             reached_success = true;
-            RUDA_EXPECT(checked.initialized);
-            RUDA_EXPECT(checked.diagnostics.length == 0);
-            ruda_check_result_dispose(&checked);
+            MMAY_EXPECT(checked.initialized);
+            MMAY_EXPECT(checked.diagnostics.length == 0);
+            mmay_check_result_dispose(&checked);
         } else {
-            RUDA_EXPECT(status == RUDA_CHECK_ALLOCATION_FAILED);
-            RUDA_EXPECT(!checked.initialized);
+            MMAY_EXPECT(status == MMAY_CHECK_ALLOCATION_FAILED);
+            MMAY_EXPECT(!checked.initialized);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) {
             break;
         }
     }
-    RUDA_EXPECT(reached_success);
-    ruda_checker_arrays_fixture_dispose(&fixture);
+    MMAY_EXPECT(reached_success);
+    mmay_checker_arrays_fixture_dispose(&fixture);
 }
 
-static void ruda_test_checker_arrays_limits(void) {
+static void mmay_test_checker_arrays_limits(void) {
     static const char source[] =
         "fn arrays(): [][]f64 { return [[1.0, 2.0]]; }\n";
-    RudaCheckerArraysFixture fixture;
-    RudaCheckOptions options;
-    RudaCheckResult checked;
-    RUDA_EXPECT(ruda_checker_arrays_fixture_init(&fixture, source));
+    MarimayCheckerArraysFixture fixture;
+    MarimayCheckOptions options;
+    MarimayCheckResult checked;
+    MMAY_EXPECT(mmay_checker_arrays_fixture_init(&fixture, source));
 
     memset(&checked, 0, sizeof(checked));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.mir_options.max_array_layouts = 1;
-    RUDA_EXPECT(ruda_check_ast(
-        &fixture.ast, "test/checker-array-layout-limit", ruda_system_allocator(),
+    MMAY_EXPECT(mmay_check_ast(
+        &fixture.ast, "test/checker-array-layout-limit", mmay_system_allocator(),
         options, &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
 
     memset(&checked, 0, sizeof(checked));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.mir_options.max_array_arguments = 1;
-    RUDA_EXPECT(ruda_check_ast(
-        &fixture.ast, "test/checker-array-argument-limit", ruda_system_allocator(),
+    MMAY_EXPECT(mmay_check_ast(
+        &fixture.ast, "test/checker-array-argument-limit", mmay_system_allocator(),
         options, &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
 
     memset(&checked, 0, sizeof(checked));
-    options = ruda_check_default_options();
-    options.type_options.max_types = RUDA_TYPE_FIRST_DYNAMIC + 1;
-    RUDA_EXPECT(ruda_check_ast(
-        &fixture.ast, "test/checker-array-type-limit", ruda_system_allocator(),
+    options = mmay_check_default_options();
+    options.type_options.max_types = MMAY_TYPE_FIRST_DYNAMIC + 1;
+    MMAY_EXPECT(mmay_check_ast(
+        &fixture.ast, "test/checker-array-type-limit", mmay_system_allocator(),
         options, &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
 
-    ruda_checker_arrays_fixture_dispose(&fixture);
+    mmay_checker_arrays_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_arrays(void) {
-    ruda_test_checker_arrays_surface_and_matrix();
-    ruda_test_checker_arrays_d045_and_diagnostics();
-    ruda_test_checker_arrays_length_shadow();
-    ruda_test_checker_arrays_for_of();
-    ruda_test_checker_arrays_allocation_failures();
-    ruda_test_checker_arrays_limits();
+void mmay_test_checker_arrays(void) {
+    mmay_test_checker_arrays_surface_and_matrix();
+    mmay_test_checker_arrays_d045_and_diagnostics();
+    mmay_test_checker_arrays_length_shadow();
+    mmay_test_checker_arrays_for_of();
+    mmay_test_checker_arrays_allocation_failures();
+    mmay_test_checker_arrays_limits();
 }

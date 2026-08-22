@@ -2,512 +2,512 @@
 
 #include <stddef.h>
 
-static bool ruda_test_vm_build_record_mutation(
-    RudaBytecodeFunction *function
+static bool mmay_test_vm_build_record_mutation(
+    MarimayBytecodeFunction *function
 ) {
-    RudaBytecodeRecordField field;
-    RudaBytecodeRecordArgument argument;
-    RudaBytecodeRecordId record = RUDA_BYTECODE_NO_RECORD;
-    RudaBytecodeRecordConstructionId construction =
-        RUDA_BYTECODE_NO_RECORD_CONSTRUCTION;
+    MarimayBytecodeRecordField field;
+    MarimayBytecodeRecordArgument argument;
+    MarimayBytecodeRecordId record = MMAY_BYTECODE_NO_RECORD;
+    MarimayBytecodeRecordConstructionId construction =
+        MMAY_BYTECODE_NO_RECORD_CONSTRUCTION;
     uint32_t initial = UINT32_MAX;
     uint32_t object = UINT32_MAX;
     uint32_t replacement = UINT32_MAX;
     uint32_t projected = UINT32_MAX;
     uint32_t block = UINT32_MAX;
     uint64_t span = 0;
-    RudaSymbolId symbol = {{0x71}};
+    MarimaySymbolId symbol = {{0x71}};
     memset(function, 0, sizeof(*function));
     memset(&field, 0, sizeof(field));
     memset(&argument, 0, sizeof(argument));
-    field.type = RUDA_BYTECODE_TYPE_I64;
-    field.layout = RUDA_BYTECODE_NO_LAYOUT;
+    field.type = MMAY_BYTECODE_TYPE_I64;
+    field.layout = MMAY_BYTECODE_NO_LAYOUT;
     field.is_mutable = true;
-    if (!ruda_bytecode_function_init(
+    if (!mmay_bytecode_function_init(
             function,
-            ruda_system_allocator(),
-            RUDA_BYTECODE_TYPE_I64,
+            mmay_system_allocator(),
+            MMAY_BYTECODE_TYPE_I64,
             1,
             NULL,
             0,
-            ruda_bytecode_function_default_options()
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_I64, &initial
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_RECORD, &object
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_I64, &replacement
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_I64, &projected
-        ) || !ruda_bytecode_add_record_layout(
+            mmay_bytecode_function_default_options()
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_I64, &initial
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_RECORD, &object
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_I64, &replacement
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_I64, &projected
+        ) || !mmay_bytecode_add_record_layout(
             function, symbol, &field, 1, &record
-        ) || !ruda_bytecode_set_register_layout(function, object, record)) {
-        ruda_bytecode_function_dispose(function);
+        ) || !mmay_bytecode_set_register_layout(function, object, record)) {
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     argument.register_id = initial;
-    argument.type = RUDA_BYTECODE_TYPE_I64;
-    argument.layout = RUDA_BYTECODE_NO_LAYOUT;
-    if (!ruda_bytecode_add_record_construction(
+    argument.type = MMAY_BYTECODE_TYPE_I64;
+    argument.layout = MMAY_BYTECODE_NO_LAYOUT;
+    if (!mmay_bytecode_add_record_construction(
             function, record, &argument, 1, &construction
-        ) || !ruda_bytecode_add_block(function, &block)
-        || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_CONST_I64,
+        ) || !mmay_bytecode_add_block(function, &block)
+        || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_CONST_I64,
             initial, 7, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_RECORD_NEW,
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_RECORD_NEW,
             object, construction, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_CONST_I64,
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_CONST_I64,
             replacement, 9, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_RECORD_SET,
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_RECORD_SET,
             replacement, object, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_RECORD_GET,
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_RECORD_GET,
             projected, object, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_RETURN,
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_RETURN,
             projected, 0, 0, &span
         )) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     return true;
 }
 
-static bool ruda_test_vm_build_enum_payload(
-    RudaBytecodeFunction *function
+static bool mmay_test_vm_build_enum_payload(
+    MarimayBytecodeFunction *function
 ) {
-    RudaBytecodeEnumVariant variant;
-    RudaBytecodeEnumPayload payload;
-    RudaBytecodeEnumArgument argument;
-    RudaBytecodeEnumId enumeration = RUDA_BYTECODE_NO_ENUM;
-    RudaBytecodeEnumConstructionId construction =
-        RUDA_BYTECODE_NO_ENUM_CONSTRUCTION;
+    MarimayBytecodeEnumVariant variant;
+    MarimayBytecodeEnumPayload payload;
+    MarimayBytecodeEnumArgument argument;
+    MarimayBytecodeEnumId enumeration = MMAY_BYTECODE_NO_ENUM;
+    MarimayBytecodeEnumConstructionId construction =
+        MMAY_BYTECODE_NO_ENUM_CONSTRUCTION;
     uint32_t input = UINT32_MAX;
     uint32_t value = UINT32_MAX;
     uint32_t checked = UINT32_MAX;
     uint32_t projected = UINT32_MAX;
     uint32_t block = UINT32_MAX;
     uint64_t span = 20;
-    RudaSymbolId symbol = {{0x72}};
+    MarimaySymbolId symbol = {{0x72}};
     memset(function, 0, sizeof(*function));
     memset(&variant, 0, sizeof(variant));
     memset(&payload, 0, sizeof(payload));
     memset(&argument, 0, sizeof(argument));
     variant.payload_count = 1;
-    payload.type = RUDA_BYTECODE_TYPE_I64;
-    payload.layout = RUDA_BYTECODE_NO_LAYOUT;
-    if (!ruda_bytecode_function_init(
+    payload.type = MMAY_BYTECODE_TYPE_I64;
+    payload.layout = MMAY_BYTECODE_NO_LAYOUT;
+    if (!mmay_bytecode_function_init(
             function,
-            ruda_system_allocator(),
-            RUDA_BYTECODE_TYPE_I64,
+            mmay_system_allocator(),
+            MMAY_BYTECODE_TYPE_I64,
             1,
             NULL,
             0,
-            ruda_bytecode_function_default_options()
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_I64, &input
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_ENUM, &value
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_ENUM, &checked
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_I64, &projected
-        ) || !ruda_bytecode_add_enum_layout(
+            mmay_bytecode_function_default_options()
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_I64, &input
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_ENUM, &value
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_ENUM, &checked
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_I64, &projected
+        ) || !mmay_bytecode_add_enum_layout(
             function, symbol, &variant, 1, &payload, 1, &enumeration
-        ) || !ruda_bytecode_set_register_layout(
+        ) || !mmay_bytecode_set_register_layout(
             function, value, enumeration
-        ) || !ruda_bytecode_set_register_layout(
+        ) || !mmay_bytecode_set_register_layout(
             function, checked, enumeration
         )) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     argument.register_id = input;
-    argument.type = RUDA_BYTECODE_TYPE_I64;
-    argument.layout = RUDA_BYTECODE_NO_LAYOUT;
-    if (!ruda_bytecode_add_enum_construction(
+    argument.type = MMAY_BYTECODE_TYPE_I64;
+    argument.layout = MMAY_BYTECODE_NO_LAYOUT;
+    if (!mmay_bytecode_add_enum_construction(
             function, enumeration, 0, &argument, 1, &construction
-        ) || !ruda_bytecode_add_block(function, &block)
-        || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_CONST_I64,
+        ) || !mmay_bytecode_add_block(function, &block)
+        || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_CONST_I64,
             input, 13, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_ENUM_NEW,
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_ENUM_NEW,
             value, construction, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_ENUM_REQUIRE_VARIANT,
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_ENUM_REQUIRE_VARIANT,
             checked, value, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_ENUM_GET_PAYLOAD,
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_ENUM_GET_PAYLOAD,
             projected, checked, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_RETURN,
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_RETURN,
             projected, 0, 0, &span
         )) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     return true;
 }
 
-static void ruda_test_vm_enum_provenance_rejections(void) {
-    RudaBytecodeFunction function;
-    RudaBytecodeInstruction *require = NULL;
-    RudaBytecodeEnumArgument *argument = NULL;
-    RUDA_EXPECT(ruda_test_vm_build_enum_payload(&function));
-    require = ruda_test_vm_at(&function, 0, 2);
-    RUDA_EXPECT(require != NULL);
+static void mmay_test_vm_enum_provenance_rejections(void) {
+    MarimayBytecodeFunction function;
+    MarimayBytecodeInstruction *require = NULL;
+    MarimayBytecodeEnumArgument *argument = NULL;
+    MMAY_EXPECT(mmay_test_vm_build_enum_payload(&function));
+    require = mmay_test_vm_at(&function, 0, 2);
+    MMAY_EXPECT(require != NULL);
     if (require != NULL) {
-        require->opcode = RUDA_OPCODE_COPY;
-        RUDA_EXPECT(ruda_bytecode_verify(&function)
-            == RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT);
-        require->opcode = RUDA_OPCODE_ENUM_REQUIRE_VARIANT;
+        require->opcode = MMAY_OPCODE_COPY;
+        MMAY_EXPECT(mmay_bytecode_verify(&function)
+            == MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT);
+        require->opcode = MMAY_OPCODE_ENUM_REQUIRE_VARIANT;
     }
-    argument = ruda_vector_at(&function.enum_arguments, 0);
-    RUDA_EXPECT(argument != NULL);
+    argument = mmay_vector_at(&function.enum_arguments, 0);
+    MMAY_EXPECT(argument != NULL);
     if (argument != NULL) {
-        argument->type = RUDA_BYTECODE_TYPE_F64;
-        RUDA_EXPECT(ruda_bytecode_verify(&function)
-            == RUDA_BYTECODE_VERIFY_TYPE_MISMATCH);
-        argument->type = RUDA_BYTECODE_TYPE_I64;
+        argument->type = MMAY_BYTECODE_TYPE_F64;
+        MMAY_EXPECT(mmay_bytecode_verify(&function)
+            == MMAY_BYTECODE_VERIFY_TYPE_MISMATCH);
+        argument->type = MMAY_BYTECODE_TYPE_I64;
     }
-    ruda_bytecode_function_dispose(&function);
+    mmay_bytecode_function_dispose(&function);
 }
 
-static bool ruda_test_vm_build_nominal_result(
-    RudaBytecodeFunction *function
+static bool mmay_test_vm_build_nominal_result(
+    MarimayBytecodeFunction *function
 ) {
-    RudaBytecodeType parameter = RUDA_BYTECODE_TYPE_RECORD;
-    RudaBytecodeRecordId record = RUDA_BYTECODE_NO_RECORD;
-    RudaSymbolId symbol = {{0x73}};
+    MarimayBytecodeType parameter = MMAY_BYTECODE_TYPE_RECORD;
+    MarimayBytecodeRecordId record = MMAY_BYTECODE_NO_RECORD;
+    MarimaySymbolId symbol = {{0x73}};
     uint32_t block = UINT32_MAX;
     uint64_t span = 40;
     memset(function, 0, sizeof(*function));
-    if (!ruda_bytecode_function_init(
+    if (!mmay_bytecode_function_init(
             function,
-            ruda_system_allocator(),
-            RUDA_BYTECODE_TYPE_RECORD,
+            mmay_system_allocator(),
+            MMAY_BYTECODE_TYPE_RECORD,
             1,
             &parameter,
             1,
-            ruda_bytecode_function_default_options()
-        ) || !ruda_bytecode_add_record_layout(
+            mmay_bytecode_function_default_options()
+        ) || !mmay_bytecode_add_record_layout(
             function,
             symbol,
             NULL,
             0,
             &record
-        ) || !ruda_bytecode_set_register_layout(function, 0, record)
-        || !ruda_bytecode_add_block(function, &block)
-        || !ruda_test_vm_append(
+        ) || !mmay_bytecode_set_register_layout(function, 0, record)
+        || !mmay_bytecode_add_block(function, &block)
+        || !mmay_test_vm_append(
             function,
             block,
-            RUDA_OPCODE_RETURN,
+            MMAY_OPCODE_RETURN,
             0,
             0,
             0,
             &span
         )) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     function->result_layout = record;
     return true;
 }
 
-static bool ruda_test_vm_build_interface_metadata(
-    RudaBytecodeFunction *function
+static bool mmay_test_vm_build_interface_metadata(
+    MarimayBytecodeFunction *function
 ) {
-    RudaBytecodeType parameter = RUDA_BYTECODE_TYPE_INTERFACE;
-    RudaBytecodeInterfaceId interface_id = RUDA_BYTECODE_NO_INTERFACE;
-    RudaBytecodeRecordId record = RUDA_BYTECODE_NO_RECORD;
-    RudaBytecodeRecordConstructionId record_construction =
-        RUDA_BYTECODE_NO_RECORD_CONSTRUCTION;
-    RudaBytecodeInterfaceConstructionId construction =
-        RUDA_BYTECODE_NO_INTERFACE_CONSTRUCTION;
-    RudaBytecodeCallArgument argument;
-    RudaBytecodeCallId call_id = RUDA_BYTECODE_NO_CALL;
-    RudaBytecodeCall *call = NULL;
-    RudaSymbolId interface_symbol = {{0x74}};
-    RudaSymbolId record_symbol = {{0x77}};
-    RudaSymbolId method = {{0x75}};
-    RudaSymbolId callee = {{0x76}};
+    MarimayBytecodeType parameter = MMAY_BYTECODE_TYPE_INTERFACE;
+    MarimayBytecodeInterfaceId interface_id = MMAY_BYTECODE_NO_INTERFACE;
+    MarimayBytecodeRecordId record = MMAY_BYTECODE_NO_RECORD;
+    MarimayBytecodeRecordConstructionId record_construction =
+        MMAY_BYTECODE_NO_RECORD_CONSTRUCTION;
+    MarimayBytecodeInterfaceConstructionId construction =
+        MMAY_BYTECODE_NO_INTERFACE_CONSTRUCTION;
+    MarimayBytecodeCallArgument argument;
+    MarimayBytecodeCallId call_id = MMAY_BYTECODE_NO_CALL;
+    MarimayBytecodeCall *call = NULL;
+    MarimaySymbolId interface_symbol = {{0x74}};
+    MarimaySymbolId record_symbol = {{0x77}};
+    MarimaySymbolId method = {{0x75}};
+    MarimaySymbolId callee = {{0x76}};
     uint32_t scalar = UINT32_MAX;
     uint32_t object = UINT32_MAX;
     uint32_t block = UINT32_MAX;
     uint64_t span = 50;
     memset(function, 0, sizeof(*function));
     memset(&argument, 0, sizeof(argument));
-    if (!ruda_bytecode_function_init(
+    if (!mmay_bytecode_function_init(
             function,
-            ruda_system_allocator(),
-            RUDA_BYTECODE_TYPE_I64,
+            mmay_system_allocator(),
+            MMAY_BYTECODE_TYPE_I64,
             1,
             &parameter,
             1,
-            ruda_bytecode_function_default_options()
-        ) || !ruda_bytecode_add_register(
+            mmay_bytecode_function_default_options()
+        ) || !mmay_bytecode_add_register(
             function,
-            RUDA_BYTECODE_TYPE_I64,
+            MMAY_BYTECODE_TYPE_I64,
             &scalar
-        ) || !ruda_bytecode_add_register(
+        ) || !mmay_bytecode_add_register(
             function,
-            RUDA_BYTECODE_TYPE_RECORD,
+            MMAY_BYTECODE_TYPE_RECORD,
             &object
-        ) || !ruda_bytecode_add_record_layout(
+        ) || !mmay_bytecode_add_record_layout(
             function,
             record_symbol,
             NULL,
             0,
             &record
-        ) || !ruda_bytecode_set_register_layout(function, object, record)
-        || !ruda_bytecode_add_record_construction(
+        ) || !mmay_bytecode_set_register_layout(function, object, record)
+        || !mmay_bytecode_add_record_construction(
             function,
             record,
             NULL,
             0,
             &record_construction
-        ) || !ruda_bytecode_add_interface_layout(
+        ) || !mmay_bytecode_add_interface_layout(
             function,
             interface_symbol,
             1,
             &interface_id
-        ) || !ruda_bytecode_set_register_layout(function, 0, interface_id)
-        || !ruda_bytecode_add_interface_construction(
+        ) || !mmay_bytecode_set_register_layout(function, 0, interface_id)
+        || !mmay_bytecode_add_interface_construction(
             function,
             interface_id,
             object,
-            RUDA_BYTECODE_TYPE_RECORD,
+            MMAY_BYTECODE_TYPE_RECORD,
             record,
             &method,
             1,
             &construction
         )) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     argument.register_id = 0;
-    argument.type = RUDA_BYTECODE_TYPE_INTERFACE;
+    argument.type = MMAY_BYTECODE_TYPE_INTERFACE;
     argument.layout = interface_id;
-    if (!ruda_bytecode_add_call(
+    if (!mmay_bytecode_add_call(
             function,
             callee,
-            RUDA_BYTECODE_TYPE_I64,
+            MMAY_BYTECODE_TYPE_I64,
             &argument,
             1,
             &call_id
         )) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
-    call = ruda_vector_at(&function->calls, call_id);
+    call = mmay_vector_at(&function->calls, call_id);
     if (call == NULL) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     call->interface_slot = 0;
-    if (!ruda_bytecode_add_block(function, &block)
-        || !ruda_test_vm_append(
+    if (!mmay_bytecode_add_block(function, &block)
+        || !mmay_test_vm_append(
             function,
             block,
-            RUDA_OPCODE_CONST_I64,
+            MMAY_OPCODE_CONST_I64,
             scalar,
             3,
             0,
             &span
-        ) || !ruda_test_vm_append(
+        ) || !mmay_test_vm_append(
             function,
             block,
-            RUDA_OPCODE_RETURN,
+            MMAY_OPCODE_RETURN,
             scalar,
             0,
             0,
             &span
         )) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     return construction == 0 && record_construction == 0;
 }
 
-static bool ruda_test_vm_build_nominal_caller(
-    RudaBytecodeFunction *function,
-    RudaSymbolId callee
+static bool mmay_test_vm_build_nominal_caller(
+    MarimayBytecodeFunction *function,
+    MarimaySymbolId callee
 ) {
-    RudaBytecodeType parameter = RUDA_BYTECODE_TYPE_RECORD;
-    RudaBytecodeRecordId record = RUDA_BYTECODE_NO_RECORD;
-    RudaBytecodeCallArgument argument;
-    RudaBytecodeCallId call_id = RUDA_BYTECODE_NO_CALL;
-    RudaBytecodeCall *call = NULL;
-    RudaSymbolId record_symbol = {{0x73}};
+    MarimayBytecodeType parameter = MMAY_BYTECODE_TYPE_RECORD;
+    MarimayBytecodeRecordId record = MMAY_BYTECODE_NO_RECORD;
+    MarimayBytecodeCallArgument argument;
+    MarimayBytecodeCallId call_id = MMAY_BYTECODE_NO_CALL;
+    MarimayBytecodeCall *call = NULL;
+    MarimaySymbolId record_symbol = {{0x73}};
     uint32_t result = UINT32_MAX;
     uint32_t block = UINT32_MAX;
     uint64_t span = 60;
     memset(function, 0, sizeof(*function));
     memset(&argument, 0, sizeof(argument));
-    if (!ruda_bytecode_function_init(
+    if (!mmay_bytecode_function_init(
             function,
-            ruda_system_allocator(),
-            RUDA_BYTECODE_TYPE_RECORD,
+            mmay_system_allocator(),
+            MMAY_BYTECODE_TYPE_RECORD,
             1,
             &parameter,
             1,
-            ruda_bytecode_function_default_options()
-        ) || !ruda_bytecode_add_register(
+            mmay_bytecode_function_default_options()
+        ) || !mmay_bytecode_add_register(
             function,
-            RUDA_BYTECODE_TYPE_RECORD,
+            MMAY_BYTECODE_TYPE_RECORD,
             &result
-        ) || !ruda_bytecode_add_record_layout(
+        ) || !mmay_bytecode_add_record_layout(
             function,
             record_symbol,
             NULL,
             0,
             &record
-        ) || !ruda_bytecode_set_register_layout(function, 0, record)
-        || !ruda_bytecode_set_register_layout(function, result, record)) {
-        ruda_bytecode_function_dispose(function);
+        ) || !mmay_bytecode_set_register_layout(function, 0, record)
+        || !mmay_bytecode_set_register_layout(function, result, record)) {
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     function->result_layout = record;
     argument.register_id = 0;
-    argument.type = RUDA_BYTECODE_TYPE_RECORD;
+    argument.type = MMAY_BYTECODE_TYPE_RECORD;
     argument.layout = record;
-    if (!ruda_bytecode_add_call(
+    if (!mmay_bytecode_add_call(
             function,
             callee,
-            RUDA_BYTECODE_TYPE_RECORD,
+            MMAY_BYTECODE_TYPE_RECORD,
             &argument,
             1,
             &call_id
         )) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
-    call = ruda_vector_at(&function->calls, call_id);
+    call = mmay_vector_at(&function->calls, call_id);
     if (call == NULL) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     call->result_layout = record;
-    if (!ruda_bytecode_add_block(function, &block)
-        || !ruda_test_vm_append(
+    if (!mmay_bytecode_add_block(function, &block)
+        || !mmay_test_vm_append(
             function,
             block,
-            RUDA_OPCODE_CALL_DIRECT,
+            MMAY_OPCODE_CALL_DIRECT,
             result,
             call_id,
             0,
             &span
-        ) || !ruda_test_vm_append(
+        ) || !mmay_test_vm_append(
             function,
             block,
-            RUDA_OPCODE_RETURN,
+            MMAY_OPCODE_RETURN,
             result,
             0,
             0,
             &span
         )) {
-        ruda_bytecode_function_dispose(function);
+        mmay_bytecode_function_dispose(function);
         return false;
     }
     return true;
 }
 
-static void ruda_test_vm_nominal_program_signatures(void) {
-    RudaBytecodeProgram program;
-    RudaBytecodeProgram decoded;
-    RudaBytecodeFunction caller;
-    RudaBytecodeFunction callee;
-    RudaOwnedBytes encoded;
-    RudaSymbolId caller_symbol = {{0x10}};
-    RudaSymbolId callee_symbol = {{0x20}};
+static void mmay_test_vm_nominal_program_signatures(void) {
+    MarimayBytecodeProgram program;
+    MarimayBytecodeProgram decoded;
+    MarimayBytecodeFunction caller;
+    MarimayBytecodeFunction callee;
+    MarimayOwnedBytes encoded;
+    MarimaySymbolId caller_symbol = {{0x10}};
+    MarimaySymbolId callee_symbol = {{0x20}};
     uint32_t function_id = UINT32_MAX;
     memset(&program, 0, sizeof(program));
     memset(&decoded, 0, sizeof(decoded));
     memset(&caller, 0, sizeof(caller));
     memset(&callee, 0, sizeof(callee));
     memset(&encoded, 0, sizeof(encoded));
-    RUDA_EXPECT(ruda_test_vm_build_nominal_caller(&caller, callee_symbol));
-    RUDA_EXPECT(ruda_test_vm_build_nominal_result(&callee));
-    RUDA_EXPECT(ruda_bytecode_program_init(
+    MMAY_EXPECT(mmay_test_vm_build_nominal_caller(&caller, callee_symbol));
+    MMAY_EXPECT(mmay_test_vm_build_nominal_result(&callee));
+    MMAY_EXPECT(mmay_bytecode_program_init(
         &program,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         1,
-        ruda_bytecode_program_default_options()
+        mmay_bytecode_program_default_options()
     ));
-    RUDA_EXPECT(ruda_bytecode_program_take_function(
+    MMAY_EXPECT(mmay_bytecode_program_take_function(
         &program,
         caller_symbol,
         &caller,
         &function_id
     ) && function_id == 0);
-    RUDA_EXPECT(ruda_bytecode_program_take_function(
+    MMAY_EXPECT(mmay_bytecode_program_take_function(
         &program,
         callee_symbol,
         &callee,
         &function_id
     ) && function_id == 1);
-    RUDA_EXPECT(ruda_bytecode_program_set_entry(&program, caller_symbol));
-    RUDA_EXPECT(ruda_bytecode_program_verify(&program)
-        == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
-    RUDA_EXPECT(ruda_bytecode_encode_program(
+    MMAY_EXPECT(mmay_bytecode_program_set_entry(&program, caller_symbol));
+    MMAY_EXPECT(mmay_bytecode_program_verify(&program)
+        == MMAY_BYTECODE_PROGRAM_VERIFY_OK);
+    MMAY_EXPECT(mmay_bytecode_encode_program(
         &program,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         &encoded
-    ) == RUDA_BYTECODE_CODEC_OK);
-    RUDA_EXPECT(ruda_bytecode_decode_program(
+    ) == MMAY_BYTECODE_CODEC_OK);
+    MMAY_EXPECT(mmay_bytecode_decode_program(
         encoded.data,
         encoded.length,
-        ruda_system_allocator(),
-        ruda_bytecode_program_default_options(),
+        mmay_system_allocator(),
+        mmay_bytecode_program_default_options(),
         &decoded
-    ) == RUDA_BYTECODE_CODEC_OK);
+    ) == MMAY_BYTECODE_CODEC_OK);
     {
-        RudaBytecodeProgramFunction *decoded_callee = ruda_vector_at(
+        MarimayBytecodeProgramFunction *decoded_callee = mmay_vector_at(
             &decoded.functions,
             1
         );
-        RudaBytecodeRecordLayout *layout = decoded_callee != NULL
-            ? ruda_vector_at(&decoded_callee->body.record_layouts, 0)
+        MarimayBytecodeRecordLayout *layout = decoded_callee != NULL
+            ? mmay_vector_at(&decoded_callee->body.record_layouts, 0)
             : NULL;
-        RUDA_EXPECT(layout != NULL);
+        MMAY_EXPECT(layout != NULL);
         if (layout != NULL) {
             layout->symbol.bytes[0] ^= 0xffU;
-            RUDA_EXPECT(ruda_bytecode_program_verify(&decoded)
-                == RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH);
+            MMAY_EXPECT(mmay_bytecode_program_verify(&decoded)
+                == MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH);
         }
     }
-    ruda_bytecode_program_dispose(&decoded);
-    ruda_owned_bytes_dispose(&encoded);
-    ruda_bytecode_program_dispose(&program);
-    ruda_bytecode_function_dispose(&callee);
-    ruda_bytecode_function_dispose(&caller);
+    mmay_bytecode_program_dispose(&decoded);
+    mmay_owned_bytes_dispose(&encoded);
+    mmay_bytecode_program_dispose(&program);
+    mmay_bytecode_function_dispose(&callee);
+    mmay_bytecode_function_dispose(&caller);
 }
 
-static bool ruda_test_vm_build_nominal_limit_function(
-    RudaBytecodeFunction *function
+static bool mmay_test_vm_build_nominal_limit_function(
+    MarimayBytecodeFunction *function
 ) {
-    RudaBytecodeRecordField field;
-    RudaBytecodeRecordArgument record_argument;
-    RudaBytecodeEnumVariant variant;
-    RudaBytecodeEnumPayload payload;
-    RudaBytecodeEnumArgument enum_argument;
-    RudaBytecodeRecordId record = RUDA_BYTECODE_NO_RECORD;
-    RudaBytecodeRecordConstructionId record_construction =
-        RUDA_BYTECODE_NO_RECORD_CONSTRUCTION;
-    RudaBytecodeEnumId enum_id = RUDA_BYTECODE_NO_ENUM;
-    RudaBytecodeEnumConstructionId enum_construction =
-        RUDA_BYTECODE_NO_ENUM_CONSTRUCTION;
-    RudaBytecodeInterfaceId interface_id = RUDA_BYTECODE_NO_INTERFACE;
-    RudaBytecodeInterfaceConstructionId interface_construction =
-        RUDA_BYTECODE_NO_INTERFACE_CONSTRUCTION;
-    RudaSymbolId record_symbol = {{0x81}};
-    RudaSymbolId enum_symbol = {{0x82}};
-    RudaSymbolId interface_symbol = {{0x83}};
-    RudaSymbolId method_symbol = {{0x84}};
+    MarimayBytecodeRecordField field;
+    MarimayBytecodeRecordArgument record_argument;
+    MarimayBytecodeEnumVariant variant;
+    MarimayBytecodeEnumPayload payload;
+    MarimayBytecodeEnumArgument enum_argument;
+    MarimayBytecodeRecordId record = MMAY_BYTECODE_NO_RECORD;
+    MarimayBytecodeRecordConstructionId record_construction =
+        MMAY_BYTECODE_NO_RECORD_CONSTRUCTION;
+    MarimayBytecodeEnumId enum_id = MMAY_BYTECODE_NO_ENUM;
+    MarimayBytecodeEnumConstructionId enum_construction =
+        MMAY_BYTECODE_NO_ENUM_CONSTRUCTION;
+    MarimayBytecodeInterfaceId interface_id = MMAY_BYTECODE_NO_INTERFACE;
+    MarimayBytecodeInterfaceConstructionId interface_construction =
+        MMAY_BYTECODE_NO_INTERFACE_CONSTRUCTION;
+    MarimaySymbolId record_symbol = {{0x81}};
+    MarimaySymbolId enum_symbol = {{0x82}};
+    MarimaySymbolId interface_symbol = {{0x83}};
+    MarimaySymbolId method_symbol = {{0x84}};
     uint32_t scalar = UINT32_MAX;
     uint32_t object = UINT32_MAX;
     uint32_t block = UINT32_MAX;
@@ -518,233 +518,233 @@ static bool ruda_test_vm_build_nominal_limit_function(
     memset(&variant, 0, sizeof(variant));
     memset(&payload, 0, sizeof(payload));
     memset(&enum_argument, 0, sizeof(enum_argument));
-    field.type = RUDA_BYTECODE_TYPE_I64;
-    field.layout = RUDA_BYTECODE_NO_LAYOUT;
-    record_argument.type = RUDA_BYTECODE_TYPE_I64;
-    record_argument.layout = RUDA_BYTECODE_NO_LAYOUT;
+    field.type = MMAY_BYTECODE_TYPE_I64;
+    field.layout = MMAY_BYTECODE_NO_LAYOUT;
+    record_argument.type = MMAY_BYTECODE_TYPE_I64;
+    record_argument.layout = MMAY_BYTECODE_NO_LAYOUT;
     variant.payload_count = 1;
-    payload.type = RUDA_BYTECODE_TYPE_I64;
-    payload.layout = RUDA_BYTECODE_NO_LAYOUT;
-    enum_argument.type = RUDA_BYTECODE_TYPE_I64;
-    enum_argument.layout = RUDA_BYTECODE_NO_LAYOUT;
-    if (!ruda_bytecode_function_init(
+    payload.type = MMAY_BYTECODE_TYPE_I64;
+    payload.layout = MMAY_BYTECODE_NO_LAYOUT;
+    enum_argument.type = MMAY_BYTECODE_TYPE_I64;
+    enum_argument.layout = MMAY_BYTECODE_NO_LAYOUT;
+    if (!mmay_bytecode_function_init(
             function,
-            ruda_system_allocator(),
-            RUDA_BYTECODE_TYPE_I64,
+            mmay_system_allocator(),
+            MMAY_BYTECODE_TYPE_I64,
             1,
             NULL,
             0,
-            ruda_bytecode_function_default_options()
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_I64, &scalar
-        ) || !ruda_bytecode_add_register(
-            function, RUDA_BYTECODE_TYPE_RECORD, &object
-        ) || !ruda_bytecode_add_record_layout(
+            mmay_bytecode_function_default_options()
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_I64, &scalar
+        ) || !mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_RECORD, &object
+        ) || !mmay_bytecode_add_record_layout(
             function, record_symbol, &field, 1, &record
-        ) || !ruda_bytecode_set_register_layout(function, object, record)) {
+        ) || !mmay_bytecode_set_register_layout(function, object, record)) {
         goto failure;
     }
     record_argument.register_id = scalar;
     enum_argument.register_id = scalar;
-    if (!ruda_bytecode_add_record_construction(
+    if (!mmay_bytecode_add_record_construction(
             function, record, &record_argument, 1, &record_construction
-        ) || !ruda_bytecode_add_enum_layout(
+        ) || !mmay_bytecode_add_enum_layout(
             function, enum_symbol, &variant, 1, &payload, 1, &enum_id
-        ) || !ruda_bytecode_add_enum_construction(
+        ) || !mmay_bytecode_add_enum_construction(
             function, enum_id, 0, &enum_argument, 1, &enum_construction
-        ) || !ruda_bytecode_add_interface_layout(
+        ) || !mmay_bytecode_add_interface_layout(
             function, interface_symbol, 1, &interface_id
-        ) || !ruda_bytecode_add_interface_construction(
+        ) || !mmay_bytecode_add_interface_construction(
             function,
             interface_id,
             object,
-            RUDA_BYTECODE_TYPE_RECORD,
+            MMAY_BYTECODE_TYPE_RECORD,
             record,
             &method_symbol,
             1,
             &interface_construction
-        ) || !ruda_bytecode_add_block(function, &block)
-        || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_CONST_I64, scalar, 7, 0, &span
-        ) || !ruda_test_vm_append(
-            function, block, RUDA_OPCODE_RETURN, scalar, 0, 0, &span
+        ) || !mmay_bytecode_add_block(function, &block)
+        || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_CONST_I64, scalar, 7, 0, &span
+        ) || !mmay_test_vm_append(
+            function, block, MMAY_OPCODE_RETURN, scalar, 0, 0, &span
         )) {
         goto failure;
     }
     return true;
 
 failure:
-    ruda_bytecode_function_dispose(function);
+    mmay_bytecode_function_dispose(function);
     return false;
 }
 
-static void ruda_test_vm_nominal_program_limits(void) {
+static void mmay_test_vm_nominal_program_limits(void) {
     const size_t offsets[] = {
-        offsetof(RudaBytecodeProgramOptions, max_total_record_layouts),
-        offsetof(RudaBytecodeProgramOptions, max_total_record_fields),
-        offsetof(RudaBytecodeProgramOptions, max_total_record_constructions),
-        offsetof(RudaBytecodeProgramOptions, max_total_record_arguments),
-        offsetof(RudaBytecodeProgramOptions, max_total_enum_layouts),
-        offsetof(RudaBytecodeProgramOptions, max_total_enum_variants),
-        offsetof(RudaBytecodeProgramOptions, max_total_enum_payloads),
-        offsetof(RudaBytecodeProgramOptions, max_total_enum_constructions),
-        offsetof(RudaBytecodeProgramOptions, max_total_enum_arguments),
-        offsetof(RudaBytecodeProgramOptions, max_total_interface_layouts),
-        offsetof(RudaBytecodeProgramOptions, max_total_interface_constructions),
-        offsetof(RudaBytecodeProgramOptions, max_total_interface_methods)
+        offsetof(MarimayBytecodeProgramOptions, max_total_record_layouts),
+        offsetof(MarimayBytecodeProgramOptions, max_total_record_fields),
+        offsetof(MarimayBytecodeProgramOptions, max_total_record_constructions),
+        offsetof(MarimayBytecodeProgramOptions, max_total_record_arguments),
+        offsetof(MarimayBytecodeProgramOptions, max_total_enum_layouts),
+        offsetof(MarimayBytecodeProgramOptions, max_total_enum_variants),
+        offsetof(MarimayBytecodeProgramOptions, max_total_enum_payloads),
+        offsetof(MarimayBytecodeProgramOptions, max_total_enum_constructions),
+        offsetof(MarimayBytecodeProgramOptions, max_total_enum_arguments),
+        offsetof(MarimayBytecodeProgramOptions, max_total_interface_layouts),
+        offsetof(MarimayBytecodeProgramOptions, max_total_interface_constructions),
+        offsetof(MarimayBytecodeProgramOptions, max_total_interface_methods)
     };
-    RudaBytecodeProgram program;
-    RudaBytecodeFunction first;
-    RudaBytecodeFunction second;
-    RudaOwnedBytes encoded;
-    RudaSymbolId first_symbol = {{0x10}};
-    RudaSymbolId second_symbol = {{0x20}};
+    MarimayBytecodeProgram program;
+    MarimayBytecodeFunction first;
+    MarimayBytecodeFunction second;
+    MarimayOwnedBytes encoded;
+    MarimaySymbolId first_symbol = {{0x10}};
+    MarimaySymbolId second_symbol = {{0x20}};
     uint32_t function_id = UINT32_MAX;
     size_t index = 0;
     memset(&program, 0, sizeof(program));
     memset(&first, 0, sizeof(first));
     memset(&second, 0, sizeof(second));
     memset(&encoded, 0, sizeof(encoded));
-    RUDA_EXPECT(ruda_test_vm_build_nominal_limit_function(&first));
-    RUDA_EXPECT(ruda_test_vm_build_nominal_limit_function(&second));
-    RUDA_EXPECT(ruda_bytecode_program_init(
+    MMAY_EXPECT(mmay_test_vm_build_nominal_limit_function(&first));
+    MMAY_EXPECT(mmay_test_vm_build_nominal_limit_function(&second));
+    MMAY_EXPECT(mmay_bytecode_program_init(
         &program,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         1,
-        ruda_bytecode_program_default_options()
+        mmay_bytecode_program_default_options()
     ));
-    RUDA_EXPECT(ruda_bytecode_program_take_function(
+    MMAY_EXPECT(mmay_bytecode_program_take_function(
         &program, first_symbol, &first, &function_id
     ));
-    RUDA_EXPECT(ruda_bytecode_program_take_function(
+    MMAY_EXPECT(mmay_bytecode_program_take_function(
         &program, second_symbol, &second, &function_id
     ));
-    RUDA_EXPECT(ruda_bytecode_program_set_entry(&program, first_symbol));
-    RUDA_EXPECT(ruda_bytecode_program_verify(&program)
-        == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
+    MMAY_EXPECT(mmay_bytecode_program_set_entry(&program, first_symbol));
+    MMAY_EXPECT(mmay_bytecode_program_verify(&program)
+        == MMAY_BYTECODE_PROGRAM_VERIFY_OK);
     for (index = 0; index < sizeof(offsets) / sizeof(offsets[0]); index += 1) {
         size_t *limit = (size_t *)((unsigned char *)&program.options
             + offsets[index]);
         size_t saved = *limit;
         *limit = 1;
-        RUDA_EXPECT(ruda_bytecode_program_verify(&program)
-            == RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED);
+        MMAY_EXPECT(mmay_bytecode_program_verify(&program)
+            == MMAY_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED);
         *limit = saved;
     }
-    RUDA_EXPECT(ruda_bytecode_encode_program(
-        &program, ruda_system_allocator(), &encoded
-    ) == RUDA_BYTECODE_CODEC_OK);
+    MMAY_EXPECT(mmay_bytecode_encode_program(
+        &program, mmay_system_allocator(), &encoded
+    ) == MMAY_BYTECODE_CODEC_OK);
     for (index = 0; index < sizeof(offsets) / sizeof(offsets[0]); index += 1) {
-        RudaBytecodeProgramOptions limited =
-            ruda_bytecode_program_default_options();
-        RudaBytecodeProgram decoded;
-        RudaFailAllocator tracking;
+        MarimayBytecodeProgramOptions limited =
+            mmay_bytecode_program_default_options();
+        MarimayBytecodeProgram decoded;
+        MarimayFailAllocator tracking;
         size_t *limit = (size_t *)((unsigned char *)&limited + offsets[index]);
         memset(&decoded, 0, sizeof(decoded));
         *limit = 1;
-        ruda_fail_allocator_init(&tracking, ruda_system_allocator(), SIZE_MAX);
-        RUDA_EXPECT(ruda_bytecode_decode_program(
+        mmay_fail_allocator_init(&tracking, mmay_system_allocator(), SIZE_MAX);
+        MMAY_EXPECT(mmay_bytecode_decode_program(
             encoded.data,
             encoded.length,
-            ruda_fail_allocator(&tracking),
+            mmay_fail_allocator(&tracking),
             limited,
             &decoded
-        ) == RUDA_BYTECODE_CODEC_LIMIT_REACHED);
-        ruda_bytecode_program_dispose(&decoded);
-        RUDA_EXPECT(tracking.live_allocations == 0);
-        RUDA_EXPECT(tracking.live_bytes == 0);
+        ) == MMAY_BYTECODE_CODEC_LIMIT_REACHED);
+        mmay_bytecode_program_dispose(&decoded);
+        MMAY_EXPECT(tracking.live_allocations == 0);
+        MMAY_EXPECT(tracking.live_bytes == 0);
     }
-    ruda_owned_bytes_dispose(&encoded);
-    ruda_bytecode_program_dispose(&program);
-    ruda_bytecode_function_dispose(&second);
-    ruda_bytecode_function_dispose(&first);
+    mmay_owned_bytes_dispose(&encoded);
+    mmay_bytecode_program_dispose(&program);
+    mmay_bytecode_function_dispose(&second);
+    mmay_bytecode_function_dispose(&first);
 }
 
-static void ruda_test_vm_nominal_round_trip(
-    RudaBytecodeFunction *function
+static void mmay_test_vm_nominal_round_trip(
+    MarimayBytecodeFunction *function
 ) {
-    RudaOwnedBytes encoded;
-    RudaOwnedBytes encoded_again;
-    RudaBytecodeFunction decoded;
+    MarimayOwnedBytes encoded;
+    MarimayOwnedBytes encoded_again;
+    MarimayBytecodeFunction decoded;
     size_t index = 0;
     memset(&encoded, 0, sizeof(encoded));
     memset(&encoded_again, 0, sizeof(encoded_again));
     memset(&decoded, 0, sizeof(decoded));
-    RUDA_EXPECT(ruda_bytecode_verify(function) == RUDA_BYTECODE_VERIFY_OK);
+    MMAY_EXPECT(mmay_bytecode_verify(function) == MMAY_BYTECODE_VERIFY_OK);
     {
         bool reached_success = false;
         size_t failure_index = 0;
         for (failure_index = 0; failure_index < 64 && !reached_success;
             failure_index += 1) {
-            RudaFailAllocator state;
-            RudaOwnedBytes attempted;
-            RudaBytecodeCodecStatus status;
+            MarimayFailAllocator state;
+            MarimayOwnedBytes attempted;
+            MarimayBytecodeCodecStatus status;
             memset(&attempted, 0, sizeof(attempted));
-            ruda_fail_allocator_init(
+            mmay_fail_allocator_init(
                 &state,
-                ruda_system_allocator(),
+                mmay_system_allocator(),
                 failure_index
             );
-            status = ruda_bytecode_encode_function(
+            status = mmay_bytecode_encode_function(
                 function,
-                ruda_fail_allocator(&state),
+                mmay_fail_allocator(&state),
                 &attempted
             );
-            if (status == RUDA_BYTECODE_CODEC_OK) {
+            if (status == MMAY_BYTECODE_CODEC_OK) {
                 reached_success = true;
             } else {
-                RUDA_EXPECT(status == RUDA_BYTECODE_CODEC_ALLOCATION_FAILED);
+                MMAY_EXPECT(status == MMAY_BYTECODE_CODEC_ALLOCATION_FAILED);
             }
-            ruda_owned_bytes_dispose(&attempted);
-            RUDA_EXPECT(state.live_allocations == 0);
-            RUDA_EXPECT(state.live_bytes == 0);
+            mmay_owned_bytes_dispose(&attempted);
+            MMAY_EXPECT(state.live_allocations == 0);
+            MMAY_EXPECT(state.live_bytes == 0);
         }
-        RUDA_EXPECT(reached_success);
+        MMAY_EXPECT(reached_success);
     }
-    RUDA_EXPECT(ruda_bytecode_encode_function(
+    MMAY_EXPECT(mmay_bytecode_encode_function(
         function,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         &encoded
-    ) == RUDA_BYTECODE_CODEC_OK);
-    RUDA_EXPECT(encoded.length > 10 && encoded.data[9] < 0x80
+    ) == MMAY_BYTECODE_CODEC_OK);
+    MMAY_EXPECT(encoded.length > 10 && encoded.data[9] < 0x80
         && (encoded.data[9] & (1U << 4)) != 0);
     for (index = 0; index < encoded.length; index += 1) {
-        RUDA_EXPECT(ruda_bytecode_decode_function(
+        MMAY_EXPECT(mmay_bytecode_decode_function(
             encoded.data,
             index,
-            ruda_system_allocator(),
-            ruda_bytecode_function_default_options(),
+            mmay_system_allocator(),
+            mmay_bytecode_function_default_options(),
             &decoded
-        ) == RUDA_BYTECODE_CODEC_TRUNCATED);
-        RUDA_EXPECT(!decoded.initialized);
+        ) == MMAY_BYTECODE_CODEC_TRUNCATED);
+        MMAY_EXPECT(!decoded.initialized);
     }
-    RUDA_EXPECT(ruda_bytecode_decode_function(
+    MMAY_EXPECT(mmay_bytecode_decode_function(
         encoded.data,
         encoded.length,
-        ruda_system_allocator(),
-        ruda_bytecode_function_default_options(),
+        mmay_system_allocator(),
+        mmay_bytecode_function_default_options(),
         &decoded
-    ) == RUDA_BYTECODE_CODEC_OK);
-    RUDA_EXPECT(ruda_bytecode_encode_function(
+    ) == MMAY_BYTECODE_CODEC_OK);
+    MMAY_EXPECT(mmay_bytecode_encode_function(
         &decoded,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         &encoded_again
-    ) == RUDA_BYTECODE_CODEC_OK);
-    RUDA_EXPECT(encoded.length == encoded_again.length
+    ) == MMAY_BYTECODE_CODEC_OK);
+    MMAY_EXPECT(encoded.length == encoded_again.length
         && memcmp(encoded.data, encoded_again.data, encoded.length) == 0);
-    ruda_owned_bytes_dispose(&encoded_again);
-    ruda_bytecode_function_dispose(&decoded);
+    mmay_owned_bytes_dispose(&encoded_again);
+    mmay_bytecode_function_dispose(&decoded);
     {
         unsigned char saved_feature = encoded.data[9];
         encoded.data[9] = (unsigned char)(saved_feature & ~(1U << 4));
-        RUDA_EXPECT(ruda_bytecode_decode_function(
+        MMAY_EXPECT(mmay_bytecode_decode_function(
             encoded.data,
             encoded.length,
-            ruda_system_allocator(),
-            ruda_bytecode_function_default_options(),
+            mmay_system_allocator(),
+            mmay_bytecode_function_default_options(),
             &decoded
-        ) == RUDA_BYTECODE_CODEC_INVALID_ENCODING);
-        RUDA_EXPECT(!decoded.initialized);
+        ) == MMAY_BYTECODE_CODEC_INVALID_ENCODING);
+        MMAY_EXPECT(!decoded.initialized);
         encoded.data[9] = saved_feature;
     }
     {
@@ -752,120 +752,120 @@ static void ruda_test_vm_nominal_round_trip(
         size_t failure_index = 0;
         for (failure_index = 0; failure_index < 128 && !reached_success;
             failure_index += 1) {
-            RudaFailAllocator state;
-            RudaBytecodeCodecStatus status;
+            MarimayFailAllocator state;
+            MarimayBytecodeCodecStatus status;
             memset(&decoded, 0, sizeof(decoded));
-            ruda_fail_allocator_init(
+            mmay_fail_allocator_init(
                 &state,
-                ruda_system_allocator(),
+                mmay_system_allocator(),
                 failure_index
             );
-            status = ruda_bytecode_decode_function(
+            status = mmay_bytecode_decode_function(
                 encoded.data,
                 encoded.length,
-                ruda_fail_allocator(&state),
-                ruda_bytecode_function_default_options(),
+                mmay_fail_allocator(&state),
+                mmay_bytecode_function_default_options(),
                 &decoded
             );
-            if (status == RUDA_BYTECODE_CODEC_OK) {
+            if (status == MMAY_BYTECODE_CODEC_OK) {
                 reached_success = true;
             } else {
-                RUDA_EXPECT(status == RUDA_BYTECODE_CODEC_ALLOCATION_FAILED);
+                MMAY_EXPECT(status == MMAY_BYTECODE_CODEC_ALLOCATION_FAILED);
             }
-            ruda_bytecode_function_dispose(&decoded);
-            RUDA_EXPECT(state.live_allocations == 0);
-            RUDA_EXPECT(state.live_bytes == 0);
+            mmay_bytecode_function_dispose(&decoded);
+            MMAY_EXPECT(state.live_allocations == 0);
+            MMAY_EXPECT(state.live_bytes == 0);
         }
-        RUDA_EXPECT(reached_success);
+        MMAY_EXPECT(reached_success);
     }
-    ruda_owned_bytes_dispose(&encoded);
+    mmay_owned_bytes_dispose(&encoded);
 }
 
-void ruda_test_vm_nominal_codec(void) {
-    RudaBytecodeFunction function;
-    RudaTestBuffer disassembly;
-    RUDA_EXPECT(ruda_test_vm_build_record_mutation(&function));
-    ruda_test_buffer_init(&disassembly);
-    RUDA_EXPECT(ruda_bytecode_disassemble(
+void mmay_test_vm_nominal_codec(void) {
+    MarimayBytecodeFunction function;
+    MarimayTestBuffer disassembly;
+    MMAY_EXPECT(mmay_test_vm_build_record_mutation(&function));
+    mmay_test_buffer_init(&disassembly);
+    MMAY_EXPECT(mmay_bytecode_disassemble(
         &function,
-        ruda_test_buffer_writer(&disassembly)
-    ) == RUDA_BYTECODE_DISASSEMBLE_OK);
-    RUDA_EXPECT(strstr(disassembly.bytes, "record_new r1, rc0") != NULL);
-    ruda_test_vm_nominal_round_trip(&function);
-    ruda_bytecode_function_dispose(&function);
+        mmay_test_buffer_writer(&disassembly)
+    ) == MMAY_BYTECODE_DISASSEMBLE_OK);
+    MMAY_EXPECT(strstr(disassembly.bytes, "record_new r1, rc0") != NULL);
+    mmay_test_vm_nominal_round_trip(&function);
+    mmay_bytecode_function_dispose(&function);
 
-    RUDA_EXPECT(ruda_test_vm_build_enum_payload(&function));
-    ruda_test_buffer_init(&disassembly);
-    RUDA_EXPECT(ruda_bytecode_disassemble(
+    MMAY_EXPECT(mmay_test_vm_build_enum_payload(&function));
+    mmay_test_buffer_init(&disassembly);
+    MMAY_EXPECT(mmay_bytecode_disassemble(
         &function,
-        ruda_test_buffer_writer(&disassembly)
-    ) == RUDA_BYTECODE_DISASSEMBLE_OK);
-    RUDA_EXPECT(strstr(disassembly.bytes, "enum_new r1, ec0") != NULL);
-    ruda_test_vm_nominal_round_trip(&function);
-    ruda_bytecode_function_dispose(&function);
+        mmay_test_buffer_writer(&disassembly)
+    ) == MMAY_BYTECODE_DISASSEMBLE_OK);
+    MMAY_EXPECT(strstr(disassembly.bytes, "enum_new r1, ec0") != NULL);
+    mmay_test_vm_nominal_round_trip(&function);
+    mmay_bytecode_function_dispose(&function);
 
-    RUDA_EXPECT(ruda_test_vm_build_nominal_result(&function));
-    ruda_test_vm_nominal_round_trip(&function);
-    ruda_bytecode_function_dispose(&function);
+    MMAY_EXPECT(mmay_test_vm_build_nominal_result(&function));
+    mmay_test_vm_nominal_round_trip(&function);
+    mmay_bytecode_function_dispose(&function);
 
-    RUDA_EXPECT(ruda_test_vm_build_interface_metadata(&function));
-    ruda_test_vm_nominal_round_trip(&function);
-    ruda_bytecode_function_dispose(&function);
+    MMAY_EXPECT(mmay_test_vm_build_interface_metadata(&function));
+    mmay_test_vm_nominal_round_trip(&function);
+    mmay_bytecode_function_dispose(&function);
 
-    ruda_test_vm_nominal_program_signatures();
-    ruda_test_vm_nominal_program_limits();
+    mmay_test_vm_nominal_program_signatures();
+    mmay_test_vm_nominal_program_limits();
 }
 
-void ruda_test_vm_nominal_values_and_verifier(void) {
-    RudaBytecodeFunction function;
-    RudaBytecodeExecution execution;
-    RudaBytecodeRunOptions options;
-    RudaBytecodeValue result;
-    RudaBytecodeRecordField *field = NULL;
-    RudaBytecodeRecordArgument *argument = NULL;
+void mmay_test_vm_nominal_values_and_verifier(void) {
+    MarimayBytecodeFunction function;
+    MarimayBytecodeExecution execution;
+    MarimayBytecodeRunOptions options;
+    MarimayBytecodeValue result;
+    MarimayBytecodeRecordField *field = NULL;
+    MarimayBytecodeRecordArgument *argument = NULL;
     memset(&execution, 0, sizeof(execution));
-    RUDA_EXPECT(ruda_bytecode_execution_init(
+    MMAY_EXPECT(mmay_bytecode_execution_init(
         &execution,
-        ruda_system_allocator(),
-        ruda_bytecode_execution_default_options()
+        mmay_system_allocator(),
+        mmay_bytecode_execution_default_options()
     ));
-    options = ruda_bytecode_run_default_options();
+    options = mmay_bytecode_run_default_options();
     options.execution = &execution;
 
-    RUDA_EXPECT(ruda_test_vm_build_record_mutation(&function));
-    RUDA_EXPECT(ruda_bytecode_verify(&function) == RUDA_BYTECODE_VERIFY_OK);
-    result = ruda_test_vm_i64(-1);
-    RUDA_EXPECT(ruda_bytecode_run(
-        &function, NULL, 0, ruda_system_allocator(), options, &result
-    ) == RUDA_BYTECODE_RUN_OK);
-    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 9);
-    field = ruda_vector_at(&function.record_fields, 0);
-    RUDA_EXPECT(field != NULL);
+    MMAY_EXPECT(mmay_test_vm_build_record_mutation(&function));
+    MMAY_EXPECT(mmay_bytecode_verify(&function) == MMAY_BYTECODE_VERIFY_OK);
+    result = mmay_test_vm_i64(-1);
+    MMAY_EXPECT(mmay_bytecode_run(
+        &function, NULL, 0, mmay_system_allocator(), options, &result
+    ) == MMAY_BYTECODE_RUN_OK);
+    MMAY_EXPECT(result.type == MMAY_BYTECODE_TYPE_I64 && result.as.i64 == 9);
+    field = mmay_vector_at(&function.record_fields, 0);
+    MMAY_EXPECT(field != NULL);
     if (field != NULL) {
         field->is_mutable = false;
-        RUDA_EXPECT(ruda_bytecode_verify(&function)
-            == RUDA_BYTECODE_VERIFY_TYPE_MISMATCH);
+        MMAY_EXPECT(mmay_bytecode_verify(&function)
+            == MMAY_BYTECODE_VERIFY_TYPE_MISMATCH);
         field->is_mutable = true;
     }
-    argument = ruda_vector_at(&function.record_arguments, 0);
-    RUDA_EXPECT(argument != NULL);
+    argument = mmay_vector_at(&function.record_arguments, 0);
+    MMAY_EXPECT(argument != NULL);
     if (argument != NULL) {
-        argument->type = RUDA_BYTECODE_TYPE_F64;
-        RUDA_EXPECT(ruda_bytecode_verify(&function)
-            == RUDA_BYTECODE_VERIFY_TYPE_MISMATCH);
-        argument->type = RUDA_BYTECODE_TYPE_I64;
+        argument->type = MMAY_BYTECODE_TYPE_F64;
+        MMAY_EXPECT(mmay_bytecode_verify(&function)
+            == MMAY_BYTECODE_VERIFY_TYPE_MISMATCH);
+        argument->type = MMAY_BYTECODE_TYPE_I64;
     }
-    ruda_bytecode_function_dispose(&function);
+    mmay_bytecode_function_dispose(&function);
 
-    RUDA_EXPECT(ruda_test_vm_build_enum_payload(&function));
-    RUDA_EXPECT(ruda_bytecode_verify(&function) == RUDA_BYTECODE_VERIFY_OK);
-    result = ruda_test_vm_i64(-1);
-    RUDA_EXPECT(ruda_bytecode_run(
-        &function, NULL, 0, ruda_system_allocator(), options, &result
-    ) == RUDA_BYTECODE_RUN_OK);
-    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 13);
-    ruda_bytecode_function_dispose(&function);
+    MMAY_EXPECT(mmay_test_vm_build_enum_payload(&function));
+    MMAY_EXPECT(mmay_bytecode_verify(&function) == MMAY_BYTECODE_VERIFY_OK);
+    result = mmay_test_vm_i64(-1);
+    MMAY_EXPECT(mmay_bytecode_run(
+        &function, NULL, 0, mmay_system_allocator(), options, &result
+    ) == MMAY_BYTECODE_RUN_OK);
+    MMAY_EXPECT(result.type == MMAY_BYTECODE_TYPE_I64 && result.as.i64 == 13);
+    mmay_bytecode_function_dispose(&function);
 
-    ruda_test_vm_enum_provenance_rejections();
-    ruda_bytecode_execution_dispose(&execution);
+    mmay_test_vm_enum_provenance_rejections();
+    mmay_bytecode_execution_dispose(&execution);
 }

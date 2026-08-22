@@ -4,12 +4,12 @@
 #include "checker_internal.h"
 #include "checker_package_context.h"
 
- bool ruda_checker_private_evaluate_constant(
-    RudaChecker *checker,
-    RudaCheckConstantDeclaration *declaration,
+ bool mmay_checker_private_evaluate_constant(
+    MarimayChecker *checker,
+    MarimayCheckConstantDeclaration *declaration,
     size_t use_start,
     size_t use_end
 );
- bool ruda_checker_private_evaluate_all_constants(RudaChecker *checker);
- bool ruda_checker_private_publish_constants(RudaChecker *checker);
+ bool mmay_checker_private_evaluate_all_constants(MarimayChecker *checker);
+ bool mmay_checker_private_publish_constants(MarimayChecker *checker);
 #endif

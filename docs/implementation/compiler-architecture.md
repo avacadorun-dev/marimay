@@ -1,4 +1,4 @@
-# Ruda Stage 0 compiler architecture
+# Marimay Stage 0 compiler architecture
 
 Status: implementation architecture for the C17 bootstrap.
 Last reviewed: 2026-08-20.
@@ -71,7 +71,7 @@ shortcut for sharing checker internals with a backend.
 ### Checker to MIR
 
 - The checker lowers all implicit observable behavior before publication.
-- A `RudaMirFunction` is either failure-atomically owned by its result or not
+- A `MarimayMirFunction` is either failure-atomically owned by its result or not
   published.
 - The builder does not substitute for the verifier; malformed structures built
   by tests must be rejected independently.
@@ -80,7 +80,7 @@ shortcut for sharing checker internals with a backend.
 
 ### MIR to engines
 
-- `ruda_mir_verify` is required before oracle, bytecode, or native execution.
+- `mmay_mir_verify` is required before oracle, bytecode, or native execution.
 - Bytecode lowering may return an explicit unsupported-feature result; it must
   not omit an instruction.
 - The bytecode decoder/verifier treats bytes as hostile and finishes before VM
@@ -101,7 +101,7 @@ shortcut for sharing checker internals with a backend.
 ## Physical decomposition plan
 
 The current public headers remain stable during behavior-preserving extraction.
-New files are linked into the same `ruda_bootstrap` library.
+New files are linked into the same `mmay_bootstrap` library.
 
 ### Enforced module-size contract
 
@@ -114,7 +114,7 @@ defect.
 - Target 500–1,200 physical lines per handwritten `.c`; hard ceiling 1,500.
 - Target 50–250 physical lines per owner-private `.h`; hard ceiling 400.
   Owner API headers, including every handwritten header under
-  `bootstrap/include/ruda/` and `runtime/include/ruda/`, have a tighter hard
+  `bootstrap/include/mmay/` and `runtime/include/mmay/`, have a tighter hard
   ceiling of 160. Generated artifacts are the only standing exemption.
 - Temporary exceptions live only in `architecture-exceptions.tsv`. They name
   the exact path, owner, explicit ceiling, reason, and removal checkpoint. An
@@ -157,7 +157,7 @@ bootstrap/src/mir/
   execution_io.c        D046 oracle publication and Result construction
 ```
 
-`ruda_mir_verify` and `ruda_mir_interpret` retain their public signatures. No
+`mmay_mir_verify` and `mmay_mir_interpret` retain their public signatures. No
 representation or runtime semantics change in these extraction commits.
 
 ### Checker owner
@@ -207,8 +207,8 @@ bootstrap/src/check/
   entry.c               root main and structural Error-contract selection
 ```
 
-`ruda_check_package` remains the single-package coordinator;
-`ruda_check_package_graph` owns only canonical graph ordering, import binding,
+`mmay_check_package` remains the single-package coordinator;
+`mmay_check_package_graph` owns only canonical graph ordering, import binding,
 and repeated package-phase orchestration. One graph check uses one result and
 one type table; independently checked package results are never concatenated.
 Pattern and statement owners share only explicit context contracts; copying
@@ -216,10 +216,10 @@ that state into feature-specific modules is forbidden. Recursive expression
 lowering returns through the dedicated dispatcher contract instead of making
 a record/scalar owner the implicit hub.
 
-`ruda_compiler_service_check` is the reusable owner above the frontend and
+`mmay_compiler_service_check` is the reusable owner above the frontend and
 checker. It retains immutable source snapshots, rejects stale overlay versions,
 orders current documents by exact path, and owns lex/parse/AST/check teardown.
-`ruda_compiler_service_check_request` can reuse immutable top-level parse
+`mmay_compiler_service_check_request` can reuse immutable top-level parse
 subtrees from one exact versioned edit, polls cooperative cancellation between
 bounded phases, and still rechecks the whole semantic package. It introduces
 no persistent semantic cache and does not duplicate semantic lookup.
@@ -229,9 +229,9 @@ source order. `facts.c` owns publication, occurrence canonicalization, and
 cross-fact validation; `queries.c` owns allocation-free result-scoped
 definition-from-reference, byte-prefix package-symbol search, and completion
 access. Source-path hashing consumes exact bytes, and nominal-receiver lookup
-is indexed during declaration collection. Result-local `RudaTypeId` values do
+is indexed during declaration collection. Result-local `MarimayTypeId` values do
 not cross the query boundary; receiver and candidate identity use stable
-`RudaSymbolId` values.
+`MarimaySymbolId` values.
 
 Package-local and imported non-generic free and dot calls share one resolver in
 `resolution.c`: same-name functions are accepted only for distinct exact local
@@ -268,7 +268,7 @@ owners changes MIR, bytecode, runtime layout, or ABI.
 The present occurrence universe covers stable top-level type, constant, and
 resolved call references. Local bindings, record fields, enum variants,
 generic instantiations, effect metadata, and production indexing/LSP transport
-remain later I2/I8 work. Public `ruda check` now owns fresh disk-snapshot target
+remain later I2/I8 work. Public `mmay check` now owns fresh disk-snapshot target
 discovery and delegates the authoritative selected graph to this service; it
 reports an internal failure instead of success for a checker-incomplete
 accepted construct.
@@ -309,7 +309,7 @@ tests/c-unit/
   test_runtime_io.c
 ```
 
-The existing `ruda_test_mir` and `ruda_test_checker` aggregators retain their
+The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
 registrations. A new semantic owner may add one adjacent registered entry point
 when that keeps new coverage out of an existing hotspot; splitting existing
 tests must not delete, rename, reorder, or weaken assertions.
@@ -343,7 +343,7 @@ tests/c-unit/              focused suites mirroring those production owners
 D059 assigns the generated-C/runtime array boundary specifically to
 `bootstrap/src/native/c_emitter_range.c`,
 `runtime/common/managed_array_access.c`, and the owner API
-`runtime/include/ruda/runtime/array_access.h`. The emitter owner recognizes
+`runtime/include/mmay/runtime/array_access.h`. The emitter owner recognizes
 only verifier-approved checked/in-bounds instruction pairs and preserves
 barrier spans. The runtime owner resolves and validates one exact access; it
 does not expose mutable heap state or retain a cell pointer. VM range dispatch
@@ -374,7 +374,7 @@ backend owns a shadow capacity policy.
 
 D062 assigns representation-independent interval lattice math, branch
 refinement, and bounded widening to `bootstrap/src/base/integer_range.c` behind
-the narrow `ruda/base/integer_range.h` owner API. MIR adaptation,
+the narrow `mmay/base/integer_range.h` owner API. MIR adaptation,
 checked-to-proven transactional rewrites, and MIR proof validation live in
 `bootstrap/src/mir/integer_range.c`; hostile serialized-opcode reconstruction
 lives separately in
@@ -390,12 +390,12 @@ D063 assigns activation-view declaration and companion-state emission to
 `bootstrap/src/native/c_emitter_array_mutation.c`, and record projection use to
 `bootstrap/src/native/c_emitter_managed.c`. The runtime bind/access owners are
 `runtime/common/managed_array_access.c` behind the narrow
-`ruda/runtime/array_view.h` contract and `runtime/common/managed_record.c`
-behind `ruda/runtime/record.h`. Views contain no copied storage address and do
+`mmay/runtime/array_view.h` contract and `runtime/common/managed_record.c`
+behind `mmay/runtime/record.h`. Views contain no copied storage address and do
 not own memory. The emitter coordinator owns the conservative transitive
 safepoint predicate and root-location placement because those are activation
 construction decisions; runtime owners do not infer compiler liveness.
-`ruda/base/checked_i64_fast.h` is a header-only emission boundary mirroring the
+`mmay/base/checked_i64_fast.h` is a header-only emission boundary mirroring the
 portable checked/proven implementation, not a second semantic arithmetic
 owner.
 
@@ -584,8 +584,8 @@ checkpoint:
 | `tests/c-unit/runtime/test_managed_array_storage.c` | 0 | 407 | D060 layout/bits/alignment/accounting/tracing/corruption/failure-atomic storage coverage |
 | `tests/c-unit/test_bytecode_vm_array_storage.c` | 0 | 168 | unchanged generic-array wire round trip plus VM descriptor/bit mapping |
 | `tests/c-unit/test_native_c_emitter_array_storage.c` | 0 | 185 | every raw stride, canonical f64, reference fallback, and strict-C execution |
-| `runtime/include/ruda/runtime/array_view.h` | 0 | 148 | D063 non-escaping array-view ABI and validated C17 inline RAW64 access primitives |
-| `bootstrap/include/ruda/base/checked_i64_fast.h` | 0 | 156 | D063 portable inline mirror of checked/proven i64 emission helpers |
+| `runtime/include/mmay/runtime/array_view.h` | 0 | 148 | D063 non-escaping array-view ABI and validated C17 inline RAW64 access primitives |
+| `bootstrap/include/mmay/base/checked_i64_fast.h` | 0 | 156 | D063 portable inline mirror of checked/proven i64 emission helpers |
 | `runtime/common/managed_array_access.c` | 417 | 428 | D063 exact view bind plus growth-aware access and mutation without copied storage addresses |
 | `runtime/common/managed_record.c` | 186 | 215 | D063 exact non-moving record-view bind |
 | `bootstrap/src/native/c_emitter_emit.c` | 588 | 879 | D063 companion-view declarations, conservative transitive safepoint proof, and root-location placement |
@@ -595,9 +595,9 @@ checkpoint:
 | `tests/c-unit/test_native_c_emitter_managed_views.c` | 0 | 118 | D063 nested record-array view, alias replacement, direct RAW64, rootless emission, and O0/O2 execution |
 
 The earlier mechanical split preserves assertion order within the array suite
-and the single external `ruda_test_mir` registration. The service checkpoint
+and the single external `mmay_test_mir` registration. The service checkpoint
 adds an explicit public owner plus shared phase-option validators; it changes
-no Ruda language semantics and leaves the public CLI unavailable.
+no Marimay language semantics and leaves the public CLI unavailable.
 The command evidence is recorded in
 [architecture checkpoint 2](evidence/architecture-checkpoint-2-2026-08-14.md)
 and

@@ -1,52 +1,52 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(Ruda VERSION 0.0.0 LANGUAGES C)
+project(Marimay VERSION 0.0.0 LANGUAGES C)
 
 include(CTest)
 include(GNUInstallDirs)
-include(cmake/RudaWarnings.cmake)
-include(cmake/RudaSanitizers.cmake)
+include(cmake/MarimayWarnings.cmake)
+include(cmake/MarimaySanitizers.cmake)
 
 set(CMAKE_C_STANDARD 17)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 set(CMAKE_C_EXTENSIONS OFF)
 
-option(RUDA_WARNINGS_AS_ERRORS "Treat warnings in Ruda project code as errors" ON)
-option(RUDA_ENABLE_ADDRESS_SANITIZER "Enable AddressSanitizer" OFF)
-option(RUDA_ENABLE_UNDEFINED_SANITIZER "Enable UndefinedBehaviorSanitizer" OFF)
-option(RUDA_ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
-option(RUDA_BUILD_FUZZERS "Build Clang libFuzzer frontend targets" OFF)
+option(MMAY_WARNINGS_AS_ERRORS "Treat warnings in Marimay project code as errors" ON)
+option(MMAY_ENABLE_ADDRESS_SANITIZER "Enable AddressSanitizer" OFF)
+option(MMAY_ENABLE_UNDEFINED_SANITIZER "Enable UndefinedBehaviorSanitizer" OFF)
+option(MMAY_ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
+option(MMAY_BUILD_FUZZERS "Build Clang libFuzzer frontend targets" OFF)
 
-if(RUDA_BUILD_FUZZERS)
+if(MMAY_BUILD_FUZZERS)
   if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
-    message(FATAL_ERROR "Ruda libFuzzer targets require Clang")
+    message(FATAL_ERROR "Marimay libFuzzer targets require Clang")
   endif()
   include(CheckCSourceCompiles)
-  set(RUDA_SAVED_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
+  set(MMAY_SAVED_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS}")
   set(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -fsanitize=fuzzer")
   check_c_source_compiles(
     "#include <stddef.h>
      int LLVMFuzzerTestOneInput(const unsigned char *data, size_t size) {
        return data == NULL && size != 0;
      }"
-    RUDA_COMPILER_HAS_LIBFUZZER
+    MMAY_COMPILER_HAS_LIBFUZZER
   )
-  set(CMAKE_REQUIRED_FLAGS "${RUDA_SAVED_REQUIRED_FLAGS}")
-  if(NOT RUDA_COMPILER_HAS_LIBFUZZER)
+  set(CMAKE_REQUIRED_FLAGS "${MMAY_SAVED_REQUIRED_FLAGS}")
+  if(NOT MMAY_COMPILER_HAS_LIBFUZZER)
     message(FATAL_ERROR
-      "RUDA_BUILD_FUZZERS requires a Clang distribution with the libFuzzer runtime"
+      "MMAY_BUILD_FUZZERS requires a Clang distribution with the libFuzzer runtime"
     )
   endif()
 endif()
 
 if(WIN32)
-  set(RUDA_PLATFORM_SOURCES
+  set(MMAY_PLATFORM_SOURCES
     runtime/platform/windows/directory.c
     runtime/platform/windows/file.c
     runtime/platform/windows/process.c
   )
 elseif(UNIX)
-  set(RUDA_PLATFORM_SOURCES
+  set(MMAY_PLATFORM_SOURCES
     runtime/platform/posix/directory.c
     runtime/platform/posix/file.c
     runtime/platform/posix/process.c
@@ -55,90 +55,90 @@ else()
   message(FATAL_ERROR "No Stage 0 platform adapter for this host")
 endif()
 
-set(RUDA_COMPILER_VERSION "0.0.0-dev")
-set(RUDA_RUNTIME_VERSION "0.0.0-dev")
-set(RUDA_LANGUAGE_VERSION "0.1-design")
-set(RUDA_BYTECODE_VERSION "unavailable")
-set(RUDA_STANDARD_LIBRARY_VERSION "unavailable")
-set(RUDA_BOOTSTRAP_STAGE 0)
+set(MMAY_COMPILER_VERSION "0.0.0-dev")
+set(MMAY_RUNTIME_VERSION "0.0.0-dev")
+set(MMAY_LANGUAGE_VERSION "0.1-design")
+set(MMAY_BYTECODE_VERSION "unavailable")
+set(MMAY_STANDARD_LIBRARY_VERSION "unavailable")
+set(MMAY_BOOTSTRAP_STAGE 0)
 
-set(RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY
+set(MMAY_NATIVE_RUNTIME_DEBUG_DIRECTORY
   "${CMAKE_CURRENT_BINARY_DIR}/native-runtime/debug"
 )
-set(RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY
+set(MMAY_NATIVE_RUNTIME_RELEASE_DIRECTORY
   "${CMAKE_CURRENT_BINARY_DIR}/native-runtime/release"
 )
-set(RUDA_NATIVE_RUNTIME_DEBUG_ARCHIVE
-  "${RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}ruda_native_runtime_debug${CMAKE_STATIC_LIBRARY_SUFFIX}"
+set(MMAY_NATIVE_RUNTIME_DEBUG_ARCHIVE
+  "${MMAY_NATIVE_RUNTIME_DEBUG_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}mmay_native_runtime_debug${CMAKE_STATIC_LIBRARY_SUFFIX}"
 )
-set(RUDA_NATIVE_RUNTIME_RELEASE_ARCHIVE
-  "${RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}ruda_native_runtime_release${CMAKE_STATIC_LIBRARY_SUFFIX}"
+set(MMAY_NATIVE_RUNTIME_RELEASE_ARCHIVE
+  "${MMAY_NATIVE_RUNTIME_RELEASE_DIRECTORY}/${CMAKE_STATIC_LIBRARY_PREFIX}mmay_native_runtime_release${CMAKE_STATIC_LIBRARY_SUFFIX}"
 )
-set(RUDA_NATIVE_RUNTIME_DEBUG_MANIFEST
-  "${RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY}/ruda-native-runtime.manifest"
+set(MMAY_NATIVE_RUNTIME_DEBUG_MANIFEST
+  "${MMAY_NATIVE_RUNTIME_DEBUG_DIRECTORY}/mmay-native-runtime.manifest"
 )
-set(RUDA_NATIVE_RUNTIME_RELEASE_MANIFEST
-  "${RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY}/ruda-native-runtime.manifest"
+set(MMAY_NATIVE_RUNTIME_RELEASE_MANIFEST
+  "${MMAY_NATIVE_RUNTIME_RELEASE_DIRECTORY}/mmay-native-runtime.manifest"
 )
-set(RUDA_NATIVE_INSTALLED_RUNTIME_RELATIVE
-  "../${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native"
+set(MMAY_NATIVE_INSTALLED_RUNTIME_RELATIVE
+  "../${CMAKE_INSTALL_LIBDIR}/mmay/${MMAY_RUNTIME_VERSION}/native"
 )
-set(RUDA_NATIVE_INSTALLED_INCLUDE_RELATIVE
+set(MMAY_NATIVE_INSTALLED_INCLUDE_RELATIVE
   "../${CMAKE_INSTALL_INCLUDEDIR}"
 )
-set(RUDA_NATIVE_RUNTIME_DEBUG_FILENAME
-  "${CMAKE_STATIC_LIBRARY_PREFIX}ruda_native_runtime_debug${CMAKE_STATIC_LIBRARY_SUFFIX}"
+set(MMAY_NATIVE_RUNTIME_DEBUG_FILENAME
+  "${CMAKE_STATIC_LIBRARY_PREFIX}mmay_native_runtime_debug${CMAKE_STATIC_LIBRARY_SUFFIX}"
 )
-set(RUDA_NATIVE_RUNTIME_RELEASE_FILENAME
-  "${CMAKE_STATIC_LIBRARY_PREFIX}ruda_native_runtime_release${CMAKE_STATIC_LIBRARY_SUFFIX}"
+set(MMAY_NATIVE_RUNTIME_RELEASE_FILENAME
+  "${CMAKE_STATIC_LIBRARY_PREFIX}mmay_native_runtime_release${CMAKE_STATIC_LIBRARY_SUFFIX}"
 )
 
-set(RUDA_NATIVE_C_SANITIZER_FLAG "")
-if(MSVC AND RUDA_ENABLE_ADDRESS_SANITIZER)
-  set(RUDA_NATIVE_C_SANITIZER_FLAG "/fsanitize=address")
+set(MMAY_NATIVE_C_SANITIZER_FLAG "")
+if(MSVC AND MMAY_ENABLE_ADDRESS_SANITIZER)
+  set(MMAY_NATIVE_C_SANITIZER_FLAG "/fsanitize=address")
 elseif(NOT MSVC)
-  set(ruda_native_c_sanitizers "")
-  if(RUDA_ENABLE_ADDRESS_SANITIZER)
-    list(APPEND ruda_native_c_sanitizers "address")
+  set(mmay_native_c_sanitizers "")
+  if(MMAY_ENABLE_ADDRESS_SANITIZER)
+    list(APPEND mmay_native_c_sanitizers "address")
   endif()
-  if(RUDA_ENABLE_UNDEFINED_SANITIZER)
-    list(APPEND ruda_native_c_sanitizers "undefined")
+  if(MMAY_ENABLE_UNDEFINED_SANITIZER)
+    list(APPEND mmay_native_c_sanitizers "undefined")
   endif()
-  if(RUDA_ENABLE_THREAD_SANITIZER)
-    list(APPEND ruda_native_c_sanitizers "thread")
+  if(MMAY_ENABLE_THREAD_SANITIZER)
+    list(APPEND mmay_native_c_sanitizers "thread")
   endif()
-  if(ruda_native_c_sanitizers)
-    list(JOIN ruda_native_c_sanitizers "," ruda_native_c_sanitizer_list)
-    set(RUDA_NATIVE_C_SANITIZER_FLAG
-      "-fsanitize=${ruda_native_c_sanitizer_list}"
+  if(mmay_native_c_sanitizers)
+    list(JOIN mmay_native_c_sanitizers "," mmay_native_c_sanitizer_list)
+    set(MMAY_NATIVE_C_SANITIZER_FLAG
+      "-fsanitize=${mmay_native_c_sanitizer_list}"
     )
   endif()
 endif()
 
 configure_file(
-  cmake/ruda_build_config.h.in
-  "${CMAKE_CURRENT_BINARY_DIR}/generated/ruda/build_config.h"
+  cmake/mmay_build_config.h.in
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/mmay/build_config.h"
   @ONLY
 )
 
 file(MAKE_DIRECTORY
-  "${RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY}"
-  "${RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY}"
+  "${MMAY_NATIVE_RUNTIME_DEBUG_DIRECTORY}"
+  "${MMAY_NATIVE_RUNTIME_RELEASE_DIRECTORY}"
 )
-set(RUDA_NATIVE_RUNTIME_MANIFEST_PROFILE debug)
+set(MMAY_NATIVE_RUNTIME_MANIFEST_PROFILE debug)
 configure_file(
-  cmake/ruda_native_runtime.manifest.in
-  "${RUDA_NATIVE_RUNTIME_DEBUG_MANIFEST}"
+  cmake/mmay_native_runtime.manifest.in
+  "${MMAY_NATIVE_RUNTIME_DEBUG_MANIFEST}"
   @ONLY
 )
-set(RUDA_NATIVE_RUNTIME_MANIFEST_PROFILE release)
+set(MMAY_NATIVE_RUNTIME_MANIFEST_PROFILE release)
 configure_file(
-  cmake/ruda_native_runtime.manifest.in
-  "${RUDA_NATIVE_RUNTIME_RELEASE_MANIFEST}"
+  cmake/mmay_native_runtime.manifest.in
+  "${MMAY_NATIVE_RUNTIME_RELEASE_MANIFEST}"
   @ONLY
 )
 
-set(RUDA_NATIVE_RUNTIME_SOURCES
+set(MMAY_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/allocator.c
   bootstrap/src/base/checked_i64.c
   bootstrap/src/base/checked_integer.c
@@ -163,23 +163,23 @@ set(RUDA_NATIVE_RUNTIME_SOURCES
   runtime/common/test_output.c
 )
 
-function(ruda_add_native_runtime target profile optimization output_directory)
-  add_library(${target} STATIC ${RUDA_NATIVE_RUNTIME_SOURCES})
+function(mmay_add_native_runtime target profile optimization output_directory)
+  add_library(${target} STATIC ${MMAY_NATIVE_RUNTIME_SOURCES})
   target_include_directories(${target} PRIVATE
     bootstrap/include
     runtime/include
   )
   target_compile_definitions(${target} PRIVATE
-    RUDA_RUNTIME_BUILD_PROFILE="${profile}"
-    RUDA_RUNTIME_BUILD_VERSION="${RUDA_RUNTIME_VERSION}"
+    MMAY_RUNTIME_BUILD_PROFILE="${profile}"
+    MMAY_RUNTIME_BUILD_VERSION="${MMAY_RUNTIME_VERSION}"
   )
   set_target_properties(${target} PROPERTIES
     OUTPUT_NAME "${target}"
     ARCHIVE_OUTPUT_DIRECTORY "${output_directory}"
   )
-  foreach(ruda_config DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
+  foreach(mmay_config DEBUG RELEASE RELWITHDEBINFO MINSIZEREL)
     set_target_properties(${target} PROPERTIES
-      ARCHIVE_OUTPUT_DIRECTORY_${ruda_config} "${output_directory}"
+      ARCHIVE_OUTPUT_DIRECTORY_${mmay_config} "${output_directory}"
     )
   endforeach()
   if(MSVC)
@@ -190,29 +190,29 @@ function(ruda_add_native_runtime target profile optimization output_directory)
       -fexcess-precision=standard "${optimization}"
     )
   endif()
-  ruda_target_warnings(${target})
-  ruda_target_sanitizers(${target})
+  mmay_target_warnings(${target})
+  mmay_target_sanitizers(${target})
 endfunction()
 
 if(MSVC)
-  set(RUDA_NATIVE_RUNTIME_DEBUG_OPTIMIZATION /Od)
-  set(RUDA_NATIVE_RUNTIME_RELEASE_OPTIMIZATION /O2)
+  set(MMAY_NATIVE_RUNTIME_DEBUG_OPTIMIZATION /Od)
+  set(MMAY_NATIVE_RUNTIME_RELEASE_OPTIMIZATION /O2)
 else()
-  set(RUDA_NATIVE_RUNTIME_DEBUG_OPTIMIZATION -O0)
-  set(RUDA_NATIVE_RUNTIME_RELEASE_OPTIMIZATION -O2)
+  set(MMAY_NATIVE_RUNTIME_DEBUG_OPTIMIZATION -O0)
+  set(MMAY_NATIVE_RUNTIME_RELEASE_OPTIMIZATION -O2)
 endif()
-ruda_add_native_runtime(
-  ruda_native_runtime_debug debug
-  "${RUDA_NATIVE_RUNTIME_DEBUG_OPTIMIZATION}"
-  "${RUDA_NATIVE_RUNTIME_DEBUG_DIRECTORY}"
+mmay_add_native_runtime(
+  mmay_native_runtime_debug debug
+  "${MMAY_NATIVE_RUNTIME_DEBUG_OPTIMIZATION}"
+  "${MMAY_NATIVE_RUNTIME_DEBUG_DIRECTORY}"
 )
-ruda_add_native_runtime(
-  ruda_native_runtime_release release
-  "${RUDA_NATIVE_RUNTIME_RELEASE_OPTIMIZATION}"
-  "${RUDA_NATIVE_RUNTIME_RELEASE_DIRECTORY}"
+mmay_add_native_runtime(
+  mmay_native_runtime_release release
+  "${MMAY_NATIVE_RUNTIME_RELEASE_OPTIMIZATION}"
+  "${MMAY_NATIVE_RUNTIME_RELEASE_DIRECTORY}"
 )
 
-add_library(ruda_bootstrap STATIC
+add_library(mmay_bootstrap STATIC
   bootstrap/src/ast/ast.c
   bootstrap/src/base/allocator.c
   bootstrap/src/base/arena.c
@@ -403,61 +403,61 @@ add_library(ruda_bootstrap STATIC
   runtime/common/managed_record.c
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
-  ${RUDA_PLATFORM_SOURCES}
+  ${MMAY_PLATFORM_SOURCES}
 )
 
-target_include_directories(ruda_bootstrap
+target_include_directories(mmay_bootstrap
   PUBLIC
     "${CMAKE_CURRENT_BINARY_DIR}/generated"
     bootstrap/include
     runtime/include
 )
 if(UNIX)
-  target_link_libraries(ruda_bootstrap PUBLIC m)
+  target_link_libraries(mmay_bootstrap PUBLIC m)
 endif()
 if(MSVC)
-  target_compile_options(ruda_bootstrap PRIVATE /fp:strict)
+  target_compile_options(mmay_bootstrap PRIVATE /fp:strict)
 else()
-  target_compile_options(ruda_bootstrap PRIVATE
+  target_compile_options(mmay_bootstrap PRIVATE
     -fno-fast-math
     -frounding-math
     -ffp-contract=off
     -fexcess-precision=standard
   )
 endif()
-ruda_target_warnings(ruda_bootstrap)
-ruda_target_sanitizers(ruda_bootstrap)
-if(RUDA_BUILD_FUZZERS)
-  target_compile_options(ruda_bootstrap PRIVATE -fsanitize=fuzzer-no-link)
+mmay_target_warnings(mmay_bootstrap)
+mmay_target_sanitizers(mmay_bootstrap)
+if(MMAY_BUILD_FUZZERS)
+  target_compile_options(mmay_bootstrap PRIVATE -fsanitize=fuzzer-no-link)
 endif()
 
-add_executable(ruda bootstrap/main.c)
-target_link_libraries(ruda PRIVATE ruda_bootstrap)
-add_dependencies(ruda
-  ruda_native_runtime_debug
-  ruda_native_runtime_release
+add_executable(mmay bootstrap/main.c)
+target_link_libraries(mmay PRIVATE mmay_bootstrap)
+add_dependencies(mmay
+  mmay_native_runtime_debug
+  mmay_native_runtime_release
 )
-ruda_target_warnings(ruda)
-ruda_target_sanitizers(ruda)
+mmay_target_warnings(mmay)
+mmay_target_sanitizers(mmay)
 
-install(TARGETS ruda RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
-install(TARGETS ruda_native_runtime_debug
+install(TARGETS mmay RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+install(TARGETS mmay_native_runtime_debug
   ARCHIVE DESTINATION
-    "${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native/debug"
+    "${CMAKE_INSTALL_LIBDIR}/mmay/${MMAY_RUNTIME_VERSION}/native/debug"
 )
-install(TARGETS ruda_native_runtime_release
+install(TARGETS mmay_native_runtime_release
   ARCHIVE DESTINATION
-    "${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native/release"
+    "${CMAKE_INSTALL_LIBDIR}/mmay/${MMAY_RUNTIME_VERSION}/native/release"
 )
-install(FILES "${RUDA_NATIVE_RUNTIME_DEBUG_MANIFEST}"
+install(FILES "${MMAY_NATIVE_RUNTIME_DEBUG_MANIFEST}"
   DESTINATION
-    "${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native/debug"
+    "${CMAKE_INSTALL_LIBDIR}/mmay/${MMAY_RUNTIME_VERSION}/native/debug"
 )
-install(FILES "${RUDA_NATIVE_RUNTIME_RELEASE_MANIFEST}"
+install(FILES "${MMAY_NATIVE_RUNTIME_RELEASE_MANIFEST}"
   DESTINATION
-    "${CMAKE_INSTALL_LIBDIR}/ruda/${RUDA_RUNTIME_VERSION}/native/release"
+    "${CMAKE_INSTALL_LIBDIR}/mmay/${MMAY_RUNTIME_VERSION}/native/release"
 )
-install(DIRECTORY bootstrap/include/ruda runtime/include/ruda
+install(DIRECTORY bootstrap/include/mmay runtime/include/mmay
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
   FILES_MATCHING PATTERN "*.h"
 )
@@ -466,6 +466,6 @@ if(BUILD_TESTING)
   add_subdirectory(tests/c-unit)
 endif()
 
-if(RUDA_BUILD_FUZZERS)
+if(MMAY_BUILD_FUZZERS)
   add_subdirectory(tests/fuzz)
 endif()

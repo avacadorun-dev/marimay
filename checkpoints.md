@@ -7,7 +7,7 @@
 - record/enum живут в checker и MIR oracle, но VM/native их ещё отвергают;
 - есть bounded `Array<f64>` / `Array<Array<f64>>`, не общий `Array<T>`;
 - user stdout контракт принят, движки и `std/io` не реализованы;
-- `ruda fmt` есть; публичные `check` / `run` / `build` / `test` ещё нет.
+- `mmay fmt` есть; публичные `check` / `run` / `build` / `test` ещё нет.
 
 Каждый checkpoint — отдельная веха: полный validation loop, evidence/roadmap,
 commit и немедленный push. I2–I5 не помечать `verified`. I6 оставить
@@ -21,7 +21,7 @@ commit и немедленный push. I2–I5 не помечать `verified`.
 ## 0. Architecture and bounded context
 
 Это обязательный блокирующий checkpoint перед любым feature checkpoint ниже.
-Он меняет физическую архитектуру bootstrap, а не семантику Ruda. Пока он не
+Он меняет физическую архитектуру bootstrap, а не семантику Marimay. Пока он не
 закрыт, checkpoint 1 остаётся припаркованным и новая функциональность не
 добавляется.
 
@@ -162,8 +162,8 @@ allocation/limit tests и VM/native differential. Обнови roadmap/evidence,
 - public/private/import-aware invalidation после checkpoint 2.
 
 Completion не должна повторно вычислять кандидатов фильтрацией
-`checked.functions`. `RudaTypeId` нельзя смешивать между result versions.
-Это ещё не production LSP и не публичный `ruda check`.
+`checked.functions`. `MarimayTypeId` нельзя смешивать между result versions.
+Это ещё не production LSP и не публичный `mmay check`.
 
 Добавь reverse-order, overlay, stale snapshot, cancellation,
 fail-every-allocation, exact visibility/import и completion==resolver tests.
@@ -300,13 +300,13 @@ CTest сделай commit и сразу push.
 
 ------
 
-## 8. `ruda check`
+## 8. `mmay check`
 
-Подключи authoritative `ruda check` к compiler service.
+Подключи authoritative `mmay check` к compiler service.
 
 Требования toolchain.md §1, §2 и §6.1:
 - root/module/package discovery;
-- `file.ruda`, package и module targets;
+- `file.my`, package и module targets;
 - полный deterministic package check;
 - human stderr diagnostics;
 - newline-delimited versioned JSON diagnostics;
@@ -325,9 +325,9 @@ roadmap/evidence. Debug/Release/sanitizers, commit и немедленный pus
 
 ------
 
-## 9. `ruda run` и D046 stdout
+## 9. `mmay run` и D046 stdout
 
-Подключи `ruda run` с VM по умолчанию к canonical checker → typed MIR →
+Подключи `mmay run` с VM по умолчанию к canonical checker → typed MIR →
 verified bytecode pipeline и реализуй принятый D046 user stdout.
 
 Требования:
@@ -336,7 +336,7 @@ verified bytecode pipeline и реализуй принятый D046 user stdout
 - выбрать canonical entry symbol;
 - encode/decode/verify перед VM execution;
 - `std/io.println(text: string): Result<void, io.Error>`;
-- capability `"io.stdout"` с default grant для local `ruda run`;
+- capability `"io.stdout"` с default grant для local `mmay run`;
 - UTF-8 + один LF, line-atomic publish-before-`Ok`;
 - program args/capabilities в утверждённом минимальном объёме;
 - точные exit codes;
@@ -362,9 +362,9 @@ commit и сразу push.
 
 ------
 
-## 10. `ruda build`
+## 10. `mmay build`
 
-Подключи `ruda build` с native C17 backend по умолчанию.
+Подключи `mmay build` с native C17 backend по умолчанию.
 
 Следуй execution.md §5 и toolchain.md §6.3:
 - canonical typed MIR shared с VM;
@@ -377,10 +377,10 @@ commit и сразу push.
 - `--emit c`;
 - precise user diagnostics вместо raw compiler/linker errors;
 - no network during build;
-- тот же D046 stdout, что у `ruda run`.
+- тот же D046 stdout, что у `mmay run`.
 
 Из чистого проекта собранный executable должен выдавать те же stdout/stderr,
-exit code, f64 bits и panic identity, что `ruda run` VM.
+exit code, f64 bits и panic identity, что `mmay run` VM.
 
 Обязательно выполнить matrix и panic differential, O0/O2, fail-allocation,
 strict C17, GCC/Clang и доступную Windows/MSVC compile/run проверку.
@@ -388,10 +388,10 @@ strict C17, GCC/Clang и доступную Windows/MSVC compile/run прове�
 
 ------
 
-## 11. `ruda test`
+## 11. `mmay test`
 
 Реализуй минимальный обязательный встроенный test loop:
-- discovery `@test fn(): void` в `*_test.ruda`;
+- discovery `@test fn(): void` в `*_test.my`;
 - package-private и integration test boundaries;
 - VM default;
 - `--engine native`;
@@ -416,16 +416,16 @@ D040 и D041 fixtures. Неподдерживаемые filters/watch/cache до
 
 ## 12. Final preview integration
 
-Проведи финальную интеграцию Ruda local/private developer preview 0.1-dev.
+Проведи финальную интеграцию Marimay local/private developer preview 0.1-dev.
 
 Не добавляй новую семантику, кроме исправлений подтверждённых расхождений.
 Из чистого checkout реально выполни обязательную матрицу:
-- `ruda fmt --check`;
-- `ruda check`;
-- `ruda run`;
-- `ruda test`;
-- `ruda build`;
-- `ruda test --engine both`;
+- `mmay fmt --check`;
+- `mmay check`;
+- `mmay run`;
+- `mmay test`;
+- `mmay build`;
+- `mmay test --engine both`;
 - запуск собранного native executable.
 
 Обязательные runnable programs:

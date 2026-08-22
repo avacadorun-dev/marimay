@@ -1,36 +1,36 @@
-#ifndef RUDA_MANIFEST_INTERNAL_H
-#define RUDA_MANIFEST_INTERNAL_H
+#ifndef MMAY_MANIFEST_INTERNAL_H
+#define MMAY_MANIFEST_INTERNAL_H
 
-#include "ruda/manifest/manifest.h"
+#include "mmay/manifest/manifest.h"
 
-typedef struct RudaManifestParser {
-    const RudaSourceSnapshot *snapshot;
+typedef struct MarimayManifestParser {
+    const MarimaySourceSnapshot *snapshot;
     const unsigned char *bytes;
     size_t length;
-    RudaManifestParseResult *result;
-    RudaManifestParseOptions options;
-    RudaManifestDirectiveKind group_kind;
+    MarimayManifestParseResult *result;
+    MarimayManifestParseOptions options;
+    MarimayManifestDirectiveKind group_kind;
     bool in_group;
     bool allocation_failed;
     bool limit_reached;
-} RudaManifestParser;
+} MarimayManifestParser;
 
-typedef struct RudaManifestFormatEntry {
-    RudaManifestDirectiveKind kind;
-    RudaOwnedBytes name;
-    RudaOwnedBytes values[2];
+typedef struct MarimayManifestFormatEntry {
+    MarimayManifestDirectiveKind kind;
+    MarimayOwnedBytes name;
+    MarimayOwnedBytes values[2];
     size_t value_count;
     size_t source_order;
-} RudaManifestFormatEntry;
+} MarimayManifestFormatEntry;
 
-typedef struct RudaManifestOutput {
-    RudaVector bytes;
+typedef struct MarimayManifestOutput {
+    MarimayVector bytes;
     size_t max_bytes;
     bool limit_reached;
     bool allocation_failed;
-} RudaManifestOutput;
+} MarimayManifestOutput;
 
-RudaManifestParseStatus ruda_manifest_parse_content(RudaManifestParser *parser);
-bool ruda_manifest_first_parent(const RudaOwnedBytes *path);
+MarimayManifestParseStatus mmay_manifest_parse_content(MarimayManifestParser *parser);
+bool mmay_manifest_first_parent(const MarimayOwnedBytes *path);
 
 #endif

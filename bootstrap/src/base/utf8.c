@@ -1,10 +1,10 @@
-#include "ruda/base/utf8.h"
+#include "mmay/base/utf8.h"
 
-static bool ruda_utf8_continuation(unsigned char byte) {
+static bool mmay_utf8_continuation(unsigned char byte) {
     return byte >= 0x80U && byte <= 0xbfU;
 }
 
-static bool ruda_utf8_fail(RudaUtf8Scalar *scalar) {
+static bool mmay_utf8_fail(MarimayUtf8Scalar *scalar) {
     if (scalar != NULL) {
         scalar->value = 0xfffdU;
         scalar->width = 1;
@@ -12,10 +12,10 @@ static bool ruda_utf8_fail(RudaUtf8Scalar *scalar) {
     return false;
 }
 
-bool ruda_utf8_decode(const unsigned char *bytes, size_t length, RudaUtf8Scalar *scalar) {
+bool mmay_utf8_decode(const unsigned char *bytes, size_t length, MarimayUtf8Scalar *scalar) {
     unsigned char first = 0;
     if (bytes == NULL || scalar == NULL || length == 0) {
-        return ruda_utf8_fail(scalar);
+        return mmay_utf8_fail(scalar);
     }
     first = bytes[0];
     if (first <= 0x7fU) {
@@ -24,8 +24,8 @@ bool ruda_utf8_decode(const unsigned char *bytes, size_t length, RudaUtf8Scalar 
         return true;
     }
     if (first >= 0xc2U && first <= 0xdfU) {
-        if (length < 2 || !ruda_utf8_continuation(bytes[1])) {
-            return ruda_utf8_fail(scalar);
+        if (length < 2 || !mmay_utf8_continuation(bytes[1])) {
+            return mmay_utf8_fail(scalar);
         }
         scalar->value = ((uint32_t)(first & 0x1fU) << 6)
             | (uint32_t)(bytes[1] & 0x3fU);
@@ -33,13 +33,13 @@ bool ruda_utf8_decode(const unsigned char *bytes, size_t length, RudaUtf8Scalar 
         return true;
     }
     if (first >= 0xe0U && first <= 0xefU) {
-        if (length < 3 || !ruda_utf8_continuation(bytes[1])
-            || !ruda_utf8_continuation(bytes[2])) {
-            return ruda_utf8_fail(scalar);
+        if (length < 3 || !mmay_utf8_continuation(bytes[1])
+            || !mmay_utf8_continuation(bytes[2])) {
+            return mmay_utf8_fail(scalar);
         }
         if ((first == 0xe0U && bytes[1] < 0xa0U)
             || (first == 0xedU && bytes[1] > 0x9fU)) {
-            return ruda_utf8_fail(scalar);
+            return mmay_utf8_fail(scalar);
         }
         scalar->value = ((uint32_t)(first & 0x0fU) << 12)
             | ((uint32_t)(bytes[1] & 0x3fU) << 6)
@@ -48,14 +48,14 @@ bool ruda_utf8_decode(const unsigned char *bytes, size_t length, RudaUtf8Scalar 
         return true;
     }
     if (first >= 0xf0U && first <= 0xf4U) {
-        if (length < 4 || !ruda_utf8_continuation(bytes[1])
-            || !ruda_utf8_continuation(bytes[2])
-            || !ruda_utf8_continuation(bytes[3])) {
-            return ruda_utf8_fail(scalar);
+        if (length < 4 || !mmay_utf8_continuation(bytes[1])
+            || !mmay_utf8_continuation(bytes[2])
+            || !mmay_utf8_continuation(bytes[3])) {
+            return mmay_utf8_fail(scalar);
         }
         if ((first == 0xf0U && bytes[1] < 0x90U)
             || (first == 0xf4U && bytes[1] > 0x8fU)) {
-            return ruda_utf8_fail(scalar);
+            return mmay_utf8_fail(scalar);
         }
         scalar->value = ((uint32_t)(first & 0x07U) << 18)
             | ((uint32_t)(bytes[1] & 0x3fU) << 12)
@@ -64,10 +64,10 @@ bool ruda_utf8_decode(const unsigned char *bytes, size_t length, RudaUtf8Scalar 
         scalar->width = 4;
         return true;
     }
-    return ruda_utf8_fail(scalar);
+    return mmay_utf8_fail(scalar);
 }
 
-bool ruda_utf8_encode(uint32_t value, unsigned char output[4], size_t *width) {
+bool mmay_utf8_encode(uint32_t value, unsigned char output[4], size_t *width) {
     if (output == NULL || width == NULL || value > 0x10ffffU
         || (value >= 0xd800U && value <= 0xdfffU)) {
         return false;
@@ -94,7 +94,7 @@ bool ruda_utf8_encode(uint32_t value, unsigned char output[4], size_t *width) {
     return true;
 }
 
-bool ruda_utf8_validate(const char *text, size_t length, size_t *invalid_offset) {
+bool mmay_utf8_validate(const char *text, size_t length, size_t *invalid_offset) {
     size_t offset = 0;
     if (text == NULL && length != 0) {
         if (invalid_offset != NULL) {
@@ -103,8 +103,8 @@ bool ruda_utf8_validate(const char *text, size_t length, size_t *invalid_offset)
         return false;
     }
     while (offset < length) {
-        RudaUtf8Scalar scalar;
-        if (!ruda_utf8_decode(
+        MarimayUtf8Scalar scalar;
+        if (!mmay_utf8_decode(
                 (const unsigned char *)text + offset,
                 length - offset,
                 &scalar

@@ -2,13 +2,13 @@
 
 #include <string.h>
 
-RudaMirInstruction ruda_test_mir_binary(
-    RudaMirInstructionKind kind,
-    RudaMirRegister target,
-    RudaMirRegister first,
-    RudaMirRegister second
+MarimayMirInstruction mmay_test_mir_binary(
+    MarimayMirInstructionKind kind,
+    MarimayMirRegister target,
+    MarimayMirRegister first,
+    MarimayMirRegister second
 ) {
-    RudaMirInstruction instruction;
+    MarimayMirInstruction instruction;
     memset(&instruction, 0, sizeof(instruction));
     instruction.kind = kind;
     instruction.target = target;
@@ -17,68 +17,68 @@ RudaMirInstruction ruda_test_mir_binary(
     return instruction;
 }
 
-RudaMirTerminator ruda_test_mir_return(RudaMirRegister value) {
-    RudaMirTerminator terminator;
+MarimayMirTerminator mmay_test_mir_return(MarimayMirRegister value) {
+    MarimayMirTerminator terminator;
     memset(&terminator, 0, sizeof(terminator));
-    terminator.kind = RUDA_MIR_RETURN;
+    terminator.kind = MMAY_MIR_RETURN;
     terminator.value = value;
-    terminator.target = RUDA_MIR_NO_BLOCK;
-    terminator.otherwise = RUDA_MIR_NO_BLOCK;
+    terminator.target = MMAY_MIR_NO_BLOCK;
+    terminator.otherwise = MMAY_MIR_NO_BLOCK;
     return terminator;
 }
 
-RudaMirTerminator ruda_test_mir_goto(RudaMirBlockId target) {
-    RudaMirTerminator terminator;
+MarimayMirTerminator mmay_test_mir_goto(MarimayMirBlockId target) {
+    MarimayMirTerminator terminator;
     memset(&terminator, 0, sizeof(terminator));
-    terminator.kind = RUDA_MIR_GOTO;
-    terminator.value = RUDA_MIR_NO_REGISTER;
+    terminator.kind = MMAY_MIR_GOTO;
+    terminator.value = MMAY_MIR_NO_REGISTER;
     terminator.target = target;
-    terminator.otherwise = RUDA_MIR_NO_BLOCK;
+    terminator.otherwise = MMAY_MIR_NO_BLOCK;
     return terminator;
 }
 
-RudaMirTerminator ruda_test_mir_branch(
-    RudaMirRegister condition,
-    RudaMirBlockId when_true,
-    RudaMirBlockId when_false
+MarimayMirTerminator mmay_test_mir_branch(
+    MarimayMirRegister condition,
+    MarimayMirBlockId when_true,
+    MarimayMirBlockId when_false
 ) {
-    RudaMirTerminator terminator;
+    MarimayMirTerminator terminator;
     memset(&terminator, 0, sizeof(terminator));
-    terminator.kind = RUDA_MIR_BRANCH;
+    terminator.kind = MMAY_MIR_BRANCH;
     terminator.value = condition;
     terminator.target = when_true;
     terminator.otherwise = when_false;
     return terminator;
 }
 
-RudaMirTerminator ruda_test_mir_panic(
-    RudaMirRegister message,
+MarimayMirTerminator mmay_test_mir_panic(
+    MarimayMirRegister message,
     size_t start,
     size_t end
 ) {
-    RudaMirTerminator terminator;
+    MarimayMirTerminator terminator;
     memset(&terminator, 0, sizeof(terminator));
-    terminator.kind = RUDA_MIR_PANIC;
+    terminator.kind = MMAY_MIR_PANIC;
     terminator.value = message;
-    terminator.target = RUDA_MIR_NO_BLOCK;
-    terminator.otherwise = RUDA_MIR_NO_BLOCK;
+    terminator.target = MMAY_MIR_NO_BLOCK;
+    terminator.otherwise = MMAY_MIR_NO_BLOCK;
     terminator.span.start = start;
     terminator.span.end = end;
     return terminator;
 }
 
-RudaMirTerminator ruda_test_mir_call_never(
-    RudaMirCallId call,
+MarimayMirTerminator mmay_test_mir_call_never(
+    MarimayMirCallId call,
     size_t start,
     size_t end
 ) {
-    RudaMirTerminator terminator;
+    MarimayMirTerminator terminator;
     memset(&terminator, 0, sizeof(terminator));
-    terminator.kind = RUDA_MIR_CALL_NEVER;
-    terminator.value = RUDA_MIR_NO_REGISTER;
+    terminator.kind = MMAY_MIR_CALL_NEVER;
+    terminator.value = MMAY_MIR_NO_REGISTER;
     terminator.call = call;
-    terminator.target = RUDA_MIR_NO_BLOCK;
-    terminator.otherwise = RUDA_MIR_NO_BLOCK;
+    terminator.target = MMAY_MIR_NO_BLOCK;
+    terminator.otherwise = MMAY_MIR_NO_BLOCK;
     terminator.span.start = start;
     terminator.span.end = end;
     return terminator;

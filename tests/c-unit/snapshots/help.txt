@@ -1,6 +1,6 @@
-Ruda toolchain (Stage 0 bootstrap)
+Marimay toolchain (Stage 0 bootstrap)
 
-Usage: ruda <command> [options]
+Usage: mmay <command> [options]
 
 Everyday workflow:
   fmt       Canonically format source and manifests
@@ -26,4 +26,4 @@ Global options:
   --quiet
   --verbose
 
-Run 'ruda help <command>' for task-oriented examples.
+Run 'mmay help <command>' for task-oriented examples.

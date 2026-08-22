@@ -9,46 +9,46 @@
 
 
 
- bool ruda_checker_private_compile_literal(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaTypeId expected,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_literal(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
 ) {
-    const RudaSyntaxToken *token = ruda_checker_private_check_first_token(node);
-    RudaChecker *checker = function->checker;
+    const MarimaySyntaxToken *token = mmay_checker_private_check_first_token(node);
+    MarimayChecker *checker = function->checker;
     if (token == NULL || token->synthetic) {
-        ruda_checker_fail(checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
-    if (token->kind == RUDA_TOKEN_KW_TRUE
-        || token->kind == RUDA_TOKEN_KW_FALSE) {
-        return ruda_function_emit_instruction(
+    if (token->kind == MMAY_TOKEN_KW_TRUE
+        || token->kind == MMAY_TOKEN_KW_FALSE) {
+        return mmay_function_emit_instruction(
             function,
-            RUDA_MIR_CONSTANT_BOOL,
-            RUDA_TYPE_BOOL,
-            RUDA_MIR_NO_REGISTER,
-            RUDA_MIR_NO_REGISTER,
+            MMAY_MIR_CONSTANT_BOOL,
+            MMAY_TYPE_BOOL,
+            MMAY_MIR_NO_REGISTER,
+            MMAY_MIR_NO_REGISTER,
             0,
-            token->kind == RUDA_TOKEN_KW_TRUE,
+            token->kind == MMAY_TOKEN_KW_TRUE,
             token->start,
             token->end,
             result
         );
     }
-    if (token->kind == RUDA_TOKEN_INTEGER) {
+    if (token->kind == MMAY_TOKEN_INTEGER) {
         uint64_t magnitude = 0;
-        RudaTypeId integer_type = expected == RUDA_TYPE_INVALID
-            ? RUDA_TYPE_I64 : expected;
+        MarimayTypeId integer_type = expected == MMAY_TYPE_INVALID
+            ? MMAY_TYPE_I64 : expected;
         uint64_t limit = UINT64_MAX;
-        bool signed_integer = integer_type >= RUDA_TYPE_I8
-            && integer_type <= RUDA_TYPE_I64;
-        bool integer = integer_type >= RUDA_TYPE_I8
-            && integer_type <= RUDA_TYPE_U64;
-        if (expected == RUDA_TYPE_STRING) {
-            (void)ruda_checker_add_diagnostic(
+        bool signed_integer = integer_type >= MMAY_TYPE_I8
+            && integer_type <= MMAY_TYPE_I64;
+        bool integer = integer_type >= MMAY_TYPE_I8
+            && integer_type <= MMAY_TYPE_U64;
+        if (expected == MMAY_TYPE_STRING) {
+            (void)mmay_checker_add_diagnostic(
                 checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "integer literal does not match the required string type",
                 token->start,
                 token->end
@@ -56,54 +56,54 @@
             return false;
         }
         if (!integer) {
-            (void)ruda_checker_add_diagnostic(
-                checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            (void)mmay_checker_add_diagnostic(
+                checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "integer literal requires an integer type",
                 token->start, token->end
             );
             return false;
         }
         if (signed_integer) {
-            unsigned int width = integer_type == RUDA_TYPE_I8 ? 8U
-                : integer_type == RUDA_TYPE_I16 ? 16U
-                : integer_type == RUDA_TYPE_I32 ? 32U : 64U;
+            unsigned int width = integer_type == MMAY_TYPE_I8 ? 8U
+                : integer_type == MMAY_TYPE_I16 ? 16U
+                : integer_type == MMAY_TYPE_I32 ? 32U : 64U;
             limit = width == 64U ? (uint64_t)INT64_MAX
                 : (UINT64_C(1) << (width - 1U)) - UINT64_C(1);
         } else {
-            unsigned int width = integer_type == RUDA_TYPE_U8 ? 8U
-                : integer_type == RUDA_TYPE_U16 ? 16U
-                : integer_type == RUDA_TYPE_U32 ? 32U : 64U;
+            unsigned int width = integer_type == MMAY_TYPE_U8 ? 8U
+                : integer_type == MMAY_TYPE_U16 ? 16U
+                : integer_type == MMAY_TYPE_U32 ? 32U : 64U;
             limit = width == 64U ? UINT64_MAX
                 : (UINT64_C(1) << width) - UINT64_C(1);
         }
-        if (!ruda_checker_private_integer_magnitude(
+        if (!mmay_checker_private_integer_magnitude(
                 checker, token, limit,
                 &magnitude
             )) {
             return false;
         }
-        if (integer_type == RUDA_TYPE_I64) {
-            return ruda_function_emit_instruction(
-                function, RUDA_MIR_CONSTANT_I64, RUDA_TYPE_I64,
-                RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER,
+        if (integer_type == MMAY_TYPE_I64) {
+            return mmay_function_emit_instruction(
+                function, MMAY_MIR_CONSTANT_I64, MMAY_TYPE_I64,
+                MMAY_MIR_NO_REGISTER, MMAY_MIR_NO_REGISTER,
                 (int64_t)magnitude, false, token->start, token->end, result
             );
         }
         {
-            RudaMirInstruction instruction;
-            RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-            if (!ruda_function_add_register(function, integer_type, &target)) {
+            MarimayMirInstruction instruction;
+            MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+            if (!mmay_function_add_register(function, integer_type, &target)) {
                 return false;
             }
             memset(&instruction, 0, sizeof(instruction));
-            instruction.kind = RUDA_MIR_CONSTANT_INTEGER;
+            instruction.kind = MMAY_MIR_CONSTANT_INTEGER;
             instruction.target = target;
-            instruction.first = RUDA_MIR_NO_REGISTER;
-            instruction.second = RUDA_MIR_NO_REGISTER;
+            instruction.first = MMAY_MIR_NO_REGISTER;
+            instruction.second = MMAY_MIR_NO_REGISTER;
             instruction.integer_bits = magnitude;
             instruction.span.start = token->start;
             instruction.span.end = token->end;
-            if (!ruda_function_append_instruction(function, &instruction)) {
+            if (!mmay_function_append_instruction(function, &instruction)) {
                 return false;
             }
             result->type = integer_type;
@@ -112,39 +112,39 @@
             return true;
         }
     }
-    if (token->kind == RUDA_TOKEN_FLOAT) {
+    if (token->kind == MMAY_TOKEN_FLOAT) {
         uint64_t bits = 0;
-        RudaF64ParseStatus parse_status;
-        if (expected != RUDA_TYPE_INVALID && expected != RUDA_TYPE_F64) {
-            (void)ruda_checker_add_diagnostic(
+        MarimayF64ParseStatus parse_status;
+        if (expected != MMAY_TYPE_INVALID && expected != MMAY_TYPE_F64) {
+            (void)mmay_checker_add_diagnostic(
                 checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "f64 literal does not match the required type",
                 token->start,
                 token->end
             );
             return false;
         }
-        parse_status = ruda_f64_parse_decimal(
+        parse_status = mmay_f64_parse_decimal(
             checker->source + token->start,
             token->end - token->start,
             checker->result->allocator,
             checker->options.max_float_literal_digits,
             &bits
         );
-        if (parse_status == RUDA_F64_PARSE_ALLOCATION_FAILED) {
-            ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        if (parse_status == MMAY_F64_PARSE_ALLOCATION_FAILED) {
+            mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
             return false;
         }
-        if (parse_status == RUDA_F64_PARSE_LIMIT_REACHED) {
-            ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        if (parse_status == MMAY_F64_PARSE_LIMIT_REACHED) {
+            mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
             return false;
         }
-        if (parse_status != RUDA_F64_PARSE_OK) {
-            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        if (parse_status != MMAY_F64_PARSE_OK) {
+            mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
-        return ruda_checker_private_function_emit_f64_constant(
+        return mmay_checker_private_function_emit_f64_constant(
             function,
             bits,
             token->start,
@@ -152,110 +152,110 @@
             result
         );
     }
-    if (token->kind == RUDA_TOKEN_STRING
-        || token->kind == RUDA_TOKEN_RAW_STRING) {
-        RudaOwnedBytes decoded;
-        RudaStringLiteralStatus decode_status;
-        RudaMirStringId string_constant = RUDA_MIR_NO_STRING;
-        RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-        RudaMirInstruction instruction;
+    if (token->kind == MMAY_TOKEN_STRING
+        || token->kind == MMAY_TOKEN_RAW_STRING) {
+        MarimayOwnedBytes decoded;
+        MarimayStringLiteralStatus decode_status;
+        MarimayMirStringId string_constant = MMAY_MIR_NO_STRING;
+        MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+        MarimayMirInstruction instruction;
         size_t new_string_bytes = 0;
-        if (expected != RUDA_TYPE_INVALID && expected != RUDA_TYPE_STRING) {
-            (void)ruda_checker_add_diagnostic(
+        if (expected != MMAY_TYPE_INVALID && expected != MMAY_TYPE_STRING) {
+            (void)mmay_checker_add_diagnostic(
                 checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "string literal does not match the required type",
                 token->start,
                 token->end
             );
             return false;
         }
-        decode_status = ruda_string_literal_decode(
+        decode_status = mmay_string_literal_decode(
             checker->source + token->start,
             token->end - token->start,
-            token->kind == RUDA_TOKEN_RAW_STRING,
+            token->kind == MMAY_TOKEN_RAW_STRING,
             checker->result->allocator,
             &decoded
         );
-        if (decode_status != RUDA_STRING_LITERAL_OK) {
-            ruda_checker_fail(
+        if (decode_status != MMAY_STRING_LITERAL_OK) {
+            mmay_checker_fail(
                 checker,
-                decode_status == RUDA_STRING_LITERAL_ALLOCATION_FAILED
-                    ? RUDA_CHECK_ALLOCATION_FAILED
-                    : RUDA_CHECK_INTERNAL_ERROR
+                decode_status == MMAY_STRING_LITERAL_ALLOCATION_FAILED
+                    ? MMAY_CHECK_ALLOCATION_FAILED
+                    : MMAY_CHECK_INTERNAL_ERROR
             );
             return false;
         }
         if (function->mir.string_constants.length
                 >= function->mir.options.max_string_constants
-            || !ruda_size_add(
+            || !mmay_size_add(
                 function->mir.string_bytes,
                 decoded.length,
                 &new_string_bytes
             ) || new_string_bytes > function->mir.options.max_string_bytes) {
-            ruda_owned_bytes_dispose(&decoded);
-            ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+            mmay_owned_bytes_dispose(&decoded);
+            mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
             return false;
         }
-        if (!ruda_function_add_register(function, RUDA_TYPE_STRING, &target)
-            || !ruda_mir_add_string_constant(
+        if (!mmay_function_add_register(function, MMAY_TYPE_STRING, &target)
+            || !mmay_mir_add_string_constant(
                 &function->mir,
                 decoded.data,
                 decoded.length,
                 &string_constant
             )) {
-            ruda_owned_bytes_dispose(&decoded);
-            if (!ruda_checker_has_failed(checker)) {
-                ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+            mmay_owned_bytes_dispose(&decoded);
+            if (!mmay_checker_has_failed(checker)) {
+                mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
             }
             return false;
         }
-        ruda_owned_bytes_dispose(&decoded);
+        mmay_owned_bytes_dispose(&decoded);
         memset(&instruction, 0, sizeof(instruction));
-        instruction.kind = RUDA_MIR_CONSTANT_STRING;
+        instruction.kind = MMAY_MIR_CONSTANT_STRING;
         instruction.target = target;
-        instruction.first = RUDA_MIR_NO_REGISTER;
-        instruction.second = RUDA_MIR_NO_REGISTER;
+        instruction.first = MMAY_MIR_NO_REGISTER;
+        instruction.second = MMAY_MIR_NO_REGISTER;
         instruction.string_constant = string_constant;
         instruction.span.start = token->start;
         instruction.span.end = token->end;
-        if (!ruda_function_append_instruction(function, &instruction)) {
+        if (!mmay_function_append_instruction(function, &instruction)) {
             return false;
         }
-        result->type = RUDA_TYPE_STRING;
+        result->type = MMAY_TYPE_STRING;
         result->register_id = target;
         result->valid = true;
         return true;
     }
-    ruda_checker_fail(checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+    mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
     return false;
 }
 
- bool ruda_checker_private_compile_name(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_name(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayExpressionValue *result
 ) {
-    const RudaSyntaxToken *token = ruda_checker_private_check_child_token(
+    const MarimaySyntaxToken *token = mmay_checker_private_check_child_token(
         node,
-        RUDA_TOKEN_IDENTIFIER,
+        MMAY_TOKEN_IDENTIFIER,
         0
     );
-    RudaCheckName name;
-    const RudaCheckLocal *local = NULL;
-    RudaCheckConstantDeclaration *constant = NULL;
+    MarimayCheckName name;
+    const MarimayCheckLocal *local = NULL;
+    MarimayCheckConstantDeclaration *constant = NULL;
     if (token == NULL || token->synthetic) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
         return false;
     }
     name.snapshot = function->checker->ast->snapshot;
     name.start = token->start;
     name.end = token->end;
-    local = ruda_checker_private_function_find_local(function, name);
+    local = mmay_checker_private_function_find_local(function, name);
     if (local == NULL) {
-        constant = ruda_checker_private_checker_find_constant(function->checker, name);
+        constant = mmay_checker_private_checker_find_constant(function->checker, name);
         if (constant != NULL) {
-            if (!ruda_checker_private_evaluate_constant(
+            if (!mmay_checker_private_evaluate_constant(
                     function->checker,
                     constant,
                     token->start,
@@ -263,20 +263,20 @@
                 )) {
                 return false;
             }
-            if (!ruda_check_record_occurrence(
+            if (!mmay_check_record_occurrence(
                     function->checker,
                     name,
                     constant->symbol
                 )) {
                 return false;
             }
-            if (constant->value.type == RUDA_TYPE_I64) {
-                return ruda_function_emit_instruction(
+            if (constant->value.type == MMAY_TYPE_I64) {
+                return mmay_function_emit_instruction(
                     function,
-                    RUDA_MIR_CONSTANT_I64,
-                    RUDA_TYPE_I64,
-                    RUDA_MIR_NO_REGISTER,
-                    RUDA_MIR_NO_REGISTER,
+                    MMAY_MIR_CONSTANT_I64,
+                    MMAY_TYPE_I64,
+                    MMAY_MIR_NO_REGISTER,
+                    MMAY_MIR_NO_REGISTER,
                     constant->value.as.i64,
                     false,
                     token->start,
@@ -284,23 +284,23 @@
                     result
                 );
             }
-            if (ruda_checker_private_type_is_integer(constant->value.type)) {
-                RudaMirInstruction instruction;
-                RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-                if (!ruda_function_add_register(
+            if (mmay_checker_private_type_is_integer(constant->value.type)) {
+                MarimayMirInstruction instruction;
+                MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+                if (!mmay_function_add_register(
                         function, constant->value.type, &target
                     )) {
                     return false;
                 }
                 memset(&instruction, 0, sizeof(instruction));
-                instruction.kind = RUDA_MIR_CONSTANT_INTEGER;
+                instruction.kind = MMAY_MIR_CONSTANT_INTEGER;
                 instruction.target = target;
-                instruction.first = RUDA_MIR_NO_REGISTER;
-                instruction.second = RUDA_MIR_NO_REGISTER;
+                instruction.first = MMAY_MIR_NO_REGISTER;
+                instruction.second = MMAY_MIR_NO_REGISTER;
                 instruction.integer_bits = constant->value.as.integer_bits;
                 instruction.span.start = token->start;
                 instruction.span.end = token->end;
-                if (!ruda_function_append_instruction(function, &instruction)) {
+                if (!mmay_function_append_instruction(function, &instruction)) {
                     return false;
                 }
                 result->type = constant->value.type;
@@ -308,13 +308,13 @@
                 result->valid = true;
                 return true;
             }
-            if (constant->value.type == RUDA_TYPE_BOOL) {
-                return ruda_function_emit_instruction(
+            if (constant->value.type == MMAY_TYPE_BOOL) {
+                return mmay_function_emit_instruction(
                     function,
-                    RUDA_MIR_CONSTANT_BOOL,
-                    RUDA_TYPE_BOOL,
-                    RUDA_MIR_NO_REGISTER,
-                    RUDA_MIR_NO_REGISTER,
+                    MMAY_MIR_CONSTANT_BOOL,
+                    MMAY_TYPE_BOOL,
+                    MMAY_MIR_NO_REGISTER,
+                    MMAY_MIR_NO_REGISTER,
                     0,
                     constant->value.as.boolean,
                     token->start,
@@ -322,8 +322,8 @@
                     result
                 );
             }
-            if (constant->value.type == RUDA_TYPE_F64) {
-                return ruda_checker_private_function_emit_f64_constant(
+            if (constant->value.type == MMAY_TYPE_F64) {
+                return mmay_checker_private_function_emit_f64_constant(
                     function,
                     constant->value.as.f64_bits,
                     token->start,
@@ -331,37 +331,37 @@
                     result
                 );
             }
-            ruda_checker_fail(
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
         }
-        if (ruda_checker_private_checker_find_top_level(function->checker, name) != NULL) {
-            ruda_checker_fail(
+        if (mmay_checker_private_checker_find_top_level(function->checker, name) != NULL) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
         }
-        if (ruda_checker_private_check_text_equal(
+        if (mmay_checker_private_check_text_equal(
                 function->checker,
                 token->start,
                 token->end,
                 "panic"
             )) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_CALL_ARITY,
+                MMAY_DIAGNOSTIC_CALL_ARITY,
                 "panic requires exactly one message argument",
                 token->start,
                 token->end
             );
             return false;
         }
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_UNKNOWN_NAME,
+            MMAY_DIAGNOSTIC_UNKNOWN_NAME,
             "unknown name",
             token->start,
             token->end
@@ -369,9 +369,9 @@
         return false;
     }
     if (!local->initialized) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_UNINITIALIZED_LOCAL,
+            MMAY_DIAGNOSTIC_UNINITIALIZED_LOCAL,
             "local is used before it is initialized",
             token->start,
             token->end
@@ -384,14 +384,14 @@
     return true;
 }
 
- const RudaAstNode *ruda_checker_private_expression_only_node(
-    const RudaAstNode *node
+ const MarimayAstNode *mmay_checker_private_expression_only_node(
+    const MarimayAstNode *node
 ) {
-    const RudaAstNode *result = NULL;
+    const MarimayAstNode *result = NULL;
     size_t index = 0;
     for (index = 0; node != NULL && index < node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(node, index);
-        if (element != NULL && element->kind == RUDA_AST_ELEMENT_NODE) {
+        const MarimayAstElement *element = mmay_ast_child(node, index);
+        if (element != NULL && element->kind == MMAY_AST_ELEMENT_NODE) {
             if (result != NULL) {
                 return NULL;
             }
@@ -401,64 +401,64 @@
     return result;
 }
 
- bool ruda_checker_private_compile_unary(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaTypeId expected,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_unary(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
 ) {
-    const RudaSyntaxToken *operator_token = ruda_checker_private_check_first_token(node);
-    const RudaAstNode *operand = ruda_checker_private_expression_only_node(node);
-    RudaExpressionValue value;
-    RudaMirInstructionKind kind;
-    RudaTypeId operand_type = RUDA_TYPE_INVALID;
+    const MarimaySyntaxToken *operator_token = mmay_checker_private_check_first_token(node);
+    const MarimayAstNode *operand = mmay_checker_private_expression_only_node(node);
+    MarimayExpressionValue value;
+    MarimayMirInstructionKind kind;
+    MarimayTypeId operand_type = MMAY_TYPE_INVALID;
     memset(&value, 0, sizeof(value));
-    value.register_id = RUDA_MIR_NO_REGISTER;
+    value.register_id = MMAY_MIR_NO_REGISTER;
     if (operator_token == NULL || operand == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
-    if (operator_token->kind == RUDA_TOKEN_MINUS
-        && operand->kind == RUDA_SYNTAX_LITERAL_EXPRESSION) {
-        const RudaSyntaxToken *literal = ruda_checker_private_check_first_token(operand);
+    if (operator_token->kind == MMAY_TOKEN_MINUS
+        && operand->kind == MMAY_SYNTAX_LITERAL_EXPRESSION) {
+        const MarimaySyntaxToken *literal = mmay_checker_private_check_first_token(operand);
         uint64_t magnitude = 0;
-        RudaTypeId negative_type = expected;
+        MarimayTypeId negative_type = expected;
         unsigned int negative_width = 64U;
         uint64_t negative_limit = (uint64_t)INT64_MAX + UINT64_C(1);
-        if (!(negative_type >= RUDA_TYPE_I8
-                && negative_type <= RUDA_TYPE_I64)) {
-            negative_type = RUDA_TYPE_I64;
+        if (!(negative_type >= MMAY_TYPE_I8
+                && negative_type <= MMAY_TYPE_I64)) {
+            negative_type = MMAY_TYPE_I64;
         }
-        negative_width = negative_type == RUDA_TYPE_I8 ? 8U
-            : negative_type == RUDA_TYPE_I16 ? 16U
-            : negative_type == RUDA_TYPE_I32 ? 32U : 64U;
+        negative_width = negative_type == MMAY_TYPE_I8 ? 8U
+            : negative_type == MMAY_TYPE_I16 ? 16U
+            : negative_type == MMAY_TYPE_I32 ? 32U : 64U;
         if (negative_width != 64U) {
             negative_limit = UINT64_C(1) << (negative_width - 1U);
         }
-        if (literal != NULL && literal->kind == RUDA_TOKEN_INTEGER
-            && ruda_checker_private_integer_magnitude(
+        if (literal != NULL && literal->kind == MMAY_TOKEN_INTEGER
+            && mmay_checker_private_integer_magnitude(
                 function->checker,
                 literal,
                 negative_limit,
                 &magnitude
             )) {
             if (magnitude == negative_limit) {
-                if (negative_type != RUDA_TYPE_I64) {
-                    RudaMirInstruction instruction;
-                    RudaMirRegister target = RUDA_MIR_NO_REGISTER;
+                if (negative_type != MMAY_TYPE_I64) {
+                    MarimayMirInstruction instruction;
+                    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
                     uint64_t mask = (UINT64_C(1) << negative_width) - 1U;
-                    if (!ruda_function_add_register(
+                    if (!mmay_function_add_register(
                             function, negative_type, &target
                         )) return false;
                     memset(&instruction, 0, sizeof(instruction));
-                    instruction.kind = RUDA_MIR_CONSTANT_INTEGER;
+                    instruction.kind = MMAY_MIR_CONSTANT_INTEGER;
                     instruction.target = target;
-                    instruction.first = RUDA_MIR_NO_REGISTER;
-                    instruction.second = RUDA_MIR_NO_REGISTER;
+                    instruction.first = MMAY_MIR_NO_REGISTER;
+                    instruction.second = MMAY_MIR_NO_REGISTER;
                     instruction.integer_bits = (UINT64_C(0) - magnitude) & mask;
                     instruction.span.start = node->start;
                     instruction.span.end = node->end;
-                    if (!ruda_function_append_instruction(function, &instruction)) {
+                    if (!mmay_function_append_instruction(function, &instruction)) {
                         return false;
                     }
                     result->type = negative_type;
@@ -466,12 +466,12 @@
                     result->valid = true;
                     return true;
                 }
-                return ruda_function_emit_instruction(
+                return mmay_function_emit_instruction(
                     function,
-                    RUDA_MIR_CONSTANT_I64,
-                    RUDA_TYPE_I64,
-                    RUDA_MIR_NO_REGISTER,
-                    RUDA_MIR_NO_REGISTER,
+                    MMAY_MIR_CONSTANT_I64,
+                    MMAY_TYPE_I64,
+                    MMAY_MIR_NO_REGISTER,
+                    MMAY_MIR_NO_REGISTER,
                     INT64_MIN,
                     false,
                     node->start,
@@ -479,103 +479,103 @@
                     result
                 );
             }
-        } else if (literal != NULL && literal->kind == RUDA_TOKEN_FLOAT) {
+        } else if (literal != NULL && literal->kind == MMAY_TOKEN_FLOAT) {
             uint64_t bits = 0;
-            RudaF64ParseStatus parse_status = ruda_f64_parse_decimal(
+            MarimayF64ParseStatus parse_status = mmay_f64_parse_decimal(
                 function->checker->source + literal->start,
                 literal->end - literal->start,
                 function->checker->result->allocator,
                 function->checker->options.max_float_literal_digits,
                 &bits
             );
-            if (parse_status == RUDA_F64_PARSE_OK) {
-                return ruda_checker_private_function_emit_f64_constant(
+            if (parse_status == MMAY_F64_PARSE_OK) {
+                return mmay_checker_private_function_emit_f64_constant(
                     function,
-                    ruda_f64_negate(bits),
+                    mmay_f64_negate(bits),
                     node->start,
                     node->end,
                     result
                 );
             }
-            if (parse_status == RUDA_F64_PARSE_ALLOCATION_FAILED) {
-                ruda_checker_fail(
+            if (parse_status == MMAY_F64_PARSE_ALLOCATION_FAILED) {
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_ALLOCATION_FAILED
+                    MMAY_CHECK_ALLOCATION_FAILED
                 );
-            } else if (parse_status == RUDA_F64_PARSE_LIMIT_REACHED) {
-                ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+            } else if (parse_status == MMAY_F64_PARSE_LIMIT_REACHED) {
+                mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
             } else {
-                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+                mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             }
             return false;
-        } else if (ruda_checker_has_failed(function->checker)
+        } else if (mmay_checker_has_failed(function->checker)
             || function->checker->result->diagnostics.length
                 != function->diagnostic_start) {
             return false;
         }
     }
-    if (operator_token->kind == RUDA_TOKEN_BANG) {
-        operand_type = RUDA_TYPE_BOOL;
-        kind = RUDA_MIR_NOT_BOOL;
-    } else if (operator_token->kind == RUDA_TOKEN_MINUS) {
+    if (operator_token->kind == MMAY_TOKEN_BANG) {
+        operand_type = MMAY_TYPE_BOOL;
+        kind = MMAY_MIR_NOT_BOOL;
+    } else if (operator_token->kind == MMAY_TOKEN_MINUS) {
         operand_type = expected;
-        if (!(operand_type >= RUDA_TYPE_I8 && operand_type <= RUDA_TYPE_I64)
-            && operand_type != RUDA_TYPE_F64) {
-            operand_type = RUDA_TYPE_INVALID;
+        if (!(operand_type >= MMAY_TYPE_I8 && operand_type <= MMAY_TYPE_I64)
+            && operand_type != MMAY_TYPE_F64) {
+            operand_type = MMAY_TYPE_INVALID;
         }
-        kind = RUDA_MIR_NEGATE_CHECKED_I64;
-    } else if (operator_token->kind == RUDA_TOKEN_TILDE) {
-        operand_type = (expected >= RUDA_TYPE_I8 && expected <= RUDA_TYPE_U64)
-            ? expected : RUDA_TYPE_INVALID;
-        kind = RUDA_MIR_BITWISE_NOT_I64;
+        kind = MMAY_MIR_NEGATE_CHECKED_I64;
+    } else if (operator_token->kind == MMAY_TOKEN_TILDE) {
+        operand_type = (expected >= MMAY_TYPE_I8 && expected <= MMAY_TYPE_U64)
+            ? expected : MMAY_TYPE_INVALID;
+        kind = MMAY_MIR_BITWISE_NOT_I64;
     } else {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
         return false;
     }
-    if (!ruda_compile_expression(function, operand, operand_type, &value)) {
+    if (!mmay_compile_expression(function, operand, operand_type, &value)) {
         return false;
     }
-    if (ruda_expression_is_never(function, &value)) {
+    if (mmay_expression_is_never(function, &value)) {
         *result = value;
         return true;
     }
-    if (operator_token->kind == RUDA_TOKEN_MINUS
-        && ((value.type >= RUDA_TYPE_I8 && value.type <= RUDA_TYPE_I64)
-            || value.type == RUDA_TYPE_F64)) {
+    if (operator_token->kind == MMAY_TOKEN_MINUS
+        && ((value.type >= MMAY_TYPE_I8 && value.type <= MMAY_TYPE_I64)
+            || value.type == MMAY_TYPE_F64)) {
         operand_type = value.type;
-        kind = value.type == RUDA_TYPE_F64
-            ? RUDA_MIR_NEGATE_F64
-            : RUDA_MIR_NEGATE_CHECKED_I64;
+        kind = value.type == MMAY_TYPE_F64
+            ? MMAY_MIR_NEGATE_F64
+            : MMAY_MIR_NEGATE_CHECKED_I64;
     }
     if (value.type != operand_type) {
-        if ((operator_token->kind == RUDA_TOKEN_MINUS
-                && (value.type == RUDA_TYPE_I8
-                    || value.type == RUDA_TYPE_I16
-                    || value.type == RUDA_TYPE_I32
-                    || value.type == RUDA_TYPE_F64))
-            || (operator_token->kind == RUDA_TOKEN_TILDE
-                && ruda_checker_private_type_is_integer(value.type))) {
-            ruda_checker_fail(
+        if ((operator_token->kind == MMAY_TOKEN_MINUS
+                && (value.type == MMAY_TYPE_I8
+                    || value.type == MMAY_TYPE_I16
+                    || value.type == MMAY_TYPE_I32
+                    || value.type == MMAY_TYPE_F64))
+            || (operator_token->kind == MMAY_TOKEN_TILDE
+                && mmay_checker_private_type_is_integer(value.type))) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
         }
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+            MMAY_DIAGNOSTIC_INVALID_OPERATOR,
             "operator is not defined for the operand type",
             operator_token->start,
             operator_token->end
         );
         return false;
     }
-    return ruda_function_emit_instruction(
+    return mmay_function_emit_instruction(
         function,
         kind,
         operand_type,
         value.register_id,
-        RUDA_MIR_NO_REGISTER,
+        MMAY_MIR_NO_REGISTER,
         0,
         false,
         node->start,
@@ -584,22 +584,22 @@
     );
 }
 
- bool ruda_checker_private_binary_parts(
-    const RudaAstNode *node,
-    const RudaAstNode **left,
-    const RudaSyntaxToken **operator_token,
-    const RudaAstNode **right
+ bool mmay_checker_private_binary_parts(
+    const MarimayAstNode *node,
+    const MarimayAstNode **left,
+    const MarimaySyntaxToken **operator_token,
+    const MarimayAstNode **right
 ) {
     size_t index = 0;
     *left = NULL;
     *operator_token = NULL;
     *right = NULL;
     for (index = 0; node != NULL && index < node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(node, index);
+        const MarimayAstElement *element = mmay_ast_child(node, index);
         if (element == NULL) {
             return false;
         }
-        if (element->kind == RUDA_AST_ELEMENT_NODE) {
+        if (element->kind == MMAY_AST_ELEMENT_NODE) {
             if (*left == NULL) {
                 *left = element->as.node;
             } else if (*right == NULL) {
@@ -607,7 +607,7 @@
             } else {
                 return false;
             }
-        } else if (element->kind == RUDA_AST_ELEMENT_TOKEN) {
+        } else if (element->kind == MMAY_AST_ELEMENT_TOKEN) {
             if (*operator_token != NULL) {
                 return false;
             }
@@ -617,60 +617,60 @@
     return *left != NULL && *operator_token != NULL && *right != NULL;
 }
 
- bool ruda_checker_private_expression_is_integer_literal(const RudaAstNode *node) {
-    const RudaAstNode *inner = NULL;
-    const RudaSyntaxToken *token = NULL;
+ bool mmay_checker_private_expression_is_integer_literal(const MarimayAstNode *node) {
+    const MarimayAstNode *inner = NULL;
+    const MarimaySyntaxToken *token = NULL;
     if (node == NULL) {
         return false;
     }
-    if (node->kind == RUDA_SYNTAX_EXPRESSION
-        || node->kind == RUDA_SYNTAX_PAREN_GROUP) {
-        inner = ruda_checker_private_expression_only_node(node);
-        return ruda_checker_private_expression_is_integer_literal(inner);
+    if (node->kind == MMAY_SYNTAX_EXPRESSION
+        || node->kind == MMAY_SYNTAX_PAREN_GROUP) {
+        inner = mmay_checker_private_expression_only_node(node);
+        return mmay_checker_private_expression_is_integer_literal(inner);
     }
-    if (node->kind != RUDA_SYNTAX_LITERAL_EXPRESSION) {
+    if (node->kind != MMAY_SYNTAX_LITERAL_EXPRESSION) {
         return false;
     }
-    token = ruda_checker_private_check_first_token(node);
-    return token != NULL && token->kind == RUDA_TOKEN_INTEGER;
+    token = mmay_checker_private_check_first_token(node);
+    return token != NULL && token->kind == MMAY_TOKEN_INTEGER;
 }
 
- bool ruda_checker_private_compile_short_circuit(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    const RudaAstNode *left_node,
-    const RudaSyntaxToken *operator_token,
-    const RudaAstNode *right_node,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_short_circuit(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    const MarimayAstNode *left_node,
+    const MarimaySyntaxToken *operator_token,
+    const MarimayAstNode *right_node,
+    MarimayExpressionValue *result
 ) {
-    RudaExpressionValue left;
-    RudaExpressionValue right;
-    RudaExpressionValue shortcut;
-    RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-    RudaMirBlockId branch_block = RUDA_MIR_NO_BLOCK;
-    RudaMirBlockId right_block = RUDA_MIR_NO_BLOCK;
-    RudaMirBlockId shortcut_block = RUDA_MIR_NO_BLOCK;
-    RudaMirBlockId join_block = RUDA_MIR_NO_BLOCK;
-    bool is_and = operator_token->kind == RUDA_TOKEN_AMPERSAND_AMPERSAND;
+    MarimayExpressionValue left;
+    MarimayExpressionValue right;
+    MarimayExpressionValue shortcut;
+    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+    MarimayMirBlockId branch_block = MMAY_MIR_NO_BLOCK;
+    MarimayMirBlockId right_block = MMAY_MIR_NO_BLOCK;
+    MarimayMirBlockId shortcut_block = MMAY_MIR_NO_BLOCK;
+    MarimayMirBlockId join_block = MMAY_MIR_NO_BLOCK;
+    bool is_and = operator_token->kind == MMAY_TOKEN_AMPERSAND_AMPERSAND;
     memset(&left, 0, sizeof(left));
     memset(&right, 0, sizeof(right));
     memset(&shortcut, 0, sizeof(shortcut));
-    if (!ruda_compile_expression(
+    if (!mmay_compile_expression(
             function,
             left_node,
-            RUDA_TYPE_INVALID,
+            MMAY_TYPE_INVALID,
             &left
         )) {
         return false;
     }
-    if (ruda_expression_is_never(function, &left)) {
+    if (mmay_expression_is_never(function, &left)) {
         *result = left;
         return true;
     }
-    if (left.type != RUDA_TYPE_BOOL) {
-        (void)ruda_checker_add_diagnostic(
+    if (left.type != MMAY_TYPE_BOOL) {
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+            MMAY_DIAGNOSTIC_INVALID_OPERATOR,
             "logical operator requires bool operands",
             operator_token->start,
             operator_token->end
@@ -678,11 +678,11 @@
         return false;
     }
     branch_block = function->block;
-    if (!ruda_function_add_register(function, RUDA_TYPE_BOOL, &target)
-        || !ruda_checker_private_function_add_block(function, &right_block)
-        || !ruda_checker_private_function_add_block(function, &shortcut_block)
-        || !ruda_checker_private_function_add_block(function, &join_block)
-        || !ruda_checker_private_function_set_branch(
+    if (!mmay_function_add_register(function, MMAY_TYPE_BOOL, &target)
+        || !mmay_checker_private_function_add_block(function, &right_block)
+        || !mmay_checker_private_function_add_block(function, &shortcut_block)
+        || !mmay_checker_private_function_add_block(function, &join_block)
+        || !mmay_checker_private_function_set_branch(
             function,
             branch_block,
             left.register_id,
@@ -695,24 +695,24 @@
     }
 
     function->block = shortcut_block;
-    if (!ruda_function_emit_instruction(
+    if (!mmay_function_emit_instruction(
             function,
-            RUDA_MIR_CONSTANT_BOOL,
-            RUDA_TYPE_BOOL,
-            RUDA_MIR_NO_REGISTER,
-            RUDA_MIR_NO_REGISTER,
+            MMAY_MIR_CONSTANT_BOOL,
+            MMAY_TYPE_BOOL,
+            MMAY_MIR_NO_REGISTER,
+            MMAY_MIR_NO_REGISTER,
             0,
             !is_and,
             operator_token->start,
             operator_token->end,
             &shortcut
-        ) || !ruda_checker_private_function_emit_copy(
+        ) || !mmay_checker_private_function_emit_copy(
             function,
             target,
             shortcut.register_id,
             operator_token->start,
             operator_token->end
-        ) || !ruda_checker_private_function_set_goto(
+        ) || !mmay_checker_private_function_set_goto(
             function,
             shortcut_block,
             join_block,
@@ -723,33 +723,33 @@
     }
 
     function->block = right_block;
-    if (!ruda_compile_expression(
+    if (!mmay_compile_expression(
             function,
             right_node,
-            RUDA_TYPE_INVALID,
+            MMAY_TYPE_INVALID,
             &right
         )) {
         return false;
     }
-    if (!ruda_expression_is_never(function, &right)
-        && right.type != RUDA_TYPE_BOOL) {
-        (void)ruda_checker_add_diagnostic(
+    if (!mmay_expression_is_never(function, &right)
+        && right.type != MMAY_TYPE_BOOL) {
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+            MMAY_DIAGNOSTIC_INVALID_OPERATOR,
             "logical operator requires bool operands",
             operator_token->start,
             operator_token->end
         );
         return false;
     }
-    if (!ruda_expression_is_never(function, &right)
-        && (!ruda_checker_private_function_emit_copy(
+    if (!mmay_expression_is_never(function, &right)
+        && (!mmay_checker_private_function_emit_copy(
             function,
             target,
             right.register_id,
             right_node->start,
             right_node->end
-        ) || !ruda_checker_private_function_set_goto(
+        ) || !mmay_checker_private_function_set_goto(
             function,
             function->block,
             join_block,
@@ -760,28 +760,28 @@
     }
     function->block = join_block;
     function->terminated = false;
-    result->type = RUDA_TYPE_BOOL;
+    result->type = MMAY_TYPE_BOOL;
     result->register_id = target;
     result->valid = true;
     (void)node;
     return true;
 }
 
- bool ruda_checker_private_compile_binary(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaTypeId expected,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_binary(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
 ) {
-    const RudaAstNode *left_node = NULL;
-    const RudaAstNode *right_node = NULL;
-    const RudaSyntaxToken *operator_token = NULL;
-    RudaExpressionValue left;
-    RudaExpressionValue right;
-    RudaExpressionValue equality;
-    RudaMirInstructionKind kind = RUDA_MIR_ADD_CHECKED_I64;
-    RudaTypeId operand_type = RUDA_TYPE_I64;
-    RudaTypeId result_type = RUDA_TYPE_I64;
+    const MarimayAstNode *left_node = NULL;
+    const MarimayAstNode *right_node = NULL;
+    const MarimaySyntaxToken *operator_token = NULL;
+    MarimayExpressionValue left;
+    MarimayExpressionValue right;
+    MarimayExpressionValue equality;
+    MarimayMirInstructionKind kind = MMAY_MIR_ADD_CHECKED_I64;
+    MarimayTypeId operand_type = MMAY_TYPE_I64;
+    MarimayTypeId result_type = MMAY_TYPE_I64;
     bool swap = false;
     bool negate = false;
     bool equality_operator = false;
@@ -792,13 +792,13 @@
     memset(&left, 0, sizeof(left));
     memset(&right, 0, sizeof(right));
     memset(&equality, 0, sizeof(equality));
-    if (!ruda_checker_private_binary_parts(node, &left_node, &operator_token, &right_node)) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+    if (!mmay_checker_private_binary_parts(node, &left_node, &operator_token, &right_node)) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
-    if (operator_token->kind == RUDA_TOKEN_AMPERSAND_AMPERSAND
-        || operator_token->kind == RUDA_TOKEN_PIPE_PIPE) {
-        return ruda_checker_private_compile_short_circuit(
+    if (operator_token->kind == MMAY_TOKEN_AMPERSAND_AMPERSAND
+        || operator_token->kind == MMAY_TOKEN_PIPE_PIPE) {
+        return mmay_checker_private_compile_short_circuit(
             function,
             node,
             left_node,
@@ -808,98 +808,98 @@
         );
     }
     switch (operator_token->kind) {
-        case RUDA_TOKEN_PLUS:
-            kind = RUDA_MIR_ADD_CHECKED_I64;
+        case MMAY_TOKEN_PLUS:
+            kind = MMAY_MIR_ADD_CHECKED_I64;
             numeric_operator = true;
             break;
-        case RUDA_TOKEN_MINUS:
-            kind = RUDA_MIR_SUBTRACT_CHECKED_I64;
+        case MMAY_TOKEN_MINUS:
+            kind = MMAY_MIR_SUBTRACT_CHECKED_I64;
             numeric_operator = true;
             break;
-        case RUDA_TOKEN_STAR:
-            kind = RUDA_MIR_MULTIPLY_CHECKED_I64;
+        case MMAY_TOKEN_STAR:
+            kind = MMAY_MIR_MULTIPLY_CHECKED_I64;
             numeric_operator = true;
             break;
-        case RUDA_TOKEN_SLASH:
-            kind = RUDA_MIR_DIVIDE_CHECKED_I64;
+        case MMAY_TOKEN_SLASH:
+            kind = MMAY_MIR_DIVIDE_CHECKED_I64;
             numeric_operator = true;
             break;
-        case RUDA_TOKEN_PERCENT:
-            kind = RUDA_MIR_REMAINDER_CHECKED_I64;
+        case MMAY_TOKEN_PERCENT:
+            kind = MMAY_MIR_REMAINDER_CHECKED_I64;
             numeric_operator = true;
             break;
-        case RUDA_TOKEN_AMPERSAND:
-            kind = RUDA_MIR_BITWISE_AND_I64;
+        case MMAY_TOKEN_AMPERSAND:
+            kind = MMAY_MIR_BITWISE_AND_I64;
             bitwise_operator = true;
             break;
-        case RUDA_TOKEN_CARET:
-            kind = RUDA_MIR_BITWISE_XOR_I64;
+        case MMAY_TOKEN_CARET:
+            kind = MMAY_MIR_BITWISE_XOR_I64;
             bitwise_operator = true;
             break;
-        case RUDA_TOKEN_PIPE:
-            kind = RUDA_MIR_BITWISE_OR_I64;
+        case MMAY_TOKEN_PIPE:
+            kind = MMAY_MIR_BITWISE_OR_I64;
             bitwise_operator = true;
             break;
-        case RUDA_TOKEN_SHIFT_LEFT:
-            kind = RUDA_MIR_SHIFT_LEFT_CHECKED_I64;
+        case MMAY_TOKEN_SHIFT_LEFT:
+            kind = MMAY_MIR_SHIFT_LEFT_CHECKED_I64;
             shift_operator = true;
             break;
-        case RUDA_TOKEN_SHIFT_RIGHT:
-            kind = RUDA_MIR_SHIFT_RIGHT_I64;
+        case MMAY_TOKEN_SHIFT_RIGHT:
+            kind = MMAY_MIR_SHIFT_RIGHT_I64;
             shift_operator = true;
             break;
-        case RUDA_TOKEN_LESS:
-            kind = RUDA_MIR_LESS_I64;
-            result_type = RUDA_TYPE_BOOL;
+        case MMAY_TOKEN_LESS:
+            kind = MMAY_MIR_LESS_I64;
+            result_type = MMAY_TYPE_BOOL;
             comparison_operator = true;
             break;
-        case RUDA_TOKEN_LESS_EQUAL:
-            kind = RUDA_MIR_LESS_EQUAL_I64;
-            result_type = RUDA_TYPE_BOOL;
+        case MMAY_TOKEN_LESS_EQUAL:
+            kind = MMAY_MIR_LESS_EQUAL_I64;
+            result_type = MMAY_TYPE_BOOL;
             comparison_operator = true;
             break;
-        case RUDA_TOKEN_GREATER:
-            kind = RUDA_MIR_LESS_I64;
-            result_type = RUDA_TYPE_BOOL;
+        case MMAY_TOKEN_GREATER:
+            kind = MMAY_MIR_LESS_I64;
+            result_type = MMAY_TYPE_BOOL;
             swap = true;
             comparison_operator = true;
             break;
-        case RUDA_TOKEN_GREATER_EQUAL:
-            kind = RUDA_MIR_LESS_EQUAL_I64;
-            result_type = RUDA_TYPE_BOOL;
+        case MMAY_TOKEN_GREATER_EQUAL:
+            kind = MMAY_MIR_LESS_EQUAL_I64;
+            result_type = MMAY_TYPE_BOOL;
             swap = true;
             comparison_operator = true;
             break;
-        case RUDA_TOKEN_EQUAL_EQUAL:
+        case MMAY_TOKEN_EQUAL_EQUAL:
             equality_operator = true;
-            result_type = RUDA_TYPE_BOOL;
+            result_type = MMAY_TYPE_BOOL;
             break;
-        case RUDA_TOKEN_BANG_EQUAL:
+        case MMAY_TOKEN_BANG_EQUAL:
             equality_operator = true;
-            result_type = RUDA_TYPE_BOOL;
+            result_type = MMAY_TYPE_BOOL;
             negate = true;
             break;
         default:
-            ruda_checker_fail(
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
     }
-    if (!ruda_compile_expression(
+    if (!mmay_compile_expression(
             function, left_node,
-            (expected >= RUDA_TYPE_I8 && expected <= RUDA_TYPE_U64)
-                || expected == RUDA_TYPE_F64 ? expected : RUDA_TYPE_INVALID,
+            (expected >= MMAY_TYPE_I8 && expected <= MMAY_TYPE_U64)
+                || expected == MMAY_TYPE_F64 ? expected : MMAY_TYPE_INVALID,
             &left
         )) {
         return false;
     }
-    if (ruda_expression_is_never(function, &left)) {
+    if (mmay_expression_is_never(function, &left)) {
         *result = left;
         return true;
     }
     operand_type = left.type;
-    if (!ruda_compile_expression(
+    if (!mmay_compile_expression(
             function,
             right_node,
             operand_type,
@@ -907,65 +907,65 @@
         )) {
         return false;
     }
-    if (ruda_expression_is_never(function, &right)) {
+    if (mmay_expression_is_never(function, &right)) {
         *result = right;
         return true;
     }
     if (left.type != right.type) {
-        if ((ruda_checker_private_expression_is_integer_literal(left_node)
-                && ruda_checker_private_type_is_integer(right.type))
-            || (ruda_checker_private_expression_is_integer_literal(right_node)
-                && ruda_checker_private_type_is_integer(left.type))) {
-            ruda_checker_fail(
+        if ((mmay_checker_private_expression_is_integer_literal(left_node)
+                && mmay_checker_private_type_is_integer(right.type))
+            || (mmay_checker_private_expression_is_integer_literal(right_node)
+                && mmay_checker_private_type_is_integer(left.type))) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
         }
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+            MMAY_DIAGNOSTIC_INVALID_OPERATOR,
             "operator is not defined for the operand types",
             operator_token->start,
             operator_token->end
         );
         return false;
     }
-    if (!(operand_type >= RUDA_TYPE_I8 && operand_type <= RUDA_TYPE_U64)
-        && operand_type != RUDA_TYPE_F64
-        && !(equality_operator && operand_type == RUDA_TYPE_BOOL)) {
+    if (!(operand_type >= MMAY_TYPE_I8 && operand_type <= MMAY_TYPE_U64)
+        && operand_type != MMAY_TYPE_F64
+        && !(equality_operator && operand_type == MMAY_TYPE_BOOL)) {
         if ((numeric_operator || comparison_operator)
-            && ruda_checker_private_type_is_numeric(operand_type)) {
-            ruda_checker_fail(
+            && mmay_checker_private_type_is_numeric(operand_type)) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
         }
-        if (bitwise_operator && ruda_checker_private_type_is_integer(operand_type)) {
-            ruda_checker_fail(
+        if (bitwise_operator && mmay_checker_private_type_is_integer(operand_type)) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
         }
-        if (shift_operator && ruda_checker_private_type_is_integer(operand_type)) {
-            ruda_checker_fail(
+        if (shift_operator && mmay_checker_private_type_is_integer(operand_type)) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
         }
         if (equality_operator) {
-            ruda_checker_fail(
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
         }
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+            MMAY_DIAGNOSTIC_INVALID_OPERATOR,
             "operator is not defined for the operand types",
             operator_token->start,
             operator_token->end
@@ -973,15 +973,15 @@
         return false;
     }
     if ((numeric_operator || bitwise_operator || shift_operator)
-        && ruda_checker_private_type_is_integer(operand_type)) {
+        && mmay_checker_private_type_is_integer(operand_type)) {
         result_type = operand_type;
     }
-    if (operand_type == RUDA_TYPE_F64) {
+    if (operand_type == MMAY_TYPE_F64) {
         if (bitwise_operator || shift_operator
-            || operator_token->kind == RUDA_TOKEN_PERCENT) {
-            (void)ruda_checker_add_diagnostic(
+            || operator_token->kind == MMAY_TOKEN_PERCENT) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+                MMAY_DIAGNOSTIC_INVALID_OPERATOR,
                 "operator is not defined for f64 operands",
                 operator_token->start,
                 operator_token->end
@@ -989,34 +989,34 @@
             return false;
         }
         if (numeric_operator) {
-            result_type = RUDA_TYPE_F64;
+            result_type = MMAY_TYPE_F64;
         }
         if (equality_operator) {
-            kind = RUDA_MIR_EQUAL_F64;
+            kind = MMAY_MIR_EQUAL_F64;
         } else if (comparison_operator) {
-            kind = operator_token->kind == RUDA_TOKEN_LESS
-                    || operator_token->kind == RUDA_TOKEN_GREATER
-                ? RUDA_MIR_LESS_F64
-                : RUDA_MIR_LESS_EQUAL_F64;
-        } else if (operator_token->kind == RUDA_TOKEN_PLUS) {
-            kind = RUDA_MIR_ADD_F64;
-        } else if (operator_token->kind == RUDA_TOKEN_MINUS) {
-            kind = RUDA_MIR_SUBTRACT_F64;
-        } else if (operator_token->kind == RUDA_TOKEN_STAR) {
-            kind = RUDA_MIR_MULTIPLY_F64;
-        } else if (operator_token->kind == RUDA_TOKEN_SLASH) {
-            kind = RUDA_MIR_DIVIDE_F64;
+            kind = operator_token->kind == MMAY_TOKEN_LESS
+                    || operator_token->kind == MMAY_TOKEN_GREATER
+                ? MMAY_MIR_LESS_F64
+                : MMAY_MIR_LESS_EQUAL_F64;
+        } else if (operator_token->kind == MMAY_TOKEN_PLUS) {
+            kind = MMAY_MIR_ADD_F64;
+        } else if (operator_token->kind == MMAY_TOKEN_MINUS) {
+            kind = MMAY_MIR_SUBTRACT_F64;
+        } else if (operator_token->kind == MMAY_TOKEN_STAR) {
+            kind = MMAY_MIR_MULTIPLY_F64;
+        } else if (operator_token->kind == MMAY_TOKEN_SLASH) {
+            kind = MMAY_MIR_DIVIDE_F64;
         }
     }
     if (equality_operator) {
-        if (operand_type == RUDA_TYPE_BOOL) {
-            kind = RUDA_MIR_EQUAL_BOOL;
-        } else if (operand_type >= RUDA_TYPE_I8
-            && operand_type <= RUDA_TYPE_U64) {
-            kind = RUDA_MIR_EQUAL_I64;
+        if (operand_type == MMAY_TYPE_BOOL) {
+            kind = MMAY_MIR_EQUAL_BOOL;
+        } else if (operand_type >= MMAY_TYPE_I8
+            && operand_type <= MMAY_TYPE_U64) {
+            kind = MMAY_MIR_EQUAL_I64;
         }
     }
-    if (!ruda_function_emit_instruction(
+    if (!mmay_function_emit_instruction(
             function,
             kind,
             result_type,
@@ -1033,12 +1033,12 @@
     if (!negate) {
         return true;
     }
-    return ruda_function_emit_instruction(
+    return mmay_function_emit_instruction(
         function,
-        RUDA_MIR_NOT_BOOL,
-        RUDA_TYPE_BOOL,
+        MMAY_MIR_NOT_BOOL,
+        MMAY_TYPE_BOOL,
         equality.register_id,
-        RUDA_MIR_NO_REGISTER,
+        MMAY_MIR_NO_REGISTER,
         0,
         false,
         node->start,

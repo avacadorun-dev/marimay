@@ -5,54 +5,54 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ruda/base/allocator.h"
-#include "ruda/platform/process.h"
+#include "mmay/base/allocator.h"
+#include "mmay/platform/process.h"
 
-void ruda_test_process(void) {
-    const char *executable = ruda_test_toolchain_executable();
+void mmay_test_process(void) {
+    const char *executable = mmay_test_toolchain_executable();
     const char *version_arguments[4];
     const char *unknown_arguments[4];
     const char *space_arguments[5];
     const char *invalid_arguments[2];
-    const char *missing_arguments[2] = {"ruda-definitely-missing-i0", NULL};
-    RudaProcessResult result;
-    RudaProcessCaptureResult capture;
-    RudaOwnedBytes executable_path = {0};
-    RudaProcessStatus status;
+    const char *missing_arguments[2] = {"mmay-definitely-missing-i0", NULL};
+    MarimayProcessResult result;
+    MarimayProcessCaptureResult capture;
+    MarimayOwnedBytes executable_path = {0};
+    MarimayProcessStatus status;
     size_t failure_index = 0;
     bool reached_success = false;
 
-    RUDA_EXPECT(executable != NULL);
+    MMAY_EXPECT(executable != NULL);
     if (executable == NULL) {
         return;
     }
-    RUDA_EXPECT(ruda_process_executable_path(
-        ruda_system_allocator(), 32768, &executable_path
-    ) == RUDA_PROCESS_OK);
-    RUDA_EXPECT(executable_path.data != NULL && executable_path.length != 0);
-    ruda_owned_bytes_dispose(&executable_path);
-    RUDA_EXPECT(ruda_process_executable_path(
-        ruda_system_allocator(), 1, &executable_path
-    ) == RUDA_PROCESS_OUTPUT_LIMIT);
+    MMAY_EXPECT(mmay_process_executable_path(
+        mmay_system_allocator(), 32768, &executable_path
+    ) == MMAY_PROCESS_OK);
+    MMAY_EXPECT(executable_path.data != NULL && executable_path.length != 0);
+    mmay_owned_bytes_dispose(&executable_path);
+    MMAY_EXPECT(mmay_process_executable_path(
+        mmay_system_allocator(), 1, &executable_path
+    ) == MMAY_PROCESS_OUTPUT_LIMIT);
     for (failure_index = 0; failure_index < 4; failure_index += 1) {
-        RudaFailAllocator state;
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        MarimayFailAllocator state;
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        status = ruda_process_executable_path(
-            ruda_fail_allocator(&state), 32768, &executable_path
+        status = mmay_process_executable_path(
+            mmay_fail_allocator(&state), 32768, &executable_path
         );
-        if (status == RUDA_PROCESS_OK) {
+        if (status == MMAY_PROCESS_OK) {
             reached_success = true;
-            ruda_owned_bytes_dispose(&executable_path);
+            mmay_owned_bytes_dispose(&executable_path);
         } else {
-            RUDA_EXPECT(status == RUDA_PROCESS_ALLOCATION_FAILED);
+            MMAY_EXPECT(status == MMAY_PROCESS_ALLOCATION_FAILED);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) break;
     }
-    RUDA_EXPECT(reached_success);
+    MMAY_EXPECT(reached_success);
     reached_success = false;
     version_arguments[0] = executable;
     version_arguments[1] = "version";
@@ -70,132 +70,132 @@ void ruda_test_process(void) {
     invalid_arguments[0] = executable;
     invalid_arguments[1] = "not-null-terminated";
 
-    status = ruda_process_run(
-        ruda_system_allocator(),
+    status = mmay_process_run(
+        mmay_system_allocator(),
         version_arguments,
         3,
         16384,
         &result
     );
-    RUDA_EXPECT(status == RUDA_PROCESS_OK);
-    RUDA_EXPECT(result.exit_code == 0);
-    RUDA_EXPECT(!result.signaled);
-    RUDA_EXPECT(strstr((const char *)result.output.data, "\"schema\":\"ruda.version/1\"")
+    MMAY_EXPECT(status == MMAY_PROCESS_OK);
+    MMAY_EXPECT(result.exit_code == 0);
+    MMAY_EXPECT(!result.signaled);
+    MMAY_EXPECT(strstr((const char *)result.output.data, "\"schema\":\"marimay.version/1\"")
         != NULL);
-    ruda_process_result_dispose(&result);
+    mmay_process_result_dispose(&result);
 
     memset(&capture, 0, sizeof(capture));
-    status = ruda_process_run_capture(
-        ruda_system_allocator(), unknown_arguments, 2, 16384, 16384,
+    status = mmay_process_run_capture(
+        mmay_system_allocator(), unknown_arguments, 2, 16384, 16384,
         &capture
     );
-    RUDA_EXPECT(status == RUDA_PROCESS_OK);
-    RUDA_EXPECT(capture.exit_code == 2 && !capture.signaled);
-    RUDA_EXPECT(capture.standard_output.length == 0);
-    RUDA_EXPECT(strstr(
+    MMAY_EXPECT(status == MMAY_PROCESS_OK);
+    MMAY_EXPECT(capture.exit_code == 2 && !capture.signaled);
+    MMAY_EXPECT(capture.standard_output.length == 0);
+    MMAY_EXPECT(strstr(
         (const char *)capture.standard_error.data, "error[U0001]"
     ) != NULL);
-    ruda_process_capture_result_dispose(&capture);
+    mmay_process_capture_result_dispose(&capture);
 
-    status = ruda_process_run(
-        ruda_system_allocator(),
+    status = mmay_process_run(
+        mmay_system_allocator(),
         unknown_arguments,
         2,
         16384,
         &result
     );
-    RUDA_EXPECT(status == RUDA_PROCESS_OK);
-    RUDA_EXPECT(result.exit_code == 2);
-    RUDA_EXPECT(strstr((const char *)result.output.data, "error[U0001]") != NULL);
-    ruda_process_result_dispose(&result);
+    MMAY_EXPECT(status == MMAY_PROCESS_OK);
+    MMAY_EXPECT(result.exit_code == 2);
+    MMAY_EXPECT(strstr((const char *)result.output.data, "error[U0001]") != NULL);
+    mmay_process_result_dispose(&result);
 
-    status = ruda_process_run(
-        ruda_system_allocator(),
+    status = mmay_process_run(
+        mmay_system_allocator(),
         space_arguments,
         4,
         16384,
         &result
     );
-    RUDA_EXPECT(status == RUDA_PROCESS_OK);
-    RUDA_EXPECT(result.exit_code == 2);
-    RUDA_EXPECT(strstr((const char *)result.output.data, "not a command") != NULL);
-    ruda_process_result_dispose(&result);
+    MMAY_EXPECT(status == MMAY_PROCESS_OK);
+    MMAY_EXPECT(result.exit_code == 2);
+    MMAY_EXPECT(strstr((const char *)result.output.data, "not a command") != NULL);
+    mmay_process_result_dispose(&result);
 
-    status = ruda_process_run(
-        ruda_system_allocator(),
+    status = mmay_process_run(
+        mmay_system_allocator(),
         version_arguments,
         3,
         8,
         &result
     );
-    RUDA_EXPECT(status == RUDA_PROCESS_OUTPUT_LIMIT);
-    RUDA_EXPECT(result.output.data == NULL);
+    MMAY_EXPECT(status == MMAY_PROCESS_OUTPUT_LIMIT);
+    MMAY_EXPECT(result.output.data == NULL);
 
-    status = ruda_process_run(
-        ruda_system_allocator(),
+    status = mmay_process_run(
+        mmay_system_allocator(),
         missing_arguments,
         1,
         1024,
         &result
     );
-    RUDA_EXPECT(status == RUDA_PROCESS_SPAWN_FAILED);
-    RUDA_EXPECT(result.output.data == NULL);
+    MMAY_EXPECT(status == MMAY_PROCESS_SPAWN_FAILED);
+    MMAY_EXPECT(result.output.data == NULL);
 
-    status = ruda_process_run(
-        ruda_system_allocator(),
+    status = mmay_process_run(
+        mmay_system_allocator(),
         invalid_arguments,
         1,
         1024,
         &result
     );
-    RUDA_EXPECT(status == RUDA_PROCESS_INVALID_ARGUMENT);
+    MMAY_EXPECT(status == MMAY_PROCESS_INVALID_ARGUMENT);
 
     for (failure_index = 0; failure_index < 64; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaAllocator allocator;
-        ruda_fail_allocator_init(&state, ruda_system_allocator(), failure_index);
-        allocator = ruda_fail_allocator(&state);
-        status = ruda_process_run(allocator, version_arguments, 3, 16384, &result);
-        if (status == RUDA_PROCESS_OK) {
+        MarimayFailAllocator state;
+        MarimayAllocator allocator;
+        mmay_fail_allocator_init(&state, mmay_system_allocator(), failure_index);
+        allocator = mmay_fail_allocator(&state);
+        status = mmay_process_run(allocator, version_arguments, 3, 16384, &result);
+        if (status == MMAY_PROCESS_OK) {
             reached_success = true;
-            RUDA_EXPECT(result.exit_code == 0);
-            ruda_process_result_dispose(&result);
+            MMAY_EXPECT(result.exit_code == 0);
+            mmay_process_result_dispose(&result);
         } else {
-            RUDA_EXPECT(status == RUDA_PROCESS_ALLOCATION_FAILED);
-            RUDA_EXPECT(result.output.data == NULL);
+            MMAY_EXPECT(status == MMAY_PROCESS_ALLOCATION_FAILED);
+            MMAY_EXPECT(result.output.data == NULL);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) {
             break;
         }
     }
-    RUDA_EXPECT(reached_success);
+    MMAY_EXPECT(reached_success);
 
     reached_success = false;
     for (failure_index = 0; failure_index < 64; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaAllocator allocator;
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        MarimayFailAllocator state;
+        MarimayAllocator allocator;
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        allocator = ruda_fail_allocator(&state);
+        allocator = mmay_fail_allocator(&state);
         memset(&capture, 0, sizeof(capture));
-        status = ruda_process_run_capture(
+        status = mmay_process_run_capture(
             allocator, version_arguments, 3, 16384, 16384, &capture
         );
-        if (status == RUDA_PROCESS_OK) {
+        if (status == MMAY_PROCESS_OK) {
             reached_success = true;
-            RUDA_EXPECT(capture.exit_code == 0);
-            ruda_process_capture_result_dispose(&capture);
+            MMAY_EXPECT(capture.exit_code == 0);
+            mmay_process_capture_result_dispose(&capture);
         } else {
-            RUDA_EXPECT(status == RUDA_PROCESS_ALLOCATION_FAILED);
-            RUDA_EXPECT(capture.standard_output.data == NULL);
-            RUDA_EXPECT(capture.standard_error.data == NULL);
+            MMAY_EXPECT(status == MMAY_PROCESS_ALLOCATION_FAILED);
+            MMAY_EXPECT(capture.standard_output.data == NULL);
+            MMAY_EXPECT(capture.standard_error.data == NULL);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) break;
     }
-    RUDA_EXPECT(reached_success);
+    MMAY_EXPECT(reached_success);
 }

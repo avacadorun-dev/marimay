@@ -4,20 +4,20 @@
 #include <stdlib.h>
 #include <string.h>
 
-static int ruda_check_compare_symbol_facts(
+static int mmay_check_compare_symbol_facts(
     const void *left_pointer,
     const void *right_pointer
 ) {
-    const RudaCheckedSymbol *left = left_pointer;
-    const RudaCheckedSymbol *right = right_pointer;
-    const unsigned char *left_path = (const unsigned char *)ruda_source_path(
+    const MarimayCheckedSymbol *left = left_pointer;
+    const MarimayCheckedSymbol *right = right_pointer;
+    const unsigned char *left_path = (const unsigned char *)mmay_source_path(
         left->snapshot
     );
-    const unsigned char *right_path = (const unsigned char *)ruda_source_path(
+    const unsigned char *right_path = (const unsigned char *)mmay_source_path(
         right->snapshot
     );
-    size_t left_length = ruda_source_path_length(left->snapshot);
-    size_t right_length = ruda_source_path_length(right->snapshot);
+    size_t left_length = mmay_source_path_length(left->snapshot);
+    size_t right_length = mmay_source_path_length(right->snapshot);
     size_t shared = left_length < right_length ? left_length : right_length;
     int comparison = shared == 0 ? 0 : memcmp(left_path, right_path, shared);
     if (comparison != 0) {
@@ -56,43 +56,43 @@ static int ruda_check_compare_symbol_facts(
     );
 }
 
-static bool ruda_check_publish_symbol(
-    RudaChecker *checker,
-    const RudaCheckSymbolSeed *seed
+static bool mmay_check_publish_symbol(
+    MarimayChecker *checker,
+    const MarimayCheckSymbolSeed *seed
 ) {
-    RudaCheckedSymbol fact;
+    MarimayCheckedSymbol fact;
     const unsigned char *source = NULL;
     size_t source_length = 0;
     memset(&fact, 0, sizeof(fact));
     if (seed == NULL || seed->name.snapshot == NULL
-        || seed->type == RUDA_TYPE_INVALID
+        || seed->type == MMAY_TYPE_INVALID
         || seed->name.start >= seed->name.end) {
-        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
-    source = ruda_source_bytes(seed->name.snapshot);
-    source_length = ruda_source_length(seed->name.snapshot);
+    source = mmay_source_bytes(seed->name.snapshot);
+    source_length = mmay_source_length(seed->name.snapshot);
     if (seed->name.end > source_length || source == NULL) {
-        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &fact.name,
             checker->result->allocator,
             source + seed->name.start,
             seed->name.end - seed->name.start
         )) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &fact.package_name,
             checker->result->allocator,
             checker->package_name,
             checker->package_name_length
         )) {
-        ruda_owned_bytes_dispose(&fact.name);
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        mmay_owned_bytes_dispose(&fact.name);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     fact.symbol = seed->symbol;
@@ -102,29 +102,29 @@ static bool ruda_check_publish_symbol(
     fact.end = seed->name.end;
     fact.kind = seed->kind;
     fact.is_public = seed->is_public;
-    if (!ruda_vector_push(&checker->result->symbols, &fact)) {
-        ruda_owned_bytes_dispose(&fact.package_name);
-        ruda_owned_bytes_dispose(&fact.name);
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+    if (!mmay_vector_push(&checker->result->symbols, &fact)) {
+        mmay_owned_bytes_dispose(&fact.package_name);
+        mmay_owned_bytes_dispose(&fact.name);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     return true;
 }
 
-static int ruda_check_compare_occurrences(
+static int mmay_check_compare_occurrences(
     const void *left_pointer,
     const void *right_pointer
 ) {
-    const RudaCheckedOccurrence *left = left_pointer;
-    const RudaCheckedOccurrence *right = right_pointer;
-    const unsigned char *left_path = (const unsigned char *)ruda_source_path(
+    const MarimayCheckedOccurrence *left = left_pointer;
+    const MarimayCheckedOccurrence *right = right_pointer;
+    const unsigned char *left_path = (const unsigned char *)mmay_source_path(
         left->snapshot
     );
-    const unsigned char *right_path = (const unsigned char *)ruda_source_path(
+    const unsigned char *right_path = (const unsigned char *)mmay_source_path(
         right->snapshot
     );
-    size_t left_length = ruda_source_path_length(left->snapshot);
-    size_t right_length = ruda_source_path_length(right->snapshot);
+    size_t left_length = mmay_source_path_length(left->snapshot);
+    size_t right_length = mmay_source_path_length(right->snapshot);
     size_t shared = left_length < right_length ? left_length : right_length;
     int comparison = shared == 0 ? 0 : memcmp(left_path, right_path, shared);
     if (comparison != 0) {
@@ -146,9 +146,9 @@ static int ruda_check_compare_occurrences(
     );
 }
 
-static int ruda_check_compare_owned_bytes(
-    const RudaOwnedBytes *left,
-    const RudaOwnedBytes *right
+static int mmay_check_compare_owned_bytes(
+    const MarimayOwnedBytes *left,
+    const MarimayOwnedBytes *right
 ) {
     size_t shared = left->length < right->length
         ? left->length : right->length;
@@ -166,20 +166,20 @@ static int ruda_check_compare_owned_bytes(
     return left->length < right->length ? -1 : 1;
 }
 
-static int ruda_check_compare_completions(
+static int mmay_check_compare_completions(
     const void *left_pointer,
     const void *right_pointer
 ) {
-    const RudaCheckedCompletion *left = left_pointer;
-    const RudaCheckedCompletion *right = right_pointer;
-    RudaCheckedOccurrence left_location;
-    RudaCheckedOccurrence right_location;
+    const MarimayCheckedCompletion *left = left_pointer;
+    const MarimayCheckedCompletion *right = right_pointer;
+    MarimayCheckedOccurrence left_location;
+    MarimayCheckedOccurrence right_location;
     int comparison = 0;
     memset(&left_location, 0, sizeof(left_location));
     memset(&right_location, 0, sizeof(right_location));
     left_location.snapshot = left->snapshot;
     right_location.snapshot = right->snapshot;
-    comparison = ruda_check_compare_occurrences(
+    comparison = mmay_check_compare_occurrences(
         &left_location,
         &right_location
     );
@@ -194,11 +194,11 @@ static int ruda_check_compare_completions(
     if (comparison != 0) {
         return comparison;
     }
-    comparison = ruda_check_compare_owned_bytes(&left->name, &right->name);
+    comparison = mmay_check_compare_owned_bytes(&left->name, &right->name);
     if (comparison != 0) {
         return comparison;
     }
-    comparison = ruda_check_compare_owned_bytes(
+    comparison = mmay_check_compare_owned_bytes(
         &left->package_name,
         &right->package_name
     );
@@ -212,23 +212,23 @@ static int ruda_check_compare_completions(
     );
 }
 
-bool ruda_check_record_occurrence(
-    RudaChecker *checker,
-    RudaCheckName name,
-    RudaSymbolId symbol
+bool mmay_check_record_occurrence(
+    MarimayChecker *checker,
+    MarimayCheckName name,
+    MarimaySymbolId symbol
 ) {
-    RudaCheckedOccurrence occurrence;
+    MarimayCheckedOccurrence occurrence;
     if (checker == NULL || checker->result == NULL || name.snapshot == NULL
         || name.start >= name.end
-        || name.end > ruda_source_length(name.snapshot)) {
+        || name.end > mmay_source_length(name.snapshot)) {
         if (checker != NULL) {
-            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         }
         return false;
     }
     if (checker->result->occurrences.length
         >= checker->options.max_occurrences) {
-        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
         return false;
     }
     memset(&occurrence, 0, sizeof(occurrence));
@@ -236,15 +236,15 @@ bool ruda_check_record_occurrence(
     occurrence.snapshot = name.snapshot;
     occurrence.start = name.start;
     occurrence.end = name.end;
-    if (!ruda_vector_push(&checker->result->occurrences, &occurrence)) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+    if (!mmay_vector_push(&checker->result->occurrences, &occurrence)) {
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     return true;
 }
 
-bool ruda_check_finalize_semantic_facts(RudaChecker *checker) {
-    RudaVector *occurrences = NULL;
+bool mmay_check_finalize_semantic_facts(MarimayChecker *checker) {
+    MarimayVector *occurrences = NULL;
     size_t read_index = 0;
     size_t write_index = 0;
     size_t index = 0;
@@ -257,31 +257,31 @@ bool ruda_check_finalize_semantic_facts(RudaChecker *checker) {
             occurrences->data,
             occurrences->length,
             occurrences->element_size,
-            ruda_check_compare_occurrences
+            mmay_check_compare_occurrences
         );
         for (read_index = 0; read_index < occurrences->length;
             read_index += 1) {
-            RudaCheckedOccurrence *read = ruda_vector_at(
+            MarimayCheckedOccurrence *read = mmay_vector_at(
                 occurrences,
                 read_index
             );
-            RudaCheckedOccurrence *previous = write_index == 0 ? NULL
-                : ruda_vector_at(occurrences, write_index - 1);
+            MarimayCheckedOccurrence *previous = write_index == 0 ? NULL
+                : mmay_vector_at(occurrences, write_index - 1);
             if (read == NULL) {
-                ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+                mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
                 return false;
             }
             if (previous != NULL
-                && ruda_check_compare_occurrences(previous, read) == 0) {
+                && mmay_check_compare_occurrences(previous, read) == 0) {
                 continue;
             }
             if (write_index != read_index) {
-                RudaCheckedOccurrence *write = ruda_vector_at(
+                MarimayCheckedOccurrence *write = mmay_vector_at(
                     occurrences,
                     write_index
                 );
                 if (write == NULL) {
-                    ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+                    mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
                     return false;
                 }
                 *write = *read;
@@ -295,45 +295,45 @@ bool ruda_check_finalize_semantic_facts(RudaChecker *checker) {
             checker->result->completions.data,
             checker->result->completions.length,
             checker->result->completions.element_size,
-            ruda_check_compare_completions
+            mmay_check_compare_completions
         );
     }
     for (index = 0; index < occurrences->length; index += 1) {
-        const RudaCheckedOccurrence *occurrence = ruda_vector_at_const(
+        const MarimayCheckedOccurrence *occurrence = mmay_vector_at_const(
             occurrences,
             index
         );
-        if (occurrence == NULL || ruda_checked_symbol_by_id(
+        if (occurrence == NULL || mmay_checked_symbol_by_id(
                 checker->result,
                 occurrence->symbol
             ) == NULL) {
-            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
     }
     for (index = 0; index < checker->result->completions.length;
         index += 1) {
-        const RudaCheckedCompletion *completion = ruda_vector_at_const(
+        const MarimayCheckedCompletion *completion = mmay_vector_at_const(
             &checker->result->completions,
             index
         );
-        if (completion == NULL || ruda_checked_symbol_by_id(
+        if (completion == NULL || mmay_checked_symbol_by_id(
                 checker->result,
                 completion->symbol
-            ) == NULL || ruda_checked_symbol_by_id(
+            ) == NULL || mmay_checked_symbol_by_id(
                 checker->result,
                 completion->receiver_symbol
             ) == NULL) {
-            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
     }
     return true;
 }
 
-bool ruda_check_publish_symbol_seeds(
-    RudaChecker *checker,
-    const RudaCheckSymbolSeed *seeds,
+bool mmay_check_publish_symbol_seeds(
+    MarimayChecker *checker,
+    const MarimayCheckSymbolSeed *seeds,
     size_t seed_count
 ) {
     size_t index = 0;
@@ -342,22 +342,22 @@ bool ruda_check_publish_symbol_seeds(
         return false;
     }
     if (checker->result == NULL || (seeds == NULL && seed_count != 0)
-        || !ruda_size_add(
+        || !mmay_size_add(
             checker->result->symbols.length, seed_count, &total
         )) {
-        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
     if (total > checker->options.max_symbols) {
-        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
         return false;
     }
-    if (!ruda_vector_reserve(&checker->result->symbols, total)) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+    if (!mmay_vector_reserve(&checker->result->symbols, total)) {
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     for (index = 0; index < seed_count; index += 1) {
-        if (!ruda_check_publish_symbol(checker, &seeds[index])) {
+        if (!mmay_check_publish_symbol(checker, &seeds[index])) {
             return false;
         }
     }
@@ -366,34 +366,34 @@ bool ruda_check_publish_symbol_seeds(
             checker->result->symbols.data,
             checker->result->symbols.length,
             checker->result->symbols.element_size,
-            ruda_check_compare_symbol_facts
+            mmay_check_compare_symbol_facts
         );
     }
-    ruda_map_dispose(&checker->result->symbol_index);
-    if (!ruda_check_symbol_index_init(checker->result)) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+    mmay_map_dispose(&checker->result->symbol_index);
+    if (!mmay_check_symbol_index_init(checker->result)) {
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     for (index = 0; index < checker->result->symbols.length; index += 1) {
-        const RudaCheckedSymbol *fact = ruda_vector_at_const(
+        const MarimayCheckedSymbol *fact = mmay_vector_at_const(
             &checker->result->symbols,
             index
         );
-        if (fact == NULL || ruda_map_get_const(
+        if (fact == NULL || mmay_map_get_const(
                 &checker->result->symbol_index,
                 fact->symbol.bytes,
                 sizeof(fact->symbol.bytes)
             ) != NULL) {
-            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
-        if (!ruda_map_put(
+        if (!mmay_map_put(
                 &checker->result->symbol_index,
                 fact->symbol.bytes,
                 sizeof(fact->symbol.bytes),
                 &index
             )) {
-            ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+            mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
             return false;
         }
     }

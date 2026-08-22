@@ -1,71 +1,71 @@
-#include "ruda/types/type.h"
+#include "mmay/types/type.h"
 
 #include <stddef.h>
 #include <stdint.h>
 #include <string.h>
 
-#include "ruda/base/hash.h"
+#include "mmay/base/hash.h"
 
-static const RudaTypeKind ruda_primitive_type_kinds[] = {
-    RUDA_TYPE_KIND_INVALID,
-    RUDA_TYPE_KIND_BOOL,
-    RUDA_TYPE_KIND_I8,
-    RUDA_TYPE_KIND_I16,
-    RUDA_TYPE_KIND_I32,
-    RUDA_TYPE_KIND_I64,
-    RUDA_TYPE_KIND_U8,
-    RUDA_TYPE_KIND_U16,
-    RUDA_TYPE_KIND_U32,
-    RUDA_TYPE_KIND_U64,
-    RUDA_TYPE_KIND_F32,
-    RUDA_TYPE_KIND_F64,
-    RUDA_TYPE_KIND_RUNE,
-    RUDA_TYPE_KIND_STRING,
-    RUDA_TYPE_KIND_VOID,
-    RUDA_TYPE_KIND_NEVER
+static const MarimayTypeKind mmay_primitive_type_kinds[] = {
+    MMAY_TYPE_KIND_INVALID,
+    MMAY_TYPE_KIND_BOOL,
+    MMAY_TYPE_KIND_I8,
+    MMAY_TYPE_KIND_I16,
+    MMAY_TYPE_KIND_I32,
+    MMAY_TYPE_KIND_I64,
+    MMAY_TYPE_KIND_U8,
+    MMAY_TYPE_KIND_U16,
+    MMAY_TYPE_KIND_U32,
+    MMAY_TYPE_KIND_U64,
+    MMAY_TYPE_KIND_F32,
+    MMAY_TYPE_KIND_F64,
+    MMAY_TYPE_KIND_RUNE,
+    MMAY_TYPE_KIND_STRING,
+    MMAY_TYPE_KIND_VOID,
+    MMAY_TYPE_KIND_NEVER
 };
 
-static void ruda_type_write_u32(unsigned char bytes[4], uint32_t value) {
+static void mmay_type_write_u32(unsigned char bytes[4], uint32_t value) {
     size_t index = 0;
     for (index = 0; index < 4; index += 1) {
         bytes[index] = (unsigned char)(value >> (index * 8));
     }
 }
 
-static void ruda_type_write_u64(unsigned char bytes[8], uint64_t value) {
+static void mmay_type_write_u64(unsigned char bytes[8], uint64_t value) {
     size_t index = 0;
     for (index = 0; index < 8; index += 1) {
         bytes[index] = (unsigned char)(value >> (index * 8));
     }
 }
 
-static bool ruda_type_canonical_digest(
-    RudaTypeKind kind,
-    RudaSymbolId symbol,
+static bool mmay_type_canonical_digest(
+    MarimayTypeKind kind,
+    MarimaySymbolId symbol,
     size_t parameter_count,
-    const RudaTypeId *arguments,
+    const MarimayTypeId *arguments,
     size_t argument_count,
     unsigned char digest[32]
 ) {
-    RudaSha256 hash;
+    MarimaySha256 hash;
     unsigned char kind_bytes[4];
     unsigned char parameter_count_bytes[8];
     unsigned char argument_count_bytes[8];
     size_t index = 0;
-    ruda_type_write_u32(kind_bytes, (uint32_t)kind);
-    ruda_type_write_u64(
+    mmay_type_write_u32(kind_bytes, (uint32_t)kind);
+    mmay_type_write_u64(
         parameter_count_bytes,
         (uint64_t)parameter_count
     );
-    ruda_type_write_u64(argument_count_bytes, (uint64_t)argument_count);
-    ruda_sha256_init(&hash);
-    if (!ruda_sha256_update(&hash, kind_bytes, sizeof(kind_bytes))
-        || !ruda_sha256_update(&hash, symbol.bytes, sizeof(symbol.bytes))
-        || !ruda_sha256_update(
+    mmay_type_write_u64(argument_count_bytes, (uint64_t)argument_count);
+    mmay_sha256_init(&hash);
+    if (!mmay_sha256_update(&hash, kind_bytes, sizeof(kind_bytes))
+        || !mmay_sha256_update(&hash, symbol.bytes, sizeof(symbol.bytes))
+        || !mmay_sha256_update(
             &hash,
             parameter_count_bytes,
             sizeof(parameter_count_bytes)
-        ) || !ruda_sha256_update(
+        ) || !mmay_sha256_update(
             &hash,
             argument_count_bytes,
             sizeof(argument_count_bytes)
@@ -74,17 +74,17 @@ static bool ruda_type_canonical_digest(
     }
     for (index = 0; index < argument_count; index += 1) {
         unsigned char type_bytes[4];
-        ruda_type_write_u32(type_bytes, arguments[index]);
-        if (!ruda_sha256_update(&hash, type_bytes, sizeof(type_bytes))) {
+        mmay_type_write_u32(type_bytes, arguments[index]);
+        if (!mmay_sha256_update(&hash, type_bytes, sizeof(type_bytes))) {
             return false;
         }
     }
-    ruda_sha256_final(&hash, digest);
+    mmay_sha256_final(&hash, digest);
     return true;
 }
 
-static bool ruda_symbol_hash_bytes(
-    RudaSha256 *hash,
+static bool mmay_symbol_hash_bytes(
+    MarimaySha256 *hash,
     const void *bytes,
     size_t length
 ) {
@@ -97,18 +97,18 @@ static bool ruda_symbol_hash_bytes(
     for (index = 0; index < sizeof(length_bytes); index += 1) {
         length_bytes[index] = (unsigned char)((uint64_t)length >> (index * 8));
     }
-    return ruda_sha256_update(hash, length_bytes, sizeof(length_bytes))
-        && ruda_sha256_update(hash, bytes, length);
+    return mmay_sha256_update(hash, length_bytes, sizeof(length_bytes))
+        && mmay_sha256_update(hash, bytes, length);
 }
 
-RudaTypeTableOptions ruda_type_table_default_options(void) {
-    RudaTypeTableOptions options;
+MarimayTypeTableOptions mmay_type_table_default_options(void) {
+    MarimayTypeTableOptions options;
     options.max_types = 1000000;
     options.max_type_arguments = 1024;
     return options;
 }
 
-bool ruda_symbol_id_from_bytes(
+bool mmay_symbol_id_from_bytes(
     const void *package_name,
     size_t package_name_length,
     const void *source_path,
@@ -116,9 +116,9 @@ bool ruda_symbol_id_from_bytes(
     const void *declaration_name,
     size_t declaration_name_length,
     uint32_t discriminator,
-    RudaSymbolId *result
+    MarimaySymbolId *result
 ) {
-    RudaSha256 hash;
+    MarimaySha256 hash;
     unsigned char discriminator_bytes[4];
     unsigned char digest[32];
     size_t index = 0;
@@ -130,38 +130,38 @@ bool ruda_symbol_id_from_bytes(
     for (index = 0; index < sizeof(discriminator_bytes); index += 1) {
         discriminator_bytes[index] = (unsigned char)(discriminator >> (index * 8));
     }
-    ruda_sha256_init(&hash);
-    if (!ruda_symbol_hash_bytes(&hash, package_name, package_name_length)
-        || !ruda_symbol_hash_bytes(&hash, source_path, source_path_length)
-        || !ruda_symbol_hash_bytes(
+    mmay_sha256_init(&hash);
+    if (!mmay_symbol_hash_bytes(&hash, package_name, package_name_length)
+        || !mmay_symbol_hash_bytes(&hash, source_path, source_path_length)
+        || !mmay_symbol_hash_bytes(
             &hash,
             declaration_name,
             declaration_name_length
         )
-        || !ruda_sha256_update(
+        || !mmay_sha256_update(
             &hash,
             discriminator_bytes,
             sizeof(discriminator_bytes)
         )) {
         return false;
     }
-    ruda_sha256_final(&hash, digest);
+    mmay_sha256_final(&hash, digest);
     memcpy(result->bytes, digest, sizeof(result->bytes));
     return true;
 }
 
-bool ruda_symbol_id_from_parts(
+bool mmay_symbol_id_from_parts(
     const char *package_name,
     const char *source_path,
     const char *declaration_name,
     uint32_t discriminator,
-    RudaSymbolId *result
+    MarimaySymbolId *result
 ) {
     if (package_name == NULL || source_path == NULL
         || declaration_name == NULL) {
         return false;
     }
-    return ruda_symbol_id_from_bytes(
+    return mmay_symbol_id_from_bytes(
         package_name,
         strlen(package_name),
         source_path,
@@ -173,59 +173,59 @@ bool ruda_symbol_id_from_parts(
     );
 }
 
-bool ruda_symbol_id_from_bytes_with_receiver(
+bool mmay_symbol_id_from_bytes_with_receiver(
     const void *package_name,
     size_t package_name_length,
     const void *source_path,
     size_t source_path_length,
     const void *declaration_name,
     size_t declaration_name_length,
-    RudaSymbolId receiver,
-    RudaSymbolId *result
+    MarimaySymbolId receiver,
+    MarimaySymbolId *result
 ) {
     static const unsigned char domain[] = {
         'r', 'e', 'c', 'e', 'i', 'v', 'e', 'r'
     };
-    RudaSha256 hash;
+    MarimaySha256 hash;
     unsigned char digest[32];
     if (result == NULL || (package_name == NULL && package_name_length != 0)
         || (source_path == NULL && source_path_length != 0)
         || (declaration_name == NULL && declaration_name_length != 0)) {
         return false;
     }
-    ruda_sha256_init(&hash);
-    if (!ruda_symbol_hash_bytes(&hash, package_name, package_name_length)
-        || !ruda_symbol_hash_bytes(&hash, source_path, source_path_length)
-        || !ruda_symbol_hash_bytes(
+    mmay_sha256_init(&hash);
+    if (!mmay_symbol_hash_bytes(&hash, package_name, package_name_length)
+        || !mmay_symbol_hash_bytes(&hash, source_path, source_path_length)
+        || !mmay_symbol_hash_bytes(
             &hash,
             declaration_name,
             declaration_name_length
         )
-        || !ruda_sha256_update(&hash, domain, sizeof(domain))
-        || !ruda_sha256_update(
+        || !mmay_sha256_update(&hash, domain, sizeof(domain))
+        || !mmay_sha256_update(
             &hash,
             receiver.bytes,
             sizeof(receiver.bytes)
         )) {
         return false;
     }
-    ruda_sha256_final(&hash, digest);
+    mmay_sha256_final(&hash, digest);
     memcpy(result->bytes, digest, sizeof(result->bytes));
     return true;
 }
 
-bool ruda_symbol_id_from_parts_with_receiver(
+bool mmay_symbol_id_from_parts_with_receiver(
     const char *package_name,
     const char *source_path,
     const char *declaration_name,
-    RudaSymbolId receiver,
-    RudaSymbolId *result
+    MarimaySymbolId receiver,
+    MarimaySymbolId *result
 ) {
     if (package_name == NULL || source_path == NULL
         || declaration_name == NULL) {
         return false;
     }
-    return ruda_symbol_id_from_bytes_with_receiver(
+    return mmay_symbol_id_from_bytes_with_receiver(
         package_name,
         strlen(package_name),
         source_path,
@@ -237,14 +237,14 @@ bool ruda_symbol_id_from_parts_with_receiver(
     );
 }
 
-bool ruda_symbol_id_equal(RudaSymbolId left, RudaSymbolId right) {
+bool mmay_symbol_id_equal(MarimaySymbolId left, MarimaySymbolId right) {
     return memcmp(left.bytes, right.bytes, sizeof(left.bytes)) == 0;
 }
 
-bool ruda_type_table_init(
-    RudaTypeTable *table,
-    RudaAllocator allocator,
-    RudaTypeTableOptions options
+bool mmay_type_table_init(
+    MarimayTypeTable *table,
+    MarimayAllocator allocator,
+    MarimayTypeTableOptions options
 ) {
     static const uint64_t canonical_key0 = UINT64_C(0x727564612d747970);
     static const uint64_t canonical_key1 = UINT64_C(0x652d696e7465726e);
@@ -252,30 +252,30 @@ bool ruda_type_table_init(
     bool canonical_initialized = false;
     if (table == NULL || allocator.allocate == NULL
         || allocator.resize == NULL || allocator.deallocate == NULL
-        || options.max_types < RUDA_TYPE_FIRST_DYNAMIC
+        || options.max_types < MMAY_TYPE_FIRST_DYNAMIC
         || options.max_types > UINT32_MAX
         || options.max_type_arguments == 0) {
         return false;
     }
     memset(table, 0, sizeof(*table));
-    descriptors_initialized = ruda_vector_init(
+    descriptors_initialized = mmay_vector_init(
             &table->descriptors,
             allocator,
-            sizeof(RudaTypeDescriptor *)
+            sizeof(MarimayTypeDescriptor *)
         );
-    canonical_initialized = ruda_map_init(
+    canonical_initialized = mmay_map_init(
         &table->canonical,
         allocator,
-        sizeof(RudaTypeId),
+        sizeof(MarimayTypeId),
         canonical_key0,
         canonical_key1
     );
     if (!descriptors_initialized || !canonical_initialized) {
         if (canonical_initialized) {
-            ruda_map_dispose(&table->canonical);
+            mmay_map_dispose(&table->canonical);
         }
         if (descriptors_initialized) {
-            ruda_vector_dispose(&table->descriptors);
+            mmay_vector_dispose(&table->descriptors);
         }
         memset(table, 0, sizeof(*table));
         return false;
@@ -286,58 +286,58 @@ bool ruda_type_table_init(
     return true;
 }
 
-void ruda_type_table_dispose(RudaTypeTable *table) {
+void mmay_type_table_dispose(MarimayTypeTable *table) {
     size_t index = 0;
     if (table == NULL || !table->initialized) {
         return;
     }
     for (index = 0; index < table->descriptors.length; index += 1) {
-        RudaTypeDescriptor *const *slot = ruda_vector_at(
+        MarimayTypeDescriptor *const *slot = mmay_vector_at(
             &table->descriptors,
             index
         );
         if (slot != NULL && *slot != NULL) {
-            ruda_deallocate(
+            mmay_deallocate(
                 &table->allocator,
                 *slot,
                 (*slot)->allocation_size
             );
         }
     }
-    ruda_map_dispose(&table->canonical);
-    ruda_vector_dispose(&table->descriptors);
+    mmay_map_dispose(&table->canonical);
+    mmay_vector_dispose(&table->descriptors);
     memset(table, 0, sizeof(*table));
 }
 
-RudaTypeKind ruda_type_kind(const RudaTypeTable *table, RudaTypeId type) {
-    const RudaTypeDescriptor *descriptor = NULL;
-    if (type < RUDA_TYPE_FIRST_DYNAMIC) {
-        return type < sizeof(ruda_primitive_type_kinds)
-                / sizeof(ruda_primitive_type_kinds[0])
-            ? ruda_primitive_type_kinds[type]
-            : RUDA_TYPE_KIND_INVALID;
+MarimayTypeKind mmay_type_kind(const MarimayTypeTable *table, MarimayTypeId type) {
+    const MarimayTypeDescriptor *descriptor = NULL;
+    if (type < MMAY_TYPE_FIRST_DYNAMIC) {
+        return type < sizeof(mmay_primitive_type_kinds)
+                / sizeof(mmay_primitive_type_kinds[0])
+            ? mmay_primitive_type_kinds[type]
+            : MMAY_TYPE_KIND_INVALID;
     }
-    descriptor = ruda_type_descriptor(table, type);
-    return descriptor != NULL ? descriptor->kind : RUDA_TYPE_KIND_INVALID;
+    descriptor = mmay_type_descriptor(table, type);
+    return descriptor != NULL ? descriptor->kind : MMAY_TYPE_KIND_INVALID;
 }
 
-const RudaTypeDescriptor *ruda_type_descriptor(
-    const RudaTypeTable *table,
-    RudaTypeId type
+const MarimayTypeDescriptor *mmay_type_descriptor(
+    const MarimayTypeTable *table,
+    MarimayTypeId type
 ) {
-    const RudaTypeDescriptor *const *slot = NULL;
+    const MarimayTypeDescriptor *const *slot = NULL;
     size_t index = 0;
-    if (table == NULL || !table->initialized || type < RUDA_TYPE_FIRST_DYNAMIC) {
+    if (table == NULL || !table->initialized || type < MMAY_TYPE_FIRST_DYNAMIC) {
         return NULL;
     }
-    index = (size_t)(type - RUDA_TYPE_FIRST_DYNAMIC);
-    slot = ruda_vector_at_const(&table->descriptors, index);
+    index = (size_t)(type - MMAY_TYPE_FIRST_DYNAMIC);
+    slot = mmay_vector_at_const(&table->descriptors, index);
     return slot != NULL ? *slot : NULL;
 }
 
-static bool ruda_type_arguments_valid(
-    const RudaTypeTable *table,
-    const RudaTypeId *arguments,
+static bool mmay_type_arguments_valid(
+    const MarimayTypeTable *table,
+    const MarimayTypeId *arguments,
     size_t argument_count
 ) {
     size_t index = 0;
@@ -346,52 +346,52 @@ static bool ruda_type_arguments_valid(
         return false;
     }
     for (index = 0; index < argument_count; index += 1) {
-        if (ruda_type_kind(table, arguments[index]) == RUDA_TYPE_KIND_INVALID) {
+        if (mmay_type_kind(table, arguments[index]) == MMAY_TYPE_KIND_INVALID) {
             return false;
         }
     }
     return true;
 }
 
-static bool ruda_type_descriptor_matches(
-    const RudaTypeDescriptor *descriptor,
-    RudaTypeKind kind,
-    RudaSymbolId symbol,
+static bool mmay_type_descriptor_matches(
+    const MarimayTypeDescriptor *descriptor,
+    MarimayTypeKind kind,
+    MarimaySymbolId symbol,
     size_t parameter_count,
-    const RudaTypeId *arguments,
+    const MarimayTypeId *arguments,
     size_t argument_count
 ) {
     return descriptor != NULL && descriptor->kind == kind
-        && ruda_symbol_id_equal(descriptor->symbol, symbol)
+        && mmay_symbol_id_equal(descriptor->symbol, symbol)
         && descriptor->parameter_count == parameter_count
         && descriptor->argument_count == argument_count
         && (argument_count == 0 || memcmp(
             descriptor->arguments,
             arguments,
-            argument_count * sizeof(RudaTypeId)
+            argument_count * sizeof(MarimayTypeId)
         ) == 0);
 }
 
-static bool ruda_type_intern(
-    RudaTypeTable *table,
-    RudaTypeKind kind,
-    RudaSymbolId symbol,
+static bool mmay_type_intern(
+    MarimayTypeTable *table,
+    MarimayTypeKind kind,
+    MarimaySymbolId symbol,
     size_t parameter_count,
-    const RudaTypeId *arguments,
+    const MarimayTypeId *arguments,
     size_t argument_count,
-    RudaTypeId *result
+    MarimayTypeId *result
 ) {
     unsigned char digest[32];
-    const RudaTypeId *existing = NULL;
+    const MarimayTypeId *existing = NULL;
     size_t argument_bytes = 0;
     size_t allocation_size = 0;
-    RudaTypeDescriptor *descriptor = NULL;
-    RudaTypeId type_id = RUDA_TYPE_INVALID;
+    MarimayTypeDescriptor *descriptor = NULL;
+    MarimayTypeId type_id = MMAY_TYPE_INVALID;
     if (table == NULL || !table->initialized || result == NULL
-        || !ruda_type_arguments_valid(table, arguments, argument_count)) {
+        || !mmay_type_arguments_valid(table, arguments, argument_count)) {
         return false;
     }
-    if (!ruda_type_canonical_digest(
+    if (!mmay_type_canonical_digest(
             kind,
             symbol,
             parameter_count,
@@ -401,17 +401,17 @@ static bool ruda_type_intern(
         )) {
         return false;
     }
-    existing = ruda_map_get_const(
+    existing = mmay_map_get_const(
         &table->canonical,
         digest,
         sizeof(digest)
     );
     if (existing != NULL) {
-        const RudaTypeDescriptor *canonical = ruda_type_descriptor(
+        const MarimayTypeDescriptor *canonical = mmay_type_descriptor(
             table,
             *existing
         );
-        if (!ruda_type_descriptor_matches(
+        if (!mmay_type_descriptor_matches(
                 canonical,
                 kind,
                 symbol,
@@ -425,22 +425,22 @@ static bool ruda_type_intern(
         return true;
     }
     if (table->descriptors.length
-            >= table->options.max_types - RUDA_TYPE_FIRST_DYNAMIC
-        || table->descriptors.length > UINT32_MAX - RUDA_TYPE_FIRST_DYNAMIC) {
+            >= table->options.max_types - MMAY_TYPE_FIRST_DYNAMIC
+        || table->descriptors.length > UINT32_MAX - MMAY_TYPE_FIRST_DYNAMIC) {
         return false;
     }
-    if (!ruda_size_multiply(
+    if (!mmay_size_multiply(
             argument_count,
-            sizeof(RudaTypeId),
+            sizeof(MarimayTypeId),
             &argument_bytes
-        ) || !ruda_size_add(
-            offsetof(RudaTypeDescriptor, arguments),
+        ) || !mmay_size_add(
+            offsetof(MarimayTypeDescriptor, arguments),
             argument_bytes,
             &allocation_size
         )) {
         return false;
     }
-    descriptor = ruda_allocate(&table->allocator, allocation_size);
+    descriptor = mmay_allocate(&table->allocator, allocation_size);
     if (descriptor == NULL) {
         return false;
     }
@@ -452,39 +452,39 @@ static bool ruda_type_intern(
     if (argument_count != 0) {
         memcpy(descriptor->arguments, arguments, argument_bytes);
     }
-    if (!ruda_vector_push(&table->descriptors, &descriptor)) {
-        ruda_deallocate(&table->allocator, descriptor, allocation_size);
+    if (!mmay_vector_push(&table->descriptors, &descriptor)) {
+        mmay_deallocate(&table->allocator, descriptor, allocation_size);
         return false;
     }
-    type_id = (RudaTypeId)(RUDA_TYPE_FIRST_DYNAMIC
+    type_id = (MarimayTypeId)(MMAY_TYPE_FIRST_DYNAMIC
         + table->descriptors.length - 1);
-    if (!ruda_map_put(
+    if (!mmay_map_put(
             &table->canonical,
             digest,
             sizeof(digest),
             &type_id
         )) {
         table->descriptors.length -= 1;
-        ruda_deallocate(&table->allocator, descriptor, allocation_size);
+        mmay_deallocate(&table->allocator, descriptor, allocation_size);
         return false;
     }
     *result = type_id;
     return true;
 }
 
-bool ruda_type_intern_nominal(
-    RudaTypeTable *table,
-    RudaTypeKind kind,
-    RudaSymbolId symbol,
-    const RudaTypeId *arguments,
+bool mmay_type_intern_nominal(
+    MarimayTypeTable *table,
+    MarimayTypeKind kind,
+    MarimaySymbolId symbol,
+    const MarimayTypeId *arguments,
     size_t argument_count,
-    RudaTypeId *result
+    MarimayTypeId *result
 ) {
-    if (kind != RUDA_TYPE_KIND_NOMINAL && kind != RUDA_TYPE_KIND_INTERFACE
-        && kind != RUDA_TYPE_KIND_TYPE_PARAMETER) {
+    if (kind != MMAY_TYPE_KIND_NOMINAL && kind != MMAY_TYPE_KIND_INTERFACE
+        && kind != MMAY_TYPE_KIND_TYPE_PARAMETER) {
         return false;
     }
-    return ruda_type_intern(
+    return mmay_type_intern(
         table,
         kind,
         symbol,
@@ -495,20 +495,20 @@ bool ruda_type_intern_nominal(
     );
 }
 
-bool ruda_type_intern_array(
-    RudaTypeTable *table,
-    RudaTypeId element,
-    RudaTypeId *result
+bool mmay_type_intern_array(
+    MarimayTypeTable *table,
+    MarimayTypeId element,
+    MarimayTypeId *result
 ) {
-    RudaSymbolId symbol;
+    MarimaySymbolId symbol;
     memset(&symbol, 0, sizeof(symbol));
     if (table == NULL || !table->initialized || result == NULL
-        || ruda_type_kind(table, element) == RUDA_TYPE_KIND_INVALID) {
+        || mmay_type_kind(table, element) == MMAY_TYPE_KIND_INVALID) {
         return false;
     }
-    return ruda_type_intern(
+    return mmay_type_intern(
         table,
-        RUDA_TYPE_KIND_ARRAY,
+        MMAY_TYPE_KIND_ARRAY,
         symbol,
         0,
         &element,
@@ -517,13 +517,13 @@ bool ruda_type_intern_array(
     );
 }
 
-bool ruda_type_array_element(
-    const RudaTypeTable *table,
-    RudaTypeId array,
-    RudaTypeId *element
+bool mmay_type_array_element(
+    const MarimayTypeTable *table,
+    MarimayTypeId array,
+    MarimayTypeId *element
 ) {
-    const RudaTypeDescriptor *descriptor = ruda_type_descriptor(table, array);
-    if (descriptor == NULL || descriptor->kind != RUDA_TYPE_KIND_ARRAY
+    const MarimayTypeDescriptor *descriptor = mmay_type_descriptor(table, array);
+    if (descriptor == NULL || descriptor->kind != MMAY_TYPE_KIND_ARRAY
         || descriptor->parameter_count != 0
         || descriptor->argument_count != 1 || element == NULL) {
         return false;
@@ -532,20 +532,20 @@ bool ruda_type_array_element(
     return true;
 }
 
-bool ruda_type_intern_tuple(
-    RudaTypeTable *table,
-    const RudaTypeId *elements,
+bool mmay_type_intern_tuple(
+    MarimayTypeTable *table,
+    const MarimayTypeId *elements,
     size_t element_count,
-    RudaTypeId *result
+    MarimayTypeId *result
 ) {
-    RudaSymbolId symbol;
+    MarimaySymbolId symbol;
     memset(&symbol, 0, sizeof(symbol));
     if (element_count == 0) {
         return false;
     }
-    return ruda_type_intern(
+    return mmay_type_intern(
         table,
-        RUDA_TYPE_KIND_TUPLE,
+        MMAY_TYPE_KIND_TUPLE,
         symbol,
         0,
         elements,
@@ -554,55 +554,55 @@ bool ruda_type_intern_tuple(
     );
 }
 
-bool ruda_type_intern_function(
-    RudaTypeTable *table,
-    const RudaTypeId *parameters,
+bool mmay_type_intern_function(
+    MarimayTypeTable *table,
+    const MarimayTypeId *parameters,
     size_t parameter_count,
-    RudaTypeId return_type,
-    RudaTypeId *result
+    MarimayTypeId return_type,
+    MarimayTypeId *result
 ) {
-    RudaSymbolId symbol;
-    RudaTypeId *arguments = NULL;
+    MarimaySymbolId symbol;
+    MarimayTypeId *arguments = NULL;
     size_t argument_count = 0;
     size_t allocation_size = 0;
     bool interned = false;
     memset(&symbol, 0, sizeof(symbol));
     if (table == NULL || !table->initialized
         || (parameters == NULL && parameter_count != 0)
-        || ruda_type_kind(table, return_type) == RUDA_TYPE_KIND_INVALID
-        || !ruda_size_add(parameter_count, 1, &argument_count)
+        || mmay_type_kind(table, return_type) == MMAY_TYPE_KIND_INVALID
+        || !mmay_size_add(parameter_count, 1, &argument_count)
         || argument_count > table->options.max_type_arguments
-        || !ruda_size_multiply(
+        || !mmay_size_multiply(
             argument_count,
-            sizeof(RudaTypeId),
+            sizeof(MarimayTypeId),
             &allocation_size
         )) {
         return false;
     }
-    arguments = ruda_allocate(&table->allocator, allocation_size);
+    arguments = mmay_allocate(&table->allocator, allocation_size);
     if (arguments == NULL) {
         return false;
     }
     if (parameter_count != 0) {
-        memcpy(arguments, parameters, parameter_count * sizeof(RudaTypeId));
+        memcpy(arguments, parameters, parameter_count * sizeof(MarimayTypeId));
     }
     arguments[parameter_count] = return_type;
-    interned = ruda_type_intern(
+    interned = mmay_type_intern(
         table,
-        RUDA_TYPE_KIND_FUNCTION,
+        MMAY_TYPE_KIND_FUNCTION,
         symbol,
         parameter_count,
         arguments,
         argument_count,
         result
     );
-    ruda_deallocate(&table->allocator, arguments, allocation_size);
+    mmay_deallocate(&table->allocator, arguments, allocation_size);
     return interned;
 }
 
-bool ruda_inference_context_init(
-    RudaInferenceContext *context,
-    RudaAllocator allocator,
+bool mmay_inference_context_init(
+    MarimayInferenceContext *context,
+    MarimayAllocator allocator,
     size_t max_variables
 ) {
     if (context == NULL || allocator.allocate == NULL
@@ -611,10 +611,10 @@ bool ruda_inference_context_init(
         return false;
     }
     memset(context, 0, sizeof(*context));
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &context->variables,
             allocator,
-            sizeof(RudaInferenceVariable)
+            sizeof(MarimayInferenceVariable)
         )) {
         return false;
     }
@@ -624,45 +624,45 @@ bool ruda_inference_context_init(
     return true;
 }
 
-void ruda_inference_context_dispose(RudaInferenceContext *context) {
+void mmay_inference_context_dispose(MarimayInferenceContext *context) {
     if (context == NULL || !context->initialized) {
         return;
     }
-    ruda_vector_dispose(&context->variables);
+    mmay_vector_dispose(&context->variables);
     memset(context, 0, sizeof(*context));
 }
 
-bool ruda_inference_new(RudaInferenceContext *context, RudaInferenceId *result) {
-    RudaInferenceVariable variable;
+bool mmay_inference_new(MarimayInferenceContext *context, MarimayInferenceId *result) {
+    MarimayInferenceVariable variable;
     if (context == NULL || !context->initialized || result == NULL
         || context->variables.length >= context->max_variables
         || context->variables.length >= UINT32_MAX) {
         return false;
     }
-    variable.parent = (RudaInferenceId)context->variables.length;
+    variable.parent = (MarimayInferenceId)context->variables.length;
     variable.rank = 0;
-    variable.binding = RUDA_TYPE_INVALID;
-    if (!ruda_vector_push(&context->variables, &variable)) {
+    variable.binding = MMAY_TYPE_INVALID;
+    if (!mmay_vector_push(&context->variables, &variable)) {
         return false;
     }
     *result = variable.parent;
     return true;
 }
 
-static RudaInferenceId ruda_inference_find(
-    RudaInferenceContext *context,
-    RudaInferenceId variable
+static MarimayInferenceId mmay_inference_find(
+    MarimayInferenceContext *context,
+    MarimayInferenceId variable
 ) {
-    RudaInferenceVariable *entry = NULL;
-    RudaInferenceId root = variable;
+    MarimayInferenceVariable *entry = NULL;
+    MarimayInferenceId root = variable;
     if (context == NULL || !context->initialized
         || variable >= context->variables.length) {
-        return RUDA_INFERENCE_INVALID;
+        return MMAY_INFERENCE_INVALID;
     }
     for (;;) {
-        entry = ruda_vector_at(&context->variables, root);
+        entry = mmay_vector_at(&context->variables, root);
         if (entry == NULL || entry->parent >= context->variables.length) {
-            return RUDA_INFERENCE_INVALID;
+            return MMAY_INFERENCE_INVALID;
         }
         if (entry->parent == root) {
             break;
@@ -670,10 +670,10 @@ static RudaInferenceId ruda_inference_find(
         root = entry->parent;
     }
     while (variable != root) {
-        RudaInferenceId parent = 0;
-        entry = ruda_vector_at(&context->variables, variable);
+        MarimayInferenceId parent = 0;
+        entry = mmay_vector_at(&context->variables, variable);
         if (entry == NULL) {
-            return RUDA_INFERENCE_INVALID;
+            return MMAY_INFERENCE_INVALID;
         }
         parent = entry->parent;
         entry->parent = root;
@@ -682,38 +682,38 @@ static RudaInferenceId ruda_inference_find(
     return root;
 }
 
-bool ruda_inference_unify_variables(
-    RudaInferenceContext *context,
-    RudaInferenceId left,
-    RudaInferenceId right
+bool mmay_inference_unify_variables(
+    MarimayInferenceContext *context,
+    MarimayInferenceId left,
+    MarimayInferenceId right
 ) {
-    RudaInferenceId left_root = ruda_inference_find(context, left);
-    RudaInferenceId right_root = ruda_inference_find(context, right);
-    RudaInferenceVariable *left_entry = NULL;
-    RudaInferenceVariable *right_entry = NULL;
-    if (left_root == RUDA_INFERENCE_INVALID
-        || right_root == RUDA_INFERENCE_INVALID) {
+    MarimayInferenceId left_root = mmay_inference_find(context, left);
+    MarimayInferenceId right_root = mmay_inference_find(context, right);
+    MarimayInferenceVariable *left_entry = NULL;
+    MarimayInferenceVariable *right_entry = NULL;
+    if (left_root == MMAY_INFERENCE_INVALID
+        || right_root == MMAY_INFERENCE_INVALID) {
         return false;
     }
     if (left_root == right_root) {
         return true;
     }
-    left_entry = ruda_vector_at(&context->variables, left_root);
-    right_entry = ruda_vector_at(&context->variables, right_root);
+    left_entry = mmay_vector_at(&context->variables, left_root);
+    right_entry = mmay_vector_at(&context->variables, right_root);
     if (left_entry == NULL || right_entry == NULL
-        || (left_entry->binding != RUDA_TYPE_INVALID
-            && right_entry->binding != RUDA_TYPE_INVALID
+        || (left_entry->binding != MMAY_TYPE_INVALID
+            && right_entry->binding != MMAY_TYPE_INVALID
             && left_entry->binding != right_entry->binding)) {
         return false;
     }
     if (left_entry->rank < right_entry->rank) {
-        RudaInferenceVariable *temporary_entry = left_entry;
+        MarimayInferenceVariable *temporary_entry = left_entry;
         left_root = right_root;
         left_entry = right_entry;
         right_entry = temporary_entry;
     }
     right_entry->parent = left_root;
-    if (left_entry->binding == RUDA_TYPE_INVALID) {
+    if (left_entry->binding == MMAY_TYPE_INVALID) {
         left_entry->binding = right_entry->binding;
     }
     if (left_entry->rank == right_entry->rank) {
@@ -722,18 +722,18 @@ bool ruda_inference_unify_variables(
     return true;
 }
 
-bool ruda_inference_bind(
-    RudaInferenceContext *context,
-    RudaInferenceId variable,
-    RudaTypeId type
+bool mmay_inference_bind(
+    MarimayInferenceContext *context,
+    MarimayInferenceId variable,
+    MarimayTypeId type
 ) {
-    RudaInferenceId root = ruda_inference_find(context, variable);
-    RudaInferenceVariable *entry = NULL;
-    if (root == RUDA_INFERENCE_INVALID || type == RUDA_TYPE_INVALID) {
+    MarimayInferenceId root = mmay_inference_find(context, variable);
+    MarimayInferenceVariable *entry = NULL;
+    if (root == MMAY_INFERENCE_INVALID || type == MMAY_TYPE_INVALID) {
         return false;
     }
-    entry = ruda_vector_at(&context->variables, root);
-    if (entry == NULL || (entry->binding != RUDA_TYPE_INVALID
+    entry = mmay_vector_at(&context->variables, root);
+    if (entry == NULL || (entry->binding != MMAY_TYPE_INVALID
             && entry->binding != type)) {
         return false;
     }
@@ -741,15 +741,15 @@ bool ruda_inference_bind(
     return true;
 }
 
-RudaTypeId ruda_inference_resolve(
-    RudaInferenceContext *context,
-    RudaInferenceId variable
+MarimayTypeId mmay_inference_resolve(
+    MarimayInferenceContext *context,
+    MarimayInferenceId variable
 ) {
-    RudaInferenceId root = ruda_inference_find(context, variable);
-    const RudaInferenceVariable *entry = NULL;
-    if (root == RUDA_INFERENCE_INVALID) {
-        return RUDA_TYPE_INVALID;
+    MarimayInferenceId root = mmay_inference_find(context, variable);
+    const MarimayInferenceVariable *entry = NULL;
+    if (root == MMAY_INFERENCE_INVALID) {
+        return MMAY_TYPE_INVALID;
     }
-    entry = ruda_vector_at_const(&context->variables, root);
-    return entry != NULL ? entry->binding : RUDA_TYPE_INVALID;
+    entry = mmay_vector_at_const(&context->variables, root);
+    return entry != NULL ? entry->binding : MMAY_TYPE_INVALID;
 }

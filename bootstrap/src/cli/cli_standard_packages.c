@@ -2,18 +2,18 @@
 
 #include <string.h>
 
-typedef struct RudaCliStandardSource {
+typedef struct MarimayCliStandardSource {
     const char *import_path;
     const char *source_path;
     const unsigned char *source;
     size_t source_length;
-} RudaCliStandardSource;
+} MarimayCliStandardSource;
 
-static const unsigned char ruda_cli_std_convert_source[] =
+static const unsigned char mmay_cli_std_convert_source[] =
     "public extern \"c\" fn formatF32(value: f32): string;\n"
     "public extern \"c\" fn formatF64(value: f64): string;\n";
 
-static const unsigned char ruda_cli_std_io_source[] =
+static const unsigned char mmay_cli_std_io_source[] =
     "public enum Error {\n"
     "  CapabilityDenied { capability: string; },\n"
     "  WriteFailed,\n"
@@ -26,15 +26,15 @@ static const unsigned char ruda_cli_std_io_source[] =
     "}\n\n"
     "public extern \"c\" fn println(text: string): Result<void, Error>;\n";
 
-static RudaCliCheckTargetStatus ruda_cli_standard_package_add(
-    RudaCliCheckTarget *target,
-    const RudaCliStandardSource *standard
+static MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
+    MarimayCliCheckTarget *target,
+    const MarimayCliStandardSource *standard
 ) {
-    RudaCliCheckPackage package;
-    RudaFileId file_id = 0;
-    RudaCompilerStatus compiler_status;
+    MarimayCliCheckPackage package;
+    MarimayFileId file_id = 0;
+    MarimayCompilerStatus compiler_status;
     memset(&package, 0, sizeof(package));
-    compiler_status = ruda_compiler_service_add_document(
+    compiler_status = mmay_compiler_service_add_document(
         &target->service,
         standard->source_path,
         strlen(standard->source_path),
@@ -43,59 +43,59 @@ static RudaCliCheckTargetStatus ruda_cli_standard_package_add(
         standard->source_length,
         &file_id
     );
-    if (compiler_status != RUDA_COMPILER_OK) {
-        return compiler_status == RUDA_COMPILER_ALLOCATION_FAILED
-            ? RUDA_CLI_CHECK_TARGET_ALLOCATION_FAILED
-            : (compiler_status == RUDA_COMPILER_LIMIT_REACHED
-                ? RUDA_CLI_CHECK_TARGET_LIMIT_REACHED
-                : RUDA_CLI_CHECK_TARGET_INTERNAL_ERROR);
+    if (compiler_status != MMAY_COMPILER_OK) {
+        return compiler_status == MMAY_COMPILER_ALLOCATION_FAILED
+            ? MMAY_CLI_CHECK_TARGET_ALLOCATION_FAILED
+            : (compiler_status == MMAY_COMPILER_LIMIT_REACHED
+                ? MMAY_CLI_CHECK_TARGET_LIMIT_REACHED
+                : MMAY_CLI_CHECK_TARGET_INTERNAL_ERROR);
     }
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &package.import_path, target->allocator,
             standard->import_path, strlen(standard->import_path)
-        ) || !ruda_owned_bytes_copy(
+        ) || !mmay_owned_bytes_copy(
             &package.directory, target->allocator,
             standard->source_path, strlen(standard->source_path)
-        ) || !ruda_vector_init(
-            &package.file_ids, target->allocator, sizeof(RudaFileId)
-        ) || !ruda_vector_push(&package.file_ids, &file_id)
-        || !ruda_vector_push(&target->packages, &package)) {
-        ruda_vector_dispose(&package.file_ids);
-        ruda_owned_bytes_dispose(&package.directory);
-        ruda_owned_bytes_dispose(&package.import_path);
-        return RUDA_CLI_CHECK_TARGET_ALLOCATION_FAILED;
+        ) || !mmay_vector_init(
+            &package.file_ids, target->allocator, sizeof(MarimayFileId)
+        ) || !mmay_vector_push(&package.file_ids, &file_id)
+        || !mmay_vector_push(&target->packages, &package)) {
+        mmay_vector_dispose(&package.file_ids);
+        mmay_owned_bytes_dispose(&package.directory);
+        mmay_owned_bytes_dispose(&package.import_path);
+        return MMAY_CLI_CHECK_TARGET_ALLOCATION_FAILED;
     }
     memset(&package, 0, sizeof(package));
-    return RUDA_CLI_CHECK_TARGET_OK;
+    return MMAY_CLI_CHECK_TARGET_OK;
 }
 
-RudaCliCheckTargetStatus ruda_cli_standard_packages_add(
-    RudaCliCheckTarget *target
+MarimayCliCheckTargetStatus mmay_cli_standard_packages_add(
+    MarimayCliCheckTarget *target
 ) {
-    static const RudaCliStandardSource sources[] = {
+    static const MarimayCliStandardSource sources[] = {
         {
-            "std/convert", "std/convert/convert.ruda",
-            ruda_cli_std_convert_source,
-            sizeof(ruda_cli_std_convert_source) - 1
+            "std/convert", "std/convert/convert.my",
+            mmay_cli_std_convert_source,
+            sizeof(mmay_cli_std_convert_source) - 1
         },
         {
-            "std/io", "std/io/io.ruda",
-            ruda_cli_std_io_source,
-            sizeof(ruda_cli_std_io_source) - 1
+            "std/io", "std/io/io.my",
+            mmay_cli_std_io_source,
+            sizeof(mmay_cli_std_io_source) - 1
         }
     };
     size_t index = 0;
     if (target == NULL || !target->service_initialized
         || !target->packages_initialized) {
-        return RUDA_CLI_CHECK_TARGET_INTERNAL_ERROR;
+        return MMAY_CLI_CHECK_TARGET_INTERNAL_ERROR;
     }
     for (index = 0; index < sizeof(sources) / sizeof(sources[0]); index += 1) {
-        RudaCliCheckTargetStatus status = ruda_cli_standard_package_add(
+        MarimayCliCheckTargetStatus status = mmay_cli_standard_package_add(
             target, &sources[index]
         );
-        if (status != RUDA_CLI_CHECK_TARGET_OK) {
+        if (status != MMAY_CLI_CHECK_TARGET_OK) {
             return status;
         }
     }
-    return RUDA_CLI_CHECK_TARGET_OK;
+    return MMAY_CLI_CHECK_TARGET_OK;
 }

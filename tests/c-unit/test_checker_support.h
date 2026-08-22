@@ -1,5 +1,5 @@
-#ifndef RUDA_TEST_CHECKER_SUPPORT_H
-#define RUDA_TEST_CHECKER_SUPPORT_H
+#ifndef MMAY_TEST_CHECKER_SUPPORT_H
+#define MMAY_TEST_CHECKER_SUPPORT_H
 
 #include "test_support.h"
 
@@ -9,56 +9,56 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ruda/ast/ast.h"
-#include "ruda/base/allocator.h"
-#include "ruda/check/checker.h"
-#include "ruda/generated/diagnostic_codes.h"
-#include "ruda/lex/lexer.h"
-#include "ruda/mir/mir.h"
-#include "ruda/parse/parser.h"
-#include "ruda/source/source_manager.h"
+#include "mmay/ast/ast.h"
+#include "mmay/base/allocator.h"
+#include "mmay/check/checker.h"
+#include "mmay/generated/diagnostic_codes.h"
+#include "mmay/lex/lexer.h"
+#include "mmay/mir/mir.h"
+#include "mmay/parse/parser.h"
+#include "mmay/source/source_manager.h"
 
-typedef struct RudaCheckerFixture {
-    RudaSourceManager sources;
-    RudaLexResult lexed;
-    RudaParseResult parsed;
-    RudaAstTree ast;
+typedef struct MarimayCheckerFixture {
+    MarimaySourceManager sources;
+    MarimayLexResult lexed;
+    MarimayParseResult parsed;
+    MarimayAstTree ast;
     bool sources_initialized;
     bool lexed_initialized;
     bool parsed_initialized;
     bool ast_initialized;
-} RudaCheckerFixture;
+} MarimayCheckerFixture;
 
-bool ruda_checker_fixture_init_path(
-    RudaCheckerFixture *fixture,
+bool mmay_checker_fixture_init_path(
+    MarimayCheckerFixture *fixture,
     const char *path,
     const char *source
 );
-bool ruda_checker_fixture_init(RudaCheckerFixture *fixture, const char *source);
-void ruda_checker_fixture_dispose(RudaCheckerFixture *fixture);
-void ruda_checker_expect_one_diagnostic(
+bool mmay_checker_fixture_init(MarimayCheckerFixture *fixture, const char *source);
+void mmay_checker_fixture_dispose(MarimayCheckerFixture *fixture);
+void mmay_checker_expect_one_diagnostic(
     const char *source,
     const char *code,
     const char *marked_text,
     size_t occurrence
 );
-void ruda_checker_expect_one_diagnostic_path(
+void mmay_checker_expect_one_diagnostic_path(
     const char *path,
     const char *source,
     const char *code,
     const char *marked_text
 );
-void ruda_checker_expect_diagnostic_message(
+void mmay_checker_expect_diagnostic_message(
     const char *source,
     const char *expected_message
 );
-size_t ruda_test_mir_instruction_kind_count(
-    const RudaMirFunction *function,
-    RudaMirInstructionKind kind
+size_t mmay_test_mir_instruction_kind_count(
+    const MarimayMirFunction *function,
+    MarimayMirInstructionKind kind
 );
-const RudaMirInstruction *ruda_test_mir_instruction_kind_at(
-    const RudaMirFunction *function,
-    RudaMirInstructionKind kind,
+const MarimayMirInstruction *mmay_test_mir_instruction_kind_at(
+    const MarimayMirFunction *function,
+    MarimayMirInstructionKind kind,
     size_t occurrence
 );
 

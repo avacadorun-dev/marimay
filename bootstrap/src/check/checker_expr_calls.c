@@ -19,63 +19,63 @@
 
 
 
- bool ruda_checker_private_compile_identity_same(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
+ bool mmay_checker_private_compile_identity_same(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
     bool *resolved,
-    RudaExpressionValue *result
+    MarimayExpressionValue *result
 ) {
-    const RudaAstNode *member_node = ruda_checker_private_check_child_node(
+    const MarimayAstNode *member_node = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_MEMBER_EXPRESSION,
+        MMAY_SYNTAX_MEMBER_EXPRESSION,
         0
     );
-    const RudaAstNode *arguments_node = ruda_checker_private_check_child_node(
+    const MarimayAstNode *arguments_node = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_ARGUMENTS,
+        MMAY_SYNTAX_ARGUMENTS,
         0
     );
-    const RudaAstNode *receiver_node = NULL;
-    const RudaAstNode *argument_nodes[2] = {NULL, NULL};
-    const RudaSyntaxToken *identity_token = NULL;
-    const RudaSyntaxToken *member_token = NULL;
-    RudaCheckName identity_name;
-    RudaExpressionValue left;
-    RudaExpressionValue right;
-    RudaCheckRecordDeclaration *record_declaration = NULL;
-    RudaMirRecordId record = RUDA_MIR_NO_RECORD;
-    RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-    RudaMirInstruction instruction;
+    const MarimayAstNode *receiver_node = NULL;
+    const MarimayAstNode *argument_nodes[2] = {NULL, NULL};
+    const MarimaySyntaxToken *identity_token = NULL;
+    const MarimaySyntaxToken *member_token = NULL;
+    MarimayCheckName identity_name;
+    MarimayExpressionValue left;
+    MarimayExpressionValue right;
+    MarimayCheckRecordDeclaration *record_declaration = NULL;
+    MarimayMirRecordId record = MMAY_MIR_NO_RECORD;
+    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+    MarimayMirInstruction instruction;
     size_t argument_count = 0;
     size_t index = 0;
     if (function == NULL || resolved == NULL || result == NULL) {
         if (function != NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         }
         return false;
     }
     *resolved = false;
-    if (member_node == NULL || !ruda_checker_private_member_parts(
+    if (member_node == NULL || !mmay_checker_private_member_parts(
             member_node,
             &receiver_node,
             &member_token
         ) || receiver_node == NULL
-        || receiver_node->kind != RUDA_SYNTAX_NAME_EXPRESSION) {
+        || receiver_node->kind != MMAY_SYNTAX_NAME_EXPRESSION) {
         return true;
     }
-    identity_token = ruda_checker_private_check_child_token(
+    identity_token = mmay_checker_private_check_child_token(
         receiver_node,
-        RUDA_TOKEN_IDENTIFIER,
+        MMAY_TOKEN_IDENTIFIER,
         0
     );
     if (identity_token == NULL || identity_token->synthetic
         || member_token == NULL || member_token->synthetic
-        || !ruda_checker_private_check_text_equal(
+        || !mmay_checker_private_check_text_equal(
             function->checker,
             identity_token->start,
             identity_token->end,
             "identity"
-        ) || !ruda_checker_private_check_text_equal(
+        ) || !mmay_checker_private_check_text_equal(
             function->checker,
             member_token->start,
             member_token->end,
@@ -86,18 +86,18 @@
     identity_name.snapshot = function->checker->ast->snapshot;
     identity_name.start = identity_token->start;
     identity_name.end = identity_token->end;
-    if (ruda_checker_private_function_find_local(function, identity_name) != NULL
-        || ruda_checker_private_checker_find_top_level(
+    if (mmay_checker_private_function_find_local(function, identity_name) != NULL
+        || mmay_checker_private_checker_find_top_level(
             function->checker,
             identity_name
         ) != NULL) {
         return true;
     }
     *resolved = true;
-    if (ruda_checker_private_check_child_node(node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0) != NULL) {
-        (void)ruda_checker_add_diagnostic(
+    if (mmay_checker_private_check_child_node(node, MMAY_SYNTAX_TYPE_ARGUMENTS, 0) != NULL) {
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "identity.same does not accept type arguments",
             node->start,
             node->end
@@ -105,9 +105,9 @@
         return false;
     }
     if (function->constant_evaluation) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_CONSTANT_EVALUATION,
+            MMAY_DIAGNOSTIC_CONSTANT_EVALUATION,
             "record identity is not available in constant expressions",
             node->start,
             node->end
@@ -115,22 +115,22 @@
         return false;
     }
     if (arguments_node == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
     for (index = 0; index < arguments_node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(arguments_node, index);
+        const MarimayAstElement *element = mmay_ast_child(arguments_node, index);
         if (element == NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
             return false;
         }
-        if (element->kind == RUDA_AST_ELEMENT_NODE) {
+        if (element->kind == MMAY_AST_ELEMENT_NODE) {
             if (element->as.node == NULL
-                || element->as.node->kind != RUDA_SYNTAX_EXPRESSION
+                || element->as.node->kind != MMAY_SYNTAX_EXPRESSION
                 || argument_count >= 2) {
-                (void)ruda_checker_add_diagnostic(
+                (void)mmay_checker_add_diagnostic(
                     function->checker,
-                    RUDA_DIAGNOSTIC_CALL_ARITY,
+                    MMAY_DIAGNOSTIC_CALL_ARITY,
                     "identity.same requires exactly two arguments",
                     arguments_node->start,
                     arguments_node->end
@@ -140,14 +140,14 @@
             argument_nodes[argument_count] = element->as.node;
             argument_count += 1;
         } else if (element->as.token.synthetic) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
             return false;
         }
     }
     if (argument_count != 2) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_CALL_ARITY,
+            MMAY_DIAGNOSTIC_CALL_ARITY,
             "identity.same requires exactly two arguments",
             arguments_node->start,
             arguments_node->end
@@ -156,106 +156,106 @@
     }
     memset(&left, 0, sizeof(left));
     memset(&right, 0, sizeof(right));
-    if (!ruda_compile_expression(
+    if (!mmay_compile_expression(
             function,
             argument_nodes[0],
-            RUDA_TYPE_INVALID,
+            MMAY_TYPE_INVALID,
             &left
         )) {
         return false;
     }
-    if (ruda_expression_is_never(function, &left)) {
+    if (mmay_expression_is_never(function, &left)) {
         *result = left;
         return true;
     }
-    record_declaration = ruda_checker_private_checker_find_record_by_type(
+    record_declaration = mmay_checker_private_checker_find_record_by_type(
         function->checker,
         left.type
     );
     if (record_declaration == NULL) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "identity.same requires record arguments",
             argument_nodes[0]->start,
             argument_nodes[0]->end
         );
         return false;
     }
-    if (!ruda_compile_expression(
+    if (!mmay_compile_expression(
             function,
             argument_nodes[1],
-            RUDA_TYPE_INVALID,
+            MMAY_TYPE_INVALID,
             &right
         )) {
         return false;
     }
-    if (ruda_expression_is_never(function, &right)) {
+    if (mmay_expression_is_never(function, &right)) {
         *result = right;
         return true;
     }
     if (right.type != left.type) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "identity.same arguments must have the same nominal record type",
             argument_nodes[1]->start,
             argument_nodes[1]->end
         );
         return false;
     }
-    if (!ruda_checker_private_function_record_layout(function, record_declaration, &record)
-        || !ruda_function_add_register(function, RUDA_TYPE_BOOL, &target)) {
+    if (!mmay_checker_private_function_record_layout(function, record_declaration, &record)
+        || !mmay_function_add_register(function, MMAY_TYPE_BOOL, &target)) {
         return false;
     }
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_RECORD_IDENTITY_SAME;
+    instruction.kind = MMAY_MIR_RECORD_IDENTITY_SAME;
     instruction.target = target;
     instruction.first = left.register_id;
     instruction.second = right.register_id;
     instruction.record = record;
     instruction.span.start = node->start;
     instruction.span.end = node->end;
-    if (!ruda_function_append_instruction(function, &instruction)) {
+    if (!mmay_function_append_instruction(function, &instruction)) {
         return false;
     }
-    result->type = RUDA_TYPE_BOOL;
+    result->type = MMAY_TYPE_BOOL;
     result->register_id = target;
     result->valid = true;
     return true;
 }
 
-bool ruda_checker_private_compile_ordinary_call_with_receiver(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    const RudaAstNode *precompiled_receiver_node,
-    const RudaExpressionValue *precompiled_receiver,
-    RudaExpressionValue *result
+bool mmay_checker_private_compile_ordinary_call_with_receiver(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    const MarimayAstNode *precompiled_receiver_node,
+    const MarimayExpressionValue *precompiled_receiver,
+    MarimayExpressionValue *result
 ) {
-    const RudaAstNode *callee_node = ruda_checker_private_check_child_node(
+    const MarimayAstNode *callee_node = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_NAME_EXPRESSION,
+        MMAY_SYNTAX_NAME_EXPRESSION,
         0
     );
-    const RudaAstNode *arguments_node = ruda_checker_private_check_child_node(
+    const MarimayAstNode *arguments_node = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_ARGUMENTS,
+        MMAY_SYNTAX_ARGUMENTS,
         0
     );
-    const RudaAstNode *member_callee = ruda_checker_private_check_child_node(
+    const MarimayAstNode *member_callee = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_MEMBER_EXPRESSION,
+        MMAY_SYNTAX_MEMBER_EXPRESSION,
         0
     );
-    const RudaAstNode *receiver_node = NULL;
-    const RudaAstNode *resolution_receiver_node = NULL;
-    const RudaSyntaxToken *name_token = NULL;
-    RudaCheckCallable declaration;
-    RudaCheckName name;
-    RudaCheckName namespace_name;
-    RudaMirCallArgument *arguments = NULL;
-    RudaExpressionValue receiver;
-    RudaCheckCallResolution resolution = RUDA_CHECK_CALL_INTERNAL_ERROR;
+    const MarimayAstNode *receiver_node = NULL;
+    const MarimayAstNode *resolution_receiver_node = NULL;
+    const MarimaySyntaxToken *name_token = NULL;
+    MarimayCheckCallable declaration;
+    MarimayCheckName name;
+    MarimayCheckName namespace_name;
+    MarimayMirCallArgument *arguments = NULL;
+    MarimayExpressionValue receiver;
+    MarimayCheckCallResolution resolution = MMAY_CHECK_CALL_INTERNAL_ERROR;
     size_t explicit_argument_count = 0;
     size_t explicit_argument_index = 0;
     size_t argument_count = 0;
@@ -264,20 +264,20 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
     size_t preflight_call_argument_count = 0;
     size_t new_call_argument_count = 0;
     size_t index = 0;
-    RudaMirCallId call = RUDA_MIR_NO_CALL;
-    RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-    RudaMirInstruction instruction;
+    MarimayMirCallId call = MMAY_MIR_NO_CALL;
+    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+    MarimayMirInstruction instruction;
     bool dot_call = false;
     bool qualified_call = false;
     bool first_argument_compiled = false;
     bool accepted = false;
-    const RudaCheckFunctionDeclaration *generic_base = NULL;
-    RudaCheckFunctionDeclaration *generic_instance = NULL;
+    const MarimayCheckFunctionDeclaration *generic_base = NULL;
+    MarimayCheckFunctionDeclaration *generic_instance = NULL;
     size_t generic_base_index = SIZE_MAX;
-    RudaVector explicit_generic_arguments;
+    MarimayVector explicit_generic_arguments;
     bool explicit_generic_arguments_initialized = false;
-    RudaExpressionValue *generic_values = NULL;
-    RudaTypeId *generic_actual_types = NULL;
+    MarimayExpressionValue *generic_values = NULL;
+    MarimayTypeId *generic_actual_types = NULL;
     size_t generic_value_bytes = 0;
     size_t generic_type_bytes = 0;
     size_t generic_cursor = 0;
@@ -286,32 +286,32 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
     memset(&receiver, 0, sizeof(receiver));
     memset(&declaration, 0, sizeof(declaration));
     memset(&namespace_name, 0, sizeof(namespace_name));
-    receiver.register_id = RUDA_MIR_NO_REGISTER;
+    receiver.register_id = MMAY_MIR_NO_REGISTER;
     if ((precompiled_receiver_node == NULL) != (precompiled_receiver == NULL)) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         goto cleanup;
     }
     if (callee_node != NULL) {
-        name_token = ruda_checker_private_check_child_token(
+        name_token = mmay_checker_private_check_child_token(
             callee_node,
-            RUDA_TOKEN_IDENTIFIER,
+            MMAY_TOKEN_IDENTIFIER,
             0
         );
-    } else if (member_callee != NULL && ruda_checker_private_member_parts(
+    } else if (member_callee != NULL && mmay_checker_private_member_parts(
             member_callee,
             &receiver_node,
             &name_token
         )) {
         dot_call = true;
         if (receiver_node != NULL
-            && receiver_node->kind == RUDA_SYNTAX_NAME_EXPRESSION) {
-            const RudaSyntaxToken *namespace_token =
-                ruda_checker_private_check_child_token(
-                    receiver_node, RUDA_TOKEN_IDENTIFIER, 0
+            && receiver_node->kind == MMAY_SYNTAX_NAME_EXPRESSION) {
+            const MarimaySyntaxToken *namespace_token =
+                mmay_checker_private_check_child_token(
+                    receiver_node, MMAY_TOKEN_IDENTIFIER, 0
                 );
             const unsigned char *source = function->checker->source;
             if (namespace_token != NULL && !namespace_token->synthetic
-                && ruda_check_import_namespace_exists(
+                && mmay_check_import_namespace_exists(
                     function->checker,
                     source + namespace_token->start,
                     namespace_token->end - namespace_token->start
@@ -327,83 +327,83 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
     if (arguments_node == NULL || name_token == NULL || name_token->synthetic
         || (!dot_call && !qualified_call && callee_node == NULL)
         || (dot_call && receiver_node == NULL)) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
         goto cleanup;
     }
     name.snapshot = function->checker->ast->snapshot;
     name.start = name_token->start;
     name.end = name_token->end;
     if (!dot_call && !qualified_call
-        && ruda_checker_private_function_find_local(function, name) != NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+        && mmay_checker_private_function_find_local(function, name) != NULL) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
         goto cleanup;
     }
     for (index = 0; index < arguments_node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(arguments_node, index);
+        const MarimayAstElement *element = mmay_ast_child(arguments_node, index);
         if (element == NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
             goto cleanup;
         }
-        if (element->kind == RUDA_AST_ELEMENT_NODE) {
+        if (element->kind == MMAY_AST_ELEMENT_NODE) {
             if (element->as.node == NULL
-                || element->as.node->kind != RUDA_SYNTAX_EXPRESSION
+                || element->as.node->kind != MMAY_SYNTAX_EXPRESSION
                 || explicit_argument_count == SIZE_MAX) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
                     element->as.node == NULL
                             || element->as.node->kind
-                                != RUDA_SYNTAX_EXPRESSION
-                        ? RUDA_CHECK_INCOMPLETE_LANGUAGE
-                        : RUDA_CHECK_LIMIT_REACHED
+                                != MMAY_SYNTAX_EXPRESSION
+                        ? MMAY_CHECK_INCOMPLETE_LANGUAGE
+                        : MMAY_CHECK_LIMIT_REACHED
                 );
                 goto cleanup;
             }
             explicit_argument_count += 1;
         } else if (element->as.token.synthetic) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
             goto cleanup;
         }
     }
     if (dot_call && explicit_argument_count == SIZE_MAX) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
         goto cleanup;
     }
     argument_count = explicit_argument_count + (dot_call ? 1 : 0);
     if (function->mir.calls.length >= function->mir.options.max_calls
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->mir.call_arguments.length,
             argument_count,
             &preflight_call_argument_count
         ) || preflight_call_argument_count
             > function->mir.options.max_call_arguments) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
         goto cleanup;
     }
     if (qualified_call) {
-        resolution = ruda_check_resolve_qualified_call(
+        resolution = mmay_check_resolve_qualified_call(
             function->checker,
             namespace_name,
             name,
             false,
-            RUDA_TYPE_INVALID,
+            MMAY_TYPE_INVALID,
             &declaration
         );
-        if (resolution == RUDA_CHECK_CALL_RECEIVER_REQUIRED) {
-            const RudaAstNode *first_argument = NULL;
+        if (resolution == MMAY_CHECK_CALL_RECEIVER_REQUIRED) {
+            const MarimayAstNode *first_argument = NULL;
             for (index = 0; index < arguments_node->child_count; index += 1) {
-                const RudaAstElement *element = ruda_ast_child(
+                const MarimayAstElement *element = mmay_ast_child(
                     arguments_node, index
                 );
                 if (element != NULL
-                    && element->kind == RUDA_AST_ELEMENT_NODE) {
+                    && element->kind == MMAY_AST_ELEMENT_NODE) {
                     first_argument = element->as.node;
                     break;
                 }
             }
             if (first_argument == NULL) {
-                (void)ruda_checker_add_diagnostic(
+                (void)mmay_checker_add_diagnostic(
                     function->checker,
-                    RUDA_DIAGNOSTIC_CALL_ARITY,
+                    MMAY_DIAGNOSTIC_CALL_ARITY,
                     "qualified overloaded call requires a first argument",
                     arguments_node->start,
                     arguments_node->end
@@ -411,17 +411,17 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
                 goto cleanup;
             }
             resolution_receiver_node = first_argument;
-            if (!ruda_compile_expression(function, first_argument,
-                    RUDA_TYPE_INVALID, &receiver)) {
+            if (!mmay_compile_expression(function, first_argument,
+                    MMAY_TYPE_INVALID, &receiver)) {
                 goto cleanup;
             }
-            if (ruda_expression_is_never(function, &receiver)) {
+            if (mmay_expression_is_never(function, &receiver)) {
                 *result = receiver;
                 accepted = true;
                 goto cleanup;
             }
             first_argument_compiled = true;
-            resolution = ruda_check_resolve_qualified_call(
+            resolution = mmay_check_resolve_qualified_call(
                 function->checker,
                 namespace_name,
                 name,
@@ -435,28 +435,28 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
         if (precompiled_receiver != NULL) {
             if (precompiled_receiver_node != receiver_node
                 || !precompiled_receiver->valid) {
-                ruda_checker_fail(
-                    function->checker, RUDA_CHECK_INVALID_ARGUMENT
+                mmay_checker_fail(
+                    function->checker, MMAY_CHECK_INVALID_ARGUMENT
                 );
                 goto cleanup;
             }
             receiver = *precompiled_receiver;
         } else {
-            if (!ruda_compile_expression(
+            if (!mmay_compile_expression(
                     function,
                     receiver_node,
-                    RUDA_TYPE_INVALID,
+                    MMAY_TYPE_INVALID,
                     &receiver
                 )) {
                 goto cleanup;
             }
         }
-        if (ruda_expression_is_never(function, &receiver)) {
+        if (mmay_expression_is_never(function, &receiver)) {
             *result = receiver;
             accepted = true;
             goto cleanup;
         }
-        resolution = ruda_check_resolve_call(
+        resolution = mmay_check_resolve_call(
             function->checker,
             name,
             true,
@@ -465,14 +465,14 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
         );
     } else {
         if (precompiled_receiver != NULL) {
-            const RudaAstNode *first_argument = NULL;
+            const MarimayAstNode *first_argument = NULL;
             for (index = 0; index < arguments_node->child_count; index += 1) {
-                const RudaAstElement *element = ruda_ast_child(
+                const MarimayAstElement *element = mmay_ast_child(
                     arguments_node,
                     index
                 );
                 if (element != NULL
-                    && element->kind == RUDA_AST_ELEMENT_NODE) {
+                    && element->kind == MMAY_AST_ELEMENT_NODE) {
                     first_argument = element->as.node;
                     break;
                 }
@@ -480,47 +480,47 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
             if (first_argument == NULL
                 || first_argument != precompiled_receiver_node
                 || !precompiled_receiver->valid) {
-                ruda_checker_fail(
-                    function->checker, RUDA_CHECK_INVALID_ARGUMENT
+                mmay_checker_fail(
+                    function->checker, MMAY_CHECK_INVALID_ARGUMENT
                 );
                 goto cleanup;
             }
             resolution_receiver_node = first_argument;
             receiver = *precompiled_receiver;
             first_argument_compiled = true;
-            resolution = ruda_check_resolve_free_call(
+            resolution = mmay_check_resolve_free_call(
                 function->checker,
                 name,
                 receiver.type,
                 &declaration
             );
         } else {
-            resolution = ruda_check_resolve_call(
+            resolution = mmay_check_resolve_call(
                 function->checker,
                 name,
                 false,
-                RUDA_TYPE_INVALID,
+                MMAY_TYPE_INVALID,
                 &declaration
             );
         }
         if (precompiled_receiver == NULL
-            && resolution == RUDA_CHECK_CALL_RECEIVER_REQUIRED) {
-            const RudaAstNode *first_argument = NULL;
+            && resolution == MMAY_CHECK_CALL_RECEIVER_REQUIRED) {
+            const MarimayAstNode *first_argument = NULL;
             for (index = 0; index < arguments_node->child_count; index += 1) {
-                const RudaAstElement *element = ruda_ast_child(
+                const MarimayAstElement *element = mmay_ast_child(
                     arguments_node,
                     index
                 );
                 if (element != NULL
-                    && element->kind == RUDA_AST_ELEMENT_NODE) {
+                    && element->kind == MMAY_AST_ELEMENT_NODE) {
                     first_argument = element->as.node;
                     break;
                 }
             }
             if (first_argument == NULL) {
-                (void)ruda_checker_add_diagnostic(
+                (void)mmay_checker_add_diagnostic(
                     function->checker,
-                    RUDA_DIAGNOSTIC_CALL_ARITY,
+                    MMAY_DIAGNOSTIC_CALL_ARITY,
                     "overloaded free call requires a first argument of a locally owned nominal type; value.name() and name(value) resolve to one symbol",
                     arguments_node->start,
                     arguments_node->end
@@ -528,21 +528,21 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
                 goto cleanup;
             }
             resolution_receiver_node = first_argument;
-            if (!ruda_compile_expression(
+            if (!mmay_compile_expression(
                     function,
                     first_argument,
-                    RUDA_TYPE_INVALID,
+                    MMAY_TYPE_INVALID,
                     &receiver
                 )) {
                 goto cleanup;
             }
-            if (ruda_expression_is_never(function, &receiver)) {
+            if (mmay_expression_is_never(function, &receiver)) {
                 *result = receiver;
                 accepted = true;
                 goto cleanup;
             }
             first_argument_compiled = true;
-            resolution = ruda_check_resolve_free_call(
+            resolution = mmay_check_resolve_free_call(
                 function->checker,
                 name,
                 receiver.type,
@@ -550,67 +550,67 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
             );
         }
     }
-    if (resolution != RUDA_CHECK_CALL_FOUND) {
+    if (resolution != MMAY_CHECK_CALL_FOUND) {
         size_t diagnostic_start = resolution_receiver_node == NULL
             ? name.start
             : resolution_receiver_node->start;
         size_t diagnostic_end = resolution_receiver_node == NULL
             ? name.end
             : resolution_receiver_node->end;
-        if (resolution == RUDA_CHECK_CALL_UNKNOWN_NAME) {
-            (void)ruda_checker_add_diagnostic(
+        if (resolution == MMAY_CHECK_CALL_UNKNOWN_NAME) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_UNKNOWN_NAME,
+                MMAY_DIAGNOSTIC_UNKNOWN_NAME,
                 "unknown function name",
                 name.start,
                 name.end
             );
-        } else if (resolution == RUDA_CHECK_CALL_UNKNOWN_IMPORT) {
-            (void)ruda_checker_add_diagnostic(
+        } else if (resolution == MMAY_CHECK_CALL_UNKNOWN_IMPORT) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_UNKNOWN_IMPORT,
+                MMAY_DIAGNOSTIC_UNKNOWN_IMPORT,
                 "unknown public function in imported package",
                 name.start,
                 name.end
             );
-        } else if (resolution == RUDA_CHECK_CALL_PRIVATE_IMPORT) {
-            (void)ruda_checker_add_diagnostic(
+        } else if (resolution == MMAY_CHECK_CALL_PRIVATE_IMPORT) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_PRIVATE_IMPORT,
+                MMAY_DIAGNOSTIC_PRIVATE_IMPORT,
                 "imported function is package-private",
                 name.start,
                 name.end
             );
-        } else if (resolution == RUDA_CHECK_CALL_NOT_FUNCTION) {
-            (void)ruda_checker_add_diagnostic(
+        } else if (resolution == MMAY_CHECK_CALL_NOT_FUNCTION) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "called name is not a function",
                 name.start,
                 name.end
             );
-        } else if (resolution == RUDA_CHECK_CALL_NOT_DOT_ELIGIBLE) {
-            (void)ruda_checker_add_diagnostic(
+        } else if (resolution == MMAY_CHECK_CALL_NOT_DOT_ELIGIBLE) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "function is not dot-call eligible because its first parameter is not an exact locally owned nominal type",
                 name.start,
                 name.end
             );
-        } else if (resolution == RUDA_CHECK_CALL_RECEIVER_NOT_OWNED) {
-            (void)ruda_checker_add_diagnostic(
+        } else if (resolution == MMAY_CHECK_CALL_RECEIVER_NOT_OWNED) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 first_argument_compiled
                     ? "overloaded free call first argument is not a locally owned nominal type; value.name() and name(value) resolve to one symbol"
                     : "dot-call receiver is not a locally owned nominal type",
                 diagnostic_start,
                 diagnostic_end
             );
-        } else if (resolution == RUDA_CHECK_CALL_OTHER_NOMINAL) {
-            (void)ruda_checker_add_diagnostic(
+        } else if (resolution == MMAY_CHECK_CALL_OTHER_NOMINAL) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 first_argument_compiled
                     ? "overloaded free call has no declaration for this first-argument nominal type; value.name() and name(value) resolve to one symbol"
                     : "an eligible function with this name exists for a different locally owned nominal type",
@@ -618,25 +618,25 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
                 diagnostic_end
             );
         } else {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         }
         goto cleanup;
     }
-    generic_base = ruda_checker_private_find_function_by_symbol(
+    generic_base = mmay_checker_private_find_function_by_symbol(
         function->checker, declaration.symbol, &generic_base_index
     );
     if (generic_base != NULL && generic_base->is_generic) {
-        const RudaAstNode *type_arguments =
-            ruda_checker_private_check_child_node(
-                node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0
+        const MarimayAstNode *type_arguments =
+            mmay_checker_private_check_child_node(
+                node, MMAY_SYNTAX_TYPE_ARGUMENTS, 0
             );
         generic_call = true;
         if (type_arguments != NULL) {
-            if (!ruda_vector_init(
+            if (!mmay_vector_init(
                     &explicit_generic_arguments,
                     function->checker->result->allocator,
-                    sizeof(RudaTypeId)
-                ) || !ruda_checker_private_parse_type_arguments(
+                    sizeof(MarimayTypeId)
+                ) || !mmay_checker_private_parse_type_arguments(
                     function->checker,
                     type_arguments,
                     &explicit_generic_arguments
@@ -645,30 +645,30 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
             }
             explicit_generic_arguments_initialized = true;
         }
-        if (!ruda_size_multiply(
+        if (!mmay_size_multiply(
                 argument_count,
-                sizeof(RudaExpressionValue),
+                sizeof(MarimayExpressionValue),
                 &generic_value_bytes
-            ) || !ruda_size_multiply(
+            ) || !mmay_size_multiply(
                 argument_count,
-                sizeof(RudaTypeId),
+                sizeof(MarimayTypeId),
                 &generic_type_bytes
             )) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+            mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
             goto cleanup;
         }
         if (generic_value_bytes != 0) {
-            generic_values = ruda_allocate(
+            generic_values = mmay_allocate(
                 &function->checker->result->allocator,
                 generic_value_bytes
             );
-            generic_actual_types = ruda_allocate(
+            generic_actual_types = mmay_allocate(
                 &function->checker->result->allocator,
                 generic_type_bytes
             );
             if (generic_values == NULL || generic_actual_types == NULL) {
-                ruda_checker_fail(
-                    function->checker, RUDA_CHECK_ALLOCATION_FAILED
+                mmay_checker_fail(
+                    function->checker, MMAY_CHECK_ALLOCATION_FAILED
                 );
                 goto cleanup;
             }
@@ -677,7 +677,7 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
         }
         if (dot_call || first_argument_compiled) {
             if (argument_count == 0) {
-                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+                mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
                 goto cleanup;
             }
             generic_values[0] = receiver;
@@ -685,11 +685,11 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
             generic_cursor = 1;
         }
         for (index = 0; index < arguments_node->child_count; index += 1) {
-            const RudaAstElement *element = ruda_ast_child(
+            const MarimayAstElement *element = mmay_ast_child(
                 arguments_node, index
             );
-            RudaExpressionValue value;
-            if (element == NULL || element->kind != RUDA_AST_ELEMENT_NODE) {
+            MarimayExpressionValue value;
+            if (element == NULL || element->kind != MMAY_AST_ELEMENT_NODE) {
                 continue;
             }
             if (first_argument_compiled && explicit_argument_index == 0) {
@@ -697,21 +697,21 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
                 continue;
             }
             memset(&value, 0, sizeof(value));
-            if (!ruda_compile_expression(
+            if (!mmay_compile_expression(
                     function,
                     element->as.node,
-                    RUDA_TYPE_INVALID,
+                    MMAY_TYPE_INVALID,
                     &value
                 )) {
                 goto cleanup;
             }
-            if (ruda_expression_is_never(function, &value)) {
+            if (mmay_expression_is_never(function, &value)) {
                 *result = value;
                 accepted = true;
                 goto cleanup;
             }
             if (generic_cursor >= argument_count) {
-                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+                mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
                 goto cleanup;
             }
             generic_values[generic_cursor] = value;
@@ -720,17 +720,17 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
             explicit_argument_index += 1;
         }
         if (generic_cursor != argument_count) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }
         {
-            RudaVector inferred_arguments;
+            MarimayVector inferred_arguments;
             memset(&inferred_arguments, 0, sizeof(inferred_arguments));
-            if (!ruda_vector_init(
+            if (!mmay_vector_init(
                     &inferred_arguments,
                     function->checker->result->allocator,
-                    sizeof(RudaTypeId)
-                ) || !ruda_checker_private_prepare_generic_arguments(
+                    sizeof(MarimayTypeId)
+                ) || !mmay_checker_private_prepare_generic_arguments(
                     function->checker,
                     generic_base,
                     generic_actual_types,
@@ -738,13 +738,13 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
                     explicit_generic_arguments_initialized
                         ? &explicit_generic_arguments : NULL,
                     &inferred_arguments
-                ) || !ruda_checker_private_instantiate_function(
+                ) || !mmay_checker_private_instantiate_function(
                     function->checker,
                     generic_base_index,
                     &inferred_arguments,
                     &generic_instance
                 )) {
-                ruda_vector_dispose(&inferred_arguments);
+                mmay_vector_dispose(&inferred_arguments);
                 goto cleanup;
             }
             declaration.parameter_types = generic_instance->parameter_types.data;
@@ -754,14 +754,14 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
             declaration.receiver_symbol = generic_instance->receiver_symbol;
             declaration.receiver_type = generic_instance->receiver_type;
             declaration.dot_eligible = generic_instance->dot_eligible;
-            ruda_vector_dispose(&inferred_arguments);
+            mmay_vector_dispose(&inferred_arguments);
         }
-    } else if (ruda_checker_private_check_child_node(
-            node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0
+    } else if (mmay_checker_private_check_child_node(
+            node, MMAY_SYNTAX_TYPE_ARGUMENTS, 0
         ) != NULL) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "call supplies type arguments to a non-generic function",
             node->start,
             node->end
@@ -775,39 +775,39 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
         argument_index = 0;
     }
     if (argument_count != declaration.parameter_count) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_CALL_ARITY,
+            MMAY_DIAGNOSTIC_CALL_ARITY,
             "call argument count does not match the function signature",
             arguments_node->start,
             arguments_node->end
         );
         goto cleanup;
     }
-    if (!ruda_size_multiply(
+    if (!mmay_size_multiply(
             argument_count,
-            sizeof(RudaMirCallArgument),
+            sizeof(MarimayMirCallArgument),
             &argument_bytes
         )) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
         goto cleanup;
     }
     if (argument_bytes != 0) {
-        arguments = ruda_allocate(
+        arguments = mmay_allocate(
             &function->checker->result->allocator,
             argument_bytes
         );
         if (arguments == NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_ALLOCATION_FAILED);
+            mmay_checker_fail(function->checker, MMAY_CHECK_ALLOCATION_FAILED);
             goto cleanup;
         }
     }
     if (dot_call || first_argument_compiled) {
-        const RudaTypeId *first_parameter = declaration.parameter_count == 0
+        const MarimayTypeId *first_parameter = declaration.parameter_count == 0
             ? NULL : &declaration.parameter_types[0];
         if (first_parameter == NULL || receiver.type != *first_parameter
             || arguments == NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }
         arguments[0].register_id = receiver.register_id;
@@ -815,10 +815,10 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
         argument_index = 1;
     }
     for (index = 0; index < arguments_node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(arguments_node, index);
-        const RudaTypeId *parameter_type = NULL;
-        RudaExpressionValue value;
-        if (element == NULL || element->kind != RUDA_AST_ELEMENT_NODE) {
+        const MarimayAstElement *element = mmay_ast_child(arguments_node, index);
+        const MarimayTypeId *parameter_type = NULL;
+        MarimayExpressionValue value;
+        if (element == NULL || element->kind != MMAY_AST_ELEMENT_NODE) {
             continue;
         }
         if (first_argument_compiled && explicit_argument_index == 0) {
@@ -833,31 +833,31 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
             ];
         }
         if (parameter_type == NULL || arguments == NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }
         memset(&value, 0, sizeof(value));
         if (generic_call) {
             size_t cached_index = argument_index;
             if (cached_index >= argument_count || generic_values == NULL) {
-                ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+                mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
                 goto cleanup;
             }
             value = generic_values[cached_index];
-        } else if (!ruda_compile_expression(
+        } else if (!mmay_compile_expression(
                 function, element->as.node, *parameter_type, &value
             )) {
             goto cleanup;
         }
-        if (ruda_expression_is_never(function, &value)) {
+        if (mmay_expression_is_never(function, &value)) {
             *result = value;
             accepted = true;
             goto cleanup;
         }
         if (value.type != *parameter_type) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "argument type does not match the function parameter type",
                 element->as.node->start,
                 element->as.node->end
@@ -871,23 +871,23 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
     }
     if (argument_index != argument_count
         || function->mir.calls.length >= function->mir.options.max_calls
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->mir.call_arguments.length,
             argument_count,
             &new_call_argument_count
         ) || new_call_argument_count
             > function->mir.options.max_call_arguments) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
         goto cleanup;
     }
-    if (!ruda_check_record_occurrence(
+    if (!mmay_check_record_occurrence(
             function->checker,
             name,
             declaration.symbol
         )) {
         goto cleanup;
     }
-    if (!ruda_mir_add_call(
+    if (!mmay_mir_add_call(
             &function->mir,
             declaration.symbol,
             declaration.result_type,
@@ -895,16 +895,16 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
             argument_count,
             &call
         )) {
-        if (!ruda_checker_has_failed(function->checker)) {
-            ruda_checker_fail(
+        if (!mmay_checker_has_failed(function->checker)) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_ALLOCATION_FAILED
+                MMAY_CHECK_ALLOCATION_FAILED
             );
         }
         goto cleanup;
     }
-    if (declaration.result_type == RUDA_TYPE_NEVER) {
-        if (!ruda_checker_private_function_set_never_call(
+    if (declaration.result_type == MMAY_TYPE_NEVER) {
+        if (!mmay_checker_private_function_set_never_call(
                 function,
                 call,
                 node->start,
@@ -912,11 +912,11 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
             )) {
             goto cleanup;
         }
-        ruda_checker_private_expression_set_never(function, result);
+        mmay_checker_private_expression_set_never(function, result);
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_function_add_register(
+    if (!mmay_function_add_register(
             function,
             declaration.result_type,
             &target
@@ -924,14 +924,14 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
         goto cleanup;
     }
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_CALL;
+    instruction.kind = MMAY_MIR_CALL;
     instruction.target = target;
-    instruction.first = RUDA_MIR_NO_REGISTER;
-    instruction.second = RUDA_MIR_NO_REGISTER;
+    instruction.first = MMAY_MIR_NO_REGISTER;
+    instruction.second = MMAY_MIR_NO_REGISTER;
     instruction.call = call;
     instruction.span.start = node->start;
     instruction.span.end = node->end;
-    if (!ruda_function_append_instruction(function, &instruction)) {
+    if (!mmay_function_append_instruction(function, &instruction)) {
         goto cleanup;
     }
     result->type = declaration.result_type;
@@ -940,56 +940,56 @@ bool ruda_checker_private_compile_ordinary_call_with_receiver(
     accepted = true;
 
 cleanup:
-    ruda_deallocate(
+    mmay_deallocate(
         &function->checker->result->allocator,
         arguments,
         argument_bytes
     );
-    ruda_deallocate(
+    mmay_deallocate(
         &function->checker->result->allocator,
         generic_values,
         generic_value_bytes
     );
-    ruda_deallocate(
+    mmay_deallocate(
         &function->checker->result->allocator,
         generic_actual_types,
         generic_type_bytes
     );
     if (explicit_generic_arguments_initialized) {
-        ruda_vector_dispose(&explicit_generic_arguments);
+        mmay_vector_dispose(&explicit_generic_arguments);
     }
-    return accepted && !ruda_checker_has_failed(function->checker);
+    return accepted && !mmay_checker_has_failed(function->checker);
 }
 
-bool ruda_checker_private_compile_ordinary_call(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaExpressionValue *result
+bool mmay_checker_private_compile_ordinary_call(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayExpressionValue *result
 ) {
-    return ruda_checker_private_compile_ordinary_call_with_receiver(
+    return mmay_checker_private_compile_ordinary_call_with_receiver(
         function, node, NULL, NULL, result
     );
 }
 
- bool ruda_checker_private_compile_call(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaTypeId expected,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_call(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
 ) {
-    const RudaAstNode *callee_node = ruda_checker_private_check_child_node(
+    const MarimayAstNode *callee_node = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_NAME_EXPRESSION,
+        MMAY_SYNTAX_NAME_EXPRESSION,
         0
     );
-    const RudaAstNode *arguments_node = ruda_checker_private_check_child_node(
+    const MarimayAstNode *arguments_node = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_ARGUMENTS,
+        MMAY_SYNTAX_ARGUMENTS,
         0
     );
-    const RudaSyntaxToken *name_token = ruda_checker_private_check_child_token(
+    const MarimaySyntaxToken *name_token = mmay_checker_private_check_child_token(
         callee_node,
-        RUDA_TOKEN_IDENTIFIER,
+        MMAY_TOKEN_IDENTIFIER,
         0
     );
     size_t index = 0;
@@ -1007,19 +1007,19 @@ bool ruda_checker_private_compile_ordinary_call(
     bool convert_format_resolved = false;
     bool io_resolved = false;
     bool test_resolved = false;
-    const RudaAstNode *member_callee = ruda_checker_private_check_child_node(
+    const MarimayAstNode *member_callee = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_MEMBER_EXPRESSION,
+        MMAY_SYNTAX_MEMBER_EXPRESSION,
         0
     );
-    const RudaSyntaxToken *length_token = name_token != NULL
+    const MarimaySyntaxToken *length_token = name_token != NULL
         ? name_token
-        : ruda_checker_private_check_child_token(
+        : mmay_checker_private_check_child_token(
             member_callee,
-            RUDA_TOKEN_IDENTIFIER,
+            MMAY_TOKEN_IDENTIFIER,
             0
         );
-    if (!ruda_checker_private_compile_numeric_call(
+    if (!mmay_checker_private_compile_numeric_call(
             function, node, expected, &numeric_resolved, result
         )) {
         goto cleanup;
@@ -1028,7 +1028,7 @@ bool ruda_checker_private_compile_ordinary_call(
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_checker_private_compile_convert_format_call(
+    if (!mmay_checker_private_compile_convert_format_call(
             function, node, expected, &convert_format_resolved, result
         )) {
         goto cleanup;
@@ -1037,7 +1037,7 @@ bool ruda_checker_private_compile_ordinary_call(
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_checker_private_compile_io_call(
+    if (!mmay_checker_private_compile_io_call(
             function, node, expected, &io_resolved, result
         )) {
         goto cleanup;
@@ -1046,7 +1046,7 @@ bool ruda_checker_private_compile_ordinary_call(
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_checker_private_compile_test_call(
+    if (!mmay_checker_private_compile_test_call(
             function, node, expected, &test_resolved, result
         )) {
         goto cleanup;
@@ -1056,23 +1056,23 @@ bool ruda_checker_private_compile_ordinary_call(
         goto cleanup;
     }
     if (length_token != NULL && !length_token->synthetic
-        && ruda_checker_private_check_text_equal(
+        && mmay_checker_private_check_text_equal(
             function->checker,
             length_token->start,
             length_token->end,
             "length"
         )) {
-        RudaCheckName length_name;
+        MarimayCheckName length_name;
         length_name.snapshot = function->checker->ast->snapshot;
         length_name.start = length_token->start;
         length_name.end = length_token->end;
-        length_available = ruda_checker_private_function_find_local(function, length_name) == NULL
-            && ruda_checker_private_checker_find_top_level(
+        length_available = mmay_checker_private_function_find_local(function, length_name) == NULL
+            && mmay_checker_private_checker_find_top_level(
                 function->checker,
                 length_name
             ) == NULL;
     }
-    if (!ruda_checker_private_compile_identity_same(
+    if (!mmay_checker_private_compile_identity_same(
             function,
             node,
             &identity_resolved,
@@ -1084,7 +1084,7 @@ bool ruda_checker_private_compile_ordinary_call(
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_checker_private_compile_prelude_constructor(
+    if (!mmay_checker_private_compile_prelude_constructor(
             function, node, expected, &prelude_resolved, result
         )) {
         goto cleanup;
@@ -1093,7 +1093,7 @@ bool ruda_checker_private_compile_ordinary_call(
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_checker_private_compile_map_error(
+    if (!mmay_checker_private_compile_map_error(
             function, node, expected, &map_error_resolved, result
         )) {
         goto cleanup;
@@ -1102,7 +1102,7 @@ bool ruda_checker_private_compile_ordinary_call(
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_checker_private_compile_interface_call(
+    if (!mmay_checker_private_compile_interface_call(
             function, node, &interface_resolved, result
         )) {
         goto cleanup;
@@ -1111,7 +1111,7 @@ bool ruda_checker_private_compile_ordinary_call(
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_checker_private_compile_receiver_collection_call(
+    if (!mmay_checker_private_compile_receiver_collection_call(
             function,
             node,
             &receiver_collection_resolved,
@@ -1123,7 +1123,7 @@ bool ruda_checker_private_compile_ordinary_call(
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_compile_array_length_call(
+    if (!mmay_compile_array_length_call(
             function,
             node,
             length_available,
@@ -1138,7 +1138,7 @@ bool ruda_checker_private_compile_ordinary_call(
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_compile_array_builtin_call(
+    if (!mmay_compile_array_builtin_call(
             function, node, NULL, NULL, &array_builtin_resolved, result
         )) {
         goto cleanup;
@@ -1148,69 +1148,69 @@ bool ruda_checker_private_compile_ordinary_call(
         goto cleanup;
     }
     {
-        const RudaSyntaxToken *array_builtin_token = name_token != NULL
+        const MarimaySyntaxToken *array_builtin_token = name_token != NULL
             ? name_token
-            : ruda_checker_private_check_child_token(
+            : mmay_checker_private_check_child_token(
                 member_callee,
-                RUDA_TOKEN_IDENTIFIER,
+                MMAY_TOKEN_IDENTIFIER,
                 0
             );
         bool is_deferred_array_builtin = name_token != NULL
             && array_builtin_token != NULL
             && !array_builtin_token->synthetic
-            && ruda_checker_private_check_text_equal(
+            && mmay_checker_private_check_text_equal(
                     function->checker,
                     array_builtin_token->start,
                     array_builtin_token->end,
                     "arrayOf"
                 );
         if (is_deferred_array_builtin) {
-            RudaCheckName builtin_name;
+            MarimayCheckName builtin_name;
             builtin_name.snapshot = function->checker->ast->snapshot;
             builtin_name.start = array_builtin_token->start;
             builtin_name.end = array_builtin_token->end;
-            if (ruda_checker_private_function_find_local(function, builtin_name) == NULL
-                && ruda_checker_private_checker_find_top_level(
+            if (mmay_checker_private_function_find_local(function, builtin_name) == NULL
+                && mmay_checker_private_checker_find_top_level(
                     function->checker,
                     builtin_name
                 ) == NULL) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INCOMPLETE_LANGUAGE
+                    MMAY_CHECK_INCOMPLETE_LANGUAGE
                 );
                 goto cleanup;
             }
         }
     }
     if (name_token != NULL && !name_token->synthetic
-        && ruda_checker_private_check_text_equal(
+        && mmay_checker_private_check_text_equal(
             function->checker,
             name_token->start,
             name_token->end,
             "panic"
-        ) && ruda_checker_private_function_find_local(function, (RudaCheckName){
+        ) && mmay_checker_private_function_find_local(function, (MarimayCheckName){
             function->checker->ast->snapshot,
             name_token->start,
             name_token->end
-        }) == NULL && ruda_checker_private_checker_find_top_level(
+        }) == NULL && mmay_checker_private_checker_find_top_level(
             function->checker,
-            (RudaCheckName){
+            (MarimayCheckName){
                 function->checker->ast->snapshot,
                 name_token->start,
                 name_token->end
             }
         ) == NULL) {
-        const RudaAstNode *message_node = NULL;
-        RudaExpressionValue message;
+        const MarimayAstNode *message_node = NULL;
+        MarimayExpressionValue message;
         memset(&message, 0, sizeof(message));
-        if (ruda_checker_private_check_child_node(
+        if (mmay_checker_private_check_child_node(
                 node,
-                RUDA_SYNTAX_TYPE_ARGUMENTS,
+                MMAY_SYNTAX_TYPE_ARGUMENTS,
                 0
             ) != NULL) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "panic does not accept type arguments",
                 node->start,
                 node->end
@@ -1218,9 +1218,9 @@ bool ruda_checker_private_compile_ordinary_call(
             goto cleanup;
         }
         if (function->constant_evaluation) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_CONSTANT_EVALUATION,
+                MMAY_DIAGNOSTIC_CONSTANT_EVALUATION,
                 "constant expression can panic",
                 node->start,
                 node->end
@@ -1228,30 +1228,30 @@ bool ruda_checker_private_compile_ordinary_call(
             goto cleanup;
         }
         if (arguments_node == NULL) {
-            ruda_checker_fail(
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INVALID_ARGUMENT
+                MMAY_CHECK_INVALID_ARGUMENT
             );
             goto cleanup;
         }
         for (index = 0; index < arguments_node->child_count; index += 1) {
-            const RudaAstElement *element = ruda_ast_child(
+            const MarimayAstElement *element = mmay_ast_child(
                 arguments_node,
                 index
             );
             if (element == NULL) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INVALID_ARGUMENT
+                    MMAY_CHECK_INVALID_ARGUMENT
                 );
                 goto cleanup;
             }
-            if (element->kind == RUDA_AST_ELEMENT_NODE) {
-                if (element->as.node->kind != RUDA_SYNTAX_EXPRESSION
+            if (element->kind == MMAY_AST_ELEMENT_NODE) {
+                if (element->as.node->kind != MMAY_SYNTAX_EXPRESSION
                     || message_node != NULL) {
-                    (void)ruda_checker_add_diagnostic(
+                    (void)mmay_checker_add_diagnostic(
                         function->checker,
-                        RUDA_DIAGNOSTIC_CALL_ARITY,
+                        MMAY_DIAGNOSTIC_CALL_ARITY,
                         "panic requires exactly one message argument",
                         arguments_node->start,
                         arguments_node->end
@@ -1260,47 +1260,47 @@ bool ruda_checker_private_compile_ordinary_call(
                 }
                 message_node = element->as.node;
             } else if (element->as.token.synthetic) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INVALID_ARGUMENT
+                    MMAY_CHECK_INVALID_ARGUMENT
                 );
                 goto cleanup;
             }
         }
         if (message_node == NULL) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_CALL_ARITY,
+                MMAY_DIAGNOSTIC_CALL_ARITY,
                 "panic requires exactly one message argument",
                 arguments_node->start,
                 arguments_node->end
             );
             goto cleanup;
         }
-        if (!ruda_compile_expression(
+        if (!mmay_compile_expression(
                 function,
                 message_node,
-                RUDA_TYPE_STRING,
+                MMAY_TYPE_STRING,
                 &message
             )) {
             goto cleanup;
         }
-        if (ruda_expression_is_never(function, &message)) {
+        if (mmay_expression_is_never(function, &message)) {
             *result = message;
             accepted = true;
             goto cleanup;
         }
-        if (message.type != RUDA_TYPE_STRING) {
-            (void)ruda_checker_add_diagnostic(
+        if (message.type != MMAY_TYPE_STRING) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "panic message must have type string",
                 message_node->start,
                 message_node->end
             );
             goto cleanup;
         }
-        if (!ruda_checker_private_function_set_panic(
+        if (!mmay_checker_private_function_set_panic(
                 function,
                 message.register_id,
                 node->start,
@@ -1308,11 +1308,11 @@ bool ruda_checker_private_compile_ordinary_call(
             )) {
             goto cleanup;
         }
-        ruda_checker_private_expression_set_never(function, result);
+        mmay_checker_private_expression_set_never(function, result);
         accepted = true;
         goto cleanup;
     }
-    if (!ruda_checker_private_compile_enum_positional(
+    if (!mmay_checker_private_compile_enum_positional(
             function,
             node,
             expected,
@@ -1326,17 +1326,17 @@ bool ruda_checker_private_compile_ordinary_call(
         goto cleanup;
     }
     if (function->constant_evaluation) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_CONSTANT_EVALUATION,
+            MMAY_DIAGNOSTIC_CONSTANT_EVALUATION,
             "function calls are not permitted in this constant subset",
             node->start,
             node->end
         );
         goto cleanup;
     }
-    accepted = ruda_checker_private_compile_ordinary_call(function, node, result);
+    accepted = mmay_checker_private_compile_ordinary_call(function, node, result);
 
 cleanup:
-    return accepted && !ruda_checker_has_failed(function->checker);
+    return accepted && !mmay_checker_has_failed(function->checker);
 }

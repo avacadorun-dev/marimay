@@ -1,59 +1,59 @@
-#ifndef RUDA_BYTECODE_CODEC_INTERNAL_H
-#define RUDA_BYTECODE_CODEC_INTERNAL_H
+#ifndef MMAY_BYTECODE_CODEC_INTERNAL_H
+#define MMAY_BYTECODE_CODEC_INTERNAL_H
 
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#include "ruda/bytecode/bytecode.h"
+#include "mmay/bytecode/bytecode.h"
 
 enum {
-    RUDA_BYTECODE_FEATURE_CALLS = 1U << 0,
-    RUDA_BYTECODE_FEATURE_STRINGS = 1U << 1,
-    RUDA_BYTECODE_FEATURE_F64 = 1U << 2,
-    RUDA_BYTECODE_FEATURE_ARRAYS = 1U << 3,
-    RUDA_BYTECODE_FEATURE_NOMINAL = 1U << 4,
+    MMAY_BYTECODE_FEATURE_CALLS = 1U << 0,
+    MMAY_BYTECODE_FEATURE_STRINGS = 1U << 1,
+    MMAY_BYTECODE_FEATURE_F64 = 1U << 2,
+    MMAY_BYTECODE_FEATURE_ARRAYS = 1U << 3,
+    MMAY_BYTECODE_FEATURE_NOMINAL = 1U << 4,
     /* The extended envelope carries canonical []T descriptors. */
-    RUDA_BYTECODE_FEATURE_ARRAY_TYPES = 1U << 5
+    MMAY_BYTECODE_FEATURE_ARRAY_TYPES = 1U << 5
 };
 
-typedef struct RudaBytecodeEncodeBuffer {
-    RudaVector bytes;
+typedef struct MarimayBytecodeEncodeBuffer {
+    MarimayVector bytes;
     size_t limit;
     bool limit_reached;
-} RudaBytecodeEncodeBuffer;
+} MarimayBytecodeEncodeBuffer;
 
-typedef struct RudaBytecodeCursor {
+typedef struct MarimayBytecodeCursor {
     const unsigned char *bytes;
     size_t length;
     size_t offset;
-} RudaBytecodeCursor;
+} MarimayBytecodeCursor;
 
-bool ruda_bytecode_codec_encode_append(
-    RudaBytecodeEncodeBuffer *buffer,
+bool mmay_bytecode_codec_encode_append(
+    MarimayBytecodeEncodeBuffer *buffer,
     const void *bytes,
     size_t length
 );
-bool ruda_bytecode_codec_encode_u64(
-    RudaBytecodeEncodeBuffer *buffer,
+bool mmay_bytecode_codec_encode_u64(
+    MarimayBytecodeEncodeBuffer *buffer,
     uint64_t value
 );
-RudaBytecodeCodecStatus ruda_bytecode_codec_decode_u64(
-    RudaBytecodeCursor *cursor,
+MarimayBytecodeCodecStatus mmay_bytecode_codec_decode_u64(
+    MarimayBytecodeCursor *cursor,
     uint64_t *result
 );
-bool ruda_bytecode_codec_u64_to_size(uint64_t value, size_t *result);
+bool mmay_bytecode_codec_u64_to_size(uint64_t value, size_t *result);
 
-bool ruda_bytecode_function_uses_nominal(
-    const RudaBytecodeFunction *function
+bool mmay_bytecode_function_uses_nominal(
+    const MarimayBytecodeFunction *function
 );
-RudaBytecodeCodecStatus ruda_bytecode_encode_nominal_metadata(
-    const RudaBytecodeFunction *function,
-    RudaBytecodeEncodeBuffer *buffer
+MarimayBytecodeCodecStatus mmay_bytecode_encode_nominal_metadata(
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeEncodeBuffer *buffer
 );
-RudaBytecodeCodecStatus ruda_bytecode_decode_nominal_metadata(
-    RudaBytecodeFunction *function,
-    RudaBytecodeCursor *cursor
+MarimayBytecodeCodecStatus mmay_bytecode_decode_nominal_metadata(
+    MarimayBytecodeFunction *function,
+    MarimayBytecodeCursor *cursor
 );
 
 #endif

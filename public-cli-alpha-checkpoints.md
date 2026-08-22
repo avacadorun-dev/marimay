@@ -1,4 +1,4 @@
-# Checkpoints до первой публичной CLI-alpha Ruda
+# Checkpoints до первой публичной CLI-alpha Marimay
 
 Статус: предлагаемый post-checkpoint-28 delivery plan. Этот файл не является
 normative language specification и сам по себе не меняет состояния roadmap
@@ -10,7 +10,7 @@ gates. Перед началом реализации его нужно связ
 `0.1.0-alpha.1`, на которой можно писать, тестировать и распространять
 небольшие локальные консольные программы. Это не стабильная `0.1.0`, не P0 и
 не утверждение о готовности networking, structured concurrency, package
-registry, FFI, portable `.rudab`, self-hosting или production workloads.
+registry, FFI, portable `.myb`, self-hosting или production workloads.
 
 Checkpoint 28 остаётся algorithm/performance integration baseline.
 Checkpoints 29–40 добавляют недостающий прикладной CLI vertical slice и
@@ -31,7 +31,7 @@ dependencies: N0, I0–I5, architecture, memory-safety и Tier 1 gates сохр�
 
 Финальный release claim ограничен следующим:
 
-> Ruda 0.1.0-alpha.1 позволяет создавать локальные CLI-программы с
+> Marimay 0.1.0-alpha.1 позволяет создавать локальные CLI-программы с
 > аргументами, предсказуемыми exit codes, stdin/stdout/stderr, форматированием,
 > UTF-8 text/bytes, файлами, paths, environment, базовыми collections,
 > command-line parsing и typed JSON. `fmt`, `check`, VM `run`/`test`, native
@@ -141,15 +141,15 @@ gate, либо явно исключить source-compatibility claim из alpha
   compatibility до beta, diagnostic stability, bytecode non-compatibility,
   standard-library versioning и removal policy. Обновить toolchain §10 и
   roadmap release ladder. N0 остаётся независимым hard blocker.
-- **Scope:** `ruda version` human/JSON, help, README, examples index, installed
+- **Scope:** `mmay version` human/JSON, help, README, examples index, installed
   version metadata, known-limitations format, release-channel names и exact
   implemented-command inventory. `bytecode` может честно оставаться
   `unavailable`; работающий bounded `std` не может называться целиком
   `unavailable` без поясняющей version classification.
 - **Required corrections:** создать runnable quick start, проходящий `fmt`,
   `check`, VM `run`, native `build` и `test --engine both`; target-design
-  examples пометить и тестировать отдельно. `ruda help` не должен выдавать
-  unimplemented commands без явной маркировки. `ruda explain` либо становится
+  examples пометить и тестировать отдельно. `mmay help` не должен выдавать
+  unimplemented commands без явной маркировки. `mmay explain` либо становится
   рабочим для alpha diagnostics, либо удаляется из everyday help до своего
   checkpoint.
 - **Tests:** human/JSON version snapshots; help snapshots для каждого
@@ -159,12 +159,12 @@ gate, либо явно исключить source-compatibility claim из alpha
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda version
-  build/debug/ruda version --json
-  build/debug/ruda help
-  build/debug/ruda fmt tests/public-alpha/cp29-quick-start --check
-  build/debug/ruda check tests/public-alpha/cp29-quick-start
-  build/debug/ruda test tests/public-alpha/cp29-quick-start --engine both
+  build/debug/mmay version
+  build/debug/mmay version --json
+  build/debug/mmay help
+  build/debug/mmay fmt tests/public-alpha/cp29-quick-start --check
+  build/debug/mmay check tests/public-alpha/cp29-quick-start
+  build/debug/mmay test tests/public-alpha/cp29-quick-start --engine both
   ```
 
 - **Docs/evidence:** accepted release/version decision, toolchain and roadmap
@@ -201,11 +201,11 @@ gate, либо явно исключить source-compatibility claim из alpha
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/public-alpha/cp30-formatting --check
-  build/debug/ruda check tests/public-alpha/cp30-formatting
-  build/debug/ruda run tests/public-alpha/cp30-formatting
-  build/debug/ruda test tests/public-alpha/cp30-formatting --engine both
-  build/debug/ruda build tests/public-alpha/cp30-formatting --release --output build/debug/cp30-formatting
+  build/debug/mmay fmt tests/public-alpha/cp30-formatting --check
+  build/debug/mmay check tests/public-alpha/cp30-formatting
+  build/debug/mmay run tests/public-alpha/cp30-formatting
+  build/debug/mmay test tests/public-alpha/cp30-formatting --engine both
+  build/debug/mmay build tests/public-alpha/cp30-formatting --release --output build/debug/cp30-formatting
   build/debug/cp30-formatting
   ```
 
@@ -219,7 +219,7 @@ gate, либо явно исключить source-compatibility claim из alpha
 
 ## 31. Аргументы программы и controlled exit status
 
-**User-visible outcome:** Ruda CLI читает переданные после `--` аргументы и
+**User-visible outcome:** Marimay CLI читает переданные после `--` аргументы и
 возвращает caller-selected portable success/failure code без обхода `defer`.
 
 - **Зависимость и граница:** зависит от 30 и cross-package `Array<string>`
@@ -239,9 +239,9 @@ gate, либо явно исключить source-compatibility claim из alpha
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda run tests/public-alpha/cp31-args -- alpha "two words"
-  build/debug/ruda test tests/public-alpha/cp31-args --engine both
-  build/debug/ruda build tests/public-alpha/cp31-args --release --output build/debug/cp31-args
+  build/debug/mmay run tests/public-alpha/cp31-args -- alpha "two words"
+  build/debug/mmay test tests/public-alpha/cp31-args --engine both
+  build/debug/mmay build tests/public-alpha/cp31-args --release --output build/debug/cp31-args
   build/debug/cp31-args alpha "two words"
   ```
 
@@ -276,10 +276,10 @@ stderr через typed, bounded APIs: `print`/`println`, `eprint`/`eprintln`,
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/public-alpha/cp32-stdio --check
-  build/debug/ruda check tests/public-alpha/cp32-stdio
-  build/debug/ruda test tests/public-alpha/cp32-stdio --engine both
-  build/debug/ruda build tests/public-alpha/cp32-stdio --release --output build/debug/cp32-stdio
+  build/debug/mmay fmt tests/public-alpha/cp32-stdio --check
+  build/debug/mmay check tests/public-alpha/cp32-stdio
+  build/debug/mmay test tests/public-alpha/cp32-stdio --engine both
+  build/debug/mmay build tests/public-alpha/cp32-stdio --release --output build/debug/cp32-stdio
   ```
 
   Process fixtures передают exact input bytes и отдельно сравнивают stdout,
@@ -314,11 +314,11 @@ stderr через typed, bounded APIs: `print`/`println`, `eprint`/`eprintln`,
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/public-alpha/cp33-text-bytes --check
-  build/debug/ruda check tests/public-alpha/cp33-text-bytes
-  build/debug/ruda run tests/public-alpha/cp33-text-bytes
-  build/debug/ruda test tests/public-alpha/cp33-text-bytes --engine both
-  build/debug/ruda build tests/public-alpha/cp33-text-bytes --release --output build/debug/cp33-text-bytes
+  build/debug/mmay fmt tests/public-alpha/cp33-text-bytes --check
+  build/debug/mmay check tests/public-alpha/cp33-text-bytes
+  build/debug/mmay run tests/public-alpha/cp33-text-bytes
+  build/debug/mmay test tests/public-alpha/cp33-text-bytes --engine both
+  build/debug/mmay build tests/public-alpha/cp33-text-bytes --release --output build/debug/cp33-text-bytes
   build/debug/cp33-text-bytes
   ```
 
@@ -355,11 +355,11 @@ stderr через typed, bounded APIs: `print`/`println`, `eprint`/`eprintln`,
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/public-alpha/cp34-files --check
-  build/debug/ruda check tests/public-alpha/cp34-files
-  build/debug/ruda test tests/public-alpha/cp34-files --engine both
-  build/debug/ruda run tests/public-alpha/cp34-files --allow-read tests/public-alpha/cp34-files/fixtures
-  build/debug/ruda build tests/public-alpha/cp34-files --release --output build/debug/cp34-files
+  build/debug/mmay fmt tests/public-alpha/cp34-files --check
+  build/debug/mmay check tests/public-alpha/cp34-files
+  build/debug/mmay test tests/public-alpha/cp34-files --engine both
+  build/debug/mmay run tests/public-alpha/cp34-files --allow-read tests/public-alpha/cp34-files/fixtures
+  build/debug/mmay build tests/public-alpha/cp34-files --release --output build/debug/cp34-files
   ```
 
 - **Docs/evidence/removal:** fs/path/capability decisions and specs, diagnostics,
@@ -391,10 +391,10 @@ stderr через typed, bounded APIs: `print`/`println`, `eprint`/`eprintln`,
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/public-alpha/cp35-environment --check
-  build/debug/ruda check tests/public-alpha/cp35-environment
-  build/debug/ruda test tests/public-alpha/cp35-environment --engine both
-  build/debug/ruda run tests/public-alpha/cp35-environment --allow-env RUDA_ALPHA_TEST
+  build/debug/mmay fmt tests/public-alpha/cp35-environment --check
+  build/debug/mmay check tests/public-alpha/cp35-environment
+  build/debug/mmay test tests/public-alpha/cp35-environment --engine both
+  build/debug/mmay run tests/public-alpha/cp35-environment --allow-env MMAY_ALPHA_TEST
   ```
 
 - **Docs/evidence:** standard-library, execution capabilities, toolchain flags,
@@ -426,11 +426,11 @@ first-party collections без parallel-array workarounds.
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/public-alpha/cp36-map-set --check
-  build/debug/ruda check tests/public-alpha/cp36-map-set
-  build/debug/ruda run tests/public-alpha/cp36-map-set
-  build/debug/ruda test tests/public-alpha/cp36-map-set --engine both
-  build/debug/ruda build tests/public-alpha/cp36-map-set --release --output build/debug/cp36-map-set
+  build/debug/mmay fmt tests/public-alpha/cp36-map-set --check
+  build/debug/mmay check tests/public-alpha/cp36-map-set
+  build/debug/mmay run tests/public-alpha/cp36-map-set
+  build/debug/mmay test tests/public-alpha/cp36-map-set --engine both
+  build/debug/mmay build tests/public-alpha/cp36-map-set --release --output build/debug/cp36-map-set
   build/debug/cp36-map-set
   ```
 
@@ -454,7 +454,7 @@ positionals, печатает deterministic help и возвращает typed u
   declarations, unknown options, Unicode and exit recommendation. Shell
   expansion/quoting не выполняется библиотекой.
 - **Scope:** records/enums/builders/collections implementation through ordinary
-  Ruda-visible symbols where possible; compiler intrinsic допускается только
+  Marimay-visible symbols where possible; compiler intrinsic допускается только
   для уже утверждённого argument transport. API не использует `any` или runtime
   reflection.
 - **Tests:** empty args, clusters if accepted, `--name=value`, separated values,
@@ -463,11 +463,11 @@ positionals, печатает deterministic help и возвращает typed u
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/public-alpha/cp37-cli-parser --check
-  build/debug/ruda check tests/public-alpha/cp37-cli-parser
-  build/debug/ruda test tests/public-alpha/cp37-cli-parser --engine both
-  build/debug/ruda run tests/public-alpha/cp37-cli-parser -- --help
-  build/debug/ruda run tests/public-alpha/cp37-cli-parser -- --count 3 input.txt
+  build/debug/mmay fmt tests/public-alpha/cp37-cli-parser --check
+  build/debug/mmay check tests/public-alpha/cp37-cli-parser
+  build/debug/mmay test tests/public-alpha/cp37-cli-parser --engine both
+  build/debug/mmay run tests/public-alpha/cp37-cli-parser -- --help
+  build/debug/mmay run tests/public-alpha/cp37-cli-parser -- --count 3 input.txt
   ```
 
 - **Docs/evidence:** stdlib API, user guide, help/error snapshots, examples and
@@ -501,11 +501,11 @@ bounded JSON, декодирует typed records/enums/collections, преобр
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/public-alpha/cp38-json --check
-  build/debug/ruda check tests/public-alpha/cp38-json
-  build/debug/ruda test tests/public-alpha/cp38-json --engine both
-  build/debug/ruda run tests/public-alpha/cp38-json -- tests/public-alpha/cp38-json/input.json
-  build/debug/ruda build tests/public-alpha/cp38-json --release --output build/debug/cp38-json
+  build/debug/mmay fmt tests/public-alpha/cp38-json --check
+  build/debug/mmay check tests/public-alpha/cp38-json
+  build/debug/mmay test tests/public-alpha/cp38-json --engine both
+  build/debug/mmay run tests/public-alpha/cp38-json -- tests/public-alpha/cp38-json/input.json
+  build/debug/mmay build tests/public-alpha/cp38-json --release --output build/debug/cp38-json
   build/debug/cp38-json tests/public-alpha/cp38-json/input.json
   ```
 
@@ -518,7 +518,7 @@ bounded JSON, декодирует typed records/enums/collections, преобр
 
 ## 39. Native run, project init, doctor и installable alpha artifacts
 
-**User-visible outcome:** fresh supported host устанавливает Ruda, создаёт
+**User-visible outcome:** fresh supported host устанавливает Marimay, создаёт
 локальный проект, диагностирует native prerequisites и одинаково запускает VM
 или native программу без ручного выбора compiler/linker paths per project.
 
@@ -527,9 +527,9 @@ bounded JSON, декодирует typed records/enums/collections, преобр
   compilation.
 - **Authority / decision gate:** уточнить D030 alpha distribution contract,
   install layout, relocatability, upgrade/uninstall, host-toolchain ownership,
-  `ruda init`, `ruda doctor`, native run cache/argument/capability transport and
+  `mmay init`, `mmay doctor`, native run cache/argument/capability transport and
   artifact naming. N0 должен быть готов к закрытию, но публикация остаётся 40.
-- **Scope:** `ruda run --engine native`; local-only `ruda init`; human/JSON
+- **Scope:** `mmay run --engine native`; local-only `mmay init`; human/JSON
   `doctor`; version-matched debug/release runtimes; installed `std` and offline
   docs; source archive plus per-supported-host archive/package; checksums,
   provenance/SBOM generation; paths with spaces/Unicode; atomic install/update
@@ -542,16 +542,16 @@ bounded JSON, декодирует typed records/enums/collections, преобр
 - **Focused acceptance:**
 
   ```sh
-  ruda version --json
-  ruda doctor --json
-  ruda init alpha-smoke
+  mmay version --json
+  mmay doctor --json
+  mmay init alpha-smoke
   cd alpha-smoke
-  ruda fmt --check
-  ruda check
-  ruda run --engine vm . -- --help
-  ruda run --engine native . -- --help
-  ruda test --engine both
-  ruda build --release --output dist/alpha-smoke
+  mmay fmt --check
+  mmay check
+  mmay run --engine vm . -- --help
+  mmay run --engine native . -- --help
+  mmay test --engine both
+  mmay build --release --output dist/alpha-smoke
   ```
 
 - **Docs/evidence:** install/upgrade/uninstall and native-prerequisite guides,
@@ -565,7 +565,7 @@ bounded JSON, декодирует typed records/enums/collections, преобр
 ## 40. Финальная публичная CLI-alpha интеграция
 
 **User-visible outcome:** один versioned, installable и independently auditable
-release candidate доказывает, что Ruda годится для небольших локальных CLI, и
+release candidate доказывает, что Marimay годится для небольших локальных CLI, и
 честно перечисляет всё, чего в alpha нет.
 
 - **Зависимость и граница:** зависит от всех checkpoints 29–39 и не вводит
@@ -596,15 +596,15 @@ release candidate доказывает, что Ruda годится для неб
 - **Focused acceptance / command matrix:**
 
   ```sh
-  ruda fmt --check
-  ruda check --all-targets
-  ruda test --engine both
-  ruda run --engine vm examples/public/line-filter -- --help
-  ruda run --engine native examples/public/line-filter -- --help
-  ruda build examples/public/file-count --release --output dist/file-count
-  ruda build examples/public/json-transform --release --output dist/json-transform
-  ruda version --json
-  ruda doctor --json
+  mmay fmt --check
+  mmay check --all-targets
+  mmay test --engine both
+  mmay run --engine vm examples/public/line-filter -- --help
+  mmay run --engine native examples/public/line-filter -- --help
+  mmay build examples/public/file-count --release --output dist/file-count
+  mmay build examples/public/json-transform --release --output dist/json-transform
+  mmay version --json
+  mmay doctor --json
   ```
 
 - **Exact comparison:** для workload matrix сравнить stdout bytes, stderr bytes,
@@ -634,10 +634,10 @@ release candidate доказывает, что Ruda годится для неб
   из I6;
 - network, DNS, TLS, HTTP client/server;
 - subprocess execution and signals;
-- dependency resolver, `ruda add/update/vendor/audit` и public registry из I7;
+- dependency resolver, `mmay add/update/vendor/audit` и public registry из I7;
 - production LSP/editor integration, watch/cache/property/fuzz user commands из
   I8;
-- portable public `.rudab`, untrusted `ruda exec` and cross compilation;
+- portable public `.myb`, untrusted `mmay exec` and cross compilation;
 - C FFI/unsafe platform contract;
 - self-hosting and bootstrap reproducibility;
 - beta compatibility/security promises, production reference service и 1.0.

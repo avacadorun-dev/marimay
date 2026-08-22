@@ -1,7 +1,7 @@
 Вот тебе цель:
-# Цель: координируемая разработка Ruda 0.1-dev
+# Цель: координируемая разработка Marimay 0.1-dev
 
-Довести Ruda до пригодного для реального пользовательского тестирования
+Довести Marimay до пригодного для реального пользовательского тестирования
 локального/private developer preview 0.1-dev.
 
 Работать как ведущий координирующий инженер, а не как единственный исполнитель.
@@ -18,7 +18,7 @@
 
 Из чистого checkout пользователь должен иметь возможность написать,
 отформатировать, проверить, протестировать, запустить в VM и собрать нативно
-нетривиальную программу на Ruda.
+нетривиальную программу на Marimay.
 
 Главный приёмочный пример — умножение матриц на f64 с динамическими массивами,
 реальными циклами, индексированием, умножением и сложением. VM и native должны
@@ -159,7 +159,7 @@ owner.
 
 Сначала построить минимальную вертикаль V0:
 
-    .ruda source
+    .my source
       → parser/checker
       → typed verified MIR
       → encoded and verified bytecode
@@ -204,10 +204,10 @@ differential coverage.
 - D040 construction order;
 - lexical defer и реализуемая до появления task runtime часть D041;
 - локальные packages/imports;
-- authoritative ruda check;
-- VM-default ruda run;
-- native-default ruda build;
-- встроенный ruda test и ruda test --engine both;
+- authoritative mmay check;
+- VM-default mmay run;
+- native-default mmay build;
+- встроенный mmay test и mmay test --engine both;
 - минимальный compiler-service owner для diagnostics/dot completion.
 
 Полный production LSP, networking, task runtime и другие поздние поверхности
@@ -232,12 +232,12 @@ differential coverage.
 
 Matrix fixture должна пройти:
 
-    ruda fmt --check <module>
-    ruda check <module>
-    ruda run <module>
-    ruda test <module>
-    ruda build <module>
-    ruda test --engine both <module>
+    mmay fmt --check <module>
+    mmay check <module>
+    mmay run <module>
+    mmay test <module>
+    mmay build <module>
+    mmay test --engine both <module>
 
 Собранный native executable и VM должны печатать одинаковый результат.
 

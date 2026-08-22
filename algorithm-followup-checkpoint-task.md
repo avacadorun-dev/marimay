@@ -2,7 +2,7 @@
 
 ## Objective
 
-Audit the problems discovered by the Ruda/Go/Rust algorithm exercise and append
+Audit the problems discovered by the Marimay/Go/Rust algorithm exercise and append
 a dependency-ordered set of fully atomic follow-up checkpoints to
 `checkpoints.md` after the existing checkpoint 12.
 
@@ -28,7 +28,7 @@ Read all other files in read-only mode. In particular:
 - do not edit `goal-objective.md`;
 - do not edit either findings/proposal note;
 - do not edit specification, decisions, roadmap, evidence, source, tests, or
-  the sibling `ruda-algotithms` repository;
+  the sibling `mmay-algotithms` repository;
 - do not rewrite, renumber, reorder, or silently weaken checkpoints 0–12;
 - append the new block strictly after the final line of checkpoint 12.
 
@@ -56,7 +56,7 @@ Read these files completely before planning:
 10. `docs/spec/execution.md`, especially managed arrays, bytecode array type
     tables, memory management, resource limits, safe indexing and native
     equivalence;
-11. `docs/spec/toolchain.md`, especially `ruda build`, output profiles and
+11. `docs/spec/toolchain.md`, especially `mmay build`, output profiles and
     release/native behavior;
 12. `docs/spec/diagnostics.md`, especially bounds panics and `I0002`;
 13. `docs/implementation/compiler-architecture.md`;
@@ -72,35 +72,35 @@ the plan.
 
 ## Benchmark evidence to inspect
 
-The comparison repository is the sibling path `../ruda-algotithms`. Inspect at
+The comparison repository is the sibling path `../mmay-algotithms`. Inspect at
 least:
 
 ```text
-../ruda-algotithms/README.md
-../ruda-algotithms/benchmarks/README.md
-../ruda-algotithms/benchmarks/run.py
-../ruda-algotithms/benchmarks/results/latest.md
-../ruda-algotithms/benchmarks/results/latest.json
-../ruda-algotithms/benchmarks/results/debug-runtime-baseline.md
-../ruda-algotithms/benchmarks/ruda/core/benchmarks.ruda
-../ruda-algotithms/ruda/
-../ruda-algotithms/go/cmd/benchmark/main.go
-../ruda-algotithms/go/sorting/
-../ruda-algotithms/go/structures/
-../ruda-algotithms/go/graphs/
-../ruda-algotithms/rust/src/bin/benchmark.rs
-../ruda-algotithms/rust/src/sorting/
-../ruda-algotithms/rust/src/structures/
-../ruda-algotithms/rust/src/graphs/
+../mmay-algotithms/README.md
+../mmay-algotithms/benchmarks/README.md
+../mmay-algotithms/benchmarks/run.py
+../mmay-algotithms/benchmarks/results/latest.md
+../mmay-algotithms/benchmarks/results/latest.json
+../mmay-algotithms/benchmarks/results/debug-runtime-baseline.md
+../mmay-algotithms/benchmarks/mmay/core/benchmarks.my
+../mmay-algotithms/mmay/
+../mmay-algotithms/go/cmd/benchmark/main.go
+../mmay-algotithms/go/sorting/
+../mmay-algotithms/go/structures/
+../mmay-algotithms/go/graphs/
+../mmay-algotithms/rust/src/bin/benchmark.rs
+../mmay-algotithms/rust/src/sorting/
+../mmay-algotithms/rust/src/structures/
+../mmay-algotithms/rust/src/graphs/
 ```
 
 Confirm rather than copy the notes blindly:
 
 - all current benchmark outputs use the same expected checksum;
 - current DSU implementations all use path compression and union by rank;
-- the latest report names `build/release/ruda` as the Ruda compiler executable;
-- compilation is excluded and `ruda run`/VM is not mixed into native timings;
-- the Ruda benchmark still has documented inline/cross-package and data-layout
+- the latest report names `build/release/mmay` as the Marimay compiler executable;
+- compilation is excluded and `mmay run`/VM is not mixed into native timings;
+- the Marimay benchmark still has documented inline/cross-package and data-layout
   comparability limitations;
 - the archived debug-runtime numbers are not reused as release performance
   acceptance values.
@@ -130,8 +130,8 @@ bootstrap/src/native/build.c
 bootstrap/src/native/c_emitter*.c
 runtime/common/managed.c
 runtime/common/managed_internal.c
-runtime/include/ruda/runtime/core.h
-runtime/include/ruda/runtime/array.h
+runtime/include/mmay/runtime/core.h
+runtime/include/mmay/runtime/array.h
 tests/c-unit/                         # focused parser/checker/MIR/VM/native/runtime tests
 tools/check-architecture
 tools/check-c-memory-policy
@@ -139,11 +139,11 @@ tools/check-c-memory-policy
 
 Verify these observations from current code:
 
-1. `ruda build --release` compiles generated C with release flags but the
+1. `mmay build --release` compiles generated C with release flags but the
    invoking compiler build embeds a particular runtime archive path;
 2. generated scalar array get/set paths repeatedly perform managed resolution,
    descriptor, length, bounds, status, and cell conversion work;
-3. `RudaManagedCell` layout is wider than a raw 64-bit scalar on the measured
+3. `MarimayManagedCell` layout is wider than a raw 64-bit scalar on the measured
    64-bit target;
 4. the default managed live-byte limit is 64 MiB and array capacity grows
    geometrically;
@@ -170,9 +170,9 @@ each checkpoint independently ends green.
 
 ### Toolchain and measurement
 
-- output-profile coherence: `ruda build --release` must not silently depend on
+- output-profile coherence: `mmay build --release` must not silently depend on
   a debug native-runtime archive embedded by a debug compiler build;
-- benchmark fidelity: Ruda must eventually exercise the same reusable package
+- benchmark fidelity: Marimay must eventually exercise the same reusable package
   boundaries and equivalent algorithmic work as Go/Rust;
 - focused performance probes and reproducible metadata before hard budgets are
   introduced;
@@ -261,7 +261,7 @@ file or compiler phase. Apply these rules:
    no justified budget exists, first create a checkpoint that establishes the
    methodology, noise envelope and Tier 1 baseline; later checkpoints may use
    that accepted budget.
-10. Optimizations may not change safe Ruda semantics, panic ordering, integer
+10. Optimizations may not change safe Marimay semantics, panic ordering, integer
     overflow behavior, array identity, iteration invalidation, resource
     classification, or VM/native observable results.
 11. Any allocation-capable C API change must require cleanup on success and all
@@ -325,7 +325,7 @@ do not weaken the common gates because a change appears performance-only.
 The last appended checkpoint must be a post-optimization integration and
 rebaseline checkpoint. It must not introduce new semantics. It must:
 
-- remove benchmark-only Ruda workarounds that earlier follow-ups made obsolete;
+- remove benchmark-only Marimay workarounds that earlier follow-ups made obsolete;
 - run the reusable algorithms through package boundaries on VM and native;
 - compare exact outputs/checksums/panics/exit codes;
 - record Debug, true Release, ASan/UBSan and Tier 1 results;

@@ -1,8 +1,8 @@
-#include "ruda/base/hash.h"
+#include "mmay/base/hash.h"
 
 #include <string.h>
 
-static const uint32_t ruda_sha256_constants[64] = {
+static const uint32_t mmay_sha256_constants[64] = {
     0x428a2f98U, 0x71374491U, 0xb5c0fbcfU, 0xe9b5dba5U,
     0x3956c25bU, 0x59f111f1U, 0x923f82a4U, 0xab1c5ed5U,
     0xd807aa98U, 0x12835b01U, 0x243185beU, 0x550c7dc3U,
@@ -21,22 +21,22 @@ static const uint32_t ruda_sha256_constants[64] = {
     0x90befffaU, 0xa4506cebU, 0xbef9a3f7U, 0xc67178f2U,
 };
 
-static uint32_t ruda_rotate_right32(uint32_t value, unsigned int count) {
+static uint32_t mmay_rotate_right32(uint32_t value, unsigned int count) {
     return (value >> count) | (value << (32U - count));
 }
 
-static uint64_t ruda_rotate_left64(uint64_t value, unsigned int count) {
+static uint64_t mmay_rotate_left64(uint64_t value, unsigned int count) {
     return (value << count) | (value >> (64U - count));
 }
 
-static uint32_t ruda_load_big32(const unsigned char *bytes) {
+static uint32_t mmay_load_big32(const unsigned char *bytes) {
     return ((uint32_t)bytes[0] << 24)
         | ((uint32_t)bytes[1] << 16)
         | ((uint32_t)bytes[2] << 8)
         | (uint32_t)bytes[3];
 }
 
-static uint64_t ruda_load_little64(const unsigned char *bytes) {
+static uint64_t mmay_load_little64(const unsigned char *bytes) {
     return (uint64_t)bytes[0]
         | ((uint64_t)bytes[1] << 8)
         | ((uint64_t)bytes[2] << 16)
@@ -47,14 +47,14 @@ static uint64_t ruda_load_little64(const unsigned char *bytes) {
         | ((uint64_t)bytes[7] << 56);
 }
 
-static void ruda_store_big32(unsigned char *bytes, uint32_t value) {
+static void mmay_store_big32(unsigned char *bytes, uint32_t value) {
     bytes[0] = (unsigned char)(value >> 24);
     bytes[1] = (unsigned char)(value >> 16);
     bytes[2] = (unsigned char)(value >> 8);
     bytes[3] = (unsigned char)value;
 }
 
-static void ruda_sha256_compress(RudaSha256 *hash, const unsigned char block[64]) {
+static void mmay_sha256_compress(MarimaySha256 *hash, const unsigned char block[64]) {
     uint32_t words[64];
     uint32_t a = 0;
     uint32_t b = 0;
@@ -66,15 +66,15 @@ static void ruda_sha256_compress(RudaSha256 *hash, const unsigned char block[64]
     uint32_t h = 0;
     size_t index = 0;
     for (index = 0; index < 16; index += 1) {
-        words[index] = ruda_load_big32(block + index * 4);
+        words[index] = mmay_load_big32(block + index * 4);
     }
     for (index = 16; index < 64; index += 1) {
         uint32_t previous15 = words[index - 15];
         uint32_t previous2 = words[index - 2];
-        uint32_t small0 = ruda_rotate_right32(previous15, 7)
-            ^ ruda_rotate_right32(previous15, 18) ^ (previous15 >> 3);
-        uint32_t small1 = ruda_rotate_right32(previous2, 17)
-            ^ ruda_rotate_right32(previous2, 19) ^ (previous2 >> 10);
+        uint32_t small0 = mmay_rotate_right32(previous15, 7)
+            ^ mmay_rotate_right32(previous15, 18) ^ (previous15 >> 3);
+        uint32_t small1 = mmay_rotate_right32(previous2, 17)
+            ^ mmay_rotate_right32(previous2, 19) ^ (previous2 >> 10);
         words[index] = words[index - 16] + small0 + words[index - 7] + small1;
     }
     a = hash->state[0];
@@ -86,13 +86,13 @@ static void ruda_sha256_compress(RudaSha256 *hash, const unsigned char block[64]
     g = hash->state[6];
     h = hash->state[7];
     for (index = 0; index < 64; index += 1) {
-        uint32_t sum1 = ruda_rotate_right32(e, 6) ^ ruda_rotate_right32(e, 11)
-            ^ ruda_rotate_right32(e, 25);
+        uint32_t sum1 = mmay_rotate_right32(e, 6) ^ mmay_rotate_right32(e, 11)
+            ^ mmay_rotate_right32(e, 25);
         uint32_t choose = (e & f) ^ ((~e) & g);
-        uint32_t temporary1 = h + sum1 + choose + ruda_sha256_constants[index]
+        uint32_t temporary1 = h + sum1 + choose + mmay_sha256_constants[index]
             + words[index];
-        uint32_t sum0 = ruda_rotate_right32(a, 2) ^ ruda_rotate_right32(a, 13)
-            ^ ruda_rotate_right32(a, 22);
+        uint32_t sum0 = mmay_rotate_right32(a, 2) ^ mmay_rotate_right32(a, 13)
+            ^ mmay_rotate_right32(a, 22);
         uint32_t majority = (a & b) ^ (a & c) ^ (b & c);
         uint32_t temporary2 = sum0 + majority;
         h = g;
@@ -114,7 +114,7 @@ static void ruda_sha256_compress(RudaSha256 *hash, const unsigned char block[64]
     hash->state[7] += h;
 }
 
-void ruda_sha256_init(RudaSha256 *hash) {
+void mmay_sha256_init(MarimaySha256 *hash) {
     hash->state[0] = 0x6a09e667U;
     hash->state[1] = 0xbb67ae85U;
     hash->state[2] = 0x3c6ef372U;
@@ -127,7 +127,7 @@ void ruda_sha256_init(RudaSha256 *hash) {
     hash->block_length = 0;
 }
 
-bool ruda_sha256_update(RudaSha256 *hash, const void *bytes, size_t length) {
+bool mmay_sha256_update(MarimaySha256 *hash, const void *bytes, size_t length) {
     const unsigned char *cursor = bytes;
     size_t remaining = length;
     if (hash == NULL || (bytes == NULL && length != 0)) {
@@ -145,48 +145,48 @@ bool ruda_sha256_update(RudaSha256 *hash, const void *bytes, size_t length) {
         cursor += copied;
         remaining -= copied;
         if (hash->block_length == sizeof(hash->block)) {
-            ruda_sha256_compress(hash, hash->block);
+            mmay_sha256_compress(hash, hash->block);
             hash->block_length = 0;
         }
     }
     return true;
 }
 
-void ruda_sha256_final(RudaSha256 *hash, unsigned char digest[32]) {
+void mmay_sha256_final(MarimaySha256 *hash, unsigned char digest[32]) {
     uint64_t bit_count = hash->bit_count;
     size_t index = 0;
     hash->block[hash->block_length] = 0x80U;
     hash->block_length += 1;
     if (hash->block_length > 56) {
         memset(hash->block + hash->block_length, 0, 64 - hash->block_length);
-        ruda_sha256_compress(hash, hash->block);
+        mmay_sha256_compress(hash, hash->block);
         hash->block_length = 0;
     }
     memset(hash->block + hash->block_length, 0, 56 - hash->block_length);
     for (index = 0; index < 8; index += 1) {
         hash->block[63 - index] = (unsigned char)(bit_count >> (index * 8));
     }
-    ruda_sha256_compress(hash, hash->block);
+    mmay_sha256_compress(hash, hash->block);
     for (index = 0; index < 8; index += 1) {
-        ruda_store_big32(digest + index * 4, hash->state[index]);
+        mmay_store_big32(digest + index * 4, hash->state[index]);
     }
     hash->block_length = 0;
 }
 
-bool ruda_sha256(const void *bytes, size_t length, unsigned char digest[32]) {
-    RudaSha256 hash;
+bool mmay_sha256(const void *bytes, size_t length, unsigned char digest[32]) {
+    MarimaySha256 hash;
     if (digest == NULL) {
         return false;
     }
-    ruda_sha256_init(&hash);
-    if (!ruda_sha256_update(&hash, bytes, length)) {
+    mmay_sha256_init(&hash);
+    if (!mmay_sha256_update(&hash, bytes, length)) {
         return false;
     }
-    ruda_sha256_final(&hash, digest);
+    mmay_sha256_final(&hash, digest);
     return true;
 }
 
-void ruda_sha256_hex(const unsigned char digest[32], char output[65]) {
+void mmay_sha256_hex(const unsigned char digest[32], char output[65]) {
     static const char digits[] = "0123456789abcdef";
     size_t index = 0;
     for (index = 0; index < 32; index += 1) {
@@ -196,25 +196,25 @@ void ruda_sha256_hex(const unsigned char digest[32], char output[65]) {
     output[64] = '\0';
 }
 
-#define RUDA_SIP_ROUND() \
+#define MMAY_SIP_ROUND() \
     do { \
         value0 += value1; \
-        value1 = ruda_rotate_left64(value1, 13); \
+        value1 = mmay_rotate_left64(value1, 13); \
         value1 ^= value0; \
-        value0 = ruda_rotate_left64(value0, 32); \
+        value0 = mmay_rotate_left64(value0, 32); \
         value2 += value3; \
-        value3 = ruda_rotate_left64(value3, 16); \
+        value3 = mmay_rotate_left64(value3, 16); \
         value3 ^= value2; \
         value0 += value3; \
-        value3 = ruda_rotate_left64(value3, 21); \
+        value3 = mmay_rotate_left64(value3, 21); \
         value3 ^= value0; \
         value2 += value1; \
-        value1 = ruda_rotate_left64(value1, 17); \
+        value1 = mmay_rotate_left64(value1, 17); \
         value1 ^= value2; \
-        value2 = ruda_rotate_left64(value2, 32); \
+        value2 = mmay_rotate_left64(value2, 32); \
     } while (0)
 
-uint64_t ruda_hash_sip24(
+uint64_t mmay_hash_sip24(
     const void *bytes,
     size_t length,
     uint64_t key0,
@@ -231,10 +231,10 @@ uint64_t ruda_hash_sip24(
         return 0;
     }
     while (length - offset >= 8) {
-        uint64_t message = ruda_load_little64(input + offset);
+        uint64_t message = mmay_load_little64(input + offset);
         value3 ^= message;
-        RUDA_SIP_ROUND();
-        RUDA_SIP_ROUND();
+        MMAY_SIP_ROUND();
+        MMAY_SIP_ROUND();
         value0 ^= message;
         offset += 8;
     }
@@ -264,15 +264,15 @@ uint64_t ruda_hash_sip24(
             break;
     }
     value3 ^= final;
-    RUDA_SIP_ROUND();
-    RUDA_SIP_ROUND();
+    MMAY_SIP_ROUND();
+    MMAY_SIP_ROUND();
     value0 ^= final;
     value2 ^= 0xffU;
-    RUDA_SIP_ROUND();
-    RUDA_SIP_ROUND();
-    RUDA_SIP_ROUND();
-    RUDA_SIP_ROUND();
+    MMAY_SIP_ROUND();
+    MMAY_SIP_ROUND();
+    MMAY_SIP_ROUND();
+    MMAY_SIP_ROUND();
     return value0 ^ value1 ^ value2 ^ value3;
 }
 
-#undef RUDA_SIP_ROUND
+#undef MMAY_SIP_ROUND

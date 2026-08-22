@@ -8,7 +8,7 @@ Motivation snapshot: algorithm comparison on 2026-08-18.
 Nested managed arrays are common in graph, matrix, grid, and dynamic-programming
 code. The current spelling exposes the generic implementation at every level:
 
-```ruda
+```marimay
 public type IntAdjacency = Array<Array<int>>;
 public type WeightedAdjacency = Array<Array<Edge>>;
 
@@ -19,7 +19,7 @@ The punctuation grows outward and makes the element type harder to scan. In the
 algorithm experiment, aliases were introduced partly to avoid repeating these
 signatures. The desired source shape is closer to:
 
-```ruda
+```marimay
 public type IntAdjacency = [][]int;
 public type WeightedAdjacency = [][]Edge;
 
@@ -45,7 +45,7 @@ tag, or ABI identity.
 
 It composes with existing type forms:
 
-```ruda
+```marimay
 Option<[]int>
 Result<[][]Edge, GraphError>
 Map<string, []int>
@@ -53,7 +53,7 @@ fn flatten(rows: [][]int): []int
 ```
 
 `[]T` must mean managed `Array<T>`, not `Slice<T>`. Although the punctuation is
-familiar from Go, Ruda's `Array<T>` has stable managed-reference identity and
+familiar from Go, Marimay's `Array<T>` has stable managed-reference identity and
 mutable growth, while `Slice<T>` is a non-owning scope-bounded view. Documentation
 and hover text must make that distinction explicit.
 
@@ -78,7 +78,7 @@ not degrade.
 
 ## Canonical formatting and migration
 
-Ruda's design constitution rejects permanent overlapping spellings by default.
+Marimay's design constitution rejects permanent overlapping spellings by default.
 The preferred end state is therefore:
 
 - `[]T` is the canonical user-facing spelling and the formatter always emits
@@ -97,7 +97,7 @@ There are two viable transition policies that require an explicit decision:
    syntax-aware migration command, and remove the old source spelling at the
    next preview boundary.
 
-`ruda fmt` should not silently rewrite an arbitrary identifier named `Array`
+`mmay fmt` should not silently rewrite an arbitrary identifier named `Array`
 without a syntax or semantic guarantee that it denotes the prelude type. If the
 old form remains ordinary identifier-based generic syntax during migration, a
 dedicated migration action is safer than a context-free formatter rewrite.
@@ -108,7 +108,7 @@ Changing only signatures leaves empty construction verbose. The existing D045
 contract already permits an empty array literal when an expected array type is
 available, so examples should prefer:
 
-```ruda
+```marimay
 let rows: [][]int = [];
 let values: []int = [];
 ```
@@ -116,7 +116,7 @@ let values: []int = [];
 When no expected type exists, the explicit constructor can use the shorthand
 for its element type:
 
-```ruda
+```marimay
 let rows = arrayOf<[]int>();
 ```
 
@@ -134,7 +134,7 @@ user invents and navigates another name.
 ### `int[][]`
 
 This is familiar from Java and C#, but postfix nesting reads in the opposite
-direction from Ruda's existing prefix/container type forms and becomes harder
+direction from Marimay's existing prefix/container type forms and becomes harder
 to compose with qualified, generic, tuple, and function element types.
 
 ### `[int]`
@@ -150,7 +150,7 @@ and do not help `Array<Map<string, Array<Edge>>>`.
 ### Make `[]T` mean `Slice<T>` as in Go
 
 That would optimize for visual familiarity at the cost of misrepresenting
-Ruda's owning managed array. It would also leave the original nested `Array`
+Marimay's owning managed array. It would also leave the original nested `Array`
 verbosity unresolved. This proposal explicitly rejects that mapping.
 
 ## Adjacent findings kept out of this syntax change
@@ -161,7 +161,7 @@ semantics.
 
 ### Collection method names
 
-Ruda stack/heap examples had to use `add`/`take` and
+Marimay stack/heap examples had to use `add`/`take` and
 `insert`/`removeMinimum` because user-defined `push`/`pop` paths collided with
 compiler-known array behavior in the current preview. The accepted dot-call
 model should already allow receiver-directed names such as `stack.push(value)`

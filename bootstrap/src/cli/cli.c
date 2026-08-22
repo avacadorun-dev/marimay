@@ -4,48 +4,48 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ruda/build_config.h"
-#include "ruda/generated/diagnostic_codes.h"
+#include "mmay/build_config.h"
+#include "mmay/generated/diagnostic_codes.h"
 
-#define RUDA_STRINGIFY_INNER(value) #value
-#define RUDA_STRINGIFY(value) RUDA_STRINGIFY_INNER(value)
+#define MMAY_STRINGIFY_INNER(value) #value
+#define MMAY_STRINGIFY(value) MMAY_STRINGIFY_INNER(value)
 
-typedef struct RudaTaskHelp {
+typedef struct MarimayTaskHelp {
     const char *name;
     const char *summary;
     const char *usage;
     const char *examples;
     bool implemented;
-} RudaTaskHelp;
+} MarimayTaskHelp;
 
-static const RudaTaskHelp ruda_tasks[] = {
-    {"add", "Add a package dependency.", "add module[@version]", "ruda add ruda-lang.example/postgres@1.4", false},
-    {"audit", "Audit dependencies, capabilities, unsafe code, and provenance.", "audit", "ruda audit", false},
-    {"bench", "Run first-party benchmarks.", "bench [filter]", "ruda bench --compare base.json", false},
-    {"build", "Build a native executable by default.", "build [target] [--max-heap-bytes bytes] [options]", "ruda build --max-heap-bytes 67108864 --release", true},
-    {"check", "Run the complete frontend and MIR verifier.", "check [target] [--all-targets]", "ruda check --all-targets", true},
-    {"doc", "Build or check package documentation.", "doc [options]", "ruda doc --check", false},
-    {"exec", "Verify and execute a portable .rudab bundle.", "exec bundle.rudab [options]", "ruda exec app.rudab", false},
-    {"explain", "Explain a diagnostic or inferred compiler behavior.", "explain code|topic", "ruda explain suspension loadDashboard", false},
-    {"fix", "Apply compiler-authored safe fixes.", "fix [target] [options]", "ruda fix", false},
-    {"fmt", "Canonically format Ruda source and manifests.", "fmt [target] [options]", "ruda fmt --check", true},
-    {"fuzz", "Run a first-party fuzz target.", "fuzz target [options]", "ruda fuzz \"decoder never panics\"", false},
-    {"generate", "Run explicitly configured external generation.", "generate [target]", "ruda generate", false},
-    {"help", "Show task-oriented command help.", "help [command]", "ruda help build", true},
-    {"init", "Create a Ruda module.", "init [path]", "ruda init ./orders", false},
-    {"list", "List package dependencies.", "list", "ruda list", false},
-    {"outdated", "Report available dependency updates.", "outdated", "ruda outdated", false},
-    {"remove", "Remove a package dependency.", "remove module", "ruda remove ruda-lang.example/postgres", false},
-    {"run", "Run with the bytecode VM by default.", "run [target] [--max-heap-bytes bytes] [-- arguments]", "ruda run . --max-heap-bytes 67108864", true},
-    {"test", "Run built-in tests with the VM by default.", "test [target] [--engine vm|native|both] [--max-heap-bytes bytes]", "ruda test --engine both --max-heap-bytes 67108864", true},
-    {"update", "Update locked package versions.", "update [module]", "ruda update", false},
-    {"vendor", "Vendor immutable locked dependencies.", "vendor", "ruda vendor", false},
-    {"version", "Show compiler and runtime build identity.", "version [--json]", "ruda version --json", true},
-    {"vet", "Run first-party correctness checks.", "vet [target] [options]", "ruda vet --strict", false},
-    {"why", "Explain why a dependency is present.", "why module", "ruda why ruda-lang.example/crypto", false},
+static const MarimayTaskHelp mmay_tasks[] = {
+    {"add", "Add a package dependency.", "add module[@version]", "mmay add marimay.example/postgres@1.4", false},
+    {"audit", "Audit dependencies, capabilities, unsafe code, and provenance.", "audit", "mmay audit", false},
+    {"bench", "Run first-party benchmarks.", "bench [filter]", "mmay bench --compare base.json", false},
+    {"build", "Build a native executable by default.", "build [target] [--max-heap-bytes bytes] [options]", "mmay build --max-heap-bytes 67108864 --release", true},
+    {"check", "Run the complete frontend and MIR verifier.", "check [target] [--all-targets]", "mmay check --all-targets", true},
+    {"doc", "Build or check package documentation.", "doc [options]", "mmay doc --check", false},
+    {"exec", "Verify and execute a portable .myb bundle.", "exec bundle.myb [options]", "mmay exec app.myb", false},
+    {"explain", "Explain a diagnostic or inferred compiler behavior.", "explain code|topic", "mmay explain suspension loadDashboard", false},
+    {"fix", "Apply compiler-authored safe fixes.", "fix [target] [options]", "mmay fix", false},
+    {"fmt", "Canonically format Marimay source and manifests.", "fmt [target] [options]", "mmay fmt --check", true},
+    {"fuzz", "Run a first-party fuzz target.", "fuzz target [options]", "mmay fuzz \"decoder never panics\"", false},
+    {"generate", "Run explicitly configured external generation.", "generate [target]", "mmay generate", false},
+    {"help", "Show task-oriented command help.", "help [command]", "mmay help build", true},
+    {"init", "Create a Marimay module.", "init [path]", "mmay init ./orders", false},
+    {"list", "List package dependencies.", "list", "mmay list", false},
+    {"outdated", "Report available dependency updates.", "outdated", "mmay outdated", false},
+    {"remove", "Remove a package dependency.", "remove module", "mmay remove marimay.example/postgres", false},
+    {"run", "Run with the bytecode VM by default.", "run [target] [--max-heap-bytes bytes] [-- arguments]", "mmay run . --max-heap-bytes 67108864", true},
+    {"test", "Run built-in tests with the VM by default.", "test [target] [--engine vm|native|both] [--max-heap-bytes bytes]", "mmay test --engine both --max-heap-bytes 67108864", true},
+    {"update", "Update locked package versions.", "update [module]", "mmay update", false},
+    {"vendor", "Vendor immutable locked dependencies.", "vendor", "mmay vendor", false},
+    {"version", "Show compiler and runtime build identity.", "version [--json]", "mmay version --json", true},
+    {"vet", "Run first-party correctness checks.", "vet [target] [options]", "mmay vet --strict", false},
+    {"why", "Explain why a dependency is present.", "why module", "mmay why marimay.example/crypto", false},
 };
 
-static const char *const ruda_global_options[] = {
+static const char *const mmay_global_options[] = {
     "--check",
     "--all-targets",
     "--color",
@@ -63,27 +63,27 @@ static const char *const ruda_global_options[] = {
     "--version",
 };
 
-static bool ruda_starts_with(const char *text, const char *prefix) {
+static bool mmay_starts_with(const char *text, const char *prefix) {
     size_t prefix_length = strlen(prefix);
     return strncmp(text, prefix, prefix_length) == 0;
 }
 
-static size_t ruda_minimum3(size_t first, size_t second, size_t third) {
+static size_t mmay_minimum3(size_t first, size_t second, size_t third) {
     size_t result = first < second ? first : second;
     return result < third ? result : third;
 }
 
-static size_t ruda_edit_distance(const char *left, const char *right) {
-    enum { RUDA_SUGGESTION_LIMIT = 64 };
-    size_t previous[RUDA_SUGGESTION_LIMIT + 1];
-    size_t current[RUDA_SUGGESTION_LIMIT + 1];
+static size_t mmay_edit_distance(const char *left, const char *right) {
+    enum { MMAY_SUGGESTION_LIMIT = 64 };
+    size_t previous[MMAY_SUGGESTION_LIMIT + 1];
+    size_t current[MMAY_SUGGESTION_LIMIT + 1];
     size_t left_length = strlen(left);
     size_t right_length = strlen(right);
     size_t left_index = 0;
     size_t right_index = 0;
 
-    if (left_length > RUDA_SUGGESTION_LIMIT || right_length > RUDA_SUGGESTION_LIMIT) {
-        return RUDA_SUGGESTION_LIMIT;
+    if (left_length > MMAY_SUGGESTION_LIMIT || right_length > MMAY_SUGGESTION_LIMIT) {
+        return MMAY_SUGGESTION_LIMIT;
     }
     for (right_index = 0; right_index <= right_length; right_index += 1) {
         previous[right_index] = right_index;
@@ -93,7 +93,7 @@ static size_t ruda_edit_distance(const char *left, const char *right) {
         for (right_index = 1; right_index <= right_length; right_index += 1) {
             size_t substitution = previous[right_index - 1]
                 + (left[left_index - 1] == right[right_index - 1] ? 0U : 1U);
-            current[right_index] = ruda_minimum3(
+            current[right_index] = mmay_minimum3(
                 previous[right_index] + 1,
                 current[right_index - 1] + 1,
                 substitution
@@ -106,78 +106,78 @@ static size_t ruda_edit_distance(const char *left, const char *right) {
     return previous[right_length];
 }
 
-static const RudaTaskHelp *ruda_find_task(const char *name) {
+static const MarimayTaskHelp *mmay_find_task(const char *name) {
     size_t index = 0;
-    for (index = 0; index < sizeof(ruda_tasks) / sizeof(ruda_tasks[0]); index += 1) {
-        if (strcmp(ruda_tasks[index].name, name) == 0) {
-            return &ruda_tasks[index];
+    for (index = 0; index < sizeof(mmay_tasks) / sizeof(mmay_tasks[0]); index += 1) {
+        if (strcmp(mmay_tasks[index].name, name) == 0) {
+            return &mmay_tasks[index];
         }
     }
     return NULL;
 }
 
-static const char *ruda_suggest_task(const char *name) {
+static const char *mmay_suggest_task(const char *name) {
     const char *suggestion = NULL;
     size_t best = 4;
     size_t index = 0;
-    for (index = 0; index < sizeof(ruda_tasks) / sizeof(ruda_tasks[0]); index += 1) {
-        size_t distance = ruda_edit_distance(name, ruda_tasks[index].name);
+    for (index = 0; index < sizeof(mmay_tasks) / sizeof(mmay_tasks[0]); index += 1) {
+        size_t distance = mmay_edit_distance(name, mmay_tasks[index].name);
         if (distance < best) {
             best = distance;
-            suggestion = ruda_tasks[index].name;
+            suggestion = mmay_tasks[index].name;
         }
     }
     return suggestion;
 }
 
-static const char *ruda_suggest_option(const char *name) {
+static const char *mmay_suggest_option(const char *name) {
     const char *suggestion = NULL;
     size_t best = 4;
     size_t index = 0;
-    for (index = 0; index < sizeof(ruda_global_options) / sizeof(ruda_global_options[0]); index += 1) {
-        size_t distance = ruda_edit_distance(name, ruda_global_options[index]);
+    for (index = 0; index < sizeof(mmay_global_options) / sizeof(mmay_global_options[0]); index += 1) {
+        size_t distance = mmay_edit_distance(name, mmay_global_options[index]);
         if (distance < best) {
             best = distance;
-            suggestion = ruda_global_options[index];
+            suggestion = mmay_global_options[index];
         }
     }
-    if (ruda_edit_distance(name, "--json") < best) {
+    if (mmay_edit_distance(name, "--json") < best) {
         suggestion = "--json";
     }
     return suggestion;
 }
 
-static int ruda_cli_diagnostic(
-    RudaWriter error_writer,
-    RudaDiagnosticStyle style,
+static int mmay_cli_diagnostic(
+    MarimayWriter error_writer,
+    MarimayDiagnosticStyle style,
     const char *code,
     size_t argument_index,
     const char *message
 ) {
-    RudaDiagnostic diagnostic;
+    MarimayDiagnostic diagnostic;
     memset(&diagnostic, 0, sizeof(diagnostic));
     diagnostic.code = code;
-    diagnostic.severity = RUDA_SEVERITY_ERROR;
+    diagnostic.severity = MMAY_SEVERITY_ERROR;
     diagnostic.message = message;
     diagnostic.has_command_argument = true;
     diagnostic.command_argument = argument_index;
-    if (!ruda_diagnostic_render(error_writer, style, &diagnostic)) {
-        return RUDA_EXIT_INTERNAL;
+    if (!mmay_diagnostic_render(error_writer, style, &diagnostic)) {
+        return MMAY_EXIT_INTERNAL;
     }
-    return RUDA_EXIT_USAGE;
+    return MMAY_EXIT_USAGE;
 }
 
-static int ruda_unknown_command(
-    RudaWriter error_writer,
-    RudaDiagnosticStyle style,
+static int mmay_unknown_command(
+    MarimayWriter error_writer,
+    MarimayDiagnosticStyle style,
     const char *command,
     size_t argument_index
 ) {
     char display[128];
     char message[320];
-    const char *suggestion = ruda_suggest_task(command);
+    const char *suggestion = mmay_suggest_task(command);
     int length = 0;
-    ruda_display_argument(command, display, sizeof(display));
+    mmay_display_argument(command, display, sizeof(display));
     if (suggestion != NULL) {
         length = snprintf(
             message,
@@ -190,28 +190,28 @@ static int ruda_unknown_command(
         length = snprintf(message, sizeof(message), "unknown command '%s'", display);
     }
     if (length < 0 || (size_t)length >= sizeof(message)) {
-        return RUDA_EXIT_INTERNAL;
+        return MMAY_EXIT_INTERNAL;
     }
-    return ruda_cli_diagnostic(
+    return mmay_cli_diagnostic(
         error_writer,
         style,
-        RUDA_DIAGNOSTIC_UNKNOWN_COMMAND,
+        MMAY_DIAGNOSTIC_UNKNOWN_COMMAND,
         argument_index,
         message
     );
 }
 
-static int ruda_unknown_option(
-    RudaWriter error_writer,
-    RudaDiagnosticStyle style,
+static int mmay_unknown_option(
+    MarimayWriter error_writer,
+    MarimayDiagnosticStyle style,
     const char *option,
     size_t argument_index
 ) {
     char display[128];
     char message[320];
-    const char *suggestion = ruda_suggest_option(option);
+    const char *suggestion = mmay_suggest_option(option);
     int length = 0;
-    ruda_display_argument(option, display, sizeof(display));
+    mmay_display_argument(option, display, sizeof(display));
     if (suggestion != NULL) {
         length = snprintf(
             message,
@@ -224,60 +224,60 @@ static int ruda_unknown_option(
         length = snprintf(message, sizeof(message), "unknown option '%s'", display);
     }
     if (length < 0 || (size_t)length >= sizeof(message)) {
-        return RUDA_EXIT_INTERNAL;
+        return MMAY_EXIT_INTERNAL;
     }
-    return ruda_cli_diagnostic(
+    return mmay_cli_diagnostic(
         error_writer,
         style,
-        RUDA_DIAGNOSTIC_UNKNOWN_OPTION,
+        MMAY_DIAGNOSTIC_UNKNOWN_OPTION,
         argument_index,
         message
     );
 }
 
-static bool ruda_valid_diagnostic_style(const char *value, RudaDiagnosticStyle *style) {
+static bool mmay_valid_diagnostic_style(const char *value, MarimayDiagnosticStyle *style) {
     if (strcmp(value, "human") == 0) {
-        *style = RUDA_DIAGNOSTIC_HUMAN;
+        *style = MMAY_DIAGNOSTIC_HUMAN;
         return true;
     }
     if (strcmp(value, "short") == 0) {
-        *style = RUDA_DIAGNOSTIC_SHORT;
+        *style = MMAY_DIAGNOSTIC_SHORT;
         return true;
     }
     if (strcmp(value, "json") == 0) {
-        *style = RUDA_DIAGNOSTIC_JSON;
+        *style = MMAY_DIAGNOSTIC_JSON;
         return true;
     }
     return false;
 }
 
-static bool ruda_valid_color(const char *value) {
+static bool mmay_valid_color(const char *value) {
     return strcmp(value, "auto") == 0
         || strcmp(value, "always") == 0
         || strcmp(value, "never") == 0;
 }
 
-int ruda_cli_option_value_error(
-    RudaWriter error_writer,
-    RudaDiagnosticStyle style,
+int mmay_cli_option_value_error(
+    MarimayWriter error_writer,
+    MarimayDiagnosticStyle style,
     const char *code,
     size_t argument_index,
     const char *message
 ) {
-    return ruda_cli_diagnostic(error_writer, style, code, argument_index, message);
+    return mmay_cli_diagnostic(error_writer, style, code, argument_index, message);
 }
 
-#define ruda_option_value_error ruda_cli_option_value_error
+#define mmay_option_value_error mmay_cli_option_value_error
 
-static int ruda_parse_options(
+static int mmay_parse_options(
     int argument_count,
     const char *const arguments[],
-    RudaWriter error_writer,
-    RudaCliOptions *options
+    MarimayWriter error_writer,
+    MarimayCliOptions *options
 ) {
     int index = 0;
     options->tool_executable_path = NULL;
-    options->diagnostic_style = RUDA_DIAGNOSTIC_HUMAN;
+    options->diagnostic_style = MMAY_DIAGNOSTIC_HUMAN;
     options->command = NULL;
     options->command_index = 0;
     options->help_target = NULL;
@@ -298,7 +298,7 @@ static int ruda_parse_options(
     options->check_all_targets_index = 0;
     options->run_engine = "vm";
     options->run_engine_index = 0;
-    ruda_cli_heap_limit_default(options);
+    mmay_cli_heap_limit_default(options);
     options->build_output = NULL;
     options->build_output_index = 0;
     options->build_emit = NULL;
@@ -339,12 +339,12 @@ static int ruda_parse_options(
                 char message[160];
                 int length = snprintf(message, sizeof(message), "option '%s' requires a value", argument);
                 if (length < 0 || (size_t)length >= sizeof(message)) {
-                    return RUDA_EXIT_INTERNAL;
+                    return MMAY_EXIT_INTERNAL;
                 }
-                return ruda_option_value_error(
+                return mmay_option_value_error(
                     error_writer,
                     options->diagnostic_style,
-                    RUDA_DIAGNOSTIC_MISSING_OPTION_VALUE,
+                    MMAY_DIAGNOSTIC_MISSING_OPTION_VALUE,
                     (size_t)index,
                     message
                 );
@@ -352,21 +352,21 @@ static int ruda_parse_options(
             index += 1;
             value = arguments[index];
             if (strcmp(argument, "--diagnostic") == 0) {
-                if (!ruda_valid_diagnostic_style(value, &options->diagnostic_style)) {
-                    return ruda_option_value_error(
+                if (!mmay_valid_diagnostic_style(value, &options->diagnostic_style)) {
+                    return mmay_option_value_error(
                         error_writer,
                         options->diagnostic_style,
-                        RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                        MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
                         (size_t)index,
                         "--diagnostic expects human, short, or json"
                     );
                 }
             } else if (strcmp(argument, "--color") == 0
-                && !ruda_valid_color(value)) {
-                return ruda_option_value_error(
+                && !mmay_valid_color(value)) {
+                return mmay_option_value_error(
                     error_writer,
                     options->diagnostic_style,
-                    RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                    MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
                     (size_t)index,
                     "--color expects auto, always, or never"
                 );
@@ -378,15 +378,15 @@ static int ruda_parse_options(
                     : strcmp(value, strcmp(options->command, "run") == 0
                         ? "vm" : "native") == 0;
                 if (!valid) {
-                    return ruda_option_value_error(
+                    return mmay_option_value_error(
                         error_writer, options->diagnostic_style,
-                        RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                        MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
                         (size_t)index,
                         strcmp(options->command, "test") == 0
-                            ? "ruda test --engine expects vm, native, or both"
+                            ? "mmay test --engine expects vm, native, or both"
                             : strcmp(options->command, "run") == 0
-                            ? "checkpoint 9 ruda run supports --engine vm"
-                            : "checkpoint 10 ruda build supports --engine native"
+                            ? "checkpoint 9 mmay run supports --engine vm"
+                            : "checkpoint 10 mmay build supports --engine native"
                     );
                 }
                 options->run_engine = value;
@@ -396,45 +396,45 @@ static int ruda_parse_options(
                 options->build_output_index = (size_t)index;
             } else if (strcmp(argument, "--emit") == 0) {
                 if (strcmp(value, "c") != 0) {
-                    return ruda_option_value_error(
+                    return mmay_option_value_error(
                         error_writer, options->diagnostic_style,
-                        RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                        MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
                         (size_t)index,
-                        "checkpoint 10 ruda build supports --emit c"
+                        "checkpoint 10 mmay build supports --emit c"
                     );
                 }
                 options->build_emit = value;
                 options->build_emit_index = (size_t)index;
             } else if (strcmp(argument, "--max-heap-bytes") == 0) {
-                int heap_result = ruda_cli_heap_limit_parse(
+                int heap_result = mmay_cli_heap_limit_parse(
                     options, value, (size_t)index - 1, (size_t)index,
                     error_writer
                 );
-                if (heap_result != RUDA_EXIT_SUCCESS) return heap_result;
+                if (heap_result != MMAY_EXIT_SUCCESS) return heap_result;
             }
-        } else if (ruda_starts_with(argument, "--diagnostic=")) {
+        } else if (mmay_starts_with(argument, "--diagnostic=")) {
             value = argument + strlen("--diagnostic=");
-            if (!ruda_valid_diagnostic_style(value, &options->diagnostic_style)) {
-                return ruda_option_value_error(
+            if (!mmay_valid_diagnostic_style(value, &options->diagnostic_style)) {
+                return mmay_option_value_error(
                     error_writer,
                     options->diagnostic_style,
-                    RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                    MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
                     (size_t)index,
                     "--diagnostic expects human, short, or json"
                 );
             }
-        } else if (ruda_starts_with(argument, "--color=")) {
+        } else if (mmay_starts_with(argument, "--color=")) {
             value = argument + strlen("--color=");
-            if (!ruda_valid_color(value)) {
-                return ruda_option_value_error(
+            if (!mmay_valid_color(value)) {
+                return mmay_option_value_error(
                     error_writer,
                     options->diagnostic_style,
-                    RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                    MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
                     (size_t)index,
                     "--color expects auto, always, or never"
                 );
             }
-        } else if (ruda_starts_with(argument, "--engine=")
+        } else if (mmay_starts_with(argument, "--engine=")
             && options->command != NULL
             && (strcmp(options->command, "run") == 0
                 || strcmp(options->command, "build") == 0
@@ -448,45 +448,45 @@ static int ruda_parse_options(
                     : strcmp(value, strcmp(options->command, "run") == 0
                         ? "vm" : "native") == 0;
                 if (!valid) {
-                    return ruda_option_value_error(
+                    return mmay_option_value_error(
                         error_writer, options->diagnostic_style,
-                        RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                        MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
                         (size_t)index,
                         strcmp(options->command, "test") == 0
-                            ? "ruda test --engine expects vm, native, or both"
+                            ? "mmay test --engine expects vm, native, or both"
                             : strcmp(options->command, "run") == 0
-                            ? "checkpoint 9 ruda run supports --engine vm"
-                            : "checkpoint 10 ruda build supports --engine native"
+                            ? "checkpoint 9 mmay run supports --engine vm"
+                            : "checkpoint 10 mmay build supports --engine native"
                     );
                 }
             }
             options->run_engine = value;
             options->run_engine_index = (size_t)index;
-        } else if (ruda_starts_with(argument, "--max-heap-bytes=")
+        } else if (mmay_starts_with(argument, "--max-heap-bytes=")
             && options->command != NULL
             && (strcmp(options->command, "run") == 0
                 || strcmp(options->command, "build") == 0
                 || strcmp(options->command, "test") == 0)) {
-            int heap_result = ruda_cli_heap_limit_parse(
+            int heap_result = mmay_cli_heap_limit_parse(
                 options, argument + strlen("--max-heap-bytes="),
                 (size_t)index, (size_t)index, error_writer
             );
-            if (heap_result != RUDA_EXIT_SUCCESS) return heap_result;
-        } else if (ruda_starts_with(argument, "--output=")
+            if (heap_result != MMAY_EXIT_SUCCESS) return heap_result;
+        } else if (mmay_starts_with(argument, "--output=")
             && options->command != NULL
             && strcmp(options->command, "build") == 0) {
             options->build_output = argument + strlen("--output=");
             options->build_output_index = (size_t)index;
-        } else if (ruda_starts_with(argument, "--emit=")
+        } else if (mmay_starts_with(argument, "--emit=")
             && options->command != NULL
             && strcmp(options->command, "build") == 0) {
             value = argument + strlen("--emit=");
             if (strcmp(value, "c") != 0) {
-                return ruda_option_value_error(
+                return mmay_option_value_error(
                     error_writer, options->diagnostic_style,
-                    RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                    MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
                     (size_t)index,
-                    "checkpoint 10 ruda build supports --emit c"
+                    "checkpoint 10 mmay build supports --emit c"
                 );
             }
             options->build_emit = value;
@@ -539,15 +539,15 @@ static int ruda_parse_options(
                 || strcmp(argument, "--no-cache") == 0
                 || strcmp(argument, "--filter") == 0
                 || strcmp(argument, "--exact") == 0
-                || ruda_starts_with(argument, "--filter=")
-                || ruda_starts_with(argument, "--exact="))) {
-            return ruda_option_value_error(
+                || mmay_starts_with(argument, "--filter=")
+                || mmay_starts_with(argument, "--exact="))) {
+            return mmay_option_value_error(
                 error_writer, options->diagnostic_style,
-                RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE, (size_t)index,
-                "checkpoint 11 ruda test does not yet support filters, watch, or cache options"
+                MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE, (size_t)index,
+                "checkpoint 11 mmay test does not yet support filters, watch, or cache options"
             );
         } else if (argument[0] == '-') {
-            return ruda_unknown_option(
+            return mmay_unknown_option(
                 error_writer,
                 options->diagnostic_style,
                 argument,
@@ -571,28 +571,28 @@ static int ruda_parse_options(
             char display[128];
             char message[192];
             int length = 0;
-            ruda_display_argument(argument, display, sizeof(display));
+            mmay_display_argument(argument, display, sizeof(display));
             length = snprintf(message, sizeof(message), "unexpected argument '%s'", display);
             if (length < 0 || (size_t)length >= sizeof(message)) {
-                return RUDA_EXIT_INTERNAL;
+                return MMAY_EXIT_INTERNAL;
             }
-            return ruda_option_value_error(
+            return mmay_option_value_error(
                 error_writer,
                 options->diagnostic_style,
-                RUDA_DIAGNOSTIC_UNEXPECTED_ARGUMENT,
+                MMAY_DIAGNOSTIC_UNEXPECTED_ARGUMENT,
                 (size_t)index,
                 message
             );
         }
     }
-    return RUDA_EXIT_SUCCESS;
+    return MMAY_EXIT_SUCCESS;
 }
 
-static bool ruda_write_top_help(RudaWriter writer) {
+static bool mmay_write_top_help(MarimayWriter writer) {
     static const char help[] =
-        "Ruda toolchain (Stage 0 bootstrap)\n"
+        "Marimay toolchain (Stage 0 bootstrap)\n"
         "\n"
-        "Usage: ruda <command> [options]\n"
+        "Usage: mmay <command> [options]\n"
         "\n"
         "Everyday workflow:\n"
         "  fmt       Canonically format source and manifests\n"
@@ -618,22 +618,22 @@ static bool ruda_write_top_help(RudaWriter writer) {
         "  --quiet\n"
         "  --verbose\n"
         "\n"
-        "Run 'ruda help <command>' for task-oriented examples.\n";
-    return ruda_writer_write_cstr(writer, help);
+        "Run 'mmay help <command>' for task-oriented examples.\n";
+    return mmay_writer_write_cstr(writer, help);
 }
 
-static bool ruda_write_task_help(RudaWriter writer, const RudaTaskHelp *task) {
-    if (!ruda_writer_write_cstr(writer, "Usage: ruda ")
-        || !ruda_writer_write_cstr(writer, task->usage)
-        || !ruda_writer_write_cstr(writer, "\n\n")
-        || !ruda_writer_write_cstr(writer, task->summary)
-        || !ruda_writer_write_cstr(writer, "\n\nExample:\n  ")
-        || !ruda_writer_write_cstr(writer, task->examples)
-        || !ruda_writer_write_cstr(writer, "\n")) {
+static bool mmay_write_task_help(MarimayWriter writer, const MarimayTaskHelp *task) {
+    if (!mmay_writer_write_cstr(writer, "Usage: mmay ")
+        || !mmay_writer_write_cstr(writer, task->usage)
+        || !mmay_writer_write_cstr(writer, "\n\n")
+        || !mmay_writer_write_cstr(writer, task->summary)
+        || !mmay_writer_write_cstr(writer, "\n\nExample:\n  ")
+        || !mmay_writer_write_cstr(writer, task->examples)
+        || !mmay_writer_write_cstr(writer, "\n")) {
         return false;
     }
     if (!task->implemented) {
-        return ruda_writer_write_cstr(
+        return mmay_writer_write_cstr(
             writer,
             "\nThis command is specified but not implemented in the current bootstrap slice.\n"
         );
@@ -641,84 +641,84 @@ static bool ruda_write_task_help(RudaWriter writer, const RudaTaskHelp *task) {
     return true;
 }
 
-static bool ruda_write_version(RudaWriter writer, bool json) {
+static bool mmay_write_version(MarimayWriter writer, bool json) {
     if (json) {
         static const char version_json[] =
-            "{\"schema\":\"ruda.version/1\","
-            "\"compiler\":\"" RUDA_COMPILER_VERSION "\","
-            "\"runtime\":\"" RUDA_RUNTIME_VERSION "\","
-            "\"language\":\"" RUDA_LANGUAGE_VERSION "\","
-            "\"bytecode\":\"" RUDA_BYTECODE_VERSION "\","
-            "\"standardLibrary\":\"" RUDA_STANDARD_LIBRARY_VERSION "\","
-            "\"bootstrapStage\":" RUDA_STRINGIFY(RUDA_BOOTSTRAP_STAGE) ","
-            "\"host\":{\"system\":\"" RUDA_HOST_SYSTEM "\","
-            "\"processor\":\"" RUDA_HOST_PROCESSOR "\"},"
+            "{\"schema\":\"marimay.version/1\","
+            "\"compiler\":\"" MMAY_COMPILER_VERSION "\","
+            "\"runtime\":\"" MMAY_RUNTIME_VERSION "\","
+            "\"language\":\"" MMAY_LANGUAGE_VERSION "\","
+            "\"bytecode\":\"" MMAY_BYTECODE_VERSION "\","
+            "\"standardLibrary\":\"" MMAY_STANDARD_LIBRARY_VERSION "\","
+            "\"bootstrapStage\":" MMAY_STRINGIFY(MMAY_BOOTSTRAP_STAGE) ","
+            "\"host\":{\"system\":\"" MMAY_HOST_SYSTEM "\","
+            "\"processor\":\"" MMAY_HOST_PROCESSOR "\"},"
             "\"targets\":[\"native-host\"]}\n";
-        return ruda_writer_write_cstr(writer, version_json);
+        return mmay_writer_write_cstr(writer, version_json);
     }
-    return ruda_writer_write_cstr(writer, "Ruda compiler ")
-        && ruda_writer_write_cstr(writer, RUDA_COMPILER_VERSION)
-        && ruda_writer_write_cstr(writer, "\nruntime ")
-        && ruda_writer_write_cstr(writer, RUDA_RUNTIME_VERSION)
-        && ruda_writer_write_cstr(writer, "\nlanguage ")
-        && ruda_writer_write_cstr(writer, RUDA_LANGUAGE_VERSION)
-        && ruda_writer_write_cstr(writer, "\nbytecode ")
-        && ruda_writer_write_cstr(writer, RUDA_BYTECODE_VERSION)
-        && ruda_writer_write_cstr(writer, "\nstandard-library ")
-        && ruda_writer_write_cstr(writer, RUDA_STANDARD_LIBRARY_VERSION)
-        && ruda_writer_write_cstr(writer, "\nbootstrap-stage ")
-        && ruda_writer_write_cstr(writer, RUDA_STRINGIFY(RUDA_BOOTSTRAP_STAGE))
-        && ruda_writer_write_cstr(writer, "\nhost ")
-        && ruda_writer_write_cstr(writer, RUDA_HOST_SYSTEM)
-        && ruda_writer_write_cstr(writer, "/")
-        && ruda_writer_write_cstr(writer, RUDA_HOST_PROCESSOR)
-        && ruda_writer_write_cstr(writer, "\ntargets native-host\n");
+    return mmay_writer_write_cstr(writer, "Marimay compiler ")
+        && mmay_writer_write_cstr(writer, MMAY_COMPILER_VERSION)
+        && mmay_writer_write_cstr(writer, "\nruntime ")
+        && mmay_writer_write_cstr(writer, MMAY_RUNTIME_VERSION)
+        && mmay_writer_write_cstr(writer, "\nlanguage ")
+        && mmay_writer_write_cstr(writer, MMAY_LANGUAGE_VERSION)
+        && mmay_writer_write_cstr(writer, "\nbytecode ")
+        && mmay_writer_write_cstr(writer, MMAY_BYTECODE_VERSION)
+        && mmay_writer_write_cstr(writer, "\nstandard-library ")
+        && mmay_writer_write_cstr(writer, MMAY_STANDARD_LIBRARY_VERSION)
+        && mmay_writer_write_cstr(writer, "\nbootstrap-stage ")
+        && mmay_writer_write_cstr(writer, MMAY_STRINGIFY(MMAY_BOOTSTRAP_STAGE))
+        && mmay_writer_write_cstr(writer, "\nhost ")
+        && mmay_writer_write_cstr(writer, MMAY_HOST_SYSTEM)
+        && mmay_writer_write_cstr(writer, "/")
+        && mmay_writer_write_cstr(writer, MMAY_HOST_PROCESSOR)
+        && mmay_writer_write_cstr(writer, "\ntargets native-host\n");
 }
 
-int ruda_cli_plain_error(
-    RudaWriter error_writer,
-    RudaDiagnosticStyle style,
+int mmay_cli_plain_error(
+    MarimayWriter error_writer,
+    MarimayDiagnosticStyle style,
     const char *code,
     const char *message,
     int exit_code
 ) {
-    RudaDiagnostic diagnostic;
+    MarimayDiagnostic diagnostic;
     memset(&diagnostic, 0, sizeof(diagnostic));
     diagnostic.code = code;
-    diagnostic.severity = RUDA_SEVERITY_ERROR;
+    diagnostic.severity = MMAY_SEVERITY_ERROR;
     diagnostic.message = message;
-    return ruda_diagnostic_render(error_writer, style, &diagnostic)
+    return mmay_diagnostic_render(error_writer, style, &diagnostic)
         ? exit_code
-        : RUDA_EXIT_INTERNAL;
+        : MMAY_EXIT_INTERNAL;
 }
 
-int ruda_cli_run(
-    RudaSession *session,
+int mmay_cli_run(
+    MarimaySession *session,
     int argument_count,
     const char *const arguments[],
-    RudaReadStream standard_input,
-    RudaWriter standard_output,
-    RudaWriter standard_error
+    MarimayReadStream standard_input,
+    MarimayWriter standard_output,
+    MarimayWriter standard_error
 ) {
-    RudaCliOptions options;
-    const RudaTaskHelp *task = NULL;
+    MarimayCliOptions options;
+    const MarimayTaskHelp *task = NULL;
     int parse_result = 0;
 
     if (session == NULL || session->allocator.allocate == NULL
         || argument_count < 1 || arguments == NULL) {
-        return RUDA_EXIT_INTERNAL;
+        return MMAY_EXIT_INTERNAL;
     }
-    parse_result = ruda_parse_options(argument_count, arguments, standard_error, &options);
-    if (parse_result != RUDA_EXIT_SUCCESS) {
+    parse_result = mmay_parse_options(argument_count, arguments, standard_error, &options);
+    if (parse_result != MMAY_EXIT_SUCCESS) {
         return parse_result;
     }
     options.tool_executable_path = arguments[0];
     if (options.top_level_help || options.command == NULL) {
-        return ruda_write_top_help(standard_output) ? RUDA_EXIT_SUCCESS : RUDA_EXIT_INTERNAL;
+        return mmay_write_top_help(standard_output) ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
     }
     if (strcmp(options.command, "help") == 0) {
         if (options.version_json) {
-            return ruda_unknown_option(
+            return mmay_unknown_option(
                 standard_error,
                 options.diagnostic_style,
                 "--json",
@@ -726,23 +726,23 @@ int ruda_cli_run(
             );
         }
         if (options.help_target == NULL) {
-            return ruda_write_top_help(standard_output) ? RUDA_EXIT_SUCCESS : RUDA_EXIT_INTERNAL;
+            return mmay_write_top_help(standard_output) ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
         }
-        task = ruda_find_task(options.help_target);
+        task = mmay_find_task(options.help_target);
         if (task == NULL) {
-            return ruda_unknown_command(
+            return mmay_unknown_command(
                 standard_error,
                 options.diagnostic_style,
                 options.help_target,
                 options.help_target_index
             );
         }
-        return ruda_write_task_help(standard_output, task) ? RUDA_EXIT_SUCCESS : RUDA_EXIT_INTERNAL;
+        return mmay_write_task_help(standard_output, task) ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
     }
 
-    task = ruda_find_task(options.command);
+    task = mmay_find_task(options.command);
     if (task == NULL) {
-        return ruda_unknown_command(
+        return mmay_unknown_command(
             standard_error,
             options.diagnostic_style,
             options.command,
@@ -750,10 +750,10 @@ int ruda_cli_run(
         );
     }
     if (options.command_help) {
-        return ruda_write_task_help(standard_output, task) ? RUDA_EXIT_SUCCESS : RUDA_EXIT_INTERNAL;
+        return mmay_write_task_help(standard_output, task) ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
     }
     if (options.version_json && strcmp(task->name, "version") != 0) {
-        return ruda_unknown_option(
+        return mmay_unknown_option(
             standard_error,
             options.diagnostic_style,
             "--json",
@@ -761,24 +761,24 @@ int ruda_cli_run(
         );
     }
     if (strcmp(task->name, "version") == 0) {
-        return ruda_write_version(standard_output, options.version_json)
-            ? RUDA_EXIT_SUCCESS
-            : RUDA_EXIT_INTERNAL;
+        return mmay_write_version(standard_output, options.version_json)
+            ? MMAY_EXIT_SUCCESS
+            : MMAY_EXIT_INTERNAL;
     }
     if (strcmp(task->name, "fmt") == 0 && options.format_stdin) {
         if (options.format_check || options.format_diff) {
             size_t argument_index = options.format_check
                 ? options.format_check_index
                 : options.format_diff_index;
-            return ruda_option_value_error(
+            return mmay_option_value_error(
                 standard_error,
                 options.diagnostic_style,
-                RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+                MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
                 argument_index,
                 "--stdin cannot be combined with --check or --diff"
             );
         }
-        return ruda_cli_format_stdin(
+        return mmay_cli_format_stdin(
             session,
             &options,
             standard_input,
@@ -788,16 +788,16 @@ int ruda_cli_run(
     }
     if (strcmp(task->name, "fmt") == 0
         && options.format_check && options.format_diff) {
-        return ruda_option_value_error(
+        return mmay_option_value_error(
             standard_error,
             options.diagnostic_style,
-            RUDA_DIAGNOSTIC_INVALID_OPTION_VALUE,
+            MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE,
             options.format_diff_index,
             "--check and --diff are mutually exclusive"
         );
     }
     if (strcmp(task->name, "fmt") == 0) {
-        return ruda_cli_format_target(
+        return mmay_cli_format_target(
             session,
             &options,
             standard_output,
@@ -805,7 +805,7 @@ int ruda_cli_run(
         );
     }
     if (strcmp(task->name, "check") == 0) {
-        return ruda_cli_check(
+        return mmay_cli_check(
             session,
             &options,
             standard_output,
@@ -813,17 +813,17 @@ int ruda_cli_run(
         );
     }
     if (strcmp(task->name, "run") == 0) {
-        return ruda_cli_run_program(
+        return mmay_cli_run_program(
             session, &options, standard_output, standard_error
         );
     }
     if (strcmp(task->name, "build") == 0) {
-        return ruda_cli_build_program(
+        return mmay_cli_build_program(
             session, &options, standard_output, standard_error
         );
     }
     if (strcmp(task->name, "test") == 0) {
-        return ruda_cli_test_program(
+        return mmay_cli_test_program(
             session, &options, standard_output, standard_error
         );
     }
@@ -834,15 +834,15 @@ int ruda_cli_run(
             sizeof(message),
             "command '%s' is not implemented in bootstrap stage %d",
             task->name,
-            RUDA_BOOTSTRAP_STAGE
+            MMAY_BOOTSTRAP_STAGE
         );
         if (length < 0 || (size_t)length >= sizeof(message)) {
-            return RUDA_EXIT_INTERNAL;
+            return MMAY_EXIT_INTERNAL;
         }
-        return ruda_cli_diagnostic(
+        return mmay_cli_diagnostic(
             standard_error,
             options.diagnostic_style,
-            RUDA_DIAGNOSTIC_UNAVAILABLE_COMMAND,
+            MMAY_DIAGNOSTIC_UNAVAILABLE_COMMAND,
             options.command_index,
             message
         );

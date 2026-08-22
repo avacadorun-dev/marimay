@@ -1,51 +1,51 @@
-#ifndef RUDA_TEST_CHECKER_IMPORTS_SUPPORT_H
-#define RUDA_TEST_CHECKER_IMPORTS_SUPPORT_H
+#ifndef MMAY_TEST_CHECKER_IMPORTS_SUPPORT_H
+#define MMAY_TEST_CHECKER_IMPORTS_SUPPORT_H
 
 #include "test_checker_support.h"
 
-#define RUDA_TEST_IMPORT_MAX_FILES 16
-#define RUDA_TEST_IMPORT_MAX_PACKAGES 8
+#define MMAY_TEST_IMPORT_MAX_FILES 16
+#define MMAY_TEST_IMPORT_MAX_PACKAGES 8
 
-typedef struct RudaTestImportSource {
+typedef struct MarimayTestImportSource {
     const char *package_path;
     const char *source_path;
     const char *source;
-} RudaTestImportSource;
+} MarimayTestImportSource;
 
-typedef struct RudaCheckerImportFixture {
-    RudaCheckerFixture files[RUDA_TEST_IMPORT_MAX_FILES];
-    const RudaAstTree *package_asts[
-        RUDA_TEST_IMPORT_MAX_PACKAGES
-    ][RUDA_TEST_IMPORT_MAX_FILES];
-    RudaCheckPackageInput packages[RUDA_TEST_IMPORT_MAX_PACKAGES];
+typedef struct MarimayCheckerImportFixture {
+    MarimayCheckerFixture files[MMAY_TEST_IMPORT_MAX_FILES];
+    const MarimayAstTree *package_asts[
+        MMAY_TEST_IMPORT_MAX_PACKAGES
+    ][MMAY_TEST_IMPORT_MAX_FILES];
+    MarimayCheckPackageInput packages[MMAY_TEST_IMPORT_MAX_PACKAGES];
     size_t file_count;
     size_t package_count;
-} RudaCheckerImportFixture;
+} MarimayCheckerImportFixture;
 
-bool ruda_checker_import_fixture_init(
-    RudaCheckerImportFixture *fixture,
-    const RudaTestImportSource *sources,
+bool mmay_checker_import_fixture_init(
+    MarimayCheckerImportFixture *fixture,
+    const MarimayTestImportSource *sources,
     size_t source_count
 );
-void ruda_checker_import_fixture_dispose(
-    RudaCheckerImportFixture *fixture
+void mmay_checker_import_fixture_dispose(
+    MarimayCheckerImportFixture *fixture
 );
-RudaCheckStatus ruda_checker_import_fixture_check(
-    const RudaCheckerImportFixture *fixture,
+MarimayCheckStatus mmay_checker_import_fixture_check(
+    const MarimayCheckerImportFixture *fixture,
     const char *root,
-    RudaAllocator allocator,
-    RudaCheckGraphOptions options,
-    RudaCheckResult *result
+    MarimayAllocator allocator,
+    MarimayCheckGraphOptions options,
+    MarimayCheckResult *result
 );
-const RudaCheckedFunction *ruda_checker_import_function(
-    const RudaCheckResult *result,
+const MarimayCheckedFunction *mmay_checker_import_function(
+    const MarimayCheckResult *result,
     const char *name,
     size_t *index
 );
-bool ruda_checker_import_mir_bytes(
-    const RudaCheckResult *result,
-    RudaAllocator allocator,
-    RudaOwnedBytes *bytes
+bool mmay_checker_import_mir_bytes(
+    const MarimayCheckResult *result,
+    MarimayAllocator allocator,
+    MarimayOwnedBytes *bytes
 );
 
 #endif

@@ -1,112 +1,112 @@
-#ifndef RUDA_MANAGED_INTERNAL_H
-#define RUDA_MANAGED_INTERNAL_H
+#ifndef MMAY_MANAGED_INTERNAL_H
+#define MMAY_MANAGED_INTERNAL_H
 
-#include "ruda/runtime/managed.h"
+#include "mmay/runtime/managed.h"
 
-bool ruda_managed_heap_valid(const RudaManagedHeap *heap);
-void ruda_managed_view_cache_clear(RudaManagedHeap *heap);
-bool ruda_managed_immediate_enum_decode(
-    const RudaManagedHeap *heap,
-    RudaManagedReference reference,
-    const RudaManagedEnumDescriptor **descriptor,
+bool mmay_managed_heap_valid(const MarimayManagedHeap *heap);
+void mmay_managed_view_cache_clear(MarimayManagedHeap *heap);
+bool mmay_managed_immediate_enum_decode(
+    const MarimayManagedHeap *heap,
+    MarimayManagedReference reference,
+    const MarimayManagedEnumDescriptor **descriptor,
     size_t *variant,
     uint64_t *payload_bits
 );
-bool ruda_managed_reference_valid(
-    const RudaManagedHeap *heap,
-    RudaManagedReference reference
+bool mmay_managed_reference_valid(
+    const MarimayManagedHeap *heap,
+    MarimayManagedReference reference
 );
-size_t ruda_managed_language_max_array_length(void);
-bool ruda_managed_array_descriptor_valid(
-    const RudaManagedArrayDescriptor *descriptor
+size_t mmay_managed_language_max_array_length(void);
+bool mmay_managed_array_descriptor_valid(
+    const MarimayManagedArrayDescriptor *descriptor
 );
-size_t ruda_managed_array_storage_alignment(
-    const RudaManagedArrayDescriptor *descriptor
+size_t mmay_managed_array_storage_alignment(
+    const MarimayManagedArrayDescriptor *descriptor
 );
-bool ruda_managed_array_storage_bytes_for_capacity(
-    const RudaManagedArrayDescriptor *descriptor,
+bool mmay_managed_array_storage_bytes_for_capacity(
+    const MarimayManagedArrayDescriptor *descriptor,
     size_t capacity,
     size_t *bytes
 );
-size_t ruda_managed_array_storage_bytes(const RudaManagedArray *array);
-size_t ruda_managed_array_child_cache_bytes(const RudaManagedArray *array);
-void ruda_managed_array_dispose(RudaManagedHeap *heap, RudaManagedArray *array);
-RudaManagedStatus ruda_managed_array_storage_load(
-    const RudaManagedArray *array,
+size_t mmay_managed_array_storage_bytes(const MarimayManagedArray *array);
+size_t mmay_managed_array_child_cache_bytes(const MarimayManagedArray *array);
+void mmay_managed_array_dispose(MarimayManagedHeap *heap, MarimayManagedArray *array);
+MarimayManagedStatus mmay_managed_array_storage_load(
+    const MarimayManagedArray *array,
     size_t index,
-    RudaManagedCell *result
+    MarimayManagedCell *result
 );
-RudaManagedStatus ruda_managed_array_storage_store(
-    RudaManagedArray *array,
+MarimayManagedStatus mmay_managed_array_storage_store(
+    MarimayManagedArray *array,
     size_t index,
-    RudaManagedCell value
+    MarimayManagedCell value
 );
-RudaManagedStatus ruda_managed_array_storage_clear(
-    RudaManagedArray *array,
+MarimayManagedStatus mmay_managed_array_storage_clear(
+    MarimayManagedArray *array,
     size_t start,
     size_t count
 );
-RudaManagedStatus ruda_managed_array_index(
-    const RudaManagedHeap *heap,
-    RudaManagedReference reference,
+MarimayManagedStatus mmay_managed_array_index(
+    const MarimayManagedHeap *heap,
+    MarimayManagedReference reference,
     int64_t index,
-    const RudaManagedArray **array,
+    const MarimayManagedArray **array,
     size_t *current_length
 );
-RudaManagedStatus ruda_managed_array_resolve_mutable(
-    RudaManagedHeap *heap,
-    RudaManagedReference reference,
-    RudaManagedArray **array
+MarimayManagedStatus mmay_managed_array_resolve_mutable(
+    MarimayManagedHeap *heap,
+    MarimayManagedReference reference,
+    MarimayManagedArray **array
 );
-RudaManagedStatus ruda_managed_array_validate_value(
-    const RudaManagedHeap *heap,
-    const RudaManagedArray *array,
-    RudaManagedCell value
+MarimayManagedStatus mmay_managed_array_validate_value(
+    const MarimayManagedHeap *heap,
+    const MarimayManagedArray *array,
+    MarimayManagedCell value
 );
-RudaManagedStatus ruda_managed_array_check_mutation_commit(
-    const RudaManagedArray *array
+MarimayManagedStatus mmay_managed_array_check_mutation_commit(
+    const MarimayManagedArray *array
 );
-void ruda_managed_array_commit_mutation(RudaManagedArray *array);
-bool ruda_managed_array_plan_capacity(
+void mmay_managed_array_commit_mutation(MarimayManagedArray *array);
+bool mmay_managed_array_plan_capacity(
     size_t current_capacity,
     size_t minimum_capacity,
     size_t maximum_capacity,
     size_t *planned_capacity
 );
-RudaManagedStatus ruda_managed_array_ensure_capacity(
-    RudaManagedHeap *heap,
-    RudaManagedReference array,
+MarimayManagedStatus mmay_managed_array_ensure_capacity(
+    MarimayManagedHeap *heap,
+    MarimayManagedReference array,
     size_t minimum_capacity,
-    const RudaManagedCell *temporary_value,
-    RudaManagedArray **result
+    const MarimayManagedCell *temporary_value,
+    MarimayManagedArray **result
 );
-RudaManagedSlot *ruda_managed_resolve(RudaManagedHeap *heap, RudaManagedReference reference);
-const RudaManagedSlot *ruda_managed_resolve_const(const RudaManagedHeap *heap, RudaManagedReference reference);
-RudaManagedStatus ruda_managed_reference_status(const RudaManagedHeap *heap, RudaManagedReference reference, const RudaManagedArrayDescriptor *expected);
-bool ruda_managed_slot_occupied(const RudaManagedSlot *slot);
-size_t ruda_managed_slot_object_bytes(const RudaManagedSlot *slot);
-void ruda_managed_slot_dispose_object(RudaManagedHeap *heap, RudaManagedSlot *slot);
-RudaManagedStatus ruda_managed_mark_reference(
-    RudaManagedHeap *heap,
-    RudaManagedReference reference,
+MarimayManagedSlot *mmay_managed_resolve(MarimayManagedHeap *heap, MarimayManagedReference reference);
+const MarimayManagedSlot *mmay_managed_resolve_const(const MarimayManagedHeap *heap, MarimayManagedReference reference);
+MarimayManagedStatus mmay_managed_reference_status(const MarimayManagedHeap *heap, MarimayManagedReference reference, const MarimayManagedArrayDescriptor *expected);
+bool mmay_managed_slot_occupied(const MarimayManagedSlot *slot);
+size_t mmay_managed_slot_object_bytes(const MarimayManagedSlot *slot);
+void mmay_managed_slot_dispose_object(MarimayManagedHeap *heap, MarimayManagedSlot *slot);
+MarimayManagedStatus mmay_managed_mark_reference(
+    MarimayManagedHeap *heap,
+    MarimayManagedReference reference,
     uint32_t *gray_head
 );
-RudaManagedStatus ruda_managed_trace_slot(RudaManagedHeap *heap, RudaManagedSlot *slot, uint32_t *gray_head);
-RudaManagedStatus ruda_managed_collect_internal(RudaManagedHeap *heap, const RudaManagedReference *temporary_roots, size_t temporary_root_count, const RudaManagedCell *temporary_cells, size_t temporary_cell_count);
-bool ruda_managed_add_within_limit(size_t current, size_t amount, size_t limit, size_t *result);
-void ruda_managed_resource_failure_clear(RudaManagedHeap *heap);
-RudaManagedStatus ruda_managed_resource_budget_failure(
-    RudaManagedHeap *heap, size_t requested_bytes);
-RudaManagedStatus ruda_managed_resource_host_failure(
-    RudaManagedHeap *heap, size_t requested_bytes);
-bool ruda_managed_new_slot_capacity(const RudaManagedHeap *heap, size_t *capacity, size_t *added_bytes);
-RudaManagedStatus ruda_managed_publish_object(RudaManagedHeap *heap, RudaManagedObjectKind kind, void *object, size_t object_bytes, const RudaManagedReference *temporary_roots, size_t temporary_root_count, const RudaManagedCell *temporary_cells, size_t temporary_cell_count, RudaManagedReference *result);
-size_t ruda_managed_count_reference_fields(const RudaManagedFieldDescriptor *fields, size_t count);
-bool ruda_managed_collect_reference_roots(const RudaManagedFieldDescriptor *fields, const RudaManagedCell *cells, size_t count, RudaManagedReference *roots, size_t root_capacity, size_t *root_count);
-RudaManagedStatus ruda_managed_validate_field(const RudaManagedHeap *heap, const RudaManagedFieldDescriptor *field, RudaManagedCell value);
-void ruda_managed_string_dispose(RudaManagedHeap *heap, RudaManagedString *value);
-void ruda_managed_record_dispose(RudaManagedHeap *heap, RudaManagedRecord *record);
-void ruda_managed_enum_dispose(RudaManagedHeap *heap, RudaManagedEnum *value);
-void ruda_managed_interface_dispose(RudaManagedHeap *heap, RudaManagedInterface *value);
+MarimayManagedStatus mmay_managed_trace_slot(MarimayManagedHeap *heap, MarimayManagedSlot *slot, uint32_t *gray_head);
+MarimayManagedStatus mmay_managed_collect_internal(MarimayManagedHeap *heap, const MarimayManagedReference *temporary_roots, size_t temporary_root_count, const MarimayManagedCell *temporary_cells, size_t temporary_cell_count);
+bool mmay_managed_add_within_limit(size_t current, size_t amount, size_t limit, size_t *result);
+void mmay_managed_resource_failure_clear(MarimayManagedHeap *heap);
+MarimayManagedStatus mmay_managed_resource_budget_failure(
+    MarimayManagedHeap *heap, size_t requested_bytes);
+MarimayManagedStatus mmay_managed_resource_host_failure(
+    MarimayManagedHeap *heap, size_t requested_bytes);
+bool mmay_managed_new_slot_capacity(const MarimayManagedHeap *heap, size_t *capacity, size_t *added_bytes);
+MarimayManagedStatus mmay_managed_publish_object(MarimayManagedHeap *heap, MarimayManagedObjectKind kind, void *object, size_t object_bytes, const MarimayManagedReference *temporary_roots, size_t temporary_root_count, const MarimayManagedCell *temporary_cells, size_t temporary_cell_count, MarimayManagedReference *result);
+size_t mmay_managed_count_reference_fields(const MarimayManagedFieldDescriptor *fields, size_t count);
+bool mmay_managed_collect_reference_roots(const MarimayManagedFieldDescriptor *fields, const MarimayManagedCell *cells, size_t count, MarimayManagedReference *roots, size_t root_capacity, size_t *root_count);
+MarimayManagedStatus mmay_managed_validate_field(const MarimayManagedHeap *heap, const MarimayManagedFieldDescriptor *field, MarimayManagedCell value);
+void mmay_managed_string_dispose(MarimayManagedHeap *heap, MarimayManagedString *value);
+void mmay_managed_record_dispose(MarimayManagedHeap *heap, MarimayManagedRecord *record);
+void mmay_managed_enum_dispose(MarimayManagedHeap *heap, MarimayManagedEnum *value);
+void mmay_managed_interface_dispose(MarimayManagedHeap *heap, MarimayManagedInterface *value);
 
 #endif

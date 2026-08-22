@@ -1,6 +1,6 @@
-Usage: ruda check [target] [--all-targets]
+Usage: mmay check [target] [--all-targets]
 
 Run the complete frontend and MIR verifier.
 
 Example:
-  ruda check --all-targets
+  mmay check --all-targets

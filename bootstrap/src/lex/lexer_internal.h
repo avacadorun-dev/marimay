@@ -1,36 +1,36 @@
-#ifndef RUDA_LEX_LEXER_INTERNAL_H
-#define RUDA_LEX_LEXER_INTERNAL_H
+#ifndef MMAY_LEX_LEXER_INTERNAL_H
+#define MMAY_LEX_LEXER_INTERNAL_H
 
-#include "ruda/lex/lexer.h"
+#include "mmay/lex/lexer.h"
 
-typedef enum RudaLexContextKind {
-    RUDA_LEX_CONTEXT_ROOT,
-    RUDA_LEX_CONTEXT_INTERPOLATED_TEXT,
-    RUDA_LEX_CONTEXT_INTERPOLATION_EXPRESSION
-} RudaLexContextKind;
+typedef enum MarimayLexContextKind {
+    MMAY_LEX_CONTEXT_ROOT,
+    MMAY_LEX_CONTEXT_INTERPOLATED_TEXT,
+    MMAY_LEX_CONTEXT_INTERPOLATION_EXPRESSION
+} MarimayLexContextKind;
 
-typedef struct RudaLexContext {
-    RudaLexContextKind kind;
+typedef struct MarimayLexContext {
+    MarimayLexContextKind kind;
     size_t literal_start;
     size_t brace_depth;
-} RudaLexContext;
+} MarimayLexContext;
 
-typedef struct RudaLexer {
+typedef struct MarimayLexer {
     const unsigned char *bytes;
     size_t length;
     size_t offset;
-    RudaLexOptions options;
-    RudaLexResult *result;
-    RudaVector contexts;
+    MarimayLexOptions options;
+    MarimayLexResult *result;
+    MarimayVector contexts;
     bool allocation_failed;
     bool limit_reached;
-} RudaLexer;
+} MarimayLexer;
 
-typedef enum RudaLiteralMode {
-    RUDA_LITERAL_NORMAL,
-    RUDA_LITERAL_RAW,
-    RUDA_LITERAL_BYTE,
-    RUDA_LITERAL_RUNE
-} RudaLiteralMode;
+typedef enum MarimayLiteralMode {
+    MMAY_LITERAL_NORMAL,
+    MMAY_LITERAL_RAW,
+    MMAY_LITERAL_BYTE,
+    MMAY_LITERAL_RUNE
+} MarimayLiteralMode;
 
 #endif

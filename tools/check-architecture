@@ -41,10 +41,10 @@ def relative(path: Path) -> Path:
 def handwritten_files() -> list[Path]:
     files: set[Path] = {ROOT / "bootstrap/main.c"}
     for directory in (
-        ROOT / "bootstrap/include/ruda",
+        ROOT / "bootstrap/include/mmay",
         ROOT / "bootstrap/src",
         ROOT / "runtime/common",
-        ROOT / "runtime/include/ruda",
+        ROOT / "runtime/include/mmay",
         ROOT / "runtime/platform",
         ROOT / "tests/c-unit",
         ROOT / "tests/fuzz",
@@ -60,8 +60,8 @@ def is_public_owner_header(path: Path) -> bool:
     return (
         path.suffix == ".h"
         and path.parts[:3] in {
-            ("bootstrap", "include", "ruda"),
-            ("runtime", "include", "ruda"),
+            ("bootstrap", "include", "mmay"),
+            ("runtime", "include", "mmay"),
         }
     )
 
@@ -160,14 +160,14 @@ def line_limit_violation(
 
 def public_header_policy_regression_violations() -> list[str]:
     """Keep the non-bytecode public-header ceiling wired into the gate."""
-    fixture = Path("bootstrap/include/ruda/check/oversized-regression.h")
+    fixture = Path("bootstrap/include/mmay/check/oversized-regression.h")
     accepted = line_limit_violation(fixture, OWNER_API_HEADER_LIMIT, {})
     rejected = line_limit_violation(fixture, OWNER_API_HEADER_LIMIT + 1, {})
     discovered = {relative(path) for path in handwritten_files()}
     violations: list[str] = []
     for required in (
-        Path("bootstrap/include/ruda/check/checker.h"),
-        Path("runtime/include/ruda/runtime/managed.h"),
+        Path("bootstrap/include/mmay/check/checker.h"),
+        Path("runtime/include/mmay/runtime/managed.h"),
     ):
         if required not in discovered:
             violations.append(
@@ -204,10 +204,10 @@ def line_limit_violations(exceptions: dict[Path, ExceptionEntry]) -> list[str]:
 def include_violations() -> list[str]:
     violations: list[str] = []
     forbidden_by_owner = {
-        "check": ("ruda/bytecode/", "ruda/native/", "ruda/runtime/"),
-        "mir": ("ruda/ast/", "ruda/bytecode/", "ruda/check/", "ruda/native/", "ruda/parse/"),
-        "bytecode": ("ruda/ast/", "ruda/check/", "ruda/native/", "ruda/parse/"),
-        "native": ("ruda/ast/", "ruda/bytecode/", "ruda/check/", "ruda/parse/"),
+        "check": ("mmay/bytecode/", "mmay/native/", "mmay/runtime/"),
+        "mir": ("mmay/ast/", "mmay/bytecode/", "mmay/check/", "mmay/native/", "mmay/parse/"),
+        "bytecode": ("mmay/ast/", "mmay/check/", "mmay/native/", "mmay/parse/"),
+        "native": ("mmay/ast/", "mmay/bytecode/", "mmay/check/", "mmay/parse/"),
     }
     generated_includes = {
         "../generated/opcode_data.inc",
@@ -275,7 +275,7 @@ def cmake_registration_violations() -> list[str]:
         fuzz_template_registration = (
             path_relative.parts[:2] == ("tests", "fuzz")
             and path.name.endswith("_fuzz.c")
-            and "${ruda_fuzz_target}_fuzz.c" in cmake_text
+            and "${mmay_fuzz_target}_fuzz.c" in cmake_text
             and re.search(
                 rf"^\s*{re.escape(path.name.removesuffix('_fuzz.c'))}\s*$",
                 cmake_text,

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Reproducible structural checks for Ruda's D0 design baseline.
+"""Reproducible structural checks for Marimay's D0 design baseline.
 
 These checks intentionally use only the Python standard library.  They are
-bootstrap-time documentation tools, not part of the eventual `ruda` toolchain.
+bootstrap-time documentation tools, not part of the eventual `mmay` toolchain.
 The I1 parser and formatter replace the lightweight source scanner.
 """
 
@@ -290,7 +290,7 @@ def check_doc_links() -> List[Finding]:
     return findings
 
 
-class RudaScanner:
+class MarimayScanner:
     """A bounded lexical sanity checker, deliberately not a parser."""
 
     def __init__(self, path: Path, text: str, base_line: int = 1) -> None:
@@ -406,7 +406,7 @@ class RudaScanner:
                     depth -= 1
                     if depth == 0:
                         expression = self.text[expression_start : self.index]
-                        nested = RudaScanner(self.path, expression, expression_line)
+                        nested = MarimayScanner(self.path, expression, expression_line)
                         nested.scan()
                         self.tokens.extend(nested.tokens)
                         self.findings.extend(nested.findings)
@@ -472,7 +472,7 @@ class RudaScanner:
 
 
 def _scan(path: Path, text: str) -> Tuple[List[Token], List[Finding]]:
-    return RudaScanner(path, text).scan()
+    return MarimayScanner(path, text).scan()
 
 
 def _fenced_blocks(path: Path, language: str) -> Iterator[Tuple[int, str]]:
@@ -635,9 +635,9 @@ def check_spec_terms() -> List[Finding]:
         findings.append(Finding(requirements_path, 1, "no requirement rows found"))
 
     canonical_requirements = {
-        agents_path: ["The command is `ruda`", "source extension is `.ruda`", "portable C17"],
-        execution_path: ["typed MIR", "default engine for `ruda run`", "default engine for `ruda build`"],
-        toolchain_path: ["executable named `ruda`", "`ruda fmt`", "`ruda test`"],
+        agents_path: ["The command is `mmay`", "source extension is `.my`", "portable C17"],
+        execution_path: ["typed MIR", "default engine for `mmay run`", "default engine for `mmay build`"],
+        toolchain_path: ["executable named `mmay`", "`mmay fmt`", "`mmay test`"],
         language_path: ["There is no `async` or `await`", "there is no `impl` declaration"],
     }
     for path, phrases in canonical_requirements.items():
@@ -656,14 +656,14 @@ def check_spec_terms() -> List[Finding]:
             findings.append(Finding(evidence_path, 1, f"missing primary-source domain: {domain}"))
 
     source_surfaces = sorted(
-        path for path in (ROOT / "examples").glob("*.ruda") if path.is_file()
+        path for path in (ROOT / "examples").glob("*.my") if path.is_file()
     )
     for markdown in _markdown_files():
-        for start_line, block in _fenced_blocks(markdown, "ruda"):
+        for start_line, block in _fenced_blocks(markdown, "marimay"):
             tokens, scan_findings = _scan(markdown, block)
             for finding in scan_findings:
                 findings.append(
-                    Finding(markdown, start_line + finding.line - 1, f"Ruda code fence: {finding.message}")
+                    Finding(markdown, start_line + finding.line - 1, f"Marimay code fence: {finding.message}")
                 )
             for token in tokens:
                 if token.text in EXPECTED_RESERVED:
@@ -671,10 +671,10 @@ def check_spec_terms() -> List[Finding]:
                         Finding(
                             markdown,
                             start_line + token.line - 1,
-                            f"reserved source construct '{token.text}' in Ruda code fence",
+                            f"reserved source construct '{token.text}' in Marimay code fence",
                         )
                     )
-    if len([path for path in source_surfaces if not path.name.endswith("_test.ruda")]) < 3:
+    if len([path for path in source_surfaces if not path.name.endswith("_test.my")]) < 3:
         findings.append(Finding(ROOT / "examples", 1, "fewer than three readability examples"))
 
     return findings
@@ -683,10 +683,10 @@ def check_spec_terms() -> List[Finding]:
 def check_example_syntax() -> List[Finding]:
     findings: List[Finding] = []
     examples = sorted(
-        path for path in (ROOT / "examples").glob("*.ruda") if path.is_file()
+        path for path in (ROOT / "examples").glob("*.my") if path.is_file()
     )
     if not examples:
-        return [Finding(ROOT / "examples", 1, "no .ruda examples found")]
+        return [Finding(ROOT / "examples", 1, "no .my examples found")]
 
     for path in examples:
         try:

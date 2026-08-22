@@ -1,23 +1,23 @@
-#include "ruda/base/owned_bytes.h"
+#include "mmay/base/owned_bytes.h"
 
 #include <string.h>
 
-bool ruda_owned_bytes_copy(
-    RudaOwnedBytes *destination,
-    RudaAllocator allocator,
+bool mmay_owned_bytes_copy(
+    MarimayOwnedBytes *destination,
+    MarimayAllocator allocator,
     const void *bytes,
     size_t length
 ) {
     size_t allocation_size = 0;
     unsigned char *copy = NULL;
     if (destination == NULL || (bytes == NULL && length != 0)
-        || !ruda_size_add(length, 1, &allocation_size)) {
+        || !mmay_size_add(length, 1, &allocation_size)) {
         return false;
     }
     destination->allocator = allocator;
     destination->data = NULL;
     destination->length = 0;
-    copy = ruda_allocate(&allocator, allocation_size);
+    copy = mmay_allocate(&allocator, allocation_size);
     if (copy == NULL) {
         return false;
     }
@@ -30,13 +30,13 @@ bool ruda_owned_bytes_copy(
     return true;
 }
 
-void ruda_owned_bytes_dispose(RudaOwnedBytes *bytes) {
+void mmay_owned_bytes_dispose(MarimayOwnedBytes *bytes) {
     size_t allocation_size = 0;
     if (bytes == NULL) {
         return;
     }
-    if (bytes->data != NULL && ruda_size_add(bytes->length, 1, &allocation_size)) {
-        ruda_deallocate(&bytes->allocator, bytes->data, allocation_size);
+    if (bytes->data != NULL && mmay_size_add(bytes->length, 1, &allocation_size)) {
+        mmay_deallocate(&bytes->allocator, bytes->data, allocation_size);
     }
     bytes->data = NULL;
     bytes->length = 0;

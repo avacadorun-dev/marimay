@@ -3,44 +3,44 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ruda/base/utf8.h"
-#include "ruda/base/path.h"
-#include "ruda/generated/diagnostic_codes.h"
+#include "mmay/base/utf8.h"
+#include "mmay/base/path.h"
+#include "mmay/generated/diagnostic_codes.h"
 
-static bool ruda_manifest_horizontal(unsigned char byte) {
+static bool mmay_manifest_horizontal(unsigned char byte) {
     return byte == ' ' || byte == '\t';
 }
 
-static size_t ruda_manifest_trim_left(
+static size_t mmay_manifest_trim_left(
     const unsigned char *bytes,
     size_t start,
     size_t end
 ) {
-    while (start < end && ruda_manifest_horizontal(bytes[start])) {
+    while (start < end && mmay_manifest_horizontal(bytes[start])) {
         start += 1;
     }
     return start;
 }
 
-static size_t ruda_manifest_trim_right(
+static size_t mmay_manifest_trim_right(
     const unsigned char *bytes,
     size_t start,
     size_t end
 ) {
-    while (end > start && ruda_manifest_horizontal(bytes[end - 1])) {
+    while (end > start && mmay_manifest_horizontal(bytes[end - 1])) {
         end -= 1;
     }
     return end;
 }
 
-static void ruda_manifest_diagnose(
-    RudaManifestParser *parser,
+static void mmay_manifest_diagnose(
+    MarimayManifestParser *parser,
     const char *code,
     const char *message,
     size_t start,
     size_t end
 ) {
-    RudaManifestDiagnostic diagnostic;
+    MarimayManifestDiagnostic diagnostic;
     if (parser->result->diagnostics.length >= parser->options.max_diagnostics) {
         parser->result->suppressed_diagnostics += 1;
         return;
@@ -52,12 +52,12 @@ static void ruda_manifest_diagnose(
     if (diagnostic.end < diagnostic.start) {
         diagnostic.end = diagnostic.start;
     }
-    if (!ruda_vector_push(&parser->result->diagnostics, &diagnostic)) {
+    if (!mmay_vector_push(&parser->result->diagnostics, &diagnostic)) {
         parser->allocation_failed = true;
     }
 }
 
-static bool ruda_manifest_hex(unsigned char byte, uint32_t *value) {
+static bool mmay_manifest_hex(unsigned char byte, uint32_t *value) {
     if (byte >= '0' && byte <= '9') {
         *value = (uint32_t)(byte - '0');
         return true;
@@ -73,7 +73,7 @@ static bool ruda_manifest_hex(unsigned char byte, uint32_t *value) {
     return false;
 }
 
-static bool ruda_manifest_hex4(
+static bool mmay_manifest_hex4(
     const unsigned char *bytes,
     size_t start,
     size_t end,
@@ -86,7 +86,7 @@ static bool ruda_manifest_hex4(
     }
     for (index = 0; index < 4; index += 1) {
         uint32_t digit = 0;
-        if (!ruda_manifest_hex(bytes[start + index], &digit)) {
+        if (!mmay_manifest_hex(bytes[start + index], &digit)) {
             return false;
         }
         result = (result << 4) | digit;
@@ -95,18 +95,18 @@ static bool ruda_manifest_hex4(
     return true;
 }
 
-static bool ruda_manifest_scan_string(
-    RudaManifestParser *parser,
+static bool mmay_manifest_scan_string(
+    MarimayManifestParser *parser,
     size_t *cursor,
     size_t end,
-    RudaManifestSpan *span
+    MarimayManifestSpan *span
 ) {
     size_t start = *cursor;
     size_t index = start;
     if (index >= end || parser->bytes[index] != '"') {
-        ruda_manifest_diagnose(
+        mmay_manifest_diagnose(
             parser,
-            RUDA_DIAGNOSTIC_MANIFEST_SYNTAX,
+            MMAY_DIAGNOSTIC_MANIFEST_SYNTAX,
             "expected a quoted manifest string",
             index,
             index < end ? index + 1 : index
@@ -123,9 +123,9 @@ static bool ruda_manifest_scan_string(
             return true;
         }
         if (byte < 0x20U) {
-            ruda_manifest_diagnose(
+            mmay_manifest_diagnose(
                 parser,
-                RUDA_DIAGNOSTIC_MANIFEST_STRING,
+                MMAY_DIAGNOSTIC_MANIFEST_STRING,
                 "manifest string contains an unescaped control byte",
                 index,
                 index + 1
@@ -135,9 +135,9 @@ static bool ruda_manifest_scan_string(
         if (byte == '\\') {
             uint32_t first = 0;
             if (index + 1 >= end) {
-                ruda_manifest_diagnose(
+                mmay_manifest_diagnose(
                     parser,
-                    RUDA_DIAGNOSTIC_MANIFEST_STRING,
+                    MMAY_DIAGNOSTIC_MANIFEST_STRING,
                     "manifest string ends inside an escape",
                     index,
                     end
@@ -152,10 +152,10 @@ static bool ruda_manifest_scan_string(
                 continue;
             }
             if (byte != 'u'
-                || !ruda_manifest_hex4(parser->bytes, index + 2, end, &first)) {
-                ruda_manifest_diagnose(
+                || !mmay_manifest_hex4(parser->bytes, index + 2, end, &first)) {
+                mmay_manifest_diagnose(
                     parser,
-                    RUDA_DIAGNOSTIC_MANIFEST_STRING,
+                    MMAY_DIAGNOSTIC_MANIFEST_STRING,
                     "manifest string contains an invalid JSON escape",
                     index,
                     index + 2 < end ? index + 2 : end
@@ -167,16 +167,16 @@ static bool ruda_manifest_scan_string(
                 uint32_t second = 0;
                 if (index + 6 > end || parser->bytes[index] != '\\'
                     || parser->bytes[index + 1] != 'u'
-                    || !ruda_manifest_hex4(
+                    || !mmay_manifest_hex4(
                         parser->bytes,
                         index + 2,
                         end,
                         &second
                     )
                     || second < 0xdc00U || second > 0xdfffU) {
-                    ruda_manifest_diagnose(
+                    mmay_manifest_diagnose(
                         parser,
-                        RUDA_DIAGNOSTIC_MANIFEST_STRING,
+                        MMAY_DIAGNOSTIC_MANIFEST_STRING,
                         "high surrogate escape requires a following low surrogate",
                         index - 6,
                         index
@@ -185,9 +185,9 @@ static bool ruda_manifest_scan_string(
                 }
                 index += 6;
             } else if (first >= 0xdc00U && first <= 0xdfffU) {
-                ruda_manifest_diagnose(
+                mmay_manifest_diagnose(
                     parser,
-                    RUDA_DIAGNOSTIC_MANIFEST_STRING,
+                    MMAY_DIAGNOSTIC_MANIFEST_STRING,
                     "low surrogate escape has no preceding high surrogate",
                     index - 6,
                     index
@@ -197,15 +197,15 @@ static bool ruda_manifest_scan_string(
             continue;
         }
         if (byte >= 0x80U) {
-            RudaUtf8Scalar scalar;
-            if (!ruda_utf8_decode(
+            MarimayUtf8Scalar scalar;
+            if (!mmay_utf8_decode(
                     parser->bytes + index,
                     end - index,
                     &scalar
                 )) {
-                ruda_manifest_diagnose(
+                mmay_manifest_diagnose(
                     parser,
-                    RUDA_DIAGNOSTIC_MANIFEST_STRING,
+                    MMAY_DIAGNOSTIC_MANIFEST_STRING,
                     "manifest string contains malformed UTF-8",
                     index,
                     index + 1
@@ -217,9 +217,9 @@ static bool ruda_manifest_scan_string(
             index += 1;
         }
     }
-    ruda_manifest_diagnose(
+    mmay_manifest_diagnose(
         parser,
-        RUDA_DIAGNOSTIC_MANIFEST_STRING,
+        MMAY_DIAGNOSTIC_MANIFEST_STRING,
         "manifest string is missing its closing quote",
         start,
         end
@@ -227,7 +227,7 @@ static bool ruda_manifest_scan_string(
     return false;
 }
 
-static bool ruda_manifest_name_part(
+static bool mmay_manifest_name_part(
     const unsigned char *bytes,
     size_t start,
     size_t end
@@ -247,7 +247,7 @@ static bool ruda_manifest_name_part(
     return true;
 }
 
-static bool ruda_manifest_metadata_name(
+static bool mmay_manifest_metadata_name(
     const unsigned char *bytes,
     size_t start,
     size_t end
@@ -263,11 +263,11 @@ static bool ruda_manifest_metadata_name(
         }
     }
     return dot != SIZE_MAX
-        && ruda_manifest_name_part(bytes, start, dot)
-        && ruda_manifest_name_part(bytes, dot + 1, end);
+        && mmay_manifest_name_part(bytes, start, dot)
+        && mmay_manifest_name_part(bytes, dot + 1, end);
 }
 
-static bool ruda_manifest_name_equals(
+static bool mmay_manifest_name_equals(
     const unsigned char *bytes,
     size_t start,
     size_t end,
@@ -277,31 +277,31 @@ static bool ruda_manifest_name_equals(
     return end - start == length && memcmp(bytes + start, literal, length) == 0;
 }
 
-static void ruda_manifest_push_entry(
-    RudaManifestParser *parser,
-    RudaManifestEntry entry
+static void mmay_manifest_push_entry(
+    MarimayManifestParser *parser,
+    MarimayManifestEntry entry
 ) {
     if (parser->result->entries.length >= parser->options.max_entries) {
         parser->limit_reached = true;
         return;
     }
     entry.source_order = parser->result->entries.length;
-    if (!ruda_vector_push(&parser->result->entries, &entry)) {
+    if (!mmay_vector_push(&parser->result->entries, &entry)) {
         parser->allocation_failed = true;
     }
 }
 
-static bool ruda_manifest_parse_values(
-    RudaManifestParser *parser,
+static bool mmay_manifest_parse_values(
+    MarimayManifestParser *parser,
     size_t cursor,
     size_t end,
     size_t count,
-    RudaManifestEntry *entry
+    MarimayManifestEntry *entry
 ) {
     size_t index = 0;
     for (index = 0; index < count; index += 1) {
-        cursor = ruda_manifest_trim_left(parser->bytes, cursor, end);
-        if (!ruda_manifest_scan_string(
+        cursor = mmay_manifest_trim_left(parser->bytes, cursor, end);
+        if (!mmay_manifest_scan_string(
                 parser,
                 &cursor,
                 end,
@@ -310,11 +310,11 @@ static bool ruda_manifest_parse_values(
             return false;
         }
     }
-    cursor = ruda_manifest_trim_left(parser->bytes, cursor, end);
+    cursor = mmay_manifest_trim_left(parser->bytes, cursor, end);
     if (cursor != end) {
-        ruda_manifest_diagnose(
+        mmay_manifest_diagnose(
             parser,
-            RUDA_DIAGNOSTIC_MANIFEST_SYNTAX,
+            MMAY_DIAGNOSTIC_MANIFEST_SYNTAX,
             "unexpected token after manifest directive values",
             cursor,
             end
@@ -325,17 +325,17 @@ static bool ruda_manifest_parse_values(
     return true;
 }
 
-static bool ruda_manifest_validate_workspace_value(
-    RudaManifestParser *parser,
-    RudaManifestSpan span
+static bool mmay_manifest_validate_workspace_value(
+    MarimayManifestParser *parser,
+    MarimayManifestSpan span
 ) {
-    RudaOwnedBytes decoded = {0};
-    RudaPath normalized;
-    RudaPathStatus path_status;
+    MarimayOwnedBytes decoded = {0};
+    MarimayPath normalized;
+    MarimayPathStatus path_status;
     size_t index = 0;
     bool valid = true;
     memset(&normalized, 0, sizeof(normalized));
-    if (!ruda_manifest_decode_string(
+    if (!mmay_manifest_decode_string(
             parser->result,
             span,
             parser->result->allocator,
@@ -351,20 +351,20 @@ static bool ruda_manifest_validate_workspace_value(
         }
     }
     path_status = valid
-        ? ruda_path_normalize(
+        ? mmay_path_normalize(
             &normalized,
             parser->result->allocator,
-            RUDA_PATH_POSIX,
+            MMAY_PATH_POSIX,
             (const char *)decoded.data,
             decoded.length
         )
-        : RUDA_PATH_INVALID_CHARACTER;
-    if (path_status == RUDA_PATH_ALLOCATION_FAILED) {
+        : MMAY_PATH_INVALID_CHARACTER;
+    if (path_status == MMAY_PATH_ALLOCATION_FAILED) {
         parser->allocation_failed = true;
         valid = false;
-    } else if (path_status != RUDA_PATH_OK || normalized.absolute
+    } else if (path_status != MMAY_PATH_OK || normalized.absolute
         || normalized.text.length == 0
-        || ruda_manifest_first_parent(&normalized.text)
+        || mmay_manifest_first_parent(&normalized.text)
         || (normalized.text.length > 3
             && normalized.text.data[0] == '.'
             && normalized.text.data[1] == '.'
@@ -372,98 +372,98 @@ static bool ruda_manifest_validate_workspace_value(
         valid = false;
     }
     if (!valid && !parser->allocation_failed) {
-        ruda_manifest_diagnose(
+        mmay_manifest_diagnose(
             parser,
-            RUDA_DIAGNOSTIC_WORKSPACE_PATH,
+            MMAY_DIAGNOSTIC_WORKSPACE_PATH,
             "workspace use path must be relative and remain inside the workspace root",
             span.start,
             span.end
         );
     }
-    ruda_path_dispose(&normalized);
-    ruda_owned_bytes_dispose(&decoded);
+    mmay_path_dispose(&normalized);
+    mmay_owned_bytes_dispose(&decoded);
     return valid;
 }
 
-static void ruda_manifest_parse_group_line(
-    RudaManifestParser *parser,
+static void mmay_manifest_parse_group_line(
+    MarimayManifestParser *parser,
     size_t start,
     size_t end
 ) {
-    RudaManifestEntry entry;
+    MarimayManifestEntry entry;
     memset(&entry, 0, sizeof(entry));
     if (end - start == 1 && parser->bytes[start] == ')') {
         parser->in_group = false;
         return;
     }
     entry.kind = parser->group_kind;
-    if (ruda_manifest_parse_values(parser, start, end, 2, &entry)) {
-        ruda_manifest_push_entry(parser, entry);
+    if (mmay_manifest_parse_values(parser, start, end, 2, &entry)) {
+        mmay_manifest_push_entry(parser, entry);
     }
 }
 
-static void ruda_manifest_parse_top_line(
-    RudaManifestParser *parser,
+static void mmay_manifest_parse_top_line(
+    MarimayManifestParser *parser,
     size_t start,
     size_t end
 ) {
-    RudaManifestEntry entry;
+    MarimayManifestEntry entry;
     size_t name_start = start;
     size_t name_end = start;
     size_t cursor = start;
     memset(&entry, 0, sizeof(entry));
-    while (name_end < end && !ruda_manifest_horizontal(parser->bytes[name_end])) {
+    while (name_end < end && !mmay_manifest_horizontal(parser->bytes[name_end])) {
         name_end += 1;
     }
-    cursor = ruda_manifest_trim_left(parser->bytes, name_end, end);
+    cursor = mmay_manifest_trim_left(parser->bytes, name_end, end);
     entry.name.start = name_start;
     entry.name.end = name_end;
-    if (parser->result->kind == RUDA_MANIFEST_WORKSPACE) {
-        if (!ruda_manifest_name_equals(
+    if (parser->result->kind == MMAY_MANIFEST_WORKSPACE) {
+        if (!mmay_manifest_name_equals(
                 parser->bytes,
                 name_start,
                 name_end,
                 "use"
             )) {
-            ruda_manifest_diagnose(
+            mmay_manifest_diagnose(
                 parser,
-                RUDA_DIAGNOSTIC_MANIFEST_SYNTAX,
-                "ruda.work accepts only use directives",
+                MMAY_DIAGNOSTIC_MANIFEST_SYNTAX,
+                "mmay.work accepts only use directives",
                 name_start,
                 name_end
             );
             return;
         }
-        entry.kind = RUDA_MANIFEST_DIRECTIVE_USE;
-        if (ruda_manifest_parse_values(parser, cursor, end, 1, &entry)
-            && ruda_manifest_validate_workspace_value(
+        entry.kind = MMAY_MANIFEST_DIRECTIVE_USE;
+        if (mmay_manifest_parse_values(parser, cursor, end, 1, &entry)
+            && mmay_manifest_validate_workspace_value(
                 parser,
                 entry.values[0]
             )) {
-            ruda_manifest_push_entry(parser, entry);
+            mmay_manifest_push_entry(parser, entry);
         }
         return;
     }
-    if (ruda_manifest_name_equals(
+    if (mmay_manifest_name_equals(
             parser->bytes,
             name_start,
             name_end,
             "module"
         )) {
-        entry.kind = RUDA_MANIFEST_DIRECTIVE_MODULE;
-    } else if (ruda_manifest_name_equals(
+        entry.kind = MMAY_MANIFEST_DIRECTIVE_MODULE;
+    } else if (mmay_manifest_name_equals(
             parser->bytes,
             name_start,
             name_end,
             "language"
         )) {
-        entry.kind = RUDA_MANIFEST_DIRECTIVE_LANGUAGE;
-    } else if (ruda_manifest_name_equals(
+        entry.kind = MMAY_MANIFEST_DIRECTIVE_LANGUAGE;
+    } else if (mmay_manifest_name_equals(
             parser->bytes,
             name_start,
             name_end,
             "require"
-        ) || ruda_manifest_name_equals(
+        ) || mmay_manifest_name_equals(
             parser->bytes,
             name_start,
             name_end,
@@ -471,9 +471,9 @@ static void ruda_manifest_parse_top_line(
         )) {
         bool require = parser->bytes[name_start] == 'r';
         if (end - cursor != 1 || parser->bytes[cursor] != '(') {
-            ruda_manifest_diagnose(
+            mmay_manifest_diagnose(
                 parser,
-                RUDA_DIAGNOSTIC_MANIFEST_SYNTAX,
+                MMAY_DIAGNOSTIC_MANIFEST_SYNTAX,
                 "manifest group directive requires '(' alone after its name",
                 cursor,
                 end
@@ -482,9 +482,9 @@ static void ruda_manifest_parse_top_line(
         }
         if ((require && parser->result->has_require_group)
             || (!require && parser->result->has_capability_group)) {
-            ruda_manifest_diagnose(
+            mmay_manifest_diagnose(
                 parser,
-                RUDA_DIAGNOSTIC_MANIFEST_SYNTAX,
+                MMAY_DIAGNOSTIC_MANIFEST_SYNTAX,
                 "manifest group directive cannot be repeated",
                 name_start,
                 name_end
@@ -492,8 +492,8 @@ static void ruda_manifest_parse_top_line(
             return;
         }
         parser->group_kind = require
-            ? RUDA_MANIFEST_DIRECTIVE_REQUIRE
-            : RUDA_MANIFEST_DIRECTIVE_CAPABILITY;
+            ? MMAY_MANIFEST_DIRECTIVE_REQUIRE
+            : MMAY_MANIFEST_DIRECTIVE_CAPABILITY;
         parser->in_group = true;
         if (require) {
             parser->result->has_require_group = true;
@@ -501,58 +501,58 @@ static void ruda_manifest_parse_top_line(
             parser->result->has_capability_group = true;
         }
         return;
-    } else if (ruda_manifest_metadata_name(
+    } else if (mmay_manifest_metadata_name(
             parser->bytes,
             name_start,
             name_end
         )) {
-        entry.kind = RUDA_MANIFEST_DIRECTIVE_METADATA;
+        entry.kind = MMAY_MANIFEST_DIRECTIVE_METADATA;
     } else {
-        ruda_manifest_diagnose(
+        mmay_manifest_diagnose(
             parser,
-            RUDA_DIAGNOSTIC_MANIFEST_SYNTAX,
+            MMAY_DIAGNOSTIC_MANIFEST_SYNTAX,
             "unknown manifest directive must use a namespaced name",
             name_start,
             name_end
         );
         return;
     }
-    if (ruda_manifest_parse_values(parser, cursor, end, 1, &entry)) {
-        ruda_manifest_push_entry(parser, entry);
+    if (mmay_manifest_parse_values(parser, cursor, end, 1, &entry)) {
+        mmay_manifest_push_entry(parser, entry);
     }
 }
 
 
-RudaManifestParseStatus ruda_manifest_parse_content(RudaManifestParser *parser) {
+MarimayManifestParseStatus mmay_manifest_parse_content(MarimayManifestParser *parser) {
     size_t cursor = 0;
-    if (ruda_source_has_bom(parser->snapshot)) {
-        ruda_manifest_diagnose(
+    if (mmay_source_has_bom(parser->snapshot)) {
+        mmay_manifest_diagnose(
             parser,
-            RUDA_DIAGNOSTIC_MANIFEST_SYNTAX,
+            MMAY_DIAGNOSTIC_MANIFEST_SYNTAX,
             "manifest files do not accept a byte-order mark",
             0,
             3
         );
         if (parser->allocation_failed) {
-            ruda_manifest_parse_result_dispose(parser->result);
-            return RUDA_MANIFEST_PARSE_ALLOCATION_FAILED;
+            mmay_manifest_parse_result_dispose(parser->result);
+            return MMAY_MANIFEST_PARSE_ALLOCATION_FAILED;
         }
-        return RUDA_MANIFEST_PARSE_OK;
+        return MMAY_MANIFEST_PARSE_OK;
     }
-    if (!ruda_source_is_valid_utf8(parser->snapshot)) {
-        size_t invalid = ruda_source_invalid_utf8_offset(parser->snapshot);
-        ruda_manifest_diagnose(
+    if (!mmay_source_is_valid_utf8(parser->snapshot)) {
+        size_t invalid = mmay_source_invalid_utf8_offset(parser->snapshot);
+        mmay_manifest_diagnose(
             parser,
-            RUDA_DIAGNOSTIC_INVALID_UTF8,
+            MMAY_DIAGNOSTIC_INVALID_UTF8,
             "manifest contains malformed UTF-8",
             invalid,
             invalid < parser->length ? invalid + 1 : invalid
         );
         if (parser->allocation_failed) {
-            ruda_manifest_parse_result_dispose(parser->result);
-            return RUDA_MANIFEST_PARSE_ALLOCATION_FAILED;
+            mmay_manifest_parse_result_dispose(parser->result);
+            return MMAY_MANIFEST_PARSE_ALLOCATION_FAILED;
         }
-        return RUDA_MANIFEST_PARSE_OK;
+        return MMAY_MANIFEST_PARSE_OK;
     }
     while (cursor < parser->length && !parser->allocation_failed
         && !parser->limit_reached) {
@@ -571,12 +571,12 @@ RudaManifestParseStatus ruda_manifest_parse_content(RudaManifestParser *parser) 
         } else if (cursor < parser->length) {
             cursor += 1;
         }
-        trimmed_start = ruda_manifest_trim_left(
+        trimmed_start = mmay_manifest_trim_left(
             parser->bytes,
             line_start,
             line_end
         );
-        trimmed_end = ruda_manifest_trim_right(
+        trimmed_end = mmay_manifest_trim_right(
             parser->bytes,
             trimmed_start,
             line_end
@@ -585,57 +585,57 @@ RudaManifestParseStatus ruda_manifest_parse_content(RudaManifestParser *parser) 
             continue;
         }
         if (parser->in_group) {
-            ruda_manifest_parse_group_line(parser, trimmed_start, trimmed_end);
+            mmay_manifest_parse_group_line(parser, trimmed_start, trimmed_end);
         } else {
-            ruda_manifest_parse_top_line(parser, trimmed_start, trimmed_end);
+            mmay_manifest_parse_top_line(parser, trimmed_start, trimmed_end);
         }
     }
     if (parser->in_group && !parser->allocation_failed && !parser->limit_reached) {
-        ruda_manifest_diagnose(
+        mmay_manifest_diagnose(
             parser,
-            RUDA_DIAGNOSTIC_MANIFEST_SYNTAX,
+            MMAY_DIAGNOSTIC_MANIFEST_SYNTAX,
             "manifest group is missing its closing ')'",
             parser->length,
             parser->length
         );
     }
     if (parser->allocation_failed) {
-        ruda_manifest_parse_result_dispose(parser->result);
-        return RUDA_MANIFEST_PARSE_ALLOCATION_FAILED;
+        mmay_manifest_parse_result_dispose(parser->result);
+        return MMAY_MANIFEST_PARSE_ALLOCATION_FAILED;
     }
     return parser->limit_reached
-        ? RUDA_MANIFEST_PARSE_LIMIT_REACHED
-        : RUDA_MANIFEST_PARSE_OK;
+        ? MMAY_MANIFEST_PARSE_LIMIT_REACHED
+        : MMAY_MANIFEST_PARSE_OK;
 }
 
-bool ruda_manifest_decode_string(
-    const RudaManifestParseResult *parsed,
-    RudaManifestSpan span,
-    RudaAllocator allocator,
-    RudaOwnedBytes *output
+bool mmay_manifest_decode_string(
+    const MarimayManifestParseResult *parsed,
+    MarimayManifestSpan span,
+    MarimayAllocator allocator,
+    MarimayOwnedBytes *output
 ) {
-    const unsigned char *bytes = ruda_source_bytes(parsed->snapshot);
-    RudaVector decoded;
+    const unsigned char *bytes = mmay_source_bytes(parsed->snapshot);
+    MarimayVector decoded;
     size_t cursor = span.start + 1;
     size_t end = span.end - 1;
     bool ok = false;
-    if (span.end <= span.start + 1 || span.end > ruda_source_length(parsed->snapshot)
+    if (span.end <= span.start + 1 || span.end > mmay_source_length(parsed->snapshot)
         || bytes[span.start] != '"' || bytes[span.end - 1] != '"'
-        || !ruda_vector_init(&decoded, allocator, sizeof(unsigned char))) {
+        || !mmay_vector_init(&decoded, allocator, sizeof(unsigned char))) {
         return false;
     }
     while (cursor < end) {
         unsigned char byte = bytes[cursor];
         if (byte != '\\') {
-            RudaUtf8Scalar scalar;
+            MarimayUtf8Scalar scalar;
             size_t width = 1;
             if (byte >= 0x80U) {
-                if (!ruda_utf8_decode(bytes + cursor, end - cursor, &scalar)) {
+                if (!mmay_utf8_decode(bytes + cursor, end - cursor, &scalar)) {
                     goto cleanup;
                 }
                 width = scalar.width;
             }
-            if (!ruda_vector_append(&decoded, bytes + cursor, width)) {
+            if (!mmay_vector_append(&decoded, bytes + cursor, width)) {
                 goto cleanup;
             }
             cursor += width;
@@ -644,7 +644,7 @@ bool ruda_manifest_decode_string(
         cursor += 1;
         byte = bytes[cursor];
         if (byte == '"' || byte == '\\' || byte == '/') {
-            if (!ruda_vector_push(&decoded, &byte)) {
+            if (!mmay_vector_push(&decoded, &byte)) {
                 goto cleanup;
             }
             cursor += 1;
@@ -654,7 +654,7 @@ bool ruda_manifest_decode_string(
                 : (byte == 'f' ? '\f'
                     : (byte == 'n' ? '\n'
                         : (byte == 'r' ? '\r' : '\t')));
-            if (!ruda_vector_push(&decoded, &decoded_byte)) {
+            if (!mmay_vector_push(&decoded, &decoded_byte)) {
                 goto cleanup;
             }
             cursor += 1;
@@ -664,7 +664,7 @@ bool ruda_manifest_decode_string(
             unsigned char encoded[4];
             size_t encoded_width = 0;
             if (byte != 'u'
-                || !ruda_manifest_hex4(bytes, cursor + 1, end, &first)) {
+                || !mmay_manifest_hex4(bytes, cursor + 1, end, &first)) {
                 goto cleanup;
             }
             cursor += 5;
@@ -673,7 +673,7 @@ bool ruda_manifest_decode_string(
                 uint32_t second = 0;
                 if (cursor + 6 > end || bytes[cursor] != '\\'
                     || bytes[cursor + 1] != 'u'
-                    || !ruda_manifest_hex4(bytes, cursor + 2, end, &second)) {
+                    || !mmay_manifest_hex4(bytes, cursor + 2, end, &second)) {
                     goto cleanup;
                 }
                 value = UINT32_C(0x10000)
@@ -681,18 +681,18 @@ bool ruda_manifest_decode_string(
                     + (second - UINT32_C(0xdc00));
                 cursor += 6;
             }
-            if (!ruda_utf8_encode(value, encoded, &encoded_width)
-                || !ruda_vector_append(&decoded, encoded, encoded_width)) {
+            if (!mmay_utf8_encode(value, encoded, &encoded_width)
+                || !mmay_vector_append(&decoded, encoded, encoded_width)) {
                 goto cleanup;
             }
         }
     }
-    ok = ruda_owned_bytes_copy(output, allocator, decoded.data, decoded.length);
+    ok = mmay_owned_bytes_copy(output, allocator, decoded.data, decoded.length);
 
 cleanup:
-    ruda_vector_dispose(&decoded);
+    mmay_vector_dispose(&decoded);
     return ok;
 }
-bool ruda_manifest_first_parent(const RudaOwnedBytes *path) {
+bool mmay_manifest_first_parent(const MarimayOwnedBytes *path) {
     return path->length == 2 && path->data[0] == '.' && path->data[1] == '.';
 }

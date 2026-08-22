@@ -1,30 +1,30 @@
-#ifndef RUDA_TEST_IMPORTED_ARRAYS_SUPPORT_H
-#define RUDA_TEST_IMPORTED_ARRAYS_SUPPORT_H
+#ifndef MMAY_TEST_IMPORTED_ARRAYS_SUPPORT_H
+#define MMAY_TEST_IMPORTED_ARRAYS_SUPPORT_H
 
 #include "test_checker_imports_support.h"
 
-#include "ruda/bytecode/mir_lower.h"
+#include "mmay/bytecode/mir_lower.h"
 
-#define RUDA_TEST_IMPORTED_ARRAY_MAX_FUNCTIONS 32
+#define MMAY_TEST_IMPORTED_ARRAY_MAX_FUNCTIONS 32
 
-typedef struct RudaTestImportedArrays {
-    RudaCheckerImportFixture fixture;
-    RudaCheckResult checked;
-    const RudaMirFunction *functions[RUDA_TEST_IMPORTED_ARRAY_MAX_FUNCTIONS];
-    const RudaCheckedFunction *entry;
+typedef struct MarimayTestImportedArrays {
+    MarimayCheckerImportFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayMirFunction *functions[MMAY_TEST_IMPORTED_ARRAY_MAX_FUNCTIONS];
+    const MarimayCheckedFunction *entry;
     size_t entry_index;
     bool initialized;
-} RudaTestImportedArrays;
+} MarimayTestImportedArrays;
 
-bool ruda_test_imported_arrays_init(
-    RudaTestImportedArrays *test,
-    RudaAllocator allocator
+bool mmay_test_imported_arrays_init(
+    MarimayTestImportedArrays *test,
+    MarimayAllocator allocator
 );
-void ruda_test_imported_arrays_dispose(RudaTestImportedArrays *test);
-RudaMirBytecodeLowerStatus ruda_test_imported_arrays_lower(
-    const RudaTestImportedArrays *test,
-    RudaAllocator allocator,
-    RudaBytecodeProgram *program
+void mmay_test_imported_arrays_dispose(MarimayTestImportedArrays *test);
+MarimayMirBytecodeLowerStatus mmay_test_imported_arrays_lower(
+    const MarimayTestImportedArrays *test,
+    MarimayAllocator allocator,
+    MarimayBytecodeProgram *program
 );
 
 #endif

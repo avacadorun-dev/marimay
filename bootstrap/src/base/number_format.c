@@ -1,4 +1,4 @@
-#include "ruda/base/number_format.h"
+#include "mmay/base/number_format.h"
 
 #include <stdbool.h>
 #include <string.h>
@@ -6,16 +6,16 @@
 
 /* 5^324 plus the largest binary shift used by either IEEE width fits here. */
 enum {
-    RUDA_NUMBER_FORMAT_LIMBS = 128,
-    RUDA_NUMBER_FORMAT_OUTPUT = 32
+    MMAY_NUMBER_FORMAT_LIMBS = 128,
+    MMAY_NUMBER_FORMAT_OUTPUT = 32
 };
 
-typedef struct RudaNumberBig {
-    uint32_t limbs[RUDA_NUMBER_FORMAT_LIMBS];
+typedef struct MarimayNumberBig {
+    uint32_t limbs[MMAY_NUMBER_FORMAT_LIMBS];
     size_t length;
-} RudaNumberBig;
+} MarimayNumberBig;
 
-typedef struct RudaNumberProfile {
+typedef struct MarimayNumberProfile {
     unsigned fraction_bits;
     unsigned exponent_bits;
     unsigned precision;
@@ -23,43 +23,43 @@ typedef struct RudaNumberProfile {
     int minimum_binary_exponent;
     int maximum_binary_exponent;
     unsigned maximum_digits;
-} RudaNumberProfile;
+} MarimayNumberProfile;
 
-typedef struct RudaNumberDecoded {
+typedef struct MarimayNumberDecoded {
     uint64_t significand;
     int exponent;
-} RudaNumberDecoded;
+} MarimayNumberDecoded;
 
-typedef struct RudaNumberBoundary {
-    RudaNumberBig numerator;
+typedef struct MarimayNumberBoundary {
+    MarimayNumberBig numerator;
     int exponent;
-} RudaNumberBoundary;
+} MarimayNumberBoundary;
 
-typedef struct RudaNumberBounds {
-    RudaNumberBoundary lower;
-    RudaNumberBoundary upper;
-} RudaNumberBounds;
+typedef struct MarimayNumberBounds {
+    MarimayNumberBoundary lower;
+    MarimayNumberBoundary upper;
+} MarimayNumberBounds;
 
-typedef struct RudaNumberCandidate {
+typedef struct MarimayNumberCandidate {
     uint64_t digits;
     int exponent;
-} RudaNumberCandidate;
+} MarimayNumberCandidate;
 
-static const RudaNumberProfile ruda_number_f32_profile = {
+static const MarimayNumberProfile mmay_number_f32_profile = {
     23u, 8u, 24u, 127, -149, 128, 9u
 };
 
-static const RudaNumberProfile ruda_number_f64_profile = {
+static const MarimayNumberProfile mmay_number_f64_profile = {
     52u, 11u, 53u, 1023, -1074, 1024, 17u
 };
 
-static void ruda_number_big_zero(RudaNumberBig *value) {
+static void mmay_number_big_zero(MarimayNumberBig *value) {
     if (value != NULL) {
         value->length = 0;
     }
 }
 
-static void ruda_number_big_normalize(RudaNumberBig *value) {
+static void mmay_number_big_normalize(MarimayNumberBig *value) {
     if (value == NULL) {
         return;
     }
@@ -69,14 +69,14 @@ static void ruda_number_big_normalize(RudaNumberBig *value) {
     }
 }
 
-static bool ruda_number_big_from_u64(
-    RudaNumberBig *value,
+static bool mmay_number_big_from_u64(
+    MarimayNumberBig *value,
     uint64_t input
 ) {
     if (value == NULL) {
         return false;
     }
-    ruda_number_big_zero(value);
+    mmay_number_big_zero(value);
     if (input == 0) {
         return true;
     }
@@ -89,9 +89,9 @@ static bool ruda_number_big_from_u64(
     return true;
 }
 
-static bool ruda_number_big_copy(
-    RudaNumberBig *destination,
-    const RudaNumberBig *source
+static bool mmay_number_big_copy(
+    MarimayNumberBig *destination,
+    const MarimayNumberBig *source
 ) {
     size_t index = 0;
     if (destination == NULL || source == NULL) {
@@ -104,8 +104,8 @@ static bool ruda_number_big_copy(
     return true;
 }
 
-static bool ruda_number_big_shift_left(
-    RudaNumberBig *value,
+static bool mmay_number_big_shift_left(
+    MarimayNumberBig *value,
     unsigned shift
 ) {
     size_t word_shift = shift / 32u;
@@ -113,13 +113,13 @@ static bool ruda_number_big_shift_left(
     size_t old_length = 0;
     size_t index = 0;
     uint32_t carry = 0;
-    RudaNumberBig shifted_value;
+    MarimayNumberBig shifted_value;
     if (value == NULL || value->length == 0) {
         return true;
     }
     old_length = value->length;
-    if (word_shift >= RUDA_NUMBER_FORMAT_LIMBS
-        || old_length + word_shift > RUDA_NUMBER_FORMAT_LIMBS) {
+    if (word_shift >= MMAY_NUMBER_FORMAT_LIMBS
+        || old_length + word_shift > MMAY_NUMBER_FORMAT_LIMBS) {
         return false;
     }
     if (bit_shift == 0) {
@@ -132,10 +132,10 @@ static bool ruda_number_big_shift_left(
         value->length = old_length + word_shift;
         return true;
     }
-    if (old_length + word_shift + 1 > RUDA_NUMBER_FORMAT_LIMBS) {
+    if (old_length + word_shift + 1 > MMAY_NUMBER_FORMAT_LIMBS) {
         return false;
     }
-    ruda_number_big_zero(&shifted_value);
+    mmay_number_big_zero(&shifted_value);
     shifted_value.length = old_length + word_shift;
     for (index = 0; index < shifted_value.length; index += 1) {
         shifted_value.limbs[index] = 0;
@@ -157,9 +157,9 @@ static bool ruda_number_big_shift_left(
     return true;
 }
 
-static bool ruda_number_big_add(
-    RudaNumberBig *destination,
-    const RudaNumberBig *source
+static bool mmay_number_big_add(
+    MarimayNumberBig *destination,
+    const MarimayNumberBig *source
 ) {
     size_t index = 0;
     size_t maximum = 0;
@@ -179,7 +179,7 @@ static bool ruda_number_big_add(
     }
     destination->length = maximum;
     if (carry != 0) {
-        if (destination->length == RUDA_NUMBER_FORMAT_LIMBS) {
+        if (destination->length == MMAY_NUMBER_FORMAT_LIMBS) {
             return false;
         }
         destination->limbs[destination->length] = (uint32_t)carry;
@@ -188,8 +188,8 @@ static bool ruda_number_big_add(
     return true;
 }
 
-static bool ruda_number_big_add_small(
-    RudaNumberBig *value,
+static bool mmay_number_big_add_small(
+    MarimayNumberBig *value,
     uint32_t addend
 ) {
     size_t index = 0;
@@ -204,7 +204,7 @@ static bool ruda_number_big_add_small(
         index += 1;
     }
     if (carry != 0) {
-        if (value->length == RUDA_NUMBER_FORMAT_LIMBS) {
+        if (value->length == MMAY_NUMBER_FORMAT_LIMBS) {
             return false;
         }
         value->limbs[value->length] = (uint32_t)carry;
@@ -213,9 +213,9 @@ static bool ruda_number_big_add_small(
     return true;
 }
 
-static int ruda_number_big_compare(
-    const RudaNumberBig *left,
-    const RudaNumberBig *right
+static int mmay_number_big_compare(
+    const MarimayNumberBig *left,
+    const MarimayNumberBig *right
 ) {
     size_t index = 0;
     if (left->length != right->length) {
@@ -231,14 +231,14 @@ static int ruda_number_big_compare(
     return 0;
 }
 
-static bool ruda_number_big_subtract(
-    RudaNumberBig *destination,
-    const RudaNumberBig *source
+static bool mmay_number_big_subtract(
+    MarimayNumberBig *destination,
+    const MarimayNumberBig *source
 ) {
     size_t index = 0;
     uint64_t borrow = 0;
     if (destination == NULL || source == NULL
-        || ruda_number_big_compare(destination, source) < 0) {
+        || mmay_number_big_compare(destination, source) < 0) {
         return false;
     }
     for (index = 0; index < destination->length; index += 1) {
@@ -248,12 +248,12 @@ static bool ruda_number_big_subtract(
         destination->limbs[index] = (uint32_t)(left - subtrahend);
         borrow = left < subtrahend ? 1u : 0u;
     }
-    ruda_number_big_normalize(destination);
+    mmay_number_big_normalize(destination);
     return borrow == 0;
 }
 
-static bool ruda_number_big_multiply_small(
-    RudaNumberBig *value,
+static bool mmay_number_big_multiply_small(
+    MarimayNumberBig *value,
     uint32_t multiplier
 ) {
     size_t index = 0;
@@ -267,7 +267,7 @@ static bool ruda_number_big_multiply_small(
         carry = product >> 32;
     }
     if (carry != 0) {
-        if (value->length == RUDA_NUMBER_FORMAT_LIMBS) {
+        if (value->length == MMAY_NUMBER_FORMAT_LIMBS) {
             return false;
         }
         value->limbs[value->length] = (uint32_t)carry;
@@ -276,7 +276,7 @@ static bool ruda_number_big_multiply_small(
     return true;
 }
 
-static unsigned ruda_number_big_bit_length(const RudaNumberBig *value) {
+static unsigned mmay_number_big_bit_length(const MarimayNumberBig *value) {
     uint32_t high = 0;
     unsigned bits = 0;
     if (value == NULL || value->length == 0) {
@@ -291,8 +291,8 @@ static unsigned ruda_number_big_bit_length(const RudaNumberBig *value) {
     return (unsigned)((value->length - 1) * 32u) + bits;
 }
 
-static unsigned ruda_number_big_get_bit(
-    const RudaNumberBig *value,
+static unsigned mmay_number_big_get_bit(
+    const MarimayNumberBig *value,
     unsigned bit
 ) {
     size_t limb = bit / 32u;
@@ -302,24 +302,24 @@ static unsigned ruda_number_big_get_bit(
     return (value->limbs[limb] >> (bit % 32u)) & 1u;
 }
 
-static bool ruda_number_big_power5(
-    RudaNumberBig *value,
+static bool mmay_number_big_power5(
+    MarimayNumberBig *value,
     unsigned exponent
 ) {
     unsigned index = 0;
-    if (!ruda_number_big_from_u64(value, 1)) {
+    if (!mmay_number_big_from_u64(value, 1)) {
         return false;
     }
     for (index = 0; index < exponent; index += 1) {
-        if (!ruda_number_big_multiply_small(value, 5)) {
+        if (!mmay_number_big_multiply_small(value, 5)) {
             return false;
         }
     }
     return true;
 }
 
-static bool ruda_number_big_multiply_power5(
-    RudaNumberBig *value,
+static bool mmay_number_big_multiply_power5(
+    MarimayNumberBig *value,
     unsigned exponent
 ) {
     unsigned index = 0;
@@ -327,44 +327,44 @@ static bool ruda_number_big_multiply_power5(
         return false;
     }
     for (index = 0; index < exponent; index += 1) {
-        if (!ruda_number_big_multiply_small(value, 5)) {
+        if (!mmay_number_big_multiply_small(value, 5)) {
             return false;
         }
     }
     return true;
 }
 
-static int ruda_number_big_compare_scaled(
-    const RudaNumberBig *left,
+static int mmay_number_big_compare_scaled(
+    const MarimayNumberBig *left,
     int left_exponent,
-    const RudaNumberBig *right,
+    const MarimayNumberBig *right,
     int right_exponent
 ) {
-    RudaNumberBig left_scaled;
-    RudaNumberBig right_scaled;
+    MarimayNumberBig left_scaled;
+    MarimayNumberBig right_scaled;
     int common_exponent = left_exponent < right_exponent
         ? left_exponent : right_exponent;
-    if (!ruda_number_big_copy(&left_scaled, left)
-        || !ruda_number_big_copy(&right_scaled, right)) {
+    if (!mmay_number_big_copy(&left_scaled, left)
+        || !mmay_number_big_copy(&right_scaled, right)) {
         return 0;
     }
-    if (!ruda_number_big_shift_left(
+    if (!mmay_number_big_shift_left(
         &left_scaled,
         (unsigned)(left_exponent - common_exponent)
-    ) || !ruda_number_big_shift_left(
+    ) || !mmay_number_big_shift_left(
         &right_scaled,
         (unsigned)(right_exponent - common_exponent)
     )) {
         return 0;
     }
-    return ruda_number_big_compare(&left_scaled, &right_scaled);
+    return mmay_number_big_compare(&left_scaled, &right_scaled);
 }
 
-static bool ruda_number_big_divide(
-    const RudaNumberBig *numerator,
-    const RudaNumberBig *denominator,
-    RudaNumberBig *quotient,
-    RudaNumberBig *remainder
+static bool mmay_number_big_divide(
+    const MarimayNumberBig *numerator,
+    const MarimayNumberBig *denominator,
+    MarimayNumberBig *quotient,
+    MarimayNumberBig *remainder
 ) {
     unsigned bit = 0;
     unsigned bits = 0;
@@ -372,21 +372,21 @@ static bool ruda_number_big_divide(
         || remainder == NULL || denominator->length == 0) {
         return false;
     }
-    bits = ruda_number_big_bit_length(numerator);
-    ruda_number_big_zero(quotient);
-    ruda_number_big_zero(remainder);
+    bits = mmay_number_big_bit_length(numerator);
+    mmay_number_big_zero(quotient);
+    mmay_number_big_zero(remainder);
     while (bits != 0) {
         bit = bits - 1;
-        if (!ruda_number_big_shift_left(remainder, 1)
-            || !ruda_number_big_add_small(
+        if (!mmay_number_big_shift_left(remainder, 1)
+            || !mmay_number_big_add_small(
                 remainder,
-                ruda_number_big_get_bit(numerator, bit)
-            ) || !ruda_number_big_shift_left(quotient, 1)) {
+                mmay_number_big_get_bit(numerator, bit)
+            ) || !mmay_number_big_shift_left(quotient, 1)) {
             return false;
         }
-        if (ruda_number_big_compare(remainder, denominator) >= 0) {
-            if (!ruda_number_big_subtract(remainder, denominator)
-                || !ruda_number_big_add_small(quotient, 1)) {
+        if (mmay_number_big_compare(remainder, denominator) >= 0) {
+            if (!mmay_number_big_subtract(remainder, denominator)
+                || !mmay_number_big_add_small(quotient, 1)) {
                 return false;
             }
         }
@@ -395,8 +395,8 @@ static bool ruda_number_big_divide(
     return true;
 }
 
-static bool ruda_number_big_to_u64(
-    const RudaNumberBig *value,
+static bool mmay_number_big_to_u64(
+    const MarimayNumberBig *value,
     uint64_t *result
 ) {
     if (value == NULL || result == NULL || value->length > 2) {
@@ -409,10 +409,10 @@ static bool ruda_number_big_to_u64(
     return true;
 }
 
-static bool ruda_number_decode(
+static bool mmay_number_decode(
     uint64_t raw_bits,
-    const RudaNumberProfile *profile,
-    RudaNumberDecoded *decoded,
+    const MarimayNumberProfile *profile,
+    MarimayNumberDecoded *decoded,
     bool *negative,
     bool *infinity,
     bool *nan
@@ -438,22 +438,22 @@ static bool ruda_number_decode(
     return true;
 }
 
-static bool ruda_number_value_compare_power10(
-    const RudaNumberDecoded *value,
+static bool mmay_number_value_compare_power10(
+    const MarimayNumberDecoded *value,
     int power,
     int *comparison
 ) {
-    RudaNumberBig left;
-    RudaNumberBig right;
+    MarimayNumberBig left;
+    MarimayNumberBig right;
     if (value == NULL || comparison == NULL) {
         return false;
     }
     if (power >= 0) {
-        if (!ruda_number_big_from_u64(&left, value->significand)
-            || !ruda_number_big_power5(&right, (unsigned)power)) {
+        if (!mmay_number_big_from_u64(&left, value->significand)
+            || !mmay_number_big_power5(&right, (unsigned)power)) {
             return false;
         }
-        *comparison = ruda_number_big_compare_scaled(
+        *comparison = mmay_number_big_compare_scaled(
             &left,
             value->exponent,
             &right,
@@ -461,12 +461,12 @@ static bool ruda_number_value_compare_power10(
         );
         return true;
     }
-    if (!ruda_number_big_from_u64(&left, value->significand)
-        || !ruda_number_big_multiply_power5(&left, (unsigned)(-power))
-        || !ruda_number_big_from_u64(&right, 1)) {
+    if (!mmay_number_big_from_u64(&left, value->significand)
+        || !mmay_number_big_multiply_power5(&left, (unsigned)(-power))
+        || !mmay_number_big_from_u64(&right, 1)) {
         return false;
     }
-    *comparison = ruda_number_big_compare_scaled(
+    *comparison = mmay_number_big_compare_scaled(
         &left,
         value->exponent - power,
         &right,
@@ -475,38 +475,38 @@ static bool ruda_number_value_compare_power10(
     return true;
 }
 
-static bool ruda_number_find_decimal_exponent(
-    const RudaNumberDecoded *value,
+static bool mmay_number_find_decimal_exponent(
+    const MarimayNumberDecoded *value,
     int *decimal_exponent
 ) {
-    RudaNumberBig significand;
+    MarimayNumberBig significand;
     int binary_exponent = 0;
     int estimate = 0;
     int comparison = 0;
     if (value == NULL || decimal_exponent == NULL
         || value->significand == 0
-        || !ruda_number_big_from_u64(&significand, value->significand)) {
+        || !mmay_number_big_from_u64(&significand, value->significand)) {
         return false;
     }
     binary_exponent = value->exponent
-        + (int)ruda_number_big_bit_length(&significand) - 1;
+        + (int)mmay_number_big_bit_length(&significand) - 1;
     if (binary_exponent >= 0) {
         estimate = (binary_exponent * 1233) / 4096;
     } else {
         estimate = -(((-binary_exponent) * 1233 + 4095) / 4096);
     }
-    if (!ruda_number_value_compare_power10(value, estimate, &comparison)) {
+    if (!mmay_number_value_compare_power10(value, estimate, &comparison)) {
         return false;
     }
     while (comparison < 0) {
         estimate -= 1;
-        if (!ruda_number_value_compare_power10(value, estimate, &comparison)) {
+        if (!mmay_number_value_compare_power10(value, estimate, &comparison)) {
             return false;
         }
     }
     while (true) {
         int next_comparison = 0;
-        if (!ruda_number_value_compare_power10(
+        if (!mmay_number_value_compare_power10(
             value, estimate + 1, &next_comparison
         )) {
             return false;
@@ -520,30 +520,30 @@ static bool ruda_number_find_decimal_exponent(
     return true;
 }
 
-static bool ruda_number_make_midpoint(
-    RudaNumberBoundary *boundary,
-    const RudaNumberDecoded *left,
-    const RudaNumberDecoded *right
+static bool mmay_number_make_midpoint(
+    MarimayNumberBoundary *boundary,
+    const MarimayNumberDecoded *left,
+    const MarimayNumberDecoded *right
 ) {
-    RudaNumberBig left_value;
-    RudaNumberBig right_value;
+    MarimayNumberBig left_value;
+    MarimayNumberBig right_value;
     int common_exponent = 0;
     if (boundary == NULL || left == NULL || right == NULL) {
         return false;
     }
     common_exponent = left->exponent < right->exponent
         ? left->exponent : right->exponent;
-    if (!ruda_number_big_from_u64(&left_value, left->significand)
-        || !ruda_number_big_from_u64(&right_value, right->significand)
-        || !ruda_number_big_shift_left(
+    if (!mmay_number_big_from_u64(&left_value, left->significand)
+        || !mmay_number_big_from_u64(&right_value, right->significand)
+        || !mmay_number_big_shift_left(
             &left_value,
             (unsigned)(left->exponent - common_exponent)
         )
-        || !ruda_number_big_shift_left(
+        || !mmay_number_big_shift_left(
             &right_value,
             (unsigned)(right->exponent - common_exponent)
         )
-        || !ruda_number_big_add(&left_value, &right_value)) {
+        || !mmay_number_big_add(&left_value, &right_value)) {
         return false;
     }
     boundary->numerator = left_value;
@@ -551,14 +551,14 @@ static bool ruda_number_make_midpoint(
     return true;
 }
 
-static bool ruda_number_make_bounds(
+static bool mmay_number_make_bounds(
     uint64_t raw_bits,
-    const RudaNumberProfile *profile,
-    const RudaNumberDecoded *value,
-    RudaNumberBounds *bounds
+    const MarimayNumberProfile *profile,
+    const MarimayNumberDecoded *value,
+    MarimayNumberBounds *bounds
 ) {
-    RudaNumberDecoded previous;
-    RudaNumberDecoded next;
+    MarimayNumberDecoded previous;
+    MarimayNumberDecoded next;
     uint64_t magnitude_mask = 0;
     uint64_t magnitude = 0;
     uint64_t previous_bits = 0;
@@ -586,7 +586,7 @@ static bool ruda_number_make_bounds(
         && value->exponent == profile->minimum_binary_exponent) {
         previous.significand = 0;
         previous.exponent = value->exponent;
-    } else if (!ruda_number_decode(
+    } else if (!mmay_number_decode(
         previous_bits,
         profile,
         &previous,
@@ -599,7 +599,7 @@ static bool ruda_number_make_bounds(
     if (magnitude == maximum) {
         next.significand = 1;
         next.exponent = profile->maximum_binary_exponent;
-    } else if (!ruda_number_decode(
+    } else if (!mmay_number_decode(
         next_bits,
         profile,
         &next,
@@ -609,109 +609,109 @@ static bool ruda_number_make_bounds(
     )) {
         return false;
     }
-    return ruda_number_make_midpoint(&bounds->lower, &previous, value)
-        && ruda_number_make_midpoint(&bounds->upper, value, &next);
+    return mmay_number_make_midpoint(&bounds->lower, &previous, value)
+        && mmay_number_make_midpoint(&bounds->upper, value, &next);
 }
 
-static bool ruda_number_build_scaled_quotient(
-    const RudaNumberDecoded *value,
+static bool mmay_number_build_scaled_quotient(
+    const MarimayNumberDecoded *value,
     int decimal_power,
-    RudaNumberBig *numerator,
-    RudaNumberBig *denominator
+    MarimayNumberBig *numerator,
+    MarimayNumberBig *denominator
 ) {
-    RudaNumberBig power5;
+    MarimayNumberBig power5;
     int shifted_exponent = 0;
     if (value == NULL || numerator == NULL || denominator == NULL) {
         return false;
     }
     if (decimal_power >= 0) {
-        if (!ruda_number_big_from_u64(numerator, value->significand)
-            || !ruda_number_big_power5(&power5, (unsigned)decimal_power)
-            || !ruda_number_big_copy(denominator, &power5)) {
+        if (!mmay_number_big_from_u64(numerator, value->significand)
+            || !mmay_number_big_power5(&power5, (unsigned)decimal_power)
+            || !mmay_number_big_copy(denominator, &power5)) {
             return false;
         }
         if (value->exponent >= decimal_power) {
-            return ruda_number_big_shift_left(
+            return mmay_number_big_shift_left(
                 numerator,
                 (unsigned)(value->exponent - decimal_power)
             );
         }
-        return ruda_number_big_shift_left(
+        return mmay_number_big_shift_left(
             denominator,
             (unsigned)(decimal_power - value->exponent)
         );
     }
-    if (!ruda_number_big_from_u64(numerator, value->significand)
-        || !ruda_number_big_multiply_power5(
+    if (!mmay_number_big_from_u64(numerator, value->significand)
+        || !mmay_number_big_multiply_power5(
             numerator, (unsigned)(-decimal_power)
         )) {
         return false;
     }
     shifted_exponent = value->exponent - decimal_power;
     if (shifted_exponent >= 0) {
-        ruda_number_big_zero(denominator);
-        return ruda_number_big_shift_left(
+        mmay_number_big_zero(denominator);
+        return mmay_number_big_shift_left(
             numerator,
             (unsigned)shifted_exponent
         );
     }
-    if (!ruda_number_big_from_u64(denominator, 1)) {
+    if (!mmay_number_big_from_u64(denominator, 1)) {
         return false;
     }
-    return ruda_number_big_shift_left(
+    return mmay_number_big_shift_left(
         denominator,
         (unsigned)(-shifted_exponent)
     );
 }
 
-static bool ruda_number_decimal_floor(
-    const RudaNumberDecoded *value,
+static bool mmay_number_decimal_floor(
+    const MarimayNumberDecoded *value,
     int decimal_power,
     uint64_t *floor_value
 ) {
-    RudaNumberBig numerator;
-    RudaNumberBig denominator;
-    RudaNumberBig quotient;
-    RudaNumberBig remainder;
-    if (!ruda_number_build_scaled_quotient(
+    MarimayNumberBig numerator;
+    MarimayNumberBig denominator;
+    MarimayNumberBig quotient;
+    MarimayNumberBig remainder;
+    if (!mmay_number_build_scaled_quotient(
         value, decimal_power, &numerator, &denominator
-    ) || !ruda_number_big_divide(
+    ) || !mmay_number_big_divide(
         &numerator, &denominator, &quotient, &remainder
     )) {
         return false;
     }
-    return ruda_number_big_to_u64(&quotient, floor_value);
+    return mmay_number_big_to_u64(&quotient, floor_value);
 }
 
-static int ruda_number_decimal_compare_value(
-    const RudaNumberDecoded *value,
+static int mmay_number_decimal_compare_value(
+    const MarimayNumberDecoded *value,
     uint64_t digits,
     int decimal_power
 ) {
-    RudaNumberBig left;
-    RudaNumberBig right;
+    MarimayNumberBig left;
+    MarimayNumberBig right;
     if (decimal_power >= 0) {
-        if (!ruda_number_big_from_u64(&left, digits)
-            || !ruda_number_big_multiply_power5(
+        if (!mmay_number_big_from_u64(&left, digits)
+            || !mmay_number_big_multiply_power5(
                 &left, (unsigned)decimal_power
             )
-            || !ruda_number_big_from_u64(&right, value->significand)) {
+            || !mmay_number_big_from_u64(&right, value->significand)) {
             return 0;
         }
         /* Return exact value versus digits * 10^q. */
-        return ruda_number_big_compare_scaled(
+        return mmay_number_big_compare_scaled(
             &right, value->exponent, &left, decimal_power
         );
     }
-    if (!ruda_number_big_from_u64(&left, digits)
-        || !ruda_number_big_from_u64(&right, value->significand)
-        || !ruda_number_big_multiply_power5(
+    if (!mmay_number_big_from_u64(&left, digits)
+        || !mmay_number_big_from_u64(&right, value->significand)
+        || !mmay_number_big_multiply_power5(
             &right, (unsigned)(-decimal_power)
         )) {
         return 0;
     }
     /* Return value * 5^(-q) versus digits * 2^q. */
-    return ruda_number_big_compare_scaled(
+    return mmay_number_big_compare_scaled(
         &right,
         value->exponent,
         &left,
@@ -719,40 +719,40 @@ static int ruda_number_decimal_compare_value(
     );
 }
 
-static int ruda_number_decimal_compare_boundary(
+static int mmay_number_decimal_compare_boundary(
     uint64_t digits,
     int decimal_power,
-    const RudaNumberBoundary *boundary
+    const MarimayNumberBoundary *boundary
 ) {
-    RudaNumberBig decimal;
-    RudaNumberBig boundary_value;
+    MarimayNumberBig decimal;
+    MarimayNumberBig boundary_value;
     if (boundary == NULL) {
         return 0;
     }
     if (decimal_power >= 0) {
-        if (!ruda_number_big_from_u64(&decimal, digits)
-            || !ruda_number_big_multiply_power5(
+        if (!mmay_number_big_from_u64(&decimal, digits)
+            || !mmay_number_big_multiply_power5(
                 &decimal, (unsigned)decimal_power
             )
-            || !ruda_number_big_copy(&boundary_value, &boundary->numerator)) {
+            || !mmay_number_big_copy(&boundary_value, &boundary->numerator)) {
             return 0;
         }
-        return ruda_number_big_compare_scaled(
+        return mmay_number_big_compare_scaled(
             &decimal,
             decimal_power,
             &boundary_value,
             boundary->exponent
         );
     }
-    if (!ruda_number_big_from_u64(&decimal, digits)
-        || !ruda_number_big_copy(&boundary_value, &boundary->numerator)
-        || !ruda_number_big_multiply_power5(
+    if (!mmay_number_big_from_u64(&decimal, digits)
+        || !mmay_number_big_copy(&boundary_value, &boundary->numerator)
+        || !mmay_number_big_multiply_power5(
             &boundary_value, (unsigned)(-decimal_power)
         )) {
         return 0;
     }
     /* Multiply both sides by 5^(-q). */
-    return ruda_number_big_compare_scaled(
+    return mmay_number_big_compare_scaled(
         &decimal,
         decimal_power,
         &boundary_value,
@@ -760,10 +760,10 @@ static int ruda_number_decimal_compare_boundary(
     );
 }
 
-static bool ruda_number_candidate_valid(
+static bool mmay_number_candidate_valid(
     uint64_t digits,
     int decimal_power,
-    const RudaNumberBounds *bounds,
+    const MarimayNumberBounds *bounds,
     bool odd
 ) {
     int lower_comparison = 0;
@@ -771,10 +771,10 @@ static bool ruda_number_candidate_valid(
     if (digits == 0 || bounds == NULL) {
         return false;
     }
-    lower_comparison = ruda_number_decimal_compare_boundary(
+    lower_comparison = mmay_number_decimal_compare_boundary(
         digits, decimal_power, &bounds->lower
     );
-    upper_comparison = ruda_number_decimal_compare_boundary(
+    upper_comparison = mmay_number_decimal_compare_boundary(
         digits, decimal_power, &bounds->upper
     );
     if (lower_comparison < 0 || upper_comparison > 0) {
@@ -786,7 +786,7 @@ static bool ruda_number_candidate_valid(
     return true;
 }
 
-static unsigned ruda_number_decimal_digits(uint64_t value) {
+static unsigned mmay_number_decimal_digits(uint64_t value) {
     unsigned digits = 1;
     while (value >= 10) {
         value /= 10;
@@ -795,7 +795,7 @@ static unsigned ruda_number_decimal_digits(uint64_t value) {
     return digits;
 }
 
-static uint64_t ruda_number_power10_u64(unsigned exponent) {
+static uint64_t mmay_number_power10_u64(unsigned exponent) {
     uint64_t value = 1;
     unsigned index = 0;
     for (index = 0; index < exponent; index += 1) {
@@ -804,14 +804,14 @@ static uint64_t ruda_number_power10_u64(unsigned exponent) {
     return value;
 }
 
-static bool ruda_number_normalize_candidate(
+static bool mmay_number_normalize_candidate(
     uint64_t digits,
     int decimal_power,
     unsigned requested_digits,
-    RudaNumberCandidate *candidate
+    MarimayNumberCandidate *candidate
 ) {
-    uint64_t lower = ruda_number_power10_u64(requested_digits - 1);
-    uint64_t upper = ruda_number_power10_u64(requested_digits);
+    uint64_t lower = mmay_number_power10_u64(requested_digits - 1);
+    uint64_t upper = mmay_number_power10_u64(requested_digits);
     if (candidate == NULL || digits < lower || digits > upper) {
         return false;
     }
@@ -831,16 +831,16 @@ static bool ruda_number_normalize_candidate(
     return true;
 }
 
-static bool ruda_number_find_candidate(
-    const RudaNumberDecoded *value,
-    const RudaNumberProfile *profile,
-    const RudaNumberBounds *bounds,
+static bool mmay_number_find_candidate(
+    const MarimayNumberDecoded *value,
+    const MarimayNumberProfile *profile,
+    const MarimayNumberBounds *bounds,
     bool target_odd,
-    RudaNumberCandidate *candidate
+    MarimayNumberCandidate *candidate
 ) {
     int decimal_exponent = 0;
     unsigned requested_digits = 0;
-    if (!ruda_number_find_decimal_exponent(value, &decimal_exponent)) {
+    if (!mmay_number_find_decimal_exponent(value, &decimal_exponent)) {
         return false;
     }
     for (requested_digits = 1;
@@ -849,21 +849,21 @@ static bool ruda_number_find_candidate(
         int decimal_power = decimal_exponent
             - (int)requested_digits + 1;
         uint64_t floor_value = 0;
-        RudaNumberCandidate floor_candidate = {0, 0};
-        RudaNumberCandidate ceiling_candidate = {0, 0};
+        MarimayNumberCandidate floor_candidate = {0, 0};
+        MarimayNumberCandidate ceiling_candidate = {0, 0};
         bool floor_valid = false;
         bool ceiling_valid = false;
-        if (!ruda_number_decimal_floor(
+        if (!mmay_number_decimal_floor(
             value, decimal_power, &floor_value
         )) {
             return false;
         }
-        floor_valid = ruda_number_candidate_valid(
+        floor_valid = mmay_number_candidate_valid(
             floor_value,
             decimal_power,
             bounds,
             target_odd
-        ) && ruda_number_normalize_candidate(
+        ) && mmay_number_normalize_candidate(
             floor_value,
             decimal_power,
             requested_digits,
@@ -872,12 +872,12 @@ static bool ruda_number_find_candidate(
         ceiling_candidate = floor_candidate;
         if (floor_value != UINT64_MAX) {
             ceiling_candidate.exponent = decimal_power;
-            ceiling_valid = ruda_number_candidate_valid(
+            ceiling_valid = mmay_number_candidate_valid(
                 floor_value + 1,
                 decimal_power,
                 bounds,
                 target_odd
-            ) && ruda_number_normalize_candidate(
+            ) && mmay_number_normalize_candidate(
                 floor_value + 1,
                 decimal_power,
                 requested_digits,
@@ -885,7 +885,7 @@ static bool ruda_number_find_candidate(
             );
         }
         if (floor_valid && ceiling_valid) {
-            int midpoint = ruda_number_decimal_compare_value(
+            int midpoint = mmay_number_decimal_compare_value(
                 value,
                 (floor_value * 2 + 1) * 5,
                 decimal_power - 1
@@ -909,12 +909,12 @@ static bool ruda_number_find_candidate(
     return false;
 }
 
-static bool ruda_number_append_char(
+static bool mmay_number_append_char(
     char *output,
     size_t *length,
     char character
 ) {
-    if (output == NULL || length == NULL || *length >= RUDA_NUMBER_FORMAT_OUTPUT - 1) {
+    if (output == NULL || length == NULL || *length >= MMAY_NUMBER_FORMAT_OUTPUT - 1) {
         return false;
     }
     output[*length] = character;
@@ -922,7 +922,7 @@ static bool ruda_number_append_char(
     return true;
 }
 
-static bool ruda_number_append_digits(
+static bool mmay_number_append_digits(
     char *output,
     size_t *length,
     uint64_t digits,
@@ -939,16 +939,16 @@ static bool ruda_number_append_digits(
     }
     while (index != 0) {
         index -= 1;
-        if (!ruda_number_append_char(output, length, reversed[index])) {
+        if (!mmay_number_append_char(output, length, reversed[index])) {
             return false;
         }
     }
     return true;
 }
 
-static bool ruda_number_emit_finite(
+static bool mmay_number_emit_finite(
     bool negative,
-    const RudaNumberCandidate *candidate,
+    const MarimayNumberCandidate *candidate,
     char *output,
     size_t *length
 ) {
@@ -960,93 +960,93 @@ static bool ruda_number_emit_finite(
         return false;
     }
     *length = 0;
-    digits_count = ruda_number_decimal_digits(candidate->digits);
+    digits_count = mmay_number_decimal_digits(candidate->digits);
     scientific_exponent = candidate->exponent + (int)digits_count - 1;
-    if (negative && !ruda_number_append_char(output, length, '-')) {
+    if (negative && !mmay_number_append_char(output, length, '-')) {
         return false;
     }
     if (scientific_exponent >= -4 && scientific_exponent <= 15) {
         if (scientific_exponent >= 0) {
             unsigned before = (unsigned)scientific_exponent + 1;
             if (digits_count <= before) {
-                if (!ruda_number_append_digits(
+                if (!mmay_number_append_digits(
                     output, length, candidate->digits, digits_count
                 )) {
                     return false;
                 }
                 for (index = (int)digits_count; index < (int)before; index += 1) {
-                    if (!ruda_number_append_char(output, length, '0')) {
+                    if (!mmay_number_append_char(output, length, '0')) {
                         return false;
                     }
                 }
-                if (!ruda_number_append_char(output, length, '.')
-                    || !ruda_number_append_char(output, length, '0')) {
+                if (!mmay_number_append_char(output, length, '.')
+                    || !mmay_number_append_char(output, length, '0')) {
                     return false;
                 }
                 return true;
             }
-            divisor = ruda_number_power10_u64(digits_count - before);
-            if (!ruda_number_append_digits(
+            divisor = mmay_number_power10_u64(digits_count - before);
+            if (!mmay_number_append_digits(
                 output, length, candidate->digits / divisor, before
-            ) || !ruda_number_append_char(output, length, '.')) {
+            ) || !mmay_number_append_char(output, length, '.')) {
                 return false;
             }
-            return ruda_number_append_digits(
+            return mmay_number_append_digits(
                 output,
                 length,
                 candidate->digits % divisor,
                 digits_count - before
             );
         }
-        if (!ruda_number_append_char(output, length, '0')
-            || !ruda_number_append_char(output, length, '.')) {
+        if (!mmay_number_append_char(output, length, '0')
+            || !mmay_number_append_char(output, length, '.')) {
             return false;
         }
         for (index = -scientific_exponent - 1; index > 0; index -= 1) {
-            if (!ruda_number_append_char(output, length, '0')) {
+            if (!mmay_number_append_char(output, length, '0')) {
                 return false;
             }
         }
-        return ruda_number_append_digits(
+        return mmay_number_append_digits(
             output, length, candidate->digits, digits_count
         );
     }
-    if (!ruda_number_append_char(
+    if (!mmay_number_append_char(
         output, length, (char)('0' + candidate->digits
-            / ruda_number_power10_u64(digits_count - 1))
-    ) || !ruda_number_append_char(output, length, '.')) {
+            / mmay_number_power10_u64(digits_count - 1))
+    ) || !mmay_number_append_char(output, length, '.')) {
         return false;
     }
     if (digits_count == 1) {
-        if (!ruda_number_append_char(output, length, '0')) {
+        if (!mmay_number_append_char(output, length, '0')) {
             return false;
         }
-    } else if (!ruda_number_append_digits(
+    } else if (!mmay_number_append_digits(
         output,
         length,
-        candidate->digits % ruda_number_power10_u64(digits_count - 1),
+        candidate->digits % mmay_number_power10_u64(digits_count - 1),
         digits_count - 1
     )) {
         return false;
     }
-    if (!ruda_number_append_char(output, length, 'e')) {
+    if (!mmay_number_append_char(output, length, 'e')) {
         return false;
     }
     if (scientific_exponent < 0) {
-        if (!ruda_number_append_char(output, length, '-')) {
+        if (!mmay_number_append_char(output, length, '-')) {
             return false;
         }
         scientific_exponent = -scientific_exponent;
     }
-    return ruda_number_append_digits(
+    return mmay_number_append_digits(
         output,
         length,
         (uint64_t)scientific_exponent,
-        ruda_number_decimal_digits((uint64_t)scientific_exponent)
+        mmay_number_decimal_digits((uint64_t)scientific_exponent)
     );
 }
 
-static RudaNumberFormatStatus ruda_number_finish(
+static MarimayNumberFormatStatus mmay_number_finish(
     const char *output,
     size_t length,
     char *buffer,
@@ -1054,35 +1054,35 @@ static RudaNumberFormatStatus ruda_number_finish(
     size_t *result_length
 ) {
     if (result_length == NULL) {
-        return RUDA_NUMBER_FORMAT_INVALID_ARGUMENT;
+        return MMAY_NUMBER_FORMAT_INVALID_ARGUMENT;
     }
     *result_length = length;
     if (buffer == NULL || capacity <= length) {
-        return RUDA_NUMBER_FORMAT_BUFFER_TOO_SMALL;
+        return MMAY_NUMBER_FORMAT_BUFFER_TOO_SMALL;
     }
     memcpy(buffer, output, length);
     buffer[length] = '\0';
-    return RUDA_NUMBER_FORMAT_OK;
+    return MMAY_NUMBER_FORMAT_OK;
 }
 
-static RudaNumberFormatStatus ruda_number_format(
+static MarimayNumberFormatStatus mmay_number_format(
     uint64_t raw_bits,
-    const RudaNumberProfile *profile,
+    const MarimayNumberProfile *profile,
     char *buffer,
     size_t capacity,
     size_t *length
 ) {
-    RudaNumberDecoded value;
-    RudaNumberBounds bounds;
-    RudaNumberCandidate candidate;
-    char output[RUDA_NUMBER_FORMAT_OUTPUT];
+    MarimayNumberDecoded value;
+    MarimayNumberBounds bounds;
+    MarimayNumberCandidate candidate;
+    char output[MMAY_NUMBER_FORMAT_OUTPUT];
     size_t output_length = 0;
     bool negative = false;
     bool infinity = false;
     bool nan = false;
     uint64_t magnitude_mask = 0;
     if (profile == NULL || length == NULL) {
-        return RUDA_NUMBER_FORMAT_INVALID_ARGUMENT;
+        return MMAY_NUMBER_FORMAT_INVALID_ARGUMENT;
     }
     if (profile->fraction_bits + profile->exponent_bits == 64) {
         magnitude_mask = UINT64_MAX;
@@ -1090,81 +1090,81 @@ static RudaNumberFormatStatus ruda_number_format(
         magnitude_mask = (UINT64_C(1)
             << (profile->fraction_bits + profile->exponent_bits)) - 1;
     }
-    if (!ruda_number_decode(
+    if (!mmay_number_decode(
         raw_bits, profile, &value, &negative, &infinity, &nan
     )) {
-        return RUDA_NUMBER_FORMAT_INTERNAL_ERROR;
+        return MMAY_NUMBER_FORMAT_INTERNAL_ERROR;
     }
     output[0] = '\0';
     if (nan || infinity) {
         const char *text = nan ? "nan" : "inf";
         output_length = 0;
-        if (negative && !ruda_number_append_char(output, &output_length, '-')) {
-            return RUDA_NUMBER_FORMAT_INTERNAL_ERROR;
+        if (negative && !mmay_number_append_char(output, &output_length, '-')) {
+            return MMAY_NUMBER_FORMAT_INTERNAL_ERROR;
         }
-        if (!ruda_number_append_char(output, &output_length, text[0])
-            || !ruda_number_append_char(output, &output_length, text[1])
-            || !ruda_number_append_char(output, &output_length, text[2])) {
-            return RUDA_NUMBER_FORMAT_INTERNAL_ERROR;
+        if (!mmay_number_append_char(output, &output_length, text[0])
+            || !mmay_number_append_char(output, &output_length, text[1])
+            || !mmay_number_append_char(output, &output_length, text[2])) {
+            return MMAY_NUMBER_FORMAT_INTERNAL_ERROR;
         }
-        return ruda_number_finish(
+        return mmay_number_finish(
             output, output_length, buffer, capacity, length
         );
     }
     if (value.significand == 0) {
         output_length = 0;
-        if (negative && !ruda_number_append_char(output, &output_length, '-')) {
-            return RUDA_NUMBER_FORMAT_INTERNAL_ERROR;
+        if (negative && !mmay_number_append_char(output, &output_length, '-')) {
+            return MMAY_NUMBER_FORMAT_INTERNAL_ERROR;
         }
-        if (!ruda_number_append_char(output, &output_length, '0')
-            || !ruda_number_append_char(output, &output_length, '.')
-            || !ruda_number_append_char(output, &output_length, '0')) {
-            return RUDA_NUMBER_FORMAT_INTERNAL_ERROR;
+        if (!mmay_number_append_char(output, &output_length, '0')
+            || !mmay_number_append_char(output, &output_length, '.')
+            || !mmay_number_append_char(output, &output_length, '0')) {
+            return MMAY_NUMBER_FORMAT_INTERNAL_ERROR;
         }
-        return ruda_number_finish(
+        return mmay_number_finish(
             output, output_length, buffer, capacity, length
         );
     }
-    if (!ruda_number_make_bounds(raw_bits, profile, &value, &bounds)
-        || !ruda_number_find_candidate(
+    if (!mmay_number_make_bounds(raw_bits, profile, &value, &bounds)
+        || !mmay_number_find_candidate(
             &value,
             profile,
             &bounds,
             (raw_bits & magnitude_mask & UINT64_C(1)) != 0,
             &candidate
         )
-        || !ruda_number_emit_finite(
+        || !mmay_number_emit_finite(
             negative, &candidate, output, &output_length
         )) {
-        return RUDA_NUMBER_FORMAT_INTERNAL_ERROR;
+        return MMAY_NUMBER_FORMAT_INTERNAL_ERROR;
     }
-    return ruda_number_finish(output, output_length, buffer, capacity, length);
+    return mmay_number_finish(output, output_length, buffer, capacity, length);
 }
 
-RudaNumberFormatStatus ruda_format_f32(
+MarimayNumberFormatStatus mmay_format_f32(
     uint32_t raw_bits,
     char *buffer,
     size_t capacity,
     size_t *length
 ) {
-    return ruda_number_format(
+    return mmay_number_format(
         raw_bits,
-        &ruda_number_f32_profile,
+        &mmay_number_f32_profile,
         buffer,
         capacity,
         length
     );
 }
 
-RudaNumberFormatStatus ruda_format_f64(
+MarimayNumberFormatStatus mmay_format_f64(
     uint64_t raw_bits,
     char *buffer,
     size_t capacity,
     size_t *length
 ) {
-    return ruda_number_format(
+    return mmay_number_format(
         raw_bits,
-        &ruda_number_f64_profile,
+        &mmay_number_f64_profile,
         buffer,
         capacity,
         length

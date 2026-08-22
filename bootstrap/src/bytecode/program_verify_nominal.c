@@ -2,20 +2,20 @@
 
 #include <string.h>
 
-#include "ruda/base/map.h"
+#include "mmay/base/map.h"
 #include "bytecode_internal.h"
 
-typedef struct RudaBytecodeNominalDefinition {
-    const RudaBytecodeFunction *function;
-    RudaBytecodeType type;
+typedef struct MarimayBytecodeNominalDefinition {
+    const MarimayBytecodeFunction *function;
+    MarimayBytecodeType type;
     uint32_t layout;
-} RudaBytecodeNominalDefinition;
+} MarimayBytecodeNominalDefinition;
 
-static bool ruda_bytecode_program_consume_work(
+static bool mmay_bytecode_program_consume_work(
     size_t *work, size_t amount, size_t limit
 ) {
     size_t next = 0;
-    if (work == NULL || !ruda_size_add(*work, amount, &next)
+    if (work == NULL || !mmay_size_add(*work, amount, &next)
         || next > limit) {
         return false;
     }
@@ -23,8 +23,8 @@ static bool ruda_bytecode_program_consume_work(
     return true;
 }
 
-bool ruda_bytecode_program_consume_nominal_work(
-    const RudaBytecodeFunction *function,
+bool mmay_bytecode_program_consume_nominal_work(
+    const MarimayBytecodeFunction *function,
     size_t *work,
     size_t limit
 ) {
@@ -47,38 +47,38 @@ bool ruda_bytecode_program_consume_nominal_work(
         return false;
     }
     for (index = 0; index < sizeof(counts) / sizeof(counts[0]); index += 1) {
-        if (!ruda_bytecode_program_consume_work(work, counts[index], limit)) {
+        if (!mmay_bytecode_program_consume_work(work, counts[index], limit)) {
             return false;
         }
     }
     return true;
 }
 
-bool ruda_bytecode_program_same_type(
-    const RudaBytecodeFunction *left_function,
-    RudaBytecodeType left_type,
+bool mmay_bytecode_program_same_type(
+    const MarimayBytecodeFunction *left_function,
+    MarimayBytecodeType left_type,
     uint32_t left_layout,
-    const RudaBytecodeFunction *right_function,
-    RudaBytecodeType right_type,
+    const MarimayBytecodeFunction *right_function,
+    MarimayBytecodeType right_type,
     uint32_t right_layout
 ) {
-    RudaSymbolId left_symbol;
-    RudaSymbolId right_symbol;
-    bool nominal = left_type == RUDA_BYTECODE_TYPE_RECORD
-        || left_type == RUDA_BYTECODE_TYPE_ENUM
-        || left_type == RUDA_BYTECODE_TYPE_INTERFACE;
+    MarimaySymbolId left_symbol;
+    MarimaySymbolId right_symbol;
+    bool nominal = left_type == MMAY_BYTECODE_TYPE_RECORD
+        || left_type == MMAY_BYTECODE_TYPE_ENUM
+        || left_type == MMAY_BYTECODE_TYPE_INTERFACE;
     if (left_type != right_type) {
         return false;
     }
-    if (left_type == RUDA_BYTECODE_TYPE_ARRAY) {
-        const RudaBytecodeArrayType *left = ruda_bytecode_array_type(
+    if (left_type == MMAY_BYTECODE_TYPE_ARRAY) {
+        const MarimayBytecodeArrayType *left = mmay_bytecode_array_type(
             left_function, left_layout
         );
-        const RudaBytecodeArrayType *right = ruda_bytecode_array_type(
+        const MarimayBytecodeArrayType *right = mmay_bytecode_array_type(
             right_function, right_layout
         );
         return left != NULL && right != NULL
-            && ruda_bytecode_program_same_type(
+            && mmay_bytecode_program_same_type(
                 left_function,
                 left->element_type,
                 left->element_layout,
@@ -88,17 +88,17 @@ bool ruda_bytecode_program_same_type(
             );
     }
     if (!nominal) {
-        return left_layout == RUDA_BYTECODE_NO_LAYOUT
-            && right_layout == RUDA_BYTECODE_NO_LAYOUT;
+        return left_layout == MMAY_BYTECODE_NO_LAYOUT
+            && right_layout == MMAY_BYTECODE_NO_LAYOUT;
     }
     memset(&left_symbol, 0, sizeof(left_symbol));
     memset(&right_symbol, 0, sizeof(right_symbol));
-    if (left_type == RUDA_BYTECODE_TYPE_RECORD) {
-        const RudaBytecodeRecordLayout *left = ruda_bytecode_record_layout(
+    if (left_type == MMAY_BYTECODE_TYPE_RECORD) {
+        const MarimayBytecodeRecordLayout *left = mmay_bytecode_record_layout(
             left_function,
             left_layout
         );
-        const RudaBytecodeRecordLayout *right = ruda_bytecode_record_layout(
+        const MarimayBytecodeRecordLayout *right = mmay_bytecode_record_layout(
             right_function,
             right_layout
         );
@@ -107,12 +107,12 @@ bool ruda_bytecode_program_same_type(
         }
         left_symbol = left->symbol;
         right_symbol = right->symbol;
-    } else if (left_type == RUDA_BYTECODE_TYPE_ENUM) {
-        const RudaBytecodeEnumLayout *left = ruda_bytecode_enum_layout(
+    } else if (left_type == MMAY_BYTECODE_TYPE_ENUM) {
+        const MarimayBytecodeEnumLayout *left = mmay_bytecode_enum_layout(
             left_function,
             left_layout
         );
-        const RudaBytecodeEnumLayout *right = ruda_bytecode_enum_layout(
+        const MarimayBytecodeEnumLayout *right = mmay_bytecode_enum_layout(
             right_function,
             right_layout
         );
@@ -122,55 +122,55 @@ bool ruda_bytecode_program_same_type(
         left_symbol = left->symbol;
         right_symbol = right->symbol;
     } else {
-        const RudaBytecodeInterfaceLayout *left =
-            ruda_bytecode_interface_layout(left_function, left_layout);
-        const RudaBytecodeInterfaceLayout *right =
-            ruda_bytecode_interface_layout(right_function, right_layout);
+        const MarimayBytecodeInterfaceLayout *left =
+            mmay_bytecode_interface_layout(left_function, left_layout);
+        const MarimayBytecodeInterfaceLayout *right =
+            mmay_bytecode_interface_layout(right_function, right_layout);
         if (left == NULL || right == NULL) {
             return false;
         }
         left_symbol = left->symbol;
         right_symbol = right->symbol;
     }
-    return ruda_symbol_id_equal(left_symbol, right_symbol);
+    return mmay_symbol_id_equal(left_symbol, right_symbol);
 }
 
-static RudaBytecodeProgramVerifyStatus ruda_bytecode_program_compare_record(
-    const RudaBytecodeNominalDefinition *left,
-    const RudaBytecodeNominalDefinition *right,
+static MarimayBytecodeProgramVerifyStatus mmay_bytecode_program_compare_record(
+    const MarimayBytecodeNominalDefinition *left,
+    const MarimayBytecodeNominalDefinition *right,
     size_t *work,
     size_t limit
 ) {
-    const RudaBytecodeRecordLayout *left_layout = ruda_bytecode_record_layout(
+    const MarimayBytecodeRecordLayout *left_layout = mmay_bytecode_record_layout(
         left->function,
         left->layout
     );
-    const RudaBytecodeRecordLayout *right_layout = ruda_bytecode_record_layout(
+    const MarimayBytecodeRecordLayout *right_layout = mmay_bytecode_record_layout(
         right->function,
         right->layout
     );
     size_t field = 0;
     if (left_layout == NULL || right_layout == NULL
         || left_layout->field_count != right_layout->field_count) {
-        return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+        return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
     }
     for (field = 0; field < left_layout->field_count; field += 1) {
-        const RudaBytecodeRecordField *left_field = ruda_bytecode_record_field(
+        const MarimayBytecodeRecordField *left_field = mmay_bytecode_record_field(
             left->function,
             left_layout,
             field
         );
-        const RudaBytecodeRecordField *right_field = ruda_bytecode_record_field(
+        const MarimayBytecodeRecordField *right_field = mmay_bytecode_record_field(
             right->function,
             right_layout,
             field
         );
-        if (!ruda_bytecode_program_consume_work(work, 1, limit)) {
-            return RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
+        if (!mmay_bytecode_program_consume_work(work, 1, limit)) {
+            return MMAY_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
         }
         if (left_field == NULL || right_field == NULL
             || left_field->is_mutable != right_field->is_mutable
-            || !ruda_bytecode_program_same_type(
+            || !mmay_bytecode_program_same_type(
                 left->function,
                 left_field->type,
                 left_field->layout,
@@ -178,23 +178,23 @@ static RudaBytecodeProgramVerifyStatus ruda_bytecode_program_compare_record(
                 right_field->type,
                 right_field->layout
             )) {
-            return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+            return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
         }
     }
-    return RUDA_BYTECODE_PROGRAM_VERIFY_OK;
+    return MMAY_BYTECODE_PROGRAM_VERIFY_OK;
 }
 
-static RudaBytecodeProgramVerifyStatus ruda_bytecode_program_compare_enum(
-    const RudaBytecodeNominalDefinition *left,
-    const RudaBytecodeNominalDefinition *right,
+static MarimayBytecodeProgramVerifyStatus mmay_bytecode_program_compare_enum(
+    const MarimayBytecodeNominalDefinition *left,
+    const MarimayBytecodeNominalDefinition *right,
     size_t *work,
     size_t limit
 ) {
-    const RudaBytecodeEnumLayout *left_layout = ruda_bytecode_enum_layout(
+    const MarimayBytecodeEnumLayout *left_layout = mmay_bytecode_enum_layout(
         left->function,
         left->layout
     );
-    const RudaBytecodeEnumLayout *right_layout = ruda_bytecode_enum_layout(
+    const MarimayBytecodeEnumLayout *right_layout = mmay_bytecode_enum_layout(
         right->function,
         right->layout
     );
@@ -203,39 +203,39 @@ static RudaBytecodeProgramVerifyStatus ruda_bytecode_program_compare_enum(
     if (left_layout == NULL || right_layout == NULL
         || left_layout->variant_count != right_layout->variant_count
         || left_layout->payload_count != right_layout->payload_count) {
-        return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+        return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
     }
     for (variant = 0; variant < left_layout->variant_count; variant += 1) {
-        const RudaBytecodeEnumVariant *left_variant = ruda_vector_at_const(
+        const MarimayBytecodeEnumVariant *left_variant = mmay_vector_at_const(
             &left->function->enum_variants,
             left_layout->variant_start + variant
         );
-        const RudaBytecodeEnumVariant *right_variant = ruda_vector_at_const(
+        const MarimayBytecodeEnumVariant *right_variant = mmay_vector_at_const(
             &right->function->enum_variants,
             right_layout->variant_start + variant
         );
-        if (!ruda_bytecode_program_consume_work(work, 1, limit)) {
-            return RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
+        if (!mmay_bytecode_program_consume_work(work, 1, limit)) {
+            return MMAY_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
         }
         if (left_variant == NULL || right_variant == NULL
             || left_variant->payload_count != right_variant->payload_count) {
-            return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+            return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
         }
     }
     for (payload = 0; payload < left_layout->payload_count; payload += 1) {
-        const RudaBytecodeEnumPayload *left_payload = ruda_vector_at_const(
+        const MarimayBytecodeEnumPayload *left_payload = mmay_vector_at_const(
             &left->function->enum_payloads,
             left_layout->payload_start + payload
         );
-        const RudaBytecodeEnumPayload *right_payload = ruda_vector_at_const(
+        const MarimayBytecodeEnumPayload *right_payload = mmay_vector_at_const(
             &right->function->enum_payloads,
             right_layout->payload_start + payload
         );
-        if (!ruda_bytecode_program_consume_work(work, 1, limit)) {
-            return RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
+        if (!mmay_bytecode_program_consume_work(work, 1, limit)) {
+            return MMAY_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
         }
         if (left_payload == NULL || right_payload == NULL
-            || !ruda_bytecode_program_same_type(
+            || !mmay_bytecode_program_same_type(
                 left->function,
                 left_payload->type,
                 left_payload->layout,
@@ -243,82 +243,82 @@ static RudaBytecodeProgramVerifyStatus ruda_bytecode_program_compare_enum(
                 right_payload->type,
                 right_payload->layout
             )) {
-            return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+            return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
         }
     }
-    return RUDA_BYTECODE_PROGRAM_VERIFY_OK;
+    return MMAY_BYTECODE_PROGRAM_VERIFY_OK;
 }
 
-static RudaBytecodeProgramVerifyStatus ruda_bytecode_program_compare_schema(
-    const RudaBytecodeNominalDefinition *left,
-    const RudaBytecodeNominalDefinition *right,
+static MarimayBytecodeProgramVerifyStatus mmay_bytecode_program_compare_schema(
+    const MarimayBytecodeNominalDefinition *left,
+    const MarimayBytecodeNominalDefinition *right,
     size_t *work,
     size_t limit
 ) {
     if (left->type != right->type) {
-        return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+        return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
     }
-    if (left->type == RUDA_BYTECODE_TYPE_RECORD) {
-        return ruda_bytecode_program_compare_record(left, right, work, limit);
+    if (left->type == MMAY_BYTECODE_TYPE_RECORD) {
+        return mmay_bytecode_program_compare_record(left, right, work, limit);
     }
-    if (left->type == RUDA_BYTECODE_TYPE_ENUM) {
-        return ruda_bytecode_program_compare_enum(left, right, work, limit);
+    if (left->type == MMAY_BYTECODE_TYPE_ENUM) {
+        return mmay_bytecode_program_compare_enum(left, right, work, limit);
     }
-    if (left->type == RUDA_BYTECODE_TYPE_INTERFACE) {
-        const RudaBytecodeInterfaceLayout *left_layout =
-            ruda_bytecode_interface_layout(left->function, left->layout);
-        const RudaBytecodeInterfaceLayout *right_layout =
-            ruda_bytecode_interface_layout(right->function, right->layout);
+    if (left->type == MMAY_BYTECODE_TYPE_INTERFACE) {
+        const MarimayBytecodeInterfaceLayout *left_layout =
+            mmay_bytecode_interface_layout(left->function, left->layout);
+        const MarimayBytecodeInterfaceLayout *right_layout =
+            mmay_bytecode_interface_layout(right->function, right->layout);
         return left_layout != NULL && right_layout != NULL
                 && left_layout->method_count == right_layout->method_count
-            ? RUDA_BYTECODE_PROGRAM_VERIFY_OK
-            : RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+            ? MMAY_BYTECODE_PROGRAM_VERIFY_OK
+            : MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
     }
-    return RUDA_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION;
+    return MMAY_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION;
 }
 
-static RudaBytecodeProgramVerifyStatus ruda_bytecode_program_add_schema(
-    RudaMap *definitions,
-    RudaSymbolId symbol,
-    RudaBytecodeNominalDefinition definition,
+static MarimayBytecodeProgramVerifyStatus mmay_bytecode_program_add_schema(
+    MarimayMap *definitions,
+    MarimaySymbolId symbol,
+    MarimayBytecodeNominalDefinition definition,
     size_t *work,
     size_t limit
 ) {
-    const RudaBytecodeNominalDefinition *existing = ruda_map_get_const(
+    const MarimayBytecodeNominalDefinition *existing = mmay_map_get_const(
         definitions,
         symbol.bytes,
         sizeof(symbol.bytes)
     );
-    if (!ruda_bytecode_program_consume_work(work, 1, limit)) {
-        return RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
+    if (!mmay_bytecode_program_consume_work(work, 1, limit)) {
+        return MMAY_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
     }
     if (existing != NULL) {
-        return ruda_bytecode_program_compare_schema(
+        return mmay_bytecode_program_compare_schema(
             existing,
             &definition,
             work,
             limit
         );
     }
-    return ruda_map_put(
+    return mmay_map_put(
             definitions,
             symbol.bytes,
             sizeof(symbol.bytes),
             &definition
         )
-        ? RUDA_BYTECODE_PROGRAM_VERIFY_OK
-        : RUDA_BYTECODE_PROGRAM_VERIFY_ALLOCATION_FAILED;
+        ? MMAY_BYTECODE_PROGRAM_VERIFY_OK
+        : MMAY_BYTECODE_PROGRAM_VERIFY_ALLOCATION_FAILED;
 }
 
-static bool ruda_bytecode_program_nominal_symbol(
-    const RudaBytecodeNominalDefinition *definition,
-    RudaSymbolId *symbol
+static bool mmay_bytecode_program_nominal_symbol(
+    const MarimayBytecodeNominalDefinition *definition,
+    MarimaySymbolId *symbol
 ) {
     if (definition == NULL || definition->function == NULL || symbol == NULL) {
         return false;
     }
-    if (definition->type == RUDA_BYTECODE_TYPE_RECORD) {
-        const RudaBytecodeRecordLayout *layout = ruda_bytecode_record_layout(
+    if (definition->type == MMAY_BYTECODE_TYPE_RECORD) {
+        const MarimayBytecodeRecordLayout *layout = mmay_bytecode_record_layout(
             definition->function,
             definition->layout
         );
@@ -328,8 +328,8 @@ static bool ruda_bytecode_program_nominal_symbol(
         *symbol = layout->symbol;
         return true;
     }
-    if (definition->type == RUDA_BYTECODE_TYPE_ENUM) {
-        const RudaBytecodeEnumLayout *layout = ruda_bytecode_enum_layout(
+    if (definition->type == MMAY_BYTECODE_TYPE_ENUM) {
+        const MarimayBytecodeEnumLayout *layout = mmay_bytecode_enum_layout(
             definition->function,
             definition->layout
         );
@@ -339,9 +339,9 @@ static bool ruda_bytecode_program_nominal_symbol(
         *symbol = layout->symbol;
         return true;
     }
-    if (definition->type == RUDA_BYTECODE_TYPE_INTERFACE) {
-        const RudaBytecodeInterfaceLayout *layout =
-            ruda_bytecode_interface_layout(
+    if (definition->type == MMAY_BYTECODE_TYPE_INTERFACE) {
+        const MarimayBytecodeInterfaceLayout *layout =
+            mmay_bytecode_interface_layout(
                 definition->function,
                 definition->layout
             );
@@ -354,31 +354,31 @@ static bool ruda_bytecode_program_nominal_symbol(
     return false;
 }
 
-RudaBytecodeProgramVerifyStatus ruda_bytecode_program_verify_nominal_schemas(
-    const RudaBytecodeProgram *program,
+MarimayBytecodeProgramVerifyStatus mmay_bytecode_program_verify_nominal_schemas(
+    const MarimayBytecodeProgram *program,
     size_t *work
 ) {
-    RudaMap definitions;
-    RudaBytecodeProgramVerifyStatus status = RUDA_BYTECODE_PROGRAM_VERIFY_OK;
+    MarimayMap definitions;
+    MarimayBytecodeProgramVerifyStatus status = MMAY_BYTECODE_PROGRAM_VERIFY_OK;
     size_t function_index = 0;
     memset(&definitions, 0, sizeof(definitions));
-    if (program == NULL || work == NULL || !ruda_map_init(
+    if (program == NULL || work == NULL || !mmay_map_init(
             &definitions,
             program->allocator,
-            sizeof(RudaBytecodeNominalDefinition),
+            sizeof(MarimayBytecodeNominalDefinition),
             UINT64_C(0x243f6a8885a308d3),
             UINT64_C(0x13198a2e03707344)
         )) {
-        return RUDA_BYTECODE_PROGRAM_VERIFY_ALLOCATION_FAILED;
+        return MMAY_BYTECODE_PROGRAM_VERIFY_ALLOCATION_FAILED;
     }
     for (function_index = 0; function_index < program->functions.length;
         function_index += 1) {
-        const RudaBytecodeProgramFunction *owner =
-            ruda_bytecode_program_function(program, function_index);
-        const RudaBytecodeType types[] = {
-            RUDA_BYTECODE_TYPE_RECORD,
-            RUDA_BYTECODE_TYPE_ENUM,
-            RUDA_BYTECODE_TYPE_INTERFACE
+        const MarimayBytecodeProgramFunction *owner =
+            mmay_bytecode_program_function(program, function_index);
+        const MarimayBytecodeType types[] = {
+            MMAY_BYTECODE_TYPE_RECORD,
+            MMAY_BYTECODE_TYPE_ENUM,
+            MMAY_BYTECODE_TYPE_INTERFACE
         };
         const size_t counts[] = {
             owner != NULL ? owner->body.record_layouts.length : 0,
@@ -387,114 +387,114 @@ RudaBytecodeProgramVerifyStatus ruda_bytecode_program_verify_nominal_schemas(
         };
         size_t type_index = 0;
         if (owner == NULL) {
-            status = RUDA_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION;
+            status = MMAY_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION;
             break;
         }
         for (type_index = 0; type_index < sizeof(types) / sizeof(types[0]);
             type_index += 1) {
             size_t layout = 0;
             for (layout = 0; layout < counts[type_index]; layout += 1) {
-                RudaBytecodeNominalDefinition definition;
-                RudaSymbolId symbol;
+                MarimayBytecodeNominalDefinition definition;
+                MarimaySymbolId symbol;
                 definition.function = &owner->body;
                 definition.type = types[type_index];
                 definition.layout = (uint32_t)layout;
-                if (!ruda_bytecode_program_nominal_symbol(
+                if (!mmay_bytecode_program_nominal_symbol(
                         &definition,
                         &symbol
                     )) {
-                    status = RUDA_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION;
+                    status = MMAY_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION;
                     break;
                 }
-                status = ruda_bytecode_program_add_schema(
+                status = mmay_bytecode_program_add_schema(
                     &definitions,
                     symbol,
                     definition,
                     work,
                     program->options.max_verify_work
                 );
-                if (status != RUDA_BYTECODE_PROGRAM_VERIFY_OK) {
+                if (status != MMAY_BYTECODE_PROGRAM_VERIFY_OK) {
                     break;
                 }
             }
-            if (status != RUDA_BYTECODE_PROGRAM_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_PROGRAM_VERIFY_OK) {
                 break;
             }
         }
-        if (status != RUDA_BYTECODE_PROGRAM_VERIFY_OK) {
+        if (status != MMAY_BYTECODE_PROGRAM_VERIFY_OK) {
             break;
         }
     }
-    ruda_map_dispose(&definitions);
+    mmay_map_dispose(&definitions);
     return status;
 }
 
-RudaBytecodeProgramVerifyStatus
-ruda_bytecode_program_verify_interface_call(
-    const RudaBytecodeProgram *program,
-    const RudaBytecodeProgramFunction *caller,
-    const RudaBytecodeCall *call,
+MarimayBytecodeProgramVerifyStatus
+mmay_bytecode_program_verify_interface_call(
+    const MarimayBytecodeProgram *program,
+    const MarimayBytecodeProgramFunction *caller,
+    const MarimayBytecodeCall *call,
     size_t *work
 ) {
-    const RudaBytecodeCallArgument *receiver = call->argument_count != 0
-        ? ruda_bytecode_call_argument(&caller->body, call->argument_start)
+    const MarimayBytecodeCallArgument *receiver = call->argument_count != 0
+        ? mmay_bytecode_call_argument(&caller->body, call->argument_start)
         : NULL;
-    const RudaBytecodeInterfaceLayout *required = receiver != NULL
-            && receiver->type == RUDA_BYTECODE_TYPE_INTERFACE
-        ? ruda_bytecode_interface_layout(&caller->body, receiver->layout)
+    const MarimayBytecodeInterfaceLayout *required = receiver != NULL
+            && receiver->type == MMAY_BYTECODE_TYPE_INTERFACE
+        ? mmay_bytecode_interface_layout(&caller->body, receiver->layout)
         : NULL;
     size_t function_index = 0;
     bool found = false;
     if (receiver == NULL || required == NULL
         || call->interface_slot >= required->method_count) {
-        return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+        return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
     }
     for (function_index = 0; function_index < program->functions.length;
         function_index += 1) {
-        const RudaBytecodeProgramFunction *owner =
-            ruda_bytecode_program_function(program, function_index);
+        const MarimayBytecodeProgramFunction *owner =
+            mmay_bytecode_program_function(program, function_index);
         size_t construction_index = 0;
-        if (!ruda_bytecode_program_consume_work(
+        if (!mmay_bytecode_program_consume_work(
                 work,
                 1,
                 program->options.max_verify_work
             )) {
-            return RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
+            return MMAY_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
         }
         if (owner == NULL) {
-            return RUDA_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION;
+            return MMAY_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION;
         }
         for (construction_index = 0;
             construction_index < owner->body.interface_constructions.length;
             construction_index += 1) {
-            const RudaBytecodeInterfaceConstruction *construction =
-                ruda_bytecode_interface_construction(
+            const MarimayBytecodeInterfaceConstruction *construction =
+                mmay_bytecode_interface_construction(
                     &owner->body,
-                    (RudaBytecodeInterfaceConstructionId)construction_index
+                    (MarimayBytecodeInterfaceConstructionId)construction_index
                 );
-            const RudaBytecodeInterfaceLayout *actual = construction != NULL
-                ? ruda_bytecode_interface_layout(
+            const MarimayBytecodeInterfaceLayout *actual = construction != NULL
+                ? mmay_bytecode_interface_layout(
                     &owner->body,
                     construction->interface_id
                 )
                 : NULL;
-            const RudaSymbolId *method = construction != NULL
+            const MarimaySymbolId *method = construction != NULL
                     && call->interface_slot < construction->method_count
-                ? ruda_vector_at_const(
+                ? mmay_vector_at_const(
                     &owner->body.interface_methods,
                     construction->method_start + call->interface_slot
                 )
                 : NULL;
-            const RudaBytecodeProgramFunction *callee = NULL;
+            const MarimayBytecodeProgramFunction *callee = NULL;
             size_t argument_index = 0;
-            if (!ruda_bytecode_program_consume_work(
+            if (!mmay_bytecode_program_consume_work(
                     work,
                     1,
                     program->options.max_verify_work
                 )) {
-                return RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
+                return MMAY_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
             }
-            if (actual == NULL || !ruda_symbol_id_equal(
+            if (actual == NULL || !mmay_symbol_id_equal(
                     actual->symbol,
                     required->symbol
                 )) {
@@ -502,14 +502,14 @@ ruda_bytecode_program_verify_interface_call(
             }
             found = true;
             if (method == NULL) {
-                return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+                return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
             }
-            callee = ruda_bytecode_program_function_by_symbol(program, *method);
+            callee = mmay_bytecode_program_function_by_symbol(program, *method);
             if (callee == NULL) {
-                return RUDA_BYTECODE_PROGRAM_VERIFY_UNKNOWN_CALLEE;
+                return MMAY_BYTECODE_PROGRAM_VERIFY_UNKNOWN_CALLEE;
             }
             if (call->argument_count != callee->body.parameter_count
-                || !ruda_bytecode_program_same_type(
+                || !mmay_bytecode_program_same_type(
                     &caller->body,
                     call->result_type,
                     call->result_layout,
@@ -517,56 +517,56 @@ ruda_bytecode_program_verify_interface_call(
                     callee->body.result_type,
                     callee->body.result_layout
                 )) {
-                return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+                return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
             }
             for (argument_index = 0;
                 argument_index < call->argument_count;
                 argument_index += 1) {
-                const RudaBytecodeCallArgument *argument =
-                    ruda_bytecode_call_argument(
+                const MarimayBytecodeCallArgument *argument =
+                    mmay_bytecode_call_argument(
                         &caller->body,
                         call->argument_start + argument_index
                     );
-                const RudaBytecodeType *parameter = ruda_vector_at_const(
+                const MarimayBytecodeType *parameter = mmay_vector_at_const(
                     &callee->body.register_types,
                     argument_index
                 );
-                RudaBytecodeType expected_type = argument_index == 0
+                MarimayBytecodeType expected_type = argument_index == 0
                     ? construction->payload_type
                     : (argument != NULL
                         ? argument->type
-                        : RUDA_BYTECODE_TYPE_INVALID);
+                        : MMAY_BYTECODE_TYPE_INVALID);
                 uint32_t expected_layout = argument_index == 0
                     ? construction->payload_layout
                     : (argument != NULL
                         ? argument->layout
-                        : RUDA_BYTECODE_NO_LAYOUT);
-                const RudaBytecodeFunction *expected_owner =
+                        : MMAY_BYTECODE_NO_LAYOUT);
+                const MarimayBytecodeFunction *expected_owner =
                     argument_index == 0 ? &owner->body : &caller->body;
-                if (!ruda_bytecode_program_consume_work(
+                if (!mmay_bytecode_program_consume_work(
                         work,
                         1,
                         program->options.max_verify_work
                     )) {
-                    return RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
+                    return MMAY_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED;
                 }
-                if (parameter == NULL || !ruda_bytecode_program_same_type(
+                if (parameter == NULL || !mmay_bytecode_program_same_type(
                         expected_owner,
                         expected_type,
                         expected_layout,
                         &callee->body,
                         *parameter,
-                        ruda_bytecode_register_layout(
+                        mmay_bytecode_register_layout(
                             &callee->body,
                             (uint32_t)argument_index
                         )
                     )) {
-                    return RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+                    return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
                 }
             }
         }
     }
     return found
-        ? RUDA_BYTECODE_PROGRAM_VERIFY_OK
-        : RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+        ? MMAY_BYTECODE_PROGRAM_VERIFY_OK
+        : MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
 }

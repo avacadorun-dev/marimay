@@ -4,53 +4,53 @@
 #include "checker_internal.h"
 #include "checker_function_context.h"
 
- bool ruda_checker_private_compile_return(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node
+ bool mmay_checker_private_compile_return(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_compile_block(
-    RudaFunctionChecker *function,
-    const RudaAstNode *block
+ bool mmay_checker_private_compile_block(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *block
 );
 
- bool ruda_checker_private_compile_condition(
-    RudaFunctionChecker *function,
-    const RudaAstNode *expression,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_condition(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *expression,
+    MarimayExpressionValue *result
 );
- bool ruda_checker_private_compile_scoped_block(
-    RudaFunctionChecker *function,
-    const RudaAstNode *block
+ bool mmay_checker_private_compile_scoped_block(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *block
 );
- bool ruda_checker_private_merge_initialization_states(
-    RudaFunctionChecker *function,
-    const RudaInitializationSnapshot *when_true,
+ bool mmay_checker_private_merge_initialization_states(
+    MarimayFunctionChecker *function,
+    const MarimayInitializationSnapshot *when_true,
     bool true_continues,
-    const RudaInitializationSnapshot *when_false,
+    const MarimayInitializationSnapshot *when_false,
     bool false_continues
 );
- bool ruda_checker_private_compile_if(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node
+ bool mmay_checker_private_compile_if(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_compile_while(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node
+ bool mmay_checker_private_compile_while(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_compile_c_for(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node
+ bool mmay_checker_private_compile_c_for(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_compile_array_for(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node
+ bool mmay_checker_private_compile_array_for(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_compile_loop_control(
-    RudaFunctionChecker *function,
-    const RudaAstNode *statement
+ bool mmay_checker_private_compile_loop_control(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *statement
 );
- bool ruda_checker_private_compile_statement(
-    RudaFunctionChecker *function,
-    const RudaAstNode *statement
+ bool mmay_checker_private_compile_statement(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *statement
 );
 #endif

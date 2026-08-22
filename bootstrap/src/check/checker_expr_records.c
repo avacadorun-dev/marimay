@@ -9,90 +9,90 @@
 
 
 
- bool ruda_checker_private_compile_record_construction(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaTypeId expected,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_record_construction(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
 ) {
-    const RudaAstNode *name_node = ruda_checker_private_check_child_node(
+    const MarimayAstNode *name_node = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_NAME_EXPRESSION,
+        MMAY_SYNTAX_NAME_EXPRESSION,
         0
     );
-    const RudaAstNode *fields_node = ruda_checker_private_check_child_node(
+    const MarimayAstNode *fields_node = mmay_checker_private_check_child_node(
         node,
-        RUDA_SYNTAX_RECORD_FIELDS,
+        MMAY_SYNTAX_RECORD_FIELDS,
         0
     );
-    const RudaSyntaxToken *type_token = ruda_checker_private_check_child_token(
+    const MarimaySyntaxToken *type_token = mmay_checker_private_check_child_token(
         name_node,
-        RUDA_TOKEN_IDENTIFIER,
+        MMAY_TOKEN_IDENTIFIER,
         0
     );
-    RudaCheckName type_name;
-    RudaCheckRecordDeclaration *declaration = NULL;
-    RudaCheckRecordDeclaration concrete;
-    RudaCheckTypeAliasDeclaration *alias = NULL;
-    RudaMirRecordArgument *arguments = NULL;
+    MarimayCheckName type_name;
+    MarimayCheckRecordDeclaration *declaration = NULL;
+    MarimayCheckRecordDeclaration concrete;
+    MarimayCheckTypeAliasDeclaration *alias = NULL;
+    MarimayMirRecordArgument *arguments = NULL;
     unsigned char *seen = NULL;
     size_t argument_bytes = 0;
     size_t seen_bytes = 0;
     size_t new_argument_count = 0;
     size_t child_index = 0;
     size_t supplied_count = 0;
-    RudaMirRecordId record = RUDA_MIR_NO_RECORD;
-    RudaMirRecordConstructionId construction =
-        RUDA_MIR_NO_RECORD_CONSTRUCTION;
-    RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-    RudaMirInstruction instruction;
+    MarimayMirRecordId record = MMAY_MIR_NO_RECORD;
+    MarimayMirRecordConstructionId construction =
+        MMAY_MIR_NO_RECORD_CONSTRUCTION;
+    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+    MarimayMirInstruction instruction;
     bool accepted = false;
     if (function->constant_evaluation) {
-        ruda_checker_fail(
+        mmay_checker_fail(
             function->checker,
-            RUDA_CHECK_INCOMPLETE_LANGUAGE
+            MMAY_CHECK_INCOMPLETE_LANGUAGE
         );
         goto cleanup;
     }
     if (name_node == NULL || fields_node == NULL || type_token == NULL
         || type_token->synthetic) {
-        ruda_checker_fail(
+        mmay_checker_fail(
             function->checker,
-            RUDA_CHECK_INCOMPLETE_LANGUAGE
+            MMAY_CHECK_INCOMPLETE_LANGUAGE
         );
         goto cleanup;
     }
     type_name.snapshot = function->checker->ast->snapshot;
     type_name.start = type_token->start;
     type_name.end = type_token->end;
-    declaration = ruda_checker_private_checker_find_record(function->checker, type_name);
+    declaration = mmay_checker_private_checker_find_record(function->checker, type_name);
     if (declaration == NULL) {
-        alias = ruda_checker_private_checker_find_type_alias(function->checker, type_name);
-        if (alias != NULL && ruda_checker_private_evaluate_type_alias(
+        alias = mmay_checker_private_checker_find_type_alias(function->checker, type_name);
+        if (alias != NULL && mmay_checker_private_evaluate_type_alias(
                 function->checker,
                 alias,
                 type_name.start,
                 type_name.end
             )) {
-            declaration = ruda_checker_private_checker_find_record_by_type(
+            declaration = mmay_checker_private_checker_find_record_by_type(
                 function->checker,
                 alias->type
             );
         }
     }
     if (declaration == NULL) {
-        if (ruda_checker_private_checker_find_top_level(function->checker, type_name) != NULL) {
-            (void)ruda_checker_add_diagnostic(
+        if (mmay_checker_private_checker_find_top_level(function->checker, type_name) != NULL) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "constructed name is not a nominal record type",
                 type_name.start,
                 type_name.end
             );
         } else {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_UNKNOWN_TYPE,
+                MMAY_DIAGNOSTIC_UNKNOWN_TYPE,
                 "unknown record type name",
                 type_name.start,
                 type_name.end
@@ -102,16 +102,16 @@
     }
     concrete = *declaration;
     if (declaration->is_generic) {
-        const RudaTypeDescriptor *descriptor = expected == RUDA_TYPE_INVALID
-            ? NULL : ruda_type_descriptor(
+        const MarimayTypeDescriptor *descriptor = expected == MMAY_TYPE_INVALID
+            ? NULL : mmay_type_descriptor(
                 &function->checker->result->types, expected
             );
-        if (descriptor == NULL || descriptor->kind != RUDA_TYPE_KIND_NOMINAL
-            || !ruda_symbol_id_equal(descriptor->symbol, declaration->symbol)
+        if (descriptor == NULL || descriptor->kind != MMAY_TYPE_KIND_NOMINAL
+            || !mmay_symbol_id_equal(descriptor->symbol, declaration->symbol)
             || descriptor->argument_count != declaration->type_parameters.length) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "generic record construction requires an expected concrete record type",
                 node->start,
                 node->end
@@ -120,38 +120,38 @@
         }
         concrete.type = expected;
     }
-    if (!ruda_size_multiply(
+    if (!mmay_size_multiply(
             declaration->fields.length,
-            sizeof(RudaMirRecordArgument),
+            sizeof(MarimayMirRecordArgument),
             &argument_bytes
         )) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
         goto cleanup;
     }
     seen_bytes = declaration->fields.length;
     if (argument_bytes != 0) {
-        arguments = ruda_allocate(
+        arguments = mmay_allocate(
             &function->checker->result->allocator,
             argument_bytes
         );
         if (arguments == NULL) {
-            ruda_checker_fail(
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_ALLOCATION_FAILED
+                MMAY_CHECK_ALLOCATION_FAILED
             );
             goto cleanup;
         }
         memset(arguments, 0, argument_bytes);
     }
     if (seen_bytes != 0) {
-        seen = ruda_allocate(
+        seen = mmay_allocate(
             &function->checker->result->allocator,
             seen_bytes
         );
         if (seen == NULL) {
-            ruda_checker_fail(
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_ALLOCATION_FAILED
+                MMAY_CHECK_ALLOCATION_FAILED
             );
             goto cleanup;
         }
@@ -159,59 +159,59 @@
     }
     for (child_index = 0; child_index < fields_node->child_count;
         child_index += 1) {
-        const RudaAstElement *element = ruda_ast_child(
+        const MarimayAstElement *element = mmay_ast_child(
             fields_node,
             child_index
         );
-        const RudaAstNode *field_node = NULL;
-        const RudaAstNode *expression = NULL;
-        const RudaSyntaxToken *field_token = NULL;
-        RudaCheckName field_name;
-        RudaCheckRecordFieldDeclaration *field = NULL;
-        RudaExpressionValue value;
-        RudaTypeId expected_field_type = RUDA_TYPE_INVALID;
+        const MarimayAstNode *field_node = NULL;
+        const MarimayAstNode *expression = NULL;
+        const MarimaySyntaxToken *field_token = NULL;
+        MarimayCheckName field_name;
+        MarimayCheckRecordFieldDeclaration *field = NULL;
+        MarimayExpressionValue value;
+        MarimayTypeId expected_field_type = MMAY_TYPE_INVALID;
         size_t field_index = 0;
         if (element == NULL) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
             goto cleanup;
         }
-        if (element->kind != RUDA_AST_ELEMENT_NODE) {
+        if (element->kind != MMAY_AST_ELEMENT_NODE) {
             if (element->as.token.synthetic) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INVALID_ARGUMENT
+                    MMAY_CHECK_INVALID_ARGUMENT
                 );
                 goto cleanup;
             }
             continue;
         }
         field_node = element->as.node;
-        if (field_node == NULL || field_node->kind != RUDA_SYNTAX_FIELD_VALUE) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        if (field_node == NULL || field_node->kind != MMAY_SYNTAX_FIELD_VALUE) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
             goto cleanup;
         }
-        field_token = ruda_checker_private_check_child_token(
+        field_token = mmay_checker_private_check_child_token(
             field_node,
-            RUDA_TOKEN_IDENTIFIER,
+            MMAY_TOKEN_IDENTIFIER,
             0
         );
         if (field_token == NULL || field_token->synthetic) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
             goto cleanup;
         }
         field_name.snapshot = function->checker->ast->snapshot;
         field_name.start = field_token->start;
         field_name.end = field_token->end;
-        field = ruda_checker_private_checker_find_record_field(
+        field = mmay_checker_private_checker_find_record_field(
             function->checker,
             declaration,
             field_name,
             &field_index
         );
         if (field == NULL) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_UNKNOWN_FIELD,
+                MMAY_DIAGNOSTIC_UNKNOWN_FIELD,
                 "record type has no field with this name",
                 field_name.start,
                 field_name.end
@@ -220,34 +220,34 @@
         }
         if (seen == NULL || arguments == NULL
             || field_index >= declaration->fields.length) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }
         if (seen[field_index] != 0) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_DUPLICATE_FIELD,
+                MMAY_DIAGNOSTIC_DUPLICATE_FIELD,
                 "record field is supplied more than once",
                 field_name.start,
                 field_name.end
             );
             goto cleanup;
         }
-        expression = ruda_checker_private_check_child_node(
+        expression = mmay_checker_private_check_child_node(
             field_node,
-            RUDA_SYNTAX_EXPRESSION,
+            MMAY_SYNTAX_EXPRESSION,
             0
         );
         memset(&value, 0, sizeof(value));
-        value.register_id = RUDA_MIR_NO_REGISTER;
-        if (!ruda_checker_private_substitute_nominal_member_type(
+        value.register_id = MMAY_MIR_NO_REGISTER;
+        if (!mmay_checker_private_substitute_nominal_member_type(
                 function, concrete.type, &concrete.type_parameters,
                 field->type, &expected_field_type
             )) {
             goto cleanup;
         }
         if (expression != NULL) {
-            if (!ruda_compile_expression(
+            if (!mmay_compile_expression(
                     function,
                     expression,
                     expected_field_type,
@@ -255,20 +255,20 @@
                 )) {
                 goto cleanup;
             }
-            if (ruda_expression_is_never(function, &value)) {
+            if (mmay_expression_is_never(function, &value)) {
                 *result = value;
                 accepted = true;
                 goto cleanup;
             }
         } else {
-            const RudaCheckLocal *local = ruda_checker_private_function_find_local(
+            const MarimayCheckLocal *local = mmay_checker_private_function_find_local(
                 function,
                 field_name
             );
             if (local == NULL) {
-                (void)ruda_checker_add_diagnostic(
+                (void)mmay_checker_add_diagnostic(
                     function->checker,
-                    RUDA_DIAGNOSTIC_UNKNOWN_NAME,
+                    MMAY_DIAGNOSTIC_UNKNOWN_NAME,
                     "record field shorthand requires a visible local",
                     field_name.start,
                     field_name.end
@@ -276,9 +276,9 @@
                 goto cleanup;
             }
             if (!local->initialized) {
-                (void)ruda_checker_add_diagnostic(
+                (void)mmay_checker_add_diagnostic(
                     function->checker,
-                    RUDA_DIAGNOSTIC_UNINITIALIZED_LOCAL,
+                    MMAY_DIAGNOSTIC_UNINITIALIZED_LOCAL,
                     "record field shorthand reads an uninitialized local",
                     field_name.start,
                     field_name.end
@@ -290,9 +290,9 @@
             value.valid = true;
         }
         if (value.type != expected_field_type) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "record field value type does not match its declaration",
                 expression != NULL ? expression->start : field_name.start,
                 expression != NULL ? expression->end : field_name.end
@@ -305,54 +305,54 @@
         supplied_count += 1;
     }
     if (supplied_count != declaration->fields.length) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_MISSING_FIELD,
+            MMAY_DIAGNOSTIC_MISSING_FIELD,
             "record construction omits a required field",
             node->start,
             node->end
         );
         goto cleanup;
     }
-    if (!ruda_checker_private_function_record_layout(function, &concrete, &record)) {
+    if (!mmay_checker_private_function_record_layout(function, &concrete, &record)) {
         goto cleanup;
     }
     if (function->mir.record_constructions.length
             >= function->mir.options.max_record_constructions
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->mir.record_arguments.length,
             concrete.fields.length,
             &new_argument_count
         ) || new_argument_count > function->mir.options.max_record_arguments) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
         goto cleanup;
     }
-    if (!ruda_mir_add_record_construction(
+    if (!mmay_mir_add_record_construction(
             &function->mir,
             record,
             arguments,
             declaration->fields.length,
             &construction
         )) {
-        ruda_checker_fail(
+        mmay_checker_fail(
             function->checker,
-            RUDA_CHECK_ALLOCATION_FAILED
+            MMAY_CHECK_ALLOCATION_FAILED
         );
         goto cleanup;
     }
-    if (!ruda_function_add_register(function, concrete.type, &target)) {
+    if (!mmay_function_add_register(function, concrete.type, &target)) {
         goto cleanup;
     }
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_RECORD_NEW;
+    instruction.kind = MMAY_MIR_RECORD_NEW;
     instruction.target = target;
-    instruction.first = RUDA_MIR_NO_REGISTER;
-    instruction.second = RUDA_MIR_NO_REGISTER;
+    instruction.first = MMAY_MIR_NO_REGISTER;
+    instruction.second = MMAY_MIR_NO_REGISTER;
     instruction.record = record;
     instruction.record_construction = construction;
     instruction.span.start = node->start;
     instruction.span.end = node->end;
-    if (!ruda_function_append_instruction(function, &instruction)) {
+    if (!mmay_function_append_instruction(function, &instruction)) {
         goto cleanup;
     }
     result->type = concrete.type;
@@ -361,38 +361,38 @@
     accepted = true;
 
 cleanup:
-    ruda_deallocate(
+    mmay_deallocate(
         &function->checker->result->allocator,
         seen,
         seen_bytes
     );
-    ruda_deallocate(
+    mmay_deallocate(
         &function->checker->result->allocator,
         arguments,
         argument_bytes
     );
-    return accepted && !ruda_checker_has_failed(function->checker);
+    return accepted && !mmay_checker_has_failed(function->checker);
 }
 
- bool ruda_checker_private_member_parts(
-    const RudaAstNode *node,
-    const RudaAstNode **receiver,
-    const RudaSyntaxToken **member
+ bool mmay_checker_private_member_parts(
+    const MarimayAstNode *node,
+    const MarimayAstNode **receiver,
+    const MarimaySyntaxToken **member
 ) {
     size_t index = 0;
     *receiver = NULL;
     *member = NULL;
     for (index = 0; node != NULL && index < node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(node, index);
+        const MarimayAstElement *element = mmay_ast_child(node, index);
         if (element == NULL) {
             return false;
         }
-        if (element->kind == RUDA_AST_ELEMENT_NODE) {
+        if (element->kind == MMAY_AST_ELEMENT_NODE) {
             if (*receiver != NULL) {
                 return false;
             }
             *receiver = element->as.node;
-        } else if (element->as.token.kind == RUDA_TOKEN_IDENTIFIER) {
+        } else if (element->as.token.kind == MMAY_TOKEN_IDENTIFIER) {
             if (*member != NULL) {
                 return false;
             }
@@ -402,59 +402,59 @@ cleanup:
     return *receiver != NULL && *member != NULL && !(*member)->synthetic;
 }
 
- bool ruda_checker_private_resolve_record_member(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaExpressionValue *receiver,
-    RudaCheckRecordDeclaration **record_declaration,
-    RudaCheckRecordFieldDeclaration **field_declaration,
-    const RudaCheckedRecordField **imported_field,
-    RudaMirRecordId *record,
+ bool mmay_checker_private_resolve_record_member(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayExpressionValue *receiver,
+    MarimayCheckRecordDeclaration **record_declaration,
+    MarimayCheckRecordFieldDeclaration **field_declaration,
+    const MarimayCheckedRecordField **imported_field,
+    MarimayMirRecordId *record,
     size_t *field_index
 ) {
-    const RudaAstNode *receiver_node = NULL;
-    const RudaSyntaxToken *field_token = NULL;
-    RudaCheckName field_name;
-    const RudaCheckedRecord *imported_record = NULL;
+    const MarimayAstNode *receiver_node = NULL;
+    const MarimaySyntaxToken *field_token = NULL;
+    MarimayCheckName field_name;
+    const MarimayCheckedRecord *imported_record = NULL;
     size_t imported_index = 0;
     const unsigned char *field_bytes = NULL;
     size_t field_length = 0;
-    RudaCheckRecordDeclaration concrete;
+    MarimayCheckRecordDeclaration concrete;
     *record_declaration = NULL;
     *field_declaration = NULL;
     *imported_field = NULL;
-    if (!ruda_checker_private_member_parts(node, &receiver_node, &field_token)
-        || !ruda_compile_expression(
+    if (!mmay_checker_private_member_parts(node, &receiver_node, &field_token)
+        || !mmay_compile_expression(
             function,
             receiver_node,
-            RUDA_TYPE_INVALID,
+            MMAY_TYPE_INVALID,
             receiver
         )) {
-        if (!ruda_checker_has_failed(function->checker)
+        if (!mmay_checker_has_failed(function->checker)
             && function->checker->result->diagnostics.length
                 == function->diagnostic_start) {
-            ruda_checker_fail(
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INVALID_ARGUMENT
+                MMAY_CHECK_INVALID_ARGUMENT
             );
         }
         return false;
     }
-    if (ruda_expression_is_never(function, receiver)) {
+    if (mmay_expression_is_never(function, receiver)) {
         return true;
     }
-    *record_declaration = ruda_checker_private_checker_find_record_by_type(
+    *record_declaration = mmay_checker_private_checker_find_record_by_type(
         function->checker,
         receiver->type
     );
     if (*record_declaration == NULL) {
-        imported_record = ruda_check_imported_record_by_type(
+        imported_record = mmay_check_imported_record_by_type(
             function->checker, receiver->type
         );
         if (imported_record == NULL) {
-            ruda_checker_fail(
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_INCOMPLETE_LANGUAGE
+                MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
         }
@@ -463,18 +463,18 @@ cleanup:
     field_name.start = field_token->start;
     field_name.end = field_token->end;
     if (*record_declaration != NULL) {
-        *field_declaration = ruda_checker_private_checker_find_record_field(
+        *field_declaration = mmay_checker_private_checker_find_record_field(
             function->checker,
             *record_declaration,
             field_name,
             field_index
         );
-    } else if (ruda_checker_private_check_name_bytes(
+    } else if (mmay_checker_private_check_name_bytes(
             field_name, &field_bytes, &field_length
         )) {
         for (imported_index = 0; imported_index < imported_record->fields.length;
             imported_index += 1) {
-            const RudaCheckedRecordField *candidate = ruda_vector_at_const(
+            const MarimayCheckedRecordField *candidate = mmay_vector_at_const(
                 &imported_record->fields, imported_index
             );
             if (candidate != NULL && candidate->name.length == field_length
@@ -486,9 +486,9 @@ cleanup:
         }
     }
     if (*field_declaration == NULL && *imported_field == NULL) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_UNKNOWN_FIELD,
+            MMAY_DIAGNOSTIC_UNKNOWN_FIELD,
             "record type has no field with this name",
             field_name.start,
             field_name.end
@@ -496,9 +496,9 @@ cleanup:
         return false;
     }
     if (*imported_field != NULL && !(*imported_field)->is_public) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_PRIVATE_IMPORT,
+            MMAY_DIAGNOSTIC_PRIVATE_IMPORT,
             "record field is package-private in the owning package",
             field_name.start,
             field_name.end
@@ -506,46 +506,46 @@ cleanup:
         return false;
     }
     if (imported_record != NULL) {
-        return ruda_checker_private_imported_record_layout(
+        return mmay_checker_private_imported_record_layout(
             function, imported_record, receiver->type, record
         );
     }
     if ((*record_declaration)->is_generic) {
-        const RudaTypeDescriptor *descriptor = ruda_type_descriptor(
+        const MarimayTypeDescriptor *descriptor = mmay_type_descriptor(
             &function->checker->result->types, receiver->type
         );
-        if (descriptor == NULL || descriptor->kind != RUDA_TYPE_KIND_NOMINAL
-            || !ruda_symbol_id_equal(
+        if (descriptor == NULL || descriptor->kind != MMAY_TYPE_KIND_NOMINAL
+            || !mmay_symbol_id_equal(
                 descriptor->symbol, (*record_declaration)->symbol
             ) || descriptor->argument_count
                 != (*record_declaration)->type_parameters.length) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
         concrete = **record_declaration;
         concrete.type = receiver->type;
-        return ruda_checker_private_function_record_layout(
+        return mmay_checker_private_function_record_layout(
             function, &concrete, record
         );
     }
-    return ruda_checker_private_function_record_layout(
+    return mmay_checker_private_function_record_layout(
         function, *record_declaration, record
     );
 }
 
- bool ruda_checker_private_compile_record_member(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaExpressionValue *result
+ bool mmay_checker_private_compile_record_member(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayExpressionValue *result
 ) {
-    RudaExpressionValue receiver;
-    RudaCheckRecordDeclaration *record_declaration = NULL;
-    RudaCheckRecordFieldDeclaration *field_declaration = NULL;
-    const RudaCheckedRecordField *imported_field = NULL;
-    RudaMirRecordId record = RUDA_MIR_NO_RECORD;
+    MarimayExpressionValue receiver;
+    MarimayCheckRecordDeclaration *record_declaration = NULL;
+    MarimayCheckRecordFieldDeclaration *field_declaration = NULL;
+    const MarimayCheckedRecordField *imported_field = NULL;
+    MarimayMirRecordId record = MMAY_MIR_NO_RECORD;
     size_t field_index = 0;
     memset(&receiver, 0, sizeof(receiver));
-    if (!ruda_checker_private_resolve_record_member(
+    if (!mmay_checker_private_resolve_record_member(
             function,
             node,
             &receiver,
@@ -557,16 +557,16 @@ cleanup:
         )) {
         return false;
     }
-    if (ruda_expression_is_never(function, &receiver)) {
+    if (mmay_expression_is_never(function, &receiver)) {
         *result = receiver;
         return true;
     }
     {
-        RudaTypeId field_type = field_declaration != NULL
+        MarimayTypeId field_type = field_declaration != NULL
             ? field_declaration->type : imported_field->type;
         if (field_declaration != NULL && record_declaration != NULL
             && record_declaration->is_generic
-            && !ruda_checker_private_substitute_nominal_member_type(
+            && !mmay_checker_private_substitute_nominal_member_type(
                 function,
                 receiver.type,
                 &record_declaration->type_parameters,
@@ -576,12 +576,12 @@ cleanup:
             return false;
         }
         if (imported_field != NULL) {
-            const RudaCheckedRecord *imported_record =
-                ruda_check_imported_record_by_type(
+            const MarimayCheckedRecord *imported_record =
+                mmay_check_imported_record_by_type(
                     function->checker, receiver.type
                 );
             if (imported_record == NULL
-                || !ruda_checker_private_substitute_nominal_member_type(
+                || !mmay_checker_private_substitute_nominal_member_type(
                     function,
                     receiver.type,
                     &imported_record->type_parameters,
@@ -589,12 +589,12 @@ cleanup:
                     &field_type
                 )) return false;
         }
-        return ruda_checker_private_function_emit_record_access(
+        return mmay_checker_private_function_emit_record_access(
             function,
-            RUDA_MIR_RECORD_GET,
+            MMAY_MIR_RECORD_GET,
             field_type,
             receiver.register_id,
-            RUDA_MIR_NO_REGISTER,
+            MMAY_MIR_NO_REGISTER,
             record,
             field_index,
             node->start,

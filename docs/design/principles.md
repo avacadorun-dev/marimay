@@ -1,4 +1,4 @@
-# Ruda design constitution
+# Marimay design constitution
 
 Status: accepted design baseline.
 
@@ -6,9 +6,9 @@ These principles decide trade-offs when individual syntax preferences conflict. 
 
 ## 1. Complexity belongs in one compiler, not every program
 
-Ruda accepts implementation complexity when it removes recurring application complexity. Compiler-inferred task suspension is the canonical example: generating resumable frames twice is harder for the compiler team, but exposing async colors, futures, pinning, and executor compatibility would charge every user forever.
+Marimay accepts implementation complexity when it removes recurring application complexity. Compiler-inferred task suspension is the canonical example: generating resumable frames twice is harder for the compiler team, but exposing async colors, futures, pinning, and executor compatibility would charge every user forever.
 
-This principle is not a license for hidden magic. The compiler must expose inferred behavior in diagnostics, docs, MIR dumps, tracing, and `ruda explain`.
+This principle is not a license for hidden magic. The compiler must expose inferred behavior in diagnostics, docs, MIR dumps, tracing, and `mmay explain`.
 
 ## 2. One source program has one meaning
 
@@ -36,7 +36,7 @@ Memory is managed. Expected failures are typed. Mutable fields are explicit. Raw
 
 ## 8. Concurrency is structured; parallelism is isolated
 
-Lightweight tasks within an isolate share one cooperatively scheduled heap and cannot outlive their lexical task scope. CPU-parallel work uses separate isolates with no shared mutable heap. Values cross isolate boundaries by checked copy or explicit transfer. This makes data races absent by construction in safe Ruda 1.x without adding ownership syntax.
+Lightweight tasks within an isolate share one cooperatively scheduled heap and cannot outlive their lexical task scope. CPU-parallel work uses separate isolates with no shared mutable heap. Values cross isolate boundaries by checked copy or explicit transfer. This makes data races absent by construction in safe Marimay 1.x without adding ownership syntax.
 
 ## 9. Predictability beats clever coercion
 
@@ -44,7 +44,7 @@ Evaluation is left to right. Numeric conversions are explicit. Integer overflow 
 
 ## 10. The happy path has no tool assembly step
 
-Installing Ruda installs `ruda run`, `ruda build`, `ruda check`, `ruda fmt`, `ruda test`, documentation, package operations, linting, fuzzing, and the runtime. Defaults work without configuration; CI flags are small extensions of the same commands.
+Installing Marimay installs `mmay run`, `mmay build`, `mmay check`, `mmay fmt`, `mmay test`, documentation, package operations, linting, fuzzing, and the runtime. Defaults work without configuration; CI flags are small extensions of the same commands.
 
 ## 11. Fast feedback and production speed are separate optimizations
 
@@ -69,7 +69,7 @@ Every feature adds grammar, type interactions, diagnostics, formatter behavior, 
 ## 16. Semantic facts, tools, enforcement, and trust are separate layers
 
 A property belongs to the language only when it changes the meaning or static
-validity of a Ruda program. The compiler proves those rules and publishes
+validity of a Marimay program. The compiler proves those rules and publishes
 stable facts such as typed trees, symbol graphs, effect summaries, MIR, and
 diagnostics. Formatter, semantic-diff, dependency-analysis, test, property,
 fuzz, and vet tools consume those facts without turning their policies into
@@ -78,7 +78,7 @@ source semantics.
 Runtime and operating-system boundaries enforce granted resources and limits.
 CI and project governance decide required checks, acceptable coverage,
 attestation, review authority, and release eligibility. Author identity,
-whether code was generated, and whether an agent participated are not Ruda
-language concepts. Shipping all first-party workflows through one `ruda`
+whether code was generated, and whether an agent participated are not Marimay
+language concepts. Shipping all first-party workflows through one `mmay`
 executable is a cohesive product decision, not a collapse of these
 responsibilities.

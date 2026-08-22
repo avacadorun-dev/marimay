@@ -4,11 +4,11 @@
 #include "checker_internal.h"
 #include "checker_package_context.h"
 
-bool ruda_checker_private_collect_interface_declaration(
-    RudaChecker *checker,
-    const RudaAstNode *node
+bool mmay_checker_private_collect_interface_declaration(
+    MarimayChecker *checker,
+    const MarimayAstNode *node
 );
-bool ruda_checker_private_resolve_all_interface_methods(RudaChecker *checker);
-bool ruda_checker_private_publish_interfaces(RudaChecker *checker);
+bool mmay_checker_private_resolve_all_interface_methods(MarimayChecker *checker);
+bool mmay_checker_private_publish_interfaces(MarimayChecker *checker);
 
 #endif

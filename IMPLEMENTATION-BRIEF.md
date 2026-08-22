@@ -1,4 +1,4 @@
-# Ruda compiler and production implementation brief
+# Marimay compiler and production implementation brief
 
 Status: implementation handoff.  
 Audience: an autonomous implementation/documentation/test agent or compiler team.  
@@ -6,15 +6,15 @@ Initial implementation language: portable C17.
 
 ## 1. Mission
 
-Build Ruda from an empty repository into a production-credible language implementation while preserving the normative contracts under `docs/spec/`.
+Build Marimay from an empty repository into a production-credible language implementation while preserving the normative contracts under `docs/spec/`.
 
 Canonical target positioning:
 
-> “Ruda is a statically typed, garbage-collected programming language for reliable native applications—from CLIs and network services to desktop software. It combines algebraic data types, structural interfaces, direct-style structured concurrency, and a unified VM/native toolchain, without null, async coloring, or exceptions for expected failures.”
+> “Marimay is a statically typed, garbage-collected programming language for reliable native applications—from CLIs and network services to desktop software. It combines algebraic data types, structural interfaces, direct-style structured concurrency, and a unified VM/native toolchain, without null, async coloring, or exceptions for expected failures.”
 
-> «Ruda — статически типизированный язык программирования с управляемой памятью для создания надёжных нативных приложений: от CLI и сетевых сервисов до десктопных программ. Он сочетает алгебраические типы данных, структурные интерфейсы, прямой стиль структурированной конкурентности и единый VM/native toolchain — без null, async-окраски и исключений для ожидаемых ошибок».
+> «Marimay — статически типизированный язык программирования с управляемой памятью для создания надёжных нативных приложений: от CLI и сетевых сервисов до десктопных программ. Он сочетает алгебраические типы данных, структурные интерфейсы, прямой стиль структурированной конкурентности и единый VM/native toolchain — без null, async-окраски и исключений для ожидаемых ошибок».
 
-Ruda means ore: source material transformed by a clear language, strict types, and a cohesive toolchain into reliable native software. This is the intended product position, not a present-tense implementation claim. At the date of this brief, the C17 Stage 0 provides the `ruda` executable, lossless frontend, and canonical formatter; type checking, VM/native execution, networking, and desktop support remain roadmap deliverables.
+Marimay means ore: source material transformed by a clear language, strict types, and a cohesive toolchain into reliable native software. This is the intended product position, not a present-tense implementation claim. At the date of this brief, the C17 Stage 0 provides the `mmay` executable, lossless frontend, and canonical formatter; type checking, VM/native execution, networking, and desktop support remain roadmap deliverables.
 
 The assignment is not complete when a parser prints an AST or when a toy program runs. Completion requires:
 
@@ -22,7 +22,7 @@ The assignment is not complete when a parser prints an AST or when a toy program
 - the bytecode VM and native C17 AOT backend from one typed MIR;
 - algebraic enums, exhaustive match, structural interfaces, first-parameter dot calls, `Option`, `Result`, and `?`;
 - direct-style suspending I/O, `scope`-owned `spawn`, cancellation, isolates, and managed memory;
-- first-party `ruda fmt`, `ruda test`, packages, docs, vet, fuzzing, diagnostics, and audit;
+- first-party `mmay fmt`, `mmay test`, packages, docs, vet, fuzzing, diagnostics, and audit;
 - reproducible self-hosting with a retained C17 root of trust;
 - platform, security, compatibility, performance, and operational evidence for 1.0;
 - a reference production service built and operated with the public toolchain.
@@ -30,10 +30,10 @@ The assignment is not complete when a parser prints an AST or when a toy program
 The everyday user path must remain:
 
 ```sh
-ruda fmt
-ruda test
-ruda run .
-ruda build --release
+mmay fmt
+mmay test
+mmay run .
+mmay build --release
 ```
 
 Do not satisfy the checklist by exposing compiler/runtime machinery in application syntax. Complexity belongs behind these commands.
@@ -60,7 +60,7 @@ When these disagree, `AGENTS.md` defines precedence. Resolve a conflict in desig
 - Core source forms are `fn`, `scope`, `type Name { ... }`, `Name { ... }`, `$"...{value}..."`, and one `public` visibility modifier; do not add compatibility aliases.
 - No `impl`, `async`, `await`, `Future`, `null`, exceptions, classes, lifetime annotations, or shared-memory user threads.
 - No parser-only feature claims: syntax, types, formatter, both engines, diagnostics, and tests land together.
-- D001 accepts the repository identity `Ruda`, executable `ruda`, source extension `.ruda`, and related first-party artifact names. N0 still blocks I7 public namespace commitments and every public preview/alpha until legal review and external domains, accounts, registry namespaces, signing identity, and command/PATH coexistence have direct evidence. No external identity is claimed or reserved by this brief.
+- D001 accepts the repository identity `Marimay`, executable `mmay`, source extension `.my`, and related first-party artifact names. N0 still blocks I7 public namespace commitments and every public preview/alpha until legal review and external domains, accounts, registry namespaces, signing identity, and command/PATH coexistence have direct evidence. No external identity is claimed or reserved by this brief.
 - No arbitrary macro, install hook, build script, or compiler plugin execution in 1.0.
 - No safe-code dependence on C undefined behavior.
 - No VM-only or native-only standard-library semantics.
@@ -69,8 +69,8 @@ When these disagree, `AGENTS.md` defines precedence. Resolve a conflict in desig
 - Do not move repository trust policy into source semantics. The language owns
   program meaning, the compiler publishes stable semantic facts, tools consume
   them, runtime/OS layers enforce grants and limits, and CI owns provenance,
-  coverage, review, and release policy under D034. One `ruda` executable is a
-  product boundary, not an excuse to add author/agent/trust markers to Ruda.
+  coverage, review, and release policy under D034. One `mmay` executable is a
+  product boundary, not an excuse to add author/agent/trust markers to Marimay.
 
 Prototype-gated decisions D007, D010, D012, and D013 require measured evidence. If evidence rejects one, amend the decision and all affected specs before changing the implementation direction.
 
@@ -86,7 +86,7 @@ The implementation should converge on this structure; names may change only thro
 ├── CMakeLists.txt
 ├── cmake/
 ├── bootstrap/
-│   ├── include/ruda/
+│   ├── include/mmay/
 │   ├── src/
 │   │   ├── base/
 │   │   ├── source/
@@ -107,7 +107,7 @@ The implementation should converge on this structure; names may change only thro
 │   │   ├── test/
 │   │   └── cli/
 │   └── main.c
-├── compiler/                 # self-hosted Ruda compiler when Stage 1 starts
+├── compiler/                 # self-hosted Marimay compiler when Stage 1 starts
 ├── runtime/
 │   ├── common/
 │   ├── platform/
@@ -137,7 +137,7 @@ Generated Unicode tables, opcode tables, and diagnostic registries are checked i
 
 ## 5. Bootstrap build system
 
-CMake is the canonical Stage 0 developer build system because it can express C17, sanitizers, platform probes, generated test data, and Windows builds without shell-only logic. CMake is a compiler-development dependency, not a dependency of Ruda user projects.
+CMake is the canonical Stage 0 developer build system because it can express C17, sanitizers, platform probes, generated test data, and Windows builds without shell-only logic. CMake is a compiler-development dependency, not a dependency of Marimay user projects.
 
 Baseline commands:
 
@@ -149,7 +149,7 @@ ctest --test-dir build --output-on-failure
 
 Presets must cover debug, release, ASan+UBSan, and platform-supported thread/memory sanitizers. Warnings are errors in project code for supported compilers. The project pins its minimum CMake version and never downloads dependencies during configure.
 
-Once `ruda` can build and test the compiler module, the release gate runs both bootstrap C tests and public `ruda test --engine both` tests.
+Once `mmay` can build and test the compiler module, the release gate runs both bootstrap C tests and public `mmay test --engine both` tests.
 
 ## 6. C17 engineering rules
 
@@ -160,7 +160,7 @@ Once `ruda` can build and test the compiler module, the release gate runs both b
 - Isolate OS APIs under `runtime/platform/`.
 - Do not depend on compiler extensions in common code; guarded intrinsics require a portable fallback and equivalence test.
 - Detect endianness, pointer width, and platform capabilities at configure time, never through undefined probes.
-- Under D039, generated C identifiers are injective compiler-owned names; never copy a Ruda source name into C or reserve C keywords in Ruda merely for backend convenience. The emitter must avoid C keyword, implementation-reserved, library, runtime-helper, Unicode, truncation, and case-folded collision spaces. Explicit `extern "c"` link names remain separately validated ABI contracts.
+- Under D039, generated C identifiers are injective compiler-owned names; never copy a Marimay source name into C or reserve C keywords in Marimay merely for backend convenience. The emitter must avoid C keyword, implementation-reserved, library, runtime-helper, Unicode, truncation, and case-folded collision spaces. Explicit `extern "c"` link names remain separately validated ABI contracts.
 
 ### 6.2 Memory and error discipline
 
@@ -168,7 +168,7 @@ Once `ruda` can build and test the compiler module, the release gate runs both b
 - Use arenas for source-lifetime CST/HIR/MIR data and explicit owners for cross-phase artifacts.
 - Every public C function documents ownership of input/output pointers.
 - Vectors, maps, strings, spans, and diagnostics have central tested implementations; do not proliferate bespoke containers.
-- No hidden process-global mutable compiler state. A `RudaSession` owns source, interners, diagnostics, cache, and options.
+- No hidden process-global mutable compiler state. A `MarimaySession` owns source, interners, diagnostics, cache, and options.
 - OOM and internal invariant failures produce a controlled internal diagnostic where possible; they do not continue with corrupt state.
 - Cleanup paths are sanitizer tested, including parse/type errors and cancellation.
 
@@ -301,18 +301,18 @@ Database drivers may begin outside `std`, but the reference service must exercis
 
 ## 10. Toolchain implementation
 
-The `ruda` CLI is a thin dispatcher over reusable libraries. Subcommands must not fork separate parsers, resolver configurations, cache keys, or diagnostic renderers.
+The `mmay` CLI is a thin dispatcher over reusable libraries. Subcommands must not fork separate parsers, resolver configurations, cache keys, or diagnostic renderers.
 
 Implement in this order:
 
-1. `ruda version`, `ruda help` and stable diagnostics;
-2. `ruda fmt`, `ruda check`, and the minimum overlay/compiler-service completion owner used to validate dot-call discoverability;
-3. `ruda run --engine vm`;
-4. `ruda build` and native run;
-5. `ruda test`, then `--engine both`;
+1. `mmay version`, `mmay help` and stable diagnostics;
+2. `mmay fmt`, `mmay check`, and the minimum overlay/compiler-service completion owner used to validate dot-call discoverability;
+3. `mmay run --engine vm`;
+4. `mmay build` and native run;
+5. `mmay test`, then `--engine both`;
 6. project manifest/lock and offline cache;
-7. `ruda doc`, `ruda vet`, `ruda fuzz`, `ruda bench`;
-8. registry operations and `ruda audit`.
+7. `mmay doc`, `mmay vet`, `mmay fuzz`, `mmay bench`;
+8. registry operations and `mmay audit`.
 
 This order is a vertical dependency order, not permission to finish the whole
 I2 language before exercising execution backends. Once the minimally useful
@@ -321,11 +321,11 @@ source → typed MIR → bytecode VM → generated C → identical observable re
 New I2 surface work must either extend that path or close a documented semantic
 blocker; it must not indefinitely postpone the first engine-equivalence slice.
 
-Test every command from temporary directories with spaces, Unicode, read-only files, interrupted writes, stale locks, missing compilers, corrupt caches, and denied capabilities. Official Tier 1 installation must reach native `ruda build` without per-project/user-selected compiler, linker, or SDK configuration; installation/preflight owns the D030 dependency and `ruda doctor` explains it before code generation.
+Test every command from temporary directories with spaces, Unicode, read-only files, interrupted writes, stale locks, missing compilers, corrupt caches, and denied capabilities. Official Tier 1 installation must reach native `mmay build` without per-project/user-selected compiler, linker, or SDK configuration; installation/preflight owns the D030 dependency and `mmay doctor` explains it before code generation.
 
 ## 11. Package security
 
-N0 naming/distribution identity is a prerequisite for public registry/module namespace implementation. Internal resolver prototypes use replaceable test namespaces such as `ruda-lang.example` and cannot reserve, publish, sign, or document them as a cleared public identity.
+N0 naming/distribution identity is a prerequisite for public registry/module namespace implementation. Internal resolver prototypes use replaceable test namespaces such as `marimay.example` and cannot reserve, publish, sign, or document them as a cleared public identity.
 
 The package resolver is deterministic and lock-driven. Implement SHA-256 or stronger content verification using a reviewed implementation; signature verification must use a well-maintained audited dependency or platform facility rather than novel cryptography.
 
@@ -340,7 +340,7 @@ Self-hosting is a reproducible chain, not a ceremonial rewrite:
 ```text
 trusted C compiler
   -> Stage 0 compiler/runtime written in C17
-  -> Stage 1 compiler written in Ruda, built by Stage 0
+  -> Stage 1 compiler written in Marimay, built by Stage 0
   -> Stage 2 compiler, built by Stage 1
 ```
 
@@ -351,7 +351,7 @@ Requirements:
 - Stage 1 and Stage 2 compile the conformance suite identically;
 - a reproducibility process compares normalized artifacts and investigates every divergence;
 - the bootstrap records compiler hashes, source hashes, C compiler identity, and generated C/MIR where applicable;
-- the C17 implementation is maintained as the bootstrap root for supported releases, even after day-to-day development moves to Ruda.
+- the C17 implementation is maintained as the bootstrap root for supported releases, even after day-to-day development moves to Marimay.
 
 Do not begin the full rewrite until the roadmap's bootstrap-language subset, modules, diagnostics, GC, and both engines are stable enough to compile the compiler without privileged syntax. E0 external ergonomics pilots over the working I4–I6 toolchain must also be verified first: D007 allocation behavior, exact-error-mapping noise, dot-call discovery, structured race/select, and native-toolchain installation findings are resolved before expensive self-hosted code locks in an untested surface.
 
@@ -361,19 +361,19 @@ Maintain alongside implementation:
 
 - language, execution, bytecode, package, FFI, runtime, and CLI specifications;
 - generated grammar, opcode, diagnostic-code, and standard-library references;
-- tutorial and “effective Ruda” guidance derived from evidence, not folklore;
+- tutorial and “effective Marimay” guidance derived from evidence, not folklore;
 - compiler architecture and contributor guide;
 - unsafe-code and FFI safety guide;
 - operations guide for task dumps, GC, profiling, graceful shutdown, and crash reports;
 - compatibility and deprecation policy;
 - platform tier policy and release checklist;
-- every public example compiled by `ruda test` or doc tests.
+- every public example compiled by `mmay test` or doc tests.
 
 Documentation code that is not executable must be explicitly tagged illustrative and minimized.
 
 ## 14. Production reference application
 
-Before 1.0, build and operate a public reference service using only released Ruda tooling. It must include:
+Before 1.0, build and operate a public reference service using only released Marimay tooling. It must include:
 
 - HTTP/TLS server and client calls;
 - JSON request/response streaming;

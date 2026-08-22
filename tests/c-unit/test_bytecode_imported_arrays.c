@@ -1,9 +1,9 @@
 #include "test_imported_arrays_support.h"
 
-#include "ruda/bytecode/vm.h"
+#include "mmay/bytecode/vm.h"
 
-static void ruda_test_bytecode_imported_array_tables(
-    RudaBytecodeProgram *program
+static void mmay_test_bytecode_imported_array_tables(
+    MarimayBytecodeProgram *program
 ) {
     size_t function_index = 0;
     bool saw_record = false;
@@ -13,286 +13,286 @@ static void ruda_test_bytecode_imported_array_tables(
     bool corrupted = false;
     for (function_index = 0; function_index < program->functions.length;
         function_index += 1) {
-        RudaBytecodeProgramFunction *program_function = ruda_vector_at(
+        MarimayBytecodeProgramFunction *program_function = mmay_vector_at(
             &program->functions, function_index
         );
-        RudaBytecodeFunction *function = program_function != NULL
+        MarimayBytecodeFunction *function = program_function != NULL
             ? &program_function->body
             : NULL;
         size_t layout_index = 0;
         if (function == NULL) continue;
         for (layout_index = 0; layout_index < function->array_types.length;
             layout_index += 1) {
-            RudaBytecodeArrayType *layout = ruda_vector_at(
+            MarimayBytecodeArrayType *layout = mmay_vector_at(
                 &function->array_types, layout_index
             );
             if (layout == NULL) continue;
-            if (layout->element_type == RUDA_BYTECODE_TYPE_RECORD) {
+            if (layout->element_type == MMAY_BYTECODE_TYPE_RECORD) {
                 uint32_t saved = layout->element_layout;
                 saw_record = true;
-                RUDA_EXPECT(saved != RUDA_BYTECODE_NO_LAYOUT);
-                RUDA_EXPECT((size_t)saved < function->record_layouts.length);
+                MMAY_EXPECT(saved != MMAY_BYTECODE_NO_LAYOUT);
+                MMAY_EXPECT((size_t)saved < function->record_layouts.length);
                 if (!corrupted) {
-                    layout->element_layout = RUDA_BYTECODE_NO_LAYOUT;
-                    RUDA_EXPECT(ruda_bytecode_program_verify(program)
-                        == RUDA_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION);
+                    layout->element_layout = MMAY_BYTECODE_NO_LAYOUT;
+                    MMAY_EXPECT(mmay_bytecode_program_verify(program)
+                        == MMAY_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION);
                     layout->element_layout = UINT32_MAX - 1;
-                    RUDA_EXPECT(ruda_bytecode_program_verify(program)
-                        == RUDA_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION);
+                    MMAY_EXPECT(mmay_bytecode_program_verify(program)
+                        == MMAY_BYTECODE_PROGRAM_VERIFY_INVALID_FUNCTION);
                     layout->element_layout = saved;
                     corrupted = true;
                 }
-            } else if (layout->element_type == RUDA_BYTECODE_TYPE_ENUM) {
+            } else if (layout->element_type == MMAY_BYTECODE_TYPE_ENUM) {
                 saw_enum = true;
-                RUDA_EXPECT(layout->element_layout
-                    != RUDA_BYTECODE_NO_LAYOUT);
-                RUDA_EXPECT((size_t)layout->element_layout
+                MMAY_EXPECT(layout->element_layout
+                    != MMAY_BYTECODE_NO_LAYOUT);
+                MMAY_EXPECT((size_t)layout->element_layout
                     < function->enum_layouts.length);
             } else if (layout->element_type
-                    == RUDA_BYTECODE_TYPE_STRING) {
+                    == MMAY_BYTECODE_TYPE_STRING) {
                 saw_string = true;
-                RUDA_EXPECT(layout->element_layout
-                    == RUDA_BYTECODE_NO_LAYOUT);
+                MMAY_EXPECT(layout->element_layout
+                    == MMAY_BYTECODE_NO_LAYOUT);
             } else if (layout->element_type
-                    == RUDA_BYTECODE_TYPE_ARRAY) {
+                    == MMAY_BYTECODE_TYPE_ARRAY) {
                 saw_nested = true;
-                RUDA_EXPECT(layout->element_layout
-                    != RUDA_BYTECODE_NO_LAYOUT);
-                RUDA_EXPECT((size_t)layout->element_layout < layout_index);
+                MMAY_EXPECT(layout->element_layout
+                    != MMAY_BYTECODE_NO_LAYOUT);
+                MMAY_EXPECT((size_t)layout->element_layout < layout_index);
             }
         }
     }
-    RUDA_EXPECT(saw_record);
-    RUDA_EXPECT(saw_enum);
-    RUDA_EXPECT(saw_string);
-    RUDA_EXPECT(saw_nested);
-    RUDA_EXPECT(corrupted);
-    RUDA_EXPECT(ruda_bytecode_program_verify(program)
-        == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
+    MMAY_EXPECT(saw_record);
+    MMAY_EXPECT(saw_enum);
+    MMAY_EXPECT(saw_string);
+    MMAY_EXPECT(saw_nested);
+    MMAY_EXPECT(corrupted);
+    MMAY_EXPECT(mmay_bytecode_program_verify(program)
+        == MMAY_BYTECODE_PROGRAM_VERIFY_OK);
 }
 
-static void ruda_test_bytecode_imported_array_execute(
-    const RudaBytecodeProgram *program
+static void mmay_test_bytecode_imported_array_execute(
+    const MarimayBytecodeProgram *program
 ) {
-    RudaBytecodeExecution execution;
-    RudaBytecodeExecutionOptions execution_options =
-        ruda_bytecode_execution_default_options();
-    RudaBytecodeRunOptions run_options = ruda_bytecode_run_default_options();
-    RudaBytecodeValue value;
+    MarimayBytecodeExecution execution;
+    MarimayBytecodeExecutionOptions execution_options =
+        mmay_bytecode_execution_default_options();
+    MarimayBytecodeRunOptions run_options = mmay_bytecode_run_default_options();
+    MarimayBytecodeValue value;
     memset(&execution, 0, sizeof(execution));
     memset(&value, 0, sizeof(value));
     execution_options.managed_heap.collect_before_allocation = true;
-    RUDA_EXPECT(ruda_bytecode_execution_init(
-        &execution, ruda_system_allocator(), execution_options
+    MMAY_EXPECT(mmay_bytecode_execution_init(
+        &execution, mmay_system_allocator(), execution_options
     ));
     if (!execution.initialized) return;
     run_options.execution = &execution;
-    RUDA_EXPECT(ruda_bytecode_run_program(
-        program, NULL, 0, ruda_system_allocator(), run_options, &value
-    ) == RUDA_BYTECODE_RUN_OK);
-    RUDA_EXPECT(value.type == RUDA_BYTECODE_TYPE_I64);
-    RUDA_EXPECT(value.as.i64 == 51);
-    ruda_bytecode_execution_dispose(&execution);
+    MMAY_EXPECT(mmay_bytecode_run_program(
+        program, NULL, 0, mmay_system_allocator(), run_options, &value
+    ) == MMAY_BYTECODE_RUN_OK);
+    MMAY_EXPECT(value.type == MMAY_BYTECODE_TYPE_I64);
+    MMAY_EXPECT(value.as.i64 == 51);
+    mmay_bytecode_execution_dispose(&execution);
 }
 
-static void ruda_test_bytecode_imported_array_lower_allocations(
-    const RudaTestImportedArrays *test
+static void mmay_test_bytecode_imported_array_lower_allocations(
+    const MarimayTestImportedArrays *test
 ) {
     size_t failure_index = 0;
     bool reached_success = false;
     for (failure_index = 0; failure_index < 4096; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaBytecodeProgram program;
-        RudaMirBytecodeLowerStatus status;
+        MarimayFailAllocator state;
+        MarimayBytecodeProgram program;
+        MarimayMirBytecodeLowerStatus status;
         memset(&program, 0, sizeof(program));
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        status = ruda_test_imported_arrays_lower(
-            test, ruda_fail_allocator(&state), &program
+        status = mmay_test_imported_arrays_lower(
+            test, mmay_fail_allocator(&state), &program
         );
-        if (status == RUDA_MIR_BYTECODE_LOWER_OK) {
+        if (status == MMAY_MIR_BYTECODE_LOWER_OK) {
             reached_success = true;
-            RUDA_EXPECT(program.initialized);
-            ruda_bytecode_program_dispose(&program);
+            MMAY_EXPECT(program.initialized);
+            mmay_bytecode_program_dispose(&program);
         } else {
-            RUDA_EXPECT(status == RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED);
-            RUDA_EXPECT(!program.initialized);
+            MMAY_EXPECT(status == MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED);
+            MMAY_EXPECT(!program.initialized);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) break;
     }
-    RUDA_EXPECT(reached_success);
+    MMAY_EXPECT(reached_success);
 }
 
-static void ruda_test_bytecode_imported_array_codec_allocations(
-    const RudaBytecodeProgram *program,
-    const RudaOwnedBytes *encoded
+static void mmay_test_bytecode_imported_array_codec_allocations(
+    const MarimayBytecodeProgram *program,
+    const MarimayOwnedBytes *encoded
 ) {
     size_t failure_index = 0;
     bool reached_encode = false;
     bool reached_decode = false;
     for (failure_index = 0; failure_index < 4096; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaOwnedBytes bytes;
-        RudaBytecodeCodecStatus status;
+        MarimayFailAllocator state;
+        MarimayOwnedBytes bytes;
+        MarimayBytecodeCodecStatus status;
         memset(&bytes, 0, sizeof(bytes));
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        status = ruda_bytecode_encode_program(
-            program, ruda_fail_allocator(&state), &bytes
+        status = mmay_bytecode_encode_program(
+            program, mmay_fail_allocator(&state), &bytes
         );
-        if (status == RUDA_BYTECODE_CODEC_OK) reached_encode = true;
-        else RUDA_EXPECT(status == RUDA_BYTECODE_CODEC_ALLOCATION_FAILED);
-        ruda_owned_bytes_dispose(&bytes);
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        if (status == MMAY_BYTECODE_CODEC_OK) reached_encode = true;
+        else MMAY_EXPECT(status == MMAY_BYTECODE_CODEC_ALLOCATION_FAILED);
+        mmay_owned_bytes_dispose(&bytes);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_encode) break;
     }
-    RUDA_EXPECT(reached_encode);
+    MMAY_EXPECT(reached_encode);
     for (failure_index = 0; failure_index < 4096; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaBytecodeProgram decoded;
-        RudaBytecodeCodecStatus status;
+        MarimayFailAllocator state;
+        MarimayBytecodeProgram decoded;
+        MarimayBytecodeCodecStatus status;
         memset(&decoded, 0, sizeof(decoded));
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        status = ruda_bytecode_decode_program(
+        status = mmay_bytecode_decode_program(
             encoded->data,
             encoded->length,
-            ruda_fail_allocator(&state),
-            ruda_bytecode_program_default_options(),
+            mmay_fail_allocator(&state),
+            mmay_bytecode_program_default_options(),
             &decoded
         );
-        if (status == RUDA_BYTECODE_CODEC_OK) {
+        if (status == MMAY_BYTECODE_CODEC_OK) {
             reached_decode = true;
-            ruda_bytecode_program_dispose(&decoded);
+            mmay_bytecode_program_dispose(&decoded);
         } else {
-            RUDA_EXPECT(status == RUDA_BYTECODE_CODEC_ALLOCATION_FAILED);
-            RUDA_EXPECT(!decoded.initialized);
+            MMAY_EXPECT(status == MMAY_BYTECODE_CODEC_ALLOCATION_FAILED);
+            MMAY_EXPECT(!decoded.initialized);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_decode) break;
     }
-    RUDA_EXPECT(reached_decode);
+    MMAY_EXPECT(reached_decode);
 }
 
-static void ruda_test_bytecode_imported_array_vm_allocations(
-    const RudaBytecodeProgram *program
+static void mmay_test_bytecode_imported_array_vm_allocations(
+    const MarimayBytecodeProgram *program
 ) {
     size_t failure_index = 0;
     bool reached_success = false;
     for (failure_index = 0; failure_index < 4096; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaBytecodeExecution execution;
-        RudaBytecodeExecutionOptions execution_options =
-            ruda_bytecode_execution_default_options();
-        RudaBytecodeRunOptions run_options =
-            ruda_bytecode_run_default_options();
-        RudaBytecodeValue value;
-        RudaBytecodeRunStatus status = RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        MarimayFailAllocator state;
+        MarimayBytecodeExecution execution;
+        MarimayBytecodeExecutionOptions execution_options =
+            mmay_bytecode_execution_default_options();
+        MarimayBytecodeRunOptions run_options =
+            mmay_bytecode_run_default_options();
+        MarimayBytecodeValue value;
+        MarimayBytecodeRunStatus status = MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         memset(&execution, 0, sizeof(execution));
         memset(&value, 0, sizeof(value));
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
         execution_options.managed_heap.collect_before_allocation = true;
-        if (ruda_bytecode_execution_init(
-                &execution, ruda_fail_allocator(&state), execution_options
+        if (mmay_bytecode_execution_init(
+                &execution, mmay_fail_allocator(&state), execution_options
             )) {
             run_options.execution = &execution;
-            status = ruda_bytecode_run_program(
+            status = mmay_bytecode_run_program(
                 program,
                 NULL,
                 0,
-                ruda_fail_allocator(&state),
+                mmay_fail_allocator(&state),
                 run_options,
                 &value
             );
-            if (status == RUDA_BYTECODE_RUN_OK) {
+            if (status == MMAY_BYTECODE_RUN_OK) {
                 reached_success = true;
-                RUDA_EXPECT(value.type == RUDA_BYTECODE_TYPE_I64);
-                RUDA_EXPECT(value.as.i64 == 51);
+                MMAY_EXPECT(value.type == MMAY_BYTECODE_TYPE_I64);
+                MMAY_EXPECT(value.as.i64 == 51);
             } else {
-                RUDA_EXPECT(status == RUDA_BYTECODE_RUN_ALLOCATION_FAILED);
+                MMAY_EXPECT(status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED);
             }
-            ruda_bytecode_execution_dispose(&execution);
+            mmay_bytecode_execution_dispose(&execution);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) break;
     }
-    RUDA_EXPECT(reached_success);
+    MMAY_EXPECT(reached_success);
 }
 
-void ruda_test_bytecode_imported_arrays(void) {
-    RudaTestImportedArrays test;
-    RudaBytecodeProgram program;
-    RudaBytecodeProgram decoded;
-    RudaBytecodeProgram corrupt_output;
-    RudaOwnedBytes encoded;
+void mmay_test_bytecode_imported_arrays(void) {
+    MarimayTestImportedArrays test;
+    MarimayBytecodeProgram program;
+    MarimayBytecodeProgram decoded;
+    MarimayBytecodeProgram corrupt_output;
+    MarimayOwnedBytes encoded;
     unsigned char *corrupt = NULL;
     memset(&program, 0, sizeof(program));
     memset(&decoded, 0, sizeof(decoded));
     memset(&corrupt_output, 0, sizeof(corrupt_output));
     memset(&encoded, 0, sizeof(encoded));
-    RUDA_EXPECT(ruda_test_imported_arrays_init(
-        &test, ruda_system_allocator()
+    MMAY_EXPECT(mmay_test_imported_arrays_init(
+        &test, mmay_system_allocator()
     ));
     if (!test.initialized) return;
-    RUDA_EXPECT(ruda_test_imported_arrays_lower(
-        &test, ruda_system_allocator(), &program
-    ) == RUDA_MIR_BYTECODE_LOWER_OK);
+    MMAY_EXPECT(mmay_test_imported_arrays_lower(
+        &test, mmay_system_allocator(), &program
+    ) == MMAY_MIR_BYTECODE_LOWER_OK);
     if (!program.initialized) goto cleanup;
-    RUDA_EXPECT(ruda_bytecode_program_verify(&program)
-        == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
-    ruda_test_bytecode_imported_array_tables(&program);
-    RUDA_EXPECT(ruda_bytecode_encode_program(
-        &program, ruda_system_allocator(), &encoded
-    ) == RUDA_BYTECODE_CODEC_OK);
-    RUDA_EXPECT(ruda_bytecode_decode_program(
+    MMAY_EXPECT(mmay_bytecode_program_verify(&program)
+        == MMAY_BYTECODE_PROGRAM_VERIFY_OK);
+    mmay_test_bytecode_imported_array_tables(&program);
+    MMAY_EXPECT(mmay_bytecode_encode_program(
+        &program, mmay_system_allocator(), &encoded
+    ) == MMAY_BYTECODE_CODEC_OK);
+    MMAY_EXPECT(mmay_bytecode_decode_program(
         encoded.data,
         encoded.length,
-        ruda_system_allocator(),
-        ruda_bytecode_program_default_options(),
+        mmay_system_allocator(),
+        mmay_bytecode_program_default_options(),
         &decoded
-    ) == RUDA_BYTECODE_CODEC_OK);
+    ) == MMAY_BYTECODE_CODEC_OK);
     if (decoded.initialized) {
-        RUDA_EXPECT(ruda_bytecode_program_verify(&decoded)
-            == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
-        ruda_test_bytecode_imported_array_execute(&decoded);
+        MMAY_EXPECT(mmay_bytecode_program_verify(&decoded)
+            == MMAY_BYTECODE_PROGRAM_VERIFY_OK);
+        mmay_test_bytecode_imported_array_execute(&decoded);
     }
     {
-        RudaAllocator allocator = ruda_system_allocator();
-        corrupt = ruda_allocate(&allocator, encoded.length);
+        MarimayAllocator allocator = mmay_system_allocator();
+        corrupt = mmay_allocate(&allocator, encoded.length);
     }
-    RUDA_EXPECT(corrupt != NULL);
+    MMAY_EXPECT(corrupt != NULL);
     if (corrupt != NULL && encoded.length != 0) {
         memcpy(corrupt, encoded.data, encoded.length);
         corrupt[encoded.length - 1] ^= 0x01U;
-        RUDA_EXPECT(ruda_bytecode_decode_program(
+        MMAY_EXPECT(mmay_bytecode_decode_program(
             corrupt,
             encoded.length,
-            ruda_system_allocator(),
-            ruda_bytecode_program_default_options(),
+            mmay_system_allocator(),
+            mmay_bytecode_program_default_options(),
             &corrupt_output
-        ) != RUDA_BYTECODE_CODEC_OK);
-        RUDA_EXPECT(!corrupt_output.initialized);
+        ) != MMAY_BYTECODE_CODEC_OK);
+        MMAY_EXPECT(!corrupt_output.initialized);
     }
-    ruda_test_bytecode_imported_array_lower_allocations(&test);
-    ruda_test_bytecode_imported_array_codec_allocations(&program, &encoded);
-    ruda_test_bytecode_imported_array_vm_allocations(&program);
+    mmay_test_bytecode_imported_array_lower_allocations(&test);
+    mmay_test_bytecode_imported_array_codec_allocations(&program, &encoded);
+    mmay_test_bytecode_imported_array_vm_allocations(&program);
 cleanup:
     {
-        RudaAllocator allocator = ruda_system_allocator();
-        ruda_deallocate(&allocator, corrupt, encoded.length);
+        MarimayAllocator allocator = mmay_system_allocator();
+        mmay_deallocate(&allocator, corrupt, encoded.length);
     }
-    ruda_owned_bytes_dispose(&encoded);
-    if (decoded.initialized) ruda_bytecode_program_dispose(&decoded);
-    if (program.initialized) ruda_bytecode_program_dispose(&program);
-    ruda_test_imported_arrays_dispose(&test);
+    mmay_owned_bytes_dispose(&encoded);
+    if (decoded.initialized) mmay_bytecode_program_dispose(&decoded);
+    if (program.initialized) mmay_bytecode_program_dispose(&program);
+    mmay_test_imported_arrays_dispose(&test);
 }

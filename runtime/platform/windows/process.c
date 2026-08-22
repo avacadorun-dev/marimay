@@ -1,7 +1,7 @@
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#include "ruda/platform/process.h"
+#include "mmay/platform/process.h"
 
 #include <stdbool.h>
 #include <limits.h>
@@ -9,13 +9,13 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "ruda/base/utf8.h"
-#include "ruda/base/vector.h"
+#include "mmay/base/utf8.h"
+#include "mmay/base/vector.h"
 
-RudaProcessStatus ruda_process_executable_path(
-    RudaAllocator allocator,
+MarimayProcessStatus mmay_process_executable_path(
+    MarimayAllocator allocator,
     size_t max_path,
-    RudaOwnedBytes *path
+    MarimayOwnedBytes *path
 ) {
     wchar_t wide_path[32768];
     DWORD wide_length = 0;
@@ -23,43 +23,43 @@ RudaProcessStatus ruda_process_executable_path(
     size_t allocation_size = 0;
     unsigned char *bytes = NULL;
     if (path == NULL || max_path == 0) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
     memset(path, 0, sizeof(*path));
     wide_length = GetModuleFileNameW(
         NULL, wide_path, (DWORD)(sizeof(wide_path) / sizeof(wide_path[0]))
     );
-    if (wide_length == 0) return RUDA_PROCESS_IO_FAILED;
+    if (wide_length == 0) return MMAY_PROCESS_IO_FAILED;
     if ((size_t)wide_length
         >= sizeof(wide_path) / sizeof(wide_path[0])) {
-        return RUDA_PROCESS_OUTPUT_LIMIT;
+        return MMAY_PROCESS_OUTPUT_LIMIT;
     }
     byte_count = WideCharToMultiByte(
         CP_UTF8, WC_ERR_INVALID_CHARS, wide_path, (int)wide_length,
         NULL, 0, NULL, NULL
     );
-    if (byte_count <= 0) return RUDA_PROCESS_IO_FAILED;
+    if (byte_count <= 0) return MMAY_PROCESS_IO_FAILED;
     if ((size_t)byte_count > max_path
-        || !ruda_size_add((size_t)byte_count, 1, &allocation_size)) {
-        return RUDA_PROCESS_OUTPUT_LIMIT;
+        || !mmay_size_add((size_t)byte_count, 1, &allocation_size)) {
+        return MMAY_PROCESS_OUTPUT_LIMIT;
     }
-    bytes = ruda_allocate(&allocator, allocation_size);
-    if (bytes == NULL) return RUDA_PROCESS_ALLOCATION_FAILED;
+    bytes = mmay_allocate(&allocator, allocation_size);
+    if (bytes == NULL) return MMAY_PROCESS_ALLOCATION_FAILED;
     if (WideCharToMultiByte(
             CP_UTF8, WC_ERR_INVALID_CHARS, wide_path, (int)wide_length,
             (char *)bytes, byte_count, NULL, NULL
         ) != byte_count) {
-        ruda_deallocate(&allocator, bytes, allocation_size);
-        return RUDA_PROCESS_IO_FAILED;
+        mmay_deallocate(&allocator, bytes, allocation_size);
+        return MMAY_PROCESS_IO_FAILED;
     }
     bytes[byte_count] = 0;
     path->allocator = allocator;
     path->data = bytes;
     path->length = (size_t)byte_count;
-    return RUDA_PROCESS_OK;
+    return MMAY_PROCESS_OK;
 }
 
-static void ruda_process_result_init(RudaProcessResult *result, RudaAllocator allocator) {
+static void mmay_process_result_init(MarimayProcessResult *result, MarimayAllocator allocator) {
     result->output.allocator = allocator;
     result->output.data = NULL;
     result->output.length = 0;
@@ -68,21 +68,21 @@ static void ruda_process_result_init(RudaProcessResult *result, RudaAllocator al
     result->signal_code = 0;
 }
 
-static bool ruda_windows_append_repeat(RudaVector *command, char byte, size_t count) {
+static bool mmay_windows_append_repeat(MarimayVector *command, char byte, size_t count) {
     size_t index = 0;
     for (index = 0; index < count; index += 1) {
-        if (!ruda_vector_push(command, &byte)) {
+        if (!mmay_vector_push(command, &byte)) {
             return false;
         }
     }
     return true;
 }
 
-static bool ruda_windows_append_argument(RudaVector *command, const char *argument) {
+static bool mmay_windows_append_argument(MarimayVector *command, const char *argument) {
     size_t length = strlen(argument);
     size_t index = 0;
     char quote = '"';
-    if (!ruda_vector_push(command, &quote)) {
+    if (!mmay_vector_push(command, &quote)) {
         return false;
     }
     while (index < length) {
@@ -93,62 +93,62 @@ static bool ruda_windows_append_argument(RudaVector *command, const char *argume
         }
         if (index == length) {
             size_t escaped = 0;
-            if (!ruda_size_multiply(backslashes, 2, &escaped)) {
+            if (!mmay_size_multiply(backslashes, 2, &escaped)) {
                 return false;
             }
-            return ruda_windows_append_repeat(command, '\\', escaped)
-                && ruda_vector_push(command, &quote);
+            return mmay_windows_append_repeat(command, '\\', escaped)
+                && mmay_vector_push(command, &quote);
         }
         if (argument[index] == '"') {
             size_t escaped = 0;
-            if (!ruda_size_multiply(backslashes, 2, &escaped)
-                || !ruda_size_add(escaped, 1, &escaped)
-                || !ruda_windows_append_repeat(command, '\\', escaped)
-                || !ruda_vector_push(command, &quote)) {
+            if (!mmay_size_multiply(backslashes, 2, &escaped)
+                || !mmay_size_add(escaped, 1, &escaped)
+                || !mmay_windows_append_repeat(command, '\\', escaped)
+                || !mmay_vector_push(command, &quote)) {
                 return false;
             }
         } else {
-            if (!ruda_windows_append_repeat(command, '\\', backslashes)
-                || !ruda_vector_push(command, &argument[index])) {
+            if (!mmay_windows_append_repeat(command, '\\', backslashes)
+                || !mmay_vector_push(command, &argument[index])) {
                 return false;
             }
         }
         index += 1;
     }
-    return ruda_vector_push(command, &quote);
+    return mmay_vector_push(command, &quote);
 }
 
-static bool ruda_windows_command_line(
-    RudaAllocator allocator,
+static bool mmay_windows_command_line(
+    MarimayAllocator allocator,
     const char *const arguments[],
     size_t argument_count,
     wchar_t **wide_command,
     size_t *wide_allocation_size
 ) {
-    RudaVector command;
+    MarimayVector command;
     size_t index = 0;
     char zero = '\0';
     int wide_count = 0;
     size_t allocation_size = 0;
     wchar_t *wide = NULL;
-    if (!ruda_vector_init(&command, allocator, sizeof(char))) {
+    if (!mmay_vector_init(&command, allocator, sizeof(char))) {
         return false;
     }
     for (index = 0; index < argument_count; index += 1) {
         if (index != 0) {
             char space = ' ';
-            if (!ruda_vector_push(&command, &space)) {
-                ruda_vector_dispose(&command);
+            if (!mmay_vector_push(&command, &space)) {
+                mmay_vector_dispose(&command);
                 return false;
             }
         }
-        if (!ruda_windows_append_argument(&command, arguments[index])) {
-            ruda_vector_dispose(&command);
+        if (!mmay_windows_append_argument(&command, arguments[index])) {
+            mmay_vector_dispose(&command);
             return false;
         }
     }
-    if (!ruda_vector_push(&command, &zero) || command.length > (size_t)INT_MAX) {
-        ruda_vector_dispose(&command);
+    if (!mmay_vector_push(&command, &zero) || command.length > (size_t)INT_MAX) {
+        mmay_vector_dispose(&command);
         return false;
     }
     wide_count = MultiByteToWideChar(
@@ -160,13 +160,13 @@ static bool ruda_windows_command_line(
         0
     );
     if (wide_count <= 0 || wide_count > 32767
-        || !ruda_size_multiply((size_t)wide_count, sizeof(wchar_t), &allocation_size)) {
-        ruda_vector_dispose(&command);
+        || !mmay_size_multiply((size_t)wide_count, sizeof(wchar_t), &allocation_size)) {
+        mmay_vector_dispose(&command);
         return false;
     }
-    wide = ruda_allocate(&allocator, allocation_size);
+    wide = mmay_allocate(&allocator, allocation_size);
     if (wide == NULL) {
-        ruda_vector_dispose(&command);
+        mmay_vector_dispose(&command);
         return false;
     }
     if (MultiByteToWideChar(
@@ -177,22 +177,22 @@ static bool ruda_windows_command_line(
             wide,
             wide_count
         ) != wide_count) {
-        ruda_deallocate(&allocator, wide, allocation_size);
-        ruda_vector_dispose(&command);
+        mmay_deallocate(&allocator, wide, allocation_size);
+        mmay_vector_dispose(&command);
         return false;
     }
-    ruda_vector_dispose(&command);
+    mmay_vector_dispose(&command);
     *wide_command = wide;
     *wide_allocation_size = allocation_size;
     return true;
 }
 
-RudaProcessStatus ruda_process_run(
-    RudaAllocator allocator,
+MarimayProcessStatus mmay_process_run(
+    MarimayAllocator allocator,
     const char *const arguments[],
     size_t argument_count,
     size_t max_output,
-    RudaProcessResult *result
+    MarimayProcessResult *result
 ) {
     SECURITY_ATTRIBUTES security;
     HANDLE read_handle = INVALID_HANDLE_VALUE;
@@ -201,37 +201,37 @@ RudaProcessStatus ruda_process_run(
     PROCESS_INFORMATION process;
     wchar_t *command = NULL;
     size_t command_allocation_size = 0;
-    RudaVector output;
+    MarimayVector output;
     unsigned char chunk[4096];
-    RudaProcessStatus status = RUDA_PROCESS_OK;
+    MarimayProcessStatus status = MMAY_PROCESS_OK;
     bool process_started = false;
     size_t index = 0;
 
     if (result == NULL) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
-    ruda_process_result_init(result, allocator);
+    mmay_process_result_init(result, allocator);
     if (arguments == NULL || argument_count == 0 || arguments[0] == NULL
         || arguments[argument_count] != NULL) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
     for (index = 0; index < argument_count; index += 1) {
         if (arguments[index] == NULL
-            || !ruda_utf8_validate(arguments[index], strlen(arguments[index]), NULL)) {
-            return RUDA_PROCESS_INVALID_ARGUMENT;
+            || !mmay_utf8_validate(arguments[index], strlen(arguments[index]), NULL)) {
+            return MMAY_PROCESS_INVALID_ARGUMENT;
         }
     }
-    if (!ruda_vector_init(&output, allocator, sizeof(unsigned char))) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+    if (!mmay_vector_init(&output, allocator, sizeof(unsigned char))) {
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
-    if (!ruda_windows_command_line(
+    if (!mmay_windows_command_line(
             allocator,
             arguments,
             argument_count,
             &command,
             &command_allocation_size
         )) {
-        status = RUDA_PROCESS_ALLOCATION_FAILED;
+        status = MMAY_PROCESS_ALLOCATION_FAILED;
         goto cleanup;
     }
     ZeroMemory(&security, sizeof(security));
@@ -239,7 +239,7 @@ RudaProcessStatus ruda_process_run(
     security.bInheritHandle = TRUE;
     if (!CreatePipe(&read_handle, &write_handle, &security, 0)
         || !SetHandleInformation(read_handle, HANDLE_FLAG_INHERIT, 0)) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     ZeroMemory(&startup, sizeof(startup));
@@ -261,7 +261,7 @@ RudaProcessStatus ruda_process_run(
             &startup,
             &process
         )) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     process_started = true;
@@ -274,35 +274,35 @@ RudaProcessStatus ruda_process_run(
             if (GetLastError() == ERROR_BROKEN_PIPE) {
                 break;
             }
-            status = RUDA_PROCESS_IO_FAILED;
+            status = MMAY_PROCESS_IO_FAILED;
             goto terminate;
         }
         if (count == 0) {
             break;
         }
         if (output.length > max_output || (size_t)count > max_output - output.length) {
-            status = RUDA_PROCESS_OUTPUT_LIMIT;
+            status = MMAY_PROCESS_OUTPUT_LIMIT;
             goto terminate;
         }
-        if (!ruda_vector_append(&output, chunk, (size_t)count)) {
-            status = RUDA_PROCESS_ALLOCATION_FAILED;
+        if (!mmay_vector_append(&output, chunk, (size_t)count)) {
+            status = MMAY_PROCESS_ALLOCATION_FAILED;
             goto terminate;
         }
     }
     if (WaitForSingleObject(process.hProcess, INFINITE) != WAIT_OBJECT_0) {
-        status = RUDA_PROCESS_WAIT_FAILED;
+        status = MMAY_PROCESS_WAIT_FAILED;
         goto terminate;
     }
     {
         DWORD exit_code = 0;
         if (!GetExitCodeProcess(process.hProcess, &exit_code)) {
-            status = RUDA_PROCESS_WAIT_FAILED;
+            status = MMAY_PROCESS_WAIT_FAILED;
             goto cleanup;
         }
         result->exit_code = (uint32_t)exit_code;
     }
-    if (!ruda_owned_bytes_copy(&result->output, allocator, output.data, output.length)) {
-        status = RUDA_PROCESS_ALLOCATION_FAILED;
+    if (!mmay_owned_bytes_copy(&result->output, allocator, output.data, output.length)) {
+        status = MMAY_PROCESS_ALLOCATION_FAILED;
     }
     goto cleanup;
 
@@ -322,27 +322,27 @@ cleanup:
         CloseHandle(write_handle);
     }
     if (command != NULL) {
-        ruda_deallocate(&allocator, command, command_allocation_size);
+        mmay_deallocate(&allocator, command, command_allocation_size);
     }
-    ruda_vector_dispose(&output);
-    if (status != RUDA_PROCESS_OK) {
-        ruda_owned_bytes_dispose(&result->output);
+    mmay_vector_dispose(&output);
+    if (status != MMAY_PROCESS_OK) {
+        mmay_owned_bytes_dispose(&result->output);
     }
     return status;
 }
 
-void ruda_process_result_dispose(RudaProcessResult *result) {
+void mmay_process_result_dispose(MarimayProcessResult *result) {
     if (result != NULL) {
-        ruda_owned_bytes_dispose(&result->output);
+        mmay_owned_bytes_dispose(&result->output);
         result->exit_code = 0;
         result->signaled = false;
         result->signal_code = 0;
     }
 }
 
-static RudaProcessStatus ruda_windows_capture_available(
+static MarimayProcessStatus mmay_windows_capture_available(
     HANDLE handle,
-    RudaVector *bytes,
+    MarimayVector *bytes,
     size_t limit,
     bool *progress
 ) {
@@ -352,31 +352,31 @@ static RudaProcessStatus ruda_windows_capture_available(
     DWORD requested = 0;
     if (!PeekNamedPipe(handle, NULL, 0, NULL, &available, NULL)) {
         return GetLastError() == ERROR_BROKEN_PIPE
-            ? RUDA_PROCESS_OK : RUDA_PROCESS_IO_FAILED;
+            ? MMAY_PROCESS_OK : MMAY_PROCESS_IO_FAILED;
     }
-    if (available == 0) return RUDA_PROCESS_OK;
+    if (available == 0) return MMAY_PROCESS_OK;
     requested = available < (DWORD)sizeof(chunk)
         ? available : (DWORD)sizeof(chunk);
     if (!ReadFile(handle, chunk, requested, &count, NULL)) {
-        return RUDA_PROCESS_IO_FAILED;
+        return MMAY_PROCESS_IO_FAILED;
     }
     if (bytes->length > limit || (size_t)count > limit - bytes->length) {
-        return RUDA_PROCESS_OUTPUT_LIMIT;
+        return MMAY_PROCESS_OUTPUT_LIMIT;
     }
-    if (!ruda_vector_append(bytes, chunk, (size_t)count)) {
-        return RUDA_PROCESS_ALLOCATION_FAILED;
+    if (!mmay_vector_append(bytes, chunk, (size_t)count)) {
+        return MMAY_PROCESS_ALLOCATION_FAILED;
     }
     *progress = count != 0;
-    return RUDA_PROCESS_OK;
+    return MMAY_PROCESS_OK;
 }
 
-RudaProcessStatus ruda_process_run_capture(
-    RudaAllocator allocator,
+MarimayProcessStatus mmay_process_run_capture(
+    MarimayAllocator allocator,
     const char *const arguments[],
     size_t argument_count,
     size_t max_output,
     size_t max_error,
-    RudaProcessCaptureResult *result
+    MarimayProcessCaptureResult *result
 ) {
     SECURITY_ATTRIBUTES security;
     HANDLE output_read = INVALID_HANDLE_VALUE;
@@ -387,36 +387,36 @@ RudaProcessStatus ruda_process_run_capture(
     PROCESS_INFORMATION process;
     wchar_t *command = NULL;
     size_t command_size = 0;
-    RudaVector output;
-    RudaVector error;
-    RudaProcessStatus status = RUDA_PROCESS_OK;
+    MarimayVector output;
+    MarimayVector error;
+    MarimayProcessStatus status = MMAY_PROCESS_OK;
     bool process_started = false;
     size_t index = 0;
     memset(&output, 0, sizeof(output));
     memset(&error, 0, sizeof(error));
-    if (result == NULL) return RUDA_PROCESS_INVALID_ARGUMENT;
+    if (result == NULL) return MMAY_PROCESS_INVALID_ARGUMENT;
     memset(result, 0, sizeof(*result));
     result->standard_output.allocator = allocator;
     result->standard_error.allocator = allocator;
     if (arguments == NULL || argument_count == 0 || arguments[0] == NULL
         || arguments[argument_count] != NULL) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
     for (index = 0; index < argument_count; index += 1) {
-        if (arguments[index] == NULL || !ruda_utf8_validate(
+        if (arguments[index] == NULL || !mmay_utf8_validate(
                 arguments[index], strlen(arguments[index]), NULL
-            )) return RUDA_PROCESS_INVALID_ARGUMENT;
+            )) return MMAY_PROCESS_INVALID_ARGUMENT;
     }
-    if (!ruda_vector_init(&output, allocator, sizeof(unsigned char))
-        || !ruda_vector_init(&error, allocator, sizeof(unsigned char))) {
-        status = RUDA_PROCESS_ALLOCATION_FAILED;
+    if (!mmay_vector_init(&output, allocator, sizeof(unsigned char))
+        || !mmay_vector_init(&error, allocator, sizeof(unsigned char))) {
+        status = MMAY_PROCESS_ALLOCATION_FAILED;
         goto cleanup;
     }
-    if (!ruda_windows_command_line(
+    if (!mmay_windows_command_line(
             allocator, arguments, argument_count,
             &command, &command_size
         )) {
-        status = RUDA_PROCESS_ALLOCATION_FAILED;
+        status = MMAY_PROCESS_ALLOCATION_FAILED;
         goto cleanup;
     }
     ZeroMemory(&security, sizeof(security));
@@ -426,7 +426,7 @@ RudaProcessStatus ruda_process_run_capture(
         || !SetHandleInformation(output_read, HANDLE_FLAG_INHERIT, 0)
         || !CreatePipe(&error_read, &error_write, &security, 0)
         || !SetHandleInformation(error_read, HANDLE_FLAG_INHERIT, 0)) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     ZeroMemory(&startup, sizeof(startup));
@@ -440,7 +440,7 @@ RudaProcessStatus ruda_process_run_capture(
             NULL, command, NULL, NULL, TRUE, CREATE_NO_WINDOW,
             NULL, NULL, &startup, &process
         )) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     process_started = true;
@@ -451,17 +451,17 @@ RudaProcessStatus ruda_process_run_capture(
     for (;;) {
         bool progress = false;
         DWORD wait_status;
-        status = ruda_windows_capture_available(
+        status = mmay_windows_capture_available(
             output_read, &output, max_output, &progress
         );
-        if (status != RUDA_PROCESS_OK) goto terminate;
-        status = ruda_windows_capture_available(
+        if (status != MMAY_PROCESS_OK) goto terminate;
+        status = mmay_windows_capture_available(
             error_read, &error, max_error, &progress
         );
-        if (status != RUDA_PROCESS_OK) goto terminate;
+        if (status != MMAY_PROCESS_OK) goto terminate;
         wait_status = WaitForSingleObject(process.hProcess, 0);
         if (wait_status == WAIT_FAILED) {
-            status = RUDA_PROCESS_WAIT_FAILED;
+            status = MMAY_PROCESS_WAIT_FAILED;
             goto terminate;
         }
         if (wait_status == WAIT_OBJECT_0 && !progress) {
@@ -473,7 +473,7 @@ RudaProcessStatus ruda_process_run_capture(
                 || (!PeekNamedPipe(
                     error_read, NULL, 0, NULL, &error_available, NULL
                 ) && GetLastError() != ERROR_BROKEN_PIPE)) {
-                status = RUDA_PROCESS_IO_FAILED;
+                status = MMAY_PROCESS_IO_FAILED;
                 goto terminate;
             }
             if (output_available == 0 && error_available == 0) break;
@@ -483,19 +483,19 @@ RudaProcessStatus ruda_process_run_capture(
     {
         DWORD exit_code = 0;
         if (!GetExitCodeProcess(process.hProcess, &exit_code)) {
-            status = RUDA_PROCESS_WAIT_FAILED;
+            status = MMAY_PROCESS_WAIT_FAILED;
             goto cleanup;
         }
         result->exit_code = (uint32_t)exit_code;
     }
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &result->standard_output, allocator,
             output.data, output.length
-        ) || !ruda_owned_bytes_copy(
+        ) || !mmay_owned_bytes_copy(
             &result->standard_error, allocator,
             error.data, error.length
         )) {
-        status = RUDA_PROCESS_ALLOCATION_FAILED;
+        status = MMAY_PROCESS_ALLOCATION_FAILED;
     }
     goto cleanup;
 terminate:
@@ -510,19 +510,19 @@ cleanup:
     if (output_write != INVALID_HANDLE_VALUE) CloseHandle(output_write);
     if (error_read != INVALID_HANDLE_VALUE) CloseHandle(error_read);
     if (error_write != INVALID_HANDLE_VALUE) CloseHandle(error_write);
-    if (command != NULL) ruda_deallocate(&allocator, command, command_size);
-    ruda_vector_dispose(&output);
-    ruda_vector_dispose(&error);
-    if (status != RUDA_PROCESS_OK) {
-        ruda_process_capture_result_dispose(result);
+    if (command != NULL) mmay_deallocate(&allocator, command, command_size);
+    mmay_vector_dispose(&output);
+    mmay_vector_dispose(&error);
+    if (status != MMAY_PROCESS_OK) {
+        mmay_process_capture_result_dispose(result);
     }
     return status;
 }
 
-void ruda_process_capture_result_dispose(RudaProcessCaptureResult *result) {
+void mmay_process_capture_result_dispose(MarimayProcessCaptureResult *result) {
     if (result == NULL) return;
-    ruda_owned_bytes_dispose(&result->standard_output);
-    ruda_owned_bytes_dispose(&result->standard_error);
+    mmay_owned_bytes_dispose(&result->standard_output);
+    mmay_owned_bytes_dispose(&result->standard_error);
     result->exit_code = 0;
     result->signaled = false;
     result->signal_code = 0;

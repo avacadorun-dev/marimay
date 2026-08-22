@@ -1,19 +1,19 @@
 #include "c_emitter_internal.h"
 
-static bool ruda_native_c_value_source(
-    const RudaMirFunction *function,
-    RudaMirRegister register_id,
+static bool mmay_native_c_value_source(
+    const MarimayMirFunction *function,
+    MarimayMirRegister register_id,
     size_t depth,
-    RudaMirRegister *origin,
-    const RudaMirInstruction **definition
+    MarimayMirRegister *origin,
+    const MarimayMirInstruction **definition
 ) {
-    const RudaMirInstruction *found = NULL;
+    const MarimayMirInstruction *found = NULL;
     size_t block_index = 0;
     if (function == NULL || origin == NULL || definition == NULL
         || depth > function->register_types.length) return false;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
@@ -21,7 +21,7 @@ static bool ruda_native_c_value_source(
         for (instruction_index = 0;
             instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *instruction = ruda_vector_at_const(
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
             if (instruction == NULL) return false;
@@ -30,8 +30,8 @@ static bool ruda_native_c_value_source(
             found = instruction;
         }
     }
-    if (found != NULL && found->kind == RUDA_MIR_COPY) {
-        return ruda_native_c_value_source(
+    if (found != NULL && found->kind == MMAY_MIR_COPY) {
+        return mmay_native_c_value_source(
             function, found->first, depth + 1, origin, definition
         );
     }
@@ -40,30 +40,30 @@ static bool ruda_native_c_value_source(
     return true;
 }
 
-static bool ruda_native_c_local_array_is_empty(
-    const RudaMirFunction *function,
-    RudaMirRegister array_origin
+static bool mmay_native_c_local_array_is_empty(
+    const MarimayMirFunction *function,
+    MarimayMirRegister array_origin
 ) {
     size_t block_index = 0;
     bool found = false;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
         for (instruction_index = 0;
             block != NULL && instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *instruction = ruda_vector_at_const(
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
-            const RudaMirArrayConstruction *construction = NULL;
+            const MarimayMirArrayConstruction *construction = NULL;
             if (instruction == NULL) return false;
             if (instruction->target != array_origin
-                || instruction->kind != RUDA_MIR_ARRAY_NEW) continue;
+                || instruction->kind != MMAY_MIR_ARRAY_NEW) continue;
             if (found) return false;
-            construction = ruda_vector_at_const(
+            construction = mmay_vector_at_const(
                 &function->array_constructions,
                 instruction->array_construction
             );
@@ -75,50 +75,50 @@ static bool ruda_native_c_local_array_is_empty(
     return found;
 }
 
-static bool ruda_native_c_value_pushes_are_indices(
-    const RudaMirFunction *function,
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_value_pushes_are_indices(
+    const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
     size_t function_count,
-    RudaMirRegister source_origin,
-    RudaMirRegister target_array
+    MarimayMirRegister source_origin,
+    MarimayMirRegister target_array
 ) {
     size_t block_index = 0;
     bool found_push = false;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
         if (block != NULL
-            && block->terminator.kind == RUDA_MIR_CALL_NEVER) return false;
+            && block->terminator.kind == MMAY_MIR_CALL_NEVER) return false;
         for (instruction_index = 0;
             block != NULL && instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *instruction = ruda_vector_at_const(
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
-            RudaMirRegister instruction_origin = RUDA_MIR_NO_REGISTER;
+            MarimayMirRegister instruction_origin = MMAY_MIR_NO_REGISTER;
             bool same_source = false;
             if (instruction == NULL) return false;
-            if (instruction->kind == RUDA_MIR_CALL
-                || instruction->kind == RUDA_MIR_CALL_INTERFACE) return false;
-            if (instruction->kind != RUDA_MIR_ARRAY_PUSH
-                && instruction->kind != RUDA_MIR_ARRAY_SET
-                && instruction->kind != RUDA_MIR_ARRAY_SET_IN_BOUNDS
-                && instruction->kind != RUDA_MIR_ARRAY_POP
-                && instruction->kind != RUDA_MIR_ARRAY_TRUNCATE
-                && instruction->kind != RUDA_MIR_ARRAY_CLEAR) continue;
-            same_source = ruda_native_c_array_register_origin(
+            if (instruction->kind == MMAY_MIR_CALL
+                || instruction->kind == MMAY_MIR_CALL_INTERFACE) return false;
+            if (instruction->kind != MMAY_MIR_ARRAY_PUSH
+                && instruction->kind != MMAY_MIR_ARRAY_SET
+                && instruction->kind != MMAY_MIR_ARRAY_SET_IN_BOUNDS
+                && instruction->kind != MMAY_MIR_ARRAY_POP
+                && instruction->kind != MMAY_MIR_ARRAY_TRUNCATE
+                && instruction->kind != MMAY_MIR_ARRAY_CLEAR) continue;
+            same_source = mmay_native_c_array_register_origin(
                 function, instruction->first, &instruction_origin
             ) && instruction_origin == source_origin;
             if (!same_source) continue;
-            if (instruction->kind != RUDA_MIR_ARRAY_PUSH) return false;
-            if (!ruda_native_c_array_filled_index_proven(
+            if (instruction->kind != MMAY_MIR_ARRAY_PUSH) return false;
+            if (!mmay_native_c_array_filled_index_proven(
                     function, instruction, target_array, instruction->second
-                ) && !ruda_native_c_array_guarded_index_proven(
+                ) && !mmay_native_c_array_guarded_index_proven(
                     function, instruction, target_array, instruction->second
-                ) && !ruda_native_c_array_relational_index_proven(
+                ) && !mmay_native_c_array_relational_index_proven(
                     function, functions, function_count, instruction,
                     target_array, instruction->second
                 )) return false;
@@ -128,34 +128,34 @@ static bool ruda_native_c_value_pushes_are_indices(
     return found_push;
 }
 
-bool ruda_native_c_array_loaded_index_proven(
-    const RudaMirFunction *function,
-    const RudaMirFunction *const *functions,
+bool mmay_native_c_array_loaded_index_proven(
+    const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
     size_t function_count,
-    const RudaMirInstruction *instruction,
-    RudaMirRegister array_register,
-    RudaMirRegister index_register
+    const MarimayMirInstruction *instruction,
+    MarimayMirRegister array_register,
+    MarimayMirRegister index_register
 ) {
-    const RudaMirInstruction *definition = NULL;
-    const RudaMirArray *source_array = NULL;
-    RudaMirRegister index_origin = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister source_origin = RUDA_MIR_NO_REGISTER;
+    const MarimayMirInstruction *definition = NULL;
+    const MarimayMirArray *source_array = NULL;
+    MarimayMirRegister index_origin = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister source_origin = MMAY_MIR_NO_REGISTER;
     if (function == NULL || functions == NULL || instruction == NULL
-        || !ruda_native_c_value_source(
+        || !mmay_native_c_value_source(
             function, index_register, 0, &index_origin, &definition
         ) || definition == NULL
-        || (definition->kind != RUDA_MIR_ARRAY_GET
-            && definition->kind != RUDA_MIR_ARRAY_GET_IN_BOUNDS)
-        || !ruda_native_c_array_register_origin(
+        || (definition->kind != MMAY_MIR_ARRAY_GET
+            && definition->kind != MMAY_MIR_ARRAY_GET_IN_BOUNDS)
+        || !mmay_native_c_array_register_origin(
             function, definition->first, &source_origin
-        ) || !ruda_native_c_local_array_is_empty(
+        ) || !mmay_native_c_local_array_is_empty(
             function, source_origin
         )) return false;
-    source_array = ruda_vector_at_const(
+    source_array = mmay_vector_at_const(
         &function->arrays, definition->array
     );
-    return source_array != NULL && source_array->element_type == RUDA_TYPE_I64
-        && ruda_native_c_value_pushes_are_indices(
+    return source_array != NULL && source_array->element_type == MMAY_TYPE_I64
+        && mmay_native_c_value_pushes_are_indices(
             function, functions, function_count, source_origin,
             array_register
         );

@@ -1,11 +1,11 @@
-# Ruda execution and runtime specification — design baseline 0.1
+# Marimay execution and runtime specification — design baseline 0.1
 
 Status: normative design baseline.  
 Applies to: bytecode VM, C17 AOT backend, runtime, and standard-library I/O.
 
 ## 1. Central invariant
 
-A Ruda source program has one language meaning. The VM and native backend may differ in startup time, throughput, memory layout, optimization, and deployment shape. They must not differ in accepted syntax, static types, evaluation order, numeric behavior, panic rules, task structure, standard-library contracts, or safe-code results.
+A Marimay source program has one language meaning. The VM and native backend may differ in startup time, throughput, memory layout, optimization, and deployment shape. They must not differ in accepted syntax, static types, evaluation order, numeric behavior, panic rules, task structure, standard-library contracts, or safe-code results.
 
 The engine is not observable through a safe standard API. A program cannot branch on “VM versus native”. Engine-specific diagnostics and profiler metadata are outside program semantics.
 
@@ -14,7 +14,7 @@ The engine is not observable through a safe standard API. A program cannot branc
 Both engines consume the same front half:
 
 ```text
-.ruda source
+.my source
   -> UTF-8 source manager and tokens
   -> lossless syntax tree
   -> resolved HIR
@@ -22,7 +22,7 @@ Both engines consume the same front half:
   -> typed HIR
   -> control-flow and cleanup lowering
   -> typed MIR
-      -> verified register bytecode -> .rudab -> C17 VM
+      -> verified register bytecode -> .myb -> C17 VM
       -> portable generated C17 -> host C compiler -> native executable
 ```
 
@@ -42,21 +42,21 @@ Every MIR function contains:
 - a compiler-inferred suspension bit and suspension-point table;
 - source spans for every user-observable operation.
 
-`ruda build --emit mir` is a diagnostic format, not a stable public ABI. A versioned MIR test serializer is maintained internally for golden and differential tests.
+`mmay build --emit mir` is a diagnostic format, not a stable public ABI. A versioned MIR test serializer is maintained internally for golden and differential tests.
 
 ## 3. Required execution engines
 
 ### 3.1 Typed bytecode VM
 
-The VM is required in every standard Ruda installation. It is the default engine for `ruda run`, `ruda test`, the REPL, debugger evaluation, compile-time execution, and sandboxed `.rudab` execution.
+The VM is required in every standard Marimay installation. It is the default engine for `mmay run`, `mmay test`, the REPL, debugger evaluation, compile-time execution, and sandboxed `.myb` execution.
 
 The baseline VM is an interpreter. A JIT is not required for 1.0 and cannot become a semantic dependency.
 
 ### 3.2 Native AOT
 
-The native backend lowers typed MIR to portable C17 and invokes a supported host C toolchain. It is the default engine for `ruda build`. Generated C and the C runtime form an implementation boundary, not a stable foreign API.
+The native backend lowers typed MIR to portable C17 and invokes a supported host C toolchain. It is the default engine for `mmay build`. Generated C and the C runtime form an implementation boundary, not a stable foreign API.
 
-A native program is standalone except for documented operating-system libraries, the platform C runtime, and explicitly requested dynamic FFI dependencies. The Ruda runtime is statically linked by default.
+A native program is standalone except for documented operating-system libraries, the platform C runtime, and explicitly requested dynamic FFI dependencies. The Marimay runtime is statically linked by default.
 
 ### 3.3 Scenario defaults
 
@@ -67,7 +67,7 @@ A native program is standalone except for documented operating-system libraries,
 | semantic release gate | both | differential conformance |
 | REPL/debug evaluation | VM | inspectable frames and sandboxing |
 | distributable service/CLI | native | standalone startup and throughput |
-| portable plugin/script artifact | `.rudab` | validated target-neutral bundle |
+| portable plugin/script artifact | `.myb` | validated target-neutral bundle |
 
 Every default can be made explicit with `--engine vm|native|both` where the command supports it. `both` is a verification mode, not a third engine.
 
@@ -75,13 +75,13 @@ Every default can be made explicit with `--engine vm|native|both` where the comm
 
 ### 4.1 Instruction model
 
-Ruda bytecode is register-based. Each function declares typed virtual registers, constants, control-flow blocks, root maps, and suspension metadata. Instructions never infer operand types at runtime; the verifier confirms the declared type state before execution.
+Marimay bytecode is register-based. Each function declares typed virtual registers, constants, control-flow blocks, root maps, and suspension metadata. Instructions never infer operand types at runtime; the verifier confirms the declared type state before execution.
 
 Instruction families include constants and moves, checked numeric operations, record/enum construction and projection, direct/interface/closure/extern calls, typed branches, verified collection intrinsics, task operations, root registration, panic, cleanup transfer, and return. First-parameter dot calls are resolved before MIR and therefore require no separate call instruction.
 
 There is no instruction that treats arbitrary data as a type, jumps to an unchecked byte offset, accesses a field without a layout descriptor, or dereferences a raw pointer in verified safe bytecode.
 
-### 4.2 `.rudab` format
+### 4.2 `.myb` format
 
 A portable bundle contains, in canonical order:
 
@@ -98,7 +98,7 @@ A portable bundle contains, in canonical order:
 
 All integers in the file format use a specified little-endian variable-length encoding independent of host endianness. Unknown mandatory features cause loader rejection. Unknown optional debug sections may be skipped.
 
-A portable `.rudab` contains no native machine code. An FFI import marks a bundle platform-constrained; the loader validates ABI, library identity, and granted capability before linking it.
+A portable `.myb` contains no native machine code. An FFI import marks a bundle platform-constrained; the loader validates ABI, library identity, and granted capability before linking it.
 
 #### 4.2.1 Generic array type table
 
@@ -107,7 +107,7 @@ program type section. Each row stores the bytecode element type tag and either
 `NO_LAYOUT` for scalar elements and the built-in canonical string descriptor,
 or the index of the exact array, record, enum, or interface layout for another
 managed reference element. Array construction, access, and growth instructions carry
-the row index through their verified function metadata. A source `RudaTypeId`,
+the row index through their verified function metadata. A source `MarimayTypeId`,
 allocator address, descriptor pointer, or other host pointer is never written
 to the wire. The loader rejects an out-of-range row, a mismatched element
 layout, a nominal/reference row without its required exact layout, or a row
@@ -145,7 +145,7 @@ execution.
 
 ### 5.1 Generated C safety
 
-Generated C must not depend on C undefined behavior to implement safe Ruda. In particular:
+Generated C must not depend on C undefined behavior to implement safe Marimay. In particular:
 
 - checked signed arithmetic uses range checks or unsigned-domain techniques before conversion;
 - verifier-proven D062 `i64` add/subtract/multiply uses unsigned-domain
@@ -185,7 +185,7 @@ The C backend test suite runs generated code with strong warnings, AddressSaniti
 
 ### 5.1.1 Generated identifiers
 
-User-controlled Ruda identifiers are never copied verbatim into C identifiers.
+User-controlled Marimay identifiers are never copied verbatim into C identifiers.
 The backend assigns every generated function, type, field accessor, local,
 temporary, descriptor, and helper an injective compiler-owned spelling from
 its stable symbol identity and ordinal. Generated spellings must be valid C17,
@@ -212,7 +212,7 @@ The internal native ABI has two call categories:
 
 Interface calls and general closure calls use the resumable ABI so an open implementation set does not expose suspension in source types. A non-suspending implementation receives a generated adapter. Direct statically resolved calls remain ordinary C calls when safe.
 
-Changing a function from direct to resumable changes package build metadata and forces dependent native recompilation, but is not a source API break because the declared Ruda signature is unchanged.
+Changing a function from direct to resumable changes package build metadata and forces dependent native recompilation, but is not a source API break because the declared Marimay signature is unchanged.
 
 ### 5.3 Rooting
 
@@ -222,7 +222,7 @@ Conservative scanning of arbitrary C stack bytes is not a conforming primary str
 
 ### 5.4 Emitted C
 
-`ruda build --emit c` may emit human-readable C for compiler debugging and bootstrap inspection. Symbol names, file partitioning, helper signatures, and formatting are unstable. User code must use the documented C FFI surface instead of including generated headers.
+`mmay build --emit c` may emit human-readable C for compiler debugging and bootstrap inspection. Symbol names, file partitioning, helper signatures, and formatting are unstable. User code must use the documented C FFI surface instead of including generated headers.
 
 ### 5.5 Native executable entry
 
@@ -239,7 +239,7 @@ error payload in exact managed roots while it calls the checker-selected
 before popping roots. Root frames are balanced and the managed heap is disposed
 on success, expected error, panic, allocation/resource failure, invalid runtime
 layout, and host-rejection edges. A release optimizer may remove a check only
-after proving it redundant under Ruda semantics.
+after proving it redundant under Marimay semantics.
 
 ### 5.6 Native runtime profiles
 
@@ -263,7 +263,7 @@ host linking and cannot be reclassified as a generated-C failure.
 
 A function's declared return type describes its completed result, not its execution container:
 
-```ruda
+```marimay
 fn loadUser(id: int): Result<User, Error> {
   const response = http.get($"/users/{id}")?;
   return json.decode<User>(response.body);
@@ -278,16 +278,16 @@ Calling the same function without `spawn` remains sequential: the caller cannot 
 
 The compiler assigns each function an internal effect `maySuspend: bool`. It is true when a function directly invokes a suspending runtime operation, calls a suspending function, performs an open interface/closure call, waits on a task/channel/timer/isolate operation, or invokes `@blocking` FFI through the runtime adapter.
 
-Inference is a least fixed point over strongly connected components of the call graph. Imported package metadata supplies effect summaries and causal source spans. Unsafe code cannot lie about the effect of an ordinary Ruda function.
+Inference is a least fixed point over strongly connected components of the call graph. Imported package metadata supplies effect summaries and causal source spans. Unsafe code cannot lie about the effect of an ordinary Marimay function.
 
 The effect is not considered when checking source-level function compatibility. It is observable to tooling:
 
 ```text
-ruda explain suspension loadDashboard
+mmay explain suspension loadDashboard
 
 loadDashboard may suspend
-└─ calls loadUser at src/dashboard.ruda:12
-   └─ calls http.get at src/users.ruda:8
+└─ calls loadUser at src/dashboard.my:12
+   └─ calls http.get at src/users.my:8
       └─ runtime network wait
 ```
 
@@ -305,9 +305,9 @@ Conceptually:
 switch (frame->state) {
 case 0:
     frame->state = 1;
-    return ruda_http_get_or_suspend(frame, request);
+    return mmay_http_get_or_suspend(frame, request);
 case 1:
-    response = ruda_resume_value(frame);
+    response = mmay_resume_value(frame);
     /* continue typed MIR */
 }
 ```
@@ -322,7 +322,7 @@ Synchronous C callbacks, constant evaluation, GC tracing helpers, low-level sign
 
 ### 7.1 Terms
 
-- A **task** is a lightweight resumable Ruda execution context.
+- A **task** is a lightweight resumable Marimay execution context.
 - A **scope** is the lexical lifetime owner created by `scope`.
 - A **child** is a task created by `spawn` in that scope.
 - The **owner** is the task executing the `scope` block.
@@ -332,7 +332,7 @@ Every program starts in a root task. Standard servers create request tasks under
 
 ### 7.2 Creating tasks
 
-```ruda
+```marimay
 scope {
   const userTask = spawn loadUser(id);
   const ordersTask = spawn loadOrders(id);
@@ -400,7 +400,7 @@ During cancellation cleanup, further cancellation is masked while lexical `defer
 
 Timeout, structured first-result racing, and readiness selection are standard compiler-aware library operations, not syntax in 0.1:
 
-```ruda
+```marimay
 const result = task.withTimeout(2.seconds, (): Result<User, Error> => {
   return loadUser(id);
 });
@@ -420,7 +420,7 @@ Channel endpoints must remain within a scope that owns all participating tasks. 
 
 ### 7.9 Scheduling
 
-Each isolate runs at most one of its Ruda tasks at a time. Scheduling is preemptive only at compiler-defined safepoints and cooperative between them. The required policy is fair: a continuously runnable task cannot be postponed forever by other runnable tasks.
+Each isolate runs at most one of its Marimay tasks at a time. Scheduling is preemptive only at compiler-defined safepoints and cooperative between them. The required policy is fair: a continuously runnable task cannot be postponed forever by other runnable tasks.
 
 The exact interleaving of independent tasks is not ordinary program semantics. Mutable shared objects inside one isolate are free of simultaneous data races but can still have order-dependent logical races. Programs requiring a deterministic order use channels, explicit waits, or a single owner task.
 
@@ -432,13 +432,13 @@ Conformance mode uses a deterministic scheduler keyed by task creation identifie
 
 An isolate owns one managed heap, scheduler/task tree, package runtime state, capability set, resource table, and logical event loop.
 
-Different isolates may execute in parallel on different OS threads. Safe Ruda cannot hold a mutable reference into another isolate's heap. There are no user-visible shared-memory threads, mutexes, atomics, or data-race-prone global variables in 1.0.
+Different isolates may execute in parallel on different OS threads. Safe Marimay cannot hold a mutable reference into another isolate's heap. There are no user-visible shared-memory threads, mutexes, atomics, or data-race-prone global variables in 1.0.
 
 ### 8.2 Running CPU work
 
 The core parallel API is a suspending standard operation:
 
-```ruda
+```marimay
 fn hashChunk(chunk: Bytes): Digest {
   return crypto.hash(chunk);
 }
@@ -457,7 +457,7 @@ fn hashBoth(a: Bytes, b: Bytes): [Digest, Digest] {
 
 The compiler checks that input and result are sendable. Sendable values are primitives, strings, immutable enums, and immutable record graphs whose reachable fields are sendable. Mutable records and containers are deep-copied as an independent snapshot when explicitly accepted by the API. Opaque resources are non-sendable unless their API defines transfer.
 
-Selected buffer/resource types support explicit transfer. A transferred handle becomes statically unusable at the sender through a narrow compiler-known affine rule. This rule does not introduce general move semantics into Ruda values.
+Selected buffer/resource types support explicit transfer. A transferred handle becomes statically unusable at the sender through a narrow compiler-known affine rule. This rule does not introduce general move semantics into Marimay values.
 
 ### 8.3 Service workers
 
@@ -469,7 +469,7 @@ Operational worker counts are runtime configuration and must not change request-
 
 ### 9.1 Required guarantees
 
-Safe Ruda automatically manages records, strings, arrays, maps, closures, task frames, interface boxes, and runtime metadata. It prevents use-after-free, double-free, null dereference, uninitialized reads, and type confusion.
+Safe Marimay automatically manages records, strings, arrays, maps, closures, task frames, interface boxes, and runtime metadata. It prevents use-after-free, double-free, null dereference, uninitialized reads, and type confusion.
 
 Objects retain stable reference identity for 1.0. The Stage 0 collector is a precise non-moving tracing collector. A later moving or generational collector may be introduced only if identity, FFI handles, suspension frames, and observable semantics remain unchanged.
 
@@ -513,7 +513,7 @@ shadow-root frame owns the array reference for the complete call.
 
 Under D060, a verified raw scalar element type selects dense byte-addressed
 array storage with an exact 1-, 2-, 4-, or 8-byte stride; reference elements
-retain `RudaManagedCell` stride. The runtime validates the descriptor tag,
+retain `MarimayManagedCell` stride. The runtime validates the descriptor tag,
 stride, and raw/reference class before publishing or accessing storage. Raw
 loads and stores use byte copies through aligned fixed-width locals, preserve
 the canonical low payload bits, and are never traced as references. Newly
@@ -622,21 +622,21 @@ removal-gated implementation detail, not a second stdout semantics.
 
 ## 11. FFI interaction
 
-### 11.1 Calls from Ruda to C
+### 11.1 Calls from Marimay to C
 
 An ordinary extern call executes on the isolate's carrier thread and must not block or retain managed pointers after returning. `@blocking` dispatches the call through the bounded blocking pool with marshalled arguments.
 
 Managed objects are not raw C pointers. FFI uses scoped handles, copied C strings/buffers, opaque pointers, or explicit borrowed views whose lifetime cannot cross a suspension point. The compiler rejects a live scoped C view at a possible suspension.
 
-### 11.2 Calls from C to Ruda
+### 11.2 Calls from C to Marimay
 
-A synchronous C callback may target only a function proven non-suspending. A foreign thread entering Ruda must attach through a runtime API and schedule work onto an isolate rather than directly accessing its heap.
+A synchronous C callback may target only a function proven non-suspending. A foreign thread entering Marimay must attach through a runtime API and schedule work onto an isolate rather than directly accessing its heap.
 
-For asynchronous C libraries, the callback records an opaque completion event and resumes a Ruda task through the runtime event queue. It does not call an arbitrary suspending frame on the foreign stack.
+For asynchronous C libraries, the callback records an opaque completion event and resumes a Marimay task through the runtime event queue. It does not call an arbitrary suspending frame on the foreign stack.
 
 ### 11.3 Unsafe containment
 
-An FFI declaration and wrapper live in a package that declares the `ffi` capability. Packages containing unsafe code are reported by `ruda audit`. Unsafe operations cannot bypass bytecode task-scope verification or obtain engine identity.
+An FFI declaration and wrapper live in a package that declares the `ffi` capability. Packages containing unsafe code are reported by `mmay audit`. Unsafe operations cannot bypass bytecode task-scope verification or obtain engine identity.
 
 ## 12. Capabilities and sandboxing
 
@@ -644,7 +644,7 @@ The root application declares the ambient capabilities it requires, such as file
 
 Libraries cannot broaden the root set. Standard APIs check the current runtime capability context. Tests replace capabilities with deterministic in-memory implementations.
 
-For `.rudab` execution, capabilities are denied unless granted by the invoking command or accepted root manifest. The VM verifier and runtime enforce them. Native binaries perform the same standard-library checks, but unsafe native FFI can escape process-level enforcement; production hard isolation also uses operating-system sandboxing.
+For `.myb` execution, capabilities are denied unless granted by the invoking command or accepted root manifest. The VM verifier and runtime enforce them. Native binaries perform the same standard-library checks, but unsafe native FFI can escape process-level enforcement; production hard isolation also uses operating-system sandboxing.
 
 Package build and constant evaluation have no ambient runtime capabilities and cannot access the network or filesystem outside declared source inputs.
 
@@ -714,7 +714,7 @@ invalid rather than continue with a fabricated value.
 
 ### 13.2 Differential harness
 
-`ruda test --engine both` runs each test in an isolated deterministic environment:
+`mmay test --engine both` runs each test in an isolated deterministic environment:
 
 1. execute VM with a recorded scheduler/I/O/clock/random seed;
 2. execute native against the same logical event recording;
@@ -752,7 +752,7 @@ Tracing uses a stable event schema for task start/end, scope enter/exit, suspens
 
 The following are release blockers:
 
-- malformed `.rudab` causes memory corruption, verifier bypass, or partial execution;
+- malformed `.myb` causes memory corruption, verifier bypass, or partial execution;
 - safe source reaches C undefined behavior;
 - a managed pointer is retained by C beyond its handle lifetime;
 - a task escapes its lexical scope;

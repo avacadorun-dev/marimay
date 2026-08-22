@@ -3,299 +3,299 @@
 #include <limits.h>
 #include <string.h>
 
-size_t ruda_managed_string_storage_bytes(const RudaManagedString *value) {
+size_t mmay_managed_string_storage_bytes(const MarimayManagedString *value) {
     return value != NULL ? value->length : 0;
 }
-void ruda_managed_string_dispose(
-    RudaManagedHeap *heap,
-    RudaManagedString *value
+void mmay_managed_string_dispose(
+    MarimayManagedHeap *heap,
+    MarimayManagedString *value
 ) {
     if (heap == NULL || value == NULL) {
         return;
     }
-    ruda_deallocate(&heap->allocator, value->bytes, value->length);
-    ruda_deallocate(&heap->allocator, value, sizeof(*value));
+    mmay_deallocate(&heap->allocator, value->bytes, value->length);
+    mmay_deallocate(&heap->allocator, value, sizeof(*value));
 }
 
-size_t ruda_managed_record_field_bytes(const RudaManagedRecord *record) {
+size_t mmay_managed_record_field_bytes(const MarimayManagedRecord *record) {
     size_t bytes = 0;
     return record != NULL && record->descriptor != NULL
-            && ruda_size_multiply(
+            && mmay_size_multiply(
                 record->descriptor->field_count,
-                sizeof(RudaManagedCell),
+                sizeof(MarimayManagedCell),
                 &bytes
             )
         ? bytes
         : 0;
 }
 
-void ruda_managed_record_dispose(
-    RudaManagedHeap *heap,
-    RudaManagedRecord *record
+void mmay_managed_record_dispose(
+    MarimayManagedHeap *heap,
+    MarimayManagedRecord *record
 ) {
-    size_t field_bytes = ruda_managed_record_field_bytes(record);
+    size_t field_bytes = mmay_managed_record_field_bytes(record);
     if (heap == NULL || record == NULL) {
         return;
     }
-    ruda_deallocate(&heap->allocator, record->fields, field_bytes);
-    ruda_deallocate(&heap->allocator, record, sizeof(*record));
+    mmay_deallocate(&heap->allocator, record->fields, field_bytes);
+    mmay_deallocate(&heap->allocator, record, sizeof(*record));
 }
 
-size_t ruda_managed_enum_payload_bytes(const RudaManagedEnum *value) {
-    const RudaManagedEnumVariantDescriptor *variant = NULL;
+size_t mmay_managed_enum_payload_bytes(const MarimayManagedEnum *value) {
+    const MarimayManagedEnumVariantDescriptor *variant = NULL;
     size_t bytes = 0;
     if (value == NULL || value->descriptor == NULL
         || value->variant >= value->descriptor->variant_count) {
         return 0;
     }
     variant = &value->descriptor->variants[value->variant];
-    return variant != NULL && ruda_size_multiply(
+    return variant != NULL && mmay_size_multiply(
             variant->payload_count,
-            sizeof(RudaManagedCell),
+            sizeof(MarimayManagedCell),
             &bytes
         )
         ? bytes
         : 0;
 }
 
-void ruda_managed_enum_dispose(
-    RudaManagedHeap *heap,
-    RudaManagedEnum *value
+void mmay_managed_enum_dispose(
+    MarimayManagedHeap *heap,
+    MarimayManagedEnum *value
 ) {
-    size_t payload_bytes = ruda_managed_enum_payload_bytes(value);
+    size_t payload_bytes = mmay_managed_enum_payload_bytes(value);
     if (heap == NULL || value == NULL) {
         return;
     }
-    ruda_deallocate(&heap->allocator, value->payload, payload_bytes);
-    ruda_deallocate(&heap->allocator, value, sizeof(*value));
+    mmay_deallocate(&heap->allocator, value->payload, payload_bytes);
+    mmay_deallocate(&heap->allocator, value, sizeof(*value));
 }
 
-void ruda_managed_interface_dispose(
-    RudaManagedHeap *heap,
-    RudaManagedInterface *value
+void mmay_managed_interface_dispose(
+    MarimayManagedHeap *heap,
+    MarimayManagedInterface *value
 ) {
     if (heap == NULL || value == NULL) {
         return;
     }
-    ruda_deallocate(&heap->allocator, value, sizeof(*value));
+    mmay_deallocate(&heap->allocator, value, sizeof(*value));
 }
 
-bool ruda_managed_slot_occupied(const RudaManagedSlot *slot) {
+bool mmay_managed_slot_occupied(const MarimayManagedSlot *slot) {
     if (slot == NULL) {
         return false;
     }
     switch (slot->kind) {
-        case RUDA_MANAGED_OBJECT_ARRAY:
+        case MMAY_MANAGED_OBJECT_ARRAY:
             return slot->as.array != NULL;
-        case RUDA_MANAGED_OBJECT_STRING:
+        case MMAY_MANAGED_OBJECT_STRING:
             return slot->as.string != NULL;
-        case RUDA_MANAGED_OBJECT_RECORD:
+        case MMAY_MANAGED_OBJECT_RECORD:
             return slot->as.record != NULL;
-        case RUDA_MANAGED_OBJECT_ENUM:
+        case MMAY_MANAGED_OBJECT_ENUM:
             return slot->as.enumeration != NULL;
-        case RUDA_MANAGED_OBJECT_INTERFACE:
+        case MMAY_MANAGED_OBJECT_INTERFACE:
             return slot->as.iface != NULL;
-        case RUDA_MANAGED_OBJECT_INVALID:
+        case MMAY_MANAGED_OBJECT_INVALID:
             break;
     }
     return false;
 }
 
-size_t ruda_managed_slot_object_bytes(const RudaManagedSlot *slot) {
+size_t mmay_managed_slot_object_bytes(const MarimayManagedSlot *slot) {
     if (slot == NULL) {
         return 0;
     }
     switch (slot->kind) {
-        case RUDA_MANAGED_OBJECT_ARRAY:
+        case MMAY_MANAGED_OBJECT_ARRAY:
             return slot->as.array != NULL
-                ? sizeof(RudaManagedArray)
-                    + ruda_managed_array_storage_bytes(slot->as.array)
-                    + ruda_managed_array_child_cache_bytes(slot->as.array)
+                ? sizeof(MarimayManagedArray)
+                    + mmay_managed_array_storage_bytes(slot->as.array)
+                    + mmay_managed_array_child_cache_bytes(slot->as.array)
                 : 0;
-        case RUDA_MANAGED_OBJECT_STRING:
+        case MMAY_MANAGED_OBJECT_STRING:
             return slot->as.string != NULL
-                ? sizeof(RudaManagedString)
-                    + ruda_managed_string_storage_bytes(slot->as.string)
+                ? sizeof(MarimayManagedString)
+                    + mmay_managed_string_storage_bytes(slot->as.string)
                 : 0;
-        case RUDA_MANAGED_OBJECT_RECORD:
+        case MMAY_MANAGED_OBJECT_RECORD:
             return slot->as.record != NULL
-                ? sizeof(RudaManagedRecord)
-                    + ruda_managed_record_field_bytes(slot->as.record)
+                ? sizeof(MarimayManagedRecord)
+                    + mmay_managed_record_field_bytes(slot->as.record)
                 : 0;
-        case RUDA_MANAGED_OBJECT_ENUM:
+        case MMAY_MANAGED_OBJECT_ENUM:
             return slot->as.enumeration != NULL
-                ? sizeof(RudaManagedEnum)
-                    + ruda_managed_enum_payload_bytes(slot->as.enumeration)
+                ? sizeof(MarimayManagedEnum)
+                    + mmay_managed_enum_payload_bytes(slot->as.enumeration)
                 : 0;
-        case RUDA_MANAGED_OBJECT_INTERFACE:
-            return slot->as.iface != NULL ? sizeof(RudaManagedInterface) : 0;
-        case RUDA_MANAGED_OBJECT_INVALID:
+        case MMAY_MANAGED_OBJECT_INTERFACE:
+            return slot->as.iface != NULL ? sizeof(MarimayManagedInterface) : 0;
+        case MMAY_MANAGED_OBJECT_INVALID:
             break;
     }
     return 0;
 }
 
-void ruda_managed_slot_dispose_object(
-    RudaManagedHeap *heap,
-    RudaManagedSlot *slot
+void mmay_managed_slot_dispose_object(
+    MarimayManagedHeap *heap,
+    MarimayManagedSlot *slot
 ) {
     if (heap == NULL || slot == NULL) {
         return;
     }
     switch (slot->kind) {
-        case RUDA_MANAGED_OBJECT_ARRAY:
-            ruda_managed_array_dispose(heap, slot->as.array);
+        case MMAY_MANAGED_OBJECT_ARRAY:
+            mmay_managed_array_dispose(heap, slot->as.array);
             slot->as.array = NULL;
             break;
-        case RUDA_MANAGED_OBJECT_STRING:
-            ruda_managed_string_dispose(heap, slot->as.string);
+        case MMAY_MANAGED_OBJECT_STRING:
+            mmay_managed_string_dispose(heap, slot->as.string);
             slot->as.string = NULL;
             break;
-        case RUDA_MANAGED_OBJECT_RECORD:
-            ruda_managed_record_dispose(heap, slot->as.record);
+        case MMAY_MANAGED_OBJECT_RECORD:
+            mmay_managed_record_dispose(heap, slot->as.record);
             slot->as.record = NULL;
             break;
-        case RUDA_MANAGED_OBJECT_ENUM:
-            ruda_managed_enum_dispose(heap, slot->as.enumeration);
+        case MMAY_MANAGED_OBJECT_ENUM:
+            mmay_managed_enum_dispose(heap, slot->as.enumeration);
             slot->as.enumeration = NULL;
             break;
-        case RUDA_MANAGED_OBJECT_INTERFACE:
-            ruda_managed_interface_dispose(heap, slot->as.iface);
+        case MMAY_MANAGED_OBJECT_INTERFACE:
+            mmay_managed_interface_dispose(heap, slot->as.iface);
             slot->as.iface = NULL;
             break;
-        case RUDA_MANAGED_OBJECT_INVALID:
+        case MMAY_MANAGED_OBJECT_INVALID:
             break;
     }
-    slot->kind = RUDA_MANAGED_OBJECT_INVALID;
+    slot->kind = MMAY_MANAGED_OBJECT_INVALID;
 }
 
 
-static RudaManagedStatus ruda_managed_trace_array(
-    RudaManagedHeap *heap,
-    const RudaManagedArray *array,
+static MarimayManagedStatus mmay_managed_trace_array(
+    MarimayManagedHeap *heap,
+    const MarimayManagedArray *array,
     uint32_t *gray_head
 ) {
     size_t index = 0;
     for (index = 0; index < array->length; index += 1) {
-        RudaManagedCell cell;
-        RudaManagedStatus status = ruda_managed_array_storage_load(
+        MarimayManagedCell cell;
+        MarimayManagedStatus status = mmay_managed_array_storage_load(
             array, index, &cell
         );
-        if (status != RUDA_MANAGED_OK) {
+        if (status != MMAY_MANAGED_OK) {
             return status;
         }
-        status = ruda_managed_mark_reference(
+        status = mmay_managed_mark_reference(
             heap, cell.reference, gray_head
         );
-        if (status != RUDA_MANAGED_OK) {
+        if (status != MMAY_MANAGED_OK) {
             return status;
         }
     }
-    return RUDA_MANAGED_OK;
+    return MMAY_MANAGED_OK;
 }
 
-RudaManagedStatus ruda_managed_trace_slot(
-    RudaManagedHeap *heap,
-    RudaManagedSlot *slot,
+MarimayManagedStatus mmay_managed_trace_slot(
+    MarimayManagedHeap *heap,
+    MarimayManagedSlot *slot,
     uint32_t *gray_head
 ) {
     size_t index = 0;
     if (heap == NULL || slot == NULL || gray_head == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
     switch (slot->kind) {
-        case RUDA_MANAGED_OBJECT_ARRAY:
+        case MMAY_MANAGED_OBJECT_ARRAY:
             if (slot->as.array == NULL
-                || !ruda_managed_array_descriptor_valid(
+                || !mmay_managed_array_descriptor_valid(
                     slot->as.array->descriptor
                 )) {
-                return RUDA_MANAGED_INVALID_REFERENCE;
+                return MMAY_MANAGED_INVALID_REFERENCE;
             }
             if (slot->as.array->descriptor->cell_kind
-                != RUDA_MANAGED_CELL_REFERENCE) {
-                return RUDA_MANAGED_OK;
+                != MMAY_MANAGED_CELL_REFERENCE) {
+                return MMAY_MANAGED_OK;
             }
-            return ruda_managed_trace_array(
+            return mmay_managed_trace_array(
                 heap, slot->as.array, gray_head
             );
-        case RUDA_MANAGED_OBJECT_STRING:
-            return RUDA_MANAGED_OK;
-        case RUDA_MANAGED_OBJECT_RECORD:
+        case MMAY_MANAGED_OBJECT_STRING:
+            return MMAY_MANAGED_OK;
+        case MMAY_MANAGED_OBJECT_RECORD:
             if (slot->as.record == NULL
                 || slot->as.record->descriptor == NULL) {
-                return RUDA_MANAGED_INVALID_REFERENCE;
+                return MMAY_MANAGED_INVALID_REFERENCE;
             }
             for (index = 0; index < slot->as.record->descriptor->field_count;
                 index += 1) {
-                const RudaManagedFieldDescriptor *field =
+                const MarimayManagedFieldDescriptor *field =
                     &slot->as.record->descriptor->fields[index];
-                if (field->cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
-                    RudaManagedStatus status = ruda_managed_mark_reference(
+                if (field->cell_kind == MMAY_MANAGED_CELL_REFERENCE) {
+                    MarimayManagedStatus status = mmay_managed_mark_reference(
                         heap,
                         slot->as.record->fields[index].reference,
                         gray_head
                     );
-                    if (status != RUDA_MANAGED_OK) {
+                    if (status != MMAY_MANAGED_OK) {
                         return status;
                     }
                 }
             }
-            return RUDA_MANAGED_OK;
-        case RUDA_MANAGED_OBJECT_ENUM: {
-            const RudaManagedEnumVariantDescriptor *variant = NULL;
+            return MMAY_MANAGED_OK;
+        case MMAY_MANAGED_OBJECT_ENUM: {
+            const MarimayManagedEnumVariantDescriptor *variant = NULL;
             if (slot->as.enumeration == NULL
                 || slot->as.enumeration->descriptor == NULL
                 || slot->as.enumeration->variant
                     >= slot->as.enumeration->descriptor->variant_count) {
-                return RUDA_MANAGED_INVALID_REFERENCE;
+                return MMAY_MANAGED_INVALID_REFERENCE;
             }
             variant = &slot->as.enumeration->descriptor->variants[
                 slot->as.enumeration->variant
             ];
             for (index = 0; index < variant->payload_count; index += 1) {
                 if (variant->payloads[index].cell_kind
-                    == RUDA_MANAGED_CELL_REFERENCE) {
-                    RudaManagedStatus status = ruda_managed_mark_reference(
+                    == MMAY_MANAGED_CELL_REFERENCE) {
+                    MarimayManagedStatus status = mmay_managed_mark_reference(
                         heap,
                         slot->as.enumeration->payload[index].reference,
                         gray_head
                     );
-                    if (status != RUDA_MANAGED_OK) {
+                    if (status != MMAY_MANAGED_OK) {
                         return status;
                     }
                 }
             }
-            return RUDA_MANAGED_OK;
+            return MMAY_MANAGED_OK;
         }
-        case RUDA_MANAGED_OBJECT_INTERFACE:
+        case MMAY_MANAGED_OBJECT_INTERFACE:
             if (slot->as.iface == NULL) {
-                return RUDA_MANAGED_INVALID_REFERENCE;
+                return MMAY_MANAGED_INVALID_REFERENCE;
             }
-            return ruda_managed_mark_reference(
+            return mmay_managed_mark_reference(
                 heap,
                 slot->as.iface->payload,
                 gray_head
             );
-        case RUDA_MANAGED_OBJECT_INVALID:
+        case MMAY_MANAGED_OBJECT_INVALID:
             break;
     }
-    return RUDA_MANAGED_INVALID_REFERENCE;
+    return MMAY_MANAGED_INVALID_REFERENCE;
 }
 
 
-RudaManagedStatus ruda_managed_publish_object(
-    RudaManagedHeap *heap,
-    RudaManagedObjectKind kind,
+MarimayManagedStatus mmay_managed_publish_object(
+    MarimayManagedHeap *heap,
+    MarimayManagedObjectKind kind,
     void *object,
     size_t object_bytes,
-    const RudaManagedReference *temporary_roots,
+    const MarimayManagedReference *temporary_roots,
     size_t temporary_root_count,
-    const RudaManagedCell *temporary_cells,
+    const MarimayManagedCell *temporary_cells,
     size_t temporary_cell_count,
-    RudaManagedReference *result
+    MarimayManagedReference *result
 ) {
-    RudaManagedStatus status;
-    RudaManagedSlot *resized = NULL;
+    MarimayManagedStatus status;
+    MarimayManagedSlot *resized = NULL;
     size_t slot_capacity = 0;
     size_t slot_added_bytes = 0;
     size_t added_bytes = 0;
@@ -303,83 +303,83 @@ RudaManagedStatus ruda_managed_publish_object(
     uint32_t slot_index = UINT32_MAX;
     bool collected = false;
     if (result != NULL) {
-        *result = ruda_managed_invalid_reference();
+        *result = mmay_managed_invalid_reference();
     }
-    if (!ruda_managed_heap_valid(heap) || result == NULL || object == NULL
-        || kind == RUDA_MANAGED_OBJECT_INVALID) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+    if (!mmay_managed_heap_valid(heap) || result == NULL || object == NULL
+        || kind == MMAY_MANAGED_OBJECT_INVALID) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
 retry:
     if ((heap->options.collect_before_allocation && !collected)
         || heap->live_object_count >= heap->options.max_objects) {
-        status = ruda_managed_collect_internal(
+        status = mmay_managed_collect_internal(
             heap,
             temporary_roots,
             temporary_root_count,
             temporary_cells,
             temporary_cell_count
         );
-        if (status != RUDA_MANAGED_OK) {
+        if (status != MMAY_MANAGED_OK) {
             return status;
         }
         collected = true;
     }
     if (heap->live_object_count >= heap->options.max_objects
-        || !ruda_managed_new_slot_capacity(
+        || !mmay_managed_new_slot_capacity(
             heap,
             &slot_capacity,
             &slot_added_bytes
-        ) || !ruda_size_add(object_bytes, slot_added_bytes, &added_bytes)
+        ) || !mmay_size_add(object_bytes, slot_added_bytes, &added_bytes)
         ) {
         if (!collected) {
-            status = ruda_managed_collect_internal(
+            status = mmay_managed_collect_internal(
                 heap,
                 temporary_roots,
                 temporary_root_count,
                 temporary_cells,
                 temporary_cell_count
             );
-            if (status != RUDA_MANAGED_OK) {
+            if (status != MMAY_MANAGED_OK) {
                 return status;
             }
             collected = true;
             goto retry;
         }
-        return RUDA_MANAGED_LIMIT_REACHED;
+        return MMAY_MANAGED_LIMIT_REACHED;
     }
-    if (!ruda_managed_add_within_limit(
+    if (!mmay_managed_add_within_limit(
             heap->live_byte_count,
             added_bytes,
             heap->options.max_live_bytes,
             &next_bytes
         )) {
         if (!collected) {
-            status = ruda_managed_collect_internal(
+            status = mmay_managed_collect_internal(
                 heap,
                 temporary_roots,
                 temporary_root_count,
                 temporary_cells,
                 temporary_cell_count
             );
-            if (status != RUDA_MANAGED_OK) {
+            if (status != MMAY_MANAGED_OK) {
                 return status;
             }
             collected = true;
             goto retry;
         }
-        return ruda_managed_resource_budget_failure(heap, added_bytes);
+        return mmay_managed_resource_budget_failure(heap, added_bytes);
     }
     if (slot_capacity != heap->slot_capacity) {
-        size_t old_bytes = heap->slot_capacity * sizeof(RudaManagedSlot);
-        size_t new_bytes = slot_capacity * sizeof(RudaManagedSlot);
-        resized = ruda_resize(
+        size_t old_bytes = heap->slot_capacity * sizeof(MarimayManagedSlot);
+        size_t new_bytes = slot_capacity * sizeof(MarimayManagedSlot);
+        resized = mmay_resize(
             &heap->allocator,
             heap->slots,
             old_bytes,
             new_bytes
         );
         if (resized == NULL) {
-            return ruda_managed_resource_host_failure(heap, new_bytes);
+            return mmay_managed_resource_host_failure(heap, new_bytes);
         }
         memset(
             resized + heap->slot_capacity,
@@ -390,7 +390,7 @@ retry:
         heap->slot_capacity = slot_capacity;
     }
     if (heap->free_slot != UINT32_MAX) {
-        RudaManagedSlot *slot = &heap->slots[heap->free_slot];
+        MarimayManagedSlot *slot = &heap->slots[heap->free_slot];
         slot_index = heap->free_slot;
         heap->free_slot = slot->next_free;
         slot->next_free = UINT32_MAX;
@@ -402,21 +402,21 @@ retry:
     }
     heap->slots[slot_index].kind = kind;
     switch (kind) {
-        case RUDA_MANAGED_OBJECT_STRING:
+        case MMAY_MANAGED_OBJECT_STRING:
             heap->slots[slot_index].as.string = object;
             break;
-        case RUDA_MANAGED_OBJECT_RECORD:
+        case MMAY_MANAGED_OBJECT_RECORD:
             heap->slots[slot_index].as.record = object;
             break;
-        case RUDA_MANAGED_OBJECT_ENUM:
+        case MMAY_MANAGED_OBJECT_ENUM:
             heap->slots[slot_index].as.enumeration = object;
             break;
-        case RUDA_MANAGED_OBJECT_INTERFACE:
+        case MMAY_MANAGED_OBJECT_INTERFACE:
             heap->slots[slot_index].as.iface = object;
             break;
-        case RUDA_MANAGED_OBJECT_ARRAY:
-        case RUDA_MANAGED_OBJECT_INVALID:
-            return RUDA_MANAGED_INVALID_ARGUMENT;
+        case MMAY_MANAGED_OBJECT_ARRAY:
+        case MMAY_MANAGED_OBJECT_INVALID:
+            return MMAY_MANAGED_INVALID_ARGUMENT;
     }
     heap->slots[slot_index].marked = false;
     heap->slots[slot_index].retired = false;
@@ -425,11 +425,11 @@ retry:
     result->heap_provenance = heap->provenance;
     result->slot = slot_index;
     result->generation = heap->slots[slot_index].generation;
-    return RUDA_MANAGED_OK;
+    return MMAY_MANAGED_OK;
 }
 
-size_t ruda_managed_count_reference_fields(
-    const RudaManagedFieldDescriptor *fields,
+size_t mmay_managed_count_reference_fields(
+    const MarimayManagedFieldDescriptor *fields,
     size_t count
 ) {
     size_t index = 0;
@@ -438,18 +438,18 @@ size_t ruda_managed_count_reference_fields(
         return 0;
     }
     for (index = 0; index < count; index += 1) {
-        if (fields[index].cell_kind == RUDA_MANAGED_CELL_REFERENCE) {
+        if (fields[index].cell_kind == MMAY_MANAGED_CELL_REFERENCE) {
             references += 1;
         }
     }
     return references;
 }
 
-bool ruda_managed_collect_reference_roots(
-    const RudaManagedFieldDescriptor *fields,
-    const RudaManagedCell *cells,
+bool mmay_managed_collect_reference_roots(
+    const MarimayManagedFieldDescriptor *fields,
+    const MarimayManagedCell *cells,
     size_t count,
-    RudaManagedReference *roots,
+    MarimayManagedReference *roots,
     size_t root_capacity,
     size_t *root_count
 ) {
@@ -461,7 +461,7 @@ bool ruda_managed_collect_reference_roots(
         return false;
     }
     for (index = 0; index < count; index += 1) {
-        if (fields[index].cell_kind != RUDA_MANAGED_CELL_REFERENCE) {
+        if (fields[index].cell_kind != MMAY_MANAGED_CELL_REFERENCE) {
             continue;
         }
         if (written >= root_capacity) {
@@ -474,105 +474,105 @@ bool ruda_managed_collect_reference_roots(
     return true;
 }
 
-RudaManagedStatus ruda_managed_validate_field(
-    const RudaManagedHeap *heap,
-    const RudaManagedFieldDescriptor *field,
-    RudaManagedCell value
+MarimayManagedStatus mmay_managed_validate_field(
+    const MarimayManagedHeap *heap,
+    const MarimayManagedFieldDescriptor *field,
+    MarimayManagedCell value
 ) {
-    const RudaManagedSlot *slot = NULL;
+    const MarimayManagedSlot *slot = NULL;
     if (field == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    if (field->cell_kind == RUDA_MANAGED_CELL_RAW64) {
-        return field->reference_kind == RUDA_MANAGED_OBJECT_INVALID
+    if (field->cell_kind == MMAY_MANAGED_CELL_RAW64) {
+        return field->reference_kind == MMAY_MANAGED_OBJECT_INVALID
                 && field->reference_descriptor == NULL
-            ? RUDA_MANAGED_OK
-            : RUDA_MANAGED_INVALID_ARGUMENT;
+            ? MMAY_MANAGED_OK
+            : MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    if (field->cell_kind != RUDA_MANAGED_CELL_REFERENCE) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+    if (field->cell_kind != MMAY_MANAGED_CELL_REFERENCE) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    if (ruda_managed_reference_is_invalid(value.reference)) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
+    if (mmay_managed_reference_is_invalid(value.reference)) {
+        return MMAY_MANAGED_INVALID_REFERENCE;
     }
-    if (field->reference_kind == RUDA_MANAGED_OBJECT_ENUM) {
-        const RudaManagedEnumDescriptor *descriptor = NULL;
-        if (ruda_managed_immediate_enum_decode(
+    if (field->reference_kind == MMAY_MANAGED_OBJECT_ENUM) {
+        const MarimayManagedEnumDescriptor *descriptor = NULL;
+        if (mmay_managed_immediate_enum_decode(
                 heap, value.reference, &descriptor, NULL, NULL
             )) {
             return field->reference_descriptor == descriptor
-                ? RUDA_MANAGED_OK
-                : RUDA_MANAGED_TYPE_MISMATCH;
+                ? MMAY_MANAGED_OK
+                : MMAY_MANAGED_TYPE_MISMATCH;
         }
     }
-    slot = ruda_managed_resolve_const(heap, value.reference);
+    slot = mmay_managed_resolve_const(heap, value.reference);
     if (slot == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
+        return MMAY_MANAGED_INVALID_REFERENCE;
     }
     if (slot->kind != field->reference_kind) {
-        return RUDA_MANAGED_TYPE_MISMATCH;
+        return MMAY_MANAGED_TYPE_MISMATCH;
     }
-    if (field->reference_kind == RUDA_MANAGED_OBJECT_STRING) {
+    if (field->reference_kind == MMAY_MANAGED_OBJECT_STRING) {
         return field->reference_descriptor == NULL
-            ? RUDA_MANAGED_OK
-            : RUDA_MANAGED_INVALID_ARGUMENT;
+            ? MMAY_MANAGED_OK
+            : MMAY_MANAGED_INVALID_ARGUMENT;
     }
     if (field->reference_descriptor == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
     switch (field->reference_kind) {
-        case RUDA_MANAGED_OBJECT_ARRAY:
+        case MMAY_MANAGED_OBJECT_ARRAY:
             return slot->as.array != NULL
                     && slot->as.array->descriptor == field->reference_descriptor
-                ? RUDA_MANAGED_OK
-                : RUDA_MANAGED_TYPE_MISMATCH;
-        case RUDA_MANAGED_OBJECT_RECORD:
+                ? MMAY_MANAGED_OK
+                : MMAY_MANAGED_TYPE_MISMATCH;
+        case MMAY_MANAGED_OBJECT_RECORD:
             return slot->as.record != NULL
                     && slot->as.record->descriptor
                         == field->reference_descriptor
-                ? RUDA_MANAGED_OK
-                : RUDA_MANAGED_TYPE_MISMATCH;
-        case RUDA_MANAGED_OBJECT_ENUM:
+                ? MMAY_MANAGED_OK
+                : MMAY_MANAGED_TYPE_MISMATCH;
+        case MMAY_MANAGED_OBJECT_ENUM:
             return slot->as.enumeration != NULL
                     && slot->as.enumeration->descriptor
                         == field->reference_descriptor
-                ? RUDA_MANAGED_OK
-                : RUDA_MANAGED_TYPE_MISMATCH;
-        case RUDA_MANAGED_OBJECT_INTERFACE:
+                ? MMAY_MANAGED_OK
+                : MMAY_MANAGED_TYPE_MISMATCH;
+        case MMAY_MANAGED_OBJECT_INTERFACE:
             return slot->as.iface != NULL
                     && slot->as.iface->descriptor
                         == field->reference_descriptor
-                ? RUDA_MANAGED_OK
-                : RUDA_MANAGED_TYPE_MISMATCH;
-        case RUDA_MANAGED_OBJECT_STRING:
-        case RUDA_MANAGED_OBJECT_INVALID:
+                ? MMAY_MANAGED_OK
+                : MMAY_MANAGED_TYPE_MISMATCH;
+        case MMAY_MANAGED_OBJECT_STRING:
+        case MMAY_MANAGED_OBJECT_INVALID:
             break;
     }
-    return RUDA_MANAGED_TYPE_MISMATCH;
+    return MMAY_MANAGED_TYPE_MISMATCH;
 }
 
-RudaManagedStatus ruda_managed_object_kind(
-    const RudaManagedHeap *heap,
-    RudaManagedReference reference,
-    RudaManagedObjectKind *kind
+MarimayManagedStatus mmay_managed_object_kind(
+    const MarimayManagedHeap *heap,
+    MarimayManagedReference reference,
+    MarimayManagedObjectKind *kind
 ) {
-    const RudaManagedSlot *slot = NULL;
+    const MarimayManagedSlot *slot = NULL;
     if (kind != NULL) {
-        *kind = RUDA_MANAGED_OBJECT_INVALID;
+        *kind = MMAY_MANAGED_OBJECT_INVALID;
     }
-    if (!ruda_managed_heap_valid(heap) || kind == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+    if (!mmay_managed_heap_valid(heap) || kind == NULL) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    slot = ruda_managed_resolve_const(heap, reference);
+    slot = mmay_managed_resolve_const(heap, reference);
     if (slot == NULL) {
-        if (ruda_managed_immediate_enum_decode(
+        if (mmay_managed_immediate_enum_decode(
                 heap, reference, NULL, NULL, NULL
             )) {
-            *kind = RUDA_MANAGED_OBJECT_ENUM;
-            return RUDA_MANAGED_OK;
+            *kind = MMAY_MANAGED_OBJECT_ENUM;
+            return MMAY_MANAGED_OK;
         }
-        return RUDA_MANAGED_INVALID_REFERENCE;
+        return MMAY_MANAGED_INVALID_REFERENCE;
     }
     *kind = slot->kind;
-    return RUDA_MANAGED_OK;
+    return MMAY_MANAGED_OK;
 }

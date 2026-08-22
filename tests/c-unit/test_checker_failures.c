@@ -1,101 +1,101 @@
 #include "test_checker_support.h"
 
-void ruda_test_checker_unsupported_is_explicit(void) {
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
+void mmay_test_checker_unsupported_is_explicit(void) {
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn sum(a: i32, b: i32): i32 { return a + b; }\n"
     ));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
-    RUDA_EXPECT(checked.initialized);
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.initialized);
     if (checked.initialized) {
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn iterate(items: int): void { for const item of items {} }\n"
     ));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
-    RUDA_EXPECT(checked.initialized);
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.initialized);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 1);
-        RUDA_EXPECT(strcmp(
-            ruda_check_diagnostic(&checked, 0)->code,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH
+        MMAY_EXPECT(checked.diagnostics.length == 1);
+        MMAY_EXPECT(strcmp(
+            mmay_check_diagnostic(&checked, 0)->code,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH
         ) == 0);
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "const message: string = \"not implemented\";\n"
     ));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_INCOMPLETE_LANGUAGE);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_INCOMPLETE_LANGUAGE);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_limits_are_failure_atomic(void) {
+void mmay_test_checker_limits_are_failure_atomic(void) {
     static const char source[] =
         "fn calc(a: int, b: int, c: int): int { return a + b * c; }\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaCheckOptions options = ruda_check_default_options();
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayCheckOptions options = mmay_check_default_options();
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
     options.mir_options.max_registers = 3;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "type Pair { value: int; }\n"
         "fn same(left: Pair, right: Pair): bool {\n"
         "  return identity.same(left, right);\n"
         "}\n"
     ));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.mir_options.max_registers = 2;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "type Pair { first: int; second: int; }\n"
         "type Other { value: int; }\n"
@@ -105,88 +105,88 @@ void ruda_test_checker_limits_are_failure_atomic(void) {
         "  return pair.first + other.value;\n"
         "}\n"
     ));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.mir_options.max_record_fields = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_record_constructions = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_record_arguments = 2;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_record_layouts = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "type Pair { first: int; second: int; }\n"
         "fn project(pair: Pair): int {\n"
         "  return match pair { case Pair { first, second } => first + second; };\n"
         "}\n"
     ));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.max_locals_per_function = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_record_fields = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_registers = 4;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "enum First { Unit, Pair(int, int), Named { x: int; y: int; }, }\n"
         "enum Second { Unit, }\n"
@@ -196,59 +196,59 @@ void ruda_test_checker_limits_are_failure_atomic(void) {
         "  return Second.Unit;\n"
         "}\n"
     ));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.mir_options.max_enum_layouts = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_enum_variants = 3;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_enum_payloads = 3;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_enum_constructions = 2;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_enum_arguments = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "enum Choice { A, B(int, int), C, }\n"
         "fn choose(value: Choice): int {\n"
@@ -259,29 +259,29 @@ void ruda_test_checker_limits_are_failure_atomic(void) {
         "  };\n"
         "}\n"
     ));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.mir_options.max_blocks = 5;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.max_locals_per_function = 2;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn limited(value: bool): int {\n"
         "  return match value {\n"
@@ -290,64 +290,64 @@ void ruda_test_checker_limits_are_failure_atomic(void) {
         "  };\n"
         "}\n"
     ));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.mir_options.max_string_constants = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn limited(value: string): int {\n"
         "  return match value { case \"a\" => 1; case \"b\" => 2; case _ => 0; };\n"
         "}\n"
     ));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.mir_options.max_string_constants = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    options = ruda_check_default_options();
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    options = mmay_check_default_options();
     options.mir_options.max_string_bytes = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn limited(): int { panic(\"ab\"); }\n"
     ));
-    options = ruda_check_default_options();
+    options = mmay_check_default_options();
     options.mir_options.max_string_bytes = 1;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_allocation_failures(void) {
+void mmay_test_checker_allocation_failures(void) {
     static const char source[] =
         "type Count = int;\n"
         "type Box { public count: Count; mutable next: Box; }\n"
@@ -414,51 +414,51 @@ void ruda_test_checker_allocation_failures(void) {
         "    case Counted(_) => { yield 0; }\n"
         "  };\n"
         "}\n";
-    RudaCheckerFixture fixture;
+    MarimayCheckerFixture fixture;
     size_t failure_index = 0;
     bool reached_success = false;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
     for (failure_index = 0; failure_index < 1024; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaAllocator allocator;
-        RudaCheckResult checked;
-        RudaCheckStatus status;
-        ruda_fail_allocator_init(
+        MarimayFailAllocator state;
+        MarimayAllocator allocator;
+        MarimayCheckResult checked;
+        MarimayCheckStatus status;
+        mmay_fail_allocator_init(
             &state,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             failure_index
         );
-        allocator = ruda_fail_allocator(&state);
-        status = ruda_check_ast(
+        allocator = mmay_fail_allocator(&state);
+        status = mmay_check_ast(
             &fixture.ast,
             "test/checker",
             allocator,
-            ruda_check_default_options(),
+            mmay_check_default_options(),
             &checked
         );
-        if (status == RUDA_CHECK_OK) {
+        if (status == MMAY_CHECK_OK) {
             reached_success = true;
-            RUDA_EXPECT(checked.functions.length == 16);
-            RUDA_EXPECT(checked.constants.length == 1);
-            RUDA_EXPECT(checked.type_aliases.length == 1);
-            RUDA_EXPECT(checked.records.length == 2);
-            RUDA_EXPECT(checked.enums.length == 1);
-            ruda_check_result_dispose(&checked);
+            MMAY_EXPECT(checked.functions.length == 16);
+            MMAY_EXPECT(checked.constants.length == 1);
+            MMAY_EXPECT(checked.type_aliases.length == 1);
+            MMAY_EXPECT(checked.records.length == 2);
+            MMAY_EXPECT(checked.enums.length == 1);
+            mmay_check_result_dispose(&checked);
         } else {
-            RUDA_EXPECT(status == RUDA_CHECK_ALLOCATION_FAILED);
-            RUDA_EXPECT(!checked.initialized);
+            MMAY_EXPECT(status == MMAY_CHECK_ALLOCATION_FAILED);
+            MMAY_EXPECT(!checked.initialized);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) {
             break;
         }
     }
-    RUDA_EXPECT(reached_success);
-    ruda_checker_fixture_dispose(&fixture);
+    MMAY_EXPECT(reached_success);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_package_allocation_failures(void) {
+void mmay_test_checker_package_allocation_failures(void) {
     static const char entry_source[] =
         "fn entry(value: Count): Count { return helper(value) + offset; }\n"
         "fn truth(value: bool): Count {\n"
@@ -487,61 +487,61 @@ void ruda_test_checker_package_allocation_failures(void) {
         "enum Status { Ready, Paused, Counted(Count), }\n"
         "const offset: Count = 1;\n"
         "fn helper(value: Count): Count { return value; }\n";
-    RudaCheckerFixture entry;
-    RudaCheckerFixture helper;
-    const RudaAstTree *asts[2];
+    MarimayCheckerFixture entry;
+    MarimayCheckerFixture helper;
+    const MarimayAstTree *asts[2];
     size_t failure_index = 0;
     bool reached_success = false;
-    RUDA_EXPECT(ruda_checker_fixture_init_path(
+    MMAY_EXPECT(mmay_checker_fixture_init_path(
         &entry,
-        "a_entry.ruda",
+        "a_entry.my",
         entry_source
     ));
-    RUDA_EXPECT(ruda_checker_fixture_init_path(
+    MMAY_EXPECT(mmay_checker_fixture_init_path(
         &helper,
-        "z_helper.ruda",
+        "z_helper.my",
         helper_source
     ));
     asts[0] = &helper.ast;
     asts[1] = &entry.ast;
     for (failure_index = 0; failure_index < 1024; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaAllocator allocator;
-        RudaCheckResult checked;
-        RudaCheckStatus status;
-        ruda_fail_allocator_init(
+        MarimayFailAllocator state;
+        MarimayAllocator allocator;
+        MarimayCheckResult checked;
+        MarimayCheckStatus status;
+        mmay_fail_allocator_init(
             &state,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             failure_index
         );
-        allocator = ruda_fail_allocator(&state);
-        status = ruda_check_package(
+        allocator = mmay_fail_allocator(&state);
+        status = mmay_check_package(
             asts,
             2,
             "test/package",
             allocator,
-            ruda_check_default_options(),
+            mmay_check_default_options(),
             &checked
         );
-        if (status == RUDA_CHECK_OK) {
+        if (status == MMAY_CHECK_OK) {
             reached_success = true;
-            RUDA_EXPECT(checked.functions.length == 7);
-            RUDA_EXPECT(checked.constants.length == 1);
-            RUDA_EXPECT(checked.type_aliases.length == 1);
-            RUDA_EXPECT(checked.records.length == 1);
-            RUDA_EXPECT(checked.enums.length == 1);
-            ruda_check_result_dispose(&checked);
+            MMAY_EXPECT(checked.functions.length == 7);
+            MMAY_EXPECT(checked.constants.length == 1);
+            MMAY_EXPECT(checked.type_aliases.length == 1);
+            MMAY_EXPECT(checked.records.length == 1);
+            MMAY_EXPECT(checked.enums.length == 1);
+            mmay_check_result_dispose(&checked);
         } else {
-            RUDA_EXPECT(status == RUDA_CHECK_ALLOCATION_FAILED);
-            RUDA_EXPECT(!checked.initialized);
+            MMAY_EXPECT(status == MMAY_CHECK_ALLOCATION_FAILED);
+            MMAY_EXPECT(!checked.initialized);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) {
             break;
         }
     }
-    RUDA_EXPECT(reached_success);
-    ruda_checker_fixture_dispose(&helper);
-    ruda_checker_fixture_dispose(&entry);
+    MMAY_EXPECT(reached_success);
+    mmay_checker_fixture_dispose(&helper);
+    mmay_checker_fixture_dispose(&entry);
 }

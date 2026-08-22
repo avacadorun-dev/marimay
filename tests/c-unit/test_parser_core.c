@@ -1,6 +1,6 @@
 #include "test_parser_support.h"
 
-static bool ruda_parser_read_file(
+static bool mmay_parser_read_file(
     const char *path,
     unsigned char *bytes,
     size_t capacity,
@@ -23,7 +23,7 @@ static bool ruda_parser_read_file(
     return true;
 }
 
-static void ruda_parser_append(
+static void mmay_parser_append(
     char *output,
     size_t capacity,
     size_t *length,
@@ -38,8 +38,8 @@ static void ruda_parser_append(
     output[*length] = '\0';
 }
 
-static void ruda_dump_syntax_node(
-    const RudaGreenNode *node,
+static void mmay_dump_syntax_node(
+    const MarimayGreenNode *node,
     size_t depth,
     char *output,
     size_t capacity,
@@ -49,27 +49,27 @@ static void ruda_dump_syntax_node(
     char line[160];
     int written = 0;
     for (index = 0; index < depth; index += 1) {
-        ruda_parser_append(output, capacity, length, "  ");
+        mmay_parser_append(output, capacity, length, "  ");
     }
     written = snprintf(
         line,
         sizeof(line),
         "%s len=%zu\n",
-        ruda_syntax_kind_name(node->kind),
+        mmay_syntax_kind_name(node->kind),
         node->text_length
     );
     if (written < 0 || (size_t)written >= sizeof(line)) {
         return;
     }
-    ruda_parser_append(output, capacity, length, line);
+    mmay_parser_append(output, capacity, length, line);
     for (index = 0; index < node->child_count; index += 1) {
-        const RudaSyntaxElement *element = ruda_syntax_child(node, index);
+        const MarimaySyntaxElement *element = mmay_syntax_child(node, index);
         size_t indent = 0;
         if (element == NULL) {
             return;
         }
-        if (element->kind == RUDA_SYNTAX_ELEMENT_NODE) {
-            ruda_dump_syntax_node(
+        if (element->kind == MMAY_SYNTAX_ELEMENT_NODE) {
+            mmay_dump_syntax_node(
                 element->as.node,
                 depth + 1,
                 output,
@@ -78,13 +78,13 @@ static void ruda_dump_syntax_node(
             );
         } else {
             for (indent = 0; indent < depth + 1; indent += 1) {
-                ruda_parser_append(output, capacity, length, "  ");
+                mmay_parser_append(output, capacity, length, "  ");
             }
             written = snprintf(
                 line,
                 sizeof(line),
                 "%s %zu..%zu%s\n",
-                ruda_token_kind_name(element->as.token.kind),
+                mmay_token_kind_name(element->as.token.kind),
                 element->as.token.start,
                 element->as.token.end,
                 element->as.token.synthetic ? " synthetic" : ""
@@ -92,134 +92,134 @@ static void ruda_dump_syntax_node(
             if (written < 0 || (size_t)written >= sizeof(line)) {
                 return;
             }
-            ruda_parser_append(output, capacity, length, line);
+            mmay_parser_append(output, capacity, length, line);
         }
     }
 }
 
-void ruda_test_parser_snapshot(void) {
+void mmay_test_parser_snapshot(void) {
     unsigned char source[4096];
     size_t source_length = 0;
-    RudaParseFixture fixture;
+    MarimayParseFixture fixture;
     char dump[16384] = {0};
     size_t dump_length = 0;
-    RUDA_EXPECT(ruda_parser_read_file(
-        "syntax/lexer/lossless.ruda",
+    MMAY_EXPECT(mmay_parser_read_file(
+        "syntax/lexer/lossless.my",
         source,
         sizeof(source),
         &source_length
     ));
-    RUDA_EXPECT(ruda_parse_fixture_init_bytes(&fixture, source, source_length));
+    MMAY_EXPECT(mmay_parse_fixture_init_bytes(&fixture, source, source_length));
     if (!fixture.parsed.initialized) {
         return;
     }
-    RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-    RUDA_EXPECT(fixture.parsed.diagnostics.length == 0);
-    RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-    ruda_dump_syntax_node(
+    MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+    MMAY_EXPECT(fixture.parsed.diagnostics.length == 0);
+    MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+    mmay_dump_syntax_node(
         fixture.parsed.tree.root,
         0,
         dump,
         sizeof(dump),
         &dump_length
     );
-    RUDA_EXPECT_SNAPSHOT("parser-lossless.tree", dump);
-    ruda_parse_fixture_dispose(&fixture);
+    MMAY_EXPECT_SNAPSHOT("parser-lossless.tree", dump);
+    mmay_parse_fixture_dispose(&fixture);
 }
 
-void ruda_test_parser_empty_source(void) {
-    RudaParseFixture fixture;
-    bool initialized = ruda_parse_fixture_init_bytes(
+void mmay_test_parser_empty_source(void) {
+    MarimayParseFixture fixture;
+    bool initialized = mmay_parse_fixture_init_bytes(
         &fixture,
         (const unsigned char *)"",
         0
     );
-    RUDA_EXPECT(initialized);
+    MMAY_EXPECT(initialized);
     if (!initialized) {
         return;
     }
-    RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-    RUDA_EXPECT(fixture.parsed.diagnostics.length == 0);
-    RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-    RUDA_EXPECT(fixture.parsed.tree.root->text_length == 0);
-    ruda_parse_fixture_dispose(&fixture);
+    MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+    MMAY_EXPECT(fixture.parsed.diagnostics.length == 0);
+    MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+    MMAY_EXPECT(fixture.parsed.tree.root->text_length == 0);
+    mmay_parse_fixture_dispose(&fixture);
 }
 
-void ruda_test_parser_examples(void) {
+void mmay_test_parser_examples(void) {
     static const char *const paths[] = {
-        "examples/concurrency.ruda",
-        "examples/matrix.ruda",
-        "examples/nominal_cp1.ruda",
-        "examples/service.ruda",
-        "examples/tour.ruda",
-        "examples/tour_test.ruda",
-        "syntax/parser/stdout-preview.ruda"
+        "examples/concurrency.my",
+        "examples/matrix.my",
+        "examples/nominal_cp1.my",
+        "examples/service.my",
+        "examples/tour.my",
+        "examples/tour_test.my",
+        "syntax/parser/stdout-preview.my"
     };
     unsigned char source[32768];
     size_t path_index = 0;
     for (path_index = 0; path_index < sizeof(paths) / sizeof(paths[0]); path_index += 1) {
         size_t source_length = 0;
-        RudaParseFixture fixture;
-        RUDA_EXPECT(ruda_parser_read_file(
+        MarimayParseFixture fixture;
+        MMAY_EXPECT(mmay_parser_read_file(
             paths[path_index],
             source,
             sizeof(source),
             &source_length
         ));
-        RUDA_EXPECT(ruda_parse_fixture_init_bytes(&fixture, source, source_length));
+        MMAY_EXPECT(mmay_parse_fixture_init_bytes(&fixture, source, source_length));
         if (fixture.parsed.initialized) {
-            RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-            RUDA_EXPECT(fixture.parsed.diagnostics.length == 0);
-            RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-            ruda_parse_fixture_dispose(&fixture);
+            MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+            MMAY_EXPECT(fixture.parsed.diagnostics.length == 0);
+            MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+            mmay_parse_fixture_dispose(&fixture);
         }
     }
 }
 
-void ruda_test_parser_all_productions(void) {
+void mmay_test_parser_all_productions(void) {
     unsigned char source[32768];
     size_t source_length = 0;
     size_t kind = 0;
-    RudaParseFixture fixture;
+    MarimayParseFixture fixture;
     bool initialized = false;
-    RUDA_EXPECT(ruda_parser_read_file(
-        "syntax/parser/all-productions.ruda",
+    MMAY_EXPECT(mmay_parser_read_file(
+        "syntax/parser/all-productions.my",
         source,
         sizeof(source),
         &source_length
     ));
-    initialized = ruda_parse_fixture_init_bytes(
+    initialized = mmay_parse_fixture_init_bytes(
         &fixture,
         source,
         source_length
     );
-    RUDA_EXPECT(initialized);
+    MMAY_EXPECT(initialized);
     if (!initialized) {
         return;
     }
-    RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-    RUDA_EXPECT(fixture.parsed.diagnostics.length == 0);
-    RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-    for (kind = 0; kind < RUDA_SYNTAX_KIND_COUNT; kind += 1) {
-        size_t count = ruda_syntax_count_kind(
+    MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+    MMAY_EXPECT(fixture.parsed.diagnostics.length == 0);
+    MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+    for (kind = 0; kind < MMAY_SYNTAX_KIND_COUNT; kind += 1) {
+        size_t count = mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            (RudaSyntaxKind)kind
+            (MarimaySyntaxKind)kind
         );
-        if ((RudaSyntaxKind)kind == RUDA_SYNTAX_ERROR) {
-            RUDA_EXPECT(count == 0);
+        if ((MarimaySyntaxKind)kind == MMAY_SYNTAX_ERROR) {
+            MMAY_EXPECT(count == 0);
         } else if (count == 0) {
             fprintf(
                 stderr,
-                "all-productions.ruda misses syntax kind %s\n",
-                ruda_syntax_kind_name((RudaSyntaxKind)kind)
+                "all-productions.my misses syntax kind %s\n",
+                mmay_syntax_kind_name((MarimaySyntaxKind)kind)
             );
-            RUDA_EXPECT(count != 0);
+            MMAY_EXPECT(count != 0);
         }
     }
-    ruda_parse_fixture_dispose(&fixture);
+    mmay_parse_fixture_dispose(&fixture);
 }
 
-void ruda_test_parser_recovery(void) {
+void mmay_test_parser_recovery(void) {
     static const char source[] =
         "fn broken(value int): Result<int, E> {\n"
         "  const = 1;\n"
@@ -228,44 +228,44 @@ void ruda_test_parser_recovery(void) {
         "enum Bad { 123, Good }\n"
         "nonsense;\n"
         "fn after(): void {}\n";
-    RudaParseFixture fixture;
-    RUDA_EXPECT(ruda_parse_fixture_init(&fixture, source));
+    MarimayParseFixture fixture;
+    MMAY_EXPECT(mmay_parse_fixture_init(&fixture, source));
     if (!fixture.parsed.initialized) {
         return;
     }
-    RUDA_EXPECT(fixture.parsed.diagnostics.length >= 4);
-    RUDA_EXPECT(ruda_parse_has_diagnostic(
+    MMAY_EXPECT(fixture.parsed.diagnostics.length >= 4);
+    MMAY_EXPECT(mmay_parse_has_diagnostic(
         &fixture.parsed,
-        RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+        MMAY_DIAGNOSTIC_EXPECTED_TOKEN
     ));
-    RUDA_EXPECT(ruda_parse_has_diagnostic(
+    MMAY_EXPECT(mmay_parse_has_diagnostic(
         &fixture.parsed,
-        RUDA_DIAGNOSTIC_UNEXPECTED_TOKEN
+        MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
     ));
-    RUDA_EXPECT(ruda_parse_has_diagnostic(
+    MMAY_EXPECT(mmay_parse_has_diagnostic(
         &fixture.parsed,
-        RUDA_DIAGNOSTIC_INVALID_DECLARATION
+        MMAY_DIAGNOSTIC_INVALID_DECLARATION
     ));
-    RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-    ruda_parse_fixture_dispose(&fixture);
+    MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+    mmay_parse_fixture_dispose(&fixture);
 }
 
-void ruda_test_parser_delimiter_recovery(void) {
+void mmay_test_parser_delimiter_recovery(void) {
     static const char source[] = "fn broken(): void { call((1); }";
-    RudaParseFixture fixture;
-    bool initialized = ruda_parse_fixture_init(&fixture, source);
-    RUDA_EXPECT(initialized);
+    MarimayParseFixture fixture;
+    bool initialized = mmay_parse_fixture_init(&fixture, source);
+    MMAY_EXPECT(initialized);
     if (!initialized) {
         return;
     }
-    RUDA_EXPECT(ruda_parse_has_diagnostic(
+    MMAY_EXPECT(mmay_parse_has_diagnostic(
         &fixture.parsed,
-        RUDA_DIAGNOSTIC_UNTERMINATED_DELIMITER
+        MMAY_DIAGNOSTIC_UNTERMINATED_DELIMITER
     ));
-    RUDA_EXPECT(ruda_parse_has_diagnostic(
+    MMAY_EXPECT(mmay_parse_has_diagnostic(
         &fixture.parsed,
-        RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+        MMAY_DIAGNOSTIC_EXPECTED_TOKEN
     ));
-    RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-    ruda_parse_fixture_dispose(&fixture);
+    MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+    mmay_parse_fixture_dispose(&fixture);
 }

@@ -3,56 +3,56 @@
 
 #include <string.h>
 
-#include "ruda/bytecode/mir_lower.h"
-#include "ruda/bytecode/program.h"
-#include "ruda/check/entry.h"
-#include "ruda/runtime/enum.h"
+#include "mmay/bytecode/mir_lower.h"
+#include "mmay/bytecode/program.h"
+#include "mmay/check/entry.h"
+#include "mmay/runtime/enum.h"
 
-typedef struct RudaCliStdoutContext {
-    RudaWriter writer;
-} RudaCliStdoutContext;
+typedef struct MarimayCliStdoutContext {
+    MarimayWriter writer;
+} MarimayCliStdoutContext;
 
-static bool ruda_cli_stdout_publish(
+static bool mmay_cli_stdout_publish(
     void *context,
     const unsigned char *bytes,
     size_t length
 ) {
-    RudaCliStdoutContext *stdout_context = context;
+    MarimayCliStdoutContext *stdout_context = context;
     return stdout_context != NULL
-        && ruda_writer_write(
+        && mmay_writer_write(
             stdout_context->writer, (const char *)bytes, length
         );
 }
 
-static const RudaBytecodeEnumPayload *ruda_cli_run_error_payload(
-    const RudaBytecodeFunction *function
+static const MarimayBytecodeEnumPayload *mmay_cli_run_error_payload(
+    const MarimayBytecodeFunction *function
 ) {
-    const RudaBytecodeEnumLayout *layout = ruda_bytecode_enum_layout(
+    const MarimayBytecodeEnumLayout *layout = mmay_bytecode_enum_layout(
         function, function->result_layout
     );
-    const RudaBytecodeEnumVariant *variant = layout != NULL
-        ? ruda_vector_at_const(
+    const MarimayBytecodeEnumVariant *variant = layout != NULL
+        ? mmay_vector_at_const(
             &function->enum_variants, layout->variant_start + 1
         ) : NULL;
     if (layout == NULL || variant == NULL || variant->payload_count != 1) {
         return NULL;
     }
-    return ruda_vector_at_const(
+    return mmay_vector_at_const(
         &function->enum_payloads,
         layout->payload_start + variant->payload_start
     );
 }
 
-static bool ruda_cli_run_program_entry_index(
-    const RudaBytecodeProgram *program,
-    RudaSymbolId symbol,
+static bool mmay_cli_run_program_entry_index(
+    const MarimayBytecodeProgram *program,
+    MarimaySymbolId symbol,
     uint32_t *entry
 ) {
     size_t index = 0;
     for (index = 0; index < program->functions.length; index += 1) {
-        const RudaBytecodeProgramFunction *function =
-            ruda_bytecode_program_function(program, index);
-        if (function != NULL && ruda_symbol_id_equal(
+        const MarimayBytecodeProgramFunction *function =
+            mmay_bytecode_program_function(program, index);
+        if (function != NULL && mmay_symbol_id_equal(
                 function->symbol, symbol
             )) {
             if (index > UINT32_MAX) return false;
@@ -63,52 +63,52 @@ static bool ruda_cli_run_program_entry_index(
     return false;
 }
 
-static int ruda_cli_run_render_expected(
-    RudaSession *session,
-    const RudaCliOptions *options,
-    const RudaCheckedEntry *entry,
-    const RudaBytecodeProgram *program,
-    RudaBytecodeExecution *execution,
-    RudaBytecodeRunOptions run_options,
-    RudaBytecodeValue result,
-    RudaWriter standard_error
+static int mmay_cli_run_render_expected(
+    MarimaySession *session,
+    const MarimayCliOptions *options,
+    const MarimayCheckedEntry *entry,
+    const MarimayBytecodeProgram *program,
+    MarimayBytecodeExecution *execution,
+    MarimayBytecodeRunOptions run_options,
+    MarimayBytecodeValue result,
+    MarimayWriter standard_error
 ) {
-    const RudaBytecodeProgramFunction *main_function =
-        ruda_bytecode_program_function(program, program->entry_function);
-    const RudaBytecodeEnumPayload *payload = main_function != NULL
-        ? ruda_cli_run_error_payload(&main_function->body) : NULL;
-    const RudaManagedEnumDescriptor *descriptor = NULL;
+    const MarimayBytecodeProgramFunction *main_function =
+        mmay_bytecode_program_function(program, program->entry_function);
+    const MarimayBytecodeEnumPayload *payload = main_function != NULL
+        ? mmay_cli_run_error_payload(&main_function->body) : NULL;
+    const MarimayManagedEnumDescriptor *descriptor = NULL;
     size_t variant = 0;
-    RudaManagedCell cell;
-    RudaBytecodeValue error_value;
-    RudaBytecodeValue message_value;
-    RudaBytecodeProgram message_program;
-    RudaManagedRootFrame roots;
-    RudaManagedReference *locations[1];
-    RudaBytecodeRunStatus status;
+    MarimayManagedCell cell;
+    MarimayBytecodeValue error_value;
+    MarimayBytecodeValue message_value;
+    MarimayBytecodeProgram message_program;
+    MarimayManagedRootFrame roots;
+    MarimayManagedReference *locations[1];
+    MarimayBytecodeRunStatus status;
     const unsigned char *message = NULL;
     size_t message_length = 0;
-    int exit_code = RUDA_EXIT_INTERNAL;
+    int exit_code = MMAY_EXIT_INTERNAL;
     memset(&cell, 0, sizeof(cell));
     memset(&error_value, 0, sizeof(error_value));
     memset(&message_value, 0, sizeof(message_value));
     memset(&roots, 0, sizeof(roots));
-    if (payload == NULL || result.type != RUDA_BYTECODE_TYPE_ENUM
-        || ruda_managed_enum_describe(
+    if (payload == NULL || result.type != MMAY_BYTECODE_TYPE_ENUM
+        || mmay_managed_enum_describe(
             &execution->managed_heap, result.as.managed_reference,
             &descriptor, &variant
-        ) != RUDA_MANAGED_OK) {
-        return ruda_cli_run_pipeline_error(
+        ) != MMAY_MANAGED_OK) {
+        return mmay_cli_run_pipeline_error(
             options, "verified main returned an invalid Result value",
             standard_error
         );
     }
-    if (variant == 0) return RUDA_EXIT_SUCCESS;
-    if (variant != 1 || ruda_managed_enum_get_payload(
+    if (variant == 0) return MMAY_EXIT_SUCCESS;
+    if (variant != 1 || mmay_managed_enum_get_payload(
             &execution->managed_heap, result.as.managed_reference,
             1, 0, &cell
-        ) != RUDA_MANAGED_OK) {
-        return ruda_cli_run_pipeline_error(
+        ) != MMAY_MANAGED_OK) {
+        return mmay_cli_run_pipeline_error(
             options, "verified main returned an invalid Result variant",
             standard_error
         );
@@ -116,68 +116,68 @@ static int ruda_cli_run_render_expected(
     error_value.type = payload->type;
     error_value.as.managed_reference = cell.reference;
     locations[0] = &error_value.as.managed_reference;
-    if (ruda_managed_root_push(
+    if (mmay_managed_root_push(
             &execution->managed_heap, &roots, locations, 1
-        ) != RUDA_MANAGED_OK) {
-        return RUDA_EXIT_INTERNAL;
+        ) != MMAY_MANAGED_OK) {
+        return MMAY_EXIT_INTERNAL;
     }
     message_program = *program;
-    if (!ruda_cli_run_program_entry_index(
+    if (!mmay_cli_run_program_entry_index(
             program, entry->error_message->mir.symbol,
             &message_program.entry_function
         )) goto cleanup_root;
-    status = ruda_bytecode_run_program(
+    status = mmay_bytecode_run_program(
         &message_program, &error_value, 1, session->allocator,
         run_options, &message_value
     );
-    if (status != RUDA_BYTECODE_RUN_OK) {
-        exit_code = ruda_cli_run_runtime_error(
+    if (status != MMAY_BYTECODE_RUN_OK) {
+        exit_code = mmay_cli_run_runtime_error(
             options, status, execution, run_options.panic, standard_error
         );
         goto cleanup_root;
     }
-    if (!ruda_bytecode_execution_string_bytes(
+    if (!mmay_bytecode_execution_string_bytes(
             execution, message_value, &message, &message_length
         )) {
         goto cleanup_root;
     }
-    exit_code = ruda_cli_run_expected_error(
+    exit_code = mmay_cli_run_expected_error(
         options, message, message_length, standard_error
     );
 cleanup_root:
-    if (ruda_managed_root_pop(
+    if (mmay_managed_root_pop(
             &execution->managed_heap, &roots
-        ) != RUDA_MANAGED_OK) exit_code = RUDA_EXIT_INTERNAL;
+        ) != MMAY_MANAGED_OK) exit_code = MMAY_EXIT_INTERNAL;
     return exit_code;
 }
 
-static int ruda_cli_run_execute(
-    RudaSession *session,
-    const RudaCliOptions *options,
-    const RudaCompilerResult *compiler,
-    const RudaCheckedEntry *entry,
-    RudaWriter standard_output,
-    RudaWriter standard_error
+static int mmay_cli_run_execute(
+    MarimaySession *session,
+    const MarimayCliOptions *options,
+    const MarimayCompilerResult *compiler,
+    const MarimayCheckedEntry *entry,
+    MarimayWriter standard_output,
+    MarimayWriter standard_error
 ) {
-    const RudaMirFunction **functions = NULL;
+    const MarimayMirFunction **functions = NULL;
     size_t function_count = 0;
     size_t function_bytes = 0;
     size_t index = 0;
-    RudaBytecodeProgram lowered;
-    RudaBytecodeProgram decoded;
-    RudaOwnedBytes encoded;
-    RudaBytecodeExecution execution;
-    RudaBytecodeExecutionOptions execution_options;
-    RudaBytecodePanic panic;
-    RudaBytecodeTrap trap;
-    RudaBytecodeValue result;
-    RudaBytecodeRunOptions run_options;
-    RudaCliStdoutContext stdout_context;
-    RudaIoStdout stdout_sink;
-    RudaBytecodeRunStatus run_status;
-    RudaMirBytecodeLowerStatus lower_status;
-    RudaBytecodeCodecStatus codec_status;
-    int exit_code = RUDA_EXIT_INTERNAL;
+    MarimayBytecodeProgram lowered;
+    MarimayBytecodeProgram decoded;
+    MarimayOwnedBytes encoded;
+    MarimayBytecodeExecution execution;
+    MarimayBytecodeExecutionOptions execution_options;
+    MarimayBytecodePanic panic;
+    MarimayBytecodeTrap trap;
+    MarimayBytecodeValue result;
+    MarimayBytecodeRunOptions run_options;
+    MarimayCliStdoutContext stdout_context;
+    MarimayIoStdout stdout_sink;
+    MarimayBytecodeRunStatus run_status;
+    MarimayMirBytecodeLowerStatus lower_status;
+    MarimayBytecodeCodecStatus codec_status;
+    int exit_code = MMAY_EXIT_INTERNAL;
     bool execution_ready = false;
     bool panic_ready = false;
     memset(&lowered, 0, sizeof(lowered));
@@ -188,167 +188,167 @@ static int ruda_cli_run_execute(
     memset(&trap, 0, sizeof(trap));
     memset(&result, 0, sizeof(result));
     for (index = 0; index < compiler->checked.functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             &compiler->checked, index
         );
         if (function != NULL && !function->is_external) function_count += 1;
     }
-    if (!ruda_size_multiply(
+    if (!mmay_size_multiply(
             function_count, sizeof(*functions), &function_bytes
         )) goto cleanup;
-    functions = ruda_allocate(&session->allocator, function_bytes);
+    functions = mmay_allocate(&session->allocator, function_bytes);
     if (functions == NULL) goto cleanup;
     function_count = 0;
     for (index = 0; index < compiler->checked.functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             &compiler->checked, index
         );
         if (function != NULL && !function->is_external) {
             functions[function_count++] = &function->mir;
         }
     }
-    lower_status = ruda_mir_lower_bytecode_program(
+    lower_status = mmay_mir_lower_bytecode_program(
             functions, function_count, entry->function->mir.symbol,
             session->allocator,
-            ruda_mir_bytecode_program_lower_default_options(), &lowered
+            mmay_mir_bytecode_program_lower_default_options(), &lowered
         );
-    if (lower_status != RUDA_MIR_BYTECODE_LOWER_OK) {
-        exit_code = ruda_cli_run_pipeline_error(
+    if (lower_status != MMAY_MIR_BYTECODE_LOWER_OK) {
+        exit_code = mmay_cli_run_pipeline_error(
             options, "canonical typed MIR did not lower to bytecode",
             standard_error
         );
         goto cleanup;
     }
-    codec_status = ruda_bytecode_encode_program(
+    codec_status = mmay_bytecode_encode_program(
         &lowered, session->allocator, &encoded
     );
-    if (codec_status != RUDA_BYTECODE_CODEC_OK) {
-        exit_code = ruda_cli_run_pipeline_error(
+    if (codec_status != MMAY_BYTECODE_CODEC_OK) {
+        exit_code = mmay_cli_run_pipeline_error(
             options, "verified bytecode did not encode", standard_error
         );
         goto cleanup;
     }
-    codec_status = ruda_bytecode_decode_program(
+    codec_status = mmay_bytecode_decode_program(
         encoded.data, encoded.length, session->allocator,
-        ruda_bytecode_program_default_options(), &decoded
+        mmay_bytecode_program_default_options(), &decoded
     );
-    if (codec_status != RUDA_BYTECODE_CODEC_OK
-        || ruda_bytecode_program_verify(&decoded)
-            != RUDA_BYTECODE_PROGRAM_VERIFY_OK) {
-        exit_code = ruda_cli_run_pipeline_error(
+    if (codec_status != MMAY_BYTECODE_CODEC_OK
+        || mmay_bytecode_program_verify(&decoded)
+            != MMAY_BYTECODE_PROGRAM_VERIFY_OK) {
+        exit_code = mmay_cli_run_pipeline_error(
             options, "encoded bytecode did not decode and verify",
             standard_error
         );
         goto cleanup;
     }
-    execution_options = ruda_bytecode_execution_default_options();
+    execution_options = mmay_bytecode_execution_default_options();
     execution_options.managed_heap.max_live_bytes = options->max_heap_bytes;
-    if (!ruda_bytecode_execution_init(
+    if (!mmay_bytecode_execution_init(
             &execution, session->allocator, execution_options
         )) goto cleanup;
     execution_ready = true;
-    if (!ruda_bytecode_panic_init(&panic, session->allocator)) goto cleanup;
+    if (!mmay_bytecode_panic_init(&panic, session->allocator)) goto cleanup;
     panic_ready = true;
     stdout_context.writer = standard_output;
     stdout_sink.capability_granted = true;
     stdout_sink.context = &stdout_context;
-    stdout_sink.publish = ruda_cli_stdout_publish;
-    run_options = ruda_bytecode_run_default_options();
+    stdout_sink.publish = mmay_cli_stdout_publish;
+    run_options = mmay_bytecode_run_default_options();
     run_options.execution = &execution;
     run_options.stdout_sink = &stdout_sink;
     run_options.panic = &panic;
     run_options.trap = &trap;
-    run_status = ruda_bytecode_run_program(
+    run_status = mmay_bytecode_run_program(
         &decoded, NULL, 0, session->allocator, run_options, &result
     );
-    if (run_status != RUDA_BYTECODE_RUN_OK) {
-        exit_code = ruda_cli_run_runtime_error(
+    if (run_status != MMAY_BYTECODE_RUN_OK) {
+        exit_code = mmay_cli_run_runtime_error(
             options, run_status, &execution, &panic, standard_error
         );
     } else if (!entry->returns_result) {
-        exit_code = result.type == RUDA_BYTECODE_TYPE_VOID
-            ? RUDA_EXIT_SUCCESS : RUDA_EXIT_INTERNAL;
+        exit_code = result.type == MMAY_BYTECODE_TYPE_VOID
+            ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
     } else {
-        exit_code = ruda_cli_run_render_expected(
+        exit_code = mmay_cli_run_render_expected(
             session, options, entry, &decoded, &execution,
             run_options, result, standard_error
         );
     }
 cleanup:
-    if (panic_ready) ruda_bytecode_panic_dispose(&panic);
-    if (execution_ready) ruda_bytecode_execution_dispose(&execution);
-    ruda_bytecode_program_dispose(&decoded);
-    ruda_owned_bytes_dispose(&encoded);
-    ruda_bytecode_program_dispose(&lowered);
-    ruda_deallocate(&session->allocator, functions, function_bytes);
+    if (panic_ready) mmay_bytecode_panic_dispose(&panic);
+    if (execution_ready) mmay_bytecode_execution_dispose(&execution);
+    mmay_bytecode_program_dispose(&decoded);
+    mmay_owned_bytes_dispose(&encoded);
+    mmay_bytecode_program_dispose(&lowered);
+    mmay_deallocate(&session->allocator, functions, function_bytes);
     return exit_code;
 }
 
-int ruda_cli_run_program(
-    RudaSession *session,
-    const RudaCliOptions *options,
-    RudaWriter standard_output,
-    RudaWriter standard_error
+int mmay_cli_run_program(
+    MarimaySession *session,
+    const MarimayCliOptions *options,
+    MarimayWriter standard_output,
+    MarimayWriter standard_error
 ) {
-    RudaCliCheckTarget target;
-    RudaCompilerResult compiler;
-    RudaCheckedEntry entry;
-    RudaCliCheckTargetStatus target_status;
-    RudaCompilerStatus compiler_status;
-    RudaCheckEntryStatus entry_status;
-    int exit_code = RUDA_EXIT_INTERNAL;
+    MarimayCliCheckTarget target;
+    MarimayCompilerResult compiler;
+    MarimayCheckedEntry entry;
+    MarimayCliCheckTargetStatus target_status;
+    MarimayCompilerStatus compiler_status;
+    MarimayCheckEntryStatus entry_status;
+    int exit_code = MMAY_EXIT_INTERNAL;
     memset(&target, 0, sizeof(target));
     memset(&compiler, 0, sizeof(compiler));
     memset(&entry, 0, sizeof(entry));
     (void)options->program_argument_start;
     (void)options->program_argument_count;
-    target_status = ruda_cli_check_target_build(session, options, &target);
-    if (target_status != RUDA_CLI_CHECK_TARGET_OK) {
-        exit_code = ruda_cli_compile_target_error(
+    target_status = mmay_cli_check_target_build(session, options, &target);
+    if (target_status != MMAY_CLI_CHECK_TARGET_OK) {
+        exit_code = mmay_cli_compile_target_error(
             options, &target, target_status, standard_error
         );
         goto cleanup;
     }
-    compiler_status = ruda_compiler_service_check_graph(
+    compiler_status = mmay_compiler_service_check_graph(
         &target.service, target.compiler_packages.data,
         target.compiler_packages.length,
         (const char *)target.selected_import_path.data,
         target.selected_import_path.length, &compiler
     );
-    if (compiler_status != RUDA_COMPILER_OK) {
-        exit_code = ruda_cli_compile_status_error(
+    if (compiler_status != MMAY_COMPILER_OK) {
+        exit_code = mmay_cli_compile_status_error(
             options, compiler_status, standard_error
         );
         goto cleanup;
     }
-    exit_code = ruda_cli_compile_render_result(
+    exit_code = mmay_cli_compile_render_result(
         options, &compiler, standard_error
     );
-    if (exit_code != RUDA_EXIT_SUCCESS) goto cleanup;
-    if (!ruda_cli_optimize_checked_mir(&compiler)) {
-        exit_code = ruda_cli_run_pipeline_error(
+    if (exit_code != MMAY_EXIT_SUCCESS) goto cleanup;
+    if (!mmay_cli_optimize_checked_mir(&compiler)) {
+        exit_code = mmay_cli_run_pipeline_error(
             options, "canonical typed MIR range proof was invalid",
             standard_error
         );
         goto cleanup;
     }
-    entry_status = ruda_check_select_entry(
+    entry_status = mmay_check_select_entry(
         &compiler.checked,
         (const char *)target.selected_import_path.data,
         target.selected_import_path.length, &entry
     );
-    if (entry_status != RUDA_CHECK_ENTRY_OK) {
-        exit_code = ruda_cli_run_entry_error(
+    if (entry_status != MMAY_CHECK_ENTRY_OK) {
+        exit_code = mmay_cli_run_entry_error(
             options, entry_status, standard_error
         );
         goto cleanup;
     }
-    exit_code = ruda_cli_run_execute(
+    exit_code = mmay_cli_run_execute(
         session, options, &compiler, &entry,
         standard_output, standard_error
     );
 cleanup:
-    ruda_compiler_result_dispose(&compiler);
-    ruda_cli_check_target_dispose(&target);
+    mmay_compiler_result_dispose(&compiler);
+    mmay_cli_check_target_dispose(&target);
     return exit_code;
 }

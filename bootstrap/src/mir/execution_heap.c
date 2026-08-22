@@ -1,32 +1,32 @@
 #include "mir_internal.h"
-#include "ruda/base/provenance.h"
+#include "mmay/base/provenance.h"
 #include <limits.h>
 #include <string.h>
 enum {
-    RUDA_MIR_REFERENCE_KIND_SHIFT = 29
+    MMAY_MIR_REFERENCE_KIND_SHIFT = 29
 };
-#define RUDA_MIR_REFERENCE_INDEX_MASK UINT32_C(0x1fffffff)
-typedef enum RudaMirReferenceKind {
-    RUDA_MIR_REFERENCE_RECORD = 0,
-    RUDA_MIR_REFERENCE_ENUM = 1,
-    RUDA_MIR_REFERENCE_STRING = 2,
-    RUDA_MIR_REFERENCE_ARRAY = 3,
-    RUDA_MIR_REFERENCE_INTERFACE = 4
-} RudaMirReferenceKind;
-static bool ruda_mir_reference_encode(
-    const RudaMirExecution *execution,
-    RudaMirReferenceKind kind,
+#define MMAY_MIR_REFERENCE_INDEX_MASK UINT32_C(0x1fffffff)
+typedef enum MarimayMirReferenceKind {
+    MMAY_MIR_REFERENCE_RECORD = 0,
+    MMAY_MIR_REFERENCE_ENUM = 1,
+    MMAY_MIR_REFERENCE_STRING = 2,
+    MMAY_MIR_REFERENCE_ARRAY = 3,
+    MMAY_MIR_REFERENCE_INTERFACE = 4
+} MarimayMirReferenceKind;
+static bool mmay_mir_reference_encode(
+    const MarimayMirExecution *execution,
+    MarimayMirReferenceKind kind,
     size_t index,
-    RudaMirReference *result
+    MarimayMirReference *result
 ) {
     uint32_t encoded = 0;
     if (execution == NULL || !execution->initialized
         || execution->provenance == 0
         || execution->provenance == UINT64_MAX || result == NULL
-        || index >= RUDA_MIR_REFERENCE_INDEX_MASK) {
+        || index >= MMAY_MIR_REFERENCE_INDEX_MASK) {
         return false;
     }
-    encoded = ((uint32_t)kind << RUDA_MIR_REFERENCE_KIND_SHIFT)
+    encoded = ((uint32_t)kind << MMAY_MIR_REFERENCE_KIND_SHIFT)
         | (uint32_t)index;
     if (encoded == UINT32_MAX) {
         return false;
@@ -35,13 +35,13 @@ static bool ruda_mir_reference_encode(
     result->slot = encoded;
     return true;
 }
-static bool ruda_mir_reference_decode(
-    const RudaMirExecution *execution,
-    RudaMirReference reference,
-    RudaMirReferenceKind expected,
+static bool mmay_mir_reference_decode(
+    const MarimayMirExecution *execution,
+    MarimayMirReference reference,
+    MarimayMirReferenceKind expected,
     size_t *index
 ) {
-    RudaMirReferenceKind actual;
+    MarimayMirReferenceKind actual;
     if (execution == NULL || !execution->initialized
         || execution->provenance == 0
         || execution->provenance == UINT64_MAX
@@ -49,31 +49,31 @@ static bool ruda_mir_reference_decode(
         || reference.slot == UINT32_MAX || index == NULL) {
         return false;
     }
-    actual = (RudaMirReferenceKind)(
-        reference.slot >> RUDA_MIR_REFERENCE_KIND_SHIFT
+    actual = (MarimayMirReferenceKind)(
+        reference.slot >> MMAY_MIR_REFERENCE_KIND_SHIFT
     );
     if (actual != expected) {
         return false;
     }
-    *index = (size_t)(reference.slot & RUDA_MIR_REFERENCE_INDEX_MASK);
+    *index = (size_t)(reference.slot & MMAY_MIR_REFERENCE_INDEX_MASK);
     return true;
 }
-static RudaMirRecordField *ruda_mir_managed_record_layout(
-    RudaMirManagedRecord *record
+static MarimayMirRecordField *mmay_mir_managed_record_layout(
+    MarimayMirManagedRecord *record
 ) {
-    return record != NULL ? (RudaMirRecordField *)(
+    return record != NULL ? (MarimayMirRecordField *)(
         record->fields + record->field_count
     ) : NULL;
 }
-static const RudaMirRecordField *ruda_mir_managed_record_layout_const(
-    const RudaMirManagedRecord *record
+static const MarimayMirRecordField *mmay_mir_managed_record_layout_const(
+    const MarimayMirManagedRecord *record
 ) {
-    return record != NULL ? (const RudaMirRecordField *)(
+    return record != NULL ? (const MarimayMirRecordField *)(
         record->fields + record->field_count
     ) : NULL;
 }
-RudaMirExecutionOptions ruda_mir_execution_default_options(void) {
-    RudaMirExecutionOptions options;
+MarimayMirExecutionOptions mmay_mir_execution_default_options(void) {
+    MarimayMirExecutionOptions options;
     options.max_objects = 1000000;
     options.max_fields_per_object = 100000;
     options.max_total_fields = 10000000;
@@ -84,54 +84,54 @@ RudaMirExecutionOptions ruda_mir_execution_default_options(void) {
     options.max_total_array_elements = 10000000;
     return options;
 }
-bool ruda_mir_execution_init(
-    RudaMirExecution *execution,
-    RudaAllocator allocator,
-    RudaMirExecutionOptions options
+bool mmay_mir_execution_init(
+    MarimayMirExecution *execution,
+    MarimayAllocator allocator,
+    MarimayMirExecutionOptions options
 ) {
     uint64_t provenance = 0;
     if (execution == NULL || allocator.allocate == NULL
         || allocator.resize == NULL || allocator.deallocate == NULL
         || options.max_objects == 0
-        || options.max_objects > RUDA_MIR_REFERENCE_INDEX_MASK
+        || options.max_objects > MMAY_MIR_REFERENCE_INDEX_MASK
         || options.max_fields_per_object == 0
         || options.max_total_fields == 0 || options.max_strings == 0
-        || options.max_strings > RUDA_MIR_REFERENCE_INDEX_MASK
+        || options.max_strings > MMAY_MIR_REFERENCE_INDEX_MASK
         || options.max_total_string_bytes == 0
         || options.max_arrays == 0
-        || options.max_arrays > RUDA_MIR_REFERENCE_INDEX_MASK
+        || options.max_arrays > MMAY_MIR_REFERENCE_INDEX_MASK
         || options.max_array_length == 0
         || options.max_total_array_elements == 0
-        || !ruda_new_provenance(&provenance)) {
+        || !mmay_new_provenance(&provenance)) {
         return false;
     }
     memset(execution, 0, sizeof(*execution));
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &execution->objects,
             allocator,
-            sizeof(RudaMirManagedRecord *)
-        ) || !ruda_vector_init(
+            sizeof(MarimayMirManagedRecord *)
+        ) || !mmay_vector_init(
             &execution->enums,
             allocator,
-            sizeof(RudaMirManagedEnum *)
-        ) || !ruda_vector_init(
+            sizeof(MarimayMirManagedEnum *)
+        ) || !mmay_vector_init(
             &execution->strings,
             allocator,
-            sizeof(RudaMirManagedString *)
-        ) || !ruda_vector_init(
+            sizeof(MarimayMirManagedString *)
+        ) || !mmay_vector_init(
             &execution->arrays,
             allocator,
-            sizeof(RudaMirManagedArray *)
-        ) || !ruda_vector_init(
+            sizeof(MarimayMirManagedArray *)
+        ) || !mmay_vector_init(
             &execution->interface_values,
             allocator,
-            sizeof(RudaMirManagedInterface *)
+            sizeof(MarimayMirManagedInterface *)
         )) {
-        ruda_vector_dispose(&execution->interface_values);
-        ruda_vector_dispose(&execution->arrays);
-        ruda_vector_dispose(&execution->strings);
-        ruda_vector_dispose(&execution->enums);
-        ruda_vector_dispose(&execution->objects);
+        mmay_vector_dispose(&execution->interface_values);
+        mmay_vector_dispose(&execution->arrays);
+        mmay_vector_dispose(&execution->strings);
+        mmay_vector_dispose(&execution->enums);
+        mmay_vector_dispose(&execution->objects);
         return false;
     }
     execution->allocator = allocator;
@@ -140,18 +140,18 @@ bool ruda_mir_execution_init(
     execution->initialized = true;
     return true;
 }
-void ruda_mir_execution_dispose(RudaMirExecution *execution) {
+void mmay_mir_execution_dispose(MarimayMirExecution *execution) {
     size_t index = 0;
     if (execution == NULL || !execution->initialized) {
         return;
     }
     for (index = 0; index < execution->objects.length; index += 1) {
-        RudaMirManagedRecord **record = ruda_vector_at(
+        MarimayMirManagedRecord **record = mmay_vector_at(
             &execution->objects,
             index
         );
         if (record != NULL && *record != NULL) {
-            ruda_deallocate(
+            mmay_deallocate(
                 &execution->allocator,
                 *record,
                 (*record)->allocation_size
@@ -160,12 +160,12 @@ void ruda_mir_execution_dispose(RudaMirExecution *execution) {
         }
     }
     for (index = 0; index < execution->enums.length; index += 1) {
-        RudaMirManagedEnum **value = ruda_vector_at(
+        MarimayMirManagedEnum **value = mmay_vector_at(
             &execution->enums,
             index
         );
         if (value != NULL && *value != NULL) {
-            ruda_deallocate(
+            mmay_deallocate(
                 &execution->allocator,
                 *value,
                 (*value)->allocation_size
@@ -174,12 +174,12 @@ void ruda_mir_execution_dispose(RudaMirExecution *execution) {
         }
     }
     for (index = 0; index < execution->strings.length; index += 1) {
-        RudaMirManagedString **value = ruda_vector_at(
+        MarimayMirManagedString **value = mmay_vector_at(
             &execution->strings,
             index
         );
         if (value != NULL && *value != NULL) {
-            ruda_deallocate(
+            mmay_deallocate(
                 &execution->allocator,
                 *value,
                 (*value)->allocation_size
@@ -188,12 +188,12 @@ void ruda_mir_execution_dispose(RudaMirExecution *execution) {
         }
     }
     for (index = 0; index < execution->arrays.length; index += 1) {
-        RudaMirManagedArray **value = ruda_vector_at(
+        MarimayMirManagedArray **value = mmay_vector_at(
             &execution->arrays,
             index
         );
         if (value != NULL && *value != NULL) {
-            ruda_deallocate(
+            mmay_deallocate(
                 &execution->allocator,
                 *value,
                 (*value)->allocation_size
@@ -202,12 +202,12 @@ void ruda_mir_execution_dispose(RudaMirExecution *execution) {
         }
     }
     for (index = 0; index < execution->interface_values.length; index += 1) {
-        RudaMirManagedInterface **value = ruda_vector_at(
+        MarimayMirManagedInterface **value = mmay_vector_at(
             &execution->interface_values,
             index
         );
         if (value != NULL && *value != NULL) {
-            ruda_deallocate(
+            mmay_deallocate(
                 &execution->allocator,
                 *value,
                 (*value)->allocation_size
@@ -215,40 +215,40 @@ void ruda_mir_execution_dispose(RudaMirExecution *execution) {
             *value = NULL;
         }
     }
-    ruda_vector_dispose(&execution->interface_values);
-    ruda_vector_dispose(&execution->arrays);
-    ruda_vector_dispose(&execution->strings);
-    ruda_vector_dispose(&execution->enums);
-    ruda_vector_dispose(&execution->objects);
-    ruda_test_output_dispose(&execution->test_output);
+    mmay_vector_dispose(&execution->interface_values);
+    mmay_vector_dispose(&execution->arrays);
+    mmay_vector_dispose(&execution->strings);
+    mmay_vector_dispose(&execution->enums);
+    mmay_vector_dispose(&execution->objects);
+    mmay_test_output_dispose(&execution->test_output);
     memset(execution, 0, sizeof(*execution));
 }
-const RudaMirManagedEnum *ruda_mir_execution_enum_value(
-    const RudaMirExecution *execution,
-    RudaMirValue value
+const MarimayMirManagedEnum *mmay_mir_execution_enum_value(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value
 ) {
     size_t index = 0;
-    RudaMirManagedEnum *const *stored = execution != NULL
+    MarimayMirManagedEnum *const *stored = execution != NULL
             && execution->initialized
-            && ruda_mir_reference_decode(
+            && mmay_mir_reference_decode(
                 execution,
                 value.as.reference,
-                RUDA_MIR_REFERENCE_ENUM,
+                MMAY_MIR_REFERENCE_ENUM,
                 &index
             )
-        ? ruda_vector_at_const(&execution->enums, index)
+        ? mmay_vector_at_const(&execution->enums, index)
         : NULL;
     return stored != NULL && *stored != NULL && (*stored)->type == value.type
         ? *stored
         : NULL;
 }
-bool ruda_mir_execution_inspect_enum(
-    const RudaMirExecution *execution,
-    RudaMirValue value,
+bool mmay_mir_execution_inspect_enum(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value,
     size_t *variant,
     size_t *payload_count
 ) {
-    const RudaMirManagedEnum *stored = ruda_mir_execution_enum_value(
+    const MarimayMirManagedEnum *stored = mmay_mir_execution_enum_value(
         execution,
         value
     );
@@ -259,13 +259,13 @@ bool ruda_mir_execution_inspect_enum(
     *payload_count = stored->selected_payload_count;
     return true;
 }
-bool ruda_mir_execution_enum_payload(
-    const RudaMirExecution *execution,
-    RudaMirValue value,
+bool mmay_mir_execution_enum_payload(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value,
     size_t index,
-    RudaMirValue *result
+    MarimayMirValue *result
 ) {
-    const RudaMirManagedEnum *stored = ruda_mir_execution_enum_value(
+    const MarimayMirManagedEnum *stored = mmay_mir_execution_enum_value(
         execution,
         value
     );
@@ -276,95 +276,95 @@ bool ruda_mir_execution_enum_payload(
     *result = stored->payload[index];
     return true;
 }
-const RudaMirManagedString *ruda_mir_execution_string_value(
-    const RudaMirExecution *execution,
-    RudaMirValue value
+const MarimayMirManagedString *mmay_mir_execution_string_value(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value
 ) {
     size_t index = 0;
-    RudaMirManagedString *const *stored = execution != NULL
-            && execution->initialized && value.type == RUDA_TYPE_STRING
-            && ruda_mir_reference_decode(
+    MarimayMirManagedString *const *stored = execution != NULL
+            && execution->initialized && value.type == MMAY_TYPE_STRING
+            && mmay_mir_reference_decode(
                 execution,
                 value.as.reference,
-                RUDA_MIR_REFERENCE_STRING,
+                MMAY_MIR_REFERENCE_STRING,
                 &index
             )
-        ? ruda_vector_at_const(&execution->strings, index)
+        ? mmay_vector_at_const(&execution->strings, index)
         : NULL;
     return stored != NULL ? *stored : NULL;
 }
-RudaMirManagedArray *ruda_mir_execution_array_value_mutable(
-    RudaMirExecution *execution,
-    RudaMirValue value
+MarimayMirManagedArray *mmay_mir_execution_array_value_mutable(
+    MarimayMirExecution *execution,
+    MarimayMirValue value
 ) {
-    RudaMirManagedArray **stored = ruda_mir_execution_array_slot(
+    MarimayMirManagedArray **stored = mmay_mir_execution_array_slot(
         execution, value
     );
     return stored != NULL && *stored != NULL && (*stored)->type == value.type
         ? *stored
         : NULL;
 }
-RudaMirManagedArray **ruda_mir_execution_array_slot(
-    RudaMirExecution *execution,
-    RudaMirValue value
+MarimayMirManagedArray **mmay_mir_execution_array_slot(
+    MarimayMirExecution *execution,
+    MarimayMirValue value
 ) {
     size_t index = 0;
-    RudaMirManagedArray **stored = execution != NULL && execution->initialized
-            && ruda_mir_reference_decode(
+    MarimayMirManagedArray **stored = execution != NULL && execution->initialized
+            && mmay_mir_reference_decode(
                 execution,
                 value.as.reference,
-                RUDA_MIR_REFERENCE_ARRAY,
+                MMAY_MIR_REFERENCE_ARRAY,
                 &index
             )
-        ? ruda_vector_at(&execution->arrays, index)
+        ? mmay_vector_at(&execution->arrays, index)
         : NULL;
     return stored;
 }
-const RudaMirManagedArray *ruda_mir_execution_array_value(
-    const RudaMirExecution *execution,
-    RudaMirValue value
+const MarimayMirManagedArray *mmay_mir_execution_array_value(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value
 ) {
     size_t index = 0;
-    RudaMirManagedArray *const *stored = execution != NULL
+    MarimayMirManagedArray *const *stored = execution != NULL
             && execution->initialized
-            && ruda_mir_reference_decode(
+            && mmay_mir_reference_decode(
                 execution,
                 value.as.reference,
-                RUDA_MIR_REFERENCE_ARRAY,
+                MMAY_MIR_REFERENCE_ARRAY,
                 &index
             )
-        ? ruda_vector_at_const(&execution->arrays, index)
+        ? mmay_vector_at_const(&execution->arrays, index)
         : NULL;
     return stored != NULL && *stored != NULL && (*stored)->type == value.type
         ? *stored
         : NULL;
 }
-const RudaMirManagedInterface *ruda_mir_execution_interface_value(
-    const RudaMirExecution *execution,
-    RudaMirValue value
+const MarimayMirManagedInterface *mmay_mir_execution_interface_value(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value
 ) {
     size_t index = 0;
-    RudaMirManagedInterface *const *stored = execution != NULL
+    MarimayMirManagedInterface *const *stored = execution != NULL
             && execution->initialized
-            && ruda_mir_reference_decode(
+            && mmay_mir_reference_decode(
                 execution,
                 value.as.reference,
-                RUDA_MIR_REFERENCE_INTERFACE,
+                MMAY_MIR_REFERENCE_INTERFACE,
                 &index
             )
-        ? ruda_vector_at_const(&execution->interface_values, index)
+        ? mmay_vector_at_const(&execution->interface_values, index)
         : NULL;
     return stored != NULL && *stored != NULL && (*stored)->type == value.type
         ? *stored
         : NULL;
 }
-bool ruda_mir_execution_string_bytes(
-    const RudaMirExecution *execution,
-    RudaMirValue value,
+bool mmay_mir_execution_string_bytes(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value,
     const unsigned char **bytes,
     size_t *length
 ) {
-    const RudaMirManagedString *stored = ruda_mir_execution_string_value(
+    const MarimayMirManagedString *stored = mmay_mir_execution_string_value(
         execution,
         value
     );
@@ -375,12 +375,12 @@ bool ruda_mir_execution_string_bytes(
     *length = stored->length;
     return true;
 }
-bool ruda_mir_execution_array_length(
-    const RudaMirExecution *execution,
-    RudaMirValue value,
+bool mmay_mir_execution_array_length(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value,
     size_t *length
 ) {
-    const RudaMirManagedArray *stored = ruda_mir_execution_array_value(
+    const MarimayMirManagedArray *stored = mmay_mir_execution_array_value(
         execution,
         value
     );
@@ -390,13 +390,13 @@ bool ruda_mir_execution_array_length(
     *length = stored->length;
     return true;
 }
-bool ruda_mir_execution_array_element(
-    const RudaMirExecution *execution,
-    RudaMirValue value,
+bool mmay_mir_execution_array_element(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value,
     size_t index,
-    RudaMirValue *result
+    MarimayMirValue *result
 ) {
-    const RudaMirManagedArray *stored = ruda_mir_execution_array_value(
+    const MarimayMirManagedArray *stored = mmay_mir_execution_array_value(
         execution,
         value
     );
@@ -406,19 +406,19 @@ bool ruda_mir_execution_array_element(
     *result = stored->elements[index];
     return true;
 }
-bool ruda_mir_execution_array_at(
-    const RudaMirExecution *execution,
+bool mmay_mir_execution_array_at(
+    const MarimayMirExecution *execution,
     size_t ordinal,
-    RudaMirValue *result
+    MarimayMirValue *result
 ) {
-    RudaMirManagedArray *const *stored = execution != NULL
+    MarimayMirManagedArray *const *stored = execution != NULL
             && execution->initialized
-        ? ruda_vector_at_const(&execution->arrays, ordinal)
+        ? mmay_vector_at_const(&execution->arrays, ordinal)
         : NULL;
     if (stored == NULL || *stored == NULL || result == NULL
-        || !ruda_mir_reference_encode(
+        || !mmay_mir_reference_encode(
             execution,
-            RUDA_MIR_REFERENCE_ARRAY,
+            MMAY_MIR_REFERENCE_ARRAY,
             ordinal,
             &result->as.reference
         )) {
@@ -427,30 +427,30 @@ bool ruda_mir_execution_array_at(
     result->type = (*stored)->type;
     return true;
 }
-RudaMirManagedRecord *ruda_mir_execution_record(
-    RudaMirExecution *execution,
-    RudaMirReference reference
+MarimayMirManagedRecord *mmay_mir_execution_record(
+    MarimayMirExecution *execution,
+    MarimayMirReference reference
 ) {
     size_t index = 0;
-    RudaMirManagedRecord **record = execution != NULL
+    MarimayMirManagedRecord **record = execution != NULL
             && execution->initialized
-            && ruda_mir_reference_decode(
+            && mmay_mir_reference_decode(
                 execution,
                 reference,
-                RUDA_MIR_REFERENCE_RECORD,
+                MMAY_MIR_REFERENCE_RECORD,
                 &index
             )
-        ? ruda_vector_at(&execution->objects, index)
+        ? mmay_vector_at(&execution->objects, index)
         : NULL;
     return record != NULL ? *record : NULL;
 }
-bool ruda_mir_managed_record_matches_layout(
-    const RudaMirFunction *function,
-    const RudaMirRecord *layout,
-    const RudaMirManagedRecord *record
+bool mmay_mir_managed_record_matches_layout(
+    const MarimayMirFunction *function,
+    const MarimayMirRecord *layout,
+    const MarimayMirManagedRecord *record
 ) {
-    const RudaMirRecordField *stored_layout =
-        ruda_mir_managed_record_layout_const(record);
+    const MarimayMirRecordField *stored_layout =
+        mmay_mir_managed_record_layout_const(record);
     size_t field_index = 0;
     if (function == NULL || layout == NULL || record == NULL
         || record->type != layout->type
@@ -459,7 +459,7 @@ bool ruda_mir_managed_record_matches_layout(
     }
     for (field_index = 0; field_index < layout->field_count;
         field_index += 1) {
-        const RudaMirRecordField *expected = ruda_mir_record_field(
+        const MarimayMirRecordField *expected = mmay_mir_record_field(
             function,
             layout,
             field_index
@@ -473,59 +473,59 @@ bool ruda_mir_managed_record_matches_layout(
     }
     return true;
 }
-bool ruda_mir_execution_owns_reference(
-    const RudaMirExecution *execution,
-    RudaMirValue value
+bool mmay_mir_execution_owns_reference(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value
 ) {
     size_t index = 0;
-    RudaMirManagedRecord *const *record = execution != NULL
+    MarimayMirManagedRecord *const *record = execution != NULL
             && execution->initialized
-            && ruda_mir_reference_decode(
+            && mmay_mir_reference_decode(
                 execution,
                 value.as.reference,
-                RUDA_MIR_REFERENCE_RECORD,
+                MMAY_MIR_REFERENCE_RECORD,
                 &index
             )
-        ? ruda_vector_at_const(&execution->objects, index)
+        ? mmay_vector_at_const(&execution->objects, index)
         : NULL;
-    return ruda_mir_execution_string_value(execution, value) != NULL
-        || ruda_mir_execution_enum_value(execution, value) != NULL
-        || ruda_mir_execution_array_value(execution, value) != NULL
-        || ruda_mir_execution_interface_value(execution, value) != NULL
+    return mmay_mir_execution_string_value(execution, value) != NULL
+        || mmay_mir_execution_enum_value(execution, value) != NULL
+        || mmay_mir_execution_array_value(execution, value) != NULL
+        || mmay_mir_execution_interface_value(execution, value) != NULL
         || (record != NULL && *record != NULL && (*record)->type == value.type);
 }
-bool ruda_mir_type_is_managed(RudaTypeId type) {
-    return type == RUDA_TYPE_STRING || type >= RUDA_TYPE_FIRST_DYNAMIC;
+bool mmay_mir_type_is_managed(MarimayTypeId type) {
+    return type == MMAY_TYPE_STRING || type >= MMAY_TYPE_FIRST_DYNAMIC;
 }
-bool ruda_mir_managed_array_matches_layout(
-    const RudaMirArray *layout,
-    const RudaMirManagedArray *value
+bool mmay_mir_managed_array_matches_layout(
+    const MarimayMirArray *layout,
+    const MarimayMirManagedArray *value
 ) {
     return layout != NULL && value != NULL && value->type == layout->type
         && value->element_type == layout->element_type;
 }
-static RudaMirEnumVariant *ruda_mir_managed_enum_variants(
-    RudaMirManagedEnum *value
+static MarimayMirEnumVariant *mmay_mir_managed_enum_variants(
+    MarimayMirManagedEnum *value
 ) {
-    return value != NULL ? (RudaMirEnumVariant *)(
+    return value != NULL ? (MarimayMirEnumVariant *)(
         value->payload + value->selected_payload_count
     ) : NULL;
 }
-static RudaMirEnumPayload *ruda_mir_managed_enum_payloads(
-    RudaMirManagedEnum *value
+static MarimayMirEnumPayload *mmay_mir_managed_enum_payloads(
+    MarimayMirManagedEnum *value
 ) {
-    RudaMirEnumVariant *variants = ruda_mir_managed_enum_variants(value);
-    return variants != NULL ? (RudaMirEnumPayload *)(
+    MarimayMirEnumVariant *variants = mmay_mir_managed_enum_variants(value);
+    return variants != NULL ? (MarimayMirEnumPayload *)(
         variants + value->variant_count
     ) : NULL;
 }
-bool ruda_mir_managed_enum_matches_layout(
-    const RudaMirFunction *function,
-    const RudaMirEnum *layout,
-    const RudaMirManagedEnum *value
+bool mmay_mir_managed_enum_matches_layout(
+    const MarimayMirFunction *function,
+    const MarimayMirEnum *layout,
+    const MarimayMirManagedEnum *value
 ) {
-    const RudaMirEnumVariant *stored_variants = NULL;
-    const RudaMirEnumPayload *stored_payloads = NULL;
+    const MarimayMirEnumVariant *stored_variants = NULL;
+    const MarimayMirEnumPayload *stored_payloads = NULL;
     size_t variant_index = 0;
     size_t payload_index = 0;
     if (function == NULL || layout == NULL || value == NULL
@@ -535,15 +535,15 @@ bool ruda_mir_managed_enum_matches_layout(
         || value->variant >= value->variant_count) {
         return false;
     }
-    stored_variants = (const RudaMirEnumVariant *)(
+    stored_variants = (const MarimayMirEnumVariant *)(
         value->payload + value->selected_payload_count
     );
-    stored_payloads = (const RudaMirEnumPayload *)(
+    stored_payloads = (const MarimayMirEnumPayload *)(
         stored_variants + value->variant_count
     );
     for (variant_index = 0; variant_index < layout->variant_count;
         variant_index += 1) {
-        const RudaMirEnumVariant *expected = ruda_mir_enum_variant(
+        const MarimayMirEnumVariant *expected = mmay_mir_enum_variant(
             function,
             layout,
             variant_index
@@ -559,7 +559,7 @@ bool ruda_mir_managed_enum_matches_layout(
     }
     for (payload_index = 0; payload_index < layout->payload_count;
         payload_index += 1) {
-        const RudaMirEnumPayload *expected = ruda_vector_at_const(
+        const MarimayMirEnumPayload *expected = mmay_vector_at_const(
             &function->enum_payloads,
             layout->payload_start + payload_index
         );
@@ -569,7 +569,7 @@ bool ruda_mir_managed_enum_matches_layout(
         }
     }
     {
-        const RudaMirEnumVariant *selected = &stored_variants[value->variant];
+        const MarimayMirEnumVariant *selected = &stored_variants[value->variant];
         if (value->selected_payload_count != selected->payload_count) {
             return false;
         }
@@ -586,15 +586,15 @@ bool ruda_mir_managed_enum_matches_layout(
     }
     return true;
 }
-RudaMirInterpretStatus ruda_mir_execution_new_record(
-    RudaMirExecution *execution,
-    RudaTypeId type,
-    const RudaMirValue *fields,
-    const RudaMirRecordField *layout,
+MarimayMirInterpretStatus mmay_mir_execution_new_record(
+    MarimayMirExecution *execution,
+    MarimayTypeId type,
+    const MarimayMirValue *fields,
+    const MarimayMirRecordField *layout,
     size_t field_count,
-    RudaMirReference *result
+    MarimayMirReference *result
 ) {
-    RudaMirManagedRecord *record = NULL;
+    MarimayMirManagedRecord *record = NULL;
     size_t field_bytes = 0;
     size_t layout_bytes = 0;
     size_t payload_bytes = 0;
@@ -603,58 +603,58 @@ RudaMirInterpretStatus ruda_mir_execution_new_record(
     size_t object_count = 0;
     size_t field_index = 0;
     if (execution == NULL || !execution->initialized || result == NULL
-        || type == RUDA_TYPE_INVALID) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        || type == MMAY_TYPE_INVALID) {
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
     if (field_count != 0 && (fields == NULL || layout == NULL)) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
-    if (!ruda_size_add(
+    if (!mmay_size_add(
             execution->objects.length,
             execution->enums.length,
             &object_count
-        ) || !ruda_size_add(
+        ) || !mmay_size_add(
             object_count,
             execution->interface_values.length,
             &object_count
         ) || object_count >= execution->options.max_objects
-        || execution->objects.length >= RUDA_MIR_REFERENCE_INDEX_MASK
+        || execution->objects.length >= MMAY_MIR_REFERENCE_INDEX_MASK
         || field_count > execution->options.max_fields_per_object
-        || !ruda_size_add(
+        || !mmay_size_add(
             execution->total_fields,
             field_count,
             &new_total_fields
         ) || new_total_fields > execution->options.max_total_fields) {
-        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
     }
-    if (!ruda_size_multiply(field_count, sizeof(RudaMirValue), &field_bytes)
-        || !ruda_size_multiply(
+    if (!mmay_size_multiply(field_count, sizeof(MarimayMirValue), &field_bytes)
+        || !mmay_size_multiply(
             field_count,
-            sizeof(RudaMirRecordField),
+            sizeof(MarimayMirRecordField),
             &layout_bytes
-        ) || !ruda_size_add(field_bytes, layout_bytes, &payload_bytes)
-        || !ruda_size_add(
-            offsetof(RudaMirManagedRecord, fields),
+        ) || !mmay_size_add(field_bytes, layout_bytes, &payload_bytes)
+        || !mmay_size_add(
+            offsetof(MarimayMirManagedRecord, fields),
             payload_bytes,
             &allocation_size
         )) {
-        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
     }
     for (field_index = 0; field_index < field_count; field_index += 1) {
-        if (layout[field_index].type == RUDA_TYPE_INVALID
+        if (layout[field_index].type == MMAY_TYPE_INVALID
             || fields[field_index].type != layout[field_index].type) {
-            return RUDA_MIR_INTERPRET_INVALID_MIR;
+            return MMAY_MIR_INTERPRET_INVALID_MIR;
         }
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &execution->objects,
             execution->objects.length + 1
         )) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
-    record = ruda_allocate(&execution->allocator, allocation_size);
+    record = mmay_allocate(&execution->allocator, allocation_size);
     if (record == NULL) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     record->type = type;
     record->field_count = field_count;
@@ -662,84 +662,84 @@ RudaMirInterpretStatus ruda_mir_execution_new_record(
     if (field_count != 0 && fields != NULL && layout != NULL) {
         memcpy(record->fields, fields, field_bytes);
         memcpy(
-            ruda_mir_managed_record_layout(record),
+            mmay_mir_managed_record_layout(record),
             layout,
             layout_bytes
         );
     }
-    if (!ruda_vector_push(&execution->objects, &record)) {
-        ruda_deallocate(&execution->allocator, record, allocation_size);
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&execution->objects, &record)) {
+        mmay_deallocate(&execution->allocator, record, allocation_size);
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     execution->total_fields = new_total_fields;
-    return ruda_mir_reference_encode(
+    return mmay_mir_reference_encode(
             execution,
-            RUDA_MIR_REFERENCE_RECORD,
+            MMAY_MIR_REFERENCE_RECORD,
             execution->objects.length - 1,
             result
         )
-        ? RUDA_MIR_INTERPRET_OK
-        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        ? MMAY_MIR_INTERPRET_OK
+        : MMAY_MIR_INTERPRET_OBJECT_LIMIT;
 }
-RudaMirInterpretStatus ruda_mir_execution_new_string(
-    RudaMirExecution *execution,
+MarimayMirInterpretStatus mmay_mir_execution_new_string(
+    MarimayMirExecution *execution,
     const unsigned char *bytes,
     size_t length,
-    RudaMirReference *result
+    MarimayMirReference *result
 ) {
-    RudaMirManagedString *value = NULL;
+    MarimayMirManagedString *value = NULL;
     size_t allocation_size = 0;
     size_t new_total = 0;
     if (execution == NULL || !execution->initialized || result == NULL
         || (bytes == NULL && length != 0)
         || execution->strings.length >= execution->options.max_strings
-        || execution->strings.length >= RUDA_MIR_REFERENCE_INDEX_MASK
-        || !ruda_size_add(sizeof(*value), length, &allocation_size)
-        || !ruda_size_add(
+        || execution->strings.length >= MMAY_MIR_REFERENCE_INDEX_MASK
+        || !mmay_size_add(sizeof(*value), length, &allocation_size)
+        || !mmay_size_add(
             execution->total_string_bytes,
             length,
             &new_total
         ) || new_total > execution->options.max_total_string_bytes) {
-        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
     }
-    value = ruda_allocate(&execution->allocator, allocation_size);
+    value = mmay_allocate(&execution->allocator, allocation_size);
     if (value == NULL) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     value->allocation_size = allocation_size;
     value->length = length;
     if (length != 0) {
         memcpy(value->bytes, bytes, length);
     }
-    if (!ruda_vector_push(&execution->strings, &value)) {
-        ruda_deallocate(&execution->allocator, value, allocation_size);
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&execution->strings, &value)) {
+        mmay_deallocate(&execution->allocator, value, allocation_size);
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     execution->total_string_bytes = new_total;
-    return ruda_mir_reference_encode(
+    return mmay_mir_reference_encode(
             execution,
-            RUDA_MIR_REFERENCE_STRING,
+            MMAY_MIR_REFERENCE_STRING,
             execution->strings.length - 1,
             result
         )
-        ? RUDA_MIR_INTERPRET_OK
-        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        ? MMAY_MIR_INTERPRET_OK
+        : MMAY_MIR_INTERPRET_OBJECT_LIMIT;
 }
-RudaMirInterpretStatus ruda_mir_execution_new_enum(
-    RudaMirExecution *execution,
-    const RudaMirFunction *function,
-    const RudaMirEnum *enum_layout,
+MarimayMirInterpretStatus mmay_mir_execution_new_enum(
+    MarimayMirExecution *execution,
+    const MarimayMirFunction *function,
+    const MarimayMirEnum *enum_layout,
     size_t selected_variant,
-    const RudaMirValue *payload_values,
+    const MarimayMirValue *payload_values,
     size_t payload_value_count,
-    RudaMirReference *result
+    MarimayMirReference *result
 ) {
-    const RudaMirEnumVariant *selected = ruda_mir_enum_variant(
+    const MarimayMirEnumVariant *selected = mmay_mir_enum_variant(
         function,
         enum_layout,
         selected_variant
     );
-    RudaMirManagedEnum *value = NULL;
+    MarimayMirManagedEnum *value = NULL;
     size_t value_bytes = 0;
     size_t variant_bytes = 0;
     size_t payload_layout_bytes = 0;
@@ -752,78 +752,78 @@ RudaMirInterpretStatus ruda_mir_execution_new_enum(
         || enum_layout == NULL || selected == NULL || result == NULL
         || selected->payload_count != payload_value_count
         || (payload_values == NULL && payload_value_count != 0)) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
-    if (!ruda_size_add(
+    if (!mmay_size_add(
             execution->objects.length,
             execution->enums.length,
             &object_count
-        ) || !ruda_size_add(
+        ) || !mmay_size_add(
             object_count,
             execution->interface_values.length,
             &object_count
-        ) || !ruda_size_add(
+        ) || !mmay_size_add(
             payload_value_count,
             enum_layout->variant_count,
             &object_slots
-        ) || !ruda_size_add(
+        ) || !mmay_size_add(
             object_slots,
             enum_layout->payload_count,
             &object_slots
         ) || object_count >= execution->options.max_objects
-        || execution->enums.length >= RUDA_MIR_REFERENCE_INDEX_MASK
+        || execution->enums.length >= MMAY_MIR_REFERENCE_INDEX_MASK
         || object_slots > execution->options.max_fields_per_object
-        || !ruda_size_add(
+        || !mmay_size_add(
             execution->total_fields,
             object_slots,
             &new_total_fields
         ) || new_total_fields > execution->options.max_total_fields
-        || !ruda_size_multiply(
+        || !mmay_size_multiply(
             payload_value_count,
-            sizeof(RudaMirValue),
+            sizeof(MarimayMirValue),
             &value_bytes
-        ) || !ruda_size_multiply(
+        ) || !mmay_size_multiply(
             enum_layout->variant_count,
-            sizeof(RudaMirEnumVariant),
+            sizeof(MarimayMirEnumVariant),
             &variant_bytes
-        ) || !ruda_size_multiply(
+        ) || !mmay_size_multiply(
             enum_layout->payload_count,
-            sizeof(RudaMirEnumPayload),
+            sizeof(MarimayMirEnumPayload),
             &payload_layout_bytes
-        ) || !ruda_size_add(
-            offsetof(RudaMirManagedEnum, payload),
+        ) || !mmay_size_add(
+            offsetof(MarimayMirManagedEnum, payload),
             value_bytes,
             &allocation_size
-        ) || !ruda_size_add(
+        ) || !mmay_size_add(
             allocation_size,
             variant_bytes,
             &allocation_size
-        ) || !ruda_size_add(
+        ) || !mmay_size_add(
             allocation_size,
             payload_layout_bytes,
             &allocation_size
         )) {
-        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
     }
     for (index = 0; index < payload_value_count; index += 1) {
-        const RudaMirEnumPayload *payload = ruda_mir_enum_payload(
+        const MarimayMirEnumPayload *payload = mmay_mir_enum_payload(
             function,
             selected,
             index
         );
         if (payload == NULL || payload_values[index].type != payload->type) {
-            return RUDA_MIR_INTERPRET_INVALID_MIR;
+            return MMAY_MIR_INTERPRET_INVALID_MIR;
         }
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &execution->enums,
             execution->enums.length + 1
         )) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
-    value = ruda_allocate(&execution->allocator, allocation_size);
+    value = mmay_allocate(&execution->allocator, allocation_size);
     if (value == NULL) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     value->type = enum_layout->type;
     value->variant = selected_variant;
@@ -835,30 +835,30 @@ RudaMirInterpretStatus ruda_mir_execution_new_enum(
         memcpy(value->payload, payload_values, value_bytes);
     }
     for (index = 0; index < enum_layout->variant_count; index += 1) {
-        const RudaMirEnumVariant *variant = ruda_mir_enum_variant(
+        const MarimayMirEnumVariant *variant = mmay_mir_enum_variant(
             function,
             enum_layout,
             index
         );
-        RudaMirEnumVariant *stored = ruda_mir_managed_enum_variants(value);
+        MarimayMirEnumVariant *stored = mmay_mir_managed_enum_variants(value);
         if (variant == NULL || stored == NULL
             || variant->payload_start < enum_layout->payload_start) {
-            ruda_deallocate(&execution->allocator, value, allocation_size);
-            return RUDA_MIR_INTERPRET_INVALID_MIR;
+            mmay_deallocate(&execution->allocator, value, allocation_size);
+            return MMAY_MIR_INTERPRET_INVALID_MIR;
         }
         stored[index] = *variant;
         stored[index].payload_start -= enum_layout->payload_start;
     }
     if (enum_layout->payload_count != 0) {
-        const RudaMirEnumPayload *layout_payloads = ruda_vector_at_const(
+        const MarimayMirEnumPayload *layout_payloads = mmay_vector_at_const(
             &function->enum_payloads,
             enum_layout->payload_start
         );
-        RudaMirEnumPayload *stored_payloads =
-            ruda_mir_managed_enum_payloads(value);
+        MarimayMirEnumPayload *stored_payloads =
+            mmay_mir_managed_enum_payloads(value);
         if (layout_payloads == NULL || stored_payloads == NULL) {
-            ruda_deallocate(&execution->allocator, value, allocation_size);
-            return RUDA_MIR_INTERPRET_INVALID_MIR;
+            mmay_deallocate(&execution->allocator, value, allocation_size);
+            return MMAY_MIR_INTERPRET_INVALID_MIR;
         }
         memcpy(
             stored_payloads,
@@ -866,22 +866,22 @@ RudaMirInterpretStatus ruda_mir_execution_new_enum(
             payload_layout_bytes
         );
     }
-    if (!ruda_vector_push(&execution->enums, &value)) {
-        ruda_deallocate(&execution->allocator, value, allocation_size);
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&execution->enums, &value)) {
+        mmay_deallocate(&execution->allocator, value, allocation_size);
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     execution->total_fields = new_total_fields;
-    return ruda_mir_reference_encode(
+    return mmay_mir_reference_encode(
             execution,
-            RUDA_MIR_REFERENCE_ENUM,
+            MMAY_MIR_REFERENCE_ENUM,
             execution->enums.length - 1,
             result
         )
-        ? RUDA_MIR_INTERPRET_OK
-        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        ? MMAY_MIR_INTERPRET_OK
+        : MMAY_MIR_INTERPRET_OBJECT_LIMIT;
 }
-RudaMirInterpretStatus ruda_mir_execution_array_preflight(
-    RudaMirExecution *execution,
+MarimayMirInterpretStatus mmay_mir_execution_array_preflight(
+    MarimayMirExecution *execution,
     size_t length,
     size_t *new_total,
     size_t *element_bytes,
@@ -891,27 +891,27 @@ RudaMirInterpretStatus ruda_mir_execution_array_preflight(
     size_t checked_element_bytes = 0;
     size_t checked_allocation_size = 0;
     if (execution == NULL || !execution->initialized) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
     if (execution->arrays.length >= execution->options.max_arrays
-        || execution->arrays.length >= RUDA_MIR_REFERENCE_INDEX_MASK
+        || execution->arrays.length >= MMAY_MIR_REFERENCE_INDEX_MASK
         || length > execution->options.max_array_length
         || (uintmax_t)length > (uintmax_t)INT64_MAX
-        || !ruda_size_add(
+        || !mmay_size_add(
             execution->total_array_elements,
             length,
             &checked_total
         ) || checked_total > execution->options.max_total_array_elements
-        || !ruda_size_multiply(
+        || !mmay_size_multiply(
             length,
-            sizeof(RudaMirValue),
+            sizeof(MarimayMirValue),
             &checked_element_bytes
-        ) || !ruda_size_add(
-            offsetof(RudaMirManagedArray, elements),
+        ) || !mmay_size_add(
+            offsetof(MarimayMirManagedArray, elements),
             checked_element_bytes,
             &checked_allocation_size
         )) {
-        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
     }
     if (new_total != NULL) {
         *new_total = checked_total;
@@ -922,58 +922,58 @@ RudaMirInterpretStatus ruda_mir_execution_array_preflight(
     if (allocation_size != NULL) {
         *allocation_size = checked_allocation_size;
     }
-    return RUDA_MIR_INTERPRET_OK;
+    return MMAY_MIR_INTERPRET_OK;
 }
-RudaMirInterpretStatus ruda_mir_execution_new_array(
-    RudaMirExecution *execution,
-    const RudaMirArray *layout,
-    const RudaMirValue *elements,
+MarimayMirInterpretStatus mmay_mir_execution_new_array(
+    MarimayMirExecution *execution,
+    const MarimayMirArray *layout,
+    const MarimayMirValue *elements,
     size_t length,
-    RudaMirReference *result
+    MarimayMirReference *result
 ) {
-    RudaMirManagedArray *value = NULL;
+    MarimayMirManagedArray *value = NULL;
     size_t element_bytes = 0;
     size_t allocation_size = 0;
     size_t new_total = 0;
     size_t index = 0;
-    RudaMirInterpretStatus preflight_status;
+    MarimayMirInterpretStatus preflight_status;
     if (execution == NULL || !execution->initialized || layout == NULL
-        || result == NULL || layout->type < RUDA_TYPE_FIRST_DYNAMIC
-        || layout->element_type == RUDA_TYPE_INVALID
+        || result == NULL || layout->type < MMAY_TYPE_FIRST_DYNAMIC
+        || layout->element_type == MMAY_TYPE_INVALID
         || (elements == NULL && length != 0)) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
-    preflight_status = ruda_mir_execution_array_preflight(
+    preflight_status = mmay_mir_execution_array_preflight(
         execution,
         length,
         &new_total,
         &element_bytes,
         &allocation_size
     );
-    if (preflight_status != RUDA_MIR_INTERPRET_OK) {
+    if (preflight_status != MMAY_MIR_INTERPRET_OK) {
         return preflight_status;
     }
     for (index = 0; index < length; index += 1) {
         if (elements[index].type != layout->element_type) {
-            return RUDA_MIR_INTERPRET_INVALID_MIR;
+            return MMAY_MIR_INTERPRET_INVALID_MIR;
         }
-        if (ruda_mir_type_is_managed(elements[index].type)
-            && !ruda_mir_execution_owns_reference(
+        if (mmay_mir_type_is_managed(elements[index].type)
+            && !mmay_mir_execution_owns_reference(
                 execution,
                 elements[index]
             )) {
-            return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+            return MMAY_MIR_INTERPRET_INVALID_REFERENCE;
         }
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &execution->arrays,
             execution->arrays.length + 1
         )) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
-    value = ruda_allocate(&execution->allocator, allocation_size);
+    value = mmay_allocate(&execution->allocator, allocation_size);
     if (value == NULL) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     value->type = layout->type;
     value->element_type = layout->element_type;
@@ -984,81 +984,81 @@ RudaMirInterpretStatus ruda_mir_execution_new_array(
     if (length != 0) {
         memcpy(value->elements, elements, element_bytes);
     }
-    if (!ruda_vector_push(&execution->arrays, &value)) {
-        ruda_deallocate(&execution->allocator, value, allocation_size);
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&execution->arrays, &value)) {
+        mmay_deallocate(&execution->allocator, value, allocation_size);
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     execution->total_array_elements = new_total;
-    return ruda_mir_reference_encode(
+    return mmay_mir_reference_encode(
             execution,
-            RUDA_MIR_REFERENCE_ARRAY,
+            MMAY_MIR_REFERENCE_ARRAY,
             execution->arrays.length - 1,
             result
         )
-        ? RUDA_MIR_INTERPRET_OK
-        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        ? MMAY_MIR_INTERPRET_OK
+        : MMAY_MIR_INTERPRET_OBJECT_LIMIT;
 }
 
-RudaMirInterpretStatus ruda_mir_execution_new_interface(
-    RudaMirExecution *execution,
-    RudaTypeId type,
-    RudaMirValue payload,
-    const RudaSymbolId *methods,
+MarimayMirInterpretStatus mmay_mir_execution_new_interface(
+    MarimayMirExecution *execution,
+    MarimayTypeId type,
+    MarimayMirValue payload,
+    const MarimaySymbolId *methods,
     size_t method_count,
-    RudaMirReference *result
+    MarimayMirReference *result
 ) {
-    RudaMirManagedInterface *value = NULL;
+    MarimayMirManagedInterface *value = NULL;
     size_t method_bytes = 0;
     size_t allocation_size = 0;
     size_t object_count = 0;
     size_t object_slots = 0;
     size_t new_total_fields = 0;
     if (execution == NULL || !execution->initialized || result == NULL
-        || type < RUDA_TYPE_FIRST_DYNAMIC
+        || type < MMAY_TYPE_FIRST_DYNAMIC
         || (methods == NULL && method_count != 0)) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
-    if (!ruda_mir_type_is_managed(payload.type)
-        || !ruda_mir_execution_owns_reference(execution, payload)) {
-        return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+    if (!mmay_mir_type_is_managed(payload.type)
+        || !mmay_mir_execution_owns_reference(execution, payload)) {
+        return MMAY_MIR_INTERPRET_INVALID_REFERENCE;
     }
-    if (!ruda_size_add(
+    if (!mmay_size_add(
             execution->objects.length,
             execution->enums.length,
             &object_count
-        ) || !ruda_size_add(
+        ) || !mmay_size_add(
             object_count,
             execution->interface_values.length,
             &object_count
-        ) || !ruda_size_add(method_count, 1, &object_slots)
+        ) || !mmay_size_add(method_count, 1, &object_slots)
         || object_count >= execution->options.max_objects
-        || execution->interface_values.length >= RUDA_MIR_REFERENCE_INDEX_MASK
+        || execution->interface_values.length >= MMAY_MIR_REFERENCE_INDEX_MASK
         || object_slots > execution->options.max_fields_per_object
-        || !ruda_size_add(
+        || !mmay_size_add(
             execution->total_fields,
             object_slots,
             &new_total_fields
         ) || new_total_fields > execution->options.max_total_fields
-        || !ruda_size_multiply(
+        || !mmay_size_multiply(
             method_count,
-            sizeof(RudaSymbolId),
+            sizeof(MarimaySymbolId),
             &method_bytes
-        ) || !ruda_size_add(
-            offsetof(RudaMirManagedInterface, methods),
+        ) || !mmay_size_add(
+            offsetof(MarimayMirManagedInterface, methods),
             method_bytes,
             &allocation_size
         )) {
-        return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
     }
-    if (!ruda_vector_reserve(
+    if (!mmay_vector_reserve(
             &execution->interface_values,
             execution->interface_values.length + 1
         )) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
-    value = ruda_allocate(&execution->allocator, allocation_size);
+    value = mmay_allocate(&execution->allocator, allocation_size);
     if (value == NULL) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     value->type = type;
     value->payload = payload;
@@ -1067,17 +1067,17 @@ RudaMirInterpretStatus ruda_mir_execution_new_interface(
     if (method_count != 0) {
         memcpy(value->methods, methods, method_bytes);
     }
-    if (!ruda_vector_push(&execution->interface_values, &value)) {
-        ruda_deallocate(&execution->allocator, value, allocation_size);
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&execution->interface_values, &value)) {
+        mmay_deallocate(&execution->allocator, value, allocation_size);
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     execution->total_fields = new_total_fields;
-    return ruda_mir_reference_encode(
+    return mmay_mir_reference_encode(
             execution,
-            RUDA_MIR_REFERENCE_INTERFACE,
+            MMAY_MIR_REFERENCE_INTERFACE,
             execution->interface_values.length - 1,
             result
         )
-        ? RUDA_MIR_INTERPRET_OK
-        : RUDA_MIR_INTERPRET_OBJECT_LIMIT;
+        ? MMAY_MIR_INTERPRET_OK
+        : MMAY_MIR_INTERPRET_OBJECT_LIMIT;
 }

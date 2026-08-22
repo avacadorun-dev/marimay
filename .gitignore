@@ -2,8 +2,8 @@
 /build/
 /out/
 /dist/
-.ruda/
-*.rudab
+.mmay/
+*.myb
 *.o
 *.obj
 *.a

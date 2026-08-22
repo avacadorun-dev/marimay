@@ -3,66 +3,66 @@
 
 
 
-#include "ruda/check/checker.h"
+#include "mmay/check/checker.h"
 
-typedef struct RudaCheckedInterpretContext {
-    const RudaCheckResult *checked;
-    RudaAllocator allocator;
-    RudaCheckInterpretOptions options;
-    RudaMirExecution *execution;
+typedef struct MarimayCheckedInterpretContext {
+    const MarimayCheckResult *checked;
+    MarimayAllocator allocator;
+    MarimayCheckInterpretOptions options;
+    MarimayMirExecution *execution;
     size_t depth;
     size_t remaining_steps;
-} RudaCheckedInterpretContext;
+} MarimayCheckedInterpretContext;
 
-static RudaMirInterpretStatus ruda_check_interpret_checked(
-    RudaCheckedInterpretContext *context,
-    const RudaCheckedFunction *function,
-    const RudaMirValue *arguments,
+static MarimayMirInterpretStatus mmay_check_interpret_checked(
+    MarimayCheckedInterpretContext *context,
+    const MarimayCheckedFunction *function,
+    const MarimayMirValue *arguments,
     size_t argument_count,
-    RudaMirValue *result
+    MarimayMirValue *result
 );
 
-static const RudaCheckedFunction *ruda_checked_function_by_symbol(
-    const RudaCheckResult *checked,
-    RudaSymbolId symbol
+static const MarimayCheckedFunction *mmay_checked_function_by_symbol(
+    const MarimayCheckResult *checked,
+    MarimaySymbolId symbol
 ) {
-    const size_t *index = ruda_map_get_const(
+    const size_t *index = mmay_map_get_const(
         &checked->function_index,
         symbol.bytes,
         sizeof(symbol.bytes)
     );
-    const RudaCheckedFunction *function = index != NULL
-        ? ruda_checked_function(checked, *index)
+    const MarimayCheckedFunction *function = index != NULL
+        ? mmay_checked_function(checked, *index)
         : NULL;
     if (function != NULL
-        && ruda_symbol_id_equal(function->mir.symbol, symbol)) {
+        && mmay_symbol_id_equal(function->mir.symbol, symbol)) {
         return function;
     }
     return NULL;
 }
 
-static RudaMirInterpretStatus ruda_check_interpret_call(
+static MarimayMirInterpretStatus mmay_check_interpret_call(
     void *opaque,
-    RudaSymbolId callee,
-    const RudaMirValue *arguments,
+    MarimaySymbolId callee,
+    const MarimayMirValue *arguments,
     size_t argument_count,
-    RudaMirValue *result
+    MarimayMirValue *result
 ) {
-    RudaCheckedInterpretContext *context = opaque;
-    const RudaCheckedFunction *function = NULL;
-    RudaMirInterpretStatus status;
+    MarimayCheckedInterpretContext *context = opaque;
+    const MarimayCheckedFunction *function = NULL;
+    MarimayMirInterpretStatus status;
     if (context == NULL || result == NULL) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
     if (context->depth >= context->options.max_call_depth) {
-        return RUDA_MIR_INTERPRET_STEP_LIMIT;
+        return MMAY_MIR_INTERPRET_STEP_LIMIT;
     }
-    function = ruda_checked_function_by_symbol(context->checked, callee);
+    function = mmay_checked_function_by_symbol(context->checked, callee);
     if (function == NULL) {
-        return RUDA_MIR_INTERPRET_INVALID_MIR;
+        return MMAY_MIR_INTERPRET_INVALID_MIR;
     }
     context->depth += 1;
-    status = ruda_check_interpret_checked(
+    status = mmay_check_interpret_checked(
         context,
         function,
         arguments,
@@ -73,22 +73,22 @@ static RudaMirInterpretStatus ruda_check_interpret_call(
     return status;
 }
 
-static RudaMirInterpretStatus ruda_check_interpret_checked(
-    RudaCheckedInterpretContext *context,
-    const RudaCheckedFunction *function,
-    const RudaMirValue *arguments,
+static MarimayMirInterpretStatus mmay_check_interpret_checked(
+    MarimayCheckedInterpretContext *context,
+    const MarimayCheckedFunction *function,
+    const MarimayMirValue *arguments,
     size_t argument_count,
-    RudaMirValue *result
+    MarimayMirValue *result
 ) {
-    RudaMirInterpretOptions options = ruda_mir_interpret_default_options();
+    MarimayMirInterpretOptions options = mmay_mir_interpret_default_options();
     options.max_steps = context->options.max_steps_per_function;
     options.remaining_shared_steps = &context->remaining_steps;
     options.call_context = context;
-    options.call = ruda_check_interpret_call;
+    options.call = mmay_check_interpret_call;
     options.execution = context->execution;
     options.stdout_sink = context->options.stdout_sink;
     options.panic = context->options.panic;
-    return ruda_mir_interpret(
+    return mmay_mir_interpret(
         &function->mir,
         arguments,
         argument_count,
@@ -98,30 +98,30 @@ static RudaMirInterpretStatus ruda_check_interpret_checked(
     );
 }
 
-static bool ruda_checked_type_is_managed(
-    const RudaCheckResult *checked,
-    RudaTypeId type
+static bool mmay_checked_type_is_managed(
+    const MarimayCheckResult *checked,
+    MarimayTypeId type
 ) {
     (void)checked;
-    return type == RUDA_TYPE_STRING || type >= RUDA_TYPE_FIRST_DYNAMIC;
+    return type == MMAY_TYPE_STRING || type >= MMAY_TYPE_FIRST_DYNAMIC;
 }
 
-RudaMirInterpretStatus ruda_check_interpret_function(
-    const RudaCheckResult *checked,
+MarimayMirInterpretStatus mmay_check_interpret_function(
+    const MarimayCheckResult *checked,
     size_t function_index,
-    const RudaMirValue *arguments,
+    const MarimayMirValue *arguments,
     size_t argument_count,
-    RudaAllocator allocator,
-    RudaCheckInterpretOptions options,
-    RudaMirValue *result
+    MarimayAllocator allocator,
+    MarimayCheckInterpretOptions options,
+    MarimayMirValue *result
 ) {
-    RudaCheckedInterpretContext context;
-    RudaMirExecution local_execution;
-    const RudaCheckedFunction *function = ruda_checked_function(
+    MarimayCheckedInterpretContext context;
+    MarimayMirExecution local_execution;
+    const MarimayCheckedFunction *function = mmay_checked_function(
         checked,
         function_index
     );
-    RudaMirInterpretStatus status;
+    MarimayMirInterpretStatus status;
     size_t argument_index = 0;
     bool owns_execution = false;
     if (function == NULL || result == NULL || options.max_steps_per_function == 0
@@ -130,36 +130,36 @@ RudaMirInterpretStatus ruda_check_interpret_function(
         || allocator.resize == NULL || allocator.deallocate == NULL
         || (arguments == NULL && argument_count != 0)
         || (options.execution != NULL && !options.execution->initialized)) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
     if (options.execution == NULL
-        && ruda_checked_type_is_managed(checked, function->mir.result_type)) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        && mmay_checked_type_is_managed(checked, function->mir.result_type)) {
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
     for (argument_index = 0; argument_index < argument_count;
         argument_index += 1) {
-        if (ruda_checked_type_is_managed(
+        if (mmay_checked_type_is_managed(
                 checked,
                 arguments[argument_index].type
             )) {
             if (options.execution == NULL) {
-                return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+                return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
             }
-            if (!ruda_mir_execution_owns_reference(
+            if (!mmay_mir_execution_owns_reference(
                     options.execution,
                     arguments[argument_index]
                 )) {
-                return RUDA_MIR_INTERPRET_INVALID_REFERENCE;
+                return MMAY_MIR_INTERPRET_INVALID_REFERENCE;
             }
         }
     }
     if (options.execution == NULL) {
-        if (!ruda_mir_execution_init(
+        if (!mmay_mir_execution_init(
                 &local_execution,
                 allocator,
-                ruda_mir_execution_default_options()
+                mmay_mir_execution_default_options()
             )) {
-            return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+            return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
         }
         owns_execution = true;
     }
@@ -171,7 +171,7 @@ RudaMirInterpretStatus ruda_check_interpret_function(
         : &local_execution;
     context.depth = 1;
     context.remaining_steps = options.max_total_steps;
-    status = ruda_check_interpret_checked(
+    status = mmay_check_interpret_checked(
         &context,
         function,
         arguments,
@@ -179,7 +179,7 @@ RudaMirInterpretStatus ruda_check_interpret_function(
         result
     );
     if (owns_execution) {
-        ruda_mir_execution_dispose(&local_execution);
+        mmay_mir_execution_dispose(&local_execution);
     }
     return status;
 }

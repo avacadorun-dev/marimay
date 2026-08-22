@@ -1,36 +1,36 @@
 #include "test_imported_results_support.h"
 #include "test_mir_support.h"
 
-#include "ruda/mir/interpret.h"
+#include "mmay/mir/interpret.h"
 
-typedef struct RudaTestMirImportedResultCalls {
-    const RudaTestImportedResults *test;
-    RudaAllocator allocator;
-    RudaMirExecution *execution;
-} RudaTestMirImportedResultCalls;
+typedef struct MarimayTestMirImportedResultCalls {
+    const MarimayTestImportedResults *test;
+    MarimayAllocator allocator;
+    MarimayMirExecution *execution;
+} MarimayTestMirImportedResultCalls;
 
-static RudaMirInterpretStatus ruda_test_mir_imported_result_call(
+static MarimayMirInterpretStatus mmay_test_mir_imported_result_call(
     void *context,
-    RudaSymbolId callee,
-    const RudaMirValue *arguments,
+    MarimaySymbolId callee,
+    const MarimayMirValue *arguments,
     size_t argument_count,
-    RudaMirValue *result
+    MarimayMirValue *result
 ) {
-    RudaTestMirImportedResultCalls *calls = context;
-    RudaMirInterpretOptions options = ruda_mir_interpret_default_options();
+    MarimayTestMirImportedResultCalls *calls = context;
+    MarimayMirInterpretOptions options = mmay_mir_interpret_default_options();
     size_t index = 0;
     if (calls == NULL || calls->test == NULL || calls->execution == NULL) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
     options.call_context = calls;
-    options.call = ruda_test_mir_imported_result_call;
+    options.call = mmay_test_mir_imported_result_call;
     options.execution = calls->execution;
     for (index = 0; index < calls->test->checked.functions.length;
         index += 1) {
-        const RudaMirFunction *function = calls->test->functions[index];
+        const MarimayMirFunction *function = calls->test->functions[index];
         if (function != NULL
-            && ruda_symbol_id_equal(function->symbol, callee)) {
-            return ruda_mir_interpret(
+            && mmay_symbol_id_equal(function->symbol, callee)) {
+            return mmay_mir_interpret(
                 function,
                 arguments,
                 argument_count,
@@ -40,15 +40,15 @@ static RudaMirInterpretStatus ruda_test_mir_imported_result_call(
             );
         }
     }
-    return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+    return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
 }
 
-static const RudaCheckedEnum *ruda_test_mir_imported_choice(
-    const RudaTestImportedResults *test
+static const MarimayCheckedEnum *mmay_test_mir_imported_choice(
+    const MarimayTestImportedResults *test
 ) {
     size_t index = 0;
     for (index = 0; index < test->checked.enums.length; index += 1) {
-        const RudaCheckedEnum *enum_value = ruda_checked_enum(
+        const MarimayCheckedEnum *enum_value = mmay_checked_enum(
             &test->checked, index
         );
         if (enum_value != NULL && enum_value->name.length == 6
@@ -59,57 +59,57 @@ static const RudaCheckedEnum *ruda_test_mir_imported_choice(
     return NULL;
 }
 
-static void ruda_test_mir_imported_result_identity(
-    const RudaTestImportedResults *test
+static void mmay_test_mir_imported_result_identity(
+    const MarimayTestImportedResults *test
 ) {
-    const RudaCheckedEnum *choice = ruda_test_mir_imported_choice(test);
-    RudaTypeId choice_array_type = RUDA_TYPE_INVALID;
+    const MarimayCheckedEnum *choice = mmay_test_mir_imported_choice(test);
+    MarimayTypeId choice_array_type = MMAY_TYPE_INVALID;
     bool saw_producer_construction = false;
     bool saw_consumer_construction = false;
     bool saw_consumer_match = false;
     size_t function_index = 0;
-    RUDA_EXPECT(choice != NULL);
+    MMAY_EXPECT(choice != NULL);
     for (function_index = 0;
         function_index < test->checked.functions.length;
         function_index += 1) {
-        const RudaCheckedFunction *checked = ruda_checked_function(
+        const MarimayCheckedFunction *checked = mmay_checked_function(
             &test->checked, function_index
         );
         size_t enum_index = 0;
         if (checked == NULL) {
             continue;
         }
-        RUDA_EXPECT(ruda_mir_verify(&checked->mir) == RUDA_MIR_VERIFY_OK);
+        MMAY_EXPECT(mmay_mir_verify(&checked->mir) == MMAY_MIR_VERIFY_OK);
         for (enum_index = 0; enum_index < checked->mir.enums.length;
             enum_index += 1) {
-            const RudaMirEnum *layout = ruda_vector_at_const(
+            const MarimayMirEnum *layout = mmay_vector_at_const(
                 &checked->mir.enums, enum_index
             );
-            const RudaTypeDescriptor *descriptor = layout == NULL
-                ? NULL : ruda_type_descriptor(
+            const MarimayTypeDescriptor *descriptor = layout == NULL
+                ? NULL : mmay_type_descriptor(
                     &test->checked.types, layout->type
                 );
             if (choice == NULL || descriptor == NULL
-                || !ruda_symbol_id_equal(
+                || !mmay_symbol_id_equal(
                     descriptor->symbol, choice->symbol
                 ) || descriptor->argument_count != 1) {
                 continue;
             }
-            RUDA_EXPECT(ruda_type_kind(
+            MMAY_EXPECT(mmay_type_kind(
                 &test->checked.types, descriptor->arguments[0]
-            ) == RUDA_TYPE_KIND_ARRAY);
-            if (choice_array_type == RUDA_TYPE_INVALID) {
+            ) == MMAY_TYPE_KIND_ARRAY);
+            if (choice_array_type == MMAY_TYPE_INVALID) {
                 choice_array_type = layout->type;
             } else {
-                RUDA_EXPECT(choice_array_type == layout->type);
+                MMAY_EXPECT(choice_array_type == layout->type);
             }
-            RUDA_EXPECT(layout->variant_count == 2);
-            RUDA_EXPECT(layout->payload_count == 1);
+            MMAY_EXPECT(layout->variant_count == 2);
+            MMAY_EXPECT(layout->payload_count == 1);
             if (checked->name.length == 6
                 && memcmp(checked->name.data, "choice", 6) == 0) {
                 saw_producer_construction =
-                    ruda_test_mir_instruction_kind_count(
-                        &checked->mir, RUDA_MIR_ENUM_NEW
+                    mmay_test_mir_instruction_kind_count(
+                        &checked->mir, MMAY_MIR_ENUM_NEW
                     ) != 0;
             }
             if ((checked->name.length == 14
@@ -122,99 +122,99 @@ static void ruda_test_mir_imported_result_identity(
                     ) == 0)) {
                 saw_consumer_construction =
                     saw_consumer_construction
-                    || ruda_test_mir_instruction_kind_count(
-                        &checked->mir, RUDA_MIR_ENUM_NEW
+                    || mmay_test_mir_instruction_kind_count(
+                        &checked->mir, MMAY_MIR_ENUM_NEW
                     ) != 0;
                 saw_consumer_match = saw_consumer_match
-                    || ruda_test_mir_instruction_kind_count(
-                        &checked->mir, RUDA_MIR_ENUM_IS_VARIANT
+                    || mmay_test_mir_instruction_kind_count(
+                        &checked->mir, MMAY_MIR_ENUM_IS_VARIANT
                     ) != 0;
             }
         }
     }
-    RUDA_EXPECT(choice_array_type != RUDA_TYPE_INVALID);
-    RUDA_EXPECT(saw_producer_construction);
-    RUDA_EXPECT(saw_consumer_construction);
-    RUDA_EXPECT(saw_consumer_match);
+    MMAY_EXPECT(choice_array_type != MMAY_TYPE_INVALID);
+    MMAY_EXPECT(saw_producer_construction);
+    MMAY_EXPECT(saw_consumer_construction);
+    MMAY_EXPECT(saw_consumer_match);
 }
 
-static RudaMirInterpretStatus ruda_test_mir_imported_result_execute(
-    const RudaTestImportedResults *test,
-    RudaAllocator allocator,
-    RudaMirValue *result
+static MarimayMirInterpretStatus mmay_test_mir_imported_result_execute(
+    const MarimayTestImportedResults *test,
+    MarimayAllocator allocator,
+    MarimayMirValue *result
 ) {
-    RudaMirExecution execution;
-    RudaMirInterpretOptions options = ruda_mir_interpret_default_options();
-    RudaTestMirImportedResultCalls calls;
-    RudaMirInterpretStatus status = RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+    MarimayMirExecution execution;
+    MarimayMirInterpretOptions options = mmay_mir_interpret_default_options();
+    MarimayTestMirImportedResultCalls calls;
+    MarimayMirInterpretStatus status = MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     memset(&execution, 0, sizeof(execution));
     memset(&calls, 0, sizeof(calls));
-    if (!ruda_mir_execution_init(
-            &execution, allocator, ruda_mir_execution_default_options()
+    if (!mmay_mir_execution_init(
+            &execution, allocator, mmay_mir_execution_default_options()
         )) {
-        return RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
     }
     calls.test = test;
     calls.allocator = allocator;
     calls.execution = &execution;
     options.call_context = &calls;
-    options.call = ruda_test_mir_imported_result_call;
+    options.call = mmay_test_mir_imported_result_call;
     options.execution = &execution;
-    status = ruda_mir_interpret(
+    status = mmay_mir_interpret(
         &test->entry->mir, NULL, 0, allocator, options, result
     );
-    ruda_mir_execution_dispose(&execution);
+    mmay_mir_execution_dispose(&execution);
     return status;
 }
 
-static void ruda_test_mir_imported_result_allocations(
-    const RudaTestImportedResults *test
+static void mmay_test_mir_imported_result_allocations(
+    const MarimayTestImportedResults *test
 ) {
     size_t failure_index = 0;
     bool reached_success = false;
     for (failure_index = 0; failure_index < 4096; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaMirValue result;
-        RudaMirInterpretStatus status;
+        MarimayFailAllocator state;
+        MarimayMirValue result;
+        MarimayMirInterpretStatus status;
         memset(&result, 0, sizeof(result));
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        status = ruda_test_mir_imported_result_execute(
-            test, ruda_fail_allocator(&state), &result
+        status = mmay_test_mir_imported_result_execute(
+            test, mmay_fail_allocator(&state), &result
         );
-        if (status == RUDA_MIR_INTERPRET_OK) {
+        if (status == MMAY_MIR_INTERPRET_OK) {
             reached_success = true;
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(result.as.i64 == 119);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(result.as.i64 == 119);
         } else {
-            RUDA_EXPECT(status == RUDA_MIR_INTERPRET_ALLOCATION_FAILED);
+            MMAY_EXPECT(status == MMAY_MIR_INTERPRET_ALLOCATION_FAILED);
         }
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) {
             break;
         }
     }
-    RUDA_EXPECT(reached_success);
+    MMAY_EXPECT(reached_success);
 }
 
-void ruda_test_mir_imported_results(void) {
-    RudaTestImportedResults test;
-    RudaMirValue result;
+void mmay_test_mir_imported_results(void) {
+    MarimayTestImportedResults test;
+    MarimayMirValue result;
     memset(&result, 0, sizeof(result));
-    RUDA_EXPECT(ruda_test_imported_results_init(
-        &test, ruda_system_allocator()
+    MMAY_EXPECT(mmay_test_imported_results_init(
+        &test, mmay_system_allocator()
     ));
     if (!test.initialized) {
         return;
     }
-    ruda_test_mir_imported_result_identity(&test);
-    RUDA_EXPECT(ruda_test_mir_imported_result_execute(
-        &test, ruda_system_allocator(), &result
-    ) == RUDA_MIR_INTERPRET_OK);
-    RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-    RUDA_EXPECT(result.as.i64 == 119);
-    ruda_test_mir_imported_result_allocations(&test);
-    ruda_test_imported_results_dispose(&test);
+    mmay_test_mir_imported_result_identity(&test);
+    MMAY_EXPECT(mmay_test_mir_imported_result_execute(
+        &test, mmay_system_allocator(), &result
+    ) == MMAY_MIR_INTERPRET_OK);
+    MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+    MMAY_EXPECT(result.as.i64 == 119);
+    mmay_test_mir_imported_result_allocations(&test);
+    mmay_test_imported_results_dispose(&test);
 }

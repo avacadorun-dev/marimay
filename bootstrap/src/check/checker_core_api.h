@@ -4,132 +4,132 @@
 #include "checker_internal.h"
 #include "checker_function_context.h"
 
- bool ruda_checker_private_evaluate_constant(
-    RudaChecker *checker,
-    RudaCheckConstantDeclaration *declaration,
+ bool mmay_checker_private_evaluate_constant(
+    MarimayChecker *checker,
+    MarimayCheckConstantDeclaration *declaration,
     size_t use_start,
     size_t use_end
 );
 
- bool ruda_checker_private_evaluate_type_alias(
-    RudaChecker *checker,
-    RudaCheckTypeAliasDeclaration *declaration,
+ bool mmay_checker_private_evaluate_type_alias(
+    MarimayChecker *checker,
+    MarimayCheckTypeAliasDeclaration *declaration,
     size_t use_start,
     size_t use_end
 );
 
-void ruda_checker_fail(RudaChecker *checker, RudaCheckStatus status);
- void ruda_checker_private_expression_set_never(
-    RudaFunctionChecker *function,
-    RudaExpressionValue *result
+void mmay_checker_fail(MarimayChecker *checker, MarimayCheckStatus status);
+ void mmay_checker_private_expression_set_never(
+    MarimayFunctionChecker *function,
+    MarimayExpressionValue *result
 );
- bool ruda_checker_private_checker_set_ast(
-    RudaChecker *checker,
-    const RudaAstTree *ast
+ bool mmay_checker_private_checker_set_ast(
+    MarimayChecker *checker,
+    const MarimayAstTree *ast
 );
- bool ruda_checker_private_check_span_valid(
-    const RudaChecker *checker,
+ bool mmay_checker_private_check_span_valid(
+    const MarimayChecker *checker,
     size_t start,
     size_t end
 );
- bool ruda_checker_private_check_text_equal(
-    const RudaChecker *checker,
+ bool mmay_checker_private_check_text_equal(
+    const MarimayChecker *checker,
     size_t start,
     size_t end,
     const char *text
 );
- bool ruda_checker_private_check_names_equal(
-    const RudaChecker *checker,
-    RudaCheckName left,
-    RudaCheckName right
+ bool mmay_checker_private_check_names_equal(
+    const MarimayChecker *checker,
+    MarimayCheckName left,
+    MarimayCheckName right
 );
- bool ruda_checker_private_check_name_bytes(
-    RudaCheckName name,
+ bool mmay_checker_private_check_name_bytes(
+    MarimayCheckName name,
     const unsigned char **bytes,
     size_t *length
 );
- const RudaCheckTopLevelEntry *ruda_checker_private_checker_find_top_level(
-    const RudaChecker *checker,
-    RudaCheckName name
+ const MarimayCheckTopLevelEntry *mmay_checker_private_checker_find_top_level(
+    const MarimayChecker *checker,
+    MarimayCheckName name
 );
- RudaCheckConstantDeclaration *ruda_checker_private_checker_find_constant(
-    RudaChecker *checker,
-    RudaCheckName name
+ MarimayCheckConstantDeclaration *mmay_checker_private_checker_find_constant(
+    MarimayChecker *checker,
+    MarimayCheckName name
 );
- RudaCheckTypeAliasDeclaration *ruda_checker_private_checker_find_type_alias(
-    RudaChecker *checker,
-    RudaCheckName name
+ MarimayCheckTypeAliasDeclaration *mmay_checker_private_checker_find_type_alias(
+    MarimayChecker *checker,
+    MarimayCheckName name
 );
- RudaCheckRecordDeclaration *ruda_checker_private_checker_find_record(
-    RudaChecker *checker,
-    RudaCheckName name
+ MarimayCheckRecordDeclaration *mmay_checker_private_checker_find_record(
+    MarimayChecker *checker,
+    MarimayCheckName name
 );
- RudaCheckRecordDeclaration *ruda_checker_private_checker_find_record_by_type(
-    RudaChecker *checker,
-    RudaTypeId type
+ MarimayCheckRecordDeclaration *mmay_checker_private_checker_find_record_by_type(
+    MarimayChecker *checker,
+    MarimayTypeId type
 );
- RudaCheckRecordFieldDeclaration *ruda_checker_private_checker_find_record_field(
-    RudaChecker *checker,
-    RudaCheckRecordDeclaration *record,
-    RudaCheckName name,
+ MarimayCheckRecordFieldDeclaration *mmay_checker_private_checker_find_record_field(
+    MarimayChecker *checker,
+    MarimayCheckRecordDeclaration *record,
+    MarimayCheckName name,
     size_t *field_index
 );
- RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
-    RudaChecker *checker,
-    RudaCheckName name
+ MarimayCheckEnumDeclaration *mmay_checker_private_checker_find_enum(
+    MarimayChecker *checker,
+    MarimayCheckName name
 );
- RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum_by_type(
-    RudaChecker *checker,
-    RudaTypeId type
+ MarimayCheckEnumDeclaration *mmay_checker_private_checker_find_enum_by_type(
+    MarimayChecker *checker,
+    MarimayTypeId type
 );
- RudaCheckInterfaceDeclaration *ruda_checker_private_checker_find_interface(
-    RudaChecker *checker,
-    RudaCheckName name
+ MarimayCheckInterfaceDeclaration *mmay_checker_private_checker_find_interface(
+    MarimayChecker *checker,
+    MarimayCheckName name
 );
- RudaCheckInterfaceDeclaration *ruda_checker_private_checker_find_interface_by_type(
-    RudaChecker *checker,
-    RudaTypeId type
+ MarimayCheckInterfaceDeclaration *mmay_checker_private_checker_find_interface_by_type(
+    MarimayChecker *checker,
+    MarimayTypeId type
 );
- RudaCheckEnumVariantDeclaration *ruda_checker_private_checker_find_enum_variant(
-    RudaChecker *checker,
-    RudaCheckEnumDeclaration *enum_declaration,
-    RudaCheckName name,
+ MarimayCheckEnumVariantDeclaration *mmay_checker_private_checker_find_enum_variant(
+    MarimayChecker *checker,
+    MarimayCheckEnumDeclaration *enum_declaration,
+    MarimayCheckName name,
     size_t *variant_index
 );
- RudaCheckEnumPayloadItemDeclaration *ruda_checker_private_checker_find_enum_payload(
-    RudaChecker *checker,
-    RudaCheckEnumVariantDeclaration *variant,
-    RudaCheckName name,
+ MarimayCheckEnumPayloadItemDeclaration *mmay_checker_private_checker_find_enum_payload(
+    MarimayChecker *checker,
+    MarimayCheckEnumVariantDeclaration *variant,
+    MarimayCheckName name,
     size_t *payload_index
 );
- const RudaAstNode *ruda_checker_private_check_child_node(
-    const RudaAstNode *node,
-    RudaSyntaxKind kind,
+ const MarimayAstNode *mmay_checker_private_check_child_node(
+    const MarimayAstNode *node,
+    MarimaySyntaxKind kind,
     size_t ordinal
 );
- const RudaAstNode *ruda_checker_private_check_child_node_any(
-    const RudaAstNode *node,
+ const MarimayAstNode *mmay_checker_private_check_child_node_any(
+    const MarimayAstNode *node,
     size_t ordinal
 );
- const RudaSyntaxToken *ruda_checker_private_check_child_token(
-    const RudaAstNode *node,
-    RudaTokenKind kind,
+ const MarimaySyntaxToken *mmay_checker_private_check_child_token(
+    const MarimayAstNode *node,
+    MarimayTokenKind kind,
     size_t ordinal
 );
- const RudaSyntaxToken *ruda_checker_private_check_first_token(
-    const RudaAstNode *node
+ const MarimaySyntaxToken *mmay_checker_private_check_first_token(
+    const MarimayAstNode *node
 );
- const RudaSyntaxToken *ruda_checker_private_check_attribute_name(
-    const RudaAstNode *attribute
+ const MarimaySyntaxToken *mmay_checker_private_check_attribute_name(
+    const MarimayAstNode *attribute
 );
- bool ruda_checker_private_check_attribute_is(
-    const RudaChecker *checker,
-    const RudaAstNode *attribute,
+ bool mmay_checker_private_check_attribute_is(
+    const MarimayChecker *checker,
+    const MarimayAstNode *attribute,
     const char *name
 );
- bool ruda_checker_private_check_source_is_test_file(const RudaChecker *checker);
- bool ruda_checker_private_checker_add_owned_diagnostic(
-    RudaChecker *checker,
+ bool mmay_checker_private_check_source_is_test_file(const MarimayChecker *checker);
+ bool mmay_checker_private_checker_add_owned_diagnostic(
+    MarimayChecker *checker,
     const char *code,
     const unsigned char *message,
     size_t message_length,

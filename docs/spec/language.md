@@ -1,4 +1,4 @@
-# Ruda language specification — design baseline 0.1
+# Marimay language specification — design baseline 0.1
 
 Status: normative design baseline.  
 Language version: `0.1-design`.
@@ -9,13 +9,13 @@ The key words **must**, **must not**, **should**, and **may** are normative. Any
 
 ## 1. Program model
 
-A Ruda program consists of UTF-8 `.ruda` files grouped into packages by directory. A root `ruda.mod` gives the module path and language version. All files in one directory contribute declarations to one package namespace. Imports are file-local. Package dependency cycles are compile errors.
+A Marimay program consists of UTF-8 `.my` files grouped into packages by directory. A root `mmay.mod` gives the module path and language version. All files in one directory contribute declarations to one package namespace. Imports are file-local. Package dependency cycles are compile errors.
 
 Safe source is statically typed before either VM or native execution. There is no dynamically typed execution tier and no unchecked fallback after a type error.
 
 The valid entry points are:
 
-```ruda
+```marimay
 fn main(): void;
 fn main(): Result<void, E>;
 ```
@@ -114,7 +114,7 @@ Interpolated text uses the normal-string escape set. The lossless token stream r
 `@` introduces a compiler-known attribute. The 1.0 set is closed:
 `@derive(...)`, `@link(...)`, `@blocking`, `@test`, and `@fuzz` are defined by
 this specification. `@test` and `@fuzz` take no arguments, cannot be combined,
-and mark ordinary package-private functions in files ending `_test.ruda`;
+and mark ordinary package-private functions in files ending `_test.my`;
 `@test` requires
 `fn(): void`, while `@fuzz` requires exactly one typed parameter and `void`.
 Unknown or misplaced attributes are errors. Attributes cannot execute code,
@@ -124,17 +124,17 @@ inspect arbitrary compiler state, or rewrite syntax.
 
 Named imports and namespace imports are supported:
 
-```ruda
+```marimay
 import { Decoder, decode } from "std/json";
 import { User as StoredUser } from "acme/store";
 import * as http from "std/http";
 ```
 
-There are no default imports and no wildcard injection into the local namespace. Import paths identify packages, not individual files. Relative paths are allowed only within the same root module and are normalized by `ruda fmt`.
+There are no default imports and no wildcard injection into the local namespace. Import paths identify packages, not individual files. Relative paths are allowed only within the same root module and are normalized by `mmay fmt`.
 
 Top-level declarations are package-private unless prefixed with `public`. The same visibility word applies to declarations and record fields:
 
-```ruda
+```marimay
 public type User {
   public id: int;
   public name: string;
@@ -161,13 +161,13 @@ Importing a package does not execute initialization code. Top-level values are i
 
 `const` creates a non-rebindable local. `let` creates a rebindable local:
 
-```ruda
+```marimay
 const port: int = 8080;
 let attempts = 0;
 attempts += 1;
 ```
 
-Every local must be definitely initialized before use. Shadowing a local in the same block is an error. Shadowing in a nested lexical block is allowed but warned by default and rejected by `ruda vet --strict`.
+Every local must be definitely initialized before use. Shadowing a local in the same block is an error. Shadowing in a nested lexical block is allowed but warned by default and rejected by `mmay vet --strict`.
 
 `const` controls the binding, not deep object mutability. A `const` reference may modify a field declared `mutable`. This distinction must be stated by IDE hover information.
 
@@ -248,7 +248,7 @@ Conditions require `bool`; there is no truthiness.
 
 The prelude defines at least:
 
-```ruda
+```marimay
 enum Option<T> {
   Some(T),
   None,
@@ -292,7 +292,7 @@ There is no null-like value. A reference, interface value, array, map, function 
 
 ### 5.3 Type aliases
 
-```ruda
+```marimay
 type UserId = i64;
 ```
 
@@ -300,7 +300,7 @@ A scalar or compound alias creates another spelling of the same type. The equals
 
 ### 5.4 Nominal records
 
-```ruda
+```marimay
 public type Account {
   public id: int;
   public owner: string;
@@ -312,7 +312,7 @@ A record declaration creates a nominal managed-reference type. Two record declar
 
 Construction names the nominal type and supplies every field exactly once:
 
-```ruda
+```marimay
 const account = Account {
   id: 42,
   owner: "Mara",
@@ -333,7 +333,7 @@ Record values have reference identity and are garbage collected. The compiler ma
 
 The closed compiler derive set is written before a declaration:
 
-```ruda
+```marimay
 @derive(Debug, Eq, Hash)
 type Coordinate {
   public x: int;
@@ -349,7 +349,7 @@ The prelude equality contract is `equal(other: T): bool`. `==` and `!=` are comp
 
 Enums are closed nominal sums:
 
-```ruda
+```marimay
 enum Message {
   Quit,
   Write(string),
@@ -359,7 +359,7 @@ enum Message {
 
 The three forms are unit, positional, and named payload variants. Construction is qualified:
 
-```ruda
+```marimay
 const a = Message.Quit;
 const b = Message.Write("hello");
 const c = Message.Move { x: 10, y: 20 };
@@ -375,7 +375,7 @@ Enums are immutable. Adding, removing, renaming, or changing a public variant is
 
 Tuple types use brackets in type position and values use brackets with a fixed arity:
 
-```ruda
+```marimay
 const pair: [string, int] = ["port", 8080];
 ```
 
@@ -391,7 +391,7 @@ or user conversion.
 The prelude exposes ordinary free functions whose exact first `[]T`
 parameter makes them dot-call eligible:
 
-```ruda
+```marimay
 public fn length<T>(values: []T): int;
 public fn push<T>(values: []T, value: T): Result<void, ArrayGrowthError>;
 public fn pop<T>(values: []T): Option<T>;
@@ -435,7 +435,7 @@ whether a reservation allocated are not observable.
 
 Function types use arrow notation:
 
-```ruda
+```marimay
 type Predicate<T> = (T) => bool;
 type Mapper<T, U> = (T, int) => U;
 ```
@@ -446,7 +446,7 @@ Parameter types are invariant for interface and function compatibility in 1.0. R
 
 Generic parameters are declared with angle brackets and may have interface constraints:
 
-```ruda
+```marimay
 fn first<T>(values: []T): Option<T> {
   // ...
 }
@@ -464,7 +464,7 @@ Type arguments are inferred from value arguments and expected return context whe
 
 An interface is a structural contract containing dot-call signatures only:
 
-```ruda
+```marimay
 public interface Stringer {
   string(): string;
 }
@@ -479,7 +479,7 @@ A nominal type satisfies an interface when its visible dot-call set contains eve
 
 Interfaces have no fields, constructors, static requirements, associated types, default bodies, or negative implementations. Interface embedding is syntactic signature inclusion:
 
-```ruda
+```marimay
 interface ReadWriter {
   Reader;
   Writer;
@@ -492,7 +492,7 @@ Conflicting embedded signatures are compile errors. Interface values carry a val
 
 ### 6.1 Ordinary functions
 
-```ruda
+```marimay
 fn parsePort(text: string): Result<int, ParseError> {
   // ...
 }
@@ -516,7 +516,7 @@ position. Implementations do not create a runtime value of type `never`.
 
 An ordinary package-level function is dot-call eligible when its first parameter has an exact nominal type owned by the declaring package:
 
-```ruda
+```marimay
 public fn string(user: User): string {
   return $"{user.name} (#{user.id})";
 }
@@ -524,7 +524,7 @@ public fn string(user: User): string {
 
 The following calls resolve to the same symbol. The subject expression in dot form is evaluated exactly once and becomes the first argument:
 
-```ruda
+```marimay
 const a = user.string();
 const b = string(user);
 ```
@@ -571,7 +571,7 @@ A dot-call-eligible function can mutate only fields declared `mutable` and visib
 
 ### 6.3 Closures
 
-```ruda
+```marimay
 const doubled = values.map((value: int): int => value * 2);
 
 const handler = (request: Request): Response => {
@@ -624,7 +624,7 @@ write and does not evaluate the right-hand side.
 
 Conditions omit mandatory parentheses and require `bool`:
 
-```ruda
+```marimay
 if ready {
   start();
 } else {
@@ -638,7 +638,7 @@ while queue.notEmpty() {
 
 Iterable and C-style loops are supported:
 
-```ruda
+```marimay
 for const item of items {
   process(item);
 }
@@ -671,7 +671,7 @@ therefore cannot depend on a stable raw storage address.
 
 `match` is an expression. The scrutinee is written directly before its block:
 
-```ruda
+```marimay
 fn describe(value: Result<User, LookupError>): string {
   return match value {
     case Ok(user) => user.string();
@@ -709,7 +709,7 @@ case folding, or Unicode normalization.
 
 A guard follows the pattern:
 
-```ruda
+```marimay
 case Ok(value) if value > 0 => value;
 ```
 
@@ -718,7 +718,7 @@ Every alternative in an OR pattern must bind the same names with identical types
 A multi-statement arm uses the contextual `yield expression;` form for the
 match value:
 
-```ruda
+```marimay
 const label = match status {
   case Ready => "ready";
   case Failed(error) => {
@@ -740,7 +740,7 @@ and string domains are not finite, so literal arms alone cannot exhaust them;
 an unguarded wildcard or name binding must cover the remainder. Missing cases
 are an error listing uncovered witnesses. Redundant and unreachable arms are
 errors by default. A wildcard covers remaining cases but is discouraged by
-`ruda vet` when all variants are locally visible.
+`mmay vet` when all variants are locally visible.
 
 All non-`never` arms must have an identical result type in 1.0; the compiler does not infer ad-hoc unions.
 
@@ -750,7 +750,7 @@ All non-`never` arms must have an identical result type in 1.0; the compiler doe
 
 Postfix `?` is valid only on `Result<T,E>` inside a function or closure returning `Result<U,E>`:
 
-```ruda
+```marimay
 fn configError(error: fs.Error): ConfigError {
   return ConfigError.Read(error);
 }
@@ -782,7 +782,7 @@ code `G4000`; the message is the exact runtime string value and the primary
 source span covers the complete call expression. Bounds failure, checked
 arithmetic failure, invalid internal runtime state, and failed explicit
 assertions panic with their own stable codes. Panics run `defer` cleanup, cancel
-structured child tasks, and produce a source-oriented stack trace. Safe Ruda
+structured child tasks, and produce a source-oriented stack trace. Safe Marimay
 has no general `catch`; the test runtime can assert panic behavior in an
 isolated test task.
 
@@ -796,7 +796,7 @@ prelude symbol.
 
 `defer` schedules a call for the exit of the current lexical block:
 
-```ruda
+```marimay
 {
   const file = fs.open(path, options)?;
   defer file.closeBestEffort();
@@ -834,7 +834,7 @@ Lexical rather than function-wide lifetime prevents loop iterations from accumul
 
 There is no `async` or `await`. A call to a suspending operation retains its declared result type and may park only the current lightweight task. Concurrency is created explicitly:
 
-```ruda
+```marimay
 fn dashboard(id: int): Result<Dashboard, Error> {
   scope {
     const userTask = spawn loadUser(id);
@@ -854,9 +854,9 @@ Leaving `scope` by fallthrough, `return`, `?`, panic, or cancellation first requ
 
 ## 12. Unsafe code and C interoperation
 
-Safe Ruda has no raw pointer type in the prelude. C-compatible types and pointers live in `std/c`. An extern declaration names its ABI:
+Safe Marimay has no raw pointer type in the prelude. C-compatible types and pointers live in `std/c`. An extern declaration names its ABI:
 
-```ruda
+```marimay
 import * as c from "std/c";
 
 @link("sqlite3")
@@ -870,7 +870,7 @@ Calling an extern function, dereferencing a raw pointer, constructing a pointer 
 
 `unsafe` removes specific compiler checks; it does not disable typing, bounds checks unrelated to the operation, task structure, or engine equivalence. Every public unsafe function must have a documentation section titled `Safety` listing caller obligations.
 
-An extern known to block is marked `@blocking`; the runtime invokes it on its bounded blocking pool so the isolate scheduler can continue. An unmarked extern that blocks violates its declared contract. C callbacks into a suspending Ruda function are forbidden; callback entry points must be non-suspending, which the compiler verifies from the inferred effect graph.
+An extern known to block is marked `@blocking`; the runtime invokes it on its bounded blocking pool so the isolate scheduler can continue. An unmarked extern that blocks violates its declared contract. C callbacks into a suspending Marimay function are forbidden; callback entry points must be non-suspending, which the compiler verifies from the inferred effect graph.
 
 ## 13. Constant evaluation
 
@@ -894,7 +894,7 @@ The following are not merely unimplemented; source compatibility must not assume
 
 ## 15. Generated source grammar
 
-The complete candidate 0.1 grammar is the checked-in [generated Ruda source
+The complete candidate 0.1 grammar is the checked-in [generated Marimay source
 grammar](../generated/source-grammar.md). Its machine-readable source is
 `bootstrap/tables/grammar-productions.tsv`; generation validates names,
 references, token terminals, EBNF delimiters, reachability from `file`, and

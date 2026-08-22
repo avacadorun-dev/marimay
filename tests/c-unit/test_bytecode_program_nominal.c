@@ -1,29 +1,29 @@
 #include "test_bytecode_support.h"
 
-#include "ruda/base/hash.h"
+#include "mmay/base/hash.h"
 
-typedef enum RudaTestNominalSchemaCase {
-    RUDA_TEST_NOMINAL_SCHEMA_MATCH_RECORD,
-    RUDA_TEST_NOMINAL_SCHEMA_RECORD_COUNT_MISMATCH,
-    RUDA_TEST_NOMINAL_SCHEMA_RECORD_MUTABILITY_MISMATCH,
-    RUDA_TEST_NOMINAL_SCHEMA_RECORD_TYPE_MISMATCH,
-    RUDA_TEST_NOMINAL_SCHEMA_ENUM_COUNT_MISMATCH,
-    RUDA_TEST_NOMINAL_SCHEMA_ENUM_DISTRIBUTION_MISMATCH,
-    RUDA_TEST_NOMINAL_SCHEMA_ENUM_PAYLOAD_TYPE_MISMATCH,
-    RUDA_TEST_NOMINAL_SCHEMA_INTERFACE_MISMATCH,
-    RUDA_TEST_NOMINAL_SCHEMA_KIND_MISMATCH,
-    RUDA_TEST_NOMINAL_SCHEMA_MATCH_RECURSIVE,
-    RUDA_TEST_NOMINAL_SCHEMA_RECURSIVE_MISMATCH
-} RudaTestNominalSchemaCase;
+typedef enum MarimayTestNominalSchemaCase {
+    MMAY_TEST_NOMINAL_SCHEMA_MATCH_RECORD,
+    MMAY_TEST_NOMINAL_SCHEMA_RECORD_COUNT_MISMATCH,
+    MMAY_TEST_NOMINAL_SCHEMA_RECORD_MUTABILITY_MISMATCH,
+    MMAY_TEST_NOMINAL_SCHEMA_RECORD_TYPE_MISMATCH,
+    MMAY_TEST_NOMINAL_SCHEMA_ENUM_COUNT_MISMATCH,
+    MMAY_TEST_NOMINAL_SCHEMA_ENUM_DISTRIBUTION_MISMATCH,
+    MMAY_TEST_NOMINAL_SCHEMA_ENUM_PAYLOAD_TYPE_MISMATCH,
+    MMAY_TEST_NOMINAL_SCHEMA_INTERFACE_MISMATCH,
+    MMAY_TEST_NOMINAL_SCHEMA_KIND_MISMATCH,
+    MMAY_TEST_NOMINAL_SCHEMA_MATCH_RECURSIVE,
+    MMAY_TEST_NOMINAL_SCHEMA_RECURSIVE_MISMATCH
+} MarimayTestNominalSchemaCase;
 
-typedef struct RudaTestNominalBytes {
+typedef struct MarimayTestNominalBytes {
     unsigned char *data;
     size_t length;
     size_t capacity;
-} RudaTestNominalBytes;
+} MarimayTestNominalBytes;
 
-static bool ruda_test_nominal_bytes_append(
-    RudaTestNominalBytes *bytes,
+static bool mmay_test_nominal_bytes_append(
+    MarimayTestNominalBytes *bytes,
     const void *source,
     size_t length
 ) {
@@ -36,8 +36,8 @@ static bool ruda_test_nominal_bytes_append(
     return true;
 }
 
-static bool ruda_test_nominal_bytes_u64(
-    RudaTestNominalBytes *bytes,
+static bool mmay_test_nominal_bytes_u64(
+    MarimayTestNominalBytes *bytes,
     uint64_t value
 ) {
     unsigned char encoded[10];
@@ -51,22 +51,22 @@ static bool ruda_test_nominal_bytes_u64(
         encoded[length] = next;
         length += 1;
     } while (value != 0);
-    return ruda_test_nominal_bytes_append(bytes, encoded, length);
+    return mmay_test_nominal_bytes_append(bytes, encoded, length);
 }
 
-static bool ruda_test_nominal_schema_function(
-    RudaBytecodeFunction *function,
-    RudaTestNominalSchemaCase schema_case,
+static bool mmay_test_nominal_schema_function(
+    MarimayBytecodeFunction *function,
+    MarimayTestNominalSchemaCase schema_case,
     bool second
 ) {
-    const RudaSymbolId nominal_symbol = {{0xa0}};
-    const RudaSymbolId recursive_enum_symbol = {{0xb0}};
-    RudaBytecodeRecordField field;
-    RudaBytecodeEnumVariant variants[2];
-    RudaBytecodeEnumPayload payload;
-    RudaBytecodeRecordId record = RUDA_BYTECODE_NO_RECORD;
-    RudaBytecodeEnumId enum_id = RUDA_BYTECODE_NO_ENUM;
-    RudaBytecodeInterfaceId interface_id = RUDA_BYTECODE_NO_INTERFACE;
+    const MarimaySymbolId nominal_symbol = {{0xa0}};
+    const MarimaySymbolId recursive_enum_symbol = {{0xb0}};
+    MarimayBytecodeRecordField field;
+    MarimayBytecodeEnumVariant variants[2];
+    MarimayBytecodeEnumPayload payload;
+    MarimayBytecodeRecordId record = MMAY_BYTECODE_NO_RECORD;
+    MarimayBytecodeEnumId enum_id = MMAY_BYTECODE_NO_ENUM;
+    MarimayBytecodeInterfaceId interface_id = MMAY_BYTECODE_NO_INTERFACE;
     uint32_t value = UINT32_MAX;
     uint32_t block = UINT32_MAX;
     size_t span = 1;
@@ -75,32 +75,32 @@ static bool ruda_test_nominal_schema_function(
     memset(&field, 0, sizeof(field));
     memset(variants, 0, sizeof(variants));
     memset(&payload, 0, sizeof(payload));
-    field.type = RUDA_BYTECODE_TYPE_I64;
-    field.layout = RUDA_BYTECODE_NO_LAYOUT;
-    payload.type = RUDA_BYTECODE_TYPE_I64;
-    payload.layout = RUDA_BYTECODE_NO_LAYOUT;
-    if (!ruda_bytecode_function_init(
+    field.type = MMAY_BYTECODE_TYPE_I64;
+    field.layout = MMAY_BYTECODE_NO_LAYOUT;
+    payload.type = MMAY_BYTECODE_TYPE_I64;
+    payload.layout = MMAY_BYTECODE_NO_LAYOUT;
+    if (!mmay_bytecode_function_init(
             function,
-            ruda_system_allocator(),
-            RUDA_BYTECODE_TYPE_I64,
+            mmay_system_allocator(),
+            MMAY_BYTECODE_TYPE_I64,
             1,
             NULL,
             0,
-            ruda_bytecode_function_default_options()
-        ) || !ruda_bytecode_add_register(
+            mmay_bytecode_function_default_options()
+        ) || !mmay_bytecode_add_register(
             function,
-            RUDA_BYTECODE_TYPE_I64,
+            MMAY_BYTECODE_TYPE_I64,
             &value
         )) {
         goto failure;
     }
-    if (schema_case == RUDA_TEST_NOMINAL_SCHEMA_MATCH_RECORD) {
-        metadata_ok = ruda_bytecode_add_record_layout(
+    if (schema_case == MMAY_TEST_NOMINAL_SCHEMA_MATCH_RECORD) {
+        metadata_ok = mmay_bytecode_add_record_layout(
             function, nominal_symbol, &field, 1, &record
         );
     } else if (schema_case
-            == RUDA_TEST_NOMINAL_SCHEMA_RECORD_COUNT_MISMATCH) {
-        metadata_ok = ruda_bytecode_add_record_layout(
+            == MMAY_TEST_NOMINAL_SCHEMA_RECORD_COUNT_MISMATCH) {
+        metadata_ok = mmay_bytecode_add_record_layout(
             function,
             nominal_symbol,
             second ? &field : NULL,
@@ -108,22 +108,22 @@ static bool ruda_test_nominal_schema_function(
             &record
         );
     } else if (schema_case
-            == RUDA_TEST_NOMINAL_SCHEMA_RECORD_MUTABILITY_MISMATCH) {
+            == MMAY_TEST_NOMINAL_SCHEMA_RECORD_MUTABILITY_MISMATCH) {
         field.is_mutable = second;
-        metadata_ok = ruda_bytecode_add_record_layout(
+        metadata_ok = mmay_bytecode_add_record_layout(
             function, nominal_symbol, &field, 1, &record
         );
     } else if (schema_case
-            == RUDA_TEST_NOMINAL_SCHEMA_RECORD_TYPE_MISMATCH) {
+            == MMAY_TEST_NOMINAL_SCHEMA_RECORD_TYPE_MISMATCH) {
         field.type = second
-            ? RUDA_BYTECODE_TYPE_BOOL
-            : RUDA_BYTECODE_TYPE_I64;
-        metadata_ok = ruda_bytecode_add_record_layout(
+            ? MMAY_BYTECODE_TYPE_BOOL
+            : MMAY_BYTECODE_TYPE_I64;
+        metadata_ok = mmay_bytecode_add_record_layout(
             function, nominal_symbol, &field, 1, &record
         );
     } else if (schema_case
-            == RUDA_TEST_NOMINAL_SCHEMA_ENUM_COUNT_MISMATCH) {
-        metadata_ok = ruda_bytecode_add_enum_layout(
+            == MMAY_TEST_NOMINAL_SCHEMA_ENUM_COUNT_MISMATCH) {
+        metadata_ok = mmay_bytecode_add_enum_layout(
             function,
             nominal_symbol,
             variants,
@@ -133,11 +133,11 @@ static bool ruda_test_nominal_schema_function(
             &enum_id
         );
     } else if (schema_case
-            == RUDA_TEST_NOMINAL_SCHEMA_ENUM_DISTRIBUTION_MISMATCH) {
+            == MMAY_TEST_NOMINAL_SCHEMA_ENUM_DISTRIBUTION_MISMATCH) {
         variants[0].payload_count = second ? 0 : 1;
         variants[1].payload_start = second ? 0 : 1;
         variants[1].payload_count = second ? 1 : 0;
-        metadata_ok = ruda_bytecode_add_enum_layout(
+        metadata_ok = mmay_bytecode_add_enum_layout(
             function,
             nominal_symbol,
             variants,
@@ -147,12 +147,12 @@ static bool ruda_test_nominal_schema_function(
             &enum_id
         );
     } else if (schema_case
-            == RUDA_TEST_NOMINAL_SCHEMA_ENUM_PAYLOAD_TYPE_MISMATCH) {
+            == MMAY_TEST_NOMINAL_SCHEMA_ENUM_PAYLOAD_TYPE_MISMATCH) {
         variants[0].payload_count = 1;
         payload.type = second
-            ? RUDA_BYTECODE_TYPE_BOOL
-            : RUDA_BYTECODE_TYPE_I64;
-        metadata_ok = ruda_bytecode_add_enum_layout(
+            ? MMAY_BYTECODE_TYPE_BOOL
+            : MMAY_BYTECODE_TYPE_I64;
+        metadata_ok = mmay_bytecode_add_enum_layout(
             function,
             nominal_symbol,
             variants,
@@ -161,26 +161,26 @@ static bool ruda_test_nominal_schema_function(
             1,
             &enum_id
         );
-    } else if (schema_case == RUDA_TEST_NOMINAL_SCHEMA_INTERFACE_MISMATCH) {
-        metadata_ok = ruda_bytecode_add_interface_layout(
+    } else if (schema_case == MMAY_TEST_NOMINAL_SCHEMA_INTERFACE_MISMATCH) {
+        metadata_ok = mmay_bytecode_add_interface_layout(
             function,
             nominal_symbol,
             second ? 2 : 1,
             &interface_id
         );
-    } else if (schema_case == RUDA_TEST_NOMINAL_SCHEMA_MATCH_RECURSIVE
-            || schema_case == RUDA_TEST_NOMINAL_SCHEMA_RECURSIVE_MISMATCH) {
+    } else if (schema_case == MMAY_TEST_NOMINAL_SCHEMA_MATCH_RECURSIVE
+            || schema_case == MMAY_TEST_NOMINAL_SCHEMA_RECURSIVE_MISMATCH) {
         variants[0].payload_count = 1;
-        payload.type = schema_case == RUDA_TEST_NOMINAL_SCHEMA_RECURSIVE_MISMATCH
+        payload.type = schema_case == MMAY_TEST_NOMINAL_SCHEMA_RECURSIVE_MISMATCH
                 && second
-            ? RUDA_BYTECODE_TYPE_I64
-            : RUDA_BYTECODE_TYPE_RECORD;
-        payload.layout = payload.type == RUDA_BYTECODE_TYPE_RECORD
+            ? MMAY_BYTECODE_TYPE_I64
+            : MMAY_BYTECODE_TYPE_RECORD;
+        payload.layout = payload.type == MMAY_BYTECODE_TYPE_RECORD
             ? 0
-            : RUDA_BYTECODE_NO_LAYOUT;
-        field.type = RUDA_BYTECODE_TYPE_ENUM;
+            : MMAY_BYTECODE_NO_LAYOUT;
+        field.type = MMAY_BYTECODE_TYPE_ENUM;
         field.layout = 0;
-        metadata_ok = ruda_bytecode_add_enum_layout(
+        metadata_ok = mmay_bytecode_add_enum_layout(
             function,
             recursive_enum_symbol,
             variants,
@@ -188,7 +188,7 @@ static bool ruda_test_nominal_schema_function(
             &payload,
             1,
             &enum_id
-        ) && ruda_bytecode_add_record_layout(
+        ) && mmay_bytecode_add_record_layout(
             function,
             nominal_symbol,
             &field,
@@ -196,43 +196,43 @@ static bool ruda_test_nominal_schema_function(
             &record
         );
     } else if (!second) {
-        metadata_ok = ruda_bytecode_add_record_layout(
+        metadata_ok = mmay_bytecode_add_record_layout(
             function, nominal_symbol, NULL, 0, &record
         );
     } else {
-        metadata_ok = ruda_bytecode_add_enum_layout(
+        metadata_ok = mmay_bytecode_add_enum_layout(
             function, nominal_symbol, variants, 1, NULL, 0, &enum_id
         );
     }
-    if (!metadata_ok || !ruda_bytecode_add_block(function, &block)
-        || !ruda_test_bytecode_append(
+    if (!metadata_ok || !mmay_bytecode_add_block(function, &block)
+        || !mmay_test_bytecode_append(
             function,
             block,
-            RUDA_OPCODE_CONST_I64,
+            MMAY_OPCODE_CONST_I64,
             value,
             second ? 2 : 1,
             0,
             &span
-        ) || !ruda_test_bytecode_append(
+        ) || !mmay_test_bytecode_append(
             function,
             block,
-            RUDA_OPCODE_RETURN,
+            MMAY_OPCODE_RETURN,
             value,
             0,
             0,
             &span
-        ) || ruda_bytecode_verify(function) != RUDA_BYTECODE_VERIFY_OK) {
+        ) || mmay_bytecode_verify(function) != MMAY_BYTECODE_VERIFY_OK) {
         goto failure;
     }
     return true;
 
 failure:
-    ruda_bytecode_function_dispose(function);
+    mmay_bytecode_function_dispose(function);
     return false;
 }
 
-static bool ruda_test_nominal_schema_bundle(
-    RudaTestNominalSchemaCase schema_case,
+static bool mmay_test_nominal_schema_bundle(
+    MarimayTestNominalSchemaCase schema_case,
     unsigned char *bundle_storage,
     size_t bundle_capacity,
     size_t *bundle_length
@@ -240,13 +240,13 @@ static bool ruda_test_nominal_schema_bundle(
     static const unsigned char magic[8] = {
         'R', 'U', 'D', 'A', 'B', 'C', 'P', 0
     };
-    const RudaSymbolId symbols[2] = {{{0x10}}, {{0x20}}};
+    const MarimaySymbolId symbols[2] = {{{0x10}}, {{0x20}}};
     unsigned char payload_storage[32768];
     unsigned char digest[32];
-    RudaTestNominalBytes payload;
-    RudaTestNominalBytes bundle;
-    RudaBytecodeFunction functions[2];
-    RudaOwnedBytes encoded[2];
+    MarimayTestNominalBytes payload;
+    MarimayTestNominalBytes bundle;
+    MarimayBytecodeFunction functions[2];
+    MarimayOwnedBytes encoded[2];
     size_t index = 0;
     bool success = false;
     memset(functions, 0, sizeof(functions));
@@ -258,26 +258,26 @@ static bool ruda_test_nominal_schema_bundle(
     bundle.length = 0;
     bundle.capacity = bundle_capacity;
     if (bundle_length == NULL
-        || !ruda_test_nominal_schema_function(&functions[0], schema_case, false)
-        || !ruda_test_nominal_schema_function(&functions[1], schema_case, true)
-        || ruda_bytecode_encode_function(
-            &functions[0], ruda_system_allocator(), &encoded[0]
-        ) != RUDA_BYTECODE_CODEC_OK
-        || ruda_bytecode_encode_function(
-            &functions[1], ruda_system_allocator(), &encoded[1]
-        ) != RUDA_BYTECODE_CODEC_OK
-        || !ruda_test_nominal_bytes_u64(&payload, 1)
-        || !ruda_test_nominal_bytes_u64(&payload, 2)
-        || !ruda_test_nominal_bytes_u64(&payload, 0)) {
+        || !mmay_test_nominal_schema_function(&functions[0], schema_case, false)
+        || !mmay_test_nominal_schema_function(&functions[1], schema_case, true)
+        || mmay_bytecode_encode_function(
+            &functions[0], mmay_system_allocator(), &encoded[0]
+        ) != MMAY_BYTECODE_CODEC_OK
+        || mmay_bytecode_encode_function(
+            &functions[1], mmay_system_allocator(), &encoded[1]
+        ) != MMAY_BYTECODE_CODEC_OK
+        || !mmay_test_nominal_bytes_u64(&payload, 1)
+        || !mmay_test_nominal_bytes_u64(&payload, 2)
+        || !mmay_test_nominal_bytes_u64(&payload, 0)) {
         goto cleanup;
     }
     for (index = 0; index < 2; index += 1) {
-        if (!ruda_test_nominal_bytes_append(
+        if (!mmay_test_nominal_bytes_append(
                 &payload,
                 symbols[index].bytes,
                 sizeof(symbols[index].bytes)
-            ) || !ruda_test_nominal_bytes_u64(&payload, encoded[index].length)
-            || !ruda_test_nominal_bytes_append(
+            ) || !mmay_test_nominal_bytes_u64(&payload, encoded[index].length)
+            || !mmay_test_nominal_bytes_append(
                 &payload,
                 encoded[index].data,
                 encoded[index].length
@@ -285,14 +285,14 @@ static bool ruda_test_nominal_schema_bundle(
             goto cleanup;
         }
     }
-    if (!ruda_sha256(payload.data, payload.length, digest)
-        || !ruda_test_nominal_bytes_append(&bundle, magic, sizeof(magic))
-        || !ruda_test_nominal_bytes_u64(&bundle, 1)
-        || !ruda_test_nominal_bytes_u64(&bundle, 0)
-        || !ruda_test_nominal_bytes_u64(&bundle, payload.length)
-        || !ruda_test_nominal_bytes_append(
+    if (!mmay_sha256(payload.data, payload.length, digest)
+        || !mmay_test_nominal_bytes_append(&bundle, magic, sizeof(magic))
+        || !mmay_test_nominal_bytes_u64(&bundle, 1)
+        || !mmay_test_nominal_bytes_u64(&bundle, 0)
+        || !mmay_test_nominal_bytes_u64(&bundle, payload.length)
+        || !mmay_test_nominal_bytes_append(
             &bundle, payload.data, payload.length
-        ) || !ruda_test_nominal_bytes_append(
+        ) || !mmay_test_nominal_bytes_append(
             &bundle, digest, sizeof(digest)
         )) {
         goto cleanup;
@@ -302,36 +302,36 @@ static bool ruda_test_nominal_schema_bundle(
 
 cleanup:
     for (index = 0; index < 2; index += 1) {
-        ruda_owned_bytes_dispose(&encoded[index]);
-        ruda_bytecode_function_dispose(&functions[index]);
+        mmay_owned_bytes_dispose(&encoded[index]);
+        mmay_bytecode_function_dispose(&functions[index]);
     }
     return success;
 }
 
-static bool ruda_test_nominal_schema_program(
-    RudaTestNominalSchemaCase schema_case,
-    RudaBytecodeProgram *program
+static bool mmay_test_nominal_schema_program(
+    MarimayTestNominalSchemaCase schema_case,
+    MarimayBytecodeProgram *program
 ) {
-    const RudaSymbolId symbols[2] = {{{0x10}}, {{0x20}}};
-    RudaBytecodeFunction functions[2];
+    const MarimaySymbolId symbols[2] = {{{0x10}}, {{0x20}}};
+    MarimayBytecodeFunction functions[2];
     uint32_t function_id = UINT32_MAX;
     size_t index = 0;
     bool success = false;
     memset(functions, 0, sizeof(functions));
     memset(program, 0, sizeof(*program));
-    if (!ruda_test_nominal_schema_function(&functions[0], schema_case, false)
-        || !ruda_test_nominal_schema_function(
+    if (!mmay_test_nominal_schema_function(&functions[0], schema_case, false)
+        || !mmay_test_nominal_schema_function(
             &functions[1], schema_case, true
-        ) || !ruda_bytecode_program_init(
+        ) || !mmay_bytecode_program_init(
             program,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             1,
-            ruda_bytecode_program_default_options()
+            mmay_bytecode_program_default_options()
         )) {
         goto cleanup;
     }
     for (index = 0; index < 2; index += 1) {
-        if (!ruda_bytecode_program_take_function(
+        if (!mmay_bytecode_program_take_function(
                 program,
                 symbols[index],
                 &functions[index],
@@ -340,90 +340,90 @@ static bool ruda_test_nominal_schema_program(
             goto cleanup;
         }
     }
-    if (!ruda_bytecode_program_set_entry(program, symbols[0])) {
+    if (!mmay_bytecode_program_set_entry(program, symbols[0])) {
         goto cleanup;
     }
     success = true;
 
 cleanup:
     for (index = 0; index < 2; index += 1) {
-        ruda_bytecode_function_dispose(&functions[index]);
+        mmay_bytecode_function_dispose(&functions[index]);
     }
     if (!success) {
-        ruda_bytecode_program_dispose(program);
+        mmay_bytecode_program_dispose(program);
     }
     return success;
 }
 
-void ruda_test_bytecode_nominal_program_schemas(void) {
-    const RudaTestNominalSchemaCase hostile[] = {
-        RUDA_TEST_NOMINAL_SCHEMA_RECORD_COUNT_MISMATCH,
-        RUDA_TEST_NOMINAL_SCHEMA_RECORD_MUTABILITY_MISMATCH,
-        RUDA_TEST_NOMINAL_SCHEMA_RECORD_TYPE_MISMATCH,
-        RUDA_TEST_NOMINAL_SCHEMA_ENUM_COUNT_MISMATCH,
-        RUDA_TEST_NOMINAL_SCHEMA_ENUM_DISTRIBUTION_MISMATCH,
-        RUDA_TEST_NOMINAL_SCHEMA_ENUM_PAYLOAD_TYPE_MISMATCH,
-        RUDA_TEST_NOMINAL_SCHEMA_INTERFACE_MISMATCH,
-        RUDA_TEST_NOMINAL_SCHEMA_KIND_MISMATCH,
-        RUDA_TEST_NOMINAL_SCHEMA_RECURSIVE_MISMATCH
+void mmay_test_bytecode_nominal_program_schemas(void) {
+    const MarimayTestNominalSchemaCase hostile[] = {
+        MMAY_TEST_NOMINAL_SCHEMA_RECORD_COUNT_MISMATCH,
+        MMAY_TEST_NOMINAL_SCHEMA_RECORD_MUTABILITY_MISMATCH,
+        MMAY_TEST_NOMINAL_SCHEMA_RECORD_TYPE_MISMATCH,
+        MMAY_TEST_NOMINAL_SCHEMA_ENUM_COUNT_MISMATCH,
+        MMAY_TEST_NOMINAL_SCHEMA_ENUM_DISTRIBUTION_MISMATCH,
+        MMAY_TEST_NOMINAL_SCHEMA_ENUM_PAYLOAD_TYPE_MISMATCH,
+        MMAY_TEST_NOMINAL_SCHEMA_INTERFACE_MISMATCH,
+        MMAY_TEST_NOMINAL_SCHEMA_KIND_MISMATCH,
+        MMAY_TEST_NOMINAL_SCHEMA_RECURSIVE_MISMATCH
     };
     unsigned char bundle[32768];
     size_t bundle_length = 0;
     size_t index = 0;
     for (index = 0; index < sizeof(hostile) / sizeof(hostile[0]); index += 1) {
-        RudaBytecodeProgram decoded;
-        RudaBytecodeProgram direct;
+        MarimayBytecodeProgram decoded;
+        MarimayBytecodeProgram direct;
         memset(&decoded, 0, sizeof(decoded));
         memset(&direct, 0, sizeof(direct));
-        RUDA_EXPECT(ruda_test_nominal_schema_program(
+        MMAY_EXPECT(mmay_test_nominal_schema_program(
             hostile[index],
             &direct
         ));
-        RUDA_EXPECT(ruda_bytecode_program_verify(&direct)
-            == RUDA_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH);
-        ruda_bytecode_program_dispose(&direct);
-        RUDA_EXPECT(ruda_test_nominal_schema_bundle(
+        MMAY_EXPECT(mmay_bytecode_program_verify(&direct)
+            == MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH);
+        mmay_bytecode_program_dispose(&direct);
+        MMAY_EXPECT(mmay_test_nominal_schema_bundle(
             hostile[index], bundle, sizeof(bundle), &bundle_length
         ));
-        RUDA_EXPECT(ruda_bytecode_decode_program(
+        MMAY_EXPECT(mmay_bytecode_decode_program(
             bundle,
             bundle_length,
-            ruda_system_allocator(),
-            ruda_bytecode_program_default_options(),
+            mmay_system_allocator(),
+            mmay_bytecode_program_default_options(),
             &decoded
-        ) == RUDA_BYTECODE_CODEC_VERIFY_FAILED);
-        RUDA_EXPECT(!decoded.initialized);
-        ruda_bytecode_program_dispose(&decoded);
+        ) == MMAY_BYTECODE_CODEC_VERIFY_FAILED);
+        MMAY_EXPECT(!decoded.initialized);
+        mmay_bytecode_program_dispose(&decoded);
     }
     {
-        RudaBytecodeProgram recursive;
-        RudaBytecodeProgram decoded;
+        MarimayBytecodeProgram recursive;
+        MarimayBytecodeProgram decoded;
         memset(&recursive, 0, sizeof(recursive));
         memset(&decoded, 0, sizeof(decoded));
-        RUDA_EXPECT(ruda_test_nominal_schema_program(
-            RUDA_TEST_NOMINAL_SCHEMA_MATCH_RECURSIVE,
+        MMAY_EXPECT(mmay_test_nominal_schema_program(
+            MMAY_TEST_NOMINAL_SCHEMA_MATCH_RECURSIVE,
             &recursive
         ));
-        RUDA_EXPECT(ruda_bytecode_program_verify(&recursive)
-            == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
-        ruda_bytecode_program_dispose(&recursive);
-        RUDA_EXPECT(ruda_test_nominal_schema_bundle(
-            RUDA_TEST_NOMINAL_SCHEMA_MATCH_RECURSIVE,
+        MMAY_EXPECT(mmay_bytecode_program_verify(&recursive)
+            == MMAY_BYTECODE_PROGRAM_VERIFY_OK);
+        mmay_bytecode_program_dispose(&recursive);
+        MMAY_EXPECT(mmay_test_nominal_schema_bundle(
+            MMAY_TEST_NOMINAL_SCHEMA_MATCH_RECURSIVE,
             bundle,
             sizeof(bundle),
             &bundle_length
         ));
-        RUDA_EXPECT(ruda_bytecode_decode_program(
+        MMAY_EXPECT(mmay_bytecode_decode_program(
             bundle,
             bundle_length,
-            ruda_system_allocator(),
-            ruda_bytecode_program_default_options(),
+            mmay_system_allocator(),
+            mmay_bytecode_program_default_options(),
             &decoded
-        ) == RUDA_BYTECODE_CODEC_OK);
-        ruda_bytecode_program_dispose(&decoded);
+        ) == MMAY_BYTECODE_CODEC_OK);
+        mmay_bytecode_program_dispose(&decoded);
     }
-    RUDA_EXPECT(ruda_test_nominal_schema_bundle(
-        RUDA_TEST_NOMINAL_SCHEMA_INTERFACE_MISMATCH,
+    MMAY_EXPECT(mmay_test_nominal_schema_bundle(
+        MMAY_TEST_NOMINAL_SCHEMA_INTERFACE_MISMATCH,
         bundle,
         sizeof(bundle),
         &bundle_length
@@ -435,32 +435,32 @@ void ruda_test_bytecode_nominal_program_schemas(void) {
         for (work_limit = 1;
             work_limit < 512 && !reached_schema_check;
             work_limit += 1) {
-            RudaBytecodeProgram decoded;
-            RudaBytecodeProgramOptions options =
-                ruda_bytecode_program_default_options();
-            RudaBytecodeCodecStatus status;
+            MarimayBytecodeProgram decoded;
+            MarimayBytecodeProgramOptions options =
+                mmay_bytecode_program_default_options();
+            MarimayBytecodeCodecStatus status;
             memset(&decoded, 0, sizeof(decoded));
             options.max_verify_work = work_limit;
-            status = ruda_bytecode_decode_program(
+            status = mmay_bytecode_decode_program(
                 bundle,
                 bundle_length,
-                ruda_system_allocator(),
+                mmay_system_allocator(),
                 options,
                 &decoded
             );
             observed_limit = observed_limit
-                || status == RUDA_BYTECODE_CODEC_LIMIT_REACHED;
-            reached_schema_check = status == RUDA_BYTECODE_CODEC_VERIFY_FAILED;
-            RUDA_EXPECT(status == RUDA_BYTECODE_CODEC_LIMIT_REACHED
+                || status == MMAY_BYTECODE_CODEC_LIMIT_REACHED;
+            reached_schema_check = status == MMAY_BYTECODE_CODEC_VERIFY_FAILED;
+            MMAY_EXPECT(status == MMAY_BYTECODE_CODEC_LIMIT_REACHED
                 || reached_schema_check);
-            RUDA_EXPECT(!decoded.initialized);
-            ruda_bytecode_program_dispose(&decoded);
+            MMAY_EXPECT(!decoded.initialized);
+            mmay_bytecode_program_dispose(&decoded);
         }
-        RUDA_EXPECT(observed_limit);
-        RUDA_EXPECT(reached_schema_check);
+        MMAY_EXPECT(observed_limit);
+        MMAY_EXPECT(reached_schema_check);
     }
-    RUDA_EXPECT(ruda_test_nominal_schema_bundle(
-        RUDA_TEST_NOMINAL_SCHEMA_RECORD_MUTABILITY_MISMATCH,
+    MMAY_EXPECT(mmay_test_nominal_schema_bundle(
+        MMAY_TEST_NOMINAL_SCHEMA_RECORD_MUTABILITY_MISMATCH,
         bundle,
         sizeof(bundle),
         &bundle_length
@@ -471,34 +471,34 @@ void ruda_test_bytecode_nominal_program_schemas(void) {
         for (failure_index = 0;
             failure_index < 512 && !reached_schema_check;
             failure_index += 1) {
-            RudaFailAllocator state;
-            RudaBytecodeProgram decoded;
-            RudaBytecodeCodecStatus status;
+            MarimayFailAllocator state;
+            MarimayBytecodeProgram decoded;
+            MarimayBytecodeCodecStatus status;
             memset(&decoded, 0, sizeof(decoded));
-            ruda_fail_allocator_init(
+            mmay_fail_allocator_init(
                 &state,
-                ruda_system_allocator(),
+                mmay_system_allocator(),
                 failure_index
             );
-            status = ruda_bytecode_decode_program(
+            status = mmay_bytecode_decode_program(
                 bundle,
                 bundle_length,
-                ruda_fail_allocator(&state),
-                ruda_bytecode_program_default_options(),
+                mmay_fail_allocator(&state),
+                mmay_bytecode_program_default_options(),
                 &decoded
             );
-            reached_schema_check = status == RUDA_BYTECODE_CODEC_VERIFY_FAILED;
-            RUDA_EXPECT(reached_schema_check
-                || status == RUDA_BYTECODE_CODEC_ALLOCATION_FAILED);
-            RUDA_EXPECT(!decoded.initialized);
-            ruda_bytecode_program_dispose(&decoded);
-            RUDA_EXPECT(state.live_allocations == 0);
-            RUDA_EXPECT(state.live_bytes == 0);
+            reached_schema_check = status == MMAY_BYTECODE_CODEC_VERIFY_FAILED;
+            MMAY_EXPECT(reached_schema_check
+                || status == MMAY_BYTECODE_CODEC_ALLOCATION_FAILED);
+            MMAY_EXPECT(!decoded.initialized);
+            mmay_bytecode_program_dispose(&decoded);
+            MMAY_EXPECT(state.live_allocations == 0);
+            MMAY_EXPECT(state.live_bytes == 0);
         }
-        RUDA_EXPECT(reached_schema_check);
+        MMAY_EXPECT(reached_schema_check);
     }
-    RUDA_EXPECT(ruda_test_nominal_schema_bundle(
-        RUDA_TEST_NOMINAL_SCHEMA_MATCH_RECORD,
+    MMAY_EXPECT(mmay_test_nominal_schema_bundle(
+        MMAY_TEST_NOMINAL_SCHEMA_MATCH_RECORD,
         bundle,
         sizeof(bundle),
         &bundle_length
@@ -508,29 +508,29 @@ void ruda_test_bytecode_nominal_program_schemas(void) {
         size_t failure_index = 0;
         for (failure_index = 0; failure_index < 512 && !reached_success;
             failure_index += 1) {
-            RudaFailAllocator state;
-            RudaBytecodeProgram decoded;
-            RudaBytecodeCodecStatus status;
+            MarimayFailAllocator state;
+            MarimayBytecodeProgram decoded;
+            MarimayBytecodeCodecStatus status;
             memset(&decoded, 0, sizeof(decoded));
-            ruda_fail_allocator_init(
+            mmay_fail_allocator_init(
                 &state,
-                ruda_system_allocator(),
+                mmay_system_allocator(),
                 failure_index
             );
-            status = ruda_bytecode_decode_program(
+            status = mmay_bytecode_decode_program(
                 bundle,
                 bundle_length,
-                ruda_fail_allocator(&state),
-                ruda_bytecode_program_default_options(),
+                mmay_fail_allocator(&state),
+                mmay_bytecode_program_default_options(),
                 &decoded
             );
-            reached_success = status == RUDA_BYTECODE_CODEC_OK;
-            RUDA_EXPECT(reached_success
-                || status == RUDA_BYTECODE_CODEC_ALLOCATION_FAILED);
-            ruda_bytecode_program_dispose(&decoded);
-            RUDA_EXPECT(state.live_allocations == 0);
-            RUDA_EXPECT(state.live_bytes == 0);
+            reached_success = status == MMAY_BYTECODE_CODEC_OK;
+            MMAY_EXPECT(reached_success
+                || status == MMAY_BYTECODE_CODEC_ALLOCATION_FAILED);
+            mmay_bytecode_program_dispose(&decoded);
+            MMAY_EXPECT(state.live_allocations == 0);
+            MMAY_EXPECT(state.live_bytes == 0);
         }
-        RUDA_EXPECT(reached_success);
+        MMAY_EXPECT(reached_success);
     }
 }

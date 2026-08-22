@@ -3,72 +3,72 @@
 
 #include <string.h>
 
-#include "ruda/generated/diagnostic_codes.h"
+#include "mmay/generated/diagnostic_codes.h"
 
-static bool ruda_cli_run_write_panic(
-    RudaWriter writer,
-    RudaDiagnosticStyle style,
+static bool mmay_cli_run_write_panic(
+    MarimayWriter writer,
+    MarimayDiagnosticStyle style,
     const char *code,
     const unsigned char *message,
     size_t message_length
 ) {
-    if (style == RUDA_DIAGNOSTIC_JSON) {
-        RudaDiagnostic diagnostic;
+    if (style == MMAY_DIAGNOSTIC_JSON) {
+        MarimayDiagnostic diagnostic;
         memset(&diagnostic, 0, sizeof(diagnostic));
         diagnostic.code = code;
-        diagnostic.severity = RUDA_SEVERITY_ERROR;
+        diagnostic.severity = MMAY_SEVERITY_ERROR;
         diagnostic.message = (const char *)message;
         diagnostic.message_length = message_length;
         diagnostic.message_is_counted = true;
-        return ruda_diagnostic_render(writer, style, &diagnostic);
+        return mmay_diagnostic_render(writer, style, &diagnostic);
     }
-    if (style == RUDA_DIAGNOSTIC_SHORT) {
-        return ruda_writer_write_cstr(writer, code)
-            && ruda_writer_write_cstr(writer, ":error:")
-            && ruda_writer_write(writer, (const char *)message, message_length)
-            && ruda_writer_write_cstr(writer, "\n");
+    if (style == MMAY_DIAGNOSTIC_SHORT) {
+        return mmay_writer_write_cstr(writer, code)
+            && mmay_writer_write_cstr(writer, ":error:")
+            && mmay_writer_write(writer, (const char *)message, message_length)
+            && mmay_writer_write_cstr(writer, "\n");
     }
-    return ruda_writer_write_cstr(writer, "panic[")
-        && ruda_writer_write_cstr(writer, code)
-        && ruda_writer_write_cstr(writer, "]: ")
-        && ruda_writer_write(writer, (const char *)message, message_length)
-        && ruda_writer_write_cstr(writer, "\n");
+    return mmay_writer_write_cstr(writer, "panic[")
+        && mmay_writer_write_cstr(writer, code)
+        && mmay_writer_write_cstr(writer, "]: ")
+        && mmay_writer_write(writer, (const char *)message, message_length)
+        && mmay_writer_write_cstr(writer, "\n");
 }
 
-int ruda_cli_run_entry_error(
-    const RudaCliOptions *options,
-    RudaCheckEntryStatus status,
-    RudaWriter standard_error
+int mmay_cli_run_entry_error(
+    const MarimayCliOptions *options,
+    MarimayCheckEntryStatus status,
+    MarimayWriter standard_error
 ) {
-    const char *message = status == RUDA_CHECK_ENTRY_NOT_FOUND
+    const char *message = status == MMAY_CHECK_ENTRY_NOT_FOUND
         ? "executable root does not declare fn main()"
-        : (status == RUDA_CHECK_ENTRY_ERROR_CONTRACT_MISSING
+        : (status == MMAY_CHECK_ENTRY_ERROR_CONTRACT_MISSING
             ? "main error type does not provide message(error): string"
             : "main must be fn main(): void or fn main(): Result<void, E>");
-    return ruda_cli_plain_error(
+    return mmay_cli_plain_error(
         standard_error, options->diagnostic_style,
-        RUDA_DIAGNOSTIC_INVALID_ENTRY_POINT, message,
-        RUDA_EXIT_SOURCE_FAILURE
+        MMAY_DIAGNOSTIC_INVALID_ENTRY_POINT, message,
+        MMAY_EXIT_SOURCE_FAILURE
     );
 }
 
-int ruda_cli_run_pipeline_error(
-    const RudaCliOptions *options,
+int mmay_cli_run_pipeline_error(
+    const MarimayCliOptions *options,
     const char *message,
-    RudaWriter standard_error
+    MarimayWriter standard_error
 ) {
-    return ruda_cli_plain_error(
+    return mmay_cli_plain_error(
         standard_error, options->diagnostic_style,
-        RUDA_DIAGNOSTIC_RUN_PIPELINE, message, RUDA_EXIT_INTERNAL
+        MMAY_DIAGNOSTIC_RUN_PIPELINE, message, MMAY_EXIT_INTERNAL
     );
 }
 
-int ruda_cli_run_runtime_error(
-    const RudaCliOptions *options,
-    RudaBytecodeRunStatus status,
-    const RudaBytecodeExecution *execution,
-    const RudaBytecodePanic *panic,
-    RudaWriter standard_error
+int mmay_cli_run_runtime_error(
+    const MarimayCliOptions *options,
+    MarimayBytecodeRunStatus status,
+    const MarimayBytecodeExecution *execution,
+    const MarimayBytecodePanic *panic,
+    MarimayWriter standard_error
 ) {
     static const unsigned char overflow[] = "integer overflow";
     static const unsigned char division[] = "integer division by zero";
@@ -76,61 +76,61 @@ int ruda_cli_run_runtime_error(
     const unsigned char *message = NULL;
     size_t message_length = 0;
     bool classified = false;
-    if (status == RUDA_BYTECODE_RUN_PANIC && panic != NULL
+    if (status == MMAY_BYTECODE_RUN_PANIC && panic != NULL
         && panic->initialized && panic->code != NULL) {
-        return ruda_cli_run_write_panic(
+        return mmay_cli_run_write_panic(
             standard_error, options->diagnostic_style,
             panic->code, panic->message.data,
             panic->message.length
-        ) ? RUDA_EXIT_SOURCE_FAILURE : RUDA_EXIT_INTERNAL;
+        ) ? MMAY_EXIT_SOURCE_FAILURE : MMAY_EXIT_INTERNAL;
     }
-    if (status == RUDA_BYTECODE_RUN_OVERFLOW) {
+    if (status == MMAY_BYTECODE_RUN_OVERFLOW) {
         message = overflow;
         message_length = sizeof(overflow) - 1;
-    } else if (status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO) {
+    } else if (status == MMAY_BYTECODE_RUN_DIVISION_BY_ZERO) {
         message = division;
         message_length = sizeof(division) - 1;
-    } else if (status == RUDA_BYTECODE_RUN_INVALID_SHIFT) {
+    } else if (status == MMAY_BYTECODE_RUN_INVALID_SHIFT) {
         message = shift;
         message_length = sizeof(shift) - 1;
     }
     if (message != NULL) {
-        return ruda_cli_run_write_panic(
+        return mmay_cli_run_write_panic(
             standard_error, options->diagnostic_style,
-            RUDA_DIAGNOSTIC_ARITHMETIC_PANIC,
+            MMAY_DIAGNOSTIC_ARITHMETIC_PANIC,
             message, message_length
-        ) ? RUDA_EXIT_SOURCE_FAILURE : RUDA_EXIT_INTERNAL;
+        ) ? MMAY_EXIT_SOURCE_FAILURE : MMAY_EXIT_INTERNAL;
     }
-    if (!ruda_cli_resource_render(
+    if (!mmay_cli_resource_render(
             options->diagnostic_style, status,
             execution == NULL ? NULL : &execution->managed_heap,
             standard_error, &classified
         )) {
-        return RUDA_EXIT_INTERNAL;
+        return MMAY_EXIT_INTERNAL;
     }
-    if (classified) return RUDA_EXIT_INTERNAL;
-    return ruda_cli_plain_error(
+    if (classified) return MMAY_EXIT_INTERNAL;
+    return mmay_cli_plain_error(
         standard_error, options->diagnostic_style,
-        RUDA_DIAGNOSTIC_RUNTIME_FAILURE,
+        MMAY_DIAGNOSTIC_RUNTIME_FAILURE,
         "VM execution failed a resource, integrity, or host requirement",
-        RUDA_EXIT_INTERNAL
+        MMAY_EXIT_INTERNAL
     );
 }
 
-int ruda_cli_run_expected_error(
-    const RudaCliOptions *options,
+int mmay_cli_run_expected_error(
+    const MarimayCliOptions *options,
     const unsigned char *message,
     size_t message_length,
-    RudaWriter standard_error
+    MarimayWriter standard_error
 ) {
-    RudaDiagnostic diagnostic;
+    MarimayDiagnostic diagnostic;
     memset(&diagnostic, 0, sizeof(diagnostic));
-    diagnostic.code = RUDA_DIAGNOSTIC_PROGRAM_ERROR;
-    diagnostic.severity = RUDA_SEVERITY_ERROR;
+    diagnostic.code = MMAY_DIAGNOSTIC_PROGRAM_ERROR;
+    diagnostic.severity = MMAY_SEVERITY_ERROR;
     diagnostic.message = (const char *)message;
     diagnostic.message_length = message_length;
     diagnostic.message_is_counted = true;
-    return ruda_diagnostic_render(
+    return mmay_diagnostic_render(
         standard_error, options->diagnostic_style, &diagnostic
-    ) ? RUDA_EXIT_SOURCE_FAILURE : RUDA_EXIT_INTERNAL;
+    ) ? MMAY_EXIT_SOURCE_FAILURE : MMAY_EXIT_INTERNAL;
 }

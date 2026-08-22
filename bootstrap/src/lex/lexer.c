@@ -1,42 +1,42 @@
-#include "ruda/lex/lexer.h"
+#include "mmay/lex/lexer.h"
 
-RudaLexOptions ruda_lex_default_options(void) {
-    RudaLexOptions options;
+MarimayLexOptions mmay_lex_default_options(void) {
+    MarimayLexOptions options;
     options.max_tokens = 1000000;
     options.max_diagnostics = 100;
     options.max_nesting = 256;
     return options;
 }
 
-bool ruda_lex_options_valid(RudaLexOptions options) {
+bool mmay_lex_options_valid(MarimayLexOptions options) {
     return options.max_tokens >= 2 && options.max_diagnostics != 0
         && options.max_nesting >= 2;
 }
 
-void ruda_lex_result_dispose(RudaLexResult *result) {
+void mmay_lex_result_dispose(MarimayLexResult *result) {
     if (result == NULL || !result->initialized) {
         return;
     }
-    ruda_vector_dispose(&result->tokens);
-    ruda_vector_dispose(&result->diagnostics);
+    mmay_vector_dispose(&result->tokens);
+    mmay_vector_dispose(&result->diagnostics);
     result->snapshot = NULL;
     result->suppressed_diagnostics = 0;
     result->initialized = false;
 }
 
-const RudaToken *ruda_lex_token(const RudaLexResult *result, size_t index) {
+const MarimayToken *mmay_lex_token(const MarimayLexResult *result, size_t index) {
     if (result == NULL || !result->initialized) {
         return NULL;
     }
-    return ruda_vector_at_const(&result->tokens, index);
+    return mmay_vector_at_const(&result->tokens, index);
 }
 
-const RudaLexDiagnostic *ruda_lex_diagnostic(
-    const RudaLexResult *result,
+const MarimayLexDiagnostic *mmay_lex_diagnostic(
+    const MarimayLexResult *result,
     size_t index
 ) {
     if (result == NULL || !result->initialized) {
         return NULL;
     }
-    return ruda_vector_at_const(&result->diagnostics, index);
+    return mmay_vector_at_const(&result->diagnostics, index);
 }

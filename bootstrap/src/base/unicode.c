@@ -1,12 +1,12 @@
-#include "ruda/base/unicode.h"
+#include "mmay/base/unicode.h"
 
 #include <stddef.h>
 
-#include "ruda/generated/unicode_xid.h"
-#include "ruda/generated/unicode_width.h"
+#include "mmay/generated/unicode_xid.h"
+#include "mmay/generated/unicode_width.h"
 
-static bool ruda_unicode_range_contains(
-    const RudaUnicodeRange *ranges,
+static bool mmay_unicode_range_contains(
+    const MarimayUnicodeRange *ranges,
     size_t count,
     uint32_t scalar
 ) {
@@ -25,40 +25,40 @@ static bool ruda_unicode_range_contains(
     return false;
 }
 
-const char *ruda_unicode_version(void) {
-    return RUDA_UNICODE_VERSION;
+const char *mmay_unicode_version(void) {
+    return MMAY_UNICODE_VERSION;
 }
 
-bool ruda_unicode_is_xid_start(uint32_t scalar) {
-    return ruda_unicode_range_contains(
-        ruda_unicode_xid_start_ranges,
-        RUDA_UNICODE_XID_START_RANGE_COUNT,
+bool mmay_unicode_is_xid_start(uint32_t scalar) {
+    return mmay_unicode_range_contains(
+        mmay_unicode_xid_start_ranges,
+        MMAY_UNICODE_XID_START_RANGE_COUNT,
         scalar
     );
 }
 
-bool ruda_unicode_is_xid_continue(uint32_t scalar) {
-    return ruda_unicode_range_contains(
-        ruda_unicode_xid_continue_ranges,
-        RUDA_UNICODE_XID_CONTINUE_RANGE_COUNT,
+bool mmay_unicode_is_xid_continue(uint32_t scalar) {
+    return mmay_unicode_range_contains(
+        mmay_unicode_xid_continue_ranges,
+        MMAY_UNICODE_XID_CONTINUE_RANGE_COUNT,
         scalar
     );
 }
 
-size_t ruda_unicode_formatter_width(uint32_t scalar) {
+size_t mmay_unicode_formatter_width(uint32_t scalar) {
     if (scalar > 0x10FFFFU || (scalar >= 0xD800U && scalar <= 0xDFFFU)) {
         return 0;
     }
-    if (ruda_unicode_range_contains(
-            ruda_unicode_zero_width_ranges,
-            RUDA_UNICODE_ZERO_WIDTH_RANGE_COUNT,
+    if (mmay_unicode_range_contains(
+            mmay_unicode_zero_width_ranges,
+            MMAY_UNICODE_ZERO_WIDTH_RANGE_COUNT,
             scalar
         )) {
         return 0;
     }
-    if (ruda_unicode_range_contains(
-            ruda_unicode_wide_ranges,
-            RUDA_UNICODE_WIDE_RANGE_COUNT,
+    if (mmay_unicode_range_contains(
+            mmay_unicode_wide_ranges,
+            MMAY_UNICODE_WIDE_RANGE_COUNT,
             scalar
         )) {
         return 2;

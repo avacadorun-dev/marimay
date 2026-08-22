@@ -1,23 +1,23 @@
-set(original "${RUDA_TEST_BINARY_DIR}/cp13-install-original")
-set(relocated "${RUDA_TEST_BINARY_DIR}/cp13 install relocated")
+set(original "${MMAY_TEST_BINARY_DIR}/cp13-install-original")
+set(relocated "${MMAY_TEST_BINARY_DIR}/cp13 install relocated")
 set(project "${relocated}/project with spaces")
-set(tool "${relocated}/bin/ruda${RUDA_TEST_EXECUTABLE_SUFFIX}")
-set(debug_output "${relocated}/cp13 debug artifact${RUDA_TEST_EXECUTABLE_SUFFIX}")
-set(release_output "${relocated}/cp13 release artifact${RUDA_TEST_EXECUTABLE_SUFFIX}")
-set(failed_output "${relocated}/cp13 failed artifact${RUDA_TEST_EXECUTABLE_SUFFIX}")
+set(tool "${relocated}/bin/mmay${MMAY_TEST_EXECUTABLE_SUFFIX}")
+set(debug_output "${relocated}/cp13 debug artifact${MMAY_TEST_EXECUTABLE_SUFFIX}")
+set(release_output "${relocated}/cp13 release artifact${MMAY_TEST_EXECUTABLE_SUFFIX}")
+set(failed_output "${relocated}/cp13 failed artifact${MMAY_TEST_EXECUTABLE_SUFFIX}")
 set(emitted_c "${relocated}/cp13 emitted.c")
-set(path_output "${relocated}/cp13 PATH artifact${RUDA_TEST_EXECUTABLE_SUFFIX}")
+set(path_output "${relocated}/cp13 PATH artifact${MMAY_TEST_EXECUTABLE_SUFFIX}")
 set(release_manifest
-  "${relocated}/${RUDA_TEST_LIBDIR}/ruda/${RUDA_TEST_RUNTIME_VERSION}/native/release/ruda-native-runtime.manifest"
+  "${relocated}/${MMAY_TEST_LIBDIR}/mmay/${MMAY_TEST_RUNTIME_VERSION}/native/release/mmay-native-runtime.manifest"
 )
 set(release_archive
-  "${relocated}/${RUDA_TEST_LIBDIR}/ruda/${RUDA_TEST_RUNTIME_VERSION}/native/release/${RUDA_TEST_RELEASE_ARCHIVE}"
+  "${relocated}/${MMAY_TEST_LIBDIR}/mmay/${MMAY_TEST_RUNTIME_VERSION}/native/release/${MMAY_TEST_RELEASE_ARCHIVE}"
 )
 
 file(REMOVE_RECURSE "${original}" "${relocated}")
-if(RUDA_TEST_CONFIG STREQUAL "")
+if(MMAY_TEST_CONFIG STREQUAL "")
   execute_process(
-    COMMAND "${CMAKE_COMMAND}" --install "${RUDA_TEST_BINARY_DIR}"
+    COMMAND "${CMAKE_COMMAND}" --install "${MMAY_TEST_BINARY_DIR}"
       --prefix "${original}"
     RESULT_VARIABLE install_result
     OUTPUT_VARIABLE install_output
@@ -25,8 +25,8 @@ if(RUDA_TEST_CONFIG STREQUAL "")
   )
 else()
   execute_process(
-    COMMAND "${CMAKE_COMMAND}" --install "${RUDA_TEST_BINARY_DIR}"
-      --config "${RUDA_TEST_CONFIG}" --prefix "${original}"
+    COMMAND "${CMAKE_COMMAND}" --install "${MMAY_TEST_BINARY_DIR}"
+      --config "${MMAY_TEST_CONFIG}" --prefix "${original}"
     RESULT_VARIABLE install_result
     OUTPUT_VARIABLE install_output
     ERROR_VARIABLE install_error
@@ -38,12 +38,18 @@ if(NOT install_result EQUAL 0)
   )
 endif()
 file(RENAME "${original}" "${relocated}")
+if(NOT EXISTS "${tool}"
+    OR EXISTS "${relocated}/bin/ruda${MMAY_TEST_EXECUTABLE_SUFFIX}")
+  message(FATAL_ERROR
+    "relocated install must contain bin/mmay and no legacy executable"
+  )
+endif()
 file(MAKE_DIRECTORY "${project}")
-file(COPY_FILE "${RUDA_TEST_SOURCE}" "${project}/acceptance.ruda")
+file(COPY_FILE "${MMAY_TEST_SOURCE}" "${project}/acceptance.my")
 
-function(ruda_cp13_build profile output)
+function(mmay_cp13_build profile output)
   set(arguments
-    "${tool}" build "${project}/acceptance.ruda"
+    "${tool}" build "${project}/acceptance.my"
     --output "${output}"
   )
   if(profile STREQUAL "release")
@@ -77,8 +83,8 @@ function(ruda_cp13_build profile output)
   endif()
 endfunction()
 
-ruda_cp13_build(debug "${debug_output}")
-ruda_cp13_build(release "${release_output}")
+mmay_cp13_build(debug "${debug_output}")
+mmay_cp13_build(release "${release_output}")
 
 if(WIN32)
   set(path_separator ";")
@@ -88,8 +94,8 @@ endif()
 execute_process(
   COMMAND "${CMAKE_COMMAND}" -E env
     "PATH=${relocated}/bin${path_separator}$ENV{PATH}"
-    "ruda${RUDA_TEST_EXECUTABLE_SUFFIX}" build
-    "${project}/acceptance.ruda" --release --output "${path_output}"
+    "mmay${MMAY_TEST_EXECUTABLE_SUFFIX}" build
+    "${project}/acceptance.my" --release --output "${path_output}"
   RESULT_VARIABLE path_result
   OUTPUT_VARIABLE path_stdout
   ERROR_VARIABLE path_stderr
@@ -104,7 +110,7 @@ if(NOT path_result EQUAL 0
 endif()
 
 execute_process(
-  COMMAND "${tool}" build "${project}/acceptance.ruda" --release
+  COMMAND "${tool}" build "${project}/acceptance.my" --release
     --emit c --output "${emitted_c}"
   RESULT_VARIABLE emit_result
   OUTPUT_VARIABLE emit_output
@@ -123,7 +129,7 @@ file(READ "${release_manifest}" valid_manifest)
 string(REPLACE "profile=release" "profile=debug" invalid_manifest "${valid_manifest}")
 file(WRITE "${release_manifest}" "${invalid_manifest}")
 execute_process(
-  COMMAND "${tool}" build "${project}/acceptance.ruda" --release
+  COMMAND "${tool}" build "${project}/acceptance.my" --release
     --output "${failed_output}"
   RESULT_VARIABLE failed_result
   OUTPUT_VARIABLE failed_stdout
@@ -142,7 +148,7 @@ endif()
 
 file(RENAME "${release_archive}" "${release_archive}.missing")
 execute_process(
-  COMMAND "${tool}" build "${project}/acceptance.ruda" --release
+  COMMAND "${tool}" build "${project}/acceptance.my" --release
     --output "${failed_output}"
   RESULT_VARIABLE missing_result
   OUTPUT_VARIABLE missing_stdout

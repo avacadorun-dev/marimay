@@ -1,12 +1,12 @@
-#include "ruda/base/string_literal.h"
+#include "mmay/base/string_literal.h"
 
 #include <stdint.h>
 #include <string.h>
 
-#include "ruda/base/utf8.h"
-#include "ruda/base/vector.h"
+#include "mmay/base/utf8.h"
+#include "mmay/base/vector.h"
 
-static int ruda_string_literal_hex_digit(unsigned char byte) {
+static int mmay_string_literal_hex_digit(unsigned char byte) {
     if (byte >= '0' && byte <= '9') {
         return (int)(byte - '0');
     }
@@ -19,19 +19,19 @@ static int ruda_string_literal_hex_digit(unsigned char byte) {
     return -1;
 }
 
-RudaStringLiteralStatus ruda_string_literal_decode(
+MarimayStringLiteralStatus mmay_string_literal_decode(
     const unsigned char *spelling,
     size_t length,
     bool raw,
-    RudaAllocator allocator,
-    RudaOwnedBytes *decoded
+    MarimayAllocator allocator,
+    MarimayOwnedBytes *decoded
 ) {
-    RudaVector bytes;
+    MarimayVector bytes;
     size_t cursor = raw ? 2 : 1;
     size_t end = length > 0 ? length - 1 : 0;
-    RudaStringLiteralStatus status = RUDA_STRING_LITERAL_OK;
+    MarimayStringLiteralStatus status = MMAY_STRING_LITERAL_OK;
     if (decoded == NULL) {
-        return RUDA_STRING_LITERAL_INVALID;
+        return MMAY_STRING_LITERAL_INVALID;
     }
     memset(decoded, 0, sizeof(*decoded));
     if (spelling == NULL || allocator.allocate == NULL
@@ -40,29 +40,29 @@ RudaStringLiteralStatus ruda_string_literal_decode(
         || (raw && (length < 3 || spelling[0] != 'r'
             || spelling[1] != '"'))
         || spelling[end] != '"') {
-        return RUDA_STRING_LITERAL_INVALID;
+        return MMAY_STRING_LITERAL_INVALID;
     }
-    if (!ruda_vector_init(&bytes, allocator, sizeof(unsigned char))) {
-        return RUDA_STRING_LITERAL_ALLOCATION_FAILED;
+    if (!mmay_vector_init(&bytes, allocator, sizeof(unsigned char))) {
+        return MMAY_STRING_LITERAL_ALLOCATION_FAILED;
     }
     while (cursor < end) {
         unsigned char byte = spelling[cursor];
         if (raw || byte != '\\') {
-            RudaUtf8Scalar scalar;
+            MarimayUtf8Scalar scalar;
             size_t width = 1;
             if (byte >= 0x80U) {
-                if (!ruda_utf8_decode(
+                if (!mmay_utf8_decode(
                         spelling + cursor,
                         end - cursor,
                         &scalar
                     )) {
-                    status = RUDA_STRING_LITERAL_INVALID;
+                    status = MMAY_STRING_LITERAL_INVALID;
                     break;
                 }
                 width = scalar.width;
             }
-            if (!ruda_vector_append(&bytes, spelling + cursor, width)) {
-                status = RUDA_STRING_LITERAL_ALLOCATION_FAILED;
+            if (!mmay_vector_append(&bytes, spelling + cursor, width)) {
+                status = MMAY_STRING_LITERAL_ALLOCATION_FAILED;
                 break;
             }
             cursor += width;
@@ -70,13 +70,13 @@ RudaStringLiteralStatus ruda_string_literal_decode(
         }
         cursor += 1;
         if (cursor >= end) {
-            status = RUDA_STRING_LITERAL_INVALID;
+            status = MMAY_STRING_LITERAL_INVALID;
             break;
         }
         byte = spelling[cursor];
         if (byte == '\\' || byte == '"' || byte == '\'') {
-            if (!ruda_vector_push(&bytes, &byte)) {
-                status = RUDA_STRING_LITERAL_ALLOCATION_FAILED;
+            if (!mmay_vector_push(&bytes, &byte)) {
+                status = MMAY_STRING_LITERAL_ALLOCATION_FAILED;
                 break;
             }
             cursor += 1;
@@ -84,8 +84,8 @@ RudaStringLiteralStatus ruda_string_literal_decode(
             || byte == '0') {
             unsigned char value = byte == 'n' ? '\n'
                 : (byte == 'r' ? '\r' : (byte == 't' ? '\t' : 0));
-            if (!ruda_vector_push(&bytes, &value)) {
-                status = RUDA_STRING_LITERAL_ALLOCATION_FAILED;
+            if (!mmay_vector_push(&bytes, &value)) {
+                status = MMAY_STRING_LITERAL_ALLOCATION_FAILED;
                 break;
             }
             cursor += 1;
@@ -96,46 +96,46 @@ RudaStringLiteralStatus ruda_string_literal_decode(
             size_t encoded_width = 0;
             cursor += 1;
             if (cursor >= end || spelling[cursor] != '{') {
-                status = RUDA_STRING_LITERAL_INVALID;
+                status = MMAY_STRING_LITERAL_INVALID;
                 break;
             }
             cursor += 1;
             while (cursor < end && spelling[cursor] != '}') {
-                int digit = ruda_string_literal_hex_digit(spelling[cursor]);
+                int digit = mmay_string_literal_hex_digit(spelling[cursor]);
                 if (digit < 0 || digits >= 6) {
-                    status = RUDA_STRING_LITERAL_INVALID;
+                    status = MMAY_STRING_LITERAL_INVALID;
                     break;
                 }
                 value = (value << 4) | (uint32_t)digit;
                 digits += 1;
                 cursor += 1;
             }
-            if (status != RUDA_STRING_LITERAL_OK) {
+            if (status != MMAY_STRING_LITERAL_OK) {
                 break;
             }
             if (digits == 0 || cursor >= end || spelling[cursor] != '}'
-                || !ruda_utf8_encode(value, encoded, &encoded_width)) {
-                status = RUDA_STRING_LITERAL_INVALID;
+                || !mmay_utf8_encode(value, encoded, &encoded_width)) {
+                status = MMAY_STRING_LITERAL_INVALID;
                 break;
             }
-            if (!ruda_vector_append(&bytes, encoded, encoded_width)) {
-                status = RUDA_STRING_LITERAL_ALLOCATION_FAILED;
+            if (!mmay_vector_append(&bytes, encoded, encoded_width)) {
+                status = MMAY_STRING_LITERAL_ALLOCATION_FAILED;
                 break;
             }
             cursor += 1;
         } else {
-            status = RUDA_STRING_LITERAL_INVALID;
+            status = MMAY_STRING_LITERAL_INVALID;
             break;
         }
     }
-    if (status == RUDA_STRING_LITERAL_OK && !ruda_owned_bytes_copy(
+    if (status == MMAY_STRING_LITERAL_OK && !mmay_owned_bytes_copy(
             decoded,
             allocator,
             bytes.data,
             bytes.length
         )) {
-        status = RUDA_STRING_LITERAL_ALLOCATION_FAILED;
+        status = MMAY_STRING_LITERAL_ALLOCATION_FAILED;
     }
-    ruda_vector_dispose(&bytes);
+    mmay_vector_dispose(&bytes);
     return status;
 }

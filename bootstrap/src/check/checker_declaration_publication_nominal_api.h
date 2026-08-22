@@ -4,6 +4,6 @@
 #include "checker_internal.h"
 #include "checker_package_context.h"
 
- bool ruda_checker_private_publish_records(RudaChecker *checker);
- bool ruda_checker_private_publish_enums(RudaChecker *checker);
+ bool mmay_checker_private_publish_records(MarimayChecker *checker);
+ bool mmay_checker_private_publish_enums(MarimayChecker *checker);
 #endif

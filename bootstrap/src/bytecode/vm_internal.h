@@ -1,178 +1,178 @@
-#ifndef RUDA_BYTECODE_VM_INTERNAL_H
-#define RUDA_BYTECODE_VM_INTERNAL_H
+#ifndef MMAY_BYTECODE_VM_INTERNAL_H
+#define MMAY_BYTECODE_VM_INTERNAL_H
 
-#include "ruda/bytecode/vm.h"
+#include "mmay/bytecode/vm.h"
 
 #include "bytecode_internal.h"
 
-typedef struct RudaBytecodeManagedRoots {
-    RudaManagedRootFrame frame;
-    RudaManagedReference **locations;
+typedef struct MarimayBytecodeManagedRoots {
+    MarimayManagedRootFrame frame;
+    MarimayManagedReference **locations;
     size_t location_bytes;
-} RudaBytecodeManagedRoots;
+} MarimayBytecodeManagedRoots;
 
-bool ruda_bytecode_managed_value_valid(RudaBytecodeExecution *execution,
-    RudaBytecodeValue value);
-bool ruda_bytecode_managed_value_valid_for(
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaBytecodeValue value, uint32_t layout);
-const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor(
-    RudaBytecodeType type);
-const RudaManagedArrayDescriptor *ruda_bytecode_array_descriptor_for(
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaBytecodeType type, uint32_t layout);
-bool ruda_bytecode_array_cache_init(
-    RudaBytecodeExecution *execution, RudaAllocator allocator);
-void ruda_bytecode_array_cache_dispose(RudaBytecodeExecution *execution);
-void ruda_bytecode_array_cache_rollback(
-    RudaBytecodeExecution *execution, size_t length);
-RudaManagedObjectKind ruda_bytecode_nominal_object_kind(
-    RudaBytecodeType type);
-const void *ruda_bytecode_nominal_reference_descriptor(
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaBytecodeType type, uint32_t layout);
-RudaBytecodeRunStatus ruda_bytecode_run_managed_status(
-    RudaManagedStatus status);
-RudaBytecodeRunStatus ruda_bytecode_execution_intern(
-    RudaBytecodeExecution *execution, const unsigned char *bytes,
-    size_t length, RudaBytecodeReference *result);
-bool ruda_bytecode_nominal_cache_init(
-    RudaBytecodeExecution *execution, RudaAllocator allocator);
-void ruda_bytecode_nominal_cache_dispose(
-    RudaBytecodeExecution *execution);
-RudaBytecodeRunStatus ruda_bytecode_run_nominal_descriptor(
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaBytecodeType type, uint32_t layout, const void **descriptor);
-RudaBytecodeRunStatus ruda_bytecode_run_nominal_value_validate(
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaBytecodeValue value, RudaBytecodeType type, uint32_t layout);
-RudaBytecodeRunStatus ruda_bytecode_value_to_managed_cell(
-    RudaBytecodeExecution *execution, const RudaBytecodeValue *value,
-    RudaManagedCell *cell);
-RudaBytecodeRunStatus ruda_bytecode_managed_cell_to_value(
-    RudaBytecodeExecution *execution, RudaManagedCell cell,
-    RudaBytecodeValue *value);
-RudaBytecodeRunStatus ruda_bytecode_run_nominal_instruction(
-    const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaAllocator allocator);
-RudaBytecodeRunStatus ruda_bytecode_execution_new_numeric_option(
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    uint32_t enum_id, bool some, RudaBytecodeValue payload,
-    RudaBytecodeValue *target);
-RudaBytecodeRunStatus ruda_bytecode_run_numeric_instruction(
-    const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function);
-RudaBytecodeRunStatus ruda_bytecode_run_format_instruction(
-    const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution);
-RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
-    const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaAllocator allocator, const RudaIoStdout *stdout_sink,
-    RudaBytecodePanic *panic, RudaSymbolId symbol,
+bool mmay_bytecode_managed_value_valid(MarimayBytecodeExecution *execution,
+    MarimayBytecodeValue value);
+bool mmay_bytecode_managed_value_valid_for(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayBytecodeValue value, uint32_t layout);
+const MarimayManagedArrayDescriptor *mmay_bytecode_array_descriptor(
+    MarimayBytecodeType type);
+const MarimayManagedArrayDescriptor *mmay_bytecode_array_descriptor_for(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayBytecodeType type, uint32_t layout);
+bool mmay_bytecode_array_cache_init(
+    MarimayBytecodeExecution *execution, MarimayAllocator allocator);
+void mmay_bytecode_array_cache_dispose(MarimayBytecodeExecution *execution);
+void mmay_bytecode_array_cache_rollback(
+    MarimayBytecodeExecution *execution, size_t length);
+MarimayManagedObjectKind mmay_bytecode_nominal_object_kind(
+    MarimayBytecodeType type);
+const void *mmay_bytecode_nominal_reference_descriptor(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayBytecodeType type, uint32_t layout);
+MarimayBytecodeRunStatus mmay_bytecode_run_managed_status(
+    MarimayManagedStatus status);
+MarimayBytecodeRunStatus mmay_bytecode_execution_intern(
+    MarimayBytecodeExecution *execution, const unsigned char *bytes,
+    size_t length, MarimayBytecodeReference *result);
+bool mmay_bytecode_nominal_cache_init(
+    MarimayBytecodeExecution *execution, MarimayAllocator allocator);
+void mmay_bytecode_nominal_cache_dispose(
+    MarimayBytecodeExecution *execution);
+MarimayBytecodeRunStatus mmay_bytecode_run_nominal_descriptor(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayBytecodeType type, uint32_t layout, const void **descriptor);
+MarimayBytecodeRunStatus mmay_bytecode_run_nominal_value_validate(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayBytecodeValue value, MarimayBytecodeType type, uint32_t layout);
+MarimayBytecodeRunStatus mmay_bytecode_value_to_managed_cell(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeValue *value,
+    MarimayManagedCell *cell);
+MarimayBytecodeRunStatus mmay_bytecode_managed_cell_to_value(
+    MarimayBytecodeExecution *execution, MarimayManagedCell cell,
+    MarimayBytecodeValue *value);
+MarimayBytecodeRunStatus mmay_bytecode_run_nominal_instruction(
+    const MarimayBytecodeInstruction *instruction, MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator);
+MarimayBytecodeRunStatus mmay_bytecode_execution_new_numeric_option(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    uint32_t enum_id, bool some, MarimayBytecodeValue payload,
+    MarimayBytecodeValue *target);
+MarimayBytecodeRunStatus mmay_bytecode_run_numeric_instruction(
+    const MarimayBytecodeInstruction *instruction, MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function);
+MarimayBytecodeRunStatus mmay_bytecode_run_format_instruction(
+    const MarimayBytecodeInstruction *instruction, MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution);
+MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
+    const MarimayBytecodeInstruction *instruction, MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator, const MarimayIoStdout *stdout_sink,
+    MarimayBytecodePanic *panic, MarimaySymbolId symbol,
     int64_t *bounds_index, size_t *bounds_length);
-RudaBytecodeRunStatus ruda_bytecode_run_array_mutation_instruction(
-    const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaAllocator allocator, RudaBytecodePanic *panic, RudaSymbolId symbol,
+MarimayBytecodeRunStatus mmay_bytecode_run_array_mutation_instruction(
+    const MarimayBytecodeInstruction *instruction, MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator, MarimayBytecodePanic *panic, MarimaySymbolId symbol,
     bool *handled
 );
-RudaBytecodeRunStatus ruda_bytecode_run_range_instruction(
-    const RudaBytecodeInstruction *instruction,
-    RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function
+MarimayBytecodeRunStatus mmay_bytecode_run_range_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function
 );
-RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
-    const RudaBytecodeInstruction *instruction,
-    RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    RudaAllocator allocator,
-    const RudaIoStdout *stdout_sink
+MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator,
+    const MarimayIoStdout *stdout_sink
 );
-RudaBytecodeRunStatus ruda_bytecode_run_test_output_instruction(
-    const RudaBytecodeInstruction *instruction,
-    RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    RudaAllocator allocator,
-    RudaBytecodePanic *panic,
-    RudaSymbolId symbol
+MarimayBytecodeRunStatus mmay_bytecode_run_test_output_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator,
+    MarimayBytecodePanic *panic,
+    MarimaySymbolId symbol
 );
-RudaBytecodeRunStatus ruda_bytecode_run_begin_test_panic(
-    RudaBytecodePanic *panic, RudaAllocator allocator,
+MarimayBytecodeRunStatus mmay_bytecode_run_begin_test_panic(
+    MarimayBytecodePanic *panic, MarimayAllocator allocator,
     const unsigned char *message, size_t message_length,
-    RudaSymbolId symbol, RudaBytecodeSpan span
+    MarimaySymbolId symbol, MarimayBytecodeSpan span
 );
 
-bool ruda_bytecode_run_consume_step(size_t *steps,
-    RudaBytecodeRunOptions options);
-void ruda_bytecode_run_set_trap(RudaBytecodeRunOptions options,
-    RudaBytecodeSpan span);
-void ruda_bytecode_run_reset_panic(RudaBytecodePanic *panic);
-RudaBytecodeRunStatus ruda_bytecode_run_begin_panic(RudaBytecodePanic *panic,
-    RudaAllocator allocator, RudaBytecodeExecution *execution,
-    RudaBytecodeValue message, RudaSymbolId symbol, RudaBytecodeSpan span);
-RudaBytecodeRunStatus ruda_bytecode_run_begin_bounds_panic(
-    RudaBytecodePanic *panic, RudaAllocator allocator, int64_t index,
-    size_t length, RudaSymbolId symbol, RudaBytecodeSpan span);
-RudaBytecodeRunStatus ruda_bytecode_run_begin_iterator_invalidated_panic(
-    RudaBytecodePanic *panic, RudaAllocator allocator,
-    RudaSymbolId symbol, RudaBytecodeSpan span
+bool mmay_bytecode_run_consume_step(size_t *steps,
+    MarimayBytecodeRunOptions options);
+void mmay_bytecode_run_set_trap(MarimayBytecodeRunOptions options,
+    MarimayBytecodeSpan span);
+void mmay_bytecode_run_reset_panic(MarimayBytecodePanic *panic);
+MarimayBytecodeRunStatus mmay_bytecode_run_begin_panic(MarimayBytecodePanic *panic,
+    MarimayAllocator allocator, MarimayBytecodeExecution *execution,
+    MarimayBytecodeValue message, MarimaySymbolId symbol, MarimayBytecodeSpan span);
+MarimayBytecodeRunStatus mmay_bytecode_run_begin_bounds_panic(
+    MarimayBytecodePanic *panic, MarimayAllocator allocator, int64_t index,
+    size_t length, MarimaySymbolId symbol, MarimayBytecodeSpan span);
+MarimayBytecodeRunStatus mmay_bytecode_run_begin_iterator_invalidated_panic(
+    MarimayBytecodePanic *panic, MarimayAllocator allocator,
+    MarimaySymbolId symbol, MarimayBytecodeSpan span
 );
-RudaBytecodeRunStatus ruda_bytecode_run_append_panic_frame(
-    RudaBytecodePanic *panic, RudaSymbolId symbol,
-    RudaBytecodeSpan call_span);
-bool ruda_bytecode_run_append_suppressed_panic(
-    RudaBytecodePanic *primary, RudaBytecodePanic *secondary);
-bool ruda_bytecode_run_string_value_valid(RudaBytecodeExecution *execution,
-    RudaBytecodeValue value);
-bool ruda_bytecode_run_function_uses_strings(
-    const RudaBytecodeFunction *function);
-bool ruda_bytecode_run_program_uses_strings(const RudaBytecodeProgram *program);
-bool ruda_bytecode_run_function_uses_arrays(
-    const RudaBytecodeFunction *function);
-bool ruda_bytecode_run_program_uses_arrays(const RudaBytecodeProgram *program);
-bool ruda_bytecode_run_function_uses_managed(
-    const RudaBytecodeFunction *function);
-bool ruda_bytecode_run_program_uses_managed(
-    const RudaBytecodeProgram *program);
-RudaBytecodeRunStatus ruda_bytecode_run_roots_init(
-    RudaBytecodeManagedRoots *roots, RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function, RudaBytecodeValue *registers,
-    RudaAllocator allocator);
-void ruda_bytecode_run_roots_dispose(RudaBytecodeManagedRoots *roots,
-    RudaBytecodeExecution *execution, RudaAllocator allocator);
-bool ruda_bytecode_run_function_uses_f64(
-    const RudaBytecodeFunction *function);
-bool ruda_bytecode_run_program_uses_f64(const RudaBytecodeProgram *program);
-bool ruda_bytecode_run_function_has_calls(
-    const RudaBytecodeFunction *function);
-RudaBytecodeRunStatus ruda_bytecode_run_arguments_validate(
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    const RudaBytecodeValue *arguments, size_t argument_count);
-RudaBytecodeRunStatus ruda_bytecode_run_deferred_program_call(
-    const RudaBytecodeProgram *program, const RudaBytecodeFunction *caller,
-    const RudaBytecodeCall *call, const RudaBytecodeInstruction *instruction,
-    const RudaBytecodeValue *registers, RudaAllocator allocator,
-    RudaBytecodeRunOptions options, bool preserve_primary);
+MarimayBytecodeRunStatus mmay_bytecode_run_append_panic_frame(
+    MarimayBytecodePanic *panic, MarimaySymbolId symbol,
+    MarimayBytecodeSpan call_span);
+bool mmay_bytecode_run_append_suppressed_panic(
+    MarimayBytecodePanic *primary, MarimayBytecodePanic *secondary);
+bool mmay_bytecode_run_string_value_valid(MarimayBytecodeExecution *execution,
+    MarimayBytecodeValue value);
+bool mmay_bytecode_run_function_uses_strings(
+    const MarimayBytecodeFunction *function);
+bool mmay_bytecode_run_program_uses_strings(const MarimayBytecodeProgram *program);
+bool mmay_bytecode_run_function_uses_arrays(
+    const MarimayBytecodeFunction *function);
+bool mmay_bytecode_run_program_uses_arrays(const MarimayBytecodeProgram *program);
+bool mmay_bytecode_run_function_uses_managed(
+    const MarimayBytecodeFunction *function);
+bool mmay_bytecode_run_program_uses_managed(
+    const MarimayBytecodeProgram *program);
+MarimayBytecodeRunStatus mmay_bytecode_run_roots_init(
+    MarimayBytecodeManagedRoots *roots, MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function, MarimayBytecodeValue *registers,
+    MarimayAllocator allocator);
+void mmay_bytecode_run_roots_dispose(MarimayBytecodeManagedRoots *roots,
+    MarimayBytecodeExecution *execution, MarimayAllocator allocator);
+bool mmay_bytecode_run_function_uses_f64(
+    const MarimayBytecodeFunction *function);
+bool mmay_bytecode_run_program_uses_f64(const MarimayBytecodeProgram *program);
+bool mmay_bytecode_run_function_has_calls(
+    const MarimayBytecodeFunction *function);
+MarimayBytecodeRunStatus mmay_bytecode_run_arguments_validate(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    const MarimayBytecodeValue *arguments, size_t argument_count);
+MarimayBytecodeRunStatus mmay_bytecode_run_deferred_program_call(
+    const MarimayBytecodeProgram *program, const MarimayBytecodeFunction *caller,
+    const MarimayBytecodeCall *call, const MarimayBytecodeInstruction *instruction,
+    const MarimayBytecodeValue *registers, MarimayAllocator allocator,
+    MarimayBytecodeRunOptions options, bool preserve_primary);
 
-RudaBytecodeRunStatus ruda_bytecode_run_interface_new(
-    const RudaBytecodeInstruction *instruction, RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function);
-RudaBytecodeRunStatus ruda_bytecode_run_interface_resolve(
-    const RudaBytecodeInstruction *instruction, const RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaSymbolId *method, RudaManagedReference *payload);
-bool ruda_bytecode_run_interface_value_valid(
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaBytecodeValue value, uint32_t layout);
-const RudaManagedInterfaceDescriptor *ruda_bytecode_run_interface_descriptor(
-    RudaBytecodeExecution *execution, const RudaBytecodeFunction *function,
-    RudaBytecodeInterfaceId interface_id);
-void ruda_bytecode_run_interface_tables_dispose(
-    RudaBytecodeExecution *execution);
+MarimayBytecodeRunStatus mmay_bytecode_run_interface_new(
+    const MarimayBytecodeInstruction *instruction, MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function);
+MarimayBytecodeRunStatus mmay_bytecode_run_interface_resolve(
+    const MarimayBytecodeInstruction *instruction, const MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimaySymbolId *method, MarimayManagedReference *payload);
+bool mmay_bytecode_run_interface_value_valid(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayBytecodeValue value, uint32_t layout);
+const MarimayManagedInterfaceDescriptor *mmay_bytecode_run_interface_descriptor(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayBytecodeInterfaceId interface_id);
+void mmay_bytecode_run_interface_tables_dispose(
+    MarimayBytecodeExecution *execution);
 
 #endif

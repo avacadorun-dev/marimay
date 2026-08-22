@@ -4,23 +4,23 @@
 
 #include <string.h>
 
-#include "ruda/base/hash.h"
+#include "mmay/base/hash.h"
 
-typedef struct RudaCheckCallableKey {
+typedef struct MarimayCheckCallableKey {
     unsigned char bytes[32];
-} RudaCheckCallableKey;
+} MarimayCheckCallableKey;
 
-static bool ruda_check_resolution_name_bytes(
-    RudaCheckName name,
+static bool mmay_check_resolution_name_bytes(
+    MarimayCheckName name,
     const unsigned char **bytes,
     size_t *length
 ) {
     const unsigned char *source = name.snapshot == NULL
         ? NULL
-        : ruda_source_bytes(name.snapshot);
+        : mmay_source_bytes(name.snapshot);
     if (bytes == NULL || length == NULL || source == NULL
         || name.start > name.end
-        || name.end > ruda_source_length(name.snapshot)) {
+        || name.end > mmay_source_length(name.snapshot)) {
         return false;
     }
     *bytes = source + name.start;
@@ -28,16 +28,16 @@ static bool ruda_check_resolution_name_bytes(
     return true;
 }
 
-static bool ruda_check_callable_key(
+static bool mmay_check_callable_key(
     const void *name,
     size_t name_length,
-    RudaSymbolId receiver,
-    RudaCheckCallableKey *key
+    MarimaySymbolId receiver,
+    MarimayCheckCallableKey *key
 ) {
     static const unsigned char domain[] = {
         'r', 'u', 'd', 'a', '-', 'd', 'o', 't', '-', 'c', 'a', 'l', 'l'
     };
-    RudaSha256 hash;
+    MarimaySha256 hash;
     unsigned char length_bytes[8];
     size_t index = 0;
     if (key == NULL || (name == NULL && name_length != 0)
@@ -49,24 +49,24 @@ static bool ruda_check_callable_key(
             (uint64_t)name_length >> (index * 8)
         );
     }
-    ruda_sha256_init(&hash);
-    if (!ruda_sha256_update(&hash, domain, sizeof(domain))
-        || !ruda_sha256_update(
+    mmay_sha256_init(&hash);
+    if (!mmay_sha256_update(&hash, domain, sizeof(domain))
+        || !mmay_sha256_update(
             &hash,
             receiver.bytes,
             sizeof(receiver.bytes)
-        ) || !ruda_sha256_update(&hash, length_bytes, sizeof(length_bytes))
-        || !ruda_sha256_update(&hash, name, name_length)) {
+        ) || !mmay_sha256_update(&hash, length_bytes, sizeof(length_bytes))
+        || !mmay_sha256_update(&hash, name, name_length)) {
         return false;
     }
-    ruda_sha256_final(&hash, key->bytes);
+    mmay_sha256_final(&hash, key->bytes);
     return true;
 }
 
-bool ruda_check_callable_index_init(RudaChecker *checker) {
+bool mmay_check_callable_index_init(MarimayChecker *checker) {
     static const uint64_t key0 = UINT64_C(0x727564612d63616c);
     static const uint64_t key1 = UINT64_C(0x6c61626c652d6964);
-    return checker != NULL && checker->result != NULL && ruda_map_init(
+    return checker != NULL && checker->result != NULL && mmay_map_init(
         &checker->callable_index,
         checker->result->allocator,
         sizeof(size_t),
@@ -75,135 +75,135 @@ bool ruda_check_callable_index_init(RudaChecker *checker) {
     );
 }
 
-bool ruda_check_owned_receiver(
-    const RudaChecker *checker,
-    RudaTypeId type,
-    RudaSymbolId *receiver
+bool mmay_check_owned_receiver(
+    const MarimayChecker *checker,
+    MarimayTypeId type,
+    MarimaySymbolId *receiver
 ) {
-    const RudaTypeDescriptor *descriptor = NULL;
-    const RudaSymbolId *owned = NULL;
+    const MarimayTypeDescriptor *descriptor = NULL;
+    const MarimaySymbolId *owned = NULL;
     if (checker == NULL || checker->result == NULL || receiver == NULL) {
         return false;
     }
-    descriptor = ruda_type_descriptor(&checker->result->types, type);
-    owned = ruda_map_get_const(
+    descriptor = mmay_type_descriptor(&checker->result->types, type);
+    owned = mmay_map_get_const(
         &checker->local_nominal_index,
         &type,
         sizeof(type)
     );
-    if (descriptor == NULL || descriptor->kind != RUDA_TYPE_KIND_NOMINAL
-        || owned == NULL || !ruda_symbol_id_equal(*owned, descriptor->symbol)) {
+    if (descriptor == NULL || descriptor->kind != MMAY_TYPE_KIND_NOMINAL
+        || owned == NULL || !mmay_symbol_id_equal(*owned, descriptor->symbol)) {
         return false;
     }
     *receiver = descriptor->symbol;
     return true;
 }
 
-static bool ruda_check_declaration_name_bytes(
-    const RudaCheckFunctionDeclaration *declaration,
+static bool mmay_check_declaration_name_bytes(
+    const MarimayCheckFunctionDeclaration *declaration,
     const unsigned char **bytes,
     size_t *length
 ) {
     return declaration != NULL
-        && ruda_check_resolution_name_bytes(declaration->name, bytes, length);
+        && mmay_check_resolution_name_bytes(declaration->name, bytes, length);
 }
 
-static RudaCheckCallResolution ruda_check_unresolved_receiver(
-    const RudaChecker *checker,
-    const RudaCheckTopLevelEntry *entry,
+static MarimayCheckCallResolution mmay_check_unresolved_receiver(
+    const MarimayChecker *checker,
+    const MarimayCheckTopLevelEntry *entry,
     bool receiver_owned
 ) {
-    const RudaCheckFunctionDeclaration *first = NULL;
+    const MarimayCheckFunctionDeclaration *first = NULL;
     if (checker == NULL || entry == NULL || entry->function_count == 0) {
-        return RUDA_CHECK_CALL_INTERNAL_ERROR;
+        return MMAY_CHECK_CALL_INTERNAL_ERROR;
     }
-    first = ruda_vector_at_const(&checker->declarations, entry->index);
+    first = mmay_vector_at_const(&checker->declarations, entry->index);
     if (first == NULL || !first->signature_valid) {
-        return RUDA_CHECK_CALL_INTERNAL_ERROR;
+        return MMAY_CHECK_CALL_INTERNAL_ERROR;
     }
     if (entry->function_count == 1 && !first->dot_eligible) {
-        return RUDA_CHECK_CALL_NOT_DOT_ELIGIBLE;
+        return MMAY_CHECK_CALL_NOT_DOT_ELIGIBLE;
     }
     if (!receiver_owned) {
-        return RUDA_CHECK_CALL_RECEIVER_NOT_OWNED;
+        return MMAY_CHECK_CALL_RECEIVER_NOT_OWNED;
     }
-    return RUDA_CHECK_CALL_OTHER_NOMINAL;
+    return MMAY_CHECK_CALL_OTHER_NOMINAL;
 }
 
-bool ruda_check_callable_insert(
-    RudaChecker *checker,
-    const RudaCheckFunctionDeclaration *declaration,
+bool mmay_check_callable_insert(
+    MarimayChecker *checker,
+    const MarimayCheckFunctionDeclaration *declaration,
     size_t declaration_index
 ) {
     const unsigned char *name_bytes = NULL;
     size_t name_length = 0;
-    RudaCheckCallableKey key;
+    MarimayCheckCallableKey key;
     if (checker == NULL || declaration == NULL
         || !declaration->signature_valid || !declaration->dot_eligible
         || declaration_index == SIZE_MAX
-        || !ruda_check_declaration_name_bytes(
+        || !mmay_check_declaration_name_bytes(
             declaration,
             &name_bytes,
             &name_length
-        ) || !ruda_check_callable_key(
+        ) || !mmay_check_callable_key(
             name_bytes,
             name_length,
             declaration->receiver_symbol,
             &key
         )) {
         if (checker != NULL) {
-            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         }
         return false;
     }
-    if (ruda_map_get_const(
+    if (mmay_map_get_const(
             &checker->callable_index,
             key.bytes,
             sizeof(key.bytes)
         ) != NULL) {
-        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
-    if (!ruda_map_put(
+    if (!mmay_map_put(
             &checker->callable_index,
             key.bytes,
             sizeof(key.bytes),
             &declaration_index
         )) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     return true;
 }
 
-bool ruda_check_callable_remove(
-    RudaChecker *checker,
-    const RudaCheckFunctionDeclaration *declaration
+bool mmay_check_callable_remove(
+    MarimayChecker *checker,
+    const MarimayCheckFunctionDeclaration *declaration
 ) {
     const unsigned char *name_bytes = NULL;
     size_t name_length = 0;
-    RudaCheckCallableKey key;
+    MarimayCheckCallableKey key;
     return checker != NULL && declaration != NULL
         && declaration->dot_eligible
-        && ruda_check_declaration_name_bytes(
+        && mmay_check_declaration_name_bytes(
             declaration,
             &name_bytes,
             &name_length
-        ) && ruda_check_callable_key(
+        ) && mmay_check_callable_key(
             name_bytes,
             name_length,
             declaration->receiver_symbol,
             &key
-        ) && ruda_map_remove(
+        ) && mmay_map_remove(
             &checker->callable_index,
             key.bytes,
             sizeof(key.bytes)
         );
 }
 
-static bool ruda_check_callable_from_declaration(
-    const RudaCheckFunctionDeclaration *declaration,
-    RudaCheckCallable *callable
+static bool mmay_check_callable_from_declaration(
+    const MarimayCheckFunctionDeclaration *declaration,
+    MarimayCheckCallable *callable
 ) {
     if (declaration == NULL || callable == NULL
         || !declaration->signature_valid) {
@@ -221,130 +221,130 @@ static bool ruda_check_callable_from_declaration(
     return true;
 }
 
-RudaCheckCallResolution ruda_check_resolve_call(
-    const RudaChecker *checker,
-    RudaCheckName name,
+MarimayCheckCallResolution mmay_check_resolve_call(
+    const MarimayChecker *checker,
+    MarimayCheckName name,
     bool receiver_known,
-    RudaTypeId receiver_type,
-    RudaCheckCallable *callable
+    MarimayTypeId receiver_type,
+    MarimayCheckCallable *callable
 ) {
     const unsigned char *name_bytes = NULL;
     size_t name_length = 0;
-    const RudaCheckTopLevelEntry *entry = NULL;
-    const RudaCheckFunctionDeclaration *candidate = NULL;
+    const MarimayCheckTopLevelEntry *entry = NULL;
+    const MarimayCheckFunctionDeclaration *candidate = NULL;
     const unsigned char *candidate_name = NULL;
     size_t candidate_name_length = 0;
-    RudaSymbolId receiver;
-    RudaCheckCallableKey key;
+    MarimaySymbolId receiver;
+    MarimayCheckCallableKey key;
     const size_t *candidate_index = NULL;
     bool receiver_owned = false;
-    RudaCheckCallResolution imported = RUDA_CHECK_CALL_UNKNOWN_NAME;
-    RudaCheckName no_namespace;
+    MarimayCheckCallResolution imported = MMAY_CHECK_CALL_UNKNOWN_NAME;
+    MarimayCheckName no_namespace;
     memset(&no_namespace, 0, sizeof(no_namespace));
     if (callable == NULL || checker == NULL) {
-        return RUDA_CHECK_CALL_INTERNAL_ERROR;
+        return MMAY_CHECK_CALL_INTERNAL_ERROR;
     }
     memset(callable, 0, sizeof(*callable));
-    if (!ruda_check_resolution_name_bytes(name, &name_bytes, &name_length)) {
-        return RUDA_CHECK_CALL_INTERNAL_ERROR;
+    if (!mmay_check_resolution_name_bytes(name, &name_bytes, &name_length)) {
+        return MMAY_CHECK_CALL_INTERNAL_ERROR;
     }
-    entry = ruda_map_get_const(
+    entry = mmay_map_get_const(
         &checker->top_level_index,
         name_bytes,
         name_length
     );
     if (entry == NULL) {
-        return ruda_check_resolve_imported_call(
+        return mmay_check_resolve_imported_call(
             checker, no_namespace, false, name, receiver_known,
             receiver_type, callable
         );
     }
-    if (entry->kind != RUDA_CHECK_TOP_LEVEL_FUNCTION) {
-        return RUDA_CHECK_CALL_NOT_FUNCTION;
+    if (entry->kind != MMAY_CHECK_TOP_LEVEL_FUNCTION) {
+        return MMAY_CHECK_CALL_NOT_FUNCTION;
     }
     if (entry->function_count == 0) {
-        return RUDA_CHECK_CALL_INTERNAL_ERROR;
+        return MMAY_CHECK_CALL_INTERNAL_ERROR;
     }
     if (!receiver_known) {
         if (entry->function_count != 1) {
-            return RUDA_CHECK_CALL_RECEIVER_REQUIRED;
+            return MMAY_CHECK_CALL_RECEIVER_REQUIRED;
         }
-        candidate = ruda_vector_at_const(&checker->declarations, entry->index);
+        candidate = mmay_vector_at_const(&checker->declarations, entry->index);
     } else {
-        receiver_owned = ruda_check_owned_receiver(
+        receiver_owned = mmay_check_owned_receiver(
             checker,
             receiver_type,
             &receiver
         );
         if (receiver_owned) {
-            if (!ruda_check_callable_key(
+            if (!mmay_check_callable_key(
                     name_bytes,
                     name_length,
                     receiver,
                     &key
                 )) {
-                return RUDA_CHECK_CALL_INTERNAL_ERROR;
+                return MMAY_CHECK_CALL_INTERNAL_ERROR;
             }
-            candidate_index = ruda_map_get_const(
+            candidate_index = mmay_map_get_const(
                 &checker->callable_index,
                 key.bytes,
                 sizeof(key.bytes)
             );
             if (candidate_index != NULL) {
-                candidate = ruda_vector_at_const(
+                candidate = mmay_vector_at_const(
                     &checker->declarations,
                     *candidate_index
                 );
                 if (candidate == NULL || !candidate->dot_eligible
-                    || !ruda_symbol_id_equal(
+                    || !mmay_symbol_id_equal(
                         candidate->receiver_symbol,
                         receiver
                     )) {
-                    return RUDA_CHECK_CALL_INTERNAL_ERROR;
+                    return MMAY_CHECK_CALL_INTERNAL_ERROR;
                 }
             }
         }
         if (candidate == NULL) {
-            imported = ruda_check_resolve_imported_call(
+            imported = mmay_check_resolve_imported_call(
                 checker, no_namespace, false, name, true,
                 receiver_type, callable
             );
-            if (imported == RUDA_CHECK_CALL_FOUND) {
+            if (imported == MMAY_CHECK_CALL_FOUND) {
                 return imported;
             }
-            return ruda_check_unresolved_receiver(checker, entry,
-                receiver_owned || imported == RUDA_CHECK_CALL_OTHER_NOMINAL);
+            return mmay_check_unresolved_receiver(checker, entry,
+                receiver_owned || imported == MMAY_CHECK_CALL_OTHER_NOMINAL);
         }
     }
     if (candidate == NULL || !candidate->signature_valid
-        || !ruda_check_declaration_name_bytes(
+        || !mmay_check_declaration_name_bytes(
             candidate,
             &candidate_name,
             &candidate_name_length
         ) || candidate_name_length != name_length
         || memcmp(candidate_name, name_bytes, name_length) != 0) {
-        return RUDA_CHECK_CALL_INTERNAL_ERROR;
+        return MMAY_CHECK_CALL_INTERNAL_ERROR;
     }
-    return ruda_check_callable_from_declaration(candidate, callable)
-        ? RUDA_CHECK_CALL_FOUND : RUDA_CHECK_CALL_INTERNAL_ERROR;
+    return mmay_check_callable_from_declaration(candidate, callable)
+        ? MMAY_CHECK_CALL_FOUND : MMAY_CHECK_CALL_INTERNAL_ERROR;
 }
 
-RudaCheckCallResolution ruda_check_resolve_free_call(
-    const RudaChecker *checker,
-    RudaCheckName name,
-    RudaTypeId receiver_type,
-    RudaCheckCallable *callable
+MarimayCheckCallResolution mmay_check_resolve_free_call(
+    const MarimayChecker *checker,
+    MarimayCheckName name,
+    MarimayTypeId receiver_type,
+    MarimayCheckCallable *callable
 ) {
-    RudaCheckCallResolution resolution = ruda_check_resolve_imported_named_call(
+    MarimayCheckCallResolution resolution = mmay_check_resolve_imported_named_call(
         checker,
         name,
         receiver_type,
         callable
     );
-    if (resolution != RUDA_CHECK_CALL_UNKNOWN_NAME) {
+    if (resolution != MMAY_CHECK_CALL_UNKNOWN_NAME) {
         return resolution;
     }
-    return ruda_check_resolve_call(
+    return mmay_check_resolve_call(
         checker,
         name,
         true,
@@ -353,28 +353,28 @@ RudaCheckCallResolution ruda_check_resolve_free_call(
     );
 }
 
-RudaCheckCallResolution ruda_check_resolve_qualified_call(
-    const RudaChecker *checker,
-    RudaCheckName namespace_name,
-    RudaCheckName name,
+MarimayCheckCallResolution mmay_check_resolve_qualified_call(
+    const MarimayChecker *checker,
+    MarimayCheckName namespace_name,
+    MarimayCheckName name,
     bool receiver_known,
-    RudaTypeId receiver_type,
-    RudaCheckCallable *callable
+    MarimayTypeId receiver_type,
+    MarimayCheckCallable *callable
 ) {
-    return ruda_check_resolve_imported_call(
+    return mmay_check_resolve_imported_call(
         checker, namespace_name, true, name, receiver_known,
         receiver_type, callable
     );
 }
 
-static bool ruda_check_completion_surface_active(
-    const RudaChecker *checker,
+static bool mmay_check_completion_surface_active(
+    const MarimayChecker *checker,
     size_t surface_index
 ) {
     size_t index = 0;
     for (index = 0; checker != NULL && checker->imports != NULL
         && index < checker->imports->binding_count; index += 1) {
-        const RudaCheckImportBinding *binding =
+        const MarimayCheckImportBinding *binding =
             &checker->imports->bindings[index];
         if (binding->ast == checker->ast
             && binding->surface_index == surface_index) {
@@ -384,10 +384,10 @@ static bool ruda_check_completion_surface_active(
     return false;
 }
 
-static bool ruda_check_completion_copy_free_spelling(
-    RudaChecker *checker,
-    RudaCheckedCompletion *completion,
-    const RudaCheckImportBinding *binding,
+static bool mmay_check_completion_copy_free_spelling(
+    MarimayChecker *checker,
+    MarimayCheckedCompletion *completion,
+    const MarimayCheckImportBinding *binding,
     const unsigned char *name,
     size_t name_length,
     bool local_free
@@ -395,7 +395,7 @@ static bool ruda_check_completion_copy_free_spelling(
     size_t length = 0;
     size_t allocation_size = 0;
     if (local_free) {
-        return ruda_owned_bytes_copy(
+        return mmay_owned_bytes_copy(
             &completion->free_spelling,
             checker->result->allocator,
             name,
@@ -403,7 +403,7 @@ static bool ruda_check_completion_copy_free_spelling(
         );
     }
     if (binding == NULL) {
-        return ruda_owned_bytes_copy(
+        return mmay_owned_bytes_copy(
             &completion->free_spelling,
             checker->result->allocator,
             NULL,
@@ -411,26 +411,26 @@ static bool ruda_check_completion_copy_free_spelling(
         );
     }
     if (!binding->is_namespace) {
-        return ruda_owned_bytes_copy(
+        return mmay_owned_bytes_copy(
             &completion->free_spelling,
             checker->result->allocator,
             binding->local,
             binding->local_length
         );
     }
-    if (!ruda_size_add(binding->local_length, 1, &length)
-        || !ruda_size_add(length, name_length, &length)
-        || !ruda_size_add(length, 1, &allocation_size)) {
-        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+    if (!mmay_size_add(binding->local_length, 1, &length)
+        || !mmay_size_add(length, name_length, &length)
+        || !mmay_size_add(length, 1, &allocation_size)) {
+        mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
         return false;
     }
     completion->free_spelling.allocator = checker->result->allocator;
-    completion->free_spelling.data = ruda_allocate(
+    completion->free_spelling.data = mmay_allocate(
         &completion->free_spelling.allocator,
         allocation_size
     );
     if (completion->free_spelling.data == NULL) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     memcpy(
@@ -449,20 +449,20 @@ static bool ruda_check_completion_copy_free_spelling(
     return true;
 }
 
-static const RudaCheckImportBinding *ruda_check_completion_free_binding(
-    const RudaChecker *checker,
+static const MarimayCheckImportBinding *mmay_check_completion_free_binding(
+    const MarimayChecker *checker,
     size_t surface_index,
     const unsigned char *name,
     size_t name_length
 ) {
-    const RudaCheckImportBinding *best_named = NULL;
-    const RudaCheckImportBinding *best_namespace = NULL;
+    const MarimayCheckImportBinding *best_named = NULL;
+    const MarimayCheckImportBinding *best_namespace = NULL;
     size_t index = 0;
     for (index = 0; checker != NULL && checker->imports != NULL
         && index < checker->imports->binding_count; index += 1) {
-        const RudaCheckImportBinding *binding =
+        const MarimayCheckImportBinding *binding =
             &checker->imports->bindings[index];
-        const RudaCheckImportBinding **best = NULL;
+        const MarimayCheckImportBinding **best = NULL;
         size_t shared = 0;
         int comparison = 0;
         if (binding->ast != checker->ast
@@ -492,38 +492,38 @@ static const RudaCheckImportBinding *ruda_check_completion_free_binding(
     return best_named != NULL ? best_named : best_namespace;
 }
 
-static bool ruda_check_append_completion(
-    RudaChecker *checker,
+static bool mmay_check_append_completion(
+    MarimayChecker *checker,
     const unsigned char *name,
     size_t name_length,
     const unsigned char *package_name,
     size_t package_name_length,
-    RudaSymbolId symbol,
-    RudaSymbolId receiver_symbol,
-    const RudaCheckImportBinding *free_binding,
+    MarimaySymbolId symbol,
+    MarimaySymbolId receiver_symbol,
+    const MarimayCheckImportBinding *free_binding,
     bool local_free
 ) {
-    RudaCheckedCompletion completion;
+    MarimayCheckedCompletion completion;
     memset(&completion, 0, sizeof(completion));
     if (checker->result->completions.length
         >= checker->options.max_completions) {
-        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
         return false;
     }
     completion.symbol = symbol;
     completion.receiver_symbol = receiver_symbol;
     completion.snapshot = checker->ast->snapshot;
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &completion.name,
             checker->result->allocator,
             name,
             name_length
-        ) || !ruda_owned_bytes_copy(
+        ) || !mmay_owned_bytes_copy(
             &completion.package_name,
             checker->result->allocator,
             package_name,
             package_name_length
-        ) || !ruda_check_completion_copy_free_spelling(
+        ) || !mmay_check_completion_copy_free_spelling(
             checker,
             &completion,
             free_binding,
@@ -531,51 +531,51 @@ static bool ruda_check_append_completion(
             name_length,
             local_free
         )) {
-        ruda_owned_bytes_dispose(&completion.free_spelling);
-        ruda_owned_bytes_dispose(&completion.package_name);
-        ruda_owned_bytes_dispose(&completion.name);
-        if (!ruda_checker_has_failed(checker)) {
-            ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        mmay_owned_bytes_dispose(&completion.free_spelling);
+        mmay_owned_bytes_dispose(&completion.package_name);
+        mmay_owned_bytes_dispose(&completion.name);
+        if (!mmay_checker_has_failed(checker)) {
+            mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         }
         return false;
     }
-    if (!ruda_vector_push(&checker->result->completions, &completion)) {
-        ruda_owned_bytes_dispose(&completion.free_spelling);
-        ruda_owned_bytes_dispose(&completion.package_name);
-        ruda_owned_bytes_dispose(&completion.name);
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+    if (!mmay_vector_push(&checker->result->completions, &completion)) {
+        mmay_owned_bytes_dispose(&completion.free_spelling);
+        mmay_owned_bytes_dispose(&completion.package_name);
+        mmay_owned_bytes_dispose(&completion.name);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     return true;
 }
 
-bool ruda_check_publish_completions_for_ast(RudaChecker *checker) {
+bool mmay_check_publish_completions_for_ast(MarimayChecker *checker) {
     size_t index = 0;
     if (checker == NULL || checker->result == NULL || checker->ast == NULL) {
         return false;
     }
     for (index = 0; index < checker->declarations.length; index += 1) {
-        const RudaCheckFunctionDeclaration *declaration = ruda_vector_at_const(
+        const MarimayCheckFunctionDeclaration *declaration = mmay_vector_at_const(
             &checker->declarations,
             index
         );
-        RudaCheckCallable resolved;
+        MarimayCheckCallable resolved;
         if (declaration == NULL || !declaration->signature_valid) {
-            ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             return false;
         }
         if (!declaration->dot_eligible) {
             continue;
         }
-        if (ruda_check_resolve_call(
+        if (mmay_check_resolve_call(
                 checker,
                 declaration->name,
                 true,
                 declaration->receiver_type,
                 &resolved
-            ) != RUDA_CHECK_CALL_FOUND
-            || !ruda_symbol_id_equal(resolved.symbol, declaration->symbol)
-            || !ruda_check_append_completion(
+            ) != MMAY_CHECK_CALL_FOUND
+            || !mmay_symbol_id_equal(resolved.symbol, declaration->symbol)
+            || !mmay_check_append_completion(
                 checker,
                 declaration->owned_name.data,
                 declaration->owned_name.length,
@@ -586,61 +586,61 @@ bool ruda_check_publish_completions_for_ast(RudaChecker *checker) {
                 NULL,
                 true
             )) {
-            if (!ruda_checker_has_failed(checker)) {
-                ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+            if (!mmay_checker_has_failed(checker)) {
+                mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             }
             return false;
         }
     }
     for (index = 0; checker->imports != NULL
         && index < checker->imports->surface_count; index += 1) {
-        const RudaCheckPackageSurface *surface = checker->imports->surfaces[index];
+        const MarimayCheckPackageSurface *surface = checker->imports->surfaces[index];
         size_t function_index = 0;
-        if (!ruda_check_completion_surface_active(checker, index)) {
+        if (!mmay_check_completion_surface_active(checker, index)) {
             continue;
         }
         for (function_index = 0; function_index < surface->function_count;
             function_index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 checker->result,
                 surface->function_start + function_index
             );
-            const RudaCheckedSymbol *definition = function == NULL ? NULL
-                : ruda_checked_symbol_by_id(
+            const MarimayCheckedSymbol *definition = function == NULL ? NULL
+                : mmay_checked_symbol_by_id(
                     checker->result,
                     function->mir.symbol
                 );
-            RudaCheckCallable resolved;
-            RudaCheckName name;
-            const RudaCheckImportBinding *free_binding = NULL;
+            MarimayCheckCallable resolved;
+            MarimayCheckName name;
+            const MarimayCheckImportBinding *free_binding = NULL;
             if (function == NULL || !function->is_public
                 || !function->dot_eligible) {
                 continue;
             }
             if (definition == NULL) {
-                ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+                mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
                 return false;
             }
             name.snapshot = definition->snapshot;
             name.start = definition->start;
             name.end = definition->end;
-            if (ruda_check_resolve_call(
+            if (mmay_check_resolve_call(
                     checker,
                     name,
                     true,
                     function->receiver_type,
                     &resolved
-                ) != RUDA_CHECK_CALL_FOUND
-                || !ruda_symbol_id_equal(resolved.symbol, function->mir.symbol)) {
+                ) != MMAY_CHECK_CALL_FOUND
+                || !mmay_symbol_id_equal(resolved.symbol, function->mir.symbol)) {
                 continue;
             }
-            free_binding = ruda_check_completion_free_binding(
+            free_binding = mmay_check_completion_free_binding(
                 checker,
                 index,
                 function->name.data,
                 function->name.length
             );
-            if (!ruda_check_append_completion(
+            if (!mmay_check_append_completion(
                     checker,
                     function->name.data,
                     function->name.length,

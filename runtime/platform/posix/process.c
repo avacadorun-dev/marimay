@@ -1,6 +1,6 @@
 #define _POSIX_C_SOURCE 200809L
 
-#include "ruda/platform/process.h"
+#include "mmay/platform/process.h"
 
 #include <errno.h>
 #include <signal.h>
@@ -18,48 +18,48 @@
 #include <mach-o/dyld.h>
 #endif
 
-#include "ruda/base/vector.h"
+#include "mmay/base/vector.h"
 
 extern char **environ;
 
-RudaProcessStatus ruda_process_executable_path(
-    RudaAllocator allocator,
+MarimayProcessStatus mmay_process_executable_path(
+    MarimayAllocator allocator,
     size_t max_path,
-    RudaOwnedBytes *path
+    MarimayOwnedBytes *path
 ) {
     char buffer[32769];
     size_t length = 0;
     if (path == NULL || max_path == 0) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
     memset(path, 0, sizeof(*path));
 #if defined(__APPLE__)
     {
         uint32_t capacity = (uint32_t)sizeof(buffer);
         if (_NSGetExecutablePath(buffer, &capacity) != 0) {
-            return RUDA_PROCESS_OUTPUT_LIMIT;
+            return MMAY_PROCESS_OUTPUT_LIMIT;
         }
         length = strlen(buffer);
     }
 #elif defined(__linux__)
     {
         ssize_t count = readlink("/proc/self/exe", buffer, sizeof(buffer) - 1);
-        if (count < 0) return RUDA_PROCESS_IO_FAILED;
+        if (count < 0) return MMAY_PROCESS_IO_FAILED;
         length = (size_t)count;
         buffer[length] = 0;
     }
 #else
     (void)allocator;
-    return RUDA_PROCESS_IO_FAILED;
+    return MMAY_PROCESS_IO_FAILED;
 #endif
     if (length == 0 || length > max_path) {
-        return RUDA_PROCESS_OUTPUT_LIMIT;
+        return MMAY_PROCESS_OUTPUT_LIMIT;
     }
-    return ruda_owned_bytes_copy(path, allocator, buffer, length)
-        ? RUDA_PROCESS_OK : RUDA_PROCESS_ALLOCATION_FAILED;
+    return mmay_owned_bytes_copy(path, allocator, buffer, length)
+        ? MMAY_PROCESS_OK : MMAY_PROCESS_ALLOCATION_FAILED;
 }
 
-static void ruda_process_result_init(RudaProcessResult *result, RudaAllocator allocator) {
+static void mmay_process_result_init(MarimayProcessResult *result, MarimayAllocator allocator) {
     result->output.allocator = allocator;
     result->output.data = NULL;
     result->output.length = 0;
@@ -68,19 +68,19 @@ static void ruda_process_result_init(RudaProcessResult *result, RudaAllocator al
     result->signal_code = 0;
 }
 
-static void ruda_process_stop_and_wait(pid_t process) {
+static void mmay_process_stop_and_wait(pid_t process) {
     int wait_status = 0;
     (void)kill(process, SIGKILL);
     while (waitpid(process, &wait_status, 0) < 0 && errno == EINTR) {
     }
 }
 
-RudaProcessStatus ruda_process_run(
-    RudaAllocator allocator,
+MarimayProcessStatus mmay_process_run(
+    MarimayAllocator allocator,
     const char *const arguments[],
     size_t argument_count,
     size_t max_output,
-    RudaProcessResult *result
+    MarimayProcessResult *result
 ) {
     int descriptors[2] = {-1, -1};
     posix_spawn_file_actions_t actions;
@@ -88,33 +88,33 @@ RudaProcessStatus ruda_process_run(
     pid_t process = 0;
     int spawn_status = 0;
     int wait_status = 0;
-    RudaVector output;
-    RudaProcessStatus status = RUDA_PROCESS_OK;
+    MarimayVector output;
+    MarimayProcessStatus status = MMAY_PROCESS_OK;
     unsigned char chunk[4096];
     size_t index = 0;
 
     if (result == NULL) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
-    ruda_process_result_init(result, allocator);
+    mmay_process_result_init(result, allocator);
     if (arguments == NULL || argument_count == 0 || arguments[0] == NULL
         || arguments[argument_count] != NULL) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
     for (index = 0; index < argument_count; index += 1) {
         if (arguments[index] == NULL) {
-            return RUDA_PROCESS_INVALID_ARGUMENT;
+            return MMAY_PROCESS_INVALID_ARGUMENT;
         }
     }
-    if (!ruda_vector_init(&output, allocator, sizeof(unsigned char))) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+    if (!mmay_vector_init(&output, allocator, sizeof(unsigned char))) {
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
     if (pipe(descriptors) != 0) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     if (posix_spawn_file_actions_init(&actions) != 0) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     actions_initialized = true;
@@ -122,7 +122,7 @@ RudaProcessStatus ruda_process_run(
         || posix_spawn_file_actions_adddup2(&actions, descriptors[1], STDERR_FILENO) != 0
         || posix_spawn_file_actions_addclose(&actions, descriptors[0]) != 0
         || posix_spawn_file_actions_addclose(&actions, descriptors[1]) != 0) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     spawn_status = posix_spawnp(
@@ -134,7 +134,7 @@ RudaProcessStatus ruda_process_run(
         environ
     );
     if (spawn_status != 0) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     (void)close(descriptors[1]);
@@ -148,20 +148,20 @@ RudaProcessStatus ruda_process_run(
             if (errno == EINTR) {
                 continue;
             }
-            status = RUDA_PROCESS_IO_FAILED;
-            ruda_process_stop_and_wait(process);
+            status = MMAY_PROCESS_IO_FAILED;
+            mmay_process_stop_and_wait(process);
             process = 0;
             goto cleanup;
         }
         if (output.length > max_output || (size_t)count > max_output - output.length) {
-            status = RUDA_PROCESS_OUTPUT_LIMIT;
-            ruda_process_stop_and_wait(process);
+            status = MMAY_PROCESS_OUTPUT_LIMIT;
+            mmay_process_stop_and_wait(process);
             process = 0;
             goto cleanup;
         }
-        if (!ruda_vector_append(&output, chunk, (size_t)count)) {
-            status = RUDA_PROCESS_ALLOCATION_FAILED;
-            ruda_process_stop_and_wait(process);
+        if (!mmay_vector_append(&output, chunk, (size_t)count)) {
+            status = MMAY_PROCESS_ALLOCATION_FAILED;
+            mmay_process_stop_and_wait(process);
             process = 0;
             goto cleanup;
         }
@@ -170,7 +170,7 @@ RudaProcessStatus ruda_process_run(
     descriptors[0] = -1;
     while (waitpid(process, &wait_status, 0) < 0) {
         if (errno != EINTR) {
-            status = RUDA_PROCESS_WAIT_FAILED;
+            status = MMAY_PROCESS_WAIT_FAILED;
             process = 0;
             goto cleanup;
         }
@@ -183,17 +183,17 @@ RudaProcessStatus ruda_process_run(
         result->signal_code = (uint32_t)WTERMSIG(wait_status);
         result->exit_code = 128U + result->signal_code;
     } else {
-        status = RUDA_PROCESS_WAIT_FAILED;
+        status = MMAY_PROCESS_WAIT_FAILED;
         goto cleanup;
     }
-    if (!ruda_owned_bytes_copy(&result->output, allocator, output.data, output.length)) {
-        status = RUDA_PROCESS_ALLOCATION_FAILED;
+    if (!mmay_owned_bytes_copy(&result->output, allocator, output.data, output.length)) {
+        status = MMAY_PROCESS_ALLOCATION_FAILED;
         goto cleanup;
     }
 
 cleanup:
     if (process != 0) {
-        ruda_process_stop_and_wait(process);
+        mmay_process_stop_and_wait(process);
     }
     if (descriptors[0] >= 0) {
         (void)close(descriptors[0]);
@@ -204,23 +204,23 @@ cleanup:
     if (actions_initialized) {
         (void)posix_spawn_file_actions_destroy(&actions);
     }
-    ruda_vector_dispose(&output);
-    if (status != RUDA_PROCESS_OK) {
-        ruda_owned_bytes_dispose(&result->output);
+    mmay_vector_dispose(&output);
+    if (status != MMAY_PROCESS_OK) {
+        mmay_owned_bytes_dispose(&result->output);
     }
     return status;
 }
 
-void ruda_process_result_dispose(RudaProcessResult *result) {
+void mmay_process_result_dispose(MarimayProcessResult *result) {
     if (result != NULL) {
-        ruda_owned_bytes_dispose(&result->output);
+        mmay_owned_bytes_dispose(&result->output);
         result->exit_code = 0;
         result->signaled = false;
         result->signal_code = 0;
     }
 }
 
-static bool ruda_process_capture_arguments_valid(
+static bool mmay_process_capture_arguments_valid(
     const char *const arguments[],
     size_t argument_count
 ) {
@@ -233,9 +233,9 @@ static bool ruda_process_capture_arguments_valid(
     return true;
 }
 
-static RudaProcessStatus ruda_process_capture_read(
+static MarimayProcessStatus mmay_process_capture_read(
     int descriptor,
-    RudaVector *output,
+    MarimayVector *output,
     size_t limit,
     bool *open
 ) {
@@ -247,23 +247,23 @@ static RudaProcessStatus ruda_process_capture_read(
     if (count == 0) {
         (void)close(descriptor);
         *open = false;
-        return RUDA_PROCESS_OK;
+        return MMAY_PROCESS_OK;
     }
-    if (count < 0) return RUDA_PROCESS_IO_FAILED;
+    if (count < 0) return MMAY_PROCESS_IO_FAILED;
     if (output->length > limit || (size_t)count > limit - output->length) {
-        return RUDA_PROCESS_OUTPUT_LIMIT;
+        return MMAY_PROCESS_OUTPUT_LIMIT;
     }
-    return ruda_vector_append(output, chunk, (size_t)count)
-        ? RUDA_PROCESS_OK : RUDA_PROCESS_ALLOCATION_FAILED;
+    return mmay_vector_append(output, chunk, (size_t)count)
+        ? MMAY_PROCESS_OK : MMAY_PROCESS_ALLOCATION_FAILED;
 }
 
-RudaProcessStatus ruda_process_run_capture(
-    RudaAllocator allocator,
+MarimayProcessStatus mmay_process_run_capture(
+    MarimayAllocator allocator,
     const char *const arguments[],
     size_t argument_count,
     size_t max_output,
     size_t max_error,
-    RudaProcessCaptureResult *result
+    MarimayProcessCaptureResult *result
 ) {
     int output_pipe[2] = {-1, -1};
     int error_pipe[2] = {-1, -1};
@@ -274,26 +274,26 @@ RudaProcessStatus ruda_process_run_capture(
     pid_t process = 0;
     int spawn_status = 0;
     int wait_status = 0;
-    RudaVector output;
-    RudaVector error;
-    RudaProcessStatus status = RUDA_PROCESS_OK;
+    MarimayVector output;
+    MarimayVector error;
+    MarimayProcessStatus status = MMAY_PROCESS_OK;
     memset(&output, 0, sizeof(output));
     memset(&error, 0, sizeof(error));
-    if (result == NULL) return RUDA_PROCESS_INVALID_ARGUMENT;
+    if (result == NULL) return MMAY_PROCESS_INVALID_ARGUMENT;
     memset(result, 0, sizeof(*result));
     result->standard_output.allocator = allocator;
     result->standard_error.allocator = allocator;
-    if (!ruda_process_capture_arguments_valid(arguments, argument_count)) {
-        return RUDA_PROCESS_INVALID_ARGUMENT;
+    if (!mmay_process_capture_arguments_valid(arguments, argument_count)) {
+        return MMAY_PROCESS_INVALID_ARGUMENT;
     }
-    if (!ruda_vector_init(&output, allocator, sizeof(unsigned char))
-        || !ruda_vector_init(&error, allocator, sizeof(unsigned char))) {
-        status = RUDA_PROCESS_ALLOCATION_FAILED;
+    if (!mmay_vector_init(&output, allocator, sizeof(unsigned char))
+        || !mmay_vector_init(&error, allocator, sizeof(unsigned char))) {
+        status = MMAY_PROCESS_ALLOCATION_FAILED;
         goto cleanup;
     }
     if (pipe(output_pipe) != 0 || pipe(error_pipe) != 0
         || posix_spawn_file_actions_init(&actions) != 0) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     actions_ready = true;
@@ -310,7 +310,7 @@ RudaProcessStatus ruda_process_run_capture(
         ) != 0 || posix_spawn_file_actions_addclose(
             &actions, error_pipe[1]
         ) != 0) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     spawn_status = posix_spawnp(
@@ -318,7 +318,7 @@ RudaProcessStatus ruda_process_run_capture(
         (char *const *)arguments, environ
     );
     if (spawn_status != 0) {
-        status = RUDA_PROCESS_SPAWN_FAILED;
+        status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
     (void)close(output_pipe[1]);
@@ -337,27 +337,27 @@ RudaProcessStatus ruda_process_run_capture(
         descriptors[1].revents = 0;
         if (poll(descriptors, 2, -1) < 0) {
             if (errno == EINTR) continue;
-            status = RUDA_PROCESS_IO_FAILED;
+            status = MMAY_PROCESS_IO_FAILED;
             goto terminate;
         }
         if (output_open && descriptors[0].revents != 0) {
-            status = ruda_process_capture_read(
+            status = mmay_process_capture_read(
                 output_pipe[0], &output, max_output, &output_open
             );
             if (!output_open) output_pipe[0] = -1;
-            if (status != RUDA_PROCESS_OK) goto terminate;
+            if (status != MMAY_PROCESS_OK) goto terminate;
         }
         if (error_open && descriptors[1].revents != 0) {
-            status = ruda_process_capture_read(
+            status = mmay_process_capture_read(
                 error_pipe[0], &error, max_error, &error_open
             );
             if (!error_open) error_pipe[0] = -1;
-            if (status != RUDA_PROCESS_OK) goto terminate;
+            if (status != MMAY_PROCESS_OK) goto terminate;
         }
     }
     while (waitpid(process, &wait_status, 0) < 0) {
         if (errno != EINTR) {
-            status = RUDA_PROCESS_WAIT_FAILED;
+            status = MMAY_PROCESS_WAIT_FAILED;
             goto cleanup;
         }
     }
@@ -369,41 +369,41 @@ RudaProcessStatus ruda_process_run_capture(
         result->signal_code = (uint32_t)WTERMSIG(wait_status);
         result->exit_code = 128U + result->signal_code;
     } else {
-        status = RUDA_PROCESS_WAIT_FAILED;
+        status = MMAY_PROCESS_WAIT_FAILED;
         goto cleanup;
     }
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &result->standard_output, allocator,
             output.data, output.length
-        ) || !ruda_owned_bytes_copy(
+        ) || !mmay_owned_bytes_copy(
             &result->standard_error, allocator,
             error.data, error.length
         )) {
-        status = RUDA_PROCESS_ALLOCATION_FAILED;
+        status = MMAY_PROCESS_ALLOCATION_FAILED;
     }
     goto cleanup;
 terminate:
-    ruda_process_stop_and_wait(process);
+    mmay_process_stop_and_wait(process);
     process = 0;
 cleanup:
-    if (process != 0) ruda_process_stop_and_wait(process);
+    if (process != 0) mmay_process_stop_and_wait(process);
     if (output_pipe[0] >= 0) (void)close(output_pipe[0]);
     if (output_pipe[1] >= 0) (void)close(output_pipe[1]);
     if (error_pipe[0] >= 0) (void)close(error_pipe[0]);
     if (error_pipe[1] >= 0) (void)close(error_pipe[1]);
     if (actions_ready) (void)posix_spawn_file_actions_destroy(&actions);
-    ruda_vector_dispose(&output);
-    ruda_vector_dispose(&error);
-    if (status != RUDA_PROCESS_OK) {
-        ruda_process_capture_result_dispose(result);
+    mmay_vector_dispose(&output);
+    mmay_vector_dispose(&error);
+    if (status != MMAY_PROCESS_OK) {
+        mmay_process_capture_result_dispose(result);
     }
     return status;
 }
 
-void ruda_process_capture_result_dispose(RudaProcessCaptureResult *result) {
+void mmay_process_capture_result_dispose(MarimayProcessCaptureResult *result) {
     if (result == NULL) return;
-    ruda_owned_bytes_dispose(&result->standard_output);
-    ruda_owned_bytes_dispose(&result->standard_error);
+    mmay_owned_bytes_dispose(&result->standard_output);
+    mmay_owned_bytes_dispose(&result->standard_error);
     result->exit_code = 0;
     result->signaled = false;
     result->signal_code = 0;

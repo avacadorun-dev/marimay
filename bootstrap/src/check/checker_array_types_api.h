@@ -3,15 +3,15 @@
 
 #include "checker_internal.h"
 
-const RudaAstNode *ruda_checker_private_array_type_element(
-    const RudaAstNode *node
+const MarimayAstNode *mmay_checker_private_array_type_element(
+    const MarimayAstNode *node
 );
 
 /* D054 prefix spelling; resolved tells the general type owner to stop. */
-bool ruda_checker_private_resolve_array_type(
-    RudaChecker *checker,
-    const RudaAstNode *node,
-    RudaTypeId *result,
+bool mmay_checker_private_resolve_array_type(
+    MarimayChecker *checker,
+    const MarimayAstNode *node,
+    MarimayTypeId *result,
     bool *resolved
 );
 

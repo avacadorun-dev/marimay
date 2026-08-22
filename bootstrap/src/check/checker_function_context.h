@@ -1,68 +1,68 @@
-#ifndef RUDA_CHECK_CHECKER_FUNCTION_CONTEXT_H
-#define RUDA_CHECK_CHECKER_FUNCTION_CONTEXT_H
+#ifndef MMAY_CHECK_CHECKER_FUNCTION_CONTEXT_H
+#define MMAY_CHECK_CHECKER_FUNCTION_CONTEXT_H
 
 #include "checker_package_context.h"
 
-typedef struct RudaCheckLocal {
-    RudaCheckName name;
-    RudaTypeId type;
-    RudaMirRegister register_id;
+typedef struct MarimayCheckLocal {
+    MarimayCheckName name;
+    MarimayTypeId type;
+    MarimayMirRegister register_id;
     size_t scope_depth;
     bool mutable_binding;
     bool initialized;
-} RudaCheckLocal;
+} MarimayCheckLocal;
 
-typedef struct RudaLoopContext {
-    RudaMirBlockId break_target;
-    RudaMirBlockId continue_target;
+typedef struct MarimayLoopContext {
+    MarimayMirBlockId break_target;
+    MarimayMirBlockId continue_target;
     size_t scope_depth;
-} RudaLoopContext;
+} MarimayLoopContext;
 
-typedef struct RudaDeferredCall {
-    RudaMirCallId call;
-    RudaMirRegister marker;
+typedef struct MarimayDeferredCall {
+    MarimayMirCallId call;
+    MarimayMirRegister marker;
     size_t scope_depth;
-    RudaMirSpan span;
-} RudaDeferredCall;
+    MarimayMirSpan span;
+} MarimayDeferredCall;
 
-typedef struct RudaInitializationSnapshot {
-    RudaAllocator allocator;
+typedef struct MarimayInitializationSnapshot {
+    MarimayAllocator allocator;
     unsigned char *states;
     size_t count;
     size_t allocation_size;
-} RudaInitializationSnapshot;
+} MarimayInitializationSnapshot;
 
-typedef struct RudaMatchYieldContext {
-    RudaMirBlockId *join;
-    RudaTypeId *match_type;
-    RudaMirRegister *target;
+typedef struct MarimayMatchYieldContext {
+    MarimayMirBlockId *join;
+    MarimayTypeId *match_type;
+    MarimayMirRegister *target;
     bool yielded;
-} RudaMatchYieldContext;
+} MarimayMatchYieldContext;
 
-typedef struct RudaFunctionChecker {
-    RudaChecker *checker;
-    RudaVector locals;
-    RudaVector loops;
-    RudaVector defers;
-    RudaMirFunction mir;
-    RudaMirBlockId block;
-    RudaTypeId result_type;
+typedef struct MarimayFunctionChecker {
+    MarimayChecker *checker;
+    MarimayVector locals;
+    MarimayVector loops;
+    MarimayVector defers;
+    MarimayMirFunction mir;
+    MarimayMirBlockId block;
+    MarimayTypeId result_type;
     size_t diagnostic_start;
     size_t scope_depth;
-    RudaMatchYieldContext *match_yield;
+    MarimayMatchYieldContext *match_yield;
     bool mir_initialized;
     bool terminated;
     bool constant_evaluation;
     bool unsafe_context;
     bool test_context;
-    const RudaVector *type_parameters;
-    const RudaVector *type_arguments;
-} RudaFunctionChecker;
+    const MarimayVector *type_parameters;
+    const MarimayVector *type_arguments;
+} MarimayFunctionChecker;
 
-typedef struct RudaExpressionValue {
-    RudaTypeId type;
-    RudaMirRegister register_id;
+typedef struct MarimayExpressionValue {
+    MarimayTypeId type;
+    MarimayMirRegister register_id;
     bool valid;
-} RudaExpressionValue;
+} MarimayExpressionValue;
 
 #endif

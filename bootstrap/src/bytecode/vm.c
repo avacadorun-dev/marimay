@@ -1,24 +1,24 @@
 #include "vm_internal.h"
 #include <limits.h>
 #include <string.h>
-#include "ruda/base/f64.h"
-RudaBytecodeRunStatus ruda_bytecode_run(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeValue *arguments,
+#include "mmay/base/f64.h"
+MarimayBytecodeRunStatus mmay_bytecode_run(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeValue *arguments,
     size_t argument_count,
-    RudaAllocator allocator,
-    RudaBytecodeRunOptions options,
-    RudaBytecodeValue *result
+    MarimayAllocator allocator,
+    MarimayBytecodeRunOptions options,
+    MarimayBytecodeValue *result
 ) {
-    RudaBytecodeValue *registers = NULL;
-    RudaBytecodeValue completed;
-    RudaBytecodeManagedRoots managed_roots;
+    MarimayBytecodeValue *registers = NULL;
+    MarimayBytecodeValue completed;
+    MarimayBytecodeManagedRoots managed_roots;
     size_t register_count = 0;
     size_t register_bytes = 0;
     size_t index = 0;
     size_t steps = 0;
     size_t current_block = 0;
-    RudaBytecodeRunStatus status = RUDA_BYTECODE_RUN_OK;
+    MarimayBytecodeRunStatus status = MMAY_BYTECODE_RUN_OK;
     memset(&managed_roots, 0, sizeof(managed_roots));
     if (options.trap != NULL) {
         memset(options.trap, 0, sizeof(*options.trap));
@@ -28,147 +28,147 @@ RudaBytecodeRunStatus ruda_bytecode_run(
         || options.max_steps == 0 || options.max_call_depth == 0
         || argument_count != function->parameter_count
         || (arguments == NULL && argument_count != 0)) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
     if ((options.execution != NULL && !options.execution->initialized)
         || (options.panic != NULL && !options.panic->initialized)) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
     if (options.execution != NULL) {
         options.execution->array_descriptor_allocation_failed = false;
     }
-    ruda_bytecode_run_reset_panic(options.panic);
+    mmay_bytecode_run_reset_panic(options.panic);
     {
-        RudaBytecodeVerifyStatus verify_status = ruda_bytecode_verify(function);
-        if (verify_status == RUDA_BYTECODE_VERIFY_ALLOCATION_FAILED) {
-            return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        MarimayBytecodeVerifyStatus verify_status = mmay_bytecode_verify(function);
+        if (verify_status == MMAY_BYTECODE_VERIFY_ALLOCATION_FAILED) {
+            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         }
-        if (verify_status == RUDA_BYTECODE_VERIFY_LIMIT_REACHED) {
-            return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+        if (verify_status == MMAY_BYTECODE_VERIFY_LIMIT_REACHED) {
+            return MMAY_BYTECODE_RUN_LIMIT_REACHED;
         }
-        if (verify_status != RUDA_BYTECODE_VERIFY_OK) {
-            return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        if (verify_status != MMAY_BYTECODE_VERIFY_OK) {
+            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
         }
     }
-    if (ruda_bytecode_run_function_has_calls(function)) {
-        return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+    if (mmay_bytecode_run_function_has_calls(function)) {
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
-    if (ruda_bytecode_run_function_uses_f64(function)
-        && !ruda_f64_binary64_supported()) {
-        return RUDA_BYTECODE_RUN_UNSUPPORTED_HOST;
+    if (mmay_bytecode_run_function_uses_f64(function)
+        && !mmay_f64_binary64_supported()) {
+        return MMAY_BYTECODE_RUN_UNSUPPORTED_HOST;
     }
-    if (ruda_bytecode_run_function_uses_strings(function)
+    if (mmay_bytecode_run_function_uses_strings(function)
         && options.execution == NULL) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    if (ruda_bytecode_run_function_uses_managed(function)
+    if (mmay_bytecode_run_function_uses_managed(function)
         && options.execution == NULL) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    status = ruda_bytecode_run_arguments_validate(
+    status = mmay_bytecode_run_arguments_validate(
         options.execution, function, arguments, argument_count
     );
-    if (status != RUDA_BYTECODE_RUN_OK) {
+    if (status != MMAY_BYTECODE_RUN_OK) {
         return status;
     }
     register_count = function->register_types.length;
-    if (!ruda_size_multiply(
+    if (!mmay_size_multiply(
             register_count == 0 ? 1 : register_count,
-            sizeof(RudaBytecodeValue),
+            sizeof(MarimayBytecodeValue),
             &register_bytes
         )) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    registers = ruda_allocate(&allocator, register_bytes);
+    registers = mmay_allocate(&allocator, register_bytes);
     if (registers == NULL) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     memset(registers, 0, register_bytes);
     for (index = 0; index < register_count; index += 1) {
-        const RudaBytecodeType *type = ruda_vector_at_const(
+        const MarimayBytecodeType *type = mmay_vector_at_const(
             &function->register_types,
             index
         );
         registers[index].type = *type;
-        if (ruda_bytecode_type_is_managed(*type)) {
+        if (mmay_bytecode_type_is_managed(*type)) {
             registers[index].as.managed_reference =
-                ruda_managed_invalid_reference();
+                mmay_managed_invalid_reference();
         }
     }
     for (index = 0; index < argument_count; index += 1) {
         registers[index] = arguments[index];
     }
-    if (ruda_bytecode_run_function_uses_managed(function)) {
-        status = ruda_bytecode_run_roots_init(
+    if (mmay_bytecode_run_function_uses_managed(function)) {
+        status = mmay_bytecode_run_roots_init(
             &managed_roots, options.execution, function, registers, allocator
         );
-        if (status != RUDA_BYTECODE_RUN_OK) {
+        if (status != MMAY_BYTECODE_RUN_OK) {
             goto cleanup;
         }
     }
     memset(&completed, 0, sizeof(completed));
     for (;;) {
-        const RudaBytecodeBlock *block = ruda_vector_at_const(
+        const MarimayBytecodeBlock *block = mmay_vector_at_const(
             &function->blocks,
             current_block
         );
         bool transferred = false;
         for (index = 0; index < block->instructions.length; index += 1) {
-            const RudaBytecodeInstruction *instruction = ruda_vector_at_const(
+            const MarimayBytecodeInstruction *instruction = mmay_vector_at_const(
                 &block->instructions,
                 index
             );
-            if (!ruda_bytecode_run_consume_step(&steps, options)) {
-                status = RUDA_BYTECODE_RUN_STEP_LIMIT;
+            if (!mmay_bytecode_run_consume_step(&steps, options)) {
+                status = MMAY_BYTECODE_RUN_STEP_LIMIT;
                 if (options.trap != NULL) {
                     options.trap->span = instruction->span;
                     options.trap->has_span = true;
                 }
                 goto cleanup;
             }
-            if (instruction->opcode == RUDA_OPCODE_RETURN) {
+            if (instruction->opcode == MMAY_OPCODE_RETURN) {
                 completed = registers[
                     (size_t)instruction->operands[0].unsigned_value
                 ];
-                if (completed.type == RUDA_BYTECODE_TYPE_STRING
-                    && !ruda_bytecode_run_string_value_valid(
+                if (completed.type == MMAY_BYTECODE_TYPE_STRING
+                    && !mmay_bytecode_run_string_value_valid(
                         options.execution, completed
                     )) {
-                    status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                    status = MMAY_BYTECODE_RUN_INVALID_REFERENCE;
                     goto cleanup;
                 }
-                if (ruda_bytecode_type_is_array(completed.type)
-                    && !ruda_bytecode_managed_value_valid_for(
+                if (mmay_bytecode_type_is_array(completed.type)
+                    && !mmay_bytecode_managed_value_valid_for(
                         options.execution, function, completed,
                         function->result_layout
                     )) {
-                    status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                    status = MMAY_BYTECODE_RUN_INVALID_REFERENCE;
                     goto cleanup;
                 }
-                if (completed.type == RUDA_BYTECODE_TYPE_INTERFACE
-                    && !ruda_bytecode_run_interface_value_valid(
+                if (completed.type == MMAY_BYTECODE_TYPE_INTERFACE
+                    && !mmay_bytecode_run_interface_value_valid(
                         options.execution,
                         function,
                         completed,
                         function->result_layout
                     )) {
-                    status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                    status = MMAY_BYTECODE_RUN_INVALID_REFERENCE;
                     goto cleanup;
                 }
                 *result = completed;
                 goto cleanup;
             }
-            if (instruction->opcode == RUDA_OPCODE_RETURN_VOID) {
-                completed.type = RUDA_BYTECODE_TYPE_VOID;
+            if (instruction->opcode == MMAY_OPCODE_RETURN_VOID) {
+                completed.type = MMAY_BYTECODE_TYPE_VOID;
                 *result = completed;
                 goto cleanup;
             }
-            if (instruction->opcode == RUDA_OPCODE_JUMP) {
+            if (instruction->opcode == MMAY_OPCODE_JUMP) {
                 current_block = (size_t)instruction->operands[0].unsigned_value;
                 transferred = true;
                 break;
             }
-            if (instruction->opcode == RUDA_OPCODE_BRANCH_BOOL) {
+            if (instruction->opcode == MMAY_OPCODE_BRANCH_BOOL) {
                 size_t condition = (size_t)instruction->operands[0].unsigned_value;
                 current_block = (size_t)instruction->operands[
                     registers[condition].as.boolean ? 1 : 2
@@ -176,13 +176,13 @@ RudaBytecodeRunStatus ruda_bytecode_run(
                 transferred = true;
                 break;
             }
-            if (instruction->opcode == RUDA_OPCODE_PANIC_STRING) {
-                status = ruda_bytecode_run_begin_panic(
+            if (instruction->opcode == MMAY_OPCODE_PANIC_STRING) {
+                status = mmay_bytecode_run_begin_panic(
                     options.panic,
                     allocator,
                     options.execution,
                     registers[(size_t)instruction->operands[0].unsigned_value],
-                    (RudaSymbolId){{0}},
+                    (MarimaySymbolId){{0}},
                     instruction->span
                 );
                 goto cleanup;
@@ -190,29 +190,29 @@ RudaBytecodeRunStatus ruda_bytecode_run(
             {
                 int64_t bounds_index = 0;
                 size_t bounds_length = 0;
-                status = ruda_bytecode_run_value_instruction(
+                status = mmay_bytecode_run_value_instruction(
                 instruction, registers,
                 options.execution,
                 function,
                 allocator,
                 options.stdout_sink, options.panic,
-                (RudaSymbolId){{0}},
+                (MarimaySymbolId){{0}},
                 &bounds_index,
                 &bounds_length
                 );
-                if (status == RUDA_BYTECODE_RUN_PANIC
+                if (status == MMAY_BYTECODE_RUN_PANIC
                     && (options.panic == NULL || options.panic->code == NULL)) {
-                    status = ruda_bytecode_run_begin_bounds_panic(
+                    status = mmay_bytecode_run_begin_bounds_panic(
                         options.panic, allocator, bounds_index, bounds_length,
-                        (RudaSymbolId){{0}}, instruction->span
+                        (MarimaySymbolId){{0}}, instruction->span
                     );
                 }
             }
-            if (status != RUDA_BYTECODE_RUN_OK) {
+            if (status != MMAY_BYTECODE_RUN_OK) {
                 if (options.trap != NULL
-                    && (status == RUDA_BYTECODE_RUN_OVERFLOW
-                        || status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
-                        || status == RUDA_BYTECODE_RUN_INVALID_SHIFT)) {
+                    && (status == MMAY_BYTECODE_RUN_OVERFLOW
+                        || status == MMAY_BYTECODE_RUN_DIVISION_BY_ZERO
+                        || status == MMAY_BYTECODE_RUN_INVALID_SHIFT)) {
                     options.trap->span = instruction->span;
                     options.trap->has_span = true;
                 }
@@ -220,20 +220,20 @@ RudaBytecodeRunStatus ruda_bytecode_run(
             }
         }
         if (!transferred) {
-            status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+            status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
             break;
         }
     }
 cleanup:
-    ruda_bytecode_run_roots_dispose(
+    mmay_bytecode_run_roots_dispose(
         &managed_roots, options.execution, allocator
     );
-    ruda_deallocate(&allocator, registers, register_bytes);
+    mmay_deallocate(&allocator, registers, register_bytes);
     return status;
 }
-typedef struct RudaBytecodeRunFrame {
-    const RudaBytecodeProgramFunction *function;
-    RudaBytecodeValue *registers;
+typedef struct MarimayBytecodeRunFrame {
+    const MarimayBytecodeProgramFunction *function;
+    MarimayBytecodeValue *registers;
     size_t register_bytes;
     size_t block;
     size_t instruction;
@@ -241,93 +241,93 @@ typedef struct RudaBytecodeRunFrame {
     uint32_t return_destination;
     bool return_is_void;
     bool return_is_never;
-    RudaBytecodeSpan call_span;
-    RudaBytecodeManagedRoots *managed_roots;
-    RudaBytecodeCallId *defer_stack;
+    MarimayBytecodeSpan call_span;
+    MarimayBytecodeManagedRoots *managed_roots;
+    MarimayBytecodeCallId *defer_stack;
     size_t defer_stack_bytes;
     size_t defer_count;
-} RudaBytecodeRunFrame;
-static void ruda_bytecode_run_frame_dispose(
-    RudaBytecodeRunFrame *frame,
-    const RudaAllocator *allocator,
-    RudaBytecodeExecution *execution
+} MarimayBytecodeRunFrame;
+static void mmay_bytecode_run_frame_dispose(
+    MarimayBytecodeRunFrame *frame,
+    const MarimayAllocator *allocator,
+    MarimayBytecodeExecution *execution
 ) {
     if (frame != NULL && allocator != NULL) {
         if (frame->managed_roots != NULL) {
-            ruda_bytecode_run_roots_dispose(
+            mmay_bytecode_run_roots_dispose(
                 frame->managed_roots, execution, *allocator
             );
-            ruda_deallocate(
+            mmay_deallocate(
                 allocator, frame->managed_roots,
                 sizeof(*frame->managed_roots)
             );
         }
-        ruda_deallocate(
+        mmay_deallocate(
             allocator, frame->defer_stack, frame->defer_stack_bytes
         );
-        ruda_deallocate(allocator, frame->registers, frame->register_bytes);
+        mmay_deallocate(allocator, frame->registers, frame->register_bytes);
         memset(frame, 0, sizeof(*frame));
     }
 }
-static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
-    RudaBytecodeRunFrame *frame,
-    const RudaBytecodeProgramFunction *function,
-    const RudaBytecodeValue *arguments,
+static MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
+    MarimayBytecodeRunFrame *frame,
+    const MarimayBytecodeProgramFunction *function,
+    const MarimayBytecodeValue *arguments,
     size_t argument_count,
-    RudaAllocator allocator,
+    MarimayAllocator allocator,
     uint32_t return_destination,
     bool return_is_void,
     bool return_is_never,
-    RudaBytecodeSpan call_span
+    MarimayBytecodeSpan call_span
 ) {
-    const RudaBytecodeFunction *body = function != NULL ? &function->body : NULL;
+    const MarimayBytecodeFunction *body = function != NULL ? &function->body : NULL;
     size_t index = 0;
     if (frame == NULL || body == NULL
         || (arguments == NULL && argument_count != 0)) {
-        return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
     memset(frame, 0, sizeof(*frame));
-    if (!ruda_size_multiply(
+    if (!mmay_size_multiply(
             body->register_types.length == 0 ? 1 : body->register_types.length,
-            sizeof(RudaBytecodeValue),
+            sizeof(MarimayBytecodeValue),
             &frame->register_bytes
         )) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    frame->registers = ruda_allocate(&allocator, frame->register_bytes);
+    frame->registers = mmay_allocate(&allocator, frame->register_bytes);
     if (frame->registers == NULL) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     memset(frame->registers, 0, frame->register_bytes);
     if (body->calls.length != 0) {
-        if (!ruda_size_multiply(
+        if (!mmay_size_multiply(
                 body->calls.length, sizeof(*frame->defer_stack),
                 &frame->defer_stack_bytes
             )) {
-            ruda_bytecode_run_frame_dispose(frame, &allocator, NULL);
-            return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+            mmay_bytecode_run_frame_dispose(frame, &allocator, NULL);
+            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         }
-        frame->defer_stack = ruda_allocate(
+        frame->defer_stack = mmay_allocate(
             &allocator, frame->defer_stack_bytes
         );
         if (frame->defer_stack == NULL) {
-            ruda_bytecode_run_frame_dispose(frame, &allocator, NULL);
-            return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+            mmay_bytecode_run_frame_dispose(frame, &allocator, NULL);
+            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         }
     }
     for (index = 0; index < body->register_types.length; index += 1) {
-        const RudaBytecodeType *type = ruda_vector_at_const(
+        const MarimayBytecodeType *type = mmay_vector_at_const(
             &body->register_types,
             index
         );
         if (type == NULL) {
-            ruda_bytecode_run_frame_dispose(frame, &allocator, NULL);
-            return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+            mmay_bytecode_run_frame_dispose(frame, &allocator, NULL);
+            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
         }
         frame->registers[index].type = *type;
-        if (ruda_bytecode_type_is_managed(*type)) {
+        if (mmay_bytecode_type_is_managed(*type)) {
             frame->registers[index].as.managed_reference =
-                ruda_managed_invalid_reference();
+                mmay_managed_invalid_reference();
         }
     }
     for (index = 0; index < argument_count; index += 1) {
@@ -338,64 +338,64 @@ static RudaBytecodeRunStatus ruda_bytecode_run_frame_init(
     frame->return_is_void = return_is_void;
     frame->return_is_never = return_is_never;
     frame->call_span = call_span;
-    return RUDA_BYTECODE_RUN_OK;
+    return MMAY_BYTECODE_RUN_OK;
 }
-static RudaBytecodeRunStatus ruda_bytecode_run_frame_roots_init(
-    RudaBytecodeRunFrame *frame,
-    RudaBytecodeExecution *execution,
-    RudaAllocator allocator
+static MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
+    MarimayBytecodeRunFrame *frame,
+    MarimayBytecodeExecution *execution,
+    MarimayAllocator allocator
 ) {
-    RudaBytecodeRunStatus status;
+    MarimayBytecodeRunStatus status;
     if (frame == NULL || frame->function == NULL) {
-        return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
-    if (!ruda_bytecode_run_function_uses_managed(&frame->function->body)) {
-        return RUDA_BYTECODE_RUN_OK;
+    if (!mmay_bytecode_run_function_uses_managed(&frame->function->body)) {
+        return MMAY_BYTECODE_RUN_OK;
     }
     if (execution == NULL) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    frame->managed_roots = ruda_allocate(
+    frame->managed_roots = mmay_allocate(
         &allocator, sizeof(*frame->managed_roots)
     );
     if (frame->managed_roots == NULL) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     memset(frame->managed_roots, 0, sizeof(*frame->managed_roots));
-    status = ruda_bytecode_run_roots_init(
+    status = mmay_bytecode_run_roots_init(
         frame->managed_roots, execution, &frame->function->body,
         frame->registers, allocator
     );
-    if (status != RUDA_BYTECODE_RUN_OK) {
-        ruda_deallocate(
+    if (status != MMAY_BYTECODE_RUN_OK) {
+        mmay_deallocate(
             &allocator, frame->managed_roots, sizeof(*frame->managed_roots)
         );
         frame->managed_roots = NULL;
     }
     return status;
 }
-static RudaBytecodeRunStatus ruda_bytecode_run_program_verify_status(
-    RudaBytecodeProgramVerifyStatus status
+static MarimayBytecodeRunStatus mmay_bytecode_run_program_verify_status(
+    MarimayBytecodeProgramVerifyStatus status
 ) {
-    if (status == RUDA_BYTECODE_PROGRAM_VERIFY_OK) {
-        return RUDA_BYTECODE_RUN_OK;
+    if (status == MMAY_BYTECODE_PROGRAM_VERIFY_OK) {
+        return MMAY_BYTECODE_RUN_OK;
     }
-    if (status == RUDA_BYTECODE_PROGRAM_VERIFY_ALLOCATION_FAILED) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (status == MMAY_BYTECODE_PROGRAM_VERIFY_ALLOCATION_FAILED) {
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    if (status == RUDA_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED) {
-        return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+    if (status == MMAY_BYTECODE_PROGRAM_VERIFY_LIMIT_REACHED) {
+        return MMAY_BYTECODE_RUN_LIMIT_REACHED;
     }
-    return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+    return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
 }
-static bool ruda_bytecode_run_frames_reserve(
-    RudaBytecodeRunFrame **frames,
+static bool mmay_bytecode_run_frames_reserve(
+    MarimayBytecodeRunFrame **frames,
     size_t *capacity,
     size_t required,
     size_t maximum,
-    RudaAllocator allocator
+    MarimayAllocator allocator
 ) {
-    RudaBytecodeRunFrame *next = NULL;
+    MarimayBytecodeRunFrame *next = NULL;
     size_t next_capacity = *capacity == 0 ? 1 : *capacity;
     size_t bytes = 0;
     if (frames == NULL || capacity == NULL || required > maximum) {
@@ -411,48 +411,48 @@ static bool ruda_bytecode_run_frames_reserve(
             next_capacity *= 2;
         }
     }
-    if (!ruda_size_multiply(
+    if (!mmay_size_multiply(
             next_capacity,
-            sizeof(RudaBytecodeRunFrame),
+            sizeof(MarimayBytecodeRunFrame),
             &bytes
         )) {
         return false;
     }
-    next = ruda_allocate(&allocator, bytes);
+    next = mmay_allocate(&allocator, bytes);
     if (next == NULL) {
         return false;
     }
     memset(next, 0, bytes);
     if (*frames != NULL) {
         size_t old_bytes = 0;
-        if (!ruda_size_multiply(
+        if (!mmay_size_multiply(
                 *capacity,
-                sizeof(RudaBytecodeRunFrame),
+                sizeof(MarimayBytecodeRunFrame),
                 &old_bytes
             )) {
-            ruda_deallocate(&allocator, next, bytes);
+            mmay_deallocate(&allocator, next, bytes);
             return false;
         }
         memcpy(next, *frames, old_bytes);
-        ruda_deallocate(&allocator, *frames, old_bytes);
+        mmay_deallocate(&allocator, *frames, old_bytes);
     }
     *frames = next;
     *capacity = next_capacity;
     return true;
 }
-RudaBytecodeRunStatus ruda_bytecode_run_program(
-    const RudaBytecodeProgram *program,
-    const RudaBytecodeValue *arguments,
+MarimayBytecodeRunStatus mmay_bytecode_run_program(
+    const MarimayBytecodeProgram *program,
+    const MarimayBytecodeValue *arguments,
     size_t argument_count,
-    RudaAllocator allocator,
-    RudaBytecodeRunOptions options,
-    RudaBytecodeValue *result
+    MarimayAllocator allocator,
+    MarimayBytecodeRunOptions options,
+    MarimayBytecodeValue *result
 ) {
-    RudaBytecodeRunFrame *frames = NULL;
+    MarimayBytecodeRunFrame *frames = NULL;
     size_t frame_count = 0;
     size_t frame_capacity = 0;
-    RudaBytecodeRunStatus status;
-    const RudaBytecodeProgramFunction *entry = NULL;
+    MarimayBytecodeRunStatus status;
+    const MarimayBytecodeProgramFunction *entry = NULL;
     if (options.trap != NULL) {
         memset(options.trap, 0, sizeof(*options.trap));
     }
@@ -460,157 +460,157 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         || allocator.allocate == NULL || allocator.deallocate == NULL
         || options.max_steps == 0 || options.max_call_depth == 0
         || (arguments == NULL && argument_count != 0)) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
     if ((options.execution != NULL && !options.execution->initialized)
         || (options.panic != NULL && !options.panic->initialized)) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
     if (options.execution != NULL) {
         options.execution->array_descriptor_allocation_failed = false;
     }
-    ruda_bytecode_run_reset_panic(options.panic);
-    status = ruda_bytecode_run_program_verify_status(
-        ruda_bytecode_program_verify(program)
+    mmay_bytecode_run_reset_panic(options.panic);
+    status = mmay_bytecode_run_program_verify_status(
+        mmay_bytecode_program_verify(program)
     );
-    if (status != RUDA_BYTECODE_RUN_OK) {
+    if (status != MMAY_BYTECODE_RUN_OK) {
         return status;
     }
-    if (ruda_bytecode_run_program_uses_f64(program)
-        && !ruda_f64_binary64_supported()) {
-        return RUDA_BYTECODE_RUN_UNSUPPORTED_HOST;
+    if (mmay_bytecode_run_program_uses_f64(program)
+        && !mmay_f64_binary64_supported()) {
+        return MMAY_BYTECODE_RUN_UNSUPPORTED_HOST;
     }
-    if (ruda_bytecode_run_program_uses_strings(program)
+    if (mmay_bytecode_run_program_uses_strings(program)
         && options.execution == NULL) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    if (ruda_bytecode_run_program_uses_managed(program)
+    if (mmay_bytecode_run_program_uses_managed(program)
         && options.execution == NULL) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    entry = ruda_bytecode_program_function(program, program->entry_function);
+    entry = mmay_bytecode_program_function(program, program->entry_function);
     if (entry == NULL || argument_count != entry->body.parameter_count) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    status = ruda_bytecode_run_arguments_validate(
+    status = mmay_bytecode_run_arguments_validate(
         options.execution, &entry->body, arguments, argument_count
     );
-    if (status != RUDA_BYTECODE_RUN_OK) {
+    if (status != MMAY_BYTECODE_RUN_OK) {
         return status;
     }
-    if (!ruda_bytecode_run_frames_reserve(
+    if (!mmay_bytecode_run_frames_reserve(
             &frames,
             &frame_capacity,
             1,
             options.max_call_depth,
             allocator
         )) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    status = ruda_bytecode_run_frame_init(
+    status = mmay_bytecode_run_frame_init(
         &frames[0], entry, arguments, argument_count, allocator, 0, false,
-        false, (RudaBytecodeSpan){0}
+        false, (MarimayBytecodeSpan){0}
     );
-    if (status != RUDA_BYTECODE_RUN_OK) {
-        ruda_bytecode_run_frame_dispose(
+    if (status != MMAY_BYTECODE_RUN_OK) {
+        mmay_bytecode_run_frame_dispose(
             &frames[0], &allocator, options.execution
         );
         goto cleanup;
     }
-    status = ruda_bytecode_run_frame_roots_init(
+    status = mmay_bytecode_run_frame_roots_init(
         &frames[0], options.execution, allocator
     );
-    if (status != RUDA_BYTECODE_RUN_OK) {
-        ruda_bytecode_run_frame_dispose(
+    if (status != MMAY_BYTECODE_RUN_OK) {
+        mmay_bytecode_run_frame_dispose(
             &frames[0], &allocator, options.execution
         );
         goto cleanup;
     }
     frame_count = 1;
     for (;;) {
-        RudaBytecodeRunFrame *frame = &frames[frame_count - 1];
-        const RudaBytecodeFunction *body = &frame->function->body;
-        const RudaBytecodeBlock *block = ruda_vector_at_const(
+        MarimayBytecodeRunFrame *frame = &frames[frame_count - 1];
+        const MarimayBytecodeFunction *body = &frame->function->body;
+        const MarimayBytecodeBlock *block = mmay_vector_at_const(
             &body->blocks,
             frame->block
         );
-        const RudaBytecodeInstruction *instruction = block != NULL
-            ? ruda_vector_at_const(&block->instructions, frame->instruction)
+        const MarimayBytecodeInstruction *instruction = block != NULL
+            ? mmay_vector_at_const(&block->instructions, frame->instruction)
             : NULL;
         if (instruction == NULL) {
-            status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+            status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
             goto cleanup;
         }
-        if (!ruda_bytecode_run_consume_step(&frame->steps, options)) {
-            status = RUDA_BYTECODE_RUN_STEP_LIMIT;
-            ruda_bytecode_run_set_trap(options, instruction->span);
+        if (!mmay_bytecode_run_consume_step(&frame->steps, options)) {
+            status = MMAY_BYTECODE_RUN_STEP_LIMIT;
+            mmay_bytecode_run_set_trap(options, instruction->span);
             goto cleanup;
         }
-        if (instruction->opcode == RUDA_OPCODE_RETURN
-            || instruction->opcode == RUDA_OPCODE_RETURN_VOID) {
-            RudaBytecodeValue completed;
-            bool returns_void = instruction->opcode == RUDA_OPCODE_RETURN_VOID;
+        if (instruction->opcode == MMAY_OPCODE_RETURN
+            || instruction->opcode == MMAY_OPCODE_RETURN_VOID) {
+            MarimayBytecodeValue completed;
+            bool returns_void = instruction->opcode == MMAY_OPCODE_RETURN_VOID;
             memset(&completed, 0, sizeof(completed));
             if (returns_void) {
-                completed.type = RUDA_BYTECODE_TYPE_VOID;
+                completed.type = MMAY_BYTECODE_TYPE_VOID;
             } else {
                 completed = frame->registers[
                     (size_t)instruction->operands[0].unsigned_value
                 ];
             }
             if (frame->return_is_never) {
-                status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
                 goto cleanup;
             }
-            if (completed.type == RUDA_BYTECODE_TYPE_STRING
-                && !ruda_bytecode_run_string_value_valid(
+            if (completed.type == MMAY_BYTECODE_TYPE_STRING
+                && !mmay_bytecode_run_string_value_valid(
                     options.execution, completed
                 )) {
-                status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                status = MMAY_BYTECODE_RUN_INVALID_REFERENCE;
                 goto cleanup;
             }
-            if (ruda_bytecode_type_is_array(completed.type)
-                && !ruda_bytecode_managed_value_valid_for(
+            if (mmay_bytecode_type_is_array(completed.type)
+                && !mmay_bytecode_managed_value_valid_for(
                     options.execution, body, completed, body->result_layout
                 )) {
-                status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                status = MMAY_BYTECODE_RUN_INVALID_REFERENCE;
                 goto cleanup;
             }
-            if (completed.type == RUDA_BYTECODE_TYPE_INTERFACE
-                && !ruda_bytecode_run_interface_value_valid(
+            if (completed.type == MMAY_BYTECODE_TYPE_INTERFACE
+                && !mmay_bytecode_run_interface_value_valid(
                     options.execution,
                     body,
                     completed,
                     body->result_layout
                 )) {
-                status = RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+                status = MMAY_BYTECODE_RUN_INVALID_REFERENCE;
                 goto cleanup;
             }
             if (frame_count == 1) {
                 *result = completed;
-                status = RUDA_BYTECODE_RUN_OK;
+                status = MMAY_BYTECODE_RUN_OK;
                 goto cleanup;
             }
             {
-                RudaBytecodeRunFrame *parent = &frames[frame_count - 2];
+                MarimayBytecodeRunFrame *parent = &frames[frame_count - 2];
                 uint32_t destination = frame->return_destination;
                 bool return_is_void = frame->return_is_void;
                 if (!return_is_void) {
                     parent->registers[destination] = completed;
                 }
-                ruda_bytecode_run_frame_dispose(
+                mmay_bytecode_run_frame_dispose(
                     frame, &allocator, options.execution
                 );
                 frame_count -= 1;
             }
             continue;
         }
-        if (instruction->opcode == RUDA_OPCODE_JUMP) {
+        if (instruction->opcode == MMAY_OPCODE_JUMP) {
             frame->block = (size_t)instruction->operands[0].unsigned_value;
             frame->instruction = 0;
             continue;
         }
-        if (instruction->opcode == RUDA_OPCODE_BRANCH_BOOL) {
+        if (instruction->opcode == MMAY_OPCODE_BRANCH_BOOL) {
             size_t condition = (size_t)instruction->operands[0].unsigned_value;
             frame->block = (size_t)instruction->operands[
                 frame->registers[condition].as.boolean ? 1 : 2
@@ -618,9 +618,9 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
             frame->instruction = 0;
             continue;
         }
-        if (instruction->opcode == RUDA_OPCODE_PANIC_STRING) {
+        if (instruction->opcode == MMAY_OPCODE_PANIC_STRING) {
             size_t panic_index = frame_count - 1;
-            status = ruda_bytecode_run_begin_panic(
+            status = mmay_bytecode_run_begin_panic(
                 options.panic,
                 allocator,
                 options.execution,
@@ -628,21 +628,21 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 frame->function->symbol,
                 instruction->span
             );
-            while (status == RUDA_BYTECODE_RUN_PANIC && panic_index != 0) {
-                RudaBytecodeRunFrame *callee = &frames[panic_index];
-                RudaBytecodeRunFrame *caller = &frames[panic_index - 1];
-                status = ruda_bytecode_run_append_panic_frame(
+            while (status == MMAY_BYTECODE_RUN_PANIC && panic_index != 0) {
+                MarimayBytecodeRunFrame *callee = &frames[panic_index];
+                MarimayBytecodeRunFrame *caller = &frames[panic_index - 1];
+                status = mmay_bytecode_run_append_panic_frame(
                     options.panic, caller->function->symbol, callee->call_span
                 );
                 panic_index -= 1;
             }
             goto cleanup;
         }
-        if (instruction->opcode == RUDA_OPCODE_DEFER_REGISTER) {
-            RudaBytecodeCallId call_id = (RudaBytecodeCallId)
+        if (instruction->opcode == MMAY_OPCODE_DEFER_REGISTER) {
+            MarimayBytecodeCallId call_id = (MarimayBytecodeCallId)
                 instruction->operands[1].unsigned_value;
             if (frame->defer_count >= body->calls.length) {
-                status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
                 goto cleanup;
             }
             frame->defer_stack[frame->defer_count] = call_id;
@@ -653,55 +653,55 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
             frame->instruction += 1;
             continue;
         }
-        if (instruction->opcode == RUDA_OPCODE_DEFER_CALL) {
-            RudaBytecodeCallId call_id = (RudaBytecodeCallId)
+        if (instruction->opcode == MMAY_OPCODE_DEFER_CALL) {
+            MarimayBytecodeCallId call_id = (MarimayBytecodeCallId)
                 instruction->operands[1].unsigned_value;
-            const RudaBytecodeCall *call = call_id < body->calls.length
-                ? ruda_bytecode_call(body, call_id)
+            const MarimayBytecodeCall *call = call_id < body->calls.length
+                ? mmay_bytecode_call(body, call_id)
                 : NULL;
             if (call == NULL || frame->defer_count == 0
                 || frame->defer_stack[frame->defer_count - 1] != call_id) {
-                status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
                 goto cleanup;
             }
             frame->defer_count -= 1;
-            status = ruda_bytecode_run_deferred_program_call(
+            status = mmay_bytecode_run_deferred_program_call(
                 program, body, call, instruction, frame->registers,
                 allocator, options, false
             );
-            if (status == RUDA_BYTECODE_RUN_PANIC) {
-                status = ruda_bytecode_run_append_panic_frame(
+            if (status == MMAY_BYTECODE_RUN_PANIC) {
+                status = mmay_bytecode_run_append_panic_frame(
                     options.panic, frame->function->symbol, instruction->span
                 );
             }
-            if (status != RUDA_BYTECODE_RUN_OK) {
+            if (status != MMAY_BYTECODE_RUN_OK) {
                 goto cleanup;
             }
             frame->instruction += 1;
             continue;
         }
-        if (instruction->opcode == RUDA_OPCODE_CALL_DIRECT
-            || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
-            || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER
-            || instruction->opcode == RUDA_OPCODE_CALL_INTERFACE) {
-            bool returns_void = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID;
-            bool returns_never = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER;
+        if (instruction->opcode == MMAY_OPCODE_CALL_DIRECT
+            || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID
+            || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER
+            || instruction->opcode == MMAY_OPCODE_CALL_INTERFACE) {
+            bool returns_void = instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID;
+            bool returns_never = instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER;
             bool interface_call = instruction->opcode
-                == RUDA_OPCODE_CALL_INTERFACE;
+                == MMAY_OPCODE_CALL_INTERFACE;
             uint64_t call_wire = instruction->operands[
                 returns_void || returns_never ? 0 : 1
             ].unsigned_value;
-            const RudaBytecodeCall *call = call_wire < body->calls.length
-                ? ruda_bytecode_call(body, (RudaBytecodeCallId)call_wire)
+            const MarimayBytecodeCall *call = call_wire < body->calls.length
+                ? mmay_bytecode_call(body, (MarimayBytecodeCallId)call_wire)
                 : NULL;
-            RudaSymbolId callee_symbol;
-            RudaManagedReference interface_payload =
-                ruda_managed_invalid_reference();
-            const RudaBytecodeProgramFunction *callee = NULL;
+            MarimaySymbolId callee_symbol;
+            MarimayManagedReference interface_payload =
+                mmay_managed_invalid_reference();
+            const MarimayBytecodeProgramFunction *callee = NULL;
             size_t argument_index = 0;
             memset(&callee_symbol, 0, sizeof(callee_symbol));
             if (interface_call && call != NULL) {
-                status = ruda_bytecode_run_interface_resolve(
+                status = mmay_bytecode_run_interface_resolve(
                     instruction,
                     frame->registers,
                     options.execution,
@@ -709,14 +709,14 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                     &callee_symbol,
                     &interface_payload
                 );
-                if (status != RUDA_BYTECODE_RUN_OK) {
+                if (status != MMAY_BYTECODE_RUN_OK) {
                     goto cleanup;
                 }
             } else if (call != NULL) {
                 callee_symbol = call->callee;
             }
             callee = call != NULL
-                ? ruda_bytecode_program_function_by_symbol(
+                ? mmay_bytecode_program_function_by_symbol(
                     program,
                     callee_symbol
                 )
@@ -724,24 +724,24 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
             if (call == NULL || callee == NULL || frame_count >= options.max_call_depth
             ) {
                 status = frame_count >= options.max_call_depth
-                    ? RUDA_BYTECODE_RUN_STEP_LIMIT
-                    : RUDA_BYTECODE_RUN_INVALID_BYTECODE;
-                ruda_bytecode_run_set_trap(options, instruction->span);
+                    ? MMAY_BYTECODE_RUN_STEP_LIMIT
+                    : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+                mmay_bytecode_run_set_trap(options, instruction->span);
                 goto cleanup;
             }
-            if (!ruda_bytecode_run_frames_reserve(
+            if (!mmay_bytecode_run_frames_reserve(
                     &frames,
                     &frame_capacity,
                     frame_count + 1,
                     options.max_call_depth,
                     allocator
                 )) {
-                status = RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+                status = MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
                 goto cleanup;
             }
             /* Reserve may relocate frames, so only now advance the caller. */
             frames[frame_count - 1].instruction += 1;
-            status = ruda_bytecode_run_frame_init(
+            status = mmay_bytecode_run_frame_init(
                 &frames[frame_count],
                 callee,
                 NULL,
@@ -754,8 +754,8 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 returns_never,
                 instruction->span
             );
-            if (status != RUDA_BYTECODE_RUN_OK) {
-                ruda_bytecode_run_frame_dispose(
+            if (status != MMAY_BYTECODE_RUN_OK) {
+                mmay_bytecode_run_frame_dispose(
                     &frames[frame_count], &allocator, options.execution
                 );
                 goto cleanup;
@@ -763,33 +763,33 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
             for (argument_index = 0;
                 argument_index < call->argument_count;
                 argument_index += 1) {
-                const RudaBytecodeCallArgument *argument =
-                    ruda_bytecode_call_argument(
+                const MarimayBytecodeCallArgument *argument =
+                    mmay_bytecode_call_argument(
                         body,
                         call->argument_start + argument_index
                     );
                 if (argument == NULL) {
-                    ruda_bytecode_run_frame_dispose(
+                    mmay_bytecode_run_frame_dispose(
                         &frames[frame_count],
                         &allocator,
                         options.execution
                     );
-                    status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                    status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
                     goto cleanup;
                 }
                 if (interface_call && argument_index == 0) {
-                    const RudaBytecodeType *parameter = ruda_vector_at_const(
+                    const MarimayBytecodeType *parameter = mmay_vector_at_const(
                         &callee->body.register_types,
                         0
                     );
                     if (parameter == NULL
-                        || !ruda_bytecode_type_is_managed(*parameter)) {
-                        ruda_bytecode_run_frame_dispose(
+                        || !mmay_bytecode_type_is_managed(*parameter)) {
+                        mmay_bytecode_run_frame_dispose(
                             &frames[frame_count],
                             &allocator,
                             options.execution
                         );
-                        status = RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+                        status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
                         goto cleanup;
                     }
                     frames[frame_count].registers[0].type = *parameter;
@@ -801,11 +801,11 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                             .registers[argument->register_id];
                 }
             }
-            status = ruda_bytecode_run_frame_roots_init(
+            status = mmay_bytecode_run_frame_roots_init(
                 &frames[frame_count], options.execution, allocator
             );
-            if (status != RUDA_BYTECODE_RUN_OK) {
-                ruda_bytecode_run_frame_dispose(
+            if (status != MMAY_BYTECODE_RUN_OK) {
+                mmay_bytecode_run_frame_dispose(
                     &frames[frame_count], &allocator, options.execution
                 );
                 goto cleanup;
@@ -816,25 +816,25 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
         {
             int64_t bounds_index = 0;
             size_t bounds_length = 0;
-            status = ruda_bytecode_run_value_instruction(
+            status = mmay_bytecode_run_value_instruction(
                 instruction, frame->registers, options.execution, body,
                 allocator, options.stdout_sink, options.panic,
                 frame->function->symbol,
                 &bounds_index, &bounds_length
             );
-            if (status == RUDA_BYTECODE_RUN_PANIC) {
+            if (status == MMAY_BYTECODE_RUN_PANIC) {
                 size_t panic_index = frame_count - 1;
                 if (options.panic == NULL || options.panic->code == NULL) {
-                    status = ruda_bytecode_run_begin_bounds_panic(
+                    status = mmay_bytecode_run_begin_bounds_panic(
                         options.panic, allocator, bounds_index, bounds_length,
                         frame->function->symbol, instruction->span
                     );
                 }
-                while (status == RUDA_BYTECODE_RUN_PANIC
+                while (status == MMAY_BYTECODE_RUN_PANIC
                     && panic_index != 0) {
-                    RudaBytecodeRunFrame *callee = &frames[panic_index];
-                    RudaBytecodeRunFrame *caller = &frames[panic_index - 1];
-                    status = ruda_bytecode_run_append_panic_frame(
+                    MarimayBytecodeRunFrame *callee = &frames[panic_index];
+                    MarimayBytecodeRunFrame *caller = &frames[panic_index - 1];
+                    status = mmay_bytecode_run_append_panic_frame(
                         options.panic, caller->function->symbol,
                         callee->call_span
                     );
@@ -842,11 +842,11 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
                 }
             }
         }
-        if (status != RUDA_BYTECODE_RUN_OK) {
-            if (status == RUDA_BYTECODE_RUN_OVERFLOW
-                || status == RUDA_BYTECODE_RUN_DIVISION_BY_ZERO
-                || status == RUDA_BYTECODE_RUN_INVALID_SHIFT) {
-                ruda_bytecode_run_set_trap(options, instruction->span);
+        if (status != MMAY_BYTECODE_RUN_OK) {
+            if (status == MMAY_BYTECODE_RUN_OVERFLOW
+                || status == MMAY_BYTECODE_RUN_DIVISION_BY_ZERO
+                || status == MMAY_BYTECODE_RUN_INVALID_SHIFT) {
+                mmay_bytecode_run_set_trap(options, instruction->span);
             }
             goto cleanup;
         }
@@ -854,46 +854,46 @@ RudaBytecodeRunStatus ruda_bytecode_run_program(
     }
 cleanup:
     while (frame_count != 0) {
-        RudaBytecodeRunFrame *frame = &frames[frame_count - 1];
-        const RudaBytecodeFunction *body = &frame->function->body;
+        MarimayBytecodeRunFrame *frame = &frames[frame_count - 1];
+        const MarimayBytecodeFunction *body = &frame->function->body;
         while (frame->defer_count != 0) {
-            RudaBytecodeCallId call_id;
-            const RudaBytecodeCall *call;
-            RudaBytecodeInstruction instruction;
-            RudaBytecodeRunStatus cleanup_status;
+            MarimayBytecodeCallId call_id;
+            const MarimayBytecodeCall *call;
+            MarimayBytecodeInstruction instruction;
+            MarimayBytecodeRunStatus cleanup_status;
             frame->defer_count -= 1;
             call_id = frame->defer_stack[frame->defer_count];
             call = call_id < body->calls.length
-                ? ruda_bytecode_call(body, call_id)
+                ? mmay_bytecode_call(body, call_id)
                 : NULL;
             memset(&instruction, 0, sizeof(instruction));
-            instruction.opcode = RUDA_OPCODE_DEFER_CALL;
+            instruction.opcode = MMAY_OPCODE_DEFER_CALL;
             instruction.operands[1].unsigned_value = call_id;
-            cleanup_status = ruda_bytecode_run_deferred_program_call(
+            cleanup_status = mmay_bytecode_run_deferred_program_call(
                 program, body, call, &instruction, frame->registers,
-                allocator, options, status == RUDA_BYTECODE_RUN_PANIC
+                allocator, options, status == MMAY_BYTECODE_RUN_PANIC
             );
-            if (cleanup_status == RUDA_BYTECODE_RUN_PANIC
-                && status != RUDA_BYTECODE_RUN_PANIC) {
-                status = RUDA_BYTECODE_RUN_PANIC;
-            } else if (status == RUDA_BYTECODE_RUN_OK
-                && cleanup_status != RUDA_BYTECODE_RUN_OK) {
+            if (cleanup_status == MMAY_BYTECODE_RUN_PANIC
+                && status != MMAY_BYTECODE_RUN_PANIC) {
+                status = MMAY_BYTECODE_RUN_PANIC;
+            } else if (status == MMAY_BYTECODE_RUN_OK
+                && cleanup_status != MMAY_BYTECODE_RUN_OK) {
                 status = cleanup_status;
             }
         }
         frame_count -= 1;
-        ruda_bytecode_run_frame_dispose(
+        mmay_bytecode_run_frame_dispose(
             &frames[frame_count], &allocator, options.execution
         );
     }
     if (frames != NULL) {
         size_t bytes = 0;
-        if (ruda_size_multiply(
+        if (mmay_size_multiply(
                 frame_capacity,
-                sizeof(RudaBytecodeRunFrame),
+                sizeof(MarimayBytecodeRunFrame),
                 &bytes
             )) {
-            ruda_deallocate(&allocator, frames, bytes);
+            mmay_deallocate(&allocator, frames, bytes);
         }
     }
     return status;

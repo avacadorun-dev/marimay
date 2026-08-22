@@ -3,9 +3,9 @@
 #include <limits.h>
 #include <string.h>
 
-bool ruda_bytecode_run_consume_step(
+bool mmay_bytecode_run_consume_step(
     size_t *steps,
-    RudaBytecodeRunOptions options
+    MarimayBytecodeRunOptions options
 ) {
     if (*steps >= options.max_steps
         || (options.remaining_shared_steps != NULL
@@ -19,9 +19,9 @@ bool ruda_bytecode_run_consume_step(
     return true;
 }
 
-void ruda_bytecode_run_set_trap(
-    RudaBytecodeRunOptions options,
-    RudaBytecodeSpan span
+void mmay_bytecode_run_set_trap(
+    MarimayBytecodeRunOptions options,
+    MarimayBytecodeSpan span
 ) {
     if (options.trap != NULL) {
         options.trap->span = span;
@@ -29,17 +29,17 @@ void ruda_bytecode_run_set_trap(
     }
 }
 
-void ruda_bytecode_run_reset_panic(RudaBytecodePanic *panic) {
+void mmay_bytecode_run_reset_panic(MarimayBytecodePanic *panic) {
     if (panic != NULL && panic->initialized) {
         size_t index = 0;
-        ruda_owned_bytes_dispose(&panic->message);
+        mmay_owned_bytes_dispose(&panic->message);
         for (index = 0; index < panic->suppressed.length; index += 1) {
-            RudaBytecodeSuppressedPanic *suppressed = ruda_vector_at(
+            MarimayBytecodeSuppressedPanic *suppressed = mmay_vector_at(
                 &panic->suppressed, index
             );
             if (suppressed != NULL) {
-                ruda_owned_bytes_dispose(&suppressed->message);
-                ruda_vector_dispose(&suppressed->frames);
+                mmay_owned_bytes_dispose(&suppressed->message);
+                mmay_vector_dispose(&suppressed->frames);
             }
         }
         panic->frames.length = 0;
@@ -50,11 +50,11 @@ void ruda_bytecode_run_reset_panic(RudaBytecodePanic *panic) {
     }
 }
 
-static bool ruda_bytecode_run_push_suppressed(
-    RudaBytecodePanic *primary,
-    RudaBytecodeSuppressedPanic *suppressed
+static bool mmay_bytecode_run_push_suppressed(
+    MarimayBytecodePanic *primary,
+    MarimayBytecodeSuppressedPanic *suppressed
 ) {
-    if (!ruda_vector_push(&primary->suppressed, suppressed)) {
+    if (!mmay_vector_push(&primary->suppressed, suppressed)) {
         return false;
     }
     memset(&suppressed->message, 0, sizeof(suppressed->message));
@@ -62,11 +62,11 @@ static bool ruda_bytecode_run_push_suppressed(
     return true;
 }
 
-bool ruda_bytecode_run_append_suppressed_panic(
-    RudaBytecodePanic *primary,
-    RudaBytecodePanic *secondary
+bool mmay_bytecode_run_append_suppressed_panic(
+    MarimayBytecodePanic *primary,
+    MarimayBytecodePanic *secondary
 ) {
-    RudaBytecodeSuppressedPanic observed;
+    MarimayBytecodeSuppressedPanic observed;
     size_t index = 0;
     if (primary == NULL || secondary == NULL || !primary->initialized
         || !secondary->initialized) {
@@ -78,92 +78,92 @@ bool ruda_bytecode_run_append_suppressed_panic(
     observed.symbol = secondary->symbol;
     observed.span = secondary->span;
     observed.frames = secondary->frames;
-    if (!ruda_bytecode_run_push_suppressed(primary, &observed)) {
+    if (!mmay_bytecode_run_push_suppressed(primary, &observed)) {
         return false;
     }
     memset(&secondary->message, 0, sizeof(secondary->message));
     memset(&secondary->frames, 0, sizeof(secondary->frames));
     for (index = 0; index < secondary->suppressed.length; index += 1) {
-        RudaBytecodeSuppressedPanic *nested = ruda_vector_at(
+        MarimayBytecodeSuppressedPanic *nested = mmay_vector_at(
             &secondary->suppressed, index
         );
         if (nested != NULL
-            && !ruda_bytecode_run_push_suppressed(primary, nested)) {
+            && !mmay_bytecode_run_push_suppressed(primary, nested)) {
             return false;
         }
     }
     return true;
 }
 
-RudaBytecodeRunStatus ruda_bytecode_run_begin_panic(
-    RudaBytecodePanic *panic,
-    RudaAllocator allocator,
-    RudaBytecodeExecution *execution,
-    RudaBytecodeValue message,
-    RudaSymbolId symbol,
-    RudaBytecodeSpan span
+MarimayBytecodeRunStatus mmay_bytecode_run_begin_panic(
+    MarimayBytecodePanic *panic,
+    MarimayAllocator allocator,
+    MarimayBytecodeExecution *execution,
+    MarimayBytecodeValue message,
+    MarimaySymbolId symbol,
+    MarimayBytecodeSpan span
 ) {
     const unsigned char *bytes = NULL;
     size_t length = 0;
-    RudaBytecodePanicFrame frame;
-    if (!ruda_bytecode_execution_string_bytes(
+    MarimayBytecodePanicFrame frame;
+    if (!mmay_bytecode_execution_string_bytes(
             execution, message, &bytes, &length
         )) {
-        return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
     }
     if (panic == NULL) {
-        return RUDA_BYTECODE_RUN_PANIC;
+        return MMAY_BYTECODE_RUN_PANIC;
     }
-    ruda_bytecode_run_reset_panic(panic);
-    if (!ruda_owned_bytes_copy(&panic->message, allocator, bytes, length)) {
-        ruda_bytecode_run_reset_panic(panic);
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    mmay_bytecode_run_reset_panic(panic);
+    if (!mmay_owned_bytes_copy(&panic->message, allocator, bytes, length)) {
+        mmay_bytecode_run_reset_panic(panic);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     panic->code = "G4000";
     panic->symbol = symbol;
     panic->span = span;
     frame.symbol = symbol;
     frame.call_span = span;
-    if (!ruda_vector_push(&panic->frames, &frame)) {
-        ruda_bytecode_run_reset_panic(panic);
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&panic->frames, &frame)) {
+        mmay_bytecode_run_reset_panic(panic);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    return RUDA_BYTECODE_RUN_PANIC;
+    return MMAY_BYTECODE_RUN_PANIC;
 }
 
-RudaBytecodeRunStatus ruda_bytecode_run_begin_test_panic(
-    RudaBytecodePanic *panic,
-    RudaAllocator allocator,
+MarimayBytecodeRunStatus mmay_bytecode_run_begin_test_panic(
+    MarimayBytecodePanic *panic,
+    MarimayAllocator allocator,
     const unsigned char *message,
     size_t message_length,
-    RudaSymbolId symbol,
-    RudaBytecodeSpan span
+    MarimaySymbolId symbol,
+    MarimayBytecodeSpan span
 ) {
-    RudaBytecodePanicFrame frame;
+    MarimayBytecodePanicFrame frame;
     if (message == NULL && message_length != 0) {
-        return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
-    if (panic == NULL) return RUDA_BYTECODE_RUN_PANIC;
-    ruda_bytecode_run_reset_panic(panic);
-    if (!ruda_owned_bytes_copy(
+    if (panic == NULL) return MMAY_BYTECODE_RUN_PANIC;
+    mmay_bytecode_run_reset_panic(panic);
+    if (!mmay_owned_bytes_copy(
             &panic->message, allocator, message, message_length
         )) {
-        ruda_bytecode_run_reset_panic(panic);
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        mmay_bytecode_run_reset_panic(panic);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     panic->code = "G4004";
     panic->symbol = symbol;
     panic->span = span;
     frame.symbol = symbol;
     frame.call_span = span;
-    if (!ruda_vector_push(&panic->frames, &frame)) {
-        ruda_bytecode_run_reset_panic(panic);
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&panic->frames, &frame)) {
+        mmay_bytecode_run_reset_panic(panic);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    return RUDA_BYTECODE_RUN_PANIC;
+    return MMAY_BYTECODE_RUN_PANIC;
 }
 
-static size_t ruda_bytecode_append_decimal_u64(
+static size_t mmay_bytecode_append_decimal_u64(
     unsigned char *buffer,
     size_t offset,
     uint64_t value
@@ -180,7 +180,7 @@ static size_t ruda_bytecode_append_decimal_u64(
     return offset;
 }
 
-static size_t ruda_bytecode_append_decimal_i64(
+static size_t mmay_bytecode_append_decimal_i64(
     unsigned char *buffer,
     size_t offset,
     int64_t value
@@ -190,117 +190,117 @@ static size_t ruda_bytecode_append_decimal_i64(
         buffer[offset++] = '-';
         magnitude = UINT64_C(0) - magnitude;
     }
-    return ruda_bytecode_append_decimal_u64(buffer, offset, magnitude);
+    return mmay_bytecode_append_decimal_u64(buffer, offset, magnitude);
 }
 
-RudaBytecodeRunStatus ruda_bytecode_run_begin_bounds_panic(
-    RudaBytecodePanic *panic,
-    RudaAllocator allocator,
+MarimayBytecodeRunStatus mmay_bytecode_run_begin_bounds_panic(
+    MarimayBytecodePanic *panic,
+    MarimayAllocator allocator,
     int64_t index,
     size_t length,
-    RudaSymbolId symbol,
-    RudaBytecodeSpan span
+    MarimaySymbolId symbol,
+    MarimayBytecodeSpan span
 ) {
     static const unsigned char prefix[] = "array index ";
     static const unsigned char suffix[] = " is outside length ";
     unsigned char message[sizeof(prefix) + sizeof(suffix)
         + 6 * sizeof(uint64_t)];
     size_t message_length = 0;
-    RudaBytecodePanicFrame frame;
+    MarimayBytecodePanicFrame frame;
     if (panic == NULL) {
-        return RUDA_BYTECODE_RUN_PANIC;
+        return MMAY_BYTECODE_RUN_PANIC;
     }
-    ruda_bytecode_run_reset_panic(panic);
+    mmay_bytecode_run_reset_panic(panic);
     memcpy(message + message_length, prefix, sizeof(prefix) - 1);
     message_length += sizeof(prefix) - 1;
-    message_length = ruda_bytecode_append_decimal_i64(
+    message_length = mmay_bytecode_append_decimal_i64(
         message, message_length, index
     );
     memcpy(message + message_length, suffix, sizeof(suffix) - 1);
     message_length += sizeof(suffix) - 1;
-    message_length = ruda_bytecode_append_decimal_u64(
+    message_length = mmay_bytecode_append_decimal_u64(
         message, message_length, (uint64_t)length
     );
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &panic->message, allocator, message, message_length
         )) {
-        ruda_bytecode_run_reset_panic(panic);
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        mmay_bytecode_run_reset_panic(panic);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     panic->code = "G4002";
     panic->symbol = symbol;
     panic->span = span;
     frame.symbol = symbol;
     frame.call_span = span;
-    if (!ruda_vector_push(&panic->frames, &frame)) {
-        ruda_bytecode_run_reset_panic(panic);
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&panic->frames, &frame)) {
+        mmay_bytecode_run_reset_panic(panic);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    return RUDA_BYTECODE_RUN_PANIC;
+    return MMAY_BYTECODE_RUN_PANIC;
 }
 
-RudaBytecodeRunStatus ruda_bytecode_run_begin_iterator_invalidated_panic(
-    RudaBytecodePanic *panic,
-    RudaAllocator allocator,
-    RudaSymbolId symbol,
-    RudaBytecodeSpan span
+MarimayBytecodeRunStatus mmay_bytecode_run_begin_iterator_invalidated_panic(
+    MarimayBytecodePanic *panic,
+    MarimayAllocator allocator,
+    MarimaySymbolId symbol,
+    MarimayBytecodeSpan span
 ) {
     static const unsigned char message[] =
         "array iterator invalidated by mutation";
-    RudaBytecodePanicFrame frame;
+    MarimayBytecodePanicFrame frame;
     if (panic == NULL) {
-        return RUDA_BYTECODE_RUN_PANIC;
+        return MMAY_BYTECODE_RUN_PANIC;
     }
-    ruda_bytecode_run_reset_panic(panic);
-    if (!ruda_owned_bytes_copy(
+    mmay_bytecode_run_reset_panic(panic);
+    if (!mmay_owned_bytes_copy(
             &panic->message, allocator, message, sizeof(message) - 1
         )) {
-        ruda_bytecode_run_reset_panic(panic);
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        mmay_bytecode_run_reset_panic(panic);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     panic->code = "G4005";
     panic->symbol = symbol;
     panic->span = span;
     frame.symbol = symbol;
     frame.call_span = span;
-    if (!ruda_vector_push(&panic->frames, &frame)) {
-        ruda_bytecode_run_reset_panic(panic);
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&panic->frames, &frame)) {
+        mmay_bytecode_run_reset_panic(panic);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    return RUDA_BYTECODE_RUN_PANIC;
+    return MMAY_BYTECODE_RUN_PANIC;
 }
 
-RudaBytecodeRunStatus ruda_bytecode_run_append_panic_frame(
-    RudaBytecodePanic *panic,
-    RudaSymbolId symbol,
-    RudaBytecodeSpan call_span
+MarimayBytecodeRunStatus mmay_bytecode_run_append_panic_frame(
+    MarimayBytecodePanic *panic,
+    MarimaySymbolId symbol,
+    MarimayBytecodeSpan call_span
 ) {
-    RudaBytecodePanicFrame frame;
+    MarimayBytecodePanicFrame frame;
     if (panic == NULL) {
-        return RUDA_BYTECODE_RUN_PANIC;
+        return MMAY_BYTECODE_RUN_PANIC;
     }
     frame.symbol = symbol;
     frame.call_span = call_span;
-    if (!ruda_vector_push(&panic->frames, &frame)) {
-        ruda_bytecode_run_reset_panic(panic);
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&panic->frames, &frame)) {
+        mmay_bytecode_run_reset_panic(panic);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    return RUDA_BYTECODE_RUN_PANIC;
+    return MMAY_BYTECODE_RUN_PANIC;
 }
 
-bool ruda_bytecode_run_string_value_valid(
-    RudaBytecodeExecution *execution,
-    RudaBytecodeValue value
+bool mmay_bytecode_run_string_value_valid(
+    MarimayBytecodeExecution *execution,
+    MarimayBytecodeValue value
 ) {
     const unsigned char *bytes = NULL;
     size_t length = 0;
-    return ruda_bytecode_execution_string_bytes(
+    return mmay_bytecode_execution_string_bytes(
         execution, value, &bytes, &length
     );
 }
 
-bool ruda_bytecode_run_function_uses_strings(
-    const RudaBytecodeFunction *function
+bool mmay_bytecode_run_function_uses_strings(
+    const MarimayBytecodeFunction *function
 ) {
     size_t index = 0;
     if (function == NULL) {
@@ -310,28 +310,28 @@ bool ruda_bytecode_run_function_uses_strings(
         return true;
     }
     for (index = 0; index < function->register_types.length; index += 1) {
-        const RudaBytecodeType *type = ruda_vector_at_const(
+        const MarimayBytecodeType *type = mmay_vector_at_const(
             &function->register_types, index
         );
-        if (type != NULL && *type == RUDA_BYTECODE_TYPE_STRING) {
+        if (type != NULL && *type == MMAY_BYTECODE_TYPE_STRING) {
             return true;
         }
     }
-    return function->result_type == RUDA_BYTECODE_TYPE_STRING;
+    return function->result_type == MMAY_BYTECODE_TYPE_STRING;
 }
 
-bool ruda_bytecode_run_program_uses_strings(
-    const RudaBytecodeProgram *program
+bool mmay_bytecode_run_program_uses_strings(
+    const MarimayBytecodeProgram *program
 ) {
     size_t index = 0;
     if (program == NULL) {
         return false;
     }
     for (index = 0; index < program->functions.length; index += 1) {
-        const RudaBytecodeProgramFunction *function = ruda_vector_at_const(
+        const MarimayBytecodeProgramFunction *function = mmay_vector_at_const(
             &program->functions, index
         );
-        if (function == NULL || ruda_bytecode_run_function_uses_strings(
+        if (function == NULL || mmay_bytecode_run_function_uses_strings(
                 &function->body
             )) {
             return true;
@@ -340,256 +340,256 @@ bool ruda_bytecode_run_program_uses_strings(
     return false;
 }
 
-bool ruda_bytecode_run_function_uses_arrays(
-    const RudaBytecodeFunction *function
+bool mmay_bytecode_run_function_uses_arrays(
+    const MarimayBytecodeFunction *function
 ) {
     size_t index = 0;
-    if (function == NULL || ruda_bytecode_type_is_array(function->result_type)
+    if (function == NULL || mmay_bytecode_type_is_array(function->result_type)
         || function->array_constructions.length != 0) {
         return function != NULL;
     }
     for (index = 0; index < function->register_types.length; index += 1) {
-        const RudaBytecodeType *type = ruda_vector_at_const(
+        const MarimayBytecodeType *type = mmay_vector_at_const(
             &function->register_types, index
         );
-        if (type != NULL && ruda_bytecode_type_is_array(*type)) {
+        if (type != NULL && mmay_bytecode_type_is_array(*type)) {
             return true;
         }
     }
     return false;
 }
 
-bool ruda_bytecode_run_program_uses_arrays(
-    const RudaBytecodeProgram *program
+bool mmay_bytecode_run_program_uses_arrays(
+    const MarimayBytecodeProgram *program
 ) {
     size_t index = 0;
     if (program == NULL) {
         return false;
     }
     for (index = 0; index < program->functions.length; index += 1) {
-        const RudaBytecodeProgramFunction *function = ruda_vector_at_const(
+        const MarimayBytecodeProgramFunction *function = mmay_vector_at_const(
             &program->functions, index
         );
         if (function == NULL
-            || ruda_bytecode_run_function_uses_arrays(&function->body)) {
+            || mmay_bytecode_run_function_uses_arrays(&function->body)) {
             return true;
         }
     }
     return false;
 }
 
-bool ruda_bytecode_run_function_uses_managed(
-    const RudaBytecodeFunction *function
+bool mmay_bytecode_run_function_uses_managed(
+    const MarimayBytecodeFunction *function
 ) {
     size_t index = 0;
     if (function == NULL
-        || ruda_bytecode_type_is_managed(function->result_type)) {
+        || mmay_bytecode_type_is_managed(function->result_type)) {
         return function != NULL;
     }
     for (index = 0; index < function->register_types.length; index += 1) {
-        const RudaBytecodeType *type = ruda_vector_at_const(
+        const MarimayBytecodeType *type = mmay_vector_at_const(
             &function->register_types,
             index
         );
-        if (type != NULL && ruda_bytecode_type_is_managed(*type)) {
+        if (type != NULL && mmay_bytecode_type_is_managed(*type)) {
             return true;
         }
     }
     return false;
 }
 
-bool ruda_bytecode_run_program_uses_managed(
-    const RudaBytecodeProgram *program
+bool mmay_bytecode_run_program_uses_managed(
+    const MarimayBytecodeProgram *program
 ) {
     size_t index = 0;
     if (program == NULL) {
         return false;
     }
     for (index = 0; index < program->functions.length; index += 1) {
-        const RudaBytecodeProgramFunction *function = ruda_vector_at_const(
+        const MarimayBytecodeProgramFunction *function = mmay_vector_at_const(
             &program->functions,
             index
         );
         if (function == NULL
-            || ruda_bytecode_run_function_uses_managed(&function->body)) {
+            || mmay_bytecode_run_function_uses_managed(&function->body)) {
             return true;
         }
     }
     return false;
 }
 
-RudaBytecodeRunStatus ruda_bytecode_run_arguments_validate(
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeValue *arguments,
+MarimayBytecodeRunStatus mmay_bytecode_run_arguments_validate(
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeValue *arguments,
     size_t argument_count
 ) {
     size_t index = 0;
     if (function == NULL || (arguments == NULL && argument_count != 0)
         || argument_count != function->parameter_count) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
     for (index = 0; index < argument_count; index += 1) {
-        const RudaBytecodeType *expected = ruda_vector_at_const(
+        const MarimayBytecodeType *expected = mmay_vector_at_const(
             &function->register_types, index
         );
-        uint32_t layout = ruda_bytecode_register_layout(
+        uint32_t layout = mmay_bytecode_register_layout(
             function, (uint32_t)index
         );
         if (expected == NULL || arguments[index].type != *expected) {
-            return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+            return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
         }
-        if (*expected == RUDA_BYTECODE_TYPE_STRING
-            && !ruda_bytecode_run_string_value_valid(
+        if (*expected == MMAY_BYTECODE_TYPE_STRING
+            && !mmay_bytecode_run_string_value_valid(
                 execution, arguments[index]
             )) {
-            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+            return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
         }
-        if (ruda_bytecode_type_is_array(*expected)
-            && !ruda_bytecode_managed_value_valid_for(
+        if (mmay_bytecode_type_is_array(*expected)
+            && !mmay_bytecode_managed_value_valid_for(
                 execution, function, arguments[index], layout
             )) {
-            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+            return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
         }
-        if (*expected == RUDA_BYTECODE_TYPE_RECORD
-            || *expected == RUDA_BYTECODE_TYPE_ENUM) {
-            RudaBytecodeRunStatus status =
-                ruda_bytecode_run_nominal_value_validate(
+        if (*expected == MMAY_BYTECODE_TYPE_RECORD
+            || *expected == MMAY_BYTECODE_TYPE_ENUM) {
+            MarimayBytecodeRunStatus status =
+                mmay_bytecode_run_nominal_value_validate(
                     execution,
                     function,
                     arguments[index],
                     *expected,
                     layout
                 );
-            if (status != RUDA_BYTECODE_RUN_OK) {
+            if (status != MMAY_BYTECODE_RUN_OK) {
                 return status;
             }
         }
-        if (*expected == RUDA_BYTECODE_TYPE_INTERFACE
-            && !ruda_bytecode_run_interface_value_valid(
+        if (*expected == MMAY_BYTECODE_TYPE_INTERFACE
+            && !mmay_bytecode_run_interface_value_valid(
                 execution, function, arguments[index], layout
             )) {
-            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+            return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
         }
     }
-    return RUDA_BYTECODE_RUN_OK;
+    return MMAY_BYTECODE_RUN_OK;
 }
 
-RudaBytecodeRunStatus ruda_bytecode_run_roots_init(
-    RudaBytecodeManagedRoots *roots,
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    RudaBytecodeValue *registers,
-    RudaAllocator allocator
+MarimayBytecodeRunStatus mmay_bytecode_run_roots_init(
+    MarimayBytecodeManagedRoots *roots,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeValue *registers,
+    MarimayAllocator allocator
 ) {
     size_t count = 0;
     size_t index = 0;
-    RudaManagedStatus status;
+    MarimayManagedStatus status;
     if (roots == NULL || execution == NULL || function == NULL
         || registers == NULL) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
     memset(roots, 0, sizeof(*roots));
     for (index = 0; index < function->register_types.length; index += 1) {
-        const RudaBytecodeType *type = ruda_vector_at_const(
+        const MarimayBytecodeType *type = mmay_vector_at_const(
             &function->register_types, index
         );
-        if (type != NULL && ruda_bytecode_type_is_managed(*type)) {
+        if (type != NULL && mmay_bytecode_type_is_managed(*type)) {
             count += 1;
         }
     }
-    if (!ruda_size_multiply(
-            count, sizeof(RudaManagedReference *), &roots->location_bytes
+    if (!mmay_size_multiply(
+            count, sizeof(MarimayManagedReference *), &roots->location_bytes
         )) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     if (roots->location_bytes != 0) {
-        roots->locations = ruda_allocate(&allocator, roots->location_bytes);
+        roots->locations = mmay_allocate(&allocator, roots->location_bytes);
         if (roots->locations == NULL) {
-            return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         }
     }
     count = 0;
     for (index = 0; index < function->register_types.length; index += 1) {
-        const RudaBytecodeType *type = ruda_vector_at_const(
+        const MarimayBytecodeType *type = mmay_vector_at_const(
             &function->register_types, index
         );
-        if (type != NULL && ruda_bytecode_type_is_managed(*type)) {
+        if (type != NULL && mmay_bytecode_type_is_managed(*type)) {
             roots->locations[count++] = &registers[index].as.managed_reference;
         }
     }
-    status = ruda_managed_root_push(
+    status = mmay_managed_root_push(
         &execution->managed_heap, &roots->frame, roots->locations, count
     );
-    if (status != RUDA_MANAGED_OK) {
-        ruda_deallocate(
+    if (status != MMAY_MANAGED_OK) {
+        mmay_deallocate(
             &allocator, roots->locations, roots->location_bytes
         );
         memset(roots, 0, sizeof(*roots));
-        return status == RUDA_MANAGED_INVALID_REFERENCE
-            ? RUDA_BYTECODE_RUN_INVALID_REFERENCE
-            : RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+        return status == MMAY_MANAGED_INVALID_REFERENCE
+            ? MMAY_BYTECODE_RUN_INVALID_REFERENCE
+            : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
-    return RUDA_BYTECODE_RUN_OK;
+    return MMAY_BYTECODE_RUN_OK;
 }
 
-void ruda_bytecode_run_roots_dispose(
-    RudaBytecodeManagedRoots *roots,
-    RudaBytecodeExecution *execution,
-    RudaAllocator allocator
+void mmay_bytecode_run_roots_dispose(
+    MarimayBytecodeManagedRoots *roots,
+    MarimayBytecodeExecution *execution,
+    MarimayAllocator allocator
 ) {
     if (roots == NULL) {
         return;
     }
     if (execution != NULL && roots->frame.linked) {
-        (void)ruda_managed_root_pop(&execution->managed_heap, &roots->frame);
+        (void)mmay_managed_root_pop(&execution->managed_heap, &roots->frame);
     }
-    ruda_deallocate(&allocator, roots->locations, roots->location_bytes);
+    mmay_deallocate(&allocator, roots->locations, roots->location_bytes);
     memset(roots, 0, sizeof(*roots));
 }
 
-bool ruda_bytecode_run_function_uses_f64(
-    const RudaBytecodeFunction *function
+bool mmay_bytecode_run_function_uses_f64(
+    const MarimayBytecodeFunction *function
 ) {
     size_t index = 0;
     if (function == NULL) {
         return false;
     }
-    if (function->result_type == RUDA_BYTECODE_TYPE_F64) {
+    if (function->result_type == MMAY_BYTECODE_TYPE_F64) {
         return true;
     }
     for (index = 0; index < function->register_types.length; index += 1) {
-        const RudaBytecodeType *type = ruda_vector_at_const(
+        const MarimayBytecodeType *type = mmay_vector_at_const(
             &function->register_types, index
         );
-        if (type != NULL && *type == RUDA_BYTECODE_TYPE_F64) {
+        if (type != NULL && *type == MMAY_BYTECODE_TYPE_F64) {
             return true;
         }
     }
     return false;
 }
 
-bool ruda_bytecode_run_program_uses_f64(
-    const RudaBytecodeProgram *program
+bool mmay_bytecode_run_program_uses_f64(
+    const MarimayBytecodeProgram *program
 ) {
     size_t index = 0;
     if (program == NULL) {
         return false;
     }
     for (index = 0; index < program->functions.length; index += 1) {
-        const RudaBytecodeProgramFunction *function = ruda_vector_at_const(
+        const MarimayBytecodeProgramFunction *function = mmay_vector_at_const(
             &program->functions, index
         );
         if (function == NULL
-            || ruda_bytecode_run_function_uses_f64(&function->body)) {
+            || mmay_bytecode_run_function_uses_f64(&function->body)) {
             return true;
         }
     }
     return false;
 }
 
-bool ruda_bytecode_run_function_has_calls(
-    const RudaBytecodeFunction *function
+bool mmay_bytecode_run_function_has_calls(
+    const MarimayBytecodeFunction *function
 ) {
     size_t block_index = 0;
     if (function == NULL || function->calls.length != 0
@@ -598,7 +598,7 @@ bool ruda_bytecode_run_function_has_calls(
     }
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaBytecodeBlock *block = ruda_vector_at_const(
+        const MarimayBytecodeBlock *block = mmay_vector_at_const(
             &function->blocks,
             block_index
         );
@@ -609,15 +609,15 @@ bool ruda_bytecode_run_function_has_calls(
         for (instruction_index = 0;
             instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaBytecodeInstruction *instruction = ruda_vector_at_const(
+            const MarimayBytecodeInstruction *instruction = mmay_vector_at_const(
                 &block->instructions,
                 instruction_index
             );
             if (instruction == NULL
-                || instruction->opcode == RUDA_OPCODE_CALL_DIRECT
-                || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
-                || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER
-                || instruction->opcode == RUDA_OPCODE_CALL_INTERFACE) {
+                || instruction->opcode == MMAY_OPCODE_CALL_DIRECT
+                || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID
+                || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER
+                || instruction->opcode == MMAY_OPCODE_CALL_INTERFACE) {
                 return true;
             }
         }

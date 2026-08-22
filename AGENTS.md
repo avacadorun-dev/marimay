@@ -1,6 +1,6 @@
-# Ruda repository rules
+# Marimay repository rules
 
-This repository defines and implements the Ruda programming language.
+This repository defines and implements the Marimay programming language.
 
 ## Authority order
 
@@ -16,21 +16,21 @@ Do not silently choose between conflicting normative statements. Record the conf
 
 ## Non-negotiable product constraints
 
-- The command is `ruda`; the source extension is `.ruda`.
-- Project files are `ruda.mod`, `ruda.work`, and `ruda.lock`; bytecode bundles use `.rudab`; tool-owned local state uses `.ruda/`.
+- The command is `mmay`; the source extension is `.my`.
+- Project files are `mmay.mod`, `mmay.work`, and `mmay.lock`; bytecode bundles use `.myb`; tool-owned local state uses `.mmay/`.
 - The former command `ma`, source extension `.ma`, `ma.*` project files, `.mab` bundles, and `.ma/` tool-state path are not current compatibility aliases.
 - Stage 0 is portable C17. C++ is not permitted in the compiler or runtime.
-- A later compiler is self-hosted in Ruda, but the C17 bootstrap remains reproducible.
+- A later compiler is self-hosted in Marimay, but the C17 bootstrap remains reproducible.
 - VM and native execution consume the same typed MIR and have the same observable semantics.
-- `ruda run` and `ruda test` use the VM by default; `ruda build` creates a native executable by default.
-- `ruda fmt` and `ruda test` are built in. A release cannot delegate their core behavior to third-party tools.
-- Ruda has algebraic enums, exhaustive pattern matching, `Option`, `Result`, and postfix `?`.
-- Ruda has no `null`, `undefined`, exceptions for expected failures, inheritance, user-defined implicit conversions, or `any` escape hatch.
-- Ruda has no `impl` blocks and no special method declaration. Behavior is declared by ordinary top-level functions.
+- `mmay run` and `mmay test` use the VM by default; `mmay build` creates a native executable by default.
+- `mmay fmt` and `mmay test` are built in. A release cannot delegate their core behavior to third-party tools.
+- Marimay has algebraic enums, exhaustive pattern matching, `Option`, `Result`, and postfix `?`.
+- Marimay has no `null`, `undefined`, exceptions for expected failures, inheritance, user-defined implicit conversions, or `any` escape hatch.
+- Marimay has no `impl` blocks and no special method declaration. Behavior is declared by ordinary top-level functions.
 - A visible function owned by a package is dot-call eligible when its first parameter has an exact nominal type owned by that package: `string(user)` and `user.string()` resolve to one symbol.
 - Interfaces are structural contracts over the resulting dot-call set; records and enums remain nominal.
 - Direct-style task suspension is inferred by the compiler. `scope` owns child-task lifetimes and `spawn` creates concurrency. Public source code has no `async` function color and no selectable third-party runtime.
-- Safe Ruda has no undefined behavior. Raw memory and C FFI are confined to explicit `unsafe` regions.
+- Safe Marimay has no undefined behavior. Raw memory and C FFI are confined to explicit `unsafe` regions.
 
 ## Change protocol
 

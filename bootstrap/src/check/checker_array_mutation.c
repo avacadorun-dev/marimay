@@ -8,53 +8,53 @@
 #include <limits.h>
 #include <string.h>
 
-typedef enum RudaArrayMutation {
-    RUDA_ARRAY_MUTATION_PUSH,
-    RUDA_ARRAY_MUTATION_POP,
-    RUDA_ARRAY_MUTATION_TRUNCATE,
-    RUDA_ARRAY_MUTATION_CLEAR,
-    RUDA_ARRAY_MUTATION_RESERVE
-} RudaArrayMutation;
+typedef enum MarimayArrayMutation {
+    MMAY_ARRAY_MUTATION_PUSH,
+    MMAY_ARRAY_MUTATION_POP,
+    MMAY_ARRAY_MUTATION_TRUNCATE,
+    MMAY_ARRAY_MUTATION_CLEAR,
+    MMAY_ARRAY_MUTATION_RESERVE
+} MarimayArrayMutation;
 
-bool ruda_checker_private_array_capture_generation(
-    RudaFunctionChecker *function, RudaMirArrayId array, RudaMirRegister receiver,
-    size_t start, size_t end, RudaMirRegister *generation
+bool mmay_checker_private_array_capture_generation(
+    MarimayFunctionChecker *function, MarimayMirArrayId array, MarimayMirRegister receiver,
+    size_t start, size_t end, MarimayMirRegister *generation
 ) {
-    RudaMirInstruction instruction;
+    MarimayMirInstruction instruction;
     if (function == NULL || generation == NULL
-        || !ruda_function_add_register(function, RUDA_TYPE_U64, generation)) return false;
+        || !mmay_function_add_register(function, MMAY_TYPE_U64, generation)) return false;
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_ARRAY_GENERATION;
+    instruction.kind = MMAY_MIR_ARRAY_GENERATION;
     instruction.target = *generation; instruction.first = receiver;
-    instruction.second = RUDA_MIR_NO_REGISTER; instruction.third = RUDA_MIR_NO_REGISTER;
+    instruction.second = MMAY_MIR_NO_REGISTER; instruction.third = MMAY_MIR_NO_REGISTER;
     instruction.array = array; instruction.span.start = start; instruction.span.end = end;
-    return ruda_function_append_instruction(function, &instruction);
+    return mmay_function_append_instruction(function, &instruction);
 }
 
-bool ruda_checker_private_array_require_generation(
-    RudaFunctionChecker *function, RudaMirArrayId array, RudaTypeId array_type,
-    RudaMirRegister receiver, RudaMirRegister generation, size_t start, size_t end,
-    RudaMirRegister *checked_receiver
+bool mmay_checker_private_array_require_generation(
+    MarimayFunctionChecker *function, MarimayMirArrayId array, MarimayTypeId array_type,
+    MarimayMirRegister receiver, MarimayMirRegister generation, size_t start, size_t end,
+    MarimayMirRegister *checked_receiver
 ) {
-    RudaMirInstruction instruction;
+    MarimayMirInstruction instruction;
     if (function == NULL || checked_receiver == NULL
-        || !ruda_function_add_register(function, array_type, checked_receiver)) return false;
+        || !mmay_function_add_register(function, array_type, checked_receiver)) return false;
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_ARRAY_REQUIRE_GENERATION;
+    instruction.kind = MMAY_MIR_ARRAY_REQUIRE_GENERATION;
     instruction.target = *checked_receiver; instruction.first = receiver;
-    instruction.second = generation; instruction.third = RUDA_MIR_NO_REGISTER;
+    instruction.second = generation; instruction.third = MMAY_MIR_NO_REGISTER;
     instruction.array = array; instruction.span.start = start; instruction.span.end = end;
-    return ruda_function_append_instruction(function, &instruction);
+    return mmay_function_append_instruction(function, &instruction);
 }
 
-static const RudaAstNode *ruda_array_mutation_child(
-    const RudaAstNode *node, RudaSyntaxKind kind, size_t ordinal
+static const MarimayAstNode *mmay_array_mutation_child(
+    const MarimayAstNode *node, MarimaySyntaxKind kind, size_t ordinal
 ) {
     size_t index = 0;
     size_t found = 0;
     for (index = 0; node != NULL && index < node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(node, index);
-        if (element != NULL && element->kind == RUDA_AST_ELEMENT_NODE
+        const MarimayAstElement *element = mmay_ast_child(node, index);
+        if (element != NULL && element->kind == MMAY_AST_ELEMENT_NODE
             && element->as.node != NULL && element->as.node->kind == kind) {
             if (found++ == ordinal) return element->as.node;
         }
@@ -62,78 +62,78 @@ static const RudaAstNode *ruda_array_mutation_child(
     return NULL;
 }
 
-static bool ruda_array_mutation_kind(
-    const RudaChecker *checker, const RudaSyntaxToken *name,
-    RudaArrayMutation *result
+static bool mmay_array_mutation_kind(
+    const MarimayChecker *checker, const MarimaySyntaxToken *name,
+    MarimayArrayMutation *result
 ) {
     if (checker == NULL || name == NULL || name->synthetic || result == NULL) return false;
-    if (ruda_checker_private_check_text_equal(checker, name->start, name->end, "push")) {
-        *result = RUDA_ARRAY_MUTATION_PUSH; return true;
+    if (mmay_checker_private_check_text_equal(checker, name->start, name->end, "push")) {
+        *result = MMAY_ARRAY_MUTATION_PUSH; return true;
     }
-    if (ruda_checker_private_check_text_equal(checker, name->start, name->end, "pop")) {
-        *result = RUDA_ARRAY_MUTATION_POP; return true;
+    if (mmay_checker_private_check_text_equal(checker, name->start, name->end, "pop")) {
+        *result = MMAY_ARRAY_MUTATION_POP; return true;
     }
-    if (ruda_checker_private_check_text_equal(checker, name->start, name->end, "truncate")) {
-        *result = RUDA_ARRAY_MUTATION_TRUNCATE; return true;
+    if (mmay_checker_private_check_text_equal(checker, name->start, name->end, "truncate")) {
+        *result = MMAY_ARRAY_MUTATION_TRUNCATE; return true;
     }
-    if (ruda_checker_private_check_text_equal(checker, name->start, name->end, "clear")) {
-        *result = RUDA_ARRAY_MUTATION_CLEAR; return true;
+    if (mmay_checker_private_check_text_equal(checker, name->start, name->end, "clear")) {
+        *result = MMAY_ARRAY_MUTATION_CLEAR; return true;
     }
-    if (ruda_checker_private_check_text_equal(checker, name->start, name->end, "reserve")) {
-        *result = RUDA_ARRAY_MUTATION_RESERVE; return true;
+    if (mmay_checker_private_check_text_equal(checker, name->start, name->end, "reserve")) {
+        *result = MMAY_ARRAY_MUTATION_RESERVE; return true;
     }
     return false;
 }
 
-static RudaCheckEnumDeclaration *ruda_array_mutation_prelude_enum(
-    RudaFunctionChecker *function, const char *name
+static MarimayCheckEnumDeclaration *mmay_array_mutation_prelude_enum(
+    MarimayFunctionChecker *function, const char *name
 ) {
-    RudaSymbolId symbol;
+    MarimaySymbolId symbol;
     size_t index = 0;
-    if (function == NULL || !ruda_symbol_id_from_bytes(
+    if (function == NULL || !mmay_symbol_id_from_bytes(
             "std", 3, "prelude", 7, (const unsigned char *)name,
             strlen(name), 0, &symbol)) return NULL;
     for (index = 0; index < function->checker->prelude_enums.length; index += 1) {
-        RudaCheckEnumDeclaration *candidate = ruda_vector_at(
+        MarimayCheckEnumDeclaration *candidate = mmay_vector_at(
             &function->checker->prelude_enums, index
         );
-        if (candidate != NULL && ruda_symbol_id_equal(candidate->symbol, symbol)) return candidate;
+        if (candidate != NULL && mmay_symbol_id_equal(candidate->symbol, symbol)) return candidate;
     }
     return NULL;
 }
 
-static bool ruda_array_mutation_result_type(
-    RudaFunctionChecker *function, const char *base_name,
-    RudaTypeId first, RudaTypeId second, RudaTypeId *result
+static bool mmay_array_mutation_result_type(
+    MarimayFunctionChecker *function, const char *base_name,
+    MarimayTypeId first, MarimayTypeId second, MarimayTypeId *result
 ) {
-    RudaCheckEnumDeclaration *base = ruda_array_mutation_prelude_enum(function, base_name);
-    RudaVector arguments;
+    MarimayCheckEnumDeclaration *base = mmay_array_mutation_prelude_enum(function, base_name);
+    MarimayVector arguments;
     bool ok = false;
     bool initialized = false;
     memset(&arguments, 0, sizeof(arguments));
-    if (base == NULL || !ruda_vector_init(&arguments, function->checker->result->allocator,
-            sizeof(RudaTypeId))) goto cleanup;
+    if (base == NULL || !mmay_vector_init(&arguments, function->checker->result->allocator,
+            sizeof(MarimayTypeId))) goto cleanup;
     initialized = true;
-    if (!ruda_vector_push(&arguments, &first)
-        || (second != RUDA_TYPE_INVALID && !ruda_vector_push(&arguments, &second))
-        || !ruda_checker_private_intern_generic_nominal(
-            function->checker, RUDA_TYPE_KIND_NOMINAL, base->symbol, &arguments, result)) goto cleanup;
+    if (!mmay_vector_push(&arguments, &first)
+        || (second != MMAY_TYPE_INVALID && !mmay_vector_push(&arguments, &second))
+        || !mmay_checker_private_intern_generic_nominal(
+            function->checker, MMAY_TYPE_KIND_NOMINAL, base->symbol, &arguments, result)) goto cleanup;
     ok = true;
 cleanup:
-    if (initialized) ruda_vector_dispose(&arguments);
-    if (!ok && !ruda_checker_has_failed(function->checker))
-        ruda_checker_fail(function->checker, RUDA_CHECK_ALLOCATION_FAILED);
+    if (initialized) mmay_vector_dispose(&arguments);
+    if (!ok && !mmay_checker_has_failed(function->checker))
+        mmay_checker_fail(function->checker, MMAY_CHECK_ALLOCATION_FAILED);
     return ok;
 }
 
-static bool ruda_array_mutation_arguments(
-    const RudaAstNode *arguments, const RudaAstNode **first, size_t *count
+static bool mmay_array_mutation_arguments(
+    const MarimayAstNode *arguments, const MarimayAstNode **first, size_t *count
 ) {
     size_t index = 0;
     *first = NULL; *count = 0;
     for (index = 0; arguments != NULL && index < arguments->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(arguments, index);
-        if (element != NULL && element->kind == RUDA_AST_ELEMENT_NODE) {
+        const MarimayAstElement *element = mmay_ast_child(arguments, index);
+        if (element != NULL && element->kind == MMAY_AST_ELEMENT_NODE) {
             if (*count == 0) *first = element->as.node;
             *count += 1;
         }
@@ -141,241 +141,241 @@ static bool ruda_array_mutation_arguments(
     return arguments != NULL;
 }
 
-static bool ruda_array_mutation_emit_raw(
-    RudaFunctionChecker *function, RudaMirInstructionKind kind,
-    RudaTypeId target_type, RudaMirRegister receiver, RudaMirRegister value,
-    RudaMirArrayId array, size_t start, size_t end, RudaExpressionValue *result
+static bool mmay_array_mutation_emit_raw(
+    MarimayFunctionChecker *function, MarimayMirInstructionKind kind,
+    MarimayTypeId target_type, MarimayMirRegister receiver, MarimayMirRegister value,
+    MarimayMirArrayId array, size_t start, size_t end, MarimayExpressionValue *result
 ) {
-    RudaMirInstruction instruction;
+    MarimayMirInstruction instruction;
     memset(&instruction, 0, sizeof(instruction));
-    if (target_type == RUDA_TYPE_INVALID || !ruda_function_add_register(
+    if (target_type == MMAY_TYPE_INVALID || !mmay_function_add_register(
             function, target_type, &instruction.target)) return false;
     instruction.kind = kind;
     instruction.first = receiver;
     instruction.second = value;
-    instruction.third = RUDA_MIR_NO_REGISTER;
+    instruction.third = MMAY_MIR_NO_REGISTER;
     instruction.array = array;
     instruction.span.start = start;
     instruction.span.end = end;
-    if (!ruda_function_append_instruction(function, &instruction)) return false;
+    if (!mmay_function_append_instruction(function, &instruction)) return false;
     result->type = target_type;
     result->register_id = instruction.target;
     result->valid = true;
     return true;
 }
 
-static bool ruda_array_mutation_emit_enum(
-    RudaFunctionChecker *function, RudaCheckEnumDeclaration *base,
-    RudaTypeId concrete_type, size_t variant, const RudaMirEnumArgument *arguments,
-    size_t argument_count, size_t start, size_t end, RudaExpressionValue *result
+static bool mmay_array_mutation_emit_enum(
+    MarimayFunctionChecker *function, MarimayCheckEnumDeclaration *base,
+    MarimayTypeId concrete_type, size_t variant, const MarimayMirEnumArgument *arguments,
+    size_t argument_count, size_t start, size_t end, MarimayExpressionValue *result
 ) {
-    RudaCheckEnumDeclaration concrete;
+    MarimayCheckEnumDeclaration concrete;
     if (base == NULL) return false;
     concrete = *base;
     concrete.type = concrete_type;
-    return ruda_checker_private_function_emit_enum_construction(
+    return mmay_checker_private_function_emit_enum_construction(
         function, &concrete, variant, arguments, argument_count, start, end, result
     );
 }
 
-static bool ruda_array_mutation_emit_length(
-    RudaFunctionChecker *function, RudaExpressionValue receiver, RudaMirArrayId array,
-    size_t start, size_t end, RudaExpressionValue *result
+static bool mmay_array_mutation_emit_length(
+    MarimayFunctionChecker *function, MarimayExpressionValue receiver, MarimayMirArrayId array,
+    size_t start, size_t end, MarimayExpressionValue *result
 ) {
-    return ruda_array_mutation_emit_raw(function, RUDA_MIR_ARRAY_LENGTH,
-        RUDA_TYPE_I64, receiver.register_id, RUDA_MIR_NO_REGISTER, array,
+    return mmay_array_mutation_emit_raw(function, MMAY_MIR_ARRAY_LENGTH,
+        MMAY_TYPE_I64, receiver.register_id, MMAY_MIR_NO_REGISTER, array,
         start, end, result);
 }
 
-static bool ruda_array_mutation_emit_constant(
-    RudaFunctionChecker *function, int64_t value, size_t start, size_t end,
-    RudaExpressionValue *result
+static bool mmay_array_mutation_emit_constant(
+    MarimayFunctionChecker *function, int64_t value, size_t start, size_t end,
+    MarimayExpressionValue *result
 ) {
-    return ruda_function_emit_instruction(function, RUDA_MIR_CONSTANT_I64,
-        RUDA_TYPE_I64, RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, value,
+    return mmay_function_emit_instruction(function, MMAY_MIR_CONSTANT_I64,
+        MMAY_TYPE_I64, MMAY_MIR_NO_REGISTER, MMAY_MIR_NO_REGISTER, value,
         false, start, end, result);
 }
 
-static bool ruda_array_mutation_emit_error_result(
-    RudaFunctionChecker *function, const char *error_name,
-    size_t error_variant, const RudaMirEnumArgument *error_arguments, size_t error_argument_count,
-    RudaTypeId result_type, RudaMirRegister target, size_t start, size_t end
+static bool mmay_array_mutation_emit_error_result(
+    MarimayFunctionChecker *function, const char *error_name,
+    size_t error_variant, const MarimayMirEnumArgument *error_arguments, size_t error_argument_count,
+    MarimayTypeId result_type, MarimayMirRegister target, size_t start, size_t end
 ) {
-    RudaCheckEnumDeclaration *error = ruda_array_mutation_prelude_enum(function, error_name);
-    RudaCheckEnumDeclaration *result_base = ruda_array_mutation_prelude_enum(function, "Result");
-    RudaExpressionValue error_value, wrapped;
-    if (!ruda_array_mutation_emit_enum(function, error, error->type, error_variant,
+    MarimayCheckEnumDeclaration *error = mmay_array_mutation_prelude_enum(function, error_name);
+    MarimayCheckEnumDeclaration *result_base = mmay_array_mutation_prelude_enum(function, "Result");
+    MarimayExpressionValue error_value, wrapped;
+    if (!mmay_array_mutation_emit_enum(function, error, error->type, error_variant,
             error_arguments, error_argument_count, start, end, &error_value)
-        || !ruda_array_mutation_emit_enum(function, result_base, result_type, 1,
-            &(RudaMirEnumArgument){.register_id = error_value.register_id, .type = error_value.type},
+        || !mmay_array_mutation_emit_enum(function, result_base, result_type, 1,
+            &(MarimayMirEnumArgument){.register_id = error_value.register_id, .type = error_value.type},
             1, start, end, &wrapped)
-        || !ruda_checker_private_function_emit_copy(function, target,
+        || !mmay_checker_private_function_emit_copy(function, target,
             wrapped.register_id, start, end)) return false;
     return true;
 }
 
-static bool ruda_array_mutation_emit_ok_result(
-    RudaFunctionChecker *function, RudaTypeId result_type, RudaMirRegister target,
+static bool mmay_array_mutation_emit_ok_result(
+    MarimayFunctionChecker *function, MarimayTypeId result_type, MarimayMirRegister target,
     size_t start, size_t end
 ) {
-    RudaExpressionValue wrapped;
-    return ruda_array_mutation_emit_enum(function,
-        ruda_array_mutation_prelude_enum(function, "Result"), result_type, 0,
+    MarimayExpressionValue wrapped;
+    return mmay_array_mutation_emit_enum(function,
+        mmay_array_mutation_prelude_enum(function, "Result"), result_type, 0,
         NULL, 0, start, end, &wrapped)
-        && ruda_checker_private_function_emit_copy(function, target,
+        && mmay_checker_private_function_emit_copy(function, target,
             wrapped.register_id, start, end);
 }
 
-static bool ruda_array_mutation_blocks(
-    RudaFunctionChecker *function, RudaMirBlockId *error_block,
-    RudaMirBlockId *success_block, RudaMirBlockId *join
+static bool mmay_array_mutation_blocks(
+    MarimayFunctionChecker *function, MarimayMirBlockId *error_block,
+    MarimayMirBlockId *success_block, MarimayMirBlockId *join
 ) {
-    return ruda_checker_private_function_add_block(function, error_block)
-        && ruda_checker_private_function_add_block(function, success_block)
-        && ruda_checker_private_function_add_block(function, join);
+    return mmay_checker_private_function_add_block(function, error_block)
+        && mmay_checker_private_function_add_block(function, success_block)
+        && mmay_checker_private_function_add_block(function, join);
 }
 
-bool ruda_checker_private_compile_array_mutation_call(
-    RudaFunctionChecker *function, const RudaAstNode *node,
-    const RudaAstNode *precompiled_receiver_node,
-    const RudaExpressionValue *precompiled_receiver, bool *resolved,
-    RudaExpressionValue *result
+bool mmay_checker_private_compile_array_mutation_call(
+    MarimayFunctionChecker *function, const MarimayAstNode *node,
+    const MarimayAstNode *precompiled_receiver_node,
+    const MarimayExpressionValue *precompiled_receiver, bool *resolved,
+    MarimayExpressionValue *result
 ) {
-    const RudaAstNode *callee = ruda_array_mutation_child(node, RUDA_SYNTAX_NAME_EXPRESSION, 0);
-    const RudaAstNode *member = ruda_array_mutation_child(node, RUDA_SYNTAX_MEMBER_EXPRESSION, 0);
-    const RudaAstNode *arguments = ruda_array_mutation_child(node, RUDA_SYNTAX_ARGUMENTS, 0);
-    const RudaAstNode *receiver_node = NULL;
-    const RudaAstNode *value_node = NULL;
-    const RudaSyntaxToken *name = NULL;
-    RudaArrayMutation operation;
-    RudaExpressionValue receiver, value;
-    RudaTypeId element = RUDA_TYPE_INVALID, return_type = RUDA_TYPE_VOID;
-    RudaMirArrayId array = RUDA_MIR_NO_ARRAY;
+    const MarimayAstNode *callee = mmay_array_mutation_child(node, MMAY_SYNTAX_NAME_EXPRESSION, 0);
+    const MarimayAstNode *member = mmay_array_mutation_child(node, MMAY_SYNTAX_MEMBER_EXPRESSION, 0);
+    const MarimayAstNode *arguments = mmay_array_mutation_child(node, MMAY_SYNTAX_ARGUMENTS, 0);
+    const MarimayAstNode *receiver_node = NULL;
+    const MarimayAstNode *value_node = NULL;
+    const MarimaySyntaxToken *name = NULL;
+    MarimayArrayMutation operation;
+    MarimayExpressionValue receiver, value;
+    MarimayTypeId element = MMAY_TYPE_INVALID, return_type = MMAY_TYPE_VOID;
+    MarimayMirArrayId array = MMAY_MIR_NO_ARRAY;
     size_t argument_count = 0;
     bool dot = false;
     if (function == NULL || node == NULL || resolved == NULL || result == NULL) return false;
     *resolved = false;
-    if (callee != NULL) name = ruda_checker_private_check_child_token(callee, RUDA_TOKEN_IDENTIFIER, 0);
-    else if (member != NULL && ruda_checker_private_member_parts(member, &receiver_node, &name)) dot = true;
-    if (!ruda_array_mutation_kind(function->checker, name, &operation)) return true;
-    if (ruda_array_mutation_child(node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0) != NULL) {
-        (void)ruda_checker_add_diagnostic(function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+    if (callee != NULL) name = mmay_checker_private_check_child_token(callee, MMAY_TOKEN_IDENTIFIER, 0);
+    else if (member != NULL && mmay_checker_private_member_parts(member, &receiver_node, &name)) dot = true;
+    if (!mmay_array_mutation_kind(function->checker, name, &operation)) return true;
+    if (mmay_array_mutation_child(node, MMAY_SYNTAX_TYPE_ARGUMENTS, 0) != NULL) {
+        (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "Array mutation operations do not accept type arguments", node->start, node->end);
         *resolved = true; return false;
     }
-    if (!ruda_array_mutation_arguments(arguments, &value_node, &argument_count)) return true;
+    if (!mmay_array_mutation_arguments(arguments, &value_node, &argument_count)) return true;
     if (!dot) {
         receiver_node = value_node;
         value_node = NULL;
         if (argument_count > 1) {
             size_t index = 0, found = 0;
             for (index = 0; index < arguments->child_count; index += 1) {
-                const RudaAstElement *item = ruda_ast_child(arguments, index);
-                if (item != NULL && item->kind == RUDA_AST_ELEMENT_NODE && found++ == 1) {
+                const MarimayAstElement *item = mmay_ast_child(arguments, index);
+                if (item != NULL && item->kind == MMAY_AST_ELEMENT_NODE && found++ == 1) {
                     value_node = item->as.node; break;
                 }
             }
         }
     }
-    if ((operation == RUDA_ARRAY_MUTATION_POP || operation == RUDA_ARRAY_MUTATION_CLEAR)
+    if ((operation == MMAY_ARRAY_MUTATION_POP || operation == MMAY_ARRAY_MUTATION_CLEAR)
         ? (dot ? argument_count != 0 : argument_count != 1)
         : (dot ? argument_count != 1 : argument_count != 2)) {
-        (void)ruda_checker_add_diagnostic(function->checker, RUDA_DIAGNOSTIC_CALL_ARITY,
+        (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_CALL_ARITY,
             "Array mutation call has an invalid argument count", arguments->start, arguments->end);
         *resolved = true; return false;
     }
-    memset(&receiver, 0, sizeof(receiver)); receiver.register_id = RUDA_MIR_NO_REGISTER;
+    memset(&receiver, 0, sizeof(receiver)); receiver.register_id = MMAY_MIR_NO_REGISTER;
     if (precompiled_receiver != NULL) {
         if (precompiled_receiver_node != receiver_node || !precompiled_receiver->valid) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT); return false;
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT); return false;
         }
         receiver = *precompiled_receiver;
-    } else if (!ruda_compile_expression(function, receiver_node, RUDA_TYPE_INVALID, &receiver)) return false;
+    } else if (!mmay_compile_expression(function, receiver_node, MMAY_TYPE_INVALID, &receiver)) return false;
     *resolved = true;
-    if (ruda_expression_is_never(function, &receiver)) { *result = receiver; return true; }
-    if (!ruda_type_array_element(&function->checker->result->types, receiver.type, &element)
-        || !ruda_array_layout(function, receiver.type, &array)) {
-        (void)ruda_checker_add_diagnostic(function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+    if (mmay_expression_is_never(function, &receiver)) { *result = receiver; return true; }
+    if (!mmay_type_array_element(&function->checker->result->types, receiver.type, &element)
+        || !mmay_array_layout(function, receiver.type, &array)) {
+        (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "array mutation requires a []T receiver", receiver_node->start, receiver_node->end);
         return false;
     }
-    memset(&value, 0, sizeof(value)); value.register_id = RUDA_MIR_NO_REGISTER;
-    if (value_node != NULL && !ruda_compile_expression(
+    memset(&value, 0, sizeof(value)); value.register_id = MMAY_MIR_NO_REGISTER;
+    if (value_node != NULL && !mmay_compile_expression(
             function, value_node,
-            operation == RUDA_ARRAY_MUTATION_PUSH ? element : RUDA_TYPE_I64,
+            operation == MMAY_ARRAY_MUTATION_PUSH ? element : MMAY_TYPE_I64,
             &value
         )) return false;
-    if (value_node != NULL && ruda_expression_is_never(function, &value)) { *result = value; return true; }
+    if (value_node != NULL && mmay_expression_is_never(function, &value)) { *result = value; return true; }
     if (value_node != NULL && value.type != (operation
-            == RUDA_ARRAY_MUTATION_PUSH ? element : RUDA_TYPE_I64)) {
-        (void)ruda_checker_add_diagnostic(function->checker, RUDA_DIAGNOSTIC_TYPE_MISMATCH,
-            operation == RUDA_ARRAY_MUTATION_PUSH
+            == MMAY_ARRAY_MUTATION_PUSH ? element : MMAY_TYPE_I64)) {
+        (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            operation == MMAY_ARRAY_MUTATION_PUSH
                 ? "push value must have the exact Array element type"
                 : "Array mutation count must have exact type i64",
             value_node->start, value_node->end);
         return false;
     }
-    if (operation == RUDA_ARRAY_MUTATION_POP) {
-        if (!ruda_array_mutation_result_type(function, "Option", element, RUDA_TYPE_INVALID, &return_type)) return false;
-    } else if (operation == RUDA_ARRAY_MUTATION_TRUNCATE) {
-        RudaCheckEnumDeclaration *error = ruda_array_mutation_prelude_enum(function, "ArrayTruncateError");
-        if (error == NULL || !ruda_array_mutation_result_type(function, "Result", RUDA_TYPE_VOID, error->type, &return_type)) return false;
-    } else if (operation == RUDA_ARRAY_MUTATION_RESERVE
-        || operation == RUDA_ARRAY_MUTATION_PUSH) {
-        RudaCheckEnumDeclaration *error = ruda_array_mutation_prelude_enum(function, "ArrayGrowthError");
-        if (error == NULL || !ruda_array_mutation_result_type(function, "Result", RUDA_TYPE_VOID, error->type, &return_type)) return false;
+    if (operation == MMAY_ARRAY_MUTATION_POP) {
+        if (!mmay_array_mutation_result_type(function, "Option", element, MMAY_TYPE_INVALID, &return_type)) return false;
+    } else if (operation == MMAY_ARRAY_MUTATION_TRUNCATE) {
+        MarimayCheckEnumDeclaration *error = mmay_array_mutation_prelude_enum(function, "ArrayTruncateError");
+        if (error == NULL || !mmay_array_mutation_result_type(function, "Result", MMAY_TYPE_VOID, error->type, &return_type)) return false;
+    } else if (operation == MMAY_ARRAY_MUTATION_RESERVE
+        || operation == MMAY_ARRAY_MUTATION_PUSH) {
+        MarimayCheckEnumDeclaration *error = mmay_array_mutation_prelude_enum(function, "ArrayGrowthError");
+        if (error == NULL || !mmay_array_mutation_result_type(function, "Result", MMAY_TYPE_VOID, error->type, &return_type)) return false;
     }
-    if (operation == RUDA_ARRAY_MUTATION_CLEAR) {
-        RudaExpressionValue ignored;
-        if (!ruda_array_mutation_emit_raw(function, RUDA_MIR_ARRAY_CLEAR,
-                receiver.type, receiver.register_id, RUDA_MIR_NO_REGISTER,
+    if (operation == MMAY_ARRAY_MUTATION_CLEAR) {
+        MarimayExpressionValue ignored;
+        if (!mmay_array_mutation_emit_raw(function, MMAY_MIR_ARRAY_CLEAR,
+                receiver.type, receiver.register_id, MMAY_MIR_NO_REGISTER,
                 array, node->start, node->end, &ignored)) return false;
-        result->type = RUDA_TYPE_VOID;
-        result->register_id = RUDA_MIR_NO_REGISTER;
+        result->type = MMAY_TYPE_VOID;
+        result->register_id = MMAY_MIR_NO_REGISTER;
         result->valid = true;
         return true;
     }
-    if (operation == RUDA_ARRAY_MUTATION_PUSH) {
-        RudaExpressionValue length, maximum, at_limit, raw;
-        RudaMirBlockId error_block, success_block, join;
-        RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-        RudaMirBlockId entry = function->block;
-        if (!ruda_function_add_register(function, return_type, &target)
-            || !ruda_array_mutation_emit_length(function, receiver, array,
+    if (operation == MMAY_ARRAY_MUTATION_PUSH) {
+        MarimayExpressionValue length, maximum, at_limit, raw;
+        MarimayMirBlockId error_block, success_block, join;
+        MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+        MarimayMirBlockId entry = function->block;
+        if (!mmay_function_add_register(function, return_type, &target)
+            || !mmay_array_mutation_emit_length(function, receiver, array,
                 node->start, node->end, &length)
-            || !ruda_array_mutation_emit_constant(function, INT64_MAX,
+            || !mmay_array_mutation_emit_constant(function, INT64_MAX,
                 node->start, node->end, &maximum)
-            || !ruda_function_emit_instruction(function, RUDA_MIR_EQUAL_I64,
-                RUDA_TYPE_BOOL, length.register_id, maximum.register_id, 0,
+            || !mmay_function_emit_instruction(function, MMAY_MIR_EQUAL_I64,
+                MMAY_TYPE_BOOL, length.register_id, maximum.register_id, 0,
                 false, node->start, node->end, &at_limit)
-            || !ruda_array_mutation_blocks(
+            || !mmay_array_mutation_blocks(
                 function, &error_block, &success_block, &join
             )
-            || !ruda_checker_private_function_set_branch(
+            || !mmay_checker_private_function_set_branch(
                 function, entry, at_limit.register_id, error_block,
                 success_block, node->start, node->end
             )) return false;
         function->block = error_block;
         function->terminated = false;
-        if (!ruda_array_mutation_emit_error_result(
+        if (!mmay_array_mutation_emit_error_result(
                 function, "ArrayGrowthError", 0,
-                &(RudaMirEnumArgument){
+                &(MarimayMirEnumArgument){
                     .register_id = maximum.register_id,
                     .type = maximum.type
                 },
                 1, return_type, target, node->start, node->end
-            ) || !ruda_checker_private_function_set_goto(
+            ) || !mmay_checker_private_function_set_goto(
                 function, function->block, join, node->end, node->end
             )) return false;
         function->block = success_block;
         function->terminated = false;
-        if (!ruda_array_mutation_emit_raw(
-                function, RUDA_MIR_ARRAY_PUSH, receiver.type,
+        if (!mmay_array_mutation_emit_raw(
+                function, MMAY_MIR_ARRAY_PUSH, receiver.type,
                 receiver.register_id, value.register_id, array,
                 node->start, node->end, &raw
-            ) || !ruda_array_mutation_emit_ok_result(
+            ) || !mmay_array_mutation_emit_ok_result(
                 function, return_type, target, node->start, node->end
-            ) || !ruda_checker_private_function_set_goto(
+            ) || !mmay_checker_private_function_set_goto(
                 function, function->block, join, node->end, node->end
             )) return false;
         function->block = join;
@@ -385,41 +385,41 @@ bool ruda_checker_private_compile_array_mutation_call(
         result->valid = true;
         return true;
     }
-    if (operation == RUDA_ARRAY_MUTATION_POP) {
-        RudaCheckEnumDeclaration *option = ruda_array_mutation_prelude_enum(function, "Option");
-        RudaExpressionValue length, zero, has_value, raw, wrapped;
-        RudaMirBlockId none_block, some_block, join;
-        RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-        RudaMirBlockId entry = function->block;
-        if (option == NULL || !ruda_function_add_register(function, return_type, &target)
-            || !ruda_array_mutation_emit_length(function, receiver, array,
+    if (operation == MMAY_ARRAY_MUTATION_POP) {
+        MarimayCheckEnumDeclaration *option = mmay_array_mutation_prelude_enum(function, "Option");
+        MarimayExpressionValue length, zero, has_value, raw, wrapped;
+        MarimayMirBlockId none_block, some_block, join;
+        MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+        MarimayMirBlockId entry = function->block;
+        if (option == NULL || !mmay_function_add_register(function, return_type, &target)
+            || !mmay_array_mutation_emit_length(function, receiver, array,
                 node->start, node->end, &length)
-            || !ruda_array_mutation_emit_constant(function, 0, node->start, node->end, &zero)
-            || !ruda_function_emit_instruction(function, RUDA_MIR_LESS_I64,
-                RUDA_TYPE_BOOL, zero.register_id, length.register_id, 0, false,
+            || !mmay_array_mutation_emit_constant(function, 0, node->start, node->end, &zero)
+            || !mmay_function_emit_instruction(function, MMAY_MIR_LESS_I64,
+                MMAY_TYPE_BOOL, zero.register_id, length.register_id, 0, false,
                 node->start, node->end, &has_value)
-            || !ruda_array_mutation_blocks(function, &none_block, &some_block, &join)
-            || !ruda_checker_private_function_set_branch(function, entry,
+            || !mmay_array_mutation_blocks(function, &none_block, &some_block, &join)
+            || !mmay_checker_private_function_set_branch(function, entry,
                 has_value.register_id, some_block, none_block, node->start, node->end)) return false;
         function->block = none_block;
         function->terminated = false;
-        if (!ruda_array_mutation_emit_enum(function, option, return_type, 1,
+        if (!mmay_array_mutation_emit_enum(function, option, return_type, 1,
                 NULL, 0, node->start, node->end, &wrapped)
-            || !ruda_checker_private_function_emit_copy(function, target,
+            || !mmay_checker_private_function_emit_copy(function, target,
                 wrapped.register_id, node->start, node->end)
-            || !ruda_checker_private_function_set_goto(function, function->block,
+            || !mmay_checker_private_function_set_goto(function, function->block,
                 join, node->end, node->end)) return false;
         function->block = some_block;
         function->terminated = false;
-        if (!ruda_array_mutation_emit_raw(function, RUDA_MIR_ARRAY_POP, element,
-                receiver.register_id, RUDA_MIR_NO_REGISTER, array,
+        if (!mmay_array_mutation_emit_raw(function, MMAY_MIR_ARRAY_POP, element,
+                receiver.register_id, MMAY_MIR_NO_REGISTER, array,
                 node->start, node->end, &raw)
-            || !ruda_array_mutation_emit_enum(function, option, return_type, 0,
-                &(RudaMirEnumArgument){.register_id = raw.register_id, .type = raw.type},
+            || !mmay_array_mutation_emit_enum(function, option, return_type, 0,
+                &(MarimayMirEnumArgument){.register_id = raw.register_id, .type = raw.type},
                 1, node->start, node->end, &wrapped)
-            || !ruda_checker_private_function_emit_copy(function, target,
+            || !mmay_checker_private_function_emit_copy(function, target,
                 wrapped.register_id, node->start, node->end)
-            || !ruda_checker_private_function_set_goto(function, function->block,
+            || !mmay_checker_private_function_set_goto(function, function->block,
                 join, node->end, node->end)) return false;
         function->block = join;
         function->terminated = false;
@@ -429,88 +429,88 @@ bool ruda_checker_private_compile_array_mutation_call(
         return true;
     }
     {
-        RudaExpressionValue length, zero, invalid, raw;
-        RudaMirBlockId error_block, success_block, join;
-        RudaMirRegister target = RUDA_MIR_NO_REGISTER;
-        RudaMirBlockId entry = function->block;
-        RudaCheckEnumDeclaration *error = ruda_array_mutation_prelude_enum(
-            function, operation == RUDA_ARRAY_MUTATION_TRUNCATE
+        MarimayExpressionValue length, zero, invalid, raw;
+        MarimayMirBlockId error_block, success_block, join;
+        MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+        MarimayMirBlockId entry = function->block;
+        MarimayCheckEnumDeclaration *error = mmay_array_mutation_prelude_enum(
+            function, operation == MMAY_ARRAY_MUTATION_TRUNCATE
                 ? "ArrayTruncateError" : "ArrayGrowthError"
         );
-        if (error == NULL || !ruda_function_add_register(function, return_type, &target)
-            || !ruda_array_mutation_emit_length(function, receiver, array,
+        if (error == NULL || !mmay_function_add_register(function, return_type, &target)
+            || !mmay_array_mutation_emit_length(function, receiver, array,
                 node->start, node->end, &length)
-            || !ruda_array_mutation_emit_constant(function, 0, node->start, node->end, &zero)
-            || !ruda_function_emit_instruction(function, RUDA_MIR_LESS_I64,
-                RUDA_TYPE_BOOL, value.register_id, zero.register_id, 0, false,
+            || !mmay_array_mutation_emit_constant(function, 0, node->start, node->end, &zero)
+            || !mmay_function_emit_instruction(function, MMAY_MIR_LESS_I64,
+                MMAY_TYPE_BOOL, value.register_id, zero.register_id, 0, false,
                 node->start, node->end, &invalid)
-            || !ruda_array_mutation_blocks(function, &error_block, &success_block, &join)
-            || !ruda_checker_private_function_set_branch(function, entry,
+            || !mmay_array_mutation_blocks(function, &error_block, &success_block, &join)
+            || !mmay_checker_private_function_set_branch(function, entry,
                 invalid.register_id, error_block, success_block, node->start, node->end)) return false;
         function->block = error_block;
         function->terminated = false;
-        if (operation == RUDA_ARRAY_MUTATION_TRUNCATE) {
-            RudaMirEnumArgument fields[2] = {
+        if (operation == MMAY_ARRAY_MUTATION_TRUNCATE) {
+            MarimayMirEnumArgument fields[2] = {
                 {.register_id = value.register_id, .type = value.type},
                 {.register_id = length.register_id, .type = length.type}
             };
-            if (!ruda_array_mutation_emit_error_result(function, "ArrayTruncateError",
+            if (!mmay_array_mutation_emit_error_result(function, "ArrayTruncateError",
                     0, fields, 2, return_type, target, node->start, node->end)) return false;
-        } else if (!ruda_array_mutation_emit_error_result(function, "ArrayGrowthError",
-                1, &(RudaMirEnumArgument){.register_id = value.register_id, .type = value.type},
+        } else if (!mmay_array_mutation_emit_error_result(function, "ArrayGrowthError",
+                1, &(MarimayMirEnumArgument){.register_id = value.register_id, .type = value.type},
                 1, return_type, target, node->start, node->end)) return false;
-        if (!ruda_checker_private_function_set_goto(function, function->block,
+        if (!mmay_checker_private_function_set_goto(function, function->block,
                 join, node->end, node->end)) return false;
         function->block = success_block;
         function->terminated = false;
-        if (operation == RUDA_ARRAY_MUTATION_TRUNCATE) {
-            RudaExpressionValue expands;
-            RudaMirBlockId raw_block = RUDA_MIR_NO_BLOCK;
-            if (!ruda_function_emit_instruction(function, RUDA_MIR_LESS_I64,
-                    RUDA_TYPE_BOOL, length.register_id, value.register_id, 0,
+        if (operation == MMAY_ARRAY_MUTATION_TRUNCATE) {
+            MarimayExpressionValue expands;
+            MarimayMirBlockId raw_block = MMAY_MIR_NO_BLOCK;
+            if (!mmay_function_emit_instruction(function, MMAY_MIR_LESS_I64,
+                    MMAY_TYPE_BOOL, length.register_id, value.register_id, 0,
                     false, node->start, node->end, &expands)
-                || !ruda_checker_private_function_add_block(function, &raw_block)
-                || !ruda_checker_private_function_set_branch(function,
+                || !mmay_checker_private_function_add_block(function, &raw_block)
+                || !mmay_checker_private_function_set_branch(function,
                     success_block, expands.register_id, error_block, raw_block,
                     node->start, node->end)) return false;
             function->block = raw_block;
             function->terminated = false;
         } else {
-            RudaExpressionValue maximum, available, too_large;
-            RudaMirBlockId limit_block = RUDA_MIR_NO_BLOCK;
-            RudaMirBlockId raw_block = RUDA_MIR_NO_BLOCK;
-            if (!ruda_array_mutation_emit_constant(function, INT64_MAX,
+            MarimayExpressionValue maximum, available, too_large;
+            MarimayMirBlockId limit_block = MMAY_MIR_NO_BLOCK;
+            MarimayMirBlockId raw_block = MMAY_MIR_NO_BLOCK;
+            if (!mmay_array_mutation_emit_constant(function, INT64_MAX,
                     node->start, node->end, &maximum)
-                || !ruda_function_emit_instruction(function,
-                    RUDA_MIR_SUBTRACT_CHECKED_I64, RUDA_TYPE_I64,
+                || !mmay_function_emit_instruction(function,
+                    MMAY_MIR_SUBTRACT_CHECKED_I64, MMAY_TYPE_I64,
                     maximum.register_id, length.register_id, 0, false,
                     node->start, node->end, &available)
-                || !ruda_function_emit_instruction(function, RUDA_MIR_LESS_I64,
-                    RUDA_TYPE_BOOL, available.register_id, value.register_id,
+                || !mmay_function_emit_instruction(function, MMAY_MIR_LESS_I64,
+                    MMAY_TYPE_BOOL, available.register_id, value.register_id,
                     0, false, node->start, node->end, &too_large)
-                || !ruda_checker_private_function_add_block(function, &limit_block)
-                || !ruda_checker_private_function_add_block(function, &raw_block)
-                || !ruda_checker_private_function_set_branch(function,
+                || !mmay_checker_private_function_add_block(function, &limit_block)
+                || !mmay_checker_private_function_add_block(function, &raw_block)
+                || !mmay_checker_private_function_set_branch(function,
                     success_block, too_large.register_id, limit_block, raw_block,
                     node->start, node->end)) return false;
             function->block = limit_block;
             function->terminated = false;
-            if (!ruda_array_mutation_emit_error_result(function, "ArrayGrowthError",
-                    0, &(RudaMirEnumArgument){.register_id = maximum.register_id,
+            if (!mmay_array_mutation_emit_error_result(function, "ArrayGrowthError",
+                    0, &(MarimayMirEnumArgument){.register_id = maximum.register_id,
                         .type = maximum.type}, 1, return_type, target,
                     node->start, node->end)
-                || !ruda_checker_private_function_set_goto(function, function->block,
+                || !mmay_checker_private_function_set_goto(function, function->block,
                     join, node->end, node->end)) return false;
             function->block = raw_block;
             function->terminated = false;
         }
-        if (!ruda_array_mutation_emit_raw(function,
-                operation == RUDA_ARRAY_MUTATION_TRUNCATE ? RUDA_MIR_ARRAY_TRUNCATE : RUDA_MIR_ARRAY_RESERVE,
+        if (!mmay_array_mutation_emit_raw(function,
+                operation == MMAY_ARRAY_MUTATION_TRUNCATE ? MMAY_MIR_ARRAY_TRUNCATE : MMAY_MIR_ARRAY_RESERVE,
                 receiver.type, receiver.register_id, value.register_id, array,
                 node->start, node->end, &raw)
-            || !ruda_array_mutation_emit_ok_result(function, return_type, target,
+            || !mmay_array_mutation_emit_ok_result(function, return_type, target,
                 node->start, node->end)
-            || !ruda_checker_private_function_set_goto(function, function->block,
+            || !mmay_checker_private_function_set_goto(function, function->block,
                 join, node->end, node->end)) return false;
         function->block = join;
         function->terminated = false;

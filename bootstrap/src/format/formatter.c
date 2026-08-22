@@ -4,59 +4,59 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ruda/base/string_literal.h"
-#include "ruda/base/utf8.h"
-#include "ruda/base/writer.h"
-#include "ruda/syntax/syntax.h"
+#include "mmay/base/string_literal.h"
+#include "mmay/base/utf8.h"
+#include "mmay/base/writer.h"
+#include "mmay/syntax/syntax.h"
 
-static void ruda_formatter_owned_text_dispose(RudaVector *owned_text) {
+static void mmay_formatter_owned_text_dispose(MarimayVector *owned_text) {
     size_t index = 0;
     for (index = 0; index < owned_text->length; index += 1) {
-        RudaOwnedBytes *text = ruda_vector_at(owned_text, index);
+        MarimayOwnedBytes *text = mmay_vector_at(owned_text, index);
         if (text != NULL) {
-            ruda_owned_bytes_dispose(text);
+            mmay_owned_bytes_dispose(text);
         }
     }
-    ruda_vector_dispose(owned_text);
+    mmay_vector_dispose(owned_text);
 }
 
-static void ruda_formatter_document_status(
-    RudaFormatter *formatter,
-    RudaDocumentStatus status
+static void mmay_formatter_document_status(
+    MarimayFormatter *formatter,
+    MarimayDocumentStatus status
 ) {
-    if (status == RUDA_DOCUMENT_OK || formatter->status != RUDA_FORMAT_OK) {
+    if (status == MMAY_DOCUMENT_OK || formatter->status != MMAY_FORMAT_OK) {
         return;
     }
-    if (status == RUDA_DOCUMENT_ALLOCATION_FAILED) {
-        formatter->status = RUDA_FORMAT_ALLOCATION_FAILED;
-    } else if (status == RUDA_DOCUMENT_LIMIT_REACHED) {
-        formatter->status = RUDA_FORMAT_LIMIT_REACHED;
+    if (status == MMAY_DOCUMENT_ALLOCATION_FAILED) {
+        formatter->status = MMAY_FORMAT_ALLOCATION_FAILED;
+    } else if (status == MMAY_DOCUMENT_LIMIT_REACHED) {
+        formatter->status = MMAY_FORMAT_LIMIT_REACHED;
     } else {
-        formatter->status = RUDA_FORMAT_INVALID_ARGUMENT;
+        formatter->status = MMAY_FORMAT_INVALID_ARGUMENT;
     }
 }
 
-static void ruda_formatter_part(
-    RudaFormatter *formatter,
-    RudaDocumentPartKind kind
+static void mmay_formatter_part(
+    MarimayFormatter *formatter,
+    MarimayDocumentPartKind kind
 ) {
-    if (formatter->status == RUDA_FORMAT_OK) {
-        ruda_formatter_document_status(
+    if (formatter->status == MMAY_FORMAT_OK) {
+        mmay_formatter_document_status(
             formatter,
-            ruda_document_part(&formatter->document, kind)
+            mmay_document_part(&formatter->document, kind)
         );
     }
 }
 
-static void ruda_formatter_text(
-    RudaFormatter *formatter,
+static void mmay_formatter_text(
+    MarimayFormatter *formatter,
     const unsigned char *text,
     size_t length
 ) {
-    if (formatter->status == RUDA_FORMAT_OK) {
-        ruda_formatter_document_status(
+    if (formatter->status == MMAY_FORMAT_OK) {
+        mmay_formatter_document_status(
             formatter,
-            ruda_document_text(&formatter->document, text, length)
+            mmay_document_text(&formatter->document, text, length)
         );
     }
     if (length != 0) {
@@ -65,13 +65,13 @@ static void ruda_formatter_text(
     }
 }
 
-static bool ruda_formatter_adopt_text(
-    RudaFormatter *formatter,
-    RudaOwnedBytes *text
+static bool mmay_formatter_adopt_text(
+    MarimayFormatter *formatter,
+    MarimayOwnedBytes *text
 ) {
-    if (!ruda_vector_push(&formatter->owned_text, text)) {
-        formatter->status = RUDA_FORMAT_ALLOCATION_FAILED;
-        ruda_owned_bytes_dispose(text);
+    if (!mmay_vector_push(&formatter->owned_text, text)) {
+        formatter->status = MMAY_FORMAT_ALLOCATION_FAILED;
+        mmay_owned_bytes_dispose(text);
         return false;
     }
     text->data = NULL;
@@ -79,29 +79,29 @@ static bool ruda_formatter_adopt_text(
     return true;
 }
 
-static void ruda_formatter_copy_text(
-    RudaFormatter *formatter,
+static void mmay_formatter_copy_text(
+    MarimayFormatter *formatter,
     const unsigned char *text,
     size_t length
 ) {
-    RudaOwnedBytes owned;
+    MarimayOwnedBytes owned;
     const unsigned char *stable = NULL;
-    if (formatter->status != RUDA_FORMAT_OK) {
+    if (formatter->status != MMAY_FORMAT_OK) {
         return;
     }
-    if (!ruda_owned_bytes_copy(&owned, formatter->allocator, text, length)) {
-        formatter->status = RUDA_FORMAT_ALLOCATION_FAILED;
+    if (!mmay_owned_bytes_copy(&owned, formatter->allocator, text, length)) {
+        formatter->status = MMAY_FORMAT_ALLOCATION_FAILED;
         return;
     }
     stable = owned.data;
-    if (!ruda_formatter_adopt_text(formatter, &owned)) {
+    if (!mmay_formatter_adopt_text(formatter, &owned)) {
         return;
     }
-    ruda_formatter_text(formatter, stable, length);
+    mmay_formatter_text(formatter, stable, length);
 }
 
-static void ruda_formatter_unicode_escape(
-    RudaFormatter *formatter,
+static void mmay_formatter_unicode_escape(
+    MarimayFormatter *formatter,
     uint32_t value
 ) {
     static const unsigned char digits[] = "0123456789abcdef";
@@ -121,17 +121,17 @@ static void ruda_formatter_unicode_escape(
         spelling[3 + index] = reverse[digit_count - index - 1];
     }
     spelling[3 + digit_count] = '}';
-    ruda_formatter_copy_text(formatter, spelling, digit_count + 4);
+    mmay_formatter_copy_text(formatter, spelling, digit_count + 4);
 }
 
-static bool ruda_formatter_raw_string_is_shorter(
-    const RudaOwnedBytes *decoded
+static bool mmay_formatter_raw_string_is_shorter(
+    const MarimayOwnedBytes *decoded
 ) {
     size_t cursor = 0;
     size_t backslashes = 0;
     while (cursor < decoded->length) {
-        RudaUtf8Scalar scalar;
-        if (!ruda_utf8_decode(
+        MarimayUtf8Scalar scalar;
+        if (!mmay_utf8_decode(
                 decoded->data + cursor,
                 decoded->length - cursor,
                 &scalar
@@ -151,9 +151,9 @@ static bool ruda_formatter_raw_string_is_shorter(
     return backslashes >= 2;
 }
 
-static void ruda_formatter_canonical_string(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token
+static void mmay_formatter_canonical_string(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token
 ) {
     static const unsigned char quote[] = "\"";
     static const unsigned char raw_start[] = "r\"";
@@ -163,8 +163,8 @@ static void ruda_formatter_canonical_string(
     static const unsigned char carriage_escape[] = "\\r";
     static const unsigned char tab_escape[] = "\\t";
     static const unsigned char zero_escape[] = "\\0";
-    RudaOwnedBytes decoded;
-    RudaFormatStatus status = ruda_format_decode_ordinary_string(
+    MarimayOwnedBytes decoded;
+    MarimayFormatStatus status = mmay_format_decode_ordinary_string(
         formatter->source,
         formatter->source_length,
         &token->token,
@@ -175,45 +175,45 @@ static void ruda_formatter_canonical_string(
     size_t literal_start = 0;
     const unsigned char *decoded_data = NULL;
     size_t decoded_length = 0;
-    bool allow_raw = token->parent_kind == RUDA_SYNTAX_LITERAL_EXPRESSION;
-    if (status != RUDA_FORMAT_OK) {
+    bool allow_raw = token->parent_kind == MMAY_SYNTAX_LITERAL_EXPRESSION;
+    if (status != MMAY_FORMAT_OK) {
         formatter->status = status;
         return;
     }
     decoded_data = decoded.data;
     decoded_length = decoded.length;
-    if (!ruda_formatter_adopt_text(formatter, &decoded)) {
+    if (!mmay_formatter_adopt_text(formatter, &decoded)) {
         return;
     }
     {
-        const RudaOwnedBytes *stable = ruda_vector_at_const(
+        const MarimayOwnedBytes *stable = mmay_vector_at_const(
             &formatter->owned_text,
             formatter->owned_text.length - 1
         );
         if (stable == NULL) {
-            formatter->status = RUDA_FORMAT_INVALID_ARGUMENT;
+            formatter->status = MMAY_FORMAT_INVALID_ARGUMENT;
             return;
         }
-        if (allow_raw && ruda_formatter_raw_string_is_shorter(stable)) {
-            ruda_formatter_text(formatter, raw_start, sizeof(raw_start) - 1);
-            ruda_formatter_text(formatter, decoded_data, decoded_length);
-            ruda_formatter_text(formatter, quote, sizeof(quote) - 1);
+        if (allow_raw && mmay_formatter_raw_string_is_shorter(stable)) {
+            mmay_formatter_text(formatter, raw_start, sizeof(raw_start) - 1);
+            mmay_formatter_text(formatter, decoded_data, decoded_length);
+            mmay_formatter_text(formatter, quote, sizeof(quote) - 1);
             return;
         }
     }
 
-    ruda_formatter_text(formatter, quote, sizeof(quote) - 1);
-    while (cursor < decoded_length && formatter->status == RUDA_FORMAT_OK) {
-        RudaUtf8Scalar scalar;
+    mmay_formatter_text(formatter, quote, sizeof(quote) - 1);
+    while (cursor < decoded_length && formatter->status == MMAY_FORMAT_OK) {
+        MarimayUtf8Scalar scalar;
         const unsigned char *escape = NULL;
         size_t escape_length = 0;
         bool unicode_escape = false;
-        if (!ruda_utf8_decode(
+        if (!mmay_utf8_decode(
                 decoded_data + cursor,
                 decoded_length - cursor,
                 &scalar
             )) {
-            formatter->status = RUDA_FORMAT_SOURCE_INVALID;
+            formatter->status = MMAY_FORMAT_SOURCE_INVALID;
             break;
         }
         if (scalar.value == '\\') {
@@ -240,15 +240,15 @@ static void ruda_formatter_canonical_string(
             unicode_escape = true;
         }
         if (escape != NULL || unicode_escape) {
-            ruda_formatter_text(
+            mmay_formatter_text(
                 formatter,
                 decoded_data + literal_start,
                 cursor - literal_start
             );
             if (unicode_escape) {
-                ruda_formatter_unicode_escape(formatter, scalar.value);
+                mmay_formatter_unicode_escape(formatter, scalar.value);
             } else {
-                ruda_formatter_text(formatter, escape, escape_length);
+                mmay_formatter_text(formatter, escape, escape_length);
             }
             cursor += scalar.width;
             literal_start = cursor;
@@ -256,42 +256,42 @@ static void ruda_formatter_canonical_string(
             cursor += scalar.width;
         }
     }
-    if (formatter->status == RUDA_FORMAT_OK) {
-        ruda_formatter_text(
+    if (formatter->status == MMAY_FORMAT_OK) {
+        mmay_formatter_text(
             formatter,
             decoded_data + literal_start,
             decoded_length - literal_start
         );
-        ruda_formatter_text(formatter, quote, sizeof(quote) - 1);
+        mmay_formatter_text(formatter, quote, sizeof(quote) - 1);
     }
 }
 
-static void ruda_formatter_break_text(
-    RudaFormatter *formatter,
+static void mmay_formatter_break_text(
+    MarimayFormatter *formatter,
     const unsigned char *text,
     size_t length
 ) {
-    if (formatter->status == RUDA_FORMAT_OK) {
-        ruda_formatter_document_status(
+    if (formatter->status == MMAY_FORMAT_OK) {
+        mmay_formatter_document_status(
             formatter,
-            ruda_document_break_text(&formatter->document, text, length)
+            mmay_document_break_text(&formatter->document, text, length)
         );
     }
 }
 
-static bool ruda_formatter_part_is_line(RudaDocumentPartKind kind) {
-    return kind == RUDA_DOCUMENT_HARDLINE || kind == RUDA_DOCUMENT_LITERAL_LINE;
+static bool mmay_formatter_part_is_line(MarimayDocumentPartKind kind) {
+    return kind == MMAY_DOCUMENT_HARDLINE || kind == MMAY_DOCUMENT_LITERAL_LINE;
 }
 
-static size_t ruda_formatter_trailing_lines(const RudaFormatter *formatter) {
+static size_t mmay_formatter_trailing_lines(const MarimayFormatter *formatter) {
     size_t count = 0;
     size_t index = formatter->document.parts.length;
     while (index != 0) {
-        const RudaDocumentPart *part = ruda_vector_at_const(
+        const MarimayDocumentPart *part = mmay_vector_at_const(
             &formatter->document.parts,
             index - 1
         );
-        if (part == NULL || !ruda_formatter_part_is_line(part->kind)) {
+        if (part == NULL || !mmay_formatter_part_is_line(part->kind)) {
             break;
         }
         count += 1;
@@ -300,13 +300,13 @@ static size_t ruda_formatter_trailing_lines(const RudaFormatter *formatter) {
     return count;
 }
 
-static void ruda_formatter_ensure_hardlines(
-    RudaFormatter *formatter,
+static void mmay_formatter_ensure_hardlines(
+    MarimayFormatter *formatter,
     size_t count
 ) {
-    size_t existing = ruda_formatter_trailing_lines(formatter);
-    while (existing < count && formatter->status == RUDA_FORMAT_OK) {
-        ruda_formatter_part(formatter, RUDA_DOCUMENT_HARDLINE);
+    size_t existing = mmay_formatter_trailing_lines(formatter);
+    while (existing < count && formatter->status == MMAY_FORMAT_OK) {
+        mmay_formatter_part(formatter, MMAY_DOCUMENT_HARDLINE);
         existing += 1;
     }
     formatter->pending_space = false;
@@ -314,47 +314,47 @@ static void ruda_formatter_ensure_hardlines(
     formatter->after_flexible_line = false;
 }
 
-static void ruda_formatter_softline(
-    RudaFormatter *formatter,
-    RudaDocumentPartKind kind
+static void mmay_formatter_softline(
+    MarimayFormatter *formatter,
+    MarimayDocumentPartKind kind
 ) {
-    ruda_formatter_part(formatter, kind);
+    mmay_formatter_part(formatter, kind);
     formatter->pending_space = false;
     formatter->at_line_start = false;
     formatter->after_flexible_line = true;
 }
 
-static void ruda_formatter_space(RudaFormatter *formatter) {
+static void mmay_formatter_space(MarimayFormatter *formatter) {
     static const unsigned char space[] = " ";
     if (!formatter->at_line_start && !formatter->after_flexible_line) {
-        ruda_formatter_text(formatter, space, 1);
+        mmay_formatter_text(formatter, space, 1);
     }
     formatter->pending_space = false;
 }
 
-static void ruda_formatter_pending_space(RudaFormatter *formatter) {
+static void mmay_formatter_pending_space(MarimayFormatter *formatter) {
     if (formatter->pending_space) {
-        ruda_formatter_space(formatter);
+        mmay_formatter_space(formatter);
     }
 }
 
-static const RudaFormatToken *ruda_formatter_token(
-    const RudaFormatter *formatter,
+static const MarimayFormatToken *mmay_formatter_token(
+    const MarimayFormatter *formatter,
     size_t index
 ) {
-    return ruda_vector_at_const(formatter->tokens, index);
+    return mmay_vector_at_const(formatter->tokens, index);
 }
 
-static const RudaFormatToken *ruda_formatter_next_visible(
-    const RudaFormatter *formatter,
+static const MarimayFormatToken *mmay_formatter_next_visible(
+    const MarimayFormatter *formatter,
     size_t index
 ) {
     while (index < formatter->tokens->length) {
-        const RudaFormatToken *token = ruda_formatter_token(formatter, index);
+        const MarimayFormatToken *token = mmay_formatter_token(formatter, index);
         if (token == NULL) {
             return NULL;
         }
-        if (ruda_format_token_is_visible(token->token.kind)) {
+        if (mmay_format_token_is_visible(token->token.kind)) {
             return token;
         }
         index += 1;
@@ -362,8 +362,8 @@ static const RudaFormatToken *ruda_formatter_next_visible(
     return NULL;
 }
 
-static bool ruda_formatter_gap_has_newline(
-    const RudaFormatter *formatter,
+static bool mmay_formatter_gap_has_newline(
+    const MarimayFormatter *formatter,
     size_t start,
     size_t end
 ) {
@@ -381,55 +381,55 @@ static bool ruda_formatter_gap_has_newline(
     return false;
 }
 
-static bool ruda_formatter_next_comment_same_line(
-    const RudaFormatter *formatter,
-    const RudaFormatToken *token,
-    const RudaFormatToken *next
+static bool mmay_formatter_next_comment_same_line(
+    const MarimayFormatter *formatter,
+    const MarimayFormatToken *token,
+    const MarimayFormatToken *next
 ) {
-    return next != NULL && ruda_format_token_is_comment(next->token.kind)
-        && !ruda_formatter_gap_has_newline(
+    return next != NULL && mmay_format_token_is_comment(next->token.kind)
+        && !mmay_formatter_gap_has_newline(
             formatter,
             token->token.end,
             next->token.start
         );
 }
 
-static void ruda_formatter_emit_token_text(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token
+static void mmay_formatter_emit_token_text(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token
 ) {
     if (token->token.end < token->token.start
         || token->token.end > formatter->source_length) {
-        formatter->status = RUDA_FORMAT_INVALID_ARGUMENT;
+        formatter->status = MMAY_FORMAT_INVALID_ARGUMENT;
         return;
     }
-    ruda_formatter_text(
+    mmay_formatter_text(
         formatter,
         formatter->source + token->token.start,
         token->token.end - token->token.start
     );
 }
 
-static void ruda_formatter_emit_comment(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token,
-    const RudaFormatToken *next
+static void mmay_formatter_emit_comment(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token,
+    const MarimayFormatToken *next
 ) {
     const unsigned char *bytes = formatter->source + token->token.start;
     size_t length = token->token.end - token->token.start;
     size_t segment_start = 0;
     size_t index = 0;
     if (!formatter->at_line_start && !formatter->after_flexible_line) {
-        ruda_formatter_space(formatter);
+        mmay_formatter_space(formatter);
     }
-    while (index < length && formatter->status == RUDA_FORMAT_OK) {
+    while (index < length && formatter->status == MMAY_FORMAT_OK) {
         if (bytes[index] == '\n' || bytes[index] == '\r') {
-            ruda_formatter_text(
+            mmay_formatter_text(
                 formatter,
                 bytes + segment_start,
                 index - segment_start
             );
-            ruda_formatter_part(formatter, RUDA_DOCUMENT_LITERAL_LINE);
+            mmay_formatter_part(formatter, MMAY_DOCUMENT_LITERAL_LINE);
             formatter->at_line_start = true;
             formatter->after_flexible_line = false;
             formatter->pending_space = false;
@@ -442,105 +442,105 @@ static void ruda_formatter_emit_comment(
         index += 1;
     }
     if (segment_start <= length) {
-        ruda_formatter_text(
+        mmay_formatter_text(
             formatter,
             bytes + segment_start,
             length - segment_start
         );
     }
-    if (token->token.kind == RUDA_TOKEN_LINE_COMMENT
-        || token->token.kind == RUDA_TOKEN_DOC_LINE_COMMENT
+    if (token->token.kind == MMAY_TOKEN_LINE_COMMENT
+        || token->token.kind == MMAY_TOKEN_DOC_LINE_COMMENT
         || next == NULL
-        || ruda_formatter_gap_has_newline(
+        || mmay_formatter_gap_has_newline(
             formatter,
             token->token.end,
             next->token.start
         )) {
-        ruda_formatter_ensure_hardlines(formatter, 1);
+        mmay_formatter_ensure_hardlines(formatter, 1);
     } else {
         formatter->pending_space = true;
     }
     formatter->last_was_comment = true;
 }
 
-static bool ruda_formatter_postfix_predecessor(RudaTokenKind kind) {
-    return kind == RUDA_TOKEN_IDENTIFIER || kind == RUDA_TOKEN_INTEGER
-        || kind == RUDA_TOKEN_FLOAT || kind == RUDA_TOKEN_STRING
-        || kind == RUDA_TOKEN_RAW_STRING || kind == RUDA_TOKEN_BYTE_STRING
-        || kind == RUDA_TOKEN_RUNE || kind == RUDA_TOKEN_KW_TRUE
-        || kind == RUDA_TOKEN_KW_FALSE
-        || kind == RUDA_TOKEN_RIGHT_PAREN
-        || kind == RUDA_TOKEN_RIGHT_BRACKET || kind == RUDA_TOKEN_RIGHT_BRACE
-        || kind == RUDA_TOKEN_INTERPOLATED_END || kind == RUDA_TOKEN_QUESTION
-        || kind == RUDA_TOKEN_GREATER || kind == RUDA_TOKEN_SHIFT_RIGHT;
+static bool mmay_formatter_postfix_predecessor(MarimayTokenKind kind) {
+    return kind == MMAY_TOKEN_IDENTIFIER || kind == MMAY_TOKEN_INTEGER
+        || kind == MMAY_TOKEN_FLOAT || kind == MMAY_TOKEN_STRING
+        || kind == MMAY_TOKEN_RAW_STRING || kind == MMAY_TOKEN_BYTE_STRING
+        || kind == MMAY_TOKEN_RUNE || kind == MMAY_TOKEN_KW_TRUE
+        || kind == MMAY_TOKEN_KW_FALSE
+        || kind == MMAY_TOKEN_RIGHT_PAREN
+        || kind == MMAY_TOKEN_RIGHT_BRACKET || kind == MMAY_TOKEN_RIGHT_BRACE
+        || kind == MMAY_TOKEN_INTERPOLATED_END || kind == MMAY_TOKEN_QUESTION
+        || kind == MMAY_TOKEN_GREATER || kind == MMAY_TOKEN_SHIFT_RIGHT;
 }
 
-static bool ruda_formatter_operator_spaced(const RudaFormatToken *token) {
-    RudaTokenKind kind = token->token.kind;
-    if (kind == RUDA_TOKEN_BANG || kind == RUDA_TOKEN_TILDE
-        || kind == RUDA_TOKEN_QUESTION) {
+static bool mmay_formatter_operator_spaced(const MarimayFormatToken *token) {
+    MarimayTokenKind kind = token->token.kind;
+    if (kind == MMAY_TOKEN_BANG || kind == MMAY_TOKEN_TILDE
+        || kind == MMAY_TOKEN_QUESTION) {
         return false;
     }
-    if (kind == RUDA_TOKEN_MINUS
-        && token->parent_kind == RUDA_SYNTAX_UNARY_EXPRESSION) {
+    if (kind == MMAY_TOKEN_MINUS
+        && token->parent_kind == MMAY_SYNTAX_UNARY_EXPRESSION) {
         return false;
     }
-    if (kind == RUDA_TOKEN_LESS || kind == RUDA_TOKEN_GREATER
-        || kind == RUDA_TOKEN_SHIFT_RIGHT) {
-        return token->parent_kind == RUDA_SYNTAX_BINARY_EXPRESSION;
+    if (kind == MMAY_TOKEN_LESS || kind == MMAY_TOKEN_GREATER
+        || kind == MMAY_TOKEN_SHIFT_RIGHT) {
+        return token->parent_kind == MMAY_SYNTAX_BINARY_EXPRESSION;
     }
-    return kind == RUDA_TOKEN_PLUS || kind == RUDA_TOKEN_MINUS
-        || kind == RUDA_TOKEN_STAR || kind == RUDA_TOKEN_SLASH
-        || kind == RUDA_TOKEN_PERCENT || kind == RUDA_TOKEN_AMPERSAND
-        || kind == RUDA_TOKEN_PIPE || kind == RUDA_TOKEN_CARET
-        || kind == RUDA_TOKEN_EQUAL || kind == RUDA_TOKEN_FAT_ARROW
-        || kind == RUDA_TOKEN_THIN_ARROW || kind == RUDA_TOKEN_EQUAL_EQUAL
-        || kind == RUDA_TOKEN_BANG_EQUAL || kind == RUDA_TOKEN_LESS_EQUAL
-        || kind == RUDA_TOKEN_GREATER_EQUAL
-        || kind == RUDA_TOKEN_AMPERSAND_AMPERSAND
-        || kind == RUDA_TOKEN_PIPE_PIPE || kind == RUDA_TOKEN_SHIFT_LEFT
-        || kind == RUDA_TOKEN_PLUS_EQUAL || kind == RUDA_TOKEN_MINUS_EQUAL
-        || kind == RUDA_TOKEN_STAR_EQUAL || kind == RUDA_TOKEN_SLASH_EQUAL
-        || kind == RUDA_TOKEN_PERCENT_EQUAL
-        || kind == RUDA_TOKEN_AMPERSAND_EQUAL
-        || kind == RUDA_TOKEN_PIPE_EQUAL || kind == RUDA_TOKEN_CARET_EQUAL
-        || kind == RUDA_TOKEN_SHIFT_LEFT_EQUAL
-        || kind == RUDA_TOKEN_SHIFT_RIGHT_EQUAL;
+    return kind == MMAY_TOKEN_PLUS || kind == MMAY_TOKEN_MINUS
+        || kind == MMAY_TOKEN_STAR || kind == MMAY_TOKEN_SLASH
+        || kind == MMAY_TOKEN_PERCENT || kind == MMAY_TOKEN_AMPERSAND
+        || kind == MMAY_TOKEN_PIPE || kind == MMAY_TOKEN_CARET
+        || kind == MMAY_TOKEN_EQUAL || kind == MMAY_TOKEN_FAT_ARROW
+        || kind == MMAY_TOKEN_THIN_ARROW || kind == MMAY_TOKEN_EQUAL_EQUAL
+        || kind == MMAY_TOKEN_BANG_EQUAL || kind == MMAY_TOKEN_LESS_EQUAL
+        || kind == MMAY_TOKEN_GREATER_EQUAL
+        || kind == MMAY_TOKEN_AMPERSAND_AMPERSAND
+        || kind == MMAY_TOKEN_PIPE_PIPE || kind == MMAY_TOKEN_SHIFT_LEFT
+        || kind == MMAY_TOKEN_PLUS_EQUAL || kind == MMAY_TOKEN_MINUS_EQUAL
+        || kind == MMAY_TOKEN_STAR_EQUAL || kind == MMAY_TOKEN_SLASH_EQUAL
+        || kind == MMAY_TOKEN_PERCENT_EQUAL
+        || kind == MMAY_TOKEN_AMPERSAND_EQUAL
+        || kind == MMAY_TOKEN_PIPE_EQUAL || kind == MMAY_TOKEN_CARET_EQUAL
+        || kind == MMAY_TOKEN_SHIFT_LEFT_EQUAL
+        || kind == MMAY_TOKEN_SHIFT_RIGHT_EQUAL;
 }
 
-static bool ruda_formatter_open_group_needs_space(
-    const RudaFormatter *formatter,
-    const RudaFormatToken *token
+static bool mmay_formatter_open_group_needs_space(
+    const MarimayFormatter *formatter,
+    const MarimayFormatToken *token
 ) {
     return formatter->pending_space
-        && (token->parent_kind == RUDA_SYNTAX_PAREN_GROUP
+        && (token->parent_kind == MMAY_SYNTAX_PAREN_GROUP
             || !formatter->has_previous_code
-            || !ruda_formatter_postfix_predecessor(
+            || !mmay_formatter_postfix_predecessor(
                 formatter->previous_code_kind
             ));
 }
 
-static bool ruda_formatter_trailing_comma_kind(RudaSyntaxKind parent_kind) {
-    return parent_kind == RUDA_SYNTAX_ARGUMENTS
-        || parent_kind == RUDA_SYNTAX_PARAMETERS
-        || parent_kind == RUDA_SYNTAX_ARRAY_EXPRESSION
-        || parent_kind == RUDA_SYNTAX_IMPORT_CLAUSE
-        || parent_kind == RUDA_SYNTAX_POSITIONAL_PATTERN
-        || parent_kind == RUDA_SYNTAX_TUPLE_PATTERN
-        || parent_kind == RUDA_SYNTAX_NAMED_PATTERN;
+static bool mmay_formatter_trailing_comma_kind(MarimaySyntaxKind parent_kind) {
+    return parent_kind == MMAY_SYNTAX_ARGUMENTS
+        || parent_kind == MMAY_SYNTAX_PARAMETERS
+        || parent_kind == MMAY_SYNTAX_ARRAY_EXPRESSION
+        || parent_kind == MMAY_SYNTAX_IMPORT_CLAUSE
+        || parent_kind == MMAY_SYNTAX_POSITIONAL_PATTERN
+        || parent_kind == MMAY_SYNTAX_TUPLE_PATTERN
+        || parent_kind == MMAY_SYNTAX_NAMED_PATTERN;
 }
 
-static void ruda_formatter_push_delimiter(
-    RudaFormatter *formatter,
-    RudaTokenKind open,
-    RudaSyntaxKind parent_kind,
+static void mmay_formatter_push_delimiter(
+    MarimayFormatter *formatter,
+    MarimayTokenKind open,
+    MarimaySyntaxKind parent_kind,
     bool empty,
     bool grouped,
     bool trailing_comma
 ) {
-    RudaFormatDelimiter delimiter;
+    MarimayFormatDelimiter delimiter;
     if (formatter->delimiters.length >= formatter->options.max_nesting) {
-        formatter->status = RUDA_FORMAT_LIMIT_REACHED;
+        formatter->status = MMAY_FORMAT_LIMIT_REACHED;
         return;
     }
     delimiter.open = open;
@@ -548,78 +548,78 @@ static void ruda_formatter_push_delimiter(
     delimiter.empty = empty;
     delimiter.grouped = grouped;
     delimiter.trailing_comma = trailing_comma;
-    if (!ruda_vector_push(&formatter->delimiters, &delimiter)) {
-        formatter->status = RUDA_FORMAT_ALLOCATION_FAILED;
+    if (!mmay_vector_push(&formatter->delimiters, &delimiter)) {
+        formatter->status = MMAY_FORMAT_ALLOCATION_FAILED;
     }
 }
 
-static RudaFormatDelimiter *ruda_formatter_top_delimiter(RudaFormatter *formatter) {
+static MarimayFormatDelimiter *mmay_formatter_top_delimiter(MarimayFormatter *formatter) {
     if (formatter->delimiters.length == 0) {
         return NULL;
     }
-    return ruda_vector_at(
+    return mmay_vector_at(
         &formatter->delimiters,
         formatter->delimiters.length - 1
     );
 }
 
-static bool ruda_formatter_delimiter_matches(
-    RudaTokenKind open,
-    RudaTokenKind close
+static bool mmay_formatter_delimiter_matches(
+    MarimayTokenKind open,
+    MarimayTokenKind close
 ) {
-    return (open == RUDA_TOKEN_LEFT_PAREN && close == RUDA_TOKEN_RIGHT_PAREN)
-        || (open == RUDA_TOKEN_LEFT_BRACKET && close == RUDA_TOKEN_RIGHT_BRACKET)
-        || (open == RUDA_TOKEN_LEFT_BRACE && close == RUDA_TOKEN_RIGHT_BRACE);
+    return (open == MMAY_TOKEN_LEFT_PAREN && close == MMAY_TOKEN_RIGHT_PAREN)
+        || (open == MMAY_TOKEN_LEFT_BRACKET && close == MMAY_TOKEN_RIGHT_BRACKET)
+        || (open == MMAY_TOKEN_LEFT_BRACE && close == MMAY_TOKEN_RIGHT_BRACE);
 }
 
-static void ruda_formatter_open_group(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token,
-    const RudaFormatToken *next
+static void mmay_formatter_open_group(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token,
+    const MarimayFormatToken *next
 ) {
-    RudaTokenKind expected_close = token->token.kind == RUDA_TOKEN_LEFT_PAREN
-        ? RUDA_TOKEN_RIGHT_PAREN
-        : RUDA_TOKEN_RIGHT_BRACKET;
+    MarimayTokenKind expected_close = token->token.kind == MMAY_TOKEN_LEFT_PAREN
+        ? MMAY_TOKEN_RIGHT_PAREN
+        : MMAY_TOKEN_RIGHT_BRACKET;
     bool empty = next != NULL && next->token.kind == expected_close;
-    if (ruda_formatter_open_group_needs_space(formatter, token)) {
-        ruda_formatter_space(formatter);
+    if (mmay_formatter_open_group_needs_space(formatter, token)) {
+        mmay_formatter_space(formatter);
     } else {
         formatter->pending_space = false;
     }
-    ruda_formatter_part(formatter, RUDA_DOCUMENT_GROUP_BEGIN);
-    ruda_formatter_emit_token_text(formatter, token);
+    mmay_formatter_part(formatter, MMAY_DOCUMENT_GROUP_BEGIN);
+    mmay_formatter_emit_token_text(formatter, token);
     if (!empty) {
-        ruda_formatter_part(formatter, RUDA_DOCUMENT_INDENT_BEGIN);
-        ruda_formatter_softline(formatter, RUDA_DOCUMENT_SOFTBREAK);
+        mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_BEGIN);
+        mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTBREAK);
     }
-    ruda_formatter_push_delimiter(
+    mmay_formatter_push_delimiter(
         formatter,
         token->token.kind,
         token->parent_kind,
         empty,
         true,
-        ruda_formatter_trailing_comma_kind(token->parent_kind)
+        mmay_formatter_trailing_comma_kind(token->parent_kind)
     );
     formatter->pending_space = false;
 }
 
-static void ruda_formatter_close_group(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token,
-    const RudaFormatToken *next
+static void mmay_formatter_close_group(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token,
+    const MarimayFormatToken *next
 ) {
     static const unsigned char comma[] = ",";
-    RudaFormatDelimiter *delimiter = ruda_formatter_top_delimiter(formatter);
+    MarimayFormatDelimiter *delimiter = mmay_formatter_top_delimiter(formatter);
     bool type_prefix_adjacent = false;
     if (delimiter == NULL
-        || !ruda_formatter_delimiter_matches(
+        || !mmay_formatter_delimiter_matches(
             delimiter->open,
             token->token.kind
         )) {
-        formatter->status = RUDA_FORMAT_SOURCE_INVALID;
+        formatter->status = MMAY_FORMAT_SOURCE_INVALID;
         return;
     }
-    type_prefix_adjacent = ruda_formatter_type_prefix_is_adjacent(
+    type_prefix_adjacent = mmay_formatter_type_prefix_is_adjacent(
         delimiter,
         token,
         next
@@ -627,224 +627,224 @@ static void ruda_formatter_close_group(
     if (!delimiter->empty) {
         if (delimiter->trailing_comma
             && formatter->has_previous_code
-            && formatter->previous_code_kind != RUDA_TOKEN_COMMA
+            && formatter->previous_code_kind != MMAY_TOKEN_COMMA
             && !formatter->last_was_comment) {
-            ruda_formatter_break_text(formatter, comma, 1);
+            mmay_formatter_break_text(formatter, comma, 1);
         }
-        ruda_formatter_part(formatter, RUDA_DOCUMENT_INDENT_END);
-        ruda_formatter_softline(formatter, RUDA_DOCUMENT_SOFTBREAK);
+        mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_END);
+        mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTBREAK);
     }
-    ruda_formatter_emit_token_text(formatter, token);
-    ruda_formatter_part(formatter, RUDA_DOCUMENT_GROUP_END);
+    mmay_formatter_emit_token_text(formatter, token);
+    mmay_formatter_part(formatter, MMAY_DOCUMENT_GROUP_END);
     formatter->delimiters.length -= 1;
     if (token->in_attribute
-        && !ruda_formatter_next_comment_same_line(formatter, token, next)) {
-        ruda_formatter_ensure_hardlines(formatter, 1);
+        && !mmay_formatter_next_comment_same_line(formatter, token, next)) {
+        mmay_formatter_ensure_hardlines(formatter, 1);
     } else {
         formatter->pending_space = next != NULL && !type_prefix_adjacent;
     }
 }
 
-static void ruda_formatter_open_brace(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token,
-    const RudaFormatToken *next
+static void mmay_formatter_open_brace(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token,
+    const MarimayFormatToken *next
 ) {
-    bool empty = next != NULL && next->token.kind == RUDA_TOKEN_RIGHT_BRACE;
+    bool empty = next != NULL && next->token.kind == MMAY_TOKEN_RIGHT_BRACE;
     bool grouped = token->in_record_expression
-        || token->parent_kind == RUDA_SYNTAX_IMPORT_CLAUSE
-        || token->parent_kind == RUDA_SYNTAX_ENUM_VARIANT
-        || token->parent_kind == RUDA_SYNTAX_NAMED_PAYLOAD
-        || token->parent_kind == RUDA_SYNTAX_NAMED_PATTERN;
+        || token->parent_kind == MMAY_SYNTAX_IMPORT_CLAUSE
+        || token->parent_kind == MMAY_SYNTAX_ENUM_VARIANT
+        || token->parent_kind == MMAY_SYNTAX_NAMED_PAYLOAD
+        || token->parent_kind == MMAY_SYNTAX_NAMED_PATTERN;
     if (!formatter->at_line_start) {
-        ruda_formatter_space(formatter);
+        mmay_formatter_space(formatter);
     }
     if (grouped) {
-        ruda_formatter_part(formatter, RUDA_DOCUMENT_GROUP_BEGIN);
+        mmay_formatter_part(formatter, MMAY_DOCUMENT_GROUP_BEGIN);
     }
-    ruda_formatter_emit_token_text(formatter, token);
+    mmay_formatter_emit_token_text(formatter, token);
     if (!empty) {
-        ruda_formatter_part(formatter, RUDA_DOCUMENT_INDENT_BEGIN);
+        mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_BEGIN);
         if (grouped) {
-            ruda_formatter_softline(formatter, RUDA_DOCUMENT_SOFTLINE);
+            mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
         } else {
-            ruda_formatter_ensure_hardlines(formatter, 1);
+            mmay_formatter_ensure_hardlines(formatter, 1);
         }
     }
-    ruda_formatter_push_delimiter(
+    mmay_formatter_push_delimiter(
         formatter,
-        RUDA_TOKEN_LEFT_BRACE,
+        MMAY_TOKEN_LEFT_BRACE,
         token->parent_kind,
         empty,
         grouped,
         token->in_record_expression
-            || ruda_formatter_trailing_comma_kind(token->parent_kind)
+            || mmay_formatter_trailing_comma_kind(token->parent_kind)
     );
     formatter->pending_space = false;
 }
 
-static void ruda_formatter_close_brace(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token,
-    const RudaFormatToken *next
+static void mmay_formatter_close_brace(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token,
+    const MarimayFormatToken *next
 ) {
-    RudaFormatDelimiter *delimiter = ruda_formatter_top_delimiter(formatter);
-    if (delimiter == NULL || delimiter->open != RUDA_TOKEN_LEFT_BRACE) {
-        formatter->status = RUDA_FORMAT_SOURCE_INVALID;
+    MarimayFormatDelimiter *delimiter = mmay_formatter_top_delimiter(formatter);
+    if (delimiter == NULL || delimiter->open != MMAY_TOKEN_LEFT_BRACE) {
+        formatter->status = MMAY_FORMAT_SOURCE_INVALID;
         return;
     }
     if (!delimiter->empty) {
         static const unsigned char comma[] = ",";
         if ((token->in_record_expression || delimiter->trailing_comma)
             && formatter->has_previous_code
-            && formatter->previous_code_kind != RUDA_TOKEN_COMMA
+            && formatter->previous_code_kind != MMAY_TOKEN_COMMA
             && !formatter->last_was_comment) {
             if (delimiter->grouped) {
-                ruda_formatter_break_text(formatter, comma, 1);
+                mmay_formatter_break_text(formatter, comma, 1);
             } else {
-                ruda_formatter_text(formatter, comma, 1);
+                mmay_formatter_text(formatter, comma, 1);
             }
         }
         if (delimiter->grouped) {
-            ruda_formatter_part(formatter, RUDA_DOCUMENT_INDENT_END);
+            mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_END);
             if (!formatter->after_flexible_line) {
-                ruda_formatter_softline(formatter, RUDA_DOCUMENT_SOFTLINE);
+                mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
             }
         } else {
-            ruda_formatter_ensure_hardlines(formatter, 1);
-            ruda_formatter_part(formatter, RUDA_DOCUMENT_INDENT_END);
+            mmay_formatter_ensure_hardlines(formatter, 1);
+            mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_END);
         }
     }
-    ruda_formatter_emit_token_text(formatter, token);
+    mmay_formatter_emit_token_text(formatter, token);
     if (delimiter->grouped) {
-        ruda_formatter_part(formatter, RUDA_DOCUMENT_GROUP_END);
+        mmay_formatter_part(formatter, MMAY_DOCUMENT_GROUP_END);
     }
     formatter->delimiters.length -= 1;
-    if (token->parent_kind == RUDA_SYNTAX_BLOCK
-        && next != NULL && next->token.kind != RUDA_TOKEN_KW_ELSE
-        && !ruda_formatter_next_comment_same_line(formatter, token, next)
-        && next->token.kind != RUDA_TOKEN_COMMA
-        && next->token.kind != RUDA_TOKEN_SEMICOLON
-        && next->token.kind != RUDA_TOKEN_RIGHT_PAREN
-        && next->token.kind != RUDA_TOKEN_RIGHT_BRACKET
-        && next->token.kind != RUDA_TOKEN_RIGHT_BRACE) {
-        ruda_formatter_ensure_hardlines(formatter, 1);
+    if (token->parent_kind == MMAY_SYNTAX_BLOCK
+        && next != NULL && next->token.kind != MMAY_TOKEN_KW_ELSE
+        && !mmay_formatter_next_comment_same_line(formatter, token, next)
+        && next->token.kind != MMAY_TOKEN_COMMA
+        && next->token.kind != MMAY_TOKEN_SEMICOLON
+        && next->token.kind != MMAY_TOKEN_RIGHT_PAREN
+        && next->token.kind != MMAY_TOKEN_RIGHT_BRACKET
+        && next->token.kind != MMAY_TOKEN_RIGHT_BRACE) {
+        mmay_formatter_ensure_hardlines(formatter, 1);
     } else {
         formatter->pending_space = next != NULL;
     }
 }
 
-static void ruda_formatter_comma(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token,
-    const RudaFormatToken *next
+static void mmay_formatter_comma(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token,
+    const MarimayFormatToken *next
 ) {
-    RudaFormatDelimiter *delimiter = ruda_formatter_top_delimiter(formatter);
+    MarimayFormatDelimiter *delimiter = mmay_formatter_top_delimiter(formatter);
     formatter->pending_space = false;
     if (delimiter != NULL && delimiter->grouped
         && next != NULL
-        && ruda_formatter_delimiter_matches(
+        && mmay_formatter_delimiter_matches(
             delimiter->open,
             next->token.kind
         )) {
         static const unsigned char comma[] = ",";
-        ruda_formatter_break_text(formatter, comma, 1);
+        mmay_formatter_break_text(formatter, comma, 1);
         return;
     }
-    ruda_formatter_emit_token_text(formatter, token);
-    if (token->parent_kind == RUDA_SYNTAX_TYPE
-        || token->parent_kind == RUDA_SYNTAX_TYPE_PARAMETERS
-        || token->parent_kind == RUDA_SYNTAX_TYPE_ARGUMENTS) {
+    mmay_formatter_emit_token_text(formatter, token);
+    if (token->parent_kind == MMAY_SYNTAX_TYPE
+        || token->parent_kind == MMAY_SYNTAX_TYPE_PARAMETERS
+        || token->parent_kind == MMAY_SYNTAX_TYPE_ARGUMENTS) {
         formatter->pending_space = true;
     } else if (delimiter != NULL && delimiter->grouped) {
-        ruda_formatter_softline(formatter, RUDA_DOCUMENT_SOFTLINE);
-    } else if (delimiter != NULL && delimiter->open == RUDA_TOKEN_LEFT_BRACE) {
-        ruda_formatter_ensure_hardlines(formatter, 1);
+        mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
+    } else if (delimiter != NULL && delimiter->open == MMAY_TOKEN_LEFT_BRACE) {
+        mmay_formatter_ensure_hardlines(formatter, 1);
     } else {
         formatter->pending_space = true;
     }
 }
 
-static void ruda_formatter_operator(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token
+static void mmay_formatter_operator(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token
 ) {
-    if (ruda_formatter_operator_spaced(token)) {
+    if (mmay_formatter_operator_spaced(token)) {
         if (!formatter->at_line_start && !formatter->after_flexible_line) {
-            ruda_formatter_space(formatter);
+            mmay_formatter_space(formatter);
         }
-        ruda_formatter_emit_token_text(formatter, token);
+        mmay_formatter_emit_token_text(formatter, token);
         formatter->pending_space = true;
-    } else if ((token->token.kind == RUDA_TOKEN_LESS
-            || token->token.kind == RUDA_TOKEN_GREATER
-            || token->token.kind == RUDA_TOKEN_SHIFT_RIGHT)
-        && token->parent_kind != RUDA_SYNTAX_BINARY_EXPRESSION) {
+    } else if ((token->token.kind == MMAY_TOKEN_LESS
+            || token->token.kind == MMAY_TOKEN_GREATER
+            || token->token.kind == MMAY_TOKEN_SHIFT_RIGHT)
+        && token->parent_kind != MMAY_SYNTAX_BINARY_EXPRESSION) {
         formatter->pending_space = false;
-        ruda_formatter_emit_token_text(formatter, token);
+        mmay_formatter_emit_token_text(formatter, token);
     } else {
-        ruda_formatter_pending_space(formatter);
-        ruda_formatter_emit_token_text(formatter, token);
+        mmay_formatter_pending_space(formatter);
+        mmay_formatter_emit_token_text(formatter, token);
         formatter->pending_space = false;
     }
 }
 
-static bool ruda_formatter_is_operator_token(RudaTokenKind kind) {
-    return kind >= RUDA_TOKEN_PLUS && kind <= RUDA_TOKEN_SHIFT_RIGHT_EQUAL;
+static bool mmay_formatter_is_operator_token(MarimayTokenKind kind) {
+    return kind >= MMAY_TOKEN_PLUS && kind <= MMAY_TOKEN_SHIFT_RIGHT_EQUAL;
 }
 
-static void ruda_formatter_interpolation_token(
-    RudaFormatter *formatter,
-    const RudaFormatToken *token
+static void mmay_formatter_interpolation_token(
+    MarimayFormatter *formatter,
+    const MarimayFormatToken *token
 ) {
-    RudaTokenKind kind = token->token.kind;
-    if (kind == RUDA_TOKEN_INTERPOLATED_START) {
-        ruda_formatter_pending_space(formatter);
+    MarimayTokenKind kind = token->token.kind;
+    if (kind == MMAY_TOKEN_INTERPOLATED_START) {
+        mmay_formatter_pending_space(formatter);
     }
-    ruda_formatter_emit_token_text(formatter, token);
-    formatter->pending_space = kind == RUDA_TOKEN_INTERPOLATED_END;
+    mmay_formatter_emit_token_text(formatter, token);
+    formatter->pending_space = kind == MMAY_TOKEN_INTERPOLATED_END;
 }
 
-static void ruda_formatter_trim_final_lines(RudaFormatter *formatter) {
+static void mmay_formatter_trim_final_lines(MarimayFormatter *formatter) {
     while (formatter->document.parts.length != 0) {
-        const RudaDocumentPart *part = ruda_vector_at_const(
+        const MarimayDocumentPart *part = mmay_vector_at_const(
             &formatter->document.parts,
             formatter->document.parts.length - 1
         );
-        if (part == NULL || !ruda_formatter_part_is_line(part->kind)) {
+        if (part == NULL || !mmay_formatter_part_is_line(part->kind)) {
             break;
         }
         formatter->document.parts.length -= 1;
     }
     formatter->at_line_start = false;
-    ruda_formatter_ensure_hardlines(formatter, 1);
+    mmay_formatter_ensure_hardlines(formatter, 1);
 }
 
-static void ruda_formatter_build(RudaFormatter *formatter) {
+static void mmay_formatter_build(MarimayFormatter *formatter) {
     size_t index = 0;
-    const RudaFormatToken *previous_visible = NULL;
+    const MarimayFormatToken *previous_visible = NULL;
     for (index = 0; index < formatter->tokens->length
-        && formatter->status == RUDA_FORMAT_OK; index += 1) {
-        const RudaFormatToken *token = ruda_formatter_token(formatter, index);
-        const RudaFormatToken *next = ruda_formatter_next_visible(
+        && formatter->status == MMAY_FORMAT_OK; index += 1) {
+        const MarimayFormatToken *token = mmay_formatter_token(formatter, index);
+        const MarimayFormatToken *next = mmay_formatter_next_visible(
             formatter,
             index + 1
         );
-        RudaTokenKind kind;
+        MarimayTokenKind kind;
         if (token == NULL) {
-            formatter->status = RUDA_FORMAT_INVALID_ARGUMENT;
+            formatter->status = MMAY_FORMAT_INVALID_ARGUMENT;
             break;
         }
         kind = token->token.kind;
-        if (ruda_format_token_is_trivia(kind) || kind == RUDA_TOKEN_EOF) {
+        if (mmay_format_token_is_trivia(kind) || kind == MMAY_TOKEN_EOF) {
             continue;
         }
         if (token->top_level_id != 0 && formatter->last_top_level_id != 0
             && token->top_level_id != formatter->last_top_level_id) {
-            ruda_formatter_ensure_hardlines(
+            mmay_formatter_ensure_hardlines(
                 formatter,
                 previous_visible != NULL
-                    && previous_visible->top_level_kind == RUDA_SYNTAX_IMPORT_DECL
-                    && token->top_level_kind == RUDA_SYNTAX_IMPORT_DECL
+                    && previous_visible->top_level_kind == MMAY_SYNTAX_IMPORT_DECL
+                    && token->top_level_kind == MMAY_SYNTAX_IMPORT_DECL
                     ? (previous_visible->import_group == token->import_group
                         ? 1
                         : 2)
@@ -852,114 +852,114 @@ static void ruda_formatter_build(RudaFormatter *formatter) {
             );
         }
         if (previous_visible != NULL
-            && !ruda_format_token_is_comment(kind)
-            && !ruda_format_token_is_comment(previous_visible->token.kind)
+            && !mmay_format_token_is_comment(kind)
+            && !mmay_format_token_is_comment(previous_visible->token.kind)
             && previous_visible->in_attribute
             && !token->in_attribute) {
-            ruda_formatter_ensure_hardlines(formatter, 1);
+            mmay_formatter_ensure_hardlines(formatter, 1);
         }
         if (token->top_level_id != 0) {
             formatter->last_top_level_id = token->top_level_id;
         }
-        if (ruda_format_token_is_comment(kind)) {
-            ruda_formatter_emit_comment(formatter, token, next);
+        if (mmay_format_token_is_comment(kind)) {
+            mmay_formatter_emit_comment(formatter, token, next);
             previous_visible = token;
             continue;
         }
         formatter->last_was_comment = false;
-        if (kind >= RUDA_TOKEN_INTERPOLATED_START
-            && kind <= RUDA_TOKEN_INTERPOLATED_END) {
-            ruda_formatter_interpolation_token(formatter, token);
-        } else if (kind == RUDA_TOKEN_LEFT_PAREN
-            || kind == RUDA_TOKEN_LEFT_BRACKET) {
-            ruda_formatter_open_group(formatter, token, next);
-        } else if (kind == RUDA_TOKEN_RIGHT_PAREN
-            || kind == RUDA_TOKEN_RIGHT_BRACKET) {
-            ruda_formatter_close_group(formatter, token, next);
-        } else if (kind == RUDA_TOKEN_LEFT_BRACE) {
-            ruda_formatter_open_brace(formatter, token, next);
-        } else if (kind == RUDA_TOKEN_RIGHT_BRACE) {
-            ruda_formatter_close_brace(formatter, token, next);
-        } else if (kind == RUDA_TOKEN_COMMA) {
-            ruda_formatter_comma(formatter, token, next);
-        } else if (kind == RUDA_TOKEN_SEMICOLON) {
-            RudaFormatDelimiter *delimiter = ruda_formatter_top_delimiter(
+        if (kind >= MMAY_TOKEN_INTERPOLATED_START
+            && kind <= MMAY_TOKEN_INTERPOLATED_END) {
+            mmay_formatter_interpolation_token(formatter, token);
+        } else if (kind == MMAY_TOKEN_LEFT_PAREN
+            || kind == MMAY_TOKEN_LEFT_BRACKET) {
+            mmay_formatter_open_group(formatter, token, next);
+        } else if (kind == MMAY_TOKEN_RIGHT_PAREN
+            || kind == MMAY_TOKEN_RIGHT_BRACKET) {
+            mmay_formatter_close_group(formatter, token, next);
+        } else if (kind == MMAY_TOKEN_LEFT_BRACE) {
+            mmay_formatter_open_brace(formatter, token, next);
+        } else if (kind == MMAY_TOKEN_RIGHT_BRACE) {
+            mmay_formatter_close_brace(formatter, token, next);
+        } else if (kind == MMAY_TOKEN_COMMA) {
+            mmay_formatter_comma(formatter, token, next);
+        } else if (kind == MMAY_TOKEN_SEMICOLON) {
+            MarimayFormatDelimiter *delimiter = mmay_formatter_top_delimiter(
                 formatter
             );
             formatter->pending_space = false;
-            ruda_formatter_emit_token_text(formatter, token);
+            mmay_formatter_emit_token_text(formatter, token);
             if (token->in_for_header) {
                 formatter->pending_space = true;
             } else if (delimiter != NULL && delimiter->grouped
-                && (delimiter->parent_kind == RUDA_SYNTAX_ENUM_VARIANT
-                    || delimiter->parent_kind == RUDA_SYNTAX_NAMED_PAYLOAD)) {
-                ruda_formatter_softline(formatter, RUDA_DOCUMENT_SOFTLINE);
-            } else if (ruda_formatter_next_comment_same_line(
+                && (delimiter->parent_kind == MMAY_SYNTAX_ENUM_VARIANT
+                    || delimiter->parent_kind == MMAY_SYNTAX_NAMED_PAYLOAD)) {
+                mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
+            } else if (mmay_formatter_next_comment_same_line(
                     formatter,
                     token,
                     next
                 )) {
                 formatter->pending_space = true;
             } else {
-                ruda_formatter_ensure_hardlines(formatter, 1);
+                mmay_formatter_ensure_hardlines(formatter, 1);
             }
-        } else if (kind == RUDA_TOKEN_COLON) {
+        } else if (kind == MMAY_TOKEN_COLON) {
             formatter->pending_space = false;
-            ruda_formatter_emit_token_text(formatter, token);
+            mmay_formatter_emit_token_text(formatter, token);
             formatter->pending_space = true;
-        } else if (kind == RUDA_TOKEN_DOT || kind == RUDA_TOKEN_AT) {
+        } else if (kind == MMAY_TOKEN_DOT || kind == MMAY_TOKEN_AT) {
             formatter->pending_space = false;
-            ruda_formatter_emit_token_text(formatter, token);
-        } else if (kind == RUDA_TOKEN_QUESTION) {
+            mmay_formatter_emit_token_text(formatter, token);
+        } else if (kind == MMAY_TOKEN_QUESTION) {
             formatter->pending_space = false;
-            ruda_formatter_emit_token_text(formatter, token);
+            mmay_formatter_emit_token_text(formatter, token);
             formatter->pending_space = true;
-        } else if (kind == RUDA_TOKEN_STRING
-            || kind == RUDA_TOKEN_RAW_STRING) {
-            ruda_formatter_pending_space(formatter);
-            ruda_formatter_canonical_string(formatter, token);
+        } else if (kind == MMAY_TOKEN_STRING
+            || kind == MMAY_TOKEN_RAW_STRING) {
+            mmay_formatter_pending_space(formatter);
+            mmay_formatter_canonical_string(formatter, token);
             formatter->pending_space = true;
-        } else if (ruda_formatter_is_operator_token(kind)) {
-            ruda_formatter_operator(formatter, token);
+        } else if (mmay_formatter_is_operator_token(kind)) {
+            mmay_formatter_operator(formatter, token);
         } else {
-            ruda_formatter_pending_space(formatter);
-            ruda_formatter_emit_token_text(formatter, token);
+            mmay_formatter_pending_space(formatter);
+            mmay_formatter_emit_token_text(formatter, token);
             formatter->pending_space = true;
         }
         formatter->previous_code_kind = kind;
         formatter->has_previous_code = true;
         previous_visible = token;
     }
-    if (formatter->status == RUDA_FORMAT_OK
+    if (formatter->status == MMAY_FORMAT_OK
         && formatter->delimiters.length != 0) {
-        formatter->status = RUDA_FORMAT_SOURCE_INVALID;
+        formatter->status = MMAY_FORMAT_SOURCE_INVALID;
     }
-    if (formatter->status == RUDA_FORMAT_OK) {
-        ruda_formatter_trim_final_lines(formatter);
+    if (formatter->status == MMAY_FORMAT_OK) {
+        mmay_formatter_trim_final_lines(formatter);
     }
 }
 
-static bool ruda_format_output_write(
+static bool mmay_format_output_write(
     void *context,
     const char *bytes,
     size_t length
 ) {
-    RudaFormatOutput *output = context;
+    MarimayFormatOutput *output = context;
     size_t new_length = 0;
-    if (!ruda_size_add(output->bytes.length, length, &new_length)
+    if (!mmay_size_add(output->bytes.length, length, &new_length)
         || new_length > output->max_bytes) {
         output->limit_reached = true;
         return false;
     }
-    if (!ruda_vector_append(&output->bytes, bytes, length)) {
+    if (!mmay_vector_append(&output->bytes, bytes, length)) {
         output->allocation_failed = true;
         return false;
     }
     return true;
 }
 
-RudaFormatOptions ruda_format_default_options(void) {
-    RudaFormatOptions options;
+MarimayFormatOptions mmay_format_default_options(void) {
+    MarimayFormatOptions options;
     options.max_tokens = 2000000;
     options.max_document_parts = 8000000;
     options.max_output_bytes = 64U * 1024U * 1024U;
@@ -968,22 +968,22 @@ RudaFormatOptions ruda_format_default_options(void) {
     return options;
 }
 
-RudaFormatStatus ruda_format_source(
-    const RudaLexResult *lexed,
-    const RudaParseResult *parsed,
-    RudaAllocator allocator,
-    RudaFormatOptions options,
-    RudaFormatResult *result
+MarimayFormatStatus mmay_format_source(
+    const MarimayLexResult *lexed,
+    const MarimayParseResult *parsed,
+    MarimayAllocator allocator,
+    MarimayFormatOptions options,
+    MarimayFormatResult *result
 ) {
-    RudaFormatCollector collector;
-    RudaFormatter formatter;
-    RudaFormatOutput output;
-    RudaWriter writer;
-    RudaDocumentRenderOptions render_options;
-    RudaDocumentStatus render_status;
-    RudaFormatStatus status = RUDA_FORMAT_OK;
+    MarimayFormatCollector collector;
+    MarimayFormatter formatter;
+    MarimayFormatOutput output;
+    MarimayWriter writer;
+    MarimayDocumentRenderOptions render_options;
+    MarimayDocumentStatus render_status;
+    MarimayFormatStatus status = MMAY_FORMAT_OK;
     if (result == NULL) {
-        return RUDA_FORMAT_INVALID_ARGUMENT;
+        return MMAY_FORMAT_INVALID_ARGUMENT;
     }
     memset(result, 0, sizeof(*result));
     if (lexed == NULL || !lexed->initialized || parsed == NULL
@@ -992,26 +992,26 @@ RudaFormatStatus ruda_format_source(
         || parsed->tree.root == NULL || options.max_tokens == 0
         || options.max_document_parts == 0 || options.max_output_bytes == 0
         || options.max_nesting == 0 || options.max_render_steps == 0
-        || !ruda_syntax_tree_is_lossless(&parsed->tree)) {
-        return RUDA_FORMAT_INVALID_ARGUMENT;
+        || !mmay_syntax_tree_is_lossless(&parsed->tree)) {
+        return MMAY_FORMAT_INVALID_ARGUMENT;
     }
     if (lexed->diagnostics.length != 0 || parsed->diagnostics.length != 0
         || lexed->suppressed_diagnostics != 0
         || parsed->suppressed_diagnostics != 0) {
-        return RUDA_FORMAT_SOURCE_INVALID;
+        return MMAY_FORMAT_SOURCE_INVALID;
     }
     memset(&collector, 0, sizeof(collector));
     collector.max_tokens = options.max_tokens;
     collector.max_nesting = options.max_nesting;
-    collector.status = RUDA_FORMAT_OK;
-    if (!ruda_vector_init(&collector.tokens, allocator, sizeof(RudaFormatToken))) {
-        return RUDA_FORMAT_INVALID_ARGUMENT;
+    collector.status = MMAY_FORMAT_OK;
+    if (!mmay_vector_init(&collector.tokens, allocator, sizeof(MarimayFormatToken))) {
+        return MMAY_FORMAT_INVALID_ARGUMENT;
     }
-    if (!ruda_format_collect_node(
+    if (!mmay_format_collect_node(
             &collector,
             parsed->tree.root,
             1,
-            RUDA_SYNTAX_ROOT,
+            MMAY_SYNTAX_ROOT,
             0,
             false,
             false,
@@ -1020,79 +1020,79 @@ RudaFormatStatus ruda_format_source(
         status = collector.status;
         goto cleanup_collector;
     }
-    status = ruda_format_order_imports(
+    status = mmay_format_order_imports(
         &collector.tokens,
-        ruda_source_bytes(lexed->snapshot),
-        ruda_source_length(lexed->snapshot),
+        mmay_source_bytes(lexed->snapshot),
+        mmay_source_length(lexed->snapshot),
         allocator
     );
-    if (status != RUDA_FORMAT_OK) {
+    if (status != MMAY_FORMAT_OK) {
         goto cleanup_collector;
     }
     memset(&formatter, 0, sizeof(formatter));
     formatter.allocator = allocator;
     formatter.snapshot = lexed->snapshot;
-    formatter.source = ruda_source_bytes(lexed->snapshot);
-    formatter.source_length = ruda_source_length(lexed->snapshot);
+    formatter.source = mmay_source_bytes(lexed->snapshot);
+    formatter.source_length = mmay_source_length(lexed->snapshot);
     formatter.tokens = &collector.tokens;
     formatter.options = options;
-    formatter.status = RUDA_FORMAT_OK;
+    formatter.status = MMAY_FORMAT_OK;
     formatter.at_line_start = true;
-    if (!ruda_document_init(
+    if (!mmay_document_init(
             &formatter.document,
             allocator,
             options.max_document_parts
-        ) || !ruda_vector_init(
+        ) || !mmay_vector_init(
             &formatter.delimiters,
             allocator,
-            sizeof(RudaFormatDelimiter)
-        ) || !ruda_vector_init(
+            sizeof(MarimayFormatDelimiter)
+        ) || !mmay_vector_init(
             &formatter.owned_text,
             allocator,
-            sizeof(RudaOwnedBytes)
+            sizeof(MarimayOwnedBytes)
         )) {
-        status = RUDA_FORMAT_INVALID_ARGUMENT;
+        status = MMAY_FORMAT_INVALID_ARGUMENT;
         goto cleanup_formatter;
     }
-    ruda_formatter_build(&formatter);
-    if (formatter.status != RUDA_FORMAT_OK) {
+    mmay_formatter_build(&formatter);
+    if (formatter.status != MMAY_FORMAT_OK) {
         status = formatter.status;
         goto cleanup_formatter;
     }
     memset(&output, 0, sizeof(output));
     output.max_bytes = options.max_output_bytes;
-    if (!ruda_vector_init(&output.bytes, allocator, sizeof(unsigned char))) {
-        status = RUDA_FORMAT_INVALID_ARGUMENT;
+    if (!mmay_vector_init(&output.bytes, allocator, sizeof(unsigned char))) {
+        status = MMAY_FORMAT_INVALID_ARGUMENT;
         goto cleanup_formatter;
     }
     writer.context = &output;
-    writer.write = ruda_format_output_write;
-    render_options = ruda_document_default_render_options();
+    writer.write = mmay_format_output_write;
+    render_options = mmay_document_default_render_options();
     render_options.max_nesting = options.max_nesting;
     render_options.max_scan_steps = options.max_render_steps;
-    render_status = ruda_document_render(
+    render_status = mmay_document_render(
         &formatter.document,
         writer,
         render_options
     );
-    if (render_status != RUDA_DOCUMENT_OK) {
-        status = output.limit_reached || render_status == RUDA_DOCUMENT_LIMIT_REACHED
-            ? RUDA_FORMAT_LIMIT_REACHED
+    if (render_status != MMAY_DOCUMENT_OK) {
+        status = output.limit_reached || render_status == MMAY_DOCUMENT_LIMIT_REACHED
+            ? MMAY_FORMAT_LIMIT_REACHED
             : (output.allocation_failed
-                || render_status == RUDA_DOCUMENT_ALLOCATION_FAILED
-                ? RUDA_FORMAT_ALLOCATION_FAILED
-                : RUDA_FORMAT_INVALID_ARGUMENT);
-        ruda_vector_dispose(&output.bytes);
+                || render_status == MMAY_DOCUMENT_ALLOCATION_FAILED
+                ? MMAY_FORMAT_ALLOCATION_FAILED
+                : MMAY_FORMAT_INVALID_ARGUMENT);
+        mmay_vector_dispose(&output.bytes);
         goto cleanup_formatter;
     }
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &result->output,
             allocator,
             output.bytes.data,
             output.bytes.length
         )) {
-        status = RUDA_FORMAT_ALLOCATION_FAILED;
-        ruda_vector_dispose(&output.bytes);
+        status = MMAY_FORMAT_ALLOCATION_FAILED;
+        mmay_vector_dispose(&output.bytes);
         goto cleanup_formatter;
     }
     result->changed = output.bytes.length != formatter.source_length
@@ -1102,22 +1102,22 @@ RudaFormatStatus ruda_format_source(
             output.bytes.length
         ) != 0;
     result->initialized = true;
-    ruda_vector_dispose(&output.bytes);
+    mmay_vector_dispose(&output.bytes);
 
 cleanup_formatter:
-    ruda_formatter_owned_text_dispose(&formatter.owned_text);
-    ruda_vector_dispose(&formatter.delimiters);
-    ruda_document_dispose(&formatter.document);
+    mmay_formatter_owned_text_dispose(&formatter.owned_text);
+    mmay_vector_dispose(&formatter.delimiters);
+    mmay_document_dispose(&formatter.document);
 cleanup_collector:
-    ruda_vector_dispose(&collector.tokens);
+    mmay_vector_dispose(&collector.tokens);
     return status;
 }
 
-void ruda_format_result_dispose(RudaFormatResult *result) {
+void mmay_format_result_dispose(MarimayFormatResult *result) {
     if (result == NULL || !result->initialized) {
         return;
     }
-    ruda_owned_bytes_dispose(&result->output);
+    mmay_owned_bytes_dispose(&result->output);
     result->changed = false;
     result->initialized = false;
 }

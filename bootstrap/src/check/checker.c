@@ -12,19 +12,19 @@
 #include "checker_imported_enums_api.h"
 #include "package_imports_api.h"
 
- int ruda_checker_private_check_compare_ast_paths(const void *left, const void *right) {
-    const RudaAstTree *left_ast = *(const RudaAstTree *const *)left;
-    const RudaAstTree *right_ast = *(const RudaAstTree *const *)right;
-    const RudaSourceSnapshot *left_snapshot = left_ast->snapshot;
-    const RudaSourceSnapshot *right_snapshot = right_ast->snapshot;
-    const unsigned char *left_path = (const unsigned char *)ruda_source_path(
+ int mmay_checker_private_check_compare_ast_paths(const void *left, const void *right) {
+    const MarimayAstTree *left_ast = *(const MarimayAstTree *const *)left;
+    const MarimayAstTree *right_ast = *(const MarimayAstTree *const *)right;
+    const MarimaySourceSnapshot *left_snapshot = left_ast->snapshot;
+    const MarimaySourceSnapshot *right_snapshot = right_ast->snapshot;
+    const unsigned char *left_path = (const unsigned char *)mmay_source_path(
         left_snapshot
     );
-    const unsigned char *right_path = (const unsigned char *)ruda_source_path(
+    const unsigned char *right_path = (const unsigned char *)mmay_source_path(
         right_snapshot
     );
-    size_t left_length = ruda_source_path_length(left_snapshot);
-    size_t right_length = ruda_source_path_length(right_snapshot);
+    size_t left_length = mmay_source_path_length(left_snapshot);
+    size_t right_length = mmay_source_path_length(right_snapshot);
     size_t common_length = left_length < right_length
         ? left_length
         : right_length;
@@ -38,7 +38,7 @@
     return left_length > right_length ? 1 : 0;
 }
 
- bool ruda_checker_private_check_bounded_c_string_length(
+ bool mmay_checker_private_check_bounded_c_string_length(
     const char *text,
     size_t maximum,
     size_t *length
@@ -59,9 +59,9 @@
     return false;
 }
 
-bool ruda_check_options_valid(
-    RudaAllocator allocator,
-    RudaCheckOptions options
+bool mmay_check_options_valid(
+    MarimayAllocator allocator,
+    MarimayCheckOptions options
 ) {
     return allocator.allocate != NULL && allocator.resize != NULL
         && allocator.deallocate != NULL && options.max_source_files != 0
@@ -80,7 +80,7 @@ bool ruda_check_options_valid(
         && options.max_constant_depth != 0
         && options.max_type_alias_depth != 0
         && options.max_float_literal_digits != 0
-        && options.type_options.max_types >= RUDA_TYPE_FIRST_DYNAMIC
+        && options.type_options.max_types >= MMAY_TYPE_FIRST_DYNAMIC
         && options.type_options.max_types <= UINT32_MAX
         && options.type_options.max_type_arguments != 0
         && options.mir_options.max_registers != 0
@@ -110,28 +110,28 @@ bool ruda_check_options_valid(
         && options.mir_options.max_verify_work != 0;
 }
 
- bool ruda_checker_private_check_ast_valid(const RudaAstTree *ast) {
+ bool mmay_checker_private_check_ast_valid(const MarimayAstTree *ast) {
     return ast != NULL && ast->initialized && ast->root != NULL
-        && ast->root->kind == RUDA_SYNTAX_ROOT && ast->snapshot != NULL
-        && ruda_source_path(ast->snapshot) != NULL
-        && ruda_source_path_length(ast->snapshot) != 0
-        && (ruda_source_bytes(ast->snapshot) != NULL
-            || ruda_source_length(ast->snapshot) == 0);
+        && ast->root->kind == MMAY_SYNTAX_ROOT && ast->snapshot != NULL
+        && mmay_source_path(ast->snapshot) != NULL
+        && mmay_source_path_length(ast->snapshot) != 0
+        && (mmay_source_bytes(ast->snapshot) != NULL
+            || mmay_source_length(ast->snapshot) == 0);
 }
 
-RudaCheckStatus ruda_checker_check_package_unit(
-    const RudaAstTree *const *asts,
+MarimayCheckStatus mmay_checker_check_package_unit(
+    const MarimayAstTree *const *asts,
     size_t ast_count,
     const char *package_name,
     size_t package_name_length,
-    const RudaCheckImportEnvironment *imports,
+    const MarimayCheckImportEnvironment *imports,
     bool initialize_result,
-    RudaAllocator allocator,
-    RudaCheckOptions options,
-    RudaCheckResult *result
+    MarimayAllocator allocator,
+    MarimayCheckOptions options,
+    MarimayCheckResult *result
 ) {
-    RudaChecker checker;
-    RudaVector sorted_asts;
+    MarimayChecker checker;
+    MarimayVector sorted_asts;
     bool sorted_asts_initialized = false;
     bool declarations_initialized = false;
     bool constant_declarations_initialized = false;
@@ -145,61 +145,61 @@ RudaCheckStatus ruda_checker_check_package_unit(
     size_t ast_index = 0;
     size_t index = 0;
     if (result == NULL) {
-        return RUDA_CHECK_INVALID_ARGUMENT;
+        return MMAY_CHECK_INVALID_ARGUMENT;
     }
     if (initialize_result) {
         memset(result, 0, sizeof(*result));
     }
     if (asts == NULL || ast_count == 0 || package_name == NULL
         || package_name_length == 0
-        || !ruda_check_options_valid(allocator, options)
+        || !mmay_check_options_valid(allocator, options)
         || (!initialize_result && !result->initialized)) {
-        return RUDA_CHECK_INVALID_ARGUMENT;
+        return MMAY_CHECK_INVALID_ARGUMENT;
     }
     if (package_name_length > options.max_package_name_bytes) {
-        return RUDA_CHECK_LIMIT_REACHED;
+        return MMAY_CHECK_LIMIT_REACHED;
     }
     if (ast_count > options.max_source_files) {
-        return RUDA_CHECK_LIMIT_REACHED;
+        return MMAY_CHECK_LIMIT_REACHED;
     }
-    sorted_asts_initialized = ruda_vector_init(
+    sorted_asts_initialized = mmay_vector_init(
         &sorted_asts,
         allocator,
-        sizeof(RudaAstTree *)
+        sizeof(MarimayAstTree *)
     );
     if (!sorted_asts_initialized) {
-        return RUDA_CHECK_INVALID_ARGUMENT;
+        return MMAY_CHECK_INVALID_ARGUMENT;
     }
     for (ast_index = 0; ast_index < ast_count; ast_index += 1) {
-        const RudaAstTree *ast = asts[ast_index];
-        if (!ruda_checker_private_check_ast_valid(ast)) {
-            ruda_vector_dispose(&sorted_asts);
-            return RUDA_CHECK_INVALID_ARGUMENT;
+        const MarimayAstTree *ast = asts[ast_index];
+        if (!mmay_checker_private_check_ast_valid(ast)) {
+            mmay_vector_dispose(&sorted_asts);
+            return MMAY_CHECK_INVALID_ARGUMENT;
         }
-        if (!ruda_vector_push(&sorted_asts, &ast)) {
-            ruda_vector_dispose(&sorted_asts);
-            return RUDA_CHECK_ALLOCATION_FAILED;
+        if (!mmay_vector_push(&sorted_asts, &ast)) {
+            mmay_vector_dispose(&sorted_asts);
+            return MMAY_CHECK_ALLOCATION_FAILED;
         }
     }
     qsort(
         sorted_asts.data,
         sorted_asts.length,
         sorted_asts.element_size,
-        ruda_checker_private_check_compare_ast_paths
+        mmay_checker_private_check_compare_ast_paths
     );
     for (ast_index = 1; ast_index < sorted_asts.length; ast_index += 1) {
-        const RudaAstTree *const *previous = ruda_vector_at_const(
+        const MarimayAstTree *const *previous = mmay_vector_at_const(
             &sorted_asts,
             ast_index - 1
         );
-        const RudaAstTree *const *current = ruda_vector_at_const(
+        const MarimayAstTree *const *current = mmay_vector_at_const(
             &sorted_asts,
             ast_index
         );
         if (previous == NULL || current == NULL
-            || ruda_checker_private_check_compare_ast_paths(previous, current) == 0) {
-            ruda_vector_dispose(&sorted_asts);
-            return RUDA_CHECK_INVALID_ARGUMENT;
+            || mmay_checker_private_check_compare_ast_paths(previous, current) == 0) {
+            mmay_vector_dispose(&sorted_asts);
+            return MMAY_CHECK_INVALID_ARGUMENT;
         }
     }
     memset(&checker, 0, sizeof(checker));
@@ -208,297 +208,297 @@ RudaCheckStatus ruda_checker_check_package_unit(
     checker.imports = imports;
     checker.options = options;
     checker.result = result;
-    checker.failure = RUDA_CHECK_OK;
+    checker.failure = MMAY_CHECK_OK;
     checker.remaining_constant_steps = options.max_constant_steps;
-    if (initialize_result && !ruda_check_result_init(
+    if (initialize_result && !mmay_check_result_init(
             result,
             allocator,
             options,
-            (*(const RudaAstTree *const *)sorted_asts.data)->snapshot,
+            (*(const MarimayAstTree *const *)sorted_asts.data)->snapshot,
             package_name,
             package_name_length
         )) {
-        ruda_vector_dispose(&sorted_asts);
-        return RUDA_CHECK_ALLOCATION_FAILED;
+        mmay_vector_dispose(&sorted_asts);
+        return MMAY_CHECK_ALLOCATION_FAILED;
     }
     if (initialize_result) {
         checker.package_name = (const char *)result->package_name.data;
     }
-    declarations_initialized = ruda_vector_init(
+    declarations_initialized = mmay_vector_init(
         &checker.declarations,
         allocator,
-        sizeof(RudaCheckFunctionDeclaration)
+        sizeof(MarimayCheckFunctionDeclaration)
     );
-    constant_declarations_initialized = ruda_vector_init(
+    constant_declarations_initialized = mmay_vector_init(
         &checker.constants,
         allocator,
-        sizeof(RudaCheckConstantDeclaration)
+        sizeof(MarimayCheckConstantDeclaration)
     );
-    type_alias_declarations_initialized = ruda_vector_init(
+    type_alias_declarations_initialized = mmay_vector_init(
         &checker.type_aliases,
         allocator,
-        sizeof(RudaCheckTypeAliasDeclaration)
+        sizeof(MarimayCheckTypeAliasDeclaration)
     );
-    record_declarations_initialized = ruda_vector_init(
+    record_declarations_initialized = mmay_vector_init(
         &checker.records,
         allocator,
-        sizeof(RudaCheckRecordDeclaration)
+        sizeof(MarimayCheckRecordDeclaration)
     );
-    enum_declarations_initialized = ruda_vector_init(
+    enum_declarations_initialized = mmay_vector_init(
         &checker.enums,
         allocator,
-        sizeof(RudaCheckEnumDeclaration)
+        sizeof(MarimayCheckEnumDeclaration)
     );
-    interface_declarations_initialized = ruda_vector_init(
+    interface_declarations_initialized = mmay_vector_init(
         &checker.interfaces,
         allocator,
-        sizeof(RudaCheckInterfaceDeclaration)
+        sizeof(MarimayCheckInterfaceDeclaration)
     );
-    top_level_index_initialized = ruda_checker_private_checker_top_level_index_init(
+    top_level_index_initialized = mmay_checker_private_checker_top_level_index_init(
         &checker
     );
-    local_nominal_index_initialized = ruda_checker_private_checker_local_nominal_index_init(
+    local_nominal_index_initialized = mmay_checker_private_checker_local_nominal_index_init(
         &checker
     );
-    callable_index_initialized = ruda_check_callable_index_init(&checker);
+    callable_index_initialized = mmay_check_callable_index_init(&checker);
     if (!declarations_initialized || !constant_declarations_initialized
         || !type_alias_declarations_initialized
         || !record_declarations_initialized
         || !enum_declarations_initialized || !interface_declarations_initialized
         || !top_level_index_initialized || !local_nominal_index_initialized
         || !callable_index_initialized
-        || !ruda_checker_private_imported_enums_init(&checker)) {
-        ruda_checker_private_checker_dispose_declarations(&checker);
-        ruda_check_result_dispose(result);
-        ruda_vector_dispose(&sorted_asts);
-        return RUDA_CHECK_ALLOCATION_FAILED;
+        || !mmay_checker_private_imported_enums_init(&checker)) {
+        mmay_checker_private_checker_dispose_declarations(&checker);
+        mmay_check_result_dispose(result);
+        mmay_vector_dispose(&sorted_asts);
+        return MMAY_CHECK_ALLOCATION_FAILED;
     }
-    if (!ruda_checker_private_prelude_init(&checker)) {
-        ruda_checker_private_checker_dispose_declarations(&checker);
-        ruda_check_result_dispose(result);
-        ruda_vector_dispose(&sorted_asts);
-        return checker.failure == RUDA_CHECK_OK
-            ? RUDA_CHECK_ALLOCATION_FAILED : checker.failure;
+    if (!mmay_checker_private_prelude_init(&checker)) {
+        mmay_checker_private_checker_dispose_declarations(&checker);
+        mmay_check_result_dispose(result);
+        mmay_vector_dispose(&sorted_asts);
+        return checker.failure == MMAY_CHECK_OK
+            ? MMAY_CHECK_ALLOCATION_FAILED : checker.failure;
     }
     for (ast_index = 0; ast_index < sorted_asts.length
-        && !ruda_checker_has_failed(&checker); ast_index += 1) {
-        const RudaAstTree *const *ast = ruda_vector_at_const(
+        && !mmay_checker_has_failed(&checker); ast_index += 1) {
+        const MarimayAstTree *const *ast = mmay_vector_at_const(
             &sorted_asts,
             ast_index
         );
-        if (ast == NULL || !ruda_checker_private_checker_set_ast(&checker, *ast)) {
-            ruda_checker_fail(&checker, RUDA_CHECK_INTERNAL_ERROR);
+        if (ast == NULL || !mmay_checker_private_checker_set_ast(&checker, *ast)) {
+            mmay_checker_fail(&checker, MMAY_CHECK_INTERNAL_ERROR);
             break;
         }
         for (index = 0; index < (*ast)->root->child_count
-            && !ruda_checker_has_failed(&checker); index += 1) {
-            const RudaAstElement *element = ruda_ast_child(
+            && !mmay_checker_has_failed(&checker); index += 1) {
+            const MarimayAstElement *element = mmay_ast_child(
                 (*ast)->root,
                 index
             );
-            if (element == NULL || element->kind != RUDA_AST_ELEMENT_NODE
+            if (element == NULL || element->kind != MMAY_AST_ELEMENT_NODE
                 || element->as.node == NULL) {
-                ruda_checker_fail(&checker, RUDA_CHECK_INVALID_ARGUMENT);
+                mmay_checker_fail(&checker, MMAY_CHECK_INVALID_ARGUMENT);
                 break;
             }
-            if (element->as.node->kind == RUDA_SYNTAX_TYPE_ALIAS_DECL) {
-                (void)ruda_checker_private_collect_type_alias_declaration(
+            if (element->as.node->kind == MMAY_SYNTAX_TYPE_ALIAS_DECL) {
+                (void)mmay_checker_private_collect_type_alias_declaration(
                     &checker,
                     element->as.node
                 );
-            } else if (element->as.node->kind == RUDA_SYNTAX_RECORD_DECL) {
-                (void)ruda_checker_private_collect_record_declaration(
+            } else if (element->as.node->kind == MMAY_SYNTAX_RECORD_DECL) {
+                (void)mmay_checker_private_collect_record_declaration(
                     &checker,
                     element->as.node
                 );
-            } else if (element->as.node->kind == RUDA_SYNTAX_ENUM_DECL) {
-                (void)ruda_checker_private_collect_enum_declaration(
+            } else if (element->as.node->kind == MMAY_SYNTAX_ENUM_DECL) {
+                (void)mmay_checker_private_collect_enum_declaration(
                     &checker,
                     element->as.node
                 );
-            } else if (element->as.node->kind == RUDA_SYNTAX_INTERFACE_DECL) {
-                (void)ruda_checker_private_collect_interface_declaration(
+            } else if (element->as.node->kind == MMAY_SYNTAX_INTERFACE_DECL) {
+                (void)mmay_checker_private_collect_interface_declaration(
                     &checker,
                     element->as.node
                 );
             }
         }
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_evaluate_all_type_aliases(&checker);
+        (void)mmay_checker_private_evaluate_all_type_aliases(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_resolve_all_record_fields(&checker);
+        (void)mmay_checker_private_resolve_all_record_fields(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_resolve_all_enum_variants(&checker);
+        (void)mmay_checker_private_resolve_all_enum_variants(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_resolve_all_interface_methods(&checker);
+        (void)mmay_checker_private_resolve_all_interface_methods(&checker);
     }
     for (ast_index = 0; ast_index < sorted_asts.length
-        && !ruda_checker_has_failed(&checker)
+        && !mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0; ast_index += 1) {
-        const RudaAstTree *const *ast = ruda_vector_at_const(
+        const MarimayAstTree *const *ast = mmay_vector_at_const(
             &sorted_asts,
             ast_index
         );
-        if (ast == NULL || !ruda_checker_private_checker_set_ast(&checker, *ast)) {
-            ruda_checker_fail(&checker, RUDA_CHECK_INTERNAL_ERROR);
+        if (ast == NULL || !mmay_checker_private_checker_set_ast(&checker, *ast)) {
+            mmay_checker_fail(&checker, MMAY_CHECK_INTERNAL_ERROR);
             break;
         }
         for (index = 0; index < (*ast)->root->child_count
-            && !ruda_checker_has_failed(&checker); index += 1) {
-            const RudaAstElement *element = ruda_ast_child(
+            && !mmay_checker_has_failed(&checker); index += 1) {
+            const MarimayAstElement *element = mmay_ast_child(
                 (*ast)->root,
                 index
             );
-            if (element == NULL || element->kind != RUDA_AST_ELEMENT_NODE
+            if (element == NULL || element->kind != MMAY_AST_ELEMENT_NODE
                 || element->as.node == NULL) {
-                ruda_checker_fail(&checker, RUDA_CHECK_INVALID_ARGUMENT);
+                mmay_checker_fail(&checker, MMAY_CHECK_INVALID_ARGUMENT);
                 break;
             }
-            if (element->as.node->kind == RUDA_SYNTAX_FUNCTION_DECL
-                || element->as.node->kind == RUDA_SYNTAX_EXTERN_DECL) {
-                (void)ruda_checker_private_collect_function_signature(
+            if (element->as.node->kind == MMAY_SYNTAX_FUNCTION_DECL
+                || element->as.node->kind == MMAY_SYNTAX_EXTERN_DECL) {
+                (void)mmay_checker_private_collect_function_signature(
                     &checker,
                     element->as.node
                 );
-            } else if (element->as.node->kind == RUDA_SYNTAX_CONST_DECL) {
-                (void)ruda_checker_private_collect_constant_declaration(
+            } else if (element->as.node->kind == MMAY_SYNTAX_CONST_DECL) {
+                (void)mmay_checker_private_collect_constant_declaration(
                     &checker,
                     element->as.node
                 );
             } else if (element->as.node->kind
-                == RUDA_SYNTAX_TYPE_ALIAS_DECL) {
+                == MMAY_SYNTAX_TYPE_ALIAS_DECL) {
                 continue;
-            } else if (element->as.node->kind == RUDA_SYNTAX_RECORD_DECL) {
+            } else if (element->as.node->kind == MMAY_SYNTAX_RECORD_DECL) {
                 continue;
-            } else if (element->as.node->kind == RUDA_SYNTAX_ENUM_DECL) {
+            } else if (element->as.node->kind == MMAY_SYNTAX_ENUM_DECL) {
                 continue;
-            } else if (element->as.node->kind == RUDA_SYNTAX_INTERFACE_DECL) {
+            } else if (element->as.node->kind == MMAY_SYNTAX_INTERFACE_DECL) {
                 continue;
-            } else if (element->as.node->kind == RUDA_SYNTAX_IMPORT_DECL) {
+            } else if (element->as.node->kind == MMAY_SYNTAX_IMPORT_DECL) {
                 continue;
             } else {
-                ruda_checker_fail(&checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+                mmay_checker_fail(&checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
                 break;
             }
         }
     }
     for (ast_index = 0; ast_index < sorted_asts.length
-        && !ruda_checker_has_failed(&checker)
+        && !mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0; ast_index += 1) {
-        const RudaAstTree *const *ast = ruda_vector_at_const(
+        const MarimayAstTree *const *ast = mmay_vector_at_const(
             &sorted_asts,
             ast_index
         );
-        if (ast == NULL || !ruda_checker_private_checker_set_ast(&checker, *ast)
-            || !ruda_check_publish_completions_for_ast(&checker)) {
-            if (!ruda_checker_has_failed(&checker)) {
-                ruda_checker_fail(&checker, RUDA_CHECK_INTERNAL_ERROR);
+        if (ast == NULL || !mmay_checker_private_checker_set_ast(&checker, *ast)
+            || !mmay_check_publish_completions_for_ast(&checker)) {
+            if (!mmay_checker_has_failed(&checker)) {
+                mmay_checker_fail(&checker, MMAY_CHECK_INTERNAL_ERROR);
             }
             break;
         }
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
         size_t symbol_total = 0;
-        if (!ruda_checker_private_check_symbol_fact_total(&checker, &symbol_total)
+        if (!mmay_checker_private_check_symbol_fact_total(&checker, &symbol_total)
             || symbol_total > checker.options.max_symbols) {
-            ruda_checker_fail(&checker, RUDA_CHECK_LIMIT_REACHED);
+            mmay_checker_fail(&checker, MMAY_CHECK_LIMIT_REACHED);
         }
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_evaluate_all_constants(&checker);
+        (void)mmay_checker_private_evaluate_all_constants(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_publish_constants(&checker);
+        (void)mmay_checker_private_publish_constants(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
         for (index = 0; index < checker.declarations.length
-            && !ruda_checker_has_failed(&checker); index += 1) {
-            RudaCheckFunctionDeclaration *declaration = ruda_vector_at(
+            && !mmay_checker_has_failed(&checker); index += 1) {
+            MarimayCheckFunctionDeclaration *declaration = mmay_vector_at(
                 &checker.declarations,
                 index
             );
             if (declaration == NULL || !declaration->signature_valid) {
-                ruda_checker_fail(&checker, RUDA_CHECK_INTERNAL_ERROR);
+                mmay_checker_fail(&checker, MMAY_CHECK_INTERNAL_ERROR);
                 break;
             }
             if (declaration->is_generic && !declaration->is_instance) {
                 continue;
             }
-            (void)ruda_checker_private_check_function_body(&checker, declaration);
+            (void)mmay_checker_private_check_function_body(&checker, declaration);
         }
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_publish_type_aliases(&checker);
+        (void)mmay_checker_private_publish_type_aliases(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_publish_records(&checker);
+        (void)mmay_checker_private_publish_records(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_publish_enums(&checker);
+        (void)mmay_checker_private_publish_enums(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_publish_interfaces(&checker);
+        (void)mmay_checker_private_publish_interfaces(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_checker_private_publish_symbol_facts(&checker);
+        (void)mmay_checker_private_publish_symbol_facts(&checker);
     }
-    if (!ruda_checker_has_failed(&checker)
+    if (!mmay_checker_has_failed(&checker)
         && result->diagnostics.length == 0) {
-        (void)ruda_check_finalize_semantic_facts(&checker);
+        (void)mmay_check_finalize_semantic_facts(&checker);
     }
     if (result->diagnostics.length != 0) {
-        if (!ruda_check_clear_semantics(result)) {
-            ruda_checker_fail(&checker, RUDA_CHECK_ALLOCATION_FAILED);
+        if (!mmay_check_clear_semantics(result)) {
+            mmay_checker_fail(&checker, MMAY_CHECK_ALLOCATION_FAILED);
         }
     }
-    ruda_checker_private_checker_dispose_declarations(&checker);
-    ruda_vector_dispose(&sorted_asts);
-    if (checker.failure != RUDA_CHECK_OK) {
-        RudaCheckStatus status = checker.failure;
-        ruda_check_result_dispose(result);
+    mmay_checker_private_checker_dispose_declarations(&checker);
+    mmay_vector_dispose(&sorted_asts);
+    if (checker.failure != MMAY_CHECK_OK) {
+        MarimayCheckStatus status = checker.failure;
+        mmay_check_result_dispose(result);
         return status;
     }
-    return RUDA_CHECK_OK;
+    return MMAY_CHECK_OK;
 }
 
-RudaCheckStatus ruda_check_package(
-    const RudaAstTree *const *asts,
+MarimayCheckStatus mmay_check_package(
+    const MarimayAstTree *const *asts,
     size_t ast_count,
     const char *package_name,
-    RudaAllocator allocator,
-    RudaCheckOptions options,
-    RudaCheckResult *result
+    MarimayAllocator allocator,
+    MarimayCheckOptions options,
+    MarimayCheckResult *result
 ) {
     size_t package_name_length = 0;
     if (result == NULL) {
-        return RUDA_CHECK_INVALID_ARGUMENT;
+        return MMAY_CHECK_INVALID_ARGUMENT;
     }
     memset(result, 0, sizeof(*result));
-    if (!ruda_checker_private_check_bounded_c_string_length(
+    if (!mmay_checker_private_check_bounded_c_string_length(
             package_name,
             options.max_package_name_bytes,
             &package_name_length
         )) {
-        return RUDA_CHECK_LIMIT_REACHED;
+        return MMAY_CHECK_LIMIT_REACHED;
     }
-    return ruda_checker_check_package_unit(
+    return mmay_checker_check_package_unit(
         asts,
         ast_count,
         package_name,
@@ -511,16 +511,16 @@ RudaCheckStatus ruda_check_package(
     );
 }
 
-RudaCheckStatus ruda_check_ast(
-    const RudaAstTree *ast,
+MarimayCheckStatus mmay_check_ast(
+    const MarimayAstTree *ast,
     const char *package_name,
-    RudaAllocator allocator,
-    RudaCheckOptions options,
-    RudaCheckResult *result
+    MarimayAllocator allocator,
+    MarimayCheckOptions options,
+    MarimayCheckResult *result
 ) {
-    const RudaAstTree *asts[1];
+    const MarimayAstTree *asts[1];
     asts[0] = ast;
-    return ruda_check_package(
+    return mmay_check_package(
         asts,
         1,
         package_name,

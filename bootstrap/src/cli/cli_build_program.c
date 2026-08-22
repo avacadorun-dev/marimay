@@ -3,20 +3,20 @@
 
 #include <string.h>
 
-#include "ruda/check/entry.h"
-#include "ruda/generated/diagnostic_codes.h"
-#include "ruda/native/build.h"
+#include "mmay/check/entry.h"
+#include "mmay/generated/diagnostic_codes.h"
+#include "mmay/native/build.h"
 
-static int ruda_cli_build_status_error(
-    const RudaCliOptions *options,
-    RudaNativeBuildStatus status,
-    RudaWriter standard_error
+static int mmay_cli_build_status_error(
+    const MarimayCliOptions *options,
+    MarimayNativeBuildStatus status,
+    MarimayWriter standard_error
 ) {
-    const char *code = RUDA_DIAGNOSTIC_NATIVE_EMIT_FAILED;
+    const char *code = MMAY_DIAGNOSTIC_NATIVE_EMIT_FAILED;
     const char *message = "native build failed inside the compiler";
-    int exit_code = RUDA_EXIT_INTERNAL;
-    if (status == RUDA_NATIVE_BUILD_TOOLCHAIN_MISSING) {
-        code = RUDA_DIAGNOSTIC_NATIVE_TOOLCHAIN_MISSING;
+    int exit_code = MMAY_EXIT_INTERNAL;
+    if (status == MMAY_NATIVE_BUILD_TOOLCHAIN_MISSING) {
+        code = MMAY_DIAGNOSTIC_NATIVE_TOOLCHAIN_MISSING;
 #if defined(_WIN32)
         message = "supported host C toolchain is unavailable; install Visual Studio Build Tools with Desktop development with C++";
 #elif defined(__APPLE__)
@@ -24,71 +24,71 @@ static int ruda_cli_build_status_error(
 #else
         message = "supported host C toolchain is unavailable; install the platform Clang or GCC C17 development tools and retry";
 #endif
-        exit_code = RUDA_EXIT_SOURCE_FAILURE;
-    } else if (status == RUDA_NATIVE_BUILD_RUNTIME_MISSING) {
-        code = RUDA_DIAGNOSTIC_NATIVE_RUNTIME_INCOMPATIBLE;
-        message = "the version-matched native runtime artifact is missing; reinstall the Ruda toolchain";
-        exit_code = RUDA_EXIT_SOURCE_FAILURE;
-    } else if (status == RUDA_NATIVE_BUILD_RUNTIME_INCOMPATIBLE) {
-        code = RUDA_DIAGNOSTIC_NATIVE_RUNTIME_INCOMPATIBLE;
-        message = "the selected native runtime has a stale version or wrong build profile; reinstall the Ruda toolchain";
-        exit_code = RUDA_EXIT_SOURCE_FAILURE;
-    } else if (status == RUDA_NATIVE_BUILD_IO_FAILED) {
-        code = RUDA_DIAGNOSTIC_BUILD_OUTPUT_IO;
+        exit_code = MMAY_EXIT_SOURCE_FAILURE;
+    } else if (status == MMAY_NATIVE_BUILD_RUNTIME_MISSING) {
+        code = MMAY_DIAGNOSTIC_NATIVE_RUNTIME_INCOMPATIBLE;
+        message = "the version-matched native runtime artifact is missing; reinstall the Marimay toolchain";
+        exit_code = MMAY_EXIT_SOURCE_FAILURE;
+    } else if (status == MMAY_NATIVE_BUILD_RUNTIME_INCOMPATIBLE) {
+        code = MMAY_DIAGNOSTIC_NATIVE_RUNTIME_INCOMPATIBLE;
+        message = "the selected native runtime has a stale version or wrong build profile; reinstall the Marimay toolchain";
+        exit_code = MMAY_EXIT_SOURCE_FAILURE;
+    } else if (status == MMAY_NATIVE_BUILD_IO_FAILED) {
+        code = MMAY_DIAGNOSTIC_BUILD_OUTPUT_IO;
         message = "cannot atomically write the native build cache or requested output";
-        exit_code = RUDA_EXIT_SOURCE_FAILURE;
-    } else if (status == RUDA_NATIVE_BUILD_COMPILE_FAILED) {
-        code = RUDA_DIAGNOSTIC_NATIVE_COMPILE_FAILED;
+        exit_code = MMAY_EXIT_SOURCE_FAILURE;
+    } else if (status == MMAY_NATIVE_BUILD_COMPILE_FAILED) {
+        code = MMAY_DIAGNOSTIC_NATIVE_COMPILE_FAILED;
         message = "the supported host C compiler rejected compiler-generated C";
-    } else if (status == RUDA_NATIVE_BUILD_UNSUPPORTED_HOST) {
-        code = RUDA_DIAGNOSTIC_NATIVE_HOST_UNSUPPORTED;
+    } else if (status == MMAY_NATIVE_BUILD_UNSUPPORTED_HOST) {
+        code = MMAY_DIAGNOSTIC_NATIVE_HOST_UNSUPPORTED;
         message = "the selected host cannot preserve required native semantics";
-        exit_code = RUDA_EXIT_SOURCE_FAILURE;
-    } else if (status == RUDA_NATIVE_BUILD_LIMIT_REACHED) {
-        code = RUDA_DIAGNOSTIC_BUILD_OUTPUT_IO;
+        exit_code = MMAY_EXIT_SOURCE_FAILURE;
+    } else if (status == MMAY_NATIVE_BUILD_LIMIT_REACHED) {
+        code = MMAY_DIAGNOSTIC_BUILD_OUTPUT_IO;
         message = "native build exhausted a defensive path or artifact limit";
-        exit_code = RUDA_EXIT_SOURCE_FAILURE;
-    } else if (status == RUDA_NATIVE_BUILD_EMIT_FAILED) {
-        code = RUDA_DIAGNOSTIC_NATIVE_EMIT_FAILED;
+        exit_code = MMAY_EXIT_SOURCE_FAILURE;
+    } else if (status == MMAY_NATIVE_BUILD_EMIT_FAILED) {
+        code = MMAY_DIAGNOSTIC_NATIVE_EMIT_FAILED;
         message = "canonical typed MIR did not lower to portable C17";
     }
-    return ruda_cli_plain_error(
+    return mmay_cli_plain_error(
         standard_error, options->diagnostic_style,
         code, message, exit_code
     );
 }
 
-static int ruda_cli_build_execute(
-    RudaSession *session,
-    const RudaCliOptions *options,
-    const RudaCliCheckTarget *target,
-    const RudaCompilerResult *compiler,
-    const RudaCheckedEntry *entry,
-    RudaWriter standard_output,
-    RudaWriter standard_error
+static int mmay_cli_build_execute(
+    MarimaySession *session,
+    const MarimayCliOptions *options,
+    const MarimayCliCheckTarget *target,
+    const MarimayCompilerResult *compiler,
+    const MarimayCheckedEntry *entry,
+    MarimayWriter standard_output,
+    MarimayWriter standard_error
 ) {
-    const RudaMirFunction **functions = NULL;
+    const MarimayMirFunction **functions = NULL;
     size_t function_count = 0;
     size_t function_bytes = 0;
     size_t index = 0;
-    RudaNativeBuildRequest request;
-    RudaNativeBuildResult result;
-    RudaNativeBuildStatus status;
-    int exit_code = RUDA_EXIT_INTERNAL;
+    MarimayNativeBuildRequest request;
+    MarimayNativeBuildResult result;
+    MarimayNativeBuildStatus status;
+    int exit_code = MMAY_EXIT_INTERNAL;
     for (index = 0; index < compiler->checked.functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             &compiler->checked, index
         );
         if (function != NULL && !function->is_external) function_count += 1;
     }
-    if (!ruda_size_multiply(
+    if (!mmay_size_multiply(
             function_count, sizeof(*functions), &function_bytes
-        )) return RUDA_EXIT_INTERNAL;
-    functions = ruda_allocate(&session->allocator, function_bytes);
-    if (functions == NULL) return RUDA_EXIT_INTERNAL;
+        )) return MMAY_EXIT_INTERNAL;
+    functions = mmay_allocate(&session->allocator, function_bytes);
+    if (functions == NULL) return MMAY_EXIT_INTERNAL;
     function_count = 0;
     for (index = 0; index < compiler->checked.functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             &compiler->checked, index
         );
         if (function != NULL && !function->is_external) {
@@ -111,87 +111,87 @@ static int ruda_cli_build_execute(
     request.returns_result = entry->returns_result;
     request.release = options->build_release;
     request.emit_c = options->build_emit != NULL;
-    status = ruda_native_build(session->allocator, &request, &result);
-    if (status != RUDA_NATIVE_BUILD_OK) {
-        exit_code = ruda_cli_build_status_error(
+    status = mmay_native_build(session->allocator, &request, &result);
+    if (status != MMAY_NATIVE_BUILD_OK) {
+        exit_code = mmay_cli_build_status_error(
             options, status, standard_error
         );
     } else if (options->quiet
-        || (ruda_writer_write(
+        || (mmay_writer_write(
                 standard_output, (const char *)result.artifact_path.data,
                 result.artifact_path.length
-            ) && ruda_writer_write_cstr(standard_output, "\n"))) {
-        exit_code = RUDA_EXIT_SUCCESS;
+            ) && mmay_writer_write_cstr(standard_output, "\n"))) {
+        exit_code = MMAY_EXIT_SUCCESS;
     }
-    ruda_native_build_result_dispose(&result);
-    ruda_deallocate(&session->allocator, functions, function_bytes);
+    mmay_native_build_result_dispose(&result);
+    mmay_deallocate(&session->allocator, functions, function_bytes);
     return exit_code;
 }
 
-int ruda_cli_build_program(
-    RudaSession *session,
-    const RudaCliOptions *options,
-    RudaWriter standard_output,
-    RudaWriter standard_error
+int mmay_cli_build_program(
+    MarimaySession *session,
+    const MarimayCliOptions *options,
+    MarimayWriter standard_output,
+    MarimayWriter standard_error
 ) {
-    RudaCliCheckTarget target;
-    RudaCompilerResult compiler;
-    RudaCheckedEntry entry;
-    RudaCliCheckTargetStatus target_status;
-    RudaCompilerStatus compiler_status;
-    RudaCheckEntryStatus entry_status;
-    int exit_code = RUDA_EXIT_INTERNAL;
+    MarimayCliCheckTarget target;
+    MarimayCompilerResult compiler;
+    MarimayCheckedEntry entry;
+    MarimayCliCheckTargetStatus target_status;
+    MarimayCompilerStatus compiler_status;
+    MarimayCheckEntryStatus entry_status;
+    int exit_code = MMAY_EXIT_INTERNAL;
     memset(&target, 0, sizeof(target));
     memset(&compiler, 0, sizeof(compiler));
     memset(&entry, 0, sizeof(entry));
-    target_status = ruda_cli_check_target_build(session, options, &target);
-    if (target_status != RUDA_CLI_CHECK_TARGET_OK) {
-        exit_code = ruda_cli_compile_target_error(
+    target_status = mmay_cli_check_target_build(session, options, &target);
+    if (target_status != MMAY_CLI_CHECK_TARGET_OK) {
+        exit_code = mmay_cli_compile_target_error(
             options, &target, target_status, standard_error
         );
         goto cleanup;
     }
-    compiler_status = ruda_compiler_service_check_graph(
+    compiler_status = mmay_compiler_service_check_graph(
         &target.service, target.compiler_packages.data,
         target.compiler_packages.length,
         (const char *)target.selected_import_path.data,
         target.selected_import_path.length, &compiler
     );
-    if (compiler_status != RUDA_COMPILER_OK) {
-        exit_code = ruda_cli_compile_status_error(
+    if (compiler_status != MMAY_COMPILER_OK) {
+        exit_code = mmay_cli_compile_status_error(
             options, compiler_status, standard_error
         );
         goto cleanup;
     }
-    exit_code = ruda_cli_compile_render_result(
+    exit_code = mmay_cli_compile_render_result(
         options, &compiler, standard_error
     );
-    if (exit_code != RUDA_EXIT_SUCCESS) goto cleanup;
-    if (!ruda_cli_optimize_checked_mir(&compiler)) {
-        exit_code = ruda_cli_plain_error(
+    if (exit_code != MMAY_EXIT_SUCCESS) goto cleanup;
+    if (!mmay_cli_optimize_checked_mir(&compiler)) {
+        exit_code = mmay_cli_plain_error(
             standard_error, options->diagnostic_style,
-            RUDA_DIAGNOSTIC_NATIVE_EMIT_FAILED,
+            MMAY_DIAGNOSTIC_NATIVE_EMIT_FAILED,
             "canonical typed MIR range proof was invalid",
-            RUDA_EXIT_INTERNAL
+            MMAY_EXIT_INTERNAL
         );
         goto cleanup;
     }
-    entry_status = ruda_check_select_entry(
+    entry_status = mmay_check_select_entry(
         &compiler.checked, (const char *)target.selected_import_path.data,
         target.selected_import_path.length, &entry
     );
-    if (entry_status != RUDA_CHECK_ENTRY_OK) {
-        exit_code = ruda_cli_run_entry_error(
+    if (entry_status != MMAY_CHECK_ENTRY_OK) {
+        exit_code = mmay_cli_run_entry_error(
             options, entry_status, standard_error
         );
         goto cleanup;
     }
-    exit_code = ruda_cli_build_execute(
+    exit_code = mmay_cli_build_execute(
         session, options, &target, &compiler, &entry,
         standard_output, standard_error
     );
 cleanup:
-    ruda_compiler_result_dispose(&compiler);
-    ruda_cli_check_target_dispose(&target);
+    mmay_compiler_result_dispose(&compiler);
+    mmay_cli_check_target_dispose(&target);
     return exit_code;
 }

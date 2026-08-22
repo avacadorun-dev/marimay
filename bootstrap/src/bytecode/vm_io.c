@@ -2,16 +2,16 @@
 
 #include <string.h>
 
-#include "ruda/runtime/io.h"
-#include "ruda/runtime/string.h"
+#include "mmay/runtime/io.h"
+#include "mmay/runtime/string.h"
 
-static const RudaBytecodeEnumPayload *ruda_bytecode_run_io_payload(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeEnumLayout *layout,
+static const MarimayBytecodeEnumPayload *mmay_bytecode_run_io_payload(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeEnumLayout *layout,
     size_t variant_index,
     size_t field
 ) {
-    const RudaBytecodeEnumVariant *variant = NULL;
+    const MarimayBytecodeEnumVariant *variant = NULL;
     size_t relative = 0;
     if (function == NULL || layout == NULL
         || variant_index >= layout->variant_count
@@ -20,127 +20,127 @@ static const RudaBytecodeEnumPayload *ruda_bytecode_run_io_payload(
             - layout->variant_start) {
         return NULL;
     }
-    variant = ruda_vector_at_const(
+    variant = mmay_vector_at_const(
         &function->enum_variants,
         layout->variant_start + variant_index
     );
     if (variant == NULL || field >= variant->payload_count
-        || !ruda_size_add(variant->payload_start, field, &relative)
+        || !mmay_size_add(variant->payload_start, field, &relative)
         || relative >= layout->payload_count
         || layout->payload_start > function->enum_payloads.length
         || relative >= function->enum_payloads.length - layout->payload_start) {
         return NULL;
     }
-    return ruda_vector_at_const(
+    return mmay_vector_at_const(
         &function->enum_payloads, layout->payload_start + relative
     );
 }
 
-static RudaBytecodeRunStatus ruda_bytecode_run_io_error(
-    RudaBytecodeExecution *execution,
-    const RudaManagedEnumDescriptor *result_descriptor,
-    const RudaManagedEnumDescriptor *error_descriptor,
-    RudaIoStdoutStatus io_status,
-    RudaBytecodeValue *target
+static MarimayBytecodeRunStatus mmay_bytecode_run_io_error(
+    MarimayBytecodeExecution *execution,
+    const MarimayManagedEnumDescriptor *result_descriptor,
+    const MarimayManagedEnumDescriptor *error_descriptor,
+    MarimayIoStdoutStatus io_status,
+    MarimayBytecodeValue *target
 ) {
     static const unsigned char capability_name[] = "io.stdout";
-    RudaManagedReference capability = ruda_managed_invalid_reference();
-    RudaManagedReference error = ruda_managed_invalid_reference();
-    RudaManagedReference *locations[2] = {&capability, &error};
-    RudaManagedRootFrame roots;
-    RudaManagedCell payload;
-    RudaManagedStatus managed_status;
+    MarimayManagedReference capability = mmay_managed_invalid_reference();
+    MarimayManagedReference error = mmay_managed_invalid_reference();
+    MarimayManagedReference *locations[2] = {&capability, &error};
+    MarimayManagedRootFrame roots;
+    MarimayManagedCell payload;
+    MarimayManagedStatus managed_status;
     memset(&roots, 0, sizeof(roots));
     memset(&payload, 0, sizeof(payload));
-    managed_status = ruda_managed_root_push(
+    managed_status = mmay_managed_root_push(
         &execution->managed_heap, &roots, locations, 2
     );
-    if (managed_status != RUDA_MANAGED_OK) {
-        return ruda_bytecode_run_managed_status(managed_status);
+    if (managed_status != MMAY_MANAGED_OK) {
+        return mmay_bytecode_run_managed_status(managed_status);
     }
-    if (io_status == RUDA_IO_STDOUT_CAPABILITY_DENIED) {
-        managed_status = ruda_managed_string_new(
+    if (io_status == MMAY_IO_STDOUT_CAPABILITY_DENIED) {
+        managed_status = mmay_managed_string_new(
             &execution->managed_heap,
             capability_name,
             sizeof(capability_name) - 1,
             &capability
         );
-        if (managed_status == RUDA_MANAGED_OK) {
+        if (managed_status == MMAY_MANAGED_OK) {
             payload.reference = capability;
-            managed_status = ruda_managed_enum_new(
+            managed_status = mmay_managed_enum_new(
                 &execution->managed_heap, error_descriptor, 0,
                 &payload, 1, &error
             );
         }
     } else {
-        managed_status = ruda_managed_enum_new(
+        managed_status = mmay_managed_enum_new(
             &execution->managed_heap, error_descriptor, 1,
             NULL, 0, &error
         );
     }
-    if (managed_status == RUDA_MANAGED_OK) {
+    if (managed_status == MMAY_MANAGED_OK) {
         payload.reference = error;
-        managed_status = ruda_managed_enum_new(
+        managed_status = mmay_managed_enum_new(
             &execution->managed_heap, result_descriptor, 1,
             &payload, 1, &target->as.managed_reference
         );
     }
     {
-        RudaManagedStatus pop_status = ruda_managed_root_pop(
+        MarimayManagedStatus pop_status = mmay_managed_root_pop(
             &execution->managed_heap, &roots
         );
-        if (managed_status == RUDA_MANAGED_OK) {
+        if (managed_status == MMAY_MANAGED_OK) {
             managed_status = pop_status;
         }
     }
-    return ruda_bytecode_run_managed_status(managed_status);
+    return mmay_bytecode_run_managed_status(managed_status);
 }
 
-RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
-    const RudaBytecodeInstruction *instruction,
-    RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    RudaAllocator allocator,
-    const RudaIoStdout *stdout_sink
+MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator,
+    const MarimayIoStdout *stdout_sink
 ) {
     size_t target_index = (size_t)instruction->operands[0].unsigned_value;
     size_t text_index = (size_t)instruction->operands[1].unsigned_value;
-    uint32_t result_id = ruda_bytecode_register_layout(
+    uint32_t result_id = mmay_bytecode_register_layout(
         function, (uint32_t)target_index
     );
-    const RudaBytecodeEnumLayout *result_layout = ruda_bytecode_enum_layout(
+    const MarimayBytecodeEnumLayout *result_layout = mmay_bytecode_enum_layout(
         function, result_id
     );
-    const RudaBytecodeEnumPayload *error_payload =
-        ruda_bytecode_run_io_payload(function, result_layout, 1, 0);
+    const MarimayBytecodeEnumPayload *error_payload =
+        mmay_bytecode_run_io_payload(function, result_layout, 1, 0);
     const void *result_descriptor_raw = NULL;
     const void *error_descriptor_raw = NULL;
     const unsigned char *text = NULL;
     size_t text_length = 0;
     size_t line_length = 0;
     unsigned char *line = NULL;
-    RudaBytecodeRunStatus status;
-    RudaTestOutputStatus output_status;
+    MarimayBytecodeRunStatus status;
+    MarimayTestOutputStatus output_status;
     if (execution == NULL || !execution->initialized || stdout_sink == NULL
         || result_layout == NULL || error_payload == NULL
-        || error_payload->type != RUDA_BYTECODE_TYPE_ENUM) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        || error_payload->type != MMAY_BYTECODE_TYPE_ENUM) {
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    status = ruda_bytecode_run_nominal_descriptor(
-        execution, function, RUDA_BYTECODE_TYPE_ENUM,
+    status = mmay_bytecode_run_nominal_descriptor(
+        execution, function, MMAY_BYTECODE_TYPE_ENUM,
         result_id, &result_descriptor_raw
     );
-    if (status == RUDA_BYTECODE_RUN_OK) {
-        status = ruda_bytecode_run_nominal_descriptor(
-            execution, function, RUDA_BYTECODE_TYPE_ENUM,
+    if (status == MMAY_BYTECODE_RUN_OK) {
+        status = mmay_bytecode_run_nominal_descriptor(
+            execution, function, MMAY_BYTECODE_TYPE_ENUM,
             error_payload->layout, &error_descriptor_raw
         );
     }
-    if (status != RUDA_BYTECODE_RUN_OK) {
+    if (status != MMAY_BYTECODE_RUN_OK) {
         return status;
     }
-    status = ruda_bytecode_run_managed_status(ruda_managed_enum_new(
+    status = mmay_bytecode_run_managed_status(mmay_managed_enum_new(
         &execution->managed_heap,
         result_descriptor_raw,
         0,
@@ -148,105 +148,105 @@ RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
         0,
         &registers[target_index].as.managed_reference
     ));
-    if (status != RUDA_BYTECODE_RUN_OK) {
+    if (status != MMAY_BYTECODE_RUN_OK) {
         return status;
     }
-    if (!ruda_bytecode_execution_string_bytes(
+    if (!mmay_bytecode_execution_string_bytes(
             execution, registers[text_index], &text, &text_length
         )) {
-        return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+        return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
     }
-    if (!ruda_size_add(text_length, 1, &line_length)) {
-        return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+    if (!mmay_size_add(text_length, 1, &line_length)) {
+        return MMAY_BYTECODE_RUN_LIMIT_REACHED;
     }
-    line = ruda_allocate(&allocator, line_length);
+    line = mmay_allocate(&allocator, line_length);
     if (line == NULL) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
     if (text_length != 0) {
         memcpy(line, text, text_length);
     }
     line[text_length] = '\n';
-    output_status = ruda_test_output_publish(
+    output_status = mmay_test_output_publish(
         &execution->test_output, stdout_sink, line, line_length
     );
-    ruda_deallocate(&allocator, line, line_length);
-    if (output_status == RUDA_TEST_OUTPUT_OK) {
-        return RUDA_BYTECODE_RUN_OK;
+    mmay_deallocate(&allocator, line, line_length);
+    if (output_status == MMAY_TEST_OUTPUT_OK) {
+        return MMAY_BYTECODE_RUN_OK;
     }
-    if (output_status == RUDA_TEST_OUTPUT_ALLOCATION_FAILED) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (output_status == MMAY_TEST_OUTPUT_ALLOCATION_FAILED) {
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    if (output_status == RUDA_TEST_OUTPUT_LIMIT_REACHED) {
-        return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+    if (output_status == MMAY_TEST_OUTPUT_LIMIT_REACHED) {
+        return MMAY_BYTECODE_RUN_LIMIT_REACHED;
     }
-    if (output_status != RUDA_TEST_OUTPUT_CAPABILITY_DENIED
-        && output_status != RUDA_TEST_OUTPUT_WRITE_FAILED) {
-        return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+    if (output_status != MMAY_TEST_OUTPUT_CAPABILITY_DENIED
+        && output_status != MMAY_TEST_OUTPUT_WRITE_FAILED) {
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
-    return ruda_bytecode_run_io_error(
+    return mmay_bytecode_run_io_error(
         execution, result_descriptor_raw, error_descriptor_raw,
-        output_status == RUDA_TEST_OUTPUT_CAPABILITY_DENIED
-            ? RUDA_IO_STDOUT_CAPABILITY_DENIED
-            : RUDA_IO_STDOUT_WRITE_FAILED,
+        output_status == MMAY_TEST_OUTPUT_CAPABILITY_DENIED
+            ? MMAY_IO_STDOUT_CAPABILITY_DENIED
+            : MMAY_IO_STDOUT_WRITE_FAILED,
         &registers[target_index]
     );
 }
 
-RudaBytecodeRunStatus ruda_bytecode_run_test_output_instruction(
-    const RudaBytecodeInstruction *instruction,
-    RudaBytecodeValue *registers,
-    RudaBytecodeExecution *execution,
-    const RudaBytecodeFunction *function,
-    RudaAllocator allocator,
-    RudaBytecodePanic *panic,
-    RudaSymbolId symbol
+MarimayBytecodeRunStatus mmay_bytecode_run_test_output_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator,
+    MarimayBytecodePanic *panic,
+    MarimaySymbolId symbol
 ) {
     size_t target = (size_t)instruction->operands[0].unsigned_value;
     size_t source = (size_t)instruction->operands[1].unsigned_value;
     const unsigned char *expected = NULL;
-    const RudaOwnedBytes *failure = NULL;
+    const MarimayOwnedBytes *failure = NULL;
     size_t expected_length = 0;
-    RudaTestOutputStatus output_status;
+    MarimayTestOutputStatus output_status;
     if (execution == NULL || !execution->initialized || function == NULL) {
-        return RUDA_BYTECODE_RUN_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    if (instruction->opcode == RUDA_OPCODE_TEST_OUTPUT_BEGIN) {
-        if (!ruda_bytecode_execution_string_bytes(
+    if (instruction->opcode == MMAY_OPCODE_TEST_OUTPUT_BEGIN) {
+        if (!mmay_bytecode_execution_string_bytes(
                 execution, registers[source], &expected, &expected_length
             )) {
-            return RUDA_BYTECODE_RUN_INVALID_REFERENCE;
+            return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
         }
-        output_status = ruda_test_output_begin(
+        output_status = mmay_test_output_begin(
             &execution->test_output, allocator, expected, expected_length
         );
-        if (output_status == RUDA_TEST_OUTPUT_OK) {
+        if (output_status == MMAY_TEST_OUTPUT_OK) {
             registers[target].as.boolean = true;
-            return RUDA_BYTECODE_RUN_OK;
+            return MMAY_BYTECODE_RUN_OK;
         }
     } else {
         if (!registers[source].as.boolean) {
-            return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
         }
-        output_status = ruda_test_output_end(&execution->test_output);
-        if (output_status == RUDA_TEST_OUTPUT_OK) {
-            return RUDA_BYTECODE_RUN_OK;
+        output_status = mmay_test_output_end(&execution->test_output);
+        if (output_status == MMAY_TEST_OUTPUT_OK) {
+            return MMAY_BYTECODE_RUN_OK;
         }
-        if (output_status == RUDA_TEST_OUTPUT_MISMATCH) {
-            failure = ruda_test_output_failure(&execution->test_output);
+        if (output_status == MMAY_TEST_OUTPUT_MISMATCH) {
+            failure = mmay_test_output_failure(&execution->test_output);
             return failure == NULL
-                ? RUDA_BYTECODE_RUN_INVALID_BYTECODE
-                : ruda_bytecode_run_begin_test_panic(
+                ? MMAY_BYTECODE_RUN_INVALID_BYTECODE
+                : mmay_bytecode_run_begin_test_panic(
                     panic, allocator, failure->data, failure->length,
                     symbol, instruction->span
                 );
         }
     }
-    if (output_status == RUDA_TEST_OUTPUT_ALLOCATION_FAILED) {
-        return RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (output_status == MMAY_TEST_OUTPUT_ALLOCATION_FAILED) {
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    if (output_status == RUDA_TEST_OUTPUT_LIMIT_REACHED) {
-        return RUDA_BYTECODE_RUN_LIMIT_REACHED;
+    if (output_status == MMAY_TEST_OUTPUT_LIMIT_REACHED) {
+        return MMAY_BYTECODE_RUN_LIMIT_REACHED;
     }
-    return RUDA_BYTECODE_RUN_INVALID_BYTECODE;
+    return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
 }

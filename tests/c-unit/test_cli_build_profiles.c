@@ -3,57 +3,57 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ruda/native/runtime_artifact.h"
-#include "ruda/platform/directory.h"
-#include "ruda/platform/process.h"
+#include "mmay/native/runtime_artifact.h"
+#include "mmay/platform/directory.h"
+#include "mmay/platform/process.h"
 
-#ifndef RUDA_TEST_C_COMPILER
-#define RUDA_TEST_C_COMPILER "cc"
+#ifndef MMAY_TEST_C_COMPILER
+#define MMAY_TEST_C_COMPILER "cc"
 #endif
-#ifndef RUDA_TEST_SOURCE_DIR
-#define RUDA_TEST_SOURCE_DIR "."
+#ifndef MMAY_TEST_SOURCE_DIR
+#define MMAY_TEST_SOURCE_DIR "."
 #endif
-#ifndef RUDA_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE
-#define RUDA_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE "missing-debug-runtime"
+#ifndef MMAY_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE
+#define MMAY_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE "missing-debug-runtime"
 #endif
-#ifndef RUDA_TEST_NATIVE_RUNTIME_RELEASE_ARCHIVE
-#define RUDA_TEST_NATIVE_RUNTIME_RELEASE_ARCHIVE "missing-release-runtime"
+#ifndef MMAY_TEST_NATIVE_RUNTIME_RELEASE_ARCHIVE
+#define MMAY_TEST_NATIVE_RUNTIME_RELEASE_ARCHIVE "missing-release-runtime"
 #endif
-#ifndef RUDA_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST
-#define RUDA_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST "missing-debug-manifest"
+#ifndef MMAY_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST
+#define MMAY_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST "missing-debug-manifest"
 #endif
-#ifndef RUDA_TEST_NATIVE_RUNTIME_RELEASE_MANIFEST
-#define RUDA_TEST_NATIVE_RUNTIME_RELEASE_MANIFEST "missing-release-manifest"
+#ifndef MMAY_TEST_NATIVE_RUNTIME_RELEASE_MANIFEST
+#define MMAY_TEST_NATIVE_RUNTIME_RELEASE_MANIFEST "missing-release-manifest"
 #endif
-#ifndef RUDA_TEST_NATIVE_BOOTSTRAP_INCLUDE
-#define RUDA_TEST_NATIVE_BOOTSTRAP_INCLUDE "."
+#ifndef MMAY_TEST_NATIVE_BOOTSTRAP_INCLUDE
+#define MMAY_TEST_NATIVE_BOOTSTRAP_INCLUDE "."
 #endif
-#ifndef RUDA_TEST_NATIVE_RUNTIME_INCLUDE
-#define RUDA_TEST_NATIVE_RUNTIME_INCLUDE "."
+#ifndef MMAY_TEST_NATIVE_RUNTIME_INCLUDE
+#define MMAY_TEST_NATIVE_RUNTIME_INCLUDE "."
 #endif
 
-static const char ruda_cp13_directory[] =
+static const char mmay_cp13_directory[] =
     "cp13 runtime path with spaces";
-static const char ruda_cp13_archive[] =
+static const char mmay_cp13_archive[] =
     "cp13 runtime path with spaces/runtime debug archive.a";
-static const char ruda_cp13_manifest[] =
-    "cp13 runtime path with spaces/ruda-native-runtime.manifest";
-static const char ruda_cp13_stale_manifest[] =
+static const char mmay_cp13_manifest[] =
+    "cp13 runtime path with spaces/mmay-native-runtime.manifest";
+static const char mmay_cp13_stale_manifest[] =
     "cp13 runtime path with spaces/stale-runtime.manifest";
 
-static RudaNativeRuntimePaths ruda_cp13_paths(
+static MarimayNativeRuntimePaths mmay_cp13_paths(
     const char *archive,
     const char *manifest
 ) {
-    RudaNativeRuntimePaths paths;
+    MarimayNativeRuntimePaths paths;
     paths.archive = archive;
     paths.manifest = manifest;
-    paths.bootstrap_include = RUDA_TEST_NATIVE_BOOTSTRAP_INCLUDE;
-    paths.runtime_include = RUDA_TEST_NATIVE_RUNTIME_INCLUDE;
+    paths.bootstrap_include = MMAY_TEST_NATIVE_BOOTSTRAP_INCLUDE;
+    paths.runtime_include = MMAY_TEST_NATIVE_RUNTIME_INCLUDE;
     return paths;
 }
 
-static bool ruda_cp13_copy_file(const char *source, const char *destination) {
+static bool mmay_cp13_copy_file(const char *source, const char *destination) {
     unsigned char buffer[8192];
     FILE *input = fopen(source, "rb");
     FILE *output = NULL;
@@ -77,7 +77,7 @@ static bool ruda_cp13_copy_file(const char *source, const char *destination) {
     return ok;
 }
 
-static bool ruda_cp13_write_file(const char *path, const char *bytes) {
+static bool mmay_cp13_write_file(const char *path, const char *bytes) {
     size_t length = strlen(bytes);
     FILE *output = fopen(path, "wb");
     bool ok = output != NULL;
@@ -86,7 +86,7 @@ static bool ruda_cp13_write_file(const char *path, const char *bytes) {
     return ok;
 }
 
-static bool ruda_cp13_append_byte(const char *path) {
+static bool mmay_cp13_append_byte(const char *path) {
     FILE *output = fopen(path, "ab");
     bool ok = output != NULL;
     if (ok && fputc('\n', output) == EOF) ok = false;
@@ -94,18 +94,18 @@ static bool ruda_cp13_append_byte(const char *path) {
     return ok;
 }
 
-static bool ruda_cp13_select(
-    RudaNativeRuntimeProfile profile,
-    const RudaNativeRuntimePaths *paths,
-    RudaNativeRuntimeArtifact *artifact
+static bool mmay_cp13_select(
+    MarimayNativeRuntimeProfile profile,
+    const MarimayNativeRuntimePaths *paths,
+    MarimayNativeRuntimeArtifact *artifact
 ) {
-    return ruda_native_runtime_artifact_select(
-        ruda_system_allocator(), profile, NULL, paths, artifact
-    ) == RUDA_NATIVE_RUNTIME_ARTIFACT_OK;
+    return mmay_native_runtime_artifact_select(
+        mmay_system_allocator(), profile, NULL, paths, artifact
+    ) == MMAY_NATIVE_RUNTIME_ARTIFACT_OK;
 }
 
-static void ruda_cp13_expect_probe(
-    const RudaNativeRuntimeArtifact *artifact,
+static void mmay_cp13_expect_probe(
+    const MarimayNativeRuntimeArtifact *artifact,
     const char *expected,
     const char *output_path
 ) {
@@ -119,29 +119,29 @@ static void ruda_cp13_expect_probe(
     size_t argument_count = 0;
     int written = snprintf(
         source_path, sizeof(source_path),
-        "%s/tests/c-unit/runtime_profile_probe.c", RUDA_TEST_SOURCE_DIR
+        "%s/tests/c-unit/runtime_profile_probe.c", MMAY_TEST_SOURCE_DIR
     );
-    RudaProcessResult process;
-    RUDA_EXPECT(written > 0 && (size_t)written < sizeof(source_path));
+    MarimayProcessResult process;
+    MMAY_EXPECT(written > 0 && (size_t)written < sizeof(source_path));
     if (written <= 0 || (size_t)written >= sizeof(source_path)) return;
 #if defined(_WIN32)
     written = snprintf(
         include_argument, sizeof(include_argument), "/I%s",
         (const char *)artifact->runtime_include.data
     );
-    RUDA_EXPECT(written > 0 && (size_t)written < sizeof(include_argument));
+    MMAY_EXPECT(written > 0 && (size_t)written < sizeof(include_argument));
     written = snprintf(
         executable_argument, sizeof(executable_argument),
         "/Fe:%s", output_path
     );
-    RUDA_EXPECT(
+    MMAY_EXPECT(
         written > 0 && (size_t)written < sizeof(executable_argument)
     );
-    arguments[argument_count++] = RUDA_TEST_C_COMPILER;
+    arguments[argument_count++] = MMAY_TEST_C_COMPILER;
     arguments[argument_count++] = "/nologo";
     arguments[argument_count++] = "/std:c17";
-#if defined(RUDA_TEST_C_SANITIZER)
-    arguments[argument_count++] = RUDA_TEST_C_SANITIZER;
+#if defined(MMAY_TEST_C_SANITIZER)
+    arguments[argument_count++] = MMAY_TEST_C_SANITIZER;
 #endif
     arguments[argument_count++] = include_argument;
     arguments[argument_count++] = source_path;
@@ -152,11 +152,11 @@ static void ruda_cp13_expect_probe(
         include_argument, sizeof(include_argument), "-I%s",
         (const char *)artifact->runtime_include.data
     );
-    RUDA_EXPECT(written > 0 && (size_t)written < sizeof(include_argument));
-    arguments[argument_count++] = RUDA_TEST_C_COMPILER;
+    MMAY_EXPECT(written > 0 && (size_t)written < sizeof(include_argument));
+    arguments[argument_count++] = MMAY_TEST_C_COMPILER;
     arguments[argument_count++] = "-std=c17";
-#if defined(RUDA_TEST_C_SANITIZER)
-    arguments[argument_count++] = RUDA_TEST_C_SANITIZER;
+#if defined(MMAY_TEST_C_SANITIZER)
+    arguments[argument_count++] = MMAY_TEST_C_SANITIZER;
 #endif
     arguments[argument_count++] = include_argument;
     arguments[argument_count++] = source_path;
@@ -166,163 +166,163 @@ static void ruda_cp13_expect_probe(
 #endif
     arguments[argument_count] = NULL;
     memset(&process, 0, sizeof(process));
-    if (ruda_process_run(
-            ruda_system_allocator(), arguments, argument_count,
+    if (mmay_process_run(
+            mmay_system_allocator(), arguments, argument_count,
             16384, &process
-        ) != RUDA_PROCESS_OK
+        ) != MMAY_PROCESS_OK
         || process.signaled || process.exit_code != 0) {
         if (process.output.data != NULL) {
             (void)fwrite(
                 process.output.data, 1, process.output.length, stderr
             );
         }
-        RUDA_EXPECT(false);
-        ruda_process_result_dispose(&process);
+        MMAY_EXPECT(false);
+        mmay_process_result_dispose(&process);
         return;
     }
-    ruda_process_result_dispose(&process);
+    mmay_process_result_dispose(&process);
     run_arguments[0] = output_path;
     run_arguments[1] = NULL;
     memset(&process, 0, sizeof(process));
-    RUDA_EXPECT(ruda_process_run(
-        ruda_system_allocator(), run_arguments, 1, 16384, &process
-    ) == RUDA_PROCESS_OK);
-    RUDA_EXPECT(!process.signaled && process.exit_code == 0);
-    RUDA_EXPECT(process.output.length == strlen(expected)
+    MMAY_EXPECT(mmay_process_run(
+        mmay_system_allocator(), run_arguments, 1, 16384, &process
+    ) == MMAY_PROCESS_OK);
+    MMAY_EXPECT(!process.signaled && process.exit_code == 0);
+    MMAY_EXPECT(process.output.length == strlen(expected)
         && memcmp(process.output.data, expected, process.output.length) == 0);
-    ruda_process_result_dispose(&process);
-    RUDA_EXPECT(remove(output_path) == 0);
+    mmay_process_result_dispose(&process);
+    MMAY_EXPECT(remove(output_path) == 0);
 }
 
-static void ruda_cp13_test_profiles(void) {
-    RudaNativeRuntimeArtifact debug = {0};
-    RudaNativeRuntimeArtifact release = {0};
-    RUDA_EXPECT(ruda_cp13_select(RUDA_NATIVE_RUNTIME_DEBUG, NULL, &debug));
-    RUDA_EXPECT(ruda_cp13_select(RUDA_NATIVE_RUNTIME_RELEASE, NULL, &release));
-    RUDA_EXPECT(debug.archive.data != NULL && release.archive.data != NULL);
-    RUDA_EXPECT(strcmp(
+static void mmay_cp13_test_profiles(void) {
+    MarimayNativeRuntimeArtifact debug = {0};
+    MarimayNativeRuntimeArtifact release = {0};
+    MMAY_EXPECT(mmay_cp13_select(MMAY_NATIVE_RUNTIME_DEBUG, NULL, &debug));
+    MMAY_EXPECT(mmay_cp13_select(MMAY_NATIVE_RUNTIME_RELEASE, NULL, &release));
+    MMAY_EXPECT(debug.archive.data != NULL && release.archive.data != NULL);
+    MMAY_EXPECT(strcmp(
         (const char *)debug.archive.data,
         (const char *)release.archive.data
     ) != 0);
-    RUDA_EXPECT(strcmp(debug.content_hash, release.content_hash) != 0);
-    RUDA_EXPECT(!debug.installed && !release.installed);
+    MMAY_EXPECT(strcmp(debug.content_hash, release.content_hash) != 0);
+    MMAY_EXPECT(!debug.installed && !release.installed);
 #if defined(_WIN32)
-    ruda_cp13_expect_probe(&debug, "debug\n", "cp13-profile-debug.exe");
-    ruda_cp13_expect_probe(&release, "release\n", "cp13-profile-release.exe");
+    mmay_cp13_expect_probe(&debug, "debug\n", "cp13-profile-debug.exe");
+    mmay_cp13_expect_probe(&release, "release\n", "cp13-profile-release.exe");
 #else
-    ruda_cp13_expect_probe(&debug, "debug\n", "./cp13-profile-debug");
-    ruda_cp13_expect_probe(&release, "release\n", "./cp13-profile-release");
+    mmay_cp13_expect_probe(&debug, "debug\n", "./cp13-profile-debug");
+    mmay_cp13_expect_probe(&release, "release\n", "./cp13-profile-release");
 #endif
-    ruda_native_runtime_artifact_dispose(&release);
-    ruda_native_runtime_artifact_dispose(&debug);
+    mmay_native_runtime_artifact_dispose(&release);
+    mmay_native_runtime_artifact_dispose(&debug);
 }
 
-static void ruda_cp13_test_paths_and_hash(void) {
-    RudaNativeRuntimePaths paths;
-    RudaNativeRuntimeArtifact first = {0};
-    RudaNativeRuntimeArtifact second = {0};
-    RUDA_EXPECT(ruda_directory_create(
-        ruda_system_allocator(), ruda_cp13_directory,
-        sizeof(ruda_cp13_directory) - 1
-    ) == RUDA_FILE_OK);
-    RUDA_EXPECT(ruda_cp13_copy_file(
-        RUDA_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE, ruda_cp13_archive
+static void mmay_cp13_test_paths_and_hash(void) {
+    MarimayNativeRuntimePaths paths;
+    MarimayNativeRuntimeArtifact first = {0};
+    MarimayNativeRuntimeArtifact second = {0};
+    MMAY_EXPECT(mmay_directory_create(
+        mmay_system_allocator(), mmay_cp13_directory,
+        sizeof(mmay_cp13_directory) - 1
+    ) == MMAY_FILE_OK);
+    MMAY_EXPECT(mmay_cp13_copy_file(
+        MMAY_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE, mmay_cp13_archive
     ));
-    RUDA_EXPECT(ruda_cp13_copy_file(
-        RUDA_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST, ruda_cp13_manifest
+    MMAY_EXPECT(mmay_cp13_copy_file(
+        MMAY_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST, mmay_cp13_manifest
     ));
-    paths = ruda_cp13_paths(ruda_cp13_archive, ruda_cp13_manifest);
-    RUDA_EXPECT(ruda_cp13_select(RUDA_NATIVE_RUNTIME_DEBUG, &paths, &first));
+    paths = mmay_cp13_paths(mmay_cp13_archive, mmay_cp13_manifest);
+    MMAY_EXPECT(mmay_cp13_select(MMAY_NATIVE_RUNTIME_DEBUG, &paths, &first));
 #if defined(_WIN32)
-    ruda_cp13_expect_probe(
+    mmay_cp13_expect_probe(
         &first, "debug\n",
         "cp13 runtime path with spaces/profile probe.exe"
     );
 #else
-    ruda_cp13_expect_probe(
+    mmay_cp13_expect_probe(
         &first, "debug\n",
         "./cp13 runtime path with spaces/profile probe"
     );
 #endif
-    RUDA_EXPECT(ruda_cp13_append_byte(ruda_cp13_archive));
-    RUDA_EXPECT(ruda_cp13_select(
-        RUDA_NATIVE_RUNTIME_DEBUG, &paths, &second
+    MMAY_EXPECT(mmay_cp13_append_byte(mmay_cp13_archive));
+    MMAY_EXPECT(mmay_cp13_select(
+        MMAY_NATIVE_RUNTIME_DEBUG, &paths, &second
     ));
-    RUDA_EXPECT(strcmp(first.content_hash, second.content_hash) != 0);
-    ruda_native_runtime_artifact_dispose(&second);
-    ruda_native_runtime_artifact_dispose(&first);
-    RUDA_EXPECT(remove(ruda_cp13_manifest) == 0);
-    RUDA_EXPECT(remove(ruda_cp13_archive) == 0);
+    MMAY_EXPECT(strcmp(first.content_hash, second.content_hash) != 0);
+    mmay_native_runtime_artifact_dispose(&second);
+    mmay_native_runtime_artifact_dispose(&first);
+    MMAY_EXPECT(remove(mmay_cp13_manifest) == 0);
+    MMAY_EXPECT(remove(mmay_cp13_archive) == 0);
 }
 
-static void ruda_cp13_test_invalid_artifacts(void) {
+static void mmay_cp13_test_invalid_artifacts(void) {
     static const char stale[] =
-        "ruda-native-runtime-v1\n"
+        "mmay-native-runtime-v1\n"
         "profile=debug\n"
         "runtime=stale\n"
         "host=stale\n"
         "processor=stale\n"
         "compiler=stale\n";
-    RudaNativeRuntimePaths paths = ruda_cp13_paths(
+    MarimayNativeRuntimePaths paths = mmay_cp13_paths(
         "cp13 definitely missing runtime archive",
-        RUDA_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST
+        MMAY_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST
     );
-    RudaNativeRuntimeArtifact artifact = {0};
-    RUDA_EXPECT(ruda_native_runtime_artifact_select(
-        ruda_system_allocator(), RUDA_NATIVE_RUNTIME_DEBUG,
+    MarimayNativeRuntimeArtifact artifact = {0};
+    MMAY_EXPECT(mmay_native_runtime_artifact_select(
+        mmay_system_allocator(), MMAY_NATIVE_RUNTIME_DEBUG,
         NULL, &paths, &artifact
-    ) == RUDA_NATIVE_RUNTIME_ARTIFACT_MISSING);
-    ruda_native_runtime_artifact_dispose(&artifact);
-    paths = ruda_cp13_paths(
-        RUDA_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE,
-        RUDA_TEST_NATIVE_RUNTIME_RELEASE_MANIFEST
+    ) == MMAY_NATIVE_RUNTIME_ARTIFACT_MISSING);
+    mmay_native_runtime_artifact_dispose(&artifact);
+    paths = mmay_cp13_paths(
+        MMAY_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE,
+        MMAY_TEST_NATIVE_RUNTIME_RELEASE_MANIFEST
     );
-    RUDA_EXPECT(ruda_native_runtime_artifact_select(
-        ruda_system_allocator(), RUDA_NATIVE_RUNTIME_RELEASE,
+    MMAY_EXPECT(mmay_native_runtime_artifact_select(
+        mmay_system_allocator(), MMAY_NATIVE_RUNTIME_RELEASE,
         NULL, &paths, &artifact
-    ) == RUDA_NATIVE_RUNTIME_ARTIFACT_INCOMPATIBLE);
-    ruda_native_runtime_artifact_dispose(&artifact);
-    RUDA_EXPECT(ruda_cp13_write_file(ruda_cp13_stale_manifest, stale));
-    paths = ruda_cp13_paths(
-        RUDA_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE, ruda_cp13_stale_manifest
+    ) == MMAY_NATIVE_RUNTIME_ARTIFACT_INCOMPATIBLE);
+    mmay_native_runtime_artifact_dispose(&artifact);
+    MMAY_EXPECT(mmay_cp13_write_file(mmay_cp13_stale_manifest, stale));
+    paths = mmay_cp13_paths(
+        MMAY_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE, mmay_cp13_stale_manifest
     );
-    RUDA_EXPECT(ruda_native_runtime_artifact_select(
-        ruda_system_allocator(), RUDA_NATIVE_RUNTIME_DEBUG,
+    MMAY_EXPECT(mmay_native_runtime_artifact_select(
+        mmay_system_allocator(), MMAY_NATIVE_RUNTIME_DEBUG,
         NULL, &paths, &artifact
-    ) == RUDA_NATIVE_RUNTIME_ARTIFACT_INCOMPATIBLE);
-    ruda_native_runtime_artifact_dispose(&artifact);
-    RUDA_EXPECT(remove(ruda_cp13_stale_manifest) == 0);
+    ) == MMAY_NATIVE_RUNTIME_ARTIFACT_INCOMPATIBLE);
+    mmay_native_runtime_artifact_dispose(&artifact);
+    MMAY_EXPECT(remove(mmay_cp13_stale_manifest) == 0);
 }
 
-static void ruda_cp13_test_allocations(void) {
+static void mmay_cp13_test_allocations(void) {
     size_t failure_index = 0;
     bool reached_success = false;
     for (failure_index = 0; failure_index < 256; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaNativeRuntimeArtifact artifact = {0};
-        RudaNativeRuntimeArtifactStatus status;
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        MarimayFailAllocator state;
+        MarimayNativeRuntimeArtifact artifact = {0};
+        MarimayNativeRuntimeArtifactStatus status;
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        status = ruda_native_runtime_artifact_select(
-            ruda_fail_allocator(&state), RUDA_NATIVE_RUNTIME_RELEASE,
-            ruda_test_toolchain_executable(), NULL, &artifact
+        status = mmay_native_runtime_artifact_select(
+            mmay_fail_allocator(&state), MMAY_NATIVE_RUNTIME_RELEASE,
+            mmay_test_toolchain_executable(), NULL, &artifact
         );
-        if (status == RUDA_NATIVE_RUNTIME_ARTIFACT_OK) reached_success = true;
-        else RUDA_EXPECT(
-            status == RUDA_NATIVE_RUNTIME_ARTIFACT_ALLOCATION_FAILED
+        if (status == MMAY_NATIVE_RUNTIME_ARTIFACT_OK) reached_success = true;
+        else MMAY_EXPECT(
+            status == MMAY_NATIVE_RUNTIME_ARTIFACT_ALLOCATION_FAILED
         );
-        ruda_native_runtime_artifact_dispose(&artifact);
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        mmay_native_runtime_artifact_dispose(&artifact);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) break;
     }
-    RUDA_EXPECT(reached_success);
+    MMAY_EXPECT(reached_success);
 }
 
-void ruda_test_cli_build_profiles(void) {
-    ruda_cp13_test_profiles();
-    ruda_cp13_test_paths_and_hash();
-    ruda_cp13_test_invalid_artifacts();
-    ruda_cp13_test_allocations();
+void mmay_test_cli_build_profiles(void) {
+    mmay_cp13_test_profiles();
+    mmay_cp13_test_paths_and_hash();
+    mmay_cp13_test_invalid_artifacts();
+    mmay_cp13_test_allocations();
 }

@@ -2,235 +2,235 @@
 
 #include <string.h>
 
-#include "ruda/base/allocator.h"
+#include "mmay/base/allocator.h"
 
 enum {
-    RUDA_TEST_MIR_INTERFACE_RECORD_TYPE = RUDA_TYPE_FIRST_DYNAMIC + 100,
-    RUDA_TEST_MIR_INTERFACE_VALUE_TYPE
+    MMAY_TEST_MIR_INTERFACE_RECORD_TYPE = MMAY_TYPE_FIRST_DYNAMIC + 100,
+    MMAY_TEST_MIR_INTERFACE_VALUE_TYPE
 };
 
-typedef struct RudaTestMirInterfaceCallContext {
-    RudaSymbolId expected_method;
-    RudaMirExecution *execution;
+typedef struct MarimayTestMirInterfaceCallContext {
+    MarimaySymbolId expected_method;
+    MarimayMirExecution *execution;
     size_t calls;
-} RudaTestMirInterfaceCallContext;
+} MarimayTestMirInterfaceCallContext;
 
-static bool ruda_test_mir_interface_execution_symbol(
+static bool mmay_test_mir_interface_execution_symbol(
     const char *name,
     uint32_t discriminator,
-    RudaSymbolId *result
+    MarimaySymbolId *result
 ) {
-    return ruda_symbol_id_from_parts(
+    return mmay_symbol_id_from_parts(
         "example.test/mir-interface-execution",
-        "src/interface-execution.ruda",
+        "src/interface-execution.my",
         name,
         discriminator,
         result
     );
 }
 
-static bool ruda_test_mir_interface_creator_init(
-    RudaMirFunction *function,
-    RudaSymbolId symbol,
-    RudaSymbolId method
+static bool mmay_test_mir_interface_creator_init(
+    MarimayMirFunction *function,
+    MarimaySymbolId symbol,
+    MarimaySymbolId method
 ) {
-    RudaMirRecordField field;
-    RudaMirRecordArgument record_argument;
-    RudaMirRecordId record = RUDA_MIR_NO_RECORD;
-    RudaMirRecordConstructionId record_construction =
-        RUDA_MIR_NO_RECORD_CONSTRUCTION;
-    RudaMirInterfaceId interface_id = RUDA_MIR_NO_INTERFACE;
-    RudaMirInterfaceConstructionId interface_construction =
-        RUDA_MIR_NO_INTERFACE_CONSTRUCTION;
-    RudaMirRegister scalar = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister payload = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister interface_value = RUDA_MIR_NO_REGISTER;
-    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
-    RudaMirInstruction instruction;
+    MarimayMirRecordField field;
+    MarimayMirRecordArgument record_argument;
+    MarimayMirRecordId record = MMAY_MIR_NO_RECORD;
+    MarimayMirRecordConstructionId record_construction =
+        MMAY_MIR_NO_RECORD_CONSTRUCTION;
+    MarimayMirInterfaceId interface_id = MMAY_MIR_NO_INTERFACE;
+    MarimayMirInterfaceConstructionId interface_construction =
+        MMAY_MIR_NO_INTERFACE_CONSTRUCTION;
+    MarimayMirRegister scalar = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister payload = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister interface_value = MMAY_MIR_NO_REGISTER;
+    MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
+    MarimayMirInstruction instruction;
     bool ok = false;
     if (function == NULL) {
         return false;
     }
     memset(function, 0, sizeof(*function));
-    if (!ruda_mir_function_init(
+    if (!mmay_mir_function_init(
             function,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             symbol,
             NULL,
             0,
-            RUDA_TEST_MIR_INTERFACE_VALUE_TYPE,
-            ruda_mir_function_default_options()
+            MMAY_TEST_MIR_INTERFACE_VALUE_TYPE,
+            mmay_mir_function_default_options()
         )) {
         return false;
     }
-    field.type = RUDA_TYPE_I64;
+    field.type = MMAY_TYPE_I64;
     field.is_mutable = false;
-    ok = ruda_mir_add_register(function, RUDA_TYPE_I64, &scalar)
-        && ruda_mir_add_register(
+    ok = mmay_mir_add_register(function, MMAY_TYPE_I64, &scalar)
+        && mmay_mir_add_register(
             function,
-            RUDA_TEST_MIR_INTERFACE_RECORD_TYPE,
+            MMAY_TEST_MIR_INTERFACE_RECORD_TYPE,
             &payload
-        ) && ruda_mir_add_register(
+        ) && mmay_mir_add_register(
             function,
-            RUDA_TEST_MIR_INTERFACE_VALUE_TYPE,
+            MMAY_TEST_MIR_INTERFACE_VALUE_TYPE,
             &interface_value
-        ) && ruda_mir_add_block(function, &block)
-        && ruda_mir_add_record(
+        ) && mmay_mir_add_block(function, &block)
+        && mmay_mir_add_record(
             function,
-            RUDA_TEST_MIR_INTERFACE_RECORD_TYPE,
+            MMAY_TEST_MIR_INTERFACE_RECORD_TYPE,
             &field,
             1,
             &record
         );
     record_argument.register_id = scalar;
-    record_argument.type = RUDA_TYPE_I64;
-    ok = ok && ruda_mir_add_record_construction(
+    record_argument.type = MMAY_TYPE_I64;
+    ok = ok && mmay_mir_add_record_construction(
         function,
         record,
         &record_argument,
         1,
         &record_construction
-    ) && ruda_mir_add_interface(
+    ) && mmay_mir_add_interface(
         function,
-        RUDA_TEST_MIR_INTERFACE_VALUE_TYPE,
+        MMAY_TEST_MIR_INTERFACE_VALUE_TYPE,
         1,
         &interface_id
-    ) && ruda_mir_add_interface_construction(
+    ) && mmay_mir_add_interface_construction(
         function,
         interface_id,
         payload,
-        RUDA_TEST_MIR_INTERFACE_RECORD_TYPE,
+        MMAY_TEST_MIR_INTERFACE_RECORD_TYPE,
         &method,
         1,
         &interface_construction
     );
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_CONSTANT_I64;
+    instruction.kind = MMAY_MIR_CONSTANT_I64;
     instruction.target = scalar;
     instruction.integer = 3;
-    ok = ok && ruda_mir_append_instruction(function, block, &instruction);
+    ok = ok && mmay_mir_append_instruction(function, block, &instruction);
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_RECORD_NEW;
+    instruction.kind = MMAY_MIR_RECORD_NEW;
     instruction.target = payload;
     instruction.record = record;
     instruction.record_construction = record_construction;
-    ok = ok && ruda_mir_append_instruction(function, block, &instruction);
+    ok = ok && mmay_mir_append_instruction(function, block, &instruction);
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_INTERFACE_NEW;
+    instruction.kind = MMAY_MIR_INTERFACE_NEW;
     instruction.target = interface_value;
     instruction.interface_construction = interface_construction;
-    ok = ok && ruda_mir_append_instruction(function, block, &instruction)
-        && ruda_mir_set_terminator(
+    ok = ok && mmay_mir_append_instruction(function, block, &instruction)
+        && mmay_mir_set_terminator(
             function,
             block,
-            ruda_test_mir_return(interface_value)
+            mmay_test_mir_return(interface_value)
         );
     if (!ok) {
-        ruda_mir_function_dispose(function);
+        mmay_mir_function_dispose(function);
     }
     return ok;
 }
 
-static bool ruda_test_mir_interface_dispatcher_init(
-    RudaMirFunction *function,
-    RudaSymbolId symbol,
-    RudaSymbolId interface_symbol
+static bool mmay_test_mir_interface_dispatcher_init(
+    MarimayMirFunction *function,
+    MarimaySymbolId symbol,
+    MarimaySymbolId interface_symbol
 ) {
-    RudaTypeId parameters[2] = {
-        RUDA_TEST_MIR_INTERFACE_VALUE_TYPE,
-        RUDA_TYPE_I64
+    MarimayTypeId parameters[2] = {
+        MMAY_TEST_MIR_INTERFACE_VALUE_TYPE,
+        MMAY_TYPE_I64
     };
-    RudaMirCallArgument arguments[2];
-    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
-    RudaMirInterfaceId interface_id = RUDA_MIR_NO_INTERFACE;
-    RudaMirCallId call = RUDA_MIR_NO_CALL;
-    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
-    RudaMirInstruction instruction;
+    MarimayMirCallArgument arguments[2];
+    MarimayMirRegister result = MMAY_MIR_NO_REGISTER;
+    MarimayMirInterfaceId interface_id = MMAY_MIR_NO_INTERFACE;
+    MarimayMirCallId call = MMAY_MIR_NO_CALL;
+    MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
+    MarimayMirInstruction instruction;
     bool ok = false;
     if (function == NULL) {
         return false;
     }
     memset(function, 0, sizeof(*function));
-    if (!ruda_mir_function_init(
+    if (!mmay_mir_function_init(
             function,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             symbol,
             parameters,
             2,
-            RUDA_TYPE_I64,
-            ruda_mir_function_default_options()
+            MMAY_TYPE_I64,
+            mmay_mir_function_default_options()
         )) {
         return false;
     }
     arguments[0].register_id = 0;
-    arguments[0].type = RUDA_TEST_MIR_INTERFACE_VALUE_TYPE;
+    arguments[0].type = MMAY_TEST_MIR_INTERFACE_VALUE_TYPE;
     arguments[1].register_id = 1;
-    arguments[1].type = RUDA_TYPE_I64;
-    ok = ruda_mir_add_register(function, RUDA_TYPE_I64, &result)
-        && ruda_mir_add_block(function, &block)
-        && ruda_mir_add_interface(
+    arguments[1].type = MMAY_TYPE_I64;
+    ok = mmay_mir_add_register(function, MMAY_TYPE_I64, &result)
+        && mmay_mir_add_block(function, &block)
+        && mmay_mir_add_interface(
             function,
-            RUDA_TEST_MIR_INTERFACE_VALUE_TYPE,
+            MMAY_TEST_MIR_INTERFACE_VALUE_TYPE,
             1,
             &interface_id
-        ) && ruda_mir_add_call(
+        ) && mmay_mir_add_call(
             function,
             interface_symbol,
-            RUDA_TYPE_I64,
+            MMAY_TYPE_I64,
             arguments,
             2,
             &call
-        ) && ruda_mir_set_call_interface_slot(function, call, 0);
+        ) && mmay_mir_set_call_interface_slot(function, call, 0);
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = RUDA_MIR_CALL_INTERFACE;
+    instruction.kind = MMAY_MIR_CALL_INTERFACE;
     instruction.target = result;
     instruction.call = call;
-    ok = ok && ruda_mir_append_instruction(function, block, &instruction)
-        && ruda_mir_set_terminator(
+    ok = ok && mmay_mir_append_instruction(function, block, &instruction)
+        && mmay_mir_set_terminator(
             function,
             block,
-            ruda_test_mir_return(result)
+            mmay_test_mir_return(result)
         );
     if (!ok) {
-        ruda_mir_function_dispose(function);
+        mmay_mir_function_dispose(function);
     }
     return ok;
 }
 
-static RudaMirInterpretStatus ruda_test_mir_interface_call(
+static MarimayMirInterpretStatus mmay_test_mir_interface_call(
     void *opaque,
-    RudaSymbolId callee,
-    const RudaMirValue *arguments,
+    MarimaySymbolId callee,
+    const MarimayMirValue *arguments,
     size_t argument_count,
-    RudaMirValue *result
+    MarimayMirValue *result
 ) {
-    RudaTestMirInterfaceCallContext *context = opaque;
+    MarimayTestMirInterfaceCallContext *context = opaque;
     if (context == NULL || context->execution == NULL || arguments == NULL
         || result == NULL || argument_count != 2
-        || !ruda_symbol_id_equal(callee, context->expected_method)
-        || arguments[0].type != RUDA_TEST_MIR_INTERFACE_RECORD_TYPE
-        || !ruda_mir_execution_owns_reference(
+        || !mmay_symbol_id_equal(callee, context->expected_method)
+        || arguments[0].type != MMAY_TEST_MIR_INTERFACE_RECORD_TYPE
+        || !mmay_mir_execution_owns_reference(
             context->execution,
             arguments[0]
-        ) || arguments[1].type != RUDA_TYPE_I64
+        ) || arguments[1].type != MMAY_TYPE_I64
         || arguments[1].as.i64 != 4) {
-        return RUDA_MIR_INTERPRET_INVALID_ARGUMENT;
+        return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
     }
     context->calls += 1;
-    result->type = RUDA_TYPE_I64;
+    result->type = MMAY_TYPE_I64;
     result->as.i64 = 7;
-    return RUDA_MIR_INTERPRET_OK;
+    return MMAY_MIR_INTERPRET_OK;
 }
 
-static RudaMirInterpretStatus ruda_test_mir_interface_create(
-    const RudaMirFunction *creator,
-    RudaMirExecution *execution,
-    RudaAllocator allocator,
-    RudaMirValue *result
+static MarimayMirInterpretStatus mmay_test_mir_interface_create(
+    const MarimayMirFunction *creator,
+    MarimayMirExecution *execution,
+    MarimayAllocator allocator,
+    MarimayMirValue *result
 ) {
-    RudaMirInterpretOptions options = ruda_mir_interpret_default_options();
+    MarimayMirInterpretOptions options = mmay_mir_interpret_default_options();
     options.execution = execution;
-    return ruda_mir_interpret(
+    return mmay_mir_interpret(
         creator,
         NULL,
         0,
@@ -240,23 +240,23 @@ static RudaMirInterpretStatus ruda_test_mir_interface_create(
     );
 }
 
-static RudaMirInterpretStatus ruda_test_mir_interface_dispatch(
-    const RudaMirFunction *dispatcher,
-    RudaMirValue interface_value,
-    RudaMirExecution *execution,
-    RudaAllocator allocator,
-    RudaTestMirInterfaceCallContext *context,
-    RudaMirValue *result
+static MarimayMirInterpretStatus mmay_test_mir_interface_dispatch(
+    const MarimayMirFunction *dispatcher,
+    MarimayMirValue interface_value,
+    MarimayMirExecution *execution,
+    MarimayAllocator allocator,
+    MarimayTestMirInterfaceCallContext *context,
+    MarimayMirValue *result
 ) {
-    RudaMirValue arguments[2];
-    RudaMirInterpretOptions options = ruda_mir_interpret_default_options();
+    MarimayMirValue arguments[2];
+    MarimayMirInterpretOptions options = mmay_mir_interpret_default_options();
     arguments[0] = interface_value;
-    arguments[1].type = RUDA_TYPE_I64;
+    arguments[1].type = MMAY_TYPE_I64;
     arguments[1].as.i64 = 4;
     options.execution = execution;
     options.call_context = context;
-    options.call = context != NULL ? ruda_test_mir_interface_call : NULL;
-    return ruda_mir_interpret(
+    options.call = context != NULL ? mmay_test_mir_interface_call : NULL;
+    return mmay_mir_interpret(
         dispatcher,
         arguments,
         2,
@@ -266,65 +266,65 @@ static RudaMirInterpretStatus ruda_test_mir_interface_dispatch(
     );
 }
 
-static void ruda_test_mir_interface_object_limit(
-    const RudaMirFunction *creator
+static void mmay_test_mir_interface_object_limit(
+    const MarimayMirFunction *creator
 ) {
-    RudaMirExecution execution;
-    RudaMirExecutionOptions execution_options =
-        ruda_mir_execution_default_options();
-    RudaMirValue result;
+    MarimayMirExecution execution;
+    MarimayMirExecutionOptions execution_options =
+        mmay_mir_execution_default_options();
+    MarimayMirValue result;
     execution_options.max_objects = 1;
-    RUDA_EXPECT(ruda_mir_execution_init(
+    MMAY_EXPECT(mmay_mir_execution_init(
         &execution,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         execution_options
     ));
-    RUDA_EXPECT(ruda_test_mir_interface_create(
+    MMAY_EXPECT(mmay_test_mir_interface_create(
         creator,
         &execution,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         &result
-    ) == RUDA_MIR_INTERPRET_OBJECT_LIMIT);
-    ruda_mir_execution_dispose(&execution);
+    ) == MMAY_MIR_INTERPRET_OBJECT_LIMIT);
+    mmay_mir_execution_dispose(&execution);
 }
 
-static void ruda_test_mir_interface_allocation_failures(
-    const RudaMirFunction *creator,
-    const RudaMirFunction *dispatcher,
-    RudaSymbolId method
+static void mmay_test_mir_interface_allocation_failures(
+    const MarimayMirFunction *creator,
+    const MarimayMirFunction *dispatcher,
+    MarimaySymbolId method
 ) {
     size_t failure_index = 0;
     bool reached_success = false;
     for (failure_index = 0; failure_index < 32; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaAllocator allocator;
-        RudaMirExecution execution;
-        RudaMirValue interface_value;
-        RudaMirValue result;
-        RudaMirInterpretStatus status;
-        RudaTestMirInterfaceCallContext context;
-        ruda_fail_allocator_init(
+        MarimayFailAllocator state;
+        MarimayAllocator allocator;
+        MarimayMirExecution execution;
+        MarimayMirValue interface_value;
+        MarimayMirValue result;
+        MarimayMirInterpretStatus status;
+        MarimayTestMirInterfaceCallContext context;
+        mmay_fail_allocator_init(
             &state,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             failure_index
         );
-        allocator = ruda_fail_allocator(&state);
-        RUDA_EXPECT(ruda_mir_execution_init(
+        allocator = mmay_fail_allocator(&state);
+        MMAY_EXPECT(mmay_mir_execution_init(
             &execution,
             allocator,
-            ruda_mir_execution_default_options()
+            mmay_mir_execution_default_options()
         ));
         context.expected_method = method;
         context.execution = &execution;
         context.calls = 0;
-        status = ruda_test_mir_interface_create(
+        status = mmay_test_mir_interface_create(
             creator,
             &execution,
             allocator,
             &interface_value
         );
-        if (status == RUDA_MIR_INTERPRET_OK) {
-            status = ruda_test_mir_interface_dispatch(
+        if (status == MMAY_MIR_INTERPRET_OK) {
+            status = mmay_test_mir_interface_dispatch(
                 dispatcher,
                 interface_value,
                 &execution,
@@ -333,132 +333,132 @@ static void ruda_test_mir_interface_allocation_failures(
                 &result
             );
         }
-        if (status == RUDA_MIR_INTERPRET_OK) {
+        if (status == MMAY_MIR_INTERPRET_OK) {
             reached_success = true;
-            RUDA_EXPECT(context.calls == 1);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(result.as.i64 == 7);
+            MMAY_EXPECT(context.calls == 1);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(result.as.i64 == 7);
         } else {
-            RUDA_EXPECT(status == RUDA_MIR_INTERPRET_ALLOCATION_FAILED);
+            MMAY_EXPECT(status == MMAY_MIR_INTERPRET_ALLOCATION_FAILED);
         }
-        ruda_mir_execution_dispose(&execution);
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        mmay_mir_execution_dispose(&execution);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) {
             break;
         }
     }
-    RUDA_EXPECT(reached_success);
+    MMAY_EXPECT(reached_success);
 }
 
-void ruda_test_mir_interface_execution(void) {
-    RudaSymbolId creator_symbol;
-    RudaSymbolId dispatcher_symbol;
-    RudaSymbolId interface_symbol;
-    RudaSymbolId method_symbol;
-    RudaMirFunction creator;
-    RudaMirFunction dispatcher;
-    RudaMirExecution execution;
-    RudaMirExecution foreign_execution;
-    RudaMirValue interface_value;
-    RudaMirValue result;
-    RudaTestMirInterfaceCallContext context;
-    RUDA_EXPECT(ruda_test_mir_interface_execution_symbol(
+void mmay_test_mir_interface_execution(void) {
+    MarimaySymbolId creator_symbol;
+    MarimaySymbolId dispatcher_symbol;
+    MarimaySymbolId interface_symbol;
+    MarimaySymbolId method_symbol;
+    MarimayMirFunction creator;
+    MarimayMirFunction dispatcher;
+    MarimayMirExecution execution;
+    MarimayMirExecution foreign_execution;
+    MarimayMirValue interface_value;
+    MarimayMirValue result;
+    MarimayTestMirInterfaceCallContext context;
+    MMAY_EXPECT(mmay_test_mir_interface_execution_symbol(
         "create",
         0,
         &creator_symbol
     ));
-    RUDA_EXPECT(ruda_test_mir_interface_execution_symbol(
+    MMAY_EXPECT(mmay_test_mir_interface_execution_symbol(
         "dispatch",
         1,
         &dispatcher_symbol
     ));
-    RUDA_EXPECT(ruda_test_mir_interface_execution_symbol(
+    MMAY_EXPECT(mmay_test_mir_interface_execution_symbol(
         "Contract.show",
         2,
         &interface_symbol
     ));
-    RUDA_EXPECT(ruda_test_mir_interface_execution_symbol(
+    MMAY_EXPECT(mmay_test_mir_interface_execution_symbol(
         "Record.show",
         3,
         &method_symbol
     ));
-    RUDA_EXPECT(ruda_test_mir_interface_creator_init(
+    MMAY_EXPECT(mmay_test_mir_interface_creator_init(
         &creator,
         creator_symbol,
         method_symbol
     ));
-    RUDA_EXPECT(ruda_test_mir_interface_dispatcher_init(
+    MMAY_EXPECT(mmay_test_mir_interface_dispatcher_init(
         &dispatcher,
         dispatcher_symbol,
         interface_symbol
     ));
-    RUDA_EXPECT(ruda_mir_verify(&creator) == RUDA_MIR_VERIFY_OK);
-    RUDA_EXPECT(ruda_mir_verify(&dispatcher) == RUDA_MIR_VERIFY_OK);
-    ruda_test_mir_interface_object_limit(&creator);
-    ruda_test_mir_interface_allocation_failures(
+    MMAY_EXPECT(mmay_mir_verify(&creator) == MMAY_MIR_VERIFY_OK);
+    MMAY_EXPECT(mmay_mir_verify(&dispatcher) == MMAY_MIR_VERIFY_OK);
+    mmay_test_mir_interface_object_limit(&creator);
+    mmay_test_mir_interface_allocation_failures(
         &creator,
         &dispatcher,
         method_symbol
     );
 
-    RUDA_EXPECT(ruda_mir_execution_init(
+    MMAY_EXPECT(mmay_mir_execution_init(
         &execution,
-        ruda_system_allocator(),
-        ruda_mir_execution_default_options()
+        mmay_system_allocator(),
+        mmay_mir_execution_default_options()
     ));
-    RUDA_EXPECT(ruda_test_mir_interface_create(
+    MMAY_EXPECT(mmay_test_mir_interface_create(
         &creator,
         &execution,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         &interface_value
-    ) == RUDA_MIR_INTERPRET_OK);
-    RUDA_EXPECT(interface_value.type == RUDA_TEST_MIR_INTERFACE_VALUE_TYPE);
-    RUDA_EXPECT(ruda_mir_execution_owns_reference(
+    ) == MMAY_MIR_INTERPRET_OK);
+    MMAY_EXPECT(interface_value.type == MMAY_TEST_MIR_INTERFACE_VALUE_TYPE);
+    MMAY_EXPECT(mmay_mir_execution_owns_reference(
         &execution,
         interface_value
     ));
-    ruda_mir_function_dispose(&creator);
+    mmay_mir_function_dispose(&creator);
 
     context.expected_method = method_symbol;
     context.execution = &execution;
     context.calls = 0;
-    RUDA_EXPECT(ruda_test_mir_interface_dispatch(
+    MMAY_EXPECT(mmay_test_mir_interface_dispatch(
         &dispatcher,
         interface_value,
         &execution,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         &context,
         &result
-    ) == RUDA_MIR_INTERPRET_OK);
-    RUDA_EXPECT(context.calls == 1);
-    RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-    RUDA_EXPECT(result.as.i64 == 7);
-    RUDA_EXPECT(ruda_test_mir_interface_dispatch(
+    ) == MMAY_MIR_INTERPRET_OK);
+    MMAY_EXPECT(context.calls == 1);
+    MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+    MMAY_EXPECT(result.as.i64 == 7);
+    MMAY_EXPECT(mmay_test_mir_interface_dispatch(
         &dispatcher,
         interface_value,
         &execution,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         NULL,
         &result
-    ) == RUDA_MIR_INTERPRET_INVALID_ARGUMENT);
+    ) == MMAY_MIR_INTERPRET_INVALID_ARGUMENT);
 
-    RUDA_EXPECT(ruda_mir_execution_init(
+    MMAY_EXPECT(mmay_mir_execution_init(
         &foreign_execution,
-        ruda_system_allocator(),
-        ruda_mir_execution_default_options()
+        mmay_system_allocator(),
+        mmay_mir_execution_default_options()
     ));
     context.execution = &foreign_execution;
-    RUDA_EXPECT(ruda_test_mir_interface_dispatch(
+    MMAY_EXPECT(mmay_test_mir_interface_dispatch(
         &dispatcher,
         interface_value,
         &foreign_execution,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         &context,
         &result
-    ) == RUDA_MIR_INTERPRET_INVALID_REFERENCE);
-    RUDA_EXPECT(context.calls == 1);
-    ruda_mir_execution_dispose(&foreign_execution);
-    ruda_mir_execution_dispose(&execution);
-    ruda_mir_function_dispose(&dispatcher);
+    ) == MMAY_MIR_INTERPRET_INVALID_REFERENCE);
+    MMAY_EXPECT(context.calls == 1);
+    mmay_mir_execution_dispose(&foreign_execution);
+    mmay_mir_execution_dispose(&execution);
+    mmay_mir_function_dispose(&dispatcher);
 }

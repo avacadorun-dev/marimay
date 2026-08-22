@@ -1,6 +1,6 @@
 #include "test_parser_support.h"
 
-void ruda_test_parser_declarations(void) {
+void mmay_test_parser_declarations(void) {
     static const char source[] =
         "import { Item as Renamed, other, } from \"pkg\";\n"
         "type Id = i64;\n"
@@ -11,18 +11,18 @@ void ruda_test_parser_declarations(void) {
         "const answer: int = 42;\n"
         "@fuzz fn fuzzBytes(input: []byte): void { const _ = input; }\n"
         "@test fn ok(): void { expect.equal(answer, 42); }\n";
-    RudaParseFixture fixture;
-    RUDA_EXPECT(ruda_parse_fixture_init(&fixture, source));
+    MarimayParseFixture fixture;
+    MMAY_EXPECT(mmay_parse_fixture_init(&fixture, source));
     if (!fixture.parsed.initialized) {
         return;
     }
-    RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-    RUDA_EXPECT(fixture.parsed.diagnostics.length == 0);
-    RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-    ruda_parse_fixture_dispose(&fixture);
+    MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+    MMAY_EXPECT(fixture.parsed.diagnostics.length == 0);
+    MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+    mmay_parse_fixture_dispose(&fixture);
 }
 
-void ruda_test_parser_declaration_grammar(void) {
+void mmay_test_parser_declaration_grammar(void) {
     static const char valid[] =
         "import * as http from \"std/http\";\n"
         "import { Item, Other as Alias, } from \"pkg\";\n"
@@ -37,105 +37,105 @@ void ruda_test_parser_declaration_grammar(void) {
         "@fuzz fn emptyFuzz(input: bytes): void {}\n";
     static const struct {
         const char *source;
-        RudaSyntaxKind kind;
+        MarimaySyntaxKind kind;
         const char *diagnostic;
     } invalid[] = {
         {
             "public import * as x from \"pkg\"; fn after(): void {}",
-            RUDA_SYNTAX_IMPORT_DECL,
-            RUDA_DIAGNOSTIC_UNEXPECTED_TOKEN
+            MMAY_SYNTAX_IMPORT_DECL,
+            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
             "@tag import * as x from \"pkg\"; fn after(): void {}",
-            RUDA_SYNTAX_IMPORT_DECL,
-            RUDA_DIAGNOSTIC_UNEXPECTED_TOKEN
+            MMAY_SYNTAX_IMPORT_DECL,
+            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
             "import * from \"pkg\"; fn after(): void {}",
-            RUDA_SYNTAX_IMPORT_CLAUSE,
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_SYNTAX_IMPORT_CLAUSE,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "import { First Second } from \"pkg\"; fn after(): void {}",
-            RUDA_SYNTAX_IMPORT_DECL,
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_SYNTAX_IMPORT_DECL,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "type Bad { value: int } fn after(): void {}",
-            RUDA_SYNTAX_FIELD_DECL,
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_SYNTAX_FIELD_DECL,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "enum Bad { First Second } fn after(): void {}",
-            RUDA_SYNTAX_ENUM_VARIANT,
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_SYNTAX_ENUM_VARIANT,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "interface Bad { call(value: int) int; } fn after(): void {}",
-            RUDA_SYNTAX_INTERFACE_ITEM,
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_SYNTAX_INTERFACE_ITEM,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "const missing: int; fn after(): void {}",
-            RUDA_SYNTAX_CONST_DECL,
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_SYNTAX_CONST_DECL,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "extern \"c\" fn bad(): void {} fn after(): void {}",
-            RUDA_SYNTAX_EXTERN_DECL,
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_SYNTAX_EXTERN_DECL,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         }
     };
-    RudaParseFixture fixture;
+    MarimayParseFixture fixture;
     size_t index = 0;
-    RUDA_EXPECT(ruda_parse_fixture_init(&fixture, valid));
+    MMAY_EXPECT(mmay_parse_fixture_init(&fixture, valid));
     if (fixture.parsed.initialized) {
-        RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-        RUDA_EXPECT(fixture.parsed.diagnostics.length == 0);
-        RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+        MMAY_EXPECT(fixture.parsed.diagnostics.length == 0);
+        MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_IMPORT_DECL
+            MMAY_SYNTAX_IMPORT_DECL
         ) == 2);
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_ENUM_VARIANT
+            MMAY_SYNTAX_ENUM_VARIANT
         ) == 3);
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_FUNCTION_DECL
+            MMAY_SYNTAX_FUNCTION_DECL
         ) == 3);
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_EXTERN_DECL
+            MMAY_SYNTAX_EXTERN_DECL
         ) == 1);
-        ruda_parse_fixture_dispose(&fixture);
+        mmay_parse_fixture_dispose(&fixture);
     }
     for (index = 0; index < sizeof(invalid) / sizeof(invalid[0]); index += 1) {
-        bool initialized = ruda_parse_fixture_init(&fixture, invalid[index].source);
-        RUDA_EXPECT(initialized);
+        bool initialized = mmay_parse_fixture_init(&fixture, invalid[index].source);
+        MMAY_EXPECT(initialized);
         if (!initialized) {
             continue;
         }
-        RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-        RUDA_EXPECT(ruda_parse_has_diagnostic(
+        MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+        MMAY_EXPECT(mmay_parse_has_diagnostic(
             &fixture.parsed,
             invalid[index].diagnostic
         ));
-        RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
             invalid[index].kind
         ) != 0);
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_FUNCTION_DECL
+            MMAY_SYNTAX_FUNCTION_DECL
         ) >= 1);
-        ruda_parse_fixture_dispose(&fixture);
+        mmay_parse_fixture_dispose(&fixture);
     }
 }
 
-void ruda_test_parser_keyword_boundaries(void) {
+void mmay_test_parser_keyword_boundaries(void) {
     static const char source[] =
         "type Contextual {\n"
         "  as: int; break: int; case: int; const: int; continue: int;\n"
@@ -168,32 +168,32 @@ void ruda_test_parser_keyword_boundaries(void) {
         "fn await(): void {} fn class(): void {} fn extends(): void {}\n"
         "fn impl(): void {} fn throws(): void {} fn test(): void {}\n"
         "fn fuzz(): void {} fn panic(): void {}\n";
-    RudaParseFixture fixture;
-    bool initialized = ruda_parse_fixture_init(&fixture, source);
-    RUDA_EXPECT(initialized);
+    MarimayParseFixture fixture;
+    bool initialized = mmay_parse_fixture_init(&fixture, source);
+    MMAY_EXPECT(initialized);
     if (!initialized) {
         return;
     }
-    RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-    RUDA_EXPECT(fixture.parsed.diagnostics.length == 0);
-    RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-    RUDA_EXPECT(ruda_syntax_count_kind(
+    MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+    MMAY_EXPECT(fixture.parsed.diagnostics.length == 0);
+    MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+    MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
-        RUDA_SYNTAX_FUNCTION_DECL
+        MMAY_SYNTAX_FUNCTION_DECL
     ) == 25);
-    RUDA_EXPECT(ruda_syntax_count_kind(
+    MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
-        RUDA_SYNTAX_YIELD_STATEMENT
+        MMAY_SYNTAX_YIELD_STATEMENT
     ) == 1);
-    RUDA_EXPECT(ruda_syntax_count_kind(
+    MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
-        RUDA_SYNTAX_CALL_EXPRESSION
+        MMAY_SYNTAX_CALL_EXPRESSION
     ) == 10);
-    RUDA_EXPECT(ruda_syntax_count_kind(
+    MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
-        RUDA_SYNTAX_RECORD_EXPRESSION
+        MMAY_SYNTAX_RECORD_EXPRESSION
     ) == 2);
-    ruda_parse_fixture_dispose(&fixture);
+    mmay_parse_fixture_dispose(&fixture);
 
     {
         static const char *const hard_names[] = {
@@ -211,115 +211,115 @@ void ruda_test_parser_keyword_boundaries(void) {
                 "fn %s(): void {} fn after(): void {}",
                 hard_names[hard_index]
             );
-            RUDA_EXPECT(written > 0
+            MMAY_EXPECT(written > 0
                 && (size_t)written < sizeof(invalid_source));
-            initialized = ruda_parse_fixture_init(&fixture, invalid_source);
-            RUDA_EXPECT(initialized);
+            initialized = mmay_parse_fixture_init(&fixture, invalid_source);
+            MMAY_EXPECT(initialized);
             if (!initialized) {
                 continue;
             }
-            RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-            RUDA_EXPECT(ruda_parse_has_diagnostic(
+            MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+            MMAY_EXPECT(mmay_parse_has_diagnostic(
                 &fixture.parsed,
-                RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+                MMAY_DIAGNOSTIC_EXPECTED_TOKEN
             ));
-            RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-            ruda_parse_fixture_dispose(&fixture);
+            MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+            mmay_parse_fixture_dispose(&fixture);
         }
     }
 }
 
-void ruda_test_parser_declaration_recovery(void) {
+void mmay_test_parser_declaration_recovery(void) {
     static const struct {
         const char *source;
-        RudaSyntaxKind kinds[4];
+        MarimaySyntaxKind kinds[4];
         size_t kind_count;
         size_t minimum_function_count;
     } cases[] = {
         {
             "@() fn decorated(): void {} fn after(): void {}",
-            {RUDA_SYNTAX_ATTRIBUTE},
+            {MMAY_SYNTAX_ATTRIBUTE},
             1,
             2
         },
         {
             "import { , Good } from \"pkg\"; fn after(): void {}",
             {
-                RUDA_SYNTAX_IMPORT_DECL,
-                RUDA_SYNTAX_IMPORT_CLAUSE,
-                RUDA_SYNTAX_IMPORT_ITEM
+                MMAY_SYNTAX_IMPORT_DECL,
+                MMAY_SYNTAX_IMPORT_CLAUSE,
+                MMAY_SYNTAX_IMPORT_ITEM
             },
             3,
             1
         },
         {
             "type = int; fn after(): void {}",
-            {RUDA_SYNTAX_TYPE_ALIAS_DECL},
+            {MMAY_SYNTAX_TYPE_ALIAS_DECL},
             1,
             1
         },
         {
             "type Bad { : int; } fn after(): void {}",
-            {RUDA_SYNTAX_RECORD_DECL, RUDA_SYNTAX_FIELD_DECL},
+            {MMAY_SYNTAX_RECORD_DECL, MMAY_SYNTAX_FIELD_DECL},
             2,
             1
         },
         {
             "enum Bad { , Good } fn after(): void {}",
-            {RUDA_SYNTAX_ENUM_DECL, RUDA_SYNTAX_ENUM_VARIANT},
+            {MMAY_SYNTAX_ENUM_DECL, MMAY_SYNTAX_ENUM_VARIANT},
             2,
             1
         },
         {
             "enum Bad { Broken { : int; }, } fn after(): void {}",
-            {RUDA_SYNTAX_ENUM_DECL, RUDA_SYNTAX_NAMED_PAYLOAD},
+            {MMAY_SYNTAX_ENUM_DECL, MMAY_SYNTAX_NAMED_PAYLOAD},
             2,
             1
         },
         {
             "interface Bad { (): int; } fn after(): void {}",
-            {RUDA_SYNTAX_INTERFACE_DECL, RUDA_SYNTAX_INTERFACE_ITEM},
+            {MMAY_SYNTAX_INTERFACE_DECL, MMAY_SYNTAX_INTERFACE_ITEM},
             2,
             1
         },
         {
             "fn (value int): void {} fn after(): void {}",
             {
-                RUDA_SYNTAX_FUNCTION_DECL,
-                RUDA_SYNTAX_PARAMETERS,
-                RUDA_SYNTAX_PARAMETER,
-                RUDA_SYNTAX_BLOCK
+                MMAY_SYNTAX_FUNCTION_DECL,
+                MMAY_SYNTAX_PARAMETERS,
+                MMAY_SYNTAX_PARAMETER,
+                MMAY_SYNTAX_BLOCK
             },
             4,
             2
         },
         {
             "fn broken(value: int: void {} fn after(): void {}",
-            {RUDA_SYNTAX_FUNCTION_DECL, RUDA_SYNTAX_PARAMETERS},
+            {MMAY_SYNTAX_FUNCTION_DECL, MMAY_SYNTAX_PARAMETERS},
             2,
             2
         },
         {
             "fn broken(): void { const value = 1;",
-            {RUDA_SYNTAX_FUNCTION_DECL, RUDA_SYNTAX_BLOCK},
+            {MMAY_SYNTAX_FUNCTION_DECL, MMAY_SYNTAX_BLOCK},
             2,
             1
         },
         {
             "extern fn foreign(): void; fn after(): void {}",
-            {RUDA_SYNTAX_EXTERN_DECL},
+            {MMAY_SYNTAX_EXTERN_DECL},
             1,
             1
         },
         {
             "const : int = 1; fn after(): void {}",
-            {RUDA_SYNTAX_CONST_DECL},
+            {MMAY_SYNTAX_CONST_DECL},
             1,
             1
         },
         {
             "fn broken(): void { let : int = 1; } fn after(): void {}",
-            {RUDA_SYNTAX_LET_DECL},
+            {MMAY_SYNTAX_LET_DECL},
             1,
             2
         }
@@ -334,67 +334,67 @@ void ruda_test_parser_declaration_recovery(void) {
         "bad public fn visible(): void {}\n";
     size_t case_index = 0;
     for (case_index = 0; case_index < sizeof(cases) / sizeof(cases[0]); case_index += 1) {
-        RudaParseFixture fixture;
+        MarimayParseFixture fixture;
         size_t kind_index = 0;
-        bool initialized = ruda_parse_fixture_init(&fixture, cases[case_index].source);
-        RUDA_EXPECT(initialized);
+        bool initialized = mmay_parse_fixture_init(&fixture, cases[case_index].source);
+        MMAY_EXPECT(initialized);
         if (!initialized) {
             continue;
         }
-        RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-        RUDA_EXPECT(fixture.parsed.diagnostics.length != 0);
-        RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-        RUDA_EXPECT(ruda_syntax_count_synthetic_tokens(
+        MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+        MMAY_EXPECT(fixture.parsed.diagnostics.length != 0);
+        MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+        MMAY_EXPECT(mmay_syntax_count_synthetic_tokens(
             fixture.parsed.tree.root
         ) != 0);
         for (kind_index = 0; kind_index < cases[case_index].kind_count; kind_index += 1) {
-            RUDA_EXPECT(ruda_syntax_count_kind(
+            MMAY_EXPECT(mmay_syntax_count_kind(
                 fixture.parsed.tree.root,
                 cases[case_index].kinds[kind_index]
             ) != 0);
         }
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_FUNCTION_DECL
+            MMAY_SYNTAX_FUNCTION_DECL
         ) >= cases[case_index].minimum_function_count);
-        ruda_parse_fixture_dispose(&fixture);
+        mmay_parse_fixture_dispose(&fixture);
     }
 
     {
-        RudaParseFixture fixture;
-        bool initialized = ruda_parse_fixture_init(&fixture, declaration_starters);
-        RUDA_EXPECT(initialized);
+        MarimayParseFixture fixture;
+        bool initialized = mmay_parse_fixture_init(&fixture, declaration_starters);
+        MMAY_EXPECT(initialized);
         if (!initialized) {
             return;
         }
-        RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-        RUDA_EXPECT(fixture.parsed.diagnostics.length == 7);
-        RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+        MMAY_EXPECT(fixture.parsed.diagnostics.length == 7);
+        MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_ERROR
+            MMAY_SYNTAX_ERROR
         ) == 7);
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_EXTERN_DECL
+            MMAY_SYNTAX_EXTERN_DECL
         ) == 1);
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_CONST_DECL
+            MMAY_SYNTAX_CONST_DECL
         ) == 1);
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_ATTRIBUTE
+            MMAY_SYNTAX_ATTRIBUTE
         ) == 3);
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_FUNCTION_DECL
+            MMAY_SYNTAX_FUNCTION_DECL
         ) == 5);
-        ruda_parse_fixture_dispose(&fixture);
+        mmay_parse_fixture_dispose(&fixture);
     }
 }
 
-void ruda_test_parser_type_grammar(void) {
+void mmay_test_parser_type_grammar(void) {
     static const char valid[] =
         "type Scalar = int;\n"
         "type Qualified = pkg.User;\n"
@@ -408,89 +408,89 @@ void ruda_test_parser_type_grammar(void) {
     } invalid[] = {
         {
             "type Missing = ; fn after(): void {}",
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "type EmptyArguments = Array<>; fn after(): void {}",
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "type Qualified = pkg.; fn after(): void {}",
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "type EmptyTuple = []; fn after(): void {}",
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "type NotFunction = (int); fn after(): void {}",
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "type Extra = int string; fn after(): void {}",
-            RUDA_DIAGNOSTIC_UNEXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
             "type MissingClose = Map<string, []int; fn after(): void {}",
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "type ExtraClose = []int>; fn after(): void {}",
-            RUDA_DIAGNOSTIC_UNEXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
             "fn emptyParameters<>(value: int): int { return value; } "
             "fn after(): void {}",
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
             "fn missingConstraint<T: >(value: T): T { return value; } "
             "fn after(): void {}",
-            RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         }
     };
-    RudaParseFixture fixture;
+    MarimayParseFixture fixture;
     size_t index = 0;
-    bool initialized = ruda_parse_fixture_init(&fixture, valid);
-    RUDA_EXPECT(initialized);
+    bool initialized = mmay_parse_fixture_init(&fixture, valid);
+    MMAY_EXPECT(initialized);
     if (initialized) {
-        RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-        RUDA_EXPECT(fixture.parsed.diagnostics.length == 0);
-        RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+        MMAY_EXPECT(fixture.parsed.diagnostics.length == 0);
+        MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_TYPE
+            MMAY_SYNTAX_TYPE
         ) >= 16);
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_TYPE_ARGUMENTS
+            MMAY_SYNTAX_TYPE_ARGUMENTS
         ) >= 5);
-        ruda_parse_fixture_dispose(&fixture);
+        mmay_parse_fixture_dispose(&fixture);
     }
     for (index = 0; index < sizeof(invalid) / sizeof(invalid[0]); index += 1) {
-        initialized = ruda_parse_fixture_init(&fixture, invalid[index].source);
-        RUDA_EXPECT(initialized);
+        initialized = mmay_parse_fixture_init(&fixture, invalid[index].source);
+        MMAY_EXPECT(initialized);
         if (!initialized) {
             continue;
         }
-        RUDA_EXPECT(fixture.lexed.diagnostics.length == 0);
-        RUDA_EXPECT(ruda_parse_has_diagnostic(
+        MMAY_EXPECT(fixture.lexed.diagnostics.length == 0);
+        MMAY_EXPECT(mmay_parse_has_diagnostic(
             &fixture.parsed,
             invalid[index].diagnostic
         ));
-        RUDA_EXPECT(ruda_syntax_tree_is_lossless(&fixture.parsed.tree));
+        MMAY_EXPECT(mmay_syntax_tree_is_lossless(&fixture.parsed.tree));
         if (strcmp(
                 invalid[index].diagnostic,
-                RUDA_DIAGNOSTIC_EXPECTED_TOKEN
+                MMAY_DIAGNOSTIC_EXPECTED_TOKEN
             ) == 0) {
-            RUDA_EXPECT(ruda_syntax_count_synthetic_tokens(
+            MMAY_EXPECT(mmay_syntax_count_synthetic_tokens(
                 fixture.parsed.tree.root
             ) != 0);
         }
-        RUDA_EXPECT(ruda_syntax_count_kind(
+        MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
-            RUDA_SYNTAX_FUNCTION_DECL
+            MMAY_SYNTAX_FUNCTION_DECL
         ) >= 1);
-        ruda_parse_fixture_dispose(&fixture);
+        mmay_parse_fixture_dispose(&fixture);
     }
 }

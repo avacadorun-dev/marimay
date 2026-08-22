@@ -1,6 +1,6 @@
 #include "test_formatter_support.h"
 
-typedef struct RudaFormatterStringIterator {
+typedef struct MarimayFormatterStringIterator {
     const unsigned char *source;
     size_t cursor;
     size_t end;
@@ -8,9 +8,9 @@ typedef struct RudaFormatterStringIterator {
     size_t pending_cursor;
     size_t pending_length;
     bool raw;
-} RudaFormatterStringIterator;
+} MarimayFormatterStringIterator;
 
-static int ruda_formatter_test_hex_digit(unsigned char byte) {
+static int mmay_formatter_test_hex_digit(unsigned char byte) {
     if (byte >= '0' && byte <= '9') {
         return (int)(byte - '0');
     }
@@ -23,25 +23,25 @@ static int ruda_formatter_test_hex_digit(unsigned char byte) {
     return -1;
 }
 
-static bool ruda_formatter_string_iterator_init(
-    RudaFormatterStringIterator *iterator,
-    const RudaSyntaxToken *token,
-    const RudaSourceSnapshot *source
+static bool mmay_formatter_string_iterator_init(
+    MarimayFormatterStringIterator *iterator,
+    const MarimaySyntaxToken *token,
+    const MarimaySourceSnapshot *source
 ) {
-    const unsigned char *bytes = ruda_source_bytes(source);
-    size_t length = ruda_source_length(source);
+    const unsigned char *bytes = mmay_source_bytes(source);
+    size_t length = mmay_source_length(source);
     memset(iterator, 0, sizeof(*iterator));
     if (token->synthetic || token->end > length) {
         return false;
     }
     iterator->source = bytes;
-    if (token->kind == RUDA_TOKEN_STRING && token->end >= token->start + 2
+    if (token->kind == MMAY_TOKEN_STRING && token->end >= token->start + 2
         && bytes[token->start] == '"' && bytes[token->end - 1] == '"') {
         iterator->cursor = token->start + 1;
         iterator->end = token->end - 1;
         return true;
     }
-    if (token->kind == RUDA_TOKEN_RAW_STRING
+    if (token->kind == MMAY_TOKEN_RAW_STRING
         && token->end >= token->start + 3
         && bytes[token->start] == 'r' && bytes[token->start + 1] == '"'
         && bytes[token->end - 1] == '"') {
@@ -53,8 +53,8 @@ static bool ruda_formatter_string_iterator_init(
     return false;
 }
 
-static bool ruda_formatter_string_iterator_next(
-    RudaFormatterStringIterator *iterator,
+static bool mmay_formatter_string_iterator_next(
+    MarimayFormatterStringIterator *iterator,
     unsigned char *value,
     bool *present
 ) {
@@ -101,7 +101,7 @@ static bool ruda_formatter_string_iterator_next(
         iterator->cursor += 1;
         while (iterator->cursor < iterator->end
             && iterator->source[iterator->cursor] != '}') {
-            int digit = ruda_formatter_test_hex_digit(
+            int digit = mmay_formatter_test_hex_digit(
                 iterator->source[iterator->cursor]
             );
             if (digit < 0 || digits >= 6) {
@@ -113,7 +113,7 @@ static bool ruda_formatter_string_iterator_next(
         }
         if (digits == 0 || iterator->cursor >= iterator->end
             || iterator->source[iterator->cursor] != '}'
-            || !ruda_utf8_encode(
+            || !mmay_utf8_encode(
                 scalar,
                 iterator->pending,
                 &iterator->pending_length
@@ -130,19 +130,19 @@ static bool ruda_formatter_string_iterator_next(
     return true;
 }
 
-static bool ruda_formatter_string_tokens_equal(
-    const RudaSyntaxToken *left,
-    const RudaSourceSnapshot *left_source,
-    const RudaSyntaxToken *right,
-    const RudaSourceSnapshot *right_source
+static bool mmay_formatter_string_tokens_equal(
+    const MarimaySyntaxToken *left,
+    const MarimaySourceSnapshot *left_source,
+    const MarimaySyntaxToken *right,
+    const MarimaySourceSnapshot *right_source
 ) {
-    RudaFormatterStringIterator left_iterator;
-    RudaFormatterStringIterator right_iterator;
-    if (!ruda_formatter_string_iterator_init(
+    MarimayFormatterStringIterator left_iterator;
+    MarimayFormatterStringIterator right_iterator;
+    if (!mmay_formatter_string_iterator_init(
             &left_iterator,
             left,
             left_source
-        ) || !ruda_formatter_string_iterator_init(
+        ) || !mmay_formatter_string_iterator_init(
             &right_iterator,
             right,
             right_source
@@ -154,11 +154,11 @@ static bool ruda_formatter_string_tokens_equal(
         unsigned char right_byte = 0;
         bool left_present = false;
         bool right_present = false;
-        if (!ruda_formatter_string_iterator_next(
+        if (!mmay_formatter_string_iterator_next(
                 &left_iterator,
                 &left_byte,
                 &left_present
-            ) || !ruda_formatter_string_iterator_next(
+            ) || !mmay_formatter_string_iterator_next(
                 &right_iterator,
                 &right_byte,
                 &right_present
@@ -177,24 +177,24 @@ static bool ruda_formatter_string_tokens_equal(
     }
 }
 
-static bool ruda_formatter_ast_tokens_equal(
-    const RudaSyntaxToken *left,
-    const RudaSourceSnapshot *left_source,
-    const RudaSyntaxToken *right,
-    const RudaSourceSnapshot *right_source
+static bool mmay_formatter_ast_tokens_equal(
+    const MarimaySyntaxToken *left,
+    const MarimaySourceSnapshot *left_source,
+    const MarimaySyntaxToken *right,
+    const MarimaySourceSnapshot *right_source
 ) {
     size_t left_length = left->end - left->start;
     size_t right_length = right->end - right->start;
-    bool left_string = left->kind == RUDA_TOKEN_STRING
-        || left->kind == RUDA_TOKEN_RAW_STRING;
-    bool right_string = right->kind == RUDA_TOKEN_STRING
-        || right->kind == RUDA_TOKEN_RAW_STRING;
+    bool left_string = left->kind == MMAY_TOKEN_STRING
+        || left->kind == MMAY_TOKEN_RAW_STRING;
+    bool right_string = right->kind == MMAY_TOKEN_STRING
+        || right->kind == MMAY_TOKEN_RAW_STRING;
     if (left->synthetic != right->synthetic) {
         return false;
     }
     if (left_string || right_string) {
         return left_string && right_string
-            && ruda_formatter_string_tokens_equal(
+            && mmay_formatter_string_tokens_equal(
                 left,
                 left_source,
                 right,
@@ -203,60 +203,60 @@ static bool ruda_formatter_ast_tokens_equal(
     }
     return left->kind == right->kind && left_length == right_length
         && memcmp(
-            ruda_source_bytes(left_source) + left->start,
-            ruda_source_bytes(right_source) + right->start,
+            mmay_source_bytes(left_source) + left->start,
+            mmay_source_bytes(right_source) + right->start,
             left_length
         ) == 0;
 }
 
-bool ruda_formatter_fixture_init(
-    RudaFormatterFixture *fixture,
+bool mmay_formatter_fixture_init(
+    MarimayFormatterFixture *fixture,
     const char *path,
     const unsigned char *bytes,
     size_t length
 ) {
     memset(fixture, 0, sizeof(*fixture));
-    if (!ruda_source_manager_init(&fixture->sources, ruda_system_allocator())
-        || ruda_source_manager_add(
+    if (!mmay_source_manager_init(&fixture->sources, mmay_system_allocator())
+        || mmay_source_manager_add(
             &fixture->sources,
             path,
             strlen(path),
             bytes,
             length,
             &fixture->snapshot
-        ) != RUDA_SOURCE_OK
-        || ruda_lex_snapshot(
+        ) != MMAY_SOURCE_OK
+        || mmay_lex_snapshot(
             fixture->snapshot,
-            ruda_system_allocator(),
-            ruda_lex_default_options(),
+            mmay_system_allocator(),
+            mmay_lex_default_options(),
             &fixture->lexed
-        ) != RUDA_LEX_OK
-        || ruda_parse_file(
+        ) != MMAY_LEX_OK
+        || mmay_parse_file(
             &fixture->lexed,
-            ruda_system_allocator(),
-            ruda_parse_default_options(),
+            mmay_system_allocator(),
+            mmay_parse_default_options(),
             &fixture->parsed
-        ) != RUDA_PARSE_OK) {
+        ) != MMAY_PARSE_OK) {
         if (fixture->lexed.initialized) {
-            ruda_lex_result_dispose(&fixture->lexed);
+            mmay_lex_result_dispose(&fixture->lexed);
         }
-        ruda_source_manager_dispose(&fixture->sources);
+        mmay_source_manager_dispose(&fixture->sources);
         return false;
     }
     return true;
 }
 
-void ruda_formatter_fixture_dispose(RudaFormatterFixture *fixture) {
-    ruda_parse_result_dispose(&fixture->parsed);
-    ruda_lex_result_dispose(&fixture->lexed);
-    ruda_source_manager_dispose(&fixture->sources);
+void mmay_formatter_fixture_dispose(MarimayFormatterFixture *fixture) {
+    mmay_parse_result_dispose(&fixture->parsed);
+    mmay_lex_result_dispose(&fixture->lexed);
+    mmay_source_manager_dispose(&fixture->sources);
 }
 
-static bool ruda_formatter_ast_equal_internal(
-    const RudaAstNode *left,
-    const RudaSourceSnapshot *left_source,
-    const RudaAstNode *right,
-    const RudaSourceSnapshot *right_source,
+static bool mmay_formatter_ast_equal_internal(
+    const MarimayAstNode *left,
+    const MarimaySourceSnapshot *left_source,
+    const MarimayAstNode *right,
+    const MarimaySourceSnapshot *right_source,
     bool report
 ) {
     size_t left_index = 0;
@@ -274,56 +274,56 @@ static bool ruda_formatter_ast_equal_internal(
     }
     while (left_index < left->child_count
         || right_index < right->child_count) {
-        const RudaAstElement *left_element = ruda_ast_child(left, left_index);
-        const RudaAstElement *right_element = ruda_ast_child(right, right_index);
-        bool list_kind = left->kind == RUDA_SYNTAX_ARGUMENTS
-            || left->kind == RUDA_SYNTAX_PARAMETERS
-            || left->kind == RUDA_SYNTAX_IMPORT_CLAUSE
-            || left->kind == RUDA_SYNTAX_ARRAY_EXPRESSION
-            || left->kind == RUDA_SYNTAX_RECORD_EXPRESSION
-            || left->kind == RUDA_SYNTAX_RECORD_FIELDS
-            || left->kind == RUDA_SYNTAX_PAREN_GROUP
-            || left->kind == RUDA_SYNTAX_BRACKET_GROUP
-            || left->kind == RUDA_SYNTAX_POSITIONAL_PATTERN
-            || left->kind == RUDA_SYNTAX_TUPLE_PATTERN
-            || left->kind == RUDA_SYNTAX_NAMED_PATTERN
-            || left->kind == RUDA_SYNTAX_PATTERN_LIST
-            || left->kind == RUDA_SYNTAX_PATTERN_FIELDS;
+        const MarimayAstElement *left_element = mmay_ast_child(left, left_index);
+        const MarimayAstElement *right_element = mmay_ast_child(right, right_index);
+        bool list_kind = left->kind == MMAY_SYNTAX_ARGUMENTS
+            || left->kind == MMAY_SYNTAX_PARAMETERS
+            || left->kind == MMAY_SYNTAX_IMPORT_CLAUSE
+            || left->kind == MMAY_SYNTAX_ARRAY_EXPRESSION
+            || left->kind == MMAY_SYNTAX_RECORD_EXPRESSION
+            || left->kind == MMAY_SYNTAX_RECORD_FIELDS
+            || left->kind == MMAY_SYNTAX_PAREN_GROUP
+            || left->kind == MMAY_SYNTAX_BRACKET_GROUP
+            || left->kind == MMAY_SYNTAX_POSITIONAL_PATTERN
+            || left->kind == MMAY_SYNTAX_TUPLE_PATTERN
+            || left->kind == MMAY_SYNTAX_NAMED_PATTERN
+            || left->kind == MMAY_SYNTAX_PATTERN_LIST
+            || left->kind == MMAY_SYNTAX_PATTERN_FIELDS;
         bool left_trailing_comma = false;
         bool right_trailing_comma = false;
         if (list_kind && left_element != NULL
-            && left_element->kind == RUDA_AST_ELEMENT_TOKEN
-            && left_element->as.token.kind == RUDA_TOKEN_COMMA
+            && left_element->kind == MMAY_AST_ELEMENT_TOKEN
+            && left_element->as.token.kind == MMAY_TOKEN_COMMA
             && left_index + 1 < left->child_count) {
-            const RudaAstElement *after = ruda_ast_child(left, left_index + 1);
+            const MarimayAstElement *after = mmay_ast_child(left, left_index + 1);
             left_trailing_comma = after != NULL
-                && after->kind == RUDA_AST_ELEMENT_TOKEN
-                && (after->as.token.kind == RUDA_TOKEN_RIGHT_PAREN
-                    || after->as.token.kind == RUDA_TOKEN_RIGHT_BRACKET
-                    || after->as.token.kind == RUDA_TOKEN_RIGHT_BRACE);
-        } else if ((left->kind == RUDA_SYNTAX_PATTERN_LIST
-                || left->kind == RUDA_SYNTAX_PATTERN_FIELDS)
+                && after->kind == MMAY_AST_ELEMENT_TOKEN
+                && (after->as.token.kind == MMAY_TOKEN_RIGHT_PAREN
+                    || after->as.token.kind == MMAY_TOKEN_RIGHT_BRACKET
+                    || after->as.token.kind == MMAY_TOKEN_RIGHT_BRACE);
+        } else if ((left->kind == MMAY_SYNTAX_PATTERN_LIST
+                || left->kind == MMAY_SYNTAX_PATTERN_FIELDS)
             && left_element != NULL
-            && left_element->kind == RUDA_AST_ELEMENT_TOKEN
-            && left_element->as.token.kind == RUDA_TOKEN_COMMA
+            && left_element->kind == MMAY_AST_ELEMENT_TOKEN
+            && left_element->as.token.kind == MMAY_TOKEN_COMMA
             && left_index + 1 == left->child_count) {
             left_trailing_comma = true;
         }
         if (list_kind && right_element != NULL
-            && right_element->kind == RUDA_AST_ELEMENT_TOKEN
-            && right_element->as.token.kind == RUDA_TOKEN_COMMA
+            && right_element->kind == MMAY_AST_ELEMENT_TOKEN
+            && right_element->as.token.kind == MMAY_TOKEN_COMMA
             && right_index + 1 < right->child_count) {
-            const RudaAstElement *after = ruda_ast_child(right, right_index + 1);
+            const MarimayAstElement *after = mmay_ast_child(right, right_index + 1);
             right_trailing_comma = after != NULL
-                && after->kind == RUDA_AST_ELEMENT_TOKEN
-                && (after->as.token.kind == RUDA_TOKEN_RIGHT_PAREN
-                    || after->as.token.kind == RUDA_TOKEN_RIGHT_BRACKET
-                    || after->as.token.kind == RUDA_TOKEN_RIGHT_BRACE);
-        } else if ((right->kind == RUDA_SYNTAX_PATTERN_LIST
-                || right->kind == RUDA_SYNTAX_PATTERN_FIELDS)
+                && after->kind == MMAY_AST_ELEMENT_TOKEN
+                && (after->as.token.kind == MMAY_TOKEN_RIGHT_PAREN
+                    || after->as.token.kind == MMAY_TOKEN_RIGHT_BRACKET
+                    || after->as.token.kind == MMAY_TOKEN_RIGHT_BRACE);
+        } else if ((right->kind == MMAY_SYNTAX_PATTERN_LIST
+                || right->kind == MMAY_SYNTAX_PATTERN_FIELDS)
             && right_element != NULL
-            && right_element->kind == RUDA_AST_ELEMENT_TOKEN
-            && right_element->as.token.kind == RUDA_TOKEN_COMMA
+            && right_element->kind == MMAY_AST_ELEMENT_TOKEN
+            && right_element->as.token.kind == MMAY_TOKEN_COMMA
             && right_index + 1 == right->child_count) {
             right_trailing_comma = true;
         }
@@ -348,8 +348,8 @@ static bool ruda_formatter_ast_equal_internal(
             }
             return false;
         }
-        if (left_element->kind == RUDA_AST_ELEMENT_NODE) {
-            if (!ruda_formatter_ast_equal_internal(
+        if (left_element->kind == MMAY_AST_ELEMENT_NODE) {
+            if (!mmay_formatter_ast_equal_internal(
                     left_element->as.node,
                     left_source,
                     right_element->as.node,
@@ -359,9 +359,9 @@ static bool ruda_formatter_ast_equal_internal(
                 return false;
             }
         } else {
-            const RudaSyntaxToken *left_token = &left_element->as.token;
-            const RudaSyntaxToken *right_token = &right_element->as.token;
-            if (!ruda_formatter_ast_tokens_equal(
+            const MarimaySyntaxToken *left_token = &left_element->as.token;
+            const MarimaySyntaxToken *right_token = &right_element->as.token;
+            if (!mmay_formatter_ast_tokens_equal(
                     left_token,
                     left_source,
                     right_token,
@@ -387,13 +387,13 @@ static bool ruda_formatter_ast_equal_internal(
     return true;
 }
 
-static bool ruda_formatter_ast_equal(
-    const RudaAstNode *left,
-    const RudaSourceSnapshot *left_source,
-    const RudaAstNode *right,
-    const RudaSourceSnapshot *right_source
+static bool mmay_formatter_ast_equal(
+    const MarimayAstNode *left,
+    const MarimaySourceSnapshot *left_source,
+    const MarimayAstNode *right,
+    const MarimaySourceSnapshot *right_source
 ) {
-    return ruda_formatter_ast_equal_internal(
+    return mmay_formatter_ast_equal_internal(
         left,
         left_source,
         right,
@@ -402,21 +402,21 @@ static bool ruda_formatter_ast_equal(
     );
 }
 
-static bool ruda_formatter_ast_root_element_is_import(
-    const RudaAstElement *element
+static bool mmay_formatter_ast_root_element_is_import(
+    const MarimayAstElement *element
 ) {
     return element != NULL
-        && element->kind == RUDA_AST_ELEMENT_NODE
-        && element->as.node->kind == RUDA_SYNTAX_IMPORT_DECL;
+        && element->kind == MMAY_AST_ELEMENT_NODE
+        && element->as.node->kind == MMAY_SYNTAX_IMPORT_DECL;
 }
 
-static bool ruda_formatter_ast_root_token_equal(
-    const RudaSyntaxToken *left,
-    const RudaSourceSnapshot *left_source,
-    const RudaSyntaxToken *right,
-    const RudaSourceSnapshot *right_source
+static bool mmay_formatter_ast_root_token_equal(
+    const MarimaySyntaxToken *left,
+    const MarimaySourceSnapshot *left_source,
+    const MarimaySyntaxToken *right,
+    const MarimaySourceSnapshot *right_source
 ) {
-    return ruda_formatter_ast_tokens_equal(
+    return mmay_formatter_ast_tokens_equal(
         left,
         left_source,
         right,
@@ -424,11 +424,11 @@ static bool ruda_formatter_ast_root_token_equal(
     );
 }
 
-bool ruda_formatter_ast_semantically_equal(
-    const RudaAstNode *left,
-    const RudaSourceSnapshot *left_source,
-    const RudaAstNode *right,
-    const RudaSourceSnapshot *right_source
+bool mmay_formatter_ast_semantically_equal(
+    const MarimayAstNode *left,
+    const MarimaySourceSnapshot *left_source,
+    const MarimayAstNode *right,
+    const MarimaySourceSnapshot *right_source
 ) {
     bool *matched = NULL;
     size_t left_index = 0;
@@ -436,9 +436,9 @@ bool ruda_formatter_ast_semantically_equal(
     size_t left_imports = 0;
     size_t right_imports = 0;
     bool equal = true;
-    if (left == NULL || right == NULL || left->kind != RUDA_SYNTAX_ROOT
-        || right->kind != RUDA_SYNTAX_ROOT) {
-        return ruda_formatter_ast_equal(
+    if (left == NULL || right == NULL || left->kind != MMAY_SYNTAX_ROOT
+        || right->kind != MMAY_SYNTAX_ROOT) {
+        return mmay_formatter_ast_equal(
             left,
             left_source,
             right,
@@ -450,20 +450,20 @@ bool ruda_formatter_ast_semantically_equal(
         return false;
     }
     for (left_index = 0; left_index < left->child_count; left_index += 1) {
-        const RudaAstElement *element = ruda_ast_child(left, left_index);
-        if (ruda_formatter_ast_root_element_is_import(element)) {
+        const MarimayAstElement *element = mmay_ast_child(left, left_index);
+        if (mmay_formatter_ast_root_element_is_import(element)) {
             bool found = false;
             left_imports += 1;
             for (right_index = 0;
                 right_index < right->child_count;
                 right_index += 1) {
-                const RudaAstElement *candidate = ruda_ast_child(
+                const MarimayAstElement *candidate = mmay_ast_child(
                     right,
                     right_index
                 );
                 if (!matched[right_index]
-                    && ruda_formatter_ast_root_element_is_import(candidate)
-                    && ruda_formatter_ast_equal_internal(
+                    && mmay_formatter_ast_root_element_is_import(candidate)
+                    && mmay_formatter_ast_equal_internal(
                         element->as.node,
                         left_source,
                         candidate->as.node,
@@ -483,8 +483,8 @@ bool ruda_formatter_ast_semantically_equal(
     }
     for (right_index = 0; equal && right_index < right->child_count;
         right_index += 1) {
-        if (ruda_formatter_ast_root_element_is_import(
-                ruda_ast_child(right, right_index)
+        if (mmay_formatter_ast_root_element_is_import(
+                mmay_ast_child(right, right_index)
             )) {
             right_imports += 1;
         }
@@ -493,20 +493,20 @@ bool ruda_formatter_ast_semantically_equal(
     left_index = 0;
     right_index = 0;
     while (equal) {
-        const RudaAstElement *left_element = NULL;
-        const RudaAstElement *right_element = NULL;
+        const MarimayAstElement *left_element = NULL;
+        const MarimayAstElement *right_element = NULL;
         while (left_index < left->child_count) {
-            left_element = ruda_ast_child(left, left_index);
+            left_element = mmay_ast_child(left, left_index);
             left_index += 1;
-            if (!ruda_formatter_ast_root_element_is_import(left_element)) {
+            if (!mmay_formatter_ast_root_element_is_import(left_element)) {
                 break;
             }
             left_element = NULL;
         }
         while (right_index < right->child_count) {
-            right_element = ruda_ast_child(right, right_index);
+            right_element = mmay_ast_child(right, right_index);
             right_index += 1;
-            if (!ruda_formatter_ast_root_element_is_import(right_element)) {
+            if (!mmay_formatter_ast_root_element_is_import(right_element)) {
                 break;
             }
             right_element = NULL;
@@ -517,8 +517,8 @@ bool ruda_formatter_ast_semantically_equal(
         }
         if (left_element->kind != right_element->kind) {
             equal = false;
-        } else if (left_element->kind == RUDA_AST_ELEMENT_NODE) {
-            equal = ruda_formatter_ast_equal_internal(
+        } else if (left_element->kind == MMAY_AST_ELEMENT_NODE) {
+            equal = mmay_formatter_ast_equal_internal(
                 left_element->as.node,
                 left_source,
                 right_element->as.node,
@@ -526,7 +526,7 @@ bool ruda_formatter_ast_semantically_equal(
                 false
             );
         } else {
-            equal = ruda_formatter_ast_root_token_equal(
+            equal = mmay_formatter_ast_root_token_equal(
                 &left_element->as.token,
                 left_source,
                 &right_element->as.token,
@@ -538,14 +538,14 @@ bool ruda_formatter_ast_semantically_equal(
     return equal;
 }
 
-static bool ruda_formatter_comment_kind(RudaTokenKind kind) {
-    return kind == RUDA_TOKEN_LINE_COMMENT
-        || kind == RUDA_TOKEN_DOC_LINE_COMMENT
-        || kind == RUDA_TOKEN_BLOCK_COMMENT
-        || kind == RUDA_TOKEN_DOC_BLOCK_COMMENT;
+static bool mmay_formatter_comment_kind(MarimayTokenKind kind) {
+    return kind == MMAY_TOKEN_LINE_COMMENT
+        || kind == MMAY_TOKEN_DOC_LINE_COMMENT
+        || kind == MMAY_TOKEN_BLOCK_COMMENT
+        || kind == MMAY_TOKEN_DOC_BLOCK_COMMENT;
 }
 
-static unsigned char ruda_formatter_normalized_comment_byte(
+static unsigned char mmay_formatter_normalized_comment_byte(
     const unsigned char *bytes,
     size_t length,
     size_t *index
@@ -561,7 +561,7 @@ static unsigned char ruda_formatter_normalized_comment_byte(
     return byte;
 }
 
-static bool ruda_formatter_comment_text_equal(
+static bool mmay_formatter_comment_text_equal(
     const unsigned char *left,
     size_t left_length,
     const unsigned char *right,
@@ -570,11 +570,11 @@ static bool ruda_formatter_comment_text_equal(
     size_t left_index = 0;
     size_t right_index = 0;
     while (left_index < left_length && right_index < right_length) {
-        if (ruda_formatter_normalized_comment_byte(
+        if (mmay_formatter_normalized_comment_byte(
                 left,
                 left_length,
                 &left_index
-            ) != ruda_formatter_normalized_comment_byte(
+            ) != mmay_formatter_normalized_comment_byte(
                 right,
                 right_length,
                 &right_index
@@ -585,31 +585,31 @@ static bool ruda_formatter_comment_text_equal(
     return left_index == left_length && right_index == right_length;
 }
 
-bool ruda_formatter_comments_equal(
-    const RudaLexResult *left,
-    const RudaLexResult *right
+bool mmay_formatter_comments_equal(
+    const MarimayLexResult *left,
+    const MarimayLexResult *right
 ) {
     size_t left_index = 0;
     size_t right_index = 0;
-    const unsigned char *left_bytes = ruda_source_bytes(left->snapshot);
-    const unsigned char *right_bytes = ruda_source_bytes(right->snapshot);
+    const unsigned char *left_bytes = mmay_source_bytes(left->snapshot);
+    const unsigned char *right_bytes = mmay_source_bytes(right->snapshot);
     for (;;) {
-        const RudaToken *left_token = NULL;
-        const RudaToken *right_token = NULL;
+        const MarimayToken *left_token = NULL;
+        const MarimayToken *right_token = NULL;
         while (left_index < left->tokens.length) {
-            left_token = ruda_lex_token(left, left_index);
+            left_token = mmay_lex_token(left, left_index);
             left_index += 1;
             if (left_token == NULL
-                || ruda_formatter_comment_kind(left_token->kind)) {
+                || mmay_formatter_comment_kind(left_token->kind)) {
                 break;
             }
             left_token = NULL;
         }
         while (right_index < right->tokens.length) {
-            right_token = ruda_lex_token(right, right_index);
+            right_token = mmay_lex_token(right, right_index);
             right_index += 1;
             if (right_token == NULL
-                || ruda_formatter_comment_kind(right_token->kind)) {
+                || mmay_formatter_comment_kind(right_token->kind)) {
                 break;
             }
             right_token = NULL;
@@ -618,7 +618,7 @@ bool ruda_formatter_comments_equal(
             return left_token == NULL && right_token == NULL;
         }
         if (left_token->kind != right_token->kind
-            || !ruda_formatter_comment_text_equal(
+            || !mmay_formatter_comment_text_equal(
                 left_bytes + left_token->start,
                 left_token->end - left_token->start,
                 right_bytes + right_token->start,
@@ -629,7 +629,7 @@ bool ruda_formatter_comments_equal(
     }
 }
 
-bool ruda_formatter_read_file(
+bool mmay_formatter_read_file(
     const char *path,
     unsigned char *bytes,
     size_t capacity,

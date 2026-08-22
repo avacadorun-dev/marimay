@@ -3,32 +3,32 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ruda/ast/ast.h"
-#include "ruda/format/formatter.h"
-#include "ruda/lex/lexer.h"
-#include "ruda/parse/parser.h"
-#include "ruda/source/source_manager.h"
+#include "mmay/ast/ast.h"
+#include "mmay/format/formatter.h"
+#include "mmay/lex/lexer.h"
+#include "mmay/parse/parser.h"
+#include "mmay/source/source_manager.h"
 
 #include "semantic_oracle.h"
 
 int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-    RudaSourceManager sources;
-    const RudaSourceSnapshot *original_snapshot = NULL;
-    const RudaSourceSnapshot *formatted_snapshot = NULL;
-    RudaLexResult original_lexed;
-    RudaLexResult formatted_lexed;
-    RudaParseResult original_parsed;
-    RudaParseResult formatted_parsed;
-    RudaFormatResult first;
-    RudaFormatResult second;
-    RudaAstTree original_ast;
-    RudaAstTree formatted_ast;
-    RudaLexOptions lex_options = ruda_lex_default_options();
-    RudaParseOptions parse_options = ruda_parse_default_options();
-    RudaFormatOptions format_options = ruda_format_default_options();
-    RudaLexStatus lex_status;
-    RudaParseStatus parse_status;
-    RudaFormatStatus format_status;
+    MarimaySourceManager sources;
+    const MarimaySourceSnapshot *original_snapshot = NULL;
+    const MarimaySourceSnapshot *formatted_snapshot = NULL;
+    MarimayLexResult original_lexed;
+    MarimayLexResult formatted_lexed;
+    MarimayParseResult original_parsed;
+    MarimayParseResult formatted_parsed;
+    MarimayFormatResult first;
+    MarimayFormatResult second;
+    MarimayAstTree original_ast;
+    MarimayAstTree formatted_ast;
+    MarimayLexOptions lex_options = mmay_lex_default_options();
+    MarimayParseOptions parse_options = mmay_parse_default_options();
+    MarimayFormatOptions format_options = mmay_format_default_options();
+    MarimayLexStatus lex_status;
+    MarimayParseStatus parse_status;
+    MarimayFormatStatus format_status;
     if (size > 512U * 1024U) {
         return 0;
     }
@@ -45,112 +45,112 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     format_options.max_render_steps = 400000;
     memset(&original_ast, 0, sizeof(original_ast));
     memset(&formatted_ast, 0, sizeof(formatted_ast));
-    if (!ruda_source_manager_init(&sources, ruda_system_allocator())) {
+    if (!mmay_source_manager_init(&sources, mmay_system_allocator())) {
         abort();
     }
-    if (ruda_source_manager_add(
+    if (mmay_source_manager_add(
             &sources,
-            "fuzz.ruda",
-            sizeof("fuzz.ruda") - 1,
+            "fuzz.my",
+            sizeof("fuzz.my") - 1,
             data,
             size,
             &original_snapshot
-        ) != RUDA_SOURCE_OK) {
-        ruda_source_manager_dispose(&sources);
+        ) != MMAY_SOURCE_OK) {
+        mmay_source_manager_dispose(&sources);
         abort();
     }
-    lex_status = ruda_lex_snapshot(
+    lex_status = mmay_lex_snapshot(
         original_snapshot,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         lex_options,
         &original_lexed
     );
-    if (lex_status != RUDA_LEX_OK) {
-        if (lex_status == RUDA_LEX_LIMIT_REACHED) {
-            ruda_lex_result_dispose(&original_lexed);
+    if (lex_status != MMAY_LEX_OK) {
+        if (lex_status == MMAY_LEX_LIMIT_REACHED) {
+            mmay_lex_result_dispose(&original_lexed);
         } else {
             abort();
         }
-        ruda_source_manager_dispose(&sources);
+        mmay_source_manager_dispose(&sources);
         return 0;
     }
-    parse_status = ruda_parse_file(
+    parse_status = mmay_parse_file(
         &original_lexed,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         parse_options,
         &original_parsed
     );
-    if (parse_status != RUDA_PARSE_OK) {
-        if (parse_status != RUDA_PARSE_LIMIT_REACHED) {
+    if (parse_status != MMAY_PARSE_OK) {
+        if (parse_status != MMAY_PARSE_LIMIT_REACHED) {
             abort();
         }
-        ruda_lex_result_dispose(&original_lexed);
-        ruda_source_manager_dispose(&sources);
+        mmay_lex_result_dispose(&original_lexed);
+        mmay_source_manager_dispose(&sources);
         return 0;
     }
     if (original_lexed.diagnostics.length != 0
         || original_lexed.suppressed_diagnostics != 0
         || original_parsed.diagnostics.length != 0
         || original_parsed.suppressed_diagnostics != 0) {
-        ruda_parse_result_dispose(&original_parsed);
-        ruda_lex_result_dispose(&original_lexed);
-        ruda_source_manager_dispose(&sources);
+        mmay_parse_result_dispose(&original_parsed);
+        mmay_lex_result_dispose(&original_lexed);
+        mmay_source_manager_dispose(&sources);
         return 0;
     }
-    format_status = ruda_format_source(
+    format_status = mmay_format_source(
         &original_lexed,
         &original_parsed,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         format_options,
         &first
     );
-    if (format_status != RUDA_FORMAT_OK) {
-        if (format_status != RUDA_FORMAT_LIMIT_REACHED) {
+    if (format_status != MMAY_FORMAT_OK) {
+        if (format_status != MMAY_FORMAT_LIMIT_REACHED) {
             abort();
         }
-        ruda_parse_result_dispose(&original_parsed);
-        ruda_lex_result_dispose(&original_lexed);
-        ruda_source_manager_dispose(&sources);
+        mmay_parse_result_dispose(&original_parsed);
+        mmay_lex_result_dispose(&original_lexed);
+        mmay_source_manager_dispose(&sources);
         return 0;
     }
-    if (ruda_source_manager_overlay(
+    if (mmay_source_manager_overlay(
             &sources,
-            ruda_source_file_id(original_snapshot),
+            mmay_source_file_id(original_snapshot),
             first.output.data,
             first.output.length,
             &formatted_snapshot
-        ) != RUDA_SOURCE_OK) {
+        ) != MMAY_SOURCE_OK) {
         abort();
     }
-    if (ruda_lex_snapshot(
+    if (mmay_lex_snapshot(
             formatted_snapshot,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             lex_options,
             &formatted_lexed
-        ) != RUDA_LEX_OK
+        ) != MMAY_LEX_OK
         || formatted_lexed.diagnostics.length != 0
-        || ruda_parse_file(
+        || mmay_parse_file(
             &formatted_lexed,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             parse_options,
             &formatted_parsed
-        ) != RUDA_PARSE_OK
+        ) != MMAY_PARSE_OK
         || formatted_parsed.diagnostics.length != 0) {
         abort();
     }
-    if (ruda_ast_project(
+    if (mmay_ast_project(
             &original_parsed.tree,
-            ruda_system_allocator(),
-            ruda_ast_default_options(),
+            mmay_system_allocator(),
+            mmay_ast_default_options(),
             &original_ast
-        ) != RUDA_AST_OK
-        || ruda_ast_project(
+        ) != MMAY_AST_OK
+        || mmay_ast_project(
             &formatted_parsed.tree,
-            ruda_system_allocator(),
-            ruda_ast_default_options(),
+            mmay_system_allocator(),
+            mmay_ast_default_options(),
             &formatted_ast
-        ) != RUDA_AST_OK
-        || !ruda_fuzz_ast_semantically_equal(
+        ) != MMAY_AST_OK
+        || !mmay_fuzz_ast_semantically_equal(
             &original_ast,
             original_snapshot,
             &formatted_ast,
@@ -158,25 +158,25 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
         )) {
         abort();
     }
-    if (ruda_format_source(
+    if (mmay_format_source(
             &formatted_lexed,
             &formatted_parsed,
-            ruda_system_allocator(),
+            mmay_system_allocator(),
             format_options,
             &second
-        ) != RUDA_FORMAT_OK
+        ) != MMAY_FORMAT_OK
         || second.changed || second.output.length != first.output.length
         || memcmp(second.output.data, first.output.data, first.output.length) != 0) {
         abort();
     }
-    ruda_format_result_dispose(&second);
-    ruda_ast_tree_dispose(&formatted_ast);
-    ruda_ast_tree_dispose(&original_ast);
-    ruda_parse_result_dispose(&formatted_parsed);
-    ruda_lex_result_dispose(&formatted_lexed);
-    ruda_format_result_dispose(&first);
-    ruda_parse_result_dispose(&original_parsed);
-    ruda_lex_result_dispose(&original_lexed);
-    ruda_source_manager_dispose(&sources);
+    mmay_format_result_dispose(&second);
+    mmay_ast_tree_dispose(&formatted_ast);
+    mmay_ast_tree_dispose(&original_ast);
+    mmay_parse_result_dispose(&formatted_parsed);
+    mmay_lex_result_dispose(&formatted_lexed);
+    mmay_format_result_dispose(&first);
+    mmay_parse_result_dispose(&original_parsed);
+    mmay_lex_result_dispose(&original_lexed);
+    mmay_source_manager_dispose(&sources);
     return 0;
 }

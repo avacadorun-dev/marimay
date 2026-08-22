@@ -5,18 +5,18 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifndef RUDA_TEST_SOURCE_DIR
-#define RUDA_TEST_SOURCE_DIR "."
+#ifndef MMAY_TEST_SOURCE_DIR
+#define MMAY_TEST_SOURCE_DIR "."
 #endif
 
-static void ruda_test_numeric_cp6_format_differential(void);
-static void ruda_test_numeric_cp6_policy_panics(
-    const RudaCheckResult *checked,
-    const RudaMirFunction *const *functions,
+static void mmay_test_numeric_cp6_format_differential(void);
+static void mmay_test_numeric_cp6_policy_panics(
+    const MarimayCheckResult *checked,
+    const MarimayMirFunction *const *functions,
     size_t function_count
 );
 
-static bool ruda_test_numeric_cp6_source(char *source, size_t capacity) {
+static bool mmay_test_numeric_cp6_source(char *source, size_t capacity) {
     char path[1024];
     FILE *file = NULL;
     size_t count = 0;
@@ -27,7 +27,7 @@ static bool ruda_test_numeric_cp6_source(char *source, size_t capacity) {
         return false;
     }
     written = snprintf(
-        path, sizeof(path), "%s/examples/numeric_cp6.ruda", RUDA_TEST_SOURCE_DIR
+        path, sizeof(path), "%s/examples/numeric_cp6.my", MMAY_TEST_SOURCE_DIR
     );
     if (written < 0 || (size_t)written >= sizeof(path)) {
         return false;
@@ -46,8 +46,8 @@ static bool ruda_test_numeric_cp6_source(char *source, size_t capacity) {
     return true;
 }
 
-static const RudaCheckedFunction *ruda_test_numeric_cp6_entry(
-    const RudaCheckResult *checked,
+static const MarimayCheckedFunction *mmay_test_numeric_cp6_entry(
+    const MarimayCheckResult *checked,
     size_t *result_index
 ) {
     size_t index = 0;
@@ -55,7 +55,7 @@ static const RudaCheckedFunction *ruda_test_numeric_cp6_entry(
         return NULL;
     }
     for (index = 0; index < checked->functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             checked, index
         );
         if (function != NULL && function->name.length == 4
@@ -67,23 +67,23 @@ static const RudaCheckedFunction *ruda_test_numeric_cp6_entry(
     return NULL;
 }
 
-void ruda_test_numeric_cp6_differential(void) {
+void mmay_test_numeric_cp6_differential(void) {
     char source[16384];
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    const RudaCheckedFunction *entry = NULL;
-    const RudaMirFunction *functions[16];
-    RudaBytecodeProgram bytecode;
-    RudaBytecodeProgram decoded;
-    RudaOwnedBytes encoded;
-    RudaBytecodeExecution execution;
-    RudaBytecodeExecutionOptions execution_options;
-    RudaBytecodeRunOptions run_options;
-    RudaMirValue oracle_result;
-    RudaBytecodeValue vm_result;
-    RudaNativeCProgram native_program;
-    RudaOwnedBytes generated;
-    RudaMirBytecodeLowerStatus lower_status;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayCheckedFunction *entry = NULL;
+    const MarimayMirFunction *functions[16];
+    MarimayBytecodeProgram bytecode;
+    MarimayBytecodeProgram decoded;
+    MarimayOwnedBytes encoded;
+    MarimayBytecodeExecution execution;
+    MarimayBytecodeExecutionOptions execution_options;
+    MarimayBytecodeRunOptions run_options;
+    MarimayMirValue oracle_result;
+    MarimayBytecodeValue vm_result;
+    MarimayNativeCProgram native_program;
+    MarimayOwnedBytes generated;
+    MarimayMirBytecodeLowerStatus lower_status;
     size_t entry_index = SIZE_MAX;
     size_t index = 0;
     bool checked_ready = false;
@@ -102,27 +102,27 @@ void ruda_test_numeric_cp6_differential(void) {
     memset(&native_program, 0, sizeof(native_program));
     memset(&generated, 0, sizeof(generated));
 
-    if (!ruda_test_numeric_cp6_source(source, sizeof(source))) {
-        RUDA_EXPECT(false);
+    if (!mmay_test_numeric_cp6_source(source, sizeof(source))) {
+        MMAY_EXPECT(false);
         goto cleanup;
     }
-    if (!ruda_checker_fixture_init(&fixture, source) || !fixture.ast_initialized) {
-        RUDA_EXPECT(false);
+    if (!mmay_checker_fixture_init(&fixture, source) || !fixture.ast_initialized) {
+        MMAY_EXPECT(false);
         goto cleanup;
     }
-    if (ruda_check_ast(
+    if (mmay_check_ast(
             &fixture.ast,
             "test/numeric-cp6-differential",
-            ruda_system_allocator(),
-            ruda_check_default_options(),
+            mmay_system_allocator(),
+            mmay_check_default_options(),
             &checked
-        ) != RUDA_CHECK_OK) {
-        RUDA_EXPECT(false);
+        ) != MMAY_CHECK_OK) {
+        MMAY_EXPECT(false);
         goto cleanup;
     }
     checked_ready = true;
     for (index = 0; index < checked.diagnostics.length; index += 1) {
-        const RudaCheckDiagnostic *diagnostic = ruda_check_diagnostic(
+        const MarimayCheckDiagnostic *diagnostic = mmay_check_diagnostic(
             &checked, index
         );
         if (diagnostic != NULL) {
@@ -136,30 +136,30 @@ void ruda_test_numeric_cp6_differential(void) {
             );
         }
     }
-    RUDA_EXPECT(checked.diagnostics.length == 0);
-    RUDA_EXPECT(checked.functions.length <= sizeof(functions) / sizeof(functions[0]));
+    MMAY_EXPECT(checked.diagnostics.length == 0);
+    MMAY_EXPECT(checked.functions.length <= sizeof(functions) / sizeof(functions[0]));
     for (index = 0; index < checked.functions.length
         && index < sizeof(functions) / sizeof(functions[0]); index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             &checked, index
         );
-        RUDA_EXPECT(function != NULL);
+        MMAY_EXPECT(function != NULL);
         if (function == NULL) {
             goto cleanup;
         }
-        RUDA_EXPECT(ruda_mir_verify(&function->mir) == RUDA_MIR_VERIFY_OK);
+        MMAY_EXPECT(mmay_mir_verify(&function->mir) == MMAY_MIR_VERIFY_OK);
         functions[index] = &function->mir;
         {
-            RudaBytecodeFunction lowered_function;
-            RudaMirBytecodeLowerStatus function_status;
+            MarimayBytecodeFunction lowered_function;
+            MarimayMirBytecodeLowerStatus function_status;
             memset(&lowered_function, 0, sizeof(lowered_function));
-            function_status = ruda_mir_lower_bytecode_function(
+            function_status = mmay_mir_lower_bytecode_function(
                 &function->mir,
-                ruda_system_allocator(),
-                ruda_mir_bytecode_lower_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_bytecode_lower_default_options(),
                 &lowered_function
             );
-            if (function_status != RUDA_MIR_BYTECODE_LOWER_OK) {
+            if (function_status != MMAY_MIR_BYTECODE_LOWER_OK) {
                 fprintf(
                     stderr,
                     "numeric checkpoint-6 function %.*s lower status: %d\n",
@@ -168,140 +168,140 @@ void ruda_test_numeric_cp6_differential(void) {
                     (int)function_status
                 );
             }
-            RUDA_EXPECT(function_status == RUDA_MIR_BYTECODE_LOWER_OK);
-            ruda_bytecode_function_dispose(&lowered_function);
+            MMAY_EXPECT(function_status == MMAY_MIR_BYTECODE_LOWER_OK);
+            mmay_bytecode_function_dispose(&lowered_function);
         }
     }
-    entry = ruda_test_numeric_cp6_entry(&checked, &entry_index);
-    RUDA_EXPECT(entry != NULL);
+    entry = mmay_test_numeric_cp6_entry(&checked, &entry_index);
+    MMAY_EXPECT(entry != NULL);
     if (entry == NULL) {
         goto cleanup;
     }
-    RUDA_EXPECT(ruda_check_interpret_function(
+    MMAY_EXPECT(mmay_check_interpret_function(
         &checked,
         entry_index,
         NULL,
         0,
-        ruda_system_allocator(),
-        ruda_check_interpret_default_options(),
+        mmay_system_allocator(),
+        mmay_check_interpret_default_options(),
         &oracle_result
-    ) == RUDA_MIR_INTERPRET_OK);
-    RUDA_EXPECT(oracle_result.type == RUDA_TYPE_I64);
-    if (oracle_result.type == RUDA_TYPE_I64 && oracle_result.as.i64 != 6) {
+    ) == MMAY_MIR_INTERPRET_OK);
+    MMAY_EXPECT(oracle_result.type == MMAY_TYPE_I64);
+    if (oracle_result.type == MMAY_TYPE_I64 && oracle_result.as.i64 != 6) {
         fprintf(
             stderr,
             "numeric checkpoint-6 MIR result: %lld\n",
             (long long)oracle_result.as.i64
         );
     }
-    RUDA_EXPECT(oracle_result.as.i64 == 6);
+    MMAY_EXPECT(oracle_result.as.i64 == 6);
 
-    lower_status = ruda_mir_lower_bytecode_program(
+    lower_status = mmay_mir_lower_bytecode_program(
             functions,
             checked.functions.length,
             entry->mir.symbol,
-            ruda_system_allocator(),
-            ruda_mir_bytecode_program_lower_default_options(),
+            mmay_system_allocator(),
+            mmay_mir_bytecode_program_lower_default_options(),
             &bytecode
         );
-    if (lower_status != RUDA_MIR_BYTECODE_LOWER_OK) {
+    if (lower_status != MMAY_MIR_BYTECODE_LOWER_OK) {
         fprintf(
             stderr,
             "numeric checkpoint-6 bytecode lower status: %d\n",
             (int)lower_status
         );
-        RUDA_EXPECT(false);
+        MMAY_EXPECT(false);
         goto cleanup;
     }
     bytecode_ready = true;
-    RUDA_EXPECT(ruda_bytecode_program_verify(&bytecode)
-        == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
-    if (ruda_bytecode_encode_program(
-            &bytecode, ruda_system_allocator(), &encoded
-        ) != RUDA_BYTECODE_CODEC_OK) {
-        RUDA_EXPECT(false);
+    MMAY_EXPECT(mmay_bytecode_program_verify(&bytecode)
+        == MMAY_BYTECODE_PROGRAM_VERIFY_OK);
+    if (mmay_bytecode_encode_program(
+            &bytecode, mmay_system_allocator(), &encoded
+        ) != MMAY_BYTECODE_CODEC_OK) {
+        MMAY_EXPECT(false);
         goto cleanup;
     }
-    if (ruda_bytecode_decode_program(
+    if (mmay_bytecode_decode_program(
             encoded.data,
             encoded.length,
-            ruda_system_allocator(),
-            ruda_bytecode_program_default_options(),
+            mmay_system_allocator(),
+            mmay_bytecode_program_default_options(),
             &decoded
-        ) != RUDA_BYTECODE_CODEC_OK) {
-        RUDA_EXPECT(false);
+        ) != MMAY_BYTECODE_CODEC_OK) {
+        MMAY_EXPECT(false);
         goto cleanup;
     }
     decoded_ready = true;
-    RUDA_EXPECT(ruda_bytecode_program_verify(&decoded)
-        == RUDA_BYTECODE_PROGRAM_VERIFY_OK);
-    execution_options = ruda_bytecode_execution_default_options();
+    MMAY_EXPECT(mmay_bytecode_program_verify(&decoded)
+        == MMAY_BYTECODE_PROGRAM_VERIFY_OK);
+    execution_options = mmay_bytecode_execution_default_options();
     execution_options.managed_heap.collect_before_allocation = true;
-    if (!ruda_bytecode_execution_init(
-            &execution, ruda_system_allocator(), execution_options
+    if (!mmay_bytecode_execution_init(
+            &execution, mmay_system_allocator(), execution_options
         )) {
-        RUDA_EXPECT(false);
+        MMAY_EXPECT(false);
         goto cleanup;
     }
     execution_ready = true;
-    run_options = ruda_bytecode_run_default_options();
+    run_options = mmay_bytecode_run_default_options();
     run_options.execution = &execution;
-    RUDA_EXPECT(ruda_bytecode_run_program(
+    MMAY_EXPECT(mmay_bytecode_run_program(
         &decoded,
         NULL,
         0,
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         run_options,
         &vm_result
-    ) == RUDA_BYTECODE_RUN_OK);
-    RUDA_EXPECT(vm_result.type == RUDA_BYTECODE_TYPE_I64);
-    RUDA_EXPECT(vm_result.as.i64 == 6);
+    ) == MMAY_BYTECODE_RUN_OK);
+    MMAY_EXPECT(vm_result.type == MMAY_BYTECODE_TYPE_I64);
+    MMAY_EXPECT(vm_result.as.i64 == 6);
 
     native_program.functions = functions;
     native_program.function_count = checked.functions.length;
     native_program.entry_symbol = entry->mir.symbol;
-    RUDA_EXPECT(ruda_native_c_emit_program(
+    MMAY_EXPECT(mmay_native_c_emit_program(
         &native_program,
-        ruda_system_allocator(),
-        ruda_native_c_emit_default_options(),
+        mmay_system_allocator(),
+        mmay_native_c_emit_default_options(),
         &generated
-    ) == RUDA_NATIVE_C_EMIT_OK);
+    ) == MMAY_NATIVE_C_EMIT_OK);
 #if !defined(_WIN32)
     if (generated.data != NULL) {
-        ruda_test_native_compile_and_run(&generated, "ok:i64:6\n", 0);
+        mmay_test_native_compile_and_run(&generated, "ok:i64:6\n", 0);
     }
 #endif
-    ruda_test_numeric_cp6_policy_panics(
+    mmay_test_numeric_cp6_policy_panics(
         &checked, functions, checked.functions.length
     );
 
 cleanup:
-    ruda_owned_bytes_dispose(&generated);
+    mmay_owned_bytes_dispose(&generated);
     if (execution_ready) {
-        ruda_bytecode_execution_dispose(&execution);
+        mmay_bytecode_execution_dispose(&execution);
     }
     if (decoded_ready) {
-        ruda_bytecode_program_dispose(&decoded);
+        mmay_bytecode_program_dispose(&decoded);
     }
-    ruda_owned_bytes_dispose(&encoded);
+    mmay_owned_bytes_dispose(&encoded);
     if (bytecode_ready) {
-        ruda_bytecode_program_dispose(&bytecode);
+        mmay_bytecode_program_dispose(&bytecode);
     }
     if (checked_ready) {
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
-    ruda_test_numeric_cp6_format_differential();
+    mmay_checker_fixture_dispose(&fixture);
+    mmay_test_numeric_cp6_format_differential();
 }
 
-static const RudaCheckedFunction *ruda_test_numeric_cp6_find(
-    const RudaCheckResult *checked,
+static const MarimayCheckedFunction *mmay_test_numeric_cp6_find(
+    const MarimayCheckResult *checked,
     const char *name
 ) {
     size_t index = 0;
     size_t length = strlen(name);
     for (index = 0; index < checked->functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             checked, index
         );
         if (function != NULL && function->name.length == length
@@ -312,25 +312,25 @@ static const RudaCheckedFunction *ruda_test_numeric_cp6_find(
     return NULL;
 }
 
-static bool ruda_test_numeric_cp6_policy_span(
-    const RudaMirFunction *function,
-    RudaMirSpan *span
+static bool mmay_test_numeric_cp6_policy_span(
+    const MarimayMirFunction *function,
+    MarimayMirSpan *span
 ) {
     size_t block_index = 0;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
         for (instruction_index = 0;
             block != NULL && instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *instruction = ruda_vector_at_const(
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
             if (instruction != NULL
-                && instruction->kind == RUDA_MIR_INTEGER_POLICY) {
+                && instruction->kind == MMAY_MIR_INTEGER_POLICY) {
                 *span = instruction->span;
                 return true;
             }
@@ -339,41 +339,41 @@ static bool ruda_test_numeric_cp6_policy_span(
     return false;
 }
 
-static void ruda_test_numeric_cp6_policy_panics(
-    const RudaCheckResult *checked,
-    const RudaMirFunction *const *functions,
+static void mmay_test_numeric_cp6_policy_panics(
+    const MarimayCheckResult *checked,
+    const MarimayMirFunction *const *functions,
     size_t function_count
 ) {
     static const struct {
         const char *name;
-        RudaMirInterpretStatus mir_status;
-        RudaBytecodeRunStatus vm_status;
+        MarimayMirInterpretStatus mir_status;
+        MarimayBytecodeRunStatus vm_status;
         int trap_code;
     } cases[] = {
         {
-            "wrappingZeroDivisor", RUDA_MIR_INTERPRET_DIVISION_BY_ZERO,
-            RUDA_BYTECODE_RUN_DIVISION_BY_ZERO, 2
+            "wrappingZeroDivisor", MMAY_MIR_INTERPRET_DIVISION_BY_ZERO,
+            MMAY_BYTECODE_RUN_DIVISION_BY_ZERO, 2
         },
         {
-            "saturatingInvalidShift", RUDA_MIR_INTERPRET_INVALID_SHIFT,
-            RUDA_BYTECODE_RUN_INVALID_SHIFT, 3
+            "saturatingInvalidShift", MMAY_MIR_INTERPRET_INVALID_SHIFT,
+            MMAY_BYTECODE_RUN_INVALID_SHIFT, 3
         }
     };
     size_t case_index = 0;
     for (case_index = 0;
         case_index < sizeof(cases) / sizeof(cases[0]); case_index += 1) {
-        const RudaCheckedFunction *entry = ruda_test_numeric_cp6_find(
+        const MarimayCheckedFunction *entry = mmay_test_numeric_cp6_find(
             checked, cases[case_index].name
         );
-        RudaMirSpan span = {0};
-        RudaMirValue mir_result;
-        RudaBytecodeProgram bytecode;
-        RudaBytecodeExecution execution;
-        RudaBytecodeRunOptions options;
-        RudaBytecodeTrap trap;
-        RudaBytecodeValue vm_result;
-        RudaNativeCProgram native_program;
-        RudaOwnedBytes generated;
+        MarimayMirSpan span = {0};
+        MarimayMirValue mir_result;
+        MarimayBytecodeProgram bytecode;
+        MarimayBytecodeExecution execution;
+        MarimayBytecodeRunOptions options;
+        MarimayBytecodeTrap trap;
+        MarimayBytecodeValue vm_result;
+        MarimayNativeCProgram native_program;
+        MarimayOwnedBytes generated;
         char expected[96];
         memset(&mir_result, 0, sizeof(mir_result));
         memset(&bytecode, 0, sizeof(bytecode));
@@ -382,102 +382,102 @@ static void ruda_test_numeric_cp6_policy_panics(
         memset(&vm_result, 0, sizeof(vm_result));
         memset(&native_program, 0, sizeof(native_program));
         memset(&generated, 0, sizeof(generated));
-        RUDA_EXPECT(entry != NULL);
-        RUDA_EXPECT(entry != NULL
-            && ruda_test_numeric_cp6_policy_span(&entry->mir, &span));
+        MMAY_EXPECT(entry != NULL);
+        MMAY_EXPECT(entry != NULL
+            && mmay_test_numeric_cp6_policy_span(&entry->mir, &span));
         if (entry == NULL) {
             continue;
         }
-        RUDA_EXPECT(ruda_mir_interpret(
-            &entry->mir, NULL, 0, ruda_system_allocator(),
-            ruda_mir_interpret_default_options(), &mir_result
+        MMAY_EXPECT(mmay_mir_interpret(
+            &entry->mir, NULL, 0, mmay_system_allocator(),
+            mmay_mir_interpret_default_options(), &mir_result
         ) == cases[case_index].mir_status);
-        RUDA_EXPECT(ruda_mir_lower_bytecode_program(
+        MMAY_EXPECT(mmay_mir_lower_bytecode_program(
             functions, function_count, entry->mir.symbol,
-            ruda_system_allocator(),
-            ruda_mir_bytecode_program_lower_default_options(), &bytecode
-        ) == RUDA_MIR_BYTECODE_LOWER_OK);
-        RUDA_EXPECT(ruda_bytecode_execution_init(
-            &execution, ruda_system_allocator(),
-            ruda_bytecode_execution_default_options()
+            mmay_system_allocator(),
+            mmay_mir_bytecode_program_lower_default_options(), &bytecode
+        ) == MMAY_MIR_BYTECODE_LOWER_OK);
+        MMAY_EXPECT(mmay_bytecode_execution_init(
+            &execution, mmay_system_allocator(),
+            mmay_bytecode_execution_default_options()
         ));
-        options = ruda_bytecode_run_default_options();
+        options = mmay_bytecode_run_default_options();
         options.execution = &execution;
         options.trap = &trap;
-        RUDA_EXPECT(ruda_bytecode_run_program(
-            &bytecode, NULL, 0, ruda_system_allocator(), options, &vm_result
+        MMAY_EXPECT(mmay_bytecode_run_program(
+            &bytecode, NULL, 0, mmay_system_allocator(), options, &vm_result
         ) == cases[case_index].vm_status);
-        RUDA_EXPECT(trap.has_span && trap.span.start == span.start
+        MMAY_EXPECT(trap.has_span && trap.span.start == span.start
             && trap.span.end == span.end);
         native_program.functions = functions;
         native_program.function_count = function_count;
         native_program.entry_symbol = entry->mir.symbol;
-        RUDA_EXPECT(ruda_native_c_emit_program(
-            &native_program, ruda_system_allocator(),
-            ruda_native_c_emit_default_options(), &generated
-        ) == RUDA_NATIVE_C_EMIT_OK);
+        MMAY_EXPECT(mmay_native_c_emit_program(
+            &native_program, mmay_system_allocator(),
+            mmay_native_c_emit_default_options(), &generated
+        ) == MMAY_NATIVE_C_EMIT_OK);
         (void)snprintf(
             expected, sizeof(expected), "trap:%d:%zu:%zu\n",
             cases[case_index].trap_code, span.start, span.end
         );
 #if !defined(_WIN32)
         if (generated.data != NULL) {
-            ruda_test_native_compile_and_run(&generated, expected, 1);
+            mmay_test_native_compile_and_run(&generated, expected, 1);
         }
 #endif
-        ruda_owned_bytes_dispose(&generated);
-        ruda_bytecode_execution_dispose(&execution);
-        ruda_bytecode_program_dispose(&bytecode);
+        mmay_owned_bytes_dispose(&generated);
+        mmay_bytecode_execution_dispose(&execution);
+        mmay_bytecode_program_dispose(&bytecode);
     }
 }
 
-static bool ruda_test_numeric_cp6_build_format(
-    RudaMirFunction *function,
-    RudaSymbolId symbol,
+static bool mmay_test_numeric_cp6_build_format(
+    MarimayMirFunction *function,
+    MarimaySymbolId symbol,
     bool binary32
 ) {
-    RudaTypeId parameter = RUDA_TYPE_F32;
-    RudaMirRegister source = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
-    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
-    RudaMirInstruction instruction;
+    MarimayTypeId parameter = MMAY_TYPE_F32;
+    MarimayMirRegister source = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister result = MMAY_MIR_NO_REGISTER;
+    MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
+    MarimayMirInstruction instruction;
     memset(function, 0, sizeof(*function));
-    if (!ruda_mir_function_init(
-            function, ruda_system_allocator(), symbol,
+    if (!mmay_mir_function_init(
+            function, mmay_system_allocator(), symbol,
             binary32 ? &parameter : NULL, binary32 ? 1 : 0,
-            RUDA_TYPE_STRING, ruda_mir_function_default_options()
+            MMAY_TYPE_STRING, mmay_mir_function_default_options()
         )) {
         return false;
     }
     if (binary32) {
         source = 0;
-    } else if (!ruda_mir_add_register(function, RUDA_TYPE_F64, &source)) {
+    } else if (!mmay_mir_add_register(function, MMAY_TYPE_F64, &source)) {
         goto failure;
     }
-    if (!ruda_mir_add_register(function, RUDA_TYPE_STRING, &result)
-        || !ruda_mir_add_block(function, &block)) {
+    if (!mmay_mir_add_register(function, MMAY_TYPE_STRING, &result)
+        || !mmay_mir_add_block(function, &block)) {
         goto failure;
     }
     if (!binary32) {
-        instruction = ruda_test_native_instruction(
-            RUDA_MIR_CONSTANT_F64, source, RUDA_MIR_NO_REGISTER,
-            RUDA_MIR_NO_REGISTER, 0, false, 100
+        instruction = mmay_test_native_instruction(
+            MMAY_MIR_CONSTANT_F64, source, MMAY_MIR_NO_REGISTER,
+            MMAY_MIR_NO_REGISTER, 0, false, 100
         );
         instruction.f64_bits = UINT64_C(0x4079f00000000000);
-        if (!ruda_mir_append_instruction(function, block, &instruction)) {
+        if (!mmay_mir_append_instruction(function, block, &instruction)) {
             goto failure;
         }
     }
-    instruction = ruda_test_native_instruction(
-        binary32 ? RUDA_MIR_FORMAT_F32 : RUDA_MIR_FORMAT_F64,
-        result, source, RUDA_MIR_NO_REGISTER, 0, false, 101
+    instruction = mmay_test_native_instruction(
+        binary32 ? MMAY_MIR_FORMAT_F32 : MMAY_MIR_FORMAT_F64,
+        result, source, MMAY_MIR_NO_REGISTER, 0, false, 101
     );
-    if (!ruda_mir_append_instruction(function, block, &instruction)
-        || !ruda_mir_set_terminator(
+    if (!mmay_mir_append_instruction(function, block, &instruction)
+        || !mmay_mir_set_terminator(
             function, block,
-            ruda_test_native_terminator(
-                RUDA_MIR_RETURN, result, RUDA_MIR_NO_BLOCK,
-                RUDA_MIR_NO_BLOCK, 102
+            mmay_test_native_terminator(
+                MMAY_MIR_RETURN, result, MMAY_MIR_NO_BLOCK,
+                MMAY_MIR_NO_BLOCK, 102
             )
         )) {
         goto failure;
@@ -485,24 +485,24 @@ static bool ruda_test_numeric_cp6_build_format(
     return true;
 
 failure:
-    ruda_mir_function_dispose(function);
+    mmay_mir_function_dispose(function);
     return false;
 }
 
-static void ruda_test_numeric_cp6_execute_format(
-    const RudaMirFunction *function,
-    const RudaMirValue *mir_arguments,
-    const RudaBytecodeValue *bytecode_arguments,
+static void mmay_test_numeric_cp6_execute_format(
+    const MarimayMirFunction *function,
+    const MarimayMirValue *mir_arguments,
+    const MarimayBytecodeValue *bytecode_arguments,
     size_t argument_count,
     const char *expected
 ) {
-    RudaMirExecution mir_execution;
-    RudaMirInterpretOptions mir_options;
-    RudaMirValue mir_result;
-    RudaBytecodeFunction bytecode;
-    RudaBytecodeExecution bytecode_execution;
-    RudaBytecodeRunOptions bytecode_options;
-    RudaBytecodeValue bytecode_result;
+    MarimayMirExecution mir_execution;
+    MarimayMirInterpretOptions mir_options;
+    MarimayMirValue mir_result;
+    MarimayBytecodeFunction bytecode;
+    MarimayBytecodeExecution bytecode_execution;
+    MarimayBytecodeRunOptions bytecode_options;
+    MarimayBytecodeValue bytecode_result;
     const unsigned char *bytes = NULL;
     size_t length = 0;
     memset(&mir_execution, 0, sizeof(mir_execution));
@@ -510,162 +510,162 @@ static void ruda_test_numeric_cp6_execute_format(
     memset(&bytecode, 0, sizeof(bytecode));
     memset(&bytecode_execution, 0, sizeof(bytecode_execution));
     memset(&bytecode_result, 0, sizeof(bytecode_result));
-    RUDA_EXPECT(ruda_mir_execution_init(
-        &mir_execution, ruda_system_allocator(),
-        ruda_mir_execution_default_options()
+    MMAY_EXPECT(mmay_mir_execution_init(
+        &mir_execution, mmay_system_allocator(),
+        mmay_mir_execution_default_options()
     ));
-    mir_options = ruda_mir_interpret_default_options();
+    mir_options = mmay_mir_interpret_default_options();
     mir_options.execution = &mir_execution;
-    RUDA_EXPECT(ruda_mir_interpret(
-        function, mir_arguments, argument_count, ruda_system_allocator(),
+    MMAY_EXPECT(mmay_mir_interpret(
+        function, mir_arguments, argument_count, mmay_system_allocator(),
         mir_options, &mir_result
-    ) == RUDA_MIR_INTERPRET_OK);
-    RUDA_EXPECT(ruda_mir_execution_string_bytes(
+    ) == MMAY_MIR_INTERPRET_OK);
+    MMAY_EXPECT(mmay_mir_execution_string_bytes(
         &mir_execution, mir_result, &bytes, &length
     ));
-    RUDA_EXPECT(length == strlen(expected)
+    MMAY_EXPECT(length == strlen(expected)
         && memcmp(bytes, expected, length) == 0);
-    RUDA_EXPECT(ruda_mir_lower_bytecode_function(
-        function, ruda_system_allocator(),
-        ruda_mir_bytecode_lower_default_options(), &bytecode
-    ) == RUDA_MIR_BYTECODE_LOWER_OK);
-    RUDA_EXPECT(ruda_bytecode_execution_init(
-        &bytecode_execution, ruda_system_allocator(),
-        ruda_bytecode_execution_default_options()
+    MMAY_EXPECT(mmay_mir_lower_bytecode_function(
+        function, mmay_system_allocator(),
+        mmay_mir_bytecode_lower_default_options(), &bytecode
+    ) == MMAY_MIR_BYTECODE_LOWER_OK);
+    MMAY_EXPECT(mmay_bytecode_execution_init(
+        &bytecode_execution, mmay_system_allocator(),
+        mmay_bytecode_execution_default_options()
     ));
-    bytecode_options = ruda_bytecode_run_default_options();
+    bytecode_options = mmay_bytecode_run_default_options();
     bytecode_options.execution = &bytecode_execution;
-    RUDA_EXPECT(ruda_bytecode_run(
+    MMAY_EXPECT(mmay_bytecode_run(
         &bytecode, bytecode_arguments, argument_count,
-        ruda_system_allocator(), bytecode_options, &bytecode_result
-    ) == RUDA_BYTECODE_RUN_OK);
+        mmay_system_allocator(), bytecode_options, &bytecode_result
+    ) == MMAY_BYTECODE_RUN_OK);
     bytes = NULL;
     length = 0;
-    RUDA_EXPECT(ruda_bytecode_execution_string_bytes(
+    MMAY_EXPECT(mmay_bytecode_execution_string_bytes(
         &bytecode_execution, bytecode_result, &bytes, &length
     ));
-    RUDA_EXPECT(length == strlen(expected)
+    MMAY_EXPECT(length == strlen(expected)
         && memcmp(bytes, expected, length) == 0);
-    ruda_bytecode_execution_dispose(&bytecode_execution);
-    ruda_bytecode_function_dispose(&bytecode);
-    ruda_mir_execution_dispose(&mir_execution);
+    mmay_bytecode_execution_dispose(&bytecode_execution);
+    mmay_bytecode_function_dispose(&bytecode);
+    mmay_mir_execution_dispose(&mir_execution);
 }
 
-static void ruda_test_numeric_cp6_format_allocation_failures(
-    const RudaMirFunction *function
+static void mmay_test_numeric_cp6_format_allocation_failures(
+    const MarimayMirFunction *function
 ) {
-    RudaBytecodeFunction bytecode;
+    MarimayBytecodeFunction bytecode;
     size_t failure_index = 0;
     bool mir_success = false;
     bool bytecode_success = false;
     memset(&bytecode, 0, sizeof(bytecode));
     for (failure_index = 0; failure_index < 128 && !mir_success;
         failure_index += 1) {
-        RudaFailAllocator state;
-        RudaAllocator allocator;
-        RudaMirExecution execution;
-        RudaMirInterpretOptions options;
-        RudaMirValue result;
-        RudaMirInterpretStatus status = RUDA_MIR_INTERPRET_ALLOCATION_FAILED;
+        MarimayFailAllocator state;
+        MarimayAllocator allocator;
+        MarimayMirExecution execution;
+        MarimayMirInterpretOptions options;
+        MarimayMirValue result;
+        MarimayMirInterpretStatus status = MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
         memset(&execution, 0, sizeof(execution));
         memset(&result, 0, sizeof(result));
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        allocator = ruda_fail_allocator(&state);
-        if (ruda_mir_execution_init(
-                &execution, allocator, ruda_mir_execution_default_options()
+        allocator = mmay_fail_allocator(&state);
+        if (mmay_mir_execution_init(
+                &execution, allocator, mmay_mir_execution_default_options()
             )) {
-            options = ruda_mir_interpret_default_options();
+            options = mmay_mir_interpret_default_options();
             options.execution = &execution;
-            status = ruda_mir_interpret(
+            status = mmay_mir_interpret(
                 function, NULL, 0, allocator, options, &result
             );
         }
-        RUDA_EXPECT(status == RUDA_MIR_INTERPRET_ALLOCATION_FAILED
-            || status == RUDA_MIR_INTERPRET_OK);
-        mir_success = status == RUDA_MIR_INTERPRET_OK;
-        ruda_mir_execution_dispose(&execution);
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(status == MMAY_MIR_INTERPRET_ALLOCATION_FAILED
+            || status == MMAY_MIR_INTERPRET_OK);
+        mir_success = status == MMAY_MIR_INTERPRET_OK;
+        mmay_mir_execution_dispose(&execution);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
     }
-    RUDA_EXPECT(mir_success);
-    RUDA_EXPECT(ruda_mir_lower_bytecode_function(
-        function, ruda_system_allocator(),
-        ruda_mir_bytecode_lower_default_options(), &bytecode
-    ) == RUDA_MIR_BYTECODE_LOWER_OK);
+    MMAY_EXPECT(mir_success);
+    MMAY_EXPECT(mmay_mir_lower_bytecode_function(
+        function, mmay_system_allocator(),
+        mmay_mir_bytecode_lower_default_options(), &bytecode
+    ) == MMAY_MIR_BYTECODE_LOWER_OK);
     for (failure_index = 0; failure_index < 128 && !bytecode_success;
         failure_index += 1) {
-        RudaFailAllocator state;
-        RudaAllocator allocator;
-        RudaBytecodeExecution execution;
-        RudaBytecodeRunOptions options;
-        RudaBytecodeValue result;
-        RudaBytecodeRunStatus status = RUDA_BYTECODE_RUN_ALLOCATION_FAILED;
+        MarimayFailAllocator state;
+        MarimayAllocator allocator;
+        MarimayBytecodeExecution execution;
+        MarimayBytecodeRunOptions options;
+        MarimayBytecodeValue result;
+        MarimayBytecodeRunStatus status = MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         memset(&execution, 0, sizeof(execution));
         memset(&result, 0, sizeof(result));
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        allocator = ruda_fail_allocator(&state);
-        if (ruda_bytecode_execution_init(
+        allocator = mmay_fail_allocator(&state);
+        if (mmay_bytecode_execution_init(
                 &execution, allocator,
-                ruda_bytecode_execution_default_options()
+                mmay_bytecode_execution_default_options()
             )) {
-            options = ruda_bytecode_run_default_options();
+            options = mmay_bytecode_run_default_options();
             options.execution = &execution;
-            status = ruda_bytecode_run(
+            status = mmay_bytecode_run(
                 &bytecode, NULL, 0, allocator, options, &result
             );
         }
-        RUDA_EXPECT(status == RUDA_BYTECODE_RUN_ALLOCATION_FAILED
-            || status == RUDA_BYTECODE_RUN_OK);
-        bytecode_success = status == RUDA_BYTECODE_RUN_OK;
-        ruda_bytecode_execution_dispose(&execution);
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        MMAY_EXPECT(status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED
+            || status == MMAY_BYTECODE_RUN_OK);
+        bytecode_success = status == MMAY_BYTECODE_RUN_OK;
+        mmay_bytecode_execution_dispose(&execution);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
     }
-    RUDA_EXPECT(bytecode_success);
-    ruda_bytecode_function_dispose(&bytecode);
+    MMAY_EXPECT(bytecode_success);
+    mmay_bytecode_function_dispose(&bytecode);
 }
 
 #if !defined(_WIN32)
-static void ruda_test_numeric_cp6_native_f32(
-    const RudaOwnedBytes *generated
+static void mmay_test_numeric_cp6_native_f32(
+    const MarimayOwnedBytes *generated
 ) {
-    static const char prefix[] = "#define main ruda_g_unused_main\n";
+    static const char prefix[] = "#define main mmay_g_unused_main\n";
     static const char suffix[] =
         "\n#undef main\n"
         "int main(void) {\n"
         "  size_t start = 0, end = 0; int status;\n"
-        "  ruda_g_panic panic = {0}; ruda_g_execution execution = {0};\n"
-        "  RudaManagedHeapOptions options; ruda_g_string result = {0};\n"
-        "  ruda_g_keep_assets();\n"
-        "  execution.allocator = ruda_g_make_allocator(&execution.fail_allocator);\n"
-        "  options = ruda_managed_heap_default_options();\n"
-        "  if (!ruda_managed_heap_init(&execution.heap, execution.allocator, options)) return 1;\n"
-        "  status = ruda_g_f_87000000000000000000000000000000("
+        "  mmay_g_panic panic = {0}; mmay_g_execution execution = {0};\n"
+        "  MarimayManagedHeapOptions options; mmay_g_string result = {0};\n"
+        "  mmay_g_keep_assets();\n"
+        "  execution.allocator = mmay_g_make_allocator(&execution.fail_allocator);\n"
+        "  options = mmay_managed_heap_default_options();\n"
+        "  if (!mmay_managed_heap_init(&execution.heap, execution.allocator, options)) return 1;\n"
+        "  status = mmay_g_f_87000000000000000000000000000000("
         "&execution, &panic, UINT32_C(0x3f800000), &result, &start, &end);\n"
-        "  if (status != 0) { ruda_managed_heap_dispose(&execution.heap); return 1; }\n"
+        "  if (status != 0) { mmay_managed_heap_dispose(&execution.heap); return 1; }\n"
         "  printf(\"ok:string:%zu:\", result.length);\n"
-        "  ruda_g_print_hex(result.data, result.length); putchar('\\n');\n"
-        "  ruda_managed_heap_dispose(&execution.heap); return 0;\n"
+        "  mmay_g_print_hex(result.data, result.length); putchar('\\n');\n"
+        "  mmay_managed_heap_dispose(&execution.heap); return 0;\n"
         "}\n";
-    RudaAllocator allocator = ruda_system_allocator();
-    RudaOwnedBytes harness;
+    MarimayAllocator allocator = mmay_system_allocator();
+    MarimayOwnedBytes harness;
     size_t total = 0;
     size_t with_suffix = 0;
     memset(&harness, 0, sizeof(harness));
-    RUDA_EXPECT(generated != NULL && generated->data != NULL);
+    MMAY_EXPECT(generated != NULL && generated->data != NULL);
     if (generated == NULL || generated->data == NULL
-        || !ruda_size_add(sizeof(prefix) - 1, generated->length, &total)
-        || !ruda_size_add(total, sizeof(suffix) - 1, &with_suffix)
-        || !ruda_size_add(with_suffix, 1, &total)) {
-        RUDA_EXPECT(false);
+        || !mmay_size_add(sizeof(prefix) - 1, generated->length, &total)
+        || !mmay_size_add(total, sizeof(suffix) - 1, &with_suffix)
+        || !mmay_size_add(with_suffix, 1, &total)) {
+        MMAY_EXPECT(false);
         return;
     }
-    harness.data = ruda_allocate(&allocator, total);
-    RUDA_EXPECT(harness.data != NULL);
+    harness.data = mmay_allocate(&allocator, total);
+    MMAY_EXPECT(harness.data != NULL);
     if (harness.data == NULL) {
         return;
     }
@@ -677,46 +677,46 @@ static void ruda_test_numeric_cp6_native_f32(
     memcpy(harness.data + sizeof(prefix) - 1 + generated->length,
         suffix, sizeof(suffix) - 1);
     harness.data[harness.length] = 0;
-    ruda_test_native_compile_and_run(
+    mmay_test_native_compile_and_run(
         &harness, "ok:string:3:312e30\n", 0
     );
-    ruda_owned_bytes_dispose(&harness);
+    mmay_owned_bytes_dispose(&harness);
 }
 #endif
 
-static void ruda_test_numeric_cp6_format_differential(void) {
-    const RudaSymbolId f64_symbol = {{0x86}};
-    const RudaSymbolId f32_symbol = {{0x87}};
-    RudaMirFunction f64_function;
-    RudaMirFunction f32_function;
-    RudaMirValue mir_f32;
-    RudaBytecodeValue bytecode_f32;
-    const RudaMirFunction *functions[2];
-    RudaNativeCProgram native_program;
-    RudaOwnedBytes generated;
+static void mmay_test_numeric_cp6_format_differential(void) {
+    const MarimaySymbolId f64_symbol = {{0x86}};
+    const MarimaySymbolId f32_symbol = {{0x87}};
+    MarimayMirFunction f64_function;
+    MarimayMirFunction f32_function;
+    MarimayMirValue mir_f32;
+    MarimayBytecodeValue bytecode_f32;
+    const MarimayMirFunction *functions[2];
+    MarimayNativeCProgram native_program;
+    MarimayOwnedBytes generated;
     memset(&f64_function, 0, sizeof(f64_function));
     memset(&f32_function, 0, sizeof(f32_function));
     memset(&mir_f32, 0, sizeof(mir_f32));
     memset(&bytecode_f32, 0, sizeof(bytecode_f32));
     memset(&native_program, 0, sizeof(native_program));
     memset(&generated, 0, sizeof(generated));
-    RUDA_EXPECT(ruda_test_numeric_cp6_build_format(
+    MMAY_EXPECT(mmay_test_numeric_cp6_build_format(
         &f64_function, f64_symbol, false
     ));
-    RUDA_EXPECT(ruda_test_numeric_cp6_build_format(
+    MMAY_EXPECT(mmay_test_numeric_cp6_build_format(
         &f32_function, f32_symbol, true
     ));
-    RUDA_EXPECT(ruda_mir_verify(&f64_function) == RUDA_MIR_VERIFY_OK);
-    RUDA_EXPECT(ruda_mir_verify(&f32_function) == RUDA_MIR_VERIFY_OK);
-    ruda_test_numeric_cp6_execute_format(
+    MMAY_EXPECT(mmay_mir_verify(&f64_function) == MMAY_MIR_VERIFY_OK);
+    MMAY_EXPECT(mmay_mir_verify(&f32_function) == MMAY_MIR_VERIFY_OK);
+    mmay_test_numeric_cp6_execute_format(
         &f64_function, NULL, NULL, 0, "415.0"
     );
-    ruda_test_numeric_cp6_format_allocation_failures(&f64_function);
-    mir_f32.type = RUDA_TYPE_F32;
+    mmay_test_numeric_cp6_format_allocation_failures(&f64_function);
+    mir_f32.type = MMAY_TYPE_F32;
     mir_f32.as.integer_bits = UINT64_C(0x3f800000);
-    bytecode_f32.type = RUDA_BYTECODE_TYPE_F32;
+    bytecode_f32.type = MMAY_BYTECODE_TYPE_F32;
     bytecode_f32.as.integer_bits = UINT64_C(0x3f800000);
-    ruda_test_numeric_cp6_execute_format(
+    mmay_test_numeric_cp6_execute_format(
         &f32_function, &mir_f32, &bytecode_f32, 1, "1.0"
     );
     functions[0] = &f64_function;
@@ -724,19 +724,19 @@ static void ruda_test_numeric_cp6_format_differential(void) {
     native_program.functions = functions;
     native_program.function_count = 2;
     native_program.entry_symbol = f64_symbol;
-    RUDA_EXPECT(ruda_native_c_emit_program(
-        &native_program, ruda_system_allocator(),
-        ruda_native_c_emit_default_options(), &generated
-    ) == RUDA_NATIVE_C_EMIT_OK);
+    MMAY_EXPECT(mmay_native_c_emit_program(
+        &native_program, mmay_system_allocator(),
+        mmay_native_c_emit_default_options(), &generated
+    ) == MMAY_NATIVE_C_EMIT_OK);
 #if !defined(_WIN32)
     if (generated.data != NULL) {
-        ruda_test_native_compile_and_run(
+        mmay_test_native_compile_and_run(
             &generated, "ok:string:5:3431352e30\n", 0
         );
-        ruda_test_numeric_cp6_native_f32(&generated);
+        mmay_test_numeric_cp6_native_f32(&generated);
     }
 #endif
-    ruda_owned_bytes_dispose(&generated);
-    ruda_mir_function_dispose(&f32_function);
-    ruda_mir_function_dispose(&f64_function);
+    mmay_owned_bytes_dispose(&generated);
+    mmay_mir_function_dispose(&f32_function);
+    mmay_mir_function_dispose(&f64_function);
 }

@@ -6,21 +6,21 @@ Status values: `accepted`, `provisional`, `deferred`, `rejected`.
 
 Status: accepted; external distribution clearance remains gated by N0.
 
-The official language and product name is **Ruda**. English prose, code-adjacent prose, product metadata, and technical identifiers spell it `Ruda`. Russian prose may additionally show the Cyrillic form **Ру́да**, pronounced «ру́да». `Rudalang` is not an official name; `ruda-lang` is only an allowed fallback for a domain, repository slug, or occupied external namespace.
+The official language and product name is **Marimay**. English prose, code-adjacent prose, product metadata, and technical identifiers spell it `Marimay`. The canonical short technical stem is `mmay`; the full machine-readable language and schema identifier is `marimay`.
 
-The canonical toolchain executable is `ruda`, source files use `.ruda`, bytecode bundles use `.rudab`, project manifests are `ruda.mod`, `ruda.work`, and `ruda.lock`, and tool-owned local state uses `.ruda/`. All first-party workflows start with `ruda`; the former executable `ma`, source extension `.ma`, manifest names `ma.mod`/`ma.work`/`ma.lock`, bundle suffix `.mab`, and tool-state directory `.ma/` are not current aliases. Repository-owned user-visible identifiers and internal language/toolchain namespaces use `Ruda`/`ruda` consistently; this rule does not alter ordinary words merely containing the letters `ma`.
+The canonical toolchain executable is `mmay`, source files use `.my`, bytecode bundles use `.myb`, project manifests are `mmay.mod`, `mmay.work`, and `mmay.lock`, and tool-owned local state uses `.mmay/`. C functions, build targets, environment variables, include paths, install paths, and cache/runtime artifacts use the corresponding `mmay`/`MMAY` stems. JSON schemas and Markdown/editor language IDs use `marimay`.
 
-This is a pre-release product rename only: it changes no syntax beyond the source filename suffix, source semantics, manifest or package data model, MIR, bytecode/ABI contents, runtime behavior, or observable program behavior. The repository has not published a compatible release with established users, so no undocumented `ma` executable or `.ma` source compatibility alias is retained.
+This is an atomic, intentionally incompatible pre-release rename from the historical **Ruda** identity and its `ruda`, `.ruda`, `.rudab`, `ruda.mod`/`ruda.work`/`ruda.lock`, and `.ruda/` artifacts. Those names, and the still earlier **Malang**/`ma` identity, receive no executable alias, source fallback, dual manifest discovery, old-bytecode decoder, warning period, or converter.
 
-The name uses the ore metaphor: a clear language, strict types, and cohesive toolchain turn source material into reliable native software. It replaces the former working name **Malang** because a separately published project already used “Malang Compiler” for a programming language. This accepted text supersedes both D001's former provisional Malang identity and its short-lived intermediate wording that retained `ma`/`.ma`; no other accepted naming decision is superseded.
+The rename changes identity-dependent suffixes, wire magic, schema IDs, and cache namespaces, but it changes no source syntax or semantics, manifest/package data model, MIR opcode IDs, runtime behavior, or observable program behavior. The repository has no published compatibility contract or external users. This accepted text supersedes D001's historical Malang and Ruda identities; no other accepted decision is superseded.
 
-N0 remains a release blocker for trademark/legal review, domains, public handles, organization and registry namespaces, package/module prefixes, signing identity, and independent verification of `ruda` across supported PATH/package-manager environments. Accepting `Ruda` here does not claim that any domain, external account, package, namespace, or trademark is available, reserved, controlled, or legally cleared.
+N0 remains a release blocker for trademark/legal review, domains, public handles, organization and registry namespaces, package/module prefixes, signing identity, and independent verification of `mmay` across supported PATH/package-manager environments. Accepting `Marimay` here does not claim that any domain, external account, package, namespace, or trademark is available, reserved, controlled, or legally cleared; `marimay.example` is only a reserved-TLD placeholder.
 
-## D002 — Familiar C-family surface, Ruda-native forms
+## D002 — Familiar C-family surface, Marimay-native forms
 
 Status: accepted.
 
-Use `fn`, `const`, `let`, `name: Type`, `<T>`, braces, and named imports because they are readable without a glossary. Give Ruda's core constructs their own regular forms: `type User { ... }` for records, `User { ... }` for construction, `Variant { ... }` for named enum payloads, `$"...{value}..."` for interpolation, `public` for every public declaration, and control-flow conditions without mandatory parentheses. Keep semicolons explicit where statements or signatures require them.
+Use `fn`, `const`, `let`, `name: Type`, `<T>`, braces, and named imports because they are readable without a glossary. Give Marimay's core constructs their own regular forms: `type User { ... }` for records, `User { ... }` for construction, `Variant { ... }` for named enum payloads, `$"...{value}..."` for interpolation, `public` for every public declaration, and control-flow conditions without mandatory parentheses. Keep semicolons explicit where statements or signatures require them.
 
 Do not inherit browser-language semantics: no coercion, prototypes, classes, `any`, nullish values, truthiness, automatic semicolon insertion, open record-shape assignment, or dynamic escape tier. Familiar punctuation is not a compatibility promise.
 
@@ -32,7 +32,7 @@ Status: accepted.
 
 Behavior is declared by an ordinary top-level function with an ordinary, meaningfully named first parameter:
 
-```ruda
+```marimay
 fn string(user: User): string {
   return user.name;
 }
@@ -70,7 +70,7 @@ Enums are closed nominal sums with unit, positional, or named payloads. `match` 
 
 Status: accepted.
 
-Safe Ruda has no null-like value. Absence is `Option<T>`. Recoverable failure is `Result<T,E>`. Postfix `?` propagates an `Err` from a function with the same error type. Error conversion is explicit; ordinary structural conversion to a declared interface remains available at an explicit construction/return boundary. Panic represents a violated invariant, not routine control flow.
+Safe Marimay has no null-like value. Absence is `Option<T>`. Recoverable failure is `Result<T,E>`. Postfix `?` propagates an `Err` from a function with the same error type. Error conversion is explicit; ordinary structural conversion to a declared interface remains available at an explicit construction/return boundary. Panic represents a violated invariant, not routine control flow.
 
 ## D007 — Managed reference data with immutable fields by default
 
@@ -80,7 +80,7 @@ Nominal record values have managed reference identity. Fields are immutable afte
 
 Reason: this avoids source-level ownership and accidental large copies while supporting graphs, services, and FFI handles. The single-threaded isolate rule prevents data races within one heap. The prototype must measure allocation behavior and confirm that escape analysis can stack-allocate or scalar-replace common short-lived records. The required workloads include decoded/encoded JSON DTO graphs, immutable UI-style trees, request/response models, and collection-heavy transformations; microbenchmarks alone cannot accept D007.
 
-Rejected alternative: implicit copy-on-write value semantics for every record. It makes alias behavior attractive but imposes substantial hidden runtime and FFI complexity. Ruda may later add an explicitly declared compact `value type`; it will not change `type` semantics.
+Rejected alternative: implicit copy-on-write value semantics for every record. It makes alias behavior attractive but imposes substantial hidden runtime and FFI complexity. Marimay may later add an explicitly declared compact `value type`; it will not change `type` semantics.
 
 ## D008 — One frontend and typed MIR, two required engines
 
@@ -94,7 +94,7 @@ Reason: fast interactive work and standalone deployment have different performan
 
 Status: accepted.
 
-The first compiler, VM, garbage collector, task runtime, bytecode verifier, formatter, and test harness are implemented in portable C17. After the language reaches the bootstrap gate, the compiler is rewritten in Ruda. Reproducible C17 Stage 0 remains the root of trust and must be able to build Stage 1.
+The first compiler, VM, garbage collector, task runtime, bytecode verifier, formatter, and test harness are implemented in portable C17. After the language reaches the bootstrap gate, the compiler is rewritten in Marimay. Reproducible C17 Stage 0 remains the root of trust and must be able to build Stage 1.
 
 ## D010 — No source-level async color
 
@@ -132,13 +132,13 @@ Reason: avoid Rust-style mandatory per-type monomorphization costs while keeping
 
 Status: accepted.
 
-There are no user-defined syntax macros, procedural macros, import hooks, package install scripts, or implicit build scripts. A small closed set of compiler derives may generate predictable functions. External code generation is an explicit `ruda generate` action and generated files are ordinary reviewed inputs.
+There are no user-defined syntax macros, procedural macros, import hooks, package install scripts, or implicit build scripts. A small closed set of compiler derives may generate predictable functions. External code generation is an explicit `mmay generate` action and generated files are ordinary reviewed inputs.
 
 ## D015 — Canonical formatting is non-configurable in 1.x
 
 Status: accepted.
 
-`ruda fmt` has one style and is idempotent. Projects cannot configure brace, indentation, semicolon, or line-width policy. Compatibility exceptions require a language-versioned formatter change.
+`mmay fmt` has one style and is idempotent. Projects cannot configure brace, indentation, semicolon, or line-width policy. Compatibility exceptions require a language-versioned formatter change.
 
 ## D016 — Deterministic safe semantics
 
@@ -156,7 +156,7 @@ The lock file pins immutable artifacts and cryptographic hashes. Build and test 
 
 Status: rejected for 1.x.
 
-Ruda has no catchable exceptions for expected failure and no class inheritance. `Result`, exhaustive enums, interfaces, composition, and `defer` cover the intended use cases with visible control flow.
+Marimay has no catchable exceptions for expected failure and no class inheritance. `Result`, exhaustive enums, interfaces, composition, and `defer` cover the intended use cases with visible control flow.
 
 ## D019 — JIT
 
@@ -224,13 +224,13 @@ The canonical formatter uses Unicode 17.0.0 scalar properties rather than host l
 
 The metric sums scalar contributions and deliberately does not perform font shaping or claim the rendered width of an extended grapheme cluster. Source spelling remains exact under D023, so canonically equivalent but differently spelled unbreakable tokens may have different measured widths. Unicode inputs and generated tables are committed and hash-pinned; changing the Unicode version or metric is a language-versioned formatter compatibility change.
 
-Reason: “Unicode display columns” is otherwise host- and terminal-dependent, especially for ambiguous-width characters, combining marks, variation selectors, and emoji sequences. Canonical formatting must produce identical bytes on every Tier 1 platform. Unicode UAX #11 explicitly requires contextual treatment of ambiguous width and notes that combining-mark East Asian Width is not advance width, so Ruda defines the non-East-Asian deterministic tailoring above rather than inheriting an OS policy.
+Reason: “Unicode display columns” is otherwise host- and terminal-dependent, especially for ambiguous-width characters, combining marks, variation selectors, and emoji sequences. Canonical formatting must produce identical bytes on every Tier 1 platform. Unicode UAX #11 explicitly requires contextual treatment of ambiguous width and notes that combining-mark East Asian Width is not advance width, so Marimay defines the non-East-Asian deterministic tailoring above rather than inheriting an OS policy.
 
 ## D027 — Manifest syntax and formatter gate ownership
 
 Status: accepted.
 
-I1 owns the bounded syntactic parsers and canonical formatters for `.ruda`, `ruda.mod`, and `ruda.work`, including their use by no-argument `ruda fmt`. I7 reuses those parsers and adds manifest semantic validation, dependency resolution, canonical `ruda.lock`, and package commands; it does not introduce a second manifest grammar or formatter. A syntactically valid manifest may therefore be formatted before its module names, version constraints, capabilities, or workspace membership can be semantically resolved.
+I1 owns the bounded syntactic parsers and canonical formatters for `.my`, `mmay.mod`, and `mmay.work`, including their use by no-argument `mmay fmt`. I7 reuses those parsers and adds manifest semantic validation, dependency resolution, canonical `mmay.lock`, and package commands; it does not introduce a second manifest grammar or formatter. A syntactically valid manifest may therefore be formatted before its module names, version constraints, capabilities, or workspace membership can be semantically resolved.
 
 Reason: the toolchain contract assigns no-argument canonical formatting to I1, while the original I7 roadmap wording also assigned all manifest parsing/formatting to I7. Leaving both statements in place would either make the I1 gate unverifiable or encourage a temporary formatter grammar that later drifts. One early hostile-input syntax implementation and one later semantic consumer preserve the public command contract and eliminate duplicate parsers.
 
@@ -238,11 +238,11 @@ Reason: the toolchain contract assigns no-argument canonical formatting to I1, w
 
 Status: accepted.
 
-No-argument `ruda fmt` finds the nearest regular `ruda.mod` on the physical working-directory ancestor chain and formats that module tree. It also formats the nearest regular `ruda.work`, if one exists from the module root upward. A module-tree walk visits regular `.ruda` files and the root manifests in unsigned UTF-8 path order, does not follow symbolic links, ignores tool-owned `.git` and `.ruda` directories, and does not enter a nested directory that owns another `ruda.mod`. An explicit regular file formats only that recognized `.ruda`, `ruda.mod`, or `ruda.work` input; an explicit directory uses the same bounded physical-tree rules rooted at that directory.
+No-argument `mmay fmt` finds the nearest regular `mmay.mod` on the physical working-directory ancestor chain and formats that module tree. It also formats the nearest regular `mmay.work`, if one exists from the module root upward. A module-tree walk visits regular `.my` files and the root manifests in unsigned UTF-8 path order, does not follow symbolic links, ignores tool-owned `.git` and `.mmay` directories, and does not enter a nested directory that owns another `mmay.mod`. An explicit regular file formats only that recognized `.my`, `mmay.mod`, or `mmay.work` input; an explicit directory uses the same bounded physical-tree rules rooted at that directory.
 
 Directory-entry count, nesting, path bytes, and total selected files are bounded before unbounded allocation or recursion. Each file retains the existing per-file transactional rule; tree formatting does not claim an all-filesystem atomic commit. Discovery/traversal failures are formatter input failures, and a symbolic link explicitly selected as the target is rejected rather than followed.
 
-Reason: root discovery and tree selection affect which user files a write-capable command mutates. Leaving symlinks, nested modules, hidden tool state, ordering, and bounds to host directory APIs would make `ruda fmt` nondeterministic and could rewrite sources outside the selected module. Physical no-follow traversal is portable, auditable, and independent of the later package resolver.
+Reason: root discovery and tree selection affect which user files a write-capable command mutates. Leaving symlinks, nested modules, hidden tool state, ordering, and bounds to host directory APIs would make `mmay fmt` nondeterministic and could rewrite sources outside the selected module. Physical no-follow traversal is portable, auditable, and independent of the later package resolver.
 
 ## D029 — Structured race and readiness selection before 1.0
 
@@ -258,11 +258,11 @@ Reason: `spawn`, `wait`, and a single-operation timeout do not express common se
 
 Status: accepted.
 
-The required C17 AOT backend remains the auditable Stage 0 native path, but ordinary Tier 1 users must not configure compiler, linker, SDK paths, or cache keys manually. Each official distribution provides one tested zero-manual-configuration host-build path: a version-matched managed toolchain where redistribution permits it, or verified platform-toolchain discovery plus an installer/preflight flow that performs or precisely requests the one unavoidable platform installation step. `ruda build` itself remains offline and deterministic after installation.
+The required C17 AOT backend remains the auditable Stage 0 native path, but ordinary Tier 1 users must not configure compiler, linker, SDK paths, or cache keys manually. Each official distribution provides one tested zero-manual-configuration host-build path: a version-matched managed toolchain where redistribution permits it, or verified platform-toolchain discovery plus an installer/preflight flow that performs or precisely requests the one unavoidable platform installation step. `mmay build` itself remains offline and deterministic after installation.
 
-Missing or incompatible native tools produce one actionable diagnostic and a machine-readable `ruda doctor` result; they never fail later as raw C compiler/linker output. Cross-compilation may require an explicitly installed target pack. A future direct object-code backend may remove the external C toolchain from day-to-day builds only after it reaches the same safety, portability, and VM/native differential gates; it does not weaken the required C17 bootstrap root.
+Missing or incompatible native tools produce one actionable diagnostic and a machine-readable `mmay doctor` result; they never fail later as raw C compiler/linker output. Cross-compilation may require an explicitly installed target pack. A future direct object-code backend may remove the external C toolchain from day-to-day builds only after it reaches the same safety, portability, and VM/native differential gates; it does not weaken the required C17 bootstrap root.
 
-Reason: exposing generated C is valuable for audit and bootstrap, but making users assemble a C development environment would break the single-command `ruda build` product promise. Packaging and discovery complexity belongs to the toolchain, not each Ruda project.
+Reason: exposing generated C is valuable for audit and bootstrap, but making users assemble a C development environment would break the single-command `mmay build` product promise. Packaging and discovery complexity belongs to the toolchain, not each Marimay project.
 
 ## D031 — Width-sensitive braced list layout
 
@@ -311,7 +311,7 @@ never exhaustive: an unguarded wildcard or binding must cover the remainder.
 
 Status: accepted.
 
-Ruda has exactly two 0.1 `for` headers. Iteration uses
+Marimay has exactly two 0.1 `for` headers. Iteration uses
 `for const name of expression`; its binding is immutable and must be an
 identifier. The C-style form uses
 `for let name = initializer; condition; step`; all three expressions are
@@ -333,7 +333,7 @@ counter runtime semantics beyond the existing language contract.
 
 Status: accepted.
 
-The Ruda language owns program meaning and static validity: types, memory and
+The Marimay language owns program meaning and static validity: types, memory and
 error behavior, arithmetic, control flow, task lifetimes, and any effect that
 is proven to be part of a function's semantic contract. The compiler proves
 those rules and exposes stable factual outputs. First-party tools may use the
@@ -344,9 +344,9 @@ editor features.
 Repository and CI policy owns authorship, generated-code provenance,
 attestation, required coverage, review authority, and release admission.
 Runtime and operating-system layers own sandbox enforcement and resource
-limits. Ruda source has no author/agent marker, trust level, coverage promise,
+limits. Marimay source has no author/agent marker, trust level, coverage promise,
 or attestation construct. Co-locating compiler, formatter, tests, audit, and
-package commands under the `ruda` executable does not make every command a
+package commands under the `mmay` executable does not make every command a
 language feature.
 
 A future source-level capability annotation is justified only if the
@@ -355,7 +355,7 @@ function values. A package/network/filesystem admission policy remains in the
 manifest, runtime grant, sandbox, or CI layer and must not be added to syntax
 merely to make an audit policy look language-enforced.
 
-Reason: Ruda should be a small language with precise semantics from which
+Reason: Marimay should be a small language with precise semantics from which
 tools can reliably extract facts. It cannot determine an author's intent or
 replace engineering governance; mixing those concerns would expand the type
 system while weakening the responsibility boundary.
@@ -428,14 +428,14 @@ unbounded recursion, cancellation, or another defined non-returning operation.
 
 Status: accepted.
 
-Ruda reserves a spelling globally only when the parser needs it to determine
+Marimay reserves a spelling globally only when the parser needs it to determine
 program structure without surrounding context. The audited 0.1 hard-keyword
 set is `defer false if match return spawn true while`. The parser treats
 `as break case const continue else enum extern fn for from import interface let
 mutable of public scope type unsafe yield` contextually: each retains its
 grammatical role where that role is unambiguous and otherwise becomes an
 ordinary identifier token in the syntax tree. Hard keywords remain unavailable
-as declaration, field, member, or local names in 0.1; Ruda does not add a
+as declaration, field, member, or local names in 0.1; Marimay does not add a
 separate escaped-identifier syntax at this stage.
 
 The disambiguating forms are part of the grammar contract. `break;` and
@@ -454,7 +454,7 @@ recoverable without reserving the same words across every API namespace.
 are ordinary package-private functions marked with the closed compiler
 attributes `@test` and `@fuzz`; the former requires `fn(): void`, and the latter
 exactly one typed parameter plus `void`. Both attributes are legal only in a
-source file ending `_test.ruda`; normal builds exclude those files while test,
+source file ending `_test.my`; normal builds exclude those files while test,
 fuzz, and explicit all-targets checks include them. The unshadowed prelude declaration
 `fn panic(message: string): never` is compiler intrinsic, but normal lexical
 and package name resolution may shadow it. Its stable D036 runtime identity
@@ -464,7 +464,7 @@ applies only after resolution selects that prelude symbol.
 and remains invalid outside a block match arm. `yield()`, `task.yield()`, and
 declarations named `yield` are ordinary identifier uses. `in`, `any`, `async`,
 `await`, `class`, `extends`, `impl`, and `throws` are also ordinary identifiers:
-Ruda omits the corresponding type or construct by grammar/semantic rules, not
+Marimay omits the corresponding type or construct by grammar/semantic rules, not
 by preemptively occupying API vocabulary. Only `null` and `undefined` remain
 reserved sentinel spellings so ordinary resolution cannot introduce a
 null-like value tier.
@@ -486,20 +486,20 @@ change the syntax or meaning of any construct.
 
 Status: accepted.
 
-No user-controlled Ruda identifier is copied verbatim into a generated C
+No user-controlled Marimay identifier is copied verbatim into a generated C
 identifier. The C17 backend assigns functions, types, field accessors, locals,
 temporaries, descriptors, and helpers injective compiler-owned spellings from
 stable symbol identity plus bounded ordinals. A generated spelling is valid
 C17, avoids every C keyword and implementation-reserved namespace, cannot
 collide with runtime helpers or C-library external identifiers, and remains
 distinct under target filesystem case folding and backend length limits.
-Unicode source spelling and normalization-distinct Ruda names remain distinct.
+Unicode source spelling and normalization-distinct Marimay names remain distinct.
 
 Explicit `extern "c"` link names are not internal generated identifiers. They
 are validated foreign ABI contracts and are never silently mangled; I9 owns
 their platform-specific linkage and library validation.
 
-Reason: reserving C vocabulary in Ruda would leak the temporary Stage 0 backend
+Reason: reserving C vocabulary in Marimay would leak the temporary Stage 0 backend
 into source semantics, break generated bindings, and still fail to cover C's
 underscore-reserved, library, runtime-helper, case-folding, and truncation
 collision spaces. A compiler-owned namespace closes the entire boundary and
@@ -705,7 +705,7 @@ Status: accepted.
 
 The 0.1-dev user stdout surface is exactly:
 
-```ruda
+```marimay
 import { println, Error as IoError } from "std/io";
 
 public enum Error {
@@ -727,7 +727,7 @@ invent a compiler-known multi-type `println`.
 A program that needs decimal text for a binary32 or binary64 value uses the
 total `std/convert` formatters and then writes the resulting string:
 
-```ruda
+```marimay
 import { formatF32, formatF64 } from "std/convert";
 
 public fn formatF32(value: f32): string;
@@ -756,11 +756,11 @@ tasks is not an additional guarantee beyond ordinary happens-before; sequential
 calls in one task follow source evaluation order. Deterministic tests use the
 execution-spec scheduler.
 
-`println` requires the named capability `"io.stdout"`. `ruda run` of a local
-module or script, and a native executable produced by `ruda build`, grant it by
-default against the process stdout stream. `ruda test` grants a captured sink
-by default; `expect.output` compares those exact bytes. `ruda exec` of an
-untrusted `.rudab` denies it unless the invocation grants it. Libraries cannot
+`println` requires the named capability `"io.stdout"`. `mmay run` of a local
+module or script, and a native executable produced by `mmay build`, grant it by
+default against the process stdout stream. `mmay test` grants a captured sink
+by default; `expect.output` compares those exact bytes. `mmay exec` of an
+untrusted `.myb` denies it unless the invocation grants it. Libraries cannot
 broaden the root set. Denial returns `Err(Error.CapabilityDenied { capability:
 "io.stdout" })` and writes no program stdout.
 
@@ -804,7 +804,7 @@ decision as stated in D044.
 
 The internal engine-test traces of the form `ok:f64:` plus hexadecimal bits are
 not a public API, not a formatter, and not an accepted user stdout spelling.
-Public VM, native, and `ruda test` capture comparison for this surface uses the
+Public VM, native, and `mmay test` capture comparison for this surface uses the
 D046 byte stream and `Result` classification.
 
 This decision does not add `print`, `eprintln`, a public `flush`, formatted
@@ -823,7 +823,7 @@ The prelude defines a compiler-known generic integer family over exactly
 `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, and `u64`. Binary operations
 require two values of the same exact integer type `T`; negate takes one `T`:
 
-```ruda
+```marimay
 checkedAdd<T>(left: T, right: T): Option<T>
 checkedSubtract<T>(left: T, right: T): Option<T>
 checkedMultiply<T>(left: T, right: T): Option<T>
@@ -875,7 +875,7 @@ Status: accepted.
 
 The manifest parser continues to retain repeated syntactically valid
 `module` and `language` directives for formatting. A command that constructs a
-local module graph, beginning with `ruda check`, additionally requires exactly
+local module graph, beginning with `mmay check`, additionally requires exactly
 one of each directive and requires both decoded values to be nonempty and
 NUL-free. Failure is `K0005`. This is the minimum identity boundary needed to
 name local packages; versions, dependencies, capabilities, metadata,
@@ -888,16 +888,16 @@ discovered package in canonical import-path order, including packages not
 reachable from the root package. Source files within each package are ordered
 by exact normalized path before the authoritative compiler service runs.
 
-Default batch checking excludes files ending `_test.ruda` and the module-root
-`tests/` tree. `ruda check --all-targets` includes both. Traversal does not
-follow symbolic links, enter `.git` or `.ruda`, or cross a nested `ruda.mod`,
+Default batch checking excludes files ending `_test.my` and the module-root
+`tests/` tree. `mmay check --all-targets` includes both. Traversal does not
+follow symbolic links, enter `.git` or `.mmay`, or cross a nested `mmay.mod`,
 and it is bounded by documented path, depth, entry, file-count, and source-byte
 limits. Batch requests never consume editor overlays or persistent semantic
 caches: each invocation loads immutable disk snapshots into a fresh compiler
 service and checks the complete selected graph.
 
 An accepted source construct that has not reached the authoritative checker
-cannot produce a successful `ruda check`. The command reports `I0001` and exits
+cannot produce a successful `mmay check`. The command reports `I0001` and exits
 70 rather than treating an incomplete compiler status as a clean program.
 
 Reason: checkpoint 8 cannot truthfully expose complete, deterministic module
@@ -906,19 +906,19 @@ supply-chain policy ahead of I7 would couple an otherwise local compiler
 command to unfinished resolution semantics. This narrow exception resolves
 that boundary without changing the lossless manifest tree used by I1.
 
-## D049 — Local `ruda run` has one verified VM boundary and closed outcomes
+## D049 — Local `mmay run` has one verified VM boundary and closed outcomes
 
 Status: accepted.
 
-`ruda run` uses the D048 local target and root-package discovery rules. A
-standalone `.ruda` target is the root `script` package. A module target selects
+`mmay run` uses the D048 local target and root-package discovery rules. A
+standalone `.my` target is the root `script` package. A module target selects
 the canonical package represented by that target; no-target and an explicit
 module-root target select the module root package. Only a function named
 exactly `main` in that root package can be the entry symbol. It must be a
 non-external, non-test, non-fuzz function with no parameters and one of these
 exact return types:
 
-```ruda
+```marimay
 fn main(): void;
 fn main(): Result<void, E>;
 ```
@@ -955,7 +955,7 @@ Human rendering is `panic[code]: message`; short and JSON styles retain their
 ordinary stable diagnostic forms. All compiler, expected-error, panic, and
 internal diagnostics go only to stderr. Successful program bytes go only to
 the D046 stdout owner; the internal `ok:f64:` trace is never emitted by
-`ruda run`.
+`mmay run`.
 
 The D046 capability `io.stdout` is granted by default for this local command.
 The argument boundary is exact: arguments after the first `--` are program
@@ -975,7 +975,7 @@ later native-build sequencing.
 
 Status: accepted.
 
-The Stage 0 checkpoint-10 `ruda build` path reuses D048 target discovery,
+The Stage 0 checkpoint-10 `mmay build` path reuses D048 target discovery,
 D049 entry selection, and the authoritative verified typed MIR. Native is the
 only public build engine in this checkpoint. `--release`, `--output`, and
 `--emit c` are accepted; `--engine vm` and `--emit mir` remain `U0005` staging
@@ -990,8 +990,8 @@ configuration. A missing compiler is detected by a bounded preflight before C
 generation and is `B0002`/exit `1`, with one platform installation action.
 
 The default artifact lives below
-`.ruda/build/native/{debug|release}/{sha256}/app` (`app.exe` on Windows), and
-`ruda build` writes that path followed by LF on success unless `--quiet` is
+`.mmay/build/native/{debug|release}/{sha256}/app` (`app.exe` on Windows), and
+`mmay build` writes that path followed by LF on success unless `--quiet` is
 set. The SHA-256 key covers generated C, compiler/runtime/language versions,
 host compiler identity, target host identity, profile, and the versioned
 backend flag contract; absolute workspace paths do not enter it. A regular
@@ -1002,7 +1002,7 @@ host compiler. Failed checking or code generation never executes or publishes
 a stale temporary artifact.
 
 Debug uses strict C17 at `-O0` (or `/Od`), release uses `-O2` (or `/O2`), and
-both retain checked Ruda overflow, division, shift, bounds, panic, and root
+both retain checked Marimay overflow, division, shift, bounds, panic, and root
 cleanup semantics. The public native entry emits no internal `ok:*`/`trap:*`
 harness envelope. `void` and `Ok()` exit `0`; `Err`, `G4000`, `G4001`, and
 `G4002` retain D049 messages and exit `1`; runtime integrity/resource failures
@@ -1019,8 +1019,8 @@ three competing native semantics paths.
 
 Status: accepted.
 
-The Stage 0 checkpoint-11 `ruda test` path discovers only ordinary
-`@test fn(): void` declarations in `*_test.ruda`. Package tests retain their
+The Stage 0 checkpoint-11 `mmay test` path discovers only ordinary
+`@test fn(): void` declarations in `*_test.my`. Package tests retain their
 package-private visibility; module-root `tests/` packages are checked against
 public imports. Discovery and reporting use the stable checked symbol and are
 ordered by package, canonical source path, declaration span, and name.
@@ -1051,20 +1051,20 @@ ordered owners.
 
 Status: accepted.
 
-`ruda build` treats the requested output profile as authoritative for every
+`mmay build` treats the requested output profile as authoritative for every
 first-party native object. Each Stage 0 toolchain build and official host
 installation contains separate debug and release runtime archives. The debug
 archive is compiled with the debug optimization contract (`-O0` or `/Od`); the
 release archive is compiled with the release optimization contract (`-O2` or
-`/O2`). Which configuration was used to compile the invoking `ruda` executable
+`/O2`). Which configuration was used to compile the invoking `mmay` executable
 does not affect this selection.
 
 Before generated-C emission, the native artifact owner selects the requested
 archive and validates a versioned manifest plus embedded runtime-version and
 profile markers. A missing, stale, partial, or wrong-profile artifact is
 `B0008`/exit `1` and never falls through to an opaque host linker failure. An
-installed tool first resolves `../lib/ruda/{runtime-version}/native/{profile}`
-and `../include` relative to the invoked `ruda` path. A partially present
+installed tool first resolves `../lib/mmay/{runtime-version}/native/{profile}`
+and `../include` relative to the invoked `mmay` path. A partially present
 installed candidate is an error; only the absence of the complete installed
 candidate permits the development build-tree metadata fallback. Relocating a
 complete installed prefix therefore preserves native builds without retaining
@@ -1092,7 +1092,7 @@ The compiler-known prelude collection surface additionally contains these
 ordinary generic functions, with free and dot forms resolving to the same
 operation after exact receiver-directed D003/D043 candidate selection:
 
-```ruda
+```marimay
 public fn pop<T>(values: []T): Option<T>;
 public fn truncate<T>(
   values: []T,
@@ -1205,7 +1205,7 @@ resolution.
 
 Status: accepted.
 
-`ruda run`, `ruda test`, and `ruda build` accept one
+`mmay run`, `mmay test`, and `mmay build` accept one
 `--max-heap-bytes <positive-decimal>` option; the equivalent
 `--max-heap-bytes=<positive-decimal>` spelling is also accepted. The value is
 an integer number of bytes with no sign, whitespace, separator, or unit suffix.
@@ -1276,7 +1276,7 @@ silent outlier deletion, and best-of-N reporting are forbidden.
 
 Each run records the exact source/corpus revisions, workload-manifest and
 protocol hashes, platform/CPU/load/power metadata, command, managed-heap
-budget, Ruda compiler path/hash/version, selected release-runtime
+budget, Marimay compiler path/hash/version, selected release-runtime
 path/hash/manifest/profile, and generated-C compiler/linker paths, versions,
 and flags. A timed process must have the exact expected stdout/checksum, empty
 stderr, successful exit, and no timeout. Debug or unclassified runtime
@@ -1288,10 +1288,10 @@ Reports publish every raw sample and execution-order event plus median, median
 absolute deviation, Tukey-hinge interquartile range, min, max, and the workload
 noise fraction. The noise fraction is the maximum of 2%, three MAD divided by
 the median, and IQR divided by the median. A baseline with more than 30% noise
-is not eligible for a budget. The reviewed per-platform, per-workload Ruda
+is not eligible for a budget. The reviewed per-platform, per-workload Marimay
 regression limit is the baseline median multiplied by one plus the greater of
 10% and that noise fraction. Cross-language ratios remain exploratory and do
-not become Ruda release budgets.
+not become Marimay release budgets.
 
 A median above budget triggers exactly one complete run after cool-down using
 the same schema and artifacts. A regression is confirmed only when the
@@ -1313,11 +1313,11 @@ Status: accepted.
 
 Checkpoint 21 is complete when one dedicated Linux x86_64 runner has produced
 and passed the D056 protocol for both the nine focused array/native probes and
-the faithful eight-workload algorithm corpus with the full Ruda, Go, and Rust
-participant matrix. The result must use release Ruda artifacts, retain at
+the faithful eight-workload algorithm corpus with the full Marimay, Go, and Rust
+participant matrix. The result must use release Marimay artifacts, retain at
 least three warmups and eleven measured samples, pass exact schema, checksum,
 artifact, manifest, metadata, and noise validation, and have reviewed
-platform/workload Ruda budgets. Other platform reports may be retained as
+platform/workload Marimay budgets. Other platform reports may be retained as
 supplemental evidence but do not widen this checkpoint's completion gate.
 
 Preparation for the public alpha owns the separate full Tier 1 performance
@@ -1395,7 +1395,7 @@ array-access ABI. `length`, `require`, `get`, and `set` receive the expected
 immutable array descriptor. Each call resolves the managed handle once,
 compares the exact descriptor at that resolve, observes the current length,
 and either performs the signed bounds check or consumes a D058 verified
-in-bounds capability. Get/set transport one `RudaManagedCell`; type-directed
+in-bounds capability. Get/set transport one `MarimayManagedCell`; type-directed
 generated C converts that cell exactly once at the call boundary. Set validates
 reference-valued elements and advances the D053 mutation generation only after
 the access is known to succeed.
@@ -1435,17 +1435,17 @@ layouts: `RAW8`, `RAW16`, `RAW32`, `RAW64`, or `CELL`. `bool`, `i8`, and `u8`
 use `RAW8`; `i16` and `u16` use `RAW16`; `i32`, `u32`, and the raw binary32
 formatter input use `RAW32`; `i64`, `u64`, and `f64` use `RAW64`. Managed
 reference elements use `CELL`. Each descriptor carries the exact byte stride,
-which must be respectively 1, 2, 4, 8, or `sizeof(RudaManagedCell)` and must
+which must be respectively 1, 2, 4, 8, or `sizeof(MarimayManagedCell)` and must
 agree with its existing raw/reference cell class. An invalid tag, stride, or
 raw/reference combination is rejected before storage is published or accessed.
 
 Raw payload storage is byte-addressed. Loads and stores copy through an aligned
 fixed-width local integer with `memcpy`; generated C and the VM continue to
-transport the canonical low payload bits in one `RudaManagedCell` at the D059
+transport the canonical low payload bits in one `MarimayManagedCell` at the D059
 boundary. This gives raw storage an alignment requirement of one without
 creating an unaligned typed pointer or violating C17 effective-type/aliasing
 rules. `CELL` storage retains the allocator alignment required by
-`RudaManagedCell`. Newly reserved bytes are zero-initialized, growth copies the
+`MarimayManagedCell`. Newly reserved bytes are zero-initialized, growth copies the
 complete initialized prefix, and truncation clears the removed byte range.
 `f64` preserves every binary64 pattern, including signed zero and NaN payloads;
 the narrower layouts preserve exactly their low 8, 16, or 32 payload bits.
@@ -1573,7 +1573,7 @@ the view. Managed objects are non-moving. An array view retains addresses of
 the object's `length`, mutation-generation, and storage-pointer fields, not a
 copy of the current element-storage pointer, so successful growth updates what
 later accesses observe. A record view retains its fixed field-array address.
-No view is serialized, returned, stored in managed memory, or exposed to Ruda.
+No view is serialized, returned, stored in managed memory, or exposed to Marimay.
 
 Every managed register has a companion-view invariant. Copying the exact
 reference copies its proven companion; any instruction that can define a new

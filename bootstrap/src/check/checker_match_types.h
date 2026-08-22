@@ -1,70 +1,70 @@
-#ifndef RUDA_CHECK_CHECKER_MATCH_TYPES_H
-#define RUDA_CHECK_CHECKER_MATCH_TYPES_H
+#ifndef MMAY_CHECK_CHECKER_MATCH_TYPES_H
+#define MMAY_CHECK_CHECKER_MATCH_TYPES_H
 
 #include "checker_function_context.h"
 
-typedef struct RudaCheckEnumMatchBinding {
-    RudaCheckName name;
-    RudaTypeId type;
-} RudaCheckEnumMatchBinding;
+typedef struct MarimayCheckEnumMatchBinding {
+    MarimayCheckName name;
+    MarimayTypeId type;
+} MarimayCheckEnumMatchBinding;
 
-typedef struct RudaCheckEnumMatchAlternative {
-    const RudaAstNode *pattern;
-    RudaCheckEnumVariantDeclaration *variant;
-    RudaTypeId enum_type;
-    RudaCheckName catch_binding;
+typedef struct MarimayCheckEnumMatchAlternative {
+    const MarimayAstNode *pattern;
+    MarimayCheckEnumVariantDeclaration *variant;
+    MarimayTypeId enum_type;
+    MarimayCheckName catch_binding;
     size_t variant_index;
     bool is_catch_all;
     bool has_catch_binding;
     bool has_refutable_nested_pattern;
-} RudaCheckEnumMatchAlternative;
+} MarimayCheckEnumMatchAlternative;
 
-typedef struct RudaCheckEnumMatchArm {
-    const RudaAstNode *node;
-    const RudaAstNode *pattern;
-    const RudaAstNode *guard;
-    const RudaAstNode *body;
-    RudaVector alternatives;
-    RudaVector bindings;
+typedef struct MarimayCheckEnumMatchArm {
+    const MarimayAstNode *node;
+    const MarimayAstNode *pattern;
+    const MarimayAstNode *guard;
+    const MarimayAstNode *body;
+    MarimayVector alternatives;
+    MarimayVector bindings;
     bool body_is_block;
-} RudaCheckEnumMatchArm;
+} MarimayCheckEnumMatchArm;
 
-typedef struct RudaCheckScalarMatchAlternative {
-    const RudaAstNode *pattern;
-    RudaCheckName catch_binding;
-    RudaMirStringId string_constant;
+typedef struct MarimayCheckScalarMatchAlternative {
+    const MarimayAstNode *pattern;
+    MarimayCheckName catch_binding;
+    MarimayMirStringId string_constant;
     int64_t integer;
     bool literal;
     bool is_catch_all;
     bool has_catch_binding;
-} RudaCheckScalarMatchAlternative;
+} MarimayCheckScalarMatchAlternative;
 
-typedef struct RudaCheckScalarMatchArm {
-    const RudaAstNode *node;
-    const RudaAstNode *pattern;
-    const RudaAstNode *guard;
-    const RudaAstNode *body;
-    RudaVector alternatives;
-    RudaVector bindings;
+typedef struct MarimayCheckScalarMatchArm {
+    const MarimayAstNode *node;
+    const MarimayAstNode *pattern;
+    const MarimayAstNode *guard;
+    const MarimayAstNode *body;
+    MarimayVector alternatives;
+    MarimayVector bindings;
     bool body_is_block;
-} RudaCheckScalarMatchArm;
+} MarimayCheckScalarMatchArm;
 
-typedef struct RudaCheckRecordMatchAlternative {
-    const RudaAstNode *pattern;
-    RudaCheckName catch_binding;
+typedef struct MarimayCheckRecordMatchAlternative {
+    const MarimayAstNode *pattern;
+    MarimayCheckName catch_binding;
     bool is_record_pattern;
     bool has_catch_binding;
-} RudaCheckRecordMatchAlternative;
+} MarimayCheckRecordMatchAlternative;
 
-typedef struct RudaCheckRecordMatchArm {
-    const RudaAstNode *node;
-    const RudaAstNode *pattern;
-    const RudaAstNode *guard;
-    const RudaAstNode *body;
-    RudaVector alternatives;
-    RudaVector bindings;
+typedef struct MarimayCheckRecordMatchArm {
+    const MarimayAstNode *node;
+    const MarimayAstNode *pattern;
+    const MarimayAstNode *guard;
+    const MarimayAstNode *body;
+    MarimayVector alternatives;
+    MarimayVector bindings;
     bool body_is_block;
-} RudaCheckRecordMatchArm;
+} MarimayCheckRecordMatchArm;
 
 
 #endif

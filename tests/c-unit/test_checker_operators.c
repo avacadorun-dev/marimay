@@ -1,6 +1,6 @@
 #include "test_checker_support.h"
 
-void ruda_test_checker_short_circuit(void) {
+void mmay_test_checker_short_circuit(void) {
     static const char source[] =
         "const safeAnd = false && (1 / 0 == 0);\n"
         "const safeOr = true || (1 / 0 == 0);\n"
@@ -12,71 +12,71 @@ void ruda_test_checker_short_circuit(void) {
         "fn nestedLeft(): bool { return (false || true) && true; }\n";
     static const char invalid[] =
         "fn bad(): bool { return 1 && true; }\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    const RudaCheckedConstant *safe_and = NULL;
-    const RudaCheckedConstant *safe_or = NULL;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayCheckedConstant *safe_and = NULL;
+    const MarimayCheckedConstant *safe_or = NULL;
     size_t index = 0;
-    RudaMirValue result;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MarimayMirValue result;
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/short-circuit",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.constants.length == 2);
-        RUDA_EXPECT(checked.functions.length == 6);
-        safe_and = ruda_checked_constant(&checked, 0);
-        safe_or = ruda_checked_constant(&checked, 1);
-        RUDA_EXPECT(safe_and != NULL);
-        RUDA_EXPECT(safe_or != NULL);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.constants.length == 2);
+        MMAY_EXPECT(checked.functions.length == 6);
+        safe_and = mmay_checked_constant(&checked, 0);
+        safe_or = mmay_checked_constant(&checked, 1);
+        MMAY_EXPECT(safe_and != NULL);
+        MMAY_EXPECT(safe_or != NULL);
         if (safe_and != NULL && safe_or != NULL) {
-            RUDA_EXPECT(safe_and->value.type == RUDA_TYPE_BOOL);
-            RUDA_EXPECT(!safe_and->value.as.boolean);
-            RUDA_EXPECT(safe_or->value.type == RUDA_TYPE_BOOL);
-            RUDA_EXPECT(safe_or->value.as.boolean);
+            MMAY_EXPECT(safe_and->value.type == MMAY_TYPE_BOOL);
+            MMAY_EXPECT(!safe_and->value.as.boolean);
+            MMAY_EXPECT(safe_or->value.type == MMAY_TYPE_BOOL);
+            MMAY_EXPECT(safe_or->value.as.boolean);
         }
         for (index = 0; index < checked.functions.length; index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked,
                 index
             );
-            RUDA_EXPECT(function != NULL);
+            MMAY_EXPECT(function != NULL);
             if (function == NULL) {
                 continue;
             }
-            RUDA_EXPECT(function->mir.blocks.length == (index < 4 ? 4 : 7));
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(function->mir.blocks.length == (index < 4 ? 4 : 7));
+            MMAY_EXPECT(mmay_mir_interpret(
                 &function->mir,
                 NULL,
                 0,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_BOOL);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_BOOL);
             if (index == 0) {
-                RUDA_EXPECT(!result.as.boolean);
+                MMAY_EXPECT(!result.as.boolean);
             } else {
-                RUDA_EXPECT(result.as.boolean);
+                MMAY_EXPECT(result.as.boolean);
             }
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_fixture_dispose(&fixture);
+    mmay_checker_expect_one_diagnostic(
         invalid,
-        RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+        MMAY_DIAGNOSTIC_INVALID_OPERATOR,
         "&&",
         0
     );
 }
 
-void ruda_test_checker_bitwise(void) {
+void mmay_test_checker_bitwise(void) {
     static const char source[] =
         "const mask: int = (((~0) & 255) ^ 15) | 256;\n"
         "fn apply(value: int): int {\n"
@@ -89,90 +89,90 @@ void ruda_test_checker_bitwise(void) {
         "fn negative(): int { return ~0; }\n";
     static const char invalid[] =
         "fn bad(): bool { return true & false; }\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    const RudaCheckedConstant *mask = NULL;
-    const RudaCheckedFunction *apply = NULL;
-    const RudaCheckedFunction *negative = NULL;
-    RudaMirValue argument;
-    RudaMirValue result;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayCheckedConstant *mask = NULL;
+    const MarimayCheckedFunction *apply = NULL;
+    const MarimayCheckedFunction *negative = NULL;
+    MarimayMirValue argument;
+    MarimayMirValue result;
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/bitwise",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.constants.length == 1);
-        RUDA_EXPECT(checked.functions.length == 2);
-        mask = ruda_checked_constant(&checked, 0);
-        apply = ruda_checked_function(&checked, 0);
-        negative = ruda_checked_function(&checked, 1);
-        RUDA_EXPECT(mask != NULL);
-        RUDA_EXPECT(apply != NULL);
-        RUDA_EXPECT(negative != NULL);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.constants.length == 1);
+        MMAY_EXPECT(checked.functions.length == 2);
+        mask = mmay_checked_constant(&checked, 0);
+        apply = mmay_checked_function(&checked, 0);
+        negative = mmay_checked_function(&checked, 1);
+        MMAY_EXPECT(mask != NULL);
+        MMAY_EXPECT(apply != NULL);
+        MMAY_EXPECT(negative != NULL);
         if (mask != NULL) {
-            RUDA_EXPECT(mask->value.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(mask->value.as.i64 == 496);
+            MMAY_EXPECT(mask->value.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(mask->value.as.i64 == 496);
         }
         if (apply != NULL) {
-            argument.type = RUDA_TYPE_I64;
+            argument.type = MMAY_TYPE_I64;
             argument.as.i64 = 291;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &apply->mir,
                 &argument,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(result.as.i64 == 300);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(result.as.i64 == 300);
         }
         if (negative != NULL) {
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &negative->mir,
                 NULL,
                 0,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(result.as.i64 == -1);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(result.as.i64 == -1);
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_fixture_dispose(&fixture);
+    mmay_checker_expect_one_diagnostic(
         invalid,
-        RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+        MMAY_DIAGNOSTIC_INVALID_OPERATOR,
         "&",
         0
     );
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn bad(left: i32, right: i32): i32 { return left & right; }\n"
     ));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/bitwise",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
-    RUDA_EXPECT(checked.initialized);
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.initialized);
     if (checked.initialized) {
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_numeric_widths(void) {
+void mmay_test_checker_numeric_widths(void) {
     static const char source[] =
         "const i8MinValue: i8 = -128;\n"
         "const i16MinValue: i16 = -32768;\n"
@@ -222,9 +222,9 @@ void ruda_test_checker_numeric_widths(void) {
         "fn u16Max(): u16 { return u16MaxValue; }\n"
         "fn u32Max(): u32 { return u32MaxValue; }\n"
         "fn u64Max(): u64 { return u64MaxValue; }\n";
-    static const RudaTypeId types[] = {
-        RUDA_TYPE_I8, RUDA_TYPE_I16, RUDA_TYPE_I32, RUDA_TYPE_I64,
-        RUDA_TYPE_U8, RUDA_TYPE_U16, RUDA_TYPE_U32, RUDA_TYPE_U64
+    static const MarimayTypeId types[] = {
+        MMAY_TYPE_I8, MMAY_TYPE_I16, MMAY_TYPE_I32, MMAY_TYPE_I64,
+        MMAY_TYPE_U8, MMAY_TYPE_U16, MMAY_TYPE_U32, MMAY_TYPE_U64
     };
     static const uint64_t minimum_bits[] = {
         UINT64_C(0x80), UINT64_C(0x8000), UINT64_C(0x80000000),
@@ -236,55 +236,55 @@ void ruda_test_checker_numeric_widths(void) {
         UINT64_C(0xff), UINT64_C(0xffff), UINT64_C(0xffffffff),
         UINT64_C(0xffffffffffffffff)
     };
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaCheckStatus status;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayCheckStatus status;
     size_t index = 0;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    status = ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    status = mmay_check_ast(
         &fixture.ast,
         "test/numeric-widths",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
     );
-    RUDA_EXPECT(status == RUDA_CHECK_OK);
+    MMAY_EXPECT(status == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.constants.length == 8);
-        RUDA_EXPECT(checked.functions.length == 16);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.constants.length == 8);
+        MMAY_EXPECT(checked.functions.length == 16);
         for (index = 0; index < 16; index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked, index
             );
-            RudaMirValue argument;
-            RudaMirValue result;
+            MarimayMirValue argument;
+            MarimayMirValue result;
             uint64_t expected_bits = index < 8 ? UINT64_C(3)
                 : (index < 12 ? minimum_bits[index - 8]
                                : maximum_bits[index - 8]);
-            RUDA_EXPECT(function != NULL);
+            MMAY_EXPECT(function != NULL);
             if (function == NULL) {
                 continue;
             }
             argument.type = types[index < 8 ? index : index - 8];
             argument.as.integer_bits = UINT64_C(6);
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &function->mir,
                 index < 8 ? &argument : NULL,
                 index < 8 ? 1 : 0,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == types[index < 8 ? index : index - 8]);
-            RUDA_EXPECT(result.as.integer_bits == expected_bits);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == types[index < 8 ? index : index - 8]);
+            MMAY_EXPECT(result.as.integer_bits == expected_bits);
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_shifts(void) {
+void mmay_test_checker_shifts(void) {
     static const char source[] =
         "const lowest: int = -1 << 63;\n"
         "const signed: int = -7 >> 1;\n"
@@ -304,259 +304,259 @@ void ruda_test_checker_shifts(void) {
         "const bad: int = 1 >> 64;\n";
     static const char invalid[] =
         "fn bad(): bool { return true << false; }\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    const RudaCheckedConstant *lowest = NULL;
-    const RudaCheckedConstant *signed_value = NULL;
-    const RudaCheckedConstant *precedence = NULL;
-    const RudaCheckedFunction *compound = NULL;
-    const RudaCheckedFunction *right = NULL;
-    RudaMirValue arguments[2];
-    RudaMirValue result;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayCheckedConstant *lowest = NULL;
+    const MarimayCheckedConstant *signed_value = NULL;
+    const MarimayCheckedConstant *precedence = NULL;
+    const MarimayCheckedFunction *compound = NULL;
+    const MarimayCheckedFunction *right = NULL;
+    MarimayMirValue arguments[2];
+    MarimayMirValue result;
 
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/shifts",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.constants.length == 3);
-        RUDA_EXPECT(checked.functions.length == 2);
-        lowest = ruda_checked_constant(&checked, 0);
-        signed_value = ruda_checked_constant(&checked, 1);
-        precedence = ruda_checked_constant(&checked, 2);
-        compound = ruda_checked_function(&checked, 0);
-        right = ruda_checked_function(&checked, 1);
-        RUDA_EXPECT(lowest != NULL);
-        RUDA_EXPECT(signed_value != NULL);
-        RUDA_EXPECT(precedence != NULL);
-        RUDA_EXPECT(compound != NULL);
-        RUDA_EXPECT(right != NULL);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.constants.length == 3);
+        MMAY_EXPECT(checked.functions.length == 2);
+        lowest = mmay_checked_constant(&checked, 0);
+        signed_value = mmay_checked_constant(&checked, 1);
+        precedence = mmay_checked_constant(&checked, 2);
+        compound = mmay_checked_function(&checked, 0);
+        right = mmay_checked_function(&checked, 1);
+        MMAY_EXPECT(lowest != NULL);
+        MMAY_EXPECT(signed_value != NULL);
+        MMAY_EXPECT(precedence != NULL);
+        MMAY_EXPECT(compound != NULL);
+        MMAY_EXPECT(right != NULL);
         if (lowest != NULL && signed_value != NULL && precedence != NULL) {
-            RUDA_EXPECT(lowest->value.as.i64 == INT64_MIN);
-            RUDA_EXPECT(signed_value->value.as.i64 == -4);
-            RUDA_EXPECT(precedence->value.as.i64 == 8);
+            MMAY_EXPECT(lowest->value.as.i64 == INT64_MIN);
+            MMAY_EXPECT(signed_value->value.as.i64 == -4);
+            MMAY_EXPECT(precedence->value.as.i64 == 8);
         }
-        arguments[0].type = RUDA_TYPE_I64;
-        arguments[1].type = RUDA_TYPE_I64;
+        arguments[0].type = MMAY_TYPE_I64;
+        arguments[1].type = MMAY_TYPE_I64;
         if (compound != NULL) {
             arguments[0].as.i64 = 3;
             arguments[1].as.i64 = 2;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &compound->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 6);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 6);
             arguments[0].as.i64 = 1;
             arguments[1].as.i64 = 63;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &compound->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OVERFLOW);
+            ) == MMAY_MIR_INTERPRET_OVERFLOW);
         }
         if (right != NULL) {
             arguments[0].as.i64 = -7;
             arguments[1].as.i64 = 1;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &right->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == -4);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == -4);
             arguments[1].as.i64 = 64;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &right->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_INVALID_SHIFT);
+            ) == MMAY_MIR_INTERPRET_INVALID_SHIFT);
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         overflow,
-        RUDA_DIAGNOSTIC_CONSTANT_EVALUATION,
+        MMAY_DIAGNOSTIC_CONSTANT_EVALUATION,
         "1 << 63",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         negative_count,
-        RUDA_DIAGNOSTIC_CONSTANT_EVALUATION,
+        MMAY_DIAGNOSTIC_CONSTANT_EVALUATION,
         "1 << -1",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         large_count,
-        RUDA_DIAGNOSTIC_CONSTANT_EVALUATION,
+        MMAY_DIAGNOSTIC_CONSTANT_EVALUATION,
         "1 >> 64",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         invalid,
-        RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+        MMAY_DIAGNOSTIC_INVALID_OPERATOR,
         "<<",
         0
     );
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn bad(left: i32, right: i32): i32 { return left << right; }\n"
     ));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/shifts",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
-    RUDA_EXPECT(checked.initialized);
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.initialized);
     if (checked.initialized) {
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_division_and_remainder(void) {
+void mmay_test_checker_division_and_remainder(void) {
     static const char source[] =
         "fn quotient(left: int, right: int): int { return left / right; }\n"
         "fn remainder(left: int, right: int): int { return left % right; }\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaMirValue arguments[2];
-    RudaMirValue result;
-    const RudaCheckedFunction *quotient = NULL;
-    const RudaCheckedFunction *remainder = NULL;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayMirValue arguments[2];
+    MarimayMirValue result;
+    const MarimayCheckedFunction *quotient = NULL;
+    const MarimayCheckedFunction *remainder = NULL;
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/division-remainder",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        quotient = ruda_checked_function(&checked, 0);
-        remainder = ruda_checked_function(&checked, 1);
-        RUDA_EXPECT(quotient != NULL);
-        RUDA_EXPECT(remainder != NULL);
-        arguments[0].type = RUDA_TYPE_I64;
-        arguments[1].type = RUDA_TYPE_I64;
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        quotient = mmay_checked_function(&checked, 0);
+        remainder = mmay_checked_function(&checked, 1);
+        MMAY_EXPECT(quotient != NULL);
+        MMAY_EXPECT(remainder != NULL);
+        arguments[0].type = MMAY_TYPE_I64;
+        arguments[1].type = MMAY_TYPE_I64;
 
         if (quotient != NULL) {
             arguments[0].as.i64 = -7;
             arguments[1].as.i64 = 3;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &quotient->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == -2);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == -2);
             arguments[0].as.i64 = 7;
             arguments[1].as.i64 = -3;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &quotient->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == -2);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == -2);
             arguments[0].as.i64 = INT64_MIN;
             arguments[1].as.i64 = -1;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &quotient->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OVERFLOW);
+            ) == MMAY_MIR_INTERPRET_OVERFLOW);
             arguments[0].as.i64 = 1;
             arguments[1].as.i64 = 0;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &quotient->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_DIVISION_BY_ZERO);
+            ) == MMAY_MIR_INTERPRET_DIVISION_BY_ZERO);
         }
 
         if (remainder != NULL) {
             arguments[0].as.i64 = -7;
             arguments[1].as.i64 = 3;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &remainder->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == -1);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == -1);
             arguments[0].as.i64 = 7;
             arguments[1].as.i64 = -3;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &remainder->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 1);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 1);
             arguments[0].as.i64 = INT64_MIN;
             arguments[1].as.i64 = -1;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &remainder->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OVERFLOW);
+            ) == MMAY_MIR_INTERPRET_OVERFLOW);
             arguments[0].as.i64 = 1;
             arguments[1].as.i64 = 0;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &remainder->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_DIVISION_BY_ZERO);
+            ) == MMAY_MIR_INTERPRET_DIVISION_BY_ZERO);
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_f64_literals_and_operators(void) {
+void mmay_test_checker_f64_literals_and_operators(void) {
     static const char half_min_subnormal[] =
         "24703282292062327208828439643411068618252990130716238221279284125033775363510437593264991818081799618989828234772285886546332835517796989819938739800539093906315035659515570226392290858392449105184435931802849936536152500319370457678249219365623669863658480757001585769269903706311928279558551332927834338409351978015531246597263579574622766465272827220056374006485499977096599470454020828166226237857393450736339007967761930577506740176324673600968951340535537458516661134223766678604162159680461914467291840300530057530849048765391711386591646239524912623653881879636239373280423891018672348497668235089863388587925628302755995657524455507255189313690836254779186948667994968324049705821028513185451396213837722826145437693412532098591327667236328125";
     static const char beyond_half_min_subnormal[] =
@@ -575,19 +575,19 @@ void ruda_test_checker_f64_literals_and_operators(void) {
         UINT64_C(0xc018000000000000),
         UINT64_C(0x7ff0000000000000)
     };
-    static const RudaMirInstructionKind arithmetic_kinds[] = {
-        RUDA_MIR_ADD_F64,
-        RUDA_MIR_SUBTRACT_F64,
-        RUDA_MIR_MULTIPLY_F64,
-        RUDA_MIR_DIVIDE_F64
+    static const MarimayMirInstructionKind arithmetic_kinds[] = {
+        MMAY_MIR_ADD_F64,
+        MMAY_MIR_SUBTRACT_F64,
+        MMAY_MIR_MULTIPLY_F64,
+        MMAY_MIR_DIVIDE_F64
     };
-    static const RudaMirInstructionKind comparison_kinds[] = {
-        RUDA_MIR_EQUAL_F64,
-        RUDA_MIR_EQUAL_F64,
-        RUDA_MIR_LESS_F64,
-        RUDA_MIR_LESS_EQUAL_F64,
-        RUDA_MIR_LESS_F64,
-        RUDA_MIR_LESS_EQUAL_F64
+    static const MarimayMirInstructionKind comparison_kinds[] = {
+        MMAY_MIR_EQUAL_F64,
+        MMAY_MIR_EQUAL_F64,
+        MMAY_MIR_LESS_F64,
+        MMAY_MIR_LESS_EQUAL_F64,
+        MMAY_MIR_LESS_F64,
+        MMAY_MIR_LESS_EQUAL_F64
     };
     char source[8192];
     int written = snprintf(
@@ -625,76 +625,76 @@ void ruda_test_checker_f64_literals_and_operators(void) {
         half_min_subnormal,
         beyond_half_min_subnormal
     );
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaMirValue argument;
-    RudaMirValue result;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayMirValue argument;
+    MarimayMirValue result;
     size_t function_index = 0;
 
-    RUDA_EXPECT(written > 0);
-    RUDA_EXPECT(written > 0 && (size_t)written < sizeof(source));
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(written > 0);
+    MMAY_EXPECT(written > 0 && (size_t)written < sizeof(source));
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker-f64",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 23);
-        RUDA_EXPECT(checked.constants.length == 1);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 23);
+        MMAY_EXPECT(checked.constants.length == 1);
         for (function_index = 0; function_index < checked.functions.length;
             function_index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked,
                 function_index
             );
-            RUDA_EXPECT(function != NULL);
+            MMAY_EXPECT(function != NULL);
             if (function != NULL) {
-                RUDA_EXPECT(ruda_mir_verify(&function->mir)
-                    == RUDA_MIR_VERIFY_OK);
+                MMAY_EXPECT(mmay_mir_verify(&function->mir)
+                    == MMAY_MIR_VERIFY_OK);
             }
         }
         for (function_index = 0;
             function_index < sizeof(expected_f64) / sizeof(expected_f64[0]);
             function_index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked,
                 function_index
             );
-            RUDA_EXPECT(ruda_check_interpret_function(
+            MMAY_EXPECT(mmay_check_interpret_function(
                 &checked,
                 function_index,
                 NULL,
                 0,
-                ruda_system_allocator(),
-                ruda_check_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_check_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_F64);
-            RUDA_EXPECT(result.as.f64_bits == expected_f64[function_index]);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_F64);
+            MMAY_EXPECT(result.as.f64_bits == expected_f64[function_index]);
             if (function_index < 8 && function != NULL) {
-                const RudaMirInstruction *constant =
-                    ruda_test_mir_instruction_kind_at(
+                const MarimayMirInstruction *constant =
+                    mmay_test_mir_instruction_kind_at(
                         &function->mir,
-                        RUDA_MIR_CONSTANT_F64,
+                        MMAY_MIR_CONSTANT_F64,
                         0
                     );
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
                     &function->mir,
-                    RUDA_MIR_CONSTANT_F64
+                    MMAY_MIR_CONSTANT_F64
                 ) == 1);
-                RUDA_EXPECT(constant != NULL);
+                MMAY_EXPECT(constant != NULL);
                 if (constant != NULL) {
-                    RUDA_EXPECT(constant->f64_bits
+                    MMAY_EXPECT(constant->f64_bits
                         == expected_f64[function_index]);
                 }
             }
             if (function_index >= 8 && function_index < 12
                 && function != NULL) {
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
                     &function->mir,
                     arithmetic_kinds[function_index - 8]
                 ) == 1);
@@ -702,199 +702,199 @@ void ruda_test_checker_f64_literals_and_operators(void) {
         }
         for (function_index = 12; function_index < 18;
             function_index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked,
                 function_index
             );
-            RUDA_EXPECT(ruda_check_interpret_function(
+            MMAY_EXPECT(mmay_check_interpret_function(
                 &checked,
                 function_index,
                 NULL,
                 0,
-                ruda_system_allocator(),
-                ruda_check_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_check_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_BOOL);
-            RUDA_EXPECT(result.as.boolean);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_BOOL);
+            MMAY_EXPECT(result.as.boolean);
             if (function != NULL) {
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
                     &function->mir,
                     comparison_kinds[function_index - 12]
                 ) == 1);
                 if (function_index == 13) {
-                    RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+                    MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
                         &function->mir,
-                        RUDA_MIR_NOT_BOOL
+                        MMAY_MIR_NOT_BOOL
                     ) == 1);
                 }
             }
         }
-        argument.type = RUDA_TYPE_F64;
+        argument.type = MMAY_TYPE_F64;
         argument.as.f64_bits = UINT64_C(0x7ff8000000000042);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             18,
             &argument,
             1,
-            ruda_system_allocator(),
-            ruda_check_interpret_default_options(),
+            mmay_system_allocator(),
+            mmay_check_interpret_default_options(),
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_F64);
-        RUDA_EXPECT(result.as.f64_bits == argument.as.f64_bits);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_F64);
+        MMAY_EXPECT(result.as.f64_bits == argument.as.f64_bits);
 
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             19,
             NULL,
             0,
-            ruda_system_allocator(),
-            ruda_check_interpret_default_options(),
+            mmay_system_allocator(),
+            mmay_check_interpret_default_options(),
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_F64);
-        RUDA_EXPECT(result.as.f64_bits == UINT64_C(0x8000000000000000));
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_F64);
+        MMAY_EXPECT(result.as.f64_bits == UINT64_C(0x8000000000000000));
         {
-            const RudaCheckedFunction *direct = ruda_checked_function(
+            const MarimayCheckedFunction *direct = mmay_checked_function(
                 &checked,
                 19
             );
-            RUDA_EXPECT(direct != NULL);
+            MMAY_EXPECT(direct != NULL);
             if (direct != NULL) {
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
                     &direct->mir,
-                    RUDA_MIR_CALL
+                    MMAY_MIR_CALL
                 ) == 1);
             }
         }
         argument.as.f64_bits = UINT64_C(0x4008000000000000);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             21,
             &argument,
             1,
-            ruda_system_allocator(),
-            ruda_check_interpret_default_options(),
+            mmay_system_allocator(),
+            mmay_check_interpret_default_options(),
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_F64);
-        RUDA_EXPECT(result.as.f64_bits == UINT64_C(0x4010000000000000));
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_F64);
+        MMAY_EXPECT(result.as.f64_bits == UINT64_C(0x4010000000000000));
         {
-            const RudaCheckedFunction *compound = ruda_checked_function(
+            const MarimayCheckedFunction *compound = mmay_checked_function(
                 &checked,
                 21
             );
-            RUDA_EXPECT(compound != NULL);
+            MMAY_EXPECT(compound != NULL);
             if (compound != NULL) {
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
-                    &compound->mir, RUDA_MIR_ADD_F64
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
+                    &compound->mir, MMAY_MIR_ADD_F64
                 ) == 1);
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
-                    &compound->mir, RUDA_MIR_SUBTRACT_F64
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
+                    &compound->mir, MMAY_MIR_SUBTRACT_F64
                 ) == 1);
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
-                    &compound->mir, RUDA_MIR_MULTIPLY_F64
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
+                    &compound->mir, MMAY_MIR_MULTIPLY_F64
                 ) == 1);
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
-                    &compound->mir, RUDA_MIR_DIVIDE_F64
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
+                    &compound->mir, MMAY_MIR_DIVIDE_F64
                 ) == 1);
             }
         }
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             22,
             NULL,
             0,
-            ruda_system_allocator(),
-            ruda_check_interpret_default_options(),
+            mmay_system_allocator(),
+            mmay_check_interpret_default_options(),
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_F64);
-        RUDA_EXPECT(result.as.f64_bits == UINT64_C(0x8000000000000000));
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_F64);
+        MMAY_EXPECT(result.as.f64_bits == UINT64_C(0x8000000000000000));
 
         argument.as.f64_bits = UINT64_C(0x3ff8000000000000);
-        RUDA_EXPECT(ruda_check_interpret_function(
+        MMAY_EXPECT(mmay_check_interpret_function(
             &checked,
             20,
             &argument,
             1,
-            ruda_system_allocator(),
-            ruda_check_interpret_default_options(),
+            mmay_system_allocator(),
+            mmay_check_interpret_default_options(),
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_F64);
-        RUDA_EXPECT(result.as.f64_bits == UINT64_C(0xbff8000000000000));
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_F64);
+        MMAY_EXPECT(result.as.f64_bits == UINT64_C(0xbff8000000000000));
         {
-            const RudaCheckedFunction *negate = ruda_checked_function(
+            const MarimayCheckedFunction *negate = mmay_checked_function(
                 &checked,
                 20
             );
-            RUDA_EXPECT(negate != NULL);
+            MMAY_EXPECT(negate != NULL);
             if (negate != NULL) {
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
                     &negate->mir,
-                    RUDA_MIR_NEGATE_F64
+                    MMAY_MIR_NEGATE_F64
                 ) == 1);
             }
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(): int { return 1.0; }\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "1.0",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(left: f64, right: int): f64 { return left + right; }\n",
-        RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+        MMAY_DIAGNOSTIC_INVALID_OPERATOR,
         "+",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(left: f64, right: f64): f64 { return left % right; }\n",
-        RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+        MMAY_DIAGNOSTIC_INVALID_OPERATOR,
         "%",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(left: f64, right: f64): f64 { return left & right; }\n",
-        RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+        MMAY_DIAGNOSTIC_INVALID_OPERATOR,
         "&",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(): f64 { let value: f64 = 1.0; value %= 1.0; return value; }\n",
-        RUDA_DIAGNOSTIC_INVALID_OPERATOR,
+        MMAY_DIAGNOSTIC_INVALID_OPERATOR,
         "%=",
         0
     );
 }
 
-void ruda_test_checker_float_literal_digit_limit(void) {
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaCheckOptions options = ruda_check_default_options();
-    RUDA_EXPECT(ruda_checker_fixture_init(
+void mmay_test_checker_float_literal_digit_limit(void) {
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayCheckOptions options = mmay_check_default_options();
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn limited(): f64 { return 1.234; }\n"
     ));
     options.max_float_literal_digits = 3;
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker-f64-limit",
-        ruda_system_allocator(),
+        mmay_system_allocator(),
         options,
         &checked
-    ) == RUDA_CHECK_LIMIT_REACHED);
-    RUDA_EXPECT(!checked.initialized);
-    ruda_checker_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_LIMIT_REACHED);
+    MMAY_EXPECT(!checked.initialized);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_locals_and_literal_boundary(void) {
+void mmay_test_checker_locals_and_literal_boundary(void) {
     static const char source[] =
         "fn update(): int {\n"
         "  let value: int;\n"
@@ -905,51 +905,51 @@ void ruda_test_checker_locals_and_literal_boundary(void) {
         "fn minimum(): int {\n"
         "  return -9223372036854775808;\n"
         "}\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    const RudaCheckedFunction *update = NULL;
-    const RudaCheckedFunction *minimum = NULL;
-    RudaMirValue result;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayCheckedFunction *update = NULL;
+    const MarimayCheckedFunction *minimum = NULL;
+    MarimayMirValue result;
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 2);
-        update = ruda_checked_function(&checked, 0);
-        minimum = ruda_checked_function(&checked, 1);
-        RUDA_EXPECT(update != NULL);
-        RUDA_EXPECT(minimum != NULL);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 2);
+        update = mmay_checked_function(&checked, 0);
+        minimum = mmay_checked_function(&checked, 1);
+        MMAY_EXPECT(update != NULL);
+        MMAY_EXPECT(minimum != NULL);
         if (update != NULL) {
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &update->mir,
                 NULL,
                 0,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(result.as.i64 == 42);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(result.as.i64 == 42);
         }
         if (minimum != NULL) {
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &minimum->mir,
                 NULL,
                 0,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(result.as.i64 == INT64_MIN);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(result.as.i64 == INT64_MIN);
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }

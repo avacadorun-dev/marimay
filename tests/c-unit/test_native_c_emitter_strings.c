@@ -2,171 +2,171 @@
 
 #include <string.h>
 
-static bool ruda_test_native_build_string_return(
-    RudaMirFunction *function,
-    RudaSymbolId symbol
+static bool mmay_test_native_build_string_return(
+    MarimayMirFunction *function,
+    MarimaySymbolId symbol
 ) {
     static const unsigned char value[] = {'p', 0, '!', 0xe2, 0x98, 0x83};
-    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
-    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
-    RudaMirStringId constant = RUDA_MIR_NO_STRING;
-    RudaMirInstruction instruction;
+    MarimayMirRegister result = MMAY_MIR_NO_REGISTER;
+    MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
+    MarimayMirStringId constant = MMAY_MIR_NO_STRING;
+    MarimayMirInstruction instruction;
     memset(function, 0, sizeof(*function));
-    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol, NULL,
-            0, RUDA_TYPE_STRING, ruda_mir_function_default_options())
-        || !ruda_mir_add_register(function, RUDA_TYPE_STRING, &result)
-        || !ruda_mir_add_block(function, &block)
-        || !ruda_mir_add_string_constant(function, value, sizeof(value),
+    if (!mmay_mir_function_init(function, mmay_system_allocator(), symbol, NULL,
+            0, MMAY_TYPE_STRING, mmay_mir_function_default_options())
+        || !mmay_mir_add_register(function, MMAY_TYPE_STRING, &result)
+        || !mmay_mir_add_block(function, &block)
+        || !mmay_mir_add_string_constant(function, value, sizeof(value),
             &constant)) {
-        ruda_mir_function_dispose(function);
+        mmay_mir_function_dispose(function);
         return false;
     }
-    instruction = ruda_test_native_instruction(RUDA_MIR_CONSTANT_STRING, result,
-        RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0, false, 400);
+    instruction = mmay_test_native_instruction(MMAY_MIR_CONSTANT_STRING, result,
+        MMAY_MIR_NO_REGISTER, MMAY_MIR_NO_REGISTER, 0, false, 400);
     instruction.string_constant = constant;
-    if (!ruda_mir_append_instruction(function, block, &instruction)
-        || !ruda_mir_set_terminator(function, block,
-            ruda_test_native_terminator(RUDA_MIR_RETURN, result,
-                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 401))) {
-        ruda_mir_function_dispose(function);
+    if (!mmay_mir_append_instruction(function, block, &instruction)
+        || !mmay_mir_set_terminator(function, block,
+            mmay_test_native_terminator(MMAY_MIR_RETURN, result,
+                MMAY_MIR_NO_BLOCK, MMAY_MIR_NO_BLOCK, 401))) {
+        mmay_mir_function_dispose(function);
         return false;
     }
     return true;
 }
 
-static bool ruda_test_native_build_string_equal(
-    RudaMirFunction *function,
-    RudaSymbolId symbol
+static bool mmay_test_native_build_string_equal(
+    MarimayMirFunction *function,
+    MarimaySymbolId symbol
 ) {
     static const unsigned char value[] = {'p', 0, '!', 0xe2, 0x98, 0x83};
-    RudaMirRegister left = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister right = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister result = RUDA_MIR_NO_REGISTER;
-    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
-    RudaMirStringId first = RUDA_MIR_NO_STRING;
-    RudaMirStringId second = RUDA_MIR_NO_STRING;
-    RudaMirInstruction instruction;
+    MarimayMirRegister left = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister right = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister result = MMAY_MIR_NO_REGISTER;
+    MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
+    MarimayMirStringId first = MMAY_MIR_NO_STRING;
+    MarimayMirStringId second = MMAY_MIR_NO_STRING;
+    MarimayMirInstruction instruction;
     memset(function, 0, sizeof(*function));
-    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol, NULL,
-            0, RUDA_TYPE_BOOL, ruda_mir_function_default_options())
-        || !ruda_mir_add_register(function, RUDA_TYPE_STRING, &left)
-        || !ruda_mir_add_register(function, RUDA_TYPE_STRING, &right)
-        || !ruda_mir_add_register(function, RUDA_TYPE_BOOL, &result)
-        || !ruda_mir_add_block(function, &block)
-        || !ruda_mir_add_string_constant(function, value, sizeof(value), &first)
-        || !ruda_mir_add_string_constant(function, value, sizeof(value), &second)) {
-        ruda_mir_function_dispose(function);
+    if (!mmay_mir_function_init(function, mmay_system_allocator(), symbol, NULL,
+            0, MMAY_TYPE_BOOL, mmay_mir_function_default_options())
+        || !mmay_mir_add_register(function, MMAY_TYPE_STRING, &left)
+        || !mmay_mir_add_register(function, MMAY_TYPE_STRING, &right)
+        || !mmay_mir_add_register(function, MMAY_TYPE_BOOL, &result)
+        || !mmay_mir_add_block(function, &block)
+        || !mmay_mir_add_string_constant(function, value, sizeof(value), &first)
+        || !mmay_mir_add_string_constant(function, value, sizeof(value), &second)) {
+        mmay_mir_function_dispose(function);
         return false;
     }
-    instruction = ruda_test_native_instruction(RUDA_MIR_CONSTANT_STRING, left,
-        RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0, false, 410);
+    instruction = mmay_test_native_instruction(MMAY_MIR_CONSTANT_STRING, left,
+        MMAY_MIR_NO_REGISTER, MMAY_MIR_NO_REGISTER, 0, false, 410);
     instruction.string_constant = first;
-    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+    if (!mmay_mir_append_instruction(function, block, &instruction)) {
         goto failure;
     }
-    instruction = ruda_test_native_instruction(RUDA_MIR_CONSTANT_STRING, right,
-        RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0, false, 411);
+    instruction = mmay_test_native_instruction(MMAY_MIR_CONSTANT_STRING, right,
+        MMAY_MIR_NO_REGISTER, MMAY_MIR_NO_REGISTER, 0, false, 411);
     instruction.string_constant = second;
-    if (!ruda_mir_append_instruction(function, block, &instruction)) {
+    if (!mmay_mir_append_instruction(function, block, &instruction)) {
         goto failure;
     }
-    instruction = ruda_test_native_instruction(RUDA_MIR_EQUAL_STRING, result,
+    instruction = mmay_test_native_instruction(MMAY_MIR_EQUAL_STRING, result,
         left, right, 0, false, 412);
-    if (!ruda_mir_append_instruction(function, block, &instruction)
-        || !ruda_mir_set_terminator(function, block,
-            ruda_test_native_terminator(RUDA_MIR_RETURN, result,
-                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 413))) {
+    if (!mmay_mir_append_instruction(function, block, &instruction)
+        || !mmay_mir_set_terminator(function, block,
+            mmay_test_native_terminator(MMAY_MIR_RETURN, result,
+                MMAY_MIR_NO_BLOCK, MMAY_MIR_NO_BLOCK, 413))) {
         goto failure;
     }
     return true;
 
 failure:
-    ruda_mir_function_dispose(function);
+    mmay_mir_function_dispose(function);
     return false;
 }
 
-bool ruda_test_native_build_panic_leaf(
-    RudaMirFunction *function,
-    RudaSymbolId symbol
+bool mmay_test_native_build_panic_leaf(
+    MarimayMirFunction *function,
+    MarimaySymbolId symbol
 ) {
     static const unsigned char message[] = {'p', 0, '!', 0xe2, 0x98, 0x83};
-    RudaMirRegister value = RUDA_MIR_NO_REGISTER;
-    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
-    RudaMirStringId constant = RUDA_MIR_NO_STRING;
-    RudaMirInstruction instruction;
+    MarimayMirRegister value = MMAY_MIR_NO_REGISTER;
+    MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
+    MarimayMirStringId constant = MMAY_MIR_NO_STRING;
+    MarimayMirInstruction instruction;
     memset(function, 0, sizeof(*function));
-    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol, NULL,
-            0, RUDA_TYPE_NEVER, ruda_mir_function_default_options())
-        || !ruda_mir_add_register(function, RUDA_TYPE_STRING, &value)
-        || !ruda_mir_add_block(function, &block)
-        || !ruda_mir_add_string_constant(function, message, sizeof(message),
+    if (!mmay_mir_function_init(function, mmay_system_allocator(), symbol, NULL,
+            0, MMAY_TYPE_NEVER, mmay_mir_function_default_options())
+        || !mmay_mir_add_register(function, MMAY_TYPE_STRING, &value)
+        || !mmay_mir_add_block(function, &block)
+        || !mmay_mir_add_string_constant(function, message, sizeof(message),
             &constant)) {
-        ruda_mir_function_dispose(function);
+        mmay_mir_function_dispose(function);
         return false;
     }
-    instruction = ruda_test_native_instruction(RUDA_MIR_CONSTANT_STRING, value,
-        RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_REGISTER, 0, false, 200);
+    instruction = mmay_test_native_instruction(MMAY_MIR_CONSTANT_STRING, value,
+        MMAY_MIR_NO_REGISTER, MMAY_MIR_NO_REGISTER, 0, false, 200);
     instruction.string_constant = constant;
-    if (!ruda_mir_append_instruction(function, block, &instruction)
-        || !ruda_mir_set_terminator(function, block,
-            ruda_test_native_terminator(RUDA_MIR_PANIC, value,
-                RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 201))) {
-        ruda_mir_function_dispose(function);
+    if (!mmay_mir_append_instruction(function, block, &instruction)
+        || !mmay_mir_set_terminator(function, block,
+            mmay_test_native_terminator(MMAY_MIR_PANIC, value,
+                MMAY_MIR_NO_BLOCK, MMAY_MIR_NO_BLOCK, 201))) {
+        mmay_mir_function_dispose(function);
         return false;
     }
     return true;
 }
 
 
-static bool ruda_test_native_build_never_entry(
-    RudaMirFunction *function,
-    RudaSymbolId symbol,
-    RudaSymbolId callee
+static bool mmay_test_native_build_never_entry(
+    MarimayMirFunction *function,
+    MarimaySymbolId symbol,
+    MarimaySymbolId callee
 ) {
-    RudaMirBlockId block = RUDA_MIR_NO_BLOCK;
-    RudaMirCallId call = RUDA_MIR_NO_CALL;
-    RudaMirTerminator terminator;
+    MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
+    MarimayMirCallId call = MMAY_MIR_NO_CALL;
+    MarimayMirTerminator terminator;
     memset(function, 0, sizeof(*function));
-    if (!ruda_mir_function_init(function, ruda_system_allocator(), symbol, NULL,
-            0, RUDA_TYPE_NEVER, ruda_mir_function_default_options())
-        || !ruda_mir_add_block(function, &block)
-        || !ruda_mir_add_call(function, callee, RUDA_TYPE_NEVER, NULL, 0,
+    if (!mmay_mir_function_init(function, mmay_system_allocator(), symbol, NULL,
+            0, MMAY_TYPE_NEVER, mmay_mir_function_default_options())
+        || !mmay_mir_add_block(function, &block)
+        || !mmay_mir_add_call(function, callee, MMAY_TYPE_NEVER, NULL, 0,
             &call)) {
-        ruda_mir_function_dispose(function);
+        mmay_mir_function_dispose(function);
         return false;
     }
-    terminator = ruda_test_native_terminator(RUDA_MIR_CALL_NEVER,
-        RUDA_MIR_NO_REGISTER, RUDA_MIR_NO_BLOCK, RUDA_MIR_NO_BLOCK, 210);
+    terminator = mmay_test_native_terminator(MMAY_MIR_CALL_NEVER,
+        MMAY_MIR_NO_REGISTER, MMAY_MIR_NO_BLOCK, MMAY_MIR_NO_BLOCK, 210);
     terminator.call = call;
-    if (!ruda_mir_set_terminator(function, block, terminator)) {
-        ruda_mir_function_dispose(function);
+    if (!mmay_mir_set_terminator(function, block, terminator)) {
+        mmay_mir_function_dispose(function);
         return false;
     }
     return true;
 }
 
-static void ruda_test_native_strings_and_panic(void) {
+static void mmay_test_native_strings_and_panic(void) {
     static const unsigned char value[] = {'p', 0, '!', 0xe2, 0x98, 0x83};
-    const RudaSymbolId return_symbol = {{0x40}};
-    const RudaSymbolId equal_symbol = {{0x41}};
-    const RudaSymbolId leaf_symbol = {{0x10}};
-    const RudaSymbolId entry_symbol = {{0x20}};
-    RudaMirFunction returned;
-    RudaMirFunction equal;
-    RudaMirFunction leaf;
-    RudaMirFunction entry;
-    const RudaMirFunction *one_function[1];
-    const RudaMirFunction *ordered[2];
-    const RudaMirFunction *permuted[2];
-    RudaNativeCProgram native_program;
-    RudaOwnedBytes first;
-    RudaOwnedBytes second;
-    RudaBytecodeFunction bytecode;
-    RudaBytecodeProgram program;
-    RudaBytecodeExecution execution;
-    RudaBytecodePanic panic;
-    RudaBytecodeRunOptions run_options;
-    RudaBytecodeValue result;
+    const MarimaySymbolId return_symbol = {{0x40}};
+    const MarimaySymbolId equal_symbol = {{0x41}};
+    const MarimaySymbolId leaf_symbol = {{0x10}};
+    const MarimaySymbolId entry_symbol = {{0x20}};
+    MarimayMirFunction returned;
+    MarimayMirFunction equal;
+    MarimayMirFunction leaf;
+    MarimayMirFunction entry;
+    const MarimayMirFunction *one_function[1];
+    const MarimayMirFunction *ordered[2];
+    const MarimayMirFunction *permuted[2];
+    MarimayNativeCProgram native_program;
+    MarimayOwnedBytes first;
+    MarimayOwnedBytes second;
+    MarimayBytecodeFunction bytecode;
+    MarimayBytecodeProgram program;
+    MarimayBytecodeExecution execution;
+    MarimayBytecodePanic panic;
+    MarimayBytecodeRunOptions run_options;
+    MarimayBytecodeValue result;
     const unsigned char *bytes = NULL;
     size_t length = 0;
     size_t failure_index = 0;
@@ -182,76 +182,76 @@ static void ruda_test_native_strings_and_panic(void) {
     memset(&program, 0, sizeof(program));
     memset(&execution, 0, sizeof(execution));
     memset(&panic, 0, sizeof(panic));
-    RUDA_EXPECT(ruda_test_native_build_string_return(&returned, return_symbol));
-    RUDA_EXPECT(ruda_test_native_build_string_equal(&equal, equal_symbol));
-    RUDA_EXPECT(ruda_test_native_build_panic_leaf(&leaf, leaf_symbol));
-    RUDA_EXPECT(ruda_test_native_build_never_entry(&entry, entry_symbol,
+    MMAY_EXPECT(mmay_test_native_build_string_return(&returned, return_symbol));
+    MMAY_EXPECT(mmay_test_native_build_string_equal(&equal, equal_symbol));
+    MMAY_EXPECT(mmay_test_native_build_panic_leaf(&leaf, leaf_symbol));
+    MMAY_EXPECT(mmay_test_native_build_never_entry(&entry, entry_symbol,
         leaf_symbol));
-    RUDA_EXPECT(ruda_mir_verify(&returned) == RUDA_MIR_VERIFY_OK);
-    RUDA_EXPECT(ruda_mir_verify(&equal) == RUDA_MIR_VERIFY_OK);
-    RUDA_EXPECT(ruda_mir_verify(&leaf) == RUDA_MIR_VERIFY_OK);
-    RUDA_EXPECT(ruda_mir_verify(&entry) == RUDA_MIR_VERIFY_OK);
+    MMAY_EXPECT(mmay_mir_verify(&returned) == MMAY_MIR_VERIFY_OK);
+    MMAY_EXPECT(mmay_mir_verify(&equal) == MMAY_MIR_VERIFY_OK);
+    MMAY_EXPECT(mmay_mir_verify(&leaf) == MMAY_MIR_VERIFY_OK);
+    MMAY_EXPECT(mmay_mir_verify(&entry) == MMAY_MIR_VERIFY_OK);
 
     one_function[0] = &returned;
     native_program.functions = one_function;
     native_program.function_count = 1;
     native_program.entry_symbol = return_symbol;
-    RUDA_EXPECT(ruda_native_c_emit_program(&native_program,
-        ruda_system_allocator(), ruda_native_c_emit_default_options(), &first)
-        == RUDA_NATIVE_C_EMIT_OK);
-    RUDA_EXPECT(ruda_native_c_emit_program(&native_program,
-        ruda_system_allocator(), ruda_native_c_emit_default_options(), &second)
-        == RUDA_NATIVE_C_EMIT_OK);
-    RUDA_EXPECT(first.length != 0 && first.length == second.length
+    MMAY_EXPECT(mmay_native_c_emit_program(&native_program,
+        mmay_system_allocator(), mmay_native_c_emit_default_options(), &first)
+        == MMAY_NATIVE_C_EMIT_OK);
+    MMAY_EXPECT(mmay_native_c_emit_program(&native_program,
+        mmay_system_allocator(), mmay_native_c_emit_default_options(), &second)
+        == MMAY_NATIVE_C_EMIT_OK);
+    MMAY_EXPECT(first.length != 0 && first.length == second.length
         && memcmp(first.data, second.data, first.length) == 0);
-    RUDA_EXPECT(ruda_test_native_contains(&first, "ruda_g_string"));
+    MMAY_EXPECT(mmay_test_native_contains(&first, "mmay_g_string"));
 #if !defined(_WIN32)
-    ruda_test_native_compile_and_run(&first, "ok:string:6:700021e29883\n", 0);
+    mmay_test_native_compile_and_run(&first, "ok:string:6:700021e29883\n", 0);
 #endif
-    ruda_owned_bytes_dispose(&second);
-    ruda_owned_bytes_dispose(&first);
+    mmay_owned_bytes_dispose(&second);
+    mmay_owned_bytes_dispose(&first);
 
-    RUDA_EXPECT(ruda_mir_lower_bytecode_function(&returned,
-        ruda_system_allocator(), ruda_mir_bytecode_lower_default_options(),
-        &bytecode) == RUDA_MIR_BYTECODE_LOWER_OK);
-    RUDA_EXPECT(ruda_bytecode_execution_init(&execution, ruda_system_allocator(),
-        ruda_bytecode_execution_default_options()));
-    result.type = RUDA_BYTECODE_TYPE_I64;
+    MMAY_EXPECT(mmay_mir_lower_bytecode_function(&returned,
+        mmay_system_allocator(), mmay_mir_bytecode_lower_default_options(),
+        &bytecode) == MMAY_MIR_BYTECODE_LOWER_OK);
+    MMAY_EXPECT(mmay_bytecode_execution_init(&execution, mmay_system_allocator(),
+        mmay_bytecode_execution_default_options()));
+    result.type = MMAY_BYTECODE_TYPE_I64;
     result.as.i64 = INT64_MIN;
-    run_options = ruda_bytecode_run_default_options();
+    run_options = mmay_bytecode_run_default_options();
     run_options.execution = &execution;
-    RUDA_EXPECT(ruda_bytecode_run(&bytecode, NULL, 0, ruda_system_allocator(),
-        run_options, &result) == RUDA_BYTECODE_RUN_OK);
-    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_STRING
-        && ruda_bytecode_execution_string_bytes(&execution, result, &bytes, &length)
+    MMAY_EXPECT(mmay_bytecode_run(&bytecode, NULL, 0, mmay_system_allocator(),
+        run_options, &result) == MMAY_BYTECODE_RUN_OK);
+    MMAY_EXPECT(result.type == MMAY_BYTECODE_TYPE_STRING
+        && mmay_bytecode_execution_string_bytes(&execution, result, &bytes, &length)
         && length == sizeof(value) && memcmp(bytes, value, sizeof(value)) == 0);
-    ruda_bytecode_execution_dispose(&execution);
-    ruda_bytecode_function_dispose(&bytecode);
+    mmay_bytecode_execution_dispose(&execution);
+    mmay_bytecode_function_dispose(&bytecode);
 
     one_function[0] = &equal;
     native_program.entry_symbol = equal_symbol;
-    RUDA_EXPECT(ruda_native_c_emit_program(&native_program,
-        ruda_system_allocator(), ruda_native_c_emit_default_options(), &first)
-        == RUDA_NATIVE_C_EMIT_OK);
-    RUDA_EXPECT(ruda_test_native_contains(&first, "ruda_g_string_equal"));
+    MMAY_EXPECT(mmay_native_c_emit_program(&native_program,
+        mmay_system_allocator(), mmay_native_c_emit_default_options(), &first)
+        == MMAY_NATIVE_C_EMIT_OK);
+    MMAY_EXPECT(mmay_test_native_contains(&first, "mmay_g_string_equal"));
 #if !defined(_WIN32)
-    ruda_test_native_compile_and_run(&first, "ok:bool:true\n", 0);
+    mmay_test_native_compile_and_run(&first, "ok:bool:true\n", 0);
 #endif
-    ruda_owned_bytes_dispose(&first);
-    RUDA_EXPECT(ruda_mir_lower_bytecode_function(&equal, ruda_system_allocator(),
-        ruda_mir_bytecode_lower_default_options(), &bytecode)
-        == RUDA_MIR_BYTECODE_LOWER_OK);
-    RUDA_EXPECT(ruda_bytecode_execution_init(&execution, ruda_system_allocator(),
-        ruda_bytecode_execution_default_options()));
-    result.type = RUDA_BYTECODE_TYPE_I64;
+    mmay_owned_bytes_dispose(&first);
+    MMAY_EXPECT(mmay_mir_lower_bytecode_function(&equal, mmay_system_allocator(),
+        mmay_mir_bytecode_lower_default_options(), &bytecode)
+        == MMAY_MIR_BYTECODE_LOWER_OK);
+    MMAY_EXPECT(mmay_bytecode_execution_init(&execution, mmay_system_allocator(),
+        mmay_bytecode_execution_default_options()));
+    result.type = MMAY_BYTECODE_TYPE_I64;
     result.as.i64 = INT64_MIN;
-    run_options = ruda_bytecode_run_default_options();
+    run_options = mmay_bytecode_run_default_options();
     run_options.execution = &execution;
-    RUDA_EXPECT(ruda_bytecode_run(&bytecode, NULL, 0, ruda_system_allocator(),
-        run_options, &result) == RUDA_BYTECODE_RUN_OK);
-    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_BOOL && result.as.boolean);
-    ruda_bytecode_execution_dispose(&execution);
-    ruda_bytecode_function_dispose(&bytecode);
+    MMAY_EXPECT(mmay_bytecode_run(&bytecode, NULL, 0, mmay_system_allocator(),
+        run_options, &result) == MMAY_BYTECODE_RUN_OK);
+    MMAY_EXPECT(result.type == MMAY_BYTECODE_TYPE_BOOL && result.as.boolean);
+    mmay_bytecode_execution_dispose(&execution);
+    mmay_bytecode_function_dispose(&bytecode);
 
     ordered[0] = &leaf;
     ordered[1] = &entry;
@@ -260,95 +260,95 @@ static void ruda_test_native_strings_and_panic(void) {
     native_program.functions = ordered;
     native_program.function_count = 2;
     native_program.entry_symbol = entry_symbol;
-    RUDA_EXPECT(ruda_native_c_emit_program(&native_program,
-        ruda_system_allocator(), ruda_native_c_emit_default_options(), &first)
-        == RUDA_NATIVE_C_EMIT_OK);
+    MMAY_EXPECT(mmay_native_c_emit_program(&native_program,
+        mmay_system_allocator(), mmay_native_c_emit_default_options(), &first)
+        == MMAY_NATIVE_C_EMIT_OK);
     native_program.functions = permuted;
-    RUDA_EXPECT(ruda_native_c_emit_program(&native_program,
-        ruda_system_allocator(), ruda_native_c_emit_default_options(), &second)
-        == RUDA_NATIVE_C_EMIT_OK);
-    RUDA_EXPECT(first.length == second.length
+    MMAY_EXPECT(mmay_native_c_emit_program(&native_program,
+        mmay_system_allocator(), mmay_native_c_emit_default_options(), &second)
+        == MMAY_NATIVE_C_EMIT_OK);
+    MMAY_EXPECT(first.length == second.length
         && memcmp(first.data, second.data, first.length) == 0);
 #if !defined(_WIN32)
-    ruda_test_native_compile_and_run(&first,
+    mmay_test_native_compile_and_run(&first,
         "panic:G4000:10000000000000000000000000000000:201:202:6:700021e29883:2:"
         "10000000000000000000000000000000:201:202:"
         "20000000000000000000000000000000:210:211\n", 1);
 #endif
-    ruda_owned_bytes_dispose(&second);
-    ruda_owned_bytes_dispose(&first);
+    mmay_owned_bytes_dispose(&second);
+    mmay_owned_bytes_dispose(&first);
 
-    RUDA_EXPECT(ruda_mir_lower_bytecode_program(permuted, 2, entry_symbol,
-        ruda_system_allocator(), ruda_mir_bytecode_program_lower_default_options(),
-        &program) == RUDA_MIR_BYTECODE_LOWER_OK);
-    RUDA_EXPECT(ruda_bytecode_execution_init(&execution, ruda_system_allocator(),
-        ruda_bytecode_execution_default_options()));
-    RUDA_EXPECT(ruda_bytecode_panic_init(&panic, ruda_system_allocator()));
-    run_options = ruda_bytecode_run_default_options();
+    MMAY_EXPECT(mmay_mir_lower_bytecode_program(permuted, 2, entry_symbol,
+        mmay_system_allocator(), mmay_mir_bytecode_program_lower_default_options(),
+        &program) == MMAY_MIR_BYTECODE_LOWER_OK);
+    MMAY_EXPECT(mmay_bytecode_execution_init(&execution, mmay_system_allocator(),
+        mmay_bytecode_execution_default_options()));
+    MMAY_EXPECT(mmay_bytecode_panic_init(&panic, mmay_system_allocator()));
+    run_options = mmay_bytecode_run_default_options();
     run_options.execution = &execution;
     run_options.panic = &panic;
-    result.type = RUDA_BYTECODE_TYPE_I64;
+    result.type = MMAY_BYTECODE_TYPE_I64;
     result.as.i64 = 1234;
-    RUDA_EXPECT(ruda_bytecode_run_program(&program, NULL, 0,
-        ruda_system_allocator(), run_options, &result) == RUDA_BYTECODE_RUN_PANIC);
-    RUDA_EXPECT(result.type == RUDA_BYTECODE_TYPE_I64 && result.as.i64 == 1234);
-    RUDA_EXPECT(panic.code != NULL && strcmp(panic.code, "G4000") == 0
+    MMAY_EXPECT(mmay_bytecode_run_program(&program, NULL, 0,
+        mmay_system_allocator(), run_options, &result) == MMAY_BYTECODE_RUN_PANIC);
+    MMAY_EXPECT(result.type == MMAY_BYTECODE_TYPE_I64 && result.as.i64 == 1234);
+    MMAY_EXPECT(panic.code != NULL && strcmp(panic.code, "G4000") == 0
         && panic.message.length == sizeof(value)
         && memcmp(panic.message.data, value, sizeof(value)) == 0
         && memcmp(&panic.symbol, &leaf_symbol, sizeof(leaf_symbol)) == 0
         && panic.span.start == 201 && panic.span.end == 202
         && panic.frames.length == 2);
     {
-        const RudaBytecodePanicFrame *leaf_frame = ruda_bytecode_panic_frame(
+        const MarimayBytecodePanicFrame *leaf_frame = mmay_bytecode_panic_frame(
             &panic, 0
         );
-        const RudaBytecodePanicFrame *entry_frame = ruda_bytecode_panic_frame(
+        const MarimayBytecodePanicFrame *entry_frame = mmay_bytecode_panic_frame(
             &panic, 1
         );
-        RUDA_EXPECT(leaf_frame != NULL && entry_frame != NULL
+        MMAY_EXPECT(leaf_frame != NULL && entry_frame != NULL
             && memcmp(&leaf_frame->symbol, &leaf_symbol, sizeof(leaf_symbol)) == 0
             && leaf_frame->call_span.start == 201 && leaf_frame->call_span.end == 202
             && memcmp(&entry_frame->symbol, &entry_symbol, sizeof(entry_symbol)) == 0
             && entry_frame->call_span.start == 210
             && entry_frame->call_span.end == 211);
     }
-    ruda_bytecode_panic_dispose(&panic);
-    ruda_bytecode_execution_dispose(&execution);
-    ruda_bytecode_program_dispose(&program);
+    mmay_bytecode_panic_dispose(&panic);
+    mmay_bytecode_execution_dispose(&execution);
+    mmay_bytecode_program_dispose(&program);
 
     {
-        RudaNativeCEmitOptions options = ruda_native_c_emit_default_options();
+        MarimayNativeCEmitOptions options = mmay_native_c_emit_default_options();
         options.max_functions = 1;
-        ruda_test_native_emit(ordered, 2, entry_symbol, options,
-            RUDA_NATIVE_C_EMIT_LIMIT_REACHED);
-        options = ruda_native_c_emit_default_options();
+        mmay_test_native_emit(ordered, 2, entry_symbol, options,
+            MMAY_NATIVE_C_EMIT_LIMIT_REACHED);
+        options = mmay_native_c_emit_default_options();
         options.max_generated_bytes = 1;
-        ruda_test_native_emit(ordered, 2, entry_symbol, options,
-            RUDA_NATIVE_C_EMIT_LIMIT_REACHED);
+        mmay_test_native_emit(ordered, 2, entry_symbol, options,
+            MMAY_NATIVE_C_EMIT_LIMIT_REACHED);
     }
     for (failure_index = 0; failure_index < 128 && !reached_success;
         failure_index += 1) {
-        RudaFailAllocator state;
-        RudaOwnedBytes output;
-        RudaNativeCEmitStatus status;
-        ruda_fail_allocator_init(&state, ruda_system_allocator(), failure_index);
+        MarimayFailAllocator state;
+        MarimayOwnedBytes output;
+        MarimayNativeCEmitStatus status;
+        mmay_fail_allocator_init(&state, mmay_system_allocator(), failure_index);
         memset(&output, 0, sizeof(output));
-        status = ruda_native_c_emit_program(&native_program,
-            ruda_fail_allocator(&state), ruda_native_c_emit_default_options(),
+        status = mmay_native_c_emit_program(&native_program,
+            mmay_fail_allocator(&state), mmay_native_c_emit_default_options(),
             &output);
-        RUDA_EXPECT(status == RUDA_NATIVE_C_EMIT_ALLOCATION_FAILED
-            || status == RUDA_NATIVE_C_EMIT_OK);
-        reached_success = reached_success || status == RUDA_NATIVE_C_EMIT_OK;
-        ruda_owned_bytes_dispose(&output);
-        RUDA_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+        MMAY_EXPECT(status == MMAY_NATIVE_C_EMIT_ALLOCATION_FAILED
+            || status == MMAY_NATIVE_C_EMIT_OK);
+        reached_success = reached_success || status == MMAY_NATIVE_C_EMIT_OK;
+        mmay_owned_bytes_dispose(&output);
+        MMAY_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
     }
-    RUDA_EXPECT(reached_success);
-    ruda_mir_function_dispose(&entry);
-    ruda_mir_function_dispose(&leaf);
-    ruda_mir_function_dispose(&equal);
-    ruda_mir_function_dispose(&returned);
+    MMAY_EXPECT(reached_success);
+    mmay_mir_function_dispose(&entry);
+    mmay_mir_function_dispose(&leaf);
+    mmay_mir_function_dispose(&equal);
+    mmay_mir_function_dispose(&returned);
 }
 
-void ruda_test_native_strings_panic(void) {
-    ruda_test_native_strings_and_panic();
+void mmay_test_native_strings_panic(void) {
+    mmay_test_native_strings_and_panic();
 }

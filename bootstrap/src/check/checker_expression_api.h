@@ -4,16 +4,16 @@
 #include "checker_internal.h"
 #include "checker_function_context.h"
 
-bool ruda_checker_private_compile_expression_raw(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaTypeId expected,
-    RudaExpressionValue *result
+bool mmay_checker_private_compile_expression_raw(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
 );
-bool ruda_checker_private_maybe_box_interface(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    RudaTypeId expected,
-    RudaExpressionValue *result
+bool mmay_checker_private_maybe_box_interface(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
 );
 #endif

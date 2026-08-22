@@ -1,4 +1,4 @@
-# Ruda diagnostic code registry
+# Marimay diagnostic code registry
 
 <!-- Generated from bootstrap/tables/diagnostics.tsv. Do not edit by hand. -->
 

@@ -2,181 +2,181 @@
 
 #include <string.h>
 
-static bool ruda_mir_bytecode_array_is_generic(
-    const RudaMirFunction *function,
-    const RudaMirArray *array
+static bool mmay_mir_bytecode_array_is_generic(
+    const MarimayMirFunction *function,
+    const MarimayMirArray *array
 ) {
     size_t index = 0;
-    if (function == NULL || array == NULL || array->element_type == RUDA_TYPE_F64) {
+    if (function == NULL || array == NULL || array->element_type == MMAY_TYPE_F64) {
         return false;
     }
-    if (array->element_type < RUDA_TYPE_FIRST_DYNAMIC) {
+    if (array->element_type < MMAY_TYPE_FIRST_DYNAMIC) {
         return true;
     }
     for (index = 0; index < function->arrays.length; index += 1) {
-        const RudaMirArray *nested = ruda_vector_at_const(
+        const MarimayMirArray *nested = mmay_vector_at_const(
             &function->arrays, index
         );
         if (nested != NULL && nested->type == array->element_type) {
-            return nested->element_type != RUDA_TYPE_F64;
+            return nested->element_type != MMAY_TYPE_F64;
         }
     }
     return true;
 }
 
-bool ruda_mir_bytecode_type(
-    const RudaMirFunction *function,
-    RudaTypeId input,
+bool mmay_mir_bytecode_type(
+    const MarimayMirFunction *function,
+    MarimayTypeId input,
     bool allow_void,
     bool allow_never,
-    RudaBytecodeType *output
+    MarimayBytecodeType *output
 ) {
     size_t index = 0;
     if (output == NULL) {
         return false;
     }
-    if (input == RUDA_TYPE_BOOL) {
-        *output = RUDA_BYTECODE_TYPE_BOOL;
+    if (input == MMAY_TYPE_BOOL) {
+        *output = MMAY_BYTECODE_TYPE_BOOL;
         return true;
     }
-    if (input == RUDA_TYPE_I64) {
-        *output = RUDA_BYTECODE_TYPE_I64;
+    if (input == MMAY_TYPE_I64) {
+        *output = MMAY_BYTECODE_TYPE_I64;
         return true;
     }
-    if (input == RUDA_TYPE_I8) {
-        *output = RUDA_BYTECODE_TYPE_I8;
+    if (input == MMAY_TYPE_I8) {
+        *output = MMAY_BYTECODE_TYPE_I8;
         return true;
     }
-    if (input == RUDA_TYPE_I16) {
-        *output = RUDA_BYTECODE_TYPE_I16;
+    if (input == MMAY_TYPE_I16) {
+        *output = MMAY_BYTECODE_TYPE_I16;
         return true;
     }
-    if (input == RUDA_TYPE_I32) {
-        *output = RUDA_BYTECODE_TYPE_I32;
+    if (input == MMAY_TYPE_I32) {
+        *output = MMAY_BYTECODE_TYPE_I32;
         return true;
     }
-    if (input == RUDA_TYPE_U8) {
-        *output = RUDA_BYTECODE_TYPE_U8;
+    if (input == MMAY_TYPE_U8) {
+        *output = MMAY_BYTECODE_TYPE_U8;
         return true;
     }
-    if (input == RUDA_TYPE_U16) {
-        *output = RUDA_BYTECODE_TYPE_U16;
+    if (input == MMAY_TYPE_U16) {
+        *output = MMAY_BYTECODE_TYPE_U16;
         return true;
     }
-    if (input == RUDA_TYPE_U32) {
-        *output = RUDA_BYTECODE_TYPE_U32;
+    if (input == MMAY_TYPE_U32) {
+        *output = MMAY_BYTECODE_TYPE_U32;
         return true;
     }
-    if (input == RUDA_TYPE_U64) {
-        *output = RUDA_BYTECODE_TYPE_U64;
+    if (input == MMAY_TYPE_U64) {
+        *output = MMAY_BYTECODE_TYPE_U64;
         return true;
     }
-    if (input == RUDA_TYPE_F64) {
-        *output = RUDA_BYTECODE_TYPE_F64;
+    if (input == MMAY_TYPE_F64) {
+        *output = MMAY_BYTECODE_TYPE_F64;
         return true;
     }
-    if (input == RUDA_TYPE_F32) {
-        *output = RUDA_BYTECODE_TYPE_F32;
+    if (input == MMAY_TYPE_F32) {
+        *output = MMAY_BYTECODE_TYPE_F32;
         return true;
     }
-    if (input == RUDA_TYPE_STRING) {
-        *output = RUDA_BYTECODE_TYPE_STRING;
+    if (input == MMAY_TYPE_STRING) {
+        *output = MMAY_BYTECODE_TYPE_STRING;
         return true;
     }
-    if (allow_void && input == RUDA_TYPE_VOID) {
-        *output = RUDA_BYTECODE_TYPE_VOID;
+    if (allow_void && input == MMAY_TYPE_VOID) {
+        *output = MMAY_BYTECODE_TYPE_VOID;
         return true;
     }
-    if (allow_never && input == RUDA_TYPE_NEVER) {
-        *output = RUDA_BYTECODE_TYPE_NEVER;
+    if (allow_never && input == MMAY_TYPE_NEVER) {
+        *output = MMAY_BYTECODE_TYPE_NEVER;
         return true;
     }
-    if (function == NULL || input < RUDA_TYPE_FIRST_DYNAMIC) {
+    if (function == NULL || input < MMAY_TYPE_FIRST_DYNAMIC) {
         return false;
     }
     for (index = 0; index < function->arrays.length; index += 1) {
-        const RudaMirArray *array = ruda_vector_at_const(
+        const MarimayMirArray *array = mmay_vector_at_const(
             &function->arrays,
             index
         );
         if (array == NULL || array->type != input) {
             continue;
         }
-        if (!ruda_mir_bytecode_array_is_generic(function, array)
-            && array->element_type == RUDA_TYPE_F64) {
-            *output = RUDA_BYTECODE_TYPE_ARRAY_F64;
+        if (!mmay_mir_bytecode_array_is_generic(function, array)
+            && array->element_type == MMAY_TYPE_F64) {
+            *output = MMAY_BYTECODE_TYPE_ARRAY_F64;
             return true;
         }
-        if (!ruda_mir_bytecode_array_is_generic(function, array)
-            && array->element_type >= RUDA_TYPE_FIRST_DYNAMIC) {
+        if (!mmay_mir_bytecode_array_is_generic(function, array)
+            && array->element_type >= MMAY_TYPE_FIRST_DYNAMIC) {
             size_t nested_index = 0;
             for (nested_index = 0; nested_index < function->arrays.length;
                 nested_index += 1) {
-                const RudaMirArray *nested = ruda_vector_at_const(
+                const MarimayMirArray *nested = mmay_vector_at_const(
                     &function->arrays, nested_index
                 );
                 if (nested != NULL && nested->type == array->element_type
-                    && nested->element_type == RUDA_TYPE_F64) {
-                    *output = RUDA_BYTECODE_TYPE_ARRAY_ARRAY_F64;
+                    && nested->element_type == MMAY_TYPE_F64) {
+                    *output = MMAY_BYTECODE_TYPE_ARRAY_ARRAY_F64;
                     return true;
                 }
             }
         }
-        *output = RUDA_BYTECODE_TYPE_ARRAY;
+        *output = MMAY_BYTECODE_TYPE_ARRAY;
         return true;
     }
     for (index = 0; index < function->records.length; index += 1) {
-        const RudaMirRecord *record = ruda_vector_at_const(
+        const MarimayMirRecord *record = mmay_vector_at_const(
             &function->records,
             index
         );
         if (record != NULL && record->type == input) {
-            *output = RUDA_BYTECODE_TYPE_RECORD;
+            *output = MMAY_BYTECODE_TYPE_RECORD;
             return true;
         }
     }
     for (index = 0; index < function->enums.length; index += 1) {
-        const RudaMirEnum *enumeration = ruda_vector_at_const(
+        const MarimayMirEnum *enumeration = mmay_vector_at_const(
             &function->enums,
             index
         );
         if (enumeration != NULL && enumeration->type == input) {
-            *output = RUDA_BYTECODE_TYPE_ENUM;
+            *output = MMAY_BYTECODE_TYPE_ENUM;
             return true;
         }
     }
     for (index = 0; index < function->interfaces.length; index += 1) {
-        const RudaMirInterface *interface_layout = ruda_vector_at_const(
+        const MarimayMirInterface *interface_layout = mmay_vector_at_const(
             &function->interfaces,
             index
         );
         if (interface_layout != NULL && interface_layout->type == input) {
-            *output = RUDA_BYTECODE_TYPE_INTERFACE;
+            *output = MMAY_BYTECODE_TYPE_INTERFACE;
             return true;
         }
     }
     return false;
 }
 
-uint32_t ruda_mir_bytecode_layout_for_type(
-    const RudaMirFunction *function,
-    RudaTypeId type
+uint32_t mmay_mir_bytecode_layout_for_type(
+    const MarimayMirFunction *function,
+    MarimayTypeId type
 ) {
     size_t index = 0;
-    if (function == NULL || type < RUDA_TYPE_FIRST_DYNAMIC) {
-        return RUDA_BYTECODE_NO_LAYOUT;
+    if (function == NULL || type < MMAY_TYPE_FIRST_DYNAMIC) {
+        return MMAY_BYTECODE_NO_LAYOUT;
     }
     for (index = 0; index < function->arrays.length; index += 1) {
-        const RudaMirArray *array = ruda_vector_at_const(
+        const MarimayMirArray *array = mmay_vector_at_const(
             &function->arrays, index
         );
         if (array != NULL && array->type == type && index <= UINT32_MAX
-            && ruda_mir_bytecode_array_is_generic(function, array)) {
+            && mmay_mir_bytecode_array_is_generic(function, array)) {
             return (uint32_t)index;
         }
     }
     for (index = 0; index < function->records.length; index += 1) {
-        const RudaMirRecord *record = ruda_vector_at_const(
+        const MarimayMirRecord *record = mmay_vector_at_const(
             &function->records,
             index
         );
@@ -185,7 +185,7 @@ uint32_t ruda_mir_bytecode_layout_for_type(
         }
     }
     for (index = 0; index < function->enums.length; index += 1) {
-        const RudaMirEnum *enumeration = ruda_vector_at_const(
+        const MarimayMirEnum *enumeration = mmay_vector_at_const(
             &function->enums,
             index
         );
@@ -195,7 +195,7 @@ uint32_t ruda_mir_bytecode_layout_for_type(
         }
     }
     for (index = 0; index < function->interfaces.length; index += 1) {
-        const RudaMirInterface *interface_layout = ruda_vector_at_const(
+        const MarimayMirInterface *interface_layout = mmay_vector_at_const(
             &function->interfaces,
             index
         );
@@ -204,174 +204,174 @@ uint32_t ruda_mir_bytecode_layout_for_type(
             return (uint32_t)index;
         }
     }
-    return RUDA_BYTECODE_NO_LAYOUT;
+    return MMAY_BYTECODE_NO_LAYOUT;
 }
 
-static RudaSymbolId ruda_mir_bytecode_nominal_symbol(
-    RudaTypeId type,
+static MarimaySymbolId mmay_mir_bytecode_nominal_symbol(
+    MarimayTypeId type,
     unsigned char tag
 ) {
-    RudaSymbolId symbol;
+    MarimaySymbolId symbol;
     memset(&symbol, 0, sizeof(symbol));
     memcpy(symbol.bytes, &type, sizeof(type));
     symbol.bytes[sizeof(type)] = tag;
     return symbol;
 }
 
-static RudaSymbolId ruda_mir_bytecode_enum_symbol(
-    const RudaMirFunction *function,
-    const RudaMirEnum *enumeration
+static MarimaySymbolId mmay_mir_bytecode_enum_symbol(
+    const MarimayMirFunction *function,
+    const MarimayMirEnum *enumeration
 ) {
-    RudaSymbolId option_base;
-    RudaSymbolId specialized;
-    const RudaMirEnumVariant *some = enumeration != NULL
+    MarimaySymbolId option_base;
+    MarimaySymbolId specialized;
+    const MarimayMirEnumVariant *some = enumeration != NULL
             && enumeration->variant_count == 2
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->enum_variants, enumeration->variant_start
         ) : NULL;
-    const RudaMirEnumVariant *none = enumeration != NULL
+    const MarimayMirEnumVariant *none = enumeration != NULL
             && enumeration->variant_count == 2
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->enum_variants, enumeration->variant_start + 1
         ) : NULL;
-    const RudaMirEnumPayload *payload = enumeration != NULL && some != NULL
+    const MarimayMirEnumPayload *payload = enumeration != NULL && some != NULL
             && some->payload_count == 1
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->enum_payloads,
             some->payload_start
         ) : NULL;
-    RudaBytecodeType payload_type = RUDA_BYTECODE_TYPE_INVALID;
+    MarimayBytecodeType payload_type = MMAY_BYTECODE_TYPE_INVALID;
     memset(&option_base, 0, sizeof(option_base));
     memset(&specialized, 0, sizeof(specialized));
     if (enumeration != NULL
-        && ruda_symbol_id_from_bytes(
+        && mmay_symbol_id_from_bytes(
             "std", 3, "prelude", 7,
             (const unsigned char *)"Option", 6, 0, &option_base
-        ) && ruda_symbol_id_equal(enumeration->symbol, option_base)
+        ) && mmay_symbol_id_equal(enumeration->symbol, option_base)
         && enumeration->payload_count == 1 && some != NULL
-        && some->kind == RUDA_MIR_ENUM_VARIANT_POSITIONAL
+        && some->kind == MMAY_MIR_ENUM_VARIANT_POSITIONAL
         && some->payload_start == 0 && some->payload_count == 1
-        && none != NULL && none->kind == RUDA_MIR_ENUM_VARIANT_UNIT
+        && none != NULL && none->kind == MMAY_MIR_ENUM_VARIANT_UNIT
         && none->payload_count == 0 && payload != NULL
-        && ruda_mir_bytecode_type(
+        && mmay_mir_bytecode_type(
             function, payload->type, false, false, &payload_type
-        ) && ruda_bytecode_numeric_option_symbol(
+        ) && mmay_bytecode_numeric_option_symbol(
             payload_type, &specialized
         )) {
         return specialized;
     }
     return enumeration != NULL
-        ? ruda_mir_bytecode_nominal_symbol(enumeration->type, 0x45)
+        ? mmay_mir_bytecode_nominal_symbol(enumeration->type, 0x45)
         : specialized;
 }
 
-static RudaMirBytecodeLowerStatus ruda_mir_bytecode_record_layouts(
-    const RudaMirFunction *input,
-    RudaBytecodeFunction *output,
-    RudaAllocator allocator
+static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_record_layouts(
+    const MarimayMirFunction *input,
+    MarimayBytecodeFunction *output,
+    MarimayAllocator allocator
 ) {
     size_t index = 0;
     for (index = 0; index < input->records.length; index += 1) {
-        const RudaMirRecord *record = ruda_vector_at_const(
+        const MarimayMirRecord *record = mmay_vector_at_const(
             &input->records, index
         );
-        RudaBytecodeRecordField *fields = NULL;
+        MarimayBytecodeRecordField *fields = NULL;
         size_t field_bytes = 0;
         size_t field_index = 0;
-        RudaBytecodeRecordId record_id = RUDA_BYTECODE_NO_RECORD;
-        if (record == NULL || !ruda_size_multiply(
+        MarimayBytecodeRecordId record_id = MMAY_BYTECODE_NO_RECORD;
+        if (record == NULL || !mmay_size_multiply(
                 record->field_count, sizeof(*fields), &field_bytes
             )) {
-            return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
         }
         if (field_bytes != 0) {
-            fields = ruda_allocate(&allocator, field_bytes);
+            fields = mmay_allocate(&allocator, field_bytes);
             if (fields == NULL) {
-                return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+                return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
             }
             memset(fields, 0, field_bytes);
         }
         for (field_index = 0; field_index < record->field_count;
             field_index += 1) {
-            const RudaMirRecordField *field = ruda_vector_at_const(
+            const MarimayMirRecordField *field = mmay_vector_at_const(
                 &input->record_fields, record->field_start + field_index
             );
-            if (field == NULL || !ruda_mir_bytecode_type(
+            if (field == NULL || !mmay_mir_bytecode_type(
                     input, field->type, false, false, &fields[field_index].type
                 )) {
-                ruda_deallocate(&allocator, fields, field_bytes);
-                return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
+                mmay_deallocate(&allocator, fields, field_bytes);
+                return MMAY_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
             }
-            fields[field_index].layout = ruda_mir_bytecode_layout_for_type(
+            fields[field_index].layout = mmay_mir_bytecode_layout_for_type(
                 input, field->type
             );
             fields[field_index].is_mutable = field->is_mutable;
         }
-        if (!ruda_bytecode_add_record_layout(
+        if (!mmay_bytecode_add_record_layout(
                 output,
-                ruda_mir_bytecode_nominal_symbol(record->type, 0x52),
+                mmay_mir_bytecode_nominal_symbol(record->type, 0x52),
                 fields,
                 record->field_count,
                 &record_id
             ) || record_id != index) {
-            ruda_deallocate(&allocator, fields, field_bytes);
-            return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+            mmay_deallocate(&allocator, fields, field_bytes);
+            return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
         }
-        ruda_deallocate(&allocator, fields, field_bytes);
+        mmay_deallocate(&allocator, fields, field_bytes);
     }
-    return RUDA_MIR_BYTECODE_LOWER_OK;
+    return MMAY_MIR_BYTECODE_LOWER_OK;
 }
 
-static RudaMirBytecodeLowerStatus ruda_mir_bytecode_enum_layouts(
-    const RudaMirFunction *input,
-    RudaBytecodeFunction *output,
-    RudaAllocator allocator
+static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_enum_layouts(
+    const MarimayMirFunction *input,
+    MarimayBytecodeFunction *output,
+    MarimayAllocator allocator
 ) {
     size_t index = 0;
     for (index = 0; index < input->enums.length; index += 1) {
-        const RudaMirEnum *enumeration = ruda_vector_at_const(
+        const MarimayMirEnum *enumeration = mmay_vector_at_const(
             &input->enums, index
         );
-        RudaBytecodeEnumVariant *variants = NULL;
-        RudaBytecodeEnumPayload *payloads = NULL;
+        MarimayBytecodeEnumVariant *variants = NULL;
+        MarimayBytecodeEnumPayload *payloads = NULL;
         size_t variant_bytes = 0;
         size_t payload_bytes = 0;
         size_t variant_index = 0;
         size_t payload_index = 0;
-        RudaBytecodeEnumId enum_id = RUDA_BYTECODE_NO_ENUM;
-        if (enumeration == NULL || !ruda_size_multiply(
+        MarimayBytecodeEnumId enum_id = MMAY_BYTECODE_NO_ENUM;
+        if (enumeration == NULL || !mmay_size_multiply(
                 enumeration->variant_count, sizeof(*variants), &variant_bytes
-            ) || !ruda_size_multiply(
+            ) || !mmay_size_multiply(
                 enumeration->payload_count, sizeof(*payloads), &payload_bytes
             )) {
-            return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
         }
         if (variant_bytes != 0) {
-            variants = ruda_allocate(&allocator, variant_bytes);
+            variants = mmay_allocate(&allocator, variant_bytes);
             if (variants == NULL) {
-                return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+                return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
             }
             memset(variants, 0, variant_bytes);
         }
         if (payload_bytes != 0) {
-            payloads = ruda_allocate(&allocator, payload_bytes);
+            payloads = mmay_allocate(&allocator, payload_bytes);
             if (payloads == NULL) {
-                ruda_deallocate(&allocator, variants, variant_bytes);
-                return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+                mmay_deallocate(&allocator, variants, variant_bytes);
+                return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
             }
             memset(payloads, 0, payload_bytes);
         }
         for (variant_index = 0; variant_index < enumeration->variant_count;
             variant_index += 1) {
-            const RudaMirEnumVariant *variant = ruda_vector_at_const(
+            const MarimayMirEnumVariant *variant = mmay_vector_at_const(
                 &input->enum_variants,
                 enumeration->variant_start + variant_index
             );
             if (variant == NULL
                 || variant->payload_start < enumeration->payload_start) {
-                ruda_deallocate(&allocator, variants, variant_bytes);
-                ruda_deallocate(&allocator, payloads, payload_bytes);
-                return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+                mmay_deallocate(&allocator, variants, variant_bytes);
+                mmay_deallocate(&allocator, payloads, payload_bytes);
+                return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
             }
             variants[variant_index].payload_start =
                 variant->payload_start - enumeration->payload_start;
@@ -379,259 +379,259 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_enum_layouts(
         }
         for (payload_index = 0; payload_index < enumeration->payload_count;
             payload_index += 1) {
-            const RudaMirEnumPayload *payload = ruda_vector_at_const(
+            const MarimayMirEnumPayload *payload = mmay_vector_at_const(
                 &input->enum_payloads,
                 enumeration->payload_start + payload_index
             );
-            if (payload == NULL || !ruda_mir_bytecode_type(
+            if (payload == NULL || !mmay_mir_bytecode_type(
                     input, payload->type, false, false,
                     &payloads[payload_index].type
                 )) {
-                ruda_deallocate(&allocator, variants, variant_bytes);
-                ruda_deallocate(&allocator, payloads, payload_bytes);
-                return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
+                mmay_deallocate(&allocator, variants, variant_bytes);
+                mmay_deallocate(&allocator, payloads, payload_bytes);
+                return MMAY_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
             }
             payloads[payload_index].layout =
-                ruda_mir_bytecode_layout_for_type(input, payload->type);
+                mmay_mir_bytecode_layout_for_type(input, payload->type);
         }
-        if (!ruda_bytecode_add_enum_layout(
+        if (!mmay_bytecode_add_enum_layout(
                 output,
-                ruda_mir_bytecode_enum_symbol(input, enumeration),
+                mmay_mir_bytecode_enum_symbol(input, enumeration),
                 variants,
                 enumeration->variant_count,
                 payloads,
                 enumeration->payload_count,
                 &enum_id
             ) || enum_id != index) {
-            ruda_deallocate(&allocator, variants, variant_bytes);
-            ruda_deallocate(&allocator, payloads, payload_bytes);
-            return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+            mmay_deallocate(&allocator, variants, variant_bytes);
+            mmay_deallocate(&allocator, payloads, payload_bytes);
+            return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
         }
-        ruda_deallocate(&allocator, variants, variant_bytes);
-        ruda_deallocate(&allocator, payloads, payload_bytes);
+        mmay_deallocate(&allocator, variants, variant_bytes);
+        mmay_deallocate(&allocator, payloads, payload_bytes);
     }
-    return RUDA_MIR_BYTECODE_LOWER_OK;
+    return MMAY_MIR_BYTECODE_LOWER_OK;
 }
 
-static RudaMirBytecodeLowerStatus ruda_mir_bytecode_interface_layouts(
-    const RudaMirFunction *input,
-    RudaBytecodeFunction *output
+static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_interface_layouts(
+    const MarimayMirFunction *input,
+    MarimayBytecodeFunction *output
 ) {
     size_t index = 0;
     for (index = 0; index < input->interfaces.length; index += 1) {
-        const RudaMirInterface *layout = ruda_vector_at_const(
+        const MarimayMirInterface *layout = mmay_vector_at_const(
             &input->interfaces, index
         );
-        RudaBytecodeInterfaceId interface_id = RUDA_BYTECODE_NO_INTERFACE;
+        MarimayBytecodeInterfaceId interface_id = MMAY_BYTECODE_NO_INTERFACE;
         if (layout == NULL) {
-            return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
         }
-        if (!ruda_bytecode_add_interface_layout(
+        if (!mmay_bytecode_add_interface_layout(
                 output,
-                ruda_mir_bytecode_nominal_symbol(layout->type, 0x49),
+                mmay_mir_bytecode_nominal_symbol(layout->type, 0x49),
                 layout->method_count,
                 &interface_id
             ) || interface_id != index) {
-            return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+            return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
         }
     }
-    return RUDA_MIR_BYTECODE_LOWER_OK;
+    return MMAY_MIR_BYTECODE_LOWER_OK;
 }
 
-static RudaMirBytecodeLowerStatus ruda_mir_bytecode_record_constructions(
-    const RudaMirFunction *input,
-    RudaBytecodeFunction *output,
-    RudaAllocator allocator
+static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_record_constructions(
+    const MarimayMirFunction *input,
+    MarimayBytecodeFunction *output,
+    MarimayAllocator allocator
 ) {
     size_t index = 0;
     for (index = 0; index < input->record_constructions.length; index += 1) {
-        const RudaMirRecordConstruction *construction = ruda_vector_at_const(
+        const MarimayMirRecordConstruction *construction = mmay_vector_at_const(
             &input->record_constructions, index
         );
-        RudaBytecodeRecordArgument *arguments = NULL;
+        MarimayBytecodeRecordArgument *arguments = NULL;
         size_t argument_bytes = 0;
         size_t argument_index = 0;
-        RudaBytecodeRecordConstructionId construction_id =
-            RUDA_BYTECODE_NO_RECORD_CONSTRUCTION;
-        if (construction == NULL || !ruda_size_multiply(
+        MarimayBytecodeRecordConstructionId construction_id =
+            MMAY_BYTECODE_NO_RECORD_CONSTRUCTION;
+        if (construction == NULL || !mmay_size_multiply(
                 construction->argument_count, sizeof(*arguments),
                 &argument_bytes
             )) {
-            return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
         }
         if (argument_bytes != 0) {
-            arguments = ruda_allocate(&allocator, argument_bytes);
+            arguments = mmay_allocate(&allocator, argument_bytes);
             if (arguments == NULL) {
-                return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+                return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
             }
             memset(arguments, 0, argument_bytes);
         }
         for (argument_index = 0;
             argument_index < construction->argument_count;
             argument_index += 1) {
-            const RudaMirRecordArgument *argument = ruda_vector_at_const(
+            const MarimayMirRecordArgument *argument = mmay_vector_at_const(
                 &input->record_arguments,
                 construction->argument_start + argument_index
             );
-            if (argument == NULL || !ruda_mir_bytecode_type(
+            if (argument == NULL || !mmay_mir_bytecode_type(
                     input, argument->type, false, false,
                     &arguments[argument_index].type
                 )) {
-                ruda_deallocate(&allocator, arguments, argument_bytes);
-                return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
+                mmay_deallocate(&allocator, arguments, argument_bytes);
+                return MMAY_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
             }
             arguments[argument_index].register_id = argument->register_id;
             arguments[argument_index].layout =
-                ruda_mir_bytecode_layout_for_type(input, argument->type);
+                mmay_mir_bytecode_layout_for_type(input, argument->type);
         }
-        if (!ruda_bytecode_add_record_construction(
+        if (!mmay_bytecode_add_record_construction(
                 output, construction->record, arguments,
                 construction->argument_count, &construction_id
             ) || construction_id != index) {
-            ruda_deallocate(&allocator, arguments, argument_bytes);
-            return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+            mmay_deallocate(&allocator, arguments, argument_bytes);
+            return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
         }
-        ruda_deallocate(&allocator, arguments, argument_bytes);
+        mmay_deallocate(&allocator, arguments, argument_bytes);
     }
-    return RUDA_MIR_BYTECODE_LOWER_OK;
+    return MMAY_MIR_BYTECODE_LOWER_OK;
 }
 
-static RudaMirBytecodeLowerStatus ruda_mir_bytecode_enum_constructions(
-    const RudaMirFunction *input,
-    RudaBytecodeFunction *output,
-    RudaAllocator allocator
+static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_enum_constructions(
+    const MarimayMirFunction *input,
+    MarimayBytecodeFunction *output,
+    MarimayAllocator allocator
 ) {
     size_t index = 0;
     for (index = 0; index < input->enum_constructions.length; index += 1) {
-        const RudaMirEnumConstruction *construction = ruda_vector_at_const(
+        const MarimayMirEnumConstruction *construction = mmay_vector_at_const(
             &input->enum_constructions, index
         );
-        RudaBytecodeEnumArgument *arguments = NULL;
+        MarimayBytecodeEnumArgument *arguments = NULL;
         size_t argument_bytes = 0;
         size_t argument_index = 0;
-        RudaBytecodeEnumConstructionId construction_id =
-            RUDA_BYTECODE_NO_ENUM_CONSTRUCTION;
-        if (construction == NULL || !ruda_size_multiply(
+        MarimayBytecodeEnumConstructionId construction_id =
+            MMAY_BYTECODE_NO_ENUM_CONSTRUCTION;
+        if (construction == NULL || !mmay_size_multiply(
                 construction->argument_count, sizeof(*arguments),
                 &argument_bytes
             )) {
-            return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
         }
         if (argument_bytes != 0) {
-            arguments = ruda_allocate(&allocator, argument_bytes);
+            arguments = mmay_allocate(&allocator, argument_bytes);
             if (arguments == NULL) {
-                return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+                return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
             }
             memset(arguments, 0, argument_bytes);
         }
         for (argument_index = 0;
             argument_index < construction->argument_count;
             argument_index += 1) {
-            const RudaMirEnumArgument *argument = ruda_vector_at_const(
+            const MarimayMirEnumArgument *argument = mmay_vector_at_const(
                 &input->enum_arguments,
                 construction->argument_start + argument_index
             );
-            if (argument == NULL || !ruda_mir_bytecode_type(
+            if (argument == NULL || !mmay_mir_bytecode_type(
                     input, argument->type, false, false,
                     &arguments[argument_index].type
                 )) {
-                ruda_deallocate(&allocator, arguments, argument_bytes);
-                return RUDA_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
+                mmay_deallocate(&allocator, arguments, argument_bytes);
+                return MMAY_MIR_BYTECODE_LOWER_UNSUPPORTED_TYPE;
             }
             arguments[argument_index].register_id = argument->register_id;
             arguments[argument_index].layout =
-                ruda_mir_bytecode_layout_for_type(input, argument->type);
+                mmay_mir_bytecode_layout_for_type(input, argument->type);
         }
-        if (!ruda_bytecode_add_enum_construction(
+        if (!mmay_bytecode_add_enum_construction(
                 output, construction->enum_id, construction->variant,
                 arguments, construction->argument_count, &construction_id
             ) || construction_id != index) {
-            ruda_deallocate(&allocator, arguments, argument_bytes);
-            return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+            mmay_deallocate(&allocator, arguments, argument_bytes);
+            return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
         }
-        ruda_deallocate(&allocator, arguments, argument_bytes);
+        mmay_deallocate(&allocator, arguments, argument_bytes);
     }
-    return RUDA_MIR_BYTECODE_LOWER_OK;
+    return MMAY_MIR_BYTECODE_LOWER_OK;
 }
 
-static RudaMirBytecodeLowerStatus ruda_mir_bytecode_interface_constructions(
-    const RudaMirFunction *input,
-    RudaBytecodeFunction *output
+static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_interface_constructions(
+    const MarimayMirFunction *input,
+    MarimayBytecodeFunction *output
 ) {
     size_t index = 0;
     for (index = 0; index < input->interface_constructions.length;
         index += 1) {
-        const RudaMirInterfaceConstruction *construction =
-            ruda_vector_at_const(&input->interface_constructions, index);
-        const RudaSymbolId *methods = NULL;
+        const MarimayMirInterfaceConstruction *construction =
+            mmay_vector_at_const(&input->interface_constructions, index);
+        const MarimaySymbolId *methods = NULL;
         size_t method_end = 0;
-        RudaBytecodeType payload_type;
-        RudaBytecodeInterfaceConstructionId construction_id =
-            RUDA_BYTECODE_NO_INTERFACE_CONSTRUCTION;
-        if (construction == NULL || !ruda_size_add(
+        MarimayBytecodeType payload_type;
+        MarimayBytecodeInterfaceConstructionId construction_id =
+            MMAY_BYTECODE_NO_INTERFACE_CONSTRUCTION;
+        if (construction == NULL || !mmay_size_add(
                 construction->method_start,
                 construction->method_count,
                 &method_end
             ) || method_end > input->interface_methods.length
-            || !ruda_mir_bytecode_type(
+            || !mmay_mir_bytecode_type(
                 input, construction->payload_type, false, false, &payload_type
             )) {
-            return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+            return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
         }
         if (construction->method_count != 0) {
-            methods = ruda_vector_at_const(
+            methods = mmay_vector_at_const(
                 &input->interface_methods, construction->method_start
             );
             if (methods == NULL) {
-                return RUDA_MIR_BYTECODE_LOWER_INVALID_MIR;
+                return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
             }
         }
-        if (!ruda_bytecode_add_interface_construction(
+        if (!mmay_bytecode_add_interface_construction(
                 output,
                 construction->interface_id,
                 construction->payload,
                 payload_type,
-                ruda_mir_bytecode_layout_for_type(
+                mmay_mir_bytecode_layout_for_type(
                     input, construction->payload_type
                 ),
                 methods,
                 construction->method_count,
                 &construction_id
             ) || construction_id != index) {
-            return RUDA_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+            return MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
         }
     }
-    return RUDA_MIR_BYTECODE_LOWER_OK;
+    return MMAY_MIR_BYTECODE_LOWER_OK;
 }
 
-RudaMirBytecodeLowerStatus ruda_mir_bytecode_lower_nominals(
-    const RudaMirFunction *input,
-    RudaBytecodeFunction *output,
-    RudaAllocator allocator
+MarimayMirBytecodeLowerStatus mmay_mir_bytecode_lower_nominals(
+    const MarimayMirFunction *input,
+    MarimayBytecodeFunction *output,
+    MarimayAllocator allocator
 ) {
-    RudaMirBytecodeLowerStatus status;
+    MarimayMirBytecodeLowerStatus status;
     if (input == NULL || output == NULL) {
-        return RUDA_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
+        return MMAY_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
     }
-    status = ruda_mir_bytecode_record_layouts(input, output, allocator);
-    if (status == RUDA_MIR_BYTECODE_LOWER_OK) {
-        status = ruda_mir_bytecode_enum_layouts(input, output, allocator);
+    status = mmay_mir_bytecode_record_layouts(input, output, allocator);
+    if (status == MMAY_MIR_BYTECODE_LOWER_OK) {
+        status = mmay_mir_bytecode_enum_layouts(input, output, allocator);
     }
-    if (status == RUDA_MIR_BYTECODE_LOWER_OK) {
-        status = ruda_mir_bytecode_interface_layouts(input, output);
+    if (status == MMAY_MIR_BYTECODE_LOWER_OK) {
+        status = mmay_mir_bytecode_interface_layouts(input, output);
     }
-    if (status == RUDA_MIR_BYTECODE_LOWER_OK) {
-        status = ruda_mir_bytecode_record_constructions(
+    if (status == MMAY_MIR_BYTECODE_LOWER_OK) {
+        status = mmay_mir_bytecode_record_constructions(
             input, output, allocator
         );
     }
-    if (status == RUDA_MIR_BYTECODE_LOWER_OK) {
-        status = ruda_mir_bytecode_enum_constructions(
+    if (status == MMAY_MIR_BYTECODE_LOWER_OK) {
+        status = mmay_mir_bytecode_enum_constructions(
             input, output, allocator
         );
     }
-    if (status == RUDA_MIR_BYTECODE_LOWER_OK) {
-        status = ruda_mir_bytecode_interface_constructions(input, output);
+    if (status == MMAY_MIR_BYTECODE_LOWER_OK) {
+        status = mmay_mir_bytecode_interface_constructions(input, output);
     }
     return status;
 }

@@ -13,7 +13,7 @@ from typing import List
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "bootstrap/tables/diagnostics.tsv"
-HEADER = ROOT / "bootstrap/include/ruda/generated/diagnostic_codes.h"
+HEADER = ROOT / "bootstrap/include/mmay/generated/diagnostic_codes.h"
 REFERENCE = ROOT / "docs/generated/diagnostic-codes.md"
 
 
@@ -52,10 +52,10 @@ def read_entries() -> List[Entry]:
 
 def render_header(entries: List[Entry]) -> str:
     definitions = "\n".join(
-        f'#define RUDA_DIAGNOSTIC_{entry.symbol} "{entry.code}"' for entry in entries
+        f'#define MMAY_DIAGNOSTIC_{entry.symbol} "{entry.code}"' for entry in entries
     )
-    return f"""#ifndef RUDA_GENERATED_DIAGNOSTIC_CODES_H
-#define RUDA_GENERATED_DIAGNOSTIC_CODES_H
+    return f"""#ifndef MMAY_GENERATED_DIAGNOSTIC_CODES_H
+#define MMAY_GENERATED_DIAGNOSTIC_CODES_H
 
 /* Generated from bootstrap/tables/diagnostics.tsv. Do not edit by hand. */
 {definitions}
@@ -68,7 +68,7 @@ def render_reference(entries: List[Entry]) -> str:
     rows = "\n".join(
         f"| `{entry.code}` | {entry.component} | {entry.summary} |" for entry in entries
     )
-    return f"""# Ruda diagnostic code registry
+    return f"""# Marimay diagnostic code registry
 
 <!-- Generated from bootstrap/tables/diagnostics.tsv. Do not edit by hand. -->
 

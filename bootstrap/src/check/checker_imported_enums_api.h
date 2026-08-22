@@ -3,14 +3,14 @@
 
 #include "checker_package_context.h"
 
-bool ruda_checker_private_imported_enums_init(RudaChecker *checker);
+bool mmay_checker_private_imported_enums_init(MarimayChecker *checker);
 
-void ruda_checker_private_imported_enums_dispose(RudaChecker *checker);
+void mmay_checker_private_imported_enums_dispose(MarimayChecker *checker);
 
-RudaCheckEnumDeclaration *
-ruda_checker_private_imported_enum_declaration_by_type(
-    RudaChecker *checker,
-    RudaTypeId type
+MarimayCheckEnumDeclaration *
+mmay_checker_private_imported_enum_declaration_by_type(
+    MarimayChecker *checker,
+    MarimayTypeId type
 );
 
 #endif

@@ -3,11 +3,11 @@
 #include <stdio.h>
 #include <string.h>
 
-static int ruda_failures = 0;
-static const char *ruda_executable = NULL;
+static int mmay_failures = 0;
+static const char *mmay_executable = NULL;
 
-static bool ruda_test_buffer_write(void *context, const char *bytes, size_t length) {
-    RudaTestBuffer *buffer = context;
+static bool mmay_test_buffer_write(void *context, const char *bytes, size_t length) {
+    MarimayTestBuffer *buffer = context;
     if (buffer->calls == buffer->failure_index) {
         buffer->calls += 1;
         return false;
@@ -22,26 +22,26 @@ static bool ruda_test_buffer_write(void *context, const char *bytes, size_t leng
     return true;
 }
 
-void ruda_test_buffer_init(RudaTestBuffer *buffer) {
+void mmay_test_buffer_init(MarimayTestBuffer *buffer) {
     buffer->bytes[0] = '\0';
     buffer->length = 0;
     buffer->calls = 0;
     buffer->failure_index = SIZE_MAX;
 }
 
-RudaWriter ruda_test_buffer_writer(RudaTestBuffer *buffer) {
-    RudaWriter writer;
+MarimayWriter mmay_test_buffer_writer(MarimayTestBuffer *buffer) {
+    MarimayWriter writer;
     writer.context = buffer;
-    writer.write = ruda_test_buffer_write;
+    writer.write = mmay_test_buffer_write;
     return writer;
 }
 
-void ruda_test_fail(const char *file, int line, const char *expression) {
-    ruda_failures += 1;
+void mmay_test_fail(const char *file, int line, const char *expression) {
+    mmay_failures += 1;
     fprintf(stderr, "%s:%d: expectation failed: %s\n", file, line, expression);
 }
 
-void ruda_test_expect_snapshot(
+void mmay_test_expect_snapshot(
     const char *file,
     int line,
     const char *snapshot,
@@ -50,13 +50,13 @@ void ruda_test_expect_snapshot(
     char path[256];
     int path_length = snprintf(path, sizeof(path), "snapshots/%s", snapshot);
     if (path_length < 0 || (size_t)path_length >= sizeof(path)) {
-        ruda_test_fail(file, line, "snapshot path fits buffer");
+        mmay_test_fail(file, line, "snapshot path fits buffer");
         return;
     }
-    ruda_test_expect_file(file, line, path, actual);
+    mmay_test_expect_file(file, line, path, actual);
 }
 
-void ruda_test_expect_file(
+void mmay_test_expect_file(
     const char *file,
     int line,
     const char *expected_path,
@@ -67,22 +67,22 @@ void ruda_test_expect_file(
     size_t length = 0;
     input = fopen(expected_path, "rb");
     if (input == NULL) {
-        ruda_test_fail(file, line, "expected file opens");
+        mmay_test_fail(file, line, "expected file opens");
         return;
     }
     length = fread(expected, 1, sizeof(expected) - 1, input);
     if (ferror(input) != 0 || !feof(input)) {
         fclose(input);
-        ruda_test_fail(file, line, "snapshot read completes");
+        mmay_test_fail(file, line, "snapshot read completes");
         return;
     }
     if (fclose(input) != 0) {
-        ruda_test_fail(file, line, "snapshot closes");
+        mmay_test_fail(file, line, "snapshot closes");
         return;
     }
     expected[length] = '\0';
     if (strcmp(expected, actual) != 0) {
-        ruda_failures += 1;
+        mmay_failures += 1;
         fprintf(
             stderr,
             "%s:%d: snapshot %s differs\n--- expected ---\n%s--- actual ---\n%s",
@@ -95,14 +95,14 @@ void ruda_test_expect_file(
     }
 }
 
-int ruda_test_failure_count(void) {
-    return ruda_failures;
+int mmay_test_failure_count(void) {
+    return mmay_failures;
 }
 
-void ruda_test_set_toolchain_executable(const char *path) {
-    ruda_executable = path;
+void mmay_test_set_toolchain_executable(const char *path) {
+    mmay_executable = path;
 }
 
-const char *ruda_test_toolchain_executable(void) {
-    return ruda_executable;
+const char *mmay_test_toolchain_executable(void) {
+    return mmay_executable;
 }

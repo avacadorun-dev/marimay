@@ -2,9 +2,9 @@
 
 #include <string.h>
 
-#include "ruda/base/utf8.h"
+#include "mmay/base/utf8.h"
 
-void ruda_display_argument(const char *argument, char *output, size_t capacity) {
+void mmay_display_argument(const char *argument, char *output, size_t capacity) {
     const unsigned char *cursor = (const unsigned char *)argument;
     size_t remaining = strlen(argument);
     size_t length = 0;
@@ -40,8 +40,8 @@ void ruda_display_argument(const char *argument, char *output, size_t capacity) 
             remaining -= 1;
             continue;
         } else {
-            RudaUtf8Scalar scalar;
-            if (ruda_utf8_decode(cursor, remaining, &scalar)) {
+            MarimayUtf8Scalar scalar;
+            if (mmay_utf8_decode(cursor, remaining, &scalar)) {
                 if (scalar.width > capacity - length - 1) {
                     break;
                 }

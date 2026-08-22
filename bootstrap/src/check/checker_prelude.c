@@ -5,12 +5,12 @@
 #include <stdio.h>
 #include <string.h>
 
-static bool ruda_checker_private_prelude_name(
-    RudaChecker *checker,
-    RudaOwnedBytes *owned,
+static bool mmay_checker_private_prelude_name(
+    MarimayChecker *checker,
+    MarimayOwnedBytes *owned,
     const char *text
 ) {
-    return ruda_owned_bytes_copy(
+    return mmay_owned_bytes_copy(
         owned,
         checker->result->allocator,
         (const unsigned char *)text,
@@ -18,26 +18,26 @@ static bool ruda_checker_private_prelude_name(
     );
 }
 
-static bool ruda_checker_private_prelude_symbol(
+static bool mmay_checker_private_prelude_symbol(
     const char *name,
-    RudaSymbolId *result
+    MarimaySymbolId *result
 ) {
-    return ruda_symbol_id_from_bytes(
+    return mmay_symbol_id_from_bytes(
         "std", 3, "prelude", 7,
         (const unsigned char *)name, strlen(name), 0, result
     );
 }
 
-static bool ruda_checker_private_prelude_parameter(
-    RudaChecker *checker,
+static bool mmay_checker_private_prelude_parameter(
+    MarimayChecker *checker,
     const char *owner,
     size_t index,
     const char *name,
-    RudaCheckTypeParameterDeclaration *result
+    MarimayCheckTypeParameterDeclaration *result
 ) {
     char symbol_name[64];
     int symbol_name_length = 0;
-    RudaSymbolId symbol;
+    MarimaySymbolId symbol;
     memset(result, 0, sizeof(*result));
     symbol_name_length = snprintf(
         symbol_name, sizeof(symbol_name), "%s.%s.%zu", owner, name, index
@@ -45,22 +45,22 @@ static bool ruda_checker_private_prelude_parameter(
     if (symbol_name_length < 0 || (size_t)symbol_name_length >= sizeof(symbol_name)) {
         return false;
     }
-    if (!ruda_checker_private_prelude_name(
+    if (!mmay_checker_private_prelude_name(
             checker, &result->owned_name, name
-        ) || !ruda_checker_private_prelude_symbol(symbol_name, &symbol)
-        || !ruda_type_intern_nominal(
+        ) || !mmay_checker_private_prelude_symbol(symbol_name, &symbol)
+        || !mmay_type_intern_nominal(
             &checker->result->types,
-            RUDA_TYPE_KIND_TYPE_PARAMETER,
+            MMAY_TYPE_KIND_TYPE_PARAMETER,
             symbol,
             NULL,
             0,
             &result->type
-        ) || !ruda_vector_init(
+        ) || !mmay_vector_init(
             &result->constraints,
             checker->result->allocator,
-            sizeof(RudaTypeId)
+            sizeof(MarimayTypeId)
         )) {
-        ruda_owned_bytes_dispose(&result->owned_name);
+        mmay_owned_bytes_dispose(&result->owned_name);
         return false;
     }
     result->name_initialized = true;
@@ -68,85 +68,85 @@ static bool ruda_checker_private_prelude_parameter(
     return true;
 }
 
-static bool ruda_checker_private_prelude_variant(
-    RudaChecker *checker,
+static bool mmay_checker_private_prelude_variant(
+    MarimayChecker *checker,
     const char *name,
-    RudaCheckedEnumVariantKind kind,
-    RudaTypeId payload_type,
+    MarimayCheckedEnumVariantKind kind,
+    MarimayTypeId payload_type,
     const char *payload_name,
-    RudaCheckEnumVariantDeclaration *result
+    MarimayCheckEnumVariantDeclaration *result
 ) {
-    RudaCheckEnumPayloadItemDeclaration payload;
+    MarimayCheckEnumPayloadItemDeclaration payload;
     memset(result, 0, sizeof(*result));
     memset(&payload, 0, sizeof(payload));
-    if (!ruda_checker_private_prelude_name(
+    if (!mmay_checker_private_prelude_name(
             checker, &result->owned_name, name
         )) {
         return false;
     }
     result->name_initialized = true;
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &result->payload,
             checker->result->allocator,
-            sizeof(RudaCheckEnumPayloadItemDeclaration)
+            sizeof(MarimayCheckEnumPayloadItemDeclaration)
         )) {
-        ruda_owned_bytes_dispose(&result->owned_name);
+        mmay_owned_bytes_dispose(&result->owned_name);
         result->name_initialized = false;
         return false;
     }
     result->payload_initialized = true;
     result->kind = kind;
-    if (payload_type != RUDA_TYPE_INVALID) {
+    if (payload_type != MMAY_TYPE_INVALID) {
         payload.type = payload_type;
         payload.has_name = payload_name != NULL;
-        if (payload_name != NULL && !ruda_checker_private_prelude_name(
+        if (payload_name != NULL && !mmay_checker_private_prelude_name(
                 checker, &payload.owned_name, payload_name
             )) {
-            ruda_checker_private_enum_variant_declaration_dispose(result);
+            mmay_checker_private_enum_variant_declaration_dispose(result);
             return false;
         }
         payload.name_initialized = payload_name != NULL;
-        if (!ruda_vector_push(&result->payload, &payload)) {
-            ruda_owned_bytes_dispose(&payload.owned_name);
-            ruda_checker_private_enum_variant_declaration_dispose(result);
+        if (!mmay_vector_push(&result->payload, &payload)) {
+            mmay_owned_bytes_dispose(&payload.owned_name);
+            mmay_checker_private_enum_variant_declaration_dispose(result);
             return false;
         }
     }
     return true;
 }
 
-static bool ruda_checker_private_prelude_enum(
-    RudaChecker *checker,
+static bool mmay_checker_private_prelude_enum(
+    MarimayChecker *checker,
     const char *name,
     const char *first_parameter,
     const char *second_parameter,
     const char *first_variant,
     const char *second_variant,
-    RudaCheckedEnumVariantKind first_kind,
-    RudaCheckedEnumVariantKind second_kind
+    MarimayCheckedEnumVariantKind first_kind,
+    MarimayCheckedEnumVariantKind second_kind
 ) {
-    RudaCheckEnumDeclaration declaration;
-    RudaCheckTypeParameterDeclaration parameter;
-    RudaCheckEnumVariantDeclaration variant;
-    RudaSymbolId symbol;
-    RudaTypeId parameter_types[2] = {RUDA_TYPE_INVALID, RUDA_TYPE_INVALID};
+    MarimayCheckEnumDeclaration declaration;
+    MarimayCheckTypeParameterDeclaration parameter;
+    MarimayCheckEnumVariantDeclaration variant;
+    MarimaySymbolId symbol;
+    MarimayTypeId parameter_types[2] = {MMAY_TYPE_INVALID, MMAY_TYPE_INVALID};
     size_t parameter_count = second_parameter == NULL ? 1 : 2;
     size_t index = 0;
     memset(&declaration, 0, sizeof(declaration));
     memset(&variant, 0, sizeof(variant));
-    if (!ruda_checker_private_prelude_name(
+    if (!mmay_checker_private_prelude_name(
             checker, &declaration.owned_name, name
-        ) || !ruda_checker_private_prelude_symbol(name, &symbol)
-        || !ruda_vector_init(
+        ) || !mmay_checker_private_prelude_symbol(name, &symbol)
+        || !mmay_vector_init(
             &declaration.type_parameters,
             checker->result->allocator,
-            sizeof(RudaCheckTypeParameterDeclaration)
-        ) || !ruda_vector_init(
+            sizeof(MarimayCheckTypeParameterDeclaration)
+        ) || !mmay_vector_init(
             &declaration.variants,
             checker->result->allocator,
-            sizeof(RudaCheckEnumVariantDeclaration)
+            sizeof(MarimayCheckEnumVariantDeclaration)
         )) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     declaration.name_initialized = true;
@@ -161,104 +161,104 @@ static bool ruda_checker_private_prelude_enum(
     for (index = 0; index < parameter_count; index += 1) {
         const char *parameter_name = index == 0
             ? first_parameter : second_parameter;
-        if (!ruda_checker_private_prelude_parameter(
+        if (!mmay_checker_private_prelude_parameter(
                 checker, name, index, parameter_name, &parameter
-            ) || !ruda_vector_push(
+            ) || !mmay_vector_push(
                 &declaration.type_parameters, &parameter
             )) {
             if (parameter.name_initialized) {
-                ruda_owned_bytes_dispose(&parameter.owned_name);
+                mmay_owned_bytes_dispose(&parameter.owned_name);
             }
             if (parameter.constraints_initialized) {
-                ruda_vector_dispose(&parameter.constraints);
+                mmay_vector_dispose(&parameter.constraints);
             }
-            ruda_checker_private_enum_declaration_dispose(&declaration);
+            mmay_checker_private_enum_declaration_dispose(&declaration);
             return false;
         }
         parameter_types[index] = parameter.type;
         memset(&parameter, 0, sizeof(parameter));
     }
-    if (!ruda_type_intern_nominal(
+    if (!mmay_type_intern_nominal(
             &checker->result->types,
-            RUDA_TYPE_KIND_NOMINAL,
+            MMAY_TYPE_KIND_NOMINAL,
             symbol,
             NULL,
             0,
             &declaration.type
-        ) || !ruda_checker_private_prelude_variant(
+        ) || !mmay_checker_private_prelude_variant(
             checker, first_variant, first_kind, parameter_types[0], NULL, &variant
-        ) || !ruda_vector_push(&declaration.variants, &variant)) {
-        ruda_checker_private_enum_variant_declaration_dispose(&variant);
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        ) || !mmay_vector_push(&declaration.variants, &variant)) {
+        mmay_checker_private_enum_variant_declaration_dispose(&variant);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     memset(&variant, 0, sizeof(variant));
-    if (!ruda_checker_private_prelude_variant(
+    if (!mmay_checker_private_prelude_variant(
             checker,
             second_variant,
             second_kind,
-            second_kind == RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
-                ? parameter_types[parameter_count - 1] : RUDA_TYPE_INVALID,
+            second_kind == MMAY_CHECKED_ENUM_VARIANT_POSITIONAL
+                ? parameter_types[parameter_count - 1] : MMAY_TYPE_INVALID,
             NULL,
             &variant
-        ) || !ruda_vector_push(&declaration.variants, &variant)) {
-        ruda_checker_private_enum_variant_declaration_dispose(&variant);
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        ) || !mmay_vector_push(&declaration.variants, &variant)) {
+        mmay_checker_private_enum_variant_declaration_dispose(&variant);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     memset(&variant, 0, sizeof(variant));
-    if (!ruda_vector_push(&checker->prelude_enums, &declaration)) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+    if (!mmay_vector_push(&checker->prelude_enums, &declaration)) {
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     memset(&declaration, 0, sizeof(declaration));
     return true;
 }
 
-static bool ruda_checker_private_prelude_array_growth_error(
-    RudaChecker *checker
+static bool mmay_checker_private_prelude_array_growth_error(
+    MarimayChecker *checker
 ) {
-    RudaCheckEnumDeclaration declaration;
-    RudaCheckEnumVariantDeclaration variant;
-    RudaSymbolId symbol;
+    MarimayCheckEnumDeclaration declaration;
+    MarimayCheckEnumVariantDeclaration variant;
+    MarimaySymbolId symbol;
     memset(&declaration, 0, sizeof(declaration));
     memset(&variant, 0, sizeof(variant));
-    if (!ruda_checker_private_prelude_name(
+    if (!mmay_checker_private_prelude_name(
             checker, &declaration.owned_name, "ArrayGrowthError"
         )) {
         return false;
     }
     declaration.name_initialized = true;
-    if (!ruda_checker_private_prelude_symbol(
+    if (!mmay_checker_private_prelude_symbol(
             "ArrayGrowthError", &symbol
-        ) || !ruda_vector_init(
+        ) || !mmay_vector_init(
             &declaration.type_parameters,
             checker->result->allocator,
-            sizeof(RudaCheckTypeParameterDeclaration)
+            sizeof(MarimayCheckTypeParameterDeclaration)
         )) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     declaration.symbol = symbol;
     declaration.type_parameters_initialized = true;
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &declaration.variants,
             checker->result->allocator,
-            sizeof(RudaCheckEnumVariantDeclaration)
+            sizeof(MarimayCheckEnumVariantDeclaration)
         )) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     declaration.variants_initialized = true;
-    if (!ruda_type_intern_nominal(
+    if (!mmay_type_intern_nominal(
             &checker->result->types,
-            RUDA_TYPE_KIND_NOMINAL,
+            MMAY_TYPE_KIND_NOMINAL,
             symbol,
             NULL,
             0,
             &declaration.type
         )) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
 
@@ -266,50 +266,50 @@ static bool ruda_checker_private_prelude_array_growth_error(
     declaration.variants_resolved = true;
     declaration.is_public = true;
     declaration.is_builtin = true;
-    if (!ruda_checker_private_prelude_variant(
+    if (!mmay_checker_private_prelude_variant(
             checker,
             "LengthLimit",
-            RUDA_CHECKED_ENUM_VARIANT_NAMED,
-            RUDA_TYPE_I64,
+            MMAY_CHECKED_ENUM_VARIANT_NAMED,
+            MMAY_TYPE_I64,
             "limit",
             &variant
-        ) || !ruda_vector_push(&declaration.variants, &variant)) {
-        ruda_checker_private_enum_variant_declaration_dispose(&variant);
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        ) || !mmay_vector_push(&declaration.variants, &variant)) {
+        mmay_checker_private_enum_variant_declaration_dispose(&variant);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     memset(&variant, 0, sizeof(variant));
-    if (!ruda_checker_private_prelude_variant(
+    if (!mmay_checker_private_prelude_variant(
             checker,
             "NegativeAdditional",
-            RUDA_CHECKED_ENUM_VARIANT_NAMED,
-            RUDA_TYPE_I64,
+            MMAY_CHECKED_ENUM_VARIANT_NAMED,
+            MMAY_TYPE_I64,
             "additional",
             &variant
-        ) || !ruda_vector_push(&declaration.variants, &variant)) {
-        ruda_checker_private_enum_variant_declaration_dispose(&variant);
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        ) || !mmay_vector_push(&declaration.variants, &variant)) {
+        mmay_checker_private_enum_variant_declaration_dispose(&variant);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     memset(&variant, 0, sizeof(variant));
-    if (!ruda_vector_push(&checker->prelude_enums, &declaration)) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+    if (!mmay_vector_push(&checker->prelude_enums, &declaration)) {
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     memset(&declaration, 0, sizeof(declaration));
     return true;
 }
 
-static bool ruda_checker_private_prelude_error_enum(
-    RudaChecker *checker,
+static bool mmay_checker_private_prelude_error_enum(
+    MarimayChecker *checker,
     const char *name,
     const char *variant_name,
     const char *const *payload_names,
     size_t payload_count
 ) {
-    RudaCheckEnumDeclaration declaration;
-    RudaCheckEnumVariantDeclaration variant;
-    RudaSymbolId symbol;
+    MarimayCheckEnumDeclaration declaration;
+    MarimayCheckEnumVariantDeclaration variant;
+    MarimaySymbolId symbol;
     size_t index = 0;
     memset(&declaration, 0, sizeof(declaration));
     memset(&variant, 0, sizeof(variant));
@@ -317,45 +317,45 @@ static bool ruda_checker_private_prelude_error_enum(
         || (payload_names == NULL && payload_count != 0)) {
         return false;
     }
-    if (!ruda_checker_private_prelude_name(
+    if (!mmay_checker_private_prelude_name(
             checker, &declaration.owned_name, name
         )) {
         return false;
     }
     declaration.name_initialized = true;
-    if (!ruda_checker_private_prelude_symbol(name, &symbol)
-        || !ruda_vector_init(
+    if (!mmay_checker_private_prelude_symbol(name, &symbol)
+        || !mmay_vector_init(
             &declaration.type_parameters,
             checker->result->allocator,
-            sizeof(RudaCheckTypeParameterDeclaration)
+            sizeof(MarimayCheckTypeParameterDeclaration)
         )) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     declaration.type_parameters_initialized = true;
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &declaration.variants,
             checker->result->allocator,
-            sizeof(RudaCheckEnumVariantDeclaration)
+            sizeof(MarimayCheckEnumVariantDeclaration)
         )) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     declaration.variants_initialized = true;
-    if (!ruda_checker_private_prelude_name(
+    if (!mmay_checker_private_prelude_name(
             checker, &variant.owned_name, variant_name
         )) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     variant.name_initialized = true;
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &variant.payload,
             checker->result->allocator,
-            sizeof(RudaCheckEnumPayloadItemDeclaration)
+            sizeof(MarimayCheckEnumPayloadItemDeclaration)
         )) {
-        ruda_checker_private_enum_variant_declaration_dispose(&variant);
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        mmay_checker_private_enum_variant_declaration_dispose(&variant);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     declaration.symbol = symbol;
@@ -364,73 +364,73 @@ static bool ruda_checker_private_prelude_error_enum(
     declaration.is_builtin = true;
     declaration.is_public = true;
     variant.payload_initialized = true;
-    variant.kind = RUDA_CHECKED_ENUM_VARIANT_NAMED;
-    if (!ruda_type_intern_nominal(
+    variant.kind = MMAY_CHECKED_ENUM_VARIANT_NAMED;
+    if (!mmay_type_intern_nominal(
             &checker->result->types,
-            RUDA_TYPE_KIND_NOMINAL,
+            MMAY_TYPE_KIND_NOMINAL,
             symbol,
             NULL,
             0,
             &declaration.type
         )) {
-        ruda_checker_private_enum_variant_declaration_dispose(&variant);
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+        mmay_checker_private_enum_variant_declaration_dispose(&variant);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     for (index = 0; index < payload_count; index += 1) {
-        RudaCheckEnumPayloadItemDeclaration payload;
+        MarimayCheckEnumPayloadItemDeclaration payload;
         memset(&payload, 0, sizeof(payload));
-        if (!ruda_checker_private_prelude_name(
+        if (!mmay_checker_private_prelude_name(
                 checker, &payload.owned_name, payload_names[index]
             )) {
-            ruda_checker_private_enum_variant_declaration_dispose(&variant);
-            ruda_checker_private_enum_declaration_dispose(&declaration);
+            mmay_checker_private_enum_variant_declaration_dispose(&variant);
+            mmay_checker_private_enum_declaration_dispose(&declaration);
             return false;
         }
-        payload.type = RUDA_TYPE_I64;
+        payload.type = MMAY_TYPE_I64;
         payload.name_initialized = true;
         payload.has_name = true;
-        if (!ruda_vector_push(&variant.payload, &payload)) {
-            ruda_owned_bytes_dispose(&payload.owned_name);
-            ruda_checker_private_enum_variant_declaration_dispose(&variant);
-            ruda_checker_private_enum_declaration_dispose(&declaration);
+        if (!mmay_vector_push(&variant.payload, &payload)) {
+            mmay_owned_bytes_dispose(&payload.owned_name);
+            mmay_checker_private_enum_variant_declaration_dispose(&variant);
+            mmay_checker_private_enum_declaration_dispose(&declaration);
             return false;
         }
         memset(&payload, 0, sizeof(payload));
     }
-    if (!ruda_vector_push(&declaration.variants, &variant)) {
-        ruda_checker_private_enum_variant_declaration_dispose(&variant);
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+    if (!mmay_vector_push(&declaration.variants, &variant)) {
+        mmay_checker_private_enum_variant_declaration_dispose(&variant);
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     memset(&variant, 0, sizeof(variant));
-    if (!ruda_vector_push(&checker->prelude_enums, &declaration)) {
-        ruda_checker_private_enum_declaration_dispose(&declaration);
+    if (!mmay_vector_push(&checker->prelude_enums, &declaration)) {
+        mmay_checker_private_enum_declaration_dispose(&declaration);
         return false;
     }
     memset(&declaration, 0, sizeof(declaration));
     return true;
 }
 
-bool ruda_checker_private_prelude_init(RudaChecker *checker) {
+bool mmay_checker_private_prelude_init(MarimayChecker *checker) {
     size_t original_max_types = 0;
     size_t prelude_max_types = 0;
     if (checker == NULL || checker->result == NULL) {
         return false;
     }
     original_max_types = checker->options.type_options.max_types;
-    prelude_max_types = RUDA_TYPE_FIRST_DYNAMIC + 7;
+    prelude_max_types = MMAY_TYPE_FIRST_DYNAMIC + 7;
     if (prelude_max_types < original_max_types) {
         prelude_max_types = original_max_types;
     }
     checker->options.type_options.max_types = prelude_max_types;
     checker->result->types.options.max_types = prelude_max_types;
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &checker->prelude_enums,
             checker->result->allocator,
-            sizeof(RudaCheckEnumDeclaration)
+            sizeof(MarimayCheckEnumDeclaration)
     )) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         checker->options.type_options.max_types = original_max_types;
         checker->result->types.options.max_types = original_max_types;
         return false;
@@ -438,22 +438,22 @@ bool ruda_checker_private_prelude_init(RudaChecker *checker) {
     checker->prelude_enums_initialized = true;
     {
         static const char *const invalid_length[] = {"requested", "length"};
-        if (!ruda_checker_private_prelude_enum(
+        if (!mmay_checker_private_prelude_enum(
         checker, "Option", "T", NULL, "Some", "None",
-            RUDA_CHECKED_ENUM_VARIANT_POSITIONAL,
-            RUDA_CHECKED_ENUM_VARIANT_UNIT
-        ) || !ruda_checker_private_prelude_enum(
+            MMAY_CHECKED_ENUM_VARIANT_POSITIONAL,
+            MMAY_CHECKED_ENUM_VARIANT_UNIT
+        ) || !mmay_checker_private_prelude_enum(
             checker, "Result", "T", "E", "Ok", "Err",
-            RUDA_CHECKED_ENUM_VARIANT_POSITIONAL,
-            RUDA_CHECKED_ENUM_VARIANT_POSITIONAL
-        ) || !ruda_checker_private_prelude_array_growth_error(checker)
-        || !ruda_checker_private_prelude_error_enum(
+            MMAY_CHECKED_ENUM_VARIANT_POSITIONAL,
+            MMAY_CHECKED_ENUM_VARIANT_POSITIONAL
+        ) || !mmay_checker_private_prelude_array_growth_error(checker)
+        || !mmay_checker_private_prelude_error_enum(
             checker, "ArrayTruncateError", "InvalidLength",
             invalid_length, 2
         )) {
-        ruda_checker_fail(
+        mmay_checker_fail(
             checker,
-            RUDA_CHECK_ALLOCATION_FAILED
+            MMAY_CHECK_ALLOCATION_FAILED
         );
         checker->options.type_options.max_types = original_max_types;
         checker->result->types.options.max_types = original_max_types;

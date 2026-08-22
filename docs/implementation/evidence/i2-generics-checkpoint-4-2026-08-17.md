@@ -50,7 +50,7 @@ does not claim a verified I2 gate or a public 0.1.0 release.
   specialization paths; every failed result is uninitialized and teardown
   asserts both `live_allocations == 0` and `live_bytes == 0`.
 - The formatter has a generic declaration and `mapError`/`?` fixture. The public
-  example [`examples/generics_checkpoint.ruda`](../../../examples/generics_checkpoint.ruda)
+  example [`examples/generics_checkpoint.my`](../../../examples/generics_checkpoint.my)
   includes generic identity, `Option`, explicit error mapping, and propagation.
 - The VM/native differential source checks `Option`, `Result`, both `Err` and
   `Ok` mapping branches, `?`, exhaustive matches, bytecode encode/decode, and

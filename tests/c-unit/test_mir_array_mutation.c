@@ -2,18 +2,18 @@
 
 #include <string.h>
 
-#include "ruda/check/checker.h"
-#include "ruda/mir/mir.h"
+#include "mmay/check/checker.h"
+#include "mmay/mir/mir.h"
 
-static size_t ruda_test_mir_array_mutation_function(
-    const RudaCheckResult *checked,
+static size_t mmay_test_mir_array_mutation_function(
+    const MarimayCheckResult *checked,
     const char *name
 ) {
     size_t index = 0;
     size_t length = strlen(name);
     for (index = 0; checked != NULL && index < checked->functions.length;
         index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             checked, index
         );
         if (function != NULL && function->name.length == length
@@ -24,7 +24,7 @@ static size_t ruda_test_mir_array_mutation_function(
     return SIZE_MAX;
 }
 
-void ruda_test_mir_array_mutation(void) {
+void mmay_test_mir_array_mutation(void) {
     static const char source[] =
         "fn probe(): int {\n"
         "  let values = [1, 2, 3]; let alias = values;\n"
@@ -43,11 +43,11 @@ void ruda_test_mir_array_mutation(void) {
     static const unsigned char panic_message[] =
         "array iterator invalidated by mutation";
     static const char loop_header[] = "for const value of values";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaCheckInterpretOptions options = ruda_check_interpret_default_options();
-    RudaMirPanic panic;
-    RudaMirValue result;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayCheckInterpretOptions options = mmay_check_interpret_default_options();
+    MarimayMirPanic panic;
+    MarimayMirValue result;
     size_t probe = SIZE_MAX;
     size_t invalidated = SIZE_MAX;
     size_t index = 0;
@@ -55,56 +55,56 @@ void ruda_test_mir_array_mutation(void) {
     memset(&checked, 0, sizeof(checked));
     memset(&panic, 0, sizeof(panic));
     memset(&result, 0, sizeof(result));
-    RUDA_EXPECT(header != NULL);
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(header != NULL);
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/mir-array-mutation",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
-    RUDA_EXPECT(checked.initialized && checked.diagnostics.length == 0);
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.initialized && checked.diagnostics.length == 0);
     for (index = 0; index < checked.functions.length; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             &checked, index
         );
-        RUDA_EXPECT(function != NULL);
+        MMAY_EXPECT(function != NULL);
         if (function != NULL) {
-            RUDA_EXPECT(ruda_mir_verify(&function->mir) == RUDA_MIR_VERIFY_OK);
+            MMAY_EXPECT(mmay_mir_verify(&function->mir) == MMAY_MIR_VERIFY_OK);
         }
     }
-    probe = ruda_test_mir_array_mutation_function(&checked, "probe");
-    invalidated = ruda_test_mir_array_mutation_function(
+    probe = mmay_test_mir_array_mutation_function(&checked, "probe");
+    invalidated = mmay_test_mir_array_mutation_function(
         &checked, "invalidated"
     );
-    RUDA_EXPECT(probe != SIZE_MAX && invalidated != SIZE_MAX);
+    MMAY_EXPECT(probe != SIZE_MAX && invalidated != SIZE_MAX);
     if (probe != SIZE_MAX) {
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, probe, NULL, 0, ruda_system_allocator(),
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, probe, NULL, 0, mmay_system_allocator(),
             options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 410);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 410);
     }
     options.panic = &panic;
     if (invalidated != SIZE_MAX) {
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, invalidated, NULL, 0, ruda_system_allocator(),
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, invalidated, NULL, 0, mmay_system_allocator(),
             options, &result
-        ) == RUDA_MIR_INTERPRET_PANIC);
-        RUDA_EXPECT(panic.code != NULL && strcmp(panic.code, "G4005") == 0);
-        RUDA_EXPECT(panic.message.length == sizeof(panic_message) - 1);
-        RUDA_EXPECT(panic.message.data != NULL && memcmp(
+        ) == MMAY_MIR_INTERPRET_PANIC);
+        MMAY_EXPECT(panic.code != NULL && strcmp(panic.code, "G4005") == 0);
+        MMAY_EXPECT(panic.message.length == sizeof(panic_message) - 1);
+        MMAY_EXPECT(panic.message.data != NULL && memcmp(
             panic.message.data, panic_message, sizeof(panic_message) - 1
         ) == 0);
         if (header != NULL) {
-            RUDA_EXPECT(panic.span.start == (size_t)(header - source));
-            RUDA_EXPECT(
+            MMAY_EXPECT(panic.span.start == (size_t)(header - source));
+            MMAY_EXPECT(
                 panic.span.end == panic.span.start + strlen(loop_header)
             );
         }
     }
-    ruda_mir_panic_dispose(&panic);
-    ruda_check_result_dispose(&checked);
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_mir_panic_dispose(&panic);
+    mmay_check_result_dispose(&checked);
+    mmay_checker_fixture_dispose(&fixture);
 }

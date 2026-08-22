@@ -4,52 +4,52 @@
 #include "checker_internal.h"
 #include "checker_package_context.h"
 
-void ruda_checker_private_function_declaration_dispose(
-    RudaCheckFunctionDeclaration *declaration
+void mmay_checker_private_function_declaration_dispose(
+    MarimayCheckFunctionDeclaration *declaration
 );
-void ruda_checker_private_type_parameter_vector_dispose(RudaVector *parameters);
- void ruda_checker_private_constant_declaration_dispose(
-    RudaCheckConstantDeclaration *declaration
+void mmay_checker_private_type_parameter_vector_dispose(MarimayVector *parameters);
+ void mmay_checker_private_constant_declaration_dispose(
+    MarimayCheckConstantDeclaration *declaration
 );
- void ruda_checker_private_type_alias_declaration_dispose(
-    RudaCheckTypeAliasDeclaration *declaration
+ void mmay_checker_private_type_alias_declaration_dispose(
+    MarimayCheckTypeAliasDeclaration *declaration
 );
- void ruda_checker_private_record_field_declaration_dispose(
-    RudaCheckRecordFieldDeclaration *field
+ void mmay_checker_private_record_field_declaration_dispose(
+    MarimayCheckRecordFieldDeclaration *field
 );
- void ruda_checker_private_record_declaration_dispose(
-    RudaCheckRecordDeclaration *declaration
+ void mmay_checker_private_record_declaration_dispose(
+    MarimayCheckRecordDeclaration *declaration
 );
- void ruda_checker_private_enum_payload_item_declaration_dispose(
-    RudaCheckEnumPayloadItemDeclaration *item
+ void mmay_checker_private_enum_payload_item_declaration_dispose(
+    MarimayCheckEnumPayloadItemDeclaration *item
 );
- void ruda_checker_private_enum_variant_declaration_dispose(
-    RudaCheckEnumVariantDeclaration *variant
+ void mmay_checker_private_enum_variant_declaration_dispose(
+    MarimayCheckEnumVariantDeclaration *variant
 );
- void ruda_checker_private_enum_declaration_dispose(
-    RudaCheckEnumDeclaration *declaration
+ void mmay_checker_private_enum_declaration_dispose(
+    MarimayCheckEnumDeclaration *declaration
 );
- void ruda_checker_private_interface_method_declaration_dispose(
-    RudaCheckInterfaceMethodDeclaration *method
+ void mmay_checker_private_interface_method_declaration_dispose(
+    MarimayCheckInterfaceMethodDeclaration *method
 );
- void ruda_checker_private_interface_declaration_dispose(
-    RudaCheckInterfaceDeclaration *declaration
+ void mmay_checker_private_interface_declaration_dispose(
+    MarimayCheckInterfaceDeclaration *declaration
 );
- bool ruda_checker_private_declaration_name_is_duplicate(
-    const RudaChecker *checker,
-    RudaCheckName name
+ bool mmay_checker_private_declaration_name_is_duplicate(
+    const MarimayChecker *checker,
+    MarimayCheckName name
 );
- bool ruda_checker_private_parameter_name_is_duplicate(
-    const RudaChecker *checker,
-    const RudaCheckFunctionDeclaration *declaration,
-    RudaCheckName name
+ bool mmay_checker_private_parameter_name_is_duplicate(
+    const MarimayChecker *checker,
+    const MarimayCheckFunctionDeclaration *declaration,
+    MarimayCheckName name
 );
- bool ruda_checker_private_check_name_is_primitive_type(
-    const RudaChecker *checker,
-    RudaCheckName name
+ bool mmay_checker_private_check_name_is_primitive_type(
+    const MarimayChecker *checker,
+    MarimayCheckName name
 );
- bool ruda_checker_private_check_public_type_reference(
-    RudaChecker *checker,
-    const RudaAstNode *node
+ bool mmay_checker_private_check_public_type_reference(
+    MarimayChecker *checker,
+    const MarimayAstNode *node
 );
 #endif

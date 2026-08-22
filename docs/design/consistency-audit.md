@@ -5,7 +5,7 @@ Scope: repository design package before implementation.
 
 ## Result
 
-The baseline is internally consistent enough to hand to an implementation agent. It is intentionally not marked as an implemented language. D001 accepts `Ruda`, `ruda`, and `.ruda`; N0 remains an external distribution-identity release blocker and does not make the repository identity provisional. Four architectural decisions additionally remain gated by executable prototypes or benchmarks: managed record representation (D007), inferred suspension (D010), isolate parallelism (D012), and shape-shared generics (D013). D010 is accepted in intent but still has a mandatory feasibility gate; D007/D012/D013 remain provisional.
+The baseline is internally consistent enough to hand to an implementation agent. It is intentionally not marked as an implemented language. D001 accepts `Marimay`, `mmay`, and `.my`; N0 remains an external distribution-identity release blocker and does not make the repository identity provisional. Four architectural decisions additionally remain gated by executable prototypes or benchmarks: managed record representation (D007), inferred suspension (D010), isolate parallelism (D012), and shape-shared generics (D013). D010 is accepted in intent but still has a mandatory feasibility gate; D007/D012/D013 remain provisional.
 
 No provisional item permits an implementation to silently substitute source-level async, ownership syntax, shared mutable threads, a dynamic VM, or per-backend semantics.
 
@@ -25,14 +25,14 @@ No provisional item permits an implementation to silently substitute source-leve
 3. Defined the closed compiler-attribute model used by `@derive`, `@link`, and `@blocking`.
 4. Defined `Error.message()` in the prelude and zero-argument construction for a positional `void` payload, making `Ok()` valid.
 5. Defined record-construction field shorthand used by examples.
-6. Replaced the pseudo-static `Headers.json()` with package function `http.jsonHeaders()` because Ruda has no class/static-method model.
+6. Replaced the pseudo-static `Headers.json()` with package function `http.jsonHeaders()` because Marimay has no class/static-method model.
 7. Replaced `Array.of` wording with prelude `arrayOf` for the same reason.
 8. Clarified that `spawn` may be nested anywhere under the active lexical `scope` block, not only as its immediate statement child.
 9. Defined the only user-type operator hook: exact equality contract used by `==`/`!=`; general operator overloading remains absent.
 10. Defined insertion-order behavior for update versus delete/reinsert in maps and sets.
 11. Kept `?` conversion exact and made error mapping explicit in cross-domain examples; structural interface boxing remains an explicit boundary conversion.
 12. Separated task concurrency from isolate parallelism and documented that lack of simultaneous data races does not remove logical ordering races.
-13. Replaced compatibility-oriented surface forms with one Ruda-native grammar: `fn`, `type User { ... }`, `User { ... }`, named enum payload braces, `$"..."` interpolation, one `public` modifier, and unparenthesized control flow.
+13. Replaced compatibility-oriented surface forms with one Marimay-native grammar: `fn`, `type User { ... }`, `User { ... }`, named enum payload braces, `$"..."` interpolation, one `public` modifier, and unparenthesized control flow.
 14. Established ordinary first-parameter functions as the sole source of dot-call behavior and interface conformance; package ownership supplies coherence without a second declaration form.
 15. Renamed the structured-concurrency lifetime block to `scope`; `spawn` remains the only task-creation operation.
 16. During I0 implementation, clarified non-source diagnostics through D021: the required JSON `primary` field is nullable, so command/package/runtime failures do not invent source spans.
@@ -41,13 +41,13 @@ No provisional item permits an implementation to silently substitute source-leve
 19. Closed the 0.1 literal grammar through D024: numeric separators/bases/exponents, string/rune/byte escapes, raw strings, and interpolation boundaries are now locale-independent and testable.
 20. Resolved the named-enum-payload separator conflict through D025: declaration fields use `name: Type;`, while the variant list retains commas.
 21. Closed formatter-width host dependence through D026: Unicode 17 scalar properties define the 100-column metric, with ambiguous width narrow and no host `wcwidth` dependency.
-22. Resolved manifest formatter gate ownership through D027: I1 owns the bounded `ruda.mod`/`ruda.work` syntax and canonical bytes required by no-argument `ruda fmt`; I7 reuses them for semantic resolution and lock/package workflows.
+22. Resolved manifest formatter gate ownership through D027: I1 owns the bounded `mmay.mod`/`mmay.work` syntax and canonical bytes required by no-argument `mmay fmt`; I7 reuses them for semantic resolution and lock/package workflows.
 23. Closed formatter target-selection ambiguity through D028: nearest-module discovery, optional ancestor workspace formatting, nested-module boundaries, no-follow symlink behavior, deterministic path order, and traversal limits now have one cross-platform contract.
 24. Added the pre-1.0 structured coordination gate through D029: race owns/cancels/joins losers, readiness selection unregisters losing waits without cancelling independently owned tasks, and both replay deterministically.
-25. Made native toolchain usability an owned product constraint through D030: the C17 AOT/root-of-trust remains, while official Tier 1 installation and `ruda doctor` absorb compiler/linker/SDK discovery instead of user project configuration.
+25. Made native toolchain usability an owned product constraint through D030: the C17 AOT/root-of-trust remains, while official Tier 1 installation and `mmay doctor` absorb compiler/linker/SDK discovery instead of user project configuration.
 26. Reopened the former D001 after confirming an indexed “Malang Compiler” Go command module: the historical project-name collision is evidence-backed and triggered a coordinated pre-release rename rather than an undocumented compatibility fork.
 27. Closed braced-list layout ambiguity through D031: import names, record construction/patterns, and named enum payload fields use the D026 fit oracle, while executable and declaration bodies remain structurally multiline.
-28. Accepted the replacement D001 and completed the repository identity migration to `Ruda`, `ruda`, `.ruda`, `.rudab`, `ruda.mod`/`ruda.work`/`ruda.lock`, and `.ruda/`; former names remain only in explicit historical records, while N0 continues to own legal and external distribution clearance.
+28. Accepted the replacement D001 and completed the repository identity migration to `Marimay`, `mmay`, `.my`, `.myb`, `mmay.mod`/`mmay.work`/`mmay.lock`, and `.mmay/`; former names remain only in explicit historical records, while N0 continues to own legal and external distribution clearance.
 29. Separated semantic facts from trust policy through D034: the compiler may
     expose typed trees, symbol/effect graphs, MIR, and diagnostics to every
     first-party tool, while author/agent identity, provenance, coverage,
@@ -70,10 +70,10 @@ No provisional item permits an implementation to silently substitute source-leve
     functions plus the shadowable prelude `panic` replace special declarations
     and call syntax. This supersedes resolved finding 2's former `fuzz` keyword
     and the keyword aspects of findings 3 and 31.
-34. Closed the Ruda-to-C17 identifier boundary through D039: internal emitted C
+34. Closed the Marimay-to-C17 identifier boundary through D039: internal emitted C
     identifiers are injective compiler-owned names rather than source spelling,
     so C keywords, implementation-reserved identifiers, library/runtime names,
-    Unicode, truncation, and filesystem case folding cannot leak into Ruda
+    Unicode, truncation, and filesystem case folding cannot leak into Marimay
     source acceptance; explicit foreign link names remain separate ABI
     contracts owned by I9.
 35. Made D007 record identity executable in I2: `identity.same` accepts exactly
@@ -128,7 +128,7 @@ No provisional item permits an implementation to silently substitute source-leve
 - the repository map and all linked deliverables resolve;
 - each normative requirement category maps to a roadmap gate.
 
-These checks are not a substitute for parsing. At I1, the real lossless parser and `ruda fmt --check` replace the lightweight example check. At I2/I6, examples become compile/run conformance fixtures.
+These checks are not a substitute for parsing. At I1, the real lossless parser and `mmay fmt --check` replace the lightweight example check. At I2/I6, examples become compile/run conformance fixtures.
 
 The reproducible commands and final results are recorded in the [D0 verification evidence](../implementation/evidence/d0-2026-08-10.md).
 
@@ -139,7 +139,7 @@ The following precision belongs to its implementation gate and is explicitly for
 - exact generated parser grammar and recovery tables — I1;
 - diagnostic numeric code allocation — I0/I2;
 - concrete MIR serialization — I2;
-- opcode numbers and exact `.rudab` binary field widths — I3;
+- opcode numbers and exact `.myb` binary field widths — I3;
 - native internal helper ABI and C partitioning — I4;
 - GC allocation thresholds and performance budgets — I5;
 - scheduler quantum/poller adapters and direct-suspension feasibility — I6;

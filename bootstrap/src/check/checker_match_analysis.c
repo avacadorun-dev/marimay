@@ -9,31 +9,31 @@
 
 
 
- bool ruda_checker_private_analyze_bool_match_alternative(
-    RudaFunctionChecker *function,
-    const RudaAstNode *pattern,
-    RudaVector *bindings,
-    RudaCheckScalarMatchAlternative *alternative
+ bool mmay_checker_private_analyze_bool_match_alternative(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *pattern,
+    MarimayVector *bindings,
+    MarimayCheckScalarMatchAlternative *alternative
 ) {
-    const RudaSyntaxToken *literal = NULL;
-    RudaCheckName name;
+    const MarimaySyntaxToken *literal = NULL;
+    MarimayCheckName name;
     if (pattern == NULL || bindings == NULL || alternative == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
     memset(alternative, 0, sizeof(*alternative));
     alternative->pattern = pattern;
-    if (pattern->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
+    if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
         alternative->is_catch_all = true;
         return true;
     }
-    if (pattern->kind == RUDA_SYNTAX_NAME_PATTERN) {
-        if (!ruda_checker_private_enum_match_name(function, pattern, &name)
-            || !ruda_checker_private_enum_match_add_binding(
+    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
+        if (!mmay_checker_private_enum_match_name(function, pattern, &name)
+            || !mmay_checker_private_enum_match_add_binding(
                 function,
                 bindings,
                 name,
-                RUDA_TYPE_BOOL
+                MMAY_TYPE_BOOL
             )) {
             return false;
         }
@@ -42,31 +42,31 @@
         alternative->catch_binding = name;
         return true;
     }
-    if (pattern->kind != RUDA_SYNTAX_LITERAL_PATTERN) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+    if (pattern->kind != MMAY_SYNTAX_LITERAL_PATTERN) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
         return false;
     }
-    literal = ruda_checker_private_check_first_token(pattern);
+    literal = mmay_checker_private_check_first_token(pattern);
     if (literal == NULL || literal->synthetic) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
-    if (literal->kind != RUDA_TOKEN_KW_TRUE
-        && literal->kind != RUDA_TOKEN_KW_FALSE) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+    if (literal->kind != MMAY_TOKEN_KW_TRUE
+        && literal->kind != MMAY_TOKEN_KW_FALSE) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
         return false;
     }
-    alternative->literal = literal->kind == RUDA_TOKEN_KW_TRUE;
+    alternative->literal = literal->kind == MMAY_TOKEN_KW_TRUE;
     return true;
 }
 
- bool ruda_checker_private_bool_match_alternative_redundant(
-    const RudaCheckScalarMatchArm *arm,
-    const RudaCheckScalarMatchAlternative *alternative
+ bool mmay_checker_private_bool_match_alternative_redundant(
+    const MarimayCheckScalarMatchArm *arm,
+    const MarimayCheckScalarMatchAlternative *alternative
 ) {
     size_t index = 0;
     for (index = 0; index < arm->alternatives.length; index += 1) {
-        const RudaCheckScalarMatchAlternative *earlier = ruda_vector_at_const(
+        const MarimayCheckScalarMatchAlternative *earlier = mmay_vector_at_const(
             &arm->alternatives,
             index
         );
@@ -79,24 +79,24 @@
     return false;
 }
 
- bool ruda_checker_private_analyze_bool_match_arm(
-    RudaFunctionChecker *function,
-    const RudaAstNode *arm_node,
+ bool mmay_checker_private_analyze_bool_match_arm(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *arm_node,
     unsigned char seen[2],
     bool *covered,
-    RudaCheckScalarMatchArm *arm
+    MarimayCheckScalarMatchArm *arm
 ) {
-    const RudaAstNode *pattern_wrapper = ruda_checker_private_check_child_node(
+    const MarimayAstNode *pattern_wrapper = mmay_checker_private_check_child_node(
         arm_node,
-        RUDA_SYNTAX_PATTERN,
+        MMAY_SYNTAX_PATTERN,
         0
     );
-    const RudaAstNode *pattern = ruda_checker_private_check_child_node_any(
+    const MarimayAstNode *pattern = mmay_checker_private_check_child_node_any(
         pattern_wrapper,
         0
     );
-    RudaVector pattern_nodes;
-    RudaVector alternative_bindings;
+    MarimayVector pattern_nodes;
+    MarimayVector alternative_bindings;
     size_t alternative_index = 0;
     bool pattern_nodes_initialized = false;
     bool alternative_bindings_initialized = false;
@@ -105,61 +105,61 @@
     memset(&alternative_bindings, 0, sizeof(alternative_bindings));
     if (arm == NULL || arm_node == NULL || pattern_wrapper == NULL
         || pattern == NULL || seen == NULL || covered == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         goto cleanup;
     }
     memset(arm, 0, sizeof(*arm));
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &arm->alternatives,
             function->checker->result->allocator,
-            sizeof(RudaCheckScalarMatchAlternative)
-        ) || !ruda_vector_init(
+            sizeof(MarimayCheckScalarMatchAlternative)
+        ) || !mmay_vector_init(
             &arm->bindings,
             function->checker->result->allocator,
-            sizeof(RudaCheckEnumMatchBinding)
-        ) || !ruda_vector_init(
+            sizeof(MarimayCheckEnumMatchBinding)
+        ) || !mmay_vector_init(
             &pattern_nodes,
             function->checker->result->allocator,
-            sizeof(const RudaAstNode *)
-        ) || !ruda_vector_init(
+            sizeof(const MarimayAstNode *)
+        ) || !mmay_vector_init(
             &alternative_bindings,
             function->checker->result->allocator,
-            sizeof(RudaCheckEnumMatchBinding)
+            sizeof(MarimayCheckEnumMatchBinding)
         )) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         goto cleanup;
     }
     pattern_nodes_initialized = true;
     alternative_bindings_initialized = true;
     arm->node = arm_node;
     arm->pattern = pattern;
-    if (!ruda_checker_private_match_arm_body_parts(
+    if (!mmay_checker_private_match_arm_body_parts(
             function,
             arm_node,
             &arm->guard,
             &arm->body,
             &arm->body_is_block
-        ) || !ruda_checker_private_match_collect_alternatives(
+        ) || !mmay_checker_private_match_collect_alternatives(
             function,
             pattern,
             &pattern_nodes
         ) || pattern_nodes.length == 0) {
-        if (!ruda_checker_has_failed(function->checker)) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        if (!mmay_checker_has_failed(function->checker)) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         }
         goto cleanup;
     }
     for (alternative_index = 0;
         alternative_index < pattern_nodes.length;
         alternative_index += 1) {
-        const RudaAstNode *const *alternative_pattern = ruda_vector_at_const(
+        const MarimayAstNode *const *alternative_pattern = mmay_vector_at_const(
             &pattern_nodes,
             alternative_index
         );
-        RudaCheckScalarMatchAlternative alternative;
+        MarimayCheckScalarMatchAlternative alternative;
         alternative_bindings.length = 0;
         if (alternative_pattern == NULL || *alternative_pattern == NULL
-            || !ruda_checker_private_analyze_bool_match_alternative(
+            || !mmay_checker_private_analyze_bool_match_alternative(
                 function,
                 *alternative_pattern,
                 &alternative_bindings,
@@ -169,18 +169,18 @@
         }
         if (alternative.is_catch_all
             && arm->alternatives.length != 0) {
-            const RudaCheckScalarMatchAlternative *subsumed =
-                ruda_vector_at_const(&arm->alternatives, 0);
+            const MarimayCheckScalarMatchAlternative *subsumed =
+                mmay_vector_at_const(&arm->alternatives, 0);
             if (subsumed == NULL) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
             }
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+                MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
                 "match alternative is subsumed by a catch-all in the same OR pattern",
                 subsumed->pattern->start,
                 subsumed->pattern->end
@@ -189,13 +189,13 @@
         }
         if (*covered || (!alternative.is_catch_all
                 && seen[alternative.literal ? 1 : 0] != 0)
-            || ruda_checker_private_bool_match_alternative_redundant(
+            || mmay_checker_private_bool_match_alternative_redundant(
                 arm,
                 &alternative
             )) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+                MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
                 "match alternative is unreachable after earlier patterns",
                 alternative.pattern->start,
                 alternative.pattern->end
@@ -203,35 +203,35 @@
             goto cleanup;
         }
         if (alternative_index == 0) {
-            if (!ruda_vector_append(
+            if (!mmay_vector_append(
                     &arm->bindings,
                     alternative_bindings.data,
                     alternative_bindings.length
                 )) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_ALLOCATION_FAILED
+                    MMAY_CHECK_ALLOCATION_FAILED
                 );
                 goto cleanup;
             }
-        } else if (!ruda_checker_private_enum_match_bindings_equal(
+        } else if (!mmay_checker_private_enum_match_bindings_equal(
                 function,
                 &arm->bindings,
                 &alternative_bindings
             )) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "OR pattern alternatives must bind the same names with identical types",
                 alternative.pattern->start,
                 alternative.pattern->end
             );
             goto cleanup;
         }
-        if (!ruda_vector_push(&arm->alternatives, &alternative)) {
-            ruda_checker_fail(
+        if (!mmay_vector_push(&arm->alternatives, &alternative)) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_ALLOCATION_FAILED
+                MMAY_CHECK_ALLOCATION_FAILED
             );
             goto cleanup;
         }
@@ -240,15 +240,15 @@
         for (alternative_index = 0;
             alternative_index < arm->alternatives.length;
             alternative_index += 1) {
-            const RudaCheckScalarMatchAlternative *alternative =
-                ruda_vector_at_const(
+            const MarimayCheckScalarMatchAlternative *alternative =
+                mmay_vector_at_const(
                     &arm->alternatives,
                     alternative_index
                 );
             if (alternative == NULL) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
             }
@@ -263,42 +263,42 @@
 
 cleanup:
     if (alternative_bindings_initialized) {
-        ruda_vector_dispose(&alternative_bindings);
+        mmay_vector_dispose(&alternative_bindings);
     }
     if (pattern_nodes_initialized) {
-        ruda_vector_dispose(&pattern_nodes);
+        mmay_vector_dispose(&pattern_nodes);
     }
-    return accepted && !ruda_checker_has_failed(function->checker);
+    return accepted && !mmay_checker_has_failed(function->checker);
 }
 
- bool ruda_checker_private_analyze_scalar_match_alternative(
-    RudaFunctionChecker *function,
-    const RudaAstNode *pattern,
-    RudaVector *bindings,
-    RudaTypeId scalar_type,
-    RudaCheckScalarMatchAlternative *alternative
+ bool mmay_checker_private_analyze_scalar_match_alternative(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *pattern,
+    MarimayVector *bindings,
+    MarimayTypeId scalar_type,
+    MarimayCheckScalarMatchAlternative *alternative
 ) {
-    const RudaSyntaxToken *literal = NULL;
-    RudaCheckName name;
+    const MarimaySyntaxToken *literal = NULL;
+    MarimayCheckName name;
     uint64_t magnitude = 0;
-    RudaOwnedBytes decoded;
-    RudaStringLiteralStatus decode_status;
+    MarimayOwnedBytes decoded;
+    MarimayStringLiteralStatus decode_status;
     size_t new_string_bytes = 0;
     memset(&decoded, 0, sizeof(decoded));
     if (pattern == NULL || bindings == NULL || alternative == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
     memset(alternative, 0, sizeof(*alternative));
-    alternative->string_constant = RUDA_MIR_NO_STRING;
+    alternative->string_constant = MMAY_MIR_NO_STRING;
     alternative->pattern = pattern;
-    if (pattern->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
+    if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
         alternative->is_catch_all = true;
         return true;
     }
-    if (pattern->kind == RUDA_SYNTAX_NAME_PATTERN) {
-        if (!ruda_checker_private_enum_match_name(function, pattern, &name)
-            || !ruda_checker_private_enum_match_add_binding(
+    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
+        if (!mmay_checker_private_enum_match_name(function, pattern, &name)
+            || !mmay_checker_private_enum_match_add_binding(
                 function,
                 bindings,
                 name,
@@ -311,26 +311,26 @@ cleanup:
         alternative->catch_binding = name;
         return true;
     }
-    if (pattern->kind != RUDA_SYNTAX_LITERAL_PATTERN) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INCOMPLETE_LANGUAGE);
+    if (pattern->kind != MMAY_SYNTAX_LITERAL_PATTERN) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
         return false;
     }
-    literal = ruda_checker_private_check_first_token(pattern);
+    literal = mmay_checker_private_check_first_token(pattern);
     if (literal == NULL || literal->synthetic) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
-    if (scalar_type == RUDA_TYPE_I64 && literal->kind != RUDA_TOKEN_INTEGER) {
-        (void)ruda_checker_add_diagnostic(
+    if (scalar_type == MMAY_TYPE_I64 && literal->kind != MMAY_TOKEN_INTEGER) {
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "literal pattern type must match the integer scrutinee",
             pattern->start,
             pattern->end
         );
         return false;
     }
-    if (scalar_type == RUDA_TYPE_I64 && !ruda_checker_private_integer_magnitude(
+    if (scalar_type == MMAY_TYPE_I64 && !mmay_checker_private_integer_magnitude(
             function->checker,
             literal,
             (uint64_t)INT64_MAX,
@@ -338,85 +338,85 @@ cleanup:
         )) {
         return false;
     }
-    if (scalar_type == RUDA_TYPE_I64) {
+    if (scalar_type == MMAY_TYPE_I64) {
         alternative->integer = (int64_t)magnitude;
         return true;
     }
-    if (scalar_type != RUDA_TYPE_STRING
-        || (literal->kind != RUDA_TOKEN_STRING
-            && literal->kind != RUDA_TOKEN_RAW_STRING)) {
-        (void)ruda_checker_add_diagnostic(
+    if (scalar_type != MMAY_TYPE_STRING
+        || (literal->kind != MMAY_TOKEN_STRING
+            && literal->kind != MMAY_TOKEN_RAW_STRING)) {
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "literal pattern type must match the string scrutinee",
             pattern->start,
             pattern->end
         );
         return false;
     }
-    decode_status = ruda_string_literal_decode(
+    decode_status = mmay_string_literal_decode(
         function->checker->source + literal->start,
         literal->end - literal->start,
-        literal->kind == RUDA_TOKEN_RAW_STRING,
+        literal->kind == MMAY_TOKEN_RAW_STRING,
         function->checker->result->allocator,
         &decoded
     );
-    if (decode_status != RUDA_STRING_LITERAL_OK) {
-        ruda_checker_fail(
+    if (decode_status != MMAY_STRING_LITERAL_OK) {
+        mmay_checker_fail(
             function->checker,
-            decode_status == RUDA_STRING_LITERAL_ALLOCATION_FAILED
-                ? RUDA_CHECK_ALLOCATION_FAILED
-                : RUDA_CHECK_INTERNAL_ERROR
+            decode_status == MMAY_STRING_LITERAL_ALLOCATION_FAILED
+                ? MMAY_CHECK_ALLOCATION_FAILED
+                : MMAY_CHECK_INTERNAL_ERROR
         );
         return false;
     }
     if (function->mir.string_constants.length
             >= function->mir.options.max_string_constants
-        || !ruda_size_add(
+        || !mmay_size_add(
             function->mir.string_bytes,
             decoded.length,
             &new_string_bytes
         ) || new_string_bytes > function->mir.options.max_string_bytes) {
-        ruda_owned_bytes_dispose(&decoded);
-        ruda_checker_fail(function->checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_owned_bytes_dispose(&decoded);
+        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
         return false;
     }
-    if (!ruda_mir_add_string_constant(
+    if (!mmay_mir_add_string_constant(
             &function->mir,
             decoded.data,
             decoded.length,
             &alternative->string_constant
         )) {
-        ruda_owned_bytes_dispose(&decoded);
-        ruda_checker_fail(
+        mmay_owned_bytes_dispose(&decoded);
+        mmay_checker_fail(
             function->checker,
-            RUDA_CHECK_ALLOCATION_FAILED
+            MMAY_CHECK_ALLOCATION_FAILED
         );
         return false;
     }
-    ruda_owned_bytes_dispose(&decoded);
+    mmay_owned_bytes_dispose(&decoded);
     return true;
 }
 
- bool ruda_checker_private_scalar_match_key(
-    const RudaFunctionChecker *function,
-    const RudaCheckScalarMatchAlternative *alternative,
-    RudaTypeId scalar_type,
+ bool mmay_checker_private_scalar_match_key(
+    const MarimayFunctionChecker *function,
+    const MarimayCheckScalarMatchAlternative *alternative,
+    MarimayTypeId scalar_type,
     const void **key,
     size_t *key_length
 ) {
-    const RudaMirStringConstant *string_constant = NULL;
+    const MarimayMirStringConstant *string_constant = NULL;
     if (alternative == NULL || alternative->is_catch_all
         || key == NULL || key_length == NULL) {
         return false;
     }
-    if (scalar_type == RUDA_TYPE_I64) {
+    if (scalar_type == MMAY_TYPE_I64) {
         *key = &alternative->integer;
         *key_length = sizeof(alternative->integer);
         return true;
     }
-    string_constant = scalar_type == RUDA_TYPE_STRING
-        ? ruda_checker_private_check_match_string_constant(
+    string_constant = scalar_type == MMAY_TYPE_STRING
+        ? mmay_checker_private_check_match_string_constant(
             function,
             alternative->string_constant
         )
@@ -429,22 +429,22 @@ cleanup:
     return true;
 }
 
- bool ruda_checker_private_scalar_match_alternative_redundant(
-    const RudaFunctionChecker *function,
-    const RudaCheckScalarMatchArm *arm,
-    const RudaCheckScalarMatchAlternative *alternative,
-    RudaTypeId scalar_type
+ bool mmay_checker_private_scalar_match_alternative_redundant(
+    const MarimayFunctionChecker *function,
+    const MarimayCheckScalarMatchArm *arm,
+    const MarimayCheckScalarMatchAlternative *alternative,
+    MarimayTypeId scalar_type
 ) {
     size_t index = 0;
     for (index = 0; index < arm->alternatives.length; index += 1) {
-        const RudaCheckScalarMatchAlternative *earlier = ruda_vector_at_const(
+        const MarimayCheckScalarMatchAlternative *earlier = mmay_vector_at_const(
             &arm->alternatives,
             index
         );
-        bool equal = scalar_type == RUDA_TYPE_I64
+        bool equal = scalar_type == MMAY_TYPE_I64
             ? earlier != NULL
                 && earlier->integer == alternative->integer
-            : earlier != NULL && ruda_checker_private_check_match_string_equal(
+            : earlier != NULL && mmay_checker_private_check_match_string_equal(
                 function,
                 earlier->string_constant,
                 alternative->string_constant
@@ -457,25 +457,25 @@ cleanup:
     return false;
 }
 
- bool ruda_checker_private_analyze_scalar_match_arm(
-    RudaFunctionChecker *function,
-    const RudaAstNode *arm_node,
-    RudaMap *seen_literals,
+ bool mmay_checker_private_analyze_scalar_match_arm(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *arm_node,
+    MarimayMap *seen_literals,
     bool *covered,
-    RudaTypeId scalar_type,
-    RudaCheckScalarMatchArm *arm
+    MarimayTypeId scalar_type,
+    MarimayCheckScalarMatchArm *arm
 ) {
-    const RudaAstNode *pattern_wrapper = ruda_checker_private_check_child_node(
+    const MarimayAstNode *pattern_wrapper = mmay_checker_private_check_child_node(
         arm_node,
-        RUDA_SYNTAX_PATTERN,
+        MMAY_SYNTAX_PATTERN,
         0
     );
-    const RudaAstNode *pattern = ruda_checker_private_check_child_node_any(
+    const MarimayAstNode *pattern = mmay_checker_private_check_child_node_any(
         pattern_wrapper,
         0
     );
-    RudaVector pattern_nodes;
-    RudaVector alternative_bindings;
+    MarimayVector pattern_nodes;
+    MarimayVector alternative_bindings;
     size_t alternative_index = 0;
     bool pattern_nodes_initialized = false;
     bool alternative_bindings_initialized = false;
@@ -484,61 +484,61 @@ cleanup:
     memset(&alternative_bindings, 0, sizeof(alternative_bindings));
     if (arm == NULL || arm_node == NULL || pattern_wrapper == NULL
         || pattern == NULL || seen_literals == NULL || covered == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         goto cleanup;
     }
     memset(arm, 0, sizeof(*arm));
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &arm->alternatives,
             function->checker->result->allocator,
-            sizeof(RudaCheckScalarMatchAlternative)
-        ) || !ruda_vector_init(
+            sizeof(MarimayCheckScalarMatchAlternative)
+        ) || !mmay_vector_init(
             &arm->bindings,
             function->checker->result->allocator,
-            sizeof(RudaCheckEnumMatchBinding)
-        ) || !ruda_vector_init(
+            sizeof(MarimayCheckEnumMatchBinding)
+        ) || !mmay_vector_init(
             &pattern_nodes,
             function->checker->result->allocator,
-            sizeof(const RudaAstNode *)
-        ) || !ruda_vector_init(
+            sizeof(const MarimayAstNode *)
+        ) || !mmay_vector_init(
             &alternative_bindings,
             function->checker->result->allocator,
-            sizeof(RudaCheckEnumMatchBinding)
+            sizeof(MarimayCheckEnumMatchBinding)
         )) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         goto cleanup;
     }
     pattern_nodes_initialized = true;
     alternative_bindings_initialized = true;
     arm->node = arm_node;
     arm->pattern = pattern;
-    if (!ruda_checker_private_match_arm_body_parts(
+    if (!mmay_checker_private_match_arm_body_parts(
             function,
             arm_node,
             &arm->guard,
             &arm->body,
             &arm->body_is_block
-        ) || !ruda_checker_private_match_collect_alternatives(
+        ) || !mmay_checker_private_match_collect_alternatives(
             function,
             pattern,
             &pattern_nodes
         ) || pattern_nodes.length == 0) {
-        if (!ruda_checker_has_failed(function->checker)) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        if (!mmay_checker_has_failed(function->checker)) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         }
         goto cleanup;
     }
     for (alternative_index = 0;
         alternative_index < pattern_nodes.length;
         alternative_index += 1) {
-        const RudaAstNode *const *alternative_pattern = ruda_vector_at_const(
+        const MarimayAstNode *const *alternative_pattern = mmay_vector_at_const(
             &pattern_nodes,
             alternative_index
         );
-        RudaCheckScalarMatchAlternative alternative;
+        MarimayCheckScalarMatchAlternative alternative;
         alternative_bindings.length = 0;
         if (alternative_pattern == NULL || *alternative_pattern == NULL
-            || !ruda_checker_private_analyze_scalar_match_alternative(
+            || !mmay_checker_private_analyze_scalar_match_alternative(
                 function,
                 *alternative_pattern,
                 &alternative_bindings,
@@ -549,18 +549,18 @@ cleanup:
         }
         if (alternative.is_catch_all
             && arm->alternatives.length != 0) {
-            const RudaCheckScalarMatchAlternative *subsumed =
-                ruda_vector_at_const(&arm->alternatives, 0);
+            const MarimayCheckScalarMatchAlternative *subsumed =
+                mmay_vector_at_const(&arm->alternatives, 0);
             if (subsumed == NULL) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
             }
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+                MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
                 "match alternative is subsumed by a catch-all in the same OR pattern",
                 subsumed->pattern->start,
                 subsumed->pattern->end
@@ -571,7 +571,7 @@ cleanup:
             const void *key = NULL;
             size_t key_length = 0;
             bool has_key = alternative.is_catch_all
-                || ruda_checker_private_scalar_match_key(
+                || mmay_checker_private_scalar_match_key(
                     function,
                     &alternative,
                     scalar_type,
@@ -579,27 +579,27 @@ cleanup:
                     &key_length
                 );
             if (!has_key) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
             }
             if (*covered || (!alternative.is_catch_all
-                    && ruda_map_get_const(
+                    && mmay_map_get_const(
                         seen_literals,
                         key,
                         key_length
                     ) != NULL)
-                || ruda_checker_private_scalar_match_alternative_redundant(
+                || mmay_checker_private_scalar_match_alternative_redundant(
                     function,
                     arm,
                     &alternative,
                     scalar_type
                 )) {
-                (void)ruda_checker_add_diagnostic(
+                (void)mmay_checker_add_diagnostic(
                     function->checker,
-                    RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+                    MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
                     "match alternative is unreachable after earlier patterns",
                     alternative.pattern->start,
                     alternative.pattern->end
@@ -608,35 +608,35 @@ cleanup:
             }
         }
         if (alternative_index == 0) {
-            if (!ruda_vector_append(
+            if (!mmay_vector_append(
                     &arm->bindings,
                     alternative_bindings.data,
                     alternative_bindings.length
                 )) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_ALLOCATION_FAILED
+                    MMAY_CHECK_ALLOCATION_FAILED
                 );
                 goto cleanup;
             }
-        } else if (!ruda_checker_private_enum_match_bindings_equal(
+        } else if (!mmay_checker_private_enum_match_bindings_equal(
                 function,
                 &arm->bindings,
                 &alternative_bindings
             )) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "OR pattern alternatives must bind the same names with identical types",
                 alternative.pattern->start,
                 alternative.pattern->end
             );
             goto cleanup;
         }
-        if (!ruda_vector_push(&arm->alternatives, &alternative)) {
-            ruda_checker_fail(
+        if (!mmay_vector_push(&arm->alternatives, &alternative)) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_ALLOCATION_FAILED
+                MMAY_CHECK_ALLOCATION_FAILED
             );
             goto cleanup;
         }
@@ -645,8 +645,8 @@ cleanup:
         for (alternative_index = 0;
             alternative_index < arm->alternatives.length;
             alternative_index += 1) {
-            const RudaCheckScalarMatchAlternative *alternative =
-                ruda_vector_at_const(
+            const MarimayCheckScalarMatchAlternative *alternative =
+                mmay_vector_at_const(
                     &arm->alternatives,
                     alternative_index
                 );
@@ -654,35 +654,35 @@ cleanup:
             const void *key = NULL;
             size_t key_length = 0;
             if (alternative == NULL) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
             }
             if (alternative->is_catch_all) {
                 *covered = true;
-            } else if (!ruda_checker_private_scalar_match_key(
+            } else if (!mmay_checker_private_scalar_match_key(
                     function,
                     alternative,
                     scalar_type,
                     &key,
                     &key_length
                 )) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_INTERNAL_ERROR
+                    MMAY_CHECK_INTERNAL_ERROR
                 );
                 goto cleanup;
-            } else if (!ruda_map_put(
+            } else if (!mmay_map_put(
                     seen_literals,
                     key,
                     key_length,
                     &present
                 )) {
-                ruda_checker_fail(
+                mmay_checker_fail(
                     function->checker,
-                    RUDA_CHECK_ALLOCATION_FAILED
+                    MMAY_CHECK_ALLOCATION_FAILED
                 );
                 goto cleanup;
             }
@@ -692,39 +692,39 @@ cleanup:
 
 cleanup:
     if (alternative_bindings_initialized) {
-        ruda_vector_dispose(&alternative_bindings);
+        mmay_vector_dispose(&alternative_bindings);
     }
     if (pattern_nodes_initialized) {
-        ruda_vector_dispose(&pattern_nodes);
+        mmay_vector_dispose(&pattern_nodes);
     }
-    return accepted && !ruda_checker_has_failed(function->checker);
+    return accepted && !mmay_checker_has_failed(function->checker);
 }
 
- bool ruda_checker_private_resolve_record_match_pattern(
-    RudaFunctionChecker *function,
-    const RudaAstNode *pattern,
-    RudaCheckRecordDeclaration *scrutinee_record,
-    RudaVector *bindings,
-    RudaCheckRecordMatchAlternative *alternative
+ bool mmay_checker_private_resolve_record_match_pattern(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *pattern,
+    MarimayCheckRecordDeclaration *scrutinee_record,
+    MarimayVector *bindings,
+    MarimayCheckRecordMatchAlternative *alternative
 ) {
-    const RudaAstNode *constructor_name = NULL;
-    const RudaAstNode *named = NULL;
-    RudaCheckRecordDeclaration *pattern_record = NULL;
-    RudaCheckTypeAliasDeclaration *alias = NULL;
-    RudaCheckName name;
+    const MarimayAstNode *constructor_name = NULL;
+    const MarimayAstNode *named = NULL;
+    MarimayCheckRecordDeclaration *pattern_record = NULL;
+    MarimayCheckTypeAliasDeclaration *alias = NULL;
+    MarimayCheckName name;
     if (pattern == NULL || scrutinee_record == NULL || bindings == NULL
         || alternative == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
     memset(alternative, 0, sizeof(*alternative));
     alternative->pattern = pattern;
-    if (pattern->kind == RUDA_SYNTAX_WILDCARD_PATTERN) {
+    if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
         return true;
     }
-    if (pattern->kind == RUDA_SYNTAX_NAME_PATTERN) {
-        if (!ruda_checker_private_enum_match_name(function, pattern, &name)
-            || !ruda_checker_private_enum_match_add_binding(
+    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
+        if (!mmay_checker_private_enum_match_name(function, pattern, &name)
+            || !mmay_checker_private_enum_match_add_binding(
                 function,
                 bindings,
                 name,
@@ -736,57 +736,57 @@ cleanup:
         alternative->catch_binding = name;
         return true;
     }
-    if (pattern->kind != RUDA_SYNTAX_CONSTRUCTOR_PATTERN) {
-        (void)ruda_checker_add_diagnostic(
+    if (pattern->kind != MMAY_SYNTAX_CONSTRUCTOR_PATTERN) {
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "pattern does not match the nominal record scrutinee",
             pattern->start,
             pattern->end
         );
         return false;
     }
-    constructor_name = ruda_checker_private_check_child_node(
+    constructor_name = mmay_checker_private_check_child_node(
         pattern,
-        RUDA_SYNTAX_NAME_PATTERN,
+        MMAY_SYNTAX_NAME_PATTERN,
         0
     );
-    named = ruda_checker_private_check_child_node(
+    named = mmay_checker_private_check_child_node(
         pattern,
-        RUDA_SYNTAX_NAMED_PATTERN,
+        MMAY_SYNTAX_NAMED_PATTERN,
         0
     );
-    if (!ruda_checker_private_enum_match_name(function, constructor_name, &name)) {
+    if (!mmay_checker_private_enum_match_name(function, constructor_name, &name)) {
         return false;
     }
-    pattern_record = ruda_checker_private_checker_find_record(function->checker, name);
+    pattern_record = mmay_checker_private_checker_find_record(function->checker, name);
     if (pattern_record == NULL) {
-        alias = ruda_checker_private_checker_find_type_alias(function->checker, name);
-        if (alias != NULL && ruda_checker_private_evaluate_type_alias(
+        alias = mmay_checker_private_checker_find_type_alias(function->checker, name);
+        if (alias != NULL && mmay_checker_private_evaluate_type_alias(
                 function->checker,
                 alias,
                 name.start,
                 name.end
             )) {
-            pattern_record = ruda_checker_private_checker_find_record_by_type(
+            pattern_record = mmay_checker_private_checker_find_record_by_type(
                 function->checker,
                 alias->type
             );
         }
     }
     if (pattern_record == NULL) {
-        if (ruda_checker_private_checker_find_top_level(function->checker, name) != NULL) {
-            (void)ruda_checker_add_diagnostic(
+        if (mmay_checker_private_checker_find_top_level(function->checker, name) != NULL) {
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "record pattern name does not denote a record type",
                 name.start,
                 name.end
             );
         } else {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_UNKNOWN_TYPE,
+                MMAY_DIAGNOSTIC_UNKNOWN_TYPE,
                 "unknown record pattern type",
                 name.start,
                 name.end
@@ -795,30 +795,30 @@ cleanup:
         return false;
     }
     if (pattern_record->type != scrutinee_record->type) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "record pattern type differs from the scrutinee type",
             name.start,
             name.end
         );
         return false;
     }
-    if (named == NULL || ruda_checker_private_check_child_node(
+    if (named == NULL || mmay_checker_private_check_child_node(
             pattern,
-            RUDA_SYNTAX_POSITIONAL_PATTERN,
+            MMAY_SYNTAX_POSITIONAL_PATTERN,
             0
         ) != NULL) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             function->checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "record pattern requires its named field shape",
             pattern->start,
             pattern->end
         );
         return false;
     }
-    if (!ruda_checker_private_record_match_validate_named(
+    if (!mmay_checker_private_record_match_validate_named(
             function,
             pattern,
             pattern_record,
@@ -830,24 +830,24 @@ cleanup:
     return true;
 }
 
- bool ruda_checker_private_analyze_record_match_arm(
-    RudaFunctionChecker *function,
-    RudaCheckRecordDeclaration *record_declaration,
-    const RudaAstNode *arm_node,
+ bool mmay_checker_private_analyze_record_match_arm(
+    MarimayFunctionChecker *function,
+    MarimayCheckRecordDeclaration *record_declaration,
+    const MarimayAstNode *arm_node,
     bool *covered,
-    RudaCheckRecordMatchArm *arm
+    MarimayCheckRecordMatchArm *arm
 ) {
-    const RudaAstNode *pattern_wrapper = ruda_checker_private_check_child_node(
+    const MarimayAstNode *pattern_wrapper = mmay_checker_private_check_child_node(
         arm_node,
-        RUDA_SYNTAX_PATTERN,
+        MMAY_SYNTAX_PATTERN,
         0
     );
-    const RudaAstNode *pattern = ruda_checker_private_check_child_node_any(
+    const MarimayAstNode *pattern = mmay_checker_private_check_child_node_any(
         pattern_wrapper,
         0
     );
-    RudaVector pattern_nodes;
-    RudaVector alternative_bindings;
+    MarimayVector pattern_nodes;
+    MarimayVector alternative_bindings;
     size_t alternative_index = 0;
     bool pattern_nodes_initialized = false;
     bool alternative_bindings_initialized = false;
@@ -856,61 +856,61 @@ cleanup:
     memset(&alternative_bindings, 0, sizeof(alternative_bindings));
     if (record_declaration == NULL || arm_node == NULL || covered == NULL
         || arm == NULL || pattern_wrapper == NULL || pattern == NULL) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         goto cleanup;
     }
     memset(arm, 0, sizeof(*arm));
-    if (!ruda_vector_init(
+    if (!mmay_vector_init(
             &arm->alternatives,
             function->checker->result->allocator,
-            sizeof(RudaCheckRecordMatchAlternative)
-        ) || !ruda_vector_init(
+            sizeof(MarimayCheckRecordMatchAlternative)
+        ) || !mmay_vector_init(
             &arm->bindings,
             function->checker->result->allocator,
-            sizeof(RudaCheckEnumMatchBinding)
-        ) || !ruda_vector_init(
+            sizeof(MarimayCheckEnumMatchBinding)
+        ) || !mmay_vector_init(
             &pattern_nodes,
             function->checker->result->allocator,
-            sizeof(const RudaAstNode *)
-        ) || !ruda_vector_init(
+            sizeof(const MarimayAstNode *)
+        ) || !mmay_vector_init(
             &alternative_bindings,
             function->checker->result->allocator,
-            sizeof(RudaCheckEnumMatchBinding)
+            sizeof(MarimayCheckEnumMatchBinding)
         )) {
-        ruda_checker_fail(function->checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         goto cleanup;
     }
     pattern_nodes_initialized = true;
     alternative_bindings_initialized = true;
     arm->node = arm_node;
     arm->pattern = pattern;
-    if (!ruda_checker_private_match_arm_body_parts(
+    if (!mmay_checker_private_match_arm_body_parts(
             function,
             arm_node,
             &arm->guard,
             &arm->body,
             &arm->body_is_block
-        ) || !ruda_checker_private_match_collect_alternatives(
+        ) || !mmay_checker_private_match_collect_alternatives(
             function,
             pattern,
             &pattern_nodes
         ) || pattern_nodes.length == 0) {
-        if (!ruda_checker_has_failed(function->checker)) {
-            ruda_checker_fail(function->checker, RUDA_CHECK_INVALID_ARGUMENT);
+        if (!mmay_checker_has_failed(function->checker)) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         }
         goto cleanup;
     }
     for (alternative_index = 0;
         alternative_index < pattern_nodes.length;
         alternative_index += 1) {
-        const RudaAstNode *const *alternative_pattern = ruda_vector_at_const(
+        const MarimayAstNode *const *alternative_pattern = mmay_vector_at_const(
             &pattern_nodes,
             alternative_index
         );
-        RudaCheckRecordMatchAlternative alternative;
+        MarimayCheckRecordMatchAlternative alternative;
         alternative_bindings.length = 0;
         if (alternative_pattern == NULL || *alternative_pattern == NULL
-            || !ruda_checker_private_resolve_record_match_pattern(
+            || !mmay_checker_private_resolve_record_match_pattern(
                 function,
                 *alternative_pattern,
                 record_declaration,
@@ -920,23 +920,23 @@ cleanup:
             goto cleanup;
         }
         if (*covered || arm->alternatives.length != 0) {
-            (void)ruda_checker_add_diagnostic(
+            (void)mmay_checker_add_diagnostic(
                 function->checker,
-                RUDA_DIAGNOSTIC_REDUNDANT_PATTERN,
+                MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
                 "record pattern is unreachable after an irrefutable pattern",
                 alternative.pattern->start,
                 alternative.pattern->end
             );
             goto cleanup;
         }
-        if (!ruda_vector_append(
+        if (!mmay_vector_append(
                 &arm->bindings,
                 alternative_bindings.data,
                 alternative_bindings.length
-            ) || !ruda_vector_push(&arm->alternatives, &alternative)) {
-            ruda_checker_fail(
+            ) || !mmay_vector_push(&arm->alternatives, &alternative)) {
+            mmay_checker_fail(
                 function->checker,
-                RUDA_CHECK_ALLOCATION_FAILED
+                MMAY_CHECK_ALLOCATION_FAILED
             );
             goto cleanup;
         }
@@ -948,10 +948,10 @@ cleanup:
 
 cleanup:
     if (alternative_bindings_initialized) {
-        ruda_vector_dispose(&alternative_bindings);
+        mmay_vector_dispose(&alternative_bindings);
     }
     if (pattern_nodes_initialized) {
-        ruda_vector_dispose(&pattern_nodes);
+        mmay_vector_dispose(&pattern_nodes);
     }
-    return accepted && !ruda_checker_has_failed(function->checker);
+    return accepted && !mmay_checker_has_failed(function->checker);
 }

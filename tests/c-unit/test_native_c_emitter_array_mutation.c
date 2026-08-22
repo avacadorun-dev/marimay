@@ -3,42 +3,42 @@
 
 #include <string.h>
 
-#include "ruda/check/checker.h"
-#include "ruda/native/c_emitter.h"
+#include "mmay/check/checker.h"
+#include "mmay/native/c_emitter.h"
 
-static void ruda_test_native_array_mutation_allocations(
-    const RudaNativeCProgram *program
+static void mmay_test_native_array_mutation_allocations(
+    const MarimayNativeCProgram *program
 ) {
     size_t failure_index = 0;
     bool reached_success = false;
     for (failure_index = 0; failure_index < 4096; failure_index += 1) {
-        RudaFailAllocator state;
-        RudaOwnedBytes generated;
-        RudaNativeCEmitStatus status;
+        MarimayFailAllocator state;
+        MarimayOwnedBytes generated;
+        MarimayNativeCEmitStatus status;
         memset(&generated, 0, sizeof(generated));
-        ruda_fail_allocator_init(
-            &state, ruda_system_allocator(), failure_index
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
         );
-        status = ruda_native_c_emit_program(
+        status = mmay_native_c_emit_program(
             program,
-            ruda_fail_allocator(&state),
-            ruda_native_c_emit_default_options(),
+            mmay_fail_allocator(&state),
+            mmay_native_c_emit_default_options(),
             &generated
         );
-        if (status == RUDA_NATIVE_C_EMIT_OK) {
+        if (status == MMAY_NATIVE_C_EMIT_OK) {
             reached_success = true;
         } else {
-            RUDA_EXPECT(status == RUDA_NATIVE_C_EMIT_ALLOCATION_FAILED);
+            MMAY_EXPECT(status == MMAY_NATIVE_C_EMIT_ALLOCATION_FAILED);
         }
-        ruda_owned_bytes_dispose(&generated);
-        RUDA_EXPECT(state.live_allocations == 0);
-        RUDA_EXPECT(state.live_bytes == 0);
+        mmay_owned_bytes_dispose(&generated);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) break;
     }
-    RUDA_EXPECT(reached_success);
+    MMAY_EXPECT(reached_success);
 }
 
-void ruda_test_native_c_emitter_array_mutation(void) {
+void mmay_test_native_c_emitter_array_mutation(void) {
     static const char source[] =
         "fn probe(): int {\n"
         "  let values = [1, 2, 3]; let alias = values;\n"
@@ -52,29 +52,29 @@ void ruda_test_native_c_emitter_array_mutation(void) {
         "  for const value of stable { stable.reserve(2); total += value; }\n"
         "  return popped * 100 + shortened * 10 + alias.length() + total;\n"
         "}\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    const RudaMirFunction *functions[16];
-    RudaNativeCProgram program;
-    RudaOwnedBytes generated;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayMirFunction *functions[16];
+    MarimayNativeCProgram program;
+    MarimayOwnedBytes generated;
     size_t index = 0;
     memset(&checked, 0, sizeof(checked));
     memset(functions, 0, sizeof(functions));
     memset(&program, 0, sizeof(program));
     memset(&generated, 0, sizeof(generated));
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/native-array-mutation",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
-    RUDA_EXPECT(checked.initialized && checked.diagnostics.length == 0);
-    RUDA_EXPECT(checked.functions.length == 1);
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.initialized && checked.diagnostics.length == 0);
+    MMAY_EXPECT(checked.functions.length == 1);
     for (index = 0; index < checked.functions.length && index < 16;
         index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             &checked, index
         );
         functions[index] = function == NULL ? NULL : &function->mir;
@@ -83,33 +83,33 @@ void ruda_test_native_c_emitter_array_mutation(void) {
         program.functions = functions;
         program.function_count = checked.functions.length;
         program.entry_symbol = functions[0]->symbol;
-        RUDA_EXPECT(ruda_native_c_emit_program(
+        MMAY_EXPECT(mmay_native_c_emit_program(
             &program,
-            ruda_system_allocator(),
-            ruda_native_c_emit_default_options(),
+            mmay_system_allocator(),
+            mmay_native_c_emit_default_options(),
             &generated
-        ) == RUDA_NATIVE_C_EMIT_OK);
-        RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "ruda_managed_array_generated_pop_raw64"
+        ) == MMAY_NATIVE_C_EMIT_OK);
+        MMAY_EXPECT(mmay_test_native_contains(
+            &generated, "mmay_managed_array_generated_pop_raw64"
         ));
-        RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "ruda_managed_array_truncate"
+        MMAY_EXPECT(mmay_test_native_contains(
+            &generated, "mmay_managed_array_truncate"
         ));
-        RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "ruda_managed_array_clear"
+        MMAY_EXPECT(mmay_test_native_contains(
+            &generated, "mmay_managed_array_clear"
         ));
-        RUDA_EXPECT(ruda_test_native_contains(
-            &generated, "ruda_managed_array_reserve"
+        MMAY_EXPECT(mmay_test_native_contains(
+            &generated, "mmay_managed_array_reserve"
         ));
-        RUDA_EXPECT(ruda_test_native_contains(
+        MMAY_EXPECT(mmay_test_native_contains(
             &generated, "->mutation_generation"
         ));
 #if !defined(_WIN32)
-        ruda_test_native_compile_and_run(&generated, "ok:i64:415\n", 0);
+        mmay_test_native_compile_and_run(&generated, "ok:i64:415\n", 0);
 #endif
-        ruda_test_native_array_mutation_allocations(&program);
+        mmay_test_native_array_mutation_allocations(&program);
     }
-    ruda_owned_bytes_dispose(&generated);
-    ruda_check_result_dispose(&checked);
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_owned_bytes_dispose(&generated);
+    mmay_check_result_dispose(&checked);
+    mmay_checker_fixture_dispose(&fixture);
 }

@@ -3,31 +3,31 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ruda/generated/diagnostic_codes.h"
+#include "mmay/generated/diagnostic_codes.h"
 
-bool ruda_cli_resource_render(
-    RudaDiagnosticStyle style,
-    RudaBytecodeRunStatus status,
-    const RudaManagedHeap *heap,
-    RudaWriter writer,
+bool mmay_cli_resource_render(
+    MarimayDiagnosticStyle style,
+    MarimayBytecodeRunStatus status,
+    const MarimayManagedHeap *heap,
+    MarimayWriter writer,
     bool *classified
 ) {
-    RudaDiagnostic diagnostic;
-    RudaManagedResourceFailure failure;
+    MarimayDiagnostic diagnostic;
+    MarimayManagedResourceFailure failure;
     char message[192];
     int length = 0;
     if (classified == NULL) return false;
     *classified = false;
     memset(&diagnostic, 0, sizeof(diagnostic));
     memset(&failure, 0, sizeof(failure));
-    diagnostic.code = RUDA_DIAGNOSTIC_RUNTIME_FAILURE;
-    diagnostic.severity = RUDA_SEVERITY_ERROR;
-    if (status == RUDA_BYTECODE_RUN_ALLOCATION_FAILED) {
+    diagnostic.code = MMAY_DIAGNOSTIC_RUNTIME_FAILURE;
+    diagnostic.severity = MMAY_SEVERITY_ERROR;
+    if (status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED) {
         diagnostic.message = "runtime host allocation failed";
-        diagnostic.runtime_resource = RUDA_RUNTIME_RESOURCE_HOST_ALLOCATION;
-    } else if (status == RUDA_BYTECODE_RUN_LIMIT_REACHED
-        && ruda_managed_heap_last_resource_failure(heap, &failure)
-        && failure.classification == RUDA_MANAGED_RESOURCE_FAILURE_BUDGET) {
+        diagnostic.runtime_resource = MMAY_RUNTIME_RESOURCE_HOST_ALLOCATION;
+    } else if (status == MMAY_BYTECODE_RUN_LIMIT_REACHED
+        && mmay_managed_heap_last_resource_failure(heap, &failure)
+        && failure.classification == MMAY_MANAGED_RESOURCE_FAILURE_BUDGET) {
         length = snprintf(
             message, sizeof(message),
             "managed heap budget exceeded: live=%zu bytes, requested=%zu bytes, limit=%zu bytes",
@@ -36,7 +36,7 @@ bool ruda_cli_resource_render(
         if (length < 0 || (size_t)length >= sizeof(message)) return false;
         diagnostic.message = message;
         diagnostic.runtime_resource =
-            RUDA_RUNTIME_RESOURCE_MANAGED_HEAP_BUDGET;
+            MMAY_RUNTIME_RESOURCE_MANAGED_HEAP_BUDGET;
         diagnostic.resource_live_bytes = failure.live_bytes;
         diagnostic.resource_requested_bytes = failure.requested_bytes;
         diagnostic.resource_limit_bytes = failure.limit_bytes;
@@ -44,5 +44,5 @@ bool ruda_cli_resource_render(
         return true;
     }
     *classified = true;
-    return ruda_diagnostic_render(writer, style, &diagnostic);
+    return mmay_diagnostic_render(writer, style, &diagnostic);
 }

@@ -4,79 +4,79 @@
 #include "checker_internal.h"
 #include "checker_match_types.h"
 
- bool ruda_checker_private_match_witness_append(
-    RudaChecker *checker,
-    RudaVector *buffer,
+ bool mmay_checker_private_match_witness_append(
+    MarimayChecker *checker,
+    MarimayVector *buffer,
     const void *bytes,
     size_t length
 );
- bool ruda_checker_private_match_witness_append_text(
-    RudaChecker *checker,
-    RudaVector *buffer,
+ bool mmay_checker_private_match_witness_append_text(
+    MarimayChecker *checker,
+    MarimayVector *buffer,
     const char *text
 );
- bool ruda_checker_private_match_witness_append_name(
-    RudaChecker *checker,
-    RudaVector *buffer,
-    RudaCheckName name
+ bool mmay_checker_private_match_witness_append_name(
+    MarimayChecker *checker,
+    MarimayVector *buffer,
+    MarimayCheckName name
 );
- bool ruda_checker_private_match_witness_append_size(
-    RudaChecker *checker,
-    RudaVector *buffer,
+ bool mmay_checker_private_match_witness_append_size(
+    MarimayChecker *checker,
+    MarimayVector *buffer,
     size_t value
 );
- bool ruda_checker_private_match_witness_append_u64(
-    RudaChecker *checker,
-    RudaVector *buffer,
+ bool mmay_checker_private_match_witness_append_u64(
+    MarimayChecker *checker,
+    MarimayVector *buffer,
     uint64_t value
 );
- bool ruda_checker_private_render_enum_match_witness(
-    RudaChecker *checker,
-    RudaVector *buffer,
-    const RudaCheckEnumVariantDeclaration *variant
+ bool mmay_checker_private_render_enum_match_witness(
+    MarimayChecker *checker,
+    MarimayVector *buffer,
+    const MarimayCheckEnumVariantDeclaration *variant
 );
- bool ruda_checker_private_add_enum_match_witness_diagnostic(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    const RudaCheckEnumDeclaration *declaration,
+ bool mmay_checker_private_add_enum_match_witness_diagnostic(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    const MarimayCheckEnumDeclaration *declaration,
     const unsigned char *seen_variants,
-    const RudaCheckEnumMatchArm *arms,
+    const MarimayCheckEnumMatchArm *arms,
     size_t arm_count
 );
- bool ruda_checker_private_add_bool_match_witness_diagnostic(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
+ bool mmay_checker_private_add_bool_match_witness_diagnostic(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
     const unsigned char seen[2],
-    const RudaCheckScalarMatchArm *arms,
+    const MarimayCheckScalarMatchArm *arms,
     size_t arm_count
 );
- bool ruda_checker_private_add_i64_match_witness_diagnostic(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    const RudaMap *seen_literals,
-    const RudaCheckScalarMatchArm *arms,
+ bool mmay_checker_private_add_i64_match_witness_diagnostic(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    const MarimayMap *seen_literals,
+    const MarimayCheckScalarMatchArm *arms,
     size_t arm_count
 );
- const RudaMirStringConstant *ruda_checker_private_check_match_string_constant(
-    const RudaFunctionChecker *function,
-    RudaMirStringId string_id
+ const MarimayMirStringConstant *mmay_checker_private_check_match_string_constant(
+    const MarimayFunctionChecker *function,
+    MarimayMirStringId string_id
 );
- bool ruda_checker_private_check_match_string_equal(
-    const RudaFunctionChecker *function,
-    RudaMirStringId left_id,
-    RudaMirStringId right_id
+ bool mmay_checker_private_check_match_string_equal(
+    const MarimayFunctionChecker *function,
+    MarimayMirStringId left_id,
+    MarimayMirStringId right_id
 );
- bool ruda_checker_private_add_string_match_witness_diagnostic(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    const RudaMap *seen_literals,
-    const RudaCheckScalarMatchArm *arms,
+ bool mmay_checker_private_add_string_match_witness_diagnostic(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    const MarimayMap *seen_literals,
+    const MarimayCheckScalarMatchArm *arms,
     size_t arm_count
 );
- bool ruda_checker_private_add_record_match_witness_diagnostic(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
-    const RudaCheckRecordDeclaration *record,
+ bool mmay_checker_private_add_record_match_witness_diagnostic(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    const MarimayCheckRecordDeclaration *record,
     bool guarded_witness
 );
 #endif

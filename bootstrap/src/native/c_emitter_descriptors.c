@@ -2,64 +2,64 @@
 
 #include <stdint.h>
 
-const RudaMirArray *ruda_native_c_register_array(
-    const RudaMirFunction *function,
-    RudaMirRegister register_id
+const MarimayMirArray *mmay_native_c_register_array(
+    const MarimayMirFunction *function,
+    MarimayMirRegister register_id
 ) {
-    const RudaTypeId *type = function != NULL
-        ? ruda_vector_at_const(&function->register_types, register_id) : NULL;
-    return type != NULL ? ruda_native_c_array(function, *type) : NULL;
+    const MarimayTypeId *type = function != NULL
+        ? mmay_vector_at_const(&function->register_types, register_id) : NULL;
+    return type != NULL ? mmay_native_c_array(function, *type) : NULL;
 }
 
-static bool ruda_native_c_function_layout(
-    const RudaMirFunction *function,
-    RudaTypeId type,
-    RudaNativeCManagedLayout *result
+static bool mmay_native_c_function_layout(
+    const MarimayMirFunction *function,
+    MarimayTypeId type,
+    MarimayNativeCManagedLayout *result
 ) {
     size_t index = 0;
-    if (function == NULL || result == NULL || type < RUDA_TYPE_FIRST_DYNAMIC) {
+    if (function == NULL || result == NULL || type < MMAY_TYPE_FIRST_DYNAMIC) {
         return false;
     }
     for (index = 0; index < function->arrays.length; index += 1) {
-        const RudaMirArray *layout = ruda_vector_at_const(
+        const MarimayMirArray *layout = mmay_vector_at_const(
             &function->arrays, index
         );
         if (layout != NULL && layout->type == type) {
-            *result = (RudaNativeCManagedLayout){
-                function, RUDA_NATIVE_C_MANAGED_ARRAY, index
+            *result = (MarimayNativeCManagedLayout){
+                function, MMAY_NATIVE_C_MANAGED_ARRAY, index
             };
             return true;
         }
     }
     for (index = 0; index < function->records.length; index += 1) {
-        const RudaMirRecord *layout = ruda_vector_at_const(
+        const MarimayMirRecord *layout = mmay_vector_at_const(
             &function->records, index
         );
         if (layout != NULL && layout->type == type) {
-            *result = (RudaNativeCManagedLayout){
-                function, RUDA_NATIVE_C_MANAGED_RECORD, index
+            *result = (MarimayNativeCManagedLayout){
+                function, MMAY_NATIVE_C_MANAGED_RECORD, index
             };
             return true;
         }
     }
     for (index = 0; index < function->enums.length; index += 1) {
-        const RudaMirEnum *layout = ruda_vector_at_const(
+        const MarimayMirEnum *layout = mmay_vector_at_const(
             &function->enums, index
         );
         if (layout != NULL && layout->type == type) {
-            *result = (RudaNativeCManagedLayout){
-                function, RUDA_NATIVE_C_MANAGED_ENUM, index
+            *result = (MarimayNativeCManagedLayout){
+                function, MMAY_NATIVE_C_MANAGED_ENUM, index
             };
             return true;
         }
     }
     for (index = 0; index < function->interfaces.length; index += 1) {
-        const RudaMirInterface *layout = ruda_vector_at_const(
+        const MarimayMirInterface *layout = mmay_vector_at_const(
             &function->interfaces, index
         );
         if (layout != NULL && layout->type == type) {
-            *result = (RudaNativeCManagedLayout){
-                function, RUDA_NATIVE_C_MANAGED_INTERFACE, index
+            *result = (MarimayNativeCManagedLayout){
+                function, MMAY_NATIVE_C_MANAGED_INTERFACE, index
             };
             return true;
         }
@@ -67,32 +67,32 @@ static bool ruda_native_c_function_layout(
     return false;
 }
 
-bool ruda_native_c_find_managed_layout(
-    const RudaMirFunction *const *functions,
+bool mmay_native_c_find_managed_layout(
+    const MarimayMirFunction *const *functions,
     size_t count,
-    RudaTypeId type,
-    RudaNativeCManagedLayout *result
+    MarimayTypeId type,
+    MarimayNativeCManagedLayout *result
 ) {
     size_t index = 0;
     if (functions == NULL || result == NULL) {
         return false;
     }
     for (index = 0; index < count; index += 1) {
-        if (ruda_native_c_function_layout(functions[index], type, result)) {
+        if (mmay_native_c_function_layout(functions[index], type, result)) {
             return true;
         }
     }
     return false;
 }
 
-static bool ruda_native_c_same_record(
-    RudaNativeCManagedLayout left,
-    RudaNativeCManagedLayout right
+static bool mmay_native_c_same_record(
+    MarimayNativeCManagedLayout left,
+    MarimayNativeCManagedLayout right
 ) {
-    const RudaMirRecord *a = ruda_vector_at_const(
+    const MarimayMirRecord *a = mmay_vector_at_const(
         &left.function->records, left.index
     );
-    const RudaMirRecord *b = ruda_vector_at_const(
+    const MarimayMirRecord *b = mmay_vector_at_const(
         &right.function->records, right.index
     );
     size_t index = 0;
@@ -100,10 +100,10 @@ static bool ruda_native_c_same_record(
         return false;
     }
     for (index = 0; index < a->field_count; index += 1) {
-        const RudaMirRecordField *af = ruda_vector_at_const(
+        const MarimayMirRecordField *af = mmay_vector_at_const(
             &left.function->record_fields, a->field_start + index
         );
-        const RudaMirRecordField *bf = ruda_vector_at_const(
+        const MarimayMirRecordField *bf = mmay_vector_at_const(
             &right.function->record_fields, b->field_start + index
         );
         if (af == NULL || bf == NULL || af->type != bf->type
@@ -114,14 +114,14 @@ static bool ruda_native_c_same_record(
     return true;
 }
 
-static bool ruda_native_c_same_enum(
-    RudaNativeCManagedLayout left,
-    RudaNativeCManagedLayout right
+static bool mmay_native_c_same_enum(
+    MarimayNativeCManagedLayout left,
+    MarimayNativeCManagedLayout right
 ) {
-    const RudaMirEnum *a = ruda_vector_at_const(
+    const MarimayMirEnum *a = mmay_vector_at_const(
         &left.function->enums, left.index
     );
-    const RudaMirEnum *b = ruda_vector_at_const(
+    const MarimayMirEnum *b = mmay_vector_at_const(
         &right.function->enums, right.index
     );
     size_t variant = 0;
@@ -129,10 +129,10 @@ static bool ruda_native_c_same_enum(
         return false;
     }
     for (variant = 0; variant < a->variant_count; variant += 1) {
-        const RudaMirEnumVariant *av = ruda_vector_at_const(
+        const MarimayMirEnumVariant *av = mmay_vector_at_const(
             &left.function->enum_variants, a->variant_start + variant
         );
-        const RudaMirEnumVariant *bv = ruda_vector_at_const(
+        const MarimayMirEnumVariant *bv = mmay_vector_at_const(
             &right.function->enum_variants, b->variant_start + variant
         );
         size_t payload = 0;
@@ -141,10 +141,10 @@ static bool ruda_native_c_same_enum(
             return false;
         }
         for (payload = 0; payload < av->payload_count; payload += 1) {
-            const RudaMirEnumPayload *ap = ruda_vector_at_const(
+            const MarimayMirEnumPayload *ap = mmay_vector_at_const(
                 &left.function->enum_payloads, av->payload_start + payload
             );
-            const RudaMirEnumPayload *bp = ruda_vector_at_const(
+            const MarimayMirEnumPayload *bp = mmay_vector_at_const(
                 &right.function->enum_payloads, bv->payload_start + payload
             );
             if (ap == NULL || bp == NULL || ap->type != bp->type) {
@@ -155,33 +155,33 @@ static bool ruda_native_c_same_enum(
     return true;
 }
 
-static bool ruda_native_c_same_layout(
-    RudaNativeCManagedLayout left,
-    RudaNativeCManagedLayout right
+static bool mmay_native_c_same_layout(
+    MarimayNativeCManagedLayout left,
+    MarimayNativeCManagedLayout right
 ) {
     if (left.kind != right.kind) {
         return false;
     }
-    if (left.kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
-        const RudaMirArray *a = ruda_vector_at_const(
+    if (left.kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
+        const MarimayMirArray *a = mmay_vector_at_const(
             &left.function->arrays, left.index
         );
-        const RudaMirArray *b = ruda_vector_at_const(
+        const MarimayMirArray *b = mmay_vector_at_const(
             &right.function->arrays, right.index
         );
         return a != NULL && b != NULL && a->element_type == b->element_type;
     }
-    if (left.kind == RUDA_NATIVE_C_MANAGED_RECORD) {
-        return ruda_native_c_same_record(left, right);
+    if (left.kind == MMAY_NATIVE_C_MANAGED_RECORD) {
+        return mmay_native_c_same_record(left, right);
     }
-    if (left.kind == RUDA_NATIVE_C_MANAGED_ENUM) {
-        return ruda_native_c_same_enum(left, right);
+    if (left.kind == MMAY_NATIVE_C_MANAGED_ENUM) {
+        return mmay_native_c_same_enum(left, right);
     }
-    if (left.kind == RUDA_NATIVE_C_MANAGED_INTERFACE) {
-        const RudaMirInterface *a = ruda_vector_at_const(
+    if (left.kind == MMAY_NATIVE_C_MANAGED_INTERFACE) {
+        const MarimayMirInterface *a = mmay_vector_at_const(
             &left.function->interfaces, left.index
         );
-        const RudaMirInterface *b = ruda_vector_at_const(
+        const MarimayMirInterface *b = mmay_vector_at_const(
             &right.function->interfaces, right.index
         );
         return a != NULL && b != NULL && a->method_count == b->method_count;
@@ -189,72 +189,72 @@ static bool ruda_native_c_same_layout(
     return false;
 }
 
-bool ruda_native_c_program_type_supported(
-    const RudaMirFunction *const *functions,
+bool mmay_native_c_program_type_supported(
+    const MarimayMirFunction *const *functions,
     size_t count,
-    RudaTypeId type,
+    MarimayTypeId type,
     bool result
 ) {
-    RudaNativeCManagedLayout layout;
-    if (type == RUDA_TYPE_BOOL || type == RUDA_TYPE_I8
-        || type == RUDA_TYPE_I16 || type == RUDA_TYPE_I32
-        || type == RUDA_TYPE_I64 || type == RUDA_TYPE_U8
-        || type == RUDA_TYPE_U16 || type == RUDA_TYPE_U32
-        || type == RUDA_TYPE_U64 || type == RUDA_TYPE_F32
-        || type == RUDA_TYPE_F64
-        || type == RUDA_TYPE_STRING) {
+    MarimayNativeCManagedLayout layout;
+    if (type == MMAY_TYPE_BOOL || type == MMAY_TYPE_I8
+        || type == MMAY_TYPE_I16 || type == MMAY_TYPE_I32
+        || type == MMAY_TYPE_I64 || type == MMAY_TYPE_U8
+        || type == MMAY_TYPE_U16 || type == MMAY_TYPE_U32
+        || type == MMAY_TYPE_U64 || type == MMAY_TYPE_F32
+        || type == MMAY_TYPE_F64
+        || type == MMAY_TYPE_STRING) {
         return true;
     }
-    if (type == RUDA_TYPE_VOID
-        || (result && type == RUDA_TYPE_NEVER)) {
+    if (type == MMAY_TYPE_VOID
+        || (result && type == MMAY_TYPE_NEVER)) {
         return true;
     }
-    if (!ruda_native_c_find_managed_layout(functions, count, type, &layout)) {
+    if (!mmay_native_c_find_managed_layout(functions, count, type, &layout)) {
         return false;
     }
-    return layout.kind != RUDA_NATIVE_C_MANAGED_ARRAY
-        || ruda_native_c_array_kind(layout.function, type)
-            != RUDA_NATIVE_C_ARRAY_UNSUPPORTED;
+    return layout.kind != MMAY_NATIVE_C_MANAGED_ARRAY
+        || mmay_native_c_array_kind(layout.function, type)
+            != MMAY_NATIVE_C_ARRAY_UNSUPPORTED;
 }
 
-static bool ruda_native_c_layout_fields_supported(
-    RudaNativeCManagedLayout layout,
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_layout_fields_supported(
+    MarimayNativeCManagedLayout layout,
+    const MarimayMirFunction *const *functions,
     size_t count
 ) {
     size_t index = 0;
-    if (layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
-        const RudaMirArray *array = ruda_vector_at_const(
+    if (layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
+        const MarimayMirArray *array = mmay_vector_at_const(
             &layout.function->arrays, layout.index
         );
-        return array != NULL && ruda_native_c_program_type_supported(
+        return array != NULL && mmay_native_c_program_type_supported(
             functions, count, array->element_type, false
         );
     }
-    if (layout.kind == RUDA_NATIVE_C_MANAGED_RECORD) {
-        const RudaMirRecord *record = ruda_vector_at_const(
+    if (layout.kind == MMAY_NATIVE_C_MANAGED_RECORD) {
+        const MarimayMirRecord *record = mmay_vector_at_const(
             &layout.function->records, layout.index
         );
         if (record == NULL) return false;
         for (index = 0; index < record->field_count; index += 1) {
-            const RudaMirRecordField *field = ruda_vector_at_const(
+            const MarimayMirRecordField *field = mmay_vector_at_const(
                 &layout.function->record_fields, record->field_start + index
             );
-            if (field == NULL || !ruda_native_c_program_type_supported(
+            if (field == NULL || !mmay_native_c_program_type_supported(
                     functions, count, field->type, false
                 )) return false;
         }
-    } else if (layout.kind == RUDA_NATIVE_C_MANAGED_ENUM) {
-        const RudaMirEnum *enumeration = ruda_vector_at_const(
+    } else if (layout.kind == MMAY_NATIVE_C_MANAGED_ENUM) {
+        const MarimayMirEnum *enumeration = mmay_vector_at_const(
             &layout.function->enums, layout.index
         );
         if (enumeration == NULL) return false;
         for (index = 0; index < enumeration->payload_count; index += 1) {
-            const RudaMirEnumPayload *payload = ruda_vector_at_const(
+            const MarimayMirEnumPayload *payload = mmay_vector_at_const(
                 &layout.function->enum_payloads,
                 enumeration->payload_start + index
             );
-            if (payload == NULL || !ruda_native_c_program_type_supported(
+            if (payload == NULL || !mmay_native_c_program_type_supported(
                     functions, count, payload->type, false
                 )) return false;
         }
@@ -262,45 +262,45 @@ static bool ruda_native_c_layout_fields_supported(
     return true;
 }
 
-bool ruda_native_c_managed_layouts_valid(
-    const RudaMirFunction *const *functions,
+bool mmay_native_c_managed_layouts_valid(
+    const MarimayMirFunction *const *functions,
     size_t count
 ) {
     size_t function_index = 0;
     if (functions == NULL) return false;
     for (function_index = 0; function_index < count; function_index += 1) {
-        const RudaMirFunction *function = functions[function_index];
-        RudaNativeCManagedKind kind = RUDA_NATIVE_C_MANAGED_ARRAY;
+        const MarimayMirFunction *function = functions[function_index];
+        MarimayNativeCManagedKind kind = MMAY_NATIVE_C_MANAGED_ARRAY;
         if (function == NULL) return false;
-        for (kind = RUDA_NATIVE_C_MANAGED_ARRAY;
-            kind <= RUDA_NATIVE_C_MANAGED_INTERFACE; kind += 1) {
-            const RudaVector *layouts = kind == RUDA_NATIVE_C_MANAGED_ARRAY
-                ? &function->arrays : (kind == RUDA_NATIVE_C_MANAGED_RECORD
-                    ? &function->records : (kind == RUDA_NATIVE_C_MANAGED_ENUM
+        for (kind = MMAY_NATIVE_C_MANAGED_ARRAY;
+            kind <= MMAY_NATIVE_C_MANAGED_INTERFACE; kind += 1) {
+            const MarimayVector *layouts = kind == MMAY_NATIVE_C_MANAGED_ARRAY
+                ? &function->arrays : (kind == MMAY_NATIVE_C_MANAGED_RECORD
+                    ? &function->records : (kind == MMAY_NATIVE_C_MANAGED_ENUM
                         ? &function->enums : &function->interfaces));
             size_t index = 0;
             for (index = 0; index < layouts->length; index += 1) {
-                RudaTypeId type = RUDA_TYPE_INVALID;
-                RudaNativeCManagedLayout current = {function, kind, index};
-                RudaNativeCManagedLayout canonical;
-                if (kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
-                    const RudaMirArray *value = ruda_vector_at_const(layouts, index);
+                MarimayTypeId type = MMAY_TYPE_INVALID;
+                MarimayNativeCManagedLayout current = {function, kind, index};
+                MarimayNativeCManagedLayout canonical;
+                if (kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
+                    const MarimayMirArray *value = mmay_vector_at_const(layouts, index);
                     if (value != NULL) type = value->type;
-                } else if (kind == RUDA_NATIVE_C_MANAGED_RECORD) {
-                    const RudaMirRecord *value = ruda_vector_at_const(layouts, index);
+                } else if (kind == MMAY_NATIVE_C_MANAGED_RECORD) {
+                    const MarimayMirRecord *value = mmay_vector_at_const(layouts, index);
                     if (value != NULL) type = value->type;
-                } else if (kind == RUDA_NATIVE_C_MANAGED_ENUM) {
-                    const RudaMirEnum *value = ruda_vector_at_const(layouts, index);
+                } else if (kind == MMAY_NATIVE_C_MANAGED_ENUM) {
+                    const MarimayMirEnum *value = mmay_vector_at_const(layouts, index);
                     if (value != NULL) type = value->type;
                 } else {
-                    const RudaMirInterface *value = ruda_vector_at_const(layouts, index);
+                    const MarimayMirInterface *value = mmay_vector_at_const(layouts, index);
                     if (value != NULL) type = value->type;
                 }
-                if (type == RUDA_TYPE_INVALID
-                    || !ruda_native_c_find_managed_layout(
+                if (type == MMAY_TYPE_INVALID
+                    || !mmay_native_c_find_managed_layout(
                         functions, count, type, &canonical
-                    ) || !ruda_native_c_same_layout(canonical, current)
-                    || !ruda_native_c_layout_fields_supported(
+                    ) || !mmay_native_c_same_layout(canonical, current)
+                    || !mmay_native_c_layout_fields_supported(
                         current, functions, count
                 )) return false;
             }
@@ -310,33 +310,33 @@ bool ruda_native_c_managed_layouts_valid(
             for (construction_index = 0;
                 construction_index < function->interface_constructions.length;
                 construction_index += 1) {
-                const RudaMirInterfaceConstruction *construction =
-                    ruda_vector_at_const(
+                const MarimayMirInterfaceConstruction *construction =
+                    mmay_vector_at_const(
                         &function->interface_constructions, construction_index
                     );
-                const RudaMirInterface *interface = construction != NULL
-                    ? ruda_vector_at_const(
+                const MarimayMirInterface *interface = construction != NULL
+                    ? mmay_vector_at_const(
                         &function->interfaces, construction->interface_id
                     ) : NULL;
-                RudaNativeCManagedLayout payload_layout;
+                MarimayNativeCManagedLayout payload_layout;
                 size_t method_index = 0;
                 if (construction == NULL || interface == NULL
                     || construction->method_count != interface->method_count
-                    || !ruda_native_c_find_managed_layout(
+                    || !mmay_native_c_find_managed_layout(
                         functions, count, construction->payload_type,
                         &payload_layout
                     )) return false;
                 for (method_index = 0;
                     method_index < construction->method_count;
                     method_index += 1) {
-                    const RudaSymbolId *symbol = ruda_vector_at_const(
+                    const MarimaySymbolId *symbol = mmay_vector_at_const(
                         &function->interface_methods,
                         construction->method_start + method_index
                     );
-                    const RudaMirFunction *callee = symbol != NULL
-                        ? ruda_native_c_find(functions, count, *symbol) : NULL;
-                    const RudaTypeId *receiver = callee != NULL
-                        ? ruda_vector_at_const(&callee->register_types, 0)
+                    const MarimayMirFunction *callee = symbol != NULL
+                        ? mmay_native_c_find(functions, count, *symbol) : NULL;
+                    const MarimayTypeId *receiver = callee != NULL
+                        ? mmay_vector_at_const(&callee->register_types, 0)
                         : NULL;
                     if (callee == NULL || callee->parameter_count == 0
                         || receiver == NULL
@@ -348,138 +348,138 @@ bool ruda_native_c_managed_layouts_valid(
     return true;
 }
 
-bool ruda_native_c_write_descriptor_name(
-    RudaNativeCBuffer *buffer,
-    RudaNativeCManagedKind kind,
-    RudaTypeId type
+bool mmay_native_c_write_descriptor_name(
+    MarimayNativeCBuffer *buffer,
+    MarimayNativeCManagedKind kind,
+    MarimayTypeId type
 ) {
-    const char *prefix = kind == RUDA_NATIVE_C_MANAGED_RECORD ? "rd"
-        : (kind == RUDA_NATIVE_C_MANAGED_ENUM ? "ed"
-            : (kind == RUDA_NATIVE_C_MANAGED_INTERFACE ? "id" : NULL));
-    return prefix != NULL && ruda_native_c_write(
-        buffer, "ruda_g_%s_%u", prefix, (unsigned int)type
+    const char *prefix = kind == MMAY_NATIVE_C_MANAGED_RECORD ? "rd"
+        : (kind == MMAY_NATIVE_C_MANAGED_ENUM ? "ed"
+            : (kind == MMAY_NATIVE_C_MANAGED_INTERFACE ? "id" : NULL));
+    return prefix != NULL && mmay_native_c_write(
+        buffer, "mmay_g_%s_%u", prefix, (unsigned int)type
     );
 }
 
-bool ruda_native_c_write_interface_table_name(
-    RudaNativeCBuffer *buffer,
-    RudaSymbolId symbol,
+bool mmay_native_c_write_interface_table_name(
+    MarimayNativeCBuffer *buffer,
+    MarimaySymbolId symbol,
     size_t construction
 ) {
-    return ruda_native_c_write(buffer, "ruda_g_it_")
-        && ruda_native_c_symbol_hex(buffer, symbol)
-        && ruda_native_c_write(buffer, "_%zu", construction);
+    return mmay_native_c_write(buffer, "mmay_g_it_")
+        && mmay_native_c_symbol_hex(buffer, symbol)
+        && mmay_native_c_write(buffer, "_%zu", construction);
 }
 
-static bool ruda_native_c_emit_field_descriptor(
-    RudaNativeCBuffer *buffer,
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_emit_field_descriptor(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
     size_t count,
-    RudaTypeId type,
+    MarimayTypeId type,
     bool is_mutable
 ) {
-    RudaNativeCManagedLayout layout;
-    if (type == RUDA_TYPE_STRING) {
-        return ruda_native_c_write(
+    MarimayNativeCManagedLayout layout;
+    if (type == MMAY_TYPE_STRING) {
+        return mmay_native_c_write(
             buffer,
-            "{RUDA_MANAGED_CELL_REFERENCE, %s, RUDA_MANAGED_OBJECT_STRING, NULL}",
+            "{MMAY_MANAGED_CELL_REFERENCE, %s, MMAY_MANAGED_OBJECT_STRING, NULL}",
             is_mutable ? "true" : "false"
         );
     }
-    if (type < RUDA_TYPE_FIRST_DYNAMIC) {
-        return ruda_native_c_write(
+    if (type < MMAY_TYPE_FIRST_DYNAMIC) {
+        return mmay_native_c_write(
             buffer,
-            "{RUDA_MANAGED_CELL_RAW64, %s, RUDA_MANAGED_OBJECT_INVALID, NULL}",
+            "{MMAY_MANAGED_CELL_RAW64, %s, MMAY_MANAGED_OBJECT_INVALID, NULL}",
             is_mutable ? "true" : "false"
         );
     }
-    if (!ruda_native_c_find_managed_layout(functions, count, type, &layout)) {
+    if (!mmay_native_c_find_managed_layout(functions, count, type, &layout)) {
         return false;
     }
-    if (layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
-        return ruda_native_c_write(
-            buffer, "{RUDA_MANAGED_CELL_REFERENCE, %s, RUDA_MANAGED_OBJECT_ARRAY, %s}",
+    if (layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
+        return mmay_native_c_write(
+            buffer, "{MMAY_MANAGED_CELL_REFERENCE, %s, MMAY_MANAGED_OBJECT_ARRAY, %s}",
             is_mutable ? "true" : "false",
-            ruda_native_c_array_descriptor(layout.function, type)
+            mmay_native_c_array_descriptor(layout.function, type)
         );
     }
-    if (!ruda_native_c_write(
-            buffer, "{RUDA_MANAGED_CELL_REFERENCE, %s, %s, &",
+    if (!mmay_native_c_write(
+            buffer, "{MMAY_MANAGED_CELL_REFERENCE, %s, %s, &",
             is_mutable ? "true" : "false",
-            layout.kind == RUDA_NATIVE_C_MANAGED_RECORD
-                ? "RUDA_MANAGED_OBJECT_RECORD"
-                : (layout.kind == RUDA_NATIVE_C_MANAGED_ENUM
-                    ? "RUDA_MANAGED_OBJECT_ENUM"
-                    : "RUDA_MANAGED_OBJECT_INTERFACE")
-        ) || !ruda_native_c_write_descriptor_name(buffer, layout.kind, type)) {
+            layout.kind == MMAY_NATIVE_C_MANAGED_RECORD
+                ? "MMAY_MANAGED_OBJECT_RECORD"
+                : (layout.kind == MMAY_NATIVE_C_MANAGED_ENUM
+                    ? "MMAY_MANAGED_OBJECT_ENUM"
+                    : "MMAY_MANAGED_OBJECT_INTERFACE")
+        ) || !mmay_native_c_write_descriptor_name(buffer, layout.kind, type)) {
         return false;
     }
-    return ruda_native_c_write(buffer, "}");
+    return mmay_native_c_write(buffer, "}");
 }
 
-static bool ruda_native_c_layout_is_canonical(
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_layout_is_canonical(
+    const MarimayMirFunction *const *functions,
     size_t count,
-    RudaNativeCManagedLayout layout,
-    RudaTypeId type
+    MarimayNativeCManagedLayout layout,
+    MarimayTypeId type
 ) {
-    RudaNativeCManagedLayout canonical;
-    return ruda_native_c_find_managed_layout(
+    MarimayNativeCManagedLayout canonical;
+    return mmay_native_c_find_managed_layout(
             functions, count, type, &canonical
         ) && canonical.function == layout.function
         && canonical.kind == layout.kind && canonical.index == layout.index;
 }
 
-static bool ruda_native_c_enum_has_immediate_variant(
-    const RudaMirFunction *function, const RudaMirEnum *enumeration
+static bool mmay_native_c_enum_has_immediate_variant(
+    const MarimayMirFunction *function, const MarimayMirEnum *enumeration
 ) {
     size_t index = 0;
     if (function == NULL || enumeration == NULL
         || enumeration->variant_count != 2) return false;
     for (index = 0; index < enumeration->variant_count; index += 1) {
-        const RudaMirEnumVariant *variant = ruda_vector_at_const(
+        const MarimayMirEnumVariant *variant = mmay_vector_at_const(
             &function->enum_variants, enumeration->variant_start + index
         );
-        const RudaMirEnumPayload *payload = variant != NULL
+        const MarimayMirEnumPayload *payload = variant != NULL
                 && variant->payload_count == 1
-            ? ruda_vector_at_const(
+            ? mmay_vector_at_const(
                 &function->enum_payloads, variant->payload_start
             ) : NULL;
         if (variant != NULL && (variant->payload_count == 0
             || (variant->payload_count == 1 && payload != NULL
-                && payload->type > RUDA_TYPE_INVALID
-                && payload->type < RUDA_TYPE_FIRST_DYNAMIC
-                && payload->type != RUDA_TYPE_STRING
-                && payload->type != RUDA_TYPE_VOID
-                && payload->type != RUDA_TYPE_NEVER))) return true;
+                && payload->type > MMAY_TYPE_INVALID
+                && payload->type < MMAY_TYPE_FIRST_DYNAMIC
+                && payload->type != MMAY_TYPE_STRING
+                && payload->type != MMAY_TYPE_VOID
+                && payload->type != MMAY_TYPE_NEVER))) return true;
     }
     return false;
 }
 
-bool ruda_native_c_immediate_enum_id(
-    const RudaMirFunction *const *functions,
+bool mmay_native_c_immediate_enum_id(
+    const MarimayMirFunction *const *functions,
     size_t count,
-    RudaTypeId type,
+    MarimayTypeId type,
     uint32_t *result
 ) {
     size_t function_index = 0;
     uint32_t next = 0;
     if (functions == NULL || result == NULL) return false;
     for (function_index = 0; function_index < count; function_index += 1) {
-        const RudaMirFunction *function = functions[function_index];
+        const MarimayMirFunction *function = functions[function_index];
         size_t index = 0;
         for (index = 0; function != NULL && index < function->enums.length;
             index += 1) {
-            const RudaMirEnum *enumeration = ruda_vector_at_const(
+            const MarimayMirEnum *enumeration = mmay_vector_at_const(
                 &function->enums, index
             );
-            RudaNativeCManagedLayout layout = {
-                function, RUDA_NATIVE_C_MANAGED_ENUM, index
+            MarimayNativeCManagedLayout layout = {
+                function, MMAY_NATIVE_C_MANAGED_ENUM, index
             };
             if (enumeration != NULL
-                && ruda_native_c_layout_is_canonical(
+                && mmay_native_c_layout_is_canonical(
                     functions, count, layout, enumeration->type
-                ) && ruda_native_c_enum_has_immediate_variant(
+                ) && mmay_native_c_enum_has_immediate_variant(
                     function, enumeration
                 )) {
                 if (next == UINT32_C(0x3fffffff)) {
@@ -496,465 +496,465 @@ bool ruda_native_c_immediate_enum_id(
     return false;
 }
 
-static bool ruda_native_c_emit_immediate_enum_registration(
-    RudaNativeCBuffer *buffer,
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_emit_immediate_enum_registration(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
     size_t count
 ) {
     size_t function_index = 0;
     uint32_t expected = 0;
-    if (!ruda_native_c_write(
+    if (!mmay_native_c_write(
             buffer,
-            "static RudaManagedStatus ruda_g_register_immediate_enums(RudaManagedHeap *ruda_g_heap) { RudaManagedStatus ruda_g_status = RUDA_MANAGED_OK; uint32_t ruda_g_id = 0; (void)ruda_g_heap; (void)ruda_g_status; (void)ruda_g_id;\n"
+            "static MarimayManagedStatus mmay_g_register_immediate_enums(MarimayManagedHeap *mmay_g_heap) { MarimayManagedStatus mmay_g_status = MMAY_MANAGED_OK; uint32_t mmay_g_id = 0; (void)mmay_g_heap; (void)mmay_g_status; (void)mmay_g_id;\n"
         )) return false;
     for (function_index = 0; function_index < count; function_index += 1) {
-        const RudaMirFunction *function = functions[function_index];
+        const MarimayMirFunction *function = functions[function_index];
         size_t index = 0;
         for (index = 0; function != NULL && index < function->enums.length;
             index += 1) {
-            const RudaMirEnum *enumeration = ruda_vector_at_const(
+            const MarimayMirEnum *enumeration = mmay_vector_at_const(
                 &function->enums, index
             );
-            RudaNativeCManagedLayout layout = {
-                function, RUDA_NATIVE_C_MANAGED_ENUM, index
+            MarimayNativeCManagedLayout layout = {
+                function, MMAY_NATIVE_C_MANAGED_ENUM, index
             };
             if (enumeration != NULL
-                && ruda_native_c_layout_is_canonical(
+                && mmay_native_c_layout_is_canonical(
                     functions, count, layout, enumeration->type
-                ) && ruda_native_c_enum_has_immediate_variant(
+                ) && mmay_native_c_enum_has_immediate_variant(
                     function, enumeration
                 )) {
                 expected += UINT32_C(1);
-                if (!ruda_native_c_write(
+                if (!mmay_native_c_write(
                         buffer,
-                        "  ruda_g_status = ruda_managed_enum_register_immediate_descriptor(ruda_g_heap, &"
-                    ) || !ruda_native_c_write_descriptor_name(
+                        "  mmay_g_status = mmay_managed_enum_register_immediate_descriptor(mmay_g_heap, &"
+                    ) || !mmay_native_c_write_descriptor_name(
                         buffer, layout.kind, enumeration->type
-                    ) || !ruda_native_c_write(
+                    ) || !mmay_native_c_write(
                         buffer,
-                        ", &ruda_g_id); if (ruda_g_status != RUDA_MANAGED_OK || ruda_g_id != UINT32_C(%u)) return ruda_g_status == RUDA_MANAGED_OK ? RUDA_MANAGED_TYPE_MISMATCH : ruda_g_status;\n",
+                        ", &mmay_g_id); if (mmay_g_status != MMAY_MANAGED_OK || mmay_g_id != UINT32_C(%u)) return mmay_g_status == MMAY_MANAGED_OK ? MMAY_MANAGED_TYPE_MISMATCH : mmay_g_status;\n",
                         (unsigned int)expected
                     )) return false;
             }
         }
     }
-    return ruda_native_c_write(buffer, "  return RUDA_MANAGED_OK; }\n\n");
+    return mmay_native_c_write(buffer, "  return MMAY_MANAGED_OK; }\n\n");
 }
 
-static bool ruda_native_c_emit_array_element_descriptor(
-    RudaNativeCBuffer *buffer,
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_emit_array_element_descriptor(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
     size_t count,
-    const RudaMirArray *array
+    const MarimayMirArray *array
 ) {
-    RudaNativeCManagedLayout layout;
+    MarimayNativeCManagedLayout layout;
     if (array == NULL) return false;
-    if (array->element_type == RUDA_TYPE_STRING) {
-        return ruda_native_c_write(
+    if (array->element_type == MMAY_TYPE_STRING) {
+        return mmay_native_c_write(
             buffer,
-            "RUDA_MANAGED_CELL_REFERENCE, RUDA_MANAGED_ARRAY_STORAGE_CELL, sizeof(RudaManagedCell), RUDA_MANAGED_OBJECT_STRING, NULL"
+            "MMAY_MANAGED_CELL_REFERENCE, MMAY_MANAGED_ARRAY_STORAGE_CELL, sizeof(MarimayManagedCell), MMAY_MANAGED_OBJECT_STRING, NULL"
         );
     }
-    if (array->element_type < RUDA_TYPE_FIRST_DYNAMIC) {
+    if (array->element_type < MMAY_TYPE_FIRST_DYNAMIC) {
         const char *storage = NULL;
         const char *stride = NULL;
-        if (array->element_type == RUDA_TYPE_BOOL
-            || array->element_type == RUDA_TYPE_I8
-            || array->element_type == RUDA_TYPE_U8) {
-            storage = "RUDA_MANAGED_ARRAY_STORAGE_RAW8";
+        if (array->element_type == MMAY_TYPE_BOOL
+            || array->element_type == MMAY_TYPE_I8
+            || array->element_type == MMAY_TYPE_U8) {
+            storage = "MMAY_MANAGED_ARRAY_STORAGE_RAW8";
             stride = "sizeof(uint8_t)";
-        } else if (array->element_type == RUDA_TYPE_I16
-            || array->element_type == RUDA_TYPE_U16) {
-            storage = "RUDA_MANAGED_ARRAY_STORAGE_RAW16";
+        } else if (array->element_type == MMAY_TYPE_I16
+            || array->element_type == MMAY_TYPE_U16) {
+            storage = "MMAY_MANAGED_ARRAY_STORAGE_RAW16";
             stride = "sizeof(uint16_t)";
-        } else if (array->element_type == RUDA_TYPE_I32
-            || array->element_type == RUDA_TYPE_U32
-            || array->element_type == RUDA_TYPE_F32) {
-            storage = "RUDA_MANAGED_ARRAY_STORAGE_RAW32";
+        } else if (array->element_type == MMAY_TYPE_I32
+            || array->element_type == MMAY_TYPE_U32
+            || array->element_type == MMAY_TYPE_F32) {
+            storage = "MMAY_MANAGED_ARRAY_STORAGE_RAW32";
             stride = "sizeof(uint32_t)";
-        } else if (array->element_type == RUDA_TYPE_I64
-            || array->element_type == RUDA_TYPE_U64
-            || array->element_type == RUDA_TYPE_F64) {
-            storage = "RUDA_MANAGED_ARRAY_STORAGE_RAW64";
+        } else if (array->element_type == MMAY_TYPE_I64
+            || array->element_type == MMAY_TYPE_U64
+            || array->element_type == MMAY_TYPE_F64) {
+            storage = "MMAY_MANAGED_ARRAY_STORAGE_RAW64";
             stride = "sizeof(uint64_t)";
         }
-        return storage != NULL && stride != NULL && ruda_native_c_write(
+        return storage != NULL && stride != NULL && mmay_native_c_write(
             buffer,
-            "RUDA_MANAGED_CELL_RAW64, %s, %s, RUDA_MANAGED_OBJECT_INVALID, NULL",
+            "MMAY_MANAGED_CELL_RAW64, %s, %s, MMAY_MANAGED_OBJECT_INVALID, NULL",
             storage, stride
         );
     }
-    if (!ruda_native_c_find_managed_layout(
+    if (!mmay_native_c_find_managed_layout(
             functions, count, array->element_type, &layout
         )) return false;
-    if (layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
-        return ruda_native_c_write(
+    if (layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
+        return mmay_native_c_write(
             buffer,
-            "RUDA_MANAGED_CELL_REFERENCE, RUDA_MANAGED_ARRAY_STORAGE_CELL, sizeof(RudaManagedCell), RUDA_MANAGED_OBJECT_ARRAY, %s",
-            ruda_native_c_array_descriptor(
+            "MMAY_MANAGED_CELL_REFERENCE, MMAY_MANAGED_ARRAY_STORAGE_CELL, sizeof(MarimayManagedCell), MMAY_MANAGED_OBJECT_ARRAY, %s",
+            mmay_native_c_array_descriptor(
                 layout.function, array->element_type
             )
         );
     }
-    if (!ruda_native_c_write(
+    if (!mmay_native_c_write(
         buffer,
-        "RUDA_MANAGED_CELL_REFERENCE, RUDA_MANAGED_ARRAY_STORAGE_CELL, sizeof(RudaManagedCell), %s, &",
-            layout.kind == RUDA_NATIVE_C_MANAGED_RECORD
-                ? "RUDA_MANAGED_OBJECT_RECORD"
-                : (layout.kind == RUDA_NATIVE_C_MANAGED_ENUM
-                    ? "RUDA_MANAGED_OBJECT_ENUM"
-                    : "RUDA_MANAGED_OBJECT_INTERFACE")
-        ) || !ruda_native_c_write_descriptor_name(
+        "MMAY_MANAGED_CELL_REFERENCE, MMAY_MANAGED_ARRAY_STORAGE_CELL, sizeof(MarimayManagedCell), %s, &",
+            layout.kind == MMAY_NATIVE_C_MANAGED_RECORD
+                ? "MMAY_MANAGED_OBJECT_RECORD"
+                : (layout.kind == MMAY_NATIVE_C_MANAGED_ENUM
+                    ? "MMAY_MANAGED_OBJECT_ENUM"
+                    : "MMAY_MANAGED_OBJECT_INTERFACE")
+        ) || !mmay_native_c_write_descriptor_name(
             buffer, layout.kind, array->element_type
         )) return false;
     return true;
 }
 
-static bool ruda_native_c_emit_nominal_forward_declarations(
-    RudaNativeCBuffer *buffer,
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_emit_nominal_forward_declarations(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
     size_t count
 ) {
-    RudaNativeCManagedKind kind = RUDA_NATIVE_C_MANAGED_RECORD;
+    MarimayNativeCManagedKind kind = MMAY_NATIVE_C_MANAGED_RECORD;
     size_t function_index = 0;
-    for (kind = RUDA_NATIVE_C_MANAGED_RECORD;
-        kind <= RUDA_NATIVE_C_MANAGED_INTERFACE; kind += 1) {
+    for (kind = MMAY_NATIVE_C_MANAGED_RECORD;
+        kind <= MMAY_NATIVE_C_MANAGED_INTERFACE; kind += 1) {
         for (function_index = 0; function_index < count; function_index += 1) {
-            const RudaMirFunction *function = functions[function_index];
-            const RudaVector *layouts = kind == RUDA_NATIVE_C_MANAGED_RECORD
-                ? &function->records : (kind == RUDA_NATIVE_C_MANAGED_ENUM
+            const MarimayMirFunction *function = functions[function_index];
+            const MarimayVector *layouts = kind == MMAY_NATIVE_C_MANAGED_RECORD
+                ? &function->records : (kind == MMAY_NATIVE_C_MANAGED_ENUM
                     ? &function->enums : &function->interfaces);
             size_t index = 0;
             for (index = 0; index < layouts->length; index += 1) {
-                RudaTypeId type = kind == RUDA_NATIVE_C_MANAGED_RECORD
-                    ? ((const RudaMirRecord *)ruda_vector_at_const(
+                MarimayTypeId type = kind == MMAY_NATIVE_C_MANAGED_RECORD
+                    ? ((const MarimayMirRecord *)mmay_vector_at_const(
                         layouts, index))->type
-                    : (kind == RUDA_NATIVE_C_MANAGED_ENUM
-                        ? ((const RudaMirEnum *)ruda_vector_at_const(
+                    : (kind == MMAY_NATIVE_C_MANAGED_ENUM
+                        ? ((const MarimayMirEnum *)mmay_vector_at_const(
                             layouts, index))->type
-                        : ((const RudaMirInterface *)ruda_vector_at_const(
+                        : ((const MarimayMirInterface *)mmay_vector_at_const(
                             layouts, index))->type);
-                RudaNativeCManagedLayout layout = {function, kind, index};
-                const char *name = kind == RUDA_NATIVE_C_MANAGED_RECORD
-                    ? "Record" : (kind == RUDA_NATIVE_C_MANAGED_ENUM
+                MarimayNativeCManagedLayout layout = {function, kind, index};
+                const char *name = kind == MMAY_NATIVE_C_MANAGED_RECORD
+                    ? "Record" : (kind == MMAY_NATIVE_C_MANAGED_ENUM
                         ? "Enum" : "Interface");
-                if (ruda_native_c_layout_is_canonical(
+                if (mmay_native_c_layout_is_canonical(
                         functions, count, layout, type
-                    ) && (!ruda_native_c_write(
-                        buffer, "static const RudaManaged%sDescriptor ", name
-                    ) || !ruda_native_c_write_descriptor_name(
+                    ) && (!mmay_native_c_write(
+                        buffer, "static const MarimayManaged%sDescriptor ", name
+                    ) || !mmay_native_c_write_descriptor_name(
                         buffer, kind, type
-                    ) || !ruda_native_c_write(buffer, ";\n"))) return false;
+                    ) || !mmay_native_c_write(buffer, ";\n"))) return false;
             }
         }
     }
     return true;
 }
 
-static bool ruda_native_c_emit_record_descriptor(
-    RudaNativeCBuffer *buffer,
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_emit_record_descriptor(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
     size_t count,
-    RudaNativeCManagedLayout layout
+    MarimayNativeCManagedLayout layout
 ) {
-    const RudaMirRecord *record = ruda_vector_at_const(
+    const MarimayMirRecord *record = mmay_vector_at_const(
         &layout.function->records, layout.index
     );
     size_t index = 0;
     if (record == NULL) return false;
     if (record->field_count != 0) {
-        if (!ruda_native_c_write(buffer, "static const RudaManagedFieldDescriptor ")
-            || !ruda_native_c_write_descriptor_name(
+        if (!mmay_native_c_write(buffer, "static const MarimayManagedFieldDescriptor ")
+            || !mmay_native_c_write_descriptor_name(
                 buffer, layout.kind, record->type
-            ) || !ruda_native_c_write(buffer, "_fields[] = {")) return false;
+            ) || !mmay_native_c_write(buffer, "_fields[] = {")) return false;
         for (index = 0; index < record->field_count; index += 1) {
-            const RudaMirRecordField *field = ruda_vector_at_const(
+            const MarimayMirRecordField *field = mmay_vector_at_const(
                 &layout.function->record_fields, record->field_start + index
             );
-            if (field == NULL || (index != 0 && !ruda_native_c_write(buffer, ","))
-                || !ruda_native_c_emit_field_descriptor(
+            if (field == NULL || (index != 0 && !mmay_native_c_write(buffer, ","))
+                || !mmay_native_c_emit_field_descriptor(
                     buffer, functions, count, field->type, field->is_mutable
                 )) return false;
         }
-        if (!ruda_native_c_write(buffer, "};\n")) return false;
+        if (!mmay_native_c_write(buffer, "};\n")) return false;
     }
-    if (!ruda_native_c_write(buffer, "static const RudaManagedRecordDescriptor ")
-        || !ruda_native_c_write_descriptor_name(buffer, layout.kind, record->type)
-        || !ruda_native_c_write(buffer, " = {%zu, ", record->field_count)) {
+    if (!mmay_native_c_write(buffer, "static const MarimayManagedRecordDescriptor ")
+        || !mmay_native_c_write_descriptor_name(buffer, layout.kind, record->type)
+        || !mmay_native_c_write(buffer, " = {%zu, ", record->field_count)) {
         return false;
     }
-    if (record->field_count == 0) return ruda_native_c_write(buffer, "NULL};\n");
-    return ruda_native_c_write_descriptor_name(buffer, layout.kind, record->type)
-        && ruda_native_c_write(buffer, "_fields};\n");
+    if (record->field_count == 0) return mmay_native_c_write(buffer, "NULL};\n");
+    return mmay_native_c_write_descriptor_name(buffer, layout.kind, record->type)
+        && mmay_native_c_write(buffer, "_fields};\n");
 }
 
-static bool ruda_native_c_emit_enum_descriptor(
-    RudaNativeCBuffer *buffer,
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_emit_enum_descriptor(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
     size_t count,
-    RudaNativeCManagedLayout layout
+    MarimayNativeCManagedLayout layout
 ) {
-    const RudaMirEnum *enumeration = ruda_vector_at_const(
+    const MarimayMirEnum *enumeration = mmay_vector_at_const(
         &layout.function->enums, layout.index
     );
     size_t index = 0;
     if (enumeration == NULL) return false;
     if (enumeration->payload_count != 0) {
-        if (!ruda_native_c_write(buffer, "static const RudaManagedFieldDescriptor ")
-            || !ruda_native_c_write_descriptor_name(
+        if (!mmay_native_c_write(buffer, "static const MarimayManagedFieldDescriptor ")
+            || !mmay_native_c_write_descriptor_name(
                 buffer, layout.kind, enumeration->type
-            ) || !ruda_native_c_write(buffer, "_payloads[] = {")) return false;
+            ) || !mmay_native_c_write(buffer, "_payloads[] = {")) return false;
         for (index = 0; index < enumeration->payload_count; index += 1) {
-            const RudaMirEnumPayload *payload = ruda_vector_at_const(
+            const MarimayMirEnumPayload *payload = mmay_vector_at_const(
                 &layout.function->enum_payloads,
                 enumeration->payload_start + index
             );
-            if (payload == NULL || (index != 0 && !ruda_native_c_write(buffer, ","))
-                || !ruda_native_c_emit_field_descriptor(
+            if (payload == NULL || (index != 0 && !mmay_native_c_write(buffer, ","))
+                || !mmay_native_c_emit_field_descriptor(
                     buffer, functions, count, payload->type, false
                 )) return false;
         }
-        if (!ruda_native_c_write(buffer, "};\n")) return false;
+        if (!mmay_native_c_write(buffer, "};\n")) return false;
     }
     if (enumeration->variant_count != 0
-        && (!ruda_native_c_write(buffer,
-            "static const RudaManagedEnumVariantDescriptor ")
-            || !ruda_native_c_write_descriptor_name(
+        && (!mmay_native_c_write(buffer,
+            "static const MarimayManagedEnumVariantDescriptor ")
+            || !mmay_native_c_write_descriptor_name(
                 buffer, layout.kind, enumeration->type
-            ) || !ruda_native_c_write(buffer, "_variants[] = {"))) return false;
+            ) || !mmay_native_c_write(buffer, "_variants[] = {"))) return false;
     for (index = 0; index < enumeration->variant_count; index += 1) {
-        const RudaMirEnumVariant *variant = ruda_vector_at_const(
+        const MarimayMirEnumVariant *variant = mmay_vector_at_const(
             &layout.function->enum_variants,
             enumeration->variant_start + index
         );
-        if (variant == NULL || (index != 0 && !ruda_native_c_write(buffer, ","))) {
+        if (variant == NULL || (index != 0 && !mmay_native_c_write(buffer, ","))) {
             return false;
         }
         if (variant->payload_count == 0) {
-            if (!ruda_native_c_write(buffer, "{0,NULL}")) return false;
-        } else if (!ruda_native_c_write(buffer, "{%zu,", variant->payload_count)
-            || !ruda_native_c_write_descriptor_name(
+            if (!mmay_native_c_write(buffer, "{0,NULL}")) return false;
+        } else if (!mmay_native_c_write(buffer, "{%zu,", variant->payload_count)
+            || !mmay_native_c_write_descriptor_name(
                 buffer, layout.kind, enumeration->type
-            ) || !ruda_native_c_write(
+            ) || !mmay_native_c_write(
                 buffer, "_payloads + %zu}",
                 variant->payload_start - enumeration->payload_start
             )) return false;
     }
     if (enumeration->variant_count != 0
-        && !ruda_native_c_write(buffer, "};\n")) return false;
-    if (!ruda_native_c_write(buffer, "static const RudaManagedEnumDescriptor ")
-        || !ruda_native_c_write_descriptor_name(
+        && !mmay_native_c_write(buffer, "};\n")) return false;
+    if (!mmay_native_c_write(buffer, "static const MarimayManagedEnumDescriptor ")
+        || !mmay_native_c_write_descriptor_name(
             buffer, layout.kind, enumeration->type
-        ) || !ruda_native_c_write(
+        ) || !mmay_native_c_write(
             buffer, " = {%zu, ", enumeration->variant_count
         )) return false;
     if (enumeration->variant_count == 0) {
-        return ruda_native_c_write(buffer, "NULL};\n");
+        return mmay_native_c_write(buffer, "NULL};\n");
     }
-    return ruda_native_c_write_descriptor_name(
+    return mmay_native_c_write_descriptor_name(
             buffer, layout.kind, enumeration->type
-        ) && ruda_native_c_write(buffer, "_variants};\n");
+        ) && mmay_native_c_write(buffer, "_variants};\n");
 }
 
-static bool ruda_native_c_emit_interface_tables(
-    RudaNativeCBuffer *buffer,
-    const RudaMirFunction *const *functions,
+static bool mmay_native_c_emit_interface_tables(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
     size_t count
 ) {
     size_t function_index = 0;
     for (function_index = 0; function_index < count; function_index += 1) {
-        const RudaMirFunction *function = functions[function_index];
+        const MarimayMirFunction *function = functions[function_index];
         size_t construction_index = 0;
         for (construction_index = 0;
             construction_index < function->interface_constructions.length;
             construction_index += 1) {
-            const RudaMirInterfaceConstruction *construction =
-                ruda_vector_at_const(
+            const MarimayMirInterfaceConstruction *construction =
+                mmay_vector_at_const(
                     &function->interface_constructions, construction_index
                 );
             size_t method = 0;
             if (construction == NULL
-                || !ruda_native_c_write(buffer, "static const uint32_t ")
-                || !ruda_native_c_write_interface_table_name(
+                || !mmay_native_c_write(buffer, "static const uint32_t ")
+                || !mmay_native_c_write_interface_table_name(
                     buffer, function->symbol, construction_index
-                ) || !ruda_native_c_write(buffer, "[%zu] = {",
+                ) || !mmay_native_c_write(buffer, "[%zu] = {",
                     construction->method_count == 0
                         ? (size_t)1 : construction->method_count)) return false;
             for (method = 0; method < construction->method_count; method += 1) {
-                const RudaSymbolId *symbol = ruda_vector_at_const(
+                const MarimaySymbolId *symbol = mmay_vector_at_const(
                     &function->interface_methods,
                     construction->method_start + method
                 );
                 size_t target = 0;
-                if (symbol == NULL || !ruda_native_c_function_index(
+                if (symbol == NULL || !mmay_native_c_function_index(
                         functions, count, *symbol, &target
-                    ) || (method != 0 && !ruda_native_c_write(buffer, ","))
-                    || !ruda_native_c_write(buffer, "%zu", target)) return false;
+                    ) || (method != 0 && !mmay_native_c_write(buffer, ","))
+                    || !mmay_native_c_write(buffer, "%zu", target)) return false;
             }
             if (construction->method_count == 0
-                && !ruda_native_c_write(buffer, "0")) return false;
-            if (!ruda_native_c_write(buffer, "};\n")) return false;
+                && !mmay_native_c_write(buffer, "0")) return false;
+            if (!mmay_native_c_write(buffer, "};\n")) return false;
         }
     }
     return true;
 }
 
-bool ruda_native_c_emit_managed_descriptors(
-    RudaNativeCBuffer *buffer,
-    const RudaMirFunction *const *functions,
+bool mmay_native_c_emit_managed_descriptors(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
     size_t count
 ) {
     size_t function_index = 0;
     for (function_index = 0; function_index < count; function_index += 1) {
-        const RudaMirFunction *function = functions[function_index];
+        const MarimayMirFunction *function = functions[function_index];
         size_t index = 0;
         for (index = 0; index < function->arrays.length; index += 1) {
-            const RudaMirArray *array = ruda_vector_at_const(
+            const MarimayMirArray *array = mmay_vector_at_const(
                 &function->arrays, index
             );
-            RudaNativeCManagedLayout layout = {
-                function, RUDA_NATIVE_C_MANAGED_ARRAY, index
+            MarimayNativeCManagedLayout layout = {
+                function, MMAY_NATIVE_C_MANAGED_ARRAY, index
             };
-            if (array != NULL && ruda_native_c_layout_is_canonical(
+            if (array != NULL && mmay_native_c_layout_is_canonical(
                     functions, count, layout, array->type
-                ) && ruda_native_c_array_kind(function, array->type)
-                    == RUDA_NATIVE_C_ARRAY_GENERIC
-                && (!ruda_native_c_write(
+                ) && mmay_native_c_array_kind(function, array->type)
+                    == MMAY_NATIVE_C_ARRAY_GENERIC
+                && (!mmay_native_c_write(
                     buffer,
-                    "static const RudaManagedArrayDescriptor ruda_g_ad_%u;\n",
+                    "static const MarimayManagedArrayDescriptor mmay_g_ad_%u;\n",
                     (unsigned int)array->type
                 ))) return false;
         }
     }
-    if (!ruda_native_c_emit_nominal_forward_declarations(
+    if (!mmay_native_c_emit_nominal_forward_declarations(
             buffer, functions, count
         )) return false;
     for (function_index = 0; function_index < count; function_index += 1) {
-        const RudaMirFunction *function = functions[function_index];
+        const MarimayMirFunction *function = functions[function_index];
         size_t index = 0;
         for (index = 0; index < function->arrays.length; index += 1) {
-            const RudaMirArray *array = ruda_vector_at_const(
+            const MarimayMirArray *array = mmay_vector_at_const(
                 &function->arrays, index
             );
-            RudaNativeCManagedLayout layout = {
-                function, RUDA_NATIVE_C_MANAGED_ARRAY, index
+            MarimayNativeCManagedLayout layout = {
+                function, MMAY_NATIVE_C_MANAGED_ARRAY, index
             };
-            if (array != NULL && ruda_native_c_layout_is_canonical(
+            if (array != NULL && mmay_native_c_layout_is_canonical(
                     functions, count, layout, array->type
-                ) && ruda_native_c_array_kind(function, array->type)
-                    == RUDA_NATIVE_C_ARRAY_GENERIC) {
-                if (!ruda_native_c_write(
+                ) && mmay_native_c_array_kind(function, array->type)
+                    == MMAY_NATIVE_C_ARRAY_GENERIC) {
+                if (!mmay_native_c_write(
                         buffer,
-                        "static const RudaManagedArrayDescriptor ruda_g_ad_%u = {",
+                        "static const MarimayManagedArrayDescriptor mmay_g_ad_%u = {",
                         (unsigned int)array->type
-                    ) || !ruda_native_c_emit_array_element_descriptor(
+                    ) || !mmay_native_c_emit_array_element_descriptor(
                         buffer, functions, count, array
                     )) return false;
-                if (!ruda_native_c_write(buffer, "};\n")) return false;
+                if (!mmay_native_c_write(buffer, "};\n")) return false;
             }
         }
     }
     for (function_index = 0; function_index < count; function_index += 1) {
-        const RudaMirFunction *function = functions[function_index];
+        const MarimayMirFunction *function = functions[function_index];
         size_t index = 0;
         for (index = 0; index < function->records.length; index += 1) {
-            const RudaMirRecord *record = ruda_vector_at_const(
+            const MarimayMirRecord *record = mmay_vector_at_const(
                 &function->records, index
             );
-            RudaNativeCManagedLayout layout = {
-                function, RUDA_NATIVE_C_MANAGED_RECORD, index
+            MarimayNativeCManagedLayout layout = {
+                function, MMAY_NATIVE_C_MANAGED_RECORD, index
             };
-            if (record != NULL && ruda_native_c_layout_is_canonical(
+            if (record != NULL && mmay_native_c_layout_is_canonical(
                     functions, count, layout, record->type
-                ) && !ruda_native_c_emit_record_descriptor(
+                ) && !mmay_native_c_emit_record_descriptor(
                     buffer, functions, count, layout
                 )) return false;
         }
         for (index = 0; index < function->enums.length; index += 1) {
-            const RudaMirEnum *enumeration = ruda_vector_at_const(
+            const MarimayMirEnum *enumeration = mmay_vector_at_const(
                 &function->enums, index
             );
-            RudaNativeCManagedLayout layout = {
-                function, RUDA_NATIVE_C_MANAGED_ENUM, index
+            MarimayNativeCManagedLayout layout = {
+                function, MMAY_NATIVE_C_MANAGED_ENUM, index
             };
-            if (enumeration != NULL && ruda_native_c_layout_is_canonical(
+            if (enumeration != NULL && mmay_native_c_layout_is_canonical(
                     functions, count, layout, enumeration->type
-                ) && !ruda_native_c_emit_enum_descriptor(
+                ) && !mmay_native_c_emit_enum_descriptor(
                     buffer, functions, count, layout
                 )) return false;
         }
         for (index = 0; index < function->interfaces.length; index += 1) {
-            const RudaMirInterface *interface = ruda_vector_at_const(
+            const MarimayMirInterface *interface = mmay_vector_at_const(
                 &function->interfaces, index
             );
-            RudaNativeCManagedLayout layout = {
-                function, RUDA_NATIVE_C_MANAGED_INTERFACE, index
+            MarimayNativeCManagedLayout layout = {
+                function, MMAY_NATIVE_C_MANAGED_INTERFACE, index
             };
-            if (interface != NULL && ruda_native_c_layout_is_canonical(
+            if (interface != NULL && mmay_native_c_layout_is_canonical(
                     functions, count, layout, interface->type
-                ) && (!ruda_native_c_write(
-                    buffer, "static const RudaManagedInterfaceDescriptor "
-                ) || !ruda_native_c_write_descriptor_name(
+                ) && (!mmay_native_c_write(
+                    buffer, "static const MarimayManagedInterfaceDescriptor "
+                ) || !mmay_native_c_write_descriptor_name(
                     buffer, layout.kind, interface->type
-                ) || !ruda_native_c_write(
+                ) || !mmay_native_c_write(
                     buffer, " = {%zu};\n", interface->method_count
                 ))) return false;
         }
     }
-    if (!ruda_native_c_emit_interface_tables(buffer, functions, count)
-        || !ruda_native_c_emit_immediate_enum_registration(
+    if (!mmay_native_c_emit_interface_tables(buffer, functions, count)
+        || !mmay_native_c_emit_immediate_enum_registration(
             buffer, functions, count
         )
-        || !ruda_native_c_write(
-            buffer, "static void ruda_g_keep_managed(void) {\n"
+        || !mmay_native_c_write(
+            buffer, "static void mmay_g_keep_managed(void) {\n"
         )) return false;
     for (function_index = 0; function_index < count; function_index += 1) {
-        const RudaMirFunction *function = functions[function_index];
+        const MarimayMirFunction *function = functions[function_index];
         size_t index = 0;
         for (index = 0; index < function->records.length; index += 1) {
-            const RudaMirRecord *value = ruda_vector_at_const(&function->records, index);
-            RudaNativeCManagedLayout layout = {function, RUDA_NATIVE_C_MANAGED_RECORD, index};
-            if (value != NULL && ruda_native_c_layout_is_canonical(functions, count, layout, value->type)
-                && (!ruda_native_c_write(buffer, "  (void)&")
-                    || !ruda_native_c_write_descriptor_name(buffer, layout.kind, value->type)
-                    || !ruda_native_c_write(buffer, ";\n"))) return false;
+            const MarimayMirRecord *value = mmay_vector_at_const(&function->records, index);
+            MarimayNativeCManagedLayout layout = {function, MMAY_NATIVE_C_MANAGED_RECORD, index};
+            if (value != NULL && mmay_native_c_layout_is_canonical(functions, count, layout, value->type)
+                && (!mmay_native_c_write(buffer, "  (void)&")
+                    || !mmay_native_c_write_descriptor_name(buffer, layout.kind, value->type)
+                    || !mmay_native_c_write(buffer, ";\n"))) return false;
         }
         for (index = 0; index < function->enums.length; index += 1) {
-            const RudaMirEnum *value = ruda_vector_at_const(&function->enums, index);
-            RudaNativeCManagedLayout layout = {function, RUDA_NATIVE_C_MANAGED_ENUM, index};
-            if (value != NULL && ruda_native_c_layout_is_canonical(functions, count, layout, value->type)
-                && (!ruda_native_c_write(buffer, "  (void)&")
-                    || !ruda_native_c_write_descriptor_name(buffer, layout.kind, value->type)
-                    || !ruda_native_c_write(buffer, ";\n"))) return false;
+            const MarimayMirEnum *value = mmay_vector_at_const(&function->enums, index);
+            MarimayNativeCManagedLayout layout = {function, MMAY_NATIVE_C_MANAGED_ENUM, index};
+            if (value != NULL && mmay_native_c_layout_is_canonical(functions, count, layout, value->type)
+                && (!mmay_native_c_write(buffer, "  (void)&")
+                    || !mmay_native_c_write_descriptor_name(buffer, layout.kind, value->type)
+                    || !mmay_native_c_write(buffer, ";\n"))) return false;
         }
         for (index = 0; index < function->interfaces.length; index += 1) {
-            const RudaMirInterface *value = ruda_vector_at_const(&function->interfaces, index);
-            RudaNativeCManagedLayout layout = {function, RUDA_NATIVE_C_MANAGED_INTERFACE, index};
-            if (value != NULL && ruda_native_c_layout_is_canonical(functions, count, layout, value->type)
-                && (!ruda_native_c_write(buffer, "  (void)&")
-                    || !ruda_native_c_write_descriptor_name(buffer, layout.kind, value->type)
-                    || !ruda_native_c_write(buffer, ";\n"))) return false;
+            const MarimayMirInterface *value = mmay_vector_at_const(&function->interfaces, index);
+            MarimayNativeCManagedLayout layout = {function, MMAY_NATIVE_C_MANAGED_INTERFACE, index};
+            if (value != NULL && mmay_native_c_layout_is_canonical(functions, count, layout, value->type)
+                && (!mmay_native_c_write(buffer, "  (void)&")
+                    || !mmay_native_c_write_descriptor_name(buffer, layout.kind, value->type)
+                    || !mmay_native_c_write(buffer, ";\n"))) return false;
         }
         for (index = 0; index < function->interface_constructions.length; index += 1) {
-            if (!ruda_native_c_write(buffer, "  (void)")
-                || !ruda_native_c_write_interface_table_name(
+            if (!mmay_native_c_write(buffer, "  (void)")
+                || !mmay_native_c_write_interface_table_name(
                     buffer, function->symbol, index
-                ) || !ruda_native_c_write(buffer, ";\n")) return false;
+                ) || !mmay_native_c_write(buffer, ";\n")) return false;
         }
     }
-    return ruda_native_c_write(buffer, "}\n\n");
+    return mmay_native_c_write(buffer, "}\n\n");
 }
 
-static bool ruda_native_c_record_array_field_used(
-    const RudaMirFunction *function,
-    RudaMirRegister parameter,
+static bool mmay_native_c_record_array_field_used(
+    const MarimayMirFunction *function,
+    MarimayMirRegister parameter,
     size_t field
 ) {
     size_t block_index = 0;
     if (function == NULL) return false;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
@@ -962,14 +962,14 @@ static bool ruda_native_c_record_array_field_used(
         for (instruction_index = 0;
             instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *instruction = ruda_vector_at_const(
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
             if (instruction != NULL
-                && instruction->kind == RUDA_MIR_RECORD_GET
+                && instruction->kind == MMAY_MIR_RECORD_GET
                 && instruction->first == parameter
                 && instruction->field == field
-                && ruda_native_c_register_array(
+                && mmay_native_c_register_array(
                     function, instruction->target
                 ) != NULL) {
                 return true;
@@ -979,84 +979,84 @@ static bool ruda_native_c_record_array_field_used(
     return false;
 }
 
-bool ruda_native_c_emit_managed_parameter_check(
-    RudaNativeCBuffer *buffer,
-    const RudaMirFunction *function,
-    const RudaMirFunction *const *functions,
+bool mmay_native_c_emit_managed_parameter_check(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
     size_t count,
     size_t parameter
 ) {
-    const RudaTypeId *type = ruda_vector_at_const(
+    const MarimayTypeId *type = mmay_vector_at_const(
         &function->register_types, parameter
     );
-    RudaNativeCManagedLayout layout;
+    MarimayNativeCManagedLayout layout;
     const char *descriptor_type = NULL;
     const char *describe = NULL;
-    if (type == NULL || *type < RUDA_TYPE_FIRST_DYNAMIC) return type != NULL;
-    if (!ruda_native_c_find_managed_layout(functions, count, *type, &layout)) {
+    if (type == NULL || *type < MMAY_TYPE_FIRST_DYNAMIC) return type != NULL;
+    if (!mmay_native_c_find_managed_layout(functions, count, *type, &layout)) {
         return false;
     }
-    if (layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
-        return ruda_native_c_write(
+    if (layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
+        return mmay_native_c_write(
             buffer,
-            "  ruda_g_m = ruda_managed_array_generated_bind(&ruda_g_x->heap, ruda_g_v_%zu, %s, &ruda_g_av_%zu); if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n",
+            "  mmay_g_m = mmay_managed_array_generated_bind(&mmay_g_x->heap, mmay_g_v_%zu, %s, &mmay_g_av_%zu); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; }\n",
             parameter,
-            ruda_native_c_array_descriptor(layout.function, *type),
+            mmay_native_c_array_descriptor(layout.function, *type),
             parameter
         );
-    } else if (layout.kind == RUDA_NATIVE_C_MANAGED_RECORD) {
-        const RudaMirRecord *record = ruda_vector_at_const(
+    } else if (layout.kind == MMAY_NATIVE_C_MANAGED_RECORD) {
+        const MarimayMirRecord *record = mmay_vector_at_const(
             &layout.function->records, layout.index
         );
         size_t field_index = 0;
-        if (!ruda_native_c_write(
+        if (!mmay_native_c_write(
                 buffer,
-                "  if (ruda_g_ro_%zu != NULL) { ruda_g_rv_%zu.reference = ruda_g_v_%zu; ruda_g_rv_%zu.object = ruda_g_ro_%zu; ruda_g_m = ruda_g_ro_%zu->descriptor == &",
+                "  if (mmay_g_ro_%zu != NULL) { mmay_g_rv_%zu.reference = mmay_g_v_%zu; mmay_g_rv_%zu.object = mmay_g_ro_%zu; mmay_g_m = mmay_g_ro_%zu->descriptor == &",
                 parameter, parameter, parameter, parameter, parameter,
                 parameter
-            ) || !ruda_native_c_write_descriptor_name(
+            ) || !mmay_native_c_write_descriptor_name(
                 buffer, layout.kind, *type
             )) {
             return false;
         }
-        if (!ruda_native_c_write(
+        if (!mmay_native_c_write(
                 buffer,
-                " ? RUDA_MANAGED_OK : RUDA_MANAGED_TYPE_MISMATCH; } else { ruda_g_m = ruda_managed_record_generated_bind(&ruda_g_x->heap, ruda_g_v_%zu, &",
+                " ? MMAY_MANAGED_OK : MMAY_MANAGED_TYPE_MISMATCH; } else { mmay_g_m = mmay_managed_record_generated_bind(&mmay_g_x->heap, mmay_g_v_%zu, &",
                 parameter
-            ) || !ruda_native_c_write_descriptor_name(
+            ) || !mmay_native_c_write_descriptor_name(
                 buffer, layout.kind, *type
-            ) || !ruda_native_c_write(
+            ) || !mmay_native_c_write(
                 buffer,
-                ", &ruda_g_rv_%zu); } if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n",
+                ", &mmay_g_rv_%zu); } if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; }\n",
                 parameter
             ) || record == NULL) {
             return false;
         }
         for (field_index = 0; field_index < record->field_count;
             field_index += 1) {
-            const RudaMirRecordField *field = ruda_vector_at_const(
+            const MarimayMirRecordField *field = mmay_vector_at_const(
                 &layout.function->record_fields,
                 record->field_start + field_index
             );
-            RudaNativeCManagedLayout field_layout;
+            MarimayNativeCManagedLayout field_layout;
             if (field != NULL
-                && ruda_native_c_record_array_field_used(
-                    function, (RudaMirRegister)parameter, field_index
-                ) && ruda_native_c_find_managed_layout(
+                && mmay_native_c_record_array_field_used(
+                    function, (MarimayMirRegister)parameter, field_index
+                ) && mmay_native_c_find_managed_layout(
                     functions, count, field->type, &field_layout
-                ) && field_layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY
-                && !ruda_native_c_write(
+                ) && field_layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY
+                && !mmay_native_c_write(
                     buffer,
-                    "  if (ruda_g_ro_%zu_f_%zu != NULL) { ruda_g_rv_%zu_f_%zu.object = ruda_g_ro_%zu_f_%zu; ruda_g_m = ruda_g_ro_%zu_f_%zu->descriptor == %s ? RUDA_MANAGED_OK : RUDA_MANAGED_TYPE_MISMATCH; } else { ruda_g_m = ruda_managed_array_generated_bind(&ruda_g_x->heap, ruda_g_rv_%zu.object->fields[%zu].reference, %s, &ruda_g_rv_%zu_f_%zu); } if (ruda_g_m != RUDA_MANAGED_OK) { ruda_g_s = ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; }\n",
+                    "  if (mmay_g_ro_%zu_f_%zu != NULL) { mmay_g_rv_%zu_f_%zu.object = mmay_g_ro_%zu_f_%zu; mmay_g_m = mmay_g_ro_%zu_f_%zu->descriptor == %s ? MMAY_MANAGED_OK : MMAY_MANAGED_TYPE_MISMATCH; } else { mmay_g_m = mmay_managed_array_generated_bind(&mmay_g_x->heap, mmay_g_rv_%zu.object->fields[%zu].reference, %s, &mmay_g_rv_%zu_f_%zu); } if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; }\n",
                     parameter, field_index,
                     parameter, field_index,
                     parameter, field_index,
                     parameter, field_index,
-                    ruda_native_c_array_descriptor(
+                    mmay_native_c_array_descriptor(
                         field_layout.function, field->type
                     ),
                     parameter, field_index,
-                    ruda_native_c_array_descriptor(
+                    mmay_native_c_array_descriptor(
                         field_layout.function, field->type
                     ),
                     parameter, field_index
@@ -1065,33 +1065,33 @@ bool ruda_native_c_emit_managed_parameter_check(
             }
         }
         return true;
-    } else if (layout.kind == RUDA_NATIVE_C_MANAGED_ENUM) {
-        if (!ruda_native_c_write(buffer,
-            "  { const RudaManagedEnumDescriptor *ruda_g_actual = NULL; size_t ruda_g_variant = 0; ruda_g_m = ruda_managed_enum_describe(&ruda_g_x->heap, ruda_g_v_%zu, &ruda_g_actual, &ruda_g_variant); if (ruda_g_m != RUDA_MANAGED_OK || ruda_g_actual != &",
-            parameter) || !ruda_native_c_write_descriptor_name(
+    } else if (layout.kind == MMAY_NATIVE_C_MANAGED_ENUM) {
+        if (!mmay_native_c_write(buffer,
+            "  { const MarimayManagedEnumDescriptor *mmay_g_actual = NULL; size_t mmay_g_variant = 0; mmay_g_m = mmay_managed_enum_describe(&mmay_g_x->heap, mmay_g_v_%zu, &mmay_g_actual, &mmay_g_variant); if (mmay_g_m != MMAY_MANAGED_OK || mmay_g_actual != &",
+            parameter) || !mmay_native_c_write_descriptor_name(
                 buffer, layout.kind, *type
             )) return false;
-        return ruda_native_c_write(buffer,
-            ") { ruda_g_s = ruda_g_m == RUDA_MANAGED_OK ? 7 : ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } }\n");
+        return mmay_native_c_write(buffer,
+            ") { mmay_g_s = mmay_g_m == MMAY_MANAGED_OK ? 7 : mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n");
     } else {
-        if (!ruda_native_c_write(buffer,
-            "  { const RudaManagedInterfaceDescriptor *ruda_g_actual = NULL; RudaManagedReference ruda_g_payload; const void *ruda_g_methods = NULL; ruda_g_m = ruda_managed_interface_describe(&ruda_g_x->heap, ruda_g_v_%zu, &ruda_g_actual, &ruda_g_payload, &ruda_g_methods); if (ruda_g_m != RUDA_MANAGED_OK || ruda_g_actual != &",
-            parameter) || !ruda_native_c_write_descriptor_name(
+        if (!mmay_native_c_write(buffer,
+            "  { const MarimayManagedInterfaceDescriptor *mmay_g_actual = NULL; MarimayManagedReference mmay_g_payload; const void *mmay_g_methods = NULL; mmay_g_m = mmay_managed_interface_describe(&mmay_g_x->heap, mmay_g_v_%zu, &mmay_g_actual, &mmay_g_payload, &mmay_g_methods); if (mmay_g_m != MMAY_MANAGED_OK || mmay_g_actual != &",
+            parameter) || !mmay_native_c_write_descriptor_name(
                 buffer, layout.kind, *type
             )) return false;
-        return ruda_native_c_write(buffer,
-            ") { ruda_g_s = ruda_g_m == RUDA_MANAGED_OK ? 7 : ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } }\n");
+        return mmay_native_c_write(buffer,
+            ") { mmay_g_s = mmay_g_m == MMAY_MANAGED_OK ? 7 : mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n");
     }
-    if (!ruda_native_c_write(buffer,
-        "  { const %s *ruda_g_actual = NULL; ruda_g_m = %s(&ruda_g_x->heap, ruda_g_v_%zu, &ruda_g_actual); if (ruda_g_m != RUDA_MANAGED_OK || ruda_g_actual != ",
+    if (!mmay_native_c_write(buffer,
+        "  { const %s *mmay_g_actual = NULL; mmay_g_m = %s(&mmay_g_x->heap, mmay_g_v_%zu, &mmay_g_actual); if (mmay_g_m != MMAY_MANAGED_OK || mmay_g_actual != ",
         descriptor_type, describe, parameter)) return false;
-    if (layout.kind == RUDA_NATIVE_C_MANAGED_ARRAY) {
-        if (!ruda_native_c_write(buffer, "%s",
-            ruda_native_c_array_descriptor(layout.function, *type))) return false;
-    } else if (!ruda_native_c_write(buffer, "&")
-        || !ruda_native_c_write_descriptor_name(buffer, layout.kind, *type)) {
+    if (layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
+        if (!mmay_native_c_write(buffer, "%s",
+            mmay_native_c_array_descriptor(layout.function, *type))) return false;
+    } else if (!mmay_native_c_write(buffer, "&")
+        || !mmay_native_c_write_descriptor_name(buffer, layout.kind, *type)) {
         return false;
     }
-    return ruda_native_c_write(buffer,
-        ") { ruda_g_s = ruda_g_m == RUDA_MANAGED_OK ? 7 : ruda_g_managed_status(ruda_g_m); goto ruda_g_cleanup; } }\n");
+    return mmay_native_c_write(buffer,
+        ") { mmay_g_s = mmay_g_m == MMAY_MANAGED_OK ? 7 : mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n");
 }

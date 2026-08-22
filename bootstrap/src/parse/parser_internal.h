@@ -1,113 +1,113 @@
-#ifndef RUDA_PARSE_PARSER_INTERNAL_H
-#define RUDA_PARSE_PARSER_INTERNAL_H
+#ifndef MMAY_PARSE_PARSER_INTERNAL_H
+#define MMAY_PARSE_PARSER_INTERNAL_H
 
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "ruda/parse/parser.h"
+#include "mmay/parse/parser.h"
 
-typedef enum RudaParseEventKind {
-    RUDA_PARSE_EVENT_TOMBSTONE,
-    RUDA_PARSE_EVENT_START,
-    RUDA_PARSE_EVENT_TOKEN,
-    RUDA_PARSE_EVENT_SYNTHETIC_TOKEN,
-    RUDA_PARSE_EVENT_FINISH
-} RudaParseEventKind;
+typedef enum MarimayParseEventKind {
+    MMAY_PARSE_EVENT_TOMBSTONE,
+    MMAY_PARSE_EVENT_START,
+    MMAY_PARSE_EVENT_TOKEN,
+    MMAY_PARSE_EVENT_SYNTHETIC_TOKEN,
+    MMAY_PARSE_EVENT_FINISH
+} MarimayParseEventKind;
 
-typedef struct RudaParseStartEvent {
-    RudaSyntaxKind syntax_kind;
+typedef struct MarimayParseStartEvent {
+    MarimaySyntaxKind syntax_kind;
     size_t forward_parent;
-} RudaParseStartEvent;
+} MarimayParseStartEvent;
 
-typedef struct RudaParseTokenEvent {
+typedef struct MarimayParseTokenEvent {
     size_t token_index;
-    RudaTokenKind kind;
-} RudaParseTokenEvent;
+    MarimayTokenKind kind;
+} MarimayParseTokenEvent;
 
-typedef struct RudaParseEvent {
-    RudaParseEventKind kind;
+typedef struct MarimayParseEvent {
+    MarimayParseEventKind kind;
     union {
-        RudaParseStartEvent start;
-        RudaParseTokenEvent token;
-        RudaSyntaxToken synthetic_token;
+        MarimayParseStartEvent start;
+        MarimayParseTokenEvent token;
+        MarimaySyntaxToken synthetic_token;
     } as;
-} RudaParseEvent;
+} MarimayParseEvent;
 
-typedef struct RudaMarker {
+typedef struct MarimayMarker {
     size_t position;
     bool valid;
-} RudaMarker;
+} MarimayMarker;
 
-typedef struct RudaCompletedMarker {
+typedef struct MarimayCompletedMarker {
     size_t position;
     bool valid;
-} RudaCompletedMarker;
+} MarimayCompletedMarker;
 
-typedef struct RudaParser {
-    const RudaLexResult *lexed;
-    RudaParseResult *result;
-    RudaParseOptions options;
-    RudaVector events;
+typedef struct MarimayParser {
+    const MarimayLexResult *lexed;
+    MarimayParseResult *result;
+    MarimayParseOptions options;
+    MarimayVector events;
     size_t raw_index;
     size_t nesting;
     size_t pending_type_greater;
     size_t type_angle_depth;
     bool allocation_failed;
     bool limit_reached;
-} RudaParser;
+} MarimayParser;
 
-const RudaToken *ruda_parser_raw_token(const RudaParser *parser, size_t index);
-size_t ruda_parser_skip_trivia(const RudaParser *parser, size_t index);
-size_t ruda_parser_significant_index(const RudaParser *parser);
-const RudaToken *ruda_parser_current_token(const RudaParser *parser);
-RudaTokenKind ruda_parser_current(const RudaParser *parser);
-size_t ruda_parser_current_offset(const RudaParser *parser);
-bool ruda_parser_at(const RudaParser *parser, RudaTokenKind kind);
-bool ruda_token_is_contextual_keyword(RudaTokenKind kind);
-bool ruda_parser_at_identifier(const RudaParser *parser);
-RudaTokenKind ruda_parser_next_significant_kind(const RudaParser *parser);
-RudaTokenKind ruda_parser_second_next_significant_kind(const RudaParser *parser);
-bool ruda_parser_add_diagnostic(RudaParser *parser, const char *code,
+const MarimayToken *mmay_parser_raw_token(const MarimayParser *parser, size_t index);
+size_t mmay_parser_skip_trivia(const MarimayParser *parser, size_t index);
+size_t mmay_parser_significant_index(const MarimayParser *parser);
+const MarimayToken *mmay_parser_current_token(const MarimayParser *parser);
+MarimayTokenKind mmay_parser_current(const MarimayParser *parser);
+size_t mmay_parser_current_offset(const MarimayParser *parser);
+bool mmay_parser_at(const MarimayParser *parser, MarimayTokenKind kind);
+bool mmay_token_is_contextual_keyword(MarimayTokenKind kind);
+bool mmay_parser_at_identifier(const MarimayParser *parser);
+MarimayTokenKind mmay_parser_next_significant_kind(const MarimayParser *parser);
+MarimayTokenKind mmay_parser_second_next_significant_kind(const MarimayParser *parser);
+bool mmay_parser_add_diagnostic(MarimayParser *parser, const char *code,
     const char *message, size_t start, size_t end);
-RudaMarker ruda_parser_start(RudaParser *parser);
-RudaCompletedMarker ruda_parser_complete(RudaParser *parser,
-    RudaMarker marker, RudaSyntaxKind kind);
-RudaMarker ruda_parser_precede(RudaParser *parser,
-    RudaCompletedMarker completed);
-bool ruda_parser_completed_contains_kind(const RudaParser *parser,
-    RudaCompletedMarker completed, RudaSyntaxKind kind);
-RudaSyntaxKind ruda_parser_completed_kind(const RudaParser *parser,
-    RudaCompletedMarker completed);
-bool ruda_parser_completed_contains_token_kind(const RudaParser *parser,
-    RudaCompletedMarker completed, RudaTokenKind kind);
-void ruda_parser_bump_as(RudaParser *parser, RudaTokenKind significant_kind);
-void ruda_parser_bump(RudaParser *parser);
-bool ruda_parser_eat_identifier(RudaParser *parser);
-bool ruda_parser_eat(RudaParser *parser, RudaTokenKind kind);
-void ruda_parser_expect(RudaParser *parser, RudaTokenKind kind,
+MarimayMarker mmay_parser_start(MarimayParser *parser);
+MarimayCompletedMarker mmay_parser_complete(MarimayParser *parser,
+    MarimayMarker marker, MarimaySyntaxKind kind);
+MarimayMarker mmay_parser_precede(MarimayParser *parser,
+    MarimayCompletedMarker completed);
+bool mmay_parser_completed_contains_kind(const MarimayParser *parser,
+    MarimayCompletedMarker completed, MarimaySyntaxKind kind);
+MarimaySyntaxKind mmay_parser_completed_kind(const MarimayParser *parser,
+    MarimayCompletedMarker completed);
+bool mmay_parser_completed_contains_token_kind(const MarimayParser *parser,
+    MarimayCompletedMarker completed, MarimayTokenKind kind);
+void mmay_parser_bump_as(MarimayParser *parser, MarimayTokenKind significant_kind);
+void mmay_parser_bump(MarimayParser *parser);
+bool mmay_parser_eat_identifier(MarimayParser *parser);
+bool mmay_parser_eat(MarimayParser *parser, MarimayTokenKind kind);
+void mmay_parser_expect(MarimayParser *parser, MarimayTokenKind kind,
     const char *message);
-void ruda_parser_expect_identifier(RudaParser *parser, const char *message);
-bool ruda_parser_is_stop(const RudaParser *parser, RudaTokenKind first,
-    RudaTokenKind second, RudaTokenKind third);
-void ruda_parser_expect_closing_delimiter(RudaParser *parser,
-    RudaTokenKind close, size_t open_offset, const char *message);
+void mmay_parser_expect_identifier(MarimayParser *parser, const char *message);
+bool mmay_parser_is_stop(const MarimayParser *parser, MarimayTokenKind first,
+    MarimayTokenKind second, MarimayTokenKind third);
+void mmay_parser_expect_closing_delimiter(MarimayParser *parser,
+    MarimayTokenKind close, size_t open_offset, const char *message);
 
-void ruda_parse_expression_until(RudaParser *parser, RudaTokenKind first,
-    RudaTokenKind second, RudaTokenKind third);
-void ruda_parse_type_until(RudaParser *parser, RudaTokenKind first,
-    RudaTokenKind second, RudaTokenKind third);
-bool ruda_parser_type_at_greater(const RudaParser *parser);
-void ruda_parser_expect_type_greater(RudaParser *parser);
-void ruda_parser_begin_type_angle(RudaParser *parser);
-void ruda_parser_end_type_angle(RudaParser *parser);
-void ruda_parse_type_list(RudaParser *parser, RudaTokenKind close,
+void mmay_parse_expression_until(MarimayParser *parser, MarimayTokenKind first,
+    MarimayTokenKind second, MarimayTokenKind third);
+void mmay_parse_type_until(MarimayParser *parser, MarimayTokenKind first,
+    MarimayTokenKind second, MarimayTokenKind third);
+bool mmay_parser_type_at_greater(const MarimayParser *parser);
+void mmay_parser_expect_type_greater(MarimayParser *parser);
+void mmay_parser_begin_type_angle(MarimayParser *parser);
+void mmay_parser_end_type_angle(MarimayParser *parser);
+void mmay_parse_type_list(MarimayParser *parser, MarimayTokenKind close,
     bool allow_empty);
-void ruda_parse_arguments(RudaParser *parser);
-bool ruda_parser_yield_is_name_expression(const RudaParser *parser);
-bool ruda_parser_contextual_statement_starts(const RudaParser *parser,
-    RudaTokenKind current);
-void ruda_parse_block(RudaParser *parser);
-void ruda_parse_parameters(RudaParser *parser);
-void ruda_parse_top_decl(RudaParser *parser);
+void mmay_parse_arguments(MarimayParser *parser);
+bool mmay_parser_yield_is_name_expression(const MarimayParser *parser);
+bool mmay_parser_contextual_statement_starts(const MarimayParser *parser,
+    MarimayTokenKind current);
+void mmay_parse_block(MarimayParser *parser);
+void mmay_parse_parameters(MarimayParser *parser);
+void mmay_parse_top_decl(MarimayParser *parser);
 
 #endif

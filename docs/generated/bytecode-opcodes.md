@@ -1,10 +1,10 @@
-# Generated Ruda bytecode opcode registry
+# Generated Marimay bytecode opcode registry
 
 <!-- Generated from bootstrap/tables/opcodes.tsv. Do not edit by hand. -->
 
 This registry assigns explicit stable wire identifiers to the currently
 implemented internal typed-bytecode foundation. It does not by itself define a
-complete `.rudab` bundle, VM execution support, or a public compatibility
+complete `.myb` bundle, VM execution support, or a public compatibility
 promise. Operands use canonical bounded variable-length encodings in the
 Stage 0 codec.
 

@@ -1,4 +1,4 @@
-# Ruda roadmap: design baseline to production 1.0
+# Marimay roadmap: design baseline to production 1.0
 
 Status: normative delivery gates.  
 Allowed gate states: `not-started`, `in-progress`, `verified`, `blocked`.
@@ -10,13 +10,13 @@ A gate is `verified` only with linked command output and artifacts satisfying ev
 | Gate | State | Evidence |
 |---|---|---|
 | D0 — research and design baseline | `verified` | [2026-08-10 D0 verification](evidence/d0-2026-08-10.md) |
-| N0 — naming and distribution identity | `in-progress` | [open external identity audit and historical name collision](../design/naming-audit.md) |
+| N0 — naming and distribution identity | `in-progress` | [open external identity audit and historical name collision](../design/naming-audit.md); [2026-08-23 atomic Marimay repository rebrand](evidence/marimay-rebrand-2026-08-23.md) |
 | I0 — repository/bootstrap foundation | `in-progress` | [iteration 1: build/CLI](evidence/i0-iteration-1-2026-08-10.md); [iteration 2: source ownership/positions](evidence/i0-iteration-2-2026-08-10.md); [iteration 3: portability/fault injection/CI](evidence/i0-iteration-3-2026-08-10.md); [iteration 4: memory-safety gates and bounded leak evidence](evidence/i0-memory-safety-gates-iteration-4-2026-08-13.md) |
 | A0 — bounded compiler architecture | `in-progress` | [checkpoint 0 local verification; Tier 1 CI pending](evidence/a0-bounded-architecture-checkpoint-0-2026-08-14.md) |
 | I1 — lossless frontend and formatter | `in-progress` | [lexer iteration 1: Unicode/literals/lossless tokens](evidence/i1-lexer-iteration-1-2026-08-10.md); [parser iteration 2: immutable green tree/structural recovery](evidence/i1-parser-iteration-2-2026-08-10.md); [frontend iteration 3: generated kinds/Pratt/AST projection](evidence/i1-frontend-iteration-3-2026-08-10.md); [formatter library iteration 4: D026 document model/round trip](evidence/i1-formatter-library-iteration-4-2026-08-10.md); [formatter CLI iteration 5: D027/D028/D031 targets, manifests, and import ordering](evidence/i1-formatter-cli-iteration-5-2026-08-10.md); [frontend iteration 6: syntax-kind matrix, D032 strings, incremental reuse, and fuzz harnesses](evidence/i1-frontend-iteration-6-2026-08-10.md); [grammar registry iteration 7: generated productions and independent coverage axis](evidence/i1-grammar-registry-iteration-7-2026-08-10.md); [grammar completion iteration 8: 117/117 baseline productions](evidence/i1-grammar-completion-iteration-8-2026-08-11.md); [keyword-boundary iteration 9: initial D038 partition](evidence/i1-keyword-boundary-iteration-9-2026-08-12.md); [keyword-boundary iteration 10: exhaustive contextual-collision audit](evidence/i1-keyword-boundary-iteration-10-2026-08-12.md); [post-preview checkpoint 18: canonical managed-array type spelling](evidence/cp18-array-spelling-2026-08-21.md) |
-| I2 — typed core and MIR oracle | `in-progress` | [iteration 1: type identity, verified MIR oracle, and internal source-to-MIR slice](evidence/i2-typed-core-iteration-1-2026-08-11.md); [iteration 2: indexed interning and bounded verifier dataflow](evidence/i2-foundation-hardening-iteration-2-2026-08-11.md); [iteration 3: control-flow lowering and definite assignment](evidence/i2-control-flow-iteration-3-2026-08-11.md); [iteration 4: staged signatures and loop control](evidence/i2-signatures-loop-control-iteration-4-2026-08-11.md); [iteration 5: C-style `for` and compound assignment](evidence/i2-c-for-iteration-5-2026-08-11.md); [iteration 6: typed direct calls and program oracle](evidence/i2-calls-iteration-6-2026-08-11.md); [iteration 7: deterministic multi-file package checking](evidence/i2-multifile-package-iteration-7-2026-08-11.md); [iteration 8: bounded top-level constants](evidence/i2-constants-iteration-8-2026-08-11.md); [iteration 9: logical short-circuiting and composable expression CFG](evidence/i2-short-circuit-iteration-9-2026-08-11.md); [iteration 10: deterministic non-generic type aliases](evidence/i2-type-aliases-iteration-10-2026-08-11.md); [iteration 11: portable `i64` bitwise operators](evidence/i2-bitwise-i64-iteration-11-2026-08-11.md); [iteration 12: D035 checked `i64` shifts](evidence/i2-checked-shifts-iteration-12-2026-08-11.md); [iteration 13: deterministic nominal record declarations](evidence/i2-record-declarations-iteration-13-2026-08-11.md); [iteration 14: public-type visibility](evidence/i2-public-visibility-iteration-14-2026-08-11.md); [iteration 15: algebraic enum declarations](evidence/i2-enum-declarations-iteration-15-2026-08-11.md); [iteration 16: executable managed-record MIR oracle](evidence/i2-managed-record-oracle-iteration-16-2026-08-11.md); [iteration 17: algebraic-enum construction oracle](evidence/i2-enum-construction-oracle-iteration-17-2026-08-11.md); [iteration 18: checked enum-match oracle](evidence/i2-enum-match-oracle-iteration-18-2026-08-11.md); [iteration 19: guarded enum match](evidence/i2-guarded-enum-match-iteration-19-2026-08-11.md); [iteration 20: enum OR patterns](evidence/i2-enum-or-patterns-iteration-20-2026-08-11.md); [iteration 21: finite-boolean match](evidence/i2-boolean-match-iteration-21-2026-08-11.md); [iteration 22: concrete match witnesses](evidence/i2-match-witnesses-iteration-22-2026-08-11.md); [iteration 23: i64 literal match](evidence/i2-i64-literal-match-iteration-23-2026-08-11.md); [iteration 24: block match arms and `yield`](evidence/i2-match-block-arms-iteration-24-2026-08-11.md); [iteration 25: return-only match arms](evidence/i2-match-return-arms-iteration-25-2026-08-11.md); [iteration 26: all-`never` match propagation](evidence/i2-all-never-match-iteration-26-2026-08-11.md); [iteration 27: `never` conditions and guards](evidence/i2-never-conditions-guards-iteration-27-2026-08-11.md); [iteration 28: `never` loop conditions](evidence/i2-never-loop-conditions-iteration-28-2026-08-11.md); [iteration 29: `never` C-style `for` steps](evidence/i2-never-loop-steps-iteration-29-2026-08-12.md); [iteration 30: string literals and explicit-panic MIR oracle](evidence/i2-string-panic-oracle-iteration-30-2026-08-12.md); [iteration 31: declared-`never` terminating-call edge](evidence/i2-declared-never-calls-iteration-31-2026-08-12.md); [iteration 32: exact string literal patterns and MIR equality](evidence/i2-string-literal-match-iteration-32-2026-08-12.md); [iteration 33: flat nominal record patterns](evidence/i2-record-patterns-iteration-33-2026-08-12.md); [iteration 34: stable nominal record identity](evidence/i2-record-identity-iteration-34-2026-08-12.md); [iteration 35: executable managed-array MIR oracle and exact D045 bounds ordering](evidence/i2-managed-array-oracle-iteration-35-2026-08-13.md); [iteration 36: versioned compiler-service diagnostics foundation](evidence/i2-compiler-service-foundation-iteration-36-2026-08-14.md); [iteration 37: request-local incremental parsing and cancellation](evidence/i2-compiler-service-incremental-iteration-37-2026-08-14.md); [V0 iteration 10: loop-based f64 matrix engine checkpoint](evidence/v0-f64-matrix-iteration-10-2026-08-14.md); [V0 iteration 11: source arrays and source matrix/G4002 differential](evidence/v0-source-arrays-iteration-11-2026-08-14.md); [iteration 38: bounded stable definition facts](evidence/i2-checker-facts-iteration-38-2026-08-14.md); [iteration 39: package-local free/dot-call resolver](evidence/i2-dot-call-resolution-iteration-39-2026-08-14.md); [V0 checkpoint 1: nominal MIR oracle and source differential](evidence/v0-nominal-engines-checkpoint-1-2026-08-15.md); [preview checkpoint 2: deterministic local packages and D043](evidence/i2-local-packages-checkpoint-2-2026-08-16.md); [preview checkpoint 3: compiler-service queries and exact checker-backed completion](evidence/i2-compiler-service-queries-checkpoint-3-2026-08-17.md); [preview checkpoint 8: authoritative batch `ruda check`](evidence/cp8-authoritative-check-2026-08-18.md); [post-preview checkpoint 16: receiver-directed collection-name resolution](evidence/cp16-receiver-collection-names-2026-08-20.md); [post-preview checkpoint 18: canonical managed-array type spelling](evidence/cp18-array-spelling-2026-08-21.md) |
+| I2 — typed core and MIR oracle | `in-progress` | [iteration 1: type identity, verified MIR oracle, and internal source-to-MIR slice](evidence/i2-typed-core-iteration-1-2026-08-11.md); [iteration 2: indexed interning and bounded verifier dataflow](evidence/i2-foundation-hardening-iteration-2-2026-08-11.md); [iteration 3: control-flow lowering and definite assignment](evidence/i2-control-flow-iteration-3-2026-08-11.md); [iteration 4: staged signatures and loop control](evidence/i2-signatures-loop-control-iteration-4-2026-08-11.md); [iteration 5: C-style `for` and compound assignment](evidence/i2-c-for-iteration-5-2026-08-11.md); [iteration 6: typed direct calls and program oracle](evidence/i2-calls-iteration-6-2026-08-11.md); [iteration 7: deterministic multi-file package checking](evidence/i2-multifile-package-iteration-7-2026-08-11.md); [iteration 8: bounded top-level constants](evidence/i2-constants-iteration-8-2026-08-11.md); [iteration 9: logical short-circuiting and composable expression CFG](evidence/i2-short-circuit-iteration-9-2026-08-11.md); [iteration 10: deterministic non-generic type aliases](evidence/i2-type-aliases-iteration-10-2026-08-11.md); [iteration 11: portable `i64` bitwise operators](evidence/i2-bitwise-i64-iteration-11-2026-08-11.md); [iteration 12: D035 checked `i64` shifts](evidence/i2-checked-shifts-iteration-12-2026-08-11.md); [iteration 13: deterministic nominal record declarations](evidence/i2-record-declarations-iteration-13-2026-08-11.md); [iteration 14: public-type visibility](evidence/i2-public-visibility-iteration-14-2026-08-11.md); [iteration 15: algebraic enum declarations](evidence/i2-enum-declarations-iteration-15-2026-08-11.md); [iteration 16: executable managed-record MIR oracle](evidence/i2-managed-record-oracle-iteration-16-2026-08-11.md); [iteration 17: algebraic-enum construction oracle](evidence/i2-enum-construction-oracle-iteration-17-2026-08-11.md); [iteration 18: checked enum-match oracle](evidence/i2-enum-match-oracle-iteration-18-2026-08-11.md); [iteration 19: guarded enum match](evidence/i2-guarded-enum-match-iteration-19-2026-08-11.md); [iteration 20: enum OR patterns](evidence/i2-enum-or-patterns-iteration-20-2026-08-11.md); [iteration 21: finite-boolean match](evidence/i2-boolean-match-iteration-21-2026-08-11.md); [iteration 22: concrete match witnesses](evidence/i2-match-witnesses-iteration-22-2026-08-11.md); [iteration 23: i64 literal match](evidence/i2-i64-literal-match-iteration-23-2026-08-11.md); [iteration 24: block match arms and `yield`](evidence/i2-match-block-arms-iteration-24-2026-08-11.md); [iteration 25: return-only match arms](evidence/i2-match-return-arms-iteration-25-2026-08-11.md); [iteration 26: all-`never` match propagation](evidence/i2-all-never-match-iteration-26-2026-08-11.md); [iteration 27: `never` conditions and guards](evidence/i2-never-conditions-guards-iteration-27-2026-08-11.md); [iteration 28: `never` loop conditions](evidence/i2-never-loop-conditions-iteration-28-2026-08-11.md); [iteration 29: `never` C-style `for` steps](evidence/i2-never-loop-steps-iteration-29-2026-08-12.md); [iteration 30: string literals and explicit-panic MIR oracle](evidence/i2-string-panic-oracle-iteration-30-2026-08-12.md); [iteration 31: declared-`never` terminating-call edge](evidence/i2-declared-never-calls-iteration-31-2026-08-12.md); [iteration 32: exact string literal patterns and MIR equality](evidence/i2-string-literal-match-iteration-32-2026-08-12.md); [iteration 33: flat nominal record patterns](evidence/i2-record-patterns-iteration-33-2026-08-12.md); [iteration 34: stable nominal record identity](evidence/i2-record-identity-iteration-34-2026-08-12.md); [iteration 35: executable managed-array MIR oracle and exact D045 bounds ordering](evidence/i2-managed-array-oracle-iteration-35-2026-08-13.md); [iteration 36: versioned compiler-service diagnostics foundation](evidence/i2-compiler-service-foundation-iteration-36-2026-08-14.md); [iteration 37: request-local incremental parsing and cancellation](evidence/i2-compiler-service-incremental-iteration-37-2026-08-14.md); [V0 iteration 10: loop-based f64 matrix engine checkpoint](evidence/v0-f64-matrix-iteration-10-2026-08-14.md); [V0 iteration 11: source arrays and source matrix/G4002 differential](evidence/v0-source-arrays-iteration-11-2026-08-14.md); [iteration 38: bounded stable definition facts](evidence/i2-checker-facts-iteration-38-2026-08-14.md); [iteration 39: package-local free/dot-call resolver](evidence/i2-dot-call-resolution-iteration-39-2026-08-14.md); [V0 checkpoint 1: nominal MIR oracle and source differential](evidence/v0-nominal-engines-checkpoint-1-2026-08-15.md); [preview checkpoint 2: deterministic local packages and D043](evidence/i2-local-packages-checkpoint-2-2026-08-16.md); [preview checkpoint 3: compiler-service queries and exact checker-backed completion](evidence/i2-compiler-service-queries-checkpoint-3-2026-08-17.md); [preview checkpoint 8: authoritative batch `mmay check`](evidence/cp8-authoritative-check-2026-08-18.md); [post-preview checkpoint 16: receiver-directed collection-name resolution](evidence/cp16-receiver-collection-names-2026-08-20.md); [post-preview checkpoint 18: canonical managed-array type spelling](evidence/cp18-array-spelling-2026-08-21.md) |
 | I3 — bytecode VM vertical slice | `in-progress` | [iteration 1: internal bytecode registry, codec, verifier, and disassembler foundation](evidence/i3-bytecode-foundation-iteration-1-2026-08-12.md); [iteration 2: scalar MIR lowering, VM dispatch, and MIR/VM differential execution](evidence/i3-scalar-vm-iteration-2-2026-08-13.md); [iteration 3: portable `i64` bitwise and D035 checked shifts](evidence/i3-bitwise-shifts-iteration-3-2026-08-13.md); [iteration 4: verified direct-call programs and explicit VM frames](evidence/i3-direct-calls-iteration-4-2026-08-13.md); [iteration 5: exact strings, explicit G4000 panic, and declared-never calls](evidence/i3-string-panic-never-iteration-5-2026-08-13.md); [iteration 8: deterministic `f64` source-to-VM slice](evidence/i3-f64-iteration-8-2026-08-13.md); [iteration 9: managed f64 arrays, verified D045 ordering, and exact G4002 VM execution](evidence/i3-managed-arrays-iteration-9-2026-08-14.md); [iteration 10: loop-based f64 matrix engine checkpoint](evidence/v0-f64-matrix-iteration-10-2026-08-14.md); [iteration 11: source matrix and G4002 differential](evidence/v0-source-arrays-iteration-11-2026-08-14.md); [V0 checkpoint 1: encoded nominal verifier and VM execution](evidence/v0-nominal-engines-checkpoint-1-2026-08-15.md); [preview checkpoint 11: isolated VM test execution and exact output capture](evidence/cp11-ruda-test-2026-08-18.md); [post-preview checkpoint 19: configurable managed-heap resource policy](evidence/cp19-resource-limits-2026-08-21.md) |
-| I4 — C17 AOT and engine equivalence | `in-progress` | [iteration 1: verified scalar MIR-to-C17 emitter and three-engine differential matrix](evidence/i4-scalar-c17-emitter-iteration-1-2026-08-13.md); [iteration 2: counted strings, G4000 panic frames, and declared-never calls](evidence/i4-string-panic-never-iteration-2-2026-08-13.md); [iteration 8: strict native `f64` and VM/native differential execution](evidence/i3-f64-iteration-8-2026-08-13.md); [iteration 9: precise-rooted managed arrays and exact native G4002](evidence/i4-managed-arrays-iteration-9-2026-08-14.md); [iteration 10: loop-based f64 matrix engine checkpoint](evidence/v0-f64-matrix-iteration-10-2026-08-14.md); [iteration 11: source matrix and exact native G4002](evidence/v0-source-arrays-iteration-11-2026-08-14.md); [V0 checkpoint 1: native nominal execution and three-engine differential](evidence/v0-nominal-engines-checkpoint-1-2026-08-15.md); [preview checkpoint 10: content-addressed native `ruda build`](evidence/cp10-native-build-2026-08-18.md); [preview checkpoint 11: VM/native test record/replay](evidence/cp11-ruda-test-2026-08-18.md); [post-preview checkpoint 13: profile-coherent native runtime selection](evidence/cp13-release-runtime-2026-08-19.md); [post-preview checkpoint 19: embedded native managed-heap policy and exact VM/native `I0002`](evidence/cp19-resource-limits-2026-08-21.md) |
+| I4 — C17 AOT and engine equivalence | `in-progress` | [iteration 1: verified scalar MIR-to-C17 emitter and three-engine differential matrix](evidence/i4-scalar-c17-emitter-iteration-1-2026-08-13.md); [iteration 2: counted strings, G4000 panic frames, and declared-never calls](evidence/i4-string-panic-never-iteration-2-2026-08-13.md); [iteration 8: strict native `f64` and VM/native differential execution](evidence/i3-f64-iteration-8-2026-08-13.md); [iteration 9: precise-rooted managed arrays and exact native G4002](evidence/i4-managed-arrays-iteration-9-2026-08-14.md); [iteration 10: loop-based f64 matrix engine checkpoint](evidence/v0-f64-matrix-iteration-10-2026-08-14.md); [iteration 11: source matrix and exact native G4002](evidence/v0-source-arrays-iteration-11-2026-08-14.md); [V0 checkpoint 1: native nominal execution and three-engine differential](evidence/v0-nominal-engines-checkpoint-1-2026-08-15.md); [preview checkpoint 10: content-addressed native `mmay build`](evidence/cp10-native-build-2026-08-18.md); [preview checkpoint 11: VM/native test record/replay](evidence/cp11-ruda-test-2026-08-18.md); [post-preview checkpoint 13: profile-coherent native runtime selection](evidence/cp13-release-runtime-2026-08-19.md); [post-preview checkpoint 19: embedded native managed-heap policy and exact VM/native `I0002`](evidence/cp19-resource-limits-2026-08-21.md) |
 | I5 — managed data and standard core | `in-progress` | [iteration 1: generic managed-array descriptors, precise non-moving tracing, and canonical `[]T` identity](evidence/i5-managed-arrays-iteration-1-2026-08-13.md); [preview checkpoint 5: generic `[]T` through checker, bytecode, VM, and native C17](evidence/i5-arrays-checkpoint-5-2026-08-17.md); [V0 checkpoint 1: managed record, enum, and structural interface values](evidence/v0-nominal-engines-checkpoint-1-2026-08-15.md); [post-preview checkpoint 18: canonical managed-array type spelling](evidence/cp18-array-spelling-2026-08-21.md); [post-preview checkpoint 19: exact managed accounting and classified resource failures](evidence/cp19-resource-limits-2026-08-21.md) |
 | I6 — direct-style tasks and I/O | `not-started` | none |
 | E0 — pre-self-host ergonomics pilot | `not-started` | none |
@@ -49,14 +49,14 @@ transports imported generic enum constructors, patterns, nested
 encoded bytecode, VM, and native C17.
 [Post-preview checkpoint 20 evidence](evidence/cp20-reusable-algorithm-corpus-2026-08-21.md)
 records the first machine-validated reusable sorting/structure/graph workload
-shared by Ruda, Go, and Rust, plus exact Ruda fmt/check/VM/test-both/debug and
+shared by Marimay, Go, and Rust, plus exact Marimay fmt/check/VM/test-both/debug and
 release native regression coverage. It is workload-fidelity evidence only:
 no compiler semantics, performance budget, or roadmap gate state changes.
 [Post-preview checkpoint 21 evidence](evidence/cp21-array-performance-baseline-2026-08-22.md)
 accepts D056/D057 and adds strict raw-result schemas, nine focused array/native
 probes, balanced 11/3 measurement, artifact/toolchain/resource hashes, exact
 checksum validation, median/MAD/IQR noise envelopes, and reviewed
-workload-local Ruda budgets for the dedicated Linux x86_64 runner. The earlier
+workload-local Marimay budgets for the dedicated Linux x86_64 runner. The earlier
 macOS arm64 Apple M2 report remains supplemental. A separate machine gate still
 rejects the missing Linux arm64, macOS x86_64, and Windows x86_64 baselines for
 public-alpha preparation; no optimization or semantic change is included.
@@ -97,7 +97,7 @@ and records loop-header widening plus narrowing, transactional fallback,
 hostile-artifact rejection, and checked-loop measurements.
 [Post-preview checkpoint 28 integration evidence](evidence/cp28-release-rebaseline-2026-08-22.md)
 records D063's remaining native fast paths and the 11/3 macOS arm64
-Ruda/Go/Rust rebaseline. It reports the material algorithm improvements and
+Marimay/Go/Rust rebaseline. It reports the material algorithm improvements and
 the still-large Option/enum-allocation and cross-language gaps without
 claiming the unrun five-platform public-alpha gate.
 [Post-integration checkpoint 28 release hardening](evidence/cp28-release-hardening-2026-08-23.md)
@@ -112,7 +112,7 @@ selected by requested output profile, validated before C emission, hashed into
 the cache identity, and resolved from a relocatable installation](evidence/cp13-release-runtime-2026-08-19.md).
 I2–I5 remain
 `in-progress`; this is not the complete language gate, package management,
-workspace resolution, production LSP, native `ruda run`, or the production I8
+workspace resolution, production LSP, native `mmay run`, or the production I8
 test surface. I6 remains `not-started`. Accepted
 [D051](../design/decisions.md) records checkpoint-11 discovery, isolation,
 capture, expectation, and engine-equivalence semantics.
@@ -161,7 +161,7 @@ bytecode, and native C17, including malformed bytecode and O0/O2 differential
 coverage. The checkpoint-7 re-audit additionally closes all D047 public-name
 checks, raw-binary32 native formatter execution, and registered numeric
 formatter fixtures. I2–I5 remain `in-progress`; I6 remains `not-started`, and
-this evidence does not claim `std/io`, `ruda run`, or public stdout.
+this evidence does not claim `std/io`, `mmay run`, or public stdout.
 
 Preview checkpoint 7 evidence: [D041 lexical defer across checker, verified
 MIR, encoded VM, and native C17](evidence/cp7-lexical-defer-2026-08-18.md).
@@ -172,22 +172,22 @@ rejection, dedicated formatter fixtures, and VM/native differential execution.
 I6 remains `not-started`; scheduler and cancellation runtime work were not
 started.
 
-Preview checkpoint 8 evidence: [authoritative batch `ruda check` target
+Preview checkpoint 8 evidence: [authoritative batch `mmay check` target
 discovery, module-graph orchestration, stable stderr diagnostics, and
 fail-closed incomplete-language handling](evidence/cp8-authoritative-check-2026-08-18.md).
 The command is now available for the checker-backed preview surface. I2 remains
 `in-progress`; I7 manifest/dependency/workspace semantics and I8's remaining
 developer loop are not claimed.
 
-Preview checkpoint 9 evidence: [local `ruda run`, exact D046 stdout, canonical
+Preview checkpoint 9 evidence: [local `mmay run`, exact D046 stdout, canonical
 entry selection, and verified VM execution](evidence/cp9-ruda-run-stdout-2026-08-18.md).
 The slice covers success, expected `Result` failure, runtime panics, invalid
 entry points, malformed MIR/bytecode, denied capabilities, writer failures,
 allocation-failure cleanup, and generated C17 differential execution. I2–I5
-remain `in-progress`; I6 remains `not-started`, and native `ruda build` is the
+remain `in-progress`; I6 remains `not-started`, and native `mmay build` is the
 next ordered preview checkpoint rather than a checkpoint-9 claim.
 
-Preview checkpoint 10 evidence: [content-addressed native `ruda build`, strict
+Preview checkpoint 10 evidence: [content-addressed native `mmay build`, strict
 C17 toolchain ownership, atomic output, and exact VM/native observable
 parity](evidence/cp10-native-build-2026-08-18.md). The slice covers default and
 explicit native builds, debug/release, emitted C, cache identity, output paths,
@@ -195,7 +195,7 @@ stable tool diagnostics, root cleanup, allocation failures, binary stdout,
 expected errors, and the panic matrix. I2–I5 remain `in-progress`; I6 remains
 `not-started`.
 
-Preview checkpoint 11 evidence: [built-in `ruda test`, exact D046 capture, and
+Preview checkpoint 11 evidence: [built-in `mmay test`, exact D046 capture, and
 VM/native record/replay](evidence/cp11-ruda-test-2026-08-18.md). The slice
 covers package-private and integration discovery, deterministic reporting,
 fresh execution state, matching panic/failure parity, `G4004` exact-output
@@ -213,7 +213,7 @@ classes. Sustained fuzz campaigns are explicit CI jobs. I2–I5 remain
 
 Post-preview checkpoint 13 evidence: [profile-coherent release runtime
 selection](evidence/cp13-release-runtime-2026-08-19.md). D052 removes the
-compiler-build-profile leak from `ruda build`: each toolchain carries validated
+compiler-build-profile leak from `mmay build`: each toolchain carries validated
 debug and release archives, installed lookup is relocatable, and runtime bytes
 participate in the native cache key. Local Debug/Release/sanitizer evidence
 does not by itself verify I4; the complete Tier 1 installation matrix remains
@@ -224,7 +224,7 @@ the governing gate.
 Checkpoint A0 is locally complete and its initial pushed Linux x86_64 matrix is
 green; full Tier 1 evidence remains pending. Its post-audit public-header gate
 closure passed as part of V0 checkpoint 1 in
-[Gitea run 29](http://ci.example:3000/OS/Ruda/actions/runs/29). The architecture
+[Gitea run 29](http://ci.example:3000/OS/Marimay/actions/runs/29). The architecture
 gate remains a blocking prerequisite for every subsequent feature checkpoint.
 
 The physical ownership map and behavior-preserving extraction sequence are
@@ -251,7 +251,7 @@ callable indexes built during collection. V0 checkpoint 1 now executes managed
 records, algebraic enums, nested patterns, D040 source-order effects, and
 non-generic structural interfaces through the MIR oracle, encoded VM, and
 generated C17; the configured Linux x86_64 matrix is green in
-[Gitea run 29](http://ci.example:3000/OS/Ruda/actions/runs/29). Preview
+[Gitea run 29](http://ci.example:3000/OS/Marimay/actions/runs/29). Preview
 checkpoint 2 established deterministic local packages and D043 invariance;
 preview checkpoint 3 now publishes bounded occurrence facts and exact
 resolver-owned dot completion through generation/snapshot-safe query APIs.
@@ -315,21 +315,21 @@ Evidence command before implementation exists:
 ./tools/check-example-syntax
 ```
 
-These scripts may initially be host tools but become `ruda doc --check` and parser tests later.
+These scripts may initially be host tools but become `mmay doc --check` and parser tests later.
 
 Verification evidence: [D0 design-baseline verification, 2026-08-10](evidence/d0-2026-08-10.md).
 
 ## N0 — Naming and distribution identity
 
-Purpose: obtain legally and operationally defensible external distribution identities for the accepted `Ruda`/`ruda` repository identity. D001 is accepted; that acceptance is not a trademark, domain, namespace, package-manager, or PATH clearance claim.
+Purpose: obtain legally and operationally defensible external distribution identities for the accepted `Marimay`/`mmay` repository identity. D001 is accepted; that acceptance is not a trademark, domain, namespace, package-manager, or PATH clearance claim.
 
 Deliver:
 
 - the versioned [naming audit](../design/naming-audit.md) covering name/confusables, trademarks in initial jurisdictions, domains/handles, package/registry organization, command/PATH/package-manager collisions, artifact suffixes/MIME/editor identities, and migration cost;
-- direct dated evidence for confusingly similar Ruda candidates and preserved historical evidence for the separate “Malang Compiler” that triggered the pre-release rename;
+- direct dated evidence for confusingly similar Marimay candidates and preserved historical evidence for the separate “Malang Compiler” that triggered the pre-release rename;
 - reservation/control evidence for the chosen organization, domains, registry/module namespace, documentation/security contact, and signing identity;
-- Tier 1 clean-image command/install/upgrade/uninstall collision matrix for `ruda` and alternatives;
-- repository migration evidence proving that current authority/spec/test/generated/build surfaces consistently use `Ruda`, `ruda`, and `.ruda`, with former names confined to explicit history;
+- Tier 1 clean-image command/install/upgrade/uninstall collision matrix for `mmay` and alternatives;
+- repository migration evidence proving that current authority/spec/test/generated/build surfaces consistently use `Marimay`, `mmay`, and `.my`, with former names confined to explicit history;
 - a follow-up accepted decision for controlled public organization, registry/module namespace, signing identity, and residual legal/search risk.
 
 Gate:
@@ -348,7 +348,7 @@ Deliver:
 - documented CMake debug/release/sanitizer presets;
 - portable base library: allocation, arenas, vectors, maps, UTF-8, strings, hashing, paths, process, diagnostics;
 - source manager and test fixture harness;
-- CLI dispatcher with `ruda --version`/`ruda version` and task-oriented `ruda help`;
+- CLI dispatcher with `mmay --version`/`mmay version` and task-oriented `mmay help`;
 - Tier 1 CI skeleton for Linux x86_64/arm64, macOS arm64/x86_64, and Windows x86_64;
 - reproducible generated-table workflow with outputs committed;
 - zero network access during configure/build/test.
@@ -368,7 +368,7 @@ Deliver:
 - complete lexer and lossless syntax tree for the baseline grammar;
 - recovery-capable parser and AST projection;
 - comments/doc comments/interpolated strings/Unicode/numeric literal handling;
-- `ruda fmt`, `--check`, `--diff`, and stdin mode;
+- `mmay fmt`, `--check`, `--diff`, and stdin mode;
 - editor-friendly incremental source overlays;
 - generated syntax reference.
 
@@ -393,7 +393,7 @@ Deliver:
 - type/effect metadata and typed MIR;
 - unoptimized MIR interpreter for the pure core;
 - minimum overlay-based compiler service with diagnostics, definition, symbol search, and dot-call-complete completion;
-- `ruda check`.
+- `mmay check`.
 
 Gate:
 
@@ -476,7 +476,7 @@ Current internal removal gates before I2 verification:
   iteration spelling is `for const item of array` and remains tied to the
   iterator implementation gate. The checkpoint evidence is local and does
   not change I2/I3/I4/I5 gate state;
-- keep `ruda check` fail-closed for every accepted construct outside the
+- keep `mmay check` fail-closed for every accepted construct outside the
   checker-backed preview surface. Preview checkpoint 8 exposes the command
   only through the authoritative source service and maps incomplete language
   work to `I0001`/exit 70 rather than a false clean result;
@@ -489,12 +489,12 @@ Current internal removal gates before I2 verification:
 Deliver:
 
 - versioned opcode table, encoder, decoder, verifier, disassembler;
-- `.rudab` section format and integrity checks;
+- `.myb` section format and integrity checks;
 - VM execution for the typed pure core;
 - managed runtime object descriptors sufficient for records/enums/strings/closures;
 - VM source stack traces and deterministic limits;
-- `ruda run` defaulting to VM and `ruda exec` for verified bundles;
-- VM-backed `ruda test` for core language tests.
+- `mmay run` defaulting to VM and `mmay exec` for verified bundles;
+- VM-backed `mmay test` for core language tests.
 
 Start with V0 as soon as its minimal I2 MIR subset is stable; do not wait for
 all I2 generics, interfaces, closures, `?`, or `defer` work before decoding and
@@ -515,9 +515,9 @@ Deliver:
 
 - portable C emitter with explicit evaluation temporaries and safe arithmetic helpers;
 - native runtime linkage, D030 toolchain discovery/provisioning, object/build cache;
-- `ruda build`, `--release`, `--emit c`, native `ruda run`;
+- `mmay build`, `--release`, `--emit c`, native `mmay run`;
 - deterministic VM/native test record/replay;
-- `ruda test --engine native|both`;
+- `mmay test --engine native|both`;
 - source-oriented native stack traces.
 
 Start the V0 portable-C emitter alongside the first I3 opcode subset. The first
@@ -528,13 +528,13 @@ Gate:
 
 - all deterministic core tests agree across MIR oracle, VM, and native;
 - generated C compiles at debug/release optimization with supported Clang/GCC/MSVC;
-- generated identifiers pass the EXEC-020 adversarial matrix for every Ruda
+- generated identifiers pass the EXEC-020 adversarial matrix for every Marimay
   namespace without entering C keyword, implementation-reserved, standard
   library, runtime-helper, truncation, Unicode, or case-folded collision space;
 - generated programs are ASan/UBSan clean;
 - evaluation-order, overflow, NaN, bounds, enum-layout, interface, closure, and panic corpora agree;
 - divergence minimizer produces a checked regression fixture;
-- an official Tier 1 installation builds a native hello/service fixture without user-selected `CC`, linker, SDK path, or project configuration; missing prerequisites fail at preflight with one actionable diagnostic and machine-readable `ruda doctor` result;
+- an official Tier 1 installation builds a native hello/service fixture without user-selected `CC`, linker, SDK path, or project configuration; missing prerequisites fail at preflight with one actionable diagnostic and machine-readable `mmay doctor` result;
 - clean/incremental compile and binary-size baselines are published.
 
 ## I5 — Managed data and standard core
@@ -618,7 +618,7 @@ Gate:
 - exact error mapping is measured on at least three multi-layer boundaries; if repeated `mapError` materially impairs task completion/readability, D006 is revisited before I10 rather than papered over with implicit conversion;
 - dot-call tasks are completable from editor discovery without prior free-function knowledge, and completion results match the checker exactly;
 - race/select covers the service coordination tasks without detached work or hand-built cancellation plumbing;
-- an ordinary host install reaches native `ruda build` without manual compiler/linker/SDK configuration beyond any single unavoidable platform-owned installation action;
+- an ordinary host install reaches native `mmay build` without manual compiler/linker/SDK configuration beyond any single unavoidable platform-owned installation action;
 - all semantic findings are accepted, rejected with evidence, or fixed in decisions/spec/tests; no unresolved language-ergonomics blocker enters self-hosting.
 
 ## I7 — Packages, cache, and supply chain
@@ -627,11 +627,11 @@ Dependency: N0 is `verified`; public module/registry namespaces cannot be built 
 
 Deliver:
 
-- semantic validation of the I1 `ruda.mod`/`ruda.work` syntax, plus canonical `ruda.lock` parsing/formatting;
+- semantic validation of the I1 `mmay.mod`/`mmay.work` syntax, plus canonical `mmay.lock` parsing/formatting;
 - semantic-version resolver with clear conflict paths;
 - immutable content-addressed artifact cache and offline builds;
 - secure archive extraction and checksum/provenance verification;
-- `ruda init/add/remove/update/list/why/outdated/vendor/audit`;
+- `mmay init/add/remove/update/list/why/outdated/vendor/audit`;
 - registry protocol draft, local test registry, yanking/advisory model;
 - capability reachability in audit output.
 
@@ -648,10 +648,10 @@ Gate:
 
 Deliver:
 
-- production `ruda test`, filters/watch/cache/isolation/output;
+- production `mmay test`, filters/watch/cache/isolation/output;
 - doc tests, integration tests, expectations, property tests;
-- coverage-guided `ruda fuzz` with minimization and corpus persistence;
-- `ruda doc`, `ruda vet`, `ruda fix`, `ruda bench`;
+- coverage-guided `mmay fuzz` with minimization and corpus persistence;
+- `mmay doc`, `mmay vet`, `mmay fix`, `mmay bench`;
 - production LSP transport, indexing, cancellation, compatibility, and editor integration over the I2 compiler-service/completion owner;
 - stable JSON diagnostics and test event protocol;
 - help/documentation that answers common commands without external lookup.
@@ -659,7 +659,7 @@ Deliver:
 Gate:
 
 - a fresh user can initialize, format, check, test, run, build, document, and add a dependency from the CLI alone;
-- `ruda test` has no external framework/config dependency;
+- `mmay test` has no external framework/config dependency;
 - test ordering/isolation/cache invalidation are deterministic;
 - doc examples compile and public APIs meet documentation policy;
 - built-in fuzzing finds seeded defects in parser/verifier/runtime exercises;
@@ -691,7 +691,7 @@ Dependency: E0 is `verified`; self-hosting does not begin merely because I9 impl
 
 Deliver:
 
-- self-hosted compiler/formatter/test tooling in Ruda;
+- self-hosted compiler/formatter/test tooling in Marimay;
 - Stage 0 C builds Stage 1, Stage 1 builds Stage 2;
 - versioned bootstrap subset and internal compiler libraries;
 - normalized artifact comparison and provenance report;
@@ -764,12 +764,12 @@ Gate:
 Required release-candidate evidence:
 
 ```sh
-ruda fmt --check
-ruda check --all-targets
-ruda test --engine both
-ruda vet --strict
-ruda doc --check
-ruda audit
+mmay fmt --check
+mmay check --all-targets
+mmay test --engine both
+mmay vet --strict
+mmay doc --check
+mmay audit
 ```
 
 Plus compiler C tests, all platform CI, sanitizers, fuzzing, bootstrap, reproducibility, compatibility, package-registry, installer, reference-service, and performance gates.

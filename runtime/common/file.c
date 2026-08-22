@@ -1,43 +1,43 @@
-#include "ruda/platform/file.h"
+#include "mmay/platform/file.h"
 
 #include <stdbool.h>
 #include <string.h>
 
-#include "ruda/base/utf8.h"
-#include "ruda/base/vector.h"
+#include "mmay/base/utf8.h"
+#include "mmay/base/vector.h"
 
-static bool ruda_file_path_valid(const char *path, size_t length) {
+static bool mmay_file_path_valid(const char *path, size_t length) {
     return path != NULL
         && length != 0
         && memchr(path, 0, length) == NULL
-        && ruda_utf8_validate(path, length, NULL);
+        && mmay_utf8_validate(path, length, NULL);
 }
 
-RudaFileStatus ruda_file_read_all_with_ops(
-    RudaFileReadOps ops,
-    RudaAllocator allocator,
+MarimayFileStatus mmay_file_read_all_with_ops(
+    MarimayFileReadOps ops,
+    MarimayAllocator allocator,
     const char *path,
     size_t path_length,
     size_t max_bytes,
-    RudaOwnedBytes *output
+    MarimayOwnedBytes *output
 ) {
-    RudaVector bytes;
-    RudaFileHandle handle = 0;
-    RudaFileStatus status = RUDA_FILE_OK;
+    MarimayVector bytes;
+    MarimayFileHandle handle = 0;
+    MarimayFileStatus status = MMAY_FILE_OK;
     unsigned char chunk[4096];
     if (output == NULL) {
-        return RUDA_FILE_INVALID_ARGUMENT;
+        return MMAY_FILE_INVALID_ARGUMENT;
     }
     memset(output, 0, sizeof(*output));
     if (ops.open == NULL || ops.read == NULL || ops.close == NULL
-        || max_bytes == 0 || !ruda_file_path_valid(path, path_length)) {
+        || max_bytes == 0 || !mmay_file_path_valid(path, path_length)) {
         return path != NULL && path_length != 0
-            && !ruda_utf8_validate(path, path_length, NULL)
-            ? RUDA_FILE_INVALID_UTF8
-            : RUDA_FILE_INVALID_ARGUMENT;
+            && !mmay_utf8_validate(path, path_length, NULL)
+            ? MMAY_FILE_INVALID_UTF8
+            : MMAY_FILE_INVALID_ARGUMENT;
     }
-    if (!ruda_vector_init(&bytes, allocator, sizeof(unsigned char))) {
-        return RUDA_FILE_INVALID_ARGUMENT;
+    if (!mmay_vector_init(&bytes, allocator, sizeof(unsigned char))) {
+        return MMAY_FILE_INVALID_ARGUMENT;
     }
     status = ops.open(
         ops.context,
@@ -46,7 +46,7 @@ RudaFileStatus ruda_file_read_all_with_ops(
         path_length,
         &handle
     );
-    if (status != RUDA_FILE_OK) {
+    if (status != MMAY_FILE_OK) {
         goto cleanup;
     }
     for (;;) {
@@ -60,19 +60,19 @@ RudaFileStatus ruda_file_read_all_with_ops(
             &read_count,
             &end
         );
-        if (status != RUDA_FILE_OK || read_count > sizeof(chunk)
+        if (status != MMAY_FILE_OK || read_count > sizeof(chunk)
             || (read_count == 0 && !end)) {
-            if (status == RUDA_FILE_OK) {
-                status = RUDA_FILE_IO_FAILED;
+            if (status == MMAY_FILE_OK) {
+                status = MMAY_FILE_IO_FAILED;
             }
             break;
         }
         if (read_count > max_bytes - bytes.length) {
-            status = RUDA_FILE_LIMIT_EXCEEDED;
+            status = MMAY_FILE_LIMIT_EXCEEDED;
             break;
         }
-        if (!ruda_vector_append(&bytes, chunk, read_count)) {
-            status = RUDA_FILE_ALLOCATION_FAILED;
+        if (!mmay_vector_append(&bytes, chunk, read_count)) {
+            status = MMAY_FILE_ALLOCATION_FAILED;
             break;
         }
         if (end) {
@@ -80,33 +80,33 @@ RudaFileStatus ruda_file_read_all_with_ops(
         }
     }
     {
-        RudaFileStatus close_status = ops.close(ops.context, handle);
-        if (status == RUDA_FILE_OK && close_status != RUDA_FILE_OK) {
+        MarimayFileStatus close_status = ops.close(ops.context, handle);
+        if (status == MMAY_FILE_OK && close_status != MMAY_FILE_OK) {
             status = close_status;
         }
     }
-    if (status == RUDA_FILE_OK
-        && !ruda_owned_bytes_copy(output, allocator, bytes.data, bytes.length)) {
-        status = RUDA_FILE_ALLOCATION_FAILED;
+    if (status == MMAY_FILE_OK
+        && !mmay_owned_bytes_copy(output, allocator, bytes.data, bytes.length)) {
+        status = MMAY_FILE_ALLOCATION_FAILED;
     }
 
 cleanup:
-    ruda_vector_dispose(&bytes);
-    if (status != RUDA_FILE_OK) {
-        ruda_owned_bytes_dispose(output);
+    mmay_vector_dispose(&bytes);
+    if (status != MMAY_FILE_OK) {
+        mmay_owned_bytes_dispose(output);
     }
     return status;
 }
 
-RudaFileStatus ruda_file_read_all(
-    RudaAllocator allocator,
+MarimayFileStatus mmay_file_read_all(
+    MarimayAllocator allocator,
     const char *path,
     size_t path_length,
     size_t max_bytes,
-    RudaOwnedBytes *output
+    MarimayOwnedBytes *output
 ) {
-    return ruda_file_read_all_with_ops(
-        ruda_platform_file_read_ops(),
+    return mmay_file_read_all_with_ops(
+        mmay_platform_file_read_ops(),
         allocator,
         path,
         path_length,
@@ -115,7 +115,7 @@ RudaFileStatus ruda_file_read_all(
     );
 }
 
-static size_t ruda_file_parent_length(const char *path, size_t length) {
+static size_t mmay_file_parent_length(const char *path, size_t length) {
     size_t index = length;
     while (index != 0) {
         unsigned char byte = (unsigned char)path[index - 1];
@@ -127,17 +127,17 @@ static size_t ruda_file_parent_length(const char *path, size_t length) {
     return 0;
 }
 
-static bool ruda_file_paths_are_distinct_siblings(
+static bool mmay_file_paths_are_distinct_siblings(
     const char *temporary_path,
     size_t temporary_path_length,
     const char *destination_path,
     size_t destination_path_length
 ) {
-    size_t temporary_parent_length = ruda_file_parent_length(
+    size_t temporary_parent_length = mmay_file_parent_length(
         temporary_path,
         temporary_path_length
     );
-    size_t destination_parent_length = ruda_file_parent_length(
+    size_t destination_parent_length = mmay_file_parent_length(
         destination_path,
         destination_path_length
     );
@@ -152,9 +152,9 @@ static bool ruda_file_paths_are_distinct_siblings(
         ) == 0;
 }
 
-RudaFileStatus ruda_file_replace_atomic_with_ops(
-    RudaFileOps ops,
-    RudaAllocator allocator,
+MarimayFileStatus mmay_file_replace_atomic_with_ops(
+    MarimayFileOps ops,
+    MarimayAllocator allocator,
     const char *temporary_path,
     size_t temporary_path_length,
     const char *destination_path,
@@ -162,8 +162,8 @@ RudaFileStatus ruda_file_replace_atomic_with_ops(
     const unsigned char *bytes,
     size_t length
 ) {
-    RudaFileHandle handle = 0;
-    RudaFileStatus status = RUDA_FILE_OK;
+    MarimayFileHandle handle = 0;
+    MarimayFileStatus status = MMAY_FILE_OK;
     bool created = false;
     bool open = false;
     size_t offset = 0;
@@ -171,25 +171,25 @@ RudaFileStatus ruda_file_replace_atomic_with_ops(
     if (ops.create_exclusive == NULL || ops.write == NULL || ops.sync == NULL
         || ops.close == NULL || ops.replace == NULL || ops.remove == NULL
         || (bytes == NULL && length != 0)) {
-        return RUDA_FILE_INVALID_ARGUMENT;
+        return MMAY_FILE_INVALID_ARGUMENT;
     }
-    if (!ruda_file_path_valid(temporary_path, temporary_path_length)
-        || !ruda_file_path_valid(destination_path, destination_path_length)) {
+    if (!mmay_file_path_valid(temporary_path, temporary_path_length)
+        || !mmay_file_path_valid(destination_path, destination_path_length)) {
         if ((temporary_path != NULL && temporary_path_length != 0
-                && !ruda_utf8_validate(temporary_path, temporary_path_length, NULL))
+                && !mmay_utf8_validate(temporary_path, temporary_path_length, NULL))
             || (destination_path != NULL && destination_path_length != 0
-                && !ruda_utf8_validate(destination_path, destination_path_length, NULL))) {
-            return RUDA_FILE_INVALID_UTF8;
+                && !mmay_utf8_validate(destination_path, destination_path_length, NULL))) {
+            return MMAY_FILE_INVALID_UTF8;
         }
-        return RUDA_FILE_INVALID_ARGUMENT;
+        return MMAY_FILE_INVALID_ARGUMENT;
     }
-    if (!ruda_file_paths_are_distinct_siblings(
+    if (!mmay_file_paths_are_distinct_siblings(
             temporary_path,
             temporary_path_length,
             destination_path,
             destination_path_length
         )) {
-        return RUDA_FILE_INVALID_ARGUMENT;
+        return MMAY_FILE_INVALID_ARGUMENT;
     }
 
     status = ops.create_exclusive(
@@ -199,7 +199,7 @@ RudaFileStatus ruda_file_replace_atomic_with_ops(
         temporary_path_length,
         &handle
     );
-    if (status != RUDA_FILE_OK) {
+    if (status != MMAY_FILE_OK) {
         return status;
     }
     created = true;
@@ -214,9 +214,9 @@ RudaFileStatus ruda_file_replace_atomic_with_ops(
             length - offset,
             &written
         );
-        if (status != RUDA_FILE_OK || written == 0 || written > length - offset) {
-            if (status == RUDA_FILE_OK) {
-                status = RUDA_FILE_IO_FAILED;
+        if (status != MMAY_FILE_OK || written == 0 || written > length - offset) {
+            if (status == MMAY_FILE_OK) {
+                status = MMAY_FILE_IO_FAILED;
             }
             goto cleanup;
         }
@@ -224,12 +224,12 @@ RudaFileStatus ruda_file_replace_atomic_with_ops(
     }
 
     status = ops.sync(ops.context, handle);
-    if (status != RUDA_FILE_OK) {
+    if (status != MMAY_FILE_OK) {
         goto cleanup;
     }
     status = ops.close(ops.context, handle);
     open = false;
-    if (status != RUDA_FILE_OK) {
+    if (status != MMAY_FILE_OK) {
         goto cleanup;
     }
     status = ops.replace(
@@ -240,7 +240,7 @@ RudaFileStatus ruda_file_replace_atomic_with_ops(
         destination_path,
         destination_path_length
     );
-    if (status == RUDA_FILE_OK) {
+    if (status == MMAY_FILE_OK) {
         created = false;
     }
 
@@ -259,8 +259,8 @@ cleanup:
     return status;
 }
 
-RudaFileStatus ruda_file_replace_atomic(
-    RudaAllocator allocator,
+MarimayFileStatus mmay_file_replace_atomic(
+    MarimayAllocator allocator,
     const char *temporary_path,
     size_t temporary_path_length,
     const char *destination_path,
@@ -268,8 +268,8 @@ RudaFileStatus ruda_file_replace_atomic(
     const unsigned char *bytes,
     size_t length
 ) {
-    return ruda_file_replace_atomic_with_ops(
-        ruda_platform_file_ops(),
+    return mmay_file_replace_atomic_with_ops(
+        mmay_platform_file_ops(),
         allocator,
         temporary_path,
         temporary_path_length,

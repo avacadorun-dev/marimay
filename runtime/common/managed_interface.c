@@ -3,37 +3,37 @@
 #include <limits.h>
 #include <string.h>
 
-RudaManagedStatus ruda_managed_interface_new(
-    RudaManagedHeap *heap,
-    const RudaManagedInterfaceDescriptor *descriptor,
-    RudaManagedReference payload,
+MarimayManagedStatus mmay_managed_interface_new(
+    MarimayManagedHeap *heap,
+    const MarimayManagedInterfaceDescriptor *descriptor,
+    MarimayManagedReference payload,
     const void *method_table,
-    RudaManagedReference *result
+    MarimayManagedReference *result
 ) {
-    RudaManagedInterface *value = NULL;
-    RudaManagedStatus status;
+    MarimayManagedInterface *value = NULL;
+    MarimayManagedStatus status;
     if (result != NULL) {
-        *result = ruda_managed_invalid_reference();
+        *result = mmay_managed_invalid_reference();
     }
-    if (!ruda_managed_heap_valid(heap) || result == NULL
+    if (!mmay_managed_heap_valid(heap) || result == NULL
         || descriptor == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    ruda_managed_resource_failure_clear(heap);
-    if (!ruda_managed_reference_valid(heap, payload)) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
+    mmay_managed_resource_failure_clear(heap);
+    if (!mmay_managed_reference_valid(heap, payload)) {
+        return MMAY_MANAGED_INVALID_REFERENCE;
     }
-    value = ruda_allocate(&heap->allocator, sizeof(*value));
+    value = mmay_allocate(&heap->allocator, sizeof(*value));
     if (value == NULL) {
-        return ruda_managed_resource_host_failure(heap, sizeof(*value));
+        return mmay_managed_resource_host_failure(heap, sizeof(*value));
     }
     memset(value, 0, sizeof(*value));
     value->descriptor = descriptor;
     value->payload = payload;
     value->method_table = method_table;
-    status = ruda_managed_publish_object(
+    status = mmay_managed_publish_object(
         heap,
-        RUDA_MANAGED_OBJECT_INTERFACE,
+        MMAY_MANAGED_OBJECT_INTERFACE,
         value,
         sizeof(*value),
         &payload,
@@ -42,43 +42,43 @@ RudaManagedStatus ruda_managed_interface_new(
         0,
         result
     );
-    if (status != RUDA_MANAGED_OK) {
-        ruda_managed_interface_dispose(heap, value);
+    if (status != MMAY_MANAGED_OK) {
+        mmay_managed_interface_dispose(heap, value);
     }
     return status;
 }
 
-RudaManagedStatus ruda_managed_interface_describe(
-    const RudaManagedHeap *heap,
-    RudaManagedReference value,
-    const RudaManagedInterfaceDescriptor **descriptor,
-    RudaManagedReference *payload,
+MarimayManagedStatus mmay_managed_interface_describe(
+    const MarimayManagedHeap *heap,
+    MarimayManagedReference value,
+    const MarimayManagedInterfaceDescriptor **descriptor,
+    MarimayManagedReference *payload,
     const void **method_table
 ) {
-    const RudaManagedSlot *slot = NULL;
+    const MarimayManagedSlot *slot = NULL;
     if (descriptor != NULL) {
         *descriptor = NULL;
     }
     if (payload != NULL) {
-        *payload = ruda_managed_invalid_reference();
+        *payload = mmay_managed_invalid_reference();
     }
     if (method_table != NULL) {
         *method_table = NULL;
     }
-    if (!ruda_managed_heap_valid(heap) || descriptor == NULL
+    if (!mmay_managed_heap_valid(heap) || descriptor == NULL
         || payload == NULL || method_table == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    slot = ruda_managed_resolve_const(heap, value);
+    slot = mmay_managed_resolve_const(heap, value);
     if (slot == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
+        return MMAY_MANAGED_INVALID_REFERENCE;
     }
-    if (slot->kind != RUDA_MANAGED_OBJECT_INTERFACE
+    if (slot->kind != MMAY_MANAGED_OBJECT_INTERFACE
         || slot->as.iface == NULL) {
-        return RUDA_MANAGED_TYPE_MISMATCH;
+        return MMAY_MANAGED_TYPE_MISMATCH;
     }
     *descriptor = slot->as.iface->descriptor;
     *payload = slot->as.iface->payload;
     *method_table = slot->as.iface->method_table;
-    return RUDA_MANAGED_OK;
+    return MMAY_MANAGED_OK;
 }

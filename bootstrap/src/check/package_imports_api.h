@@ -1,11 +1,11 @@
-#ifndef RUDA_CHECK_PACKAGE_IMPORTS_API_H
-#define RUDA_CHECK_PACKAGE_IMPORTS_API_H
+#ifndef MMAY_CHECK_PACKAGE_IMPORTS_API_H
+#define MMAY_CHECK_PACKAGE_IMPORTS_API_H
 
 #include "checker_declaration_types.h"
 
-typedef struct RudaChecker RudaChecker;
+typedef struct MarimayChecker MarimayChecker;
 
-typedef struct RudaCheckPackageSurface {
+typedef struct MarimayCheckPackageSurface {
     const unsigned char *path;
     size_t path_length;
     size_t function_start;
@@ -20,10 +20,10 @@ typedef struct RudaCheckPackageSurface {
     size_t enum_count;
     size_t interface_start;
     size_t interface_count;
-} RudaCheckPackageSurface;
+} MarimayCheckPackageSurface;
 
-typedef struct RudaCheckImportBinding {
-    const RudaAstTree *ast;
+typedef struct MarimayCheckImportBinding {
+    const MarimayAstTree *ast;
     size_t surface_index;
     const unsigned char *original;
     size_t original_length;
@@ -32,80 +32,80 @@ typedef struct RudaCheckImportBinding {
     size_t start;
     size_t end;
     bool is_namespace;
-} RudaCheckImportBinding;
+} MarimayCheckImportBinding;
 
-typedef struct RudaCheckImportEnvironment {
-    const RudaCheckPackageSurface *const *surfaces;
+typedef struct MarimayCheckImportEnvironment {
+    const MarimayCheckPackageSurface *const *surfaces;
     size_t surface_count;
-    const RudaCheckImportBinding *bindings;
+    const MarimayCheckImportBinding *bindings;
     size_t binding_count;
-} RudaCheckImportEnvironment;
+} MarimayCheckImportEnvironment;
 
-typedef struct RudaCheckCallable {
-    const RudaTypeId *parameter_types;
+typedef struct MarimayCheckCallable {
+    const MarimayTypeId *parameter_types;
     size_t parameter_count;
-    RudaSymbolId symbol;
-    RudaSymbolId receiver_symbol;
-    RudaTypeId receiver_type;
-    RudaTypeId result_type;
+    MarimaySymbolId symbol;
+    MarimaySymbolId receiver_symbol;
+    MarimayTypeId receiver_type;
+    MarimayTypeId result_type;
     bool dot_eligible;
     bool is_external;
-} RudaCheckCallable;
+} MarimayCheckCallable;
 
-bool ruda_check_import_binding_exists(
-    const RudaChecker *checker,
+bool mmay_check_import_binding_exists(
+    const MarimayChecker *checker,
     const unsigned char *name,
     size_t name_length
 );
-bool ruda_check_import_namespace_exists(
-    const RudaChecker *checker,
+bool mmay_check_import_namespace_exists(
+    const MarimayChecker *checker,
     const unsigned char *name,
     size_t name_length
 );
-bool ruda_check_import_namespace_owns_enum(
-    const RudaChecker *checker,
-    RudaCheckName namespace_name,
-    RudaTypeId type
+bool mmay_check_import_namespace_owns_enum(
+    const MarimayChecker *checker,
+    MarimayCheckName namespace_name,
+    MarimayTypeId type
 );
-bool ruda_check_import_type(
-    RudaChecker *checker,
-    const RudaAstNode *type_node,
-    RudaTypeId *type,
+bool mmay_check_import_type(
+    MarimayChecker *checker,
+    const MarimayAstNode *type_node,
+    MarimayTypeId *type,
     bool *resolved
 );
-bool ruda_check_imported_nominal(
-    const RudaChecker *checker,
-    RudaTypeId type,
-    RudaSymbolId *symbol
+bool mmay_check_imported_nominal(
+    const MarimayChecker *checker,
+    MarimayTypeId type,
+    MarimaySymbolId *symbol
 );
-RudaCheckCallResolution ruda_check_resolve_imported_call(
-    const RudaChecker *checker,
-    RudaCheckName namespace_name,
+MarimayCheckCallResolution mmay_check_resolve_imported_call(
+    const MarimayChecker *checker,
+    MarimayCheckName namespace_name,
     bool has_namespace,
-    RudaCheckName name,
+    MarimayCheckName name,
     bool receiver_known,
-    RudaTypeId receiver_type,
-    RudaCheckCallable *callable
+    MarimayTypeId receiver_type,
+    MarimayCheckCallable *callable
 );
-RudaCheckCallResolution ruda_check_resolve_imported_named_call(
-    const RudaChecker *checker,
-    RudaCheckName name,
-    RudaTypeId receiver_type,
-    RudaCheckCallable *callable
+MarimayCheckCallResolution mmay_check_resolve_imported_named_call(
+    const MarimayChecker *checker,
+    MarimayCheckName name,
+    MarimayTypeId receiver_type,
+    MarimayCheckCallable *callable
 );
-const RudaCheckedRecord *ruda_check_imported_record_by_type(
-    const RudaChecker *checker,
-    RudaTypeId type
+const MarimayCheckedRecord *mmay_check_imported_record_by_type(
+    const MarimayChecker *checker,
+    MarimayTypeId type
 );
-const RudaCheckedEnum *ruda_check_imported_enum_by_type(
-    const RudaChecker *checker,
-    RudaTypeId type
+const MarimayCheckedEnum *mmay_check_imported_enum_by_type(
+    const MarimayChecker *checker,
+    MarimayTypeId type
 );
-const RudaCheckedEnum *ruda_check_imported_enum_by_name(
-    const RudaChecker *checker,
-    RudaCheckName namespace_name,
+const MarimayCheckedEnum *mmay_check_imported_enum_by_name(
+    const MarimayChecker *checker,
+    MarimayCheckName namespace_name,
     bool has_namespace,
-    RudaCheckName enum_name,
+    MarimayCheckName enum_name,
     bool *resolved,
     bool *exists_private
 );

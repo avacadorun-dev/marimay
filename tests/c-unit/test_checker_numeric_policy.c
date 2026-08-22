@@ -1,6 +1,6 @@
 #include "test_checker_support.h"
 
-void ruda_test_checker_numeric_policy(void) {
+void mmay_test_checker_numeric_policy(void) {
     static const char source[] =
         "fn ca(value: i8): Option<i8> { return checkedAdd(value, 1); }\n"
         "fn cs(value: i8): Option<i8> { return checkedSubtract(value, 1); }\n"
@@ -28,95 +28,95 @@ void ruda_test_checker_numeric_policy(void) {
         "fn ssr(value: i8): i8 { return saturatingShiftRight(value, 1); }\n"
         "fn widened(value: u8): u16 { return value as u16; }\n"
         "fn narrowed(value: u16): Option<u8> { return value as u8; }\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
     size_t index = 0;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/numeric-policy",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
-    RUDA_EXPECT(checked.initialized);
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.initialized);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 26);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 26);
         for (index = 0; index < checked.functions.length; index += 1) {
-            const RudaCheckedFunction *checked_function = ruda_checked_function(
+            const MarimayCheckedFunction *checked_function = mmay_checked_function(
                 &checked, index
             );
-            RUDA_EXPECT(checked_function != NULL);
+            MMAY_EXPECT(checked_function != NULL);
             if (checked_function != NULL) {
-                RUDA_EXPECT(
-                    ruda_mir_verify(&checked_function->mir) == RUDA_MIR_VERIFY_OK
+                MMAY_EXPECT(
+                    mmay_mir_verify(&checked_function->mir) == MMAY_MIR_VERIFY_OK
                 );
             }
         }
         if (checked.functions.length == 26) {
             for (index = 0; index < 24; index += 1) {
-                RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
-                    &ruda_checked_function(&checked, index)->mir,
-                    RUDA_MIR_INTEGER_POLICY
+                MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
+                    &mmay_checked_function(&checked, index)->mir,
+                    MMAY_MIR_INTEGER_POLICY
                 ) == 1);
             }
-            RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
-                &ruda_checked_function(&checked, 24)->mir,
-                RUDA_MIR_INTEGER_CONVERT
+            MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
+                &mmay_checked_function(&checked, 24)->mir,
+                MMAY_MIR_INTEGER_CONVERT
             ) == 1);
-            RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
-                &ruda_checked_function(&checked, 25)->mir,
-                RUDA_MIR_INTEGER_CONVERT
+            MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
+                &mmay_checked_function(&checked, 25)->mir,
+                MMAY_MIR_INTEGER_CONVERT
             ) == 1);
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 
     {
         static const char shadow_source[] =
             "fn wrappingAdd(left: i8, right: i8): i8 { return left; }\n"
             "fn useShadow(): i8 { return wrappingAdd(1, 2); }\n";
-        RudaCheckerFixture shadow_fixture;
-        RudaCheckResult shadow_checked;
+        MarimayCheckerFixture shadow_fixture;
+        MarimayCheckResult shadow_checked;
         memset(&shadow_fixture, 0, sizeof(shadow_fixture));
         memset(&shadow_checked, 0, sizeof(shadow_checked));
-        RUDA_EXPECT(ruda_checker_fixture_init(
+        MMAY_EXPECT(mmay_checker_fixture_init(
             &shadow_fixture, shadow_source
         ));
-        RUDA_EXPECT(ruda_check_ast(
+        MMAY_EXPECT(mmay_check_ast(
             &shadow_fixture.ast, "test/numeric-policy-shadow",
-            ruda_system_allocator(), ruda_check_default_options(),
+            mmay_system_allocator(), mmay_check_default_options(),
             &shadow_checked
-        ) == RUDA_CHECK_OK);
-        RUDA_EXPECT(shadow_checked.diagnostics.length == 0);
-        RUDA_EXPECT(shadow_checked.functions.length == 2);
+        ) == MMAY_CHECK_OK);
+        MMAY_EXPECT(shadow_checked.diagnostics.length == 0);
+        MMAY_EXPECT(shadow_checked.functions.length == 2);
         if (shadow_checked.functions.length == 2) {
-            const RudaMirFunction *use =
-                &ruda_checked_function(&shadow_checked, 1)->mir;
-            RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
-                use, RUDA_MIR_INTEGER_POLICY
+            const MarimayMirFunction *use =
+                &mmay_checked_function(&shadow_checked, 1)->mir;
+            MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
+                use, MMAY_MIR_INTEGER_POLICY
             ) == 0);
-            RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
-                use, RUDA_MIR_CALL
+            MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
+                use, MMAY_MIR_CALL
             ) == 1);
         }
         if (shadow_checked.initialized) {
-            ruda_check_result_dispose(&shadow_checked);
+            mmay_check_result_dispose(&shadow_checked);
         }
-        ruda_checker_fixture_dispose(&shadow_fixture);
+        mmay_checker_fixture_dispose(&shadow_fixture);
     }
 
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(value: f64): f64 { return wrappingAdd(value, value); }\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "value",
         1
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(value: u16): u8 { return value as u8; }\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "value as u8",
         0
     );

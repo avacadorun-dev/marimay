@@ -1,5 +1,5 @@
-#ifndef RUDA_TEST_FORMATTER_SUPPORT_H
-#define RUDA_TEST_FORMATTER_SUPPORT_H
+#ifndef MMAY_TEST_FORMATTER_SUPPORT_H
+#define MMAY_TEST_FORMATTER_SUPPORT_H
 
 #include "test_support.h"
 
@@ -10,41 +10,41 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ruda/ast/ast.h"
-#include "ruda/base/allocator.h"
-#include "ruda/base/utf8.h"
-#include "ruda/format/formatter.h"
-#include "ruda/lex/lexer.h"
-#include "ruda/parse/parser.h"
-#include "ruda/source/source_manager.h"
+#include "mmay/ast/ast.h"
+#include "mmay/base/allocator.h"
+#include "mmay/base/utf8.h"
+#include "mmay/format/formatter.h"
+#include "mmay/lex/lexer.h"
+#include "mmay/parse/parser.h"
+#include "mmay/source/source_manager.h"
 
 #include "semantic_oracle.h"
 
-typedef struct RudaFormatterFixture {
-    RudaSourceManager sources;
-    const RudaSourceSnapshot *snapshot;
-    RudaLexResult lexed;
-    RudaParseResult parsed;
-} RudaFormatterFixture;
+typedef struct MarimayFormatterFixture {
+    MarimaySourceManager sources;
+    const MarimaySourceSnapshot *snapshot;
+    MarimayLexResult lexed;
+    MarimayParseResult parsed;
+} MarimayFormatterFixture;
 
-bool ruda_formatter_fixture_init(
-    RudaFormatterFixture *fixture,
+bool mmay_formatter_fixture_init(
+    MarimayFormatterFixture *fixture,
     const char *path,
     const unsigned char *bytes,
     size_t length
 );
-void ruda_formatter_fixture_dispose(RudaFormatterFixture *fixture);
-bool ruda_formatter_ast_semantically_equal(
-    const RudaAstNode *left,
-    const RudaSourceSnapshot *left_source,
-    const RudaAstNode *right,
-    const RudaSourceSnapshot *right_source
+void mmay_formatter_fixture_dispose(MarimayFormatterFixture *fixture);
+bool mmay_formatter_ast_semantically_equal(
+    const MarimayAstNode *left,
+    const MarimaySourceSnapshot *left_source,
+    const MarimayAstNode *right,
+    const MarimaySourceSnapshot *right_source
 );
-bool ruda_formatter_comments_equal(
-    const RudaLexResult *left,
-    const RudaLexResult *right
+bool mmay_formatter_comments_equal(
+    const MarimayLexResult *left,
+    const MarimayLexResult *right
 );
-bool ruda_formatter_read_file(
+bool mmay_formatter_read_file(
     const char *path,
     unsigned char *bytes,
     size_t capacity,

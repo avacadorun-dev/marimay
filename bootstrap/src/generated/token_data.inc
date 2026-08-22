@@ -1,37 +1,37 @@
 /* Generated from bootstrap/tables/tokens.tsv. Do not edit by hand. */
-static const RudaKeyword ruda_keywords[] = {
-    {"as", RUDA_TOKEN_KW_AS},
-    {"break", RUDA_TOKEN_KW_BREAK},
-    {"case", RUDA_TOKEN_KW_CASE},
-    {"const", RUDA_TOKEN_KW_CONST},
-    {"continue", RUDA_TOKEN_KW_CONTINUE},
-    {"defer", RUDA_TOKEN_KW_DEFER},
-    {"else", RUDA_TOKEN_KW_ELSE},
-    {"enum", RUDA_TOKEN_KW_ENUM},
-    {"extern", RUDA_TOKEN_KW_EXTERN},
-    {"false", RUDA_TOKEN_KW_FALSE},
-    {"fn", RUDA_TOKEN_KW_FN},
-    {"for", RUDA_TOKEN_KW_FOR},
-    {"from", RUDA_TOKEN_KW_FROM},
-    {"if", RUDA_TOKEN_KW_IF},
-    {"import", RUDA_TOKEN_KW_IMPORT},
-    {"interface", RUDA_TOKEN_KW_INTERFACE},
-    {"let", RUDA_TOKEN_KW_LET},
-    {"match", RUDA_TOKEN_KW_MATCH},
-    {"mutable", RUDA_TOKEN_KW_MUTABLE},
-    {"of", RUDA_TOKEN_KW_OF},
-    {"public", RUDA_TOKEN_KW_PUBLIC},
-    {"return", RUDA_TOKEN_KW_RETURN},
-    {"scope", RUDA_TOKEN_KW_SCOPE},
-    {"spawn", RUDA_TOKEN_KW_SPAWN},
-    {"true", RUDA_TOKEN_KW_TRUE},
-    {"type", RUDA_TOKEN_KW_TYPE},
-    {"unsafe", RUDA_TOKEN_KW_UNSAFE},
-    {"while", RUDA_TOKEN_KW_WHILE},
-    {"yield", RUDA_TOKEN_KW_YIELD}
+static const MarimayKeyword mmay_keywords[] = {
+    {"as", MMAY_TOKEN_KW_AS},
+    {"break", MMAY_TOKEN_KW_BREAK},
+    {"case", MMAY_TOKEN_KW_CASE},
+    {"const", MMAY_TOKEN_KW_CONST},
+    {"continue", MMAY_TOKEN_KW_CONTINUE},
+    {"defer", MMAY_TOKEN_KW_DEFER},
+    {"else", MMAY_TOKEN_KW_ELSE},
+    {"enum", MMAY_TOKEN_KW_ENUM},
+    {"extern", MMAY_TOKEN_KW_EXTERN},
+    {"false", MMAY_TOKEN_KW_FALSE},
+    {"fn", MMAY_TOKEN_KW_FN},
+    {"for", MMAY_TOKEN_KW_FOR},
+    {"from", MMAY_TOKEN_KW_FROM},
+    {"if", MMAY_TOKEN_KW_IF},
+    {"import", MMAY_TOKEN_KW_IMPORT},
+    {"interface", MMAY_TOKEN_KW_INTERFACE},
+    {"let", MMAY_TOKEN_KW_LET},
+    {"match", MMAY_TOKEN_KW_MATCH},
+    {"mutable", MMAY_TOKEN_KW_MUTABLE},
+    {"of", MMAY_TOKEN_KW_OF},
+    {"public", MMAY_TOKEN_KW_PUBLIC},
+    {"return", MMAY_TOKEN_KW_RETURN},
+    {"scope", MMAY_TOKEN_KW_SCOPE},
+    {"spawn", MMAY_TOKEN_KW_SPAWN},
+    {"true", MMAY_TOKEN_KW_TRUE},
+    {"type", MMAY_TOKEN_KW_TYPE},
+    {"unsafe", MMAY_TOKEN_KW_UNSAFE},
+    {"while", MMAY_TOKEN_KW_WHILE},
+    {"yield", MMAY_TOKEN_KW_YIELD}
 };
 
-static const char *const ruda_token_names[] = {
+static const char *const mmay_token_names[] = {
     "EOF",
     "INVALID",
     "BOM",
@@ -131,6 +131,6 @@ static const char *const ruda_token_names[] = {
 };
 
 _Static_assert(
-    sizeof(ruda_token_names) / sizeof(ruda_token_names[0]) == RUDA_TOKEN_KIND_COUNT,
+    sizeof(mmay_token_names) / sizeof(mmay_token_names[0]) == MMAY_TOKEN_KIND_COUNT,
     "token name table must cover every token kind"
 );

@@ -3,27 +3,27 @@
 #include <limits.h>
 #include <string.h>
 
-RudaManagedStatus ruda_managed_record_view_bind(
-    RudaManagedHeap *heap,
-    RudaManagedReference reference,
-    const RudaManagedRecordDescriptor *expected,
-    RudaManagedRecordView *view
+MarimayManagedStatus mmay_managed_record_view_bind(
+    MarimayManagedHeap *heap,
+    MarimayManagedReference reference,
+    const MarimayManagedRecordDescriptor *expected,
+    MarimayManagedRecordView *view
 ) {
-    RudaManagedSlot *slot = NULL;
+    MarimayManagedSlot *slot = NULL;
     if (view == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
     memset(view, 0, sizeof(*view));
-    if (!ruda_managed_heap_valid(heap) || expected == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+    if (!mmay_managed_heap_valid(heap) || expected == NULL) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    slot = ruda_managed_resolve(heap, reference);
+    slot = mmay_managed_resolve(heap, reference);
     if (slot == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
+        return MMAY_MANAGED_INVALID_REFERENCE;
     }
-    if (slot->kind != RUDA_MANAGED_OBJECT_RECORD || slot->as.record == NULL
+    if (slot->kind != MMAY_MANAGED_OBJECT_RECORD || slot->as.record == NULL
         || slot->as.record->descriptor != expected) {
-        return RUDA_MANAGED_TYPE_MISMATCH;
+        return MMAY_MANAGED_TYPE_MISMATCH;
     }
     view->reference = reference;
     view->descriptor = expected;
@@ -33,76 +33,76 @@ RudaManagedStatus ruda_managed_record_view_bind(
     heap->cached_record_descriptor = expected;
     heap->cached_record_object = view->object;
     heap->cached_record_fields = view->fields;
-    return RUDA_MANAGED_OK;
+    return MMAY_MANAGED_OK;
 }
 
-RudaManagedStatus ruda_managed_record_new(
-    RudaManagedHeap *heap,
-    const RudaManagedRecordDescriptor *descriptor,
-    const RudaManagedCell *fields,
+MarimayManagedStatus mmay_managed_record_new(
+    MarimayManagedHeap *heap,
+    const MarimayManagedRecordDescriptor *descriptor,
+    const MarimayManagedCell *fields,
     size_t field_count,
-    RudaManagedReference *result
+    MarimayManagedReference *result
 ) {
-    RudaManagedRecord *record = NULL;
-    RudaManagedStatus status;
+    MarimayManagedRecord *record = NULL;
+    MarimayManagedStatus status;
     size_t field_bytes = 0;
     size_t object_bytes = 0;
     size_t index = 0;
     if (result != NULL) {
-        *result = ruda_managed_invalid_reference();
+        *result = mmay_managed_invalid_reference();
     }
-    if (!ruda_managed_heap_valid(heap) || result == NULL || descriptor == NULL
+    if (!mmay_managed_heap_valid(heap) || result == NULL || descriptor == NULL
         || descriptor->field_count != field_count
         || (descriptor->fields == NULL && field_count != 0)
         || (fields == NULL && field_count != 0)) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    ruda_managed_resource_failure_clear(heap);
+    mmay_managed_resource_failure_clear(heap);
     for (index = 0; index < field_count; index += 1) {
-        status = ruda_managed_validate_field(
+        status = mmay_managed_validate_field(
             heap,
             &descriptor->fields[index],
             fields[index]
         );
-        if (status != RUDA_MANAGED_OK) {
+        if (status != MMAY_MANAGED_OK) {
             return status;
         }
     }
-    if (!ruda_size_multiply(field_count, sizeof(RudaManagedCell), &field_bytes)
-        || !ruda_size_add(sizeof(*record), field_bytes, &object_bytes)) {
-        return RUDA_MANAGED_LIMIT_REACHED;
+    if (!mmay_size_multiply(field_count, sizeof(MarimayManagedCell), &field_bytes)
+        || !mmay_size_add(sizeof(*record), field_bytes, &object_bytes)) {
+        return MMAY_MANAGED_LIMIT_REACHED;
     }
-    record = ruda_allocate(&heap->allocator, sizeof(*record));
+    record = mmay_allocate(&heap->allocator, sizeof(*record));
     if (record == NULL) {
-        return ruda_managed_resource_host_failure(heap, sizeof(*record));
+        return mmay_managed_resource_host_failure(heap, sizeof(*record));
     }
     memset(record, 0, sizeof(*record));
     if (field_bytes != 0) {
-        record->fields = ruda_allocate(&heap->allocator, field_bytes);
+        record->fields = mmay_allocate(&heap->allocator, field_bytes);
         if (record->fields == NULL) {
-            ruda_deallocate(&heap->allocator, record, sizeof(*record));
-            return ruda_managed_resource_host_failure(heap, field_bytes);
+            mmay_deallocate(&heap->allocator, record, sizeof(*record));
+            return mmay_managed_resource_host_failure(heap, field_bytes);
         }
         memcpy(record->fields, fields, field_bytes);
     }
     record->descriptor = descriptor;
     {
-        size_t root_count = ruda_managed_count_reference_fields(
+        size_t root_count = mmay_managed_count_reference_fields(
             descriptor->fields,
             field_count
         );
         size_t root_bytes = 0;
-        RudaManagedReference *roots = NULL;
+        MarimayManagedReference *roots = NULL;
         if (root_count != 0
-            && ruda_size_multiply(
+            && mmay_size_multiply(
                 root_count,
-                sizeof(RudaManagedReference),
+                sizeof(MarimayManagedReference),
                 &root_bytes
             )) {
-            roots = ruda_allocate(&heap->allocator, root_bytes);
+            roots = mmay_allocate(&heap->allocator, root_bytes);
         }
         if (root_count != 0 && (roots == NULL
-                || !ruda_managed_collect_reference_roots(
+                || !mmay_managed_collect_reference_roots(
                     descriptor->fields,
                     fields,
                     field_count,
@@ -110,13 +110,13 @@ RudaManagedStatus ruda_managed_record_new(
                     root_count,
                     &root_count
                 ))) {
-            ruda_deallocate(&heap->allocator, roots, root_bytes);
-            ruda_managed_record_dispose(heap, record);
-            return ruda_managed_resource_host_failure(heap, root_bytes);
+            mmay_deallocate(&heap->allocator, roots, root_bytes);
+            mmay_managed_record_dispose(heap, record);
+            return mmay_managed_resource_host_failure(heap, root_bytes);
         }
-        status = ruda_managed_publish_object(
+        status = mmay_managed_publish_object(
             heap,
-            RUDA_MANAGED_OBJECT_RECORD,
+            MMAY_MANAGED_OBJECT_RECORD,
             record,
             object_bytes,
             roots,
@@ -125,95 +125,95 @@ RudaManagedStatus ruda_managed_record_new(
             0,
             result
         );
-        ruda_deallocate(&heap->allocator, roots, root_bytes);
+        mmay_deallocate(&heap->allocator, roots, root_bytes);
     }
-    if (status != RUDA_MANAGED_OK) {
-        ruda_managed_record_dispose(heap, record);
+    if (status != MMAY_MANAGED_OK) {
+        mmay_managed_record_dispose(heap, record);
     }
     return status;
 }
-RudaManagedStatus ruda_managed_record_describe(
-    const RudaManagedHeap *heap,
-    RudaManagedReference record,
-    const RudaManagedRecordDescriptor **descriptor
+MarimayManagedStatus mmay_managed_record_describe(
+    const MarimayManagedHeap *heap,
+    MarimayManagedReference record,
+    const MarimayManagedRecordDescriptor **descriptor
 ) {
-    const RudaManagedSlot *slot = NULL;
+    const MarimayManagedSlot *slot = NULL;
     if (descriptor != NULL) {
         *descriptor = NULL;
     }
-    if (!ruda_managed_heap_valid(heap) || descriptor == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+    if (!mmay_managed_heap_valid(heap) || descriptor == NULL) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    slot = ruda_managed_resolve_const(heap, record);
+    slot = mmay_managed_resolve_const(heap, record);
     if (slot == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
+        return MMAY_MANAGED_INVALID_REFERENCE;
     }
-    if (slot->kind != RUDA_MANAGED_OBJECT_RECORD || slot->as.record == NULL) {
-        return RUDA_MANAGED_TYPE_MISMATCH;
+    if (slot->kind != MMAY_MANAGED_OBJECT_RECORD || slot->as.record == NULL) {
+        return MMAY_MANAGED_TYPE_MISMATCH;
     }
     *descriptor = slot->as.record->descriptor;
-    return RUDA_MANAGED_OK;
+    return MMAY_MANAGED_OK;
 }
 
-RudaManagedStatus ruda_managed_record_get(
-    const RudaManagedHeap *heap,
-    RudaManagedReference record,
+MarimayManagedStatus mmay_managed_record_get(
+    const MarimayManagedHeap *heap,
+    MarimayManagedReference record,
     size_t field,
-    RudaManagedCell *result
+    MarimayManagedCell *result
 ) {
-    const RudaManagedSlot *slot = NULL;
+    const MarimayManagedSlot *slot = NULL;
     if (result != NULL) {
         memset(result, 0, sizeof(*result));
     }
-    if (!ruda_managed_heap_valid(heap) || result == NULL) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+    if (!mmay_managed_heap_valid(heap) || result == NULL) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    slot = ruda_managed_resolve_const(heap, record);
+    slot = mmay_managed_resolve_const(heap, record);
     if (slot == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
+        return MMAY_MANAGED_INVALID_REFERENCE;
     }
-    if (slot->kind != RUDA_MANAGED_OBJECT_RECORD || slot->as.record == NULL
+    if (slot->kind != MMAY_MANAGED_OBJECT_RECORD || slot->as.record == NULL
         || slot->as.record->descriptor == NULL) {
-        return RUDA_MANAGED_TYPE_MISMATCH;
+        return MMAY_MANAGED_TYPE_MISMATCH;
     }
     if (field >= slot->as.record->descriptor->field_count) {
-        return RUDA_MANAGED_BOUNDS;
+        return MMAY_MANAGED_BOUNDS;
     }
     *result = slot->as.record->fields[field];
-    return RUDA_MANAGED_OK;
+    return MMAY_MANAGED_OK;
 }
 
-RudaManagedStatus ruda_managed_record_set(
-    RudaManagedHeap *heap,
-    RudaManagedReference record,
+MarimayManagedStatus mmay_managed_record_set(
+    MarimayManagedHeap *heap,
+    MarimayManagedReference record,
     size_t field,
-    RudaManagedCell value
+    MarimayManagedCell value
 ) {
-    RudaManagedSlot *slot = NULL;
-    const RudaManagedFieldDescriptor *descriptor = NULL;
-    RudaManagedStatus status;
-    if (!ruda_managed_heap_valid(heap)) {
-        return RUDA_MANAGED_INVALID_ARGUMENT;
+    MarimayManagedSlot *slot = NULL;
+    const MarimayManagedFieldDescriptor *descriptor = NULL;
+    MarimayManagedStatus status;
+    if (!mmay_managed_heap_valid(heap)) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
     }
-    slot = ruda_managed_resolve(heap, record);
+    slot = mmay_managed_resolve(heap, record);
     if (slot == NULL) {
-        return RUDA_MANAGED_INVALID_REFERENCE;
+        return MMAY_MANAGED_INVALID_REFERENCE;
     }
-    if (slot->kind != RUDA_MANAGED_OBJECT_RECORD || slot->as.record == NULL
+    if (slot->kind != MMAY_MANAGED_OBJECT_RECORD || slot->as.record == NULL
         || slot->as.record->descriptor == NULL) {
-        return RUDA_MANAGED_TYPE_MISMATCH;
+        return MMAY_MANAGED_TYPE_MISMATCH;
     }
     if (field >= slot->as.record->descriptor->field_count) {
-        return RUDA_MANAGED_BOUNDS;
+        return MMAY_MANAGED_BOUNDS;
     }
     descriptor = &slot->as.record->descriptor->fields[field];
     if (!descriptor->is_mutable) {
-        return RUDA_MANAGED_TYPE_MISMATCH;
+        return MMAY_MANAGED_TYPE_MISMATCH;
     }
-    status = ruda_managed_validate_field(heap, descriptor, value);
-    if (status != RUDA_MANAGED_OK) {
+    status = mmay_managed_validate_field(heap, descriptor, value);
+    if (status != MMAY_MANAGED_OK) {
         return status;
     }
     slot->as.record->fields[field] = value;
-    return RUDA_MANAGED_OK;
+    return MMAY_MANAGED_OK;
 }

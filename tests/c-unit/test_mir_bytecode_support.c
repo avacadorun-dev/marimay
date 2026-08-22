@@ -2,18 +2,18 @@
 
 #include <string.h>
 
-#include "ruda/mir/mir.h"
+#include "mmay/mir/mir.h"
 
-RudaMirInstruction ruda_test_mir_bytecode_instruction(
-    RudaMirInstructionKind kind,
-    RudaMirRegister target,
-    RudaMirRegister first,
-    RudaMirRegister second,
+MarimayMirInstruction mmay_test_mir_bytecode_instruction(
+    MarimayMirInstructionKind kind,
+    MarimayMirRegister target,
+    MarimayMirRegister first,
+    MarimayMirRegister second,
     int64_t integer,
     bool boolean,
     size_t start
 ) {
-    RudaMirInstruction instruction;
+    MarimayMirInstruction instruction;
     memset(&instruction, 0, sizeof(instruction));
     instruction.kind = kind;
     instruction.target = target;
@@ -26,14 +26,14 @@ RudaMirInstruction ruda_test_mir_bytecode_instruction(
     return instruction;
 }
 
-RudaMirTerminator ruda_test_mir_bytecode_terminator(
-    RudaMirTerminatorKind kind,
-    RudaMirRegister value,
-    RudaMirBlockId target,
-    RudaMirBlockId otherwise,
+MarimayMirTerminator mmay_test_mir_bytecode_terminator(
+    MarimayMirTerminatorKind kind,
+    MarimayMirRegister value,
+    MarimayMirBlockId target,
+    MarimayMirBlockId otherwise,
     size_t start
 ) {
-    RudaMirTerminator terminator;
+    MarimayMirTerminator terminator;
     memset(&terminator, 0, sizeof(terminator));
     terminator.kind = kind;
     terminator.value = value;
@@ -44,25 +44,25 @@ RudaMirTerminator ruda_test_mir_bytecode_terminator(
     return terminator;
 }
 
-RudaMirBytecodeLowerOptions ruda_test_mir_bytecode_options(void) {
-    RudaMirBytecodeLowerOptions options =
-        ruda_mir_bytecode_lower_default_options();
+MarimayMirBytecodeLowerOptions mmay_test_mir_bytecode_options(void) {
+    MarimayMirBytecodeLowerOptions options =
+        mmay_mir_bytecode_lower_default_options();
     options.source = 2;
     options.source_count = 3;
     return options;
 }
 
-const RudaBytecodeInstruction *ruda_test_mir_bytecode_at(
-    const RudaBytecodeFunction *function,
+const MarimayBytecodeInstruction *mmay_test_mir_bytecode_at(
+    const MarimayBytecodeFunction *function,
     size_t block,
     size_t instruction
 ) {
-    const RudaBytecodeBlock *target = ruda_vector_at_const(
+    const MarimayBytecodeBlock *target = mmay_vector_at_const(
         &function->blocks,
         block
     );
     return target != NULL
-        ? ruda_vector_at_const(&target->instructions, instruction)
+        ? mmay_vector_at_const(&target->instructions, instruction)
         : NULL;
 }
 

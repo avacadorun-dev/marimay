@@ -17,13 +17,13 @@ index и финальные `live_allocations == 0`, `live_bytes == 0`.
 
 ## Подтверждённая исходная evidence
 
-- Все текущие Ruda/Go/Rust benchmark runs проверяются по одним и тем же
+- Все текущие Marimay/Go/Rust benchmark runs проверяются по одним и тем же
   checksum constants.
 - Все три текущие DSU реализации используют path compression и union by rank.
-- Последний отчёт называет `build/release/ruda` фактическим Ruda compiler.
+- Последний отчёт называет `build/release/mmay` фактическим Marimay compiler.
 - Harness сначала собирает программы, затем измеряет native executables;
-  компиляция и `ruda run`/VM в native timing не входят.
-- Timed Ruda corpus ещё содержит inline/package-local реализации и местами
+  компиляция и `mmay run`/VM в native timing не входят.
+- Timed Marimay corpus ещё содержит inline/package-local реализации и местами
   несопоставимый data layout; равенство checksum само по себе это не закрывает.
 - Архивные debug-runtime результаты фиксируют конфигурационную ловушку и не
   являются release acceptance values.
@@ -68,9 +68,9 @@ checked arithmetic; 28 удаляет оставшиеся workarounds и вып
 
 ------
 
-## 13. Согласованный release runtime для `ruda build`
+## 13. Согласованный release runtime для `mmay build`
 
-**User-visible outcome:** `ruda build --release` детерминированно создаёт
+**User-visible outcome:** `mmay build --release` детерминированно создаёт
 настоящий release artifact или выдаёт точную ошибку; он не может молча
 подлинковать debug runtime из build tree вызывающего compiler.
 
@@ -83,8 +83,8 @@ checked arithmetic; 28 удаляет оставшиеся workarounds и вып
   rebuild contract либо точный profile-mismatch rejection. Decision также
   фиксирует installed-tree lookup, relocation и cache-key inputs.
 - **Подтверждённое ограничение:** `native/build.c` передаёт release flags для
-  generated C, но `RUDA_NATIVE_RUNTIME_ARCHIVE` вшит из CMake configuration
-  самого `ruda`. Смена только `build/debug/ruda` на `build/release/ruda`
+  generated C, но `MMAY_NATIVE_RUNTIME_ARCHIVE` вшит из CMake configuration
+  самого `mmay`. Смена только `build/debug/mmay` на `build/release/mmay`
   существенно изменила timings. Это доказывает incoherence, но не общий speed
   ratio языка.
 - **Scope:** runtime artifact discovery/validation, build-cache identity,
@@ -104,11 +104,11 @@ checked arithmetic; 28 удаляет оставшиеся workarounds и вып
 - **Focused acceptance:**
 
   ```sh
-  cmake --build --preset debug --target ruda_c_unit --parallel
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
-  cmake --build --preset release --target ruda_c_unit --parallel
-  ctest --preset release -R '^ruda_c_unit$' --output-on-failure
-  build/debug/ruda build tests/run/cp9 --release --output build/debug/cp13-release
+  cmake --build --preset debug --target mmay_c_unit --parallel
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
+  cmake --build --preset release --target mmay_c_unit --parallel
+  ctest --preset release -R '^mmay_c_unit$' --output-on-failure
+  build/debug/mmay build tests/run/cp9 --release --output build/debug/cp13-release
   build/debug/cp13-release
   ```
 
@@ -173,13 +173,13 @@ checked arithmetic; 28 удаляет оставшиеся workarounds и вып
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/post-preview/cp14-imported-arrays --check
-  build/debug/ruda check tests/post-preview/cp14-imported-arrays
-  build/debug/ruda run tests/post-preview/cp14-imported-arrays
-  build/debug/ruda test tests/post-preview/cp14-imported-arrays --engine both
-  build/debug/ruda build tests/post-preview/cp14-imported-arrays --output build/debug/cp14-imported-arrays
+  build/debug/mmay fmt tests/post-preview/cp14-imported-arrays --check
+  build/debug/mmay check tests/post-preview/cp14-imported-arrays
+  build/debug/mmay run tests/post-preview/cp14-imported-arrays
+  build/debug/mmay test tests/post-preview/cp14-imported-arrays --engine both
+  build/debug/mmay build tests/post-preview/cp14-imported-arrays --output build/debug/cp14-imported-arrays
   build/debug/cp14-imported-arrays
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
   ```
 
 - **Docs/evidence/removal:** уточнить spec canonical instantiated package type,
@@ -235,13 +235,13 @@ patterns, returns и postfix `?` работают между packages без loc
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/post-preview/cp15-imported-results --check
-  build/debug/ruda check tests/post-preview/cp15-imported-results
-  build/debug/ruda run tests/post-preview/cp15-imported-results
-  build/debug/ruda test tests/post-preview/cp15-imported-results --engine both
-  build/debug/ruda build tests/post-preview/cp15-imported-results --output build/debug/cp15-imported-results
+  build/debug/mmay fmt tests/post-preview/cp15-imported-results --check
+  build/debug/mmay check tests/post-preview/cp15-imported-results
+  build/debug/mmay run tests/post-preview/cp15-imported-results
+  build/debug/mmay test tests/post-preview/cp15-imported-results --engine both
+  build/debug/mmay build tests/post-preview/cp15-imported-results --output build/debug/cp15-imported-results
   build/debug/cp15-imported-results
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
   ```
 
 - **Docs/evidence/removal:** уточнить normative import/generic text только при
@@ -297,12 +297,12 @@ compiler-known Array operations с теми же именами.
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/post-preview/cp16-receiver-names --check
-  build/debug/ruda check tests/post-preview/cp16-receiver-names
-  build/debug/ruda test tests/post-preview/cp16-receiver-names --engine both
-  build/debug/ruda build tests/post-preview/cp16-receiver-names --output build/debug/cp16-receiver-names
+  build/debug/mmay fmt tests/post-preview/cp16-receiver-names --check
+  build/debug/mmay check tests/post-preview/cp16-receiver-names
+  build/debug/mmay test tests/post-preview/cp16-receiver-names --engine both
+  build/debug/mmay build tests/post-preview/cp16-receiver-names --output build/debug/cp16-receiver-names
   build/debug/cp16-receiver-names
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
   ```
 
 - **Docs/evidence/removal:** уточнить implementation/spec candidate precedence,
@@ -363,12 +363,12 @@ initialized elements; capacity остаётся ненаблюдаемой.
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/post-preview/cp17-array-mutation --check
-  build/debug/ruda check tests/post-preview/cp17-array-mutation
-  build/debug/ruda test tests/post-preview/cp17-array-mutation --engine both
-  build/debug/ruda build tests/post-preview/cp17-array-mutation --output build/debug/cp17-array-mutation
+  build/debug/mmay fmt tests/post-preview/cp17-array-mutation --check
+  build/debug/mmay check tests/post-preview/cp17-array-mutation
+  build/debug/mmay test tests/post-preview/cp17-array-mutation --engine both
+  build/debug/mmay build tests/post-preview/cp17-array-mutation --output build/debug/cp17-array-mutation
   build/debug/cp17-array-mutation
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
   ```
 
 - **Docs/evidence/removal:** decision, normative specs, generated artifacts,
@@ -437,13 +437,13 @@ formatter, diagnostic и IDE spelling существующих `Array<int>` и
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda fmt tests/post-preview/cp18-array-spelling --check
-  build/debug/ruda check tests/post-preview/cp18-array-spelling
-  build/debug/ruda test tests/post-preview/cp18-array-spelling --engine both
-  build/debug/ruda build tests/post-preview/cp18-array-spelling --output build/debug/cp18-array-spelling
+  build/debug/mmay fmt tests/post-preview/cp18-array-spelling --check
+  build/debug/mmay check tests/post-preview/cp18-array-spelling
+  build/debug/mmay test tests/post-preview/cp18-array-spelling --engine both
+  build/debug/mmay build tests/post-preview/cp18-array-spelling --output build/debug/cp18-array-spelling
   build/debug/cp18-array-spelling
-  build/debug/ruda fmt tests/format --check
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
+  build/debug/mmay fmt tests/format --check
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
   ```
 
 - **Docs/evidence/removal:** accepted decision, все normative texts, grammar/
@@ -510,11 +510,11 @@ exit behavior.
 - **Focused acceptance:**
 
   ```sh
-  build/debug/ruda run tests/post-preview/cp19-resource-limits --max-heap-bytes 1048576
-  build/debug/ruda test tests/post-preview/cp19-resource-limits --engine both --max-heap-bytes 1048576
-  build/debug/ruda build tests/post-preview/cp19-resource-limits --max-heap-bytes 1048576 --output build/debug/cp19-resource-limits
+  build/debug/mmay run tests/post-preview/cp19-resource-limits --max-heap-bytes 1048576
+  build/debug/mmay test tests/post-preview/cp19-resource-limits --engine both --max-heap-bytes 1048576
+  build/debug/mmay build tests/post-preview/cp19-resource-limits --max-heap-bytes 1048576 --output build/debug/cp19-resource-limits
   build/debug/cp19-resource-limits
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
   ```
 
 - **Docs/evidence/removal:** decision, execution/toolchain/diagnostics/stdlib
@@ -544,7 +544,7 @@ exit behavior.
 
 ## 20. Эквивалентный reusable algorithm corpus
 
-**User-visible outcome:** timed и correctness Ruda corpus вызывает reusable
+**User-visible outcome:** timed и correctness Marimay corpus вызывает reusable
 sorting/stack/queue/heap/DSU/BFS/Dijkstra packages и выполняет algorithmic work/
 data layout, эквивалентные Go/Rust corpus.
 
@@ -555,18 +555,18 @@ data layout, эквивалентные Go/Rust corpus.
   generator, checks, representation, checksum. Если equivalence требует новой
   semantics сверх 13–19 — добавить новый semantic checkpoint, не ослаблять
   workload другого языка.
-- **Evidence:** checksums и DSU совпадают, но timed Ruda inlines algorithms;
-  Go/Rust вызывают packages. Ruda stack/queue/heap используют inline state,
+- **Evidence:** checksums и DSU совпадают, но timed Marimay inlines algorithms;
+  Go/Rust вызывают packages. Marimay stack/queue/heap используют inline state,
   Dijkstra — parallel target/weight arrays вместо edge records; validation work
   местами различается.
-- **Scope:** переключить timed entrypoints на reusable Ruda APIs; выровнять
+- **Scope:** переключить timed entrypoints на reusable Marimay APIs; выровнять
   structures/graph layout и checks; сохранить LCG, sizes/counts, Dijkstra
   `O(V^2)`, checksums и stdout line; добавить equivalence manifest и main-repo
   regressions. Не входят timings budgets, algorithm substitutions, tuning и
   compiler optimization.
 - **Owners:** main repo — focused post-preview package/CLI fixtures. Sibling —
-  reusable Ruda packages, benchmark entrypoints, `verify.sh`, `run.py`, Go/Rust
-  sources. `benchmarks/ruda/core/benchmarks.ruda` только orchestrates package
+  reusable Marimay packages, benchmark entrypoints, `verify.sh`, `run.py`, Go/Rust
+  sources. `benchmarks/mmay/core/benchmarks.my` только orchestrates package
   owners, не становится semantic aggregator.
 - **Поведение и tests:** все 8 algorithms через imports, public aliases,
   Option/Result, dot calls, nested/record arrays. `fmt`, `check`, VM run/test,
@@ -576,9 +576,9 @@ data layout, эквивалентные Go/Rust corpus.
 - **Focused acceptance:**
 
   ```sh
-  cd ../ruda-algotithms
-  RUDA="$(cd ../Ma && pwd)/build/debug/ruda" ./verify.sh
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/run.py --languages ruda,go,rust --samples 1 --warmups 0 --output benchmarks/results/cp20-fidelity-smoke.md
+  cd ../mmay-algotithms
+  MMAY="$(cd ../Ma && pwd)/build/debug/mmay" ./verify.sh
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/run.py --languages marimay,go,rust --samples 1 --warmups 0 --output benchmarks/results/cp20-fidelity-smoke.md
   (cd go && go test ./...)
   cargo test --manifest-path rust/Cargo.toml
   ```
@@ -591,7 +591,7 @@ data layout, эквивалентные Go/Rust corpus.
 - **Completion:** по одному малому linked commit в каждом изменённом repo,
   немедленно push, записать SHAs. Все 8 workloads должны реально использовать
   reusable surface; speed claim запрещён.
-- **Полный validation tail в Ruda repo:**
+- **Полный validation tail в Marimay repo:**
 
   ```sh
   ./tools/check-architecture
@@ -638,9 +638,9 @@ regression budgets до начала optimizations.
 - **Focused acceptance на каждом Tier 1 runner:**
 
   ```sh
-  cd ../ruda-algotithms
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/probes.py --samples 11 --warmups 3 --output benchmarks/results/cp21-probes-PLATFORM.json
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/run.py --languages ruda,go,rust --samples 11 --warmups 3 --output benchmarks/results/cp21-algorithms-PLATFORM.md
+  cd ../mmay-algotithms
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/probes.py --samples 11 --warmups 3 --output benchmarks/results/cp21-probes-PLATFORM.json
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/run.py --languages marimay,go,rust --samples 11 --warmups 3 --output benchmarks/results/cp21-algorithms-PLATFORM.md
   ./benchmarks/validate_results.py benchmarks/results/cp21-probes-PLATFORM.json benchmarks/results/cp21-algorithms-PLATFORM.json
   ```
 
@@ -650,7 +650,7 @@ regression budgets до начала optimizations.
   counter должен иметь checkpoint-28 removal.
 - **Completion:** linked commits/evidence сразу push. Пока нет всех Tier 1
   baselines/review, checkpoint не complete и 22–27 не начинаются.
-- **Полный validation tail в Ruda repo:**
+- **Полный validation tail в Marimay repo:**
 
   ```sh
   ./tools/check-architecture
@@ -703,9 +703,9 @@ evaluation order в VM/native.
 - **Focused acceptance:**
 
   ```sh
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
-  cd ../ruda-algotithms
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/probes.py --probe bounds --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp22-bounds-PLATFORM.json
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
+  cd ../mmay-algotithms
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/probes.py --probe bounds --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp22-bounds-PLATFORM.json
   ./benchmarks/validate_results.py benchmarks/results/cp22-bounds-PLATFORM.json
   ```
 
@@ -750,7 +750,7 @@ descriptor, length, bounds, status и cell conversion.
   ровно одну internal decision. Нельзя оставить случайный profile/host-dependent
   выбор.
 - **Evidence/hypothesis:** emitter сначала проверяет exact descriptor/length,
-  затем runtime get/set снова resolves/checks/maps `RudaManagedCell`. Runtime —
+  затем runtime get/set снова resolves/checks/maps `MarimayManagedCell`. Runtime —
   отдельный archive, обычный generated-C `-O2` не inline через него. Sequence
   подтверждён; его isolated timing contribution ещё hypothesis.
 - **Scope:** один internal exact typed checked/proof-in-bounds API; single
@@ -771,9 +771,9 @@ descriptor, length, bounds, status и cell conversion.
 - **Focused acceptance:**
 
   ```sh
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
-  cd ../ruda-algotithms
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/probes.py --probe scalar-access --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp23-scalar-access-PLATFORM.json
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
+  cd ../mmay-algotithms
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/probes.py --probe scalar-access --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp23-scalar-access-PLATFORM.json
   ./benchmarks/validate_results.py benchmarks/results/cp23-scalar-access-PLATFORM.json
   ```
 
@@ -815,7 +815,7 @@ identity, tracing, failures и VM behavior.
   internal layout/ABI decision: список raw scalar kinds, width/alignment/bits,
   descriptor tag/stride, zero-init, compatibility и отсутствие bundle change.
   Это не source-level D013 specialization.
-- **Evidence/hypothesis:** на measured 64-bit target `RudaManagedCell` 16 bytes,
+- **Evidence/hypothesis:** на measured 64-bit target `MarimayManagedCell` 16 bytes,
   raw64 — 8; collector уже различает raw/reference kinds. Cache density и
   capacity improvement вероятны, но подтверждаются probes 21.
 - **Scope:** native allocation/access/copy/growth raw descriptors; checked size/
@@ -834,9 +834,9 @@ identity, tracing, failures и VM behavior.
 - **Focused acceptance:**
 
   ```sh
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
-  cd ../ruda-algotithms
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/probes.py --probe scalar-storage --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp24-scalar-storage-PLATFORM.json
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
+  cd ../mmay-algotithms
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/probes.py --probe scalar-storage --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp24-scalar-storage-PLATFORM.json
   ./benchmarks/validate_results.py benchmarks/results/cp24-scalar-storage-PLATFORM.json
   ```
 
@@ -895,9 +895,9 @@ reallocations и изменения source behavior.
 - **Focused acceptance:**
 
   ```sh
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
-  cd ../ruda-algotithms
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/probes.py --probe capacity --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp25-capacity-PLATFORM.json
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
+  cd ../mmay-algotithms
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/probes.py --probe capacity --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp25-capacity-PLATFORM.json
   ./benchmarks/validate_results.py benchmarks/results/cp25-capacity-PLATFORM.json
   ```
 
@@ -956,10 +956,10 @@ safe aliasing, tracing и panic behavior.
 - **Focused acceptance:**
 
   ```sh
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
-  cd ../ruda-algotithms
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/probes.py --probe nested-traversal --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp26-nested-PLATFORM.json
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/run.py --languages ruda --samples 11 --warmups 3 --output benchmarks/results/cp26-graphs-PLATFORM.md
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
+  cd ../mmay-algotithms
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/probes.py --probe nested-traversal --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp26-nested-PLATFORM.json
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/run.py --languages marimay --samples 11 --warmups 3 --output benchmarks/results/cp26-graphs-PLATFORM.md
   ./benchmarks/validate_results.py benchmarks/results/cp26-nested-PLATFORM.json benchmarks/results/cp26-graphs-PLATFORM.json
   ```
 
@@ -1018,9 +1018,9 @@ safe aliasing, tracing и panic behavior.
 - **Focused acceptance:**
 
   ```sh
-  ctest --preset debug -R '^ruda_c_unit$' --output-on-failure
-  cd ../ruda-algotithms
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/probes.py --probe checked-integer --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp27-checked-integer-PLATFORM.json
+  ctest --preset debug -R '^mmay_c_unit$' --output-on-failure
+  cd ../mmay-algotithms
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/probes.py --probe checked-integer --samples 11 --warmups 3 --baseline benchmarks/results/cp21-probes-PLATFORM.json --output benchmarks/results/cp27-checked-integer-PLATFORM.json
   ./benchmarks/validate_results.py benchmarks/results/cp27-checked-integer-PLATFORM.json
   ```
 
@@ -1061,7 +1061,7 @@ faithful reusable algorithm corpus и preview suite после всех follow-u
   strategy и Tier 1 roadmap. Единственный performance authority — protocol/
   budgets 21. Debug archive и broad language claims запрещены.
 - **Evidence:** initial latest report уже использует release compiler/checksums,
-  но это один host/3 samples и pre-fidelity Ruda boundaries. Каждый 13–27 должен
+  но это один host/3 samples и pre-fidelity Marimay boundaries. Каждый 13–27 должен
   иметь focused evidence до aggregate run.
 - **Scope:** удалить оставшиеся aliases/wrappers/inline copies/renamed ops/shadow
   sizes/parallel-edge layouts/adapters/test counters/proof injection/old source
@@ -1083,10 +1083,10 @@ faithful reusable algorithm corpus и preview suite после всех follow-u
 - **Focused acceptance на каждом Tier 1:**
 
   ```sh
-  cd ../ruda-algotithms
-  RUDA="$(cd ../Ma && pwd)/build/debug/ruda" ./verify.sh
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/probes.py --samples 11 --warmups 3 --output benchmarks/results/cp28-probes-PLATFORM.json
-  RUDA="$(cd ../Ma && pwd)/build/release/ruda" ./benchmarks/run.py --languages ruda,go,rust --samples 11 --warmups 3 --output benchmarks/results/cp28-release-PLATFORM.md
+  cd ../mmay-algotithms
+  MMAY="$(cd ../Ma && pwd)/build/debug/mmay" ./verify.sh
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/probes.py --samples 11 --warmups 3 --output benchmarks/results/cp28-probes-PLATFORM.json
+  MMAY="$(cd ../Ma && pwd)/build/release/mmay" ./benchmarks/run.py --languages marimay,go,rust --samples 11 --warmups 3 --output benchmarks/results/cp28-release-PLATFORM.md
   ./benchmarks/validate_results.py benchmarks/results/cp28-probes-PLATFORM.json benchmarks/results/cp28-release-PLATFORM.json --baseline benchmarks/results/cp21-algorithms-PLATFORM.json
   ```
 

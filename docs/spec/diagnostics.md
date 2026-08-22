@@ -1,4 +1,4 @@
-# Ruda diagnostics specification — design baseline 0.1
+# Marimay diagnostics specification — design baseline 0.1
 
 Status: normative user-facing contract.
 
@@ -27,19 +27,19 @@ Ixxxx   internal compiler/runtime failure
 
 Codes are never silently reused for a semantically unrelated condition. Splitting a broad code is allowed; machine consumers can inspect the schema-versioned category and fields.
 
-Formatter workflow failures use `F0001` when an input cannot be read, `F0002` when canonical bytes cannot be written or atomically committed, `F0003` when a documented defensive limit is exhausted, and `F0004` when `ruda fmt --check` finds non-canonical input. Lexical and parser failures discovered while formatting retain their original `Lxxxx` or `Pxxxx` identities and source spans; the formatter does not collapse them into a generic `Fxxxx` error.
+Formatter workflow failures use `F0001` when an input cannot be read, `F0002` when canonical bytes cannot be written or atomically committed, `F0003` when a documented defensive limit is exhausted, and `F0004` when `mmay fmt --check` finds non-canonical input. Lexical and parser failures discovered while formatting retain their original `Lxxxx` or `Pxxxx` identities and source spans; the formatter does not collapse them into a generic `Fxxxx` error.
 
 Batch checker discovery, read, or defensive traversal/source-limit failures use
 `K0004`. A syntactically valid manifest that lacks exactly one usable,
 nonempty, NUL-free `module` and `language` identity uses `K0005`. Lexical, parser, resolver, type,
-match, and effect failures discovered by `ruda check` retain their originating
+match, and effect failures discovered by `mmay check` retain their originating
 codes and exact source spans. If accepted syntax reaches an unimplemented
-checker path, `ruda check` emits `I0001` and exits 70; it must never turn that
+checker path, `mmay check` emits `I0001` and exits 70; it must never turn that
 condition into a successful or diagnostic-free check.
 
 The allocated codes and summaries are published in the generated [diagnostic code registry](../generated/diagnostic-codes.md).
 
-`ruda explain T1234` prints the rule, minimal bad/good examples, common causes, and links to the installed version-matched reference. Explanations are available offline.
+`mmay explain T1234` prints the rule, minimal bad/good examples, common causes, and links to the installed version-matched reference. Explanations are available offline.
 
 ## 2. Structured model
 
@@ -66,7 +66,7 @@ Default rendering shows the shortest useful source window with Unicode-safe care
 
 ```text
 error[M1001]: match does not cover `Lookup.Denied`
-  --> src/user.ruda:18:10
+  --> src/user.my:18:10
    |
 18 |   return match result {
    |          ^^^^^^^^^^^^ missing case `Denied { reason: _ }`
@@ -95,12 +95,12 @@ JSON diagnostics are newline-delimited so streaming tools receive progress witho
 
 ```json
 {
-  "schema": "ruda.diagnostic/1",
+  "schema": "marimay.diagnostic/1",
   "code": "M1001",
   "severity": "error",
   "message": "match does not cover Lookup.Denied",
   "primary": {
-    "file": "src/user.ruda",
+    "file": "src/user.my",
     "snapshot": "sha256:...",
     "startByte": 412,
     "endByte": 425,
@@ -119,7 +119,7 @@ A command invocation diagnostic has the same required shape without pretending t
 
 ```json
 {
-  "schema": "ruda.diagnostic/1",
+  "schema": "marimay.diagnostic/1",
   "code": "U0001",
   "severity": "error",
   "message": "unknown command 'buid'; did you mean 'build'?",
@@ -131,7 +131,7 @@ A command invocation diagnostic has the same required shape without pretending t
 }
 ```
 
-A machine-applicable fix includes description, applicability, source snapshot hashes, and edits. `ruda fix` rejects stale/overlapping edits rather than guessing.
+A machine-applicable fix includes description, applicability, source snapshot hashes, and edits. `mmay fix` rejects stale/overlapping edits rather than guessing.
 
 ## 5. Type and interface diagnostics
 
@@ -148,14 +148,14 @@ Example shape:
 
 ```text
 error[T2403]: `User` does not satisfy `Stringer`
-  --> src/view.ruda:9:14
+  --> src/view.my:9:14
 note: required method: string(): string
 note: candidate `string(user: User, locale: Locale): string`
       has one additional required parameter
 help: provide `fn string(user: User): string`
 ```
 
-The compiler does not dump a full generic solver trace by default. `--verbose` or `ruda explain inference <span>` may show canonical constraints for compiler debugging.
+The compiler does not dump a full generic solver trace by default. `--verbose` or `mmay explain inference <span>` may show canonical constraints for compiler debugging.
 
 ## 6. Match diagnostics
 
@@ -192,14 +192,14 @@ When a non-suspending boundary rejects a call, print the shortest inferred path 
 
 ```text
 error[E3102]: C callback `onData` may suspend
-  --> src/ffi.ruda:14:1
+  --> src/ffi.my:14:1
 note: `onData` calls `decodeAndStore`
 note: `decodeAndStore` calls `store.write`
 note: `store.write` may wait for network I/O
 help: enqueue data into the isolate and return from the C callback
 ```
 
-`ruda explain suspension <symbol>` shows the full effect summary, dynamic-call conservative edges, and source spans.
+`mmay explain suspension <symbol>` shows the full effect summary, dynamic-call conservative edges, and source spans.
 
 Task-escape diagnostics name the forbidden destination and owner scope. They suggest waiting, returning the task's completed value, or moving the `scope` block outward; they do not suggest unsafe detachment.
 
@@ -230,9 +230,9 @@ and cleanup behavior.
 
 ```text
 panic[G4002]: array index 8 is outside length 4
-  at selectUser (src/users.ruda:42:17)
-  at handleRequest (src/http.ruda:19:12)
-task 17 spawned at src/server.ruda:88:24
+  at selectUser (src/users.my:42:17)
+  at handleRequest (src/http.my:19:12)
+task 17 spawned at src/server.my:88:24
   from task 3 (server scope)
 ```
 
@@ -308,7 +308,7 @@ Timeout, memory, nesting, and complexity-limit diagnostics identify the limit an
 
 An internal compiler/runtime failure uses an `Ixxxx` code, concise invariant, toolchain/build identity, and sanitized crash-report location. It never tells the user that valid source is their fault.
 
-Where safe, `ruda` writes a minimized reproduction bundle containing only explicitly approved source/config. Automatic network upload is opt-in. Secrets and absolute user paths are redacted.
+Where safe, `mmay` writes a minimized reproduction bundle containing only explicitly approved source/config. Automatic network upload is opt-in. Secrets and absolute user paths are redacted.
 
 Internal failures exit `70`; source errors remain `1`.
 

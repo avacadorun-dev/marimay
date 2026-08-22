@@ -4,14 +4,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "ruda/base/allocator.h"
-#include "ruda/format/formatter.h"
-#include "ruda/lex/lexer.h"
-#include "ruda/parse/parser.h"
-#include "ruda/platform/file.h"
-#include "ruda/source/source_manager.h"
+#include "mmay/base/allocator.h"
+#include "mmay/format/formatter.h"
+#include "mmay/lex/lexer.h"
+#include "mmay/parse/parser.h"
+#include "mmay/platform/file.h"
+#include "mmay/source/source_manager.h"
 
-static bool ruda_doc_line_equals(
+static bool mmay_doc_line_equals(
     const unsigned char *bytes,
     size_t start,
     size_t end,
@@ -25,31 +25,31 @@ static bool ruda_doc_line_equals(
         && memcmp(bytes + start, text, length) == 0;
 }
 
-static void ruda_test_readme_ruda_fences(void) {
-    RudaOwnedBytes document = {0};
-    RudaSourceManager sources;
+static void mmay_test_readme_mmay_fences(void) {
+    MarimayOwnedBytes document = {0};
+    MarimaySourceManager sources;
     size_t cursor = 0;
     size_t content_start = 0;
     size_t fence_count = 0;
-    bool inside_ruda = false;
+    bool inside_mmay = false;
     bool sources_initialized = false;
-    RUDA_EXPECT(ruda_file_read_all(
-        ruda_system_allocator(),
+    MMAY_EXPECT(mmay_file_read_all(
+        mmay_system_allocator(),
         "README.fixture",
         strlen("README.fixture"),
         1024 * 1024,
         &document
-    ) == RUDA_FILE_OK);
+    ) == MMAY_FILE_OK);
     if (document.data == NULL) {
         return;
     }
-    sources_initialized = ruda_source_manager_init(
+    sources_initialized = mmay_source_manager_init(
         &sources,
-        ruda_system_allocator()
+        mmay_system_allocator()
     );
-    RUDA_EXPECT(sources_initialized);
+    MMAY_EXPECT(sources_initialized);
     if (!sources_initialized) {
-        ruda_owned_bytes_dispose(&document);
+        mmay_owned_bytes_dispose(&document);
         return;
     }
     while (cursor < document.length) {
@@ -60,15 +60,15 @@ static void ruda_test_readme_ruda_fences(void) {
             line_end += 1;
         }
         cursor = line_end < document.length ? line_end + 1 : line_end;
-        if (!inside_ruda && ruda_doc_line_equals(
+        if (!inside_mmay && mmay_doc_line_equals(
                 document.data,
                 line_start,
                 line_end,
-                "```ruda"
+                "```marimay"
             )) {
-            inside_ruda = true;
+            inside_mmay = true;
             content_start = cursor;
-        } else if (inside_ruda && ruda_doc_line_equals(
+        } else if (inside_mmay && mmay_doc_line_equals(
                 document.data,
                 line_start,
                 line_end,
@@ -78,76 +78,76 @@ static void ruda_test_readme_ruda_fences(void) {
             int path_length = snprintf(
                 virtual_path,
                 sizeof(virtual_path),
-                "README.md#ruda-%zu",
+                "README.md#mmay-%zu",
                 fence_count + 1
             );
-            const RudaSourceSnapshot *snapshot = NULL;
-            RudaLexResult lexed;
-            RudaParseResult parsed;
-            RudaFormatResult formatted;
-            RudaLexStatus lex_status;
-            RudaParseStatus parse_status;
-            RudaFormatStatus format_status;
+            const MarimaySourceSnapshot *snapshot = NULL;
+            MarimayLexResult lexed;
+            MarimayParseResult parsed;
+            MarimayFormatResult formatted;
+            MarimayLexStatus lex_status;
+            MarimayParseStatus parse_status;
+            MarimayFormatStatus format_status;
             memset(&lexed, 0, sizeof(lexed));
             memset(&parsed, 0, sizeof(parsed));
             memset(&formatted, 0, sizeof(formatted));
-            RUDA_EXPECT(path_length > 0
+            MMAY_EXPECT(path_length > 0
                 && (size_t)path_length < sizeof(virtual_path));
-            RUDA_EXPECT(path_length > 0
+            MMAY_EXPECT(path_length > 0
                 && (size_t)path_length < sizeof(virtual_path)
-                && ruda_source_manager_add(
+                && mmay_source_manager_add(
                     &sources,
                     virtual_path,
                     (size_t)path_length,
                     document.data + content_start,
                     line_start - content_start,
                     &snapshot
-                ) == RUDA_SOURCE_OK);
+                ) == MMAY_SOURCE_OK);
             if (snapshot != NULL) {
-                lex_status = ruda_lex_snapshot(
+                lex_status = mmay_lex_snapshot(
                     snapshot,
-                    ruda_system_allocator(),
-                    ruda_lex_default_options(),
+                    mmay_system_allocator(),
+                    mmay_lex_default_options(),
                     &lexed
                 );
-                RUDA_EXPECT(lex_status == RUDA_LEX_OK);
-                if (lex_status == RUDA_LEX_OK) {
-                    parse_status = ruda_parse_file(
+                MMAY_EXPECT(lex_status == MMAY_LEX_OK);
+                if (lex_status == MMAY_LEX_OK) {
+                    parse_status = mmay_parse_file(
                         &lexed,
-                        ruda_system_allocator(),
-                        ruda_parse_default_options(),
+                        mmay_system_allocator(),
+                        mmay_parse_default_options(),
                         &parsed
                     );
-                    RUDA_EXPECT(parse_status == RUDA_PARSE_OK);
-                    RUDA_EXPECT(lexed.diagnostics.length == 0);
-                    RUDA_EXPECT(parsed.diagnostics.length == 0);
-                    if (parse_status == RUDA_PARSE_OK
+                    MMAY_EXPECT(parse_status == MMAY_PARSE_OK);
+                    MMAY_EXPECT(lexed.diagnostics.length == 0);
+                    MMAY_EXPECT(parsed.diagnostics.length == 0);
+                    if (parse_status == MMAY_PARSE_OK
                         && lexed.diagnostics.length == 0
                         && parsed.diagnostics.length == 0) {
-                        format_status = ruda_format_source(
+                        format_status = mmay_format_source(
                             &lexed,
                             &parsed,
-                            ruda_system_allocator(),
-                            ruda_format_default_options(),
+                            mmay_system_allocator(),
+                            mmay_format_default_options(),
                             &formatted
                         );
-                        RUDA_EXPECT(format_status == RUDA_FORMAT_OK);
+                        MMAY_EXPECT(format_status == MMAY_FORMAT_OK);
                     }
                 }
             }
-            ruda_format_result_dispose(&formatted);
-            ruda_parse_result_dispose(&parsed);
-            ruda_lex_result_dispose(&lexed);
+            mmay_format_result_dispose(&formatted);
+            mmay_parse_result_dispose(&parsed);
+            mmay_lex_result_dispose(&lexed);
             fence_count += 1;
-            inside_ruda = false;
+            inside_mmay = false;
         }
     }
-    RUDA_EXPECT(!inside_ruda);
-    RUDA_EXPECT(fence_count != 0);
-    ruda_source_manager_dispose(&sources);
-    ruda_owned_bytes_dispose(&document);
+    MMAY_EXPECT(!inside_mmay);
+    MMAY_EXPECT(fence_count != 0);
+    mmay_source_manager_dispose(&sources);
+    mmay_owned_bytes_dispose(&document);
 }
 
-void ruda_test_doc_examples(void) {
-    ruda_test_readme_ruda_fences();
+void mmay_test_doc_examples(void) {
+    mmay_test_readme_mmay_fences();
 }

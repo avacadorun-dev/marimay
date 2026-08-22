@@ -1,377 +1,377 @@
-#ifndef RUDA_MIR_INTERNAL_H
-#define RUDA_MIR_INTERNAL_H
-#include "ruda/mir/mir.h"
+#ifndef MMAY_MIR_INTERNAL_H
+#define MMAY_MIR_INTERNAL_H
+#include "mmay/mir/mir.h"
 #include <stddef.h>
 #include <stdint.h>
 enum {
-    RUDA_MIR_MAX_DATAFLOW_CELLS = 16000000
+    MMAY_MIR_MAX_DATAFLOW_CELLS = 16000000
 };
 
-typedef enum RudaMirManagedLayoutKind {
-    RUDA_MIR_MANAGED_LAYOUT_RECORD,
-    RUDA_MIR_MANAGED_LAYOUT_ENUM,
-    RUDA_MIR_MANAGED_LAYOUT_ARRAY,
-    RUDA_MIR_MANAGED_LAYOUT_INTERFACE
-} RudaMirManagedLayoutKind;
+typedef enum MarimayMirManagedLayoutKind {
+    MMAY_MIR_MANAGED_LAYOUT_RECORD,
+    MMAY_MIR_MANAGED_LAYOUT_ENUM,
+    MMAY_MIR_MANAGED_LAYOUT_ARRAY,
+    MMAY_MIR_MANAGED_LAYOUT_INTERFACE
+} MarimayMirManagedLayoutKind;
 
-typedef struct RudaMirManagedLayoutInfo {
-    RudaMirManagedLayoutKind kind;
+typedef struct MarimayMirManagedLayoutInfo {
+    MarimayMirManagedLayoutKind kind;
     uint32_t layout;
-} RudaMirManagedLayoutInfo;
+} MarimayMirManagedLayoutInfo;
 
-extern const uint64_t ruda_mir_checked_index_top;
-extern const uint64_t ruda_mir_checked_index_none;
-typedef struct RudaMirManagedRecord {
-    RudaTypeId type;
+extern const uint64_t mmay_mir_checked_index_top;
+extern const uint64_t mmay_mir_checked_index_none;
+typedef struct MarimayMirManagedRecord {
+    MarimayTypeId type;
     size_t field_count;
     size_t allocation_size;
-    RudaMirValue fields[];
-} RudaMirManagedRecord;
-typedef struct RudaMirManagedEnum {
-    RudaTypeId type;
+    MarimayMirValue fields[];
+} MarimayMirManagedRecord;
+typedef struct MarimayMirManagedEnum {
+    MarimayTypeId type;
     size_t variant;
     size_t variant_count;
     size_t selected_payload_count;
     size_t layout_payload_count;
     size_t allocation_size;
-    RudaMirValue payload[];
-} RudaMirManagedEnum;
-typedef struct RudaMirManagedString {
+    MarimayMirValue payload[];
+} MarimayMirManagedEnum;
+typedef struct MarimayMirManagedString {
     size_t allocation_size;
     size_t length;
     unsigned char bytes[];
-} RudaMirManagedString;
-typedef struct RudaMirManagedArray {
-    RudaTypeId type;
-    RudaTypeId element_type;
+} MarimayMirManagedString;
+typedef struct MarimayMirManagedArray {
+    MarimayTypeId type;
+    MarimayTypeId element_type;
     size_t allocation_size;
     size_t length;
     size_t capacity;
     uint64_t mutation_generation;
-    RudaMirValue elements[];
-} RudaMirManagedArray;
-typedef struct RudaMirManagedInterface {
-    RudaTypeId type;
-    RudaMirValue payload;
+    MarimayMirValue elements[];
+} MarimayMirManagedArray;
+typedef struct MarimayMirManagedInterface {
+    MarimayTypeId type;
+    MarimayMirValue payload;
     size_t method_count;
     size_t allocation_size;
-    RudaSymbolId methods[];
-} RudaMirManagedInterface;
-RudaMirVerifyStatus ruda_mir_verify_defer_control_flow(
-    const RudaMirFunction *function,
+    MarimaySymbolId methods[];
+} MarimayMirManagedInterface;
+MarimayMirVerifyStatus mmay_mir_verify_defer_control_flow(
+    const MarimayMirFunction *function,
     size_t *work
 );
-RudaTypeId ruda_mir_register_type(
-    const RudaMirFunction *function,
-    RudaMirRegister register_id
+MarimayTypeId mmay_mir_register_type(
+    const MarimayMirFunction *function,
+    MarimayMirRegister register_id
 );
-bool ruda_mir_register_is(
-    const RudaMirFunction *function,
-    RudaMirRegister register_id,
-    RudaTypeId type
+bool mmay_mir_register_is(
+    const MarimayMirFunction *function,
+    MarimayMirRegister register_id,
+    MarimayTypeId type
 );
-const RudaMirCall *ruda_mir_call(
-    const RudaMirFunction *function,
-    RudaMirCallId call_id
+const MarimayMirCall *mmay_mir_call(
+    const MarimayMirFunction *function,
+    MarimayMirCallId call_id
 );
-const RudaMirCallArgument *ruda_mir_call_argument(
-    const RudaMirFunction *function,
+const MarimayMirCallArgument *mmay_mir_call_argument(
+    const MarimayMirFunction *function,
     size_t index
 );
-const RudaMirRecord *ruda_mir_record(
-    const RudaMirFunction *function,
-    RudaMirRecordId record_id
+const MarimayMirRecord *mmay_mir_record(
+    const MarimayMirFunction *function,
+    MarimayMirRecordId record_id
 );
-const RudaMirRecordField *ruda_mir_record_field(
-    const RudaMirFunction *function,
-    const RudaMirRecord *record,
+const MarimayMirRecordField *mmay_mir_record_field(
+    const MarimayMirFunction *function,
+    const MarimayMirRecord *record,
     size_t field
 );
-const RudaMirRecordConstruction *ruda_mir_record_construction(
-    const RudaMirFunction *function,
-    RudaMirRecordConstructionId construction_id
+const MarimayMirRecordConstruction *mmay_mir_record_construction(
+    const MarimayMirFunction *function,
+    MarimayMirRecordConstructionId construction_id
 );
-const RudaMirRecordArgument *ruda_mir_record_argument(
-    const RudaMirFunction *function,
+const MarimayMirRecordArgument *mmay_mir_record_argument(
+    const MarimayMirFunction *function,
     size_t index
 );
-const RudaMirEnum *ruda_mir_enum(
-    const RudaMirFunction *function,
-    RudaMirEnumId enum_id
+const MarimayMirEnum *mmay_mir_enum(
+    const MarimayMirFunction *function,
+    MarimayMirEnumId enum_id
 );
-const RudaMirEnumVariant *ruda_mir_enum_variant(
-    const RudaMirFunction *function,
-    const RudaMirEnum *enum_layout,
+const MarimayMirEnumVariant *mmay_mir_enum_variant(
+    const MarimayMirFunction *function,
+    const MarimayMirEnum *enum_layout,
     size_t variant
 );
-const RudaMirEnumPayload *ruda_mir_enum_payload(
-    const RudaMirFunction *function,
-    const RudaMirEnumVariant *variant,
+const MarimayMirEnumPayload *mmay_mir_enum_payload(
+    const MarimayMirFunction *function,
+    const MarimayMirEnumVariant *variant,
     size_t payload
 );
-const RudaMirEnumConstruction *ruda_mir_enum_construction(
-    const RudaMirFunction *function,
-    RudaMirEnumConstructionId construction_id
+const MarimayMirEnumConstruction *mmay_mir_enum_construction(
+    const MarimayMirFunction *function,
+    MarimayMirEnumConstructionId construction_id
 );
-const RudaMirEnumArgument *ruda_mir_enum_argument(
-    const RudaMirFunction *function,
+const MarimayMirEnumArgument *mmay_mir_enum_argument(
+    const MarimayMirFunction *function,
     size_t index
 );
-const RudaMirStringConstant *ruda_mir_string_constant(
-    const RudaMirFunction *function,
-    RudaMirStringId string_id
+const MarimayMirStringConstant *mmay_mir_string_constant(
+    const MarimayMirFunction *function,
+    MarimayMirStringId string_id
 );
-const RudaMirArray *ruda_mir_array(
-    const RudaMirFunction *function,
-    RudaMirArrayId array_id
+const MarimayMirArray *mmay_mir_array(
+    const MarimayMirFunction *function,
+    MarimayMirArrayId array_id
 );
-const RudaMirArrayConstruction *ruda_mir_array_construction(
-    const RudaMirFunction *function,
-    RudaMirArrayConstructionId construction_id
+const MarimayMirArrayConstruction *mmay_mir_array_construction(
+    const MarimayMirFunction *function,
+    MarimayMirArrayConstructionId construction_id
 );
-const RudaMirArrayArgument *ruda_mir_array_argument(
-    const RudaMirFunction *function,
+const MarimayMirArrayArgument *mmay_mir_array_argument(
+    const MarimayMirFunction *function,
     size_t index
 );
-const RudaMirInterface *ruda_mir_interface(
-    const RudaMirFunction *function,
-    RudaMirInterfaceId interface_id
+const MarimayMirInterface *mmay_mir_interface(
+    const MarimayMirFunction *function,
+    MarimayMirInterfaceId interface_id
 );
-const RudaMirInterfaceConstruction *ruda_mir_interface_construction(
-    const RudaMirFunction *function,
-    RudaMirInterfaceConstructionId construction_id
+const MarimayMirInterfaceConstruction *mmay_mir_interface_construction(
+    const MarimayMirFunction *function,
+    MarimayMirInterfaceConstructionId construction_id
 );
-const RudaSymbolId *ruda_mir_interface_method(
-    const RudaMirFunction *function,
+const MarimaySymbolId *mmay_mir_interface_method(
+    const MarimayMirFunction *function,
     size_t index
 );
-RudaMirVerifyStatus ruda_mir_validate_instruction_types(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    const RudaMap *managed_types
+MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    const MarimayMap *managed_types
 );
-RudaMirVerifyStatus ruda_mir_verify_numeric_instruction(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction
+MarimayMirVerifyStatus mmay_mir_verify_numeric_instruction(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction
 );
-RudaMirVerifyStatus ruda_mir_verify_io_instruction(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction
+MarimayMirVerifyStatus mmay_mir_verify_io_instruction(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction
 );
-RudaMirInterpretStatus ruda_mir_execute_format_instruction(
-    const RudaMirInstruction *instruction, const RudaMirValue *source,
-    RudaMirValue *target, RudaMirInterpretOptions options);
-RudaMirInterpretStatus ruda_mir_execute_io_instruction(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    const RudaMirValue *source,
-    RudaMirValue *target,
-    const RudaAllocator *allocator,
-    RudaMirInterpretOptions options
+MarimayMirInterpretStatus mmay_mir_execute_format_instruction(
+    const MarimayMirInstruction *instruction, const MarimayMirValue *source,
+    MarimayMirValue *target, MarimayMirInterpretOptions options);
+MarimayMirInterpretStatus mmay_mir_execute_io_instruction(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    const MarimayMirValue *source,
+    MarimayMirValue *target,
+    const MarimayAllocator *allocator,
+    MarimayMirInterpretOptions options
 );
-RudaMirInterpretStatus ruda_mir_execute_test_output_instruction(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    const RudaMirValue *source,
-    RudaMirValue *target,
-    const RudaAllocator *allocator,
-    RudaMirInterpretOptions options
+MarimayMirInterpretStatus mmay_mir_execute_test_output_instruction(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    const MarimayMirValue *source,
+    MarimayMirValue *target,
+    const MarimayAllocator *allocator,
+    MarimayMirInterpretOptions options
 );
-bool ruda_mir_instruction_uses_first(RudaMirInstructionKind kind);
-bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind);
-bool ruda_mir_instruction_uses_third(RudaMirInstructionKind kind);
-bool ruda_mir_assigned_register(
+bool mmay_mir_instruction_uses_first(MarimayMirInstructionKind kind);
+bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind);
+bool mmay_mir_instruction_uses_third(MarimayMirInstructionKind kind);
+bool mmay_mir_assigned_register(
     const unsigned char *assigned,
     size_t register_count,
-    RudaMirRegister register_id
+    MarimayMirRegister register_id
 );
-void ruda_mir_transfer_assignments(
-    const RudaMirBlock *block,
+void mmay_mir_transfer_assignments(
+    const MarimayMirBlock *block,
     unsigned char *assigned,
     size_t register_count
 );
-void ruda_mir_transfer_checked_index_instruction(
-    const RudaMirInstruction *instruction,
+void mmay_mir_transfer_checked_index_instruction(
+    const MarimayMirInstruction *instruction,
     uint64_t *checked,
     size_t register_count
 );
-void ruda_mir_transfer_checked_indices(
-    const RudaMirBlock *block,
+void mmay_mir_transfer_checked_indices(
+    const MarimayMirBlock *block,
     uint64_t *checked,
     size_t register_count
 );
-uint64_t ruda_mir_meet_checked_index(uint64_t left, uint64_t right);
-bool ruda_mir_consume_verify_work(
+uint64_t mmay_mir_meet_checked_index(uint64_t left, uint64_t right);
+bool mmay_mir_consume_verify_work(
     size_t *used,
     size_t amount,
     size_t limit
 );
-RudaMirVerifyStatus ruda_mir_verify_managed_layouts(
-    const RudaMirFunction *function,
-    RudaMap *managed_types,
+MarimayMirVerifyStatus mmay_mir_verify_managed_layouts(
+    const MarimayMirFunction *function,
+    MarimayMap *managed_types,
     size_t *work
 );
-RudaMirVerifyStatus ruda_mir_verify_interface_layouts(
-    const RudaMirFunction *function,
-    RudaMap *managed_types,
+MarimayMirVerifyStatus mmay_mir_verify_interface_layouts(
+    const MarimayMirFunction *function,
+    MarimayMap *managed_types,
     size_t *work
 );
-RudaMirVerifyStatus ruda_mir_verify_range_proofs(
-    const RudaMirFunction *function,
+MarimayMirVerifyStatus mmay_mir_verify_range_proofs(
+    const MarimayMirFunction *function,
     size_t *work
 );
-RudaMirVerifyStatus ruda_mir_verify_integer_range_proofs(
-    const RudaMirFunction *function,
+MarimayMirVerifyStatus mmay_mir_verify_integer_range_proofs(
+    const MarimayMirFunction *function,
     size_t *work
 );
-RudaMirRangeOptimizeStatus ruda_mir_optimize_integer_ranges(
-    RudaMirFunction *function
+MarimayMirRangeOptimizeStatus mmay_mir_optimize_integer_ranges(
+    MarimayMirFunction *function
 );
-typedef struct RudaMirRangeAnalysis {
-    const RudaMirFunction *function;
+typedef struct MarimayMirRangeAnalysis {
+    const MarimayMirFunction *function;
     unsigned char *incoming_nonnegative;
     unsigned char *scratch;
     size_t incoming_bytes;
     size_t scratch_bytes;
-} RudaMirRangeAnalysis;
-RudaMirVerifyStatus ruda_mir_range_analysis_init(
-    const RudaMirFunction *function,
+} MarimayMirRangeAnalysis;
+MarimayMirVerifyStatus mmay_mir_range_analysis_init(
+    const MarimayMirFunction *function,
     size_t *work,
-    RudaMirRangeAnalysis *analysis
+    MarimayMirRangeAnalysis *analysis
 );
-void ruda_mir_range_analysis_dispose(RudaMirRangeAnalysis *analysis);
-bool ruda_mir_range_assumption_valid(
-    RudaMirRangeAnalysis *analysis,
-    const RudaMirFunction *function,
-    RudaMirBlockId block_id,
+void mmay_mir_range_analysis_dispose(MarimayMirRangeAnalysis *analysis);
+bool mmay_mir_range_assumption_valid(
+    MarimayMirRangeAnalysis *analysis,
+    const MarimayMirFunction *function,
+    MarimayMirBlockId block_id,
     size_t instruction_index,
-    const RudaMirInstruction *instruction
+    const MarimayMirInstruction *instruction
 );
-const RudaMirManagedEnum *ruda_mir_execution_enum_value(
-    const RudaMirExecution *execution,
-    RudaMirValue value
+const MarimayMirManagedEnum *mmay_mir_execution_enum_value(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value
 );
-const RudaMirManagedString *ruda_mir_execution_string_value(
-    const RudaMirExecution *execution,
-    RudaMirValue value
+const MarimayMirManagedString *mmay_mir_execution_string_value(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value
 );
-RudaMirManagedArray *ruda_mir_execution_array_value_mutable(
-    RudaMirExecution *execution,
-    RudaMirValue value
+MarimayMirManagedArray *mmay_mir_execution_array_value_mutable(
+    MarimayMirExecution *execution,
+    MarimayMirValue value
 );
-RudaMirManagedArray **ruda_mir_execution_array_slot(
-    RudaMirExecution *execution,
-    RudaMirValue value
+MarimayMirManagedArray **mmay_mir_execution_array_slot(
+    MarimayMirExecution *execution,
+    MarimayMirValue value
 );
-const RudaMirManagedArray *ruda_mir_execution_array_value(
-    const RudaMirExecution *execution,
-    RudaMirValue value
+const MarimayMirManagedArray *mmay_mir_execution_array_value(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value
 );
-const RudaMirManagedInterface *ruda_mir_execution_interface_value(
-    const RudaMirExecution *execution,
-    RudaMirValue value
+const MarimayMirManagedInterface *mmay_mir_execution_interface_value(
+    const MarimayMirExecution *execution,
+    MarimayMirValue value
 );
-RudaMirManagedRecord *ruda_mir_execution_record(
-    RudaMirExecution *execution,
-    RudaMirReference reference
+MarimayMirManagedRecord *mmay_mir_execution_record(
+    MarimayMirExecution *execution,
+    MarimayMirReference reference
 );
-bool ruda_mir_managed_record_matches_layout(
-    const RudaMirFunction *function,
-    const RudaMirRecord *layout,
-    const RudaMirManagedRecord *record
+bool mmay_mir_managed_record_matches_layout(
+    const MarimayMirFunction *function,
+    const MarimayMirRecord *layout,
+    const MarimayMirManagedRecord *record
 );
-bool ruda_mir_type_is_managed(RudaTypeId type);
-bool ruda_mir_managed_array_matches_layout(
-    const RudaMirArray *layout,
-    const RudaMirManagedArray *value
+bool mmay_mir_type_is_managed(MarimayTypeId type);
+bool mmay_mir_managed_array_matches_layout(
+    const MarimayMirArray *layout,
+    const MarimayMirManagedArray *value
 );
-bool ruda_mir_managed_enum_matches_layout(
-    const RudaMirFunction *function,
-    const RudaMirEnum *layout,
-    const RudaMirManagedEnum *value
+bool mmay_mir_managed_enum_matches_layout(
+    const MarimayMirFunction *function,
+    const MarimayMirEnum *layout,
+    const MarimayMirManagedEnum *value
 );
-RudaMirInterpretStatus ruda_mir_execution_new_record(
-    RudaMirExecution *execution,
-    RudaTypeId type,
-    const RudaMirValue *fields,
-    const RudaMirRecordField *layout,
+MarimayMirInterpretStatus mmay_mir_execution_new_record(
+    MarimayMirExecution *execution,
+    MarimayTypeId type,
+    const MarimayMirValue *fields,
+    const MarimayMirRecordField *layout,
     size_t field_count,
-    RudaMirReference *result
+    MarimayMirReference *result
 );
-RudaMirInterpretStatus ruda_mir_execution_new_string(
-    RudaMirExecution *execution,
+MarimayMirInterpretStatus mmay_mir_execution_new_string(
+    MarimayMirExecution *execution,
     const unsigned char *bytes,
     size_t length,
-    RudaMirReference *result
+    MarimayMirReference *result
 );
-RudaMirInterpretStatus ruda_mir_execution_new_enum(
-    RudaMirExecution *execution,
-    const RudaMirFunction *function,
-    const RudaMirEnum *enum_layout,
+MarimayMirInterpretStatus mmay_mir_execution_new_enum(
+    MarimayMirExecution *execution,
+    const MarimayMirFunction *function,
+    const MarimayMirEnum *enum_layout,
     size_t selected_variant,
-    const RudaMirValue *payload_values,
+    const MarimayMirValue *payload_values,
     size_t payload_value_count,
-    RudaMirReference *result
+    MarimayMirReference *result
 );
-RudaMirInterpretStatus ruda_mir_execute_numeric_instruction(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    const RudaMirValue *first,
-    const RudaMirValue *second,
-    RudaMirValue *target,
-    RudaMirInterpretOptions options
+MarimayMirInterpretStatus mmay_mir_execute_numeric_instruction(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    const MarimayMirValue *first,
+    const MarimayMirValue *second,
+    MarimayMirValue *target,
+    MarimayMirInterpretOptions options
 );
-RudaMirInterpretStatus ruda_mir_execution_array_preflight(
-    RudaMirExecution *execution,
+MarimayMirInterpretStatus mmay_mir_execution_array_preflight(
+    MarimayMirExecution *execution,
     size_t length,
     size_t *new_total,
     size_t *element_bytes,
     size_t *allocation_size
 );
-RudaMirInterpretStatus ruda_mir_execution_new_array(
-    RudaMirExecution *execution,
-    const RudaMirArray *layout,
-    const RudaMirValue *elements,
+MarimayMirInterpretStatus mmay_mir_execution_new_array(
+    MarimayMirExecution *execution,
+    const MarimayMirArray *layout,
+    const MarimayMirValue *elements,
     size_t length,
-    RudaMirReference *result
+    MarimayMirReference *result
 );
-RudaMirInterpretStatus ruda_mir_execution_array_push(
-    RudaMirExecution *execution,
-    const RudaMirArray *layout,
-    RudaMirValue array,
-    RudaMirValue element
+MarimayMirInterpretStatus mmay_mir_execution_array_push(
+    MarimayMirExecution *execution,
+    const MarimayMirArray *layout,
+    MarimayMirValue array,
+    MarimayMirValue element
 );
-RudaMirInterpretStatus ruda_mir_execute_array_instruction(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    const RudaMirValue *first,
-    const RudaMirValue *second,
-    const RudaMirValue *third,
-    RudaMirValue *target,
-    const RudaAllocator *allocator,
-    RudaMirInterpretOptions options
+MarimayMirInterpretStatus mmay_mir_execute_array_instruction(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    const MarimayMirValue *first,
+    const MarimayMirValue *second,
+    const MarimayMirValue *third,
+    MarimayMirValue *target,
+    const MarimayAllocator *allocator,
+    MarimayMirInterpretOptions options
 );
-RudaMirInterpretStatus ruda_mir_execution_new_interface(
-    RudaMirExecution *execution,
-    RudaTypeId type,
-    RudaMirValue payload,
-    const RudaSymbolId *methods,
+MarimayMirInterpretStatus mmay_mir_execution_new_interface(
+    MarimayMirExecution *execution,
+    MarimayTypeId type,
+    MarimayMirValue payload,
+    const MarimaySymbolId *methods,
     size_t method_count,
-    RudaMirReference *result
+    MarimayMirReference *result
 );
-RudaMirInterpretStatus ruda_mir_invoke_call(
-    const RudaMirFunction *function, RudaMirCallId call_id,
-    const RudaMirValue *registers, size_t register_count,
-    const RudaAllocator *allocator, RudaMirInterpretOptions options,
-    const RudaSymbolId *selected_callee,
-    const RudaMirValue *selected_receiver, RudaMirValue *result
+MarimayMirInterpretStatus mmay_mir_invoke_call(
+    const MarimayMirFunction *function, MarimayMirCallId call_id,
+    const MarimayMirValue *registers, size_t register_count,
+    const MarimayAllocator *allocator, MarimayMirInterpretOptions options,
+    const MarimaySymbolId *selected_callee,
+    const MarimayMirValue *selected_receiver, MarimayMirValue *result
 );
-RudaMirInterpretStatus ruda_mir_invoke_deferred_call(
-    const RudaMirFunction *function, RudaMirCallId call_id,
-    const RudaMirValue *registers, size_t register_count,
-    const RudaAllocator *allocator, RudaMirInterpretOptions options
+MarimayMirInterpretStatus mmay_mir_invoke_deferred_call(
+    const MarimayMirFunction *function, MarimayMirCallId call_id,
+    const MarimayMirValue *registers, size_t register_count,
+    const MarimayAllocator *allocator, MarimayMirInterpretOptions options
 );
-bool ruda_mir_panic_append_suppressed(
-    RudaMirPanic *primary, RudaMirPanic *secondary, RudaAllocator allocator
+bool mmay_mir_panic_append_suppressed(
+    MarimayMirPanic *primary, MarimayMirPanic *secondary, MarimayAllocator allocator
 );
 #endif

@@ -1,6 +1,6 @@
 #include "test_checker_support.h"
 
-void ruda_test_checker_match_block_arms(void) {
+void mmay_test_checker_match_block_arms(void) {
     static const char source[] =
         "enum Choice { None, Value(int), }\n"
         "fn none(): Choice { return Choice.None; }\n"
@@ -56,190 +56,190 @@ void ruda_test_checker_match_block_arms(void) {
         "    case false => { yield blockBomb(); }\n"
         "  };\n"
         "}\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaMirExecution execution;
-    RudaCheckInterpretOptions options = ruda_check_interpret_default_options();
-    RudaMirValue arguments[2];
-    RudaMirValue enum_value;
-    RudaMirValue result;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayMirExecution execution;
+    MarimayCheckInterpretOptions options = mmay_check_interpret_default_options();
+    MarimayMirValue arguments[2];
+    MarimayMirValue enum_value;
+    MarimayMirValue result;
     size_t function_index = 0;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/match-block-arms",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.enums.length == 1);
-        RUDA_EXPECT(checked.functions.length == 10);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.enums.length == 1);
+        MMAY_EXPECT(checked.functions.length == 10);
         for (function_index = 0; function_index < checked.functions.length;
             function_index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked,
                 function_index
             );
-            RUDA_EXPECT(function != NULL);
+            MMAY_EXPECT(function != NULL);
             if (function != NULL) {
-                RUDA_EXPECT(ruda_mir_verify(&function->mir)
-                    == RUDA_MIR_VERIFY_OK);
+                MMAY_EXPECT(mmay_mir_verify(&function->mir)
+                    == MMAY_MIR_VERIFY_OK);
             }
         }
-        RUDA_EXPECT(ruda_mir_execution_init(
+        MMAY_EXPECT(mmay_mir_execution_init(
             &execution,
-            ruda_system_allocator(),
-            ruda_mir_execution_default_options()
+            mmay_system_allocator(),
+            mmay_mir_execution_default_options()
         ));
         options.execution = &execution;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 0, NULL, 0, ruda_system_allocator(), options, &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 0, NULL, 0, mmay_system_allocator(), options, &enum_value
+        ) == MMAY_MIR_INTERPRET_OK);
         arguments[0] = enum_value;
-        arguments[1].type = RUDA_TYPE_BOOL;
+        arguments[1].type = MMAY_TYPE_BOOL;
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 2, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 10);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 2, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 10);
 
-        arguments[0].type = RUDA_TYPE_I64;
+        arguments[0].type = MMAY_TYPE_I64;
         arguments[0].as.i64 = 5;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 1, arguments, 1, ruda_system_allocator(), options,
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 1, arguments, 1, mmay_system_allocator(), options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
+        ) == MMAY_MIR_INTERPRET_OK);
         arguments[0] = enum_value;
         arguments[1].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 2, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 5);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 2, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 5);
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 2, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 6);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 2, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 6);
 
-        arguments[0].type = RUDA_TYPE_BOOL;
+        arguments[0].type = MMAY_TYPE_BOOL;
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 3, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 3, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
         arguments[0].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 3, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 1);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 3, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 1);
 
-        arguments[0].type = RUDA_TYPE_I64;
+        arguments[0].type = MMAY_TYPE_I64;
         arguments[0].as.i64 = 0;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 4, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 10);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 4, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 10);
         arguments[0].as.i64 = 1;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 4, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 11);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 4, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 11);
         arguments[0].as.i64 = 7;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 4, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 7);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 4, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 7);
 
-        arguments[0].type = RUDA_TYPE_BOOL;
+        arguments[0].type = MMAY_TYPE_BOOL;
         arguments[0].as.boolean = true;
-        arguments[1].type = RUDA_TYPE_BOOL;
+        arguments[1].type = MMAY_TYPE_BOOL;
         arguments[1].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 11);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 11);
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 12);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 12);
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
 
         arguments[0].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 6, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 1);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 7, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 9);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 9, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 1);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 6, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 1);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 7, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 9);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 9, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 1);
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 6, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 7, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 9, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_DIVISION_BY_ZERO);
-        ruda_mir_execution_dispose(&execution);
-        ruda_check_result_dispose(&checked);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 6, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 7, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 9, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_DIVISION_BY_ZERO);
+        mmay_mir_execution_dispose(&execution);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(): int { yield 1; }\n",
-        RUDA_DIAGNOSTIC_YIELD_OUTSIDE_MATCH_ARM,
+        MMAY_DIAGNOSTIC_YIELD_OUTSIDE_MATCH_ARM,
         "yield",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(value: bool): int {\n"
         "  return match value {\n"
         "    case true => { const item = 1; } case false => { yield 0; }\n"
         "  };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_MISSING_MATCH_YIELD,
+        MMAY_DIAGNOSTIC_MISSING_MATCH_YIELD,
         "{ const item = 1; }",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(value: bool): int {\n"
         "  return match value {\n"
         "    case true => { if value { yield 1; } }\n"
         "    case false => { yield 0; }\n"
         "  };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_MISSING_MATCH_YIELD,
+        MMAY_DIAGNOSTIC_MISSING_MATCH_YIELD,
         "{ if value { yield 1; } }",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         "fn bad(value: bool): int {\n"
         "  return match value {\n"
         "    case true => { yield 1; } case false => { yield false; }\n"
         "  };\n"
         "}\n",
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "false",
         1
     );
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn pending(value: bool): int {\n"
         "  return match value {\n"
@@ -247,40 +247,40 @@ void ruda_test_checker_match_block_arms(void) {
         "  };\n"
         "}\n"
     ));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/match-block-never",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        const RudaCheckedFunction *pending = ruda_checked_function(&checked, 0);
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 1);
-        RUDA_EXPECT(pending != NULL);
+        const MarimayCheckedFunction *pending = mmay_checked_function(&checked, 0);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 1);
+        MMAY_EXPECT(pending != NULL);
         if (pending != NULL) {
-            RUDA_EXPECT(ruda_mir_verify(&pending->mir) == RUDA_MIR_VERIFY_OK);
+            MMAY_EXPECT(mmay_mir_verify(&pending->mir) == MMAY_MIR_VERIFY_OK);
         }
-        arguments[0].type = RUDA_TYPE_BOOL;
+        arguments[0].type = MMAY_TYPE_BOOL;
         arguments[0].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 0, arguments, 1, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 1);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 0, arguments, 1, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 1);
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 0, arguments, 1, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
-        ruda_check_result_dispose(&checked);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 0, arguments, 1, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_match_return_arms(void) {
+void mmay_test_checker_match_return_arms(void) {
     static const char source[] =
         "enum Decision { Stop, Value(int), }\n"
         "fn stop(): Decision { return Decision.Stop; }\n"
@@ -314,115 +314,115 @@ void ruda_test_checker_match_return_arms(void) {
         "  };\n"
         "  return selected + 1;\n"
         "}\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaMirExecution execution;
-    RudaCheckInterpretOptions options = ruda_check_interpret_default_options();
-    RudaMirValue arguments[2];
-    RudaMirValue enum_value;
-    RudaMirValue result;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayMirExecution execution;
+    MarimayCheckInterpretOptions options = mmay_check_interpret_default_options();
+    MarimayMirValue arguments[2];
+    MarimayMirValue enum_value;
+    MarimayMirValue result;
     size_t function_index = 0;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/match-return-arms",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 7);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 7);
         for (function_index = 0; function_index < checked.functions.length;
             function_index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked,
                 function_index
             );
-            RUDA_EXPECT(function != NULL);
+            MMAY_EXPECT(function != NULL);
             if (function != NULL) {
-                RUDA_EXPECT(ruda_mir_verify(&function->mir)
-                    == RUDA_MIR_VERIFY_OK);
+                MMAY_EXPECT(mmay_mir_verify(&function->mir)
+                    == MMAY_MIR_VERIFY_OK);
             }
         }
-        RUDA_EXPECT(ruda_mir_execution_init(
+        MMAY_EXPECT(mmay_mir_execution_init(
             &execution,
-            ruda_system_allocator(),
-            ruda_mir_execution_default_options()
+            mmay_system_allocator(),
+            mmay_mir_execution_default_options()
         ));
         options.execution = &execution;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 0, NULL, 0, ruda_system_allocator(), options, &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 2, &enum_value, 1, ruda_system_allocator(), options,
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 0, NULL, 0, mmay_system_allocator(), options, &enum_value
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 2, &enum_value, 1, mmay_system_allocator(), options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 9);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 9);
 
-        arguments[0].type = RUDA_TYPE_I64;
+        arguments[0].type = MMAY_TYPE_I64;
         arguments[0].as.i64 = 4;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 1, arguments, 1, ruda_system_allocator(), options,
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 1, arguments, 1, mmay_system_allocator(), options,
             &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 2, &enum_value, 1, ruda_system_allocator(), options,
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 2, &enum_value, 1, mmay_system_allocator(), options,
             &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 4);
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 4);
 
-        arguments[0].type = RUDA_TYPE_BOOL;
+        arguments[0].type = MMAY_TYPE_BOOL;
         arguments[0].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 3, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 7);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 4, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 1);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 6, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 9);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 3, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 7);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 4, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 1);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 6, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 9);
 
-        arguments[1].type = RUDA_TYPE_BOOL;
+        arguments[1].type = MMAY_TYPE_BOOL;
         arguments[1].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 11);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 11);
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 12);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 12);
 
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 3, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 4, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 8);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 6, arguments, 1, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 3);
-        ruda_mir_execution_dispose(&execution);
-        ruda_check_result_dispose(&checked);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 3, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 4, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 8);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 6, arguments, 1, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 3);
+        mmay_mir_execution_dispose(&execution);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_all_never_match(void) {
+void mmay_test_checker_all_never_match(void) {
     static const char source[] =
         "fn allReturn(value: bool): int {\n"
         "  return match value {\n"
@@ -497,143 +497,143 @@ void ruda_test_checker_all_never_match(void) {
         "fn enumAllNever(value: Wrap): int {\n"
         "  return match value { case Value(_) => { return 101; } };\n"
         "}\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaMirValue arguments[2];
-    RudaMirValue result;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayMirValue arguments[2];
+    MarimayMirValue result;
     size_t function_index = 0;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/all-never-match",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        const RudaCheckedFunction *all_return = ruda_checked_function(
+        const MarimayCheckedFunction *all_return = mmay_checked_function(
             &checked,
             0
         );
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 15);
-        RUDA_EXPECT(checked.records.length == 1);
-        RUDA_EXPECT(checked.enums.length == 1);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 15);
+        MMAY_EXPECT(checked.records.length == 1);
+        MMAY_EXPECT(checked.enums.length == 1);
         for (function_index = 0; function_index < checked.functions.length;
             function_index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked,
                 function_index
             );
-            RUDA_EXPECT(function != NULL);
+            MMAY_EXPECT(function != NULL);
             if (function != NULL) {
-                RUDA_EXPECT(ruda_mir_verify(&function->mir)
-                    == RUDA_MIR_VERIFY_OK);
+                MMAY_EXPECT(mmay_mir_verify(&function->mir)
+                    == MMAY_MIR_VERIFY_OK);
             }
         }
-        RUDA_EXPECT(all_return != NULL);
+        MMAY_EXPECT(all_return != NULL);
         if (all_return != NULL) {
-            RUDA_EXPECT(ruda_test_mir_instruction_kind_count(
+            MMAY_EXPECT(mmay_test_mir_instruction_kind_count(
                 &all_return->mir,
-                RUDA_MIR_COPY
+                MMAY_MIR_COPY
             ) == 0);
         }
-        arguments[0].type = RUDA_TYPE_BOOL;
-        arguments[1].type = RUDA_TYPE_BOOL;
+        arguments[0].type = MMAY_TYPE_BOOL;
+        arguments[1].type = MMAY_TYPE_BOOL;
         for (function_index = 0; function_index < 2; function_index += 1) {
             arguments[0].as.boolean = function_index != 0;
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, 0, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(result.as.i64 == (function_index != 0 ? 1 : 2));
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, 1, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == (function_index != 0 ? 11 : 12));
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, 2, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == (function_index != 0 ? 21 : 22));
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, 4, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == (function_index != 0 ? 31 : 32));
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, 5, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == (function_index != 0 ? 41 : 42));
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, 8, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_VOID);
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, 9, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == (function_index != 0 ? 51 : 52));
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, 10, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == (function_index != 0 ? 61 : 62));
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, 11, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == (function_index != 0 ? 71 : 72));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, 0, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(result.as.i64 == (function_index != 0 ? 1 : 2));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, 1, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == (function_index != 0 ? 11 : 12));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, 2, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == (function_index != 0 ? 21 : 22));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, 4, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == (function_index != 0 ? 31 : 32));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, 5, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == (function_index != 0 ? 41 : 42));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, 8, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_VOID);
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, 9, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == (function_index != 0 ? 51 : 52));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, 10, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == (function_index != 0 ? 61 : 62));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, 11, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == (function_index != 0 ? 71 : 72));
         }
         arguments[0].as.boolean = true;
         arguments[1].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 6, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_BOOL && result.as.boolean);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 6, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_BOOL && result.as.boolean);
         arguments[0].as.boolean = false;
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 6, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_BOOL && !result.as.boolean);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 7, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_BOOL && !result.as.boolean);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 6, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_BOOL && !result.as.boolean);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 7, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_BOOL && !result.as.boolean);
         arguments[0].as.boolean = true;
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 12, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 82);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 12, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 82);
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 12, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 80);
-        arguments[0].type = RUDA_TYPE_I64;
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 12, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 80);
+        arguments[0].type = MMAY_TYPE_I64;
         arguments[0].as.i64 = 123;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 13, arguments, 1, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 91);
-        ruda_check_result_dispose(&checked);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 13, arguments, 1, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 91);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_never_conditions_and_guards(void) {
+void mmay_test_checker_never_conditions_and_guards(void) {
     static const char source[] =
         "fn ifNever(value: bool): int {\n"
         "  if match value {\n"
@@ -667,129 +667,129 @@ void ruda_test_checker_never_conditions_and_guards(void) {
         "    case A => 1; case B => 2;\n"
         "  };\n"
         "}\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaMirExecution execution;
-    RudaCheckInterpretOptions options = ruda_check_interpret_default_options();
-    RudaMirValue arguments[2];
-    RudaMirValue enum_value;
-    RudaMirValue result;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayMirExecution execution;
+    MarimayCheckInterpretOptions options = mmay_check_interpret_default_options();
+    MarimayMirValue arguments[2];
+    MarimayMirValue enum_value;
+    MarimayMirValue result;
     size_t function_index = 0;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/never-conditions-guards",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 6);
-        RUDA_EXPECT(checked.enums.length == 1);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 6);
+        MMAY_EXPECT(checked.enums.length == 1);
         for (function_index = 0; function_index < checked.functions.length;
             function_index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked,
                 function_index
             );
-            RUDA_EXPECT(function != NULL);
+            MMAY_EXPECT(function != NULL);
             if (function != NULL) {
-                RUDA_EXPECT(ruda_mir_verify(&function->mir)
-                    == RUDA_MIR_VERIFY_OK);
+                MMAY_EXPECT(mmay_mir_verify(&function->mir)
+                    == MMAY_MIR_VERIFY_OK);
             }
         }
-        arguments[0].type = RUDA_TYPE_BOOL;
+        arguments[0].type = MMAY_TYPE_BOOL;
         arguments[0].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 0, arguments, 1, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 1);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 0, arguments, 1, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 1);
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 0, arguments, 1, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 2);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 0, arguments, 1, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 2);
 
-        arguments[0].type = RUDA_TYPE_I64;
+        arguments[0].type = MMAY_TYPE_I64;
         arguments[0].as.i64 = 1;
-        arguments[1].type = RUDA_TYPE_BOOL;
+        arguments[1].type = MMAY_TYPE_BOOL;
         arguments[1].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 1, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 1);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 1, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 1);
         arguments[0].as.i64 = 0;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 1, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 11);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 1, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 11);
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 1, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 12);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 1, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 12);
 
-        arguments[0].type = RUDA_TYPE_BOOL;
+        arguments[0].type = MMAY_TYPE_BOOL;
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 2, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 0);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 2, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 0);
         arguments[0].as.boolean = true;
         arguments[1].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 2, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 21);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 2, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 21);
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 2, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 22);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 2, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 22);
 
-        RUDA_EXPECT(ruda_mir_execution_init(
+        MMAY_EXPECT(mmay_mir_execution_init(
             &execution,
-            ruda_system_allocator(),
-            ruda_mir_execution_default_options()
+            mmay_system_allocator(),
+            mmay_mir_execution_default_options()
         ));
         options.execution = &execution;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 3, NULL, 0, ruda_system_allocator(), options, &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 3, NULL, 0, mmay_system_allocator(), options, &enum_value
+        ) == MMAY_MIR_INTERPRET_OK);
         arguments[0] = enum_value;
         arguments[1].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 31);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 31);
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 32);
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 4, NULL, 0, ruda_system_allocator(), options, &enum_value
-        ) == RUDA_MIR_INTERPRET_OK);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 32);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 4, NULL, 0, mmay_system_allocator(), options, &enum_value
+        ) == MMAY_MIR_INTERPRET_OK);
         arguments[0] = enum_value;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(), options, &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.as.i64 == 2);
-        ruda_mir_execution_dispose(&execution);
-        ruda_check_result_dispose(&checked);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(), options, &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.as.i64 == 2);
+        mmay_mir_execution_dispose(&execution);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 
-    RUDA_EXPECT(ruda_checker_fixture_init(
+    MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn whileNever(value: bool): int {\n"
         "  while match value {\n"
@@ -834,78 +834,78 @@ void ruda_test_checker_never_conditions_and_guards(void) {
         "  return 15;\n"
         "}\n"
     ));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/never-loop-conditions",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 7);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 7);
         for (function_index = 0; function_index < checked.functions.length;
             function_index += 1) {
-            const RudaCheckedFunction *function = ruda_checked_function(
+            const MarimayCheckedFunction *function = mmay_checked_function(
                 &checked,
                 function_index
             );
-            RUDA_EXPECT(function != NULL);
+            MMAY_EXPECT(function != NULL);
             if (function != NULL) {
-                RUDA_EXPECT(ruda_mir_verify(&function->mir)
-                    == RUDA_MIR_VERIFY_OK);
+                MMAY_EXPECT(mmay_mir_verify(&function->mir)
+                    == MMAY_MIR_VERIFY_OK);
             }
         }
-        arguments[0].type = RUDA_TYPE_BOOL;
+        arguments[0].type = MMAY_TYPE_BOOL;
         for (function_index = 0; function_index < 5; function_index += 1) {
             arguments[0].as.boolean = true;
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, function_index, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(result.as.i64 == (int64_t)(function_index * 2 + 1));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, function_index, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(result.as.i64 == (int64_t)(function_index * 2 + 1));
             arguments[0].as.boolean = false;
-            RUDA_EXPECT(ruda_check_interpret_function(
-                &checked, function_index, arguments, 1, ruda_system_allocator(),
-                ruda_check_interpret_default_options(), &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.type == RUDA_TYPE_I64);
-            RUDA_EXPECT(result.as.i64 == (int64_t)(function_index * 2 + 2));
+            MMAY_EXPECT(mmay_check_interpret_function(
+                &checked, function_index, arguments, 1, mmay_system_allocator(),
+                mmay_check_interpret_default_options(), &result
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.type == MMAY_TYPE_I64);
+            MMAY_EXPECT(result.as.i64 == (int64_t)(function_index * 2 + 2));
         }
-        arguments[1].type = RUDA_TYPE_BOOL;
+        arguments[1].type = MMAY_TYPE_BOOL;
         arguments[1].as.boolean = true;
         arguments[0].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 11);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 11);
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 12);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 12);
         arguments[1].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 5, arguments, 2, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 13);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 5, arguments, 2, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 13);
         arguments[0].as.boolean = true;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 6, arguments, 1, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 14);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 6, arguments, 1, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 14);
         arguments[0].as.boolean = false;
-        RUDA_EXPECT(ruda_check_interpret_function(
-            &checked, 6, arguments, 1, ruda_system_allocator(),
-            ruda_check_interpret_default_options(), &result
-        ) == RUDA_MIR_INTERPRET_OK);
-        RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 15);
-        ruda_check_result_dispose(&checked);
+        MMAY_EXPECT(mmay_check_interpret_function(
+            &checked, 6, arguments, 1, mmay_system_allocator(),
+            mmay_check_interpret_default_options(), &result
+        ) == MMAY_MIR_INTERPRET_OK);
+        MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == 15);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }

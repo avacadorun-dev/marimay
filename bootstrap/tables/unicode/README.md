@@ -1,6 +1,6 @@
 # Unicode table provenance
 
-Ruda language version `0.1-design` pins Unicode 17.0.0 identifier properties under D023.
+Marimay language version `0.1-design` pins Unicode 17.0.0 identifier properties under D023.
 
 Input:
 

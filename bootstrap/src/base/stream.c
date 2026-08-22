@@ -1,10 +1,10 @@
-#include "ruda/base/stream.h"
+#include "mmay/base/stream.h"
 
 #include <stdbool.h>
 
-#include "ruda/base/vector.h"
+#include "mmay/base/vector.h"
 
-static RudaReadStatus ruda_file_read(
+static MarimayReadStatus mmay_file_read(
     void *context,
     unsigned char *destination,
     size_t capacity,
@@ -13,80 +13,80 @@ static RudaReadStatus ruda_file_read(
     FILE *file = context;
     size_t count = 0;
     if (file == NULL || destination == NULL || capacity == 0 || read_count == NULL) {
-        return RUDA_READ_ERROR;
+        return MMAY_READ_ERROR;
     }
     count = fread(destination, 1, capacity, file);
     *read_count = count;
     if (count != 0) {
-        return RUDA_READ_OK;
+        return MMAY_READ_OK;
     }
     if (feof(file) != 0) {
-        return RUDA_READ_END;
+        return MMAY_READ_END;
     }
-    return RUDA_READ_ERROR;
+    return MMAY_READ_ERROR;
 }
 
-RudaReadStream ruda_file_read_stream(FILE *file) {
-    RudaReadStream stream;
+MarimayReadStream mmay_file_read_stream(FILE *file) {
+    MarimayReadStream stream;
     stream.context = file;
-    stream.read = ruda_file_read;
+    stream.read = mmay_file_read;
     return stream;
 }
 
-RudaReadAllStatus ruda_read_all(
-    RudaReadStream stream,
-    RudaAllocator allocator,
+MarimayReadAllStatus mmay_read_all(
+    MarimayReadStream stream,
+    MarimayAllocator allocator,
     size_t max_bytes,
-    RudaOwnedBytes *output
+    MarimayOwnedBytes *output
 ) {
-    RudaVector bytes;
+    MarimayVector bytes;
     unsigned char chunk[4096];
-    RudaReadAllStatus result = RUDA_READ_ALL_OK;
+    MarimayReadAllStatus result = MMAY_READ_ALL_OK;
     bool initialized = false;
     if (output == NULL || stream.read == NULL) {
-        return RUDA_READ_ALL_INVALID_ARGUMENT;
+        return MMAY_READ_ALL_INVALID_ARGUMENT;
     }
     output->allocator = allocator;
     output->data = NULL;
     output->length = 0;
-    initialized = ruda_vector_init(&bytes, allocator, sizeof(unsigned char));
+    initialized = mmay_vector_init(&bytes, allocator, sizeof(unsigned char));
     if (!initialized) {
-        return RUDA_READ_ALL_INVALID_ARGUMENT;
+        return MMAY_READ_ALL_INVALID_ARGUMENT;
     }
     for (;;) {
         size_t count = 0;
-        RudaReadStatus status = stream.read(
+        MarimayReadStatus status = stream.read(
             stream.context,
             chunk,
             sizeof(chunk),
             &count
         );
-        if (status == RUDA_READ_END) {
+        if (status == MMAY_READ_END) {
             if (count != 0) {
-                result = RUDA_READ_ALL_IO_ERROR;
+                result = MMAY_READ_ALL_IO_ERROR;
             }
             break;
         }
-        if (status != RUDA_READ_OK || count == 0 || count > sizeof(chunk)) {
-            result = RUDA_READ_ALL_IO_ERROR;
+        if (status != MMAY_READ_OK || count == 0 || count > sizeof(chunk)) {
+            result = MMAY_READ_ALL_IO_ERROR;
             break;
         }
         if (bytes.length > max_bytes || count > max_bytes - bytes.length) {
-            result = RUDA_READ_ALL_LIMIT_EXCEEDED;
+            result = MMAY_READ_ALL_LIMIT_EXCEEDED;
             break;
         }
-        if (!ruda_vector_append(&bytes, chunk, count)) {
-            result = RUDA_READ_ALL_ALLOCATION_FAILED;
+        if (!mmay_vector_append(&bytes, chunk, count)) {
+            result = MMAY_READ_ALL_ALLOCATION_FAILED;
             break;
         }
     }
-    if (result == RUDA_READ_ALL_OK
-        && !ruda_owned_bytes_copy(output, allocator, bytes.data, bytes.length)) {
-        result = RUDA_READ_ALL_ALLOCATION_FAILED;
+    if (result == MMAY_READ_ALL_OK
+        && !mmay_owned_bytes_copy(output, allocator, bytes.data, bytes.length)) {
+        result = MMAY_READ_ALL_ALLOCATION_FAILED;
     }
-    ruda_vector_dispose(&bytes);
-    if (result != RUDA_READ_ALL_OK) {
-        ruda_owned_bytes_dispose(output);
+    mmay_vector_dispose(&bytes);
+    if (result != MMAY_READ_ALL_OK) {
+        mmay_owned_bytes_dispose(output);
     }
     return result;
 }

@@ -1,9 +1,9 @@
-# Evidence base for Ruda
+# Evidence base for Marimay
 
 Status: design input, non-normative.  
 Snapshot date: 2026-08-10.
 
-This document separates observed evidence from Ruda design inferences. A survey answer is not automatically a feature request, and a feature in another language is not automatically a good fit. Each inference is tested against Ruda's stated audience: production application developers who want static safety without systems-language ceremony.
+This document separates observed evidence from Marimay design inferences. A survey answer is not automatically a feature request, and a feature in another language is not automatically a good fit. Each inference is tested against Marimay's stated audience: production application developers who want static safety without systems-language ceremony.
 
 ## Method
 
@@ -81,19 +81,19 @@ A 2025 empirical study of 301 rustc issues attributes many Rust-specific compile
 
 ## Familiar syntax without borrowed identity
 
-Cross-language familiarity is useful only while it reduces reading cost. Common C-family forms such as braces, `const`/`let`, `name: Type`, generics, and explicit calls are widely recognizable. Record declarations, construction, named enum payloads, interpolation, visibility, and structured task scopes carry Ruda-specific semantics and therefore use forms that expose those semantics directly.
+Cross-language familiarity is useful only while it reduces reading cost. Common C-family forms such as braces, `const`/`let`, `name: Type`, generics, and explicit calls are widely recognizable. Record declarations, construction, named enum payloads, interpolation, visibility, and structured task scopes carry Marimay-specific semantics and therefore use forms that expose those semantics directly.
 
-The inference is to prefer a small coherent grammar over surface compatibility with any existing language. Familiar punctuation must not imply coercion, open object-shape assignment, prototype behavior, nullish values, implicit numeric/enum compatibility, or a dynamic escape tier. User tests evaluate whole Ruda examples rather than asking whether the syntax resembles a named predecessor.
+The inference is to prefer a small coherent grammar over surface compatibility with any existing language. Familiar punctuation must not imply coercion, open object-shape assignment, prototype behavior, nullish values, implicit numeric/enum compatibility, or a dynamic escape tier. User tests evaluate whole Marimay examples rather than asking whether the syntax resembles a named predecessor.
 
 ## Structured concurrency evidence
 
 OpenJDK's structured-concurrency design treats related tasks as a single unit. It confines child lifetimes to the parent's lexical block, coordinates join/cancellation/error handling, and makes the task tree observable. This directly addresses the lifetime hazards documented by Go while retaining lightweight direct-style tasks. Source: [JEP 428: Structured Concurrency](https://openjdk.org/jeps/428).
 
-Ruda adopts the invariant, not Java's API: a task may not outlive its nearest `scope` block, and leaving the block cancels and joins unfinished children.
+Marimay adopts the invariant, not Java's API: a task may not outlive its nearest `scope` block, and leaving the block cancels and joins unfinished children.
 
 ## Pain-point decision matrix
 
-| Evidence | Failure mode to avoid | Ruda response | Required verification |
+| Evidence | Failure mode to avoid | Marimay response | Required verification |
 |---|---|---|---|
 | Go users request enums/sum types | invalid integers, non-exhaustive switches, manual tag/payload coupling | nominal algebraic `enum`; exhaustive `match` | compile-fail missing-arm tests; representation fuzzing |
 | Go error propagation obscures intent | repetitive branches; weak typed context | `Result<T,E>` and postfix `?`; no exceptions for expected failure | propagation typing and diagnostic tests |
@@ -103,7 +103,7 @@ Ruda adopts the invariant, not Java's API: a task may not outlive its nearest `s
 | Rust async exposes complex machinery | colored APIs, pinning, runtime fragmentation | compiler-inferred suspension; one bundled runtime | direct-style I/O and ABI conformance tests |
 | Rust builds can be slow and large | long feedback loops, generic code bloat | VM dev loop; shape-shared generics; optional specialization | clean/incremental budgets and size gates |
 | Rust traits are powerful but interact deeply | coherence/associated-type/solver complexity | structural method-only interfaces; no `impl` | conformance and ambiguity tests |
-| Familiar syntax can import misleading expectations | accidental complexity or assumed compatibility | compact C-family core with Ruda-native semantic forms | whole-example readability tests and compile-fail safety corpus |
+| Familiar syntax can import misleading expectations | accidental complexity or assumed compatibility | compact C-family core with Marimay-native semantic forms | whole-example readability tests and compile-fail safety corpus |
 | Package trust is recurring ecosystem work | hidden build execution and dependency uncertainty | immutable registry artifacts; checksummed lock; no install scripts | hermetic/offline/supply-chain tests |
 
 ## Design hypotheses that require measurement
@@ -114,14 +114,14 @@ The following are hypotheses, not facts, and must be validated with prototypes a
 - `fn` and `scope` reduce common-path typing cost while remaining immediately legible in whole programs.
 - ordinary first-parameter functions preserve dot-call ergonomics without a second behavior declaration system.
 - compiler-inferred suspension is understandable if diagnostics and observability expose suspension points.
-- VM-first `ruda run` materially improves feedback time without encouraging VM-only behavior.
+- VM-first `mmay run` materially improves feedback time without encouraging VM-only behavior.
 - shape sharing provides acceptable generic performance while controlling compile time and artifact size.
 
 Each hypothesis has a gate in the implementation roadmap. Failure of a hypothesis requires a recorded design revision, not quiet semantic drift.
 
 ## Local algorithm experiment
 
-The 2026-08-18 Ruda/Go/Rust algorithm repository adds local evidence about
+The 2026-08-18 Marimay/Go/Rust algorithm repository adds local evidence about
 native array-heavy workloads, runtime resource limits, benchmark comparability,
 and release-profile selection. The observations and optimization hypotheses are
 recorded in

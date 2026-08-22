@@ -2,7 +2,7 @@ set_source_files_properties(runtime_profile_probe.c PROPERTIES
   HEADER_FILE_ONLY TRUE
 )
 
-add_executable(ruda_c_unit
+add_executable(mmay_c_unit
   runtime_profile_probe.c
   test_allocator.c
   test_ast.c
@@ -167,33 +167,33 @@ add_executable(ruda_c_unit
   ../fuzz/semantic_oracle.c
 )
 
-target_link_libraries(ruda_c_unit PRIVATE ruda_bootstrap)
-target_include_directories(ruda_c_unit PRIVATE
+target_link_libraries(mmay_c_unit PRIVATE mmay_bootstrap)
+target_include_directories(mmay_c_unit PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../fuzz"
 )
-target_compile_definitions(ruda_c_unit PRIVATE
-  RUDA_TEST_C_COMPILER="${CMAKE_C_COMPILER}"
-  RUDA_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
-  RUDA_TEST_NATIVE_RUNTIME_ARCHIVE="$<TARGET_FILE:ruda_native_runtime_debug>"
-  RUDA_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE="$<TARGET_FILE:ruda_native_runtime_debug>"
-  RUDA_TEST_NATIVE_RUNTIME_RELEASE_ARCHIVE="$<TARGET_FILE:ruda_native_runtime_release>"
-  RUDA_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST="${RUDA_NATIVE_RUNTIME_DEBUG_MANIFEST}"
-  RUDA_TEST_NATIVE_RUNTIME_RELEASE_MANIFEST="${RUDA_NATIVE_RUNTIME_RELEASE_MANIFEST}"
-  RUDA_TEST_NATIVE_BOOTSTRAP_INCLUDE="${CMAKE_SOURCE_DIR}/bootstrap/include"
-  RUDA_TEST_NATIVE_RUNTIME_INCLUDE="${CMAKE_SOURCE_DIR}/runtime/include"
+target_compile_definitions(mmay_c_unit PRIVATE
+  MMAY_TEST_C_COMPILER="${CMAKE_C_COMPILER}"
+  MMAY_TEST_SOURCE_DIR="${CMAKE_SOURCE_DIR}"
+  MMAY_TEST_NATIVE_RUNTIME_ARCHIVE="$<TARGET_FILE:mmay_native_runtime_debug>"
+  MMAY_TEST_NATIVE_RUNTIME_DEBUG_ARCHIVE="$<TARGET_FILE:mmay_native_runtime_debug>"
+  MMAY_TEST_NATIVE_RUNTIME_RELEASE_ARCHIVE="$<TARGET_FILE:mmay_native_runtime_release>"
+  MMAY_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST="${MMAY_NATIVE_RUNTIME_DEBUG_MANIFEST}"
+  MMAY_TEST_NATIVE_RUNTIME_RELEASE_MANIFEST="${MMAY_NATIVE_RUNTIME_RELEASE_MANIFEST}"
+  MMAY_TEST_NATIVE_BOOTSTRAP_INCLUDE="${CMAKE_SOURCE_DIR}/bootstrap/include"
+  MMAY_TEST_NATIVE_RUNTIME_INCLUDE="${CMAKE_SOURCE_DIR}/runtime/include"
 )
-if(RUDA_NATIVE_C_SANITIZER_FLAG)
-  target_compile_definitions(ruda_c_unit PRIVATE
-    RUDA_TEST_C_SANITIZER="${RUDA_NATIVE_C_SANITIZER_FLAG}"
+if(MMAY_NATIVE_C_SANITIZER_FLAG)
+  target_compile_definitions(mmay_c_unit PRIVATE
+    MMAY_TEST_C_SANITIZER="${MMAY_NATIVE_C_SANITIZER_FLAG}"
   )
 endif()
-ruda_target_warnings(ruda_c_unit)
-ruda_target_sanitizers(ruda_c_unit)
-add_dependencies(ruda_c_unit
-  ruda
-  ruda_native_runtime_debug
-  ruda_native_runtime_release
+mmay_target_warnings(mmay_c_unit)
+mmay_target_sanitizers(mmay_c_unit)
+add_dependencies(mmay_c_unit
+  mmay
+  mmay_native_runtime_debug
+  mmay_native_runtime_release
 )
 
 file(COPY snapshots DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
@@ -226,8 +226,8 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling-bound
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp19-resource-limits" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp20-algorithm-corpus" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY
-  "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.ruda"
-  "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.ruda"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.my"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.my"
   DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
 )
 configure_file(
@@ -241,18 +241,18 @@ configure_file(
   COPYONLY
 )
 
-add_test(NAME ruda_c_unit COMMAND ruda_c_unit "$<TARGET_FILE:ruda>")
-set_tests_properties(ruda_c_unit PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+add_test(NAME mmay_c_unit COMMAND mmay_c_unit "$<TARGET_FILE:mmay>")
+set_tests_properties(mmay_c_unit PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 add_test(
-  NAME ruda_install_relocation
+  NAME mmay_install_relocation
   COMMAND "${CMAKE_COMMAND}"
-    "-DRUDA_TEST_BINARY_DIR=${CMAKE_BINARY_DIR}"
-    "-DRUDA_TEST_CONFIG=$<CONFIG>"
-    "-DRUDA_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/run/cp9/acceptance.ruda"
-    "-DRUDA_TEST_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
-    "-DRUDA_TEST_RUNTIME_VERSION=${RUDA_RUNTIME_VERSION}"
-    "-DRUDA_TEST_RELEASE_ARCHIVE=${RUDA_NATIVE_RUNTIME_RELEASE_FILENAME}"
-    "-DRUDA_TEST_EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    "-DMMAY_TEST_BINARY_DIR=${CMAKE_BINARY_DIR}"
+    "-DMMAY_TEST_CONFIG=$<CONFIG>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/run/cp9/acceptance.my"
+    "-DMMAY_TEST_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
+    "-DMMAY_TEST_RUNTIME_VERSION=${MMAY_RUNTIME_VERSION}"
+    "-DMMAY_TEST_RELEASE_ARCHIVE=${MMAY_NATIVE_RUNTIME_RELEASE_FILENAME}"
+    "-DMMAY_TEST_EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_install_relocation.cmake"
 )

@@ -2,44 +2,44 @@
 
 #include <string.h>
 
-typedef enum RudaNativeCBound {
-    RUDA_NATIVE_C_BOUND_LOWER,
-    RUDA_NATIVE_C_BOUND_UPPER
-} RudaNativeCBound;
+typedef enum MarimayNativeCBound {
+    MMAY_NATIVE_C_BOUND_LOWER,
+    MMAY_NATIVE_C_BOUND_UPPER
+} MarimayNativeCBound;
 
-static bool ruda_native_c_scalar_record_origin(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *definition,
-    RudaMirRegister *result
+static bool mmay_native_c_scalar_record_origin(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *definition,
+    MarimayMirRegister *result
 ) {
-    const RudaMirRecord *record = function != NULL && definition != NULL
-        && definition->kind == RUDA_MIR_RECORD_GET
-        ? ruda_vector_at_const(&function->records, definition->record) : NULL;
-    const RudaMirRecordField *field = record != NULL
+    const MarimayMirRecord *record = function != NULL && definition != NULL
+        && definition->kind == MMAY_MIR_RECORD_GET
+        ? mmay_vector_at_const(&function->records, definition->record) : NULL;
+    const MarimayMirRecordField *field = record != NULL
         && definition->field < record->field_count
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->record_fields,
             record->field_start + definition->field
         ) : NULL;
-    RudaMirRegister canonical = definition != NULL
-        ? definition->target : RUDA_MIR_NO_REGISTER;
+    MarimayMirRegister canonical = definition != NULL
+        ? definition->target : MMAY_MIR_NO_REGISTER;
     size_t block_index = 0;
     if (function == NULL || definition == NULL || result == NULL
         || field == NULL || field->is_mutable) return false;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
         for (instruction_index = 0;
             block != NULL && instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *instruction = ruda_vector_at_const(
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
             if (instruction == NULL) return false;
-            if (instruction->kind == RUDA_MIR_RECORD_GET
+            if (instruction->kind == MMAY_MIR_RECORD_GET
                 && instruction->first == definition->first
                 && instruction->record == definition->record
                 && instruction->field == definition->field
@@ -52,21 +52,21 @@ static bool ruda_native_c_scalar_record_origin(
     return true;
 }
 
-static bool ruda_native_c_scalar_origin(
-    const RudaMirFunction *function,
-    RudaMirRegister register_id,
+static bool mmay_native_c_scalar_origin(
+    const MarimayMirFunction *function,
+    MarimayMirRegister register_id,
     size_t depth,
-    RudaMirRegister *result
+    MarimayMirRegister *result
 ) {
     bool found = false;
-    RudaMirRegister origin = RUDA_MIR_NO_REGISTER;
+    MarimayMirRegister origin = MMAY_MIR_NO_REGISTER;
     size_t block_index = 0;
     if (function == NULL || result == NULL
         || register_id >= function->register_types.length
         || depth > function->register_types.length) return false;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
@@ -74,17 +74,17 @@ static bool ruda_native_c_scalar_origin(
         for (instruction_index = 0;
             instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *instruction = ruda_vector_at_const(
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
-            RudaMirRegister candidate = RUDA_MIR_NO_REGISTER;
+            MarimayMirRegister candidate = MMAY_MIR_NO_REGISTER;
             if (instruction == NULL) return false;
             if (instruction->target != register_id) continue;
-            if (instruction->kind != RUDA_MIR_COPY
-                || !ruda_native_c_scalar_origin(
+            if (instruction->kind != MMAY_MIR_COPY
+                || !mmay_native_c_scalar_origin(
                     function, instruction->first, depth + 1, &candidate
                 )) {
-                if (!ruda_native_c_scalar_record_origin(
+                if (!mmay_native_c_scalar_record_origin(
                         function, instruction, result
                     )) *result = register_id;
                 return true;
@@ -101,9 +101,9 @@ static bool ruda_native_c_scalar_origin(
     return true;
 }
 
-static bool ruda_native_c_scalar_constant(
-    const RudaMirFunction *function,
-    RudaMirRegister register_id,
+static bool mmay_native_c_scalar_constant(
+    const MarimayMirFunction *function,
+    MarimayMirRegister register_id,
     size_t depth,
     int64_t *result
 ) {
@@ -114,7 +114,7 @@ static bool ruda_native_c_scalar_constant(
         || depth > function->register_types.length) return false;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
@@ -122,16 +122,16 @@ static bool ruda_native_c_scalar_constant(
         for (instruction_index = 0;
             instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *instruction = ruda_vector_at_const(
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
             int64_t candidate = 0;
             if (instruction == NULL) return false;
             if (instruction->target != register_id) continue;
-            if (instruction->kind == RUDA_MIR_CONSTANT_I64) {
+            if (instruction->kind == MMAY_MIR_CONSTANT_I64) {
                 candidate = instruction->integer;
-            } else if (instruction->kind == RUDA_MIR_COPY) {
-                if (!ruda_native_c_scalar_constant(
+            } else if (instruction->kind == MMAY_MIR_COPY) {
+                if (!mmay_native_c_scalar_constant(
                         function, instruction->first, depth + 1, &candidate
                     )) return false;
             } else {
@@ -146,10 +146,10 @@ static bool ruda_native_c_scalar_constant(
     return found;
 }
 
-static bool ruda_native_c_instruction_location(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    RudaMirBlockId *block_id,
+static bool mmay_native_c_instruction_location(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    MarimayMirBlockId *block_id,
     size_t *instruction_index
 ) {
     size_t block_index = 0;
@@ -157,15 +157,15 @@ static bool ruda_native_c_instruction_location(
         || instruction_index == NULL) return false;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t index = 0;
         if (block == NULL) return false;
         for (index = 0; index < block->instructions.length; index += 1) {
-            if (ruda_vector_at_const(&block->instructions, index)
+            if (mmay_vector_at_const(&block->instructions, index)
                     == instruction) {
-                *block_id = (RudaMirBlockId)block_index;
+                *block_id = (MarimayMirBlockId)block_index;
                 *instruction_index = index;
                 return true;
             }
@@ -174,17 +174,17 @@ static bool ruda_native_c_instruction_location(
     return false;
 }
 
-static const RudaMirInstruction *ruda_native_c_local_definition(
-    const RudaMirBlock *block,
+static const MarimayMirInstruction *mmay_native_c_local_definition(
+    const MarimayMirBlock *block,
     size_t before,
-    RudaMirRegister register_id
+    MarimayMirRegister register_id
 ) {
     size_t cursor = before;
     if (block == NULL || cursor > block->instructions.length) return NULL;
     while (cursor != 0) {
-        const RudaMirInstruction *instruction = NULL;
+        const MarimayMirInstruction *instruction = NULL;
         cursor -= 1;
-        instruction = ruda_vector_at_const(&block->instructions, cursor);
+        instruction = mmay_vector_at_const(&block->instructions, cursor);
         if (instruction != NULL && instruction->target == register_id) {
             return instruction;
         }
@@ -192,57 +192,57 @@ static const RudaMirInstruction *ruda_native_c_local_definition(
     return NULL;
 }
 
-static const RudaMirInstruction *ruda_native_c_local_source(
-    const RudaMirBlock *block,
+static const MarimayMirInstruction *mmay_native_c_local_source(
+    const MarimayMirBlock *block,
     size_t before,
-    RudaMirRegister register_id,
+    MarimayMirRegister register_id,
     size_t depth
 ) {
-    const RudaMirInstruction *definition = NULL;
+    const MarimayMirInstruction *definition = NULL;
     if (block == NULL || depth > block->instructions.length) return NULL;
-    definition = ruda_native_c_local_definition(block, before, register_id);
-    if (definition != NULL && definition->kind == RUDA_MIR_COPY) {
+    definition = mmay_native_c_local_definition(block, before, register_id);
+    if (definition != NULL && definition->kind == MMAY_MIR_COPY) {
         size_t index = (size_t)(definition - (
-            const RudaMirInstruction *)block->instructions.data
+            const MarimayMirInstruction *)block->instructions.data
         );
-        return ruda_native_c_local_source(
+        return mmay_native_c_local_source(
             block, index, definition->first, depth + 1
         );
     }
     return definition;
 }
 
-static bool ruda_native_c_comparison_matches(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *comparison,
-    RudaNativeCBound bound,
-    RudaMirRegister index_origin,
-    RudaMirRegister count_origin,
+static bool mmay_native_c_comparison_matches(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *comparison,
+    MarimayNativeCBound bound,
+    MarimayMirRegister index_origin,
+    MarimayMirRegister count_origin,
     bool *safe_when_true
 ) {
-    RudaMirRegister first = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister second = RUDA_MIR_NO_REGISTER;
+    MarimayMirRegister first = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister second = MMAY_MIR_NO_REGISTER;
     int64_t zero = 1;
     if (comparison == NULL || safe_when_true == NULL
-        || (comparison->kind != RUDA_MIR_LESS_I64
-            && comparison->kind != RUDA_MIR_LESS_EQUAL_I64)
-        || !ruda_native_c_scalar_origin(
+        || (comparison->kind != MMAY_MIR_LESS_I64
+            && comparison->kind != MMAY_MIR_LESS_EQUAL_I64)
+        || !mmay_native_c_scalar_origin(
             function, comparison->first, 0, &first
-        ) || !ruda_native_c_scalar_origin(
+        ) || !mmay_native_c_scalar_origin(
             function, comparison->second, 0, &second
         )) return false;
-    if (bound == RUDA_NATIVE_C_BOUND_LOWER) {
-        if (comparison->kind == RUDA_MIR_LESS_I64
+    if (bound == MMAY_NATIVE_C_BOUND_LOWER) {
+        if (comparison->kind == MMAY_MIR_LESS_I64
             && first == index_origin
-            && ruda_native_c_scalar_constant(
+            && mmay_native_c_scalar_constant(
                 function, comparison->second, 0, &zero
             ) && zero == 0) {
             *safe_when_true = false;
             return true;
         }
-        if (comparison->kind == RUDA_MIR_LESS_EQUAL_I64
+        if (comparison->kind == MMAY_MIR_LESS_EQUAL_I64
             && second == index_origin
-            && ruda_native_c_scalar_constant(
+            && mmay_native_c_scalar_constant(
                 function, comparison->first, 0, &zero
             ) && zero == 0) {
             *safe_when_true = true;
@@ -250,12 +250,12 @@ static bool ruda_native_c_comparison_matches(
         }
         return false;
     }
-    if (comparison->kind == RUDA_MIR_LESS_EQUAL_I64
+    if (comparison->kind == MMAY_MIR_LESS_EQUAL_I64
         && first == count_origin && second == index_origin) {
         *safe_when_true = false;
         return true;
     }
-    if (comparison->kind == RUDA_MIR_LESS_I64
+    if (comparison->kind == MMAY_MIR_LESS_I64
         && first == index_origin && second == count_origin) {
         *safe_when_true = true;
         return true;
@@ -263,14 +263,14 @@ static bool ruda_native_c_comparison_matches(
     return false;
 }
 
-static bool ruda_native_c_push_successor_skipping_edge(
-    RudaMirBlockId predecessor,
-    RudaMirBlockId successor,
-    RudaMirBlockId skip_from,
-    RudaMirBlockId skip_to,
+static bool mmay_native_c_push_successor_skipping_edge(
+    MarimayMirBlockId predecessor,
+    MarimayMirBlockId successor,
+    MarimayMirBlockId skip_from,
+    MarimayMirBlockId skip_to,
     size_t block_count,
     unsigned char *visited,
-    RudaMirBlockId *queue,
+    MarimayMirBlockId *queue,
     size_t *tail
 ) {
     if (predecessor == skip_from && successor == skip_to) return true;
@@ -283,45 +283,45 @@ static bool ruda_native_c_push_successor_skipping_edge(
     return true;
 }
 
-static bool ruda_native_c_edge_dominates(
-    const RudaMirFunction *function,
-    RudaMirBlockId from,
-    RudaMirBlockId to,
-    RudaMirBlockId target
+static bool mmay_native_c_edge_dominates(
+    const MarimayMirFunction *function,
+    MarimayMirBlockId from,
+    MarimayMirBlockId to,
+    MarimayMirBlockId target
 ) {
     unsigned char *visited = NULL;
-    RudaMirBlockId *queue = NULL;
+    MarimayMirBlockId *queue = NULL;
     size_t block_count = function != NULL ? function->blocks.length : 0;
     size_t queue_bytes = 0, head = 0, tail = 0;
     bool result = false, valid = false;
     if (target >= block_count || from >= block_count || to >= block_count
-        || !ruda_size_multiply(
+        || !mmay_size_multiply(
             block_count, sizeof(*queue), &queue_bytes
         )) return false;
-    visited = ruda_allocate_array(
+    visited = mmay_allocate_array(
         &function->allocator, block_count, sizeof(*visited)
     );
-    queue = ruda_allocate(&function->allocator, queue_bytes);
+    queue = mmay_allocate(&function->allocator, queue_bytes);
     if (visited == NULL || queue == NULL) goto cleanup;
     memset(visited, 0, block_count * sizeof(*visited));
     visited[0] = 1;
     queue[tail++] = 0;
     while (head < tail && visited[target] == 0) {
-        RudaMirBlockId block_id = queue[head++];
-        const RudaMirBlock *block = ruda_vector_at_const(
+        MarimayMirBlockId block_id = queue[head++];
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_id
         );
         if (block == NULL) goto cleanup;
-        if (block->terminator.kind == RUDA_MIR_GOTO) {
-            if (!ruda_native_c_push_successor_skipping_edge(
+        if (block->terminator.kind == MMAY_MIR_GOTO) {
+            if (!mmay_native_c_push_successor_skipping_edge(
                     block_id, block->terminator.target, from, to,
                     block_count, visited, queue, &tail
                 )) goto cleanup;
-        } else if (block->terminator.kind == RUDA_MIR_BRANCH) {
-            if (!ruda_native_c_push_successor_skipping_edge(
+        } else if (block->terminator.kind == MMAY_MIR_BRANCH) {
+            if (!mmay_native_c_push_successor_skipping_edge(
                     block_id, block->terminator.target, from, to,
                     block_count, visited, queue, &tail
-                ) || !ruda_native_c_push_successor_skipping_edge(
+                ) || !mmay_native_c_push_successor_skipping_edge(
                     block_id, block->terminator.otherwise, from, to,
                     block_count, visited, queue, &tail
                 )) goto cleanup;
@@ -330,39 +330,39 @@ static bool ruda_native_c_edge_dominates(
     result = visited[target] == 0;
     valid = true;
 cleanup:
-    ruda_deallocate(&function->allocator, queue, queue_bytes);
-    ruda_deallocate(
+    mmay_deallocate(&function->allocator, queue, queue_bytes);
+    mmay_deallocate(
         &function->allocator, visited, block_count * sizeof(*visited)
     );
     return valid && result;
 }
 
-static bool ruda_native_c_path_preserves_registers(
-    const RudaMirFunction *function,
-    RudaMirBlockId start,
-    RudaMirBlockId target,
+static bool mmay_native_c_path_preserves_registers(
+    const MarimayMirFunction *function,
+    MarimayMirBlockId start,
+    MarimayMirBlockId target,
     size_t target_instruction,
-    RudaMirBlockId stop,
-    RudaMirRegister first,
-    RudaMirRegister second
+    MarimayMirBlockId stop,
+    MarimayMirRegister first,
+    MarimayMirRegister second
 ) {
     unsigned char *visited = NULL;
     unsigned char *reaches_target = NULL;
-    RudaMirBlockId *queue = NULL;
+    MarimayMirBlockId *queue = NULL;
     size_t block_count = function->blocks.length;
     size_t queue_bytes = 0, head = 0, tail = 0;
     bool valid = false;
     if (start >= block_count || target >= block_count
-        || !ruda_size_multiply(
+        || !mmay_size_multiply(
             block_count, sizeof(*queue), &queue_bytes
         )) return false;
-    visited = ruda_allocate_array(
+    visited = mmay_allocate_array(
         &function->allocator, block_count, sizeof(*visited)
     );
-    reaches_target = ruda_allocate_array(
+    reaches_target = mmay_allocate_array(
         &function->allocator, block_count, sizeof(*reaches_target)
     );
-    queue = ruda_allocate(&function->allocator, queue_bytes);
+    queue = mmay_allocate(&function->allocator, queue_bytes);
     if (visited == NULL || reaches_target == NULL || queue == NULL) {
         goto cleanup;
     }
@@ -371,24 +371,24 @@ static bool ruda_native_c_path_preserves_registers(
     reaches_target[target] = 1;
     queue[tail++] = target;
     while (head < tail) {
-        RudaMirBlockId successor = queue[head++];
+        MarimayMirBlockId successor = queue[head++];
         size_t predecessor_index = 0;
         for (predecessor_index = 0; predecessor_index < block_count;
             predecessor_index += 1) {
-            const RudaMirBlock *predecessor = ruda_vector_at_const(
+            const MarimayMirBlock *predecessor = mmay_vector_at_const(
                 &function->blocks, predecessor_index
             );
             bool enters = predecessor != NULL
                 && predecessor_index != stop
-                && ((predecessor->terminator.kind == RUDA_MIR_GOTO
+                && ((predecessor->terminator.kind == MMAY_MIR_GOTO
                         && predecessor->terminator.target == successor)
-                    || (predecessor->terminator.kind == RUDA_MIR_BRANCH
+                    || (predecessor->terminator.kind == MMAY_MIR_BRANCH
                         && (predecessor->terminator.target == successor
                             || predecessor->terminator.otherwise
                                 == successor)));
             if (enters && reaches_target[predecessor_index] == 0) {
                 reaches_target[predecessor_index] = 1;
-                queue[tail++] = (RudaMirBlockId)predecessor_index;
+                queue[tail++] = (MarimayMirBlockId)predecessor_index;
             }
         }
     }
@@ -398,8 +398,8 @@ static bool ruda_native_c_path_preserves_registers(
     visited[start] = 1;
     queue[tail++] = start;
     while (head < tail) {
-        RudaMirBlockId block_id = queue[head++];
-        const RudaMirBlock *block = ruda_vector_at_const(
+        MarimayMirBlockId block_id = queue[head++];
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_id
         );
         size_t instruction_index = 0;
@@ -409,29 +409,29 @@ static bool ruda_native_c_path_preserves_registers(
         if (block == NULL || block_id == stop) goto cleanup;
         for (instruction_index = 0; instruction_index < limit;
             instruction_index += 1) {
-            const RudaMirInstruction *current = ruda_vector_at_const(
+            const MarimayMirInstruction *current = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
             if (current == NULL || current->target == first
                 || current->target == second) goto cleanup;
         }
         if (block_id == target) continue;
-        if (block->terminator.kind == RUDA_MIR_GOTO) {
-            RudaMirBlockId successor = block->terminator.target;
+        if (block->terminator.kind == MMAY_MIR_GOTO) {
+            MarimayMirBlockId successor = block->terminator.target;
             if (successor < block_count && successor != stop
                 && reaches_target[successor] != 0
                 && visited[successor] == 0) {
                 visited[successor] = 1;
                 queue[tail++] = successor;
             }
-        } else if (block->terminator.kind == RUDA_MIR_BRANCH) {
-            RudaMirBlockId successors[2] = {
+        } else if (block->terminator.kind == MMAY_MIR_BRANCH) {
+            MarimayMirBlockId successors[2] = {
                 block->terminator.target, block->terminator.otherwise
             };
             size_t successor_index = 0;
             for (successor_index = 0; successor_index < 2;
                 successor_index += 1) {
-                RudaMirBlockId successor = successors[successor_index];
+                MarimayMirBlockId successor = successors[successor_index];
                 if (successor < block_count && successor != stop
                     && reaches_target[successor] != 0
                     && visited[successor] == 0) {
@@ -443,73 +443,73 @@ static bool ruda_native_c_path_preserves_registers(
     }
     valid = visited[target] != 0;
 cleanup:
-    ruda_deallocate(&function->allocator, queue, queue_bytes);
-    ruda_deallocate(
+    mmay_deallocate(&function->allocator, queue, queue_bytes);
+    mmay_deallocate(
         &function->allocator, reaches_target,
         block_count * sizeof(*reaches_target)
     );
-    ruda_deallocate(
+    mmay_deallocate(
         &function->allocator, visited, block_count * sizeof(*visited)
     );
     return valid;
 }
 
-static bool ruda_native_c_short_circuit_guard_proves(
-    const RudaMirFunction *function,
-    RudaMirBlockId target,
+static bool mmay_native_c_short_circuit_guard_proves(
+    const MarimayMirFunction *function,
+    MarimayMirBlockId target,
     size_t target_instruction,
-    RudaNativeCBound bound,
-    RudaMirRegister index_origin,
-    RudaMirRegister count_origin
+    MarimayNativeCBound bound,
+    MarimayMirRegister index_origin,
+    MarimayMirRegister count_origin
 ) {
     size_t comparison_index = 0;
     for (comparison_index = 0;
         comparison_index < function->blocks.length;
         comparison_index += 1) {
-        const RudaMirBlock *comparison = ruda_vector_at_const(
+        const MarimayMirBlock *comparison = mmay_vector_at_const(
             &function->blocks, comparison_index
         );
-        const RudaMirInstruction *condition = NULL;
+        const MarimayMirInstruction *condition = NULL;
         bool safe_when_true = false;
-        RudaMirBlockId unsafe = RUDA_MIR_NO_BLOCK;
-        const RudaMirBlock *unsafe_block = NULL;
-        const RudaMirBlock *join = NULL;
-        RudaMirBlockId join_id = RUDA_MIR_NO_BLOCK;
-        const RudaMirInstruction *assigned = NULL;
+        MarimayMirBlockId unsafe = MMAY_MIR_NO_BLOCK;
+        const MarimayMirBlock *unsafe_block = NULL;
+        const MarimayMirBlock *join = NULL;
+        MarimayMirBlockId join_id = MMAY_MIR_NO_BLOCK;
+        const MarimayMirInstruction *assigned = NULL;
         bool assigned_value = false;
-        RudaMirBlockId safe_join = RUDA_MIR_NO_BLOCK;
+        MarimayMirBlockId safe_join = MMAY_MIR_NO_BLOCK;
         if (comparison == NULL
-            || comparison->terminator.kind != RUDA_MIR_BRANCH) continue;
-        condition = ruda_native_c_local_source(
+            || comparison->terminator.kind != MMAY_MIR_BRANCH) continue;
+        condition = mmay_native_c_local_source(
             comparison, comparison->instructions.length,
             comparison->terminator.value, 0
         );
-        if (!ruda_native_c_comparison_matches(
+        if (!mmay_native_c_comparison_matches(
                 function, condition, bound, index_origin, count_origin,
                 &safe_when_true
             )) continue;
         unsafe = safe_when_true
             ? comparison->terminator.otherwise
             : comparison->terminator.target;
-        unsafe_block = ruda_vector_at_const(&function->blocks, unsafe);
+        unsafe_block = mmay_vector_at_const(&function->blocks, unsafe);
         if (unsafe_block == NULL
-            || unsafe_block->terminator.kind != RUDA_MIR_GOTO) continue;
+            || unsafe_block->terminator.kind != MMAY_MIR_GOTO) continue;
         join_id = unsafe_block->terminator.target;
-        join = ruda_vector_at_const(&function->blocks, join_id);
-        if (join == NULL || join->terminator.kind != RUDA_MIR_BRANCH) continue;
-        assigned = ruda_native_c_local_source(
+        join = mmay_vector_at_const(&function->blocks, join_id);
+        if (join == NULL || join->terminator.kind != MMAY_MIR_BRANCH) continue;
+        assigned = mmay_native_c_local_source(
             unsafe_block, unsafe_block->instructions.length,
             join->terminator.value, 0
         );
-        if (assigned == NULL || assigned->kind != RUDA_MIR_CONSTANT_BOOL) {
+        if (assigned == NULL || assigned->kind != MMAY_MIR_CONSTANT_BOOL) {
             continue;
         }
         assigned_value = assigned->boolean;
         safe_join = assigned_value
             ? join->terminator.otherwise : join->terminator.target;
-        if (ruda_native_c_edge_dominates(
+        if (mmay_native_c_edge_dominates(
                 function, join_id, safe_join, target
-            ) && ruda_native_c_path_preserves_registers(
+            ) && mmay_native_c_path_preserves_registers(
                 function, safe_join, target, target_instruction, join_id,
                 index_origin, count_origin
             )) return true;
@@ -517,109 +517,109 @@ static bool ruda_native_c_short_circuit_guard_proves(
     return false;
 }
 
-static bool ruda_native_c_direct_guard_proves(
-    const RudaMirFunction *function,
-    RudaMirBlockId target,
+static bool mmay_native_c_direct_guard_proves(
+    const MarimayMirFunction *function,
+    MarimayMirBlockId target,
     size_t target_instruction,
-    RudaNativeCBound bound,
-    RudaMirRegister index_origin,
-    RudaMirRegister count_origin
+    MarimayNativeCBound bound,
+    MarimayMirRegister index_origin,
+    MarimayMirRegister count_origin
 ) {
     size_t block_index = 0;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
-        const RudaMirInstruction *condition = NULL;
+        const MarimayMirInstruction *condition = NULL;
         bool safe_when_true = false;
-        RudaMirBlockId safe = RUDA_MIR_NO_BLOCK;
-        if (block == NULL || block->terminator.kind != RUDA_MIR_BRANCH) {
+        MarimayMirBlockId safe = MMAY_MIR_NO_BLOCK;
+        if (block == NULL || block->terminator.kind != MMAY_MIR_BRANCH) {
             continue;
         }
-        condition = ruda_native_c_local_source(
+        condition = mmay_native_c_local_source(
             block, block->instructions.length,
             block->terminator.value, 0
         );
-        if (!ruda_native_c_comparison_matches(
+        if (!mmay_native_c_comparison_matches(
                 function, condition, bound, index_origin, count_origin,
                 &safe_when_true
             )) continue;
         safe = safe_when_true
             ? block->terminator.target : block->terminator.otherwise;
-        if (ruda_native_c_edge_dominates(
-                function, (RudaMirBlockId)block_index, safe, target
-            ) && ruda_native_c_path_preserves_registers(
+        if (mmay_native_c_edge_dominates(
+                function, (MarimayMirBlockId)block_index, safe, target
+            ) && mmay_native_c_path_preserves_registers(
                 function, safe, target, target_instruction,
-                (RudaMirBlockId)block_index,
+                (MarimayMirBlockId)block_index,
                 index_origin, count_origin
             )) return true;
     }
     return false;
 }
 
-static bool ruda_native_c_block_assigns_true(
-    const RudaMirBlock *block,
-    RudaMirRegister register_id
+static bool mmay_native_c_block_assigns_true(
+    const MarimayMirBlock *block,
+    MarimayMirRegister register_id
 ) {
-    const RudaMirInstruction *source = ruda_native_c_local_source(
+    const MarimayMirInstruction *source = mmay_native_c_local_source(
         block, block != NULL ? block->instructions.length : 0,
         register_id, 0
     );
-    return source != NULL && source->kind == RUDA_MIR_CONSTANT_BOOL
+    return source != NULL && source->kind == MMAY_MIR_CONSTANT_BOOL
         && source->boolean;
 }
 
-static bool ruda_native_c_joined_guard_proves(
-    const RudaMirFunction *function,
-    RudaMirBlockId target,
+static bool mmay_native_c_joined_guard_proves(
+    const MarimayMirFunction *function,
+    MarimayMirBlockId target,
     size_t target_instruction,
-    RudaNativeCBound bound,
-    RudaMirRegister index_origin,
-    RudaMirRegister count_origin
+    MarimayNativeCBound bound,
+    MarimayMirRegister index_origin,
+    MarimayMirRegister count_origin
 ) {
     size_t comparison_block_index = 0;
     for (comparison_block_index = 0;
         comparison_block_index < function->blocks.length;
         comparison_block_index += 1) {
-        const RudaMirBlock *comparison_block = ruda_vector_at_const(
+        const MarimayMirBlock *comparison_block = mmay_vector_at_const(
             &function->blocks, comparison_block_index
         );
-        const RudaMirBlock *join = NULL;
-        const RudaMirInstruction *source = NULL;
-        RudaMirBlockId join_id = RUDA_MIR_NO_BLOCK;
-        RudaMirBlockId safe = RUDA_MIR_NO_BLOCK;
+        const MarimayMirBlock *join = NULL;
+        const MarimayMirInstruction *source = NULL;
+        MarimayMirBlockId join_id = MMAY_MIR_NO_BLOCK;
+        MarimayMirBlockId safe = MMAY_MIR_NO_BLOCK;
         bool safe_when_true = false, all_other_true = true;
         size_t predecessor_index = 0;
         if (comparison_block == NULL
-            || comparison_block->terminator.kind != RUDA_MIR_GOTO) continue;
+            || comparison_block->terminator.kind != MMAY_MIR_GOTO) continue;
         join_id = comparison_block->terminator.target;
-        join = ruda_vector_at_const(&function->blocks, join_id);
-        if (join == NULL || join->terminator.kind != RUDA_MIR_BRANCH) continue;
-        source = ruda_native_c_local_source(
+        join = mmay_vector_at_const(&function->blocks, join_id);
+        if (join == NULL || join->terminator.kind != MMAY_MIR_BRANCH) continue;
+        source = mmay_native_c_local_source(
             comparison_block, comparison_block->instructions.length,
             join->terminator.value, 0
         );
-        if (!ruda_native_c_comparison_matches(
+        if (!mmay_native_c_comparison_matches(
                 function, source, bound, index_origin, count_origin,
                 &safe_when_true
             )) continue;
         for (predecessor_index = 0;
             predecessor_index < function->blocks.length;
             predecessor_index += 1) {
-            const RudaMirBlock *predecessor = ruda_vector_at_const(
+            const MarimayMirBlock *predecessor = mmay_vector_at_const(
                 &function->blocks, predecessor_index
             );
             bool enters = predecessor != NULL
-                && ((predecessor->terminator.kind == RUDA_MIR_GOTO
+                && ((predecessor->terminator.kind == MMAY_MIR_GOTO
                         && predecessor->terminator.target == join_id)
-                    || (predecessor->terminator.kind == RUDA_MIR_BRANCH
+                    || (predecessor->terminator.kind == MMAY_MIR_BRANCH
                         && (predecessor->terminator.target == join_id
                             || predecessor->terminator.otherwise == join_id)));
             if (!enters || predecessor_index == comparison_block_index) {
                 continue;
             }
-            if (!ruda_native_c_block_assigns_true(
+            if (!mmay_native_c_block_assigns_true(
                     predecessor, join->terminator.value
                 )) {
                 all_other_true = false;
@@ -628,9 +628,9 @@ static bool ruda_native_c_joined_guard_proves(
         }
         if (!all_other_true || safe_when_true) continue;
         safe = join->terminator.otherwise;
-        if (ruda_native_c_edge_dominates(
+        if (mmay_native_c_edge_dominates(
                 function, join_id, safe, target
-            ) && ruda_native_c_path_preserves_registers(
+            ) && mmay_native_c_path_preserves_registers(
                 function, safe, target, target_instruction, join_id,
                 index_origin, count_origin
             )) return true;
@@ -638,98 +638,98 @@ static bool ruda_native_c_joined_guard_proves(
     return false;
 }
 
-static bool ruda_native_c_guard_proves(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    RudaNativeCBound bound,
-    RudaMirRegister index_origin,
-    RudaMirRegister count_origin
+static bool mmay_native_c_guard_proves(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    MarimayNativeCBound bound,
+    MarimayMirRegister index_origin,
+    MarimayMirRegister count_origin
 ) {
-    RudaMirBlockId target = RUDA_MIR_NO_BLOCK;
+    MarimayMirBlockId target = MMAY_MIR_NO_BLOCK;
     size_t target_instruction = 0;
-    return ruda_native_c_instruction_location(
+    return mmay_native_c_instruction_location(
             function, instruction, &target, &target_instruction
-        ) && (ruda_native_c_direct_guard_proves(
+        ) && (mmay_native_c_direct_guard_proves(
             function, target, target_instruction, bound,
             index_origin, count_origin
-        ) || ruda_native_c_short_circuit_guard_proves(
+        ) || mmay_native_c_short_circuit_guard_proves(
             function, target, target_instruction, bound,
             index_origin, count_origin
-        ) || ruda_native_c_joined_guard_proves(
+        ) || mmay_native_c_joined_guard_proves(
             function, target, target_instruction, bound,
             index_origin, count_origin
         ));
 }
 
-bool ruda_native_c_array_filled_index_proven(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    RudaMirRegister array_register,
-    RudaMirRegister index_register
+bool mmay_native_c_array_filled_index_proven(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    MarimayMirRegister array_register,
+    MarimayMirRegister index_register
 ) {
-    RudaMirRegister count = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister count_origin = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister index_origin = RUDA_MIR_NO_REGISTER;
-    bool filled = ruda_native_c_array_fill_count(
+    MarimayMirRegister count = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister count_origin = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister index_origin = MMAY_MIR_NO_REGISTER;
+    bool filled = mmay_native_c_array_fill_count(
         function, instruction, array_register, &count
     );
-    bool origins = filled && ruda_native_c_scalar_origin(
+    bool origins = filled && mmay_native_c_scalar_origin(
         function, count, 0, &count_origin
-    ) && ruda_native_c_scalar_origin(
+    ) && mmay_native_c_scalar_origin(
         function, index_register, 0, &index_origin
     );
-    bool lower = origins && ruda_native_c_guard_proves(
-        function, instruction, RUDA_NATIVE_C_BOUND_LOWER,
+    bool lower = origins && mmay_native_c_guard_proves(
+        function, instruction, MMAY_NATIVE_C_BOUND_LOWER,
         index_origin, count_origin
     );
-    bool upper = origins && ruda_native_c_guard_proves(
-        function, instruction, RUDA_NATIVE_C_BOUND_UPPER,
+    bool upper = origins && mmay_native_c_guard_proves(
+        function, instruction, MMAY_NATIVE_C_BOUND_UPPER,
         index_origin, count_origin
     );
     return filled && origins && lower && upper;
 }
 
-bool ruda_native_c_array_guarded_index_proven(
-    const RudaMirFunction *function,
-    const RudaMirInstruction *instruction,
-    RudaMirRegister array_register,
-    RudaMirRegister index_register
+bool mmay_native_c_array_guarded_index_proven(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    MarimayMirRegister array_register,
+    MarimayMirRegister index_register
 ) {
-    RudaMirRegister array_origin = RUDA_MIR_NO_REGISTER;
-    RudaMirRegister index_origin = RUDA_MIR_NO_REGISTER;
+    MarimayMirRegister array_origin = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister index_origin = MMAY_MIR_NO_REGISTER;
     size_t block_index = 0;
     if (function == NULL || instruction == NULL
-        || !ruda_native_c_array_register_origin(
+        || !mmay_native_c_array_register_origin(
             function, array_register, &array_origin
-        ) || !ruda_native_c_scalar_origin(
+        ) || !mmay_native_c_scalar_origin(
             function, index_register, 0, &index_origin
         )) return false;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
-        const RudaMirBlock *block = ruda_vector_at_const(
+        const MarimayMirBlock *block = mmay_vector_at_const(
             &function->blocks, block_index
         );
         size_t instruction_index = 0;
         for (instruction_index = 0;
             block != NULL && instruction_index < block->instructions.length;
             instruction_index += 1) {
-            const RudaMirInstruction *length = ruda_vector_at_const(
+            const MarimayMirInstruction *length = mmay_vector_at_const(
                 &block->instructions, instruction_index
             );
-            RudaMirRegister length_array_origin = RUDA_MIR_NO_REGISTER;
-            RudaMirRegister count_origin = RUDA_MIR_NO_REGISTER;
-            if (length == NULL || length->kind != RUDA_MIR_ARRAY_LENGTH
-                || !ruda_native_c_array_register_origin(
+            MarimayMirRegister length_array_origin = MMAY_MIR_NO_REGISTER;
+            MarimayMirRegister count_origin = MMAY_MIR_NO_REGISTER;
+            if (length == NULL || length->kind != MMAY_MIR_ARRAY_LENGTH
+                || !mmay_native_c_array_register_origin(
                     function, length->first, &length_array_origin
                 ) || length_array_origin != array_origin
-                || !ruda_native_c_scalar_origin(
+                || !mmay_native_c_scalar_origin(
                     function, length->target, 0, &count_origin
                 )) continue;
-            if (ruda_native_c_guard_proves(
-                    function, instruction, RUDA_NATIVE_C_BOUND_LOWER,
+            if (mmay_native_c_guard_proves(
+                    function, instruction, MMAY_NATIVE_C_BOUND_LOWER,
                     index_origin, count_origin
-                ) && ruda_native_c_guard_proves(
-                    function, instruction, RUDA_NATIVE_C_BOUND_UPPER,
+                ) && mmay_native_c_guard_proves(
+                    function, instruction, MMAY_NATIVE_C_BOUND_UPPER,
                     index_origin, count_origin
                 )) return true;
         }

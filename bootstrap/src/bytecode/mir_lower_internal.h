@@ -1,30 +1,30 @@
-#ifndef RUDA_BYTECODE_MIR_LOWER_INTERNAL_H
-#define RUDA_BYTECODE_MIR_LOWER_INTERNAL_H
+#ifndef MMAY_BYTECODE_MIR_LOWER_INTERNAL_H
+#define MMAY_BYTECODE_MIR_LOWER_INTERNAL_H
 
-#include "ruda/bytecode/mir_lower.h"
+#include "mmay/bytecode/mir_lower.h"
 
-bool ruda_mir_bytecode_type(
-    const RudaMirFunction *function,
-    RudaTypeId input,
+bool mmay_mir_bytecode_type(
+    const MarimayMirFunction *function,
+    MarimayTypeId input,
     bool allow_void,
     bool allow_never,
-    RudaBytecodeType *output
+    MarimayBytecodeType *output
 );
 
-uint32_t ruda_mir_bytecode_layout_for_type(
-    const RudaMirFunction *function,
-    RudaTypeId type
+uint32_t mmay_mir_bytecode_layout_for_type(
+    const MarimayMirFunction *function,
+    MarimayTypeId type
 );
 
-bool ruda_bytecode_numeric_option_symbol(
-    RudaBytecodeType payload_type,
-    RudaSymbolId *symbol
+bool mmay_bytecode_numeric_option_symbol(
+    MarimayBytecodeType payload_type,
+    MarimaySymbolId *symbol
 );
 
-RudaMirBytecodeLowerStatus ruda_mir_bytecode_lower_nominals(
-    const RudaMirFunction *input,
-    RudaBytecodeFunction *output,
-    RudaAllocator allocator
+MarimayMirBytecodeLowerStatus mmay_mir_bytecode_lower_nominals(
+    const MarimayMirFunction *input,
+    MarimayBytecodeFunction *output,
+    MarimayAllocator allocator
 );
 
 #endif

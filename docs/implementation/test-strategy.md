@@ -1,8 +1,8 @@
-# Ruda implementation and conformance test strategy
+# Marimay implementation and conformance test strategy
 
 Status: normative implementation requirement.
 
-Testing is not a final phase. Every accepted feature is represented across the layers it affects: lexer/parser, formatter, resolver/type system, diagnostics, MIR, verifier, VM, C backend, runtime, public `ruda test`, documentation, and compatibility.
+Testing is not a final phase. Every accepted feature is represented across the layers it affects: lexer/parser, formatter, resolver/type system, diagnostics, MIR, verifier, VM, C backend, runtime, public `mmay test`, documentation, and compatibility.
 
 ## 1. Evidence model
 
@@ -28,7 +28,7 @@ Every allocation-capable C API is exercised on the successful path, all
 material error paths, and under deterministic allocation failure at every
 reachable allocation index. After full teardown, every such scenario asserts
 both `live_allocations == 0` and `live_bytes == 0`. These aggregate counters
-prove balance only for calls routed through `RudaAllocator` with correct size
+prove balance only for calls routed through `MarimayAllocator` with correct size
 arguments; they do not track pointer identity and do not replace LeakSanitizer
 or Valgrind. All error paths run under sanitizers.
 
@@ -41,7 +41,7 @@ with `detect_leaks=1` is a stable required CI contract for the current commit
 SHA. A scheduled/manual Ubuntu Valgrind job independently checks the parent
 C-unit process, reports all of its leak kinds, and fails on definite or
 indirect leaks. Child-process tracing is deferred until system compiler
-children can be excluded without hiding Ruda children. Sanitizer suppressions
+children can be excluded without hiding Marimay children. Sanitizer suppressions
 require a committed rationale and review.
 
 C token pasting is rejected in production code unless a future exact allowlist
@@ -56,7 +56,7 @@ not prove that no leak exists in unexecuted behavior.
 
 Each syntax case has:
 
-- `.ruda` input;
+- `.my` input;
 - expected lossless tree or concise structural dump;
 - expected formatted output;
 - expected diagnostics for invalid forms;
@@ -98,7 +98,7 @@ parser-owner evidence. An explicitly `open` row remains visible and cannot be
 reported as gate completion. Syntax-kind completeness is therefore not
 mistaken for fine grammar-production completeness.
 
-Every public `ruda` code fence in README is extracted and parsed by the I1 frontend; D025 declaration separators and all other public syntax therefore fail executable tests rather than only prose scans. At I2 those fences and versioned documentation examples become compile-pass/fail fixtures as soon as their referenced library surface exists. I8 adds execution, output expectations, and the public `ruda doc --check` runner; it does not postpone syntax/type validation until then.
+Every public `mmay` code fence in README is extracted and parsed by the I1 frontend; D025 declaration separators and all other public syntax therefore fail executable tests rather than only prose scans. At I2 those fences and versioned documentation examples become compile-pass/fail fixtures as soon as their referenced library surface exists. I8 adds execution, output expectations, and the public `mmay doc --check` runner; it does not postpone syntax/type validation until then.
 
 ### 2.3 Compile-pass fixtures
 
@@ -248,9 +248,9 @@ Run fixtures record typed result, stdout, stderr, exit, panic, source frames, ca
 
 ### 2.8 CLI end-to-end tests
 
-Launch the real `ruda` binary in disposable directories. Cover root discovery, script mode, all commands/help/errors, program argument separation, exit statuses, JSON schema, atomic formatting, stale locks, offline cache, missing C compiler, corrupt bytecode/cache, interrupted operations, read-only trees, symlinks, paths with spaces/Unicode, and Windows path/console behavior.
+Launch the real `mmay` binary in disposable directories. Cover root discovery, script mode, all commands/help/errors, program argument separation, exit statuses, JSON schema, atomic formatting, stale locks, offline cache, missing C compiler, corrupt bytecode/cache, interrupted operations, read-only trees, symlinks, paths with spaces/Unicode, and Windows path/console behavior.
 
-Native-install fixtures start from clean Tier 1 images and assert the D030 path: official installation/preflight, machine-readable `ruda doctor`, native `ruda build` without user-selected compiler/linker/SDK variables, offline repeat build, and a single actionable diagnostic when a platform-owned prerequisite is genuinely unavailable.
+Native-install fixtures start from clean Tier 1 images and assert the D030 path: official installation/preflight, machine-readable `mmay doctor`, native `mmay build` without user-selected compiler/linker/SDK variables, offline repeat build, and a single actionable diagnostic when a platform-owned prerequisite is genuinely unavailable.
 
 D052 profile fixtures build each output profile from both debug- and
 release-built compiler executables. They inspect an archive-owned profile
@@ -303,13 +303,13 @@ A deterministic fixture must agree across every available rung. Comparison inclu
 
 Run native C with supported Clang/GCC/MSVC and at least debug/release optimization. A discrepancy is minimized by syntax-aware delta reduction while retaining type validity when possible. The minimized program and its original seed become permanent fixtures.
 
-Generated-identifier fixtures use every C17 keyword that is a valid Ruda
-identifier as each user-visible Ruda name class, plus synthetic internal
+Generated-identifier fixtures use every C17 keyword that is a valid Marimay
+identifier as each user-visible Marimay name class, plus synthetic internal
 double-underscore/underscore-plus-uppercase collision attempts, standard-header
 external names, Unicode normalization pairs, long common prefixes, symbol-hash
 prefix collisions, runtime-helper-like names, and names differing only by case.
 The emitted C must use injective compiler-owned identifiers, compile with every
-Tier 1 C toolchain, and preserve distinct Ruda symbols. Explicit `extern "c"`
+Tier 1 C toolchain, and preserve distinct Marimay symbols. Explicit `extern "c"`
 link names are tested separately as ABI strings and are never silently passed
 through the internal mangler.
 
@@ -401,14 +401,14 @@ Inject partial reads/writes, EINTR/platform equivalents, slow peer, half-close, 
 - Review unsafe/FFI packages and generated C before each RC.
 - Maintain a private-to-public security regression workflow that lands a test with every fix.
 
-ThreadSanitizer primarily covers runtime carrier/blocking/foreign threads; safe Ruda isolate code does not expose shared-memory threading.
+ThreadSanitizer primarily covers runtime carrier/blocking/foreign threads; safe Marimay isolate code does not expose shared-memory threading.
 
 ## 8. Bootstrap testing
 
 For each release candidate:
 
 1. build Stage 0 with at least two supported C compiler families;
-2. build Stage 1 from the same Ruda compiler source;
+2. build Stage 1 from the same Marimay compiler source;
 3. build Stage 2 using Stage 1;
 4. normalize and compare Stage 1/Stage 2 artifacts;
 5. compile/run the conformance suite with both;
@@ -419,7 +419,7 @@ Formatter, diagnostic code registry, standard library metadata, bytecode tables,
 
 ## 9. Compatibility testing
 
-Maintain released-source, `.rudab`, `ruda.mod`, `ruda.lock`, diagnostic JSON, test-event, registry, and trace corpora according to each format's compatibility promise.
+Maintain released-source, `.myb`, `mmay.mod`, `mmay.lock`, diagnostic JSON, test-event, registry, and trace corpora according to each format's compatibility promise.
 
 Every current toolchain builds/runs supported old source-language versions. Old toolchains must reject newer mandatory bytecode/manifest features clearly. Package semver tests verify that additions such as public enum variants are classified as breaking.
 
@@ -444,7 +444,7 @@ order event, use at least 3 warmups and 11 odd-count measured rounds, publish
 median/MAD/Tukey-IQR/min/max/noise, and carry compiler/runtime/source/schema/
 toolchain/resource hashes and metadata. Validators reject profile, checksum,
 sample-count, metadata, finite-number, source-manifest, platform, and baseline
-incompatibility. Reviewed budgets apply only to Ruda medians for one workload
+incompatibility. Reviewed budgets apply only to Marimay medians for one workload
 and platform; a candidate regression receives one complete cool-down retry and
 blocks only when both distributions exceed the same threshold. Debug archives,
 three-sample local results, cross-language ratios, and automatic reruns are not
@@ -452,7 +452,7 @@ release-budget evidence.
 
 D057 separates sequencing without weakening that contract. Checkpoint 21 uses
 the dedicated Linux x86_64 report for all nine probes and the complete
-eight-workload Ruda/Go/Rust corpus. A distinct public-alpha registry gate still
+eight-workload Marimay/Go/Rust corpus. A distinct public-alpha registry gate still
 requires compatible reviewed reports for all five Tier 1 targets in the table
 below and must be revalidated after intervening optimization work. Supplemental
 platform reports do not change either target list.
@@ -545,20 +545,20 @@ Tier claims become final only after runtime/TLS/toolchain investigation. A platf
 Fast pre-commit:
 
 ```sh
-ruda fmt --check
-ruda check --all-targets
-ruda test
+mmay fmt --check
+mmay check --all-targets
+mmay test
 ```
 
 Project CI:
 
 ```sh
-ruda fmt --check
-ruda check --all-targets
-ruda test --engine both
-ruda vet --strict
-ruda doc --check
-ruda audit
+mmay fmt --check
+mmay check --all-targets
+mmay test --engine both
+mmay vet --strict
+mmay doc --check
+mmay audit
 ```
 
 Compiler release CI additionally runs C unit tests, all native compiler/optimization combinations, sanitizers, fuzz campaign thresholds, compatibility, bootstrap, reproducibility, installer, package-security, load/fault, and performance gates.

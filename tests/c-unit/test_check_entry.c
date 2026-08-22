@@ -2,87 +2,87 @@
 
 #include <string.h>
 
-#include "ruda/check/entry.h"
+#include "mmay/check/entry.h"
 
-static RudaCheckEntryStatus ruda_test_entry_select(
+static MarimayCheckEntryStatus mmay_test_entry_select(
     const char *source,
     const char *root,
-    RudaCheckedEntry *entry
+    MarimayCheckedEntry *entry
 ) {
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    RudaCheckEntryStatus status = RUDA_CHECK_ENTRY_INVALID_ARGUMENT;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayCheckEntryStatus status = MMAY_CHECK_ENTRY_INVALID_ARGUMENT;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    if (!ruda_checker_fixture_init(&fixture, source)
+    if (!mmay_checker_fixture_init(&fixture, source)
         || !fixture.ast_initialized) {
-        RUDA_EXPECT(false);
+        MMAY_EXPECT(false);
         goto cleanup;
     }
-    if (ruda_check_ast(
-            &fixture.ast, "test/entry", ruda_system_allocator(),
-            ruda_check_default_options(), &checked
-        ) != RUDA_CHECK_OK || checked.diagnostics.length != 0) {
-        RUDA_EXPECT(false);
+    if (mmay_check_ast(
+            &fixture.ast, "test/entry", mmay_system_allocator(),
+            mmay_check_default_options(), &checked
+        ) != MMAY_CHECK_OK || checked.diagnostics.length != 0) {
+        MMAY_EXPECT(false);
         goto cleanup;
     }
-    status = ruda_check_select_entry(
+    status = mmay_check_select_entry(
         &checked, root, strlen(root), entry
     );
-    if (status == RUDA_CHECK_ENTRY_OK) {
-        RUDA_EXPECT(entry->function != NULL && entry->symbol != NULL);
+    if (status == MMAY_CHECK_ENTRY_OK) {
+        MMAY_EXPECT(entry->function != NULL && entry->symbol != NULL);
     }
 cleanup:
-    ruda_check_result_dispose(&checked);
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_check_result_dispose(&checked);
+    mmay_checker_fixture_dispose(&fixture);
     return status;
 }
 
-static void ruda_test_entry_valid_signatures(void) {
+static void mmay_test_entry_valid_signatures(void) {
     static const char result_source[] =
         "enum Failure { Invalid, }\n"
         "fn message(error: Failure): string { return \"invalid\"; }\n"
         "fn main(): Result<void, Failure> { return Err(Failure.Invalid); }\n";
-    RudaCheckedEntry entry;
+    MarimayCheckedEntry entry;
     memset(&entry, 0, sizeof(entry));
-    RUDA_EXPECT(ruda_test_entry_select(
+    MMAY_EXPECT(mmay_test_entry_select(
         "fn main(): void { return; }\n", "test/entry", &entry
-    ) == RUDA_CHECK_ENTRY_OK);
-    RUDA_EXPECT(!entry.returns_result && entry.error_message == NULL);
+    ) == MMAY_CHECK_ENTRY_OK);
+    MMAY_EXPECT(!entry.returns_result && entry.error_message == NULL);
 
     memset(&entry, 0, sizeof(entry));
-    RUDA_EXPECT(ruda_test_entry_select(
+    MMAY_EXPECT(mmay_test_entry_select(
         result_source, "test/entry", &entry
-    ) == RUDA_CHECK_ENTRY_OK);
-    RUDA_EXPECT(entry.returns_result);
-    RUDA_EXPECT(entry.error_message != NULL);
-    RUDA_EXPECT(entry.error_type != RUDA_TYPE_INVALID);
+    ) == MMAY_CHECK_ENTRY_OK);
+    MMAY_EXPECT(entry.returns_result);
+    MMAY_EXPECT(entry.error_message != NULL);
+    MMAY_EXPECT(entry.error_type != MMAY_TYPE_INVALID);
 }
 
-static void ruda_test_entry_rejections(void) {
+static void mmay_test_entry_rejections(void) {
     static const char missing_contract[] =
         "enum Failure { Invalid, }\n"
         "fn main(): Result<void, Failure> { return Err(Failure.Invalid); }\n";
-    RudaCheckedEntry entry;
+    MarimayCheckedEntry entry;
     memset(&entry, 0, sizeof(entry));
-    RUDA_EXPECT(ruda_test_entry_select(
+    MMAY_EXPECT(mmay_test_entry_select(
         "fn helper(): void { return; }\n", "test/entry", &entry
-    ) == RUDA_CHECK_ENTRY_NOT_FOUND);
-    RUDA_EXPECT(ruda_test_entry_select(
+    ) == MMAY_CHECK_ENTRY_NOT_FOUND);
+    MMAY_EXPECT(mmay_test_entry_select(
         "fn main(value: int): void { return; }\n", "test/entry", &entry
-    ) == RUDA_CHECK_ENTRY_INVALID_SIGNATURE);
-    RUDA_EXPECT(ruda_test_entry_select(
+    ) == MMAY_CHECK_ENTRY_INVALID_SIGNATURE);
+    MMAY_EXPECT(mmay_test_entry_select(
         "fn main(): int { return 0; }\n", "test/entry", &entry
-    ) == RUDA_CHECK_ENTRY_INVALID_SIGNATURE);
-    RUDA_EXPECT(ruda_test_entry_select(
+    ) == MMAY_CHECK_ENTRY_INVALID_SIGNATURE);
+    MMAY_EXPECT(mmay_test_entry_select(
         missing_contract, "test/entry", &entry
-    ) == RUDA_CHECK_ENTRY_ERROR_CONTRACT_MISSING);
-    RUDA_EXPECT(ruda_test_entry_select(
+    ) == MMAY_CHECK_ENTRY_ERROR_CONTRACT_MISSING);
+    MMAY_EXPECT(mmay_test_entry_select(
         "fn main(): void { return; }\n", "other/package", &entry
-    ) == RUDA_CHECK_ENTRY_NOT_FOUND);
+    ) == MMAY_CHECK_ENTRY_NOT_FOUND);
 }
 
-static void ruda_test_entry_requires_visible_error_contract(void) {
+static void mmay_test_entry_requires_visible_error_contract(void) {
     static const char library[] =
         "public enum Failure { Invalid, }\n"
         "fn message(error: Failure): string { return \"invalid\"; }\n";
@@ -91,50 +91,50 @@ static void ruda_test_entry_requires_visible_error_contract(void) {
         "fn main(): Result<void, Failure> {\n"
         "  panic(\"unreachable\");\n"
         "}\n";
-    RudaTestImportSource sources[] = {
-        {"test/entry-app", "app/main.ruda", application},
-        {"test/failure", "failure/failure.ruda", library}
+    MarimayTestImportSource sources[] = {
+        {"test/entry-app", "app/main.my", application},
+        {"test/failure", "failure/failure.my", library}
     };
-    RudaCheckerImportFixture fixture;
-    RudaCheckResult checked;
-    RudaCheckedEntry entry;
+    MarimayCheckerImportFixture fixture;
+    MarimayCheckResult checked;
+    MarimayCheckedEntry entry;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
     memset(&entry, 0, sizeof(entry));
-    RUDA_EXPECT(ruda_checker_import_fixture_init(
+    MMAY_EXPECT(mmay_checker_import_fixture_init(
         &fixture, sources, sizeof(sources) / sizeof(sources[0])
     ));
-    RUDA_EXPECT(ruda_checker_import_fixture_check(
-        &fixture, "test/entry-app", ruda_system_allocator(),
-        ruda_check_graph_default_options(), &checked
-    ) == RUDA_CHECK_OK);
-    RUDA_EXPECT(checked.diagnostics.length == 0);
-    RUDA_EXPECT(ruda_check_select_entry(
+    MMAY_EXPECT(mmay_checker_import_fixture_check(
+        &fixture, "test/entry-app", mmay_system_allocator(),
+        mmay_check_graph_default_options(), &checked
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.diagnostics.length == 0);
+    MMAY_EXPECT(mmay_check_select_entry(
         &checked, "test/entry-app", sizeof("test/entry-app") - 1, &entry
-    ) == RUDA_CHECK_ENTRY_ERROR_CONTRACT_MISSING);
-    ruda_check_result_dispose(&checked);
-    ruda_checker_import_fixture_dispose(&fixture);
+    ) == MMAY_CHECK_ENTRY_ERROR_CONTRACT_MISSING);
+    mmay_check_result_dispose(&checked);
+    mmay_checker_import_fixture_dispose(&fixture);
 }
 
-static void ruda_test_entry_invalid_arguments(void) {
-    RudaCheckedEntry entry;
-    RudaCheckResult checked;
+static void mmay_test_entry_invalid_arguments(void) {
+    MarimayCheckedEntry entry;
+    MarimayCheckResult checked;
     memset(&entry, 0, sizeof(entry));
     memset(&checked, 0, sizeof(checked));
-    RUDA_EXPECT(ruda_check_select_entry(
+    MMAY_EXPECT(mmay_check_select_entry(
         NULL, "test/entry", sizeof("test/entry") - 1, &entry
-    ) == RUDA_CHECK_ENTRY_INVALID_ARGUMENT);
-    RUDA_EXPECT(ruda_check_select_entry(
+    ) == MMAY_CHECK_ENTRY_INVALID_ARGUMENT);
+    MMAY_EXPECT(mmay_check_select_entry(
         &checked, "test/entry", sizeof("test/entry") - 1, &entry
-    ) == RUDA_CHECK_ENTRY_INVALID_ARGUMENT);
-    RUDA_EXPECT(ruda_check_select_entry(
+    ) == MMAY_CHECK_ENTRY_INVALID_ARGUMENT);
+    MMAY_EXPECT(mmay_check_select_entry(
         &checked, "", 0, &entry
-    ) == RUDA_CHECK_ENTRY_INVALID_ARGUMENT);
+    ) == MMAY_CHECK_ENTRY_INVALID_ARGUMENT);
 }
 
-void ruda_test_check_entry(void) {
-    ruda_test_entry_valid_signatures();
-    ruda_test_entry_rejections();
-    ruda_test_entry_requires_visible_error_contract();
-    ruda_test_entry_invalid_arguments();
+void mmay_test_check_entry(void) {
+    mmay_test_entry_valid_signatures();
+    mmay_test_entry_rejections();
+    mmay_test_entry_requires_visible_error_contract();
+    mmay_test_entry_invalid_arguments();
 }

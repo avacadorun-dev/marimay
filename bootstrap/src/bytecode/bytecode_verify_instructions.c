@@ -1,216 +1,216 @@
-#include "ruda/bytecode/bytecode.h"
+#include "mmay/bytecode/bytecode.h"
 
 #include <limits.h>
 #include <string.h>
 
 #include "bytecode_internal.h"
 
-static const RudaBytecodeType *ruda_bytecode_register_type(
-    const RudaBytecodeFunction *function,
+static const MarimayBytecodeType *mmay_bytecode_register_type(
+    const MarimayBytecodeFunction *function,
     uint64_t register_id
 ) {
     if (function == NULL || register_id >= function->register_types.length) {
         return NULL;
     }
-    return ruda_vector_at_const(
+    return mmay_vector_at_const(
         &function->register_types,
         (size_t)register_id
     );
 }
 
-static RudaBytecodeVerifyStatus ruda_bytecode_require_assigned(
+static MarimayBytecodeVerifyStatus mmay_bytecode_require_assigned(
     const unsigned char *assigned,
     size_t register_count,
     uint64_t register_id
 );
-static bool ruda_bytecode_register_matches(
-    const RudaBytecodeFunction *function,
+static bool mmay_bytecode_register_matches(
+    const MarimayBytecodeFunction *function,
     uint64_t register_id,
-    RudaBytecodeType expected,
+    MarimayBytecodeType expected,
     uint32_t expected_layout
 );
 
-const RudaBytecodeInstruction *ruda_bytecode_block_terminator(
-    const RudaBytecodeBlock *block
+const MarimayBytecodeInstruction *mmay_bytecode_block_terminator(
+    const MarimayBytecodeBlock *block
 ) {
     if (block == NULL || block->instructions.length == 0) {
         return NULL;
     }
-    return ruda_vector_at_const(
+    return mmay_vector_at_const(
         &block->instructions,
         block->instructions.length - 1
     );
 }
 
-bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
-    if (ruda_bytecode_opcode_is_numeric(opcode)) {
+bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
+    if (mmay_bytecode_opcode_is_numeric(opcode)) {
         return true;
     }
     switch (opcode) {
-        case RUDA_OPCODE_CONST_I64:
-        case RUDA_OPCODE_CONST_INTEGER:
-        case RUDA_OPCODE_CONST_F64:
-        case RUDA_OPCODE_CONST_BOOL:
-        case RUDA_OPCODE_COPY:
-        case RUDA_OPCODE_I64_ADD_CHECKED: case RUDA_OPCODE_I64_ADD_PROVEN:
-        case RUDA_OPCODE_I64_SUBTRACT_CHECKED: case RUDA_OPCODE_I64_SUBTRACT_PROVEN:
-        case RUDA_OPCODE_I64_MULTIPLY_CHECKED: case RUDA_OPCODE_I64_MULTIPLY_PROVEN:
-        case RUDA_OPCODE_I64_DIVIDE_CHECKED:
-        case RUDA_OPCODE_I64_REMAINDER_CHECKED:
-        case RUDA_OPCODE_I64_NEGATE_CHECKED:
-        case RUDA_OPCODE_I64_BITWISE_NOT:
-        case RUDA_OPCODE_F64_NEGATE:
-        case RUDA_OPCODE_BOOL_NOT:
-        case RUDA_OPCODE_I64_EQUAL:
-        case RUDA_OPCODE_BOOL_EQUAL:
-        case RUDA_OPCODE_I64_LESS:
-        case RUDA_OPCODE_I64_LESS_EQUAL:
-        case RUDA_OPCODE_I64_BITWISE_AND:
-        case RUDA_OPCODE_I64_BITWISE_XOR:
-        case RUDA_OPCODE_I64_BITWISE_OR:
-        case RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED:
-        case RUDA_OPCODE_I64_SHIFT_RIGHT:
-        case RUDA_OPCODE_F64_ADD:
-        case RUDA_OPCODE_F64_SUBTRACT:
-        case RUDA_OPCODE_F64_MULTIPLY:
-        case RUDA_OPCODE_F64_DIVIDE:
-        case RUDA_OPCODE_F64_EQUAL:
-        case RUDA_OPCODE_F64_LESS:
-        case RUDA_OPCODE_F64_LESS_EQUAL:
-        case RUDA_OPCODE_CONST_STRING:
-        case RUDA_OPCODE_STRING_EQUAL:
-        case RUDA_OPCODE_CALL_DIRECT:
-        case RUDA_OPCODE_ARRAY_NEW:
-        case RUDA_OPCODE_ARRAY_LENGTH:
-        case RUDA_OPCODE_ARRAY_REQUIRE_INDEX:
-        case RUDA_OPCODE_ARRAY_GET:
-        case RUDA_OPCODE_ARRAY_GET_IN_BOUNDS:
-        case RUDA_OPCODE_ARRAY_POP:
-        case RUDA_OPCODE_ARRAY_GENERATION:
-        case RUDA_OPCODE_ARRAY_REQUIRE_GENERATION:
-        case RUDA_OPCODE_RECORD_NEW:
-        case RUDA_OPCODE_RECORD_GET:
-        case RUDA_OPCODE_RECORD_IDENTITY_SAME:
-        case RUDA_OPCODE_ENUM_NEW:
-        case RUDA_OPCODE_ENUM_IS_VARIANT:
-        case RUDA_OPCODE_ENUM_REQUIRE_VARIANT:
-        case RUDA_OPCODE_ENUM_GET_PAYLOAD:
-        case RUDA_OPCODE_INTERFACE_NEW:
-        case RUDA_OPCODE_CALL_INTERFACE:
-        case RUDA_OPCODE_INTEGER_CHECKED_ADD:
-        case RUDA_OPCODE_INTEGER_CHECKED_SUBTRACT:
-        case RUDA_OPCODE_INTEGER_CHECKED_MULTIPLY:
-        case RUDA_OPCODE_INTEGER_CHECKED_DIVIDE:
-        case RUDA_OPCODE_INTEGER_CHECKED_REMAINDER:
-        case RUDA_OPCODE_INTEGER_CHECKED_NEGATE:
-        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_LEFT:
-        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_RIGHT:
-        case RUDA_OPCODE_INTEGER_WRAPPING_ADD:
-        case RUDA_OPCODE_INTEGER_WRAPPING_SUBTRACT:
-        case RUDA_OPCODE_INTEGER_WRAPPING_MULTIPLY:
-        case RUDA_OPCODE_INTEGER_WRAPPING_DIVIDE:
-        case RUDA_OPCODE_INTEGER_WRAPPING_REMAINDER:
-        case RUDA_OPCODE_INTEGER_WRAPPING_NEGATE:
-        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_LEFT:
-        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_RIGHT:
-        case RUDA_OPCODE_INTEGER_SATURATING_ADD:
-        case RUDA_OPCODE_INTEGER_SATURATING_SUBTRACT:
-        case RUDA_OPCODE_INTEGER_SATURATING_MULTIPLY:
-        case RUDA_OPCODE_INTEGER_SATURATING_DIVIDE:
-        case RUDA_OPCODE_INTEGER_SATURATING_REMAINDER:
-        case RUDA_OPCODE_INTEGER_SATURATING_NEGATE:
-        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_LEFT:
-        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_RIGHT:
-        case RUDA_OPCODE_INTEGER_CONVERT_TOTAL:
-        case RUDA_OPCODE_INTEGER_CONVERT_OPTION:
-        case RUDA_OPCODE_FORMAT_F32:
-        case RUDA_OPCODE_FORMAT_F64:
-        case RUDA_OPCODE_IO_PRINTLN:
-        case RUDA_OPCODE_TEST_OUTPUT_BEGIN:
-        case RUDA_OPCODE_TEST_OUTPUT_END:
-        case RUDA_OPCODE_DEFER_REGISTER:
-        case RUDA_OPCODE_DEFER_CALL:
+        case MMAY_OPCODE_CONST_I64:
+        case MMAY_OPCODE_CONST_INTEGER:
+        case MMAY_OPCODE_CONST_F64:
+        case MMAY_OPCODE_CONST_BOOL:
+        case MMAY_OPCODE_COPY:
+        case MMAY_OPCODE_I64_ADD_CHECKED: case MMAY_OPCODE_I64_ADD_PROVEN:
+        case MMAY_OPCODE_I64_SUBTRACT_CHECKED: case MMAY_OPCODE_I64_SUBTRACT_PROVEN:
+        case MMAY_OPCODE_I64_MULTIPLY_CHECKED: case MMAY_OPCODE_I64_MULTIPLY_PROVEN:
+        case MMAY_OPCODE_I64_DIVIDE_CHECKED:
+        case MMAY_OPCODE_I64_REMAINDER_CHECKED:
+        case MMAY_OPCODE_I64_NEGATE_CHECKED:
+        case MMAY_OPCODE_I64_BITWISE_NOT:
+        case MMAY_OPCODE_F64_NEGATE:
+        case MMAY_OPCODE_BOOL_NOT:
+        case MMAY_OPCODE_I64_EQUAL:
+        case MMAY_OPCODE_BOOL_EQUAL:
+        case MMAY_OPCODE_I64_LESS:
+        case MMAY_OPCODE_I64_LESS_EQUAL:
+        case MMAY_OPCODE_I64_BITWISE_AND:
+        case MMAY_OPCODE_I64_BITWISE_XOR:
+        case MMAY_OPCODE_I64_BITWISE_OR:
+        case MMAY_OPCODE_I64_SHIFT_LEFT_CHECKED:
+        case MMAY_OPCODE_I64_SHIFT_RIGHT:
+        case MMAY_OPCODE_F64_ADD:
+        case MMAY_OPCODE_F64_SUBTRACT:
+        case MMAY_OPCODE_F64_MULTIPLY:
+        case MMAY_OPCODE_F64_DIVIDE:
+        case MMAY_OPCODE_F64_EQUAL:
+        case MMAY_OPCODE_F64_LESS:
+        case MMAY_OPCODE_F64_LESS_EQUAL:
+        case MMAY_OPCODE_CONST_STRING:
+        case MMAY_OPCODE_STRING_EQUAL:
+        case MMAY_OPCODE_CALL_DIRECT:
+        case MMAY_OPCODE_ARRAY_NEW:
+        case MMAY_OPCODE_ARRAY_LENGTH:
+        case MMAY_OPCODE_ARRAY_REQUIRE_INDEX:
+        case MMAY_OPCODE_ARRAY_GET:
+        case MMAY_OPCODE_ARRAY_GET_IN_BOUNDS:
+        case MMAY_OPCODE_ARRAY_POP:
+        case MMAY_OPCODE_ARRAY_GENERATION:
+        case MMAY_OPCODE_ARRAY_REQUIRE_GENERATION:
+        case MMAY_OPCODE_RECORD_NEW:
+        case MMAY_OPCODE_RECORD_GET:
+        case MMAY_OPCODE_RECORD_IDENTITY_SAME:
+        case MMAY_OPCODE_ENUM_NEW:
+        case MMAY_OPCODE_ENUM_IS_VARIANT:
+        case MMAY_OPCODE_ENUM_REQUIRE_VARIANT:
+        case MMAY_OPCODE_ENUM_GET_PAYLOAD:
+        case MMAY_OPCODE_INTERFACE_NEW:
+        case MMAY_OPCODE_CALL_INTERFACE:
+        case MMAY_OPCODE_INTEGER_CHECKED_ADD:
+        case MMAY_OPCODE_INTEGER_CHECKED_SUBTRACT:
+        case MMAY_OPCODE_INTEGER_CHECKED_MULTIPLY:
+        case MMAY_OPCODE_INTEGER_CHECKED_DIVIDE:
+        case MMAY_OPCODE_INTEGER_CHECKED_REMAINDER:
+        case MMAY_OPCODE_INTEGER_CHECKED_NEGATE:
+        case MMAY_OPCODE_INTEGER_CHECKED_SHIFT_LEFT:
+        case MMAY_OPCODE_INTEGER_CHECKED_SHIFT_RIGHT:
+        case MMAY_OPCODE_INTEGER_WRAPPING_ADD:
+        case MMAY_OPCODE_INTEGER_WRAPPING_SUBTRACT:
+        case MMAY_OPCODE_INTEGER_WRAPPING_MULTIPLY:
+        case MMAY_OPCODE_INTEGER_WRAPPING_DIVIDE:
+        case MMAY_OPCODE_INTEGER_WRAPPING_REMAINDER:
+        case MMAY_OPCODE_INTEGER_WRAPPING_NEGATE:
+        case MMAY_OPCODE_INTEGER_WRAPPING_SHIFT_LEFT:
+        case MMAY_OPCODE_INTEGER_WRAPPING_SHIFT_RIGHT:
+        case MMAY_OPCODE_INTEGER_SATURATING_ADD:
+        case MMAY_OPCODE_INTEGER_SATURATING_SUBTRACT:
+        case MMAY_OPCODE_INTEGER_SATURATING_MULTIPLY:
+        case MMAY_OPCODE_INTEGER_SATURATING_DIVIDE:
+        case MMAY_OPCODE_INTEGER_SATURATING_REMAINDER:
+        case MMAY_OPCODE_INTEGER_SATURATING_NEGATE:
+        case MMAY_OPCODE_INTEGER_SATURATING_SHIFT_LEFT:
+        case MMAY_OPCODE_INTEGER_SATURATING_SHIFT_RIGHT:
+        case MMAY_OPCODE_INTEGER_CONVERT_TOTAL:
+        case MMAY_OPCODE_INTEGER_CONVERT_OPTION:
+        case MMAY_OPCODE_FORMAT_F32:
+        case MMAY_OPCODE_FORMAT_F64:
+        case MMAY_OPCODE_IO_PRINTLN:
+        case MMAY_OPCODE_TEST_OUTPUT_BEGIN:
+        case MMAY_OPCODE_TEST_OUTPUT_END:
+        case MMAY_OPCODE_DEFER_REGISTER:
+        case MMAY_OPCODE_DEFER_CALL:
             return true;
-        case RUDA_OPCODE_INVALID:
-        case RUDA_OPCODE_JUMP:
-        case RUDA_OPCODE_BRANCH_BOOL:
-        case RUDA_OPCODE_RETURN:
-        case RUDA_OPCODE_RETURN_VOID:
-        case RUDA_OPCODE_CALL_DIRECT_VOID:
-        case RUDA_OPCODE_PANIC_STRING:
-        case RUDA_OPCODE_CALL_DIRECT_NEVER:
-        case RUDA_OPCODE_ARRAY_SET:
-        case RUDA_OPCODE_ARRAY_SET_IN_BOUNDS:
-        case RUDA_OPCODE_ARRAY_PUSH:
-        case RUDA_OPCODE_ARRAY_TRUNCATE:
-        case RUDA_OPCODE_ARRAY_CLEAR:
-        case RUDA_OPCODE_ARRAY_RESERVE:
-        case RUDA_OPCODE_RECORD_SET:
+        case MMAY_OPCODE_INVALID:
+        case MMAY_OPCODE_JUMP:
+        case MMAY_OPCODE_BRANCH_BOOL:
+        case MMAY_OPCODE_RETURN:
+        case MMAY_OPCODE_RETURN_VOID:
+        case MMAY_OPCODE_CALL_DIRECT_VOID:
+        case MMAY_OPCODE_PANIC_STRING:
+        case MMAY_OPCODE_CALL_DIRECT_NEVER:
+        case MMAY_OPCODE_ARRAY_SET:
+        case MMAY_OPCODE_ARRAY_SET_IN_BOUNDS:
+        case MMAY_OPCODE_ARRAY_PUSH:
+        case MMAY_OPCODE_ARRAY_TRUNCATE:
+        case MMAY_OPCODE_ARRAY_CLEAR:
+        case MMAY_OPCODE_ARRAY_RESERVE:
+        case MMAY_OPCODE_RECORD_SET:
             return false;
     }
     return false;
 }
 
-static RudaBytecodeVerifyStatus ruda_bytecode_verify_defer_instruction(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeInstruction *instruction,
+static MarimayBytecodeVerifyStatus mmay_bytecode_verify_defer_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
     unsigned char *assigned
 ) {
     uint64_t marker = instruction->operands[0].unsigned_value;
     uint64_t call_wire = instruction->operands[1].unsigned_value;
-    const RudaBytecodeCall *call = call_wire < function->calls.length
-        ? ruda_bytecode_call(function, (RudaBytecodeCallId)call_wire)
+    const MarimayBytecodeCall *call = call_wire < function->calls.length
+        ? mmay_bytecode_call(function, (MarimayBytecodeCallId)call_wire)
         : NULL;
-    const RudaBytecodeType *marker_type = ruda_bytecode_register_type(
+    const MarimayBytecodeType *marker_type = mmay_bytecode_register_type(
         function, marker
     );
     size_t argument_index = 0;
     if (call == NULL || marker_type == NULL
-        || *marker_type != RUDA_BYTECODE_TYPE_BOOL
-        || call->result_type != RUDA_BYTECODE_TYPE_VOID) {
+        || *marker_type != MMAY_BYTECODE_TYPE_BOOL
+        || call->result_type != MMAY_BYTECODE_TYPE_VOID) {
         return marker_type == NULL
-            ? RUDA_BYTECODE_VERIFY_INVALID_REGISTER
-            : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            ? MMAY_BYTECODE_VERIFY_INVALID_REGISTER
+            : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
     if (call->interface_slot != UINT32_MAX) {
-        const RudaBytecodeCallArgument *receiver = call->argument_count != 0
-            ? ruda_bytecode_call_argument(function, call->argument_start)
+        const MarimayBytecodeCallArgument *receiver = call->argument_count != 0
+            ? mmay_bytecode_call_argument(function, call->argument_start)
             : NULL;
-        const RudaBytecodeInterfaceLayout *layout = receiver != NULL
-                && receiver->type == RUDA_BYTECODE_TYPE_INTERFACE
-            ? ruda_bytecode_interface_layout(function, receiver->layout)
+        const MarimayBytecodeInterfaceLayout *layout = receiver != NULL
+                && receiver->type == MMAY_BYTECODE_TYPE_INTERFACE
+            ? mmay_bytecode_interface_layout(function, receiver->layout)
             : NULL;
         if (layout == NULL || call->interface_slot >= layout->method_count) {
-            return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+            return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
         }
     }
     for (argument_index = 0; argument_index < call->argument_count;
         argument_index += 1) {
-        const RudaBytecodeCallArgument *argument = ruda_bytecode_call_argument(
+        const MarimayBytecodeCallArgument *argument = mmay_bytecode_call_argument(
             function, call->argument_start + argument_index
         );
-        RudaBytecodeVerifyStatus status = argument != NULL
-            ? ruda_bytecode_require_assigned(
+        MarimayBytecodeVerifyStatus status = argument != NULL
+            ? mmay_bytecode_require_assigned(
                 assigned, function->register_types.length,
                 argument->register_id
             )
-            : RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
-        if (status != RUDA_BYTECODE_VERIFY_OK) {
+            : MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        if (status != MMAY_BYTECODE_VERIFY_OK) {
             return status;
         }
-        if (!ruda_bytecode_register_matches(
+        if (!mmay_bytecode_register_matches(
                 function, argument->register_id,
                 argument->type, argument->layout
             )) {
-            return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
     }
     assigned[(size_t)marker] = 1;
-    return RUDA_BYTECODE_VERIFY_OK;
+    return MMAY_BYTECODE_VERIFY_OK;
 }
 
-void ruda_bytecode_transfer_assignments(
-    const RudaBytecodeBlock *block,
+void mmay_bytecode_transfer_assignments(
+    const MarimayBytecodeBlock *block,
     unsigned char *assigned,
     size_t register_count
 ) {
@@ -221,1278 +221,1278 @@ void ruda_bytecode_transfer_assignments(
     for (instruction_index = 0;
         instruction_index + 1 < block->instructions.length;
         instruction_index += 1) {
-        const RudaBytecodeInstruction *instruction = ruda_vector_at_const(
+        const MarimayBytecodeInstruction *instruction = mmay_vector_at_const(
             &block->instructions,
             instruction_index
         );
         if (instruction != NULL
-            && ruda_bytecode_opcode_writes_register(instruction->opcode)
+            && mmay_bytecode_opcode_writes_register(instruction->opcode)
             && instruction->operands[0].unsigned_value < register_count) {
             assigned[(size_t)instruction->operands[0].unsigned_value] = 1;
         }
     }
 }
 
-static RudaBytecodeVerifyStatus ruda_bytecode_require_assigned(
+static MarimayBytecodeVerifyStatus mmay_bytecode_require_assigned(
     const unsigned char *assigned,
     size_t register_count,
     uint64_t register_id
 ) {
     if (register_id >= register_count) {
-        return RUDA_BYTECODE_VERIFY_INVALID_REGISTER;
+        return MMAY_BYTECODE_VERIFY_INVALID_REGISTER;
     }
     return assigned[(size_t)register_id] != 0
-        ? RUDA_BYTECODE_VERIFY_OK
-        : RUDA_BYTECODE_VERIFY_UNINITIALIZED_REGISTER;
+        ? MMAY_BYTECODE_VERIFY_OK
+        : MMAY_BYTECODE_VERIFY_UNINITIALIZED_REGISTER;
 }
 
-static bool ruda_bytecode_register_matches(
-    const RudaBytecodeFunction *function,
+static bool mmay_bytecode_register_matches(
+    const MarimayBytecodeFunction *function,
     uint64_t register_id,
-    RudaBytecodeType type,
+    MarimayBytecodeType type,
     uint32_t layout
 ) {
-    const RudaBytecodeType *actual = ruda_bytecode_register_type(
+    const MarimayBytecodeType *actual = mmay_bytecode_register_type(
         function,
         register_id
     );
     return actual != NULL && *actual == type
-        && ruda_bytecode_type_layout_is_valid(function, type, layout)
-        && ruda_bytecode_register_layout(
+        && mmay_bytecode_type_layout_is_valid(function, type, layout)
+        && mmay_bytecode_register_layout(
             function,
             (uint32_t)register_id
         ) == layout;
 }
 
-static const RudaBytecodeEnumVariant *ruda_bytecode_enum_variant(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeEnumLayout *layout,
+static const MarimayBytecodeEnumVariant *mmay_bytecode_enum_variant(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeEnumLayout *layout,
     size_t variant
 ) {
     return function != NULL && layout != NULL && variant < layout->variant_count
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->enum_variants,
             layout->variant_start + variant
         )
         : NULL;
 }
 
-static const RudaBytecodeEnumPayload *ruda_bytecode_enum_payload(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeEnumLayout *layout,
-    const RudaBytecodeEnumVariant *variant,
+static const MarimayBytecodeEnumPayload *mmay_bytecode_enum_payload(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeEnumLayout *layout,
+    const MarimayBytecodeEnumVariant *variant,
     size_t field
 ) {
     return function != NULL && layout != NULL && variant != NULL
             && field < variant->payload_count
             && variant->payload_start <= layout->payload_count
             && field <= layout->payload_count - variant->payload_start
-        ? ruda_vector_at_const(
+        ? mmay_vector_at_const(
             &function->enum_payloads,
             layout->payload_start + variant->payload_start + field
         )
         : NULL;
 }
 
-static RudaBytecodeVerifyStatus ruda_bytecode_verify_record_instruction(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeInstruction *instruction,
+static MarimayBytecodeVerifyStatus mmay_bytecode_verify_record_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
     unsigned char *assigned
 ) {
     uint64_t target = instruction->operands[0].unsigned_value;
     uint64_t record_register = instruction->operands[1].unsigned_value;
-    RudaBytecodeVerifyStatus status = RUDA_BYTECODE_VERIFY_OK;
-    if (instruction->opcode == RUDA_OPCODE_RECORD_NEW) {
+    MarimayBytecodeVerifyStatus status = MMAY_BYTECODE_VERIFY_OK;
+    if (instruction->opcode == MMAY_OPCODE_RECORD_NEW) {
         uint64_t construction_wire = instruction->operands[1].unsigned_value;
-        const RudaBytecodeRecordConstruction *construction =
+        const MarimayBytecodeRecordConstruction *construction =
             construction_wire < function->record_constructions.length
-            ? ruda_bytecode_record_construction(
+            ? mmay_bytecode_record_construction(
                 function,
-                (RudaBytecodeRecordConstructionId)construction_wire
+                (MarimayBytecodeRecordConstructionId)construction_wire
             )
             : NULL;
-        const RudaBytecodeRecordLayout *layout = construction != NULL
-            ? ruda_bytecode_record_layout(function, construction->record)
+        const MarimayBytecodeRecordLayout *layout = construction != NULL
+            ? mmay_bytecode_record_layout(function, construction->record)
             : NULL;
         size_t argument_index = 0;
         if (construction == NULL || layout == NULL
-            || !ruda_bytecode_register_matches(
+            || !mmay_bytecode_register_matches(
                 function,
                 target,
-                RUDA_BYTECODE_TYPE_RECORD,
+                MMAY_BYTECODE_TYPE_RECORD,
                 construction->record
             )) {
             return construction == NULL || layout == NULL
-                ? RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                ? MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
         for (argument_index = 0;
             argument_index < construction->argument_count;
             argument_index += 1) {
-            const RudaBytecodeRecordArgument *argument = ruda_vector_at_const(
+            const MarimayBytecodeRecordArgument *argument = mmay_vector_at_const(
                 &function->record_arguments,
                 construction->argument_start + argument_index
             );
             status = argument != NULL
-                ? ruda_bytecode_require_assigned(
+                ? mmay_bytecode_require_assigned(
                     assigned,
                     function->register_types.length,
                     argument->register_id
                 )
-                : RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+                : MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            if (!ruda_bytecode_register_matches(
+            if (!mmay_bytecode_register_matches(
                     function,
                     argument->register_id,
                     argument->type,
                     argument->layout
                 )) {
-                return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
         }
         assigned[(size_t)target] = 1;
-        return RUDA_BYTECODE_VERIFY_OK;
+        return MMAY_BYTECODE_VERIFY_OK;
     }
-    status = ruda_bytecode_require_assigned(
+    status = mmay_bytecode_require_assigned(
         assigned,
         function->register_types.length,
         record_register
     );
-    if (status != RUDA_BYTECODE_VERIFY_OK) {
+    if (status != MMAY_BYTECODE_VERIFY_OK) {
         return status;
     }
     {
-        uint32_t record_id = ruda_bytecode_register_layout(
+        uint32_t record_id = mmay_bytecode_register_layout(
             function,
             (uint32_t)record_register
         );
-        const RudaBytecodeRecordLayout *layout = ruda_bytecode_record_layout(
+        const MarimayBytecodeRecordLayout *layout = mmay_bytecode_record_layout(
             function,
             record_id
         );
         int64_t field_wire = instruction->operands[2].signed_value;
-        const RudaBytecodeRecordField *field =
-            instruction->opcode != RUDA_OPCODE_RECORD_IDENTITY_SAME
+        const MarimayBytecodeRecordField *field =
+            instruction->opcode != MMAY_OPCODE_RECORD_IDENTITY_SAME
                 && field_wire >= 0
-            ? ruda_bytecode_record_field(
+            ? mmay_bytecode_record_field(
                 function,
                 layout,
                 (size_t)field_wire
             )
             : NULL;
-        if (layout == NULL || !ruda_bytecode_register_matches(
+        if (layout == NULL || !mmay_bytecode_register_matches(
                 function,
                 record_register,
-                RUDA_BYTECODE_TYPE_RECORD,
+                MMAY_BYTECODE_TYPE_RECORD,
                 record_id
             )) {
             return layout == NULL
-                ? RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                ? MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
-        if (instruction->opcode == RUDA_OPCODE_RECORD_IDENTITY_SAME) {
-            status = ruda_bytecode_require_assigned(
+        if (instruction->opcode == MMAY_OPCODE_RECORD_IDENTITY_SAME) {
+            status = mmay_bytecode_require_assigned(
                 assigned,
                 function->register_types.length,
                 instruction->operands[2].unsigned_value
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            if (!ruda_bytecode_register_matches(
+            if (!mmay_bytecode_register_matches(
                     function,
                     instruction->operands[2].unsigned_value,
-                    RUDA_BYTECODE_TYPE_RECORD,
+                    MMAY_BYTECODE_TYPE_RECORD,
                     record_id
-                ) || !ruda_bytecode_register_matches(
+                ) || !mmay_bytecode_register_matches(
                     function,
                     target,
-                    RUDA_BYTECODE_TYPE_BOOL,
-                    RUDA_BYTECODE_NO_LAYOUT
+                    MMAY_BYTECODE_TYPE_BOOL,
+                    MMAY_BYTECODE_NO_LAYOUT
                 )) {
-                return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
             assigned[(size_t)target] = 1;
-            return RUDA_BYTECODE_VERIFY_OK;
+            return MMAY_BYTECODE_VERIFY_OK;
         } else if (field == NULL) {
-            return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
-        } else if (instruction->opcode == RUDA_OPCODE_RECORD_SET) {
-            status = ruda_bytecode_require_assigned(
+            return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        } else if (instruction->opcode == MMAY_OPCODE_RECORD_SET) {
+            status = mmay_bytecode_require_assigned(
                 assigned,
                 function->register_types.length,
                 target
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            return field->is_mutable && ruda_bytecode_register_matches(
+            return field->is_mutable && mmay_bytecode_register_matches(
                     function,
                     target,
                     field->type,
                     field->layout
                 )
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
-        if (instruction->opcode == RUDA_OPCODE_RECORD_GET) {
-            if (!ruda_bytecode_register_matches(
+        if (instruction->opcode == MMAY_OPCODE_RECORD_GET) {
+            if (!mmay_bytecode_register_matches(
                     function,
                     target,
                     field->type,
                     field->layout
                 )) {
-                return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
         } else {
-            return RUDA_BYTECODE_VERIFY_INVALID_OPCODE;
+            return MMAY_BYTECODE_VERIFY_INVALID_OPCODE;
         }
     }
     assigned[(size_t)target] = 1;
-    return RUDA_BYTECODE_VERIFY_OK;
+    return MMAY_BYTECODE_VERIFY_OK;
 }
 
-static RudaBytecodeVerifyStatus ruda_bytecode_verify_enum_instruction(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeInstruction *instruction,
+static MarimayBytecodeVerifyStatus mmay_bytecode_verify_enum_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
     unsigned char *assigned
 ) {
     uint64_t target = instruction->operands[0].unsigned_value;
-    if (instruction->opcode == RUDA_OPCODE_ENUM_NEW) {
+    if (instruction->opcode == MMAY_OPCODE_ENUM_NEW) {
         uint64_t construction_wire = instruction->operands[1].unsigned_value;
-        const RudaBytecodeEnumConstruction *construction =
+        const MarimayBytecodeEnumConstruction *construction =
             construction_wire < function->enum_constructions.length
-            ? ruda_bytecode_enum_construction(
+            ? mmay_bytecode_enum_construction(
                 function,
-                (RudaBytecodeEnumConstructionId)construction_wire
+                (MarimayBytecodeEnumConstructionId)construction_wire
             )
             : NULL;
-        const RudaBytecodeEnumLayout *layout = construction != NULL
-            ? ruda_bytecode_enum_layout(function, construction->enum_id)
+        const MarimayBytecodeEnumLayout *layout = construction != NULL
+            ? mmay_bytecode_enum_layout(function, construction->enum_id)
             : NULL;
         size_t argument_index = 0;
         if (construction == NULL || layout == NULL
-            || !ruda_bytecode_register_matches(
+            || !mmay_bytecode_register_matches(
                 function,
                 target,
-                RUDA_BYTECODE_TYPE_ENUM,
+                MMAY_BYTECODE_TYPE_ENUM,
                 construction->enum_id
             )) {
             return construction == NULL || layout == NULL
-                ? RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                ? MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
         for (argument_index = 0;
             argument_index < construction->argument_count;
             argument_index += 1) {
-            const RudaBytecodeEnumArgument *argument = ruda_vector_at_const(
+            const MarimayBytecodeEnumArgument *argument = mmay_vector_at_const(
                 &function->enum_arguments,
                 construction->argument_start + argument_index
             );
-            RudaBytecodeVerifyStatus status = argument != NULL
-                ? ruda_bytecode_require_assigned(
+            MarimayBytecodeVerifyStatus status = argument != NULL
+                ? mmay_bytecode_require_assigned(
                     assigned,
                     function->register_types.length,
                     argument->register_id
                 )
-                : RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+                : MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            if (!ruda_bytecode_register_matches(
+            if (!mmay_bytecode_register_matches(
                     function,
                     argument->register_id,
                     argument->type,
                     argument->layout
                 )) {
-                return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
         }
         assigned[(size_t)target] = 1;
-        return RUDA_BYTECODE_VERIFY_OK;
+        return MMAY_BYTECODE_VERIFY_OK;
     }
     {
         uint64_t enum_register = instruction->operands[1].unsigned_value;
-        RudaBytecodeVerifyStatus status = ruda_bytecode_require_assigned(
+        MarimayBytecodeVerifyStatus status = mmay_bytecode_require_assigned(
             assigned,
             function->register_types.length,
             enum_register
         );
-        uint32_t enum_id = ruda_bytecode_register_layout(
+        uint32_t enum_id = mmay_bytecode_register_layout(
             function,
             (uint32_t)enum_register
         );
-        const RudaBytecodeEnumLayout *layout = ruda_bytecode_enum_layout(
+        const MarimayBytecodeEnumLayout *layout = mmay_bytecode_enum_layout(
             function,
             enum_id
         );
         uint64_t selector = (uint64_t)instruction->operands[2].signed_value;
-        size_t variant_index = instruction->opcode == RUDA_OPCODE_ENUM_GET_PAYLOAD
+        size_t variant_index = instruction->opcode == MMAY_OPCODE_ENUM_GET_PAYLOAD
             ? (size_t)(selector >> 32)
             : (size_t)instruction->operands[2].signed_value;
-        const RudaBytecodeEnumVariant *variant =
+        const MarimayBytecodeEnumVariant *variant =
             instruction->operands[2].signed_value >= 0
-                || instruction->opcode == RUDA_OPCODE_ENUM_GET_PAYLOAD
-            ? ruda_bytecode_enum_variant(function, layout, variant_index)
+                || instruction->opcode == MMAY_OPCODE_ENUM_GET_PAYLOAD
+            ? mmay_bytecode_enum_variant(function, layout, variant_index)
             : NULL;
-        if (status != RUDA_BYTECODE_VERIFY_OK) {
+        if (status != MMAY_BYTECODE_VERIFY_OK) {
             return status;
         }
         if (layout == NULL || variant == NULL) {
-            return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+            return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
         }
-        if (!ruda_bytecode_register_matches(
+        if (!mmay_bytecode_register_matches(
                 function,
                 enum_register,
-                RUDA_BYTECODE_TYPE_ENUM,
+                MMAY_BYTECODE_TYPE_ENUM,
                 enum_id
             )) {
-            return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
-        if (instruction->opcode == RUDA_OPCODE_ENUM_IS_VARIANT) {
-            if (!ruda_bytecode_register_matches(
+        if (instruction->opcode == MMAY_OPCODE_ENUM_IS_VARIANT) {
+            if (!mmay_bytecode_register_matches(
                     function,
                     target,
-                    RUDA_BYTECODE_TYPE_BOOL,
-                    RUDA_BYTECODE_NO_LAYOUT
+                    MMAY_BYTECODE_TYPE_BOOL,
+                    MMAY_BYTECODE_NO_LAYOUT
                 )) {
-                return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
-        } else if (instruction->opcode == RUDA_OPCODE_ENUM_REQUIRE_VARIANT) {
-            if (!ruda_bytecode_register_matches(
+        } else if (instruction->opcode == MMAY_OPCODE_ENUM_REQUIRE_VARIANT) {
+            if (!mmay_bytecode_register_matches(
                     function,
                     target,
-                    RUDA_BYTECODE_TYPE_ENUM,
+                    MMAY_BYTECODE_TYPE_ENUM,
                     enum_id
                 )) {
-                return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
-        } else if (instruction->opcode == RUDA_OPCODE_ENUM_GET_PAYLOAD) {
-            const RudaBytecodeEnumPayload *payload =
-                ruda_bytecode_enum_payload(
+        } else if (instruction->opcode == MMAY_OPCODE_ENUM_GET_PAYLOAD) {
+            const MarimayBytecodeEnumPayload *payload =
+                mmay_bytecode_enum_payload(
                     function,
                     layout,
                     variant,
                     (size_t)(selector & UINT32_MAX)
                 );
             if (payload == NULL) {
-                return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+                return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
             }
-            if (!ruda_bytecode_register_matches(
+            if (!mmay_bytecode_register_matches(
                     function,
                     target,
                     payload->type,
                     payload->layout
                 )) {
-                return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
         } else {
-            return RUDA_BYTECODE_VERIFY_INVALID_OPCODE;
+            return MMAY_BYTECODE_VERIFY_INVALID_OPCODE;
         }
     }
     assigned[(size_t)target] = 1;
-    return RUDA_BYTECODE_VERIFY_OK;
+    return MMAY_BYTECODE_VERIFY_OK;
 }
 
-static RudaBytecodeVerifyStatus ruda_bytecode_verify_call_instruction(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeInstruction *instruction,
+static MarimayBytecodeVerifyStatus mmay_bytecode_verify_call_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
     unsigned char *assigned
 ) {
-    bool returns_void = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID;
-    bool returns_never = instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER;
+    bool returns_void = instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID;
+    bool returns_never = instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER;
     uint64_t call_wire = returns_void || returns_never
         ? instruction->operands[0].unsigned_value
         : instruction->operands[1].unsigned_value;
-    const RudaBytecodeCall *call = call_wire < function->calls.length
-        ? ruda_vector_at_const(&function->calls, (size_t)call_wire)
+    const MarimayBytecodeCall *call = call_wire < function->calls.length
+        ? mmay_vector_at_const(&function->calls, (size_t)call_wire)
         : NULL;
     size_t argument_index = 0;
     if (call == NULL || call->interface_slot != UINT32_MAX) {
-        return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
     }
-    if (returns_void != (call->result_type == RUDA_BYTECODE_TYPE_VOID)
-        || returns_never != (call->result_type == RUDA_BYTECODE_TYPE_NEVER)) {
-        return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+    if (returns_void != (call->result_type == MMAY_BYTECODE_TYPE_VOID)
+        || returns_never != (call->result_type == MMAY_BYTECODE_TYPE_NEVER)) {
+        return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
     if (!returns_void && !returns_never) {
         uint64_t target = instruction->operands[0].unsigned_value;
-        const RudaBytecodeType *target_type = ruda_bytecode_register_type(
+        const MarimayBytecodeType *target_type = mmay_bytecode_register_type(
             function,
             target
         );
         if (target_type == NULL) {
-            return RUDA_BYTECODE_VERIFY_INVALID_REGISTER;
+            return MMAY_BYTECODE_VERIFY_INVALID_REGISTER;
         }
-        if (!ruda_bytecode_type_is_register(*target_type)
-            || !ruda_bytecode_register_matches(
+        if (!mmay_bytecode_type_is_register(*target_type)
+            || !mmay_bytecode_register_matches(
                 function,
                 target,
                 call->result_type,
                 call->result_layout
             )) {
-            return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
     }
     for (argument_index = 0; argument_index < call->argument_count;
         argument_index += 1) {
-        const RudaBytecodeCallArgument *argument = ruda_vector_at_const(
+        const MarimayBytecodeCallArgument *argument = mmay_vector_at_const(
             &function->call_arguments,
             call->argument_start + argument_index
         );
-        RudaBytecodeVerifyStatus status = argument != NULL
-            ? ruda_bytecode_require_assigned(
+        MarimayBytecodeVerifyStatus status = argument != NULL
+            ? mmay_bytecode_require_assigned(
                 assigned,
                 function->register_types.length,
                 argument->register_id
             )
-            : RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
-        if (status != RUDA_BYTECODE_VERIFY_OK) {
+            : MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        if (status != MMAY_BYTECODE_VERIFY_OK) {
             return status;
         }
-        if (!ruda_bytecode_register_matches(
+        if (!mmay_bytecode_register_matches(
                 function,
                 argument->register_id,
                 argument->type,
                 argument->layout
             )) {
-            return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
     }
     if (!returns_void && !returns_never) {
         assigned[(size_t)instruction->operands[0].unsigned_value] = 1;
     }
-    return RUDA_BYTECODE_VERIFY_OK;
+    return MMAY_BYTECODE_VERIFY_OK;
 }
 
-static RudaBytecodeVerifyStatus ruda_bytecode_verify_interface_new(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeInstruction *instruction,
+static MarimayBytecodeVerifyStatus mmay_bytecode_verify_interface_new(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
     unsigned char *assigned
 ) {
     uint64_t target = instruction->operands[0].unsigned_value;
     uint64_t construction_wire = instruction->operands[1].unsigned_value;
-    const RudaBytecodeInterfaceConstruction *construction =
+    const MarimayBytecodeInterfaceConstruction *construction =
         construction_wire < function->interface_constructions.length
-        ? ruda_bytecode_interface_construction(
+        ? mmay_bytecode_interface_construction(
             function,
-            (RudaBytecodeInterfaceConstructionId)construction_wire
+            (MarimayBytecodeInterfaceConstructionId)construction_wire
         )
         : NULL;
-    const RudaBytecodeInterfaceLayout *layout = construction != NULL
-        ? ruda_bytecode_interface_layout(function, construction->interface_id)
+    const MarimayBytecodeInterfaceLayout *layout = construction != NULL
+        ? mmay_bytecode_interface_layout(function, construction->interface_id)
         : NULL;
-    RudaBytecodeVerifyStatus status;
+    MarimayBytecodeVerifyStatus status;
     if (construction == NULL || layout == NULL) {
-        return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
     }
-    if ((construction->payload_type != RUDA_BYTECODE_TYPE_RECORD
-            && construction->payload_type != RUDA_BYTECODE_TYPE_ENUM)
-        || !ruda_bytecode_register_matches(
+    if ((construction->payload_type != MMAY_BYTECODE_TYPE_RECORD
+            && construction->payload_type != MMAY_BYTECODE_TYPE_ENUM)
+        || !mmay_bytecode_register_matches(
             function,
             target,
-            RUDA_BYTECODE_TYPE_INTERFACE,
+            MMAY_BYTECODE_TYPE_INTERFACE,
             construction->interface_id
-        ) || !ruda_bytecode_register_matches(
+        ) || !mmay_bytecode_register_matches(
             function,
             construction->payload_register,
             construction->payload_type,
             construction->payload_layout
         )) {
-        return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
-    status = ruda_bytecode_require_assigned(
+    status = mmay_bytecode_require_assigned(
         assigned,
         function->register_types.length,
         construction->payload_register
     );
-    if (status != RUDA_BYTECODE_VERIFY_OK) {
+    if (status != MMAY_BYTECODE_VERIFY_OK) {
         return status;
     }
     assigned[(size_t)target] = 1;
-    return RUDA_BYTECODE_VERIFY_OK;
+    return MMAY_BYTECODE_VERIFY_OK;
 }
 
-static RudaBytecodeVerifyStatus ruda_bytecode_verify_interface_call(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeInstruction *instruction,
+static MarimayBytecodeVerifyStatus mmay_bytecode_verify_interface_call(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
     unsigned char *assigned
 ) {
     uint64_t target = instruction->operands[0].unsigned_value;
     uint64_t call_wire = instruction->operands[1].unsigned_value;
-    const RudaBytecodeCall *call = call_wire < function->calls.length
-        ? ruda_bytecode_call(function, (RudaBytecodeCallId)call_wire)
+    const MarimayBytecodeCall *call = call_wire < function->calls.length
+        ? mmay_bytecode_call(function, (MarimayBytecodeCallId)call_wire)
         : NULL;
-    const RudaBytecodeCallArgument *receiver = call != NULL
+    const MarimayBytecodeCallArgument *receiver = call != NULL
             && call->argument_count != 0
-        ? ruda_bytecode_call_argument(function, call->argument_start)
+        ? mmay_bytecode_call_argument(function, call->argument_start)
         : NULL;
-    const RudaBytecodeInterfaceLayout *layout = receiver != NULL
-            && receiver->type == RUDA_BYTECODE_TYPE_INTERFACE
-        ? ruda_bytecode_interface_layout(function, receiver->layout)
+    const MarimayBytecodeInterfaceLayout *layout = receiver != NULL
+            && receiver->type == MMAY_BYTECODE_TYPE_INTERFACE
+        ? mmay_bytecode_interface_layout(function, receiver->layout)
         : NULL;
     size_t argument_index = 0;
     if (call == NULL || receiver == NULL || layout == NULL
         || call->interface_slot == UINT32_MAX
         || call->interface_slot >= layout->method_count
-        || !ruda_bytecode_type_is_register(call->result_type)) {
-        return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        || !mmay_bytecode_type_is_register(call->result_type)) {
+        return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
     }
-    if (!ruda_bytecode_register_matches(
+    if (!mmay_bytecode_register_matches(
             function,
             target,
             call->result_type,
             call->result_layout
         )) {
-        return ruda_bytecode_register_type(function, target) == NULL
-            ? RUDA_BYTECODE_VERIFY_INVALID_REGISTER
-            : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        return mmay_bytecode_register_type(function, target) == NULL
+            ? MMAY_BYTECODE_VERIFY_INVALID_REGISTER
+            : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
     for (argument_index = 0; argument_index < call->argument_count;
         argument_index += 1) {
-        const RudaBytecodeCallArgument *argument = ruda_bytecode_call_argument(
+        const MarimayBytecodeCallArgument *argument = mmay_bytecode_call_argument(
             function,
             call->argument_start + argument_index
         );
-        RudaBytecodeVerifyStatus status = argument != NULL
-            ? ruda_bytecode_require_assigned(
+        MarimayBytecodeVerifyStatus status = argument != NULL
+            ? mmay_bytecode_require_assigned(
                 assigned,
                 function->register_types.length,
                 argument->register_id
             )
-            : RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
-        if (status != RUDA_BYTECODE_VERIFY_OK) {
+            : MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
+        if (status != MMAY_BYTECODE_VERIFY_OK) {
             return status;
         }
-        if (!ruda_bytecode_register_matches(
+        if (!mmay_bytecode_register_matches(
                 function,
                 argument->register_id,
                 argument->type,
                 argument->layout
             )) {
-            return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
     }
     assigned[(size_t)target] = 1;
-    return RUDA_BYTECODE_VERIFY_OK;
+    return MMAY_BYTECODE_VERIFY_OK;
 }
 
-RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeInstruction *instruction,
+MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
     unsigned char *assigned
 ) {
     uint64_t target = instruction->operands[0].unsigned_value;
     uint64_t first = 0;
     uint64_t second = 0;
-    const RudaBytecodeType *target_type = NULL;
-    const RudaBytecodeType *first_type = NULL;
-    const RudaBytecodeType *second_type = NULL;
-    RudaBytecodeVerifyStatus status = RUDA_BYTECODE_VERIFY_OK;
-    if (instruction->opcode == RUDA_OPCODE_CALL_DIRECT
-        || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
-        || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER) {
-        return ruda_bytecode_verify_call_instruction(
+    const MarimayBytecodeType *target_type = NULL;
+    const MarimayBytecodeType *first_type = NULL;
+    const MarimayBytecodeType *second_type = NULL;
+    MarimayBytecodeVerifyStatus status = MMAY_BYTECODE_VERIFY_OK;
+    if (instruction->opcode == MMAY_OPCODE_CALL_DIRECT
+        || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID
+        || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER) {
+        return mmay_bytecode_verify_call_instruction(
             function,
             instruction,
             assigned
         );
     }
-    if (ruda_bytecode_opcode_is_numeric(instruction->opcode)) {
-        return ruda_bytecode_verify_numeric_instruction(
+    if (mmay_bytecode_opcode_is_numeric(instruction->opcode)) {
+        return mmay_bytecode_verify_numeric_instruction(
             function, instruction, assigned
         );
     }
-    if (instruction->opcode == RUDA_OPCODE_ARRAY_PUSH
-        || instruction->opcode == RUDA_OPCODE_ARRAY_POP
-        || instruction->opcode == RUDA_OPCODE_ARRAY_TRUNCATE
-        || instruction->opcode == RUDA_OPCODE_ARRAY_CLEAR
-        || instruction->opcode == RUDA_OPCODE_ARRAY_RESERVE
-        || instruction->opcode == RUDA_OPCODE_ARRAY_GENERATION
-        || instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_GENERATION) {
-        bool writes_target = instruction->opcode == RUDA_OPCODE_ARRAY_POP
-            || instruction->opcode == RUDA_OPCODE_ARRAY_GENERATION
-            || instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_GENERATION;
+    if (instruction->opcode == MMAY_OPCODE_ARRAY_PUSH
+        || instruction->opcode == MMAY_OPCODE_ARRAY_POP
+        || instruction->opcode == MMAY_OPCODE_ARRAY_TRUNCATE
+        || instruction->opcode == MMAY_OPCODE_ARRAY_CLEAR
+        || instruction->opcode == MMAY_OPCODE_ARRAY_RESERVE
+        || instruction->opcode == MMAY_OPCODE_ARRAY_GENERATION
+        || instruction->opcode == MMAY_OPCODE_ARRAY_REQUIRE_GENERATION) {
+        bool writes_target = instruction->opcode == MMAY_OPCODE_ARRAY_POP
+            || instruction->opcode == MMAY_OPCODE_ARRAY_GENERATION
+            || instruction->opcode == MMAY_OPCODE_ARRAY_REQUIRE_GENERATION;
         uint64_t array = instruction->operands[writes_target ? 1 : 0]
             .unsigned_value;
         uint64_t value = instruction->operands[writes_target ? 2 : 1]
             .unsigned_value;
-        const RudaBytecodeType *array_type = NULL;
-        const RudaBytecodeType *value_type = NULL;
-        uint32_t element_layout = RUDA_BYTECODE_NO_LAYOUT;
-        RudaBytecodeType element_type = RUDA_BYTECODE_TYPE_INVALID;
-        status = ruda_bytecode_require_assigned(
+        const MarimayBytecodeType *array_type = NULL;
+        const MarimayBytecodeType *value_type = NULL;
+        uint32_t element_layout = MMAY_BYTECODE_NO_LAYOUT;
+        MarimayBytecodeType element_type = MMAY_BYTECODE_TYPE_INVALID;
+        status = mmay_bytecode_require_assigned(
             assigned, function->register_types.length, array
         );
-        if (status == RUDA_BYTECODE_VERIFY_OK
-            && instruction->opcode != RUDA_OPCODE_ARRAY_CLEAR
-            && instruction->opcode != RUDA_OPCODE_ARRAY_POP
-            && instruction->opcode != RUDA_OPCODE_ARRAY_GENERATION) {
-            status = ruda_bytecode_require_assigned(
+        if (status == MMAY_BYTECODE_VERIFY_OK
+            && instruction->opcode != MMAY_OPCODE_ARRAY_CLEAR
+            && instruction->opcode != MMAY_OPCODE_ARRAY_POP
+            && instruction->opcode != MMAY_OPCODE_ARRAY_GENERATION) {
+            status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, value
             );
         }
-        if (status != RUDA_BYTECODE_VERIFY_OK) {
+        if (status != MMAY_BYTECODE_VERIFY_OK) {
             return status;
         }
-        array_type = ruda_bytecode_register_type(function, array);
-        value_type = ruda_bytecode_register_type(function, value);
-        target_type = ruda_bytecode_register_type(
+        array_type = mmay_bytecode_register_type(function, array);
+        value_type = mmay_bytecode_register_type(function, value);
+        target_type = mmay_bytecode_register_type(
             function, instruction->operands[0].unsigned_value
         );
         if (array_type != NULL) {
-            element_type = ruda_bytecode_function_array_element_type(
+            element_type = mmay_bytecode_function_array_element_type(
                 function, *array_type,
-                ruda_bytecode_register_layout(function, (uint32_t)array),
+                mmay_bytecode_register_layout(function, (uint32_t)array),
                 &element_layout
             );
         }
-        if (array_type == NULL || !ruda_bytecode_type_is_array(*array_type)) {
-            return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        if (array_type == NULL || !mmay_bytecode_type_is_array(*array_type)) {
+            return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
-        if (instruction->opcode == RUDA_OPCODE_ARRAY_PUSH) {
+        if (instruction->opcode == MMAY_OPCODE_ARRAY_PUSH) {
             return value_type != NULL && *value_type == element_type
-                    && ruda_bytecode_register_layout(
+                    && mmay_bytecode_register_layout(
                         function, (uint32_t)value
                     ) == element_layout
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
-        if (instruction->opcode == RUDA_OPCODE_ARRAY_POP) {
+        if (instruction->opcode == MMAY_OPCODE_ARRAY_POP) {
             status = target_type != NULL && *target_type == element_type
-                    && ruda_bytecode_register_layout(
+                    && mmay_bytecode_register_layout(
                         function,
                         (uint32_t)instruction->operands[0].unsigned_value
                     ) == element_layout
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
-            if (status == RUDA_BYTECODE_VERIFY_OK) {
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            if (status == MMAY_BYTECODE_VERIFY_OK) {
                 assigned[(size_t)instruction->operands[0].unsigned_value] = 1;
             }
             return status;
         }
-        if (instruction->opcode == RUDA_OPCODE_ARRAY_TRUNCATE
-            || instruction->opcode == RUDA_OPCODE_ARRAY_RESERVE) {
-            return value_type != NULL && *value_type == RUDA_BYTECODE_TYPE_I64
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        if (instruction->opcode == MMAY_OPCODE_ARRAY_TRUNCATE
+            || instruction->opcode == MMAY_OPCODE_ARRAY_RESERVE) {
+            return value_type != NULL && *value_type == MMAY_BYTECODE_TYPE_I64
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
-        if (instruction->opcode == RUDA_OPCODE_ARRAY_CLEAR) {
-            return RUDA_BYTECODE_VERIFY_OK;
+        if (instruction->opcode == MMAY_OPCODE_ARRAY_CLEAR) {
+            return MMAY_BYTECODE_VERIFY_OK;
         }
-        if (instruction->opcode == RUDA_OPCODE_ARRAY_GENERATION) {
+        if (instruction->opcode == MMAY_OPCODE_ARRAY_GENERATION) {
             status = target_type != NULL
-                    && *target_type == RUDA_BYTECODE_TYPE_U64
-                ? RUDA_BYTECODE_VERIFY_OK : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
-            if (status == RUDA_BYTECODE_VERIFY_OK) {
+                    && *target_type == MMAY_BYTECODE_TYPE_U64
+                ? MMAY_BYTECODE_VERIFY_OK : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            if (status == MMAY_BYTECODE_VERIFY_OK) {
                 assigned[(size_t)instruction->operands[0].unsigned_value] = 1;
             }
             return status;
         }
-        status = value_type != NULL && *value_type == RUDA_BYTECODE_TYPE_U64
+        status = value_type != NULL && *value_type == MMAY_BYTECODE_TYPE_U64
                 && target_type != NULL && *target_type == *array_type
-                && ruda_bytecode_register_layout(
+                && mmay_bytecode_register_layout(
                     function,
                     (uint32_t)instruction->operands[0].unsigned_value
-                ) == ruda_bytecode_register_layout(function, (uint32_t)array)
-            ? RUDA_BYTECODE_VERIFY_OK
-            : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
-        if (status == RUDA_BYTECODE_VERIFY_OK) {
+                ) == mmay_bytecode_register_layout(function, (uint32_t)array)
+            ? MMAY_BYTECODE_VERIFY_OK
+            : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+        if (status == MMAY_BYTECODE_VERIFY_OK) {
             assigned[(size_t)instruction->operands[0].unsigned_value] = 1;
         }
         return status;
     }
-    if (instruction->opcode == RUDA_OPCODE_INTERFACE_NEW) {
-        return ruda_bytecode_verify_interface_new(
+    if (instruction->opcode == MMAY_OPCODE_INTERFACE_NEW) {
+        return mmay_bytecode_verify_interface_new(
             function,
             instruction,
             assigned
         );
     }
-    if (instruction->opcode == RUDA_OPCODE_CALL_INTERFACE) {
-        return ruda_bytecode_verify_interface_call(
+    if (instruction->opcode == MMAY_OPCODE_CALL_INTERFACE) {
+        return mmay_bytecode_verify_interface_call(
             function,
             instruction,
             assigned
         );
     }
-    if (instruction->opcode == RUDA_OPCODE_DEFER_REGISTER
-        || instruction->opcode == RUDA_OPCODE_DEFER_CALL) {
-        return ruda_bytecode_verify_defer_instruction(
+    if (instruction->opcode == MMAY_OPCODE_DEFER_REGISTER
+        || instruction->opcode == MMAY_OPCODE_DEFER_CALL) {
+        return mmay_bytecode_verify_defer_instruction(
             function, instruction, assigned
         );
     }
-    if (instruction->opcode == RUDA_OPCODE_ARRAY_SET
-        || instruction->opcode == RUDA_OPCODE_ARRAY_SET_IN_BOUNDS) {
+    if (instruction->opcode == MMAY_OPCODE_ARRAY_SET
+        || instruction->opcode == MMAY_OPCODE_ARRAY_SET_IN_BOUNDS) {
         uint64_t array = instruction->operands[0].unsigned_value;
         uint64_t index = instruction->operands[1].unsigned_value;
         uint64_t value = instruction->operands[2].unsigned_value;
-        const RudaBytecodeType *array_type;
-        const RudaBytecodeType *index_type;
-        const RudaBytecodeType *value_type;
-        status = ruda_bytecode_require_assigned(
+        const MarimayBytecodeType *array_type;
+        const MarimayBytecodeType *index_type;
+        const MarimayBytecodeType *value_type;
+        status = mmay_bytecode_require_assigned(
             assigned, function->register_types.length, array
         );
-        if (status == RUDA_BYTECODE_VERIFY_OK) {
-            status = ruda_bytecode_require_assigned(
+        if (status == MMAY_BYTECODE_VERIFY_OK) {
+            status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, index
             );
         }
-        if (status == RUDA_BYTECODE_VERIFY_OK) {
-            status = ruda_bytecode_require_assigned(
+        if (status == MMAY_BYTECODE_VERIFY_OK) {
+            status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, value
             );
         }
-        if (status != RUDA_BYTECODE_VERIFY_OK) {
+        if (status != MMAY_BYTECODE_VERIFY_OK) {
             return status;
         }
-        array_type = ruda_bytecode_register_type(function, array);
-        index_type = ruda_bytecode_register_type(function, index);
-        value_type = ruda_bytecode_register_type(function, value);
+        array_type = mmay_bytecode_register_type(function, array);
+        index_type = mmay_bytecode_register_type(function, index);
+        value_type = mmay_bytecode_register_type(function, value);
         {
-            uint32_t element_layout = RUDA_BYTECODE_NO_LAYOUT;
-            RudaBytecodeType element_type = array_type != NULL
-                ? ruda_bytecode_function_array_element_type(
+            uint32_t element_layout = MMAY_BYTECODE_NO_LAYOUT;
+            MarimayBytecodeType element_type = array_type != NULL
+                ? mmay_bytecode_function_array_element_type(
                     function,
                     *array_type,
-                    ruda_bytecode_register_layout(function, (uint32_t)array),
+                    mmay_bytecode_register_layout(function, (uint32_t)array),
                     &element_layout
-                ) : RUDA_BYTECODE_TYPE_INVALID;
+                ) : MMAY_BYTECODE_TYPE_INVALID;
             return array_type != NULL && index_type != NULL
                 && value_type != NULL
-                && ruda_bytecode_type_is_array(*array_type)
-                && *index_type == RUDA_BYTECODE_TYPE_I64
+                && mmay_bytecode_type_is_array(*array_type)
+                && *index_type == MMAY_BYTECODE_TYPE_I64
                 && *value_type == element_type
-                && ruda_bytecode_register_layout(
+                && mmay_bytecode_register_layout(
                     function, (uint32_t)value
                 ) == element_layout
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
     }
-    if (instruction->opcode == RUDA_OPCODE_RECORD_NEW
-        || instruction->opcode == RUDA_OPCODE_RECORD_GET
-        || instruction->opcode == RUDA_OPCODE_RECORD_SET
-        || instruction->opcode == RUDA_OPCODE_RECORD_IDENTITY_SAME) {
-        return ruda_bytecode_verify_record_instruction(
+    if (instruction->opcode == MMAY_OPCODE_RECORD_NEW
+        || instruction->opcode == MMAY_OPCODE_RECORD_GET
+        || instruction->opcode == MMAY_OPCODE_RECORD_SET
+        || instruction->opcode == MMAY_OPCODE_RECORD_IDENTITY_SAME) {
+        return mmay_bytecode_verify_record_instruction(
             function,
             instruction,
             assigned
         );
     }
-    if (instruction->opcode == RUDA_OPCODE_ENUM_NEW
-        || instruction->opcode == RUDA_OPCODE_ENUM_IS_VARIANT
-        || instruction->opcode == RUDA_OPCODE_ENUM_REQUIRE_VARIANT
-        || instruction->opcode == RUDA_OPCODE_ENUM_GET_PAYLOAD) {
-        return ruda_bytecode_verify_enum_instruction(
+    if (instruction->opcode == MMAY_OPCODE_ENUM_NEW
+        || instruction->opcode == MMAY_OPCODE_ENUM_IS_VARIANT
+        || instruction->opcode == MMAY_OPCODE_ENUM_REQUIRE_VARIANT
+        || instruction->opcode == MMAY_OPCODE_ENUM_GET_PAYLOAD) {
+        return mmay_bytecode_verify_enum_instruction(
             function,
             instruction,
             assigned
         );
     }
-    target_type = ruda_bytecode_register_type(function, target);
+    target_type = mmay_bytecode_register_type(function, target);
     if (target_type == NULL) {
-        return RUDA_BYTECODE_VERIFY_INVALID_REGISTER;
+        return MMAY_BYTECODE_VERIFY_INVALID_REGISTER;
     }
     switch (instruction->opcode) {
-        case RUDA_OPCODE_CONST_I64:
-            status = *target_type == RUDA_BYTECODE_TYPE_I64
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        case MMAY_OPCODE_CONST_I64:
+            status = *target_type == MMAY_BYTECODE_TYPE_I64
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_CONST_INTEGER:
-            status = ruda_bytecode_type_is_integer(*target_type)
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        case MMAY_OPCODE_CONST_INTEGER:
+            status = mmay_bytecode_type_is_integer(*target_type)
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_CONST_F64:
-            status = *target_type == RUDA_BYTECODE_TYPE_F64
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        case MMAY_OPCODE_CONST_F64:
+            status = *target_type == MMAY_BYTECODE_TYPE_F64
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_CONST_BOOL:
+        case MMAY_OPCODE_CONST_BOOL:
             if (instruction->operands[1].unsigned_value > 1) {
-                return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+                return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
             }
-            status = *target_type == RUDA_BYTECODE_TYPE_BOOL
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            status = *target_type == MMAY_BYTECODE_TYPE_BOOL
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_CONST_STRING:
+        case MMAY_OPCODE_CONST_STRING:
             if (instruction->operands[1].unsigned_value
                     >= function->string_constants.length) {
-                return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
+                return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
             }
-            status = *target_type == RUDA_BYTECODE_TYPE_STRING
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            status = *target_type == MMAY_BYTECODE_TYPE_STRING
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_ARRAY_NEW: {
+        case MMAY_OPCODE_ARRAY_NEW: {
             uint64_t construction_wire = instruction->operands[1].unsigned_value;
-            const RudaBytecodeArrayConstruction *construction =
+            const MarimayBytecodeArrayConstruction *construction =
                 construction_wire < function->array_constructions.length
-                ? ruda_bytecode_array_construction(
+                ? mmay_bytecode_array_construction(
                     function,
-                    (RudaBytecodeArrayConstructionId)construction_wire
+                    (MarimayBytecodeArrayConstructionId)construction_wire
                 )
                 : NULL;
             size_t argument_index = 0;
             if (construction == NULL
                 || *target_type != construction->array_type
-                || ruda_bytecode_register_layout(
+                || mmay_bytecode_register_layout(
                     function, (uint32_t)target
                 ) != construction->array_layout) {
-                return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
             for (argument_index = 0;
                 argument_index < construction->argument_count;
                 argument_index += 1) {
-                const RudaBytecodeArrayArgument *argument =
-                    ruda_bytecode_array_argument(
+                const MarimayBytecodeArrayArgument *argument =
+                    mmay_bytecode_array_argument(
                         function, construction->argument_start + argument_index
                     );
                 status = argument != NULL
-                    ? ruda_bytecode_require_assigned(
+                    ? mmay_bytecode_require_assigned(
                         assigned, function->register_types.length,
                         argument->register_id
                     )
-                    : RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
-                if (status != RUDA_BYTECODE_VERIFY_OK) {
+                    : MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
+                if (status != MMAY_BYTECODE_VERIFY_OK) {
                     return status;
                 }
-                if (argument->type != ruda_bytecode_function_array_element_type(
+                if (argument->type != mmay_bytecode_function_array_element_type(
                         function, construction->array_type,
                         construction->array_layout, NULL
-                    ) || (construction->array_type == RUDA_BYTECODE_TYPE_ARRAY
-                        && argument->layout != ruda_bytecode_array_type(
+                    ) || (construction->array_type == MMAY_BYTECODE_TYPE_ARRAY
+                        && argument->layout != mmay_bytecode_array_type(
                             function, construction->array_layout
                         )->element_layout)) {
-                    return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                    return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
                 }
             }
             break;
         }
-        case RUDA_OPCODE_ARRAY_LENGTH:
-        case RUDA_OPCODE_ARRAY_REQUIRE_INDEX:
-        case RUDA_OPCODE_ARRAY_GET:
-        case RUDA_OPCODE_ARRAY_GET_IN_BOUNDS: {
+        case MMAY_OPCODE_ARRAY_LENGTH:
+        case MMAY_OPCODE_ARRAY_REQUIRE_INDEX:
+        case MMAY_OPCODE_ARRAY_GET:
+        case MMAY_OPCODE_ARRAY_GET_IN_BOUNDS: {
             first = instruction->operands[1].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, first
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            first_type = ruda_bytecode_register_type(function, first);
-            if (instruction->opcode == RUDA_OPCODE_ARRAY_LENGTH) {
+            first_type = mmay_bytecode_register_type(function, first);
+            if (instruction->opcode == MMAY_OPCODE_ARRAY_LENGTH) {
                 status = first_type != NULL
-                        && ruda_bytecode_type_is_array(*first_type)
-                        && *target_type == RUDA_BYTECODE_TYPE_I64
-                    ? RUDA_BYTECODE_VERIFY_OK
-                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                        && mmay_bytecode_type_is_array(*first_type)
+                        && *target_type == MMAY_BYTECODE_TYPE_I64
+                    ? MMAY_BYTECODE_VERIFY_OK
+                    : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
                 break;
             }
             second = instruction->operands[2].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, second
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            second_type = ruda_bytecode_register_type(function, second);
+            second_type = mmay_bytecode_register_type(function, second);
             {
-                uint32_t element_layout = RUDA_BYTECODE_NO_LAYOUT;
-                RudaBytecodeType element_type = first_type != NULL
-                    ? ruda_bytecode_function_array_element_type(
+                uint32_t element_layout = MMAY_BYTECODE_NO_LAYOUT;
+                MarimayBytecodeType element_type = first_type != NULL
+                    ? mmay_bytecode_function_array_element_type(
                         function, *first_type,
-                        ruda_bytecode_register_layout(function, (uint32_t)first),
+                        mmay_bytecode_register_layout(function, (uint32_t)first),
                         &element_layout
-                    ) : RUDA_BYTECODE_TYPE_INVALID;
+                    ) : MMAY_BYTECODE_TYPE_INVALID;
                 status = first_type != NULL && second_type != NULL
-                    && ruda_bytecode_type_is_array(*first_type)
-                    && *second_type == RUDA_BYTECODE_TYPE_I64
-                    && (instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_INDEX
+                    && mmay_bytecode_type_is_array(*first_type)
+                    && *second_type == MMAY_BYTECODE_TYPE_I64
+                    && (instruction->opcode == MMAY_OPCODE_ARRAY_REQUIRE_INDEX
                         ? *target_type == *first_type
-                            && ruda_bytecode_register_layout(
+                            && mmay_bytecode_register_layout(
                                 function, (uint32_t)target
-                            ) == ruda_bytecode_register_layout(
+                            ) == mmay_bytecode_register_layout(
                                 function, (uint32_t)first
                             )
                         : *target_type == element_type
-                            && ruda_bytecode_register_layout(
+                            && mmay_bytecode_register_layout(
                                 function, (uint32_t)target
                             ) == element_layout)
-                    ? RUDA_BYTECODE_VERIFY_OK
-                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                    ? MMAY_BYTECODE_VERIFY_OK
+                    : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
             break;
         }
-        case RUDA_OPCODE_COPY:
+        case MMAY_OPCODE_COPY:
             first = instruction->operands[1].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned,
                 function->register_types.length,
                 first
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            first_type = ruda_bytecode_register_type(function, first);
+            first_type = mmay_bytecode_register_type(function, first);
             status = first_type != NULL && *target_type == *first_type
-                    && ruda_bytecode_register_layout(
+                    && mmay_bytecode_register_layout(
                         function,
                         (uint32_t)target
-                    ) == ruda_bytecode_register_layout(
+                    ) == mmay_bytecode_register_layout(
                         function,
                         (uint32_t)first
                     )
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_I64_NEGATE_CHECKED:
-        case RUDA_OPCODE_I64_BITWISE_NOT:
+        case MMAY_OPCODE_I64_NEGATE_CHECKED:
+        case MMAY_OPCODE_I64_BITWISE_NOT:
             first = instruction->operands[1].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned,
                 function->register_types.length,
                 first
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            first_type = ruda_bytecode_register_type(function, first);
+            first_type = mmay_bytecode_register_type(function, first);
             status = first_type != NULL
                     && *target_type == *first_type
-                    && ruda_bytecode_type_is_integer(*target_type)
-                    && (instruction->opcode == RUDA_OPCODE_I64_BITWISE_NOT
-                        || ruda_bytecode_type_is_signed_integer(*target_type))
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                    && mmay_bytecode_type_is_integer(*target_type)
+                    && (instruction->opcode == MMAY_OPCODE_I64_BITWISE_NOT
+                        || mmay_bytecode_type_is_signed_integer(*target_type))
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_F64_NEGATE:
+        case MMAY_OPCODE_F64_NEGATE:
             first = instruction->operands[1].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, first
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            first_type = ruda_bytecode_register_type(function, first);
+            first_type = mmay_bytecode_register_type(function, first);
             status = first_type != NULL
-                    && *target_type == RUDA_BYTECODE_TYPE_F64
-                    && *first_type == RUDA_BYTECODE_TYPE_F64
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                    && *target_type == MMAY_BYTECODE_TYPE_F64
+                    && *first_type == MMAY_BYTECODE_TYPE_F64
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_FORMAT_F32:
-        case RUDA_OPCODE_FORMAT_F64:
+        case MMAY_OPCODE_FORMAT_F32:
+        case MMAY_OPCODE_FORMAT_F64:
             first = instruction->operands[1].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, first
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            first_type = ruda_bytecode_register_type(function, first);
+            first_type = mmay_bytecode_register_type(function, first);
             status = first_type != NULL
-                    && *target_type == RUDA_BYTECODE_TYPE_STRING
+                    && *target_type == MMAY_BYTECODE_TYPE_STRING
                     && *first_type == (instruction->opcode
-                            == RUDA_OPCODE_FORMAT_F32
-                        ? RUDA_BYTECODE_TYPE_F32 : RUDA_BYTECODE_TYPE_F64)
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                            == MMAY_OPCODE_FORMAT_F32
+                        ? MMAY_BYTECODE_TYPE_F32 : MMAY_BYTECODE_TYPE_F64)
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_IO_PRINTLN:
+        case MMAY_OPCODE_IO_PRINTLN:
             first = instruction->operands[1].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, first
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            status = ruda_bytecode_verify_io_instruction(
+            status = mmay_bytecode_verify_io_instruction(
                 function, instruction
             );
             break;
-        case RUDA_OPCODE_TEST_OUTPUT_BEGIN:
-        case RUDA_OPCODE_TEST_OUTPUT_END:
+        case MMAY_OPCODE_TEST_OUTPUT_BEGIN:
+        case MMAY_OPCODE_TEST_OUTPUT_END:
             first = instruction->operands[1].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, first
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            first_type = ruda_bytecode_register_type(function, first);
+            first_type = mmay_bytecode_register_type(function, first);
             status = first_type != NULL
                     && *target_type == (instruction->opcode
-                            == RUDA_OPCODE_TEST_OUTPUT_BEGIN
-                        ? RUDA_BYTECODE_TYPE_BOOL : RUDA_BYTECODE_TYPE_VOID)
+                            == MMAY_OPCODE_TEST_OUTPUT_BEGIN
+                        ? MMAY_BYTECODE_TYPE_BOOL : MMAY_BYTECODE_TYPE_VOID)
                     && *first_type == (instruction->opcode
-                            == RUDA_OPCODE_TEST_OUTPUT_BEGIN
-                        ? RUDA_BYTECODE_TYPE_STRING : RUDA_BYTECODE_TYPE_BOOL)
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                            == MMAY_OPCODE_TEST_OUTPUT_BEGIN
+                        ? MMAY_BYTECODE_TYPE_STRING : MMAY_BYTECODE_TYPE_BOOL)
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_BOOL_NOT:
+        case MMAY_OPCODE_BOOL_NOT:
             first = instruction->operands[1].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned,
                 function->register_types.length,
                 first
             );
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            first_type = ruda_bytecode_register_type(function, first);
+            first_type = mmay_bytecode_register_type(function, first);
             status = first_type != NULL
-                    && *target_type == RUDA_BYTECODE_TYPE_BOOL
-                    && *first_type == RUDA_BYTECODE_TYPE_BOOL
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                    && *target_type == MMAY_BYTECODE_TYPE_BOOL
+                    && *first_type == MMAY_BYTECODE_TYPE_BOOL
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case RUDA_OPCODE_I64_ADD_CHECKED: case RUDA_OPCODE_I64_ADD_PROVEN:
-        case RUDA_OPCODE_I64_SUBTRACT_CHECKED: case RUDA_OPCODE_I64_SUBTRACT_PROVEN:
-        case RUDA_OPCODE_I64_MULTIPLY_CHECKED: case RUDA_OPCODE_I64_MULTIPLY_PROVEN:
-        case RUDA_OPCODE_I64_DIVIDE_CHECKED:
-        case RUDA_OPCODE_I64_REMAINDER_CHECKED:
-        case RUDA_OPCODE_I64_BITWISE_AND:
-        case RUDA_OPCODE_I64_BITWISE_XOR:
-        case RUDA_OPCODE_I64_BITWISE_OR:
-        case RUDA_OPCODE_I64_SHIFT_LEFT_CHECKED:
-        case RUDA_OPCODE_I64_SHIFT_RIGHT:
-        case RUDA_OPCODE_I64_EQUAL:
-        case RUDA_OPCODE_I64_LESS:
-        case RUDA_OPCODE_I64_LESS_EQUAL:
-        case RUDA_OPCODE_BOOL_EQUAL:
-        case RUDA_OPCODE_STRING_EQUAL:
-        case RUDA_OPCODE_F64_ADD:
-        case RUDA_OPCODE_F64_SUBTRACT:
-        case RUDA_OPCODE_F64_MULTIPLY:
-        case RUDA_OPCODE_F64_DIVIDE:
-        case RUDA_OPCODE_F64_EQUAL:
-        case RUDA_OPCODE_F64_LESS:
-        case RUDA_OPCODE_F64_LESS_EQUAL:
+        case MMAY_OPCODE_I64_ADD_CHECKED: case MMAY_OPCODE_I64_ADD_PROVEN:
+        case MMAY_OPCODE_I64_SUBTRACT_CHECKED: case MMAY_OPCODE_I64_SUBTRACT_PROVEN:
+        case MMAY_OPCODE_I64_MULTIPLY_CHECKED: case MMAY_OPCODE_I64_MULTIPLY_PROVEN:
+        case MMAY_OPCODE_I64_DIVIDE_CHECKED:
+        case MMAY_OPCODE_I64_REMAINDER_CHECKED:
+        case MMAY_OPCODE_I64_BITWISE_AND:
+        case MMAY_OPCODE_I64_BITWISE_XOR:
+        case MMAY_OPCODE_I64_BITWISE_OR:
+        case MMAY_OPCODE_I64_SHIFT_LEFT_CHECKED:
+        case MMAY_OPCODE_I64_SHIFT_RIGHT:
+        case MMAY_OPCODE_I64_EQUAL:
+        case MMAY_OPCODE_I64_LESS:
+        case MMAY_OPCODE_I64_LESS_EQUAL:
+        case MMAY_OPCODE_BOOL_EQUAL:
+        case MMAY_OPCODE_STRING_EQUAL:
+        case MMAY_OPCODE_F64_ADD:
+        case MMAY_OPCODE_F64_SUBTRACT:
+        case MMAY_OPCODE_F64_MULTIPLY:
+        case MMAY_OPCODE_F64_DIVIDE:
+        case MMAY_OPCODE_F64_EQUAL:
+        case MMAY_OPCODE_F64_LESS:
+        case MMAY_OPCODE_F64_LESS_EQUAL:
             first = instruction->operands[1].unsigned_value;
             second = instruction->operands[2].unsigned_value;
-            status = ruda_bytecode_require_assigned(
+            status = mmay_bytecode_require_assigned(
                 assigned,
                 function->register_types.length,
                 first
             );
-            if (status == RUDA_BYTECODE_VERIFY_OK) {
-                status = ruda_bytecode_require_assigned(
+            if (status == MMAY_BYTECODE_VERIFY_OK) {
+                status = mmay_bytecode_require_assigned(
                     assigned,
                     function->register_types.length,
                     second
                 );
             }
-            if (status != RUDA_BYTECODE_VERIFY_OK) {
+            if (status != MMAY_BYTECODE_VERIFY_OK) {
                 return status;
             }
-            first_type = ruda_bytecode_register_type(function, first);
-            second_type = ruda_bytecode_register_type(function, second);
-            if (instruction->opcode == RUDA_OPCODE_I64_ADD_PROVEN
-                || instruction->opcode == RUDA_OPCODE_I64_SUBTRACT_PROVEN
-                || instruction->opcode == RUDA_OPCODE_I64_MULTIPLY_PROVEN) {
+            first_type = mmay_bytecode_register_type(function, first);
+            second_type = mmay_bytecode_register_type(function, second);
+            if (instruction->opcode == MMAY_OPCODE_I64_ADD_PROVEN
+                || instruction->opcode == MMAY_OPCODE_I64_SUBTRACT_PROVEN
+                || instruction->opcode == MMAY_OPCODE_I64_MULTIPLY_PROVEN) {
                 status = first_type != NULL && second_type != NULL
-                        && *target_type == RUDA_BYTECODE_TYPE_I64
-                        && *first_type == RUDA_BYTECODE_TYPE_I64
-                        && *second_type == RUDA_BYTECODE_TYPE_I64
-                    ? RUDA_BYTECODE_VERIFY_OK
-                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
-            } else if (instruction->opcode == RUDA_OPCODE_BOOL_EQUAL) {
+                        && *target_type == MMAY_BYTECODE_TYPE_I64
+                        && *first_type == MMAY_BYTECODE_TYPE_I64
+                        && *second_type == MMAY_BYTECODE_TYPE_I64
+                    ? MMAY_BYTECODE_VERIFY_OK
+                    : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            } else if (instruction->opcode == MMAY_OPCODE_BOOL_EQUAL) {
                 status = first_type != NULL && second_type != NULL
-                        && *target_type == RUDA_BYTECODE_TYPE_BOOL
-                        && *first_type == RUDA_BYTECODE_TYPE_BOOL
-                        && *second_type == RUDA_BYTECODE_TYPE_BOOL
-                    ? RUDA_BYTECODE_VERIFY_OK
-                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
-            } else if (instruction->opcode == RUDA_OPCODE_STRING_EQUAL) {
+                        && *target_type == MMAY_BYTECODE_TYPE_BOOL
+                        && *first_type == MMAY_BYTECODE_TYPE_BOOL
+                        && *second_type == MMAY_BYTECODE_TYPE_BOOL
+                    ? MMAY_BYTECODE_VERIFY_OK
+                    : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            } else if (instruction->opcode == MMAY_OPCODE_STRING_EQUAL) {
                 status = first_type != NULL && second_type != NULL
-                        && *target_type == RUDA_BYTECODE_TYPE_BOOL
-                        && *first_type == RUDA_BYTECODE_TYPE_STRING
-                        && *second_type == RUDA_BYTECODE_TYPE_STRING
-                    ? RUDA_BYTECODE_VERIFY_OK
-                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
-            } else if (instruction->opcode == RUDA_OPCODE_I64_EQUAL
-                || instruction->opcode == RUDA_OPCODE_I64_LESS
-                || instruction->opcode == RUDA_OPCODE_I64_LESS_EQUAL) {
+                        && *target_type == MMAY_BYTECODE_TYPE_BOOL
+                        && *first_type == MMAY_BYTECODE_TYPE_STRING
+                        && *second_type == MMAY_BYTECODE_TYPE_STRING
+                    ? MMAY_BYTECODE_VERIFY_OK
+                    : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            } else if (instruction->opcode == MMAY_OPCODE_I64_EQUAL
+                || instruction->opcode == MMAY_OPCODE_I64_LESS
+                || instruction->opcode == MMAY_OPCODE_I64_LESS_EQUAL) {
                 status = first_type != NULL && second_type != NULL
-                        && *target_type == RUDA_BYTECODE_TYPE_BOOL
-                        && ruda_bytecode_type_is_integer(*first_type)
+                        && *target_type == MMAY_BYTECODE_TYPE_BOOL
+                        && mmay_bytecode_type_is_integer(*first_type)
                         && *first_type == *second_type
-                    ? RUDA_BYTECODE_VERIFY_OK
-                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
-            } else if (instruction->opcode == RUDA_OPCODE_F64_EQUAL
-                || instruction->opcode == RUDA_OPCODE_F64_LESS
-                || instruction->opcode == RUDA_OPCODE_F64_LESS_EQUAL) {
+                    ? MMAY_BYTECODE_VERIFY_OK
+                    : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            } else if (instruction->opcode == MMAY_OPCODE_F64_EQUAL
+                || instruction->opcode == MMAY_OPCODE_F64_LESS
+                || instruction->opcode == MMAY_OPCODE_F64_LESS_EQUAL) {
                 status = first_type != NULL && second_type != NULL
-                        && *target_type == RUDA_BYTECODE_TYPE_BOOL
-                        && *first_type == RUDA_BYTECODE_TYPE_F64
-                        && *second_type == RUDA_BYTECODE_TYPE_F64
-                    ? RUDA_BYTECODE_VERIFY_OK
-                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
-            } else if (instruction->opcode == RUDA_OPCODE_F64_ADD
-                || instruction->opcode == RUDA_OPCODE_F64_SUBTRACT
-                || instruction->opcode == RUDA_OPCODE_F64_MULTIPLY
-                || instruction->opcode == RUDA_OPCODE_F64_DIVIDE) {
+                        && *target_type == MMAY_BYTECODE_TYPE_BOOL
+                        && *first_type == MMAY_BYTECODE_TYPE_F64
+                        && *second_type == MMAY_BYTECODE_TYPE_F64
+                    ? MMAY_BYTECODE_VERIFY_OK
+                    : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            } else if (instruction->opcode == MMAY_OPCODE_F64_ADD
+                || instruction->opcode == MMAY_OPCODE_F64_SUBTRACT
+                || instruction->opcode == MMAY_OPCODE_F64_MULTIPLY
+                || instruction->opcode == MMAY_OPCODE_F64_DIVIDE) {
                 status = first_type != NULL && second_type != NULL
-                        && *target_type == RUDA_BYTECODE_TYPE_F64
-                        && *first_type == RUDA_BYTECODE_TYPE_F64
-                        && *second_type == RUDA_BYTECODE_TYPE_F64
-                    ? RUDA_BYTECODE_VERIFY_OK
-                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                        && *target_type == MMAY_BYTECODE_TYPE_F64
+                        && *first_type == MMAY_BYTECODE_TYPE_F64
+                        && *second_type == MMAY_BYTECODE_TYPE_F64
+                    ? MMAY_BYTECODE_VERIFY_OK
+                    : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             } else {
                 status = first_type != NULL && second_type != NULL
                         && *target_type == *first_type
                         && *first_type == *second_type
-                        && ruda_bytecode_type_is_integer(*target_type)
-                    ? RUDA_BYTECODE_VERIFY_OK
-                    : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+                        && mmay_bytecode_type_is_integer(*target_type)
+                    ? MMAY_BYTECODE_VERIFY_OK
+                    : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             }
             break;
-        case RUDA_OPCODE_INVALID:
-        case RUDA_OPCODE_JUMP:
-        case RUDA_OPCODE_BRANCH_BOOL:
-        case RUDA_OPCODE_RETURN:
-        case RUDA_OPCODE_RETURN_VOID:
-        case RUDA_OPCODE_CALL_DIRECT:
-        case RUDA_OPCODE_CALL_DIRECT_VOID:
-        case RUDA_OPCODE_PANIC_STRING:
-        case RUDA_OPCODE_CALL_DIRECT_NEVER:
-        case RUDA_OPCODE_ARRAY_SET:
-        case RUDA_OPCODE_ARRAY_SET_IN_BOUNDS:
-        case RUDA_OPCODE_ARRAY_PUSH:
-        case RUDA_OPCODE_ARRAY_POP:
-        case RUDA_OPCODE_ARRAY_TRUNCATE:
-        case RUDA_OPCODE_ARRAY_CLEAR:
-        case RUDA_OPCODE_ARRAY_RESERVE:
-        case RUDA_OPCODE_ARRAY_GENERATION:
-        case RUDA_OPCODE_ARRAY_REQUIRE_GENERATION:
-        case RUDA_OPCODE_RECORD_NEW:
-        case RUDA_OPCODE_RECORD_GET:
-        case RUDA_OPCODE_RECORD_SET:
-        case RUDA_OPCODE_RECORD_IDENTITY_SAME:
-        case RUDA_OPCODE_ENUM_NEW:
-        case RUDA_OPCODE_ENUM_IS_VARIANT:
-        case RUDA_OPCODE_ENUM_REQUIRE_VARIANT:
-        case RUDA_OPCODE_ENUM_GET_PAYLOAD:
-        case RUDA_OPCODE_INTERFACE_NEW:
-        case RUDA_OPCODE_CALL_INTERFACE:
-        case RUDA_OPCODE_INTEGER_CHECKED_ADD:
-        case RUDA_OPCODE_INTEGER_CHECKED_SUBTRACT:
-        case RUDA_OPCODE_INTEGER_CHECKED_MULTIPLY:
-        case RUDA_OPCODE_INTEGER_CHECKED_DIVIDE:
-        case RUDA_OPCODE_INTEGER_CHECKED_REMAINDER:
-        case RUDA_OPCODE_INTEGER_CHECKED_NEGATE:
-        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_LEFT:
-        case RUDA_OPCODE_INTEGER_CHECKED_SHIFT_RIGHT:
-        case RUDA_OPCODE_INTEGER_WRAPPING_ADD:
-        case RUDA_OPCODE_INTEGER_WRAPPING_SUBTRACT:
-        case RUDA_OPCODE_INTEGER_WRAPPING_MULTIPLY:
-        case RUDA_OPCODE_INTEGER_WRAPPING_DIVIDE:
-        case RUDA_OPCODE_INTEGER_WRAPPING_REMAINDER:
-        case RUDA_OPCODE_INTEGER_WRAPPING_NEGATE:
-        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_LEFT:
-        case RUDA_OPCODE_INTEGER_WRAPPING_SHIFT_RIGHT:
-        case RUDA_OPCODE_INTEGER_SATURATING_ADD:
-        case RUDA_OPCODE_INTEGER_SATURATING_SUBTRACT:
-        case RUDA_OPCODE_INTEGER_SATURATING_MULTIPLY:
-        case RUDA_OPCODE_INTEGER_SATURATING_DIVIDE:
-        case RUDA_OPCODE_INTEGER_SATURATING_REMAINDER:
-        case RUDA_OPCODE_INTEGER_SATURATING_NEGATE:
-        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_LEFT:
-        case RUDA_OPCODE_INTEGER_SATURATING_SHIFT_RIGHT:
-        case RUDA_OPCODE_INTEGER_CONVERT_TOTAL:
-        case RUDA_OPCODE_INTEGER_CONVERT_OPTION:
-        case RUDA_OPCODE_DEFER_REGISTER:
-        case RUDA_OPCODE_DEFER_CALL:
-            return RUDA_BYTECODE_VERIFY_INVALID_OPCODE;
+        case MMAY_OPCODE_INVALID:
+        case MMAY_OPCODE_JUMP:
+        case MMAY_OPCODE_BRANCH_BOOL:
+        case MMAY_OPCODE_RETURN:
+        case MMAY_OPCODE_RETURN_VOID:
+        case MMAY_OPCODE_CALL_DIRECT:
+        case MMAY_OPCODE_CALL_DIRECT_VOID:
+        case MMAY_OPCODE_PANIC_STRING:
+        case MMAY_OPCODE_CALL_DIRECT_NEVER:
+        case MMAY_OPCODE_ARRAY_SET:
+        case MMAY_OPCODE_ARRAY_SET_IN_BOUNDS:
+        case MMAY_OPCODE_ARRAY_PUSH:
+        case MMAY_OPCODE_ARRAY_POP:
+        case MMAY_OPCODE_ARRAY_TRUNCATE:
+        case MMAY_OPCODE_ARRAY_CLEAR:
+        case MMAY_OPCODE_ARRAY_RESERVE:
+        case MMAY_OPCODE_ARRAY_GENERATION:
+        case MMAY_OPCODE_ARRAY_REQUIRE_GENERATION:
+        case MMAY_OPCODE_RECORD_NEW:
+        case MMAY_OPCODE_RECORD_GET:
+        case MMAY_OPCODE_RECORD_SET:
+        case MMAY_OPCODE_RECORD_IDENTITY_SAME:
+        case MMAY_OPCODE_ENUM_NEW:
+        case MMAY_OPCODE_ENUM_IS_VARIANT:
+        case MMAY_OPCODE_ENUM_REQUIRE_VARIANT:
+        case MMAY_OPCODE_ENUM_GET_PAYLOAD:
+        case MMAY_OPCODE_INTERFACE_NEW:
+        case MMAY_OPCODE_CALL_INTERFACE:
+        case MMAY_OPCODE_INTEGER_CHECKED_ADD:
+        case MMAY_OPCODE_INTEGER_CHECKED_SUBTRACT:
+        case MMAY_OPCODE_INTEGER_CHECKED_MULTIPLY:
+        case MMAY_OPCODE_INTEGER_CHECKED_DIVIDE:
+        case MMAY_OPCODE_INTEGER_CHECKED_REMAINDER:
+        case MMAY_OPCODE_INTEGER_CHECKED_NEGATE:
+        case MMAY_OPCODE_INTEGER_CHECKED_SHIFT_LEFT:
+        case MMAY_OPCODE_INTEGER_CHECKED_SHIFT_RIGHT:
+        case MMAY_OPCODE_INTEGER_WRAPPING_ADD:
+        case MMAY_OPCODE_INTEGER_WRAPPING_SUBTRACT:
+        case MMAY_OPCODE_INTEGER_WRAPPING_MULTIPLY:
+        case MMAY_OPCODE_INTEGER_WRAPPING_DIVIDE:
+        case MMAY_OPCODE_INTEGER_WRAPPING_REMAINDER:
+        case MMAY_OPCODE_INTEGER_WRAPPING_NEGATE:
+        case MMAY_OPCODE_INTEGER_WRAPPING_SHIFT_LEFT:
+        case MMAY_OPCODE_INTEGER_WRAPPING_SHIFT_RIGHT:
+        case MMAY_OPCODE_INTEGER_SATURATING_ADD:
+        case MMAY_OPCODE_INTEGER_SATURATING_SUBTRACT:
+        case MMAY_OPCODE_INTEGER_SATURATING_MULTIPLY:
+        case MMAY_OPCODE_INTEGER_SATURATING_DIVIDE:
+        case MMAY_OPCODE_INTEGER_SATURATING_REMAINDER:
+        case MMAY_OPCODE_INTEGER_SATURATING_NEGATE:
+        case MMAY_OPCODE_INTEGER_SATURATING_SHIFT_LEFT:
+        case MMAY_OPCODE_INTEGER_SATURATING_SHIFT_RIGHT:
+        case MMAY_OPCODE_INTEGER_CONVERT_TOTAL:
+        case MMAY_OPCODE_INTEGER_CONVERT_OPTION:
+        case MMAY_OPCODE_DEFER_REGISTER:
+        case MMAY_OPCODE_DEFER_CALL:
+            return MMAY_BYTECODE_VERIFY_INVALID_OPCODE;
     }
-    if (status == RUDA_BYTECODE_VERIFY_OK) {
+    if (status == MMAY_BYTECODE_VERIFY_OK) {
         assigned[(size_t)target] = 1;
     }
     return status;
 }
 
-RudaBytecodeVerifyStatus ruda_bytecode_verify_terminator(
-    const RudaBytecodeFunction *function,
-    const RudaBytecodeInstruction *instruction,
+MarimayBytecodeVerifyStatus mmay_bytecode_verify_terminator(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
     const unsigned char *assigned
 ) {
-    RudaBytecodeVerifyStatus status = RUDA_BYTECODE_VERIFY_OK;
-    const RudaBytecodeType *type = NULL;
-    if (instruction->opcode == RUDA_OPCODE_JUMP) {
-        return RUDA_BYTECODE_VERIFY_OK;
+    MarimayBytecodeVerifyStatus status = MMAY_BYTECODE_VERIFY_OK;
+    const MarimayBytecodeType *type = NULL;
+    if (instruction->opcode == MMAY_OPCODE_JUMP) {
+        return MMAY_BYTECODE_VERIFY_OK;
     }
-    if (instruction->opcode == RUDA_OPCODE_BRANCH_BOOL) {
-        status = ruda_bytecode_require_assigned(
+    if (instruction->opcode == MMAY_OPCODE_BRANCH_BOOL) {
+        status = mmay_bytecode_require_assigned(
             assigned,
             function->register_types.length,
             instruction->operands[0].unsigned_value
         );
-        if (status != RUDA_BYTECODE_VERIFY_OK) {
+        if (status != MMAY_BYTECODE_VERIFY_OK) {
             return status;
         }
-        type = ruda_bytecode_register_type(
+        type = mmay_bytecode_register_type(
             function,
             instruction->operands[0].unsigned_value
         );
-        return type != NULL && *type == RUDA_BYTECODE_TYPE_BOOL
-            ? RUDA_BYTECODE_VERIFY_OK
-            : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        return type != NULL && *type == MMAY_BYTECODE_TYPE_BOOL
+            ? MMAY_BYTECODE_VERIFY_OK
+            : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
-    if (instruction->opcode == RUDA_OPCODE_RETURN) {
-        if (function->result_type == RUDA_BYTECODE_TYPE_VOID
-            || function->result_type == RUDA_BYTECODE_TYPE_NEVER) {
-            return RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+    if (instruction->opcode == MMAY_OPCODE_RETURN) {
+        if (function->result_type == MMAY_BYTECODE_TYPE_VOID
+            || function->result_type == MMAY_BYTECODE_TYPE_NEVER) {
+            return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
-        status = ruda_bytecode_require_assigned(
+        status = mmay_bytecode_require_assigned(
             assigned,
             function->register_types.length,
             instruction->operands[0].unsigned_value
         );
-        if (status != RUDA_BYTECODE_VERIFY_OK) {
+        if (status != MMAY_BYTECODE_VERIFY_OK) {
             return status;
         }
-        type = ruda_bytecode_register_type(
+        type = mmay_bytecode_register_type(
             function,
             instruction->operands[0].unsigned_value
         );
         return type != NULL && *type == function->result_type
-            ? RUDA_BYTECODE_VERIFY_OK
-            : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+            ? MMAY_BYTECODE_VERIFY_OK
+            : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
-    if (instruction->opcode == RUDA_OPCODE_RETURN_VOID) {
-        return function->result_type == RUDA_BYTECODE_TYPE_VOID
-            ? RUDA_BYTECODE_VERIFY_OK
-            : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+    if (instruction->opcode == MMAY_OPCODE_RETURN_VOID) {
+        return function->result_type == MMAY_BYTECODE_TYPE_VOID
+            ? MMAY_BYTECODE_VERIFY_OK
+            : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
-    if (instruction->opcode == RUDA_OPCODE_PANIC_STRING) {
-        status = ruda_bytecode_require_assigned(
+    if (instruction->opcode == MMAY_OPCODE_PANIC_STRING) {
+        status = mmay_bytecode_require_assigned(
             assigned,
             function->register_types.length,
             instruction->operands[0].unsigned_value
         );
-        type = status == RUDA_BYTECODE_VERIFY_OK
-            ? ruda_bytecode_register_type(
+        type = status == MMAY_BYTECODE_VERIFY_OK
+            ? mmay_bytecode_register_type(
                 function,
                 instruction->operands[0].unsigned_value
             )
             : NULL;
-        return status != RUDA_BYTECODE_VERIFY_OK ? status
-            : type != NULL && *type == RUDA_BYTECODE_TYPE_STRING
-                ? RUDA_BYTECODE_VERIFY_OK
-                : RUDA_BYTECODE_VERIFY_TYPE_MISMATCH;
+        return status != MMAY_BYTECODE_VERIFY_OK ? status
+            : type != NULL && *type == MMAY_BYTECODE_TYPE_STRING
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
-    if (instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER) {
-        return ruda_bytecode_verify_call_instruction(
+    if (instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER) {
+        return mmay_bytecode_verify_call_instruction(
             function,
             instruction,
             (unsigned char *)assigned
         );
     }
-    return RUDA_BYTECODE_VERIFY_INVALID_OPCODE;
+    return MMAY_BYTECODE_VERIFY_INVALID_OPCODE;
 }

@@ -1,6 +1,6 @@
 #include "test_checker_support.h"
 
-void ruda_test_checker_primitive_signatures(void) {
+void mmay_test_checker_primitive_signatures(void) {
     static const char source[] =
         "fn primitives(\n"
         "  p0: bool, p1: i8, p2: i16, p3: i32, p4: i64, p5: int,\n"
@@ -8,64 +8,64 @@ void ruda_test_checker_primitive_signatures(void) {
         "  p12: f32, p13: f64, p14: float, p15: rune, p16: string,\n"
         "  p17: never\n"
         "): void {}\n";
-    static const RudaTypeId expected[] = {
-        RUDA_TYPE_BOOL,
-        RUDA_TYPE_I8,
-        RUDA_TYPE_I16,
-        RUDA_TYPE_I32,
-        RUDA_TYPE_I64,
-        RUDA_TYPE_I64,
-        RUDA_TYPE_U8,
-        RUDA_TYPE_U8,
-        RUDA_TYPE_U16,
-        RUDA_TYPE_U32,
-        RUDA_TYPE_U64,
-        RUDA_TYPE_U64,
-        RUDA_TYPE_F32,
-        RUDA_TYPE_F64,
-        RUDA_TYPE_F64,
-        RUDA_TYPE_RUNE,
-        RUDA_TYPE_STRING,
-        RUDA_TYPE_NEVER
+    static const MarimayTypeId expected[] = {
+        MMAY_TYPE_BOOL,
+        MMAY_TYPE_I8,
+        MMAY_TYPE_I16,
+        MMAY_TYPE_I32,
+        MMAY_TYPE_I64,
+        MMAY_TYPE_I64,
+        MMAY_TYPE_U8,
+        MMAY_TYPE_U8,
+        MMAY_TYPE_U16,
+        MMAY_TYPE_U32,
+        MMAY_TYPE_U64,
+        MMAY_TYPE_U64,
+        MMAY_TYPE_F32,
+        MMAY_TYPE_F64,
+        MMAY_TYPE_F64,
+        MMAY_TYPE_RUNE,
+        MMAY_TYPE_STRING,
+        MMAY_TYPE_NEVER
     };
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    const RudaCheckedFunction *function = NULL;
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayCheckedFunction *function = NULL;
     size_t index = 0;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 1);
-        function = ruda_checked_function(&checked, 0);
-        RUDA_EXPECT(function != NULL);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 1);
+        function = mmay_checked_function(&checked, 0);
+        MMAY_EXPECT(function != NULL);
         if (function != NULL) {
-            RUDA_EXPECT(function->mir.parameter_count
+            MMAY_EXPECT(function->mir.parameter_count
                 == sizeof(expected) / sizeof(expected[0]));
             for (index = 0; index < sizeof(expected) / sizeof(expected[0]);
                 index += 1) {
-                const RudaTypeId *actual = ruda_vector_at_const(
+                const MarimayTypeId *actual = mmay_vector_at_const(
                     &function->mir.register_types,
                     index
                 );
-                RUDA_EXPECT(actual != NULL);
+                MMAY_EXPECT(actual != NULL);
                 if (actual != NULL) {
-                    RUDA_EXPECT(*actual == expected[index]);
+                    MMAY_EXPECT(*actual == expected[index]);
                 }
             }
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_control_flow(void) {
+void mmay_test_checker_control_flow(void) {
     static const char source[] =
         "fn choose(ready: bool): int {\n"
         "  if ready { return 1; }\n"
@@ -120,201 +120,201 @@ void ruda_test_checker_control_flow(void) {
         "  }\n"
         "  return total;\n"
         "}\n";
-    RudaCheckerFixture fixture;
-    RudaCheckResult checked;
-    const RudaCheckedFunction *choose = NULL;
-    const RudaCheckedFunction *branch = NULL;
-    const RudaCheckedFunction *count = NULL;
-    const RudaCheckedFunction *direct = NULL;
-    const RudaCheckedFunction *nested_block = NULL;
-    const RudaCheckedFunction *classify = NULL;
-    const RudaCheckedFunction *loop_control = NULL;
-    const RudaCheckedFunction *c_for = NULL;
-    const RudaCheckedFunction *logical_loops = NULL;
-    RudaMirValue arguments[2];
-    RudaMirValue result;
-    RUDA_EXPECT(ruda_checker_fixture_init(&fixture, source));
-    RUDA_EXPECT(ruda_check_ast(
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    const MarimayCheckedFunction *choose = NULL;
+    const MarimayCheckedFunction *branch = NULL;
+    const MarimayCheckedFunction *count = NULL;
+    const MarimayCheckedFunction *direct = NULL;
+    const MarimayCheckedFunction *nested_block = NULL;
+    const MarimayCheckedFunction *classify = NULL;
+    const MarimayCheckedFunction *loop_control = NULL;
+    const MarimayCheckedFunction *c_for = NULL;
+    const MarimayCheckedFunction *logical_loops = NULL;
+    MarimayMirValue arguments[2];
+    MarimayMirValue result;
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
         "test/checker",
-        ruda_system_allocator(),
-        ruda_check_default_options(),
+        mmay_system_allocator(),
+        mmay_check_default_options(),
         &checked
-    ) == RUDA_CHECK_OK);
+    ) == MMAY_CHECK_OK);
     if (checked.initialized) {
-        RUDA_EXPECT(checked.diagnostics.length == 0);
-        RUDA_EXPECT(checked.functions.length == 9);
-        choose = ruda_checked_function(&checked, 0);
-        branch = ruda_checked_function(&checked, 1);
-        count = ruda_checked_function(&checked, 2);
-        direct = ruda_checked_function(&checked, 3);
-        nested_block = ruda_checked_function(&checked, 4);
-        classify = ruda_checked_function(&checked, 5);
-        loop_control = ruda_checked_function(&checked, 6);
-        c_for = ruda_checked_function(&checked, 7);
-        logical_loops = ruda_checked_function(&checked, 8);
-        RUDA_EXPECT(choose != NULL);
-        RUDA_EXPECT(branch != NULL);
-        RUDA_EXPECT(count != NULL);
-        RUDA_EXPECT(direct != NULL);
-        RUDA_EXPECT(nested_block != NULL);
-        RUDA_EXPECT(classify != NULL);
-        RUDA_EXPECT(loop_control != NULL);
-        RUDA_EXPECT(c_for != NULL);
-        RUDA_EXPECT(logical_loops != NULL);
+        MMAY_EXPECT(checked.diagnostics.length == 0);
+        MMAY_EXPECT(checked.functions.length == 9);
+        choose = mmay_checked_function(&checked, 0);
+        branch = mmay_checked_function(&checked, 1);
+        count = mmay_checked_function(&checked, 2);
+        direct = mmay_checked_function(&checked, 3);
+        nested_block = mmay_checked_function(&checked, 4);
+        classify = mmay_checked_function(&checked, 5);
+        loop_control = mmay_checked_function(&checked, 6);
+        c_for = mmay_checked_function(&checked, 7);
+        logical_loops = mmay_checked_function(&checked, 8);
+        MMAY_EXPECT(choose != NULL);
+        MMAY_EXPECT(branch != NULL);
+        MMAY_EXPECT(count != NULL);
+        MMAY_EXPECT(direct != NULL);
+        MMAY_EXPECT(nested_block != NULL);
+        MMAY_EXPECT(classify != NULL);
+        MMAY_EXPECT(loop_control != NULL);
+        MMAY_EXPECT(c_for != NULL);
+        MMAY_EXPECT(logical_loops != NULL);
         if (choose != NULL) {
-            arguments[0].type = RUDA_TYPE_BOOL;
+            arguments[0].type = MMAY_TYPE_BOOL;
             arguments[0].as.boolean = true;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &choose->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 1);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 1);
             arguments[0].as.boolean = false;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &choose->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 0);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 0);
         }
         if (branch != NULL) {
-            arguments[0].type = RUDA_TYPE_BOOL;
+            arguments[0].type = MMAY_TYPE_BOOL;
             arguments[0].as.boolean = true;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &branch->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 10);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 10);
             arguments[0].as.boolean = false;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &branch->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 20);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 20);
         }
         if (count != NULL) {
-            arguments[0].type = RUDA_TYPE_I64;
+            arguments[0].type = MMAY_TYPE_I64;
             arguments[0].as.i64 = 5;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &count->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 5);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 5);
         }
         if (direct != NULL) {
-            arguments[0].type = RUDA_TYPE_BOOL;
+            arguments[0].type = MMAY_TYPE_BOOL;
             arguments[0].as.boolean = false;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &direct->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 40);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 40);
         }
         if (nested_block != NULL) {
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &nested_block->mir,
                 NULL,
                 0,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 3);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 3);
         }
         if (classify != NULL) {
-            arguments[0].type = RUDA_TYPE_BOOL;
+            arguments[0].type = MMAY_TYPE_BOOL;
             arguments[0].as.boolean = false;
-            arguments[1].type = RUDA_TYPE_BOOL;
+            arguments[1].type = MMAY_TYPE_BOOL;
             arguments[1].as.boolean = true;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &classify->mir,
                 arguments,
                 2,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 2);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 2);
         }
         if (loop_control != NULL) {
-            arguments[0].type = RUDA_TYPE_I64;
+            arguments[0].type = MMAY_TYPE_I64;
             arguments[0].as.i64 = 10;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &loop_control->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 4);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 4);
         }
         if (c_for != NULL) {
-            arguments[0].type = RUDA_TYPE_I64;
+            arguments[0].type = MMAY_TYPE_I64;
             arguments[0].as.i64 = 10;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &c_for->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 13);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 13);
         }
         if (logical_loops != NULL) {
-            arguments[0].type = RUDA_TYPE_BOOL;
+            arguments[0].type = MMAY_TYPE_BOOL;
             arguments[0].as.boolean = true;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &logical_loops->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 3);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 3);
             arguments[0].as.boolean = false;
-            RUDA_EXPECT(ruda_mir_interpret(
+            MMAY_EXPECT(mmay_mir_interpret(
                 &logical_loops->mir,
                 arguments,
                 1,
-                ruda_system_allocator(),
-                ruda_mir_interpret_default_options(),
+                mmay_system_allocator(),
+                mmay_mir_interpret_default_options(),
                 &result
-            ) == RUDA_MIR_INTERPRET_OK);
-            RUDA_EXPECT(result.as.i64 == 0);
+            ) == MMAY_MIR_INTERPRET_OK);
+            MMAY_EXPECT(result.as.i64 == 0);
         }
-        ruda_check_result_dispose(&checked);
+        mmay_check_result_dispose(&checked);
     }
-    ruda_checker_fixture_dispose(&fixture);
+    mmay_checker_fixture_dispose(&fixture);
 }
 
-void ruda_test_checker_control_flow_diagnostics(void) {
+void mmay_test_checker_control_flow_diagnostics(void) {
     static const char condition[] =
         "fn bad(): int { if 1 { return 1; } return 0; }\n";
     static const char branch_initialization[] =
@@ -329,45 +329,45 @@ void ruda_test_checker_control_flow_diagnostics(void) {
         "fn bad(): void { continue; }\n";
     static const char for_scope[] =
         "fn bad(): int { for let index = 0; index < 1; index += 1 {} return index; }\n";
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         condition,
-        RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "1",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         branch_initialization,
-        RUDA_DIAGNOSTIC_UNINITIALIZED_LOCAL,
+        MMAY_DIAGNOSTIC_UNINITIALIZED_LOCAL,
         "value",
         2
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         loop_initialization,
-        RUDA_DIAGNOSTIC_UNINITIALIZED_LOCAL,
+        MMAY_DIAGNOSTIC_UNINITIALIZED_LOCAL,
         "value",
         2
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         scoped_name,
-        RUDA_DIAGNOSTIC_UNKNOWN_NAME,
+        MMAY_DIAGNOSTIC_UNKNOWN_NAME,
         "inner",
         1
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         outside_break,
-        RUDA_DIAGNOSTIC_LOOP_CONTROL_OUTSIDE_LOOP,
+        MMAY_DIAGNOSTIC_LOOP_CONTROL_OUTSIDE_LOOP,
         "break",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         outside_continue,
-        RUDA_DIAGNOSTIC_LOOP_CONTROL_OUTSIDE_LOOP,
+        MMAY_DIAGNOSTIC_LOOP_CONTROL_OUTSIDE_LOOP,
         "continue",
         0
     );
-    ruda_checker_expect_one_diagnostic(
+    mmay_checker_expect_one_diagnostic(
         for_scope,
-        RUDA_DIAGNOSTIC_UNKNOWN_NAME,
+        MMAY_DIAGNOSTIC_UNKNOWN_NAME,
         "index",
         3
     );

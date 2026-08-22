@@ -1,4 +1,4 @@
-#include "ruda/base/provenance.h"
+#include "mmay/base/provenance.h"
 
 #include <stddef.h>
 #include <stdint.h>
@@ -7,11 +7,11 @@
 
 #include <intrin.h>
 
-static volatile long ruda_next_provenance_value = 1;
+static volatile long mmay_next_provenance_value = 1;
 
-bool ruda_new_provenance(uint64_t *result) {
+bool mmay_new_provenance(uint64_t *result) {
     long current_bits = _InterlockedCompareExchange(
-        &ruda_next_provenance_value,
+        &mmay_next_provenance_value,
         0,
         0
     );
@@ -22,7 +22,7 @@ bool ruda_new_provenance(uint64_t *result) {
     while (current != 0 && current != UINT32_MAX) {
         const uint32_t next = current + UINT32_C(1);
         const long observed = _InterlockedCompareExchange(
-            &ruda_next_provenance_value,
+            &mmay_next_provenance_value,
             (long)next,
             (long)current
         );
@@ -39,11 +39,11 @@ bool ruda_new_provenance(uint64_t *result) {
 
 #include <stdatomic.h>
 
-static _Atomic uint32_t ruda_next_provenance_value = UINT32_C(1);
+static _Atomic uint32_t mmay_next_provenance_value = UINT32_C(1);
 
-bool ruda_new_provenance(uint64_t *result) {
+bool mmay_new_provenance(uint64_t *result) {
     uint32_t current = atomic_load_explicit(
-        &ruda_next_provenance_value,
+        &mmay_next_provenance_value,
         memory_order_relaxed
     );
     if (result == NULL) {
@@ -52,7 +52,7 @@ bool ruda_new_provenance(uint64_t *result) {
     while (current != 0 && current != UINT32_MAX) {
         const uint32_t next = current + UINT32_C(1);
         if (atomic_compare_exchange_weak_explicit(
-                &ruda_next_provenance_value,
+                &mmay_next_provenance_value,
                 &current,
                 next,
                 memory_order_relaxed,

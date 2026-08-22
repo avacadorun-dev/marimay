@@ -4,15 +4,15 @@
 #include "checker_internal.h"
 #include "checker_function_context.h"
 
-bool ruda_checker_private_function_ensure_interface_layouts(
-    RudaFunctionChecker *function
+bool mmay_checker_private_function_ensure_interface_layouts(
+    MarimayFunctionChecker *function
 );
 
-bool ruda_checker_private_compile_interface_call(
-    RudaFunctionChecker *function,
-    const RudaAstNode *node,
+bool mmay_checker_private_compile_interface_call(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
     bool *resolved,
-    RudaExpressionValue *result
+    MarimayExpressionValue *result
 );
 
 #endif

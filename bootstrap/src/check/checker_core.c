@@ -4,7 +4,7 @@
 
 
 
-#include "ruda/check/checker.h"
+#include "mmay/check/checker.h"
 
 
 #include <limits.h>
@@ -12,110 +12,110 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "ruda/generated/diagnostic_codes.h"
-#include "ruda/base/f64.h"
-#include "ruda/base/string_literal.h"
+#include "mmay/generated/diagnostic_codes.h"
+#include "mmay/base/f64.h"
+#include "mmay/base/string_literal.h"
 #include "checker_generic_types_api.h"
 #include "checker_imported_enums_api.h"
 
 
- bool ruda_checker_private_evaluate_constant(
-    RudaChecker *checker,
-    RudaCheckConstantDeclaration *declaration,
+ bool mmay_checker_private_evaluate_constant(
+    MarimayChecker *checker,
+    MarimayCheckConstantDeclaration *declaration,
     size_t use_start,
     size_t use_end
 );
 
- bool ruda_checker_private_evaluate_type_alias(
-    RudaChecker *checker,
-    RudaCheckTypeAliasDeclaration *declaration,
+ bool mmay_checker_private_evaluate_type_alias(
+    MarimayChecker *checker,
+    MarimayCheckTypeAliasDeclaration *declaration,
     size_t use_start,
     size_t use_end
 );
 
-void ruda_checker_fail(RudaChecker *checker, RudaCheckStatus status) {
-    if (checker->failure == RUDA_CHECK_OK) {
+void mmay_checker_fail(MarimayChecker *checker, MarimayCheckStatus status) {
+    if (checker->failure == MMAY_CHECK_OK) {
         checker->failure = status;
     }
 }
 
- void ruda_checker_private_expression_set_never(
-    RudaFunctionChecker *function,
-    RudaExpressionValue *result
+ void mmay_checker_private_expression_set_never(
+    MarimayFunctionChecker *function,
+    MarimayExpressionValue *result
 ) {
-    result->type = RUDA_TYPE_NEVER;
-    result->register_id = RUDA_MIR_NO_REGISTER;
+    result->type = MMAY_TYPE_NEVER;
+    result->register_id = MMAY_MIR_NO_REGISTER;
     result->valid = true;
     function->terminated = true;
 }
 
-bool ruda_expression_is_never(
-    const RudaFunctionChecker *function,
-    const RudaExpressionValue *value
+bool mmay_expression_is_never(
+    const MarimayFunctionChecker *function,
+    const MarimayExpressionValue *value
 ) {
     return function->terminated && value != NULL && value->valid
-        && value->type == RUDA_TYPE_NEVER
-        && value->register_id == RUDA_MIR_NO_REGISTER;
+        && value->type == MMAY_TYPE_NEVER
+        && value->register_id == MMAY_MIR_NO_REGISTER;
 }
 
-bool ruda_checker_has_failed(const RudaChecker *checker) {
-    return checker->failure != RUDA_CHECK_OK;
+bool mmay_checker_has_failed(const MarimayChecker *checker) {
+    return checker->failure != MMAY_CHECK_OK;
 }
 
- bool ruda_checker_private_checker_set_ast(
-    RudaChecker *checker,
-    const RudaAstTree *ast
+ bool mmay_checker_private_checker_set_ast(
+    MarimayChecker *checker,
+    const MarimayAstTree *ast
 ) {
     if (checker == NULL || ast == NULL || !ast->initialized
-        || ast->root == NULL || ast->root->kind != RUDA_SYNTAX_ROOT
+        || ast->root == NULL || ast->root->kind != MMAY_SYNTAX_ROOT
         || ast->snapshot == NULL) {
         return false;
     }
     checker->ast = ast;
-    checker->source = ruda_source_bytes(ast->snapshot);
-    checker->source_length = ruda_source_length(ast->snapshot);
+    checker->source = mmay_source_bytes(ast->snapshot);
+    checker->source_length = mmay_source_length(ast->snapshot);
     return checker->source != NULL || checker->source_length == 0;
 }
 
- bool ruda_checker_private_check_span_valid(
-    const RudaChecker *checker,
+ bool mmay_checker_private_check_span_valid(
+    const MarimayChecker *checker,
     size_t start,
     size_t end
 ) {
     return start <= end && end <= checker->source_length;
 }
 
- bool ruda_checker_private_check_text_equal(
-    const RudaChecker *checker,
+ bool mmay_checker_private_check_text_equal(
+    const MarimayChecker *checker,
     size_t start,
     size_t end,
     const char *text
 ) {
     size_t length = text != NULL ? strlen(text) : 0;
-    return text != NULL && ruda_checker_private_check_span_valid(checker, start, end)
+    return text != NULL && mmay_checker_private_check_span_valid(checker, start, end)
         && end - start == length
         && memcmp(checker->source + start, text, length) == 0;
 }
 
- bool ruda_checker_private_check_names_equal(
-    const RudaChecker *checker,
-    RudaCheckName left,
-    RudaCheckName right
+ bool mmay_checker_private_check_names_equal(
+    const MarimayChecker *checker,
+    MarimayCheckName left,
+    MarimayCheckName right
 ) {
     size_t left_length = left.end - left.start;
     size_t right_length = right.end - right.start;
     const unsigned char *left_source = left.snapshot != NULL
-        ? ruda_source_bytes(left.snapshot)
+        ? mmay_source_bytes(left.snapshot)
         : NULL;
     const unsigned char *right_source = right.snapshot != NULL
-        ? ruda_source_bytes(right.snapshot)
+        ? mmay_source_bytes(right.snapshot)
         : NULL;
     (void)checker;
     return left_source != NULL && right_source != NULL
         && left.start <= left.end
-        && left.end <= ruda_source_length(left.snapshot)
+        && left.end <= mmay_source_length(left.snapshot)
         && right.start <= right.end
-        && right.end <= ruda_source_length(right.snapshot)
+        && right.end <= mmay_source_length(right.snapshot)
         && left_length == right_length
         && memcmp(
             left_source + left.start,
@@ -124,17 +124,17 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
         ) == 0;
 }
 
- bool ruda_checker_private_check_name_bytes(
-    RudaCheckName name,
+ bool mmay_checker_private_check_name_bytes(
+    MarimayCheckName name,
     const unsigned char **bytes,
     size_t *length
 ) {
     const unsigned char *source = name.snapshot != NULL
-        ? ruda_source_bytes(name.snapshot)
+        ? mmay_source_bytes(name.snapshot)
         : NULL;
     if (bytes == NULL || length == NULL || source == NULL
         || name.start > name.end
-        || name.end > ruda_source_length(name.snapshot)) {
+        || name.end > mmay_source_length(name.snapshot)) {
         return false;
     }
     *bytes = source + name.start;
@@ -142,83 +142,83 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
     return true;
 }
 
- const RudaCheckTopLevelEntry *ruda_checker_private_checker_find_top_level(
-    const RudaChecker *checker,
-    RudaCheckName name
+ const MarimayCheckTopLevelEntry *mmay_checker_private_checker_find_top_level(
+    const MarimayChecker *checker,
+    MarimayCheckName name
 ) {
     const unsigned char *bytes = NULL;
     size_t length = 0;
-    if (!ruda_checker_private_check_name_bytes(name, &bytes, &length)) {
+    if (!mmay_checker_private_check_name_bytes(name, &bytes, &length)) {
         return NULL;
     }
-    return ruda_map_get_const(&checker->top_level_index, bytes, length);
+    return mmay_map_get_const(&checker->top_level_index, bytes, length);
 }
 
- RudaCheckConstantDeclaration *ruda_checker_private_checker_find_constant(
-    RudaChecker *checker,
-    RudaCheckName name
+ MarimayCheckConstantDeclaration *mmay_checker_private_checker_find_constant(
+    MarimayChecker *checker,
+    MarimayCheckName name
 ) {
-    const RudaCheckTopLevelEntry *entry = ruda_checker_private_checker_find_top_level(
+    const MarimayCheckTopLevelEntry *entry = mmay_checker_private_checker_find_top_level(
         checker,
         name
     );
-    RudaCheckConstantDeclaration *declaration = NULL;
-    if (entry != NULL && entry->kind == RUDA_CHECK_TOP_LEVEL_CONSTANT) {
-        declaration = ruda_vector_at(&checker->constants, entry->index);
+    MarimayCheckConstantDeclaration *declaration = NULL;
+    if (entry != NULL && entry->kind == MMAY_CHECK_TOP_LEVEL_CONSTANT) {
+        declaration = mmay_vector_at(&checker->constants, entry->index);
     }
     if (declaration != NULL && declaration->declaration_valid
-        && ruda_checker_private_check_names_equal(checker, declaration->name, name)) {
+        && mmay_checker_private_check_names_equal(checker, declaration->name, name)) {
         return declaration;
     }
     return NULL;
 }
 
- RudaCheckTypeAliasDeclaration *ruda_checker_private_checker_find_type_alias(
-    RudaChecker *checker,
-    RudaCheckName name
+ MarimayCheckTypeAliasDeclaration *mmay_checker_private_checker_find_type_alias(
+    MarimayChecker *checker,
+    MarimayCheckName name
 ) {
-    const RudaCheckTopLevelEntry *entry = ruda_checker_private_checker_find_top_level(
+    const MarimayCheckTopLevelEntry *entry = mmay_checker_private_checker_find_top_level(
         checker,
         name
     );
-    RudaCheckTypeAliasDeclaration *declaration = NULL;
-    if (entry != NULL && entry->kind == RUDA_CHECK_TOP_LEVEL_TYPE_ALIAS) {
-        declaration = ruda_vector_at(&checker->type_aliases, entry->index);
+    MarimayCheckTypeAliasDeclaration *declaration = NULL;
+    if (entry != NULL && entry->kind == MMAY_CHECK_TOP_LEVEL_TYPE_ALIAS) {
+        declaration = mmay_vector_at(&checker->type_aliases, entry->index);
     }
     if (declaration != NULL && declaration->declaration_valid
-        && ruda_checker_private_check_names_equal(checker, declaration->name, name)) {
+        && mmay_checker_private_check_names_equal(checker, declaration->name, name)) {
         return declaration;
     }
     return NULL;
 }
 
- RudaCheckRecordDeclaration *ruda_checker_private_checker_find_record(
-    RudaChecker *checker,
-    RudaCheckName name
+ MarimayCheckRecordDeclaration *mmay_checker_private_checker_find_record(
+    MarimayChecker *checker,
+    MarimayCheckName name
 ) {
-    const RudaCheckTopLevelEntry *entry = ruda_checker_private_checker_find_top_level(
+    const MarimayCheckTopLevelEntry *entry = mmay_checker_private_checker_find_top_level(
         checker,
         name
     );
-    RudaCheckRecordDeclaration *declaration = NULL;
-    if (entry != NULL && entry->kind == RUDA_CHECK_TOP_LEVEL_RECORD) {
-        declaration = ruda_vector_at(&checker->records, entry->index);
+    MarimayCheckRecordDeclaration *declaration = NULL;
+    if (entry != NULL && entry->kind == MMAY_CHECK_TOP_LEVEL_RECORD) {
+        declaration = mmay_vector_at(&checker->records, entry->index);
     }
     if (declaration != NULL && declaration->declaration_valid
-        && ruda_checker_private_check_names_equal(checker, declaration->name, name)) {
+        && mmay_checker_private_check_names_equal(checker, declaration->name, name)) {
         return declaration;
     }
     return NULL;
 }
 
- RudaCheckRecordDeclaration *ruda_checker_private_checker_find_record_by_type(
-    RudaChecker *checker,
-    RudaTypeId type
+ MarimayCheckRecordDeclaration *mmay_checker_private_checker_find_record_by_type(
+    MarimayChecker *checker,
+    MarimayTypeId type
 ) {
     size_t index = 0;
     for (index = 0; checker != NULL && index < checker->records.length;
         index += 1) {
-        RudaCheckRecordDeclaration *declaration = ruda_vector_at(
+        MarimayCheckRecordDeclaration *declaration = mmay_vector_at(
             &checker->records,
             index
         );
@@ -226,7 +226,7 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
             && declaration->fields_resolved
             && (declaration->type == type
                 || (declaration->is_generic
-                    && ruda_checker_private_type_matches_nominal(
+                    && mmay_checker_private_type_matches_nominal(
                         checker,
                         type,
                         declaration->symbol,
@@ -238,20 +238,20 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
     return NULL;
 }
 
- RudaCheckRecordFieldDeclaration *ruda_checker_private_checker_find_record_field(
-    RudaChecker *checker,
-    RudaCheckRecordDeclaration *record,
-    RudaCheckName name,
+ MarimayCheckRecordFieldDeclaration *mmay_checker_private_checker_find_record_field(
+    MarimayChecker *checker,
+    MarimayCheckRecordDeclaration *record,
+    MarimayCheckName name,
     size_t *field_index
 ) {
     size_t index = 0;
     for (index = 0; record != NULL && index < record->fields.length;
         index += 1) {
-        RudaCheckRecordFieldDeclaration *field = ruda_vector_at(
+        MarimayCheckRecordFieldDeclaration *field = mmay_vector_at(
             &record->fields,
             index
         );
-        if (field != NULL && ruda_checker_private_check_names_equal(
+        if (field != NULL && mmay_checker_private_check_names_equal(
                 checker,
                 field->name,
                 name
@@ -265,30 +265,30 @@ bool ruda_checker_has_failed(const RudaChecker *checker) {
     return NULL;
 }
 
-RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
-    RudaChecker *checker,
-    RudaCheckName name
+MarimayCheckEnumDeclaration *mmay_checker_private_checker_find_enum(
+    MarimayChecker *checker,
+    MarimayCheckName name
 ) {
-    const RudaCheckTopLevelEntry *entry = ruda_checker_private_checker_find_top_level(
+    const MarimayCheckTopLevelEntry *entry = mmay_checker_private_checker_find_top_level(
         checker,
         name
     );
-    RudaCheckEnumDeclaration *declaration = NULL;
-    if (entry != NULL && entry->kind == RUDA_CHECK_TOP_LEVEL_ENUM) {
-        declaration = ruda_vector_at(&checker->enums, entry->index);
+    MarimayCheckEnumDeclaration *declaration = NULL;
+    if (entry != NULL && entry->kind == MMAY_CHECK_TOP_LEVEL_ENUM) {
+        declaration = mmay_vector_at(&checker->enums, entry->index);
     }
     if (declaration != NULL && declaration->declaration_valid
-        && ruda_checker_private_check_names_equal(checker, declaration->name, name)) {
+        && mmay_checker_private_check_names_equal(checker, declaration->name, name)) {
         return declaration;
     }
     {
         const unsigned char *bytes = NULL;
         size_t length = 0;
-        if (ruda_checker_private_check_name_bytes(name, &bytes, &length)) {
+        if (mmay_checker_private_check_name_bytes(name, &bytes, &length)) {
             size_t index = 0;
             for (index = 0; checker != NULL
                 && index < checker->prelude_enums.length; index += 1) {
-                declaration = ruda_vector_at(
+                declaration = mmay_vector_at(
                     &checker->prelude_enums, index
                 );
                 if (declaration != NULL && declaration->is_builtin
@@ -303,14 +303,14 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
     return NULL;
 }
 
- RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum_by_type(
-    RudaChecker *checker,
-    RudaTypeId type
+ MarimayCheckEnumDeclaration *mmay_checker_private_checker_find_enum_by_type(
+    MarimayChecker *checker,
+    MarimayTypeId type
 ) {
     size_t index = 0;
     for (index = 0; checker != NULL && index < checker->enums.length;
         index += 1) {
-        RudaCheckEnumDeclaration *declaration = ruda_vector_at(
+        MarimayCheckEnumDeclaration *declaration = mmay_vector_at(
             &checker->enums,
             index
         );
@@ -318,7 +318,7 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
             && declaration->variants_resolved
             && (declaration->type == type
                 || (declaration->is_generic
-                    && ruda_checker_private_type_matches_nominal(
+                    && mmay_checker_private_type_matches_nominal(
                         checker,
                         type,
                         declaration->symbol,
@@ -329,13 +329,13 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
     }
     for (index = 0; checker != NULL && index < checker->prelude_enums.length;
         index += 1) {
-        RudaCheckEnumDeclaration *declaration = ruda_vector_at(
+        MarimayCheckEnumDeclaration *declaration = mmay_vector_at(
             &checker->prelude_enums, index
         );
         if (declaration != NULL && declaration->declaration_valid
             && declaration->variants_resolved
             && (declaration->type == type
-                || ruda_checker_private_type_matches_nominal(
+                || mmay_checker_private_type_matches_nominal(
                     checker,
                     type,
                     declaration->symbol,
@@ -344,35 +344,35 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
             return declaration;
         }
     }
-    return ruda_checker_private_imported_enum_declaration_by_type(
+    return mmay_checker_private_imported_enum_declaration_by_type(
         checker, type
     );
 }
 
- RudaCheckInterfaceDeclaration *ruda_checker_private_checker_find_interface(
-    RudaChecker *checker,
-    RudaCheckName name
+ MarimayCheckInterfaceDeclaration *mmay_checker_private_checker_find_interface(
+    MarimayChecker *checker,
+    MarimayCheckName name
 ) {
-    const RudaCheckTopLevelEntry *entry =
-        ruda_checker_private_checker_find_top_level(checker, name);
-    RudaCheckInterfaceDeclaration *declaration = NULL;
-    if (entry != NULL && entry->kind == RUDA_CHECK_TOP_LEVEL_INTERFACE) {
-        declaration = ruda_vector_at(&checker->interfaces, entry->index);
+    const MarimayCheckTopLevelEntry *entry =
+        mmay_checker_private_checker_find_top_level(checker, name);
+    MarimayCheckInterfaceDeclaration *declaration = NULL;
+    if (entry != NULL && entry->kind == MMAY_CHECK_TOP_LEVEL_INTERFACE) {
+        declaration = mmay_vector_at(&checker->interfaces, entry->index);
     }
     return declaration != NULL && declaration->declaration_valid
-            && ruda_checker_private_check_names_equal(checker, declaration->name, name)
+            && mmay_checker_private_check_names_equal(checker, declaration->name, name)
         ? declaration
         : NULL;
 }
 
- RudaCheckInterfaceDeclaration *ruda_checker_private_checker_find_interface_by_type(
-    RudaChecker *checker,
-    RudaTypeId type
+ MarimayCheckInterfaceDeclaration *mmay_checker_private_checker_find_interface_by_type(
+    MarimayChecker *checker,
+    MarimayTypeId type
 ) {
     size_t index = 0;
     for (index = 0; checker != NULL && index < checker->interfaces.length;
         index += 1) {
-        RudaCheckInterfaceDeclaration *declaration = ruda_vector_at(
+        MarimayCheckInterfaceDeclaration *declaration = mmay_vector_at(
             &checker->interfaces, index
         );
         if (declaration != NULL && declaration->declaration_valid
@@ -383,25 +383,25 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
     return NULL;
 }
 
- RudaCheckEnumVariantDeclaration *ruda_checker_private_checker_find_enum_variant(
-    RudaChecker *checker,
-    RudaCheckEnumDeclaration *enum_declaration,
-    RudaCheckName name,
+ MarimayCheckEnumVariantDeclaration *mmay_checker_private_checker_find_enum_variant(
+    MarimayChecker *checker,
+    MarimayCheckEnumDeclaration *enum_declaration,
+    MarimayCheckName name,
     size_t *variant_index
 ) {
     size_t index = 0;
     for (index = 0; enum_declaration != NULL
         && index < enum_declaration->variants.length; index += 1) {
-        RudaCheckEnumVariantDeclaration *variant = ruda_vector_at(
+        MarimayCheckEnumVariantDeclaration *variant = mmay_vector_at(
             &enum_declaration->variants,
             index
         );
         const unsigned char *bytes = NULL;
         size_t length = 0;
         bool same_name = variant != NULL
-            && ruda_checker_private_check_names_equal(checker, variant->name, name);
+            && mmay_checker_private_check_names_equal(checker, variant->name, name);
         if (variant != NULL && !same_name
-            && ruda_checker_private_check_name_bytes(name, &bytes, &length)) {
+            && mmay_checker_private_check_name_bytes(name, &bytes, &length)) {
             same_name = variant->owned_name.length == length
                 && memcmp(variant->owned_name.data, bytes, length) == 0;
         }
@@ -415,27 +415,27 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
     return NULL;
 }
 
- RudaCheckEnumPayloadItemDeclaration *ruda_checker_private_checker_find_enum_payload(
-    RudaChecker *checker,
-    RudaCheckEnumVariantDeclaration *variant,
-    RudaCheckName name,
+ MarimayCheckEnumPayloadItemDeclaration *mmay_checker_private_checker_find_enum_payload(
+    MarimayChecker *checker,
+    MarimayCheckEnumVariantDeclaration *variant,
+    MarimayCheckName name,
     size_t *payload_index
 ) {
     size_t index = 0;
     for (index = 0; variant != NULL && index < variant->payload.length;
         index += 1) {
-        RudaCheckEnumPayloadItemDeclaration *payload = ruda_vector_at(
+        MarimayCheckEnumPayloadItemDeclaration *payload = mmay_vector_at(
             &variant->payload,
             index
         );
         const unsigned char *bytes = NULL;
         size_t length = 0;
         bool same_name = payload != NULL && payload->has_name
-            && ruda_checker_private_check_names_equal(
+            && mmay_checker_private_check_names_equal(
                 checker, payload->name, name
             );
         if (payload != NULL && payload->has_name && !same_name
-            && ruda_checker_private_check_name_bytes(name, &bytes, &length)) {
+            && mmay_checker_private_check_name_bytes(name, &bytes, &length)) {
             same_name = payload->owned_name.length == length
                 && memcmp(payload->owned_name.data, bytes, length) == 0;
         }
@@ -449,9 +449,9 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
     return NULL;
 }
 
- const RudaAstNode *ruda_checker_private_check_child_node(
-    const RudaAstNode *node,
-    RudaSyntaxKind kind,
+ const MarimayAstNode *mmay_checker_private_check_child_node(
+    const MarimayAstNode *node,
+    MarimaySyntaxKind kind,
     size_t ordinal
 ) {
     size_t index = 0;
@@ -460,8 +460,8 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
         return NULL;
     }
     for (index = 0; index < node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(node, index);
-        if (element != NULL && element->kind == RUDA_AST_ELEMENT_NODE
+        const MarimayAstElement *element = mmay_ast_child(node, index);
+        if (element != NULL && element->kind == MMAY_AST_ELEMENT_NODE
             && element->as.node != NULL && element->as.node->kind == kind) {
             if (found == ordinal) {
                 return element->as.node;
@@ -472,8 +472,8 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
     return NULL;
 }
 
- const RudaAstNode *ruda_checker_private_check_child_node_any(
-    const RudaAstNode *node,
+ const MarimayAstNode *mmay_checker_private_check_child_node_any(
+    const MarimayAstNode *node,
     size_t ordinal
 ) {
     size_t index = 0;
@@ -482,8 +482,8 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
         return NULL;
     }
     for (index = 0; index < node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(node, index);
-        if (element != NULL && element->kind == RUDA_AST_ELEMENT_NODE) {
+        const MarimayAstElement *element = mmay_ast_child(node, index);
+        if (element != NULL && element->kind == MMAY_AST_ELEMENT_NODE) {
             if (found == ordinal) {
                 return element->as.node;
             }
@@ -493,9 +493,9 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
     return NULL;
 }
 
- const RudaSyntaxToken *ruda_checker_private_check_child_token(
-    const RudaAstNode *node,
-    RudaTokenKind kind,
+ const MarimaySyntaxToken *mmay_checker_private_check_child_token(
+    const MarimayAstNode *node,
+    MarimayTokenKind kind,
     size_t ordinal
 ) {
     size_t index = 0;
@@ -504,8 +504,8 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
         return NULL;
     }
     for (index = 0; index < node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(node, index);
-        if (element != NULL && element->kind == RUDA_AST_ELEMENT_TOKEN
+        const MarimayAstElement *element = mmay_ast_child(node, index);
+        if (element != NULL && element->kind == MMAY_AST_ELEMENT_TOKEN
             && element->as.token.kind == kind) {
             if (found == ordinal) {
                 return &element->as.token;
@@ -516,47 +516,47 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
     return NULL;
 }
 
- const RudaSyntaxToken *ruda_checker_private_check_first_token(
-    const RudaAstNode *node
+ const MarimaySyntaxToken *mmay_checker_private_check_first_token(
+    const MarimayAstNode *node
 ) {
     size_t index = 0;
     if (node == NULL) {
         return NULL;
     }
     for (index = 0; index < node->child_count; index += 1) {
-        const RudaAstElement *element = ruda_ast_child(node, index);
-        if (element != NULL && element->kind == RUDA_AST_ELEMENT_TOKEN) {
+        const MarimayAstElement *element = mmay_ast_child(node, index);
+        if (element != NULL && element->kind == MMAY_AST_ELEMENT_TOKEN) {
             return &element->as.token;
         }
     }
     return NULL;
 }
 
- const RudaSyntaxToken *ruda_checker_private_check_attribute_name(
-    const RudaAstNode *attribute
+ const MarimaySyntaxToken *mmay_checker_private_check_attribute_name(
+    const MarimayAstNode *attribute
 ) {
-    return attribute != NULL && attribute->kind == RUDA_SYNTAX_ATTRIBUTE
-        ? ruda_checker_private_check_child_token(attribute, RUDA_TOKEN_IDENTIFIER, 0)
+    return attribute != NULL && attribute->kind == MMAY_SYNTAX_ATTRIBUTE
+        ? mmay_checker_private_check_child_token(attribute, MMAY_TOKEN_IDENTIFIER, 0)
         : NULL;
 }
 
- bool ruda_checker_private_check_attribute_is(
-    const RudaChecker *checker,
-    const RudaAstNode *attribute,
+ bool mmay_checker_private_check_attribute_is(
+    const MarimayChecker *checker,
+    const MarimayAstNode *attribute,
     const char *name
 ) {
-    const RudaSyntaxToken *token = ruda_checker_private_check_attribute_name(attribute);
+    const MarimaySyntaxToken *token = mmay_checker_private_check_attribute_name(attribute);
     return token != NULL && !token->synthetic
-        && ruda_checker_private_check_text_equal(checker, token->start, token->end, name);
+        && mmay_checker_private_check_text_equal(checker, token->start, token->end, name);
 }
 
- bool ruda_checker_private_check_source_is_test_file(const RudaChecker *checker) {
-    static const char suffix[] = "_test.ruda";
+ bool mmay_checker_private_check_source_is_test_file(const MarimayChecker *checker) {
+    static const char suffix[] = "_test.my";
     size_t path_length = checker != NULL && checker->ast != NULL
-        ? ruda_source_path_length(checker->ast->snapshot)
+        ? mmay_source_path_length(checker->ast->snapshot)
         : 0;
     const char *path = checker != NULL && checker->ast != NULL
-        ? ruda_source_path(checker->ast->snapshot)
+        ? mmay_source_path(checker->ast->snapshot)
         : NULL;
     return path != NULL && path_length >= sizeof(suffix) - 1
         && memcmp(
@@ -566,24 +566,24 @@ RudaCheckEnumDeclaration *ruda_checker_private_checker_find_enum(
         ) == 0;
 }
 
-bool ruda_checker_add_diagnostic(
-    RudaChecker *checker,
+bool mmay_checker_add_diagnostic(
+    MarimayChecker *checker,
     const char *code,
     const char *message,
     size_t start,
     size_t end
 ) {
-    RudaCheckDiagnostic diagnostic;
-    if (ruda_checker_has_failed(checker)) {
+    MarimayCheckDiagnostic diagnostic;
+    if (mmay_checker_has_failed(checker)) {
         return false;
     }
-    if (!ruda_checker_private_check_span_valid(checker, start, end)) {
-        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+    if (!mmay_checker_private_check_span_valid(checker, start, end)) {
+        mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
     if (checker->result->diagnostics.length
         >= checker->options.max_diagnostics) {
-        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
         return false;
     }
     memset(&diagnostic, 0, sizeof(diagnostic));
@@ -592,43 +592,43 @@ bool ruda_checker_add_diagnostic(
     diagnostic.snapshot = checker->ast->snapshot;
     diagnostic.start = start;
     diagnostic.end = end;
-    if (!ruda_vector_push(&checker->result->diagnostics, &diagnostic)) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+    if (!mmay_vector_push(&checker->result->diagnostics, &diagnostic)) {
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     return true;
 }
 
- bool ruda_checker_private_checker_add_owned_diagnostic(
-    RudaChecker *checker,
+ bool mmay_checker_private_checker_add_owned_diagnostic(
+    MarimayChecker *checker,
     const char *code,
     const unsigned char *message,
     size_t message_length,
     size_t start,
     size_t end
 ) {
-    RudaCheckDiagnostic diagnostic;
-    if (ruda_checker_has_failed(checker)) {
+    MarimayCheckDiagnostic diagnostic;
+    if (mmay_checker_has_failed(checker)) {
         return false;
     }
-    if (!ruda_checker_private_check_span_valid(checker, start, end)
+    if (!mmay_checker_private_check_span_valid(checker, start, end)
         || (message == NULL && message_length != 0)) {
-        ruda_checker_fail(checker, RUDA_CHECK_INTERNAL_ERROR);
+        mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
     if (checker->result->diagnostics.length
         >= checker->options.max_diagnostics) {
-        ruda_checker_fail(checker, RUDA_CHECK_LIMIT_REACHED);
+        mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
         return false;
     }
     memset(&diagnostic, 0, sizeof(diagnostic));
-    if (!ruda_owned_bytes_copy(
+    if (!mmay_owned_bytes_copy(
             &diagnostic.owned_message,
             checker->result->allocator,
             message,
             message_length
         )) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     diagnostic.code = code;
@@ -636,9 +636,9 @@ bool ruda_checker_add_diagnostic(
     diagnostic.snapshot = checker->ast->snapshot;
     diagnostic.start = start;
     diagnostic.end = end;
-    if (!ruda_vector_push(&checker->result->diagnostics, &diagnostic)) {
-        ruda_owned_bytes_dispose(&diagnostic.owned_message);
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+    if (!mmay_vector_push(&checker->result->diagnostics, &diagnostic)) {
+        mmay_owned_bytes_dispose(&diagnostic.owned_message);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     return true;

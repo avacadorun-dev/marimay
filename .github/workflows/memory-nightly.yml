@@ -38,4 +38,4 @@ jobs:
           --show-leak-kinds=all
           --errors-for-leak-kinds=definite,indirect
           --error-exitcode=99
-          ./ruda_c_unit ../../ruda
+          ./mmay_c_unit ../../mmay

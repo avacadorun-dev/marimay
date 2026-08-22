@@ -13,7 +13,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "BUILD_TESTING": "ON",
-        "RUDA_WARNINGS_AS_ERRORS": "ON"
+        "MMAY_WARNINGS_AS_ERRORS": "ON"
       }
     },
     {
@@ -23,7 +23,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "BUILD_TESTING": "ON",
-        "RUDA_WARNINGS_AS_ERRORS": "ON"
+        "MMAY_WARNINGS_AS_ERRORS": "ON"
       }
     },
     {
@@ -32,7 +32,7 @@
       "inherits": "debug",
       "binaryDir": "${sourceDir}/build/asan",
       "cacheVariables": {
-        "RUDA_ENABLE_ADDRESS_SANITIZER": "ON"
+        "MMAY_ENABLE_ADDRESS_SANITIZER": "ON"
       }
     },
     {
@@ -41,8 +41,8 @@
       "inherits": "debug",
       "binaryDir": "${sourceDir}/build/asan-ubsan",
       "cacheVariables": {
-        "RUDA_ENABLE_ADDRESS_SANITIZER": "ON",
-        "RUDA_ENABLE_UNDEFINED_SANITIZER": "ON"
+        "MMAY_ENABLE_ADDRESS_SANITIZER": "ON",
+        "MMAY_ENABLE_UNDEFINED_SANITIZER": "ON"
       }
     },
     {
@@ -51,7 +51,7 @@
       "inherits": "debug",
       "binaryDir": "${sourceDir}/build/tsan",
       "cacheVariables": {
-        "RUDA_ENABLE_THREAD_SANITIZER": "ON"
+        "MMAY_ENABLE_THREAD_SANITIZER": "ON"
       }
     },
     {
@@ -61,7 +61,7 @@
       "binaryDir": "${sourceDir}/build/fuzz",
       "cacheVariables": {
         "BUILD_TESTING": "OFF",
-        "RUDA_BUILD_FUZZERS": "ON"
+        "MMAY_BUILD_FUZZERS": "ON"
       }
     }
   ],
@@ -95,7 +95,7 @@
       "name": "fuzz",
       "configurePreset": "fuzz",
       "configuration": "Debug",
-      "targets": ["ruda_fuzz_bytecode", "ruda_fuzz_frontend", "ruda_fuzz_formatter"]
+      "targets": ["mmay_fuzz_bytecode", "mmay_fuzz_frontend", "mmay_fuzz_formatter"]
     }
   ],
   "testPresets": [

@@ -13,28 +13,28 @@ from typing import List, Tuple
 
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "bootstrap/tables/opcodes.tsv"
-HEADER = ROOT / "bootstrap/include/ruda/generated/opcodes.h"
+HEADER = ROOT / "bootstrap/include/mmay/generated/opcodes.h"
 DATA = ROOT / "bootstrap/src/generated/opcode_data.inc"
 REFERENCE = ROOT / "docs/generated/bytecode-opcodes.md"
 VALID_OPERANDS = {
-    "register": "RUDA_BYTECODE_OPERAND_REGISTER",
-    "block": "RUDA_BYTECODE_OPERAND_BLOCK",
-    "i64": "RUDA_BYTECODE_OPERAND_I64",
-    "u64": "RUDA_BYTECODE_OPERAND_U64",
-    "f64_bits": "RUDA_BYTECODE_OPERAND_F64_BITS",
-    "bool": "RUDA_BYTECODE_OPERAND_BOOL",
-    "call": "RUDA_BYTECODE_OPERAND_CALL",
-    "string": "RUDA_BYTECODE_OPERAND_STRING",
-    "array_construction": "RUDA_BYTECODE_OPERAND_ARRAY_CONSTRUCTION",
-    "record_construction": "RUDA_BYTECODE_OPERAND_RECORD_CONSTRUCTION",
-    "enum_construction": "RUDA_BYTECODE_OPERAND_ENUM_CONSTRUCTION",
-    "interface_construction": "RUDA_BYTECODE_OPERAND_INTERFACE_CONSTRUCTION",
+    "register": "MMAY_BYTECODE_OPERAND_REGISTER",
+    "block": "MMAY_BYTECODE_OPERAND_BLOCK",
+    "i64": "MMAY_BYTECODE_OPERAND_I64",
+    "u64": "MMAY_BYTECODE_OPERAND_U64",
+    "f64_bits": "MMAY_BYTECODE_OPERAND_F64_BITS",
+    "bool": "MMAY_BYTECODE_OPERAND_BOOL",
+    "call": "MMAY_BYTECODE_OPERAND_CALL",
+    "string": "MMAY_BYTECODE_OPERAND_STRING",
+    "array_construction": "MMAY_BYTECODE_OPERAND_ARRAY_CONSTRUCTION",
+    "record_construction": "MMAY_BYTECODE_OPERAND_RECORD_CONSTRUCTION",
+    "enum_construction": "MMAY_BYTECODE_OPERAND_ENUM_CONSTRUCTION",
+    "interface_construction": "MMAY_BYTECODE_OPERAND_INTERFACE_CONSTRUCTION",
 }
 VALID_FLAGS = {
-    "invalid": "RUDA_OPCODE_FLAG_INVALID",
-    "terminator": "RUDA_OPCODE_FLAG_TERMINATOR",
-    "branch": "RUDA_OPCODE_FLAG_BRANCH",
-    "may_panic": "RUDA_OPCODE_FLAG_MAY_PANIC",
+    "invalid": "MMAY_OPCODE_FLAG_INVALID",
+    "terminator": "MMAY_OPCODE_FLAG_TERMINATOR",
+    "branch": "MMAY_OPCODE_FLAG_BRANCH",
+    "may_panic": "MMAY_OPCODE_FLAG_MAY_PANIC",
 }
 
 
@@ -118,19 +118,19 @@ def c_string(value: str) -> str:
 
 def render_header(entries: List[Opcode]) -> str:
     enum_rows = ",\n".join(
-        f"    RUDA_OPCODE_{entry.symbol} = {entry.wire_id}" for entry in entries
+        f"    MMAY_OPCODE_{entry.symbol} = {entry.wire_id}" for entry in entries
     )
-    return f"""#ifndef RUDA_GENERATED_OPCODES_H
-#define RUDA_GENERATED_OPCODES_H
+    return f"""#ifndef MMAY_GENERATED_OPCODES_H
+#define MMAY_GENERATED_OPCODES_H
 
 #include <stddef.h>
 
 /* Generated from bootstrap/tables/opcodes.tsv. Do not edit by hand. */
-typedef enum RudaOpcode {{
+typedef enum MarimayOpcode {{
 {enum_rows}
-}} RudaOpcode;
+}} MarimayOpcode;
 
-#define RUDA_OPCODE_COUNT ((size_t){len(entries)})
+#define MMAY_OPCODE_COUNT ((size_t){len(entries)})
 
 #endif
 """
@@ -140,23 +140,23 @@ def render_data(entries: List[Opcode]) -> str:
     rows = []
     for entry in entries:
         operands = [VALID_OPERANDS[kind] for _, kind in entry.operands]
-        operands.extend(["RUDA_BYTECODE_OPERAND_NONE"] * (3 - len(operands)))
+        operands.extend(["MMAY_BYTECODE_OPERAND_NONE"] * (3 - len(operands)))
         flags = " | ".join(VALID_FLAGS[flag] for flag in entry.flags) or "0U"
         rows.append(
             "    {"
-            f"RUDA_OPCODE_{entry.symbol}, {entry.wire_id}U, {c_string(entry.mnemonic)}, "
+            f"MMAY_OPCODE_{entry.symbol}, {entry.wire_id}U, {c_string(entry.mnemonic)}, "
             f"{len(entry.operands)}U, {{{', '.join(operands)}}}, {flags}"
             "}"
         )
     rendered_rows = ",\n".join(rows)
     return f"""/* Generated from bootstrap/tables/opcodes.tsv. Do not edit by hand. */
-static const RudaOpcodeMetadata ruda_opcode_metadata_table[RUDA_OPCODE_COUNT] = {{
+static const MarimayOpcodeMetadata mmay_opcode_metadata_table[MMAY_OPCODE_COUNT] = {{
 {rendered_rows}
 }};
 
 _Static_assert(
-    sizeof(ruda_opcode_metadata_table) / sizeof(ruda_opcode_metadata_table[0])
-        == RUDA_OPCODE_COUNT,
+    sizeof(mmay_opcode_metadata_table) / sizeof(mmay_opcode_metadata_table[0])
+        == MMAY_OPCODE_COUNT,
     "opcode metadata must cover every wire opcode"
 );
 """
@@ -177,13 +177,13 @@ def render_reference(entries: List[Opcode]) -> str:
             f"| {entry.wire_id} | `{entry.mnemonic}` | {operand_text} | "
             f"{flag_text} | {markdown_cell(entry.summary)} |"
         )
-    return f"""# Generated Ruda bytecode opcode registry
+    return f"""# Generated Marimay bytecode opcode registry
 
 <!-- Generated from bootstrap/tables/opcodes.tsv. Do not edit by hand. -->
 
 This registry assigns explicit stable wire identifiers to the currently
 implemented internal typed-bytecode foundation. It does not by itself define a
-complete `.rudab` bundle, VM execution support, or a public compatibility
+complete `.myb` bundle, VM execution support, or a public compatibility
 promise. Operands use canonical bounded variable-length encodings in the
 Stage 0 codec.
 

@@ -5,17 +5,17 @@
 #include "checker_core_api.h"
 #include "checker_generic_types_api.h"
 #include "checker_package_context.h"
-#include "ruda/generated/diagnostic_codes.h"
+#include "mmay/generated/diagnostic_codes.h"
 
-static bool ruda_import_name(
-    RudaCheckName name,
+static bool mmay_import_name(
+    MarimayCheckName name,
     const unsigned char **bytes,
     size_t *length
 ) {
-    return ruda_checker_private_check_name_bytes(name, bytes, length);
+    return mmay_checker_private_check_name_bytes(name, bytes, length);
 }
 
-static bool ruda_import_equal(
+static bool mmay_import_equal(
     const unsigned char *left,
     size_t left_length,
     const unsigned char *right,
@@ -25,8 +25,8 @@ static bool ruda_import_equal(
         && (left_length == 0 || memcmp(left, right, left_length) == 0);
 }
 
-static const RudaCheckImportBinding *ruda_import_binding(
-    const RudaChecker *checker,
+static const MarimayCheckImportBinding *mmay_import_binding(
+    const MarimayChecker *checker,
     const unsigned char *name,
     size_t name_length,
     bool namespace_only
@@ -36,10 +36,10 @@ static const RudaCheckImportBinding *ruda_import_binding(
         return NULL;
     }
     for (index = 0; index < checker->imports->binding_count; index += 1) {
-        const RudaCheckImportBinding *binding = &checker->imports->bindings[index];
+        const MarimayCheckImportBinding *binding = &checker->imports->bindings[index];
         if (binding->ast == checker->ast
             && (!namespace_only || binding->is_namespace)
-            && ruda_import_equal(
+            && mmay_import_equal(
                 binding->local,
                 binding->local_length,
                 name,
@@ -51,9 +51,9 @@ static const RudaCheckImportBinding *ruda_import_binding(
     return NULL;
 }
 
-static const RudaCheckPackageSurface *ruda_import_surface(
-    const RudaChecker *checker,
-    const RudaCheckImportBinding *binding
+static const MarimayCheckPackageSurface *mmay_import_surface(
+    const MarimayChecker *checker,
+    const MarimayCheckImportBinding *binding
 ) {
     if (checker == NULL || checker->imports == NULL || binding == NULL
         || binding->surface_index >= checker->imports->surface_count) {
@@ -62,51 +62,51 @@ static const RudaCheckPackageSurface *ruda_import_surface(
     return checker->imports->surfaces[binding->surface_index];
 }
 
-bool ruda_check_import_binding_exists(
-    const RudaChecker *checker,
+bool mmay_check_import_binding_exists(
+    const MarimayChecker *checker,
     const unsigned char *name,
     size_t name_length
 ) {
-    return ruda_import_binding(checker, name, name_length, false) != NULL;
+    return mmay_import_binding(checker, name, name_length, false) != NULL;
 }
 
-bool ruda_check_import_namespace_exists(
-    const RudaChecker *checker,
+bool mmay_check_import_namespace_exists(
+    const MarimayChecker *checker,
     const unsigned char *name,
     size_t name_length
 ) {
-    return ruda_import_binding(checker, name, name_length, true) != NULL;
+    return mmay_import_binding(checker, name, name_length, true) != NULL;
 }
 
-bool ruda_check_import_namespace_owns_enum(
-    const RudaChecker *checker,
-    RudaCheckName namespace_name,
-    RudaTypeId type
+bool mmay_check_import_namespace_owns_enum(
+    const MarimayChecker *checker,
+    MarimayCheckName namespace_name,
+    MarimayTypeId type
 ) {
     const unsigned char *namespace_bytes = NULL;
     size_t namespace_length = 0;
-    const RudaCheckImportBinding *binding = NULL;
-    const RudaCheckPackageSurface *surface = NULL;
+    const MarimayCheckImportBinding *binding = NULL;
+    const MarimayCheckPackageSurface *surface = NULL;
     size_t index = 0;
-    if (checker == NULL || type == RUDA_TYPE_INVALID
-        || !ruda_import_name(
+    if (checker == NULL || type == MMAY_TYPE_INVALID
+        || !mmay_import_name(
             namespace_name, &namespace_bytes, &namespace_length
         )) {
         return false;
     }
-    binding = ruda_import_binding(
+    binding = mmay_import_binding(
         checker, namespace_bytes, namespace_length, true
     );
-    surface = ruda_import_surface(checker, binding);
+    surface = mmay_import_surface(checker, binding);
     if (surface == NULL) {
         return false;
     }
     for (index = 0; index < surface->enum_count; index += 1) {
-        const RudaCheckedEnum *enum_value = ruda_checked_enum(
+        const MarimayCheckedEnum *enum_value = mmay_checked_enum(
             checker->result, surface->enum_start + index
         );
         if (enum_value != NULL && enum_value->is_public
-            && ruda_checker_private_type_matches_nominal(
+            && mmay_checker_private_type_matches_nominal(
                 checker,
                 type,
                 enum_value->symbol,
@@ -116,7 +116,7 @@ bool ruda_check_import_namespace_owns_enum(
         }
     }
     for (index = 0; index < surface->type_alias_count; index += 1) {
-        const RudaCheckedTypeAlias *alias = ruda_checked_type_alias(
+        const MarimayCheckedTypeAlias *alias = mmay_checked_type_alias(
             checker->result, surface->type_alias_start + index
         );
         if (alias != NULL && alias->is_public
@@ -127,23 +127,23 @@ bool ruda_check_import_namespace_owns_enum(
     return false;
 }
 
-static bool ruda_import_surface_type(
-    const RudaChecker *checker,
-    const RudaCheckPackageSurface *surface,
+static bool mmay_import_surface_type(
+    const MarimayChecker *checker,
+    const MarimayCheckPackageSurface *surface,
     const unsigned char *name,
     size_t name_length,
-    RudaTypeId *type,
-    RudaSymbolId *symbol,
+    MarimayTypeId *type,
+    MarimaySymbolId *symbol,
     size_t *generic_arity,
     bool *exists_private
 ) {
     size_t index = 0;
     *exists_private = false;
     for (index = 0; index < surface->record_count; index += 1) {
-        const RudaCheckedRecord *item = ruda_checked_record(
+        const MarimayCheckedRecord *item = mmay_checked_record(
             checker->result, surface->record_start + index
         );
-        if (item != NULL && ruda_import_equal(
+        if (item != NULL && mmay_import_equal(
                 item->name.data, item->name.length, name, name_length)) {
             *exists_private = !item->is_public;
             if (item->is_public) {
@@ -156,10 +156,10 @@ static bool ruda_import_surface_type(
         }
     }
     for (index = 0; index < surface->enum_count; index += 1) {
-        const RudaCheckedEnum *item = ruda_checked_enum(
+        const MarimayCheckedEnum *item = mmay_checked_enum(
             checker->result, surface->enum_start + index
         );
-        if (item != NULL && ruda_import_equal(
+        if (item != NULL && mmay_import_equal(
                 item->name.data, item->name.length, name, name_length)) {
             *exists_private = !item->is_public;
             if (item->is_public) {
@@ -172,10 +172,10 @@ static bool ruda_import_surface_type(
         }
     }
     for (index = 0; index < surface->interface_count; index += 1) {
-        const RudaCheckedInterface *item = ruda_checked_interface(
+        const MarimayCheckedInterface *item = mmay_checked_interface(
             checker->result, surface->interface_start + index
         );
-        if (item != NULL && ruda_import_equal(
+        if (item != NULL && mmay_import_equal(
                 item->name.data, item->name.length, name, name_length)) {
             *exists_private = !item->is_public;
             if (item->is_public) {
@@ -188,10 +188,10 @@ static bool ruda_import_surface_type(
         }
     }
     for (index = 0; index < surface->type_alias_count; index += 1) {
-        const RudaCheckedTypeAlias *item = ruda_checked_type_alias(
+        const MarimayCheckedTypeAlias *item = mmay_checked_type_alias(
             checker->result, surface->type_alias_start + index
         );
-        if (item != NULL && ruda_import_equal(
+        if (item != NULL && mmay_import_equal(
                 item->name.data, item->name.length, name, name_length)) {
             *exists_private = !item->is_public;
             if (item->is_public) {
@@ -206,83 +206,83 @@ static bool ruda_import_surface_type(
     return false;
 }
 
-static bool ruda_import_specialize_type(
-    RudaChecker *checker,
-    const RudaAstNode *type_node,
-    RudaSymbolId symbol,
+static bool mmay_import_specialize_type(
+    MarimayChecker *checker,
+    const MarimayAstNode *type_node,
+    MarimaySymbolId symbol,
     size_t generic_arity,
-    RudaTypeId *type
+    MarimayTypeId *type
 ) {
-    const RudaAstNode *type_arguments =
-        ruda_checker_private_check_child_node(
-            type_node, RUDA_SYNTAX_TYPE_ARGUMENTS, 0
+    const MarimayAstNode *type_arguments =
+        mmay_checker_private_check_child_node(
+            type_node, MMAY_SYNTAX_TYPE_ARGUMENTS, 0
         );
-    RudaVector arguments;
+    MarimayVector arguments;
     bool initialized = false;
     memset(&arguments, 0, sizeof(arguments));
     if (type_arguments == NULL) {
         if (generic_arity == 0) return true;
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "generic record or enum type requires explicit type arguments",
             type_node->start,
             type_node->end
         );
-        *type = RUDA_TYPE_INVALID;
-        return !ruda_checker_has_failed(checker);
+        *type = MMAY_TYPE_INVALID;
+        return !mmay_checker_has_failed(checker);
     }
-    *type = RUDA_TYPE_INVALID;
-    if (!ruda_vector_init(
-            &arguments, checker->result->allocator, sizeof(RudaTypeId)
+    *type = MMAY_TYPE_INVALID;
+    if (!mmay_vector_init(
+            &arguments, checker->result->allocator, sizeof(MarimayTypeId)
         )) {
-        ruda_checker_fail(checker, RUDA_CHECK_ALLOCATION_FAILED);
+        mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
     initialized = true;
-    if (!ruda_checker_private_parse_type_arguments(
+    if (!mmay_checker_private_parse_type_arguments(
             checker, type_arguments, &arguments
         )) goto cleanup;
     if (generic_arity == 0 || arguments.length != generic_arity) {
-        (void)ruda_checker_add_diagnostic(
+        (void)mmay_checker_add_diagnostic(
             checker,
-            RUDA_DIAGNOSTIC_TYPE_MISMATCH,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             generic_arity == 0
                 ? "type does not accept generic arguments"
                 : "generic type argument count does not match its declaration",
             type_node->start,
             type_node->end
         );
-        *type = RUDA_TYPE_INVALID;
+        *type = MMAY_TYPE_INVALID;
         goto cleanup;
     }
-    if (!ruda_checker_private_intern_generic_nominal(
+    if (!mmay_checker_private_intern_generic_nominal(
             checker,
-            RUDA_TYPE_KIND_NOMINAL,
+            MMAY_TYPE_KIND_NOMINAL,
             symbol,
             &arguments,
             type
         )) goto cleanup;
 cleanup:
-    if (initialized) ruda_vector_dispose(&arguments);
-    return !ruda_checker_has_failed(checker) && *type != RUDA_TYPE_INVALID;
+    if (initialized) mmay_vector_dispose(&arguments);
+    return !mmay_checker_has_failed(checker) && *type != MMAY_TYPE_INVALID;
 }
 
-bool ruda_check_import_type(
-    RudaChecker *checker,
-    const RudaAstNode *type_node,
-    RudaTypeId *type,
+bool mmay_check_import_type(
+    MarimayChecker *checker,
+    const MarimayAstNode *type_node,
+    MarimayTypeId *type,
     bool *resolved
 ) {
-    const RudaSyntaxToken *first = NULL;
-    const RudaSyntaxToken *second = NULL;
+    const MarimaySyntaxToken *first = NULL;
+    const MarimaySyntaxToken *second = NULL;
     const unsigned char *first_bytes = NULL;
     const unsigned char *second_bytes = NULL;
     size_t first_length = 0;
     size_t second_length = 0;
-    const RudaCheckImportBinding *binding = NULL;
-    const RudaCheckPackageSurface *surface = NULL;
-    RudaSymbolId symbol;
+    const MarimayCheckImportBinding *binding = NULL;
+    const MarimayCheckPackageSurface *surface = NULL;
+    MarimaySymbolId symbol;
     size_t generic_arity = 0;
     bool exists_private = false;
     if (checker == NULL || type_node == NULL || type == NULL
@@ -291,11 +291,11 @@ bool ruda_check_import_type(
     }
     *resolved = false;
     memset(&symbol, 0, sizeof(symbol));
-    first = ruda_checker_private_check_child_token(
-        type_node, RUDA_TOKEN_IDENTIFIER, 0
+    first = mmay_checker_private_check_child_token(
+        type_node, MMAY_TOKEN_IDENTIFIER, 0
     );
-    second = ruda_checker_private_check_child_token(
-        type_node, RUDA_TOKEN_IDENTIFIER, 1
+    second = mmay_checker_private_check_child_token(
+        type_node, MMAY_TOKEN_IDENTIFIER, 1
     );
     if (first == NULL || first->synthetic) {
         return true;
@@ -303,14 +303,14 @@ bool ruda_check_import_type(
     first_bytes = checker->source + first->start;
     first_length = first->end - first->start;
     if (second == NULL) {
-        binding = ruda_import_binding(
+        binding = mmay_import_binding(
             checker, first_bytes, first_length, false
         );
         if (binding == NULL || binding->is_namespace) {
             return true;
         }
-        surface = ruda_import_surface(checker, binding);
-        if (surface != NULL && ruda_import_surface_type(
+        surface = mmay_import_surface(checker, binding);
+        if (surface != NULL && mmay_import_surface_type(
                 checker,
                 surface,
                 binding->original,
@@ -321,11 +321,11 @@ bool ruda_check_import_type(
                 &exists_private
             )) {
             *resolved = true;
-            return ruda_import_specialize_type(
+            return mmay_import_specialize_type(
                     checker, type_node, symbol, generic_arity, type
-                ) && ruda_check_record_occurrence(
+                ) && mmay_check_record_occurrence(
                 checker,
-                (RudaCheckName){checker->ast->snapshot, first->start, first->end},
+                (MarimayCheckName){checker->ast->snapshot, first->start, first->end},
                 symbol
             );
         }
@@ -333,13 +333,13 @@ bool ruda_check_import_type(
     }
     second_bytes = checker->source + second->start;
     second_length = second->end - second->start;
-    binding = ruda_import_binding(checker, first_bytes, first_length, true);
+    binding = mmay_import_binding(checker, first_bytes, first_length, true);
     if (binding == NULL) {
         return true;
     }
     *resolved = true;
-    surface = ruda_import_surface(checker, binding);
-    if (surface != NULL && ruda_import_surface_type(
+    surface = mmay_import_surface(checker, binding);
+    if (surface != NULL && mmay_import_surface_type(
             checker,
             surface,
             second_bytes,
@@ -349,35 +349,35 @@ bool ruda_check_import_type(
             &generic_arity,
             &exists_private
         )) {
-        return ruda_import_specialize_type(
+        return mmay_import_specialize_type(
                 checker, type_node, symbol, generic_arity, type
-            ) && ruda_check_record_occurrence(
+            ) && mmay_check_record_occurrence(
             checker,
-            (RudaCheckName){checker->ast->snapshot, second->start, second->end},
+            (MarimayCheckName){checker->ast->snapshot, second->start, second->end},
             symbol
         );
     }
-    *type = RUDA_TYPE_INVALID;
-    (void)ruda_checker_add_diagnostic(
+    *type = MMAY_TYPE_INVALID;
+    (void)mmay_checker_add_diagnostic(
         checker,
-        exists_private ? RUDA_DIAGNOSTIC_PRIVATE_IMPORT
-            : RUDA_DIAGNOSTIC_UNKNOWN_IMPORT,
+        exists_private ? MMAY_DIAGNOSTIC_PRIVATE_IMPORT
+            : MMAY_DIAGNOSTIC_UNKNOWN_IMPORT,
         exists_private ? "imported type is package-private"
             : "unknown public type in imported package",
         second->start,
         second->end
     );
-    return !ruda_checker_has_failed(checker);
+    return !mmay_checker_has_failed(checker);
 }
 
-static bool ruda_import_surface_active(
-    const RudaChecker *checker,
+static bool mmay_import_surface_active(
+    const MarimayChecker *checker,
     size_t surface_index
 ) {
     size_t index = 0;
     for (index = 0; checker != NULL && checker->imports != NULL
         && index < checker->imports->binding_count; index += 1) {
-        const RudaCheckImportBinding *binding = &checker->imports->bindings[index];
+        const MarimayCheckImportBinding *binding = &checker->imports->bindings[index];
         if (binding->ast == checker->ast
             && binding->surface_index == surface_index) {
             return true;
@@ -386,30 +386,30 @@ static bool ruda_import_surface_active(
     return false;
 }
 
-bool ruda_check_imported_nominal(
-    const RudaChecker *checker,
-    RudaTypeId type,
-    RudaSymbolId *symbol
+bool mmay_check_imported_nominal(
+    const MarimayChecker *checker,
+    MarimayTypeId type,
+    MarimaySymbolId *symbol
 ) {
-    const RudaTypeDescriptor *descriptor = checker == NULL ? NULL
-        : ruda_type_descriptor(&checker->result->types, type);
+    const MarimayTypeDescriptor *descriptor = checker == NULL ? NULL
+        : mmay_type_descriptor(&checker->result->types, type);
     size_t surface_index = 0;
-    if (descriptor == NULL || descriptor->kind != RUDA_TYPE_KIND_NOMINAL
+    if (descriptor == NULL || descriptor->kind != MMAY_TYPE_KIND_NOMINAL
         || symbol == NULL || checker->imports == NULL) {
         return false;
     }
     for (surface_index = 0; surface_index < checker->imports->surface_count;
         surface_index += 1) {
-        if (ruda_import_surface_active(checker, surface_index)) {
-            const RudaCheckPackageSurface *surface =
+        if (mmay_import_surface_active(checker, surface_index)) {
+            const MarimayCheckPackageSurface *surface =
                 checker->imports->surfaces[surface_index];
             size_t index = 0;
             for (index = 0; index < surface->record_count; index += 1) {
-                const RudaCheckedRecord *item = ruda_checked_record(
+                const MarimayCheckedRecord *item = mmay_checked_record(
                     checker->result, surface->record_start + index
                 );
                 if (item != NULL && item->is_public
-                    && ruda_checker_private_type_matches_nominal(
+                    && mmay_checker_private_type_matches_nominal(
                         checker,
                         type,
                         item->symbol,
@@ -420,11 +420,11 @@ bool ruda_check_imported_nominal(
                 }
             }
             for (index = 0; index < surface->enum_count; index += 1) {
-                const RudaCheckedEnum *item = ruda_checked_enum(
+                const MarimayCheckedEnum *item = mmay_checked_enum(
                     checker->result, surface->enum_start + index
                 );
                 if (item != NULL && item->is_public
-                    && ruda_checker_private_type_matches_nominal(
+                    && mmay_checker_private_type_matches_nominal(
                         checker,
                         type,
                         item->symbol,
@@ -439,9 +439,9 @@ bool ruda_check_imported_nominal(
     return false;
 }
 
-static bool ruda_import_callable_from_checked(
-    const RudaCheckedFunction *function,
-    RudaCheckCallable *callable
+static bool mmay_import_callable_from_checked(
+    const MarimayCheckedFunction *function,
+    MarimayCheckCallable *callable
 ) {
     if (function == NULL || callable == NULL || !function->mir.initialized
         || function->mir.parameter_count > function->mir.register_types.length) {
@@ -459,25 +459,25 @@ static bool ruda_import_callable_from_checked(
     return true;
 }
 
-static RudaCheckCallResolution ruda_import_resolve_surface_function(
-    const RudaChecker *checker,
-    const RudaCheckPackageSurface *surface,
+static MarimayCheckCallResolution mmay_import_resolve_surface_function(
+    const MarimayChecker *checker,
+    const MarimayCheckPackageSurface *surface,
     const unsigned char *name,
     size_t name_length,
     bool receiver_known,
-    RudaTypeId receiver_type,
-    RudaCheckCallable *callable
+    MarimayTypeId receiver_type,
+    MarimayCheckCallable *callable
 ) {
-    const RudaCheckedFunction *only = NULL;
+    const MarimayCheckedFunction *only = NULL;
     size_t match_count = 0;
     size_t index = 0;
     bool name_exists = false;
     bool private_name_exists = false;
     for (index = 0; index < surface->function_count; index += 1) {
-        const RudaCheckedFunction *function = ruda_checked_function(
+        const MarimayCheckedFunction *function = mmay_checked_function(
             checker->result, surface->function_start + index
         );
-        if (function == NULL || !ruda_import_equal(
+        if (function == NULL || !mmay_import_equal(
                 function->name.data, function->name.length, name, name_length
             )) {
             continue;
@@ -493,44 +493,44 @@ static RudaCheckCallResolution ruda_import_resolve_surface_function(
             match_count += 1;
         }
     }
-    if (match_count == 1 && ruda_import_callable_from_checked(only, callable)) {
-        return RUDA_CHECK_CALL_FOUND;
+    if (match_count == 1 && mmay_import_callable_from_checked(only, callable)) {
+        return MMAY_CHECK_CALL_FOUND;
     }
     if (!receiver_known && match_count > 1) {
-        return RUDA_CHECK_CALL_RECEIVER_REQUIRED;
+        return MMAY_CHECK_CALL_RECEIVER_REQUIRED;
     }
     if (!name_exists && private_name_exists) {
-        return RUDA_CHECK_CALL_PRIVATE_IMPORT;
+        return MMAY_CHECK_CALL_PRIVATE_IMPORT;
     }
-    return name_exists ? RUDA_CHECK_CALL_OTHER_NOMINAL
-        : RUDA_CHECK_CALL_UNKNOWN_NAME;
+    return name_exists ? MMAY_CHECK_CALL_OTHER_NOMINAL
+        : MMAY_CHECK_CALL_UNKNOWN_NAME;
 }
 
-RudaCheckCallResolution ruda_check_resolve_imported_named_call(
-    const RudaChecker *checker,
-    RudaCheckName name,
-    RudaTypeId receiver_type,
-    RudaCheckCallable *callable
+MarimayCheckCallResolution mmay_check_resolve_imported_named_call(
+    const MarimayChecker *checker,
+    MarimayCheckName name,
+    MarimayTypeId receiver_type,
+    MarimayCheckCallable *callable
 ) {
     const unsigned char *name_bytes = NULL;
     size_t name_length = 0;
-    const RudaCheckImportBinding *binding = NULL;
-    const RudaCheckPackageSurface *surface = NULL;
+    const MarimayCheckImportBinding *binding = NULL;
+    const MarimayCheckPackageSurface *surface = NULL;
     if (checker == NULL || callable == NULL
-        || !ruda_import_name(name, &name_bytes, &name_length)) {
-        return RUDA_CHECK_CALL_INTERNAL_ERROR;
+        || !mmay_import_name(name, &name_bytes, &name_length)) {
+        return MMAY_CHECK_CALL_INTERNAL_ERROR;
     }
-    binding = ruda_import_binding(
+    binding = mmay_import_binding(
         checker,
         name_bytes,
         name_length,
         false
     );
-    surface = ruda_import_surface(checker, binding);
+    surface = mmay_import_surface(checker, binding);
     if (binding == NULL || binding->is_namespace || surface == NULL) {
-        return RUDA_CHECK_CALL_UNKNOWN_NAME;
+        return MMAY_CHECK_CALL_UNKNOWN_NAME;
     }
-    return ruda_import_resolve_surface_function(
+    return mmay_import_resolve_surface_function(
         checker,
         surface,
         binding->original,
@@ -541,14 +541,14 @@ RudaCheckCallResolution ruda_check_resolve_imported_named_call(
     );
 }
 
-RudaCheckCallResolution ruda_check_resolve_imported_call(
-    const RudaChecker *checker,
-    RudaCheckName namespace_name,
+MarimayCheckCallResolution mmay_check_resolve_imported_call(
+    const MarimayChecker *checker,
+    MarimayCheckName namespace_name,
     bool has_namespace,
-    RudaCheckName name,
+    MarimayCheckName name,
     bool receiver_known,
-    RudaTypeId receiver_type,
-    RudaCheckCallable *callable
+    MarimayTypeId receiver_type,
+    MarimayCheckCallable *callable
 ) {
     const unsigned char *name_bytes = NULL;
     const unsigned char *namespace_bytes = NULL;
@@ -558,29 +558,29 @@ RudaCheckCallResolution ruda_check_resolve_imported_call(
     bool name_seen = false;
     bool private_name_seen = false;
     if (checker == NULL || callable == NULL
-        || !ruda_import_name(name, &name_bytes, &name_length)
-        || (has_namespace && !ruda_import_name(
+        || !mmay_import_name(name, &name_bytes, &name_length)
+        || (has_namespace && !mmay_import_name(
             namespace_name, &namespace_bytes, &namespace_length))) {
-        return RUDA_CHECK_CALL_INTERNAL_ERROR;
+        return MMAY_CHECK_CALL_INTERNAL_ERROR;
     }
     memset(callable, 0, sizeof(*callable));
     if (has_namespace || !receiver_known) {
-        const RudaCheckImportBinding *binding = ruda_import_binding(
+        const MarimayCheckImportBinding *binding = mmay_import_binding(
             checker,
             has_namespace ? namespace_bytes : name_bytes,
             has_namespace ? namespace_length : name_length,
             has_namespace
         );
-        const RudaCheckPackageSurface *surface = ruda_import_surface(
+        const MarimayCheckPackageSurface *surface = mmay_import_surface(
             checker, binding
         );
         if (binding == NULL || surface == NULL
             || (!has_namespace && binding->is_namespace)) {
-            return RUDA_CHECK_CALL_UNKNOWN_NAME;
+            return MMAY_CHECK_CALL_UNKNOWN_NAME;
         }
         {
-            RudaCheckCallResolution resolution =
-                ruda_import_resolve_surface_function(
+            MarimayCheckCallResolution resolution =
+                mmay_import_resolve_surface_function(
             checker,
             surface,
             has_namespace ? name_bytes : binding->original,
@@ -590,19 +590,19 @@ RudaCheckCallResolution ruda_check_resolve_imported_call(
             callable
         );
             if (has_namespace
-                && resolution == RUDA_CHECK_CALL_UNKNOWN_NAME) {
-                return RUDA_CHECK_CALL_UNKNOWN_IMPORT;
+                && resolution == MMAY_CHECK_CALL_UNKNOWN_NAME) {
+                return MMAY_CHECK_CALL_UNKNOWN_IMPORT;
             }
             return resolution;
         }
     }
     for (index = 0; checker->imports != NULL
         && index < checker->imports->surface_count; index += 1) {
-        RudaCheckCallResolution resolution;
-        if (!ruda_import_surface_active(checker, index)) {
+        MarimayCheckCallResolution resolution;
+        if (!mmay_import_surface_active(checker, index)) {
             continue;
         }
-        resolution = ruda_import_resolve_surface_function(
+        resolution = mmay_import_resolve_surface_function(
             checker,
             checker->imports->surfaces[index],
             name_bytes,
@@ -611,41 +611,41 @@ RudaCheckCallResolution ruda_check_resolve_imported_call(
             receiver_type,
             callable
         );
-        if (resolution == RUDA_CHECK_CALL_FOUND) {
+        if (resolution == MMAY_CHECK_CALL_FOUND) {
             return resolution;
         }
-        if (resolution == RUDA_CHECK_CALL_PRIVATE_IMPORT) {
+        if (resolution == MMAY_CHECK_CALL_PRIVATE_IMPORT) {
             private_name_seen = true;
-        } else if (resolution != RUDA_CHECK_CALL_UNKNOWN_NAME) {
+        } else if (resolution != MMAY_CHECK_CALL_UNKNOWN_NAME) {
             name_seen = true;
         }
     }
     if (name_seen) {
-        return RUDA_CHECK_CALL_OTHER_NOMINAL;
+        return MMAY_CHECK_CALL_OTHER_NOMINAL;
     }
-    return private_name_seen ? RUDA_CHECK_CALL_PRIVATE_IMPORT
-        : RUDA_CHECK_CALL_UNKNOWN_NAME;
+    return private_name_seen ? MMAY_CHECK_CALL_PRIVATE_IMPORT
+        : MMAY_CHECK_CALL_UNKNOWN_NAME;
 }
 
-const RudaCheckedRecord *ruda_check_imported_record_by_type(
-    const RudaChecker *checker,
-    RudaTypeId type
+const MarimayCheckedRecord *mmay_check_imported_record_by_type(
+    const MarimayChecker *checker,
+    MarimayTypeId type
 ) {
     size_t surface_index = 0;
     for (surface_index = 0; checker != NULL && checker->imports != NULL
         && surface_index < checker->imports->surface_count; surface_index += 1) {
-        const RudaCheckPackageSurface *surface =
+        const MarimayCheckPackageSurface *surface =
             checker->imports->surfaces[surface_index];
         size_t index = 0;
-        if (!ruda_import_surface_active(checker, surface_index)) {
+        if (!mmay_import_surface_active(checker, surface_index)) {
             continue;
         }
         for (index = 0; index < surface->record_count; index += 1) {
-            const RudaCheckedRecord *record = ruda_checked_record(
+            const MarimayCheckedRecord *record = mmay_checked_record(
                 checker->result, surface->record_start + index
             );
             if (record != NULL && record->is_public
-                && ruda_checker_private_type_matches_nominal(
+                && mmay_checker_private_type_matches_nominal(
                     checker,
                     type,
                     record->symbol,
@@ -658,25 +658,25 @@ const RudaCheckedRecord *ruda_check_imported_record_by_type(
     return NULL;
 }
 
-const RudaCheckedEnum *ruda_check_imported_enum_by_type(
-    const RudaChecker *checker,
-    RudaTypeId type
+const MarimayCheckedEnum *mmay_check_imported_enum_by_type(
+    const MarimayChecker *checker,
+    MarimayTypeId type
 ) {
     size_t surface_index = 0;
     for (surface_index = 0; checker != NULL && checker->imports != NULL
         && surface_index < checker->imports->surface_count; surface_index += 1) {
-        const RudaCheckPackageSurface *surface =
+        const MarimayCheckPackageSurface *surface =
             checker->imports->surfaces[surface_index];
         size_t index = 0;
-        if (!ruda_import_surface_active(checker, surface_index)) {
+        if (!mmay_import_surface_active(checker, surface_index)) {
             continue;
         }
         for (index = 0; index < surface->enum_count; index += 1) {
-            const RudaCheckedEnum *enum_value = ruda_checked_enum(
+            const MarimayCheckedEnum *enum_value = mmay_checked_enum(
                 checker->result, surface->enum_start + index
             );
             if (enum_value != NULL && enum_value->is_public
-                && ruda_checker_private_type_matches_nominal(
+                && mmay_checker_private_type_matches_nominal(
                     checker,
                     type,
                     enum_value->symbol,
@@ -686,7 +686,7 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_type(
             }
         }
         for (index = 0; index < surface->type_alias_count; index += 1) {
-            const RudaCheckedTypeAlias *alias = ruda_checked_type_alias(
+            const MarimayCheckedTypeAlias *alias = mmay_checked_type_alias(
                 checker->result, surface->type_alias_start + index
             );
             size_t enum_index = 0;
@@ -697,11 +697,11 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_type(
             for (enum_index = 0;
                 enum_index < checker->result->enums.length;
                 enum_index += 1) {
-                const RudaCheckedEnum *enum_value = ruda_checked_enum(
+                const MarimayCheckedEnum *enum_value = mmay_checked_enum(
                     checker->result, enum_index
                 );
                 if (enum_value != NULL
-                    && ruda_checker_private_type_matches_nominal(
+                    && mmay_checker_private_type_matches_nominal(
                         checker,
                         type,
                         enum_value->symbol,
@@ -715,11 +715,11 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_type(
     return NULL;
 }
 
-const RudaCheckedEnum *ruda_check_imported_enum_by_name(
-    const RudaChecker *checker,
-    RudaCheckName namespace_name,
+const MarimayCheckedEnum *mmay_check_imported_enum_by_name(
+    const MarimayChecker *checker,
+    MarimayCheckName namespace_name,
     bool has_namespace,
-    RudaCheckName enum_name,
+    MarimayCheckName enum_name,
     bool *resolved,
     bool *exists_private
 ) {
@@ -727,19 +727,19 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_name(
     const unsigned char *enum_bytes = NULL;
     size_t namespace_length = 0;
     size_t enum_length = 0;
-    const RudaCheckImportBinding *binding = NULL;
-    const RudaCheckPackageSurface *surface = NULL;
+    const MarimayCheckImportBinding *binding = NULL;
+    const MarimayCheckPackageSurface *surface = NULL;
     size_t index = 0;
     if (checker == NULL || resolved == NULL || exists_private == NULL
-        || !ruda_import_name(enum_name, &enum_bytes, &enum_length)
-        || (has_namespace && !ruda_import_name(
+        || !mmay_import_name(enum_name, &enum_bytes, &enum_length)
+        || (has_namespace && !mmay_import_name(
             namespace_name, &namespace_bytes, &namespace_length
         ))) {
         return NULL;
     }
     *resolved = false;
     *exists_private = false;
-    binding = ruda_import_binding(
+    binding = mmay_import_binding(
         checker,
         has_namespace ? namespace_bytes : enum_bytes,
         has_namespace ? namespace_length : enum_length,
@@ -749,7 +749,7 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_name(
         return NULL;
     }
     *resolved = true;
-    surface = ruda_import_surface(checker, binding);
+    surface = mmay_import_surface(checker, binding);
     if (surface == NULL) {
         return NULL;
     }
@@ -758,10 +758,10 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_name(
         enum_length = binding->original_length;
     }
     for (index = 0; index < surface->enum_count; index += 1) {
-        const RudaCheckedEnum *enum_value = ruda_checked_enum(
+        const MarimayCheckedEnum *enum_value = mmay_checked_enum(
             checker->result, surface->enum_start + index
         );
-        if (enum_value != NULL && ruda_import_equal(
+        if (enum_value != NULL && mmay_import_equal(
                 enum_value->name.data,
                 enum_value->name.length,
                 enum_bytes,
@@ -772,11 +772,11 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_name(
         }
     }
     for (index = 0; index < surface->type_alias_count; index += 1) {
-        const RudaCheckedTypeAlias *alias = ruda_checked_type_alias(
+        const MarimayCheckedTypeAlias *alias = mmay_checked_type_alias(
             checker->result, surface->type_alias_start + index
         );
         size_t enum_index = 0;
-        if (alias == NULL || !ruda_import_equal(
+        if (alias == NULL || !mmay_import_equal(
                 alias->name.data,
                 alias->name.length,
                 enum_bytes,
@@ -791,11 +791,11 @@ const RudaCheckedEnum *ruda_check_imported_enum_by_name(
         for (enum_index = 0;
             enum_index < checker->result->enums.length;
             enum_index += 1) {
-            const RudaCheckedEnum *enum_value = ruda_checked_enum(
+            const MarimayCheckedEnum *enum_value = mmay_checked_enum(
                 checker->result, enum_index
             );
             if (enum_value != NULL
-                && ruda_checker_private_type_matches_nominal(
+                && mmay_checker_private_type_matches_nominal(
                     checker,
                     alias->target_type,
                     enum_value->symbol,

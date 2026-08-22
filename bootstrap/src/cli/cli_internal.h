@@ -1,21 +1,21 @@
-#ifndef RUDA_CLI_INTERNAL_H
-#define RUDA_CLI_INTERNAL_H
+#ifndef MMAY_CLI_INTERNAL_H
+#define MMAY_CLI_INTERNAL_H
 
 #include <stdbool.h>
 #include <stddef.h>
 
-#include "ruda/base/owned_bytes.h"
-#include "ruda/base/stream.h"
-#include "ruda/base/vector.h"
-#include "ruda/check/service_types.h"
-#include "ruda/cli.h"
-#include "ruda/diagnostic.h"
-#include "ruda/manifest/manifest.h"
-#include "ruda/platform/file.h"
+#include "mmay/base/owned_bytes.h"
+#include "mmay/base/stream.h"
+#include "mmay/base/vector.h"
+#include "mmay/check/service_types.h"
+#include "mmay/cli.h"
+#include "mmay/diagnostic.h"
+#include "mmay/manifest/manifest.h"
+#include "mmay/platform/file.h"
 
-typedef struct RudaCliOptions {
+typedef struct MarimayCliOptions {
     const char *tool_executable_path;
-    RudaDiagnosticStyle diagnostic_style;
+    MarimayDiagnosticStyle diagnostic_style;
     const char *command;
     size_t command_index;
     const char *help_target;
@@ -49,64 +49,64 @@ typedef struct RudaCliOptions {
     size_t program_argument_count;
     bool quiet;
     bool verbose;
-} RudaCliOptions;
+} MarimayCliOptions;
 
-typedef enum RudaCliFormatAction {
-    RUDA_CLI_FORMAT_STDOUT,
-    RUDA_CLI_FORMAT_CHECK,
-    RUDA_CLI_FORMAT_DIFF,
-    RUDA_CLI_FORMAT_WRITE
-} RudaCliFormatAction;
+typedef enum MarimayCliFormatAction {
+    MMAY_CLI_FORMAT_STDOUT,
+    MMAY_CLI_FORMAT_CHECK,
+    MMAY_CLI_FORMAT_DIFF,
+    MMAY_CLI_FORMAT_WRITE
+} MarimayCliFormatAction;
 
-typedef enum RudaCliFormatTargetStatus {
-    RUDA_CLI_FORMAT_TARGET_OK,
-    RUDA_CLI_FORMAT_TARGET_INPUT_ERROR,
-    RUDA_CLI_FORMAT_TARGET_LIMIT_REACHED,
-    RUDA_CLI_FORMAT_TARGET_ALLOCATION_FAILED
-} RudaCliFormatTargetStatus;
+typedef enum MarimayCliFormatTargetStatus {
+    MMAY_CLI_FORMAT_TARGET_OK,
+    MMAY_CLI_FORMAT_TARGET_INPUT_ERROR,
+    MMAY_CLI_FORMAT_TARGET_LIMIT_REACHED,
+    MMAY_CLI_FORMAT_TARGET_ALLOCATION_FAILED
+} MarimayCliFormatTargetStatus;
 
-typedef struct RudaCliFormatPath { RudaOwnedBytes path; } RudaCliFormatPath;
-typedef struct RudaCliFormatDirectory {
-    RudaOwnedBytes path;
+typedef struct MarimayCliFormatPath { MarimayOwnedBytes path; } MarimayCliFormatPath;
+typedef struct MarimayCliFormatDirectory {
+    MarimayOwnedBytes path;
     size_t depth;
-} RudaCliFormatDirectory;
+} MarimayCliFormatDirectory;
 
 enum {
-    RUDA_CLI_FORMAT_MAX_PATH_BYTES = 32768,
-    RUDA_CLI_FORMAT_MAX_NAME_BYTES = 4096,
-    RUDA_CLI_FORMAT_MAX_DEPTH = 256,
-    RUDA_CLI_FORMAT_MAX_DIRECTORIES = 100000,
-    RUDA_CLI_FORMAT_MAX_ENTRIES = 1000000,
-    RUDA_CLI_FORMAT_MAX_FILES = 100000
+    MMAY_CLI_FORMAT_MAX_PATH_BYTES = 32768,
+    MMAY_CLI_FORMAT_MAX_NAME_BYTES = 4096,
+    MMAY_CLI_FORMAT_MAX_DEPTH = 256,
+    MMAY_CLI_FORMAT_MAX_DIRECTORIES = 100000,
+    MMAY_CLI_FORMAT_MAX_ENTRIES = 1000000,
+    MMAY_CLI_FORMAT_MAX_FILES = 100000
 };
 
-int ruda_cli_plain_error(RudaWriter error_writer, RudaDiagnosticStyle style,
+int mmay_cli_plain_error(MarimayWriter error_writer, MarimayDiagnosticStyle style,
     const char *code, const char *message, int exit_code);
-int ruda_cli_option_value_error(RudaWriter error_writer,
-    RudaDiagnosticStyle style, const char *code, size_t argument_index,
+int mmay_cli_option_value_error(MarimayWriter error_writer,
+    MarimayDiagnosticStyle style, const char *code, size_t argument_index,
     const char *message);
-void ruda_cli_heap_limit_default(RudaCliOptions *options);
-int ruda_cli_heap_limit_parse(RudaCliOptions *options, const char *value,
-    size_t option_index, size_t value_index, RudaWriter error_writer);
-void ruda_display_argument(const char *argument, char *output, size_t capacity);
-bool ruda_cli_manifest_kind(const char *path, RudaManifestKind *kind);
-bool ruda_cli_source_path(const char *path);
-bool ruda_cli_format_file_path(const char *path);
-int ruda_cli_format_stdin(RudaSession *session, const RudaCliOptions *options,
-    RudaReadStream standard_input, RudaWriter standard_output,
-    RudaWriter standard_error);
-int ruda_cli_format_file(RudaSession *session, const RudaCliOptions *options,
-    RudaWriter standard_output, RudaWriter standard_error);
-int ruda_cli_format_target(RudaSession *session, const RudaCliOptions *options,
-    RudaWriter standard_output, RudaWriter standard_error);
-int ruda_cli_check(RudaSession *session, const RudaCliOptions *options,
-    RudaWriter standard_output, RudaWriter standard_error);
-int ruda_cli_run_program(RudaSession *session, const RudaCliOptions *options,
-    RudaWriter standard_output, RudaWriter standard_error);
-int ruda_cli_build_program(RudaSession *session, const RudaCliOptions *options,
-    RudaWriter standard_output, RudaWriter standard_error);
-int ruda_cli_test_program(RudaSession *session, const RudaCliOptions *options,
-    RudaWriter standard_output, RudaWriter standard_error);
-bool ruda_cli_optimize_checked_mir(RudaCompilerResult *compiler);
+void mmay_cli_heap_limit_default(MarimayCliOptions *options);
+int mmay_cli_heap_limit_parse(MarimayCliOptions *options, const char *value,
+    size_t option_index, size_t value_index, MarimayWriter error_writer);
+void mmay_display_argument(const char *argument, char *output, size_t capacity);
+bool mmay_cli_manifest_kind(const char *path, MarimayManifestKind *kind);
+bool mmay_cli_source_path(const char *path);
+bool mmay_cli_format_file_path(const char *path);
+int mmay_cli_format_stdin(MarimaySession *session, const MarimayCliOptions *options,
+    MarimayReadStream standard_input, MarimayWriter standard_output,
+    MarimayWriter standard_error);
+int mmay_cli_format_file(MarimaySession *session, const MarimayCliOptions *options,
+    MarimayWriter standard_output, MarimayWriter standard_error);
+int mmay_cli_format_target(MarimaySession *session, const MarimayCliOptions *options,
+    MarimayWriter standard_output, MarimayWriter standard_error);
+int mmay_cli_check(MarimaySession *session, const MarimayCliOptions *options,
+    MarimayWriter standard_output, MarimayWriter standard_error);
+int mmay_cli_run_program(MarimaySession *session, const MarimayCliOptions *options,
+    MarimayWriter standard_output, MarimayWriter standard_error);
+int mmay_cli_build_program(MarimaySession *session, const MarimayCliOptions *options,
+    MarimayWriter standard_output, MarimayWriter standard_error);
+int mmay_cli_test_program(MarimaySession *session, const MarimayCliOptions *options,
+    MarimayWriter standard_output, MarimayWriter standard_error);
+bool mmay_cli_optimize_checked_mir(MarimayCompilerResult *compiler);
 
 #endif

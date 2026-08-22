@@ -4,26 +4,26 @@
 #include "checker_generic_types_api.h"
 #include "package_imports_api.h"
 
-const RudaCheckFunctionDeclaration *ruda_checker_private_find_function_by_symbol(
-    const RudaChecker *checker,
-    RudaSymbolId symbol,
+const MarimayCheckFunctionDeclaration *mmay_checker_private_find_function_by_symbol(
+    const MarimayChecker *checker,
+    MarimaySymbolId symbol,
     size_t *index
 );
 
-bool ruda_checker_private_prepare_generic_arguments(
-    RudaChecker *checker,
-    const RudaCheckFunctionDeclaration *declaration,
-    const RudaTypeId *actual_types,
+bool mmay_checker_private_prepare_generic_arguments(
+    MarimayChecker *checker,
+    const MarimayCheckFunctionDeclaration *declaration,
+    const MarimayTypeId *actual_types,
     size_t actual_count,
-    const RudaVector *explicit_arguments,
-    RudaVector *arguments
+    const MarimayVector *explicit_arguments,
+    MarimayVector *arguments
 );
 
-bool ruda_checker_private_instantiate_function(
-    RudaChecker *checker,
+bool mmay_checker_private_instantiate_function(
+    MarimayChecker *checker,
     size_t base_index,
-    const RudaVector *arguments,
-    RudaCheckFunctionDeclaration **result
+    const MarimayVector *arguments,
+    MarimayCheckFunctionDeclaration **result
 );
 
 #endif

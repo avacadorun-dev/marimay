@@ -1,20 +1,20 @@
-set(RUDA_FUZZ_TARGETS
+set(MMAY_FUZZ_TARGETS
   bytecode
   frontend
   formatter
 )
 
-foreach(ruda_fuzz_target IN LISTS RUDA_FUZZ_TARGETS)
-  add_executable(ruda_fuzz_${ruda_fuzz_target}
-    ${ruda_fuzz_target}_fuzz.c
+foreach(mmay_fuzz_target IN LISTS MMAY_FUZZ_TARGETS)
+  add_executable(mmay_fuzz_${mmay_fuzz_target}
+    ${mmay_fuzz_target}_fuzz.c
     semantic_oracle.c
   )
-  target_link_libraries(ruda_fuzz_${ruda_fuzz_target} PRIVATE ruda_bootstrap)
-  target_include_directories(ruda_fuzz_${ruda_fuzz_target} PRIVATE
+  target_link_libraries(mmay_fuzz_${mmay_fuzz_target} PRIVATE mmay_bootstrap)
+  target_include_directories(mmay_fuzz_${mmay_fuzz_target} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
   )
-  target_compile_options(ruda_fuzz_${ruda_fuzz_target} PRIVATE -fsanitize=fuzzer)
-  target_link_options(ruda_fuzz_${ruda_fuzz_target} PRIVATE -fsanitize=fuzzer)
-  ruda_target_warnings(ruda_fuzz_${ruda_fuzz_target})
-  ruda_target_sanitizers(ruda_fuzz_${ruda_fuzz_target})
+  target_compile_options(mmay_fuzz_${mmay_fuzz_target} PRIVATE -fsanitize=fuzzer)
+  target_link_options(mmay_fuzz_${mmay_fuzz_target} PRIVATE -fsanitize=fuzzer)
+  mmay_target_warnings(mmay_fuzz_${mmay_fuzz_target})
+  mmay_target_sanitizers(mmay_fuzz_${mmay_fuzz_target})
 endforeach()

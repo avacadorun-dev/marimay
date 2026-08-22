@@ -10,37 +10,37 @@
 
 #if defined(_WIN32)
 #include <direct.h>
-#define ruda_check_test_chdir _chdir
+#define mmay_check_test_chdir _chdir
 #else
 #include <unistd.h>
-#define ruda_check_test_chdir chdir
+#define mmay_check_test_chdir chdir
 #endif
 
-#include "ruda/base/allocator.h"
-#include "ruda/cli.h"
-#include "ruda/platform/directory.h"
-#include "ruda/session.h"
+#include "mmay/base/allocator.h"
+#include "mmay/cli.h"
+#include "mmay/platform/directory.h"
+#include "mmay/session.h"
 
-static int ruda_check_test_run(
-    RudaSession *session,
+static int mmay_check_test_run(
+    MarimaySession *session,
     int argument_count,
     const char *const arguments[],
-    RudaTestBuffer *output,
-    RudaTestBuffer *error
+    MarimayTestBuffer *output,
+    MarimayTestBuffer *error
 ) {
-    ruda_test_buffer_init(output);
-    ruda_test_buffer_init(error);
-    return ruda_cli_run(
+    mmay_test_buffer_init(output);
+    mmay_test_buffer_init(error);
+    return mmay_cli_run(
         session,
         argument_count,
         arguments,
-        (RudaReadStream){0},
-        ruda_test_buffer_writer(output),
-        ruda_test_buffer_writer(error)
+        (MarimayReadStream){0},
+        mmay_test_buffer_writer(output),
+        mmay_test_buffer_writer(error)
     );
 }
 
-static bool ruda_check_test_read(
+static bool mmay_check_test_read(
     const char *path,
     unsigned char *bytes,
     size_t capacity,
@@ -60,7 +60,7 @@ static bool ruda_check_test_read(
     return ok;
 }
 
-static size_t ruda_check_test_newlines(const char *text) {
+static size_t mmay_check_test_newlines(const char *text) {
     size_t count = 0;
     while (*text != '\0') {
         if (*text == '\n') {
@@ -71,211 +71,221 @@ static size_t ruda_check_test_newlines(const char *text) {
     return count;
 }
 
-void ruda_test_cli_check(void) {
-    RudaSession session;
-    RudaTestBuffer output;
-    RudaTestBuffer error;
-    RudaOwnedBytes original_directory = {0};
-    const char *help[] = {"ruda", "check", "--help"};
-    const char *clean[] = {"ruda", "check", "check-tree"};
-    const char *package[] = {"ruda", "check", "check-tree/math"};
+void mmay_test_cli_check(void) {
+    MarimaySession session;
+    MarimayTestBuffer output;
+    MarimayTestBuffer error;
+    MarimayOwnedBytes original_directory = {0};
+    const char *help[] = {"mmay", "check", "--help"};
+    const char *clean[] = {"mmay", "check", "check-tree"};
+    const char *package[] = {"mmay", "check", "check-tree/math"};
     const char *standalone[] = {
-        "ruda", "check", "check-tree/math/arithmetic.ruda"
+        "mmay", "check", "check-tree/math/arithmetic.my"
     };
     const char *all_targets[] = {
-        "ruda", "check", "check-tree", "--all-targets"
+        "mmay", "check", "check-tree", "--all-targets"
     };
-    const char *bad_human[] = {"ruda", "check", "check-bad.ruda"};
+    const char *bad_human[] = {"mmay", "check", "check-bad.my"};
     const char *bad_json[] = {
-        "ruda", "check", "check-bad.ruda", "--diagnostic", "json"
+        "mmay", "check", "check-bad.my", "--diagnostic", "json"
     };
     const char *invalid_manifest[] = {
-        "ruda", "check", "check-invalid-manifest"
+        "mmay", "check", "check-invalid-manifest"
     };
     const char *invalid_identity[] = {
-        "ruda", "check", "check-invalid-identity"
+        "mmay", "check", "check-invalid-identity"
     };
     const char *invalid_identity_nul[] = {
-        "ruda", "check", "check-invalid-identity-nul"
+        "mmay", "check", "check-invalid-identity-nul"
+    };
+    const char *legacy_manifest[] = {
+        "mmay", "check", "check-legacy-manifest"
     };
     const char *missing_json[] = {
-        "ruda", "check", "missing-check-target", "--diagnostic", "json"
+        "mmay", "check", "missing-check-target", "--diagnostic", "json"
     };
     const char *incomplete[] = {
-        "ruda", "check", "check-incomplete.ruda"
+        "mmay", "check", "check-incomplete.my"
     };
     const char *explicit_test[] = {
-        "ruda", "check", "check-tree/ignored_test.ruda"
+        "mmay", "check", "check-tree/ignored_test.my"
     };
-    const char *no_target[] = {"ruda", "check"};
+    const char *no_target[] = {"mmay", "check"};
     unsigned char before[4096];
     unsigned char after[4096];
     size_t before_length = 0;
     size_t after_length = 0;
     int result = 0;
-    ruda_session_init(&session, ruda_system_allocator());
+    mmay_session_init(&session, mmay_system_allocator());
 
-    result = ruda_check_test_run(&session, 3, help, &output, &error);
-    RUDA_EXPECT(result == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT_SNAPSHOT("check-help.txt", output.bytes);
-    RUDA_EXPECT(error.length == 0);
+    result = mmay_check_test_run(&session, 3, help, &output, &error);
+    MMAY_EXPECT(result == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT_SNAPSHOT("check-help.txt", output.bytes);
+    MMAY_EXPECT(error.length == 0);
 
-    RUDA_EXPECT(ruda_check_test_read(
-        "check-tree/main.ruda", before, sizeof(before), &before_length
+    MMAY_EXPECT(mmay_check_test_read(
+        "check-tree/main.my", before, sizeof(before), &before_length
     ));
-    result = ruda_check_test_run(&session, 3, clean, &output, &error);
-    RUDA_EXPECT(result == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(output.length == 0 && error.length == 0);
-    result = ruda_check_test_run(&session, 3, clean, &output, &error);
-    RUDA_EXPECT(result == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(output.length == 0 && error.length == 0);
-    RUDA_EXPECT(ruda_check_test_read(
-        "check-tree/main.ruda", after, sizeof(after), &after_length
+    result = mmay_check_test_run(&session, 3, clean, &output, &error);
+    MMAY_EXPECT(result == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(output.length == 0 && error.length == 0);
+    result = mmay_check_test_run(&session, 3, clean, &output, &error);
+    MMAY_EXPECT(result == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(output.length == 0 && error.length == 0);
+    MMAY_EXPECT(mmay_check_test_read(
+        "check-tree/main.my", after, sizeof(after), &after_length
     ));
-    RUDA_EXPECT(before_length == after_length);
-    RUDA_EXPECT(before_length != after_length
+    MMAY_EXPECT(before_length == after_length);
+    MMAY_EXPECT(before_length != after_length
         || memcmp(before, after, before_length) == 0);
 
-    result = ruda_check_test_run(&session, 3, package, &output, &error);
-    RUDA_EXPECT(result == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(output.length == 0 && error.length == 0);
-    result = ruda_check_test_run(&session, 3, standalone, &output, &error);
-    RUDA_EXPECT(result == RUDA_EXIT_SUCCESS);
-    RUDA_EXPECT(output.length == 0 && error.length == 0);
+    result = mmay_check_test_run(&session, 3, package, &output, &error);
+    MMAY_EXPECT(result == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(output.length == 0 && error.length == 0);
+    result = mmay_check_test_run(&session, 3, standalone, &output, &error);
+    MMAY_EXPECT(result == MMAY_EXIT_SUCCESS);
+    MMAY_EXPECT(output.length == 0 && error.length == 0);
 
-    RUDA_EXPECT(ruda_directory_current(
-        ruda_system_allocator(), 32768, &original_directory
-    ) == RUDA_FILE_OK);
+    MMAY_EXPECT(mmay_directory_current(
+        mmay_system_allocator(), 32768, &original_directory
+    ) == MMAY_FILE_OK);
     if (original_directory.data != NULL
-        && ruda_check_test_chdir("check-tree/math") == 0) {
-        result = ruda_check_test_run(
+        && mmay_check_test_chdir("check-tree/math") == 0) {
+        result = mmay_check_test_run(
             &session, 2, no_target, &output, &error
         );
-        RUDA_EXPECT(result == RUDA_EXIT_SUCCESS);
-        RUDA_EXPECT(output.length == 0 && error.length == 0);
-        RUDA_EXPECT(ruda_check_test_chdir(
+        MMAY_EXPECT(result == MMAY_EXIT_SUCCESS);
+        MMAY_EXPECT(output.length == 0 && error.length == 0);
+        MMAY_EXPECT(mmay_check_test_chdir(
             (const char *)original_directory.data
         ) == 0);
     } else {
-        RUDA_EXPECT(false);
+        MMAY_EXPECT(false);
     }
-    ruda_owned_bytes_dispose(&original_directory);
+    mmay_owned_bytes_dispose(&original_directory);
 
-    result = ruda_check_test_run(
+    result = mmay_check_test_run(
         &session, 4, all_targets, &output, &error
     );
-    RUDA_EXPECT(result == RUDA_EXIT_SOURCE_FAILURE);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT(strstr(error.bytes, "error[R0001]") != NULL);
-    RUDA_EXPECT(strstr(error.bytes, "ignored_test.ruda") != NULL
-        || strstr(error.bytes, "integration.ruda") != NULL);
+    MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strstr(error.bytes, "error[R0001]") != NULL);
+    MMAY_EXPECT(strstr(error.bytes, "ignored_test.my") != NULL
+        || strstr(error.bytes, "integration.my") != NULL);
 
-    result = ruda_check_test_run(&session, 3, bad_human, &output, &error);
-    RUDA_EXPECT(result == RUDA_EXIT_SOURCE_FAILURE);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT(strstr(error.bytes, "error[R0001]") != NULL);
-    RUDA_EXPECT(strstr(error.bytes, "check-bad.ruda:2:") != NULL);
+    result = mmay_check_test_run(&session, 3, bad_human, &output, &error);
+    MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strstr(error.bytes, "error[R0001]") != NULL);
+    MMAY_EXPECT(strstr(error.bytes, "check-bad.my:2:") != NULL);
 
-    result = ruda_check_test_run(&session, 5, bad_json, &output, &error);
-    RUDA_EXPECT(result == RUDA_EXIT_SOURCE_FAILURE);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT(strstr(error.bytes, "\"schema\":\"ruda.diagnostic/1\"")
+    result = mmay_check_test_run(&session, 5, bad_json, &output, &error);
+    MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strstr(error.bytes, "\"schema\":\"marimay.diagnostic/1\"")
         != NULL);
-    RUDA_EXPECT(strstr(error.bytes, "\"code\":\"R0001\"") != NULL);
-    RUDA_EXPECT(strstr(error.bytes, "\"primary\":{") != NULL);
-    RUDA_EXPECT(ruda_check_test_newlines(error.bytes) == 1);
+    MMAY_EXPECT(strstr(error.bytes, "\"code\":\"R0001\"") != NULL);
+    MMAY_EXPECT(strstr(error.bytes, "\"primary\":{") != NULL);
+    MMAY_EXPECT(mmay_check_test_newlines(error.bytes) == 1);
 
-    result = ruda_check_test_run(
+    result = mmay_check_test_run(
         &session, 3, invalid_manifest, &output, &error
     );
-    RUDA_EXPECT(result == RUDA_EXIT_SOURCE_FAILURE);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT(strstr(error.bytes, "error[K0002]") != NULL);
-    RUDA_EXPECT(strstr(error.bytes, "ruda.mod:1:") != NULL);
+    MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strstr(error.bytes, "error[K0002]") != NULL);
+    MMAY_EXPECT(strstr(error.bytes, "mmay.mod:1:") != NULL);
 
-    result = ruda_check_test_run(
+    result = mmay_check_test_run(
         &session, 3, invalid_identity, &output, &error
     );
-    RUDA_EXPECT(result == RUDA_EXIT_SOURCE_FAILURE);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT(strstr(error.bytes, "error[K0005]") != NULL);
-    RUDA_EXPECT(strstr(error.bytes, "ruda.mod:1:") != NULL);
+    MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strstr(error.bytes, "error[K0005]") != NULL);
+    MMAY_EXPECT(strstr(error.bytes, "mmay.mod:1:") != NULL);
 
-    result = ruda_check_test_run(
+    result = mmay_check_test_run(
         &session, 3, invalid_identity_nul, &output, &error
     );
-    RUDA_EXPECT(result == RUDA_EXIT_SOURCE_FAILURE);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT(strstr(error.bytes, "error[K0005]") != NULL);
-    RUDA_EXPECT(strstr(error.bytes, "ruda.mod:2:") != NULL);
+    MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strstr(error.bytes, "error[K0005]") != NULL);
+    MMAY_EXPECT(strstr(error.bytes, "mmay.mod:2:") != NULL);
 
-    result = ruda_check_test_run(
+    result = mmay_check_test_run(
+        &session, 3, legacy_manifest, &output, &error
+    );
+    MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strstr(error.bytes, "error[K0004]") != NULL);
+
+    result = mmay_check_test_run(
         &session, 5, missing_json, &output, &error
     );
-    RUDA_EXPECT(result == RUDA_EXIT_SOURCE_FAILURE);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT_SNAPSHOT("check-missing.jsonl", error.bytes);
+    MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT_SNAPSHOT("check-missing.jsonl", error.bytes);
 
-    result = ruda_check_test_run(&session, 3, incomplete, &output, &error);
-    RUDA_EXPECT(result == RUDA_EXIT_INTERNAL);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT(strstr(error.bytes, "error[I0001]") != NULL);
+    result = mmay_check_test_run(&session, 3, incomplete, &output, &error);
+    MMAY_EXPECT(result == MMAY_EXIT_INTERNAL);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strstr(error.bytes, "error[I0001]") != NULL);
 
-    result = ruda_check_test_run(&session, 3, explicit_test, &output, &error);
-    RUDA_EXPECT(result == RUDA_EXIT_SOURCE_FAILURE);
-    RUDA_EXPECT(output.length == 0);
-    RUDA_EXPECT(strstr(error.bytes, "error[R0001]") != NULL);
+    result = mmay_check_test_run(&session, 3, explicit_test, &output, &error);
+    MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+    MMAY_EXPECT(output.length == 0);
+    MMAY_EXPECT(strstr(error.bytes, "error[R0001]") != NULL);
 
     {
         char long_target[32769];
-        const char *limited[] = {"ruda", "check", long_target};
+        const char *limited[] = {"mmay", "check", long_target};
         memset(long_target, 'a', sizeof(long_target) - 1);
         long_target[sizeof(long_target) - 1] = '\0';
-        result = ruda_check_test_run(
+        result = mmay_check_test_run(
             &session, 3, limited, &output, &error
         );
-        RUDA_EXPECT(result == RUDA_EXIT_SOURCE_FAILURE);
-        RUDA_EXPECT(output.length == 0);
-        RUDA_EXPECT(strstr(error.bytes, "error[K0004]") != NULL);
-        RUDA_EXPECT(strstr(error.bytes, "defensive") != NULL);
+        MMAY_EXPECT(result == MMAY_EXIT_SOURCE_FAILURE);
+        MMAY_EXPECT(output.length == 0);
+        MMAY_EXPECT(strstr(error.bytes, "error[K0004]") != NULL);
+        MMAY_EXPECT(strstr(error.bytes, "defensive") != NULL);
     }
 
     {
         size_t failure_index = 0;
         bool reached_success = false;
         for (failure_index = 0; failure_index < 2048; failure_index += 1) {
-            RudaFailAllocator state;
-            RudaSession failing_session;
-            ruda_fail_allocator_init(
-                &state, ruda_system_allocator(), failure_index
+            MarimayFailAllocator state;
+            MarimaySession failing_session;
+            mmay_fail_allocator_init(
+                &state, mmay_system_allocator(), failure_index
             );
-            ruda_session_init(&failing_session, ruda_fail_allocator(&state));
-            result = ruda_check_test_run(
+            mmay_session_init(&failing_session, mmay_fail_allocator(&state));
+            result = mmay_check_test_run(
                 &failing_session, 3, clean, &output, &error
             );
-            if (result == RUDA_EXIT_SUCCESS) {
+            if (result == MMAY_EXIT_SUCCESS) {
                 reached_success = true;
-                RUDA_EXPECT(output.length == 0 && error.length == 0);
+                MMAY_EXPECT(output.length == 0 && error.length == 0);
             } else {
-                RUDA_EXPECT(result == RUDA_EXIT_INTERNAL);
+                MMAY_EXPECT(result == MMAY_EXIT_INTERNAL);
             }
-            RUDA_EXPECT(state.live_allocations == 0);
-            RUDA_EXPECT(state.live_bytes == 0);
+            MMAY_EXPECT(state.live_allocations == 0);
+            MMAY_EXPECT(state.live_bytes == 0);
             if (reached_success) {
                 break;
             }
         }
-        RUDA_EXPECT(reached_success);
+        MMAY_EXPECT(reached_success);
     }
 
-    ruda_test_buffer_init(&output);
-    ruda_test_buffer_init(&error);
+    mmay_test_buffer_init(&output);
+    mmay_test_buffer_init(&error);
     error.failure_index = 0;
-    result = ruda_cli_run(
-        &session, 3, bad_human, (RudaReadStream){0},
-        ruda_test_buffer_writer(&output),
-        ruda_test_buffer_writer(&error)
+    result = mmay_cli_run(
+        &session, 3, bad_human, (MarimayReadStream){0},
+        mmay_test_buffer_writer(&output),
+        mmay_test_buffer_writer(&error)
     );
-    RUDA_EXPECT(result == RUDA_EXIT_INTERNAL);
-    RUDA_EXPECT(output.length == 0);
+    MMAY_EXPECT(result == MMAY_EXIT_INTERNAL);
+    MMAY_EXPECT(output.length == 0);
 }

@@ -4,16 +4,16 @@
 #include "checker_internal.h"
 #include "checker_package_context.h"
 
- bool ruda_checker_private_collect_type_alias_declaration(
-    RudaChecker *checker,
-    const RudaAstNode *node
+ bool mmay_checker_private_collect_type_alias_declaration(
+    MarimayChecker *checker,
+    const MarimayAstNode *node
 );
- bool ruda_checker_private_evaluate_type_alias(
-    RudaChecker *checker,
-    RudaCheckTypeAliasDeclaration *declaration,
+ bool mmay_checker_private_evaluate_type_alias(
+    MarimayChecker *checker,
+    MarimayCheckTypeAliasDeclaration *declaration,
     size_t use_start,
     size_t use_end
 );
- bool ruda_checker_private_evaluate_all_type_aliases(RudaChecker *checker);
- bool ruda_checker_private_publish_type_aliases(RudaChecker *checker);
+ bool mmay_checker_private_evaluate_all_type_aliases(MarimayChecker *checker);
+ bool mmay_checker_private_publish_type_aliases(MarimayChecker *checker);
 #endif

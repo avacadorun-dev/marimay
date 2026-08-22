@@ -1,13 +1,13 @@
-#ifndef RUDA_BYTECODE_PROGRAM_INTERNAL_H
-#define RUDA_BYTECODE_PROGRAM_INTERNAL_H
+#ifndef MMAY_BYTECODE_PROGRAM_INTERNAL_H
+#define MMAY_BYTECODE_PROGRAM_INTERNAL_H
 
-#include "ruda/bytecode/program.h"
+#include "mmay/bytecode/program.h"
 
 enum {
-    RUDA_BYTECODE_PROGRAM_MINIMUM_ENCODED_BYTES = 46
+    MMAY_BYTECODE_PROGRAM_MINIMUM_ENCODED_BYTES = 46
 };
 
-typedef struct RudaBytecodeProgramTotals {
+typedef struct MarimayBytecodeProgramTotals {
     size_t registers;
     size_t blocks;
     size_t instructions;
@@ -29,43 +29,43 @@ typedef struct RudaBytecodeProgramTotals {
     size_t interface_layouts;
     size_t interface_constructions;
     size_t interface_methods;
-} RudaBytecodeProgramTotals;
+} MarimayBytecodeProgramTotals;
 
-bool ruda_bytecode_program_valid_options(RudaBytecodeProgramOptions options);
-bool ruda_bytecode_program_function_options_within(
-    RudaBytecodeFunctionOptions actual,
-    RudaBytecodeFunctionOptions limit
+bool mmay_bytecode_program_valid_options(MarimayBytecodeProgramOptions options);
+bool mmay_bytecode_program_function_options_within(
+    MarimayBytecodeFunctionOptions actual,
+    MarimayBytecodeFunctionOptions limit
 );
-bool ruda_bytecode_program_accumulate_function(
-    RudaBytecodeProgramTotals *totals,
-    const RudaBytecodeFunction *function,
-    RudaBytecodeProgramOptions options
+bool mmay_bytecode_program_accumulate_function(
+    MarimayBytecodeProgramTotals *totals,
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeProgramOptions options
 );
 
-bool ruda_bytecode_program_same_type(
-    const RudaBytecodeFunction *left_function,
-    RudaBytecodeType left_type,
+bool mmay_bytecode_program_same_type(
+    const MarimayBytecodeFunction *left_function,
+    MarimayBytecodeType left_type,
     uint32_t left_layout,
-    const RudaBytecodeFunction *right_function,
-    RudaBytecodeType right_type,
+    const MarimayBytecodeFunction *right_function,
+    MarimayBytecodeType right_type,
     uint32_t right_layout
 );
 
-RudaBytecodeProgramVerifyStatus ruda_bytecode_program_verify_interface_call(
-    const RudaBytecodeProgram *program,
-    const RudaBytecodeProgramFunction *caller,
-    const RudaBytecodeCall *call,
+MarimayBytecodeProgramVerifyStatus mmay_bytecode_program_verify_interface_call(
+    const MarimayBytecodeProgram *program,
+    const MarimayBytecodeProgramFunction *caller,
+    const MarimayBytecodeCall *call,
     size_t *work
 );
 
-bool ruda_bytecode_program_consume_nominal_work(
-    const RudaBytecodeFunction *function,
+bool mmay_bytecode_program_consume_nominal_work(
+    const MarimayBytecodeFunction *function,
     size_t *work,
     size_t limit
 );
 
-RudaBytecodeProgramVerifyStatus ruda_bytecode_program_verify_nominal_schemas(
-    const RudaBytecodeProgram *program,
+MarimayBytecodeProgramVerifyStatus mmay_bytecode_program_verify_nominal_schemas(
+    const MarimayBytecodeProgram *program,
     size_t *work
 );
 

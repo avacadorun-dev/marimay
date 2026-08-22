@@ -1,4 +1,4 @@
-# Ruda standard-library contract — design baseline 0.1
+# Marimay standard-library contract — design baseline 0.1
 
 Status: normative API direction and production requirements. Exact secondary dot-call sets are frozen during their roadmap gates, but packages, safety properties, and examples in this document are required for 1.0.
 
@@ -37,7 +37,7 @@ It does not inject filesystem, network, environment, logging, JSON, reflection, 
 
 Required dot-call functions:
 
-```ruda
+```marimay
 public fn isSome<T>(option: Option<T>): bool;
 public fn isNone<T>(option: Option<T>): bool;
 public fn map<T, U>(option: Option<T>, mapper: (T) => U): Option<U>;
@@ -52,7 +52,7 @@ There is no unchecked `unwrap` in the default prelude. Tests and invariant-heavy
 
 Required dot-call functions:
 
-```ruda
+```marimay
 public fn isOk<T, E>(result: Result<T, E>): bool;
 public fn isErr<T, E>(result: Result<T, E>): bool;
 public fn map<T, U, E>(result: Result<T, E>, mapper: (T) => U): Result<U, E>;
@@ -70,7 +70,7 @@ public fn valueOr<T, E>(result: Result<T, E>, fallback: T): T;
 
 The minimum interface is:
 
-```ruda
+```marimay
 public interface Error {
   message(): string;
 }
@@ -78,7 +78,7 @@ public interface Error {
 
 First-party error enums provide stable machine-readable cases in addition to `message`. `std/error` supplies wrappers for context and cause chains without requiring every domain enum to expose optional signatures:
 
-```ruda
+```marimay
 public fn context(error: Error, message: string): Error;
 public fn causes(error: Error): Iterator<Error>;
 public fn format(error: Error): string;
@@ -94,7 +94,7 @@ public fn format(error: Error): string;
 
 `std/convert` defines parsing errors and explicit numeric/text conversions:
 
-```ruda
+```marimay
 public enum ParseError {
   Empty,
   InvalidDigit { offset: int; },
@@ -119,7 +119,7 @@ does not specify `f32` arithmetic.
 
 `std/io` is not in the prelude. The 0.1-dev user stdout surface is:
 
-```ruda
+```marimay
 public enum Error {
   CapabilityDenied { capability: string; },
   WriteFailed,
@@ -191,7 +191,7 @@ failure-atomic logical state.
 
 Iterators are pull-based direct calls. A separate `Stream<T,E>` protocol models suspending sequences without source-level futures:
 
-```ruda
+```marimay
 public interface Stream<T, E> {
   next(): Result<Option<T>, E>;
 }
@@ -203,7 +203,7 @@ public interface Stream<T, E> {
 
 `std/fs` functions require root filesystem capabilities and return structured `fs.Error` cases. Paths are checked against capabilities after safe canonicalization rules appropriate to the operation. APIs cover partial reads/writes and do not assume one call transfers the entire buffer.
 
-```ruda
+```marimay
 public fn open(path: path.Path, options: OpenOptions): Result<File, Error>;
 public fn readText(path: path.Path, limit: int): Result<string, Error>;
 public fn writeText(path: path.Path, value: string): Result<void, Error>;
@@ -230,7 +230,7 @@ entire input require a limit.
 
 `std/time` distinguishes wall clock, monotonic instant, and duration. Deadline calculations use monotonic time. Tests receive a controllable logical clock.
 
-```ruda
+```marimay
 public fn now(): Instant;
 public fn wallNow(): WallTime;
 public fn sleep(duration: Duration): void;
@@ -244,7 +244,7 @@ Secure randomness is in `std/crypto/random` and fails explicitly when the platfo
 
 `scope`, `spawn`, `Task<T>`, and `wait` are compiler/runtime primitives specified in `execution.md`. `std/task` adds policies without allowing escape:
 
-```ruda
+```marimay
 public fn yield(): void;
 public fn withTimeout<T>(duration: time.Duration, operation: () => T): Result<T, Timeout>;
 public fn channel<T>(capacity: int): Channel<T>;
@@ -252,7 +252,7 @@ public fn channel<T>(capacity: int): Channel<T>;
 
 The general direct-style channel surface is:
 
-```ruda
+```marimay
 public fn send<T>(channel: Channel<T>, value: T): Result<void, ChannelClosed>;
 public fn receive<T>(channel: Channel<T>): Result<Option<T>, ChannelError>;
 public fn close<T>(channel: Channel<T>): void;
@@ -271,7 +271,7 @@ hint/safepoint does not promise another specific task will run.
 
 `std/isolate` provides structured CPU-parallel execution:
 
-```ruda
+```marimay
 public fn run<T, U>(input: T, operation: (T) => U): U;
 ```
 
@@ -287,7 +287,7 @@ Persistent actor/supervisor APIs are deferred until their lifecycle and upgrade 
 
 Baseline signatures used by examples:
 
-```ruda
+```marimay
 import { Error as CoreError } from "std/core";
 
 public enum Error {
@@ -328,7 +328,7 @@ HTTP parsing rejects request smuggling ambiguities and configurable-limit violat
 
 `std/json` exposes a bounded streaming token reader/writer and typed codec functions:
 
-```ruda
+```marimay
 public fn decode<T>(input: Bytes): Result<T, json.Error>;
 public fn encode<T>(value: T): Result<Bytes, json.Error>;
 ```
@@ -341,7 +341,7 @@ Derive metadata supports field rename/omit/default only through a closed declara
 
 `std/log` offers leveled messages, structured typed fields, sinks, redaction markers, and task-context propagation. A simple call is valid:
 
-```ruda
+```marimay
 log.info($"service listening on {server.address}");
 ```
 
@@ -355,7 +355,7 @@ Runtime task, GC, I/O, and capability trace events use stable schemas. Metrics A
 
 Expectation structural diffs respect derived `Debug`/`Eq`, bound output size, and never invoke arbitrary mutating functions. Panic assertions run the closure in a nested task so the harness survives while still verifying cleanup.
 
-`std/test/property` provides deterministic generators/shrinkers. The same test declaration and process are used by `ruda test`; no plugin runner is required.
+`std/test/property` provides deterministic generators/shrinkers. The same test declaration and process are used by `mmay test`; no plugin runner is required.
 
 ## 13. C interoperation
 

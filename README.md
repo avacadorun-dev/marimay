@@ -1,16 +1,16 @@
-# Ruda
+# Marimay
 
-Latin spelling: **Ruda**. Cyrillic spelling: **Ру́да**, pronounced «ру́да». The toolchain command is `ruda`, and source files use `.ruda`.
+Latin spelling: **Marimay**. Cyrillic spelling: **Ру́да**, pronounced «ру́да». The toolchain command is `mmay`, and source files use `.my`.
 
-> “Ruda is a statically typed, garbage-collected programming language for reliable native applications—from CLIs and network services to desktop software. It combines algebraic data types, structural interfaces, direct-style structured concurrency, and a unified VM/native toolchain, without null, async coloring, or exceptions for expected failures.”
+> “Marimay is a statically typed, garbage-collected programming language for reliable native applications—from CLIs and network services to desktop software. It combines algebraic data types, structural interfaces, direct-style structured concurrency, and a unified VM/native toolchain, without null, async coloring, or exceptions for expected failures.”
 
-> «Ruda — статически типизированный язык программирования с управляемой памятью для создания надёжных нативных приложений: от CLI и сетевых сервисов до десктопных программ. Он сочетает алгебраические типы данных, структурные интерфейсы, прямой стиль структурированной конкурентности и единый VM/native toolchain — без null, async-окраски и исключений для ожидаемых ошибок».
+> «Marimay — статически типизированный язык программирования с управляемой памятью для создания надёжных нативных приложений: от CLI и сетевых сервисов до десктопных программ. Он сочетает алгебраические типы данных, структурные интерфейсы, прямой стиль структурированной конкурентности и единый VM/native toolchain — без null, async-окраски и исключений для ожидаемых ошибок».
 
 The name means ore: source material transformed by a clear language, strict types, and a cohesive toolchain into reliable native software.
 
-This is the canonical positioning of the intended product, not a claim that every subsystem is implemented today. The current portable C17 Stage 0 builds the `ruda` executable and provides help/version output, a lossless frontend, canonical formatting, authoritative batch `ruda check`, verified local VM execution, host-native `ruda build`, and deterministic VM/native `ruda test` for the checker-backed local/private preview surface. Portable bundles, native `ruda run`, networking, and desktop support remain gated roadmap work. [D001](docs/design/decisions.md) accepts the repository identity; [N0](docs/design/naming-audit.md) still blocks public distribution until legal review and external domains, accounts, namespaces, signing identity, and command/PATH coexistence have evidence. None of those external identities is claimed or reserved here.
+This is the canonical positioning of the intended product, not a claim that every subsystem is implemented today. The current portable C17 Stage 0 builds the `mmay` executable and provides help/version output, a lossless frontend, canonical formatting, authoritative batch `mmay check`, verified local VM execution, host-native `mmay build`, and deterministic VM/native `mmay test` for the checker-backed local/private preview surface. Portable bundles, native `mmay run`, networking, and desktop support remain gated roadmap work. [D001](docs/design/decisions.md) accepts the repository identity; [N0](docs/design/naming-audit.md) still blocks public distribution until legal review and external domains, accounts, namespaces, signing identity, and command/PATH coexistence have evidence. None of those external identities is claimed or reserved here.
 
-Ruda is not a dialect or a collage of borrowed keywords. It uses a compact C-family surface, but has its own semantic center:
+Marimay is not a dialect or a collage of borrowed keywords. It uses a compact C-family surface, but has its own semantic center:
 
 - closed algebraic enums and exhaustive `match`;
 - `Option<T>` instead of nullable references;
@@ -19,13 +19,13 @@ Ruda is not a dialect or a collage of borrowed keywords. It uses a compact C-fam
 - structural interfaces over nominal records and enums;
 - one compiler frontend and typed MIR, with both a portable bytecode VM and C17-based native AOT;
 - direct-style lightweight tasks and structured concurrency, without `async`-colored APIs;
-- a single `ruda` tool containing the formatter, test runner, build system, package workflow, docs, fuzzing, and diagnostics.
+- a single `mmay` tool containing the formatter, test runner, build system, package workflow, docs, fuzzing, and diagnostics.
 
-The first implementation is written in portable C17. After the language and bootstrap contract stabilize, the compiler is rewritten in Ruda and verified against the C17 bootstrap.
+The first implementation is written in portable C17. After the language and bootstrap contract stabilize, the compiler is rewritten in Marimay and verified against the C17 bootstrap.
 
 ## Read the language in one minute
 
-```ruda
+```marimay
 import { Error as IoError, println } from "std/io";
 
 enum Lookup<T> {
@@ -63,7 +63,7 @@ fn main(): Result<void, IoError> {
 
 The dot call and ordinary function call are the same symbol:
 
-```ruda
+```marimay
 const a = user.string();
 const b = string(user);
 ```
@@ -73,20 +73,20 @@ There is no hidden method body and no second behavior system. Because `User` is 
 ## Target execution contract: two engines, one language
 
 ```sh
-ruda run .                         # fast typed bytecode VM
-ruda run --engine native .         # compile and execute native
-ruda build --release               # standalone native executable
-ruda build --engine vm             # portable .rudab bytecode bundle
-ruda test                          # fast VM test loop
-ruda test --engine both            # VM/native semantic conformance
-ruda run . --max-heap-bytes 67108864 # managed live-byte budget
-ruda fmt                           # canonical formatting
-ruda check                         # authoritative batch type checking
+mmay run .                         # fast typed bytecode VM
+mmay run --engine native .         # compile and execute native
+mmay build --release               # standalone native executable
+mmay build --engine vm             # portable .myb bytecode bundle
+mmay test                          # fast VM test loop
+mmay test --engine both            # VM/native semantic conformance
+mmay run . --max-heap-bytes 67108864 # managed live-byte budget
+mmay fmt                           # canonical formatting
+mmay check                         # authoritative batch type checking
 ```
 
-These commands are the normative product workflow. In the current bootstrap, `ruda fmt`, `ruda check`, VM-default `ruda run`, host-native `ruda build`, and deterministic `ruda test` with VM/native comparison (plus help/version inspection) are implemented for the local/private preview surface; the roadmap gates the remaining options and commands. `ruda check` refuses success when accepted source reaches a checker path that is not implemented yet. The VM is not a looser or dynamically typed version of the language: both implemented execution paths consume code that passed the same parser, resolver, type checker, exhaustiveness checker, and typed MIR verifier.
+These commands are the normative product workflow. In the current bootstrap, `mmay fmt`, `mmay check`, VM-default `mmay run`, host-native `mmay build`, and deterministic `mmay test` with VM/native comparison (plus help/version inspection) are implemented for the local/private preview surface; the roadmap gates the remaining options and commands. `mmay check` refuses success when accepted source reaches a checker path that is not implemented yet. The VM is not a looser or dynamically typed version of the language: both implemented execution paths consume code that passed the same parser, resolver, type checker, exhaustiveness checker, and typed MIR verifier.
 
-`ruda run`, `ruda test`, and `ruda build` accept one decimal
+`mmay run`, `mmay test`, and `mmay build` accept one decimal
 `--max-heap-bytes`; the unchanged default is 64 MiB. Native builds embed the
 selected value, and configured-budget versus host-allocation failures have
 distinct `I0002` diagnostics with exit `70`.
@@ -98,7 +98,7 @@ distinct `I0002` diagnostics with exit `70`.
 - [`docs/design/decisions.md`](docs/design/decisions.md) — accepted and deferred architectural decisions;
 - [`docs/spec/language.md`](docs/spec/language.md) — normative language baseline;
 - [`docs/spec/execution.md`](docs/spec/execution.md) — VM, AOT, runtime, tasks, and equivalence;
-- [`docs/spec/toolchain.md`](docs/spec/toolchain.md) — the `ruda` command contract;
+- [`docs/spec/toolchain.md`](docs/spec/toolchain.md) — the `mmay` command contract;
 - [`docs/spec/standard-library.md`](docs/spec/standard-library.md) — required first-party APIs and production behavior;
 - [`docs/spec/diagnostics.md`](docs/spec/diagnostics.md) — stable human and machine diagnostics;
 - [`docs/requirements.md`](docs/requirements.md) — requirement-to-gate traceability;
