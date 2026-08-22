@@ -947,6 +947,7 @@ bool ruda_compile_array_index(
     RudaExpressionValue index;
     RudaTypeId element_type = RUDA_TYPE_INVALID;
     RudaMirArrayId array = RUDA_MIR_NO_ARRAY;
+    RudaMirRegister checked = RUDA_MIR_NO_REGISTER;
     RudaMirRegister target = RUDA_MIR_NO_REGISTER;
     RudaMirInstruction instruction;
     if (function == NULL || node == NULL || result == NULL
@@ -984,13 +985,26 @@ bool ruda_compile_array_index(
         *result = index;
         return true;
     }
-    if (!ruda_function_add_register(function, element_type, &target)) {
+    if (!ruda_function_add_register(function, receiver.type, &checked)
+        || !ruda_function_add_register(function, element_type, &target)) {
+        return false;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = RUDA_MIR_ARRAY_REQUIRE_INDEX;
+    instruction.target = checked;
+    instruction.first = receiver.register_id;
+    instruction.second = index.register_id;
+    instruction.third = RUDA_MIR_NO_REGISTER;
+    instruction.array = array;
+    instruction.span.start = node->start;
+    instruction.span.end = node->end;
+    if (!ruda_function_append_instruction(function, &instruction)) {
         return false;
     }
     memset(&instruction, 0, sizeof(instruction));
     instruction.kind = RUDA_MIR_ARRAY_GET;
     instruction.target = target;
-    instruction.first = receiver.register_id;
+    instruction.first = checked;
     instruction.second = index.register_id;
     instruction.third = RUDA_MIR_NO_REGISTER;
     instruction.array = array;

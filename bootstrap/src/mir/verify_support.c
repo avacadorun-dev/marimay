@@ -392,8 +392,11 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
         }
         case RUDA_MIR_ARRAY_LENGTH:
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+        case RUDA_MIR_ARRAY_ASSUME_INDEX:
         case RUDA_MIR_ARRAY_GET:
-        case RUDA_MIR_ARRAY_SET: {
+        case RUDA_MIR_ARRAY_SET:
+        case RUDA_MIR_ARRAY_GET_IN_BOUNDS:
+        case RUDA_MIR_ARRAY_SET_IN_BOUNDS: {
             const RudaMirArray *array = ruda_mir_array(
                 function,
                 instruction->array
@@ -404,7 +407,8 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             if (first_type == RUDA_TYPE_INVALID
                 || (instruction->kind != RUDA_MIR_ARRAY_LENGTH
                     && second_type == RUDA_TYPE_INVALID)
-                || (instruction->kind == RUDA_MIR_ARRAY_SET
+                || ((instruction->kind == RUDA_MIR_ARRAY_SET
+                        || instruction->kind == RUDA_MIR_ARRAY_SET_IN_BOUNDS)
                     && ruda_mir_register_type(
                         function,
                         instruction->third
@@ -419,7 +423,8 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
                     ? RUDA_MIR_VERIFY_OK
                     : RUDA_MIR_VERIFY_TYPE_MISMATCH;
             }
-            if (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX) {
+            if (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX
+                || instruction->kind == RUDA_MIR_ARRAY_ASSUME_INDEX) {
                 return second_type == RUDA_TYPE_I64
                         && target_type == array->type
                     ? RUDA_MIR_VERIFY_OK
@@ -427,7 +432,8 @@ RudaMirVerifyStatus ruda_mir_validate_instruction_types(
             }
             if (second_type != RUDA_TYPE_I64
                 || target_type != array->element_type
-                || (instruction->kind == RUDA_MIR_ARRAY_SET
+                || ((instruction->kind == RUDA_MIR_ARRAY_SET
+                        || instruction->kind == RUDA_MIR_ARRAY_SET_IN_BOUNDS)
                     && ruda_mir_register_type(
                         function,
                         instruction->third
@@ -754,7 +760,10 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
         case RUDA_MIR_RECORD_IDENTITY_SAME:
         case RUDA_MIR_ARRAY_GET:
         case RUDA_MIR_ARRAY_SET:
+        case RUDA_MIR_ARRAY_GET_IN_BOUNDS:
+        case RUDA_MIR_ARRAY_SET_IN_BOUNDS:
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+        case RUDA_MIR_ARRAY_ASSUME_INDEX:
         case RUDA_MIR_ARRAY_PUSH:
         case RUDA_MIR_ARRAY_TRUNCATE:
         case RUDA_MIR_ARRAY_RESERVE:
@@ -798,7 +807,8 @@ bool ruda_mir_instruction_uses_second(RudaMirInstructionKind kind) {
     return false;
 }
 bool ruda_mir_instruction_uses_third(RudaMirInstructionKind kind) {
-    return kind == RUDA_MIR_ARRAY_SET;
+    return kind == RUDA_MIR_ARRAY_SET
+        || kind == RUDA_MIR_ARRAY_SET_IN_BOUNDS;
 }
 bool ruda_mir_assigned_register(
     const unsigned char *assigned,

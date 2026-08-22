@@ -1338,3 +1338,50 @@ ordered pre-alpha optimization work, while obtaining every release-platform
 reference runner is deployment preparation. Keeping a separate failing
 public-alpha gate preserves the cross-platform obligation without blocking the
 measurement-driven implementation sequence on unavailable runner hardware.
+
+## D058 — Bounds proofs are verified MIR capabilities
+
+Status: accepted.
+
+`ARRAY_REQUIRE_INDEX token, array, index` remains the observable bounds
+barrier: it performs the D045/G4002 check and copies the exact array handle to
+`token`. `ARRAY_GET_IN_BOUNDS value, token, index` and
+`ARRAY_SET_IN_BOUNDS token, index, value` are internal MIR/bytecode operations
+that consume that capability and do not repeat the signed bounds comparison.
+They are never source operations and are accepted only when the MIR and the
+hostile-bytecode verifier independently reconstruct a preceding matching
+capability.
+
+A proof is a must-fact over its exact carrier register and index register. The
+MIR-only `ARRAY_ASSUME_INDEX` may replace a barrier only for a literal array
+length or on the true edge of an exact signed `index < array.length()` test.
+For the latter, a forward must-analysis reaches a CFG fixed point for the
+separate `index >= 0` fact: nonnegative constants, copies, array lengths, and
+checked additions of nonnegative values transfer it; every other definition
+loses it. The verifier repeats both facts and rejects changed registers,
+calls, stores, or mutations before the consumer. Every incoming edge at a
+join must provide the same proof. An affine index is eligible only when the
+checked arithmetic result itself is the exact compared index; uncertain,
+negative, or overflow paths retain `ARRAY_REQUIRE_INDEX`.
+
+`ARRAY_ASSUME_INDEX` has no bytecode wire encoding. Lowering serializes it as
+the ordinary checked `ARRAY_REQUIRE_INDEX`, so a hostile bundle cannot claim a
+static fact the bytecode verifier cannot reconstruct. Native and MIR execution
+consume the verified typed-MIR assumption directly. Rewriting is transactional:
+analysis and rewrite storage are allocated before MIR changes, a post-rewrite
+verifier failure restores the checked operations, and an optimizer resource
+failure leaves the original checked MIR unchanged. Verifier resource failure
+rejects the artifact rather than accepting an in-bounds operation.
+
+The native/VM helpers may validate managed references and element values but
+must not independently grant a proof or use a cached raw array cell. They rely
+on the verified capability and retain no pointer across a call, allocation, or
+mutation. This is an internal implementation decision only; D040/D045 source
+evaluation order, G4002 spans, and the language rule that unproven indexing is
+checked remain unchanged.
+
+Reason: a proof carrier makes the authority boundary explicit in both in-memory
+MIR and serialized bytecode. Invalidating conservatively prevents an aliased
+array shrink or call from turning a previously checked index into an unchecked
+memory access, while transactional fallback keeps resource pressure from
+changing source semantics.

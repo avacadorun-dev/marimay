@@ -13,6 +13,7 @@
 #include "ruda/check/checker.h"
 #include "ruda/generated/diagnostic_codes.h"
 #include "ruda/lex/lexer.h"
+#include "ruda/mir/range.h"
 #include "ruda/parse/parser.h"
 #include "ruda/source/source_manager.h"
 
@@ -148,7 +149,8 @@ static bool ruda_checker_arrays_has_checked_store(
             );
             size_t previous_index = 0;
             bool checked = false;
-            if (store == NULL || store->kind != RUDA_MIR_ARRAY_SET) {
+            if (store == NULL || (store->kind != RUDA_MIR_ARRAY_SET
+                    && store->kind != RUDA_MIR_ARRAY_SET_IN_BOUNDS)) {
                 continue;
             }
             for (previous_index = 0; previous_index < instruction_index;
@@ -162,7 +164,8 @@ static bool ruda_checker_arrays_has_checked_store(
                     checked = true;
                 }
                 if (compound != NULL && previous != NULL
-                    && previous->kind == RUDA_MIR_ARRAY_GET
+                    && (previous->kind == RUDA_MIR_ARRAY_GET
+                        || previous->kind == RUDA_MIR_ARRAY_GET_IN_BOUNDS)
                     && previous->first == store->first
                     && previous->second == store->second) {
                     *compound = true;
@@ -302,6 +305,16 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
         "  let found = 0;\n"
         "  while found < values.length() && values[found] != 2 { found += 1; }\n"
         "  return values[found];\n"
+        "}\n"
+        "fn provenLoop(): int {\n"
+        "  let values: []int = [1, 2, 3];\n"
+        "  let total = 0;\n"
+        "  for let outer = 0; outer < values.length(); outer += 1 {\n"
+        "    for let index = 0; index < values.length(); index += 2 {\n"
+        "      total += values[index];\n"
+        "    }\n"
+        "  }\n"
+        "  return total;\n"
         "}\n";
     RudaCheckerArraysFixture fixture;
     RudaCheckResult checked;
@@ -316,6 +329,8 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
     const RudaCheckedFunction *matrix = NULL;
     const RudaCheckedFunction *generic = NULL;
     const RudaCheckedFunction *sorting = NULL;
+    const RudaCheckedFunction *proven_loop = NULL;
+    RudaCheckedFunction *mutable_proven_loop = NULL;
     const RudaTypeId *first_parameter = NULL;
     const RudaTypeId *second_parameter = NULL;
     RudaTypeId inner = RUDA_TYPE_INVALID;
@@ -323,6 +338,8 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
     size_t index = 0;
     size_t empty_constructions = 0;
     size_t length_instructions = 0;
+    size_t checked_gets = 0;
+    size_t assumed_ranges = 0;
     bool inferred_f64 = false;
     bool compound = false;
     memset(&checked, 0, sizeof(checked));
@@ -342,11 +359,12 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
         matrix = ruda_checker_arrays_function(&checked, "matrix");
         generic = ruda_checker_arrays_function(&checked, "generic");
         sorting = ruda_checker_arrays_function(&checked, "sorting");
+        proven_loop = ruda_checker_arrays_function(&checked, "provenLoop");
         RUDA_EXPECT(checked.diagnostics.length == 0);
         RUDA_EXPECT(surface != NULL && matrix != NULL && generic != NULL
-            && sorting != NULL);
+            && sorting != NULL && proven_loop != NULL);
         if (surface != NULL && matrix != NULL && generic != NULL
-            && sorting != NULL) {
+            && sorting != NULL && proven_loop != NULL) {
             first_parameter = ruda_vector_at_const(&surface->mir.register_types, 0);
             second_parameter = ruda_vector_at_const(&surface->mir.register_types, 1);
             RUDA_EXPECT(first_parameter != NULL && second_parameter != NULL);
@@ -386,11 +404,32 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
                     if (instruction != NULL && instruction->kind == RUDA_MIR_ARRAY_LENGTH) {
                         length_instructions += 1;
                     }
+                    if (instruction != NULL
+                        && instruction->kind == RUDA_MIR_ARRAY_GET) {
+                        size_t previous_index = 0;
+                        for (previous_index = 0;
+                            previous_index < instruction_index;
+                            previous_index += 1) {
+                            const RudaMirInstruction *previous =
+                                ruda_vector_at_const(
+                                    &block->instructions, previous_index
+                                );
+                            if (previous != NULL
+                                && previous->kind
+                                    == RUDA_MIR_ARRAY_REQUIRE_INDEX
+                                && previous->target == instruction->first
+                                && previous->second == instruction->second) {
+                                checked_gets += 1;
+                                break;
+                            }
+                        }
+                    }
                 }
             }
             RUDA_EXPECT(empty_constructions == 1 && empty_element == RUDA_TYPE_F64);
             RUDA_EXPECT(inferred_f64);
             RUDA_EXPECT(length_instructions == 2);
+            RUDA_EXPECT(checked_gets > 0);
             RUDA_EXPECT(ruda_checker_arrays_has_checked_store(&surface->mir, &compound));
             RUDA_EXPECT(compound);
             RUDA_EXPECT(ruda_checker_arrays_has_checked_store(&matrix->mir, NULL));
@@ -398,6 +437,39 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
             RUDA_EXPECT(ruda_mir_verify(&matrix->mir) == RUDA_MIR_VERIFY_OK);
             RUDA_EXPECT(ruda_mir_verify(&generic->mir) == RUDA_MIR_VERIFY_OK);
             RUDA_EXPECT(ruda_mir_verify(&sorting->mir) == RUDA_MIR_VERIFY_OK);
+            index = ruda_checker_arrays_function_index(&checked, "provenLoop");
+            mutable_proven_loop = index == SIZE_MAX ? NULL : ruda_vector_at(
+                &checked.functions, index
+            );
+            RUDA_EXPECT(mutable_proven_loop != NULL);
+            if (mutable_proven_loop != NULL) {
+                size_t block_index = 0;
+                RUDA_EXPECT(ruda_mir_optimize_ranges(&mutable_proven_loop->mir)
+                    == RUDA_MIR_RANGE_OPTIMIZE_OK);
+                for (block_index = 0;
+                    block_index < mutable_proven_loop->mir.blocks.length;
+                    block_index += 1) {
+                    const RudaMirBlock *block = ruda_vector_at_const(
+                        &mutable_proven_loop->mir.blocks, block_index
+                    );
+                    size_t instruction_index = 0;
+                    for (instruction_index = 0; block != NULL
+                        && instruction_index < block->instructions.length;
+                        instruction_index += 1) {
+                        const RudaMirInstruction *instruction =
+                            ruda_vector_at_const(
+                                &block->instructions, instruction_index
+                            );
+                        if (instruction != NULL && instruction->kind
+                            == RUDA_MIR_ARRAY_ASSUME_INDEX) {
+                            assumed_ranges += 1;
+                        }
+                    }
+                }
+                RUDA_EXPECT(assumed_ranges > 0);
+                RUDA_EXPECT(ruda_mir_verify(&mutable_proven_loop->mir)
+                    == RUDA_MIR_VERIFY_OK);
+            }
             RUDA_EXPECT(ruda_mir_lower_bytecode_function(
                 &generic->mir, ruda_system_allocator(),
                 ruda_mir_bytecode_lower_default_options(), &lowered
@@ -505,6 +577,16 @@ static void ruda_test_checker_arrays_surface_and_matrix(void) {
                     ruda_check_interpret_default_options(), &result
                 ) == RUDA_MIR_INTERPRET_OK);
                 RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 2);
+            }
+            index = ruda_checker_arrays_function_index(&checked, "provenLoop");
+            RUDA_EXPECT(index != SIZE_MAX);
+            if (index != SIZE_MAX) {
+                memset(&result, 0, sizeof(result));
+                RUDA_EXPECT(ruda_check_interpret_function(
+                    &checked, index, NULL, 0, ruda_system_allocator(),
+                    ruda_check_interpret_default_options(), &result
+                ) == RUDA_MIR_INTERPRET_OK);
+                RUDA_EXPECT(result.type == RUDA_TYPE_I64 && result.as.i64 == 12);
             }
         }
         if (execution.initialized) {

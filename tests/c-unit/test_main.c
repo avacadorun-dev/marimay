@@ -57,6 +57,7 @@ void ruda_test_managed_resource(void);
 void ruda_test_managed_mutation(void);
 void ruda_test_number_format(void);
 void ruda_test_mir(void);
+void ruda_test_mir_range(void);
 void ruda_test_mir_interface_execution(void);
 void ruda_test_mir_interfaces(void);
 void ruda_test_mir_bytecode(void);
@@ -124,6 +125,7 @@ int main(int argument_count, char **arguments) {
     ruda_test_managed_mutation();
     ruda_test_number_format();
     ruda_test_mir();
+    ruda_test_mir_range();
     ruda_test_mir_interface_execution();
     ruda_test_mir_interfaces();
     ruda_test_mir_bytecode();

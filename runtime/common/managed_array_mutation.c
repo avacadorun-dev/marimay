@@ -3,7 +3,7 @@
 #include <limits.h>
 #include <string.h>
 
-static RudaManagedStatus ruda_managed_array_resolve_mutable(
+RudaManagedStatus ruda_managed_array_resolve_mutable(
     RudaManagedHeap *heap,
     RudaManagedReference reference,
     RudaManagedArray **array
@@ -26,7 +26,7 @@ static RudaManagedStatus ruda_managed_array_resolve_mutable(
     return RUDA_MANAGED_OK;
 }
 
-static RudaManagedStatus ruda_managed_array_validate_value(
+RudaManagedStatus ruda_managed_array_validate_value(
     const RudaManagedHeap *heap,
     const RudaManagedArray *array,
     RudaManagedCell value
@@ -45,7 +45,7 @@ static RudaManagedStatus ruda_managed_array_validate_value(
     return ruda_managed_validate_field(heap, &element, value);
 }
 
-static RudaManagedStatus ruda_managed_array_check_mutation_commit(
+RudaManagedStatus ruda_managed_array_check_mutation_commit(
     const RudaManagedArray *array
 ) {
     if (array == NULL) {
@@ -56,7 +56,7 @@ static RudaManagedStatus ruda_managed_array_check_mutation_commit(
         : RUDA_MANAGED_OK;
 }
 
-static void ruda_managed_array_commit_mutation(RudaManagedArray *array) {
+void ruda_managed_array_commit_mutation(RudaManagedArray *array) {
     array->mutation_generation += UINT64_C(1);
 }
 

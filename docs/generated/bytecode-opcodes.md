@@ -106,3 +106,5 @@ Stage 0 codec.
 | 93 | `array_reserve` | `array:register`, `additional:register` | `may_panic` | Reserve capacity for additional managed-array elements without changing length. |
 | 94 | `array_generation` | `destination:register`, `array:register` | — | Read the exact managed-array mutation generation as u64. |
 | 95 | `array_require_generation` | `destination:register`, `array:register`, `generation:register` | `may_panic` | Copy the array only if its mutation generation still matches the captured value. |
+| 96 | `array_get_in_bounds` | `destination:register`, `array:register`, `index:register` | — | Load through a verifier-proven array/index token. |
+| 97 | `array_set_in_bounds` | `array:register`, `index:register`, `value:register` | — | Store through a verifier-proven array/index token. |

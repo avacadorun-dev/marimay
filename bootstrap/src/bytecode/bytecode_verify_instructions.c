@@ -84,6 +84,7 @@ bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_ARRAY_LENGTH:
         case RUDA_OPCODE_ARRAY_REQUIRE_INDEX:
         case RUDA_OPCODE_ARRAY_GET:
+        case RUDA_OPCODE_ARRAY_GET_IN_BOUNDS:
         case RUDA_OPCODE_ARRAY_POP:
         case RUDA_OPCODE_ARRAY_GENERATION:
         case RUDA_OPCODE_ARRAY_REQUIRE_GENERATION:
@@ -139,6 +140,7 @@ bool ruda_bytecode_opcode_writes_register(RudaOpcode opcode) {
         case RUDA_OPCODE_PANIC_STRING:
         case RUDA_OPCODE_CALL_DIRECT_NEVER:
         case RUDA_OPCODE_ARRAY_SET:
+        case RUDA_OPCODE_ARRAY_SET_IN_BOUNDS:
         case RUDA_OPCODE_ARRAY_PUSH:
         case RUDA_OPCODE_ARRAY_TRUNCATE:
         case RUDA_OPCODE_ARRAY_CLEAR:
@@ -921,7 +923,8 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
             function, instruction, assigned
         );
     }
-    if (instruction->opcode == RUDA_OPCODE_ARRAY_SET) {
+    if (instruction->opcode == RUDA_OPCODE_ARRAY_SET
+        || instruction->opcode == RUDA_OPCODE_ARRAY_SET_IN_BOUNDS) {
         uint64_t array = instruction->operands[0].unsigned_value;
         uint64_t index = instruction->operands[1].unsigned_value;
         uint64_t value = instruction->operands[2].unsigned_value;
@@ -1072,7 +1075,8 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
         }
         case RUDA_OPCODE_ARRAY_LENGTH:
         case RUDA_OPCODE_ARRAY_REQUIRE_INDEX:
-        case RUDA_OPCODE_ARRAY_GET: {
+        case RUDA_OPCODE_ARRAY_GET:
+        case RUDA_OPCODE_ARRAY_GET_IN_BOUNDS: {
             first = instruction->operands[1].unsigned_value;
             status = ruda_bytecode_require_assigned(
                 assigned, function->register_types.length, first
@@ -1350,6 +1354,7 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_value_instruction(
         case RUDA_OPCODE_PANIC_STRING:
         case RUDA_OPCODE_CALL_DIRECT_NEVER:
         case RUDA_OPCODE_ARRAY_SET:
+        case RUDA_OPCODE_ARRAY_SET_IN_BOUNDS:
         case RUDA_OPCODE_ARRAY_PUSH:
         case RUDA_OPCODE_ARRAY_POP:
         case RUDA_OPCODE_ARRAY_TRUNCATE:

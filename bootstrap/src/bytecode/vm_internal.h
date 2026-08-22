@@ -78,6 +78,12 @@ RudaBytecodeRunStatus ruda_bytecode_run_array_mutation_instruction(
     RudaAllocator allocator, RudaBytecodePanic *panic, RudaSymbolId symbol,
     bool *handled
 );
+RudaBytecodeRunStatus ruda_bytecode_run_range_instruction(
+    const RudaBytecodeInstruction *instruction,
+    RudaBytecodeValue *registers,
+    RudaBytecodeExecution *execution,
+    const RudaBytecodeFunction *function
+);
 RudaBytecodeRunStatus ruda_bytecode_run_io_instruction(
     const RudaBytecodeInstruction *instruction,
     RudaBytecodeValue *registers,

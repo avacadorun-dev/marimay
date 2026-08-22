@@ -395,7 +395,9 @@ RudaBytecodeVerifyStatus ruda_bytecode_verify_with_work_limit(
                 goto cleanup;
             }
             if (instruction->opcode == RUDA_OPCODE_ARRAY_REQUIRE_INDEX
-                || instruction->opcode == RUDA_OPCODE_ARRAY_SET) {
+                || instruction->opcode == RUDA_OPCODE_ARRAY_SET
+                || instruction->opcode == RUDA_OPCODE_ARRAY_GET_IN_BOUNDS
+                || instruction->opcode == RUDA_OPCODE_ARRAY_SET_IN_BOUNDS) {
                 has_checked_index_operations = true;
             }
             if (instruction->opcode == RUDA_OPCODE_ENUM_REQUIRE_VARIANT

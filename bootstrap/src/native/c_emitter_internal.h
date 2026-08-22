@@ -120,6 +120,11 @@ bool ruda_native_c_emit_array_mutation_instruction(
     const RudaMirFunction *function,
     const RudaMirInstruction *instruction
 );
+bool ruda_native_c_emit_range_instruction(
+    RudaNativeCBuffer *buffer,
+    const RudaMirFunction *function,
+    const RudaMirInstruction *instruction
+);
 bool ruda_native_c_method_possible(
     const RudaMirFunction *const *functions, size_t count,
     RudaTypeId interface_type, uint32_t slot, size_t target);

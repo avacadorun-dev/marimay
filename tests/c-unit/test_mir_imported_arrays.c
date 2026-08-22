@@ -171,6 +171,7 @@ static void ruda_test_mir_imported_array_mutation_order(
             if (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX
                 && first_require == SIZE_MAX) first_require = ordinal;
             if ((instruction->kind == RUDA_MIR_ARRAY_SET
+                    || instruction->kind == RUDA_MIR_ARRAY_SET_IN_BOUNDS
                     || instruction->kind == RUDA_MIR_RECORD_SET)
                 && first_set == SIZE_MAX) first_set = ordinal;
         }

@@ -149,6 +149,7 @@ set(RUDA_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/vector.c
   runtime/common/io_stdout.c
   runtime/common/managed.c
+  runtime/common/managed_array_in_bounds.c
   runtime/common/managed_resource.c
   runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c
@@ -249,6 +250,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/bytecode/mir_lower_nominal.c
   bootstrap/src/bytecode/vm.c
   bootstrap/src/bytecode/vm_array.c
+  bootstrap/src/bytecode/vm_range.c
   bootstrap/src/bytecode/vm_array_mutation.c
   bootstrap/src/bytecode/vm_defer.c
   bootstrap/src/bytecode/vm_interface.c
@@ -317,6 +319,7 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/cli/cli_build_program.c
     bootstrap/src/cli/cli_check.c
     bootstrap/src/cli/cli_compile_report.c
+    bootstrap/src/cli/cli_mir_pipeline.c
     bootstrap/src/cli/cli_run_program.c
     bootstrap/src/cli/cli_test_program.c
     bootstrap/src/cli/cli_run_report.c
@@ -345,7 +348,9 @@ add_library(ruda_bootstrap STATIC
   bootstrap/src/mir/execution_numeric.c
   bootstrap/src/mir/mir.c
   bootstrap/src/mir/mir_interfaces.c
+  bootstrap/src/mir/range.c
   bootstrap/src/mir/verify.c
+  bootstrap/src/mir/verify_range.c
   bootstrap/src/mir/verify_interfaces.c
   bootstrap/src/mir/verify_io.c
   bootstrap/src/mir/verify_managed.c
@@ -363,6 +368,7 @@ add_library(ruda_bootstrap STATIC
     bootstrap/src/native/c_emitter_format.c
     bootstrap/src/native/c_emitter_io.c
   bootstrap/src/native/c_emitter_managed.c
+  bootstrap/src/native/c_emitter_range.c
   bootstrap/src/native/c_emitter_numeric.c
   bootstrap/src/native/c_emitter_validate.c
   bootstrap/src/parse/parser.c
@@ -377,6 +383,7 @@ add_library(ruda_bootstrap STATIC
   runtime/common/io_stdout.c
   runtime/common/test_output.c
   runtime/common/managed.c
+  runtime/common/managed_array_in_bounds.c
   runtime/common/managed_resource.c
   runtime/common/managed_array_mutation.c
   runtime/common/managed_internal.c

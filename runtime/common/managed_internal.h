@@ -55,6 +55,20 @@ RudaManagedStatus ruda_managed_array_index(
     const RudaManagedArray **array,
     size_t *current_length
 );
+RudaManagedStatus ruda_managed_array_resolve_mutable(
+    RudaManagedHeap *heap,
+    RudaManagedReference reference,
+    RudaManagedArray **array
+);
+RudaManagedStatus ruda_managed_array_validate_value(
+    const RudaManagedHeap *heap,
+    const RudaManagedArray *array,
+    RudaManagedCell value
+);
+RudaManagedStatus ruda_managed_array_check_mutation_commit(
+    const RudaManagedArray *array
+);
+void ruda_managed_array_commit_mutation(RudaManagedArray *array);
 RudaManagedSlot *ruda_managed_resolve(RudaManagedHeap *heap, RudaManagedReference reference);
 const RudaManagedSlot *ruda_managed_resolve_const(const RudaManagedHeap *heap, RudaManagedReference reference);
 RudaManagedStatus ruda_managed_reference_status(const RudaManagedHeap *heap, RudaManagedReference reference, const RudaManagedArrayDescriptor *expected);

@@ -60,8 +60,28 @@ static void ruda_bytecode_provenance_transfer_instruction(
 ) {
     uint64_t target = 0;
     size_t register_index = 0;
-    if (instruction == NULL || facts == NULL
-        || !ruda_bytecode_opcode_writes_register(instruction->opcode)) {
+    if (instruction == NULL || facts == NULL) {
+        return;
+    }
+    if (kind == RUDA_BYTECODE_PROVENANCE_ARRAY_INDEX
+        && (instruction->opcode == RUDA_OPCODE_CALL_DIRECT
+            || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_VOID
+            || instruction->opcode == RUDA_OPCODE_CALL_DIRECT_NEVER
+            || instruction->opcode == RUDA_OPCODE_CALL_INTERFACE
+            || instruction->opcode == RUDA_OPCODE_ARRAY_SET
+            || instruction->opcode == RUDA_OPCODE_ARRAY_SET_IN_BOUNDS
+            || instruction->opcode == RUDA_OPCODE_ARRAY_PUSH
+            || instruction->opcode == RUDA_OPCODE_ARRAY_POP
+            || instruction->opcode == RUDA_OPCODE_ARRAY_TRUNCATE
+            || instruction->opcode == RUDA_OPCODE_ARRAY_CLEAR
+            || instruction->opcode == RUDA_OPCODE_ARRAY_RESERVE)) {
+        for (register_index = 0; register_index < register_count;
+            register_index += 1) {
+            facts[register_index] = RUDA_BYTECODE_PROVENANCE_NONE;
+        }
+        return;
+    }
+    if (!ruda_bytecode_opcode_writes_register(instruction->opcode)) {
         return;
     }
     target = instruction->operands[0].unsigned_value;
@@ -416,14 +436,25 @@ RudaBytecodeVerifyStatus ruda_bytecode_provenance_validate_instruction(
     const RudaBytecodeProvenanceAnalysis *analysis,
     const RudaBytecodeInstruction *instruction
 ) {
+    uint64_t array_register = 0;
+    uint64_t index_register = 0;
     if (analysis == NULL || instruction == NULL) {
         return RUDA_BYTECODE_VERIFY_OK;
     }
-    if (instruction->opcode == RUDA_OPCODE_ARRAY_SET
+    if (instruction->opcode == RUDA_OPCODE_ARRAY_GET_IN_BOUNDS) {
+        array_register = instruction->operands[1].unsigned_value;
+        index_register = instruction->operands[2].unsigned_value;
+    } else {
+        array_register = instruction->operands[0].unsigned_value;
+        index_register = instruction->operands[1].unsigned_value;
+    }
+    if ((instruction->opcode == RUDA_OPCODE_ARRAY_SET
+            || instruction->opcode == RUDA_OPCODE_ARRAY_GET_IN_BOUNDS
+            || instruction->opcode == RUDA_OPCODE_ARRAY_SET_IN_BOUNDS)
         && (analysis->array_scratch == NULL
             || analysis->array_scratch[
-                (size_t)instruction->operands[0].unsigned_value
-            ] != instruction->operands[1].unsigned_value)) {
+                (size_t)array_register
+            ] != index_register)) {
         return RUDA_BYTECODE_VERIFY_INVALID_ARGUMENT;
     }
     if (instruction->opcode == RUDA_OPCODE_ENUM_GET_PAYLOAD) {

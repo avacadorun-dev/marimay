@@ -601,6 +601,7 @@ int ruda_cli_test_program(
         options, &compiler, standard_error
     );
     if (exit_code != RUDA_EXIT_SUCCESS) goto cleanup;
+    if (!ruda_cli_optimize_checked_mir(&compiler)) goto cleanup;
     if (!ruda_vector_init(
             &tests, session->allocator, sizeof(RudaCliTestCase)
         )) goto cleanup;

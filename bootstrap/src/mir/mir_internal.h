@@ -216,6 +216,30 @@ RudaMirVerifyStatus ruda_mir_verify_interface_layouts(
     RudaMap *managed_types,
     size_t *work
 );
+RudaMirVerifyStatus ruda_mir_verify_range_proofs(
+    const RudaMirFunction *function,
+    size_t *work
+);
+typedef struct RudaMirRangeAnalysis {
+    const RudaMirFunction *function;
+    unsigned char *incoming_nonnegative;
+    unsigned char *scratch;
+    size_t incoming_bytes;
+    size_t scratch_bytes;
+} RudaMirRangeAnalysis;
+RudaMirVerifyStatus ruda_mir_range_analysis_init(
+    const RudaMirFunction *function,
+    size_t *work,
+    RudaMirRangeAnalysis *analysis
+);
+void ruda_mir_range_analysis_dispose(RudaMirRangeAnalysis *analysis);
+bool ruda_mir_range_assumption_valid(
+    RudaMirRangeAnalysis *analysis,
+    const RudaMirFunction *function,
+    RudaMirBlockId block_id,
+    size_t instruction_index,
+    const RudaMirInstruction *instruction
+);
 const RudaMirManagedEnum *ruda_mir_execution_enum_value(
     const RudaMirExecution *execution,
     RudaMirValue value

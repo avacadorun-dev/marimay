@@ -325,6 +325,13 @@ int ruda_cli_run_program(
         options, &compiler, standard_error
     );
     if (exit_code != RUDA_EXIT_SUCCESS) goto cleanup;
+    if (!ruda_cli_optimize_checked_mir(&compiler)) {
+        exit_code = ruda_cli_run_pipeline_error(
+            options, "canonical typed MIR range proof was invalid",
+            standard_error
+        );
+        goto cleanup;
+    }
     entry_status = ruda_check_select_entry(
         &compiler.checked,
         (const char *)target.selected_import_path.data,

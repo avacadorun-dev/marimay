@@ -76,10 +76,12 @@ typedef enum RudaMirInstructionKind {
     RUDA_MIR_LESS_EQUAL_F64,
     RUDA_MIR_ARRAY_NEW,
     RUDA_MIR_ARRAY_LENGTH,
-    /* Bounds-check barrier before an indexed assignment RHS; failure is G4002. */
     RUDA_MIR_ARRAY_REQUIRE_INDEX,
+    RUDA_MIR_ARRAY_ASSUME_INDEX,
     RUDA_MIR_ARRAY_GET,
     RUDA_MIR_ARRAY_SET,
+    RUDA_MIR_ARRAY_GET_IN_BOUNDS,
+    RUDA_MIR_ARRAY_SET_IN_BOUNDS,
     RUDA_MIR_ARRAY_PUSH,
     RUDA_MIR_ARRAY_POP,
     RUDA_MIR_ARRAY_TRUNCATE,
@@ -116,10 +118,7 @@ typedef enum RudaMirIntegerOperation {
 } RudaMirIntegerOperation;
 typedef struct RudaMirInstruction {
     RudaMirInstructionKind kind;
-    RudaMirRegister target;
-    RudaMirRegister first;
-    RudaMirRegister second;
-    RudaMirRegister third;
+    RudaMirRegister target, first, second, third;
     RudaMirCallId call;
     RudaMirRecordId record;
     RudaMirRecordConstructionId record_construction;

@@ -7,6 +7,7 @@
 #include "ruda/base/owned_bytes.h"
 #include "ruda/base/stream.h"
 #include "ruda/base/vector.h"
+#include "ruda/check/service_types.h"
 #include "ruda/cli.h"
 #include "ruda/diagnostic.h"
 #include "ruda/manifest/manifest.h"
@@ -106,5 +107,6 @@ int ruda_cli_build_program(RudaSession *session, const RudaCliOptions *options,
     RudaWriter standard_output, RudaWriter standard_error);
 int ruda_cli_test_program(RudaSession *session, const RudaCliOptions *options,
     RudaWriter standard_output, RudaWriter standard_error);
+bool ruda_cli_optimize_checked_mir(RudaCompilerResult *compiler);
 
 #endif

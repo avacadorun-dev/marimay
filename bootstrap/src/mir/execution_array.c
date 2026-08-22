@@ -338,19 +338,24 @@ RudaMirInterpretStatus ruda_mir_execute_array_instruction(
         }
         return status;
     }
-    if (second->as.i64 < 0
-        || (uint64_t)second->as.i64 >= (uint64_t)array->length) {
+    if ((instruction->kind != RUDA_MIR_ARRAY_ASSUME_INDEX
+            && instruction->kind != RUDA_MIR_ARRAY_GET_IN_BOUNDS
+            && instruction->kind != RUDA_MIR_ARRAY_SET_IN_BOUNDS)
+        && (second->as.i64 < 0
+            || (uint64_t)second->as.i64 >= (uint64_t)array->length)) {
         return ruda_mir_array_bounds_panic(
             function, instruction, second->as.i64, array->length,
             allocator, options.panic
         );
     }
     index = (size_t)second->as.i64;
-    if (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX) {
+    if (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX
+        || instruction->kind == RUDA_MIR_ARRAY_ASSUME_INDEX) {
         *target = *first;
         return RUDA_MIR_INTERPRET_OK;
     }
-    if (instruction->kind == RUDA_MIR_ARRAY_SET) {
+    if (instruction->kind == RUDA_MIR_ARRAY_SET
+        || instruction->kind == RUDA_MIR_ARRAY_SET_IN_BOUNDS) {
         if (array->mutation_generation == UINT64_MAX) {
             return RUDA_MIR_INTERPRET_OBJECT_LIMIT;
         }
@@ -363,7 +368,8 @@ RudaMirInterpretStatus ruda_mir_execute_array_instruction(
         *target = *third;
         return RUDA_MIR_INTERPRET_OK;
     }
-    if (instruction->kind != RUDA_MIR_ARRAY_GET) {
+    if (instruction->kind != RUDA_MIR_ARRAY_GET
+        && instruction->kind != RUDA_MIR_ARRAY_GET_IN_BOUNDS) {
         return RUDA_MIR_INTERPRET_INVALID_MIR;
     }
     *target = array->elements[index];

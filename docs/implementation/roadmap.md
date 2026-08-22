@@ -60,6 +60,10 @@ workload-local Ruda budgets for the dedicated Linux x86_64 runner. The earlier
 macOS arm64 Apple M2 report remains supplemental. A separate machine gate still
 rejects the missing Linux arm64, macOS x86_64, and Windows x86_64 baselines for
 public-alpha preparation; no optimization or semantic change is included.
+[Post-preview checkpoint 22 range-proof evidence](evidence/cp22-mir-range-proofs-2026-08-22.md)
+records the internal D058 checked-capability rewrite, hostile-bytecode proof
+rejection, and VM/native lowering coverage. It is local implementation evidence
+until the required Linux performance and Tier 1 sanitizer reports are linked.
 Latest earlier I4 process evidence: [preview checkpoint 12 executes the final
 local/private preview process matrix and exact VM/native observation
 comparison](evidence/cp12-final-preview-2026-08-18.md).

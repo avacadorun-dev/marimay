@@ -491,8 +491,10 @@ RudaNativeCEmitStatus ruda_native_c_validate_function(
                 case RUDA_MIR_NEGATE_F64: case RUDA_MIR_EQUAL_F64:
                 case RUDA_MIR_LESS_F64: case RUDA_MIR_LESS_EQUAL_F64:
                 case RUDA_MIR_ARRAY_NEW: case RUDA_MIR_ARRAY_LENGTH:
-                case RUDA_MIR_ARRAY_REQUIRE_INDEX: case RUDA_MIR_ARRAY_GET:
-                case RUDA_MIR_ARRAY_SET:
+                case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+                case RUDA_MIR_ARRAY_ASSUME_INDEX: case RUDA_MIR_ARRAY_GET:
+                case RUDA_MIR_ARRAY_SET: case RUDA_MIR_ARRAY_GET_IN_BOUNDS:
+                case RUDA_MIR_ARRAY_SET_IN_BOUNDS:
                 case RUDA_MIR_ARRAY_PUSH:
                 case RUDA_MIR_ARRAY_POP:
                 case RUDA_MIR_ARRAY_TRUNCATE:

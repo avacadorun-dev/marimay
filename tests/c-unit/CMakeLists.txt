@@ -106,6 +106,7 @@ add_executable(ruda_c_unit
   test_mir.c
   test_mir_arrays.c
   test_mir_arrays_rhs.c
+  test_mir_range.c
   test_mir_imported_arrays.c
   test_mir_imported_results.c
   test_mir_bytecode.c

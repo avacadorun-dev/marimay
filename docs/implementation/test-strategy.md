@@ -457,6 +457,17 @@ requires compatible reviewed reports for all five Tier 1 targets in the table
 below and must be revalidated after intervening optimization work. Supplemental
 platform reports do not change either target list.
 
+D058 range-proof tests construct checked carriers, literal and true-edge loop
+assumptions, including negative true-edge rejection and the nonnegative CFG
+fixed point for nested affine loops. They rewrite duplicate reads and stores,
+then compare the checked and rewritten MIR/bytecode/native observations. They
+also forge missing carriers, wrong indices, direct and interface calls, every
+array mutation, and block-boundary flow between proof and access, plus
+allocation failures in the pass, verifiers, and bytecode codec. Every forged
+in-bounds bytecode sequence must be rejected before VM execution; optimizer
+allocation failures retain checked MIR and all failure sweeps leave allocator
+counters at zero after teardown.
+
 ## 11. Platform matrix
 
 Tier 1 target intent for 1.0:

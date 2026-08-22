@@ -182,7 +182,10 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
             );
             if (instruction != NULL
                 && (instruction->kind == RUDA_MIR_ARRAY_REQUIRE_INDEX
-                    || instruction->kind == RUDA_MIR_ARRAY_SET)) {
+                    || instruction->kind == RUDA_MIR_ARRAY_ASSUME_INDEX
+                    || instruction->kind == RUDA_MIR_ARRAY_SET
+                    || instruction->kind == RUDA_MIR_ARRAY_GET_IN_BOUNDS
+                    || instruction->kind == RUDA_MIR_ARRAY_SET_IN_BOUNDS)) {
                 has_checked_index_operations = true;
             }
             if (instruction != NULL
@@ -1091,6 +1094,10 @@ RudaMirVerifyStatus ruda_mir_verify(const RudaMirFunction *function) {
         if (status != RUDA_MIR_VERIFY_OK) {
             goto cleanup;
         }
+    }
+    status = ruda_mir_verify_range_proofs(function, &work);
+    if (status != RUDA_MIR_VERIFY_OK) {
+        goto cleanup;
     }
 cleanup:
     if (managed_types_initialized) {

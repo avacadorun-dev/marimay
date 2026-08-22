@@ -146,9 +146,12 @@ bootstrap/src/mir/
   verify.c              local, CFG, and initialization verification
   verify_support.c      type/dataflow verifier primitives
   verify_managed.c      string/record/enum/array layout verification
+  verify_range.c        verified array proof-capability validation
+  range.c               transactional checked-to-in-bounds MIR rewrite
   verify_interfaces.c   interface metadata and nominal payload verification
   verify_io.c           exact D046 stdout instruction/layout verification
-  execution.c           oracle graph and interpreter
+  execution.c           oracle graph and interpreter dispatch
+  execution_array.c     checked and verifier-gated in-bounds array execution
   execution_heap.c      execution state and managed allocations
   execution_io.c        D046 oracle publication and Result construction
 ```

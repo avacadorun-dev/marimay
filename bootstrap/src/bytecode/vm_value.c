@@ -626,6 +626,11 @@ RudaBytecodeRunStatus ruda_bytecode_run_value_instruction(
             registers[target].as.i64 = (int64_t)length;
             return RUDA_BYTECODE_RUN_OK;
         }
+        case RUDA_OPCODE_ARRAY_GET_IN_BOUNDS:
+        case RUDA_OPCODE_ARRAY_SET_IN_BOUNDS:
+            return ruda_bytecode_run_range_instruction(
+                instruction, registers, execution, function
+            );
         case RUDA_OPCODE_ARRAY_REQUIRE_INDEX:
         case RUDA_OPCODE_ARRAY_GET: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;

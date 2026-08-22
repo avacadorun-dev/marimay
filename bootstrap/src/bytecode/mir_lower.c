@@ -294,6 +294,7 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->operands[1].unsigned_value = input->first;
             break;
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+        case RUDA_MIR_ARRAY_ASSUME_INDEX:
             output->opcode = RUDA_OPCODE_ARRAY_REQUIRE_INDEX;
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
@@ -303,8 +304,19 @@ static RudaMirBytecodeLowerStatus ruda_mir_bytecode_instruction(
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
             break;
+        case RUDA_MIR_ARRAY_GET_IN_BOUNDS:
+            output->opcode = RUDA_OPCODE_ARRAY_GET_IN_BOUNDS;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case RUDA_MIR_ARRAY_SET:
             output->opcode = RUDA_OPCODE_ARRAY_SET;
+            output->operands[0].unsigned_value = input->first;
+            output->operands[1].unsigned_value = input->second;
+            output->operands[2].unsigned_value = input->third;
+            break;
+        case RUDA_MIR_ARRAY_SET_IN_BOUNDS:
+            output->opcode = RUDA_OPCODE_ARRAY_SET_IN_BOUNDS;
             output->operands[0].unsigned_value = input->first;
             output->operands[1].unsigned_value = input->second;
             output->operands[2].unsigned_value = input->third;
@@ -545,6 +557,7 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
             );
             if (instruction != NULL
                 && (instruction->kind == RUDA_MIR_ARRAY_SET
+                    || instruction->kind == RUDA_MIR_ARRAY_SET_IN_BOUNDS
                     || instruction->kind == RUDA_MIR_RECORD_SET)
                 && !ruda_size_add(array_set_count, 1, &array_set_count)) {
                 return RUDA_MIR_BYTECODE_LOWER_LIMIT_REACHED;
@@ -931,6 +944,7 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
                 goto cleanup;
             }
             if (instruction->kind == RUDA_MIR_ARRAY_SET
+                || instruction->kind == RUDA_MIR_ARRAY_SET_IN_BOUNDS
                 || instruction->kind == RUDA_MIR_RECORD_SET) {
                 RudaBytecodeInstruction copy;
                 memset(&copy, 0, sizeof(copy));
@@ -938,6 +952,7 @@ RudaMirBytecodeLowerStatus ruda_mir_lower_bytecode_function(
                 copy.operands[0].unsigned_value = instruction->target;
                 copy.operands[1].unsigned_value = instruction->kind
                     == RUDA_MIR_ARRAY_SET
+                        || instruction->kind == RUDA_MIR_ARRAY_SET_IN_BOUNDS
                     ? instruction->third
                     : instruction->second;
                 copy.span = lowered_instruction.span;

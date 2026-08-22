@@ -704,8 +704,11 @@ static RudaMirInterpretStatus ruda_mir_execute_instruction(
         }
         case RUDA_MIR_ARRAY_LENGTH:
         case RUDA_MIR_ARRAY_REQUIRE_INDEX:
+        case RUDA_MIR_ARRAY_ASSUME_INDEX:
         case RUDA_MIR_ARRAY_GET:
         case RUDA_MIR_ARRAY_SET:
+        case RUDA_MIR_ARRAY_GET_IN_BOUNDS:
+        case RUDA_MIR_ARRAY_SET_IN_BOUNDS:
         case RUDA_MIR_ARRAY_PUSH:
         case RUDA_MIR_ARRAY_POP:
         case RUDA_MIR_ARRAY_TRUNCATE:

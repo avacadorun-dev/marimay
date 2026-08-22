@@ -468,6 +468,13 @@ bool ruda_native_c_emit_function(
                             i->first
                         )) return false;
                     break;
+                case RUDA_MIR_ARRAY_ASSUME_INDEX:
+                    if (!ruda_native_c_write(
+                            buffer,
+                            "  ruda_g_v_%u = ruda_g_v_%u;\n",
+                            i->target, i->first
+                        )) return false;
+                    break;
                 case RUDA_MIR_ARRAY_GET: {
                     const RudaMirArray *array = ruda_vector_at_const(
                         &function->arrays,
@@ -523,6 +530,12 @@ bool ruda_native_c_emit_function(
                         )) return false;
                     break;
                 }
+                case RUDA_MIR_ARRAY_GET_IN_BOUNDS:
+                case RUDA_MIR_ARRAY_SET_IN_BOUNDS:
+                    if (!ruda_native_c_emit_range_instruction(
+                            buffer, function, i
+                        )) return false;
+                    break;
                 case RUDA_MIR_BITWISE_NOT_I64:
                     if (ruda_native_c_register_type(function, i->target)
                             != RUDA_TYPE_I64) {
