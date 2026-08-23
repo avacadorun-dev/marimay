@@ -104,10 +104,14 @@ distinct `I0002` diagnostics with exit `70`.
 - [`docs/requirements.md`](docs/requirements.md) — requirement-to-gate traceability;
 - [`IMPLEMENTATION-BRIEF.md`](IMPLEMENTATION-BRIEF.md) — complete handoff to an implementation agent;
 - [`docs/implementation/roadmap.md`](docs/implementation/roadmap.md) — gates from C17 bootstrap to production and self-hosting;
+- [`docs/implementation/checkpoints.md`](docs/implementation/checkpoints.md) — the single CP0–CP40 execution ledger and next ready checkpoint;
+- [`docs/implementation/evidence/README.md`](docs/implementation/evidence/README.md) — evidence grouped by product gate and historical checkpoint;
 - [`docs/implementation/bootstrap.md`](docs/implementation/bootstrap.md) — build and verify the current C17 bootstrap slice;
 - [`docs/implementation/compiler-architecture.md`](docs/implementation/compiler-architecture.md) — Stage 0 phase ownership, validation boundaries, and refactoring checkpoints;
 - [`docs/research/compiler-architecture.md`](docs/research/compiler-architecture.md) — primary-source research behind the physical compiler architecture;
 - [`docs/implementation/test-strategy.md`](docs/implementation/test-strategy.md) — required verification matrix;
 - [`examples/`](examples) — readability and conformance examples.
 
-The roadmap status labels and linked evidence are authoritative for implementation readiness.
+The product roadmap owns gate state, the checkpoint ledger owns execution
+order, and the evidence index owns direct reports. `./tools/check-roadmap`
+validates their shared IDs and states.

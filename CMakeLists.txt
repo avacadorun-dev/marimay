@@ -464,6 +464,22 @@ install(DIRECTORY bootstrap/include/mmay runtime/include/mmay
 
 if(BUILD_TESTING)
   add_subdirectory(tests/c-unit)
+  find_package(Python3 COMPONENTS Interpreter QUIET)
+  if(Python3_Interpreter_FOUND)
+    add_test(
+      NAME mmay_roadmap
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
+    )
+    set_tests_properties(mmay_roadmap PROPERTIES
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_custom_target(check-roadmap
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      COMMENT "Checking roadmap and checkpoint invariants"
+      VERBATIM
+    )
+  endif()
 endif()
 
 if(MMAY_BUILD_FUZZERS)

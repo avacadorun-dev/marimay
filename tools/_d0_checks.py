@@ -526,7 +526,15 @@ def _decision_states(text: str) -> Tuple[dict[str, str], List[Tuple[str, int]]]:
 
 
 def _roadmap_gates(text: str) -> Set[str]:
-    return set(re.findall(r"^##\s+([A-Z]\d+)\s+—", text, re.MULTILINE))
+    headings = set(re.findall(r"^##\s+([A-Z]\d+)\s+—", text, re.MULTILINE))
+    dashboard = set(
+        re.findall(
+            r"^\|\s*((?:A|D|E|I|N|P)\d+|CLI\d+)\s*\|",
+            text,
+            re.MULTILINE,
+        )
+    )
+    return headings | dashboard
 
 
 def _requirement_rows(text: str) -> List[Tuple[str, str, int]]:

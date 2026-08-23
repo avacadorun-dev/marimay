@@ -18,6 +18,8 @@ jobs:
           persist-credentials: false
       - name: Check generated artifacts
         run: ./tools/check-generated
+      - name: Check roadmap and checkpoint invariants
+        run: ./tools/check-roadmap
       - name: Check documentation links
         run: ./tools/check-doc-links
       - name: Check specification terms

@@ -1,6 +1,19 @@
 # Roadmap
 
-The authoritative production roadmap is [`docs/implementation/roadmap.md`](docs/implementation/roadmap.md).
+Start with the [current product dashboard](docs/implementation/roadmap.md#current)
+and [Now / Next / Later](docs/implementation/roadmap.md#now-next-later).
 
-Do not replace its evidence-based gate states with unchecked task-list boxes.
+The [product roadmap](docs/implementation/roadmap.md) is the only authority for
+gate states and release sequencing. The
+[checkpoint ledger](docs/implementation/checkpoints.md) is the only execution
+queue, and the [evidence index](docs/implementation/evidence/README.md) keeps
+direct reports out of status cells. Their IDs and states are checked against
+[`roadmap.tsv`](docs/implementation/roadmap.tsv).
 
+Current execution links: [CLI0](docs/implementation/roadmap.md#cli0-boundary),
+[post-CLI0 I6/E0](docs/implementation/roadmap.md#post-cli0-i6-and-e0), and the
+sole ready card,
+[CP29](docs/implementation/checkpoints.md#cp29-public-release-contract-and-closure-matrix).
+
+Do not replace evidence-based states with unchecked task-list boxes or treat a
+locally implemented slice as publicly shippable.

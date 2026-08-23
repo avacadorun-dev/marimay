@@ -47,8 +47,10 @@ Implementation convenience is not a reason to change source semantics. Temporary
 
 ## Architecture and context discipline
 
-Checkpoint 0 in `checkpoints.md` is a prerequisite for every numbered preview
-checkpoint. Feature work does not resume while that gate is red.
+Checkpoint 0 in `docs/implementation/checkpoints.md` is the historical
+architecture prerequisite for every numbered preview checkpoint. The A0
+product gate remains independently evidence-scoped; feature work does not
+resume while the current architecture check is red.
 
 - Every handwritten production or test C translation unit has one named owner
   and one reviewable responsibility. Coordinators orchestrate owners; they do
@@ -79,6 +81,8 @@ checkpoint. Feature work does not resume while that gate is red.
 - `./tools/check-architecture` is a required local and CI gate after every
   feature and every checkpoint. A checkpoint cannot be evidenced, committed,
   pushed, or marked complete while it fails.
+- `./tools/check-roadmap` is a required local and CI documentation gate after
+  every roadmap, checkpoint, evidence-index, or planning-state change.
 
 Line count is only the mechanical backstop. Passing the count while preserving
 a mixed-responsibility god object is still an architecture failure.

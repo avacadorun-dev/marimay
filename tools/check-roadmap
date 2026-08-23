@@ -1,0 +1,343 @@
+#!/usr/bin/env python3
+"""Validate Marimay's product roadmap and checkpoint execution queue.
+
+The validator uses only the Python standard library.  It validates the compact
+TSV register first, then checks the two human-readable projections and runs a
+small mutation suite proving that the most important failures are detected.
+"""
+
+from __future__ import annotations
+
+import copy
+import csv
+import re
+import sys
+from pathlib import Path
+from typing import Iterable
+
+
+ROOT = Path(__file__).resolve().parents[1]
+REGISTER = ROOT / "docs/implementation/roadmap.tsv"
+PRODUCT_ROADMAP = ROOT / "docs/implementation/roadmap.md"
+CHECKPOINT_LEDGER = ROOT / "docs/implementation/checkpoints.md"
+
+FIELDS = (
+    "kind",
+    "id",
+    "title",
+    "state",
+    "parent_gate",
+    "dependencies",
+    "evidence_scope",
+    "evidence",
+    "next_action",
+)
+STATES = {"planned", "ready", "in-progress", "blocked", "verified", "superseded"}
+EVIDENCE_SCOPES = {
+    "none",
+    "local",
+    "pushed-ci",
+    "tier-1-partial",
+    "tier-1-complete",
+    "external-pilot",
+    "release-audit",
+}
+RETIRED_PLANNING_FILES = (
+    "checkpoints.md",
+    "algorithm-followup-checkpoints.md",
+    "public-cli-alpha-checkpoints.md",
+    "goal-objective.md",
+    "algorithm-followup-checkpoint-task.md",
+)
+
+
+def read_register(path: Path = REGISTER) -> tuple[list[dict[str, str]], list[str]]:
+    findings: list[str] = []
+    try:
+        with path.open("r", encoding="utf-8", newline="") as stream:
+            reader = csv.DictReader(stream, delimiter="\t")
+            if tuple(reader.fieldnames or ()) != FIELDS:
+                findings.append(
+                    f"{path.relative_to(ROOT)}: expected TSV header {FIELDS}, "
+                    f"found {tuple(reader.fieldnames or ())}"
+                )
+                return [], findings
+            rows = []
+            for line, row in enumerate(reader, 2):
+                if None in row or any(value is None for value in row.values()):
+                    findings.append(f"{path.relative_to(ROOT)}:{line}: malformed TSV row")
+                    continue
+                normalized = {key: value.strip() for key, value in row.items()}
+                normalized["_line"] = str(line)
+                rows.append(normalized)
+            return rows, findings
+    except OSError as error:
+        return [], [f"{path.relative_to(ROOT)}: {error}"]
+
+
+def split_ids(value: str) -> list[str]:
+    return [] if value == "-" else [item.strip() for item in value.split(",") if item.strip()]
+
+
+def split_evidence(value: str) -> list[str]:
+    return [] if value == "-" else [item.strip() for item in value.split(";") if item.strip()]
+
+
+def validate_rows(rows: list[dict[str, str]], root: Path = ROOT) -> list[str]:
+    findings: list[str] = []
+    by_id: dict[str, dict[str, str]] = {}
+
+    for row in rows:
+        row_id = row["id"]
+        line = row.get("_line", "?")
+        prefix = f"docs/implementation/roadmap.tsv:{line}"
+        if row_id in by_id:
+            findings.append(f"{prefix}: duplicate id {row_id}")
+        else:
+            by_id[row_id] = row
+
+        if row["kind"] not in {"gate", "checkpoint"}:
+            findings.append(f"{prefix}: invalid kind {row['kind']!r}")
+        if row["kind"] == "gate" and not re.fullmatch(r"(?:A|D|E|I|N|P)\d+|CLI\d+", row_id):
+            findings.append(f"{prefix}: invalid gate id {row_id!r}")
+        if row["kind"] == "checkpoint" and not re.fullmatch(r"CP\d+", row_id):
+            findings.append(f"{prefix}: invalid checkpoint id {row_id!r}")
+        if row["state"] not in STATES:
+            findings.append(f"{prefix}: invalid state {row['state']!r}")
+        if row["evidence_scope"] not in EVIDENCE_SCOPES:
+            findings.append(f"{prefix}: invalid evidence scope {row['evidence_scope']!r}")
+        if row["state"] == "verified" and not split_evidence(row["evidence"]):
+            findings.append(f"{prefix}: verified row requires evidence")
+        if row["evidence_scope"] == "none" and split_evidence(row["evidence"]):
+            findings.append(f"{prefix}: evidence scope none cannot name evidence")
+        if row["evidence_scope"] != "none" and not split_evidence(row["evidence"]):
+            findings.append(f"{prefix}: non-none evidence scope requires evidence")
+        if row["state"] in {"ready", "in-progress", "blocked"} and row["next_action"] in {"", "-"}:
+            findings.append(f"{prefix}: active or blocked row requires next_action")
+        for evidence in split_evidence(row["evidence"]):
+            target = (root / evidence).resolve()
+            try:
+                target.relative_to(root.resolve())
+            except ValueError:
+                findings.append(f"{prefix}: evidence path escapes repository: {evidence}")
+                continue
+            if not target.is_file():
+                findings.append(f"{prefix}: evidence path does not exist: {evidence}")
+
+    expected_checkpoints = {f"CP{number}" for number in range(41)}
+    actual_checkpoints = {row["id"] for row in rows if row["kind"] == "checkpoint"}
+    for missing in sorted(expected_checkpoints - actual_checkpoints, key=lambda value: int(value[2:])):
+        findings.append(f"docs/implementation/roadmap.tsv: missing checkpoint {missing}")
+    for extra in sorted(actual_checkpoints - expected_checkpoints):
+        findings.append(f"docs/implementation/roadmap.tsv: checkpoint outside CP0-CP40: {extra}")
+
+    gate_ids = {row["id"] for row in rows if row["kind"] == "gate"}
+    for row in rows:
+        prefix = f"docs/implementation/roadmap.tsv:{row.get('_line', '?')}"
+        if row["kind"] == "checkpoint" and row["parent_gate"] not in gate_ids:
+            findings.append(f"{prefix}: unknown parent gate {row['parent_gate']}")
+        if row["kind"] == "gate" and row["parent_gate"] != "-":
+            findings.append(f"{prefix}: gate parent_gate must be '-'")
+        for dependency in split_ids(row["dependencies"]):
+            if dependency not in by_id:
+                findings.append(f"{prefix}: unknown dependency {dependency}")
+
+    ready = [row["id"] for row in rows if row["kind"] == "checkpoint" and row["state"] == "ready"]
+    if len(ready) > 1:
+        findings.append(f"docs/implementation/roadmap.tsv: more than one ready checkpoint: {ready}")
+    for row in rows:
+        if row["kind"] == "checkpoint" and row["state"] == "ready":
+            for dependency in split_ids(row["dependencies"]):
+                target = by_id.get(dependency)
+                if target is not None and target["state"] != "verified":
+                    findings.append(
+                        f"docs/implementation/roadmap.tsv:{row.get('_line', '?')}: "
+                        f"ready checkpoint dependency {dependency} is {target['state']}"
+                    )
+
+    graph = {
+        row_id: [dependency for dependency in split_ids(row["dependencies"]) if dependency in by_id]
+        for row_id, row in by_id.items()
+    }
+    visiting: set[str] = set()
+    visited: set[str] = set()
+
+    def visit(row_id: str, stack: list[str]) -> None:
+        if row_id in visiting:
+            start = stack.index(row_id)
+            findings.append(
+                "docs/implementation/roadmap.tsv: dependency cycle: "
+                + " -> ".join(stack[start:] + [row_id])
+            )
+            return
+        if row_id in visited:
+            return
+        visiting.add(row_id)
+        stack.append(row_id)
+        for dependency in graph.get(row_id, []):
+            visit(dependency, stack)
+        stack.pop()
+        visiting.remove(row_id)
+        visited.add(row_id)
+
+    for row_id in graph:
+        visit(row_id, [])
+    return findings
+
+
+def markdown_states(path: Path, marker: str) -> tuple[dict[str, str], list[str]]:
+    findings: list[str] = []
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as error:
+        return {}, [f"{path.relative_to(ROOT)}: {error}"]
+    begin = f"<!-- {marker}:begin -->"
+    end = f"<!-- {marker}:end -->"
+    if text.count(begin) != 1 or text.count(end) != 1:
+        return {}, [f"{path.relative_to(ROOT)}: expected one {marker} marker pair"]
+    block = text.split(begin, 1)[1].split(end, 1)[0]
+    states: dict[str, str] = {}
+    if marker == "checkpoint-register":
+        pattern = re.compile(
+            r"^#{2,3}\s+(CP\d+)\s+-[^\n]*\n\nState:\s+`([^`]+)`",
+            re.MULTILINE,
+        )
+        for match in pattern.finditer(block):
+            row_id, state = match.groups()
+            if row_id in states:
+                findings.append(f"{path.relative_to(ROOT)}: duplicate projected id {row_id}")
+            states[row_id] = state
+        if not states:
+            findings.append(f"{path.relative_to(ROOT)}: empty {marker} projection")
+        return states, findings
+
+    for number, line in enumerate(block.splitlines(), 1):
+        if not line.startswith("|"):
+            continue
+        fields = [field.strip() for field in line.strip().strip("|").split("|")]
+        if len(fields) < 3 or fields[0] in {"ID", "---"} or set(fields[0]) == {"-"}:
+            continue
+        row_id = fields[0].strip("`")
+        state = fields[2].strip("`")
+        if row_id in states:
+            findings.append(f"{path.relative_to(ROOT)}: duplicate projected id {row_id}")
+        states[row_id] = state
+    if not states:
+        findings.append(f"{path.relative_to(ROOT)}: empty {marker} projection")
+    return states, findings
+
+
+def validate_projections(rows: list[dict[str, str]]) -> list[str]:
+    findings: list[str] = []
+    roadmap_states, roadmap_findings = markdown_states(PRODUCT_ROADMAP, "roadmap-register")
+    checkpoint_states, checkpoint_findings = markdown_states(CHECKPOINT_LEDGER, "checkpoint-register")
+    findings.extend(roadmap_findings)
+    findings.extend(checkpoint_findings)
+    expected_gates = {row["id"]: row["state"] for row in rows if row["kind"] == "gate"}
+    expected_checkpoints = {
+        row["id"]: row["state"] for row in rows if row["kind"] == "checkpoint"
+    }
+    for label, expected, projected in (
+        ("product roadmap", expected_gates, roadmap_states),
+        ("checkpoint ledger", expected_checkpoints, checkpoint_states),
+    ):
+        for missing in sorted(set(expected) - set(projected)):
+            findings.append(f"{label}: missing projected id {missing}")
+        for extra in sorted(set(projected) - set(expected)):
+            findings.append(f"{label}: unknown projected id {extra}")
+        for row_id in sorted(set(expected) & set(projected)):
+            if expected[row_id] != projected[row_id]:
+                findings.append(
+                    f"{label}: state mismatch for {row_id}: "
+                    f"register={expected[row_id]} projection={projected[row_id]}"
+                )
+    return findings
+
+
+def validate_retired_files() -> list[str]:
+    return [
+        f"{name}: retired planning file still exists at repository root"
+        for name in RETIRED_PLANNING_FILES
+        if (ROOT / name).exists()
+    ]
+
+
+def expect_mutation(name: str, rows: list[dict[str, str]], needle: str) -> str | None:
+    findings = validate_rows(rows)
+    if not any(needle in finding for finding in findings):
+        return f"self-test {name!r} failed to detect {needle!r}"
+    return None
+
+
+def run_self_tests(rows: list[dict[str, str]]) -> list[str]:
+    failures: list[str] = []
+
+    def mutated() -> list[dict[str, str]]:
+        return copy.deepcopy(rows)
+
+    cases: list[tuple[str, list[dict[str, str]], str]] = []
+    sample = mutated()
+    next(row for row in sample if row["id"] == "CP40")["state"] = "done"
+    cases.append(("invalid state", sample, "invalid state"))
+
+    sample = mutated()
+    sample.append(copy.deepcopy(next(row for row in sample if row["id"] == "CP40")))
+    cases.append(("duplicate id", sample, "duplicate id CP40"))
+
+    sample = mutated()
+    next(row for row in sample if row["id"] == "CP40")["dependencies"] = "CP999"
+    cases.append(("missing dependency", sample, "unknown dependency CP999"))
+
+    sample = mutated()
+    next(row for row in sample if row["id"] == "CP29")["dependencies"] = "CP40"
+    next(row for row in sample if row["id"] == "CP40")["dependencies"] = "CP29"
+    cases.append(("dependency cycle", sample, "dependency cycle"))
+
+    sample = mutated()
+    next(row for row in sample if row["id"] == "CP30")["state"] = "ready"
+    cases.append(("duplicate ready", sample, "more than one ready checkpoint"))
+
+    sample = mutated()
+    next(row for row in sample if row["id"] == "D0")["evidence"] = "-"
+    cases.append(("missing verified evidence", sample, "verified row requires evidence"))
+
+    sample = mutated()
+    next(row for row in sample if row["id"] == "D0")["evidence"] = "docs/implementation/evidence/does-not-exist.md"
+    cases.append(("missing evidence path", sample, "evidence path does not exist"))
+
+    for name, sample, needle in cases:
+        failure = expect_mutation(name, sample, needle)
+        if failure is not None:
+            failures.append(failure)
+    return failures
+
+
+def render(findings: Iterable[str]) -> int:
+    materialized = list(findings)
+    if materialized:
+        for finding in materialized:
+            print(finding, file=sys.stderr)
+        return 1
+    return 0
+
+
+def main() -> int:
+    rows, findings = read_register()
+    if findings:
+        return render(findings)
+    findings.extend(validate_rows(rows))
+    findings.extend(validate_projections(rows))
+    findings.extend(validate_retired_files())
+    findings.extend(run_self_tests(rows))
+    if findings:
+        return render(findings)
+    print(
+        "roadmap ok: "
+        f"{sum(row['kind'] == 'gate' for row in rows)} gates, "
+        "41 checkpoints, one ready checkpoint, mutation self-tests passed"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
