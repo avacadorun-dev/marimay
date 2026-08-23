@@ -62,7 +62,7 @@ the diagnostic contract; the compiler architecture contract; and checkpoint
 | atomic publication | a bad source leaves an existing requested output byte-exact; a missing output parent is stable `B0005` in human and NDJSON modes |
 | toolchain preflight | an injected definitely-missing compiler returns the missing-toolchain status before dereferencing dummy MIR, proving preflight precedes code generation |
 | allocation ownership | the full `ruda build --emit c` command is swept through every deterministic allocation failure to first success; directory creation and executable publication have independent fail-every-allocation tests; all iterations assert `live_allocations == 0` and `live_bytes == 0` |
-| platform implementation | POSIX and Windows own UTF-8 directory creation and atomic executable replacement; [Gitea run 41](http://ci.example:3000/OS/Ruda/actions/runs/41) passed the Linux GCC/Clang debug/release and sanitizer matrix for implementation commit `2ac77cc`; the GitHub matrix additionally registers AppleClang and Windows/MSVC jobs |
+| platform implementation | POSIX and Windows own UTF-8 directory creation and atomic executable replacement; [Gitea run 41](http://ci.example:3000/Marimay/marimay/actions/runs/41) passed the Linux GCC/Clang debug/release and sanitizer matrix for implementation commit `2ac77cc`; the GitHub matrix additionally registers AppleClang and Windows/MSVC jobs |
 
 ## Observed VM/native outcomes
 
@@ -116,4 +116,4 @@ Environment: macOS Darwin 25.3.0, arm64; Apple Clang 17.0.0; CMake 4.4.2.
 | `cmake --build --preset asan-ubsan --parallel 4` | 0 | instrumented compiler and native runtime build |
 | `ctest --preset asan-ubsan --output-on-failure` | 0 | full sanitizer CTest, 236.40 seconds |
 | exact split-stream VM/native differential | 0 | eight programs matched stdout, stderr, and exit independently |
-| [Gitea Actions run 41](http://ci.example:3000/OS/Ruda/actions/runs/41) | 0 | pushed `2ac77cc` passed documentation/architecture, GCC and Clang debug/release, ASan+UBSan+LSan, and TSan in 21m59s |
+| [Gitea Actions run 41](http://ci.example:3000/Marimay/marimay/actions/runs/41) | 0 | pushed `2ac77cc` passed documentation/architecture, GCC and Clang debug/release, ASan+UBSan+LSan, and TSan in 21m59s |

@@ -63,18 +63,18 @@ barriers and seven in-bounds loads.
 ## Pushed CI and Linux performance evidence
 
 Ruda commit `1d728451612f5ad4d6cfb78a5785b2e57605af26` is published on
-`origin/main`. Gitea Actions [run #86](http://ci.example:3000/OS/Ruda/actions/runs/86)
+`origin/main`. Gitea Actions [run #86](http://ci.example:3000/Marimay/marimay/actions/runs/86)
 completed 10/10 jobs: documentation/architecture, Linux x86_64 GCC and Clang
 Debug/Release, ASan+UBSan+LSan, TSan, and bytecode, formatter, and frontend
 fuzzing.
 
-The sibling benchmark [run #87](http://ci.example:3000/OS/ruda-algotithms/actions/runs/87)
+The sibling benchmark [run #87](http://ci.example:3000/Marimay/algorithm-benchmarks/actions/runs/87)
 used that exact release compiler in paired 11-sample/3-warmup probe and
 Ruda/Go/Rust algorithm reports. Attempt 1 began at load average 14.78 on the
 four-CPU runner and transiently exceeded five old probe budgets. D056 therefore
 required one complete cool-down retry with unchanged compiler, runtime,
 protocol, manifests, source tree, resource budget, and sample schedule. The
-[retry job](http://ci.example:3000/OS/ruda-algotithms/actions/runs/87/jobs/695)
+[retry job](http://ci.example:3000/Marimay/algorithm-benchmarks/actions/runs/87/jobs/695)
 passed every previous reviewed budget; none of the five exceedances reproduced.
 Attempt 1 remains preserved by sibling commit `2bf4f73395b84eac123ccf14d45733f3d5b6ab75`.
 The reviewed retry and both merge parents are published on sibling `origin/main`

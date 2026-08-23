@@ -13,7 +13,7 @@ The sibling repository arrived on an unborn `main`: every source file was
 untracked and there was no parent commit. Its first commit therefore records
 the complete reviewed corpus instead of fabricating a pre-checkpoint history.
 Both commits are published on `main` at
-`https://code.example/benchmark-corpus.git`; the remote head is the
+`https://github.com/avacadorun-dev/marimay.git`; the remote head is the
 pinned smoke-evidence commit. The Ruda repository retains its existing
 independent history.
 

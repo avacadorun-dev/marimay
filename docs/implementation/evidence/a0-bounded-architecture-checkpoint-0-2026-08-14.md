@@ -121,7 +121,7 @@ ctest --preset asan-ubsan --output-on-failure      1/1 passed; 34.78 s
 The pushed architecture commit passed the complete configured Gitea Linux
 x86_64 matrix, including Clang/GCC Debug and Release, ASan/UBSan/LSan, TSan,
 and documentation/architecture invariants in
-[Gitea run 26](http://ci.example:3000/OS/Ruda/actions/runs/26). A0 remains
+[Gitea run 26](http://ci.example:3000/Marimay/marimay/actions/runs/26). A0 remains
 `in-progress`: Linux arm64, macOS arm64/x86_64, and Windows x86_64 Tier 1 jobs
 still require linked GitHub Actions evidence, and the public-header closure
 must pass the CI run for its containing pushed checkpoint commit.

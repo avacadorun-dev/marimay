@@ -68,7 +68,7 @@ Generated programs execute with strict C17 at both `-O0` and `-O2`.
 The retained exact ABI was measured with the D056 11-sample/3-warmup protocol
 on macOS arm64 Apple M2 using AppleClang 17 and the release runtime archive.
 The raw schema-valid report is
-`../ruda-algotithms/benchmarks/results/cp23-probes-macos-arm64-apple-m2.json`.
+`../algorithm-benchmarks/benchmarks/results/cp23-probes-macos-arm64-apple-m2.json`.
 It is preserved in the benchmark repository by commit `e74bd93`.
 The CP22 report is the comparison point because it already includes the D058
 range-proof pass.

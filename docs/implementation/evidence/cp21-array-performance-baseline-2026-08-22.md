@@ -20,7 +20,7 @@ evidence is `88d03f4df3b21d3f34256e76253e650488daaae9`, reviewed and registered 
 `23149703506ea395136aff1bdac2152fbbb72f7b` separates the completed Linux
 checkpoint gate from the deferred five-platform public-alpha gate. These
 commits are published on `origin/main` at
-`https://code.example/benchmark-corpus.git`.
+`https://github.com/avacadorun-dev/marimay.git`.
 
 Authority: accepted D056 and D057 plus the implementation test-strategy
 performance and Tier 1 platform contracts. D052 supplies release-runtime
@@ -147,7 +147,7 @@ the reviewed budget.
 ## Reviewed Linux x86_64 observations
 
 The dedicated Gitea Actions runner completed run
-[`#81`](http://ci.example:3000/OS/ruda-algotithms/actions/runs/81) from
+[`#81`](http://ci.example:3000/Marimay/algorithm-benchmarks/actions/runs/81) from
 commit `22be069a00c563f3261d0dd79759b6a7eb48dd2d`. Environment: Linux
 6.12.57+deb13-amd64 x86_64, four logical CPUs reported as QEMU Virtual CPU
 2.5+, Clang 18.1.3, Python 3.12.3, Go 1.26.6, and Rust 1.96.0. The runner
@@ -205,7 +205,7 @@ file hashes, Ruda and corpus revisions, protocol, and both manifests.
 | `RUDA=../Ma/build/release/ruda ./verify.sh` in sibling | 0 | 39 Python tests; checkpoint registry gate; exact Ruda fmt/check/VM/test-both/Debug+Release native, Go vet/tests, Rust fmt/Clippy/tests |
 | `RUDA=../Ma/build/release/ruda ./benchmarks/probes.py --samples 11 --warmups 3 --output benchmarks/results/cp21-probes-macos-arm64-apple-m2.json` | 0 | 9 probes × 3 warmups + 11 retained samples; exact checksums |
 | `RUDA=../Ma/build/release/ruda ./benchmarks/run.py --languages ruda,go,rust --samples 11 --warmups 3 --output benchmarks/results/cp21-algorithms-macos-arm64-apple-m2.md` | 0 | 8 workloads × 3 languages × 3 warmups + 11 retained samples; exact checksums |
-| Gitea Actions sibling run [`#81`](http://ci.example:3000/OS/ruda-algotithms/actions/runs/81) | 0 | checkout, pinned toolchains, Release Ruda build, full corpus verify, 9 probes, 8 × 3 algorithms, schema/budget candidate, raw artifact, and evidence branch all succeeded |
+| Gitea Actions sibling run [`#81`](http://ci.example:3000/Marimay/algorithm-benchmarks/actions/runs/81) | 0 | checkout, pinned toolchains, Release Ruda build, full corpus verify, 9 probes, 8 × 3 algorithms, schema/budget candidate, raw artifact, and evidence branch all succeeded |
 | `./benchmarks/validate_results.py ...cp21-probes...json ...cp21-algorithms...json` on each recorded platform | 0 | compatible release artifacts; macOS arm64 and Linux x86_64 each have 9 probes and 8 algorithms within reviewed budgets |
 | `make benchmark-validate` | 0 | D057 checkpoint gate accepts the exact reviewed Linux x86_64 baseline; supplemental macOS evidence remains valid |
 | `make benchmark-validate-public-alpha` | 2 (expected) | deferred aggregate gate rejects the incomplete registry and names `linux-arm64`, `macos-x86_64`, and `windows-x86_64` |

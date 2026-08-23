@@ -224,7 +224,7 @@ the governing gate.
 Checkpoint A0 is locally complete and its initial pushed Linux x86_64 matrix is
 green; full Tier 1 evidence remains pending. Its post-audit public-header gate
 closure passed as part of V0 checkpoint 1 in
-[Gitea run 29](http://ci.example:3000/OS/Marimay/actions/runs/29). The architecture
+[Gitea run 29](http://ci.example:3000/Marimay/marimay/actions/runs/29). The architecture
 gate remains a blocking prerequisite for every subsequent feature checkpoint.
 
 The physical ownership map and behavior-preserving extraction sequence are
@@ -251,7 +251,7 @@ callable indexes built during collection. V0 checkpoint 1 now executes managed
 records, algebraic enums, nested patterns, D040 source-order effects, and
 non-generic structural interfaces through the MIR oracle, encoded VM, and
 generated C17; the configured Linux x86_64 matrix is green in
-[Gitea run 29](http://ci.example:3000/OS/Marimay/actions/runs/29). Preview
+[Gitea run 29](http://ci.example:3000/Marimay/marimay/actions/runs/29). Preview
 checkpoint 2 established deterministic local packages and D043 invariance;
 preview checkpoint 3 now publishes bounded occurrence facts and exact
 resolver-owned dot completion through generation/snapshot-safe query APIs.

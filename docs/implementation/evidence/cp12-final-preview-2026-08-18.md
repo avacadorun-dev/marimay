@@ -113,7 +113,7 @@ by the pushed CI jobs described below.
 
 ## Pushed CI fuzz audit
 
-[Gitea run 45](http://ci.example:3000/OS/Ruda/actions/runs/45) passed
+[Gitea run 45](http://ci.example:3000/Marimay/marimay/actions/runs/45) passed
 documentation/architecture, Clang and GCC Debug/Release, Linux
 ASan+UBSan+LSan, and TSan. Its three new sustained jobs then found one bytecode
 disassembler defect, one formatter round-trip defect, and one frontend parser
@@ -124,7 +124,7 @@ proved that decoded and verified record, enum, interface, and `u64` operands
 were not printable. The disassembler now covers all four operand kinds, with
 focused nominal/interface/maximum-`u64` assertions.
 
-[Gitea run 46](http://ci.example:3000/OS/Ruda/actions/runs/46) independently
+[Gitea run 46](http://ci.example:3000/Marimay/marimay/actions/runs/46) independently
 passed documentation (33 s), Clang Debug/Release (3 m 24 s / 3 m 26 s), GCC
 Debug/Release (3 m 12 s / 3 m 16 s), Linux ASan+UBSan+LSan (5 m 27 s), the
 full bytecode campaign (11 m 6 s), and TSan (3 m 56 s). It then supplied exact
