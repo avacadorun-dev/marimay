@@ -1,0 +1,347 @@
+#!/usr/bin/env python3
+"""Validate the CP29 release contract, command inventory, and closure matrix."""
+
+from __future__ import annotations
+
+import copy
+import csv
+import json
+import re
+import sys
+from pathlib import Path
+from typing import Iterable
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CMAKE = ROOT / "CMakeLists.txt"
+FALLBACK_CONFIG = ROOT / "bootstrap/include/mmay/build_config.h"
+RELEASE_SOURCE = ROOT / "bootstrap/src/cli/cli_release.c"
+METADATA_TEMPLATE = ROOT / "cmake/mmay_release_metadata.json.in"
+VERSION_SNAPSHOT = ROOT / "tests/c-unit/snapshots/version.json.in"
+MATRIX = ROOT / "docs/implementation/cli0-closure-matrix.tsv"
+MATRIX_DOC = ROOT / "docs/implementation/cli0-closure-matrix.md"
+ROADMAP_REGISTER = ROOT / "docs/implementation/roadmap.tsv"
+REQUIREMENTS = ROOT / "docs/requirements.md"
+README = ROOT / "README.md"
+LIMITATIONS = ROOT / "docs/known-limitations.md"
+CANDIDATE = ROOT / "docs/releases/0.1.0-alpha.1.md"
+
+MATRIX_FIELDS = (
+    "id",
+    "gate",
+    "requirements",
+    "current_evidence_scope",
+    "missing_criterion",
+    "owner",
+    "acceptance_command",
+    "platform_scope",
+    "permitted_release_claim",
+)
+REQUIRED_GATES = {"N0", "A0", "I0", "I1", "I2", "I3", "I4", "I5"}
+REQUIRED_CP_OWNERS = {f"CP{number}" for number in range(30, 41)}
+CLAIMS = {
+    "private-preview-only",
+    "bounded-cli0-after-owner",
+    "excluded-from-cli0",
+}
+EXPECTED = {
+    "MMAY_COMPILER_VERSION": "0.1.0-alpha.1",
+    "MMAY_RUNTIME_VERSION": "0.1.0-alpha.1",
+    "MMAY_LANGUAGE_VERSION": "0.1-design",
+    "MMAY_BYTECODE_VERSION": "unavailable",
+    "MMAY_BYTECODE_COMPATIBILITY": "none",
+    "MMAY_STANDARD_LIBRARY_VERSION": "0.1.0-alpha.1",
+    "MMAY_STANDARD_LIBRARY_SCOPE": "bounded-preview",
+    "MMAY_STANDARD_LIBRARY_COMPATIBILITY": "alpha-source",
+    "MMAY_VERSION_SCHEMA": "marimay.version/2",
+    "MMAY_RELEASE_CHANNEL": "private-preview",
+    "MMAY_RELEASE_CLAIM": "local-checker-backed-slice",
+    "MMAY_RELEASE_PUBLICATION_READY_JSON": "false",
+}
+
+
+def read(path: Path) -> str:
+    return path.read_text(encoding="utf-8")
+
+
+def cmake_value(text: str, name: str) -> str | None:
+    match = re.search(rf'set\({re.escape(name)}\s+"([^"]*)"\s*\)', text)
+    return match.group(1) if match else None
+
+
+def cmake_json_array(text: str, name: str) -> list[str] | None:
+    match = re.search(
+        rf'set\({re.escape(name)}\s+"((?:\\.|[^"])*)"\s*\)',
+        text,
+        re.DOTALL,
+    )
+    if match is None:
+        return None
+    try:
+        decoded = match.group(1).replace(r'\"', '"')
+        value = json.loads(decoded)
+    except json.JSONDecodeError:
+        return None
+    return value if isinstance(value, list) and all(isinstance(v, str) for v in value) else None
+
+
+def parse_tasks(text: str) -> tuple[list[str], list[str], list[str]]:
+    available: list[str] = []
+    staged: list[str] = []
+    findings: list[str] = []
+    pattern = re.compile(
+        r'^\s*\{"(?P<name>[a-z]+)",.*,\s*"(?P<owner>(?:CP|[A-Z])[A-Z0-9]+)", '
+        r'(?P<implemented>true|false)\},$',
+        re.MULTILINE,
+    )
+    for match in pattern.finditer(text):
+        target = available if match.group("implemented") == "true" else staged
+        target.append(match.group("name"))
+    if not available or not staged:
+        findings.append("bootstrap/src/cli/cli_release.c: command inventory is empty or unparsable")
+    combined = available + staged
+    if len(combined) != len(set(combined)):
+        findings.append("bootstrap/src/cli/cli_release.c: duplicate command name")
+    if available != sorted(available) or staged != sorted(staged):
+        findings.append("bootstrap/src/cli/cli_release.c: command classes must be sorted")
+    return available, staged, findings
+
+
+def read_tsv(path: Path, fields: tuple[str, ...]) -> tuple[list[dict[str, str]], list[str]]:
+    findings: list[str] = []
+    with path.open("r", encoding="utf-8", newline="") as stream:
+        reader = csv.DictReader(stream, delimiter="\t")
+        if tuple(reader.fieldnames or ()) != fields:
+            return [], [f"{path.relative_to(ROOT)}: invalid TSV header"]
+        rows: list[dict[str, str]] = []
+        for line, row in enumerate(reader, 2):
+            if None in row or any(value is None for value in row.values()):
+                findings.append(f"{path.relative_to(ROOT)}:{line}: malformed TSV row")
+                continue
+            normalized = {key: value.strip() for key, value in row.items()}
+            normalized["_line"] = str(line)
+            rows.append(normalized)
+    return rows, findings
+
+
+def roadmap_facts() -> tuple[dict[str, str], set[str], list[str]]:
+    scopes: dict[str, str] = {}
+    ids: set[str] = set()
+    findings: list[str] = []
+    with ROADMAP_REGISTER.open("r", encoding="utf-8", newline="") as stream:
+        reader = csv.DictReader(stream, delimiter="\t")
+        for row in reader:
+            row_id = row.get("id", "")
+            ids.add(row_id)
+            if row.get("kind") == "gate":
+                scopes[row_id] = row.get("evidence_scope", "")
+    if not ids or not scopes:
+        findings.append("docs/implementation/roadmap.tsv: empty register")
+    return scopes, ids, findings
+
+
+def requirement_ids() -> set[str]:
+    return set(re.findall(r"\| ([A-Z]+-\d{3}) \|", read(REQUIREMENTS)))
+
+
+def validate_matrix(
+    rows: list[dict[str, str]],
+    scopes: dict[str, str],
+    roadmap_ids: set[str],
+    known_requirements: set[str],
+) -> list[str]:
+    findings: list[str] = []
+    seen: set[str] = set()
+    gates: set[str] = set()
+    owners: set[str] = set()
+    for row in rows:
+        line = row.get("_line", "?")
+        prefix = f"docs/implementation/cli0-closure-matrix.tsv:{line}"
+        row_id = row["id"]
+        gate = row["gate"]
+        if row_id in seen:
+            findings.append(f"{prefix}: duplicate id {row_id}")
+        seen.add(row_id)
+        gates.add(gate)
+        owners.add(row["owner"])
+        if gate not in REQUIRED_GATES:
+            findings.append(f"{prefix}: invalid gate {gate}")
+        if not row_id.startswith(f"{gate}-"):
+            findings.append(f"{prefix}: id must start with {gate}-")
+        if row["current_evidence_scope"] != scopes.get(gate):
+            findings.append(f"{prefix}: evidence scope does not match roadmap for {gate}")
+        if row["owner"] not in roadmap_ids:
+            findings.append(f"{prefix}: unknown owner {row['owner']}")
+        if row["permitted_release_claim"] not in CLAIMS:
+            findings.append(f"{prefix}: invalid permitted release claim")
+        for field in ("missing_criterion", "acceptance_command", "platform_scope"):
+            if not row[field] or row[field] == "-":
+                findings.append(f"{prefix}: {field} must be concrete")
+        listed = [value for value in row["requirements"].split(";") if value]
+        if not listed:
+            findings.append(f"{prefix}: at least one requirement id is required")
+        for requirement in listed:
+            if requirement not in known_requirements:
+                findings.append(f"{prefix}: unknown requirement {requirement}")
+    if gates != REQUIRED_GATES:
+        findings.append(
+            "docs/implementation/cli0-closure-matrix.tsv: gate coverage mismatch "
+            f"missing={sorted(REQUIRED_GATES - gates)} extra={sorted(gates - REQUIRED_GATES)}"
+        )
+    missing_owners = REQUIRED_CP_OWNERS - owners
+    if missing_owners:
+        findings.append(
+            "docs/implementation/cli0-closure-matrix.tsv: CP owner coverage missing "
+            + ",".join(sorted(missing_owners))
+        )
+    return findings
+
+
+def validate_release_files() -> list[str]:
+    findings: list[str] = []
+    cmake = read(CMAKE)
+    fallback = read(FALLBACK_CONFIG)
+    for name, expected in EXPECTED.items():
+        observed = cmake_value(cmake, name)
+        if observed != expected:
+            findings.append(f"CMakeLists.txt: {name}={observed!r}, expected {expected!r}")
+        if f'#define {name} "{expected}"' not in fallback:
+            findings.append(f"bootstrap/include/mmay/build_config.h: {name} mismatch")
+
+    available, staged, task_findings = parse_tasks(read(RELEASE_SOURCE))
+    findings.extend(task_findings)
+    cmake_available = cmake_json_array(cmake, "MMAY_AVAILABLE_COMMANDS_JSON")
+    cmake_staged = cmake_json_array(cmake, "MMAY_STAGED_COMMANDS_JSON")
+    if cmake_available != available:
+        findings.append("CMakeLists.txt: available command metadata does not match CLI owner")
+    if cmake_staged != staged:
+        findings.append("CMakeLists.txt: staged command metadata does not match CLI owner")
+    if read(METADATA_TEMPLATE) != read(VERSION_SNAPSHOT):
+        findings.append("release metadata template and JSON version snapshot differ")
+
+    limitations = read(LIMITATIONS)
+    candidate = read(CANDIDATE)
+    required_doc_text = (
+        "Version: `0.1.0-alpha.1`",
+        "Channel: `private-preview`",
+        "Claim: `local-checker-backed-slice`",
+        "Publication ready: `no`",
+        "Bytecode: `unavailable`, compatibility `none`",
+    )
+    for needle in required_doc_text:
+        if needle not in limitations:
+            findings.append(f"docs/known-limitations.md: missing {needle!r}")
+    for needle in ("0.1.0-alpha.1", "private-preview", "marimay.version/2", "not a published release"):
+        if needle not in candidate:
+            findings.append(f"docs/releases/0.1.0-alpha.1.md: missing {needle!r}")
+
+    readme = read(README)
+    begin = "<!-- cp29-quick-start:begin -->"
+    end = "<!-- cp29-quick-start:end -->"
+    if readme.count(begin) != 1 or readme.count(end) != 1:
+        findings.append("README.md: expected one CP29 quick-start marker pair")
+    else:
+        block = readme.split(begin, 1)[1].split(end, 1)[0]
+        required_commands = (
+            "build/debug/mmay version --json",
+            "build/debug/mmay fmt tests/public-alpha/cp29-quick-start --check",
+            "build/debug/mmay check tests/public-alpha/cp29-quick-start",
+            "build/debug/mmay run tests/public-alpha/cp29-quick-start",
+            "build/debug/mmay test tests/public-alpha/cp29-quick-start --engine both",
+            "build/debug/mmay build tests/public-alpha/cp29-quick-start --output build/debug/cp29-quick-start",
+            "build/debug/cp29-quick-start",
+        )
+        for command in required_commands:
+            if command not in block:
+                findings.append(f"README.md: quick start missing {command!r}")
+    for relative in (
+        "tests/public-alpha/cp29-quick-start/mmay.mod",
+        "tests/public-alpha/cp29-quick-start/main.my",
+        "tests/public-alpha/cp29-quick-start/main_test.my",
+    ):
+        if not (ROOT / relative).is_file():
+            findings.append(f"{relative}: quick-start corpus file missing")
+    for needle in (
+        "install(DIRECTORY docs examples",
+        "IMPLEMENTATION-BRIEF.md",
+        "generated/mmay-release-metadata.json",
+    ):
+        if needle not in cmake:
+            findings.append(f"CMakeLists.txt: installed release file missing: {needle}")
+    if "D064" not in read(ROOT / "docs/design/decisions.md"):
+        findings.append("docs/design/decisions.md: D064 missing")
+    if "marimay.version/2" not in read(ROOT / "docs/spec/toolchain.md"):
+        findings.append("docs/spec/toolchain.md: release schema contract missing")
+    if "cli0-closure-matrix.tsv" not in read(MATRIX_DOC):
+        findings.append("docs/implementation/cli0-closure-matrix.md: TSV link missing")
+    return findings
+
+
+def run_self_tests(
+    rows: list[dict[str, str]],
+    scopes: dict[str, str],
+    roadmap_ids: set[str],
+    known_requirements: set[str],
+) -> list[str]:
+    failures: list[str] = []
+
+    def expect(name: str, sample: list[dict[str, str]], needle: str) -> None:
+        findings = validate_matrix(sample, scopes, roadmap_ids, known_requirements)
+        if not any(needle in finding for finding in findings):
+            failures.append(f"self-test {name!r} failed to detect {needle!r}")
+
+    sample = copy.deepcopy(rows)
+    sample.append(copy.deepcopy(sample[0]))
+    expect("duplicate", sample, "duplicate id")
+
+    sample = copy.deepcopy(rows)
+    sample[0]["current_evidence_scope"] = "none"
+    expect("scope", sample, "evidence scope does not match")
+
+    sample = copy.deepcopy(rows)
+    sample[0]["owner"] = "CP999"
+    expect("owner", sample, "unknown owner")
+
+    sample = copy.deepcopy(rows)
+    sample[0]["acceptance_command"] = "-"
+    expect("acceptance", sample, "acceptance_command must be concrete")
+
+    sample = copy.deepcopy(rows)
+    sample[0]["requirements"] = "TOOL-999"
+    expect("requirement", sample, "unknown requirement")
+
+    sample = [row for row in copy.deepcopy(rows) if row["gate"] != "N0"]
+    expect("gate coverage", sample, "gate coverage mismatch")
+    return failures
+
+
+def render(findings: Iterable[str]) -> int:
+    materialized = list(findings)
+    if materialized:
+        for finding in materialized:
+            print(finding, file=sys.stderr)
+        return 1
+    return 0
+
+
+def main() -> int:
+    rows, findings = read_tsv(MATRIX, MATRIX_FIELDS)
+    scopes, roadmap_ids, roadmap_findings = roadmap_facts()
+    findings.extend(roadmap_findings)
+    known_requirements = requirement_ids()
+    findings.extend(
+        validate_matrix(rows, scopes, roadmap_ids, known_requirements)
+    )
+    findings.extend(validate_release_files())
+    findings.extend(run_self_tests(rows, scopes, roadmap_ids, known_requirements))
+    if findings:
+        return render(findings)
+    print(
+        "release contract ok: "
+        f"{len(rows)} closure rows, 24 commands, mutation self-tests passed"
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

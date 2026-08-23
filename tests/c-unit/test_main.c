@@ -24,6 +24,7 @@ void mmay_test_receiver_collection_names(void);
 void mmay_test_receiver_collection_service(void);
 void mmay_test_check_entry(void);
 void mmay_test_cli(void);
+void mmay_test_cli_release_metadata(void);
 void mmay_test_cli_build(void);
 void mmay_test_cli_build_profiles(void);
 void mmay_test_cli_check(void);
@@ -157,6 +158,7 @@ int main(int argument_count, char **arguments) {
     mmay_test_source_manager();
     mmay_test_types();
     mmay_test_cli();
+    mmay_test_cli_release_metadata();
     mmay_test_cli_build();
     mmay_test_cli_build_profiles();
     mmay_test_cli_check();

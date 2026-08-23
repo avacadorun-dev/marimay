@@ -80,7 +80,7 @@ void mmay_test_process(void) {
     MMAY_EXPECT(status == MMAY_PROCESS_OK);
     MMAY_EXPECT(result.exit_code == 0);
     MMAY_EXPECT(!result.signaled);
-    MMAY_EXPECT(strstr((const char *)result.output.data, "\"schema\":\"marimay.version/1\"")
+    MMAY_EXPECT(strstr((const char *)result.output.data, "\"schema\":\"marimay.version/2\"")
         != NULL);
     mmay_process_result_dispose(&result);
 

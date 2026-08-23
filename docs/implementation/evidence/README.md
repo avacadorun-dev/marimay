@@ -70,9 +70,10 @@ legal/search/control/PATH evidence and an accepted follow-up identity decision.
 
 ## CLI0
 
-No direct CLI0 evidence exists. CP29 is the sole ready checkpoint. CP29–CP40
-must each add direct evidence; no report in CP0–CP28 proves the bounded public
-release gate.
+[CP29](cp29-release-contract-2026-08-23.md) supplies the local release contract,
+version/help/install metadata, runnable quick start, and 42-row closure matrix.
+It does not close CLI0 or any parent product gate. CP30 is the sole ready
+checkpoint; CP30–CP40 must each add direct evidence.
 
 ## I6 and E0
 
@@ -112,6 +113,7 @@ planned after CLI0.
 | CP26 | [Nested views](cp26-nested-array-views-2026-08-22.md) | Activation-scoped managed views. |
 | CP27 | [Integer proofs](cp27-integer-proofs-2026-08-22.md) | Verified checked-integer elimination. |
 | CP28 | [Rebaseline](cp28-release-rebaseline-2026-08-22.md); [hardening](cp28-release-hardening-2026-08-23.md) | Algorithm integration boundary before product work. |
+| CP29 | [Release contract](cp29-release-contract-2026-08-23.md) | Local metadata/help/install contract and closure assignment; no publication claim. |
 
 The [planning migration record](../planning-migration.md) maps retired planning
 sections to the consolidated roadmap, ledger, and this index without altering

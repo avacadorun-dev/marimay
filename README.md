@@ -23,7 +23,36 @@ Marimay is not a dialect or a collage of borrowed keywords. It uses a compact C-
 
 The first implementation is written in portable C17. After the language and bootstrap contract stabilize, the compiler is rewritten in Marimay and verified against the C17 bootstrap.
 
-## Read the language in one minute
+## Run the implemented private preview
+
+The current candidate is `0.1.0-alpha.1` on channel `private-preview`. The
+version identifies the contract; it is not a published alpha. From a checkout,
+this checked-in quick start exercises every currently available workflow:
+
+<!-- cp29-quick-start:begin -->
+```sh
+cmake --preset debug
+cmake --build --preset debug --parallel
+build/debug/mmay version --json
+build/debug/mmay fmt tests/public-alpha/cp29-quick-start --check
+build/debug/mmay check tests/public-alpha/cp29-quick-start
+build/debug/mmay run tests/public-alpha/cp29-quick-start
+build/debug/mmay test tests/public-alpha/cp29-quick-start --engine both
+build/debug/mmay build tests/public-alpha/cp29-quick-start --output build/debug/cp29-quick-start
+build/debug/cp29-quick-start
+```
+<!-- cp29-quick-start:end -->
+
+Both run paths print `Marimay CP29 quick start`. The
+[known limitations](docs/known-limitations.md) distinguish this executable
+slice from CLI0 and the 1.0 target. `mmay help` lists only seven commands as
+available; recognized future commands are visibly staged and return `U0003`.
+
+## Target design: read the language in one minute
+
+The following example describes the accepted target language. It is parsed and
+formatter-checked as documentation, but dynamic interpolation remains CP30 and
+the complete program is not part of the executable CP29 quick start.
 
 ```marimay
 import { Error as IoError, println } from "std/io";
@@ -70,7 +99,7 @@ const b = string(user);
 
 There is no hidden method body and no second behavior system. Because `User` is owned by the package and is the exact first-parameter type of `string`, the compiler adds `string(): string` to its dot-call set. That same set satisfies `Stringer`; no conformance declaration is needed.
 
-## Target execution contract: two engines, one language
+## Target design: two engines, one language
 
 ```sh
 mmay run .                         # fast typed bytecode VM
@@ -84,7 +113,16 @@ mmay fmt                           # canonical formatting
 mmay check                         # authoritative batch type checking
 ```
 
-These commands are the normative product workflow. In the current bootstrap, `mmay fmt`, `mmay check`, VM-default `mmay run`, host-native `mmay build`, and deterministic `mmay test` with VM/native comparison (plus help/version inspection) are implemented for the local/private preview surface; the roadmap gates the remaining options and commands. `mmay check` refuses success when accepted source reaches a checker path that is not implemented yet. The VM is not a looser or dynamically typed version of the language: both implemented execution paths consume code that passed the same parser, resolver, type checker, exhaustiveness checker, and typed MIR verifier.
+These commands are the normative target product workflow, not the CP29 command
+inventory. In the current bootstrap, `mmay fmt`, `mmay check`, VM-only
+`mmay run`, host-native `mmay build`, and deterministic `mmay test` with
+VM/native comparison (plus help/version inspection) are available for the
+local/private preview surface; `mmay help` is authoritative for the exact
+inventory. The roadmap gates the remaining options and commands. `mmay check`
+refuses success when accepted source reaches a checker path that is not
+implemented yet. The VM is not a looser or dynamically typed version of the
+language: both implemented execution paths consume code that passed the same
+parser, resolver, type checker, exhaustiveness checker, and typed MIR verifier.
 
 `mmay run`, `mmay test`, and `mmay build` accept one decimal
 `--max-heap-bytes`; the unchanged default is 64 MiB. Native builds embed the

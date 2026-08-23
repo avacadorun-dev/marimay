@@ -65,6 +65,7 @@ add_executable(mmay_c_unit
   test_receiver_collection_service.c
   test_check_entry.c
   test_cli.c
+  test_cli_release_metadata.c
   test_cli_build.c
   test_cli_build_profiles.c
   test_cli_check.c
@@ -236,6 +237,11 @@ configure_file(
   @ONLY
 )
 configure_file(
+  snapshots/version.txt.in
+  "${CMAKE_CURRENT_BINARY_DIR}/snapshots/version.txt"
+  @ONLY
+)
+configure_file(
   "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md"
   "${CMAKE_CURRENT_BINARY_DIR}/README.fixture"
   COPYONLY
@@ -255,4 +261,17 @@ add_test(
     "-DMMAY_TEST_RELEASE_ARCHIVE=${MMAY_NATIVE_RUNTIME_RELEASE_FILENAME}"
     "-DMMAY_TEST_EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_install_relocation.cmake"
+)
+
+add_test(
+  NAME mmay_cp29_release_contract
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_BINARY_DIR=${CMAKE_BINARY_DIR}"
+    "-DMMAY_TEST_CONFIG=$<CONFIG>"
+    "-DMMAY_TEST_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_DATADIR=${CMAKE_INSTALL_DATADIR}"
+    "-DMMAY_TEST_VERSION=${MMAY_COMPILER_VERSION}"
+    "-DMMAY_TEST_EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp29_release_contract.cmake"
 )

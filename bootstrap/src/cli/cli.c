@@ -1,4 +1,5 @@
 #include "cli_internal.h"
+#include "cli_release.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -6,44 +7,6 @@
 
 #include "mmay/build_config.h"
 #include "mmay/generated/diagnostic_codes.h"
-
-#define MMAY_STRINGIFY_INNER(value) #value
-#define MMAY_STRINGIFY(value) MMAY_STRINGIFY_INNER(value)
-
-typedef struct MarimayTaskHelp {
-    const char *name;
-    const char *summary;
-    const char *usage;
-    const char *examples;
-    bool implemented;
-} MarimayTaskHelp;
-
-static const MarimayTaskHelp mmay_tasks[] = {
-    {"add", "Add a package dependency.", "add module[@version]", "mmay add marimay.example/postgres@1.4", false},
-    {"audit", "Audit dependencies, capabilities, unsafe code, and provenance.", "audit", "mmay audit", false},
-    {"bench", "Run first-party benchmarks.", "bench [filter]", "mmay bench --compare base.json", false},
-    {"build", "Build a native executable by default.", "build [target] [--max-heap-bytes bytes] [options]", "mmay build --max-heap-bytes 67108864 --release", true},
-    {"check", "Run the complete frontend and MIR verifier.", "check [target] [--all-targets]", "mmay check --all-targets", true},
-    {"doc", "Build or check package documentation.", "doc [options]", "mmay doc --check", false},
-    {"exec", "Verify and execute a portable .myb bundle.", "exec bundle.myb [options]", "mmay exec app.myb", false},
-    {"explain", "Explain a diagnostic or inferred compiler behavior.", "explain code|topic", "mmay explain suspension loadDashboard", false},
-    {"fix", "Apply compiler-authored safe fixes.", "fix [target] [options]", "mmay fix", false},
-    {"fmt", "Canonically format Marimay source and manifests.", "fmt [target] [options]", "mmay fmt --check", true},
-    {"fuzz", "Run a first-party fuzz target.", "fuzz target [options]", "mmay fuzz \"decoder never panics\"", false},
-    {"generate", "Run explicitly configured external generation.", "generate [target]", "mmay generate", false},
-    {"help", "Show task-oriented command help.", "help [command]", "mmay help build", true},
-    {"init", "Create a Marimay module.", "init [path]", "mmay init ./orders", false},
-    {"list", "List package dependencies.", "list", "mmay list", false},
-    {"outdated", "Report available dependency updates.", "outdated", "mmay outdated", false},
-    {"remove", "Remove a package dependency.", "remove module", "mmay remove marimay.example/postgres", false},
-    {"run", "Run with the bytecode VM by default.", "run [target] [--max-heap-bytes bytes] [-- arguments]", "mmay run . --max-heap-bytes 67108864", true},
-    {"test", "Run built-in tests with the VM by default.", "test [target] [--engine vm|native|both] [--max-heap-bytes bytes]", "mmay test --engine both --max-heap-bytes 67108864", true},
-    {"update", "Update locked package versions.", "update [module]", "mmay update", false},
-    {"vendor", "Vendor immutable locked dependencies.", "vendor", "mmay vendor", false},
-    {"version", "Show compiler and runtime build identity.", "version [--json]", "mmay version --json", true},
-    {"vet", "Run first-party correctness checks.", "vet [target] [options]", "mmay vet --strict", false},
-    {"why", "Explain why a dependency is present.", "why module", "mmay why marimay.example/crypto", false},
-};
 
 static const char *const mmay_global_options[] = {
     "--check",
@@ -106,30 +69,6 @@ static size_t mmay_edit_distance(const char *left, const char *right) {
     return previous[right_length];
 }
 
-static const MarimayTaskHelp *mmay_find_task(const char *name) {
-    size_t index = 0;
-    for (index = 0; index < sizeof(mmay_tasks) / sizeof(mmay_tasks[0]); index += 1) {
-        if (strcmp(mmay_tasks[index].name, name) == 0) {
-            return &mmay_tasks[index];
-        }
-    }
-    return NULL;
-}
-
-static const char *mmay_suggest_task(const char *name) {
-    const char *suggestion = NULL;
-    size_t best = 4;
-    size_t index = 0;
-    for (index = 0; index < sizeof(mmay_tasks) / sizeof(mmay_tasks[0]); index += 1) {
-        size_t distance = mmay_edit_distance(name, mmay_tasks[index].name);
-        if (distance < best) {
-            best = distance;
-            suggestion = mmay_tasks[index].name;
-        }
-    }
-    return suggestion;
-}
-
 static const char *mmay_suggest_option(const char *name) {
     const char *suggestion = NULL;
     size_t best = 4;
@@ -145,6 +84,11 @@ static const char *mmay_suggest_option(const char *name) {
         suggestion = "--json";
     }
     return suggestion;
+}
+
+static bool mmay_staged_command(const char *name) {
+    const MarimayCliTaskHelp *task = mmay_cli_release_find_task(name);
+    return task != NULL && !task->implemented;
 }
 
 static int mmay_cli_diagnostic(
@@ -175,7 +119,7 @@ static int mmay_unknown_command(
 ) {
     char display[128];
     char message[320];
-    const char *suggestion = mmay_suggest_task(command);
+    const char *suggestion = mmay_cli_release_suggest_task(command);
     int length = 0;
     mmay_display_argument(command, display, sizeof(display));
     if (suggestion != NULL) {
@@ -546,6 +490,9 @@ static int mmay_parse_options(
                 MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE, (size_t)index,
                 "checkpoint 11 mmay test does not yet support filters, watch, or cache options"
             );
+        } else if (argument[0] == '-' && options->command != NULL
+            && mmay_staged_command(options->command)) {
+            continue;
         } else if (argument[0] == '-') {
             return mmay_unknown_option(
                 error_writer,
@@ -567,6 +514,8 @@ static int mmay_parse_options(
             && options->target == NULL) {
             options->target = argument;
             options->target_index = (size_t)index;
+        } else if (mmay_staged_command(options->command)) {
+            continue;
         } else {
             char display[128];
             char message[192];
@@ -586,93 +535,6 @@ static int mmay_parse_options(
         }
     }
     return MMAY_EXIT_SUCCESS;
-}
-
-static bool mmay_write_top_help(MarimayWriter writer) {
-    static const char help[] =
-        "Marimay toolchain (Stage 0 bootstrap)\n"
-        "\n"
-        "Usage: mmay <command> [options]\n"
-        "\n"
-        "Everyday workflow:\n"
-        "  fmt       Canonically format source and manifests\n"
-        "  check     Check source and verified typed MIR\n"
-        "  test      Run built-in tests (VM by default)\n"
-        "  run       Run a program (VM by default)\n"
-        "  build     Build an executable (native by default)\n"
-        "\n"
-        "Packages and maintenance:\n"
-        "  init add remove update list why outdated vendor audit\n"
-        "  doc vet fix fuzz bench generate\n"
-        "\n"
-        "Inspection:\n"
-        "  version   Show compiler and runtime build identity\n"
-        "  explain   Explain diagnostics and inferred behavior\n"
-        "  help      Show help for a command\n"
-        "\n"
-        "Global options:\n"
-        "  --help\n"
-        "  --version\n"
-        "  --color auto|always|never\n"
-        "  --diagnostic human|short|json\n"
-        "  --quiet\n"
-        "  --verbose\n"
-        "\n"
-        "Run 'mmay help <command>' for task-oriented examples.\n";
-    return mmay_writer_write_cstr(writer, help);
-}
-
-static bool mmay_write_task_help(MarimayWriter writer, const MarimayTaskHelp *task) {
-    if (!mmay_writer_write_cstr(writer, "Usage: mmay ")
-        || !mmay_writer_write_cstr(writer, task->usage)
-        || !mmay_writer_write_cstr(writer, "\n\n")
-        || !mmay_writer_write_cstr(writer, task->summary)
-        || !mmay_writer_write_cstr(writer, "\n\nExample:\n  ")
-        || !mmay_writer_write_cstr(writer, task->examples)
-        || !mmay_writer_write_cstr(writer, "\n")) {
-        return false;
-    }
-    if (!task->implemented) {
-        return mmay_writer_write_cstr(
-            writer,
-            "\nThis command is specified but not implemented in the current bootstrap slice.\n"
-        );
-    }
-    return true;
-}
-
-static bool mmay_write_version(MarimayWriter writer, bool json) {
-    if (json) {
-        static const char version_json[] =
-            "{\"schema\":\"marimay.version/1\","
-            "\"compiler\":\"" MMAY_COMPILER_VERSION "\","
-            "\"runtime\":\"" MMAY_RUNTIME_VERSION "\","
-            "\"language\":\"" MMAY_LANGUAGE_VERSION "\","
-            "\"bytecode\":\"" MMAY_BYTECODE_VERSION "\","
-            "\"standardLibrary\":\"" MMAY_STANDARD_LIBRARY_VERSION "\","
-            "\"bootstrapStage\":" MMAY_STRINGIFY(MMAY_BOOTSTRAP_STAGE) ","
-            "\"host\":{\"system\":\"" MMAY_HOST_SYSTEM "\","
-            "\"processor\":\"" MMAY_HOST_PROCESSOR "\"},"
-            "\"targets\":[\"native-host\"]}\n";
-        return mmay_writer_write_cstr(writer, version_json);
-    }
-    return mmay_writer_write_cstr(writer, "Marimay compiler ")
-        && mmay_writer_write_cstr(writer, MMAY_COMPILER_VERSION)
-        && mmay_writer_write_cstr(writer, "\nruntime ")
-        && mmay_writer_write_cstr(writer, MMAY_RUNTIME_VERSION)
-        && mmay_writer_write_cstr(writer, "\nlanguage ")
-        && mmay_writer_write_cstr(writer, MMAY_LANGUAGE_VERSION)
-        && mmay_writer_write_cstr(writer, "\nbytecode ")
-        && mmay_writer_write_cstr(writer, MMAY_BYTECODE_VERSION)
-        && mmay_writer_write_cstr(writer, "\nstandard-library ")
-        && mmay_writer_write_cstr(writer, MMAY_STANDARD_LIBRARY_VERSION)
-        && mmay_writer_write_cstr(writer, "\nbootstrap-stage ")
-        && mmay_writer_write_cstr(writer, MMAY_STRINGIFY(MMAY_BOOTSTRAP_STAGE))
-        && mmay_writer_write_cstr(writer, "\nhost ")
-        && mmay_writer_write_cstr(writer, MMAY_HOST_SYSTEM)
-        && mmay_writer_write_cstr(writer, "/")
-        && mmay_writer_write_cstr(writer, MMAY_HOST_PROCESSOR)
-        && mmay_writer_write_cstr(writer, "\ntargets native-host\n");
 }
 
 int mmay_cli_plain_error(
@@ -701,7 +563,7 @@ int mmay_cli_run(
     MarimayWriter standard_error
 ) {
     MarimayCliOptions options;
-    const MarimayTaskHelp *task = NULL;
+    const MarimayCliTaskHelp *task = NULL;
     int parse_result = 0;
 
     if (session == NULL || session->allocator.allocate == NULL
@@ -714,7 +576,8 @@ int mmay_cli_run(
     }
     options.tool_executable_path = arguments[0];
     if (options.top_level_help || options.command == NULL) {
-        return mmay_write_top_help(standard_output) ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
+        return mmay_cli_release_write_top_help(standard_output)
+            ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
     }
     if (strcmp(options.command, "help") == 0) {
         if (options.version_json) {
@@ -726,9 +589,10 @@ int mmay_cli_run(
             );
         }
         if (options.help_target == NULL) {
-            return mmay_write_top_help(standard_output) ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
+            return mmay_cli_release_write_top_help(standard_output)
+                ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
         }
-        task = mmay_find_task(options.help_target);
+        task = mmay_cli_release_find_task(options.help_target);
         if (task == NULL) {
             return mmay_unknown_command(
                 standard_error,
@@ -737,10 +601,11 @@ int mmay_cli_run(
                 options.help_target_index
             );
         }
-        return mmay_write_task_help(standard_output, task) ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
+        return mmay_cli_release_write_task_help(standard_output, task)
+            ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
     }
 
-    task = mmay_find_task(options.command);
+    task = mmay_cli_release_find_task(options.command);
     if (task == NULL) {
         return mmay_unknown_command(
             standard_error,
@@ -750,7 +615,28 @@ int mmay_cli_run(
         );
     }
     if (options.command_help) {
-        return mmay_write_task_help(standard_output, task) ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
+        return mmay_cli_release_write_task_help(standard_output, task)
+            ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
+    }
+    if (!task->implemented) {
+        char message[192];
+        int length = snprintf(
+            message,
+            sizeof(message),
+            "command '%s' is not implemented in bootstrap stage %d",
+            task->name,
+            MMAY_BOOTSTRAP_STAGE
+        );
+        if (length < 0 || (size_t)length >= sizeof(message)) {
+            return MMAY_EXIT_INTERNAL;
+        }
+        return mmay_cli_diagnostic(
+            standard_error,
+            options.diagnostic_style,
+            MMAY_DIAGNOSTIC_UNAVAILABLE_COMMAND,
+            options.command_index,
+            message
+        );
     }
     if (options.version_json && strcmp(task->name, "version") != 0) {
         return mmay_unknown_option(
@@ -761,7 +647,10 @@ int mmay_cli_run(
         );
     }
     if (strcmp(task->name, "version") == 0) {
-        return mmay_write_version(standard_output, options.version_json)
+        return mmay_cli_release_write_version(
+            standard_output,
+            options.version_json
+        )
             ? MMAY_EXIT_SUCCESS
             : MMAY_EXIT_INTERNAL;
     }
@@ -827,24 +716,5 @@ int mmay_cli_run(
             session, &options, standard_output, standard_error
         );
     }
-    {
-        char message[192];
-        int length = snprintf(
-            message,
-            sizeof(message),
-            "command '%s' is not implemented in bootstrap stage %d",
-            task->name,
-            MMAY_BOOTSTRAP_STAGE
-        );
-        if (length < 0 || (size_t)length >= sizeof(message)) {
-            return MMAY_EXIT_INTERNAL;
-        }
-        return mmay_cli_diagnostic(
-            standard_error,
-            options.diagnostic_style,
-            MMAY_DIAGNOSTIC_UNAVAILABLE_COMMAND,
-            options.command_index,
-            message
-        );
-    }
+    return MMAY_EXIT_INTERNAL;
 }

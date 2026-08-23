@@ -2,11 +2,18 @@
 #define MMAY_BUILD_CONFIG_H
 
 /* Fallback for direct C17 bootstrap builds; CMake supplies a generated header. */
-#define MMAY_COMPILER_VERSION "0.0.0-dev"
-#define MMAY_RUNTIME_VERSION "0.0.0-dev"
+#define MMAY_COMPILER_VERSION "0.1.0-alpha.1"
+#define MMAY_RUNTIME_VERSION "0.1.0-alpha.1"
 #define MMAY_LANGUAGE_VERSION "0.1-design"
 #define MMAY_BYTECODE_VERSION "unavailable"
-#define MMAY_STANDARD_LIBRARY_VERSION "unavailable"
+#define MMAY_BYTECODE_COMPATIBILITY "none"
+#define MMAY_STANDARD_LIBRARY_VERSION "0.1.0-alpha.1"
+#define MMAY_STANDARD_LIBRARY_SCOPE "bounded-preview"
+#define MMAY_STANDARD_LIBRARY_COMPATIBILITY "alpha-source"
+#define MMAY_VERSION_SCHEMA "marimay.version/2"
+#define MMAY_RELEASE_CHANNEL "private-preview"
+#define MMAY_RELEASE_CLAIM "local-checker-backed-slice"
+#define MMAY_RELEASE_PUBLICATION_READY_JSON "false"
 #define MMAY_BOOTSTRAP_STAGE 0
 
 #if defined(_WIN32)

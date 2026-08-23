@@ -364,11 +364,13 @@ alpha work.
 ## Active sequence CP29-CP40
 
 The sequence is deliberately linear so exactly one card is executable. CP29 is
-`ready`; every later card is `planned` behind its immediate predecessor.
+`verified`; CP30 is `ready`, and every later card is `planned` behind its
+immediate predecessor.
 
 ## CP29 - Public release contract and closure matrix
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP28.
+State: `verified`. Parent gate: CLI0. Predecessor: CP28. Evidence scope:
+`local`. Evidence: [CP29](evidence/cp29-release-contract-2026-08-23.md).
 
 ### Outcome
 
@@ -472,7 +474,7 @@ agent should not reread CP0–CP28 instructions.
 
 ## CP30 - Dynamic strings interpolation and primitive formatting
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP29.
+State: `ready`. Parent gate: CLI0. Predecessor: CP29.
 
 ### Outcome
 

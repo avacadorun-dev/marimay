@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.25)
 
-project(Marimay VERSION 0.0.0 LANGUAGES C)
+project(Marimay VERSION 0.1.0 LANGUAGES C)
 
 include(CTest)
 include(GNUInstallDirs)
@@ -55,11 +55,24 @@ else()
   message(FATAL_ERROR "No Stage 0 platform adapter for this host")
 endif()
 
-set(MMAY_COMPILER_VERSION "0.0.0-dev")
-set(MMAY_RUNTIME_VERSION "0.0.0-dev")
+set(MMAY_COMPILER_VERSION "0.1.0-alpha.1")
+set(MMAY_RUNTIME_VERSION "0.1.0-alpha.1")
 set(MMAY_LANGUAGE_VERSION "0.1-design")
 set(MMAY_BYTECODE_VERSION "unavailable")
-set(MMAY_STANDARD_LIBRARY_VERSION "unavailable")
+set(MMAY_BYTECODE_COMPATIBILITY "none")
+set(MMAY_STANDARD_LIBRARY_VERSION "0.1.0-alpha.1")
+set(MMAY_STANDARD_LIBRARY_SCOPE "bounded-preview")
+set(MMAY_STANDARD_LIBRARY_COMPATIBILITY "alpha-source")
+set(MMAY_VERSION_SCHEMA "marimay.version/2")
+set(MMAY_RELEASE_CHANNEL "private-preview")
+set(MMAY_RELEASE_CLAIM "local-checker-backed-slice")
+set(MMAY_RELEASE_PUBLICATION_READY_JSON "false")
+set(MMAY_AVAILABLE_COMMANDS_JSON
+  "[\"build\",\"check\",\"fmt\",\"help\",\"run\",\"test\",\"version\"]"
+)
+set(MMAY_STAGED_COMMANDS_JSON
+  "[\"add\",\"audit\",\"bench\",\"doc\",\"exec\",\"explain\",\"fix\",\"fuzz\",\"generate\",\"init\",\"list\",\"outdated\",\"remove\",\"update\",\"vendor\",\"vet\",\"why\"]"
+)
 set(MMAY_BOOTSTRAP_STAGE 0)
 
 set(MMAY_NATIVE_RUNTIME_DEBUG_DIRECTORY
@@ -118,6 +131,11 @@ endif()
 configure_file(
   cmake/mmay_build_config.h.in
   "${CMAKE_CURRENT_BINARY_DIR}/generated/mmay/build_config.h"
+  @ONLY
+)
+configure_file(
+  cmake/mmay_release_metadata.json.in
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/mmay-release-metadata.json"
   @ONLY
 )
 
@@ -318,6 +336,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/service_queries.c
   bootstrap/src/check/type_spelling.c
   bootstrap/src/cli/cli.c
+  bootstrap/src/cli/cli_release.c
   bootstrap/src/cli/cli_display.c
   bootstrap/src/cli/cli_heap_limit.c
   bootstrap/src/cli/cli_build_program.c
@@ -461,6 +480,33 @@ install(DIRECTORY bootstrap/include/mmay runtime/include/mmay
   DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}"
   FILES_MATCHING PATTERN "*.h"
 )
+install(FILES
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/mmay-release-metadata.json"
+  DESTINATION
+    "${CMAKE_INSTALL_DATADIR}/mmay/${MMAY_COMPILER_VERSION}"
+)
+install(FILES
+  README.md
+  IMPLEMENTATION-BRIEF.md
+  DESTINATION
+    "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
+)
+install(DIRECTORY docs examples
+  DESTINATION
+    "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
+  FILES_MATCHING
+    PATTERN "*.md"
+    PATTERN "*.tsv"
+    PATTERN "*.my"
+)
+install(DIRECTORY bootstrap runtime
+  DESTINATION
+    "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
+  FILES_MATCHING
+    PATTERN "*.c"
+    PATTERN "*.h"
+    PATTERN "*.txt"
+)
 
 if(BUILD_TESTING)
   add_subdirectory(tests/c-unit)
@@ -477,6 +523,19 @@ if(BUILD_TESTING)
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       COMMENT "Checking roadmap and checkpoint invariants"
+      VERBATIM
+    )
+    add_test(
+      NAME mmay_release_contract
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
+    )
+    set_tests_properties(mmay_release_contract PROPERTIES
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+    add_custom_target(check-release-contract
+      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
+      WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+      COMMENT "Checking release metadata and CLI0 closure ownership"
       VERBATIM
     )
   endif()

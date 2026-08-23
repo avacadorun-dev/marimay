@@ -13,7 +13,7 @@ direct reports out of status cells. Their IDs and states are checked against
 Current execution links: [CLI0](docs/implementation/roadmap.md#cli0-boundary),
 [post-CLI0 I6/E0](docs/implementation/roadmap.md#post-cli0-i6-and-e0), and the
 sole ready card,
-[CP29](docs/implementation/checkpoints.md#cp29-public-release-contract-and-closure-matrix).
+[CP30](docs/implementation/checkpoints.md#cp30-dynamic-strings-interpolation-and-primitive-formatting).
 
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

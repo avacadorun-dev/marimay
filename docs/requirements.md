@@ -103,6 +103,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | TOOL-020 | formatter uses D031 width-sensitive braces for import/record/pattern/payload lists while keeping executable and declaration bodies structurally multiline | toolchain §4.2; D031 | I1 |
 | TOOL-021 | `mmay build` selects and validates a version-matched runtime for the requested debug/release output profile independently of the compiler's own build configuration, remains relocatable when installed, and hashes runtime content into the build cache key | toolchain §6.3; execution §5.6; D052 | I4 |
 | TOOL-022 | `run`, `test`, and `build` accept one documented decimal `--max-heap-bytes`; default/selected native values are embedded and cache-identifying, tests receive fresh counters, and no hidden environment override exists | toolchain §§5–6; D055 | I3/I4/I8 |
+| TOOL-023 | pre-beta version/help/installed metadata distinguish version, release channel, bounded claim, available versus staged commands, standard-library scope, bytecode compatibility, and publication authorization | toolchain §10; D064 | CLI0/P1 |
 
 ## Standard library
 

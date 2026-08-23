@@ -1,22 +1,22 @@
-Marimay toolchain (Stage 0 bootstrap)
+Marimay toolchain (Stage 0 private preview)
 
+Current claim: local checker-backed slice; not a public alpha.
 Usage: mmay <command> [options]
 
-Everyday workflow:
+Available workflow:
   fmt       Canonically format source and manifests
-  check     Check source and verified typed MIR
+  check     Check the implemented source and typed MIR slice
   test      Run built-in tests (VM by default)
-  run       Run a program (VM by default)
-  build     Build an executable (native by default)
+  run       Run a program (VM only in this preview)
+  build     Build a host-native executable
 
-Packages and maintenance:
-  init add remove update list why outdated vendor audit
-  doc vet fix fuzz bench generate
+Available inspection:
+  version   Show release contract and build identity
+  help      Show help for a recognized command
 
-Inspection:
-  version   Show compiler and runtime build identity
-  explain   Explain diagnostics and inferred behavior
-  help      Show help for a command
+Staged (recognized but not executable):
+  add audit bench doc exec explain fix fuzz generate init list
+  outdated remove update vendor vet why
 
 Global options:
   --help
@@ -26,4 +26,4 @@ Global options:
   --quiet
   --verbose
 
-Run 'mmay help <command>' for task-oriented examples.
+Run 'mmay help <command>' for availability, owner, and examples.

@@ -1,0 +1,27 @@
+import { Error as IoError, println } from "std/io";
+
+enum PreviewState {
+  Ready(int),
+  Waiting,
+}
+
+fn previewScore(state: PreviewState): int {
+  return match state {
+    case Ready(value) => value;
+    case Waiting => 0;
+  };
+}
+
+fn quickStartIsCorrect(): bool {
+  let values: []int = [3, 1, 2];
+  values.push(4);
+  return previewScore(PreviewState.Ready(values.length())) == 4;
+}
+
+fn main(): Result<void, IoError> {
+  if !quickStartIsCorrect() {
+    panic("CP29 quick start failed");
+  }
+  println("Marimay CP29 quick start")?;
+  return Ok();
+}

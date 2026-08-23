@@ -541,7 +541,69 @@ The Marimay compiler repository additionally runs C unit tests, generated-code s
 
 ## 10. Toolchain versioning and compatibility
 
-`mmay version` prints compiler, runtime, bytecode format, standard library, bootstrap stage, host, and supported target versions. `mmay version --json` is stable machine-readable data.
+`mmay version` prints compiler, runtime, language, bytecode format, standard
+library and its scope, release channel and bounded claim, bootstrap stage,
+host, supported targets, and exact available/staged command inventories.
+`mmay version --json` emits the versioned `marimay.version/2` schema. Its
+documented fields, diagnostic classifications, and exit status are stable for
+one candidate.
+
+### 10.1 Pre-beta release contract
+
+Under D064, compiler, runtime, and standard library share the
+`0.1.0-alpha.N` line. `N` is a positive decimal sequence without leading
+zeroes. Version is not publication state: the required `release` object also
+contains the channel, bounded claim, and `publicationReady` boolean. The
+closed pre-1.0 channels are `private-preview`, `cli-alpha`,
+`concurrency-pilot`, `ecosystem-alpha`, `beta`, and `rc`.
+
+The Stage 0 CP29 candidate is channel `private-preview`, claim
+`local-checker-backed-slice`, and `publicationReady: false`. Its available
+commands are exactly `build`, `check`, `fmt`, `help`, `run`, `test`, and
+`version`. Every other recognized command is staged and fails with `U0003` if
+invoked. Staged commands are not everyday workflow promises. In particular,
+`explain` remains staged under I8 until its installed offline reference owner
+exists.
+
+The manifest directive `language "0.1"` selects the current normative design
+baseline. Until that baseline's product gate changes its classification, the
+version metadata reports it exactly as `0.1-design`; it does not call the
+source surface stable.
+
+The version JSON contains these required top-level members:
+
+```text
+schema compiler runtime language release bytecode standardLibrary
+bootstrapStage host targets commands
+```
+
+`release` contains `channel`, `claim`, and `publicationReady`. `bytecode`
+contains `version` and `compatibility`; both are respectively `unavailable`
+and `none` until a public bundle decision lands. `standardLibrary` contains
+`version`, `scope`, and `compatibility`; CP29 reports the common compiler
+version, `bounded-preview`, and `alpha-source`. `commands` contains exact
+`available` and `staged` arrays. Arrays are deterministic and sorted by command
+name within each classification.
+
+Before beta, an accepted source/API surface may break only in a new alpha
+sequence with an accepted decision, simultaneous specification and tests, and
+an explicit migration note. A required mechanical migration blocks release
+until its `mmay fix --language` owner exists. Stable diagnostic codes,
+severities, exit classifications, and documented JSON fields do not change
+within a candidate; a breaking machine-schema change increments both schema
+and alpha sequence. Human wording may improve without reclassifying an
+outcome.
+
+D054's pre-contract `Array<T>` spelling has no alias or compatibility window;
+only `[]T` belongs to the alpha surface. Portable `.myb` bytes have no public
+compatibility promise while bytecode is unavailable. The bounded standard
+library is versioned, but its scope and exclusions remain explicit until its
+closure matrix is complete.
+
+Installed metadata, offline known limitations, help, README claims, roadmap,
+and human/JSON version output must agree. A version number, prepared archive,
+or `publicationReady` candidate never authorizes tagging, signing, upload,
+namespace reservation, or announcement.
 
 The `language` directive chooses the accepted source language. A newer toolchain must continue compiling stable source for earlier 1.x language versions. Experimental features require an explicit manifest opt-in and cannot appear in published stable packages.
 

@@ -1619,3 +1619,76 @@ allocation, and separately linked arithmetic calls dominated the already
 dense storage path. Activation-scoped views remove that repeated work without
 creating a moving/raw-pointer contract or allowing a backend to invent safety
 facts.
+
+## D064 — Pre-beta releases carry an explicit bounded claim
+
+Status: accepted.
+
+The first version line is `0.1.0-alpha.N`, where `N` is a positive decimal
+release sequence without leading zeroes. Compiler, runtime, and the shipped
+standard-library slice use the same version. A version identifies a candidate
+contract; it does not assert that an artifact was published. Machine metadata
+therefore also carries one release channel and one claim classification.
+The manifest selector remains `language "0.1"`, while version metadata reports
+the normative baseline classification `0.1-design` until the language gate
+accepts a different classification.
+
+The closed pre-1.0 channels are `private-preview`, `cli-alpha`,
+`concurrency-pilot`, `ecosystem-alpha`, `beta`, and `rc`. The current Stage 0
+binary is `private-preview` and may claim only the named checker-backed local
+slice. `cli-alpha` is unavailable until CLI0, N0, the claimed-host matrices,
+and explicit publication authorization close. No channel silently implies a
+controlled name, stable package namespace, portable public bytecode, network
+runtime, FFI, cross compilation, desktop support, or self-hosting.
+
+Before beta, source compatibility is release-scoped rather than 1.x-stable.
+An alpha may remove or change an accepted source/API surface only through an
+accepted decision, simultaneous normative text and conformance coverage, an
+explicit release-note migration, and a new `alpha.N` sequence. Building never
+rewrites source. Once `mmay fix --language` is implemented, a mechanical
+migration required by a release must be available there; before that owner
+lands, a change requiring such a migration blocks release. D054's `Array<T>`
+to `[]T` replacement predates this contract, has no compatibility window or
+alias, and is excluded from every alpha source-compatibility claim.
+
+Stable diagnostic codes, severities, exit classifications, and the documented
+fields of a versioned JSON schema do not change within an `alpha.N` candidate.
+Human wording, notes, and fixes may improve without changing classification.
+A machine-schema breaking change increments the schema identifier and the
+alpha sequence and includes a migration note. Beta may tighten this policy;
+1.x compatibility remains governed by the language version.
+
+Portable public `.myb` compatibility is `none` while the version reports
+bytecode `unavailable`. Internal encode/decode round trips remain
+version-matched implementation evidence and are not a public bundle contract.
+When a public bytecode owner lands, it must introduce a separate format
+version and compatibility decision rather than inheriting the compiler
+version implicitly.
+
+The standard library is never labelled wholly unavailable once an executable
+slice ships. It reports the common `0.1.0-alpha.N` version plus a
+`bounded-preview` scope until the owning closure matrix is complete. Its
+source/API compatibility follows the same pre-beta rule as the language; its
+runtime ABI remains version-matched with the compiler and runtime.
+
+Every user-facing command is classified as `available` or `staged`. Everyday
+help lists only available commands as workflow actions and visibly separates
+staged names with their owning checkpoint or gate. A staged invocation fails
+with `U0003`; it is never accepted and ignored. `mmay explain` remains staged
+under I8 and is absent from everyday inspection help until its offline
+reference owner lands. Removing a staged name needs no compatibility window;
+removing an available command or standard API follows the alpha removal rule
+above.
+
+Known limitations use version, channel, implemented surface, exclusions,
+publication blockers, and removal gates as explicit fields. Release metadata,
+human/JSON `mmay version`, help, installed documentation, README claims, and
+the roadmap must agree. A mismatch blocks the candidate. Prepared, versioned,
+or publication-ready artifacts are not tagged, signed, uploaded, reserved, or
+announced without a separate user instruction.
+
+Reason: pre-release users need enough stability to distinguish a real bounded
+tool from target-design prose, while the implementation still needs honest
+room to correct alpha APIs. Separating version, channel, and claim prevents a
+locally versioned binary from pretending that naming, platform, compatibility,
+or publication gates have closed.

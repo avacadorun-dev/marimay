@@ -1,6 +1,8 @@
 Usage: mmay check [target] [--all-targets]
 
-Run the complete frontend and MIR verifier.
+Check the implemented local preview surface and verified typed MIR.
 
 Example:
   mmay check --all-targets
+
+Availability: available (private preview)
