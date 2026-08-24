@@ -1,7 +1,7 @@
 # Marimay Stage 0 compiler architecture
 
 Status: implementation architecture for the C17 bootstrap.
-Last reviewed: 2026-08-20.
+Last reviewed: 2026-08-24.
 
 This document maps the normative compiler and execution contracts to physical
 owners. It changes no language semantics. When it conflicts with `docs/spec/`
@@ -312,6 +312,8 @@ tests/c-unit/
   test_cp9_io_pipeline.c
   test_cli_run.c
   test_runtime_io.c
+  test_cp31_program_arguments.c
+  runtime/test_program_arguments.c
 ```
 
 The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
@@ -403,6 +405,21 @@ construction decisions; runtime owners do not infer compiler liveness.
 `mmay/base/checked_i64_fast.h` is a header-only emission boundary mirroring the
 portable checked/proven implementation, not a second semantic arithmetic
 owner.
+
+D066 assigns bounded counted-UTF-8 validation and managed `[]string`
+construction to `runtime/common/program_arguments.c` behind
+`mmay/runtime/program_arguments.h`. POSIX byte import and Windows wide-CRT
+conversion remain separate platform owners in
+`runtime/platform/{posix,windows}/program_arguments.c`. The checker entry owner
+selects only the accepted root signatures;
+`bootstrap/src/bytecode/vm_arguments.c` constructs the verified VM parameter;
+and `bootstrap/src/native/c_emitter_entry.c` owns the host scaffold, argument
+construction, common cleanup, and public status/result mapping. The emitter
+coordinator only sequences that boundary. `bootstrap/src/cli/cli_program_arguments.c` owns separator-value
+validation shared by run and test. The focused runtime and CP31 CLI suites
+cover limits, encoding, allocation rollback, VM/native argument identity,
+result/status precedence, and lexical cleanup without adding process semantics
+to a backend.
 
 The exact filenames may follow the stable concepts already present in the
 code, but responsibility boundaries and dependency direction are fixed. A
@@ -598,6 +615,13 @@ checkpoint:
 | `tests/c-unit/runtime/test_managed_array_access.c` | 202 | 300 | D063 rooted collection, growth, allocation-free view, atomic failure, and stale/descriptor coverage |
 | `tests/c-unit/runtime/test_managed_record_view.c` | 0 | 95 | D063 exact record view, rooted collection, no-allocation, wrong-type, and stale-handle coverage |
 | `tests/c-unit/test_native_c_emitter_managed_views.c` | 0 | 118 | D063 nested record-array view, alias replacement, direct RAW64, rootless emission, and O0/O2 execution |
+| `runtime/common/program_arguments.c` | 0 | 113 | D066 counted UTF-8 validation and failure-atomic managed `[]string` construction |
+| `runtime/platform/posix/program_arguments.c` | 0 | 109 | D066 bounded POSIX argv import and owned UTF-8 views |
+| `runtime/platform/windows/program_arguments.c` | 0 | 146 | D066 bounded wide-CRT validation and strict UTF-16-to-UTF-8 import |
+| `bootstrap/src/bytecode/vm_arguments.c` | 0 | 43 | D066 verified entry-array descriptor binding for VM execution |
+| `bootstrap/src/cli/cli_program_arguments.c` | 0 | 114 | D066 shared run/test separator-value validation and diagnostics |
+| `tests/c-unit/runtime/test_program_arguments.c` | 0 | 253 | D066 validation, Unicode/platform conversion, managed values, and allocation cleanup |
+| `tests/c-unit/test_cp31_program_arguments.c` | 0 | 556 | D066 run/test/build/native arguments, status, Result, panic, cleanup, diagnostics, and allocation coverage |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `mmay_test_mir` registration. The service checkpoint

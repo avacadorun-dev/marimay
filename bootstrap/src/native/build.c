@@ -490,6 +490,8 @@ MarimayNativeBuildStatus mmay_native_build(
     program.entry_symbol = request->entry_symbol;
     emit_options = mmay_native_c_emit_default_options();
     emit_options.executable_entry = true;
+    emit_options.executable_takes_arguments = request->takes_arguments;
+    emit_options.executable_returns_status = request->returns_status;
     emit_options.executable_returns_result = request->returns_result;
     emit_options.error_message_symbol = request->error_message_symbol;
     if (request->max_heap_bytes != 0) {

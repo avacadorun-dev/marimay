@@ -1,0 +1,25 @@
+import { println } from "std/io";
+
+fn cleanup(): void {
+  println("cleanup");
+}
+
+fn main(arguments: []string): int {
+  defer cleanup();
+  if arguments.length() == 0 {
+    println("zero");
+    return 0;
+  }
+  let index = 0;
+  while index < arguments.length() {
+    println(arguments[index]);
+    index += 1;
+  }
+  if arguments.length() == 1 {
+    return 255;
+  }
+  if arguments.length() == 2 {
+    return 70;
+  }
+  return 23;
+}

@@ -27,7 +27,7 @@ static const MarimayCliTaskHelp mmay_release_tasks[] = {
     {"outdated", "Report available dependency updates.", "outdated", "mmay outdated", "I7", false},
     {"remove", "Remove a package dependency.", "remove module", "mmay remove marimay.example/postgres", "I7", false},
     {"run", "Run the implemented preview surface with the bytecode VM.", "run [target] [--max-heap-bytes bytes] [-- arguments]", "mmay run . --max-heap-bytes 67108864", "CP29", true},
-    {"test", "Run built-in preview tests with VM/native comparison available.", "test [target] [--engine vm|native|both] [--max-heap-bytes bytes]", "mmay test --engine both --max-heap-bytes 67108864", "CP29", true},
+    {"test", "Run built-in preview tests with VM/native comparison available.", "test [target] [--engine vm|native|both] [--max-heap-bytes bytes] [-- arguments]", "mmay test --engine both -- alpha \"two words\"", "CP31", true},
     {"update", "Update locked package versions.", "update [module]", "mmay update", "I7", false},
     {"vendor", "Vendor immutable locked dependencies.", "vendor", "mmay vendor", "I7", false},
     {"version", "Show the versioned release contract and build identity.", "version [--json]", "mmay version --json", "CP29", true},

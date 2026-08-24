@@ -203,7 +203,7 @@ static void mmay_cli_build_test_cache_and_emit(MarimaySession *session) {
         strlen("cp10-emitted.c"), 1024 * 1024, &source
     ) == MMAY_FILE_OK);
     MMAY_EXPECT(source.length != 0 && strstr(
-        (const char *)source.data, "int main(void)"
+        (const char *)source.data, "int main(int mmay_g_argc"
     ) != NULL);
 #if !defined(_WIN32)
     mmay_test_native_compile_and_run_configured(

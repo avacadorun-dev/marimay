@@ -17,6 +17,7 @@ add_executable(mmay_c_unit
   test_cp30_bytecode.c
   test_cp30_checker.c
   test_cp30_mir.c
+  test_cp31_program_arguments.c
   test_bytecode_program.c
   test_bytecode_program_nominal.c
   test_bytecode_verify_provenance.c
@@ -114,6 +115,7 @@ add_executable(mmay_c_unit
   runtime/test_managed_array_storage.c
   runtime/test_managed_record_view.c
   runtime/test_managed_mutation.c
+  runtime/test_program_arguments.c
   test_managed_objects.c
   test_number_format.c
   test_mir_calls.c
@@ -214,6 +216,7 @@ file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-mismatch" DESTINATION "${CMA
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-private" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-alloc" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-invalid-expect" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint31-args" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-manifest" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
 file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity-nul" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")

@@ -227,11 +227,17 @@ Conservative scanning of arbitrary C stack bytes is not a conforming primary str
 ### 5.5 Native executable entry
 
 D050's public executable adapter is distinct from the internal backend test
-harness. It accepts only the D049 checked `main` forms and calls only symbols
+harness. It accepts only the D049/D066 checked `main` forms and calls only symbols
 from the same canonical verified typed-MIR program. It grants D046 stdout,
 prints no `ok:*` or `trap:*` envelope, and maps `void`, `Result`, panic, and
 internal runtime outcomes to the same stdout bytes, stderr diagnostic identity,
 and exit status as the VM contract.
+
+The adapter strictly decodes host arguments into D066 UTF-8 values, constructs
+the exact entry `[]string` when requested, and excludes the executable name.
+The array and every string are ordinary managed values rooted before the root
+call. A selected `int` status is range-checked after the call and all lexical
+cleanup; it is never cast or truncated into a host exit type before validation.
 
 For `Result.Err`, the adapter keeps both the returned `Result` and extracted
 error payload in exact managed roots while it calls the checker-selected

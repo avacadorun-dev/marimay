@@ -1747,3 +1747,64 @@ Reason: CLI diagnostics need useful deterministic text before general builders
 or streams exist. A closed primitive family provides that vertical slice
 without committing the language to an open formatting protocol or hidden
 conversion graph.
+
+## D066 — Program arguments and exit status are bounded root inputs
+
+Status: accepted.
+
+The executable entry remains the root package's exact `main`. It accepts zero
+parameters or one exact `[]string` parameter and returns `void`, `int`,
+`Result<void, E>`, or `Result<int, E>`. Existing D049 forms remain valid. For
+either `Result` form, `E` retains D049's root-visible structural
+`message(error: E): string` contract. An argument-taking `main` receives only
+the program arguments: the executable name is excluded. No environment,
+process, filesystem, or shell capability is implied.
+
+`mmay run [target] -- ...` transports every value after the first separator in
+order. `mmay test [target] -- ...` injects the same immutable array into each
+`@test fn(arguments: []string): void`; the existing zero-parameter test form
+remains valid and receives no hidden parameter. A native executable imports
+the host arguments after `argv[0]`. POSIX bytes must be valid UTF-8. Windows
+uses the wide CRT entry and strict UTF-16-to-UTF-8 conversion after the CRT's
+standard quoting/backslash decoding; shell expansion is never repeated by
+Marimay. Empty strings, spaces, leading dashes, and a literal `--` after the
+tool separator are ordinary values.
+
+Before command parsing, the `mmay` tool itself imports the complete host
+invocation, including its executable name, with a separate defensive ceiling
+of 8192 values, 262144 bytes per value, and 8388608 bytes total. It uses the
+same POSIX/Windows strict conversion. Invalid host encoding or those outer
+limits are `U0007`/status `2`; allocation failure is `I0002`/status `70`.
+The selected source-program suffix is then independently checked against the
+tighter limits below, so tool arguments cannot consume the program's budget.
+
+Every value is counted UTF-8 without an interior NUL. The boundary accepts at
+most 4096 arguments, at most 262144 bytes in one argument, and at most 1048576
+argument bytes in total. Validation completes before source execution. Invalid
+encoding, NUL, or a limit violation is `G4006`, writes no program stdout, and
+exits `1`. Allocation or managed-heap exhaustion while importing a valid list
+retains the exact D055 `I0002` classification and exits `70`. Tests can inject
+counted hostile values through the execution adapter, including NUL, without
+depending on what a host argv representation can express.
+
+`void` and `Result.Ok()` select status `0`. A direct `int` return and the
+payload of `Result.Ok(status)` select an exact portable process status from 0
+through 255 inclusive. Another value is `G4007` with exact message
+`program exit status is outside 0..255` and exits `1`; it is not truncated by
+the host. `Result.Err` remains `G4003`/status `1`. An active panic, cleanup
+panic, internal failure, or invalid status takes precedence over a pending
+successful status according to D041/D049. Because the status is observed only
+after the root call returns, all lexical deferred calls have completed exactly
+once before it is published. There is no safe immediate-termination primitive.
+
+VM execution arguments, encoded bytecode parameter/result layouts, native
+entry construction, and test replay all use the same typed `[]string` and
+`int` metadata. `mmay run` returns the selected program status verbatim, even
+when its numeric value overlaps a tool-owned status; stderr diagnostic identity
+distinguishes tool/runtime failure. Native and VM must agree on arguments,
+stdout, stderr, cleanup, and the selected status.
+
+Reason: a root parameter and return value make both inputs and termination
+visible in ordinary typed control flow. They preserve lexical cleanup and
+avoid a hidden global accessor, shell semantics, an immediate `exit`, or a
+second test-only entry path.

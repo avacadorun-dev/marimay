@@ -268,6 +268,15 @@ MarimayNativeCEmitStatus mmay_native_c_validate_executable_entry(
     const MarimayNativeCEmitOptions *options
 );
 bool mmay_native_c_emit_public_helpers(MarimayNativeCBuffer *buffer);
+bool mmay_native_c_emit_executable_host_open(MarimayNativeCBuffer *buffer);
+bool mmay_native_c_emit_executable_host_arguments(
+    MarimayNativeCBuffer *buffer
+);
+bool mmay_native_c_emit_executable_argument_value(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *entry
+);
+bool mmay_native_c_emit_executable_host_close(MarimayNativeCBuffer *buffer);
 bool mmay_native_c_emit_executable_entry(
     MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *entry,

@@ -43,20 +43,42 @@ static void mmay_test_entry_valid_signatures(void) {
         "enum Failure { Invalid, }\n"
         "fn message(error: Failure): string { return \"invalid\"; }\n"
         "fn main(): Result<void, Failure> { return Err(Failure.Invalid); }\n";
+    static const char argument_result_source[] =
+        "enum Failure { Invalid, }\n"
+        "fn message(error: Failure): string { return \"invalid\"; }\n"
+        "fn main(arguments: []string): Result<int, Failure> {\n"
+        "  return Ok(arguments.length());\n"
+        "}\n";
     MarimayCheckedEntry entry;
     memset(&entry, 0, sizeof(entry));
     MMAY_EXPECT(mmay_test_entry_select(
         "fn main(): void { return; }\n", "test/entry", &entry
     ) == MMAY_CHECK_ENTRY_OK);
-    MMAY_EXPECT(!entry.returns_result && entry.error_message == NULL);
+    MMAY_EXPECT(!entry.takes_arguments && !entry.returns_status
+        && !entry.returns_result && entry.error_message == NULL);
+
+    memset(&entry, 0, sizeof(entry));
+    MMAY_EXPECT(mmay_test_entry_select(
+        "fn main(): int { return 23; }\n", "test/entry", &entry
+    ) == MMAY_CHECK_ENTRY_OK);
+    MMAY_EXPECT(!entry.takes_arguments && entry.returns_status
+        && !entry.returns_result);
 
     memset(&entry, 0, sizeof(entry));
     MMAY_EXPECT(mmay_test_entry_select(
         result_source, "test/entry", &entry
     ) == MMAY_CHECK_ENTRY_OK);
-    MMAY_EXPECT(entry.returns_result);
+    MMAY_EXPECT(!entry.takes_arguments && !entry.returns_status
+        && entry.returns_result);
     MMAY_EXPECT(entry.error_message != NULL);
     MMAY_EXPECT(entry.error_type != MMAY_TYPE_INVALID);
+
+    memset(&entry, 0, sizeof(entry));
+    MMAY_EXPECT(mmay_test_entry_select(
+        argument_result_source, "test/entry", &entry
+    ) == MMAY_CHECK_ENTRY_OK);
+    MMAY_EXPECT(entry.takes_arguments && entry.returns_status
+        && entry.returns_result && entry.error_message != NULL);
 }
 
 static void mmay_test_entry_rejections(void) {
@@ -72,7 +94,10 @@ static void mmay_test_entry_rejections(void) {
         "fn main(value: int): void { return; }\n", "test/entry", &entry
     ) == MMAY_CHECK_ENTRY_INVALID_SIGNATURE);
     MMAY_EXPECT(mmay_test_entry_select(
-        "fn main(): int { return 0; }\n", "test/entry", &entry
+        "fn main(values: []int): void { return; }\n", "test/entry", &entry
+    ) == MMAY_CHECK_ENTRY_INVALID_SIGNATURE);
+    MMAY_EXPECT(mmay_test_entry_select(
+        "fn main(): string { return \"bad\"; }\n", "test/entry", &entry
     ) == MMAY_CHECK_ENTRY_INVALID_SIGNATURE);
     MMAY_EXPECT(mmay_test_entry_select(
         missing_contract, "test/entry", &entry

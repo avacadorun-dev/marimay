@@ -1,0 +1,23 @@
+import { println } from "std/io";
+
+@test
+fn injectedArguments(arguments: []string): void {
+  if arguments.length() != 5 {
+    panic("program arguments were not injected exactly");
+  }
+  expect.output(
+    "alpha\ntwo words\n\nМир\n--\n",
+    (): void => {
+      println(arguments[0]);
+      println(arguments[1]);
+      println(arguments[2]);
+      println(arguments[3]);
+      println(arguments[4]);
+    },
+  );
+}
+
+@test
+fn zeroParameterTestsRemainValid(): void {
+  return;
+}

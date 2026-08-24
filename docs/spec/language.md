@@ -13,12 +13,24 @@ A Marimay program consists of UTF-8 `.my` files grouped into packages by directo
 
 Safe source is statically typed before either VM or native execution. There is no dynamically typed execution tier and no unchecked fallback after a type error.
 
-The valid entry points are:
+The valid entry points under D066 are the cross product of an optional exact
+`[]string` parameter and these result forms:
 
 ```marimay
 fn main(): void;
+fn main(arguments: []string): void;
+fn main(): int;
+fn main(arguments: []string): int;
 fn main(): Result<void, E>;
+fn main(arguments: []string): Result<void, E>;
+fn main(): Result<int, E>;
+fn main(arguments: []string): Result<int, E>;
 ```
+
+The parameter excludes the executable name and contains the validated ordered
+program arguments. `void` and `Ok()` select status zero; `int` and `Ok(int)`
+must be in `0..255`. The status is observed only after every D041 deferred call
+has completed. Safe source has no immediate process-termination operation.
 
 Under D049, `E` satisfies the preview structural `Error` contract when its
 root-visible D003 dot-call set contains an exact non-external

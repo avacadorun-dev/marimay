@@ -6,6 +6,7 @@
 #include "mmay/runtime/array_access.h"
 #include "mmay/runtime/enum.h"
 #include "mmay/runtime/interface.h"
+#include "mmay/runtime/program_arguments.h"
 #include "mmay/runtime/record.h"
 #include "mmay/runtime/string.h"
 #include "mmay/runtime/generated_array.h"

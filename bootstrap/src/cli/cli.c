@@ -249,6 +249,7 @@ static int mmay_parse_options(
     options->build_emit_index = 0;
     options->build_release = false;
     options->build_release_index = 0;
+    options->program_arguments = NULL;
     options->program_argument_start = 0;
     options->program_argument_count = 0;
     options->quiet = false;
@@ -258,10 +259,13 @@ static int mmay_parse_options(
         const char *argument = arguments[index];
         const char *value = NULL;
         if (strcmp(argument, "--") == 0 && options->command != NULL
-            && strcmp(options->command, "run") == 0) {
+            && (strcmp(options->command, "run") == 0
+                || strcmp(options->command, "test") == 0)) {
             options->program_argument_start = (size_t)index + 1;
             options->program_argument_count = (size_t)argument_count
                 - options->program_argument_start;
+            options->program_arguments = arguments
+                + options->program_argument_start;
             break;
         } else if (strcmp(argument, "--diagnostic") == 0
             || strcmp(argument, "--color") == 0

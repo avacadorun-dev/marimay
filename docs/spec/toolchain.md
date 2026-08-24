@@ -93,6 +93,15 @@ Every command supports:
 
 Unknown commands and flags report a spelling suggestion. They use stable diagnostics `U0001` and `U0002` respectively; JSON output follows the nullable-primary rule in the diagnostics specification. `mmay help` lists only top-level user tasks; `mmay help <command>` gives examples before exhaustive flags. The CLI does not automatically execute `mmay-<name>` binaries from `PATH`, preventing typos from invoking untrusted plugins.
 
+Under D066, `mmay` converts the complete host invocation to owned UTF-8 before
+dispatch. POSIX bytes must already be valid UTF-8; Windows uses the wide CRT
+entry and strict UTF-16-to-UTF-8 conversion. Including the executable name,
+this outer boundary permits at most 8192 values, 262144 bytes per value, and
+8388608 bytes total. Encoding or limit failure is `U0007`/status `2` before
+command execution; allocation failure is `I0002`/status `70`. A run/test
+program suffix is independently revalidated against D066's tighter program
+limits after the first `--`.
+
 Exit statuses are stable:
 
 | Status | Meaning |
@@ -299,8 +308,8 @@ Failures are not reused across source changes. `--no-cache` bypasses reads and w
 
 `mmay test --engine both` uses the execution specification's record/replay harness. A mismatch exits `5` and reports result/output/panic/task/capability trace divergence. Passing the same assertion independently is not sufficient if deterministic observable traces disagree.
 
-Under D051, preview checkpoint 11 exposes the deterministic core of this
-contract. `mmay test [target]` discovers `@test fn(): void` only in
+Under D051 as extended by D066, the preview deterministic core discovers
+`@test fn(): void` and `@test fn(arguments: []string): void` only in
 `*_test.my`, includes module-root `tests/` as public-surface integration
 packages, and executes each discovered symbol in a fresh VM execution or
 native process. VM is the default; `--engine native` and `--engine both` are
@@ -308,6 +317,10 @@ accepted. Reports are sorted by package, canonical source path, declaration
 span, and symbol name. A test's stdout and stderr are retained in separate
 bounded byte buffers and are emitted only with that test's failure, so output
 from different tests cannot interleave.
+
+Arguments after the first `--` are injected into every argument-taking test;
+zero-parameter tests remain unchanged. The executable name is excluded. The VM
+record and native replay use the same D066 validated values and limits.
 
 For `both`, the VM run produces one observation record containing termination,
 exact D046 stdout bytes, and exact panic/stderr bytes. Native execution replays
@@ -370,23 +383,26 @@ mmay run . -- program arguments
 
 VM is default. Native run uses the ordinary content-addressed build cache and then executes the artifact. Program arguments begin only after `--`. Source errors never leave or execute a stale binary.
 
-Under D049, local VM execution first completes the authoritative checker and
+Under D049 and D066, local VM execution first completes the authoritative checker and
 selects the exact root-package `main`. It accepts only `fn main(): void` or
-`fn main(): Result<void, E>` with the root-visible structural Error contract.
+the cross product of an optional exact `[]string` parameter with `void`, `int`,
+`Result<void, E>`, and `Result<int, E>`, with the root-visible structural Error contract.
 It then lowers canonical verified typed MIR, encodes the complete bytecode
 program, decodes it into a new program, verifies that program, and only then
 executes it. The Stage 0 checkpoint-9 command accepts `vm` only; `native` is a
 `U0005` invalid option until the checkpoint-10 build/cache path exists. This
 staging restriction does not change the final native-run contract above.
 
-Successful `void` and `Ok()` returns exit `0`. Root `Err` is `G4003` on stderr
+Successful `void` and `Ok()` returns exit `0`; direct `int` and `Ok(int)`
+return the selected `0..255` status after cleanup. Root `Err` is `G4003` on stderr
 and exit `1`; explicit, arithmetic, and bounds panics are respectively
 `G4000`, `G4001`, and `G4002` on stderr and exit `1`. Invalid entry is `T0017`
 and exit `1`. Bytecode pipeline failure `B0001` and runtime integrity/resource
 failure `I0002` exit `70`. Program stdout contains only D046 bytes and never an
 internal engine-result envelope. `io.stdout` is the sole default local grant.
-Arguments after the first `--` are retained as program arguments; until a
-source argument API is accepted they have no observable language value.
+Arguments after the first `--` are validated under D066 and passed in order;
+the executable name is not present. Invalid argument bytes/limits use `G4006`,
+and a returned status outside `0..255` uses `G4007` rather than host truncation.
 `--max-heap-bytes N` and `--max-heap-bytes=N` apply D055's decimal byte budget
 to the fresh VM execution. The option occurs at most once and is parsed before
 program arguments; the default is `67108864`.

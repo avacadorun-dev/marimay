@@ -43,13 +43,21 @@ if(WIN32)
   set(MMAY_PLATFORM_SOURCES
     runtime/platform/windows/directory.c
     runtime/platform/windows/file.c
+    runtime/platform/windows/program_arguments.c
     runtime/platform/windows/process.c
+  )
+  set(MMAY_NATIVE_PROGRAM_ARGUMENTS_SOURCE
+    runtime/platform/windows/program_arguments.c
   )
 elseif(UNIX)
   set(MMAY_PLATFORM_SOURCES
     runtime/platform/posix/directory.c
     runtime/platform/posix/file.c
+    runtime/platform/posix/program_arguments.c
     runtime/platform/posix/process.c
+  )
+  set(MMAY_NATIVE_PROGRAM_ARGUMENTS_SOURCE
+    runtime/platform/posix/program_arguments.c
   )
 else()
   message(FATAL_ERROR "No Stage 0 platform adapter for this host")
@@ -165,6 +173,7 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/number_format.c
   bootstrap/src/base/owned_bytes.c
   bootstrap/src/base/provenance.c
+  bootstrap/src/base/utf8.c
   bootstrap/src/base/vector.c
   runtime/common/io_stdout.c
   runtime/common/managed.c
@@ -178,8 +187,10 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   runtime/common/managed_record.c
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
+  runtime/common/program_arguments.c
   runtime/common/profile.c
   runtime/common/test_output.c
+  ${MMAY_NATIVE_PROGRAM_ARGUMENTS_SOURCE}
 )
 
 function(mmay_add_native_runtime target profile optimization output_directory)
@@ -287,6 +298,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_nominal.c
   bootstrap/src/bytecode/vm_numeric.c
   bootstrap/src/bytecode/vm_prepare.c
+  bootstrap/src/bytecode/vm_arguments.c
   bootstrap/src/bytecode/vm_value.c
   bootstrap/src/check/array.c
   bootstrap/src/check/checker_array_mutation.c
@@ -350,6 +362,7 @@ add_library(mmay_bootstrap STATIC
     bootstrap/src/cli/cli_check.c
     bootstrap/src/cli/cli_compile_report.c
     bootstrap/src/cli/cli_mir_pipeline.c
+    bootstrap/src/cli/cli_program_arguments.c
     bootstrap/src/cli/cli_run_program.c
     bootstrap/src/cli/cli_test_program.c
     bootstrap/src/cli/cli_run_report.c
@@ -432,6 +445,7 @@ add_library(mmay_bootstrap STATIC
   runtime/common/managed_record.c
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
+  runtime/common/program_arguments.c
   ${MMAY_PLATFORM_SOURCES}
 )
 

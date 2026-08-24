@@ -365,8 +365,8 @@ performance prerequisite inserted between CP38 and CP39.
 ## Active sequence CP29-CP41
 
 The sequence is deliberately linear so exactly one card is executable. CP29
-and CP30 are `verified`; CP31 is `ready`, and every later card is `planned`
-behind its declared predecessor. Execution order is CP31–CP38, CP41, CP39,
+through CP31 are `verified`; CP32 is `ready`, and every later card is `planned`
+behind its declared predecessor. Execution order is CP32–CP38, CP41, CP39,
 then CP40; numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
@@ -569,7 +569,8 @@ not unrelated compiler internals.
 
 ## CP31 - Program arguments and controlled exit
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP30.
+State: `verified`. Parent gate: CLI0. Predecessor: CP30. Evidence scope:
+`local`. Evidence: [CP31](evidence/cp31-program-arguments-2026-08-24.md).
 
 ### Outcome
 
@@ -652,7 +653,7 @@ evidence, and the CP32 card. Include exact encoding and limit constants.
 
 ## CP32 - Typed standard streams and flush
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP31.
+State: `ready`. Parent gate: CLI0. Predecessor: CP31.
 
 ### Outcome
 

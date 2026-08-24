@@ -16,13 +16,15 @@ typedef struct MarimayCheckedEntry {
     const MarimayCheckedSymbol *symbol;
     const MarimayCheckedFunction *error_message;
     MarimayTypeId error_type;
+    bool takes_arguments;
+    bool returns_status;
     bool returns_result;
 } MarimayCheckedEntry;
 
 /*
  * Selects the exact root-package `main` and validates the normative entry
- * signatures. For Result<void, E>, `message(E): string` is the structural
- * prelude Error contract and is returned for expected-error rendering.
+ * signatures. The optional parameter is exact []string. For Result<void, E>
+ * and Result<int, E>, `message(E): string` is the structural Error contract.
  * Returned pointers are borrowed from result.
  */
 MarimayCheckEntryStatus mmay_check_select_entry(

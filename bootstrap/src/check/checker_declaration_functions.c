@@ -10,6 +10,16 @@
 #include "checker_statement_api.h"
 #include "checker_generic_types_api.h"
 
+static bool mmay_checker_test_arguments_type(
+    const MarimayChecker *checker,
+    MarimayTypeId type
+) {
+    const MarimayTypeDescriptor *descriptor = checker != NULL
+        ? mmay_type_descriptor(&checker->result->types, type) : NULL;
+    return descriptor != NULL && descriptor->kind == MMAY_TYPE_KIND_ARRAY
+        && descriptor->argument_count == 1
+        && descriptor->arguments[0] == MMAY_TYPE_STRING;
+}
 
  bool mmay_checker_private_collect_function_signature(
     MarimayChecker *checker,
@@ -283,12 +293,17 @@
             );
             declaration.signature_valid = false;
         } else if (declaration.is_test
-            && (declaration.parameter_types.length != 0
+            && (declaration.parameter_types.length > 1
+                || (declaration.parameter_types.length == 1
+                    && !mmay_checker_test_arguments_type(
+                        checker,
+                        *(const MarimayTypeId *)declaration.parameter_types.data
+                    ))
                 || declaration.result_type != MMAY_TYPE_VOID)) {
             (void)mmay_checker_add_diagnostic(
                 checker,
                 MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
-                "@test requires a non-generic fn(): void declaration",
+                "@test requires fn(): void or fn([]string): void",
                 declaration.name.start,
                 declaration.name.end
             );

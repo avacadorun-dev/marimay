@@ -45,6 +45,7 @@ typedef struct MarimayCliOptions {
     size_t build_emit_index;
     bool build_release;
     size_t build_release_index;
+    const char *const *program_arguments;
     size_t program_argument_start;
     size_t program_argument_count;
     bool quiet;

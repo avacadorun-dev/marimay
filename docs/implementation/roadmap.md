@@ -31,13 +31,16 @@ CP30 now implements closed primitive interpolation, boolean/all-width integer
 formatting, integer parsing, and bounded dynamic string construction across the
 checker, verified MIR, bytecode VM, and native C17. Its local sustained fuzz,
 sanitizer, allocation, differential, and performance gates are verified.
+CP31 adds bounded UTF-8 program arguments, test injection, and cleanup-safe
+portable statuses across VM and native execution with local differential,
+allocation-failure, and sanitizer evidence.
 
 ### Current limitations
 
 - The implemented source surface is not the complete 1.0 specification; I1–I5
   remain `in-progress` and unsupported accepted constructs fail closed.
-- Source-visible arguments, full stdin/stdout/stderr, `Bytes`, files,
-  environment, `Map`, `Set`, `std/cli`, and typed JSON remain CP31–CP38 work.
+- Full stdin/stdout/stderr, `Bytes`, files, environment, `Map`, `Set`,
+  `std/cli`, and typed JSON remain CP32–CP38 work.
 - Native `mmay run`, `mmay init`, `mmay doctor`, relocatable install lifecycle,
   and publication-ready artifacts remain CP39–CP40 work.
 - Portable public `.myb`, untrusted `mmay exec`, dependency resolution,
@@ -53,9 +56,9 @@ sanitizer, allocation, differential, and performance gates are verified.
 
 ## Now / Next / Later
 
-- **Now:** [CP31 — program arguments](checkpoints.md#cp31-program-arguments-and-controlled-exit).
-- **Next:** [CP32 — typed standard streams](checkpoints.md#cp32-typed-standard-streams-and-flush), then [CP33 — UTF-8, bytes, and builders](checkpoints.md#cp33-utf-8-text-bytes-and-bounded-builders).
-- **Later:** CP33–CP38 finish the bounded language/core surface; CP41 then
+- **Now:** [CP32 — typed standard streams](checkpoints.md#cp32-typed-standard-streams-and-flush).
+- **Next:** [CP33 — UTF-8, bytes, and builders](checkpoints.md#cp33-utf-8-text-bytes-and-bounded-builders), then [CP34 — paths and files](checkpoints.md#cp34-paths-and-filesystem-slice).
+- **Later:** CP34–CP38 finish the bounded language/core surface; CP41 then
   closes the measured x86_64 native-code pressure gap before CP39–CP40 finish
   installation and the CLI0 audit. I6 next proves one real direct-style
   concurrent I/O vertical slice. E0 tests the semantic hypotheses externally,
@@ -106,7 +109,7 @@ authorization. These are never synonyms.
 | I3 | Typed bytecode VM | `in-progress` | `pushed-ci` | Portable public bundles and the full hostile-verifier/fuzz/limit gate remain open. | Every opcode and required bundle boundary passes verifier/execution/fuzz/limit tests and MIR/VM differential on Tier 1; [evidence](evidence/README.md#i3). |
 | I4 | C17 AOT and equivalence | `in-progress` | `pushed-ci` | Native run/install/doctor, the full compiler/platform differential matrix, and the measured x86_64 code-pressure gap remain open. | CP39 and CP41 plus complete O0/O2 Clang/GCC/MSVC sanitizer and engine-equivalence evidence meet the I4 gate; [CP41](checkpoints.md#cp41-x86_64-native-code-generation-pressure). |
 | I5 | Managed data and standard core | `in-progress` | `pushed-ci` | CLI text/bytes/files/collections plus D007/D013 workload budgets are incomplete. | CP30–CP38 and managed-heap/property/GC/workload gates close with VM/native evidence; [queue](checkpoints.md#active-sequence-cp29-cp41). |
-| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP31–CP40, the CP41 I4 prerequisite, and the CP29 matrix remain open. | CP29–CP41 are verified, N0 and all claimed platform gates are closed, and the CP40 release audit supports only the bounded CLI claim. |
+| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP32–CP40, the CP41 I4 prerequisite, and the CP29 matrix remain open. | CP29–CP41 are verified, N0 and all claimed platform gates are closed, and the CP40 release audit supports only the bounded CLI claim. |
 | I6 | Direct-style tasks, scheduler, and I/O | `planned` | `none` | CLI0 and CP41 precede the executable I6 prototype. | Suspension, scope/task lifetime, cancellation, race/select, non-blocking I/O, and deterministic VM/native traces pass the defined vertical scenario. |
 | E0 | Pre-self-host ergonomics pilot | `planned` | `none` | A working I6 vertical slice is unavailable. | At least five external developers on two Tier 1 host families complete the defined tasks and every semantic finding is resolved or accepted. |
 | I7 | Packages, cache, and supply chain | `planned` | `none` | N0 and external semantic feedback are not verified. | Deterministic offline lock/cache, hostile archive, provenance, and registry-prototype gates pass without dependency code execution. |
@@ -154,7 +157,7 @@ self-hosting.
 CP28 is the fixed algorithm/performance integration boundary. CP29 established
 the release contract and closure matrix for N0, A0, I0, I1, and the applicable
 I2–I5 slices. That matrix assigns missing evidence; it does not mark those gates
-verified. CP30 is verified, and CP31 is now the sole ready card.
+verified. CP31 is verified, and CP32 is now the sole ready card.
 
 ## CLI0 CP41 boundary and post-CLI0 I6/E0
 

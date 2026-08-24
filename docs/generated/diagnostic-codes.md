@@ -24,6 +24,8 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `G4003` | runtime | Root main returned an expected error. |
 | `G4004` | test | A compiler-known test expectation observed a mismatching value or byte stream. |
 | `G4005` | runtime | An array iterator observed an intervening initialized-sequence mutation. |
+| `G4006` | runtime | Program arguments failed UTF-8, NUL, count, or byte-limit validation. |
+| `G4007` | runtime | Root main returned a status outside the portable process range. |
 | `I0001` | compiler | Compiler does not implement an accepted language construct. |
 | `I0002` | runtime | Runtime could not complete because of an internal resource or integrity failure. |
 | `K0001` | manifest | Manifest directive or grouping syntax is invalid. |
@@ -85,3 +87,4 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `U0004` | command line | Command-line option is missing its required value. |
 | `U0005` | command line | Command-line option value is outside its closed value set. |
 | `U0006` | command line | Command received an unsupported positional argument. |
+| `U0007` | command line | Host command arguments could not be represented as bounded UTF-8. |

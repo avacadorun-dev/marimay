@@ -1,0 +1,25 @@
+import { println } from "std/io";
+
+enum Failure {
+  Missing,
+}
+
+fn message(error: Failure): string {
+  return "missing argument";
+}
+
+fn cleanup(): void {
+  println("cleanup");
+}
+
+fn main(arguments: []string): Result<int, Failure> {
+  defer cleanup();
+  if arguments.length() == 0 {
+    return Err(Failure.Missing);
+  }
+  if arguments.length() == 2 {
+    return Ok(256);
+  }
+  println(arguments[0]);
+  return Ok(7);
+}

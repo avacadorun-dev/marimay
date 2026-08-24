@@ -44,7 +44,7 @@ int mmay_cli_run_entry_error(
         ? "executable root does not declare fn main()"
         : (status == MMAY_CHECK_ENTRY_ERROR_CONTRACT_MISSING
             ? "main error type does not provide message(error): string"
-            : "main must be fn main(): void or fn main(): Result<void, E>");
+            : "main accepts zero parameters or []string and returns void, int, Result<void, E>, or Result<int, E>");
     return mmay_cli_plain_error(
         standard_error, options->diagnostic_style,
         MMAY_DIAGNOSTIC_INVALID_ENTRY_POINT, message,

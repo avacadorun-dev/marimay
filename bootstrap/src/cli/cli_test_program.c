@@ -1,5 +1,6 @@
 #include "cli_compile_report.h"
 #include "cli_internal.h"
+#include "cli_program_arguments.h"
 #include "cli_resource_report.h"
 
 #include <stdio.h>
@@ -9,6 +10,7 @@
 #include "mmay/bytecode/mir_lower.h"
 #include "mmay/bytecode/program.h"
 #include "mmay/bytecode/vm.h"
+#include "mmay/bytecode/vm_arguments.h"
 #include "mmay/generated/diagnostic_codes.h"
 #include "mmay/native/build.h"
 #include "mmay/platform/process.h"
@@ -36,6 +38,7 @@ typedef struct MarimayCliTestContext {
     const MarimayCompilerResult *compiler;
     const MarimayMirFunction **functions;
     size_t function_count;
+    MarimayProgramArgumentList program_arguments;
 } MarimayCliTestContext;
 
 typedef struct MarimayCliTestCapture {
@@ -167,6 +170,10 @@ static bool mmay_cli_test_vm(
     MarimayMirBytecodeLowerStatus lower_status;
     MarimayBytecodeCodecStatus codec_status;
     MarimayBytecodeRunStatus run_status;
+    MarimayBytecodeValue argument;
+    const MarimayBytecodeProgramFunction *entry = NULL;
+    const MarimayBytecodeValue *run_arguments = NULL;
+    size_t run_argument_count = 0;
     bool execution_ready = false;
     bool panic_ready = false;
     bool error_capture_ready = false;
@@ -177,6 +184,7 @@ static bool mmay_cli_test_vm(
     memset(&execution, 0, sizeof(execution));
     memset(&panic, 0, sizeof(panic));
     memset(&result, 0, sizeof(result));
+    memset(&argument, 0, sizeof(argument));
     memset(&capture, 0, sizeof(capture));
     memset(&error_capture, 0, sizeof(error_capture));
     memset(observation, 0, sizeof(*observation));
@@ -219,8 +227,17 @@ static bool mmay_cli_test_vm(
     run_options.execution = &execution;
     run_options.stdout_sink = &sink;
     run_options.panic = &panic;
+    entry = mmay_bytecode_program_function(&decoded, decoded.entry_function);
+    if (test->function->mir.parameter_count == 1) {
+        if (entry == NULL || mmay_bytecode_execution_program_arguments(
+                &execution, &entry->body, context->program_arguments,
+                &argument
+            ) != MMAY_BYTECODE_RUN_OK) goto cleanup;
+        run_arguments = &argument;
+        run_argument_count = 1;
+    }
     run_status = mmay_bytecode_run_program(
-        &decoded, NULL, 0, context->session->allocator,
+        &decoded, run_arguments, run_argument_count, context->session->allocator,
         run_options, &result
     );
     if (run_status == MMAY_BYTECODE_RUN_OK
@@ -283,7 +300,10 @@ static bool mmay_cli_test_native(
     MarimayNativeBuildRequest request;
     MarimayNativeBuildResult build;
     MarimayProcessCaptureResult capture;
-    const char *arguments[2];
+    const char **arguments = NULL;
+    size_t argument_bytes = 0;
+    size_t argument_count = context->options->program_argument_count + 1;
+    size_t index = 0;
     bool accepted = false;
     memset(&request, 0, sizeof(request));
     memset(&build, 0, sizeof(build));
@@ -292,6 +312,7 @@ static bool mmay_cli_test_native(
     request.functions = context->functions;
     request.function_count = context->function_count;
     request.entry_symbol = test->function->mir.symbol;
+    request.takes_arguments = test->function->mir.parameter_count == 1;
     request.root_directory = (const char *)context->target->root_directory.data;
     request.root_directory_length = context->target->root_directory.length;
     request.max_heap_bytes = context->options->max_heap_bytes;
@@ -299,10 +320,19 @@ static bool mmay_cli_test_native(
         context->session->allocator, &request, &build
     );
     if (*build_status != MMAY_NATIVE_BUILD_OK) goto cleanup;
+    if (!mmay_size_multiply(
+            argument_count + 1, sizeof(*arguments), &argument_bytes
+        )) goto cleanup;
+    arguments = mmay_allocate(&context->session->allocator, argument_bytes);
+    if (arguments == NULL) goto cleanup;
     arguments[0] = (const char *)build.artifact_path.data;
-    arguments[1] = NULL;
+    for (index = 0; index < context->options->program_argument_count;
+        index += 1) {
+        arguments[index + 1] = context->options->program_arguments[index];
+    }
+    arguments[argument_count] = NULL;
     *process_status = mmay_process_run_capture(
-        context->session->allocator, arguments, 1,
+        context->session->allocator, arguments, argument_count,
         MMAY_CLI_TEST_CAPTURE_LIMIT, MMAY_CLI_TEST_CAPTURE_LIMIT,
         &capture
     );
@@ -316,6 +346,9 @@ static bool mmay_cli_test_native(
     memset(&capture.standard_error, 0, sizeof(capture.standard_error));
     accepted = true;
 cleanup:
+    mmay_deallocate(
+        &context->session->allocator, arguments, argument_bytes
+    );
     if (!accepted) mmay_cli_test_observation_dispose(observation);
     mmay_process_capture_result_dispose(&capture);
     mmay_native_build_result_dispose(&build);
@@ -568,6 +601,8 @@ int mmay_cli_test_program(
     MarimayCompilerResult compiler;
     MarimayVector tests;
     MarimayCliTestContext context;
+    MarimayCliProgramArguments program_arguments;
+    MarimayProgramArgumentsStatus argument_status;
     MarimayCliCheckTargetStatus target_status;
     MarimayCompilerStatus compiler_status;
     size_t index = 0;
@@ -577,6 +612,15 @@ int mmay_cli_test_program(
     memset(&compiler, 0, sizeof(compiler));
     memset(&tests, 0, sizeof(tests));
     memset(&context, 0, sizeof(context));
+    memset(&program_arguments, 0, sizeof(program_arguments));
+    argument_status = mmay_cli_program_arguments_build(
+        session, options, &program_arguments
+    );
+    if (argument_status != MMAY_PROGRAM_ARGUMENTS_OK) {
+        return mmay_cli_program_arguments_error(
+            options, argument_status, standard_error
+        );
+    }
     target_options.check_all_targets = true;
     target_status = mmay_cli_check_target_build(
         session, &target_options, &target
@@ -655,10 +699,12 @@ int mmay_cli_test_program(
     context.options = options;
     context.target = &target;
     context.compiler = &compiler;
+    context.program_arguments = program_arguments.list;
     exit_code = mmay_cli_test_execute(
         &context, &tests, standard_output, standard_error
     );
 cleanup:
+    mmay_cli_program_arguments_dispose(&program_arguments);
     mmay_deallocate(&session->allocator, context.functions, function_bytes);
     mmay_vector_dispose(&tests);
     mmay_compiler_result_dispose(&compiler);

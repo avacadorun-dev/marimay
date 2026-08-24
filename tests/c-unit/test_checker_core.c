@@ -239,6 +239,10 @@ void mmay_test_checker_function_attributes_and_panic_shadow(void) {
     static const char attributed[] =
         "@test\n"
         "fn verifies(): void { return; }\n"
+        "@test\n"
+        "fn verifiesArguments(arguments: []string): void {\n"
+        "  const count = arguments.length();\n"
+        "}\n"
         "@fuzz\n"
         "fn fuzzInput(input: int): void { const copied = input; }\n";
     static const char shadow[] =
@@ -247,6 +251,7 @@ void mmay_test_checker_function_attributes_and_panic_shadow(void) {
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     const MarimayCheckedFunction *test_function = NULL;
+    const MarimayCheckedFunction *argument_test_function = NULL;
     const MarimayCheckedFunction *fuzz_function = NULL;
     MMAY_EXPECT(mmay_checker_fixture_init_path(
         &fixture,
@@ -262,11 +267,15 @@ void mmay_test_checker_function_attributes_and_panic_shadow(void) {
     ) == MMAY_CHECK_OK);
     if (checked.initialized) {
         MMAY_EXPECT(checked.diagnostics.length == 0);
-        MMAY_EXPECT(checked.functions.length == 2);
+        MMAY_EXPECT(checked.functions.length == 3);
         test_function = mmay_checked_function(&checked, 0);
-        fuzz_function = mmay_checked_function(&checked, 1);
+        argument_test_function = mmay_checked_function(&checked, 1);
+        fuzz_function = mmay_checked_function(&checked, 2);
         MMAY_EXPECT(test_function != NULL && test_function->is_test);
         MMAY_EXPECT(test_function != NULL && !test_function->is_fuzz);
+        MMAY_EXPECT(argument_test_function != NULL
+            && argument_test_function->is_test
+            && argument_test_function->mir.parameter_count == 1);
         MMAY_EXPECT(fuzz_function != NULL && !fuzz_function->is_test);
         MMAY_EXPECT(fuzz_function != NULL && fuzz_function->is_fuzz);
         mmay_check_result_dispose(&checked);
@@ -303,6 +312,12 @@ void mmay_test_checker_function_attributes_and_panic_shadow(void) {
     mmay_checker_expect_one_diagnostic_path(
         "invalid_test.my",
         "@test public fn invalid(): void {}\n",
+        MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
+        "invalid"
+    );
+    mmay_checker_expect_one_diagnostic_path(
+        "invalid_test.my",
+        "@test fn invalid(values: []int): void {}\n",
         MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
         "invalid"
     );

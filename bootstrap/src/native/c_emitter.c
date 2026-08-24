@@ -309,7 +309,8 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
             entry = ordered[index];
         }
     }
-    if (entry == NULL || entry->parameter_count != 0) {
+    if (entry == NULL
+        || (!options.executable_entry && entry->parameter_count != 0)) {
         status = MMAY_NATIVE_C_EMIT_INVALID_MIR;
         goto cleanup;
     }
@@ -357,7 +358,7 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
     }
     memset(&buffer, 0, sizeof(buffer)); buffer.limit = options.max_generated_bytes;
     if (!mmay_vector_init(&buffer.bytes, allocator, sizeof(char))) { status = MMAY_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup; }
-    if (!mmay_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"mmay/base/checked_i64_fast.h\"\n#include \"mmay/base/allocator.h\"\n#include \"mmay/runtime/managed.h\"\n#include \"mmay/runtime/string.h\"\n#include \"mmay/runtime/test_output.h\"\n")
+    if (!mmay_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"mmay/base/checked_i64_fast.h\"\n#include \"mmay/base/allocator.h\"\n#include \"mmay/runtime/managed.h\"\n#include \"mmay/runtime/program_arguments.h\"\n#include \"mmay/runtime/string.h\"\n#include \"mmay/runtime/test_output.h\"\n")
         || !mmay_native_c_write(&buffer, "#include \"mmay/base/checked_integer.h\"\n")
         || !mmay_native_c_write(&buffer, "#include \"mmay/base/number_format.h\"\n#include \"mmay/base/integer_text.h\"\n")
         || (uses_f64 && !mmay_native_c_write(
@@ -396,7 +397,12 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
     }
     if (options.executable_entry
         && !mmay_native_c_emit_public_helpers(&buffer)) goto emit_fail;
-    if (!mmay_native_c_write(&buffer, "int main(void) { size_t mmay_g_start = 0, mmay_g_end = 0; int mmay_g_s; static mmay_g_frame mmay_g_frames[MMAY_G_MAX_FRAMES]; static mmay_g_suppressed_panic mmay_g_suppressed[MMAY_G_MAX_SUPPRESSED]; mmay_g_panic mmay_g_p = {0}; mmay_g_execution mmay_g_x = {0}; MarimayManagedHeapOptions mmay_g_heap_options; ")) goto emit_fail;
+    if (options.executable_entry) {
+        if (!mmay_native_c_emit_executable_host_open(&buffer)) goto emit_fail;
+    } else if (!mmay_native_c_write(
+            &buffer,
+            "int main(void) { size_t mmay_g_start = 0, mmay_g_end = 0; int mmay_g_s; static mmay_g_frame mmay_g_frames[MMAY_G_MAX_FRAMES]; static mmay_g_suppressed_panic mmay_g_suppressed[MMAY_G_MAX_SUPPRESSED]; mmay_g_panic mmay_g_p = {0}; mmay_g_execution mmay_g_x = {0}; MarimayManagedHeapOptions mmay_g_heap_options; "
+        )) goto emit_fail;
     for (index = 0; index < program->function_count; index += 1) {
         if (!mmay_native_c_write(&buffer, "(void)&")
             || !mmay_native_c_symbol(&buffer, ordered[index]->symbol)
@@ -405,17 +411,27 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
     if (uses_f64 && !mmay_native_c_write(&buffer, options.executable_entry
             ? "if (!mmay_f64_binary64_supported()) { fputs(\"error[I0002]: native target does not provide strict binary64\\n\", stderr); return 70; } "
             : "if (!mmay_f64_binary64_supported()) { fputs(\"unsupported:f64\\n\", stderr); return 2; } ")) goto emit_fail;
-    if (!mmay_native_c_write(&buffer, "mmay_g_keep_assets(); mmay_g_p.frames = mmay_g_frames; mmay_g_p.frame_capacity = MMAY_G_MAX_FRAMES; mmay_g_p.suppressed = mmay_g_suppressed; mmay_g_p.suppressed_capacity = MMAY_G_MAX_SUPPRESSED; mmay_g_x.allocator = mmay_g_make_allocator(&mmay_g_x.fail_allocator); mmay_g_heap_options = mmay_managed_heap_default_options(); mmay_g_heap_options.max_live_bytes = %zu; mmay_g_heap_options.collect_before_allocation = MMAY_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)MMAY_G_MAX_OBJECTS < mmay_g_heap_options.max_objects) mmay_g_heap_options.max_objects = (size_t)MMAY_G_MAX_OBJECTS; if (!mmay_managed_heap_init(&mmay_g_x.heap, mmay_g_x.allocator, mmay_g_heap_options)) { ", options.max_heap_bytes)) goto emit_fail;
+    if (!mmay_native_c_write(&buffer, "mmay_g_keep_assets(); mmay_g_p.frames = mmay_g_frames; mmay_g_p.frame_capacity = MMAY_G_MAX_FRAMES; mmay_g_p.suppressed = mmay_g_suppressed; mmay_g_p.suppressed_capacity = MMAY_G_MAX_SUPPRESSED; mmay_g_x.allocator = mmay_g_make_allocator(&mmay_g_x.fail_allocator); ")) goto emit_fail;
+    if (options.executable_entry
+        && !mmay_native_c_emit_executable_host_arguments(&buffer)) {
+        goto emit_fail;
+    }
+    if (!mmay_native_c_write(&buffer, "mmay_g_heap_options = mmay_managed_heap_default_options(); mmay_g_heap_options.max_live_bytes = %zu; mmay_g_heap_options.collect_before_allocation = MMAY_G_COLLECT_BEFORE_ALLOCATION != 0; if ((size_t)MMAY_G_MAX_OBJECTS < mmay_g_heap_options.max_objects) mmay_g_heap_options.max_objects = (size_t)MMAY_G_MAX_OBJECTS; if (!mmay_managed_heap_init(&mmay_g_x.heap, mmay_g_x.allocator, mmay_g_heap_options)) { ", options.max_heap_bytes)) goto emit_fail;
     if (!mmay_native_c_write(&buffer, options.executable_entry
-            ? "fputs(\"error[I0002]: runtime host allocation failed\\n\", stderr); return 70; } "
+            ? "mmay_g_exit = mmay_g_public_message(\"error\", \"I0002\", (const unsigned char *)\"runtime host allocation failed\", sizeof(\"runtime host allocation failed\") - 1, 70); goto mmay_g_public_host_cleanup; } "
             : "fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
     if (!mmay_native_c_write(&buffer, options.executable_entry
-            ? "if (mmay_g_register_immediate_enums(&mmay_g_x.heap) != MMAY_MANAGED_OK) { mmay_g_execution_dispose(&mmay_g_x); fputs(\"error[I0002]: runtime host allocation failed\\n\", stderr); return 70; } "
+            ? "if (mmay_g_register_immediate_enums(&mmay_g_x.heap) != MMAY_MANAGED_OK) { mmay_g_exit = mmay_g_public_message(\"error\", \"I0002\", (const unsigned char *)\"runtime host allocation failed\", sizeof(\"runtime host allocation failed\") - 1, 70); goto mmay_g_public_cleanup; } "
             : "if (mmay_g_register_immediate_enums(&mmay_g_x.heap) != MMAY_MANAGED_OK) { mmay_g_execution_dispose(&mmay_g_x); fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
     if (options.executable_entry) {
+        if (options.executable_takes_arguments
+            && !mmay_native_c_emit_executable_argument_value(
+                &buffer, entry
+            )) goto emit_fail;
         if (!mmay_native_c_emit_executable_entry(
                 &buffer, entry, ordered, program->function_count, &options
             )) goto emit_fail;
+        if (!mmay_native_c_emit_executable_host_close(&buffer)) goto emit_fail;
     }
     else if (entry->result_type >= MMAY_TYPE_I8
         && entry->result_type <= MMAY_TYPE_U64

@@ -44,8 +44,19 @@ build/debug/cp29-quick-start
 <!-- cp29-quick-start:end -->
 
 The current source surface also includes CP30 dynamic primitive interpolation,
-boolean/all-width integer formatting, and `parseInt`/`parseIntRadix` with exact
-VM/native behavior.
+boolean/all-width integer formatting, and `parseInt`/`parseIntRadix`, plus CP31
+bounded UTF-8 program arguments and cleanup-safe process statuses with exact
+VM/native behavior. For an argument-taking package, for example:
+
+```sh
+build/debug/mmay run tests/public-alpha/cp31-args -- alpha "two words"
+build/debug/mmay test tests/public-alpha/cp31-args --engine both
+build/debug/mmay build tests/public-alpha/cp31-args --output build/debug/cp31-args
+build/debug/cp31-args alpha "two words"
+```
+
+The executable name is excluded from source `[]string`; empty strings, Unicode,
+leading dashes, and a literal `--` after the separator are preserved exactly.
 
 Both run paths print `Marimay CP29 quick start`. The
 [known limitations](docs/known-limitations.md) distinguish this executable

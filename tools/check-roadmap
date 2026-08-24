@@ -298,6 +298,14 @@ def expect_mutation(name: str, rows: list[dict[str, str]], needle: str) -> str |
 
 def run_self_tests(rows: list[dict[str, str]]) -> list[str]:
     failures: list[str] = []
+    ready_id = next(
+        row["id"] for row in rows
+        if row["kind"] == "checkpoint" and row["state"] == "ready"
+    )
+    verified_ids = [
+        row["id"] for row in rows
+        if row["kind"] == "checkpoint" and row["state"] == "verified"
+    ]
 
     def mutated() -> list[dict[str, str]]:
         return copy.deepcopy(rows)
@@ -321,21 +329,20 @@ def run_self_tests(rows: list[dict[str, str]]) -> list[str]:
     cases.append(("dependency cycle", sample, "dependency cycle"))
 
     sample = mutated()
-    next(row for row in sample if row["id"] == "CP30")["state"] = "ready"
-    next(row for row in sample if row["id"] == "CP31")["state"] = "ready"
+    next(row for row in sample if row["id"] == verified_ids[-1])["state"] = "ready"
     cases.append(("duplicate ready", sample, "more than one ready checkpoint"))
 
     sample = mutated()
-    next(row for row in sample if row["id"] == "CP31")["state"] = "planned"
+    next(row for row in sample if row["id"] == ready_id)["state"] = "planned"
     cases.append(("missing active", sample, "no active checkpoint"))
 
     sample = mutated()
-    next(row for row in sample if row["id"] == "CP30")["state"] = "in-progress"
-    next(row for row in sample if row["id"] == "CP31")["state"] = "in-progress"
+    next(row for row in sample if row["id"] == verified_ids[-2])["state"] = "in-progress"
+    next(row for row in sample if row["id"] == verified_ids[-1])["state"] = "in-progress"
     cases.append(("duplicate in-progress", sample, "more than one in-progress"))
 
     sample = mutated()
-    next(row for row in sample if row["id"] == "CP30")["state"] = "in-progress"
+    next(row for row in sample if row["id"] == verified_ids[-1])["state"] = "in-progress"
     cases.append(("mixed active states", sample, "ready checkpoint exists while"))
 
     sample = mutated()

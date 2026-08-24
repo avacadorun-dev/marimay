@@ -24,6 +24,18 @@ static bool mmay_entry_result_symbol(MarimaySymbolId *symbol) {
     );
 }
 
+static bool mmay_entry_string_array(
+    const MarimayCheckResult *result,
+    MarimayTypeId type
+) {
+    const MarimayTypeDescriptor *descriptor = mmay_type_descriptor(
+        &result->types, type
+    );
+    return descriptor != NULL && descriptor->kind == MMAY_TYPE_KIND_ARRAY
+        && descriptor->argument_count == 1
+        && descriptor->arguments[0] == MMAY_TYPE_STRING;
+}
+
 static const MarimayCheckedFunction *mmay_entry_function_by_symbol(
     const MarimayCheckResult *result,
     MarimaySymbolId symbol
@@ -121,13 +133,18 @@ MarimayCheckEntryStatus mmay_check_select_entry(
     if (main_function == NULL || main_function->is_external
         || main_function->is_test || main_function->is_fuzz
         || signature == NULL || signature->kind != MMAY_TYPE_KIND_FUNCTION
-        || signature->parameter_count != 0 || signature->argument_count != 1) {
+        || signature->parameter_count > 1
+        || signature->argument_count != signature->parameter_count + 1
+        || (signature->parameter_count == 1
+            && !mmay_entry_string_array(result, signature->arguments[0]))) {
         return MMAY_CHECK_ENTRY_INVALID_SIGNATURE;
     }
-    return_type = signature->arguments[0];
-    if (return_type == MMAY_TYPE_VOID) {
+    entry->takes_arguments = signature->parameter_count == 1;
+    return_type = signature->arguments[signature->parameter_count];
+    if (return_type == MMAY_TYPE_VOID || return_type == MMAY_TYPE_I64) {
         entry->function = main_function;
         entry->symbol = main_symbol;
+        entry->returns_status = return_type == MMAY_TYPE_I64;
         return MMAY_CHECK_ENTRY_OK;
     }
     return_descriptor = mmay_type_descriptor(&result->types, return_type);
@@ -136,7 +153,8 @@ MarimayCheckEntryStatus mmay_check_select_entry(
         || return_descriptor->kind != MMAY_TYPE_KIND_NOMINAL
         || return_descriptor->argument_count != 2
         || !mmay_symbol_id_equal(return_descriptor->symbol, result_symbol)
-        || return_descriptor->arguments[0] != MMAY_TYPE_VOID) {
+        || (return_descriptor->arguments[0] != MMAY_TYPE_VOID
+            && return_descriptor->arguments[0] != MMAY_TYPE_I64)) {
         return MMAY_CHECK_ENTRY_INVALID_SIGNATURE;
     }
     entry->error_message = mmay_entry_error_message(
@@ -149,6 +167,7 @@ MarimayCheckEntryStatus mmay_check_select_entry(
     entry->function = main_function;
     entry->symbol = main_symbol;
     entry->error_type = return_descriptor->arguments[1];
+    entry->returns_status = return_descriptor->arguments[0] == MMAY_TYPE_I64;
     entry->returns_result = true;
     return MMAY_CHECK_ENTRY_OK;
 }

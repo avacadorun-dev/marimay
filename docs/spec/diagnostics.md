@@ -253,6 +253,16 @@ invalidated by mutation`. The primary span is the complete
 empty/no-op/error mutation paths do not change the generation. VM and native
 preserve the same code, message, span, and caller frames.
 
+Under D066, malformed UTF-8, an interior NUL, or an exceeded argument count or
+byte limit is `G4006` and exits `1` before source execution. A root status
+outside `0..255` is `G4007` with exact message
+`program exit status is outside 0..255` and exits `1` after lexical cleanup.
+Neither is host truncation or an `I0002`. Allocation and managed-budget failure
+while importing otherwise valid arguments remain the D055 `I0002` classes.
+The separate full-tool host conversion uses `U0007`/status `2` for malformed
+encoding or its 8192-value, 262144-byte-per-value, or 8388608-byte-total limit;
+it runs before command dispatch and therefore cannot emit program stdout.
+
 Cancellation is normally not printed as an error. Unexpected forced shutdown, cleanup panic, or leaked resource receives a runtime diagnostic with allocation/open and owning task spans.
 
 Under D041 an already-active panic remains primary while cleanup panics are

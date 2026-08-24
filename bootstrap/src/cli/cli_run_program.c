@@ -1,11 +1,15 @@
 #include "cli_compile_report.h"
+#include "cli_program_arguments.h"
 #include "cli_run_report.h"
 
 #include <string.h>
 
 #include "mmay/bytecode/mir_lower.h"
 #include "mmay/bytecode/program.h"
+#include "mmay/bytecode/vm_arguments.h"
+#include "mmay/base/checked_i64.h"
 #include "mmay/check/entry.h"
+#include "mmay/generated/diagnostic_codes.h"
 #include "mmay/runtime/enum.h"
 
 typedef struct MarimayCliStdoutContext {
@@ -40,6 +44,37 @@ static const MarimayBytecodeEnumPayload *mmay_cli_run_error_payload(
     return mmay_vector_at_const(
         &function->enum_payloads,
         layout->payload_start + variant->payload_start
+    );
+}
+
+static const MarimayBytecodeEnumPayload *mmay_cli_run_ok_payload(
+    const MarimayBytecodeFunction *function
+) {
+    const MarimayBytecodeEnumLayout *layout = mmay_bytecode_enum_layout(
+        function, function->result_layout
+    );
+    const MarimayBytecodeEnumVariant *variant = layout != NULL
+        ? mmay_vector_at_const(
+            &function->enum_variants, layout->variant_start
+        ) : NULL;
+    return layout != NULL && variant != NULL && variant->payload_count == 1
+        ? mmay_vector_at_const(
+            &function->enum_payloads,
+            layout->payload_start + variant->payload_start
+        ) : NULL;
+}
+
+static int mmay_cli_run_selected_status(
+    const MarimayCliOptions *options,
+    int64_t status,
+    MarimayWriter standard_error
+) {
+    if (status >= 0 && status <= 255) return (int)status;
+    return mmay_cli_plain_error(
+        standard_error, options->diagnostic_style,
+        MMAY_DIAGNOSTIC_PROGRAM_EXIT_STATUS,
+        "program exit status is outside 0..255",
+        MMAY_EXIT_SOURCE_FAILURE
     );
 }
 
@@ -103,7 +138,27 @@ static int mmay_cli_run_render_expected(
             standard_error
         );
     }
-    if (variant == 0) return MMAY_EXIT_SUCCESS;
+    if (variant == 0) {
+        const MarimayBytecodeEnumPayload *ok_payload =
+            entry->returns_status ? mmay_cli_run_ok_payload(
+                &main_function->body
+            ) : NULL;
+        if (!entry->returns_status) return MMAY_EXIT_SUCCESS;
+        if (ok_payload == NULL || ok_payload->type != MMAY_BYTECODE_TYPE_I64
+            || mmay_managed_enum_get_payload(
+                &execution->managed_heap, result.as.managed_reference,
+                0, 0, &cell
+            ) != MMAY_MANAGED_OK) {
+            return mmay_cli_run_pipeline_error(
+                options, "verified main returned an invalid Result status",
+                standard_error
+            );
+        }
+        return mmay_cli_run_selected_status(
+            options, mmay_i64_from_twos_complement(cell.f64_bits),
+            standard_error
+        );
+    }
     if (variant != 1 || mmay_managed_enum_get_payload(
             &execution->managed_heap, result.as.managed_reference,
             1, 0, &cell
@@ -156,6 +211,7 @@ static int mmay_cli_run_execute(
     const MarimayCliOptions *options,
     const MarimayCompilerResult *compiler,
     const MarimayCheckedEntry *entry,
+    MarimayProgramArgumentList program_arguments,
     MarimayWriter standard_output,
     MarimayWriter standard_error
 ) {
@@ -180,6 +236,8 @@ static int mmay_cli_run_execute(
     int exit_code = MMAY_EXIT_INTERNAL;
     bool execution_ready = false;
     bool panic_ready = false;
+    MarimayBytecodeValue entry_arguments[1];
+    const MarimayBytecodeProgramFunction *entry_function = NULL;
     memset(&lowered, 0, sizeof(lowered));
     memset(&decoded, 0, sizeof(decoded));
     memset(&encoded, 0, sizeof(encoded));
@@ -187,6 +245,7 @@ static int mmay_cli_run_execute(
     memset(&panic, 0, sizeof(panic));
     memset(&trap, 0, sizeof(trap));
     memset(&result, 0, sizeof(result));
+    memset(entry_arguments, 0, sizeof(entry_arguments));
     for (index = 0; index < compiler->checked.functions.length; index += 1) {
         const MarimayCheckedFunction *function = mmay_checked_function(
             &compiler->checked, index
@@ -258,16 +317,41 @@ static int mmay_cli_run_execute(
     run_options.stdout_sink = &stdout_sink;
     run_options.panic = &panic;
     run_options.trap = &trap;
+    entry_function = mmay_bytecode_program_function(
+        &decoded, decoded.entry_function
+    );
+    if (entry_function == NULL) goto cleanup;
+    if (entry->takes_arguments) {
+        run_status = mmay_bytecode_execution_program_arguments(
+            &execution, &entry_function->body,
+            program_arguments, &entry_arguments[0]
+        );
+        if (run_status != MMAY_BYTECODE_RUN_OK) {
+            exit_code = mmay_cli_run_runtime_error(
+                options, run_status, &execution, &panic, standard_error
+            );
+            goto cleanup;
+        }
+    }
     run_status = mmay_bytecode_run_program(
-        &decoded, NULL, 0, session->allocator, run_options, &result
+        &decoded,
+        entry->takes_arguments ? entry_arguments : NULL,
+        entry->takes_arguments ? 1 : 0,
+        session->allocator, run_options, &result
     );
     if (run_status != MMAY_BYTECODE_RUN_OK) {
         exit_code = mmay_cli_run_runtime_error(
             options, run_status, &execution, &panic, standard_error
         );
     } else if (!entry->returns_result) {
-        exit_code = result.type == MMAY_BYTECODE_TYPE_VOID
-            ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
+        if (!entry->returns_status) {
+            exit_code = result.type == MMAY_BYTECODE_TYPE_VOID
+                ? MMAY_EXIT_SUCCESS : MMAY_EXIT_INTERNAL;
+        } else if (result.type == MMAY_BYTECODE_TYPE_I64) {
+            exit_code = mmay_cli_run_selected_status(
+                options, result.as.i64, standard_error
+            );
+        }
     } else {
         exit_code = mmay_cli_run_render_expected(
             session, options, entry, &decoded, &execution,
@@ -296,12 +380,21 @@ int mmay_cli_run_program(
     MarimayCliCheckTargetStatus target_status;
     MarimayCompilerStatus compiler_status;
     MarimayCheckEntryStatus entry_status;
+    MarimayCliProgramArguments program_arguments;
+    MarimayProgramArgumentsStatus argument_status;
     int exit_code = MMAY_EXIT_INTERNAL;
     memset(&target, 0, sizeof(target));
     memset(&compiler, 0, sizeof(compiler));
     memset(&entry, 0, sizeof(entry));
-    (void)options->program_argument_start;
-    (void)options->program_argument_count;
+    memset(&program_arguments, 0, sizeof(program_arguments));
+    argument_status = mmay_cli_program_arguments_build(
+        session, options, &program_arguments
+    );
+    if (argument_status != MMAY_PROGRAM_ARGUMENTS_OK) {
+        return mmay_cli_program_arguments_error(
+            options, argument_status, standard_error
+        );
+    }
     target_status = mmay_cli_check_target_build(session, options, &target);
     if (target_status != MMAY_CLI_CHECK_TARGET_OK) {
         exit_code = mmay_cli_compile_target_error(
@@ -345,9 +438,11 @@ int mmay_cli_run_program(
     }
     exit_code = mmay_cli_run_execute(
         session, options, &compiler, &entry,
+        program_arguments.list,
         standard_output, standard_error
     );
 cleanup:
+    mmay_cli_program_arguments_dispose(&program_arguments);
     mmay_compiler_result_dispose(&compiler);
     mmay_cli_check_target_dispose(&target);
     return exit_code;

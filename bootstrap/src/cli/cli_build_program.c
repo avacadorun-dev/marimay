@@ -108,6 +108,8 @@ static int mmay_cli_build_execute(
     request.output_path = options->build_output;
     request.tool_executable_path = options->tool_executable_path;
     request.max_heap_bytes = options->max_heap_bytes;
+    request.takes_arguments = entry->takes_arguments;
+    request.returns_status = entry->returns_status;
     request.returns_result = entry->returns_result;
     request.release = options->build_release;
     request.emit_c = options->build_emit != NULL;

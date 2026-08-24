@@ -17,6 +17,8 @@ G4002	BOUNDS_PANIC	runtime	Array indexing panicked on an out-of-bounds index.
 G4003	PROGRAM_ERROR	runtime	Root main returned an expected error.
 G4004	TEST_EXPECTATION	test	A compiler-known test expectation observed a mismatching value or byte stream.
 G4005	ARRAY_ITERATOR_INVALIDATED	runtime	An array iterator observed an intervening initialized-sequence mutation.
+G4006	PROGRAM_ARGUMENTS	runtime	Program arguments failed UTF-8, NUL, count, or byte-limit validation.
+G4007	PROGRAM_EXIT_STATUS	runtime	Root main returned a status outside the portable process range.
 I0001	COMPILER_INCOMPLETE	compiler	Compiler does not implement an accepted language construct.
 I0002	RUNTIME_FAILURE	runtime	Runtime could not complete because of an internal resource or integrity failure.
 K0001	MANIFEST_SYNTAX	manifest	Manifest directive or grouping syntax is invalid.
@@ -78,3 +80,4 @@ U0003	UNAVAILABLE_COMMAND	command line	Specified command is not present in this 
 U0004	MISSING_OPTION_VALUE	command line	Command-line option is missing its required value.
 U0005	INVALID_OPTION_VALUE	command line	Command-line option value is outside its closed value set.
 U0006	UNEXPECTED_ARGUMENT	command line	Command received an unsupported positional argument.
+U0007	INVALID_ARGUMENT_ENCODING	command line	Host command arguments could not be represented as bounded UTF-8.

@@ -18,6 +18,8 @@ typedef struct MarimayNativeCEmitOptions {
     size_t max_generated_bytes;
     size_t max_heap_bytes;
     bool executable_entry;
+    bool executable_takes_arguments;
+    bool executable_returns_status;
     bool executable_returns_result;
     MarimaySymbolId error_message_symbol;
 } MarimayNativeCEmitOptions;

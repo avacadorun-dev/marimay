@@ -1,0 +1,6 @@
+@test
+fn programArgumentsDefaultToEmpty(arguments: []string): void {
+  if arguments.length() != 0 {
+    panic("unexpected test arguments");
+  }
+}

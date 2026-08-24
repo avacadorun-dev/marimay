@@ -22,6 +22,8 @@ typedef struct MarimayNativeBuildRequest {
     const MarimayNativeRuntimePaths *runtime_paths;
     /* Zero selects the documented 64 MiB default. */
     size_t max_heap_bytes;
+    bool takes_arguments;
+    bool returns_status;
     bool returns_result;
     bool release;
     bool emit_c;

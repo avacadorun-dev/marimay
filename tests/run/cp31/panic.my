@@ -1,0 +1,12 @@
+import { println } from "std/io";
+
+fn cleanup(): void {
+  println("cleanup");
+}
+
+fn main(arguments: []string): void {
+  defer cleanup();
+  if arguments.length() == 1 {
+    panic(arguments[0]);
+  }
+}

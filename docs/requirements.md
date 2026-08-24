@@ -49,6 +49,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | LANG-039 | all eight integer primitives expose one closed checked/wrapping/saturating policy family, and `value as Target` is the only loss-detecting explicit integer conversion form; invalid divisors and shifts retain the D035/D042 panic rules | language §§5.1,7; D035/D042/D047 | I2/I4 |
 | LANG-040 | managed arrays expose typed pop/truncate/clear/reserve operations, precisely release removed reference elements, keep capacity unobservable, and invalidate iteration through the non-wrapping D053 mutation generation | language §§5.6,8; standard library §4; execution §§9,13; D053 | I2/I3/I4/I5 |
 | LANG-041 | the existing managed array identity has canonical right-associative `[]T` source, formatter, diagnostic, and compiler-service spelling; unresolved prelude-era `Array<T>` is rejected without capturing package-owned nominal `Array` or `Slice<T>` | language §5.2; diagnostics §5; toolchain §6.1; D054 | I1/I2/I8 |
+| LANG-042 | a root `main` optionally accepts exact `[]string` arguments and returns `void`, `int`, `Result<void,E>`, or `Result<int,E>`; selected status is bounded to 0–255 and every return, error, and panic preserves lexical cleanup | language §6.1; execution §§3,13.1; D041/D066 | I2/I4 |
 
 ## Execution and concurrency
 
@@ -76,6 +77,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | EXEC-020 | the C17 backend assigns injective compiler-owned identifiers and never copies user names into C keyword, implementation-reserved, library, runtime-helper, or case-folded collision namespaces; explicit foreign link names remain separately validated ABI contracts | execution §5.1.1; D039 | I4/I9 |
 | EXEC-021 | VM, native, and test-capture agree on D046 stdout bytes, `Result` classification, and `io.stdout` denial; internal `ok:f64:` traces are not user stdout | execution §§10.1,13.1; toolchain §§5.3,6.4; D046 | I4/I5/I8 |
 | EXEC-022 | each VM/native root execution applies the D055 managed live-byte budget with exact-boundary success, collection-before-budget rejection, and distinct configured-budget versus host-allocation `I0002` classifications | execution §9.4; diagnostics §13; D055 | I3/I4/I5 |
+| EXEC-023 | VM, native, and test isolates receive the same bounded UTF-8 argument sequence without the executable name, reject NUL/encoding/limit violations before source execution, and report the same controlled status after cleanup | execution §§3,5.1,13.1; D066 | I3/I4/I8 |
 
 ## Toolchain and ecosystem
 
@@ -104,6 +106,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | TOOL-021 | `mmay build` selects and validates a version-matched runtime for the requested debug/release output profile independently of the compiler's own build configuration, remains relocatable when installed, and hashes runtime content into the build cache key | toolchain §6.3; execution §5.6; D052 | I4 |
 | TOOL-022 | `run`, `test`, and `build` accept one documented decimal `--max-heap-bytes`; default/selected native values are embedded and cache-identifying, tests receive fresh counters, and no hidden environment override exists | toolchain §§5–6; D055 | I3/I4/I8 |
 | TOOL-023 | pre-beta version/help/installed metadata distinguish version, release channel, bounded claim, available versus staged commands, standard-library scope, bytecode compatibility, and publication authorization | toolchain §10; D064 | CLI0/P1 |
+| TOOL-024 | the full host invocation is converted under the bounded U0007 tool contract; the first `--` after `mmay run` or `mmay test` then separates tool options from an independently bounded exact source-program argument sequence, and test functions may opt into the same `[]string` injection | toolchain §§2,5,6.2; D066 | CLI0/I8 |
 
 ## Standard library
 
