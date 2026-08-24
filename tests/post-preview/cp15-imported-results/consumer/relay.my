@@ -2,8 +2,8 @@ import { RelayedChoice, relayChoice } from "example/cp15-imported-results/relay"
 
 fn relayScore(choice: RelayedChoice): int {
   return match choice {
-    case None => 0;
-    case Some(values) => values[0] + values.length();
+    None => 0,
+    Some(values) => values[0] + values.length(),
   };
 }
 

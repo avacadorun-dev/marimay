@@ -9,17 +9,17 @@ enum ServiceError {
 
 fn message(error: ServiceError): string {
   return match error {
-    case InvalidId => "invalid user id";
-    case Upstream(error) => error.message();
+    InvalidId => "invalid user id",
+    Upstream(error) => error.message(),
   };
 }
 
 fn userHandler(request: http.Request): Result<http.Response, ServiceError> {
   const idText = match request.pathParameter("id") {
-    case Some(value) => value;
-    case None => {
+    Some(value) => value,
+    None => {
       return Err(ServiceError.InvalidId);
-    }
+    },
   };
   const id = convert.parseInt(idText).mapError(
     (error: convert.ParseError): ServiceError => ServiceError.InvalidId,

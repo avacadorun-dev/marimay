@@ -313,13 +313,13 @@ static void mmay_checker_facts_expect_canonical(
 static void mmay_test_checker_facts_inventory(void) {
     static const char source_a[] =
         "public type PublicId = int;\n"
-        "public type Person { public id: PublicId; }\n"
+        "public type Person { public id: PublicId, }\n"
         "public enum Signal { Ready, }\n"
         "public const answer: PublicId = 42;\n"
         "public fn first(value: PublicId): PublicId { return value; }\n";
     static const char source_b[] =
         "type PrivateId = int;\n"
-        "type Secret { value: PrivateId; }\n"
+        "type Secret { value: PrivateId, }\n"
         "enum Hidden { Off, }\n"
         "const hidden: PrivateId = 1;\n"
         "fn second(value: PrivateId): PrivateId { return value + hidden; }\n";

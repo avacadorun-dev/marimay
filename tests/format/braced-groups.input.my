@@ -1,8 +1,8 @@
 import{ExtremelyLongImportedSymbolNameOne,ExtremelyLongImportedSymbolNameTwo,ExtremelyLongImportedSymbolNameThree}from "third-party/long";
-enum Message{Compact{value:int;},Expanded{firstFieldWithAnExtraordinarilyLongName:string;secondFieldWithAnExtraordinarilyLongName:string;},}
+enum Message{Compact{value:int,},Expanded{firstFieldWithAnExtraordinarilyLongName:string,secondFieldWithAnExtraordinarilyLongName:string,},}
 fn inspect(message:Message):void{
 const compact=Item{value:1};
 const sourceOrder=Pair{second:next(),first:next()};
 const expanded=Item{firstFieldWithAnExtraordinarilyLongName:1,secondFieldWithAnExtraordinarilyLongName:2,thirdFieldWithAnExtraordinarilyLongName:3};
-const selected=match message{case Compact{value}=>value;case Expanded{firstFieldWithAnExtraordinarilyLongName,secondFieldWithAnExtraordinarilyLongName}=>firstFieldWithAnExtraordinarilyLongName;};
+const selected=match message{Compact{value}=>value,Expanded{firstFieldWithAnExtraordinarilyLongName,secondFieldWithAnExtraordinarilyLongName}=>firstFieldWithAnExtraordinarilyLongName,};
 }

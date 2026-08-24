@@ -9,7 +9,11 @@ import {
 } from "example/cp14-imported-arrays/consumer";
 
 fn importedArraysWork(): bool {
-  return directArraysWork() && namespaceArraysWork() && aliasedArraysWork() && relayArraysWork() && sameNamesStayDistinct();
+  return directArraysWork()
+    && namespaceArraysWork()
+    && aliasedArraysWork()
+    && relayArraysWork()
+    && sameNamesStayDistinct();
 }
 
 fn main(): Result<void, IoError> {

@@ -2,7 +2,7 @@ import { Stack, clear as clearStack, length as stackLength, pop as popStack, pus
 
 public fn namedStack(stack: Stack): int {
   pushStack(stack, 11);
-  stack.push(13);
+  const _ = stack.push(13);
   const before = stackLength(stack) + stack.length();
   const first = popStack(stack);
   const second = stack.pop();

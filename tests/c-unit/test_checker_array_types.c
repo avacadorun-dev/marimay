@@ -37,9 +37,9 @@ static bool mmay_array_type_has_depth(
 
 static void mmay_test_checker_array_type_identity(void) {
     static const char source[] =
-        "type Edge { value: int; }\n"
-        "type Slice<T> { value: T; }\n"
-        "type Array<T> { value: T; }\n"
+        "type Edge { value: int, }\n"
+        "type Slice<T> { value: T, }\n"
+        "type Array<T> { value: T, }\n"
         "type Ints = []int;\n"
         "type Rows = [][]int;\n"
         "type Edges = []Edge;\n"
@@ -132,7 +132,7 @@ static void mmay_test_checker_imported_nominal_array_name(void) {
         {
             "types",
             "types/api.my",
-            "public type Array<T> { public value: T; }\n"
+            "public type Array<T> { public value: T, }\n"
         },
         {
             "app",

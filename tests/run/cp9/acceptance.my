@@ -1,8 +1,8 @@
 import { Error as IoError, println } from "std/io";
 
 type Pair {
-  left: int;
-  right: int;
+  left: int,
+  right: int,
 }
 
 enum Choice {
@@ -39,8 +39,8 @@ fn factorial(limit: int): int {
 
 fn sortedMiddle(): int {
   let values: []int = [3, 1, 2];
-  for let pass = 0; pass < 3; pass += 1 {
-    for let index = 0; index < 2; index += 1 {
+  for pass in 0..3 {
+    for index in 0..2 {
       if values[index] > values[index + 1] {
         let temporary = values[index];
         values[index] = values[index + 1];
@@ -54,8 +54,8 @@ fn sortedMiddle(): int {
 fn optionValue(): int {
   const value: Option<int> = Some(7);
   return match value {
-    case Some(item) => item;
-    case None => 0;
+    Some(item) => item,
+    None => 0,
   };
 }
 
@@ -71,8 +71,8 @@ fn propagatedValue(): Result<int, AppError> {
 fn nominalValue(): int {
   const choice = Choice.PairValue(Pair { right: 4, left: 3 });
   return match choice {
-    case PairValue(pair) => pair.left + pair.right;
-    case Missing => 0;
+    PairValue(pair) => pair.left + pair.right,
+    Missing => 0,
   };
 }
 
@@ -96,8 +96,8 @@ fn main(): Result<void, IoError> {
     panic("Option failed");
   }
   if match propagatedValue() {
-    case Ok(value) => value;
-    case Err(_) => 0;
+    Ok(value) => value,
+    Err(_) => 0,
   } != 10 {
     panic("Result propagation failed");
   }

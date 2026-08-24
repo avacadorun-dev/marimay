@@ -1,19 +1,19 @@
 import { Heap, Queue, Stack } from "example/cp16-receiver-names/collections";
 
 public fn typeOnlyStack(stack: Stack): int {
-  stack.push(7);
+  const _ = stack.push(7);
   const size = stack.length();
   const value = stack.pop();
-  stack.clear();
+  const _ = stack.clear();
   return size * 100 + value * 10 + stack.length();
 }
 
 public fn typeOnlyQueue(queue: Queue): int {
-  queue.push(8);
+  const _ = queue.push(8);
   return queue.length() * 100 + queue.pop() * 10;
 }
 
 public fn typeOnlyHeap(heap: Heap): int {
-  heap.push(9);
+  const _ = heap.push(9);
   return heap.length() * 100 + heap.pop() * 10;
 }

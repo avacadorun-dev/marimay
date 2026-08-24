@@ -8,24 +8,24 @@ enum AppError {
 
 fn message(error: AppError): string {
   return match error {
-    case Network(inner) => $"network: {inner.message()}";
-    case Decode(inner) => $"decode: {inner.message()}";
+    Network(inner) => $"network: {inner.message()}",
+    Decode(inner) => $"decode: {inner.message()}",
   };
 }
 
 type User {
-  public id: int;
-  public name: string;
+  public id: int,
+  public name: string,
 }
 
 type Order {
-  public id: int;
-  public total: int;
+  public id: int,
+  public total: int,
 }
 
 type Dashboard {
-  public user: User;
-  public orders: []Order;
+  public user: User,
+  public orders: []Order,
 }
 
 fn loadUser(id: int): Result<User, AppError> {

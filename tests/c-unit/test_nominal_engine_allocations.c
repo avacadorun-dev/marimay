@@ -7,7 +7,7 @@
 #include <string.h>
 
 static const char mmay_test_nominal_allocation_source[] =
-    "type Box { mutable value: int; }\n"
+    "type Box { mutable value: int, }\n"
     "enum Envelope { Wrapped(Box), Empty, }\n"
     "interface Show { show(): int; }\n"
     "fn show(value: Box): int { return value.value; }\n"
@@ -16,8 +16,8 @@ static const char mmay_test_nominal_allocation_source[] =
     "  const box = Box { value: 7 };\n"
     "  const envelope = Envelope.Wrapped(box);\n"
     "  return match envelope {\n"
-    "    case Wrapped(value) => consume(value);\n"
-    "    case Empty => 0;\n"
+    "    Wrapped(value) => consume(value),\n"
+    "    Empty => 0,\n"
     "  };\n"
     "}\n";
 

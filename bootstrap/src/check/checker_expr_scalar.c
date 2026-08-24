@@ -1,6 +1,7 @@
 #include "checker_expr_scalar_api.h"
 #include "checker_core_api.h"
 #include "checker_lookup_api.h"
+#include "checker_expr_prelude_api.h"
 #include "checker_expr_string_api.h"
 
 #include <limits.h>
@@ -199,6 +200,7 @@
  bool mmay_checker_private_compile_name(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node,
+    MarimayTypeId expected,
     MarimayExpressionValue *result
 ) {
     const MarimaySyntaxToken *token = mmay_checker_private_check_child_token(
@@ -308,6 +310,21 @@
                 MMAY_CHECK_INCOMPLETE_LANGUAGE
             );
             return false;
+        }
+        {
+            bool prelude_resolved = false;
+            if (!mmay_checker_private_compile_prelude_unit_value(
+                    function,
+                    node,
+                    expected,
+                    &prelude_resolved,
+                    result
+                )) {
+                return false;
+            }
+            if (prelude_resolved) {
+                return true;
+            }
         }
         if (mmay_checker_private_check_text_equal(
                 function->checker,

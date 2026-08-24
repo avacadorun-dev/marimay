@@ -8,13 +8,13 @@ public fn makeScores(): Scores {
 
 public fn mutateScores(values: Scores): Scores {
   values[0] += 10;
-  values.push(3);
+  const _ = values.push(3);
   return values;
 }
 
 public fn scoreTotal(values: Scores): int {
   let total = 0;
-  for const value of values {
+  for value in values {
     total += value;
   }
   return total;
@@ -26,7 +26,7 @@ public fn makeMatrix(): Matrix {
 
 public fn mutateMatrix(values: Matrix): Matrix {
   values[0][1] += values[1][0];
-  values[1].push(5);
+  const _ = values[1].push(5);
   return values;
 }
 

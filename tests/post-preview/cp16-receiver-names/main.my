@@ -4,9 +4,12 @@ import { interfaceStackScore, newHeap, newQueue, newStack } from "example/cp16-r
 import { namedStack, namespaceQueue, typeOnlyHeap, typeOnlyQueue, typeOnlyStack } from "example/cp16-receiver-names/consumer";
 
 fn checkpoint16Works(): bool {
-  return typeOnlyStack(newStack()) == 170 && typeOnlyQueue(newQueue()) == 180 && typeOnlyHeap(
-    newHeap(),
-  ) == 190 && namedStack(newStack()) == 4141 && namespaceQueue(newQueue()) == 4188 && interfaceStackScore() == 290;
+  return typeOnlyStack(newStack()) == 170
+    && typeOnlyQueue(newQueue()) == 180
+    && typeOnlyHeap(newHeap()) == 190
+    && namedStack(newStack()) == 4141
+    && namespaceQueue(newQueue()) == 4188
+    && interfaceStackScore() == 290;
 }
 
 fn main(): Result<void, IoError> {

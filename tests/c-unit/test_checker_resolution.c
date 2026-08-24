@@ -231,7 +231,7 @@ static int64_t mmay_checker_resolution_interpret(
 
 static void mmay_test_checker_resolution_free_dot_equivalence(void) {
     static const char source[] =
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "fn string(user: User): int { return user.id; }\n"
         "fn both(): int {\n"
         "  const user = User { id: 7 };\n"
@@ -282,7 +282,7 @@ static void mmay_test_checker_resolution_free_dot_equivalence(void) {
 
 static void mmay_test_checker_resolution_alias_and_enum_overloads(void) {
     static const char alias_source[] =
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "type Handle = User;\n"
         "fn string(user: Handle): int { return user.id; }\n"
         "fn both(): int {\n"
@@ -290,20 +290,19 @@ static void mmay_test_checker_resolution_alias_and_enum_overloads(void) {
         "  return user.string() + string(user);\n"
         "}\n";
     static const char enum_source[] =
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "enum Status { Ready, Done }\n"
         "fn string(user: User): int { return user.id; }\n"
         "fn string(status: Status): int {\n"
-        "  return match status { case Ready => 1; case Done => 2; };\n"
+        "  return match status { Ready => 1, Done => 2, };\n"
         "}\n"
         "fn both(): int {\n"
         "  const user = User { id: 10 };\n"
         "  const status = Status.Ready;\n"
-        "  return user.string() + string(status) + status.string()"
-        " + string(user);\n"
+        "  return user.string() + string(status) + status.string() + string(user);\n"
         "}\n";
     static const char duplicate_alias[] =
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "type Handle = User;\n"
         "fn string(user: User): int { return 1; }\n"
         "fn string(user: Handle): int { return 2; }\n";
@@ -420,7 +419,7 @@ static void mmay_test_checker_resolution_alias_and_enum_overloads(void) {
 
 static void mmay_test_checker_resolution_receiver_once(void) {
     static const char source[] =
-        "type Box { mutable value: int; }\n"
+        "type Box { mutable value: int, }\n"
         "fn mark(box: Box, bit: int): Box {\n"
         "  box.value = box.value * 10 + bit;\n"
         "  return box;\n"
@@ -466,7 +465,7 @@ static void mmay_test_checker_resolution_negative_matrix(void) {
         0
     );
     mmay_checker_resolution_expect(
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "fn bad(user: User): int { return user.missing(); }\n",
         MMAY_DIAGNOSTIC_UNKNOWN_NAME,
         "unknown function name",
@@ -474,7 +473,7 @@ static void mmay_test_checker_resolution_negative_matrix(void) {
         0
     );
     mmay_checker_resolution_expect(
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "fn bad(): int { return User(1); }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "called name is not a function",
@@ -490,7 +489,7 @@ static void mmay_test_checker_resolution_negative_matrix(void) {
         1
     );
     mmay_checker_resolution_expect(
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "fn string(user: User): int { return user.id; }\n"
         "fn bad(): int { return 1.string(); }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
@@ -499,8 +498,8 @@ static void mmay_test_checker_resolution_negative_matrix(void) {
         0
     );
     mmay_checker_resolution_expect(
-        "type User { id: int; }\n"
-        "type Order { id: int; }\n"
+        "type User { id: int, }\n"
+        "type Order { id: int, }\n"
         "fn string(user: User): int { return user.id; }\n"
         "fn bad(order: Order): int { return order.string(); }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
@@ -509,8 +508,8 @@ static void mmay_test_checker_resolution_negative_matrix(void) {
         1
     );
     mmay_checker_resolution_expect(
-        "type User { id: int; }\n"
-        "type Order { id: int; }\n"
+        "type User { id: int, }\n"
+        "type Order { id: int, }\n"
         "fn string(user: User): int { return user.id; }\n"
         "fn string(order: Order): int { return order.id; }\n"
         "fn bad(): int { return string(); }\n",
@@ -520,8 +519,8 @@ static void mmay_test_checker_resolution_negative_matrix(void) {
         1
     );
     mmay_checker_resolution_expect(
-        "type User { id: int; }\n"
-        "type Order { id: int; }\n"
+        "type User { id: int, }\n"
+        "type Order { id: int, }\n"
         "fn string(user: User): int { return user.id; }\n"
         "fn string(order: Order): int { return order.id; }\n"
         "fn bad(): int { return string(1); }\n",
@@ -531,9 +530,9 @@ static void mmay_test_checker_resolution_negative_matrix(void) {
         0
     );
     mmay_checker_resolution_expect(
-        "type User { id: int; }\n"
-        "type Order { id: int; }\n"
-        "type Item { id: int; }\n"
+        "type User { id: int, }\n"
+        "type Order { id: int, }\n"
+        "type Item { id: int, }\n"
         "fn string(user: User): int { return user.id; }\n"
         "fn string(order: Order): int { return order.id; }\n"
         "fn bad(item: Item): int { return string(item); }\n",
@@ -544,7 +543,7 @@ static void mmay_test_checker_resolution_negative_matrix(void) {
     );
     mmay_checker_resolution_expect(
         "fn label(value: int): int { return value; }\n"
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "fn label(user: User): int { return user.id; }\n",
         MMAY_DIAGNOSTIC_DUPLICATE_NAME,
         "name is already declared in this scope",
@@ -555,11 +554,11 @@ static void mmay_test_checker_resolution_negative_matrix(void) {
 
 static void mmay_test_checker_resolution_limits(void) {
     static const char two_calls[] =
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "fn string(user: User): int { return user.id; }\n"
         "fn bad(user: User): int { return user.string() + string(user); }\n";
     static const char two_args[] =
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "fn extra(user: User, value: int): int { return user.id + value; }\n"
         "fn bad(user: User): int { return user.extra(1); }\n";
     MarimayCheckerResolutionFixture fixture;
@@ -593,12 +592,12 @@ static void mmay_test_checker_resolution_limits(void) {
 
 static void mmay_test_checker_resolution_allocation_failures(void) {
     static const char source[] =
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "type Handle = User;\n"
         "enum Status { Ready, Done }\n"
         "fn string(user: Handle): int { return user.id; }\n"
         "fn string(status: Status): int {\n"
-        "  return match status { case Ready => 1; case Done => 2; };\n"
+        "  return match status { Ready => 1, Done => 2, };\n"
         "}\n"
         "fn both(user: User, status: Status): int {\n"
         "  return user.string() + string(status);\n"
@@ -648,7 +647,7 @@ static void mmay_test_checker_resolution_allocation_failures(void) {
 
 static void mmay_test_checker_resolution_engines(void) {
     static const char source[] =
-        "type User { id: int; }\n"
+        "type User { id: int, }\n"
         "fn string(user: User): int { return user.id; }\n"
         "fn main(): int {\n"
         "  const user = User { id: 21 };\n"

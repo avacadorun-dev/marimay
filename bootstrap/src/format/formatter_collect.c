@@ -35,6 +35,7 @@ static bool mmay_format_collect_token(
     MarimaySyntaxKind parent_kind,
     MarimaySyntaxKind top_level_kind,
     size_t top_level_id,
+    size_t statement_id,
     bool in_for_header,
     bool in_attribute,
     bool in_record_expression,
@@ -53,6 +54,7 @@ static bool mmay_format_collect_token(
     formatted.parent_kind = parent_kind;
     formatted.top_level_kind = top_level_kind;
     formatted.top_level_id = top_level_id;
+    formatted.statement_id = statement_id;
     formatted.in_for_header = in_for_header;
     formatted.in_attribute = in_attribute;
     formatted.in_record_expression = in_record_expression;
@@ -361,6 +363,7 @@ bool mmay_format_collect_node(
     size_t depth,
     MarimaySyntaxKind top_level_kind,
     size_t top_level_id,
+    size_t statement_id,
     bool in_for_header,
     bool in_attribute,
     bool in_record_expression,
@@ -384,6 +387,7 @@ bool mmay_format_collect_node(
     for (index = 0; index < node->child_count; index += 1) {
         const MarimaySyntaxElement *element = mmay_syntax_child(node, index);
         size_t child_top_level_id = top_level_id;
+        size_t child_statement_id = statement_id;
         if (element == NULL) {
             collector->status = MMAY_FORMAT_INVALID_ARGUMENT;
             return false;
@@ -401,6 +405,24 @@ bool mmay_format_collect_node(
             child_top_level_id = collector->next_top_level_id;
             top_level_kind = element->as.node->kind;
         }
+        if (element->kind == MMAY_SYNTAX_ELEMENT_NODE
+            && (element->as.node->kind == MMAY_SYNTAX_CONST_DECL
+                || element->as.node->kind == MMAY_SYNTAX_LET_DECL
+                || element->as.node->kind == MMAY_SYNTAX_EXPRESSION_STATEMENT
+                || element->as.node->kind == MMAY_SYNTAX_RETURN_STATEMENT
+                || element->as.node->kind == MMAY_SYNTAX_DEFER_STATEMENT
+                || element->as.node->kind == MMAY_SYNTAX_BREAK_STATEMENT
+                || element->as.node->kind == MMAY_SYNTAX_CONTINUE_STATEMENT)) {
+            if (!mmay_size_add(
+                    collector->next_statement_id,
+                    1,
+                    &collector->next_statement_id
+                )) {
+                collector->status = MMAY_FORMAT_LIMIT_REACHED;
+                return false;
+            }
+            child_statement_id = collector->next_statement_id;
+        }
         if (element->kind == MMAY_SYNTAX_ELEMENT_NODE) {
             if (!mmay_format_collect_node(
                     collector,
@@ -408,6 +430,7 @@ bool mmay_format_collect_node(
                     depth + 1,
                     top_level_kind,
                     child_top_level_id,
+                    child_statement_id,
                     in_for_header,
                     in_attribute,
                     in_record_expression,
@@ -422,6 +445,7 @@ bool mmay_format_collect_node(
                     node->kind,
                     top_level_kind,
                     top_level_id,
+                    statement_id,
                     in_for_header,
                     in_attribute,
                     in_record_expression,

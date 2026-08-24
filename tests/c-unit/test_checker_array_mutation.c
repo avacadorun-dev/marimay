@@ -12,13 +12,13 @@ static void mmay_test_checker_array_mutation_surface(void) {
         "  let second: Option<int> = raw.pop();\n"
         "  let shortened: Result<void, ArrayTruncateError> = raw.truncate(0);\n"
         "  let reserved: Result<void, ArrayGrowthError> = reserve(raw, 4);\n"
-        "  raw.push(3);\n"
-        "  raw.clear();\n"
+        "  const _ = raw.push(3);\n"
+        "  const _ = raw.clear();\n"
         "}\n"
         "type Stack {}\n"
         "fn pop(stack: Stack): int { return 1; }\n"
         "fn collision(stack: Stack): int { return stack.pop(); }\n"
-        "fn iterate(values: []int): void { for const item of values { let copy = item; } }\n";
+        "fn iterate(values: []int): void { for item in values { let copy = item; } }\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     size_t index = 0;
@@ -70,11 +70,11 @@ static void mmay_test_checker_array_mutation_surface(void) {
 
 static void mmay_test_checker_array_mutation_diagnostics(void) {
     mmay_checker_expect_one_diagnostic(
-        "fn invalid(values: []int): void { values.truncate(true); }\n",
+        "fn invalid(values: []int): void { const _ = values.truncate(true); }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH, "true", 0
     );
     mmay_checker_expect_one_diagnostic(
-        "fn invalid(values: []int): void { values.reserve(); }\n",
+        "fn invalid(values: []int): void { const _ = values.reserve(); }\n",
         MMAY_DIAGNOSTIC_CALL_ARITY, "()", 0
     );
 }
@@ -82,9 +82,9 @@ static void mmay_test_checker_array_mutation_diagnostics(void) {
 static void mmay_test_checker_array_mutation_allocation_failures(void) {
     static const char source[] =
         "fn mutate(values: []int): void {\n"
-        "  values.push(1); values.pop(); values.truncate(0);\n"
-        "  values.reserve(8); values.clear();\n"
-        "  for const value of values { let copy = value; }\n"
+        "  const _ = values.push(1); values.pop(); const _ = values.truncate(0);\n"
+        "  const _ = values.reserve(8); const _ = values.clear();\n"
+        "  for value in values { let copy = value; }\n"
         "}\n";
     MarimayCheckerFixture fixture;
     size_t failure_index = 0;

@@ -13,9 +13,9 @@ fn grow(values: []int): Result<bool, ArrayGrowthError> {
 
 fn semanticLengthLimit(values: []int): bool {
   return match excessiveGrowth(values) {
-    case Ok(_) => false;
-    case Err(LengthLimit { limit }) => limit == 9223372036854775807;
-    case Err(_) => false;
+    Ok(_) => false,
+    Err(LengthLimit { limit }) => limit == 9223372036854775807,
+    Err(_) => false,
   };
 }
 
@@ -23,8 +23,8 @@ fn managedFamiliesWork(): bool {
   let raw = [1, 2, 3];
   let nested = [[1], [2, 3]];
   const grown = match grow(raw) {
-    case Ok(value) => value;
-    case Err(_) => false;
+    Ok(value) => value,
+    Err(_) => false,
   };
   if !grown || !semanticLengthLimit(raw) {
     return false;

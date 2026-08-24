@@ -250,7 +250,8 @@ static MarimaySymbolId mmay_mir_bytecode_enum_symbol(
         ) && mmay_symbol_id_equal(enumeration->symbol, option_base)
         && enumeration->payload_count == 1 && some != NULL
         && some->kind == MMAY_MIR_ENUM_VARIANT_POSITIONAL
-        && some->payload_start == 0 && some->payload_count == 1
+        && some->payload_start == enumeration->payload_start
+        && some->payload_count == 1
         && none != NULL && none->kind == MMAY_MIR_ENUM_VARIANT_UNIT
         && none->payload_count == 0 && payload != NULL
         && mmay_mir_bytecode_type(

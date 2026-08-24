@@ -27,8 +27,8 @@ fn checkedOverflowIsNone(): bool {
   const maximum: u8 = 255;
   const one: u8 = 1;
   return match checkedAdd(maximum, one) {
-    case Some(_) => false;
-    case None => true;
+    Some(_) => false,
+    None => true,
   };
 }
 
@@ -37,13 +37,22 @@ fn conversionsAreLossDetecting(): bool {
   const wide: u16 = small as u16;
   const tooWide: u16 = 300;
   const negative: i8 = -1;
-  const narrowed = wide as u8;
-  const rejected = tooWide as u8;
-  const unsigned = negative as u8;
+  const narrowed = tryConvert<u8>(wide);
+  const rejected = tryConvert<u8>(tooWide);
+  const unsigned = tryConvert<u8>(negative);
   return wide == 200
-    && match narrowed { case Some(value) => value == 200; case None => false; }
-    && match rejected { case Some(_) => false; case None => true; }
-    && match unsigned { case Some(_) => false; case None => true; };
+    && match narrowed {
+      Some(value) => value == 200,
+      None => false,
+    }
+    && match rejected {
+      Some(_) => false,
+      None => true,
+    }
+    && match unsigned {
+      Some(_) => false,
+      None => true,
+    };
 }
 
 fn policyBoundaries(): bool {
@@ -62,20 +71,20 @@ fn policyBoundaries(): bool {
     && wrappingRemainder(minimum, negativeOne) == 0
     && saturatingRemainder(minimum, negativeOne) == 0
     && match checkedDivide(minimum, negativeOne) {
-      case Some(_) => false;
-      case None => true;
+      Some(_) => false,
+      None => true,
     }
     && match checkedShiftLeft(signedOne, six) {
-      case Some(value) => value == 64;
-      case None => false;
+      Some(value) => value == 64,
+      None => false,
     }
     && match checkedShiftLeft(signedOne, seven) {
-      case Some(_) => false;
-      case None => true;
+      Some(_) => false,
+      None => true,
     }
     && match checkedShiftLeft(signedOne, width) {
-      case Some(_) => false;
-      case None => true;
+      Some(_) => false,
+      None => true,
     };
 }
 
@@ -113,11 +122,23 @@ fn saturatingInvalidShift(): u8 {
 fn main(): i64 {
   const ten16: u16 = 10;
   const ten64: u64 = 10;
-  if fibonacci(ten16) != 55 { return -1; }
-  if factorial(ten64) != 3628800 { return -2; }
-  if !checkedOverflowIsNone() { return -3; }
-  if !conversionsAreLossDetecting() { return -4; }
-  if !policyBoundaries() { return -5; }
-  if !allWidths() { return -6; }
+  if fibonacci(ten16) != 55 {
+    return -1;
+  }
+  if factorial(ten64) != 3628800 {
+    return -2;
+  }
+  if !checkedOverflowIsNone() {
+    return -3;
+  }
+  if !conversionsAreLossDetecting() {
+    return -4;
+  }
+  if !policyBoundaries() {
+    return -5;
+  }
+  if !allWidths() {
+    return -6;
+  }
   return 6;
 }

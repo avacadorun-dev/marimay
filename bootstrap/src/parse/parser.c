@@ -52,24 +52,8 @@ bool mmay_parser_at(const MarimayParser *parser, MarimayTokenKind kind) {
     return mmay_parser_current(parser) == kind;
 }
 
-bool mmay_token_is_contextual_keyword(MarimayTokenKind kind) {
-    return kind == MMAY_TOKEN_KW_AS || kind == MMAY_TOKEN_KW_BREAK
-        || kind == MMAY_TOKEN_KW_CASE || kind == MMAY_TOKEN_KW_CONST
-        || kind == MMAY_TOKEN_KW_CONTINUE || kind == MMAY_TOKEN_KW_ELSE
-        || kind == MMAY_TOKEN_KW_ENUM || kind == MMAY_TOKEN_KW_EXTERN
-        || kind == MMAY_TOKEN_KW_FN || kind == MMAY_TOKEN_KW_FOR
-        || kind == MMAY_TOKEN_KW_FROM || kind == MMAY_TOKEN_KW_IMPORT
-        || kind == MMAY_TOKEN_KW_INTERFACE || kind == MMAY_TOKEN_KW_LET
-        || kind == MMAY_TOKEN_KW_MUTABLE || kind == MMAY_TOKEN_KW_OF
-        || kind == MMAY_TOKEN_KW_PUBLIC || kind == MMAY_TOKEN_KW_SCOPE
-        || kind == MMAY_TOKEN_KW_TYPE || kind == MMAY_TOKEN_KW_UNSAFE
-        || kind == MMAY_TOKEN_KW_YIELD;
-}
-
 bool mmay_parser_at_identifier(const MarimayParser *parser) {
-    MarimayTokenKind kind = mmay_parser_current(parser);
-    return kind == MMAY_TOKEN_IDENTIFIER
-        || mmay_token_is_contextual_keyword(kind);
+    return mmay_parser_current(parser) == MMAY_TOKEN_IDENTIFIER;
 }
 
 MarimayTokenKind mmay_parser_next_significant_kind(

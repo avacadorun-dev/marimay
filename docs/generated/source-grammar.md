@@ -25,14 +25,16 @@ import_items                 = import_item { "," import_item } [ "," ] ;
 import_item                  = IDENTIFIER [ "as" IDENTIFIER ] ;
 type_alias_decl              = "type" IDENTIFIER [ type_parameters ] "=" type ";" ;
 record_decl                  = "type" IDENTIFIER [ type_parameters ] record_body ;
-record_body                  = "{" { field_decl } "}" ;
-field_decl                   = [ "public" ] [ "mutable" ] IDENTIFIER ":" type ";" ;
+record_body                  = "{" [ field_declarations ] "}" ;
+field_declarations           = field_decl { "," field_decl } [ "," ] ;
+field_decl                   = [ "public" ] [ "mutable" ] IDENTIFIER ":" type ;
 enum_decl                    = "enum" IDENTIFIER [ type_parameters ] "{" [ enum_variants ] "}" ;
 enum_variants                = enum_variant { "," enum_variant } [ "," ] ;
 enum_variant                 = IDENTIFIER [ positional_payload | named_payload ] ;
 positional_payload           = "(" type_list ")" ;
-named_payload                = "{" { payload_field } "}" ;
-payload_field                = IDENTIFIER ":" type ";" ;
+named_payload                = "{" [ payload_fields ] "}" ;
+payload_fields               = payload_field { "," payload_field } [ "," ] ;
+payload_field                = IDENTIFIER ":" type ;
 interface_decl               = "interface" IDENTIFIER [ type_parameters ] "{" { interface_item } "}" ;
 interface_item               = method_signature | embedded_signature ;
 method_signature             = IDENTIFIER [ type_parameters ] parameters ":" type ";" ;
@@ -52,10 +54,10 @@ nominal_type                 = qualified_ident [ type_arguments ] ;
 qualified_ident              = IDENTIFIER { "." IDENTIFIER } ;
 type_arguments               = "<" type_list [ "," ] ">" ;
 type_list                    = type { "," type } ;
-tuple_type                   = "[" type_list [ "," ] "]" ;
+tuple_type                   = "(" type "," [ type_list ] ")" ;
 function_type                = "(" [ type_list [ "," ] ] ")" "=>" type ;
 block                        = "{" { statement } "}" ;
-statement                    = const_decl | let_decl | expression_statement | return_statement | defer_statement | if_statement | while_statement | for_statement | scope_statement | unsafe_statement | break_statement | continue_statement | yield_statement | block_statement ;
+statement                    = const_decl | let_decl | expression_statement | return_statement | defer_statement | if_statement | while_statement | for_statement | scope_statement | unsafe_statement | break_statement | continue_statement | block_statement ;
 let_decl                     = "let" binding_name [ ":" type ] [ "=" expression ] ";" ;
 binding_name                 = IDENTIFIER | "_" ;
 expression_statement         = expression ";" ;
@@ -64,18 +66,17 @@ defer_statement              = "defer" expression ";" ;
 if_statement                 = "if" expression block [ "else" ( if_statement | block ) ] ;
 while_statement              = "while" expression block ;
 for_statement                = "for" for_header block ;
-for_header                   = for_of_header | simple_for_header ;
-for_of_header                = "const" IDENTIFIER "of" expression ;
-simple_for_header            = "let" IDENTIFIER "=" expression ";" expression ";" expression ;
+for_header                   = IDENTIFIER "in" expression ;
 scope_statement              = "scope" block ;
 unsafe_statement             = "unsafe" block ;
 break_statement              = "break" ";" ;
 continue_statement           = "continue" ";" ;
-yield_statement              = "yield" expression ";" ;
 block_statement              = block ;
 expression                   = assignment_expression ;
-assignment_expression        = logical_or_expression [ assignment_operator logical_or_expression ] ;
+assignment_expression        = range_expression [ assignment_operator range_expression ] ;
 assignment_operator          = "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" ;
+range_expression             = logical_or_expression [ range_operator logical_or_expression ] ;
+range_operator               = ".." | "..=" ;
 logical_or_expression        = logical_and_expression { "||" logical_and_expression } ;
 logical_and_expression       = bitwise_expression { "&&" bitwise_expression } ;
 bitwise_expression           = equality_expression { bitwise_operator equality_expression } ;
@@ -102,28 +103,33 @@ generic_call_suffix          = type_arguments arguments ;
 arguments                    = "(" [ argument_list ] ")" ;
 index_suffix                 = "[" expression "]" ;
 try_suffix                   = "?" ;
-primary_expression           = literal | name_expression | parenthesized_expression | array_expression | record_expression | closure_expression | match_expression | interpolated_expression ;
+primary_expression           = literal | name_expression | parenthesized_expression | tuple_expression | array_expression | record_expression | closure_expression | match_expression | interpolated_expression ;
 name_expression              = qualified_ident ;
 literal                      = INTEGER | FLOAT | STRING | RAW_STRING | BYTE_STRING | RUNE | "true" | "false" ;
 parenthesized_expression     = "(" expression ")" ;
+tuple_expression             = "(" expression "," [ argument_list ] ")" ;
 array_expression             = "[" [ argument_list ] "]" ;
 record_expression            = qualified_ident record_fields ;
 record_fields                = "{" [ field_values ] "}" ;
 field_values                 = field_value { "," field_value } [ "," ] ;
 field_value                  = IDENTIFIER [ ":" expression ] ;
-closure_expression           = parameters [ ":" type ] "=>" closure_body ;
+closure_expression           = "(" [ IDENTIFIER [ ":" type ] { "," IDENTIFIER [ ":" type ] } [ "," ] ] ")" [ ":" type ] "=>" closure_body ;
 closure_body                 = expression | block ;
-match_expression             = "match" expression "{" { match_arm } "}" ;
-match_arm                    = "case" pattern [ "if" expression ] "=>" match_arm_body ;
-match_arm_body               = expression ";" | block ;
+match_expression             = "match" expression "{" [ match_arms ] "}" ;
+match_arms                   = match_arm { "," match_arm } [ "," ] ;
+match_arm                    = pattern [ "if" expression ] "=>" match_arm_body ;
+match_arm_body               = expression | match_arm_block ;
+match_arm_block              = "{" { statement } [ tail_expression ] "}" ;
+tail_expression              = expression ;
 interpolated_expression      = INTERPOLATED_START { INTERPOLATED_TEXT | INTERPOLATION_START expression INTERPOLATION_END } INTERPOLATED_END ;
 pattern                      = or_pattern ;
 or_pattern                   = primary_pattern { "|" primary_pattern } ;
-primary_pattern              = "_" | IDENTIFIER | literal | constructor_pattern | tuple_pattern ;
+primary_pattern              = remainder_pattern | IDENTIFIER | literal | constructor_pattern | tuple_pattern ;
+remainder_pattern            = "_" [ "as" IDENTIFIER ] ;
 constructor_pattern          = qualified_ident [ positional_pattern | named_pattern ] ;
 positional_pattern           = "(" [ pattern_list ] ")" ;
 named_pattern                = "{" [ pattern_fields ] "}" ;
-tuple_pattern                = "[" [ pattern_list ] "]" ;
+tuple_pattern                = "(" pattern "," [ pattern_list ] ")" ;
 pattern_list                 = pattern { "," pattern } [ "," ] ;
 pattern_fields               = pattern_field { "," pattern_field } [ "," ] ;
 pattern_field                = IDENTIFIER [ ":" pattern ] ;
@@ -145,14 +151,16 @@ pattern_field                = IDENTIFIER [ ":" pattern ] ;
 | `import_item` | declaration | baseline | `IDENTIFIER [ "as" IDENTIFIER ]` |
 | `type_alias_decl` | declaration | baseline | `"type" IDENTIFIER [ type_parameters ] "=" type ";"` |
 | `record_decl` | declaration | baseline | `"type" IDENTIFIER [ type_parameters ] record_body` |
-| `record_body` | declaration | baseline | `"{" { field_decl } "}"` |
-| `field_decl` | declaration | baseline | `[ "public" ] [ "mutable" ] IDENTIFIER ":" type ";"` |
+| `record_body` | declaration | baseline | `"{" [ field_declarations ] "}"` |
+| `field_declarations` | list | baseline | `field_decl { "," field_decl } [ "," ]` |
+| `field_decl` | declaration | baseline | `[ "public" ] [ "mutable" ] IDENTIFIER ":" type` |
 | `enum_decl` | declaration | baseline | `"enum" IDENTIFIER [ type_parameters ] "{" [ enum_variants ] "}"` |
 | `enum_variants` | list | baseline | `enum_variant { "," enum_variant } [ "," ]` |
 | `enum_variant` | declaration | baseline | `IDENTIFIER [ positional_payload \| named_payload ]` |
 | `positional_payload` | declaration | baseline | `"(" type_list ")"` |
-| `named_payload` | declaration | baseline | `"{" { payload_field } "}"` |
-| `payload_field` | declaration | baseline | `IDENTIFIER ":" type ";"` |
+| `named_payload` | declaration | baseline | `"{" [ payload_fields ] "}"` |
+| `payload_fields` | list | baseline | `payload_field { "," payload_field } [ "," ]` |
+| `payload_field` | declaration | baseline | `IDENTIFIER ":" type` |
 | `interface_decl` | declaration | baseline | `"interface" IDENTIFIER [ type_parameters ] "{" { interface_item } "}"` |
 | `interface_item` | declaration | baseline | `method_signature \| embedded_signature` |
 | `method_signature` | declaration | baseline | `IDENTIFIER [ type_parameters ] parameters ":" type ";"` |
@@ -172,10 +180,10 @@ pattern_field                = IDENTIFIER [ ":" pattern ] ;
 | `qualified_ident` | type | baseline | `IDENTIFIER { "." IDENTIFIER }` |
 | `type_arguments` | list | baseline | `"<" type_list [ "," ] ">"` |
 | `type_list` | list | baseline | `type { "," type }` |
-| `tuple_type` | type | baseline | `"[" type_list [ "," ] "]"` |
+| `tuple_type` | type | baseline | `"(" type "," [ type_list ] ")"` |
 | `function_type` | type | baseline | `"(" [ type_list [ "," ] ] ")" "=>" type` |
 | `block` | statement | baseline | `"{" { statement } "}"` |
-| `statement` | statement | baseline | `const_decl \| let_decl \| expression_statement \| return_statement \| defer_statement \| if_statement \| while_statement \| for_statement \| scope_statement \| unsafe_statement \| break_statement \| continue_statement \| yield_statement \| block_statement` |
+| `statement` | statement | baseline | `const_decl \| let_decl \| expression_statement \| return_statement \| defer_statement \| if_statement \| while_statement \| for_statement \| scope_statement \| unsafe_statement \| break_statement \| continue_statement \| block_statement` |
 | `let_decl` | statement | baseline | `"let" binding_name [ ":" type ] [ "=" expression ] ";"` |
 | `binding_name` | declaration | baseline | `IDENTIFIER \| "_"` |
 | `expression_statement` | statement | baseline | `expression ";"` |
@@ -184,18 +192,17 @@ pattern_field                = IDENTIFIER [ ":" pattern ] ;
 | `if_statement` | statement | baseline | `"if" expression block [ "else" ( if_statement \| block ) ]` |
 | `while_statement` | statement | baseline | `"while" expression block` |
 | `for_statement` | statement | baseline | `"for" for_header block` |
-| `for_header` | statement | baseline | `for_of_header \| simple_for_header` |
-| `for_of_header` | statement | baseline | `"const" IDENTIFIER "of" expression` |
-| `simple_for_header` | statement | baseline | `"let" IDENTIFIER "=" expression ";" expression ";" expression` |
+| `for_header` | statement | baseline | `IDENTIFIER "in" expression` |
 | `scope_statement` | statement | baseline | `"scope" block` |
 | `unsafe_statement` | statement | baseline | `"unsafe" block` |
 | `break_statement` | statement | baseline | `"break" ";"` |
 | `continue_statement` | statement | baseline | `"continue" ";"` |
-| `yield_statement` | statement | baseline | `"yield" expression ";"` |
 | `block_statement` | statement | baseline | `block` |
 | `expression` | expression | baseline | `assignment_expression` |
-| `assignment_expression` | expression | baseline | `logical_or_expression [ assignment_operator logical_or_expression ]` |
+| `assignment_expression` | expression | baseline | `range_expression [ assignment_operator range_expression ]` |
 | `assignment_operator` | expression | baseline | `"=" \| "+=" \| "-=" \| "*=" \| "/=" \| "%=" \| "&=" \| "\|=" \| "^=" \| "<<=" \| ">>="` |
+| `range_expression` | expression | baseline | `logical_or_expression [ range_operator logical_or_expression ]` |
+| `range_operator` | expression | baseline | `".." \| "..="` |
 | `logical_or_expression` | expression | baseline | `logical_and_expression { "\|\|" logical_and_expression }` |
 | `logical_and_expression` | expression | baseline | `bitwise_expression { "&&" bitwise_expression }` |
 | `bitwise_expression` | expression | baseline | `equality_expression { bitwise_operator equality_expression }` |
@@ -222,28 +229,33 @@ pattern_field                = IDENTIFIER [ ":" pattern ] ;
 | `arguments` | list | baseline | `"(" [ argument_list ] ")"` |
 | `index_suffix` | expression | baseline | `"[" expression "]"` |
 | `try_suffix` | expression | baseline | `"?"` |
-| `primary_expression` | expression | baseline | `literal \| name_expression \| parenthesized_expression \| array_expression \| record_expression \| closure_expression \| match_expression \| interpolated_expression` |
+| `primary_expression` | expression | baseline | `literal \| name_expression \| parenthesized_expression \| tuple_expression \| array_expression \| record_expression \| closure_expression \| match_expression \| interpolated_expression` |
 | `name_expression` | expression | baseline | `qualified_ident` |
 | `literal` | expression | baseline | `INTEGER \| FLOAT \| STRING \| RAW_STRING \| BYTE_STRING \| RUNE \| "true" \| "false"` |
 | `parenthesized_expression` | expression | baseline | `"(" expression ")"` |
+| `tuple_expression` | expression | baseline | `"(" expression "," [ argument_list ] ")"` |
 | `array_expression` | expression | baseline | `"[" [ argument_list ] "]"` |
 | `record_expression` | expression | baseline | `qualified_ident record_fields` |
 | `record_fields` | list | baseline | `"{" [ field_values ] "}"` |
 | `field_values` | list | baseline | `field_value { "," field_value } [ "," ]` |
 | `field_value` | expression | baseline | `IDENTIFIER [ ":" expression ]` |
-| `closure_expression` | expression | baseline | `parameters [ ":" type ] "=>" closure_body` |
+| `closure_expression` | expression | baseline | `"(" [ IDENTIFIER [ ":" type ] { "," IDENTIFIER [ ":" type ] } [ "," ] ] ")" [ ":" type ] "=>" closure_body` |
 | `closure_body` | expression | baseline | `expression \| block` |
-| `match_expression` | expression | baseline | `"match" expression "{" { match_arm } "}"` |
-| `match_arm` | expression | baseline | `"case" pattern [ "if" expression ] "=>" match_arm_body` |
-| `match_arm_body` | expression | baseline | `expression ";" \| block` |
+| `match_expression` | expression | baseline | `"match" expression "{" [ match_arms ] "}"` |
+| `match_arms` | list | baseline | `match_arm { "," match_arm } [ "," ]` |
+| `match_arm` | expression | baseline | `pattern [ "if" expression ] "=>" match_arm_body` |
+| `match_arm_body` | expression | baseline | `expression \| match_arm_block` |
+| `match_arm_block` | expression | baseline | `"{" { statement } [ tail_expression ] "}"` |
+| `tail_expression` | expression | baseline | `expression` |
 | `interpolated_expression` | expression | baseline | `INTERPOLATED_START { INTERPOLATED_TEXT \| INTERPOLATION_START expression INTERPOLATION_END } INTERPOLATED_END` |
 | `pattern` | pattern | baseline | `or_pattern` |
 | `or_pattern` | pattern | baseline | `primary_pattern { "\|" primary_pattern }` |
-| `primary_pattern` | pattern | baseline | `"_" \| IDENTIFIER \| literal \| constructor_pattern \| tuple_pattern` |
+| `primary_pattern` | pattern | baseline | `remainder_pattern \| IDENTIFIER \| literal \| constructor_pattern \| tuple_pattern` |
+| `remainder_pattern` | pattern | baseline | `"_" [ "as" IDENTIFIER ]` |
 | `constructor_pattern` | pattern | baseline | `qualified_ident [ positional_pattern \| named_pattern ]` |
 | `positional_pattern` | pattern | baseline | `"(" [ pattern_list ] ")"` |
 | `named_pattern` | pattern | baseline | `"{" [ pattern_fields ] "}"` |
-| `tuple_pattern` | pattern | baseline | `"[" [ pattern_list ] "]"` |
+| `tuple_pattern` | pattern | baseline | `"(" pattern "," [ pattern_list ] ")"` |
 | `pattern_list` | list | baseline | `pattern { "," pattern } [ "," ]` |
 | `pattern_fields` | list | baseline | `pattern_field { "," pattern_field } [ "," ]` |
 | `pattern_field` | pattern | baseline | `IDENTIFIER [ ":" pattern ]` |

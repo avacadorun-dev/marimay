@@ -146,7 +146,7 @@ static void mmay_test_checker_imported_result_negatives(void) {
         {"acme/app", "app/main.my",
             "import { Choice } from \"acme/results\";\n"
             "fn bad(value: Choice<int>): int {\n"
-            "  return match value { case Empty => 0; };\n"
+            "  return match value { Empty => 0, };\n"
             "}\n"
             "fn main(): int { return 0; }\n"},
         {"acme/results", "results/api.my",
@@ -158,7 +158,7 @@ static void mmay_test_checker_imported_result_negatives(void) {
             "import * as other from \"acme/other\";\n"
             "fn bad(value: Choice<int>): int {\n"
             "  return match value {\n"
-            "    case other.Value(_) => 1; case _ => 0;\n"
+            "    other.Value(_) => 1, _ => 0,\n"
             "  };\n"
             "}\n"
             "fn main(): int { return 0; }\n"},

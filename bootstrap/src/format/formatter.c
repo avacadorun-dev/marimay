@@ -1,4 +1,5 @@
 #include "formatter_internal.h"
+#include "formatter_layout_api.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -8,7 +9,6 @@
 #include "mmay/base/utf8.h"
 #include "mmay/base/writer.h"
 #include "mmay/syntax/syntax.h"
-
 static void mmay_formatter_owned_text_dispose(MarimayVector *owned_text) {
     size_t index = 0;
     for (index = 0; index < owned_text->length; index += 1) {
@@ -19,7 +19,6 @@ static void mmay_formatter_owned_text_dispose(MarimayVector *owned_text) {
     }
     mmay_vector_dispose(owned_text);
 }
-
 static void mmay_formatter_document_status(
     MarimayFormatter *formatter,
     MarimayDocumentStatus status
@@ -35,7 +34,6 @@ static void mmay_formatter_document_status(
         formatter->status = MMAY_FORMAT_INVALID_ARGUMENT;
     }
 }
-
 static void mmay_formatter_part(
     MarimayFormatter *formatter,
     MarimayDocumentPartKind kind
@@ -47,7 +45,6 @@ static void mmay_formatter_part(
         );
     }
 }
-
 static void mmay_formatter_text(
     MarimayFormatter *formatter,
     const unsigned char *text,
@@ -64,7 +61,6 @@ static void mmay_formatter_text(
         formatter->after_flexible_line = false;
     }
 }
-
 static bool mmay_formatter_adopt_text(
     MarimayFormatter *formatter,
     MarimayOwnedBytes *text
@@ -463,79 +459,13 @@ static void mmay_formatter_emit_comment(
     formatter->last_was_comment = true;
 }
 
-static bool mmay_formatter_postfix_predecessor(MarimayTokenKind kind) {
-    return kind == MMAY_TOKEN_IDENTIFIER || kind == MMAY_TOKEN_INTEGER
-        || kind == MMAY_TOKEN_FLOAT || kind == MMAY_TOKEN_STRING
-        || kind == MMAY_TOKEN_RAW_STRING || kind == MMAY_TOKEN_BYTE_STRING
-        || kind == MMAY_TOKEN_RUNE || kind == MMAY_TOKEN_KW_TRUE
-        || kind == MMAY_TOKEN_KW_FALSE
-        || kind == MMAY_TOKEN_RIGHT_PAREN
-        || kind == MMAY_TOKEN_RIGHT_BRACKET || kind == MMAY_TOKEN_RIGHT_BRACE
-        || kind == MMAY_TOKEN_INTERPOLATED_END || kind == MMAY_TOKEN_QUESTION
-        || kind == MMAY_TOKEN_GREATER || kind == MMAY_TOKEN_SHIFT_RIGHT;
-}
-
-static bool mmay_formatter_operator_spaced(const MarimayFormatToken *token) {
-    MarimayTokenKind kind = token->token.kind;
-    if (kind == MMAY_TOKEN_BANG || kind == MMAY_TOKEN_TILDE
-        || kind == MMAY_TOKEN_QUESTION) {
-        return false;
-    }
-    if (kind == MMAY_TOKEN_MINUS
-        && token->parent_kind == MMAY_SYNTAX_UNARY_EXPRESSION) {
-        return false;
-    }
-    if (kind == MMAY_TOKEN_LESS || kind == MMAY_TOKEN_GREATER
-        || kind == MMAY_TOKEN_SHIFT_RIGHT) {
-        return token->parent_kind == MMAY_SYNTAX_BINARY_EXPRESSION;
-    }
-    return kind == MMAY_TOKEN_PLUS || kind == MMAY_TOKEN_MINUS
-        || kind == MMAY_TOKEN_STAR || kind == MMAY_TOKEN_SLASH
-        || kind == MMAY_TOKEN_PERCENT || kind == MMAY_TOKEN_AMPERSAND
-        || kind == MMAY_TOKEN_PIPE || kind == MMAY_TOKEN_CARET
-        || kind == MMAY_TOKEN_EQUAL || kind == MMAY_TOKEN_FAT_ARROW
-        || kind == MMAY_TOKEN_THIN_ARROW || kind == MMAY_TOKEN_EQUAL_EQUAL
-        || kind == MMAY_TOKEN_BANG_EQUAL || kind == MMAY_TOKEN_LESS_EQUAL
-        || kind == MMAY_TOKEN_GREATER_EQUAL
-        || kind == MMAY_TOKEN_AMPERSAND_AMPERSAND
-        || kind == MMAY_TOKEN_PIPE_PIPE || kind == MMAY_TOKEN_SHIFT_LEFT
-        || kind == MMAY_TOKEN_PLUS_EQUAL || kind == MMAY_TOKEN_MINUS_EQUAL
-        || kind == MMAY_TOKEN_STAR_EQUAL || kind == MMAY_TOKEN_SLASH_EQUAL
-        || kind == MMAY_TOKEN_PERCENT_EQUAL
-        || kind == MMAY_TOKEN_AMPERSAND_EQUAL
-        || kind == MMAY_TOKEN_PIPE_EQUAL || kind == MMAY_TOKEN_CARET_EQUAL
-        || kind == MMAY_TOKEN_SHIFT_LEFT_EQUAL
-        || kind == MMAY_TOKEN_SHIFT_RIGHT_EQUAL;
-}
-
-static bool mmay_formatter_open_group_needs_space(
-    const MarimayFormatter *formatter,
-    const MarimayFormatToken *token
-) {
-    return formatter->pending_space
-        && (token->parent_kind == MMAY_SYNTAX_PAREN_GROUP
-            || !formatter->has_previous_code
-            || !mmay_formatter_postfix_predecessor(
-                formatter->previous_code_kind
-            ));
-}
-
-static bool mmay_formatter_trailing_comma_kind(MarimaySyntaxKind parent_kind) {
-    return parent_kind == MMAY_SYNTAX_ARGUMENTS
-        || parent_kind == MMAY_SYNTAX_PARAMETERS
-        || parent_kind == MMAY_SYNTAX_ARRAY_EXPRESSION
-        || parent_kind == MMAY_SYNTAX_IMPORT_CLAUSE
-        || parent_kind == MMAY_SYNTAX_POSITIONAL_PATTERN
-        || parent_kind == MMAY_SYNTAX_TUPLE_PATTERN
-        || parent_kind == MMAY_SYNTAX_NAMED_PATTERN;
-}
-
 static void mmay_formatter_push_delimiter(
     MarimayFormatter *formatter,
     MarimayTokenKind open,
     MarimaySyntaxKind parent_kind,
     bool empty,
     bool grouped,
+    bool compact,
     bool trailing_comma
 ) {
     MarimayFormatDelimiter delimiter;
@@ -545,8 +475,10 @@ static void mmay_formatter_push_delimiter(
     }
     delimiter.open = open;
     delimiter.parent_kind = parent_kind;
+    delimiter.comma_count = 0;
     delimiter.empty = empty;
     delimiter.grouped = grouped;
+    delimiter.compact = compact;
     delimiter.trailing_comma = trailing_comma;
     if (!mmay_vector_push(&formatter->delimiters, &delimiter)) {
         formatter->status = MMAY_FORMAT_ALLOCATION_FAILED;
@@ -563,19 +495,11 @@ static MarimayFormatDelimiter *mmay_formatter_top_delimiter(MarimayFormatter *fo
     );
 }
 
-static bool mmay_formatter_delimiter_matches(
-    MarimayTokenKind open,
-    MarimayTokenKind close
-) {
-    return (open == MMAY_TOKEN_LEFT_PAREN && close == MMAY_TOKEN_RIGHT_PAREN)
-        || (open == MMAY_TOKEN_LEFT_BRACKET && close == MMAY_TOKEN_RIGHT_BRACKET)
-        || (open == MMAY_TOKEN_LEFT_BRACE && close == MMAY_TOKEN_RIGHT_BRACE);
-}
-
 static void mmay_formatter_open_group(
     MarimayFormatter *formatter,
     const MarimayFormatToken *token,
-    const MarimayFormatToken *next
+    const MarimayFormatToken *next,
+    bool compact
 ) {
     MarimayTokenKind expected_close = token->token.kind == MMAY_TOKEN_LEFT_PAREN
         ? MMAY_TOKEN_RIGHT_PAREN
@@ -590,7 +514,16 @@ static void mmay_formatter_open_group(
         mmay_formatter_emit_token_text(formatter, token);
         mmay_formatter_push_delimiter(
             formatter, token->token.kind, token->parent_kind,
-            empty, false, false
+            empty, false, false, false
+        );
+        formatter->pending_space = false;
+        return;
+    }
+    if (compact) {
+        mmay_formatter_emit_token_text(formatter, token);
+        mmay_formatter_push_delimiter(
+            formatter, token->token.kind, token->parent_kind,
+            empty, false, true, false
         );
         formatter->pending_space = false;
         return;
@@ -607,6 +540,7 @@ static void mmay_formatter_open_group(
         token->parent_kind,
         empty,
         true,
+        false,
         mmay_formatter_trailing_comma_kind(token->parent_kind)
     );
     formatter->pending_space = false;
@@ -639,6 +573,13 @@ static void mmay_formatter_close_group(
         formatter->delimiters.length -= 1;
         return;
     }
+    if (delimiter->compact) {
+        formatter->pending_space = false;
+        mmay_formatter_emit_token_text(formatter, token);
+        formatter->delimiters.length -= 1;
+        formatter->pending_space = next != NULL;
+        return;
+    }
     if (!delimiter->empty) {
         if (delimiter->trailing_comma
             && formatter->has_previous_code
@@ -663,20 +604,16 @@ static void mmay_formatter_close_group(
 static void mmay_formatter_open_brace(
     MarimayFormatter *formatter,
     const MarimayFormatToken *token,
-    const MarimayFormatToken *next
+    const MarimayFormatToken *next,
+    bool grouped
 ) {
     bool empty = next != NULL && next->token.kind == MMAY_TOKEN_RIGHT_BRACE;
-    bool grouped = token->in_record_expression
-        || token->parent_kind == MMAY_SYNTAX_IMPORT_CLAUSE
-        || token->parent_kind == MMAY_SYNTAX_ENUM_VARIANT
-        || token->parent_kind == MMAY_SYNTAX_NAMED_PAYLOAD
-        || token->parent_kind == MMAY_SYNTAX_NAMED_PATTERN;
     if (token->in_interpolation) {
         if (!formatter->at_line_start) mmay_formatter_space(formatter);
         mmay_formatter_emit_token_text(formatter, token);
         mmay_formatter_push_delimiter(
             formatter, MMAY_TOKEN_LEFT_BRACE, token->parent_kind,
-            empty, false, false
+            empty, false, false, false
         );
         formatter->pending_space = !empty;
         return;
@@ -702,6 +639,7 @@ static void mmay_formatter_open_brace(
         token->parent_kind,
         empty,
         grouped,
+        false,
         token->in_record_expression
             || mmay_formatter_trailing_comma_kind(token->parent_kind)
     );
@@ -733,7 +671,8 @@ static void mmay_formatter_close_brace(
             && formatter->has_previous_code
             && formatter->previous_code_kind != MMAY_TOKEN_COMMA
             && !formatter->last_was_comment) {
-            if (delimiter->grouped) {
+            if (delimiter->grouped
+                && delimiter->parent_kind != MMAY_SYNTAX_NAMED_PAYLOAD) {
                 mmay_formatter_break_text(formatter, comma, 1);
             } else {
                 mmay_formatter_text(formatter, comma, 1);
@@ -774,6 +713,7 @@ static void mmay_formatter_comma(
     const MarimayFormatToken *next
 ) {
     MarimayFormatDelimiter *delimiter = mmay_formatter_top_delimiter(formatter);
+    bool required_tuple_comma = mmay_formatter_required_tuple_comma(delimiter);
     formatter->pending_space = false;
     if (token->in_interpolation) {
         mmay_formatter_emit_token_text(formatter, token);
@@ -787,8 +727,17 @@ static void mmay_formatter_comma(
             next->token.kind
         )) {
         static const unsigned char comma[] = ",";
-        mmay_formatter_break_text(formatter, comma, 1);
+        delimiter->comma_count += 1;
+        if (delimiter->parent_kind == MMAY_SYNTAX_NAMED_PAYLOAD
+            || required_tuple_comma) {
+            mmay_formatter_text(formatter, comma, 1);
+        } else {
+            mmay_formatter_break_text(formatter, comma, 1);
+        }
         return;
+    }
+    if (delimiter != NULL) {
+        delimiter->comma_count += 1;
     }
     mmay_formatter_emit_token_text(formatter, token);
     if (token->parent_kind == MMAY_SYNTAX_TYPE
@@ -797,18 +746,31 @@ static void mmay_formatter_comma(
         formatter->pending_space = true;
     } else if (delimiter != NULL && delimiter->grouped) {
         mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
+    } else if (next != NULL
+        && mmay_format_token_is_comment(next->token.kind)) {
+        formatter->pending_space = true;
     } else if (delimiter != NULL && delimiter->open == MMAY_TOKEN_LEFT_BRACE) {
         mmay_formatter_ensure_hardlines(formatter, 1);
     } else {
         formatter->pending_space = true;
     }
 }
-
 static void mmay_formatter_operator(
     MarimayFormatter *formatter,
     const MarimayFormatToken *token
 ) {
-    if (mmay_formatter_operator_spaced(token)) {
+    if (formatter->statement_grouped
+        && (token->token.kind == MMAY_TOKEN_AMPERSAND_AMPERSAND
+            || token->token.kind == MMAY_TOKEN_PIPE_PIPE)) {
+        formatter->pending_space = false;
+        if (!formatter->statement_continuation_indented) {
+            mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_BEGIN);
+            formatter->statement_continuation_indented = true;
+        }
+        mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
+        mmay_formatter_emit_token_text(formatter, token);
+        formatter->pending_space = true;
+    } else if (mmay_formatter_operator_is_spaced(token)) {
         if (!formatter->at_line_start && !formatter->after_flexible_line) {
             mmay_formatter_space(formatter);
         }
@@ -826,11 +788,6 @@ static void mmay_formatter_operator(
         formatter->pending_space = false;
     }
 }
-
-static bool mmay_formatter_is_operator_token(MarimayTokenKind kind) {
-    return kind >= MMAY_TOKEN_PLUS && kind <= MMAY_TOKEN_SHIFT_RIGHT_EQUAL;
-}
-
 static void mmay_formatter_interpolation_token(
     MarimayFormatter *formatter,
     const MarimayFormatToken *token
@@ -841,6 +798,27 @@ static void mmay_formatter_interpolation_token(
     }
     mmay_formatter_emit_token_text(formatter, token);
     formatter->pending_space = kind == MMAY_TOKEN_INTERPOLATED_END;
+}
+static void mmay_formatter_begin_statement_group(
+    MarimayFormatter *formatter,
+    size_t statement_id
+) {
+    mmay_formatter_part(formatter, MMAY_DOCUMENT_GROUP_BEGIN);
+    formatter->active_statement_id = statement_id;
+    formatter->statement_group_depth = formatter->delimiters.length;
+    formatter->statement_grouped = true;
+    formatter->statement_continuation_indented = false;
+}
+
+static void mmay_formatter_end_statement_group(MarimayFormatter *formatter) {
+    if (formatter->statement_continuation_indented) {
+        mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_END);
+    }
+    mmay_formatter_part(formatter, MMAY_DOCUMENT_GROUP_END);
+    formatter->active_statement_id = 0;
+    formatter->statement_group_depth = 0;
+    formatter->statement_grouped = false;
+    formatter->statement_continuation_indented = false;
 }
 
 static void mmay_formatter_trim_final_lines(MarimayFormatter *formatter) {
@@ -897,6 +875,25 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
             && !token->in_attribute) {
             mmay_formatter_ensure_hardlines(formatter, 1);
         }
+        if (previous_visible != NULL
+            && previous_visible->top_level_id == token->top_level_id
+            && token->token.start >= previous_visible->token.end
+            && token->token.kind != MMAY_TOKEN_RIGHT_BRACE
+            && token->token.kind != MMAY_TOKEN_KW_ELSE
+            && token->token.kind != MMAY_TOKEN_COMMA
+            && ((previous_visible->statement_id != 0
+                    && token->statement_id != 0
+                    && previous_visible->statement_id != token->statement_id)
+                || (previous_visible->token.kind == MMAY_TOKEN_RIGHT_BRACE
+                    && token->statement_id != 0))
+            && mmay_formatter_source_gap_has_blank_line(
+                formatter->source,
+                formatter->source_length,
+                previous_visible->token.end,
+                token->token.start
+            )) {
+            mmay_formatter_ensure_hardlines(formatter, 2);
+        }
         if (token->top_level_id != 0) {
             formatter->last_top_level_id = token->top_level_id;
         }
@@ -906,17 +903,40 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
             continue;
         }
         formatter->last_was_comment = false;
+        if (!formatter->statement_grouped && token->statement_id != 0
+            && token->statement_id != formatter->last_statement_id) {
+            mmay_formatter_begin_statement_group(
+                formatter, token->statement_id
+            );
+        }
         if (kind >= MMAY_TOKEN_INTERPOLATED_START
             && kind <= MMAY_TOKEN_INTERPOLATED_END) {
             mmay_formatter_interpolation_token(formatter, token);
         } else if (kind == MMAY_TOKEN_LEFT_PAREN
             || kind == MMAY_TOKEN_LEFT_BRACKET) {
-            mmay_formatter_open_group(formatter, token, next);
+            bool compact_index = kind == MMAY_TOKEN_LEFT_BRACKET
+                && mmay_formatter_index_is_compact(
+                    formatter->tokens,
+                    index,
+                    formatter->source_length,
+                    formatter->has_previous_code
+                        && mmay_formatter_postfix_predecessor(
+                            formatter->previous_code_kind
+                        )
+                );
+            mmay_formatter_open_group(formatter, token, next, compact_index);
         } else if (kind == MMAY_TOKEN_RIGHT_PAREN
             || kind == MMAY_TOKEN_RIGHT_BRACKET) {
             mmay_formatter_close_group(formatter, token, next);
         } else if (kind == MMAY_TOKEN_LEFT_BRACE) {
-            mmay_formatter_open_brace(formatter, token, next);
+            mmay_formatter_open_brace(
+                formatter,
+                token,
+                next,
+                mmay_formatter_brace_is_grouped(
+                    token, formatter->tokens, index, formatter->source_length
+                )
+            );
         } else if (kind == MMAY_TOKEN_RIGHT_BRACE) {
             mmay_formatter_close_brace(formatter, token, next);
         } else if (kind == MMAY_TOKEN_COMMA) {
@@ -927,6 +947,12 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
             );
             formatter->pending_space = false;
             mmay_formatter_emit_token_text(formatter, token);
+            if (formatter->statement_grouped
+                && token->statement_id == formatter->active_statement_id
+                && formatter->delimiters.length
+                    == formatter->statement_group_depth) {
+                mmay_formatter_end_statement_group(formatter);
+            }
             if (token->in_for_header) {
                 formatter->pending_space = true;
             } else if (delimiter != NULL && delimiter->grouped
@@ -949,6 +975,10 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
         } else if (kind == MMAY_TOKEN_DOT || kind == MMAY_TOKEN_AT) {
             formatter->pending_space = false;
             mmay_formatter_emit_token_text(formatter, token);
+        } else if (kind == MMAY_TOKEN_DOT_DOT
+            || kind == MMAY_TOKEN_DOT_DOT_EQUAL) {
+            formatter->pending_space = false;
+            mmay_formatter_emit_token_text(formatter, token);
         } else if (kind == MMAY_TOKEN_QUESTION) {
             formatter->pending_space = false;
             mmay_formatter_emit_token_text(formatter, token);
@@ -958,7 +988,7 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
             mmay_formatter_pending_space(formatter);
             mmay_formatter_canonical_string(formatter, token);
             formatter->pending_space = true;
-        } else if (mmay_formatter_is_operator_token(kind)) {
+        } else if (mmay_formatter_token_is_operator(kind)) {
             mmay_formatter_operator(formatter, token);
         } else {
             mmay_formatter_pending_space(formatter);
@@ -967,10 +997,14 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
         }
         formatter->previous_code_kind = kind;
         formatter->has_previous_code = true;
+        if (token->statement_id != 0) {
+            formatter->last_statement_id = token->statement_id;
+        }
         previous_visible = token;
     }
     if (formatter->status == MMAY_FORMAT_OK
-        && formatter->delimiters.length != 0) {
+        && (formatter->delimiters.length != 0
+            || formatter->statement_grouped)) {
         formatter->status = MMAY_FORMAT_SOURCE_INVALID;
     }
     if (formatter->status == MMAY_FORMAT_OK) {
@@ -1051,6 +1085,7 @@ MarimayFormatStatus mmay_format_source(
             parsed->tree.root,
             1,
             MMAY_SYNTAX_ROOT,
+            0,
             0,
             false,
             false,

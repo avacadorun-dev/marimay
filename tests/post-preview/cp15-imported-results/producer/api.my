@@ -25,5 +25,5 @@ public fn nestedSome(values: []int): Result<Option<[]int>, Problem> {
 }
 
 public fn nestedNone(): Result<Option<[]int>, Problem> {
-  return Ok(None<[]int>());
+  return Ok(None);
 }

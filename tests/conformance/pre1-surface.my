@@ -1,0 +1,168 @@
+enum InputError {
+  Bad(int),
+}
+
+enum AppError {
+  Network(InputError),
+}
+
+enum GenericError<T> {
+  Wrapped(T),
+}
+
+type Pair {
+  left: int,
+  right: int,
+}
+
+fn none(): Option<int> {
+  return None;
+}
+
+fn failed(): Result<int, InputError> {
+  return Err(InputError.Bad(7));
+}
+
+fn deliberatelyDiscard(): void {
+  const _ = failed();
+}
+
+fn mappedConstructor(): Result<int, AppError> {
+  return failed().mapError(AppError.Network);
+}
+
+fn mappedClosure(): Result<int, AppError> {
+  return failed().mapError((error) => AppError.Network(error));
+}
+
+fn mappedGenericConstructor(): Result<int, GenericError<InputError>> {
+  return failed().mapError(GenericError.Wrapped);
+}
+
+fn widen(value: u8): u16 {
+  return value as u16;
+}
+
+fn tupleValue(): (int, bool) {
+  return (3, true);
+}
+
+fn tupleMatch(value: (int, bool)): int {
+  return match value {
+    (number, flag) => match flag {
+      true => number,
+      false => 0,
+    },
+  };
+}
+
+fn singleTupleValue(): (int,) {
+  return (5,);
+}
+
+fn singleTupleMatch(value: (int,)): int {
+  return match value {
+    (number,) => number,
+  };
+}
+
+fn nestedTupleValue(): ((int, bool), int) {
+  return ((2, true), 3);
+}
+
+fn nestedTupleMatch(value: ((int, bool), int)): int {
+  return match value {
+    ((left, flag), right) => match flag {
+      true => left + right,
+      false => 0,
+    },
+  };
+}
+
+fn rangeTotal(): int {
+  let total = 0;
+  for value in 1..4 {
+    total += value;
+  }
+  for value in 1..=3 {
+    total += value;
+  }
+  for value in 3..3 {
+    total += 100;
+  }
+  for value in 9223372036854775807..=9223372036854775807 {
+    total += value - 9223372036854775807;
+  }
+  return total;
+}
+
+fn classify(value: int): int {
+  return match value {
+    0 => 10,
+    _ as remaining => {
+      const doubled = remaining * 2;
+      doubled
+    },
+  };
+}
+
+fn case(value: int): int {
+  return value;
+}
+
+fn of(value: int): int {
+  return value;
+}
+
+fn yield(value: int): int {
+  return value;
+}
+
+fn main(): int {
+  const widened = widen(4);
+  const converted = tryConvert<u8>(widened);
+  const rejected = tryConvert<u8>(300);
+  const noneValue = match none() {
+    Some(value) => value,
+    None => 0,
+  };
+  const narrowValue = match converted {
+    Some(value) => value as int,
+    None => 0,
+  };
+  const rejectedValue = match rejected {
+    Some(_) => 100,
+    None => 0,
+  };
+  const tupleNumber = tupleMatch(tupleValue());
+  const singleTupleNumber = singleTupleMatch(singleTupleValue());
+  const nestedTupleNumber = nestedTupleMatch(nestedTupleValue());
+  const constructorMapped = match mappedConstructor() {
+    Ok(_) => 100,
+    Err(error) => match error {
+      Network(input) => match input {
+        Bad(value) => value,
+      },
+    },
+  };
+  const closureMapped = match mappedClosure() {
+    Ok(_) => 100,
+    Err(error) => match error {
+      Network(input) => match input {
+        Bad(value) => value,
+      },
+    },
+  };
+  const genericMapped = match mappedGenericConstructor() {
+    Ok(_) => 100,
+    Err(error) => match error {
+      Wrapped(input) => match input {
+        Bad(value) => value,
+      },
+    },
+  };
+  const pair = Pair { left: 1, right: 2 };
+  return classify(2) + noneValue + widened as int + narrowValue + rejectedValue + tupleNumber + singleTupleNumber + nestedTupleNumber + constructorMapped + closureMapped + genericMapped + rangeTotal() + case(
+    pair.left,
+  ) + of(pair.right) + yield(0);
+}

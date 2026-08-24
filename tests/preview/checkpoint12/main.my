@@ -6,12 +6,12 @@ import { evaluateTypeOnly } from "example/checkpoint12/eval_type";
 import { makeUser } from "example/checkpoint12/store";
 
 type Counter {
-  mutable value: int;
+  mutable value: int,
 }
 
 type Pair {
-  first: int;
-  second: int;
+  first: int,
+  second: int,
 }
 
 enum Envelope {
@@ -52,8 +52,8 @@ fn factorial(limit: int): int {
 
 fn sortedIndex(needle: int): int {
   let values: []int = [9, 3, 7, 1, 5];
-  for let pass = 0; pass < values.length(); pass += 1 {
-    for let index = 0; index + 1 < values.length(); index += 1 {
+  for pass in 0..values.length() {
+    for index in 0..values.length() - 1 {
       if values[index] > values[index + 1] {
         const temporary = values[index];
         values[index] = values[index + 1];
@@ -78,9 +78,12 @@ fn sortedIndex(needle: int): int {
 }
 
 fn algorithmsAreCorrect(): bool {
-  return 6 * 7 == 42 && fibonacci(10) == 55 && factorial(10) == 3628800 && sortedIndex(1) == 0 && sortedIndex(
-    7,
-  ) == 3 && sortedIndex(8) == -1;
+  return 6 * 7 == 42
+    && fibonacci(10) == 55
+    && factorial(10) == 3628800
+    && sortedIndex(1) == 0
+    && sortedIndex(7) == 3
+    && sortedIndex(8) == -1;
 }
 
 fn genericIdentity<T>(value: T): T {
@@ -112,16 +115,16 @@ fn mappedBad(): Result<int, OutputError> {
 fn genericsAreCorrect(): bool {
   const option: Option<int> = Some(genericIdentity(7));
   const optionValue = match option {
-    case Some(value) => value;
-    case None => 0;
+    Some(value) => value,
+    None => 0,
   };
   const goodValue = match mappedGood() {
-    case Ok(value) => value;
-    case Err(_) => 0;
+    Ok(value) => value,
+    Err(_) => 0,
   };
   const badValue = match mappedBad() {
-    case Ok(_) => 0;
-    case Err(Config) => 1;
+    Ok(_) => 0,
+    Err(Config) => 1,
   };
   return optionValue == 7 && goodValue == 5 && badValue == 1;
 }
@@ -142,8 +145,8 @@ fn cleanupOrder(counter: Counter): void {
 
 fn exhaustiveValue(value: Envelope): int {
   return match value {
-    case Value(number) => number;
-    case Empty => 0;
+    Value(number) => number,
+    Empty => 0,
   };
 }
 
@@ -155,9 +158,13 @@ fn nominalSemanticsAreCorrect(): bool {
   const pair = Pair { second: next(order), first: next(order) };
   const cleanup = Counter { value: 0 };
   cleanupOrder(cleanup);
-  return identity.same(counter, alias) && counter.value == 1 && pair.first == 2 && pair.second == 1 && cleanup.value == 21 && exhaustiveValue(
-    Envelope.Value(9),
-  ) == 9 && exhaustiveValue(Envelope.Empty) == 0;
+  return identity.same(counter, alias)
+    && counter.value == 1
+    && pair.first == 2
+    && pair.second == 1
+    && cleanup.value == 21
+    && exhaustiveValue(Envelope.Value(9)) == 9
+    && exhaustiveValue(Envelope.Empty) == 0;
 }
 
 fn importedBehaviorIsCorrect(): bool {
@@ -166,7 +173,10 @@ fn importedBehaviorIsCorrect(): bool {
 }
 
 fn previewIsCorrect(): bool {
-  return algorithmsAreCorrect() && genericsAreCorrect() && nominalSemanticsAreCorrect() && importedBehaviorIsCorrect();
+  return algorithmsAreCorrect()
+    && genericsAreCorrect()
+    && nominalSemanticsAreCorrect()
+    && importedBehaviorIsCorrect();
 }
 
 fn main(): Result<void, IoError> {

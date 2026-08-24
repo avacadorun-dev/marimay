@@ -449,7 +449,7 @@ fn hashChunk(chunk: Bytes): Digest {
   return crypto.hash(chunk);
 }
 
-fn hashBoth(a: Bytes, b: Bytes): [Digest, Digest] {
+fn hashBoth(a: Bytes, b: Bytes): (Digest, Digest) {
   scope {
     const left = spawn isolate.run(a, hashChunk);
     const right = spawn isolate.run(b, hashChunk);

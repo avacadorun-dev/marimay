@@ -12,7 +12,7 @@ fn quickStartOutput(): void {
   expect.output(
     "Marimay CP29 quick start\n",
     (): void => {
-      println("Marimay CP29 quick start");
+      const _ = println("Marimay CP29 quick start");
     },
   );
 }

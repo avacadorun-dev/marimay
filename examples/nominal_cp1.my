@@ -1,17 +1,17 @@
 // Checkpoint-1 nominal types: mutation, identity, nested enum matching,
 // source-order construction, and structural interface dispatch.
 type Counter {
-  mutable value: int;
+  mutable value: int,
 }
 
 type Pair {
-  first: int;
-  second: int;
+  first: int,
+  second: int,
 }
 
 type NumericWidths {
-  signed: i8;
-  unsigned: u64;
+  signed: i8,
+  unsigned: u64,
 }
 
 enum Inner {
@@ -26,7 +26,7 @@ enum Envelope {
 }
 
 enum Ordered {
-  Pair { first: int; second: int; },
+  Pair { first: int, second: int, },
 }
 
 interface Show {
@@ -61,17 +61,12 @@ fn recordMutationAndIdentity(): bool {
   const alias = counter;
   counter.increment();
   const separate = Counter { value: 1 };
-  return identity.same(counter, alias)
-    && !identity.same(counter, separate)
-    && counter.value == 1;
+  return identity.same(counter, alias) && !identity.same(counter, separate) && counter.value == 1;
 }
 
 fn identityOperandsAreOrdered(): bool {
   const log = Counter { value: 0 };
-  const same = identity.same(
-    identityOperand(log, 1),
-    identityOperand(log, 2),
-  );
+  const same = identity.same(identityOperand(log, 1), identityOperand(log, 2));
   return !same && log.value == 12;
 }
 
@@ -82,13 +77,13 @@ fn freeAndDotAreEquivalent(): bool {
 
 fn nestedExhaustive(value: Envelope): int {
   return match value {
-    case Value(Some(item)) if item > 0 => item;
-    case Value(Text(text)) => match text {
-      case "mmay" => 7;
-      case _ => 0;
-    };
-    case Value(_) => 0;
-    case Empty => 0;
+    Value(Some(item)) if item > 0 => item,
+    Value(Text(text)) => match text {
+      "mmay" => 7,
+      _ => 0,
+    },
+    Value(_) => 0,
+    Empty => 0,
   };
 }
 
@@ -102,31 +97,39 @@ fn sourceOrderIsObservable(): bool {
 fn namedEnumSourceOrderIsObservable(): bool {
   const counter = Counter { value: 0 };
   // The selected payload slots do not change left-to-right evaluation.
-  const ordered = Ordered.Pair {
-    second: next(counter),
-    first: next(counter),
-  };
+  const ordered = Ordered.Pair { second: next(counter), first: next(counter) };
   return match ordered {
-    case Pair { first, second } => first == 2 && second == 1;
-  };
+    Pair { first, second } => first == 2
+      && second == 1,
+    };
 }
 
 fn numericNominalRoundTrip(): bool {
-  const value = NumericWidths {
-    signed: -128,
-    unsigned: 18446744073709551615,
-  };
-  return value.signed == -128
-    && value.unsigned == 18446744073709551615;
+  const value = NumericWidths { signed: -128, unsigned: 18446744073709551615 };
+  return value.signed == -128 && value.unsigned == 18446744073709551615;
 }
 
 fn main(): int {
-  if !recordMutationAndIdentity() { return -1; }
-  if !identityOperandsAreOrdered() { return -2; }
-  if !freeAndDotAreEquivalent() { return -3; }
-  if !sourceOrderIsObservable() { return -4; }
-  if !namedEnumSourceOrderIsObservable() { return -5; }
-  if nestedExhaustive(Envelope.Value(Inner.Text("mmay"))) != 7 { return -6; }
-  if !numericNominalRoundTrip() { return -7; }
+  if !recordMutationAndIdentity() {
+    return -1;
+  }
+  if !identityOperandsAreOrdered() {
+    return -2;
+  }
+  if !freeAndDotAreEquivalent() {
+    return -3;
+  }
+  if !sourceOrderIsObservable() {
+    return -4;
+  }
+  if !namedEnumSourceOrderIsObservable() {
+    return -5;
+  }
+  if nestedExhaustive(Envelope.Value(Inner.Text("mmay"))) != 7 {
+    return -6;
+  }
+  if !numericNominalRoundTrip() {
+    return -7;
+  }
   return nestedExhaustive(Envelope.Value(Inner.Some(7)));
 }

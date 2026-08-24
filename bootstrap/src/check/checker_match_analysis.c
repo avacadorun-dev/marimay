@@ -24,23 +24,27 @@
     memset(alternative, 0, sizeof(*alternative));
     alternative->pattern = pattern;
     if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
-        alternative->is_catch_all = true;
-        return true;
-    }
-    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
-        if (!mmay_checker_private_enum_match_name(function, pattern, &name)
-            || !mmay_checker_private_enum_match_add_binding(
-                function,
-                bindings,
-                name,
-                MMAY_TYPE_BOOL
-            )) {
+        bool has_binding = false;
+        if (!mmay_checker_private_match_remainder_name(
+                function, pattern, &has_binding, &name
+            ) || (has_binding
+                && !mmay_checker_private_enum_match_add_binding(
+                    function, bindings, name, MMAY_TYPE_BOOL
+                ))) {
             return false;
         }
         alternative->is_catch_all = true;
-        alternative->has_catch_binding = true;
+        alternative->has_catch_binding = has_binding;
         alternative->catch_binding = name;
         return true;
+    }
+    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "catch-all binding must use '_ as name'",
+            pattern->start, pattern->end
+        );
+        return false;
     }
     if (pattern->kind != MMAY_SYNTAX_LITERAL_PATTERN) {
         mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
@@ -293,23 +297,27 @@ cleanup:
     alternative->string_constant = MMAY_MIR_NO_STRING;
     alternative->pattern = pattern;
     if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
-        alternative->is_catch_all = true;
-        return true;
-    }
-    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
-        if (!mmay_checker_private_enum_match_name(function, pattern, &name)
-            || !mmay_checker_private_enum_match_add_binding(
-                function,
-                bindings,
-                name,
-                scalar_type
-            )) {
+        bool has_binding = false;
+        if (!mmay_checker_private_match_remainder_name(
+                function, pattern, &has_binding, &name
+            ) || (has_binding
+                && !mmay_checker_private_enum_match_add_binding(
+                    function, bindings, name, scalar_type
+                ))) {
             return false;
         }
         alternative->is_catch_all = true;
-        alternative->has_catch_binding = true;
+        alternative->has_catch_binding = has_binding;
         alternative->catch_binding = name;
         return true;
+    }
+    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "catch-all binding must use '_ as name'",
+            pattern->start, pattern->end
+        );
+        return false;
     }
     if (pattern->kind != MMAY_SYNTAX_LITERAL_PATTERN) {
         mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
@@ -720,21 +728,26 @@ cleanup:
     memset(alternative, 0, sizeof(*alternative));
     alternative->pattern = pattern;
     if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
+        bool has_binding = false;
+        if (!mmay_checker_private_match_remainder_name(
+                function, pattern, &has_binding, &name
+            ) || (has_binding
+                && !mmay_checker_private_enum_match_add_binding(
+                    function, bindings, name, scrutinee_record->type
+                ))) {
+            return false;
+        }
+        alternative->has_catch_binding = has_binding;
+        alternative->catch_binding = name;
         return true;
     }
     if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
-        if (!mmay_checker_private_enum_match_name(function, pattern, &name)
-            || !mmay_checker_private_enum_match_add_binding(
-                function,
-                bindings,
-                name,
-                scrutinee_record->type
-            )) {
-            return false;
-        }
-        alternative->has_catch_binding = true;
-        alternative->catch_binding = name;
-        return true;
+        (void)mmay_checker_add_diagnostic(
+            function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "record catch-all binding must use '_ as name'",
+            pattern->start, pattern->end
+        );
+        return false;
     }
     if (pattern->kind != MMAY_SYNTAX_CONSTRUCTOR_PATTERN) {
         (void)mmay_checker_add_diagnostic(

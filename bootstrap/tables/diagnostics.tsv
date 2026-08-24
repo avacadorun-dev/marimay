@@ -70,10 +70,11 @@ T0011	TYPE_ALIAS_CYCLE	type checker	Type alias expansion contains a dependency c
 T0012	MISSING_FIELD	type checker	Record or named enum payload construction/pattern omits a required field.
 T0013	NON_EXHAUSTIVE_MATCH	type checker	Match over a closed domain does not cover every reachable case.
 T0014	REDUNDANT_PATTERN	type checker	Match arm pattern is redundant or unreachable after earlier arms.
-T0015	YIELD_OUTSIDE_MATCH_ARM	type checker	Yield appears outside a block match arm.
-T0016	MISSING_MATCH_YIELD	type checker	A reachable path through a block match arm does not yield a value.
+T0015	YIELD_OUTSIDE_MATCH_ARM	type checker	Retired by D067; yield is an ordinary identifier and this code is not emitted.
+T0016	MISSING_MATCH_VALUE	type checker	A reachable block match arm does not end in a value or terminate control flow.
 T0017	INVALID_ENTRY_POINT	run	Executable root does not declare an accepted main entry point.
 T0018	ARRAY_TYPE_SPELLING	type checker	Prelude managed-array source uses the removed Array<T> spelling instead of canonical []T.
+T0019	IGNORED_RESULT	type checker	A Result value is ignored by an expression statement instead of being handled or explicitly discarded.
 U0001	UNKNOWN_COMMAND	command line	Unknown top-level command or help target.
 U0002	UNKNOWN_OPTION	command line	Unknown command-line option.
 U0003	UNAVAILABLE_COMMAND	command line	Specified command is not present in this bootstrap stage.

@@ -76,12 +76,12 @@ import { Error as IoError, println } from "std/io";
 enum Lookup<T> {
   Found(T),
   Missing,
-  Denied { reason: string; },
+  Denied { reason: string, },
 }
 
 type User {
-  id: int;
-  name: string;
+  id: int,
+  name: string,
 }
 
 interface Stringer {
@@ -94,9 +94,9 @@ fn string(user: User): string {
 
 fn describe(result: Lookup<User>): string {
   return match result {
-    case Found(user) => user.string();
-    case Missing => "not found";
-    case Denied { reason } => $"denied: {reason}";
+    Found(user) => user.string(),
+    Missing => "not found",
+    Denied { reason } => $"denied: {reason}",
   };
 }
 

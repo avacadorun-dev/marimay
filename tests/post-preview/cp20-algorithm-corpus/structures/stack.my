@@ -1,5 +1,5 @@
 public type Stack {
-  values: []int;
+  values: []int,
 }
 
 public fn newStack(): Stack {
@@ -7,7 +7,7 @@ public fn newStack(): Stack {
 }
 
 public fn push(stack: Stack, value: int): void {
-  stack.values.push(value);
+  const _ = stack.values.push(value);
 }
 
 public fn pop(stack: Stack): Option<int> {
@@ -16,7 +16,7 @@ public fn pop(stack: Stack): Option<int> {
 
 public fn top(stack: Stack): Option<int> {
   if stack.values.length() == 0 {
-    return None<int>();
+    return None;
   }
   return Some(stack.values[stack.values.length() - 1]);
 }

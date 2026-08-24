@@ -1,10 +1,10 @@
 type Stack {
-  values: []int;
-  mutable size: int;
+  values: []int,
+  mutable size: int,
 }
 
 fn push(stack: Stack, value: int): void {
-  stack.values.push(value);
+  const _ = stack.values.push(value);
   stack.size += 1;
 }
 
@@ -15,9 +15,9 @@ fn length(stack: Stack): int {
 fn receiverCollectionNamesWork(): bool {
   const stack = Stack { values: [], size: 0 };
   push(stack, 7);
-  stack.push(9);
+  const _ = stack.push(9);
   const values = [1];
-  push(values, 2);
-  values.push(3);
+  const _ = push(values, 2);
+  const _ = values.push(3);
   return length(stack) == 2 && stack.length() == 2 && length(values) == 3 && values.length() == 3;
 }

@@ -77,10 +77,11 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `T0012` | type checker | Record or named enum payload construction/pattern omits a required field. |
 | `T0013` | type checker | Match over a closed domain does not cover every reachable case. |
 | `T0014` | type checker | Match arm pattern is redundant or unreachable after earlier arms. |
-| `T0015` | type checker | Yield appears outside a block match arm. |
-| `T0016` | type checker | A reachable path through a block match arm does not yield a value. |
+| `T0015` | type checker | Retired by D067; yield is an ordinary identifier and this code is not emitted. |
+| `T0016` | type checker | A reachable block match arm does not end in a value or terminate control flow. |
 | `T0017` | run | Executable root does not declare an accepted main entry point. |
 | `T0018` | type checker | Prelude managed-array source uses the removed Array<T> spelling instead of canonical []T. |
+| `T0019` | type checker | A Result value is ignored by an expression statement instead of being handled or explicitly discarded. |
 | `U0001` | command line | Unknown top-level command or help target. |
 | `U0002` | command line | Unknown command-line option. |
 | `U0003` | command line | Specified command is not present in this bootstrap stage. |

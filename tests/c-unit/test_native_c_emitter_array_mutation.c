@@ -42,14 +42,14 @@ void mmay_test_native_c_emitter_array_mutation(void) {
     static const char source[] =
         "fn probe(): int {\n"
         "  let values = [1, 2, 3]; let alias = values;\n"
-        "  alias.reserve(8); alias.push(4);\n"
+        "  const _ = alias.reserve(8); const _ = alias.push(4);\n"
         "  const popped = match values.pop() {\n"
-        "    case Some(value) => value; case None => 0;\n"
+        "    Some(value) => value, None => 0,\n"
         "  };\n"
-        "  alias.truncate(1); const shortened = values.length();\n"
-        "  values.clear();\n"
+        "  const _ = alias.truncate(1); const shortened = values.length();\n"
+        "  const _ = values.clear();\n"
         "  let stable = [5]; let total = 0;\n"
-        "  for const value of stable { stable.reserve(2); total += value; }\n"
+        "  for value in stable { const _ = stable.reserve(2); total += value; }\n"
         "  return popped * 100 + shortened * 10 + alias.length() + total;\n"
         "}\n";
     MarimayCheckerFixture fixture;

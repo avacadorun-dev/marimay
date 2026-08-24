@@ -1,13 +1,13 @@
 @derive(Debug)
 type Box<T> {
-  public mutable value: T;
+  public mutable value: T,
 }
 
 fn compute(a: int, b: int, c: int): Result<int, Error> {
   /*keep
   shape*/ const values = [a, b + c];
-  for let i = 0; i < 3; i += 1 {
-    values.push(i);
+  for i in 0..3 {
+    const _ = values.push(i);
   }
   return service.load<Result<int, Error>>(values[0], b * c)?.value;
 }

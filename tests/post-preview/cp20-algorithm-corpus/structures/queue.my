@@ -1,6 +1,6 @@
 public type Queue {
-  values: []int;
-  mutable head: int;
+  values: []int,
+  mutable head: int,
 }
 
 public fn newQueue(): Queue {
@@ -8,12 +8,12 @@ public fn newQueue(): Queue {
 }
 
 public fn enqueue(queue: Queue, value: int): void {
-  queue.values.push(value);
+  const _ = queue.values.push(value);
 }
 
 public fn dequeue(queue: Queue): Option<int> {
   if queue.head == queue.values.length() {
-    return None<int>();
+    return None;
   }
   const value = queue.values[queue.head];
   queue.head += 1;
@@ -22,7 +22,7 @@ public fn dequeue(queue: Queue): Option<int> {
 
 public fn front(queue: Queue): Option<int> {
   if queue.head == queue.values.length() {
-    return None<int>();
+    return None;
   }
   return Some(queue.values[queue.head]);
 }

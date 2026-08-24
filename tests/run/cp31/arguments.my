@@ -1,18 +1,18 @@
 import { println } from "std/io";
 
 fn cleanup(): void {
-  println("cleanup");
+  const _ = println("cleanup");
 }
 
 fn main(arguments: []string): int {
   defer cleanup();
   if arguments.length() == 0 {
-    println("zero");
+    const _ = println("zero");
     return 0;
   }
   let index = 0;
   while index < arguments.length() {
-    println(arguments[index]);
+    const _ = println(arguments[index]);
     index += 1;
   }
   if arguments.length() == 1 {

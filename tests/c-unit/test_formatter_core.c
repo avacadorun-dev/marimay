@@ -3,10 +3,11 @@
 void mmay_test_formatter_round_trip(void) {
     static const char source[] =
         "@derive(Debug)\r\n"
-        "type  Box<T>{public mutable value:T;}\r\n"
+        "type  Box<T>{public mutable value:T,}\r\n"
         "fn  compute( a:int,b:int,c:int):Result<int,Error>{\r\n"
-        "/*keep\r\n  shape*/const values=[a,b+c];\r\n"
-        "for let i=0;i<3;i+=1{values.push(i);}\r\n"
+        "/*keep\r\n"
+        "  shape*/const values=[a,b+c];\r\n"
+        "for i in 0..3 {const _ = values.push(i);}\r\n"
         "return service.load<Result<int,Error>>(values[0],b*c)?.value;\r\n"
         "}\r\n";
     MarimayFormatterFixture original;
@@ -202,6 +203,10 @@ void mmay_test_formatter_fixture_file(void) {
         {
             "format/cp30-interpolation.input.my",
             "format/cp30-interpolation.expected.my"
+        },
+        {
+            "format/revision-surface.input.my",
+            "format/revision-surface.expected.my"
         }
     };
     unsigned char input[32768];

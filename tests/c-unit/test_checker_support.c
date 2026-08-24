@@ -99,6 +99,16 @@ void mmay_checker_expect_one_diagnostic(
             marked += strlen(marked_text);
         }
     }
+    if (marked == NULL) {
+        fprintf(
+            stderr,
+            "checker diagnostic fixture for %s cannot find occurrence %zu of '%s' in:\n%s\n",
+            code,
+            occurrence,
+            marked_text,
+            source
+        );
+    }
     MMAY_EXPECT(marked != NULL);
     status = mmay_check_ast(
         &fixture.ast,

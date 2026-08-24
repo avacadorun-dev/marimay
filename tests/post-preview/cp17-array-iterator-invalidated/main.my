@@ -1,6 +1,6 @@
 fn main(): void {
   let values = [1, 2];
-  for const value of values {
-    values.push(value);
+  for value in values {
+    const _ = values.push(value);
   }
 }

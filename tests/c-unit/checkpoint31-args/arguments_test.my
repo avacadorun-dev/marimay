@@ -8,11 +8,11 @@ fn injectedArguments(arguments: []string): void {
   expect.output(
     "alpha\ntwo words\n\nМир\n--\n",
     (): void => {
-      println(arguments[0]);
-      println(arguments[1]);
-      println(arguments[2]);
-      println(arguments[3]);
-      println(arguments[4]);
+      const _ = println(arguments[0]);
+      const _ = println(arguments[1]);
+      const _ = println(arguments[2]);
+      const _ = println(arguments[3]);
+      const _ = println(arguments[4]);
     },
   );
 }

@@ -12,7 +12,7 @@ typedef struct MarimayCliStandardSource {
 static const unsigned char mmay_cli_std_convert_source[] =
     "public enum ParseError {\n"
     "  Empty,\n"
-    "  InvalidDigit { offset: int; },\n"
+    "  InvalidDigit { offset: int, },\n"
     "  OutOfRange,\n"
     "  InvalidRadix,\n"
     "}\n\n"
@@ -32,13 +32,13 @@ static const unsigned char mmay_cli_std_convert_source[] =
 
 static const unsigned char mmay_cli_std_io_source[] =
     "public enum Error {\n"
-    "  CapabilityDenied { capability: string; },\n"
+    "  CapabilityDenied { capability: string, },\n"
     "  WriteFailed,\n"
     "}\n\n"
     "public fn message(error: Error): string {\n"
     "  return match error {\n"
-    "    case CapabilityDenied { capability } => \"capability io.stdout is not granted\";\n"
-    "    case WriteFailed => \"stdout write failed\";\n"
+    "    CapabilityDenied { capability } => \"capability io.stdout is not granted\",\n"
+    "    WriteFailed => \"stdout write failed\",\n"
     "  };\n"
     "}\n\n"
     "public extern \"c\" fn println(text: string): Result<void, Error>;\n";

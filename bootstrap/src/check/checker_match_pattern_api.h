@@ -36,6 +36,12 @@
     MarimayTypeId type,
     MarimayVector *bindings
 );
+ bool mmay_checker_private_match_remainder_name(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *pattern,
+    bool *has_binding,
+    MarimayCheckName *name
+);
  bool mmay_checker_private_enum_match_payload_type(
     MarimayFunctionChecker *function,
     MarimayTypeId enum_type,

@@ -1,8 +1,8 @@
 import { Error as IoError, println } from "std/io";
 
 type OrderState {
-  mutable trace: int;
-  values: []int;
+  mutable trace: int,
+  values: []int,
 }
 
 fn orderedValues(state: OrderState): []int {
@@ -17,7 +17,7 @@ fn orderedAdditional(state: OrderState): int {
 
 fn evaluationOrderWorks(): bool {
   const state = OrderState { trace: 0, values: [1] };
-  orderedValues(state).reserve(orderedAdditional(state));
+  const _ = orderedValues(state).reserve(orderedAdditional(state));
   return state.trace == 12;
 }
 
@@ -50,49 +50,62 @@ fn excessiveGrowth(values: []int): Result<bool, ArrayGrowthError> {
 fn arrayMutationWorks(): bool {
   let values = [1, 2, 3];
   const popped = match values.pop() {
-    case Some(value) => value;
-    case None => 0;
+    Some(value) => value,
+    None => 0,
   };
   const truncated = match shrink(values) {
-    case Ok(value) => value;
-    case Err(_) => false;
+    Ok(value) => value,
+    Err(_) => false,
   };
   const grown = match grow(values) {
-    case Ok(value) => value;
-    case Err(_) => false;
+    Ok(value) => value,
+    Err(_) => false,
   };
   let total = 0;
-  for const value of values {
-    values.reserve(2);
+  for value in values {
+    const _ = values.reserve(2);
     total += value;
   }
   const invalidTruncate = match invalidShrink(values) {
-    case Ok(value) => value;
-    case Err(InvalidLength { requested, length }) => requested == 3 && length == 2;
-    case Err(_) => false;
-  };
+    Ok(value) => value,
+    Err(InvalidLength { requested, length }) => requested == 3
+      && length == 2,
+      Err(_) => false,
+    };
   const negativeReserve = match negativeGrowth(values) {
-    case Ok(value) => value;
-    case Err(NegativeAdditional { additional }) => additional == -4;
-    case Err(_) => false;
+    Ok(value) => value,
+    Err(NegativeAdditional { additional }) => additional == -4,
+    Err(_) => false,
   };
   const excessiveReserve = match excessiveGrowth(values) {
-    case Ok(value) => value;
-    case Err(LengthLimit { limit }) => limit == 9223372036854775807;
-    case Err(_) => false;
+    Ok(value) => value,
+    Err(LengthLimit { limit }) => limit == 9223372036854775807,
+    Err(_) => false,
   };
   let nested = [[1], [2]];
   const nestedPop = match nested.pop() {
-    case Some(row) => row.length() == 1 && row[0] == 2;
-    case None => false;
-  };
-  nested.clear();
-  values.clear();
+    Some(row) => row.length() == 1
+      && row[0] == 2,
+      None => false,
+    };
+  const _ = nested.clear();
+  const _ = values.clear();
   const empty = match values.pop() {
-    case Some(_) => false;
-    case None => true;
+    Some(_) => false,
+    None => true,
   };
-  return popped == 3 && grown && truncated && total == 10 && invalidTruncate && negativeReserve && excessiveReserve && nestedPop && nested.length() == 0 && empty && values.length() == 0 && evaluationOrderWorks();
+  return popped == 3
+    && grown
+    && truncated
+    && total == 10
+    && invalidTruncate
+    && negativeReserve
+    && excessiveReserve
+    && nestedPop
+    && nested.length() == 0
+    && empty
+    && values.length() == 0
+    && evaluationOrderWorks();
 }
 
 fn main(): Result<void, IoError> {

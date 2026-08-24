@@ -2,8 +2,8 @@ import * as producer from "example/cp15-imported-results/producer";
 
 fn namespaceScore(choice: producer.Choice<[]int>): int {
   return match choice {
-    case producer.None => 0;
-    case producer.Some(values) => values[0] + values.length();
+    producer.None => 0,
+    producer.Some(values) => values[0] + values.length(),
   };
 }
 

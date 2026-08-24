@@ -308,7 +308,7 @@ void mmay_test_parser_limits_and_allocation(void) {
     options.max_diagnostics = 1;
     {
         static const char diagnostic_source[] =
-            "fn broken(value: Name...): void {}";
+            "fn broken(: ): void { const = ; }";
         MarimaySourceManager diagnostic_sources;
         const MarimaySourceSnapshot *diagnostic_snapshot = NULL;
         MarimayLexResult diagnostic_lexed;
@@ -389,7 +389,7 @@ void mmay_test_parser_limits_and_allocation(void) {
             &fuzz_lexed
         ) == MMAY_LEX_OK);
         options = mmay_parse_default_options();
-        options.max_events = 400000;
+        options.max_events = 16;
         options.max_diagnostics = 128;
         options.max_nesting = 128;
         MMAY_EXPECT(mmay_parse_file(

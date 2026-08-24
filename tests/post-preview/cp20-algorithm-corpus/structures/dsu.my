@@ -1,15 +1,15 @@
 public type Dsu {
-  parent: []int;
-  rank: []int;
-  mutable componentsValue: int;
+  parent: []int,
+  rank: []int,
+  mutable componentsValue: int,
 }
 
 public fn newDsu(size: int): Dsu {
   let parent: []int = [];
   let rank: []int = [];
-  for let index = 0; index < size; index += 1 {
-    parent.push(index);
-    rank.push(0);
+  for index in 0..size {
+    const _ = parent.push(index);
+    const _ = rank.push(0);
   }
   return Dsu { parent, rank, componentsValue: size };
 }

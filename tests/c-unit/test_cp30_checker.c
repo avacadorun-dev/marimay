@@ -8,7 +8,7 @@ static const char mmay_test_cp30_checker_source[] =
 
 static const char mmay_test_cp30_convert_source[] =
     "public enum ParseError {\n"
-    "  Empty, InvalidDigit { offset: int; }, OutOfRange, InvalidRadix,\n"
+    "  Empty, InvalidDigit { offset: int, }, OutOfRange, InvalidRadix,\n"
     "}\n"
     "public extern \"c\" fn parseInt(text: string): Result<int, ParseError>;\n"
     "public extern \"c\" fn parseIntRadix(text: string, radix: int): Result<int, ParseError>;\n"

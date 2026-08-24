@@ -252,7 +252,12 @@ static bool mmay_checker_private_enum_match_validate_namespace(
 ) {
     MarimayCheckName name;
     if (node != NULL && node->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
-        return true;
+        bool has_binding = false;
+        return mmay_checker_private_match_remainder_name(
+                function, node, &has_binding, &name
+            ) && (!has_binding || mmay_checker_private_enum_match_add_binding(
+                function, bindings, name, type
+            ));
     }
     if (node != NULL && node->kind == MMAY_SYNTAX_NAME_PATTERN) {
         return mmay_checker_private_enum_match_name(function, node, &name)
@@ -317,6 +322,45 @@ static bool mmay_checker_private_enum_match_validate_namespace(
         node != NULL ? node->start : 0, node != NULL ? node->end : 0
     );
     return false;
+}
+
+bool mmay_checker_private_match_remainder_name(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *pattern,
+    bool *has_binding,
+    MarimayCheckName *name
+) {
+    const MarimaySyntaxToken *as_token = NULL;
+    const MarimaySyntaxToken *name_token = NULL;
+    if (function == NULL || pattern == NULL
+        || pattern->kind != MMAY_SYNTAX_WILDCARD_PATTERN
+        || has_binding == NULL || name == NULL) {
+        if (function != NULL) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
+        }
+        return false;
+    }
+    *has_binding = false;
+    memset(name, 0, sizeof(*name));
+    as_token = mmay_checker_private_check_child_token(
+        pattern, MMAY_TOKEN_KW_AS, 0
+    );
+    name_token = mmay_checker_private_check_child_token(
+        pattern, MMAY_TOKEN_IDENTIFIER, 0
+    );
+    if (as_token == NULL && name_token == NULL) {
+        return true;
+    }
+    if (as_token == NULL || as_token->synthetic || name_token == NULL
+        || name_token->synthetic) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
+        return false;
+    }
+    name->snapshot = function->checker->ast->snapshot;
+    name->start = name_token->start;
+    name->end = name_token->end;
+    *has_binding = true;
+    return true;
 }
 
 bool mmay_checker_private_enum_match_validate_positional(
@@ -777,7 +821,18 @@ bool mmay_checker_private_analyze_enum_match_alternative(
     alternative->pattern = pattern;
     alternative->enum_type = enum_type;
     if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
+        bool has_binding = false;
+        if (!mmay_checker_private_match_remainder_name(
+                function, pattern, &has_binding, &name
+            ) || (has_binding
+                && !mmay_checker_private_enum_match_add_binding(
+                    function, bindings, name, enum_type
+                ))) {
+            return false;
+        }
         alternative->is_catch_all = true;
+        alternative->has_catch_binding = has_binding;
+        alternative->catch_binding = name;
     } else if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
         if (!mmay_checker_private_enum_match_name(function, pattern, &name)
             || !mmay_checker_private_enum_match_validate_namespace(
@@ -792,27 +847,15 @@ bool mmay_checker_private_analyze_enum_match_alternative(
             &variant_index
         );
         if (variant == NULL) {
-            if (qualified) {
-                (void)mmay_checker_add_diagnostic(
-                    function->checker,
-                    MMAY_DIAGNOSTIC_UNKNOWN_VARIANT,
-                    "enum type has no variant with this qualified pattern name",
-                    name.start,
-                    name.end
-                );
-                return false;
-            }
-            alternative->is_catch_all = true;
-            alternative->has_catch_binding = true;
-            alternative->catch_binding = name;
-            if (!mmay_checker_private_enum_match_add_binding(
-                    function,
-                    bindings,
-                    name,
-                    enum_type
-                )) {
-                return false;
-            }
+            (void)qualified;
+            (void)mmay_checker_add_diagnostic(
+                function->checker,
+                MMAY_DIAGNOSTIC_UNKNOWN_VARIANT,
+                "enum type has no variant with this pattern name; use '_ as name' to bind the remainder",
+                name.start,
+                name.end
+            );
+            return false;
         } else if (variant->kind != MMAY_CHECKED_ENUM_VARIANT_UNIT) {
             (void)mmay_checker_add_diagnostic(
                 function->checker,

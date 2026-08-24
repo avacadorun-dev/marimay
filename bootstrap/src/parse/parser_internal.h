@@ -63,7 +63,6 @@ const MarimayToken *mmay_parser_current_token(const MarimayParser *parser);
 MarimayTokenKind mmay_parser_current(const MarimayParser *parser);
 size_t mmay_parser_current_offset(const MarimayParser *parser);
 bool mmay_parser_at(const MarimayParser *parser, MarimayTokenKind kind);
-bool mmay_token_is_contextual_keyword(MarimayTokenKind kind);
 bool mmay_parser_at_identifier(const MarimayParser *parser);
 MarimayTokenKind mmay_parser_next_significant_kind(const MarimayParser *parser);
 MarimayTokenKind mmay_parser_second_next_significant_kind(const MarimayParser *parser);
@@ -107,6 +106,15 @@ bool mmay_parser_yield_is_name_expression(const MarimayParser *parser);
 bool mmay_parser_contextual_statement_starts(const MarimayParser *parser,
     MarimayTokenKind current);
 void mmay_parse_block(MarimayParser *parser);
+void mmay_parse_statement(MarimayParser *parser);
+void mmay_parse_match_arm_block(MarimayParser *parser);
+bool mmay_parser_paren_is_closure(const MarimayParser *parser);
+MarimayCompletedMarker mmay_parse_closure_expression(
+    MarimayParser *parser,
+    MarimayTokenKind first,
+    MarimayTokenKind second,
+    MarimayTokenKind third
+);
 void mmay_parse_parameters(MarimayParser *parser);
 void mmay_parse_top_decl(MarimayParser *parser);
 

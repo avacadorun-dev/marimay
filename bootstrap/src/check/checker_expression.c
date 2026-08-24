@@ -8,10 +8,7 @@
 #include "checker_expr_try_api.h"
 #include "checker_expr_numeric_api.h"
 #include "checker_expr_string_api.h"
-
-
-
-
+#include "checker_expr_tuples_api.h"
 
 bool mmay_checker_private_compile_expression_raw(
     MarimayFunctionChecker *function,
@@ -39,7 +36,12 @@ bool mmay_checker_private_compile_expression_raw(
         );
     }
     if (node->kind == MMAY_SYNTAX_NAME_EXPRESSION) {
-        return mmay_checker_private_compile_name(function, node, result);
+        return mmay_checker_private_compile_name(
+            function,
+            node,
+            expected,
+            result
+        );
     }
     if (node->kind == MMAY_SYNTAX_LITERAL_EXPRESSION) {
         return mmay_checker_private_compile_literal(function, node, expected, result);
@@ -51,6 +53,14 @@ bool mmay_checker_private_compile_expression_raw(
     }
     if (node->kind == MMAY_SYNTAX_ARRAY_EXPRESSION) {
         return mmay_compile_array_literal(function, node, expected, result);
+    }
+    if (node->kind == MMAY_SYNTAX_TUPLE_EXPRESSION) {
+        return mmay_checker_private_compile_tuple(
+            function,
+            node,
+            expected,
+            result
+        );
     }
     if (node->kind == MMAY_SYNTAX_INDEX_EXPRESSION) {
         return mmay_compile_array_index(function, node, result);
@@ -115,6 +125,16 @@ bool mmay_checker_private_compile_expression_raw(
         return mmay_checker_private_compile_integer_conversion(
             function, node, expected, result
         );
+    }
+    if (node->kind == MMAY_SYNTAX_RANGE_EXPRESSION) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "integer ranges are valid only as the direct iterable of a for loop",
+            node->start,
+            node->end
+        );
+        return false;
     }
     mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
     return false;

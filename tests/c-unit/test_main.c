@@ -83,6 +83,7 @@ void mmay_test_native_generics_differential(void);
 void mmay_test_native_matrix(void);
 void mmay_test_nominal_engine_allocations(void);
 void mmay_test_numeric_cp6_differential(void);
+void mmay_test_pre1_surface_differential(void);
 void mmay_test_path_stream(void);
 void mmay_test_parser(void);
 void mmay_test_process(void);
@@ -106,6 +107,7 @@ int main(int argument_count, char **arguments) {
     mmay_test_integer_text();
     mmay_test_string_interpolation();
     mmay_test_numeric_cp6_differential();
+    mmay_test_pre1_surface_differential();
     mmay_test_defer_cp7();
     mmay_test_bytecode();
     mmay_test_cp30_bytecode();

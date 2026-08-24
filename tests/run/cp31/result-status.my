@@ -9,7 +9,7 @@ fn message(error: Failure): string {
 }
 
 fn cleanup(): void {
-  println("cleanup");
+  const _ = println("cleanup");
 }
 
 fn main(arguments: []string): Result<int, Failure> {
@@ -20,6 +20,6 @@ fn main(arguments: []string): Result<int, Failure> {
   if arguments.length() == 2 {
     return Ok(256);
   }
-  println(arguments[0]);
+  const _ = println(arguments[0]);
   return Ok(7);
 }

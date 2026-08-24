@@ -10,8 +10,8 @@ fn consumerError(error: Problem): ConsumerError {
 
 fn score(choice: Choice<[]int>): int {
   return match choice {
-    case None => 0;
-    case Some(values) => values[0] + values.length();
+    None => 0,
+    Some(values) => values[0] + values.length(),
   };
 }
 
@@ -25,31 +25,39 @@ fn directResults(): Result<bool, ConsumerError> {
   const explicit: Option<[]int> = Some<[]int>([5]);
   const inferred: Option<[]int> = Some([6]);
   const nestedScore = match nestedPresent {
-    case Some(values) => values[0];
-    case None => 0;
+    Some(values) => values[0],
+    None => 0,
   };
   const absentScore = match nestedAbsent {
-    case Some(_) => 1;
-    case None => 0;
+    Some(_) => 1,
+    None => 0,
   };
   const explicitScore = match explicit {
-    case Some(values) => values[0];
-    case None => 0;
+    Some(values) => values[0],
+    None => 0,
   };
   const inferredScore = match inferred {
-    case Some(values) => values[0];
-    case None => 0;
+    Some(values) => values[0],
+    None => 0,
   };
   const failed = failure().mapError(consumerError);
   const failureScore = match failed {
-    case Ok(_) => 0;
-    case Err(Producer(Rejected(value))) => value;
-    case Err(Producer(Missing)) => 1;
-    case Err(_) => 2;
+    Ok(_) => 0,
+    Err(Producer(Rejected(value))) => value,
+    Err(Producer(Missing)) => 1,
+    Err(_) => 2,
   };
   return Ok(
-    score(made) == 41 && score(empty) == 0 && score(first) == 40 && score(second) == 0 && nestedScore == 10 && absentScore == 0 && explicitScore == 5 && inferredScore == 6 && failureScore == 9,
-  );
+    score(made) == 41
+      && score(empty) == 0
+      && score(first) == 40
+      && score(second) == 0
+      && nestedScore == 10
+      && absentScore == 0
+      && explicitScore == 5
+      && inferredScore == 6
+      && failureScore == 9,
+    );
 }
 
 fn propagatedFailure(): Result<Choice<[]int>, ConsumerError> {
@@ -58,15 +66,15 @@ fn propagatedFailure(): Result<Choice<[]int>, ConsumerError> {
 
 public fn directResultsWork(): bool {
   return match directResults() {
-    case Ok(value) => value;
-    case Err(_) => false;
+    Ok(value) => value,
+    Err(_) => false,
   };
 }
 
 public fn errorPropagationWorks(): bool {
   return match propagatedFailure() {
-    case Ok(_) => false;
-    case Err(Producer(Rejected(value))) => value == 9;
-    case Err(_) => false;
+    Ok(_) => false,
+    Err(Producer(Rejected(value))) => value == 9,
+    Err(_) => false,
   };
 }

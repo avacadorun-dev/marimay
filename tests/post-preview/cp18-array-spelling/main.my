@@ -14,7 +14,7 @@ type OptionalRows = Option<Rows>;
 
 fn buildRows(): Rows {
   let rows: [][]int = [];
-  rows.push([1, 2]);
+  const _ = rows.push([1, 2]);
   const alias = rows;
   alias[0][1] = 7;
   return rows;
@@ -27,12 +27,16 @@ fn arraySpellingWorks(): bool {
   const ordinary: Array<int> = make();
   const optional: OptionalRows = Some(rows);
   const optionalWorks = match optional {
-    case Some(value) => value[0][1] == 7;
-    case None => false;
+    Some(value) => value[0][1] == 7,
+    None => false,
   };
-  return rows.length() == 1 && rows[0].length() == 2 && rows[0][1] == 7 && edges[0].weight == 5 && direct[
-    0
-  ].weight == 6 && read(ordinary) == 9 && optionalWorks;
+  return rows.length() == 1
+    && rows[0].length() == 2
+    && rows[0][1] == 7
+    && edges[0].weight == 5
+    && direct[0].weight == 6
+    && read(ordinary) == 9
+    && optionalWorks;
 }
 
 fn main(): Result<void, IoError> {

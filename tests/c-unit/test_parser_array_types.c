@@ -7,7 +7,7 @@ void mmay_test_parser_array_type_spelling(void) {
         "type Qualified = []pkg.Edge;\n"
         "type Generic = Option<[]int>;\n"
         "type ResultRows = Result<[][]pkg.Edge, Problem>;\n"
-        "type TupleElement = [][int, string];\n"
+        "type TupleElement = [](int, string);\n"
         "type FunctionElement = [](int, string) => bool;\n"
         "type GenericElement = []Map<string, int>;\n";
     static const char *const invalid[] = {

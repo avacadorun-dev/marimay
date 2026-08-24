@@ -20,37 +20,38 @@ from urllib.parse import unquote
 ROOT = Path(__file__).resolve().parents[1]
 
 EXPECTED_KEYWORDS = {
-    "defer",
-    "false",
-    "if",
-    "match",
-    "return",
-    "spawn",
-    "true",
-    "while",
-}
-
-EXPECTED_CONTEXTUAL = {
     "as",
     "break",
-    "case",
     "const",
     "continue",
+    "defer",
     "else",
     "enum",
     "extern",
+    "false",
     "fn",
     "for",
     "from",
+    "if",
     "import",
+    "in",
     "interface",
     "let",
+    "match",
     "mutable",
-    "of",
     "public",
+    "return",
     "scope",
+    "spawn",
+    "true",
     "type",
     "unsafe",
+    "while",
+}
+
+EXPECTED_REMOVED_GRAMMAR_WORDS = {
+    "case",
+    "of",
     "yield",
 }
 
@@ -127,6 +128,14 @@ REQUIRED_DECISIONS = {
     "D064",
     "D065",
     "D066",
+    "D067",
+    "D068",
+    "D069",
+    "D070",
+    "D071",
+    "D072",
+    "D073",
+    "D074",
 }
 
 VALID_DECISION_STATES = {"accepted", "provisional", "deferred", "rejected"}
@@ -563,7 +572,7 @@ def check_spec_terms() -> List[Finding]:
     language = _read(language_path)
     keywords = _extract_word_fence(
         language,
-        "2.3 Hard keywords, contextual words, and reserved sentinels",
+        "2.3 Hard keywords, ordinary words, and reserved sentinels",
     )
     if keywords != EXPECTED_KEYWORDS:
         missing = sorted(EXPECTED_KEYWORDS - keywords)
@@ -571,17 +580,17 @@ def check_spec_terms() -> List[Finding]:
         findings.append(
             Finding(language_path, 1, f"keyword drift (missing={missing}, extra={extra})")
         )
-    contextual_match = re.search(
-        r"The following words are contextual\..*?^```text\s*$\n(.*?)^```\s*$",
+    ordinary_match = re.search(
+        r"The following removed grammar words are ordinary identifiers:.*?^```text\s*$\n(.*?)^```\s*$",
         language,
         re.MULTILINE | re.DOTALL,
     )
-    contextual = set(contextual_match.group(1).split()) if contextual_match else set()
-    if contextual != EXPECTED_CONTEXTUAL:
-        missing = sorted(EXPECTED_CONTEXTUAL - contextual)
-        extra = sorted(contextual - EXPECTED_CONTEXTUAL)
+    ordinary = set(ordinary_match.group(1).split()) if ordinary_match else set()
+    if ordinary != EXPECTED_REMOVED_GRAMMAR_WORDS:
+        missing = sorted(EXPECTED_REMOVED_GRAMMAR_WORDS - ordinary)
+        extra = sorted(ordinary - EXPECTED_REMOVED_GRAMMAR_WORDS)
         findings.append(
-            Finding(language_path, 1, f"contextual-word drift (missing={missing}, extra={extra})")
+            Finding(language_path, 1, f"ordinary-word drift (missing={missing}, extra={extra})")
         )
     reserved_match = re.search(
         r"Only `null` and `undefined` are reserved sentinels\.",

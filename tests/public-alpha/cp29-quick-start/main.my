@@ -7,14 +7,14 @@ enum PreviewState {
 
 fn previewScore(state: PreviewState): int {
   return match state {
-    case Ready(value) => value;
-    case Waiting => 0;
+    Ready(value) => value,
+    Waiting => 0,
   };
 }
 
 fn quickStartIsCorrect(): bool {
   let values: []int = [3, 1, 2];
-  values.push(4);
+  const _ = values.push(4);
   return previewScore(PreviewState.Ready(values.length())) == 4;
 }
 

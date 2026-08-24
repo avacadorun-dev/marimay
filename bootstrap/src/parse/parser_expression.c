@@ -108,28 +108,8 @@ bool mmay_parser_contextual_statement_starts(
     const MarimayParser *parser,
     MarimayTokenKind current
 ) {
-    MarimayTokenKind next = mmay_parser_next_significant_kind(parser);
-    if (current == MMAY_TOKEN_KW_CONST || current == MMAY_TOKEN_KW_LET) {
-        return next == MMAY_TOKEN_IDENTIFIER
-            || mmay_token_is_contextual_keyword(next)
-            || next == MMAY_TOKEN_UNDERSCORE
-            || next == MMAY_TOKEN_COLON;
-    }
-    if (current == MMAY_TOKEN_KW_FOR) {
-        return next == MMAY_TOKEN_KW_CONST || next == MMAY_TOKEN_KW_LET
-            || ((next == MMAY_TOKEN_IDENTIFIER
-                    || mmay_token_is_contextual_keyword(next))
-                && mmay_parser_second_next_significant_kind(parser)
-                    == MMAY_TOKEN_KW_OF);
-    }
-    if (current == MMAY_TOKEN_KW_SCOPE || current == MMAY_TOKEN_KW_UNSAFE) {
-        return next == MMAY_TOKEN_LEFT_BRACE;
-    }
-    if (current == MMAY_TOKEN_KW_BREAK
-        || current == MMAY_TOKEN_KW_CONTINUE) {
-        return next == MMAY_TOKEN_SEMICOLON
-            || next == MMAY_TOKEN_RIGHT_BRACE || next == MMAY_TOKEN_EOF;
-    }
+    (void)parser;
+    (void)current;
     return true;
 }
 
@@ -159,6 +139,12 @@ static bool mmay_expression_infix_binding_power(
         binding_power = 30;
     } else if (kind == MMAY_TOKEN_PIPE_PIPE) {
         binding_power = 20;
+    } else if (kind == MMAY_TOKEN_DOT_DOT
+        || kind == MMAY_TOKEN_DOT_DOT_EQUAL) {
+        *left = 15;
+        *right = 16;
+        *syntax_kind = MMAY_SYNTAX_RANGE_EXPRESSION;
+        return true;
     } else if (mmay_expression_is_assignment(kind)) {
         *left = 10;
         *right = 11;
@@ -171,58 +157,6 @@ static bool mmay_expression_infix_binding_power(
     *right = binding_power + 1;
     *syntax_kind = MMAY_SYNTAX_BINARY_EXPRESSION;
     return true;
-}
-
-static bool mmay_parser_paren_is_closure(const MarimayParser *parser) {
-    size_t index = mmay_parser_significant_index(parser);
-    size_t depth = 0;
-    if (mmay_parser_raw_token(parser, index) == NULL
-        || mmay_parser_raw_token(parser, index)->kind != MMAY_TOKEN_LEFT_PAREN) {
-        return false;
-    }
-    while (index < parser->lexed->tokens.length) {
-        const MarimayToken *token = mmay_parser_raw_token(parser, index);
-        if (token == NULL) {
-            return false;
-        }
-        if (token->kind == MMAY_TOKEN_LEFT_PAREN) {
-            depth += 1;
-        } else if (token->kind == MMAY_TOKEN_RIGHT_PAREN) {
-            if (depth == 0) {
-                return false;
-            }
-            depth -= 1;
-            if (depth == 0) {
-                size_t next = mmay_parser_skip_trivia(parser, index + 1);
-                const MarimayToken *after = mmay_parser_raw_token(parser, next);
-                if (after == NULL) {
-                    return false;
-                }
-                if (after->kind == MMAY_TOKEN_FAT_ARROW) {
-                    return true;
-                }
-                if (after->kind != MMAY_TOKEN_COLON) {
-                    return false;
-                }
-                next = mmay_parser_skip_trivia(parser, next + 1);
-                while (next < parser->lexed->tokens.length) {
-                    after = mmay_parser_raw_token(parser, next);
-                    if (after == NULL || after->kind == MMAY_TOKEN_EOF
-                        || after->kind == MMAY_TOKEN_SEMICOLON
-                        || after->kind == MMAY_TOKEN_RIGHT_BRACE) {
-                        return false;
-                    }
-                    if (after->kind == MMAY_TOKEN_FAT_ARROW) {
-                        return true;
-                    }
-                    next = mmay_parser_skip_trivia(parser, next + 1);
-                }
-                return false;
-            }
-        }
-        index += 1;
-    }
-    return false;
 }
 
 static bool mmay_parser_generic_call_ahead(const MarimayParser *parser) {
@@ -377,6 +311,7 @@ static void mmay_parse_expression_list(
 static MarimayCompletedMarker mmay_parse_parenthesized_expression(MarimayParser *parser) {
     MarimayMarker marker = mmay_parser_start(parser);
     size_t open_offset = mmay_parser_current_offset(parser);
+    bool tuple = false;
     mmay_parser_expect(parser, MMAY_TOKEN_LEFT_PAREN, "expected '('");
     mmay_parse_expression_until(
         parser,
@@ -385,14 +320,7 @@ static MarimayCompletedMarker mmay_parse_parenthesized_expression(MarimayParser 
         MMAY_TOKEN_EOF
     );
     if (mmay_parser_at(parser, MMAY_TOKEN_COMMA)) {
-        size_t offset = mmay_parser_current_offset(parser);
-        (void)mmay_parser_add_diagnostic(
-            parser,
-            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
-            "parenthesized expression contains more than one value",
-            offset,
-            offset
-        );
+        tuple = true;
         while (mmay_parser_eat(parser, MMAY_TOKEN_COMMA)
             && !mmay_parser_at(parser, MMAY_TOKEN_RIGHT_PAREN)
             && !mmay_parser_at(parser, MMAY_TOKEN_EOF)
@@ -411,7 +339,11 @@ static MarimayCompletedMarker mmay_parse_parenthesized_expression(MarimayParser 
         open_offset,
         "expected ')' after expression"
     );
-    return mmay_parser_complete(parser, marker, MMAY_SYNTAX_PAREN_GROUP);
+    return mmay_parser_complete(
+        parser,
+        marker,
+        tuple ? MMAY_SYNTAX_TUPLE_EXPRESSION : MMAY_SYNTAX_PAREN_GROUP
+    );
 }
 
 static MarimayCompletedMarker mmay_parse_array_expression(MarimayParser *parser) {
@@ -530,12 +462,13 @@ static MarimayCompletedMarker mmay_parse_pattern_inner(
     MarimayPatternStops stops
 );
 
-static void mmay_parse_pattern_list(
+static bool mmay_parse_pattern_list(
     MarimayParser *parser,
     MarimayTokenKind close
 ) {
     MarimayMarker list = mmay_parser_start(parser);
     MarimayPatternStops stops;
+    bool saw_comma = false;
     stops.first = MMAY_TOKEN_COMMA;
     stops.second = close;
     while (!mmay_parser_at(parser, close)
@@ -546,11 +479,13 @@ static void mmay_parse_pattern_list(
         if (!mmay_parser_eat(parser, MMAY_TOKEN_COMMA)) {
             break;
         }
+        saw_comma = true;
         if (parser->raw_index == before) {
             break;
         }
     }
     (void)mmay_parser_complete(parser, list, MMAY_SYNTAX_PATTERN_LIST);
+    return saw_comma;
 }
 
 static MarimayCompletedMarker mmay_parse_pattern_payload(
@@ -561,8 +496,18 @@ static MarimayCompletedMarker mmay_parse_pattern_payload(
 ) {
     MarimayMarker marker = mmay_parser_start(parser);
     size_t open_offset = mmay_parser_current_offset(parser);
+    bool saw_comma;
     mmay_parser_expect(parser, open, "expected pattern payload delimiter");
-    mmay_parse_pattern_list(parser, close);
+    saw_comma = mmay_parse_pattern_list(parser, close);
+    if (kind == MMAY_SYNTAX_TUPLE_PATTERN && !saw_comma) {
+        (void)mmay_parser_add_diagnostic(
+            parser,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN,
+            "one-element tuple pattern requires a trailing ','",
+            open_offset,
+            mmay_parser_current_offset(parser)
+        );
+    }
     mmay_parser_expect_closing_delimiter(
         parser,
         close,
@@ -623,6 +568,12 @@ static MarimayCompletedMarker mmay_parse_pattern_primary(
     if (current == MMAY_TOKEN_UNDERSCORE) {
         marker = mmay_parser_start(parser);
         mmay_parser_bump(parser);
+        if (mmay_parser_eat(parser, MMAY_TOKEN_KW_AS)) {
+            mmay_parser_expect_identifier(
+                parser,
+                "expected binding name after '_ as'"
+            );
+        }
         return mmay_parser_complete(
             parser,
             marker,
@@ -674,11 +625,11 @@ static MarimayCompletedMarker mmay_parse_pattern_primary(
         }
         return completed;
     }
-    if (current == MMAY_TOKEN_LEFT_BRACKET) {
+    if (current == MMAY_TOKEN_LEFT_PAREN) {
         return mmay_parse_pattern_payload(
             parser,
-            MMAY_TOKEN_LEFT_BRACKET,
-            MMAY_TOKEN_RIGHT_BRACKET,
+            MMAY_TOKEN_LEFT_PAREN,
+            MMAY_TOKEN_RIGHT_PAREN,
             MMAY_SYNTAX_TUPLE_PATTERN
         );
     }
@@ -758,7 +709,6 @@ static MarimayCompletedMarker mmay_parse_match_expression(MarimayParser *parser)
         && !parser->allocation_failed && !parser->limit_reached) {
         size_t before = parser->raw_index;
         MarimayMarker arm = mmay_parser_start(parser);
-        mmay_parser_expect(parser, MMAY_TOKEN_KW_CASE, "expected 'case'");
         mmay_parse_pattern_until(parser, MMAY_TOKEN_KW_IF, MMAY_TOKEN_FAT_ARROW);
         if (mmay_parser_eat(parser, MMAY_TOKEN_KW_IF)) {
             mmay_parse_expression_until(
@@ -770,17 +720,24 @@ static MarimayCompletedMarker mmay_parse_match_expression(MarimayParser *parser)
         }
         mmay_parser_expect(parser, MMAY_TOKEN_FAT_ARROW, "expected '=>' after match pattern");
         if (mmay_parser_at(parser, MMAY_TOKEN_LEFT_BRACE)) {
-            mmay_parse_block(parser);
+            mmay_parse_match_arm_block(parser);
         } else {
             mmay_parse_expression_until(
                 parser,
-                MMAY_TOKEN_SEMICOLON,
+                MMAY_TOKEN_COMMA,
                 MMAY_TOKEN_RIGHT_BRACE,
                 MMAY_TOKEN_EOF
             );
-            mmay_parser_expect(parser, MMAY_TOKEN_SEMICOLON, "expected ';' after match arm");
         }
         (void)mmay_parser_complete(parser, arm, MMAY_SYNTAX_MATCH_ARM);
+        if (!mmay_parser_eat(parser, MMAY_TOKEN_COMMA)
+            && !mmay_parser_at(parser, MMAY_TOKEN_RIGHT_BRACE)) {
+            mmay_parser_expect(
+                parser,
+                MMAY_TOKEN_COMMA,
+                "expected ',' between match arms"
+            );
+        }
         if (parser->raw_index == before && !parser->allocation_failed
             && !parser->limit_reached) {
             mmay_parser_bump(parser);
@@ -788,29 +745,6 @@ static MarimayCompletedMarker mmay_parse_match_expression(MarimayParser *parser)
     }
     mmay_parser_expect(parser, MMAY_TOKEN_RIGHT_BRACE, "expected '}' after match");
     return mmay_parser_complete(parser, marker, MMAY_SYNTAX_MATCH_EXPRESSION);
-}
-
-static MarimayCompletedMarker mmay_parse_closure_expression(
-    MarimayParser *parser,
-    MarimayExpressionStops stops
-) {
-    MarimayMarker marker = mmay_parser_start(parser);
-    mmay_parse_parameters(parser);
-    if (mmay_parser_eat(parser, MMAY_TOKEN_COLON)) {
-        mmay_parse_type_until(
-            parser,
-            MMAY_TOKEN_FAT_ARROW,
-            MMAY_TOKEN_EOF,
-            MMAY_TOKEN_EOF
-        );
-    }
-    mmay_parser_expect(parser, MMAY_TOKEN_FAT_ARROW, "expected '=>' in closure");
-    if (mmay_parser_at(parser, MMAY_TOKEN_LEFT_BRACE)) {
-        mmay_parse_block(parser);
-    } else {
-        (void)mmay_parse_expression_bp(parser, stops, 10);
-    }
-    return mmay_parser_complete(parser, marker, MMAY_SYNTAX_CLOSURE_EXPRESSION);
 }
 
 static MarimayCompletedMarker mmay_parse_expression_prefix(
@@ -837,7 +771,9 @@ static MarimayCompletedMarker mmay_parse_expression_prefix(
     }
     if (current == MMAY_TOKEN_LEFT_PAREN) {
         if (mmay_parser_paren_is_closure(parser)) {
-            return mmay_parse_closure_expression(parser, stops);
+            return mmay_parse_closure_expression(
+                parser, stops.first, stops.second, stops.third
+            );
         }
         return mmay_parse_parenthesized_expression(parser);
     }
@@ -1128,31 +1064,61 @@ void mmay_parse_type_until(
                 mmay_parse_type_until(parser, first, second, third);
             }
         } else {
+            (void)mmay_parser_add_diagnostic(
+                parser,
+                MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
+                "bracket tuple types were removed; use '(T, U)'",
+                open_offset,
+                open_offset + 1
+            );
             mmay_parse_type_list(parser, MMAY_TOKEN_RIGHT_BRACKET, false);
             mmay_parser_expect_closing_delimiter(
                 parser,
                 MMAY_TOKEN_RIGHT_BRACKET,
                 open_offset,
-                "expected ']' after tuple type"
+                "expected ']' after removed tuple type"
             );
         }
     } else if (current == MMAY_TOKEN_LEFT_PAREN) {
         size_t open_offset = mmay_parser_current_offset(parser);
+        bool saw_comma = false;
         mmay_parser_bump(parser);
-        mmay_parse_type_list(parser, MMAY_TOKEN_RIGHT_PAREN, true);
+        if (!mmay_parser_at(parser, MMAY_TOKEN_RIGHT_PAREN)) {
+            mmay_parse_type_until(
+                parser,
+                MMAY_TOKEN_COMMA,
+                MMAY_TOKEN_RIGHT_PAREN,
+                MMAY_TOKEN_EOF
+            );
+            while (mmay_parser_eat(parser, MMAY_TOKEN_COMMA)) {
+                saw_comma = true;
+                if (mmay_parser_at(parser, MMAY_TOKEN_RIGHT_PAREN)) {
+                    break;
+                }
+                mmay_parse_type_until(
+                    parser,
+                    MMAY_TOKEN_COMMA,
+                    MMAY_TOKEN_RIGHT_PAREN,
+                    MMAY_TOKEN_EOF
+                );
+            }
+        }
         mmay_parser_expect_closing_delimiter(
             parser,
             MMAY_TOKEN_RIGHT_PAREN,
             open_offset,
-            "expected ')' after function parameter types"
+            "expected ')' after tuple or function parameter types"
         );
-        mmay_parser_expect(
-            parser,
-            MMAY_TOKEN_FAT_ARROW,
-            "expected '=>' in function type"
-        );
-        if (!parser->allocation_failed && !parser->limit_reached) {
+        if (mmay_parser_eat(parser, MMAY_TOKEN_FAT_ARROW)) {
             mmay_parse_type_until(parser, first, second, third);
+        } else if (!saw_comma) {
+            (void)mmay_parser_add_diagnostic(
+                parser,
+                MMAY_DIAGNOSTIC_EXPECTED_TOKEN,
+                "tuple type requires ',' or function type requires '=>'",
+                open_offset,
+                mmay_parser_current_offset(parser)
+            );
         }
     } else {
         mmay_parser_expect_identifier(parser, "expected type");

@@ -4,20 +4,20 @@ void mmay_test_checker_record_declarations(void) {
     static const char source[] =
         "public type UserId = int;\n"
         "public type User {\n"
-        "  public id: UserId;\n"
-        "  mutable parent: User;\n"
+        "  public id: UserId,\n"
+        "  mutable parent: User,\n"
         "}\n"
-        "public type Shadow { public id: UserId; mutable parent: User; }\n"
+        "public type Shadow { public id: UserId, mutable parent: User, }\n"
         "fn identity(value: User): User { return value; }\n";
     static const char duplicate_field[] =
-        "type User { id: int; id: string; }\n";
+        "type User { id: int, id: string, }\n";
     static const char unknown_field_type[] =
-        "type User { value: Missing; }\n";
+        "type User { value: Missing, }\n";
     static const char primitive_redefinition[] =
-        "type int { value: int; }\n";
+        "type int { value: int, }\n";
     static const char duplicate_top_level[] =
         "type Shared = int;\n"
-        "type Shared { value: int; }\n";
+        "type Shared { value: int, }\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     MarimayCheckOptions options;
@@ -102,8 +102,8 @@ void mmay_test_checker_record_declarations(void) {
 
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
-        "type First { second: Second; }\n"
-        "type Second { first: First; }\n"
+        "type First { second: Second, }\n"
+        "type Second { first: First, }\n"
     ));
     MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
@@ -185,7 +185,7 @@ void mmay_test_checker_record_declarations(void) {
 
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
-        "type Generic<T> { value: T; }\n"
+        "type Generic<T> { value: T, }\n"
     ));
     MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
@@ -200,7 +200,7 @@ void mmay_test_checker_record_declarations(void) {
 
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
-        "@derive(Debug) type User { id: int; }\n"
+        "@derive(Debug) type User { id: int, }\n"
     ));
     MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
@@ -223,8 +223,8 @@ void mmay_test_checker_record_package_order(void) {
         "}\n";
     static const char types_source[] =
         "type Alias = Node;\n"
-        "type Node { public id: int; next: Alias; }\n"
-        "type Leaf { value: int; }\n";
+        "type Node { public id: int, next: Alias, }\n"
+        "type Leaf { value: int, }\n";
     MarimayCheckerFixture entry;
     MarimayCheckerFixture types;
     const MarimayAstTree *asts[2];
@@ -328,8 +328,8 @@ void mmay_test_checker_record_package_order(void) {
 void mmay_test_checker_record_execution(void) {
     static const char source[] =
         "type Counter {\n"
-        "  seed: int;\n"
-        "  mutable value: int;\n"
+        "  seed: int,\n"
+        "  mutable value: int,\n"
         "}\n"
         "type CounterAlias = Counter;\n"
         "fn make(seed: int): Counter {\n"
@@ -552,49 +552,49 @@ void mmay_test_checker_record_execution(void) {
     mmay_checker_fixture_dispose(&fixture);
 
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
+        "type Counter { value: int, }\n"
         "fn bad(): Counter { return Counter { other: 1 }; }\n",
         MMAY_DIAGNOSTIC_UNKNOWN_FIELD,
         "other",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
+        "type Counter { value: int, }\n"
         "fn bad(): Counter { return Counter { value: 1, value: 2 }; }\n",
         MMAY_DIAGNOSTIC_DUPLICATE_FIELD,
         "value",
         2
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { seed: int; value: int; }\n"
+        "type Counter { seed: int, value: int, }\n"
         "fn bad(): Counter { return Counter { value: 1 }; }\n",
         MMAY_DIAGNOSTIC_MISSING_FIELD,
         "Counter { value: 1 }",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
+        "type Counter { value: int, }\n"
         "fn bad(): Counter { return Counter { value: true }; }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "true",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { seed: int; }\n"
+        "type Counter { seed: int, }\n"
         "fn bad(counter: Counter): int { counter.seed = 1; return 0; }\n",
         MMAY_DIAGNOSTIC_ASSIGN_IMMUTABLE,
         "seed",
         1
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
+        "type Counter { value: int, }\n"
         "fn bad(counter: Counter): int { return counter.other; }\n",
         MMAY_DIAGNOSTIC_UNKNOWN_FIELD,
         "other",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
+        "type Counter { value: int, }\n"
         "fn bad(): Counter { return Counter { value }; }\n",
         MMAY_DIAGNOSTIC_UNKNOWN_NAME,
         "value",
@@ -604,8 +604,8 @@ void mmay_test_checker_record_execution(void) {
 
 void mmay_test_checker_record_identity(void) {
     static const char source[] =
-        "type Point { mutable x: int; }\n"
-        "type Other { x: int; }\n"
+        "type Point { mutable x: int, }\n"
+        "type Other { x: int, }\n"
         "type PointAlias = Point;\n"
         "fn make(x: int): Point { return Point { x }; }\n"
         "fn same(left: PointAlias, right: Point): bool {\n"
@@ -771,8 +771,8 @@ void mmay_test_checker_record_identity(void) {
     mmay_checker_fixture_dispose(&fixture);
 
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
-        "type Other { x: int; }\n"
+        "type Point { x: int, }\n"
+        "type Other { x: int, }\n"
         "fn bad(): bool { return identity.same(Point { x: 1 }, Other { x: 1 }); }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Other { x: 1 }",
@@ -798,35 +798,35 @@ void mmay_test_checker_record_identity(void) {
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
+        "type Point { x: int, }\n"
         "fn bad(value: Point): bool { return identity.same(value); }\n",
         MMAY_DIAGNOSTIC_CALL_ARITY,
         "(value)",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
+        "type Point { x: int, }\n"
         "fn bad(value: Point): bool { return identity.same(value, value, value); }\n",
         MMAY_DIAGNOSTIC_CALL_ARITY,
         "(value, value, value)",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
+        "type Point { x: int, }\n"
         "fn bad(value: Point): bool { return identity.same<Point>(value, value); }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "identity.same<Point>(value, value)",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
+        "type Point { x: int, }\n"
         "fn bad(value: Point): bool { return identity.same(value, 1); }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "1",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
+        "type Point { x: int, }\n"
         "const same: bool = identity.same(Point { x: 1 }, Point { x: 1 });\n",
         MMAY_DIAGNOSTIC_CONSTANT_EVALUATION,
         "identity.same(Point { x: 1 }, Point { x: 1 })",
@@ -836,34 +836,34 @@ void mmay_test_checker_record_identity(void) {
 
 void mmay_test_checker_record_match(void) {
     static const char source[] =
-        "type Point { x: int; y: int; }\n"
+        "type Point { x: int, y: int, }\n"
         "type Empty {}\n"
         "type PointAlias = Point;\n"
         "fn make(x: int, y: int): Point { return Point { x, y }; }\n"
         "fn sum(point: Point): int {\n"
-        "  return match point { case Point { x, y } => x + y; };\n"
+        "  return match point { Point { x, y } => x + y, };\n"
         "}\n"
         "fn renamed(point: Point): int {\n"
-        "  return match point { case PointAlias { x: left, y: right } => left - right; };\n"
+        "  return match point { PointAlias { x: left, y: right } => left - right, };\n"
         "}\n"
         "fn ignored(point: Point): int {\n"
-        "  return match point { case Point { x: _, y } => y; };\n"
+        "  return match point { Point { x: _, y } => y, };\n"
         "}\n"
         "fn guarded(point: Point, ready: bool): int {\n"
         "  return match point {\n"
-        "    case Point { x, y } if ready => x;\n"
-        "    case Point { x: _, y } => y;\n"
+        "    Point { x, y } if ready => x,\n"
+        "    Point { x: _, y } => y,\n"
         "  };\n"
         "}\n"
         "fn whole(point: Point): Point {\n"
-        "  return match point { case value => value; };\n"
+        "  return match point { _ as value => value, };\n"
         "}\n"
         "fn block(point: Point): int {\n"
-        "  return match point { case Point { x, y } => { yield x + y; } };\n"
+        "  return match point { Point { x, y } => { x + y }, };\n"
         "}\n"
         "fn makeEmpty(): Empty { return Empty {}; }\n"
         "fn emptyValue(value: Empty): int {\n"
-        "  return match value { case Empty {} => 14; };\n"
+        "  return match value { Empty {} => 14, };\n"
         "}\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
@@ -982,66 +982,66 @@ void mmay_test_checker_record_match(void) {
     mmay_checker_fixture_dispose(&fixture);
 
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; y: int; }\n"
-        "fn bad(point: Point): int { return match point { case Point { x } => x; }; }\n",
+        "type Point { x: int, y: int, }\n"
+        "fn bad(point: Point): int { return match point { Point { x } => x, }; }\n",
         MMAY_DIAGNOSTIC_MISSING_FIELD,
         "{ x }",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
-        "fn bad(point: Point): int { return match point { case Point { z } => z; }; }\n",
+        "type Point { x: int, }\n"
+        "fn bad(point: Point): int { return match point { Point { z } => z, }; }\n",
         MMAY_DIAGNOSTIC_UNKNOWN_FIELD,
         "z",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
-        "fn bad(point: Point): int { return match point { case Point { x, x } => x; }; }\n",
+        "type Point { x: int, }\n"
+        "fn bad(point: Point): int { return match point { Point { x, x } => x, }; }\n",
         MMAY_DIAGNOSTIC_DUPLICATE_FIELD,
         "x",
         2
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; y: int; }\n"
-        "fn bad(point: Point): int { return match point { case Point { x: value, y: value } => value; }; }\n",
+        "type Point { x: int, y: int, }\n"
+        "fn bad(point: Point): int { return match point { Point { x: value, y: value } => value, }; }\n",
         MMAY_DIAGNOSTIC_DUPLICATE_NAME,
         "value",
         1
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
-        "type Other { x: int; }\n"
-        "fn bad(point: Point): int { return match point { case Other { x } => x; }; }\n",
+        "type Point { x: int, }\n"
+        "type Other { x: int, }\n"
+        "fn bad(point: Point): int { return match point { Other { x } => x, }; }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Other",
         1
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
-        "fn bad(point: Point): int { return match point { case Point { x } | _ => x; }; }\n",
+        "type Point { x: int, }\n"
+        "fn bad(point: Point): int { return match point { Point { x } | _ => x, }; }\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "_",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
-        "fn bad(point: Point): int { return match point { case Point { x } if true => x; }; }\n",
+        "type Point { x: int, }\n"
+        "fn bad(point: Point): int { return match point { Point { x } if true => x, }; }\n",
         MMAY_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
-        "match point { case Point { x } if true => x; }",
+        "match point { Point { x } if true => x, }",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
-        "fn bad(point: Point): int { return match point { case Point(x) => x; }; }\n",
+        "type Point { x: int, }\n"
+        "fn bad(point: Point): int { return match point { Point(x) => x, }; }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Point(x)",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Point { x: int; }\n"
+        "type Point { x: int, }\n"
         "type Alias = int;\n"
-        "fn bad(point: Point): int { return match point { case Alias { x } => x; }; }\n",
+        "fn bad(point: Point): int { return match point { Alias { x } => x, }; }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Alias",
         1
@@ -1052,8 +1052,8 @@ void mmay_test_checker_record_match(void) {
         "record match is missing witness: Empty {}"
     );
     mmay_checker_expect_diagnostic_message(
-        "type Point { x: int; }\n"
-        "fn bad(point: Point): int { return match point { case Point { x } if true => x; }; }\n",
+        "type Point { x: int, }\n"
+        "fn bad(point: Point): int { return match point { Point { x } if true => x, }; }\n",
         "record match is missing witness: Point { x: _ }; guarded patterns do not count toward exhaustiveness"
     );
 }
@@ -1063,10 +1063,10 @@ void mmay_test_checker_public_type_visibility(void) {
         "public type PublicId = int;\n"
         "type PrivateId = int;\n"
         "public type PublicUser {\n"
-        "  public id: PublicId;\n"
-        "  internal: PrivateId;\n"
+        "  public id: PublicId,\n"
+        "  internal: PrivateId,\n"
         "}\n"
-        "type PrivateUser { public id: int; }\n"
+        "type PrivateUser { public id: int, }\n"
         "public const answer: PublicId = 42;\n"
         "const hidden: PrivateId = 1;\n"
         "public fn identity(value: PublicUser): PublicUser { return value; }\n"
@@ -1082,7 +1082,7 @@ void mmay_test_checker_public_type_visibility(void) {
         "public fn expose(): Hidden {}\n";
     static const char public_field_private[] =
         "type Hidden {}\n"
-        "public type Visible { public value: Hidden; internal: Hidden; }\n";
+        "public type Visible { public value: Hidden, internal: Hidden, }\n";
     static const char public_constant_private[] =
         "type Hidden = int;\n"
         "public const answer: Hidden = 1;\n";

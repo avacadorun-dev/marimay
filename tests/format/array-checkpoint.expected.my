@@ -1,5 +1,5 @@
 fn arrays(): void {
   let values = arrayOf(1, 2);
-  values.push(3);
+  const _ = values.push(3);
   values[0] += 2;
 }

@@ -6,6 +6,7 @@
 #include "checker_match_binding_api.h"
 #include "checker_match_lower_api.h"
 #include "checker_match_witness_api.h"
+#include "checker_tuple_match_api.h"
 
 
 
@@ -715,6 +716,18 @@ cleanup:
             expected,
             scrutinee,
             MMAY_TYPE_STRING,
+            result
+        );
+    }
+    if (mmay_type_kind(
+            &function->checker->result->types,
+            scrutinee.type
+        ) == MMAY_TYPE_KIND_TUPLE) {
+        return mmay_checker_private_compile_tuple_match(
+            function,
+            node,
+            expected,
+            scrutinee,
             result
         );
     }

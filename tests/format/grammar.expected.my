@@ -3,13 +3,13 @@ import { Item as Renamed, other } from "pkg";
 type Id = i64;
 
 type Box<T> {
-  public mutable value: T;
+  public mutable value: T,
 }
 
 enum Maybe<T> {
   None,
   Some(T),
-  Named { value: T; },
+  Named { value: T, },
 }
 
 interface Reader<T> {
@@ -47,27 +47,27 @@ fn expressions(a: int, b: int, c: int): void {
   const closure = (error: Error): Result<int, Error> => service.handle(error);
   const spawned = spawn service.load(a);
   const matched = match a {
-    case 0 => b;
-    case _ if c > 0 => c;
+    0 => b,
+    _ if c > 0 => c,
   };
   const textMatched = match text {
-    case "ready" => 1;
-    case _ => 0;
+    "ready" => 1,
+    _ => 0,
   };
   const pointMatched = match point {
-    case Point { x, y } => x + y;
+    Point { x, y } => x + y,
   };
 }
 
-fn scope(break: int, continue: int, unsafe: int): int {
-  return break + continue + unsafe;
+fn ordinary(case: int, of: int, yield: int): int {
+  return case + of + yield;
 }
 
 fn nested(value: Option<[]Result<int, Error>>): Option<[]int> {
-  for const item of value {
+  for item in value {
     use(item);
   }
-  for let index = 0; index < 3; index += 1 {
+  for index in 0..3 {
     if index == 1 {
       continue;
     } else if false {

@@ -1,9 +1,9 @@
 @test
 fn nestedArrayIdentityAndMutationWork(): void {
   let rows: [][]int = [];
-  rows.push([3]);
+  const _ = rows.push([3]);
   const alias = rows;
-  alias[0].push(4);
+  const _ = alias[0].push(4);
   if rows[0].length() != 2 || rows[0][1] != 4 {
     panic("nested array identity changed");
   }

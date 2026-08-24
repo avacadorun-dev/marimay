@@ -30,7 +30,7 @@ These examples are executable specification fixtures once the parser exists. Unt
   boundary conversion.
 - `array_checkpoint.my` checks the D045 array surface, including construction,
   mutation, checked indexed compound assignment, and nonmutating
-  `for const item of array` traversal.
+  `for item in array` traversal.
 - `array_mutation.my` shows the D053 typed `pop`, `truncate`, `clear`, and
   `reserve` surface over scalar and nested managed arrays. Iteration mutation
   is rejected through the separate exact-G4005 acceptance corpus.

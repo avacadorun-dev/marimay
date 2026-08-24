@@ -1,1 +1,1 @@
-fn mutate(values:[]int):void{values.push(1);values.pop();values.truncate(0);values.clear();values.reserve(8);}
+fn mutate(values:[]int):void{const _ = values.push(1);values.pop();const _ = values.truncate(0);const _ = values.clear();const _ = values.reserve(8);}

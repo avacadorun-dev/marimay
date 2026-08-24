@@ -4,10 +4,6 @@
 #include "checker_internal.h"
 #include "checker_match_types.h"
 
- bool mmay_checker_private_compile_yield(
-    MarimayFunctionChecker *function,
-    const MarimayAstNode *statement
-);
  bool mmay_checker_private_compile_match_arm_body(
     MarimayFunctionChecker *function,
     const MarimayAstNode *body,

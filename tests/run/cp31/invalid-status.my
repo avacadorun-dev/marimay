@@ -1,7 +1,7 @@
 import { println } from "std/io";
 
 fn cleanup(): void {
-  println("cleanup");
+  const _ = println("cleanup");
 }
 
 fn main(): int {

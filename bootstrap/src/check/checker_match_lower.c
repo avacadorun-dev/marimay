@@ -5,161 +5,32 @@
 #include "checker_match_analysis_api.h"
 #include "checker_match_binding_api.h"
 #include "checker_match_witness_api.h"
+#include "checker_statement_api.h"
 
-
-
-
-
-
- bool mmay_checker_private_compile_yield(
+static bool mmay_checker_private_finish_match_value(
     MarimayFunctionChecker *function,
-    const MarimayAstNode *statement
+    const MarimayAstNode *expression,
+    MarimayMirBlockId *join,
+    MarimayTypeId *match_type,
+    MarimayMirRegister *target,
+    bool terminate
 ) {
-    const MarimaySyntaxToken *keyword = mmay_checker_private_check_first_token(statement);
-    const MarimayAstNode *expression = mmay_checker_private_check_child_node(
-        statement,
-        MMAY_SYNTAX_EXPRESSION,
-        0
-    );
-    MarimayMatchYieldContext *context = function->match_yield;
     MarimayExpressionValue value;
-    if (keyword == NULL || keyword->kind != MMAY_TOKEN_KW_YIELD
-        || expression == NULL) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
-        return false;
-    }
-    if (context == NULL) {
-        (void)mmay_checker_add_diagnostic(
-            function->checker,
-            MMAY_DIAGNOSTIC_YIELD_OUTSIDE_MATCH_ARM,
-            "yield is only valid inside a block match arm",
-            keyword->start,
-            keyword->end
-        );
-        return false;
-    }
-    if (context->match_type == NULL || context->target == NULL
-        || context->join == NULL) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
-        return false;
-    }
     memset(&value, 0, sizeof(value));
-    if (!mmay_compile_expression(
-            function,
-            expression,
-            *context->match_type,
-            &value
-        )) {
+    if (!mmay_compile_expression(function, expression, *match_type, &value)) {
         return false;
     }
     if (mmay_expression_is_never(function, &value)) {
         return true;
     }
     if (value.type == MMAY_TYPE_VOID) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
-        return false;
-    }
-    if (*context->match_type == MMAY_TYPE_INVALID) {
-        *context->match_type = value.type;
-    }
-    if (value.type != *context->match_type) {
         (void)mmay_checker_add_diagnostic(
             function->checker,
             MMAY_DIAGNOSTIC_TYPE_MISMATCH,
-            "yielded match value type differs from the other arms",
+            "match arm value cannot have type void",
             expression->start,
             expression->end
         );
-        return false;
-    }
-    if (*context->join == MMAY_MIR_NO_BLOCK
-        && !mmay_checker_private_function_add_block(function, context->join)) {
-        return false;
-    }
-    if (*context->target == MMAY_MIR_NO_REGISTER
-        && !mmay_function_add_register(
-            function,
-            *context->match_type,
-            context->target
-        )) {
-        return false;
-    }
-    if (*context->target == MMAY_MIR_NO_REGISTER
-        || !mmay_checker_private_function_emit_copy(
-            function,
-            *context->target,
-            value.register_id,
-            expression->start,
-            expression->end
-        ) || !mmay_checker_private_function_set_goto(
-            function,
-            function->block,
-            *context->join,
-            statement->start,
-            statement->end
-        )) {
-        return false;
-    }
-    context->yielded = true;
-    function->terminated = true;
-    return true;
-}
-
- bool mmay_checker_private_compile_match_arm_body(
-    MarimayFunctionChecker *function,
-    const MarimayAstNode *body,
-    bool body_is_block,
-    MarimayMirBlockId *join,
-    MarimayTypeId *match_type,
-    MarimayMirRegister *target
-) {
-    MarimayExpressionValue value;
-    MarimayMatchYieldContext context;
-    MarimayMatchYieldContext *previous_context = NULL;
-    bool compiled = false;
-    if (body == NULL || join == NULL || match_type == NULL
-        || target == NULL) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
-        return false;
-    }
-    if (body_is_block) {
-        memset(&context, 0, sizeof(context));
-        context.join = join;
-        context.match_type = match_type;
-        context.target = target;
-        previous_context = function->match_yield;
-        function->match_yield = &context;
-        compiled = mmay_checker_private_compile_block(function, body);
-        function->match_yield = previous_context;
-        if (!compiled) {
-            return false;
-        }
-        if (!function->terminated) {
-            (void)mmay_checker_add_diagnostic(
-                function->checker,
-                MMAY_DIAGNOSTIC_MISSING_MATCH_YIELD,
-                "reachable block match arm path does not yield a value",
-                body->start,
-                body->end
-            );
-            return false;
-        }
-        return true;
-    }
-    memset(&value, 0, sizeof(value));
-    if (!mmay_compile_expression(
-            function,
-            body,
-            *match_type,
-            &value
-        )) {
-        return false;
-    }
-    if (mmay_expression_is_never(function, &value)) {
-        return true;
-    }
-    if (value.type == MMAY_TYPE_VOID) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
         return false;
     }
     if (*match_type == MMAY_TYPE_INVALID) {
@@ -170,8 +41,8 @@
             function->checker,
             MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "match arm result type differs from the other arms",
-            body->start,
-            body->end
+            expression->start,
+            expression->end
         );
         return false;
     }
@@ -183,20 +54,96 @@
         && !mmay_function_add_register(function, *match_type, target)) {
         return false;
     }
-    return *target != MMAY_MIR_NO_REGISTER
-        && mmay_checker_private_function_emit_copy(
-            function,
-            *target,
-            value.register_id,
-            body->start,
-            body->end
-        ) && mmay_checker_private_function_set_goto(
-            function,
-            function->block,
-            *join,
-            body->end,
-            body->end
-        );
+    if (*target == MMAY_MIR_NO_REGISTER
+        || !mmay_checker_private_function_emit_copy(
+            function, *target, value.register_id,
+            expression->start, expression->end
+        ) || !mmay_checker_private_function_set_goto(
+            function, function->block, *join,
+            expression->end, expression->end
+        )) {
+        return false;
+    }
+    if (terminate) {
+        function->terminated = true;
+    }
+    return true;
+}
+
+ bool mmay_checker_private_compile_match_arm_body(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *body,
+    bool body_is_block,
+    MarimayMirBlockId *join,
+    MarimayTypeId *match_type,
+    MarimayMirRegister *target
+) {
+    size_t index = 0;
+    bool saw_tail = false;
+    if (body == NULL || join == NULL || match_type == NULL
+        || target == NULL) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
+        return false;
+    }
+    if (body_is_block) {
+        for (index = 0; index < body->child_count; index += 1) {
+            const MarimayAstElement *element = mmay_ast_child(body, index);
+            const MarimayAstNode *expression = NULL;
+            if (element == NULL) {
+                mmay_checker_fail(
+                    function->checker, MMAY_CHECK_INVALID_ARGUMENT
+                );
+                return false;
+            }
+            if (element->kind == MMAY_AST_ELEMENT_TOKEN) {
+                if (element->as.token.synthetic
+                    || (element->as.token.kind != MMAY_TOKEN_LEFT_BRACE
+                        && element->as.token.kind != MMAY_TOKEN_RIGHT_BRACE)) {
+                    mmay_checker_fail(
+                        function->checker, MMAY_CHECK_INVALID_ARGUMENT
+                    );
+                    return false;
+                }
+                continue;
+            }
+            if (function->terminated) {
+                mmay_checker_fail(
+                    function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE
+                );
+                return false;
+            }
+            if (element->as.node->kind == MMAY_SYNTAX_MATCH_ARM_TAIL) {
+                expression = mmay_checker_private_check_child_node(
+                    element->as.node, MMAY_SYNTAX_EXPRESSION, 0
+                );
+                if (expression == NULL
+                    || !mmay_checker_private_finish_match_value(
+                        function, expression, join, match_type, target, true
+                    )) {
+                    return false;
+                }
+                saw_tail = true;
+            } else if (!mmay_checker_private_compile_statement(
+                    function, element->as.node
+                )) {
+                return false;
+            }
+        }
+        if (!saw_tail && !function->terminated) {
+            (void)mmay_checker_add_diagnostic(
+                function->checker,
+                MMAY_DIAGNOSTIC_MISSING_MATCH_VALUE,
+                "reachable block match arm does not end with a value",
+                body->start,
+                body->end
+            );
+            return false;
+        }
+        return true;
+    }
+    return mmay_checker_private_finish_match_value(
+        function, body, join, match_type, target, false
+    );
 }
 
  bool mmay_checker_private_compile_match_guard(

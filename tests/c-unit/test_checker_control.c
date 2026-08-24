@@ -105,7 +105,7 @@ void mmay_test_checker_control_flow(void) {
         "}\n"
         "fn cFor(limit: int): int {\n"
         "  let total: int = 0;\n"
-        "  for let index = 0; index < limit; index += 1 {\n"
+        "  for index in 0..limit {\n"
         "    if index == 2 { continue; }\n"
         "    total += index;\n"
         "    if total >= 10 { break; }\n"
@@ -115,8 +115,10 @@ void mmay_test_checker_control_flow(void) {
         "fn logicalLoops(ready: bool): int {\n"
         "  let total: int = 0;\n"
         "  while total < 2 && ready { total += 1; }\n"
-        "  for let keep = ready && true; keep && total < 3; keep = false || false {\n"
+        "  let keep = ready && true;\n"
+        "  while keep && total < 3 {\n"
         "    total += 1;\n"
+        "    keep = false || false;\n"
         "  }\n"
         "  return total;\n"
         "}\n";
@@ -328,7 +330,7 @@ void mmay_test_checker_control_flow_diagnostics(void) {
     static const char outside_continue[] =
         "fn bad(): void { continue; }\n";
     static const char for_scope[] =
-        "fn bad(): int { for let index = 0; index < 1; index += 1 {} return index; }\n";
+        "fn bad(): int { for index in 0..1 {} return index; }\n";
     mmay_checker_expect_one_diagnostic(
         condition,
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
@@ -369,6 +371,6 @@ void mmay_test_checker_control_flow_diagnostics(void) {
         for_scope,
         MMAY_DIAGNOSTIC_UNKNOWN_NAME,
         "index",
-        3
+        1
     );
 }

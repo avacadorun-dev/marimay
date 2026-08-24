@@ -505,6 +505,14 @@ static bool mmay_checker_private_compile_nested_pattern_cps(
         return false;
     }
     if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
+        bool has_binding = false;
+        if (!mmay_checker_private_match_remainder_name(
+                function, pattern, &has_binding, &name
+            ) || (has_binding && !mmay_checker_private_assign_match_local(
+                function, name, type, source, pattern->start, pattern->end
+            ))) {
+            return false;
+        }
         return mmay_checker_private_function_set_goto(
             function, function->block, success, pattern->end, pattern->end
         );
@@ -624,7 +632,12 @@ static bool mmay_checker_compile_nested_record_pattern(
         return false;
     }
     if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
-        return true;
+        bool has_binding = false;
+        return mmay_checker_private_match_remainder_name(
+                function, pattern, &has_binding, &name
+            ) && (!has_binding || mmay_checker_private_assign_match_local(
+                function, name, type, source, pattern->start, pattern->end
+            ));
     }
     if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
         return mmay_checker_private_enum_match_name(function, pattern, &name)
@@ -734,7 +747,15 @@ static bool mmay_checker_compile_nested_record_pattern(
     MarimayExpressionValue projected;
     MarimayCheckName name = shorthand;
     if (binding != NULL && binding->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
-        return true;
+        bool has_binding = false;
+        if (!mmay_checker_private_match_remainder_name(
+                function, binding, &has_binding, &name
+            )) {
+            return false;
+        }
+        if (!has_binding) {
+            return true;
+        }
     }
     if (payload == NULL) {
         mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
@@ -987,7 +1008,16 @@ static bool mmay_checker_compile_nested_record_pattern(
         field_name.end = field_token->end;
         binding = mmay_checker_private_check_child_node_any(field, 0);
         if (binding != NULL && binding->kind == MMAY_SYNTAX_WILDCARD_PATTERN) {
-            continue;
+            bool has_binding = false;
+            MarimayCheckName remainder_name;
+            if (!mmay_checker_private_match_remainder_name(
+                    function, binding, &has_binding, &remainder_name
+                )) {
+                return false;
+            }
+            if (!has_binding) {
+                continue;
+            }
         }
         field_declaration = mmay_checker_private_checker_find_record_field(
             function->checker,

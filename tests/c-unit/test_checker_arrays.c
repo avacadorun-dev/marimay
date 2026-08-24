@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "mmay/ast/ast.h"
@@ -250,6 +251,24 @@ static void mmay_checker_arrays_expect_status(
     if (expected == MMAY_CHECK_OK) {
         MMAY_EXPECT(checked.initialized);
         if (checked.initialized) {
+            if (checked.diagnostics.length != 0) {
+                size_t diagnostic_index = 0;
+                fprintf(stderr, "unexpected array fixture diagnostics for:\n%s\n", source);
+                for (diagnostic_index = 0;
+                    diagnostic_index < checked.diagnostics.length;
+                    diagnostic_index += 1) {
+                    const MarimayCheckDiagnostic *diagnostic =
+                        mmay_check_diagnostic(&checked, diagnostic_index);
+                    if (diagnostic != NULL) {
+                        fprintf(
+                            stderr,
+                            "%s: %s\n",
+                            diagnostic->code,
+                            diagnostic->message
+                        );
+                    }
+                }
+            }
             MMAY_EXPECT(checked.diagnostics.length == 0);
             mmay_check_result_dispose(&checked);
         }
@@ -273,9 +292,9 @@ static void mmay_test_checker_arrays_surface_and_matrix(void) {
         "  let left = [[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]];\n"
         "  let right = [[7.0, 8.0], [9.0, 10.0], [11.0, 12.0]];\n"
         "  let result = [[0.0, 0.0], [0.0, 0.0]];\n"
-        "  for let row = 0; row < 2; row += 1 {\n"
-        "    for let column = 0; column < 2; column += 1 {\n"
-        "      for let inner = 0; inner < 3; inner += 1 {\n"
+        "  for row in 0..2 {\n"
+        "    for column in 0..2 {\n"
+        "      for inner in 0..3 {\n"
         "        result[row][column] += left[row][inner] * right[inner][column];\n"
         "      }\n"
         "    }\n"
@@ -287,15 +306,15 @@ static void mmay_test_checker_arrays_surface_and_matrix(void) {
         "  let pushed: Result<void, ArrayGrowthError> = values.push(3);\n"
         "  values[1] += 4;\n"
         "  let empty = arrayOf<int>();\n"
-        "  empty.push(9);\n"
+        "  const _ = empty.push(9);\n"
         "  let nested: [][]int = [[7, 8]];\n"
-        "  nested[0].push(9);\n"
+        "  const _ = nested[0].push(9);\n"
         "  return values[2] + values.length() + empty[0] + nested[0][2];\n"
         "}\n"
         "fn sorting(): int {\n"
         "  let values: []int = [3, 1, 2];\n"
-        "  for let pass = 0; pass < 3; pass += 1 {\n"
-        "    for let index = 0; index < 2; index += 1 {\n"
+        "  for pass in 0..3 {\n"
+        "    for index in 0..2 {\n"
         "      if values[index] > values[index + 1] {\n"
         "        let temporary = values[index];\n"
         "        values[index] = values[index + 1];\n"
@@ -310,9 +329,11 @@ static void mmay_test_checker_arrays_surface_and_matrix(void) {
         "fn provenLoop(): int {\n"
         "  let values: []int = [1, 2, 3];\n"
         "  let total = 0;\n"
-        "  for let outer = 0; outer < values.length(); outer += 1 {\n"
-        "    for let index = 0; index < values.length(); index += 2 {\n"
+        "  for outer in 0..values.length() {\n"
+        "    let index = 0;\n"
+        "    while index < values.length() {\n"
         "      total += values[index];\n"
+        "      index += 2;\n"
         "    }\n"
         "  }\n"
         "  return total;\n"
@@ -681,11 +702,11 @@ static void mmay_test_checker_arrays_d045_and_diagnostics(void) {
         MMAY_CHECK_OK
     );
     mmay_checker_arrays_expect_status(
-        "fn deferred(): void { let values = [1]; push(values, 2); }\n",
+        "fn deferred(): void { let values = [1]; const _ = push(values, 2); }\n",
         MMAY_CHECK_OK
     );
     mmay_checker_arrays_expect_status(
-        "fn deferred(): void { let values = [1]; values.push(2); }\n",
+        "fn deferred(): void { let values = [1]; const _ = values.push(2); }\n",
         MMAY_CHECK_OK
     );
 }
@@ -725,7 +746,7 @@ static void mmay_test_checker_arrays_for_of(void) {
     static const char source[] =
         "fn iterate(): int {\n"
         "  let total = 0;\n"
-        "  for const value of [1, 2, 3, 4] {\n"
+        "  for value in [1, 2, 3, 4] {\n"
         "    if value == 2 { continue; }\n"
         "    total += value;\n"
         "    if value == 3 { break; }\n"
@@ -805,9 +826,9 @@ static void mmay_test_checker_arrays_allocation_failures(void) {
         "fn arrays(): int {\n"
         "  let values = arrayOf(1, 2);\n"
         "  let empty = arrayOf<int>();\n"
-        "  values.push(3);\n"
+        "  const _ = values.push(3);\n"
         "  values[0] += 2;\n"
-        "  empty.push(4);\n"
+        "  const _ = empty.push(4);\n"
         "  return values[0] + empty[0];\n"
         "}\n";
     MarimayCheckerArraysFixture fixture;

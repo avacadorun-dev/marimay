@@ -3,7 +3,7 @@
 #include "mmay/bytecode/mir_lower.h"
 
 static const char mmay_determinism_types[] =
-    "public type User { public value: int; }\n"
+    "public type User { public value: int, }\n"
     "public enum Level { Basic, Advanced(int), }\n";
 
 static const char mmay_determinism_functions[] =
@@ -16,8 +16,8 @@ static const char mmay_determinism_functions[] =
     "public fn score(user: User): int { return user.value; }\n"
     "public fn score(level: Level): int {\n"
     "  return match level {\n"
-    "    case Basic => 0;\n"
-    "    case Advanced(value) => value;\n"
+    "    Basic => 0,\n"
+    "    Advanced(value) => value,\n"
     "  };\n"
     "}\n";
 

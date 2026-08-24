@@ -23,7 +23,7 @@ static const MarimayCheckedFunction *mmay_test_native_view_function(
 
 void mmay_test_native_c_emitter_managed_views(void) {
     static const char source[] =
-        "type Bag { mutable values: []int; }\n"
+        "type Bag { mutable values: []int, }\n"
         "fn first(bag: Bag): int { return bag.values[0]; }\n"
         "fn replace(bag: Bag): void { bag.values = [9]; }\n"
         "fn afterReplace(bag: Bag): int {\n"

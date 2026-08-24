@@ -27,7 +27,7 @@ void mmay_test_checker_numeric_policy(void) {
         "fn ssl(value: i8): i8 { return saturatingShiftLeft(value, 1); }\n"
         "fn ssr(value: i8): i8 { return saturatingShiftRight(value, 1); }\n"
         "fn widened(value: u8): u16 { return value as u16; }\n"
-        "fn narrowed(value: u16): Option<u8> { return value as u8; }\n";
+        "fn narrowed(value: u16): Option<u8> { return tryConvert<u8>(value); }\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     size_t index = 0;

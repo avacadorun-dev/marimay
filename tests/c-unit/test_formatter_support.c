@@ -280,6 +280,11 @@ static bool mmay_formatter_ast_equal_internal(
             || left->kind == MMAY_SYNTAX_PARAMETERS
             || left->kind == MMAY_SYNTAX_IMPORT_CLAUSE
             || left->kind == MMAY_SYNTAX_ARRAY_EXPRESSION
+            || left->kind == MMAY_SYNTAX_ENUM_DECL
+            || left->kind == MMAY_SYNTAX_ENUM_VARIANT
+            || left->kind == MMAY_SYNTAX_MATCH_EXPRESSION
+            || left->kind == MMAY_SYNTAX_NAMED_PAYLOAD
+            || left->kind == MMAY_SYNTAX_RECORD_DECL
             || left->kind == MMAY_SYNTAX_RECORD_EXPRESSION
             || left->kind == MMAY_SYNTAX_RECORD_FIELDS
             || left->kind == MMAY_SYNTAX_PAREN_GROUP

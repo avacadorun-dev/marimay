@@ -5,7 +5,7 @@ fn output(): void {
   expect.output(
     "line\n",
     (): void => {
-      println("line");
+      const _ = println("line");
     },
   );
 }

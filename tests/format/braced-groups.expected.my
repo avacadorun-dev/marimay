@@ -5,10 +5,10 @@ import {
 } from "third-party/long";
 
 enum Message {
-  Compact { value: int; },
+  Compact { value: int, },
   Expanded {
-    firstFieldWithAnExtraordinarilyLongName: string;
-    secondFieldWithAnExtraordinarilyLongName: string;
+    firstFieldWithAnExtraordinarilyLongName: string,
+    secondFieldWithAnExtraordinarilyLongName: string,
   },
 }
 
@@ -21,10 +21,10 @@ fn inspect(message: Message): void {
     thirdFieldWithAnExtraordinarilyLongName: 3,
   };
   const selected = match message {
-    case Compact { value } => value;
-    case Expanded {
+    Compact { value } => value,
+    Expanded {
       firstFieldWithAnExtraordinarilyLongName,
       secondFieldWithAnExtraordinarilyLongName,
-    } => firstFieldWithAnExtraordinarilyLongName;
+    } => firstFieldWithAnExtraordinarilyLongName,
   };
 }

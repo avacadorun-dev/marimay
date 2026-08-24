@@ -37,10 +37,6 @@
     MarimayFunctionChecker *function,
     const MarimayAstNode *node
 );
- bool mmay_checker_private_compile_c_for(
-    MarimayFunctionChecker *function,
-    const MarimayAstNode *node
-);
  bool mmay_checker_private_compile_array_for(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node

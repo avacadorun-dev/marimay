@@ -1,10 +1,10 @@
 type Counter {
-  mutable value: int;
+  mutable value: int,
 }
 
 type Pair {
-  first: int;
-  second: int;
+  first: int,
+  second: int,
 }
 
 enum Inner {
@@ -18,7 +18,7 @@ enum Envelope {
 }
 
 enum Ordered {
-  Pair { first: int; second: int; },
+  Pair { first: int, second: int, },
 }
 
 interface Show {
@@ -34,12 +34,12 @@ fn demonstrate(counter: Counter, value: Envelope): int {
   const pair = Pair { second: next(counter), first: next(counter) };
   const ordered = Ordered.Pair { second: next(counter), first: next(counter) };
   const selected = match value {
-    case Value(Some(item)) if item > 0 => item;
-    case Value(_) => 0;
-    case Empty => 0;
+    Value(Some(item)) if item > 0 => item,
+    Value(_) => 0,
+    Empty => 0,
   };
   const enumSelected = match ordered {
-    case Pair { first, second } => first + second;
+    Pair { first, second } => first + second,
   };
   return selected + pair.first + pair.second + enumSelected;
 }

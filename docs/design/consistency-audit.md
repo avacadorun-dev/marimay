@@ -155,7 +155,8 @@ Each is an implementation detail only within the constraints already stated. For
 These are product questions, not blockers for the initial vertical slice:
 
 - Does managed reference identity for every `type` feel simpler than adding an explicit value-record form?
-- Is `case Pattern => expression` plus `yield` for multiline match arms the clearest surface after user testing?
+- Do D067's comma-delimited bare arms and block-tail values remain clear in
+  larger nested matches after user testing?
 - Are mutable fields explicit enough, or should mutation be restricted further to functions in the owning package?
 - Does exact error mapping remain readable in larger domain boundaries?
 - Does `scope { spawn ...; task.wait(); }` remain clearer than group APIs under timeouts/races?

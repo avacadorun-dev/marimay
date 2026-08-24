@@ -2,22 +2,22 @@
 
 void mmay_test_checker_nested_patterns(void) {
     static const char source[] =
-        "type Leaf { value: int; }\n"
-        "type Wrap { leaf: Leaf; }\n"
+        "type Leaf { value: int, }\n"
+        "type Wrap { leaf: Leaf, }\n"
         "enum Inner { Some(int), None, }\n"
         "enum Outer { Box(Inner), Empty, }\n"
         "fn nested(value: Wrap): int {\n"
-        "  return match value { case Wrap { leaf: Leaf { value } } => value; };\n"
+        "  return match value { Wrap { leaf: Leaf { value } } => value, };\n"
         "}\n";
     static const char enum_source[] =
         "enum Inner { Some(int), None, }\n"
         "enum Outer { Box(Inner), Empty, }\n"
         "fn nested(value: Outer): int {\n"
         "  return match value {\n"
-        "    case Box(Some(item)) if item > 0 => item;\n"
-        "    case Box(Some(_)) => 0;\n"
-        "    case Box(_) => 0;\n"
-        "    case Empty => 0;\n"
+        "    Box(Some(item)) if item > 0 => item,\n"
+        "    Box(Some(_)) => 0,\n"
+        "    Box(_) => 0,\n"
+        "    Empty => 0,\n"
         "  };\n"
         "}\n";
     MarimayCheckerFixture fixture;

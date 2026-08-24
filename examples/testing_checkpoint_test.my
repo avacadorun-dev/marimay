@@ -1,11 +1,11 @@
 import { println } from "std/io";
 
 type Counter {
-  mutable value: int;
+  mutable value: int,
 }
 
 fn cleanup(): void {
-  println("cleanup");
+  const _ = println("cleanup");
 }
 
 @test
@@ -24,7 +24,7 @@ fn exactOutputIncludesCleanup(): void {
     "body\ncleanup\n",
     (): void => {
       defer cleanup();
-      println("body");
+      const _ = println("body");
     },
   );
 }

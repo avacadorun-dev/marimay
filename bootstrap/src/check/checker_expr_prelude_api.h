@@ -10,5 +10,12 @@ bool mmay_checker_private_compile_prelude_constructor(
     bool *resolved,
     MarimayExpressionValue *result
 );
+bool mmay_checker_private_compile_prelude_unit_value(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    bool *resolved,
+    MarimayExpressionValue *result
+);
 
 #endif

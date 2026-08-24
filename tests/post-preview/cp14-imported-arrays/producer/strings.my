@@ -3,6 +3,6 @@ public fn makeNames(): []string {
 }
 
 public fn extendNames(names: []string): []string {
-  names.push("linus");
+  const _ = names.push("linus");
   return names;
 }

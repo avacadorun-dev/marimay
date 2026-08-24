@@ -3,7 +3,7 @@ import { println } from "std/io";
 @test
 fn exactMismatch(): void {
   expect.output("expected\n", (): void => {
-    println("actual");
+    const _ = println("actual");
   });
 }
 

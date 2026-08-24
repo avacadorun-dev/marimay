@@ -14,14 +14,14 @@
 #include "mmay/native/c_emitter.h"
 
 static const char mmay_receiver_names_source[] =
-    "type Counter { mutable value: int; }\n"
-    "type Stack { values: []int; mutable size: int; }\n"
-    "type Queue { values: []int; mutable size: int; }\n"
+    "type Counter { mutable value: int, }\n"
+    "type Stack { values: []int, mutable size: int, }\n"
+    "type Queue { values: []int, mutable size: int, }\n"
     "fn push(stack: Stack, value: int): void {\n"
-    "  stack.values.push(value); stack.size += 1;\n"
+    "  const _ = stack.values.push(value); stack.size += 1;\n"
     "}\n"
     "fn push(queue: Queue, value: int): void {\n"
-    "  push(queue.values, value); queue.size += 1;\n"
+    "  const _ = push(queue.values, value); queue.size += 1;\n"
     "}\n"
     "fn pop(stack: Stack): int {\n"
     "  stack.size -= 1; return stack.values[stack.size];\n"
@@ -36,13 +36,13 @@ static const char mmay_receiver_names_source[] =
     "  const counter = Counter { value: 0 };\n"
     "  makeStack(counter).push(5);\n"
     "  const stack = Stack { values: [], size: 0 };\n"
-    "  stack.push(7); push(stack, 9);\n"
+    "  const _ = stack.push(7); push(stack, 9);\n"
     "  const queue = Queue { values: [], size: 0 };\n"
     "  push(queue, 3);\n"
-    "  const raw = [1]; push(raw, 11); raw.push(13);\n"
+    "  const raw = [1]; const _ = push(raw, 11); const _ = raw.push(13);\n"
     "  const score = stack.length() + length(stack) + queue.length()\n"
     "    + raw.length() + length(raw);\n"
-    "  const taken = stack.pop(); stack.clear();\n"
+    "  const taken = stack.pop(); const _ = stack.clear();\n"
     "  return counter.value * 10000 + score * 100 + taken * 10\n"
     "    + stack.length();\n"
     "}\n";
@@ -232,7 +232,7 @@ static void mmay_test_receiver_names_diagnostics(void) {
         "type Stack {}\n"
         "type Queue {}\n"
         "fn push(value: Stack, item: int): void {}\n"
-        "fn probe(value: Queue): void { value.push(1); }\n";
+        "fn probe(value: Queue): void { const _ = value.push(1); }\n";
     static const char ambiguous[] =
         "type Stack {}\n"
         "type Queue {}\n"
@@ -299,7 +299,7 @@ static void mmay_test_receiver_names_import_diagnostics(void) {
         {
             "app/root", "root/private.my",
             "import { Stack } from \"acme/store\";\n"
-            "fn probe(value: Stack): void { value.push(1); }\n"
+            "fn probe(value: Stack): void { const _ = value.push(1); }\n"
         }
     };
     static const MarimayTestImportSource wrong[] = {
@@ -312,7 +312,7 @@ static void mmay_test_receiver_names_import_diagnostics(void) {
         {
             "app/root", "root/wrong.my",
             "import { Queue } from \"acme/store\";\n"
-            "fn probe(value: Queue): void { value.push(1); }\n"
+            "fn probe(value: Queue): void { const _ = value.push(1); }\n"
         }
     };
     mmay_receiver_expect_import_diagnostic(

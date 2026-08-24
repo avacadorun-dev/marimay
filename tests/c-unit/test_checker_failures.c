@@ -23,7 +23,7 @@ void mmay_test_checker_unsupported_is_explicit(void) {
 
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
-        "fn iterate(items: int): void { for const item of items {} }\n"
+        "fn iterate(items: int): void { for item in items {} }\n"
     ));
     MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
@@ -78,7 +78,7 @@ void mmay_test_checker_limits_are_failure_atomic(void) {
 
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
-        "type Pair { value: int; }\n"
+        "type Pair { value: int, }\n"
         "fn same(left: Pair, right: Pair): bool {\n"
         "  return identity.same(left, right);\n"
         "}\n"
@@ -97,8 +97,8 @@ void mmay_test_checker_limits_are_failure_atomic(void) {
 
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
-        "type Pair { first: int; second: int; }\n"
-        "type Other { value: int; }\n"
+        "type Pair { first: int, second: int, }\n"
+        "type Other { value: int, }\n"
         "fn build(): int {\n"
         "  const pair = Pair { second: 2, first: 1 };\n"
         "  const other = Other { value: 3 };\n"
@@ -149,9 +149,9 @@ void mmay_test_checker_limits_are_failure_atomic(void) {
 
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
-        "type Pair { first: int; second: int; }\n"
+        "type Pair { first: int, second: int, }\n"
         "fn project(pair: Pair): int {\n"
-        "  return match pair { case Pair { first, second } => first + second; };\n"
+        "  return match pair { Pair { first, second } => first + second, };\n"
         "}\n"
     ));
     options = mmay_check_default_options();
@@ -188,7 +188,7 @@ void mmay_test_checker_limits_are_failure_atomic(void) {
 
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
-        "enum First { Unit, Pair(int, int), Named { x: int; y: int; }, }\n"
+        "enum First { Unit, Pair(int, int), Named { x: int, y: int, }, }\n"
         "enum Second { Unit, }\n"
         "fn build(value: int): Second {\n"
         "  const unit = First.Unit;\n"
@@ -253,9 +253,9 @@ void mmay_test_checker_limits_are_failure_atomic(void) {
         "enum Choice { A, B(int, int), C, }\n"
         "fn choose(value: Choice): int {\n"
         "  return match value {\n"
-        "    case A => 0;\n"
-        "    case B(left, right) => left + right;\n"
-        "    case C => 3;\n"
+        "    A => 0,\n"
+        "    B(left, right) => left + right,\n"
+        "    C => 3,\n"
         "  };\n"
         "}\n"
     ));
@@ -285,8 +285,8 @@ void mmay_test_checker_limits_are_failure_atomic(void) {
         &fixture,
         "fn limited(value: bool): int {\n"
         "  return match value {\n"
-        "    case true => panic(\"a\");\n"
-        "    case false => panic(\"b\");\n"
+        "    true => panic(\"a\"),\n"
+        "    false => panic(\"b\"),\n"
         "  };\n"
         "}\n"
     ));
@@ -305,7 +305,7 @@ void mmay_test_checker_limits_are_failure_atomic(void) {
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
         "fn limited(value: string): int {\n"
-        "  return match value { case \"a\" => 1; case \"b\" => 2; case _ => 0; };\n"
+        "  return match value { \"a\" => 1, \"b\" => 2, _ => 0, };\n"
         "}\n"
     ));
     options = mmay_check_default_options();
@@ -350,39 +350,40 @@ void mmay_test_checker_limits_are_failure_atomic(void) {
 void mmay_test_checker_allocation_failures(void) {
     static const char source[] =
         "type Count = int;\n"
-        "type Box { public count: Count; mutable next: Box; }\n"
-        "type Pair { left: Count; mutable right: Count; }\n"
+        "type Box { public count: Count, mutable next: Box, }\n"
+        "type Pair { left: Count, mutable right: Count, }\n"
         "enum Signal { Idle, Paused, Counted(Count), }\n"
         "const one: Count = 1;\n"
         "fn seed(ready: bool): Count {\n"
         "  if ready && one == 1 { return one; } else { return 2; }\n"
         "}\n"
         "fn truth(value: bool): Count {\n"
-        "  return match value { case true => 1; case false => 0; };\n"
+        "  return match value { true => 1, false => 0, };\n"
         "}\n"
         "fn number(value: Count): Count {\n"
-        "  return match value { case 0 => 0; case other => other; };\n"
+        "  return match value { 0 => 0, _ as other => other, };\n"
         "}\n"
         "fn text(value: string): Count {\n"
-        "  return match value { case \"ready\" | r\"done\" => 1; case _ => 0; };\n"
+        "  return match value { \"ready\" | r\"done\" => 1, _ => 0, };\n"
         "}\n"
         "fn allStop(value: bool): Count {\n"
         "  while match value {\n"
-        "    case true => { return 1; } case false => { return 0; }\n"
+        "    true => { return 1; }, false => { return 0; },\n"
         "  } {}\n"
         "}\n"
         "fn guardStop(value: Count, ready: bool): Count {\n"
         "  return match value {\n"
-        "    case 0 if match ready {\n"
-        "      case true => { return 1; } case false => { return 2; }\n"
-        "    } => 9;\n"
-        "    case _ => 0;\n"
+        "    0 if match ready {\n"
+        "      true => { return 1; }, false => { return 2; },\n"
+        "    } => 9,\n"
+        "    _ => 0,\n"
         "  };\n"
         "}\n"
         "fn stepStop(value: bool, ready: bool): Count {\n"
-        "  for let index = 0; ready; index = match value {\n"
-        "    case true => { return 1; } case false => { return 2; }\n"
-        "  } {}\n"
+        "  let index = 0;\n"
+        "  while ready { index = match value {\n"
+        "    true => { return 1; }, false => { return 2; },\n"
+        "  }; }\n"
         "  return 3;\n"
         "}\n"
         "fn panicStop(): Count { panic(\"allocation\"); }\n"
@@ -399,7 +400,7 @@ void mmay_test_checker_allocation_failures(void) {
         "  return item.right;\n"
         "}\n"
         "fn pairMatch(item: Pair): Count {\n"
-        "  return match item { case Pair { left, right } => left + right; };\n"
+        "  return match item { Pair { left, right } => left + right, };\n"
         "}\n"
         "fn pairSame(left: Pair, right: Pair): bool {\n"
         "  return identity.same(left, right);\n"
@@ -409,9 +410,9 @@ void mmay_test_checker_allocation_failures(void) {
         "}\n"
         "fn signalValue(signal: Signal): Count {\n"
         "  return match signal {\n"
-        "    case Idle | Paused => { return 0; }\n"
-        "    case Counted(value) if value > 0 => { yield value; }\n"
-        "    case Counted(_) => { yield 0; }\n"
+        "    Idle | Paused => { return 0; },\n"
+        "    Counted(value) if value > 0 => { value },\n"
+        "    Counted(_) => { 0 },\n"
         "  };\n"
         "}\n";
     MarimayCheckerFixture fixture;
@@ -462,10 +463,10 @@ void mmay_test_checker_package_allocation_failures(void) {
     static const char entry_source[] =
         "fn entry(value: Count): Count { return helper(value) + offset; }\n"
         "fn truth(value: bool): Count {\n"
-        "  return match value { case true => 1; case false => 0; };\n"
+        "  return match value { true => 1, false => 0, };\n"
         "}\n"
         "fn number(value: Count): Count {\n"
-        "  return match value { case 0 => 0; case other => other; };\n"
+        "  return match value { 0 => 0, _ as other => other, };\n"
         "}\n"
         "fn project(value: Count): Count {\n"
         "  const marker = Marker { count: value };\n"
@@ -476,14 +477,14 @@ void mmay_test_checker_package_allocation_failures(void) {
         "}\n"
         "fn statusValue(status: Status): Count {\n"
         "  return match status {\n"
-        "    case Ready | Paused => 0;\n"
-        "    case Counted(value) if value > 0 => value;\n"
-        "    case Counted(_) => 0;\n"
+        "    Ready | Paused => 0,\n"
+        "    Counted(value) if value > 0 => value,\n"
+        "    Counted(_) => 0,\n"
         "  };\n"
         "}\n";
     static const char helper_source[] =
         "type Count = int;\n"
-        "type Marker { public count: Count; }\n"
+        "type Marker { public count: Count, }\n"
         "enum Status { Ready, Paused, Counted(Count), }\n"
         "const offset: Count = 1;\n"
         "fn helper(value: Count): Count { return value; }\n";

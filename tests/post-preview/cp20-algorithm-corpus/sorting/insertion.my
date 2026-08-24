@@ -1,5 +1,5 @@
 public fn insertionSort(values: []int): void {
-  for let index = 1; index < values.length(); index += 1 {
+  for index in 1..values.length() {
     const current = values[index];
     let position = index;
     while position > 0 && values[position - 1] > current {

@@ -5,7 +5,7 @@ void mmay_test_checker_enum_match(void) {
         "enum Message {\n"
         "  Quit,\n"
         "  Write(int, int),\n"
-        "  Move { x: int; y: int; },\n"
+        "  Move { x: int, y: int, },\n"
         "}\n"
         "fn quit(): Message { return Message.Quit; }\n"
         "fn write(x: int, y: int): Message {\n"
@@ -16,46 +16,46 @@ void mmay_test_checker_enum_match(void) {
         "}\n"
         "fn describe(value: Message): int {\n"
         "  return match value {\n"
-        "    case Quit => 0;\n"
-        "    case Write(number, _) => number;\n"
-        "    case Move { x, y: vertical } => x + vertical;\n"
+        "    Quit => 0,\n"
+        "    Write(number, _) => number,\n"
+        "    Move { x, y: vertical } => x + vertical,\n"
         "  };\n"
         "}\n"
         "fn fallback(value: Message): int {\n"
         "  return match value {\n"
-        "    case Quit => 1;\n"
-        "    case other => 2;\n"
+        "    Quit => 1,\n"
+        "    _ as other => 2,\n"
         "  };\n"
         "}\n"
         "fn divideZero(): int { return 1 / 0; }\n"
         "fn overflow(): int { return 9223372036854775807 + 1; }\n"
         "fn lazy(value: Message): int {\n"
         "  return match value {\n"
-        "    case Quit => 1;\n"
-        "    case Write(_, _) => divideZero();\n"
-        "    case Move { x: _, y: _ } => overflow();\n"
+        "    Quit => 1,\n"
+        "    Write(_, _) => divideZero(),\n"
+        "    Move { x: _, y: _ } => overflow(),\n"
         "  };\n"
         "}\n"
         "fn guarded(value: Message): int {\n"
         "  return match value {\n"
-        "    case Write(number, _) if number > 0 => number;\n"
-        "    case Write(_, _) => 0;\n"
-        "    case Quit => -1;\n"
-        "    case Move { x, y } if x > y => x;\n"
-        "    case Move { x, y } => y;\n"
+        "    Write(number, _) if number > 0 => number,\n"
+        "    Write(_, _) => 0,\n"
+        "    Quit => -1,\n"
+        "    Move { x, y } if x > y => x,\n"
+        "    Move { x, y } => y,\n"
         "  };\n"
         "}\n"
         "fn guardedCatch(value: Message): int {\n"
         "  return match value {\n"
-        "    case other if false => 9;\n"
-        "    case _ => 4;\n"
+        "    _ as other if false => 9,\n"
+        "    _ => 4,\n"
         "  };\n"
         "}\n"
         "fn guardBomb(): bool { return 1 / 0 == 0; }\n"
         "fn guardOrder(value: Message): int {\n"
         "  return match value {\n"
-        "    case Write(_, _) if guardBomb() => 1;\n"
-        "    case _ => 2;\n"
+        "    Write(_, _) if guardBomb() => 1,\n"
+        "    _ => 2,\n"
         "  };\n"
         "}\n";
     MarimayCheckerFixture fixture;
@@ -331,16 +331,16 @@ void mmay_test_checker_enum_match(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, Write(int), }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Quit => 0; };\n"
+        "  return match value { Quit => 0, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
-        "match value { case Quit => 0; }",
+        "match value { Quit => 0, }",
         0
     );
     mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Quit => 0; case Quit => 1; };\n"
+        "  return match value { Quit => 0, Quit => 1, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Quit",
@@ -349,7 +349,7 @@ void mmay_test_checker_enum_match(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, Write(int), }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case _ => 0; case Quit => 1; };\n"
+        "  return match value { _ => 0, Quit => 1, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Quit",
@@ -358,7 +358,7 @@ void mmay_test_checker_enum_match(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Message { Write(int), }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Write => 0; };\n"
+        "  return match value { Write => 0, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Write",
@@ -367,16 +367,25 @@ void mmay_test_checker_enum_match(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Message { Write(int), }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Missing(x) => x; };\n"
+        "  return match value { Missing(x) => x, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_UNKNOWN_VARIANT,
         "Missing",
         0
     );
     mmay_checker_expect_one_diagnostic(
+        "enum Message { Quit, }\n"
+        "fn bad(value: Message): int {\n"
+        "  return match value { Misspelled => 0, };\n"
+        "}\n",
+        MMAY_DIAGNOSTIC_UNKNOWN_VARIANT,
+        "Misspelled",
+        0
+    );
+    mmay_checker_expect_one_diagnostic(
         "enum Message { Write(int, int), }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Write(x) => x; };\n"
+        "  return match value { Write(x) => x, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "(x)",
@@ -385,7 +394,7 @@ void mmay_test_checker_enum_match(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Message { Write(int, int), }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Write(x, x) => x; };\n"
+        "  return match value { Write(x, x) => x, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_DUPLICATE_NAME,
         "x",
@@ -394,34 +403,34 @@ void mmay_test_checker_enum_match(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, Write(int), }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Quit => 0; case Write(x) => true; };\n"
+        "  return match value { Quit => 0, Write(x) => true, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "true",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "enum Message { Move { x: int; y: int; }, }\n"
+        "enum Message { Move { x: int, y: int, }, }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Move { z } => 0; };\n"
+        "  return match value { Move { z } => 0, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_UNKNOWN_FIELD,
         "z",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "enum Message { Move { x: int; y: int; }, }\n"
+        "enum Message { Move { x: int, y: int, }, }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Move { x, x } => 0; };\n"
+        "  return match value { Move { x, x } => 0, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_DUPLICATE_FIELD,
         "x",
         2
     );
     mmay_checker_expect_one_diagnostic(
-        "enum Message { Move { x: int; y: int; }, }\n"
+        "enum Message { Move { x: int, y: int, }, }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Move { x } => x; };\n"
+        "  return match value { Move { x } => x, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_MISSING_FIELD,
         "{ x }",
@@ -431,16 +440,16 @@ void mmay_test_checker_enum_match(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, }\n"
         "fn guarded(value: Message): int {\n"
-        "  return match value { case Quit if true => 0; };\n"
+        "  return match value { Quit if true => 0, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
-        "match value { case Quit if true => 0; }",
+        "match value { Quit if true => 0, }",
         0
     );
     mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Quit if 1 => 0; case _ => 1; };\n"
+        "  return match value { Quit if 1 => 0, _ => 1, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "1",
@@ -449,7 +458,7 @@ void mmay_test_checker_enum_match(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Message { Quit, }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Quit => 0; case Quit if false => 1; };\n"
+        "  return match value { Quit => 0, Quit if false => 1, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Quit",
@@ -463,8 +472,8 @@ void mmay_test_checker_enum_or_patterns(void) {
         "enum Choice {\n"
         "  Idle, Stop, Pause,\n"
         "  Left(int), Right(int),\n"
-        "  Point { x: int; y: int; },\n"
-        "  Pixel { x: int; y: int; },\n"
+        "  Point { x: int, y: int, },\n"
+        "  Pixel { x: int, y: int, },\n"
         "}\n"
         "fn idle(): Choice { return Choice.Idle; }\n"
         "fn stop(): Choice { return Choice.Stop; }\n"
@@ -479,37 +488,37 @@ void mmay_test_checker_enum_or_patterns(void) {
         "}\n"
         "fn classify(value: Choice): int {\n"
         "  return match value {\n"
-        "    case Idle | Stop | Pause => 1;\n"
-        "    case Left(_) | Right(_) => 2;\n"
-        "    case Point { x: _, y: _ } | Pixel { x: _, y: _ } => 3;\n"
+        "    Idle | Stop | Pause => 1,\n"
+        "    Left(_) | Right(_) => 2,\n"
+        "    Point { x: _, y: _ } | Pixel { x: _, y: _ } => 3,\n"
         "  };\n"
         "}\n"
         "fn payload(value: Choice): int {\n"
         "  return match value {\n"
-        "    case Left(number) | Right(number) => number;\n"
-        "    case _ => -1;\n"
+        "    Left(number) | Right(number) => number,\n"
+        "    _ => -1,\n"
         "  };\n"
         "}\n"
         "fn named(value: Choice): int {\n"
         "  return match value {\n"
-        "    case Point { x: horizontal, y: vertical }\n"
+        "    Point { x: horizontal, y: vertical }\n"
         "      | Pixel { y: vertical, x: horizontal }\n"
-        "      => horizontal * 10 + vertical;\n"
-        "    case _ => -1;\n"
+        "      => horizontal * 10 + vertical,\n"
+        "    _ => -1,\n"
         "  };\n"
         "}\n"
         "fn guarded(value: Choice): int {\n"
         "  return match value {\n"
-        "    case Left(number) | Right(number) if number > 0 => number;\n"
-        "    case Left(_) | Right(_) => 0;\n"
-        "    case _ => -1;\n"
+        "    Left(number) | Right(number) if number > 0 => number,\n"
+        "    Left(_) | Right(_) => 0,\n"
+        "    _ => -1,\n"
         "  };\n"
         "}\n"
         "fn guardBomb(): bool { return 1 / 0 == 0; }\n"
         "fn guardOrder(value: Choice): int {\n"
         "  return match value {\n"
-        "    case Left(_) | Right(_) if guardBomb() => 1;\n"
-        "    case _ => 2;\n"
+        "    Left(_) | Right(_) if guardBomb() => 1,\n"
+        "    _ => 2,\n"
         "  };\n"
         "}\n";
     MarimayCheckerFixture fixture;
@@ -715,7 +724,7 @@ void mmay_test_checker_enum_or_patterns(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Choice { Left(int), Right(int), }\n"
         "fn bad(value: Choice): int {\n"
-        "  return match value { case Left(x) | Right(y) => x; };\n"
+        "  return match value { Left(x) | Right(y) => x, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Right(y)",
@@ -724,7 +733,7 @@ void mmay_test_checker_enum_or_patterns(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Choice { Number(int), Flag(bool), }\n"
         "fn bad(value: Choice): int {\n"
-        "  return match value { case Number(item) | Flag(item) => 0; };\n"
+        "  return match value { Number(item) | Flag(item) => 0, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Flag(item)",
@@ -733,7 +742,7 @@ void mmay_test_checker_enum_or_patterns(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Left(int), }\n"
         "fn bad(value: Choice): int {\n"
-        "  return match value { case Left(item) | Idle => item; };\n"
+        "  return match value { Left(item) | Idle => item, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Idle",
@@ -742,7 +751,7 @@ void mmay_test_checker_enum_or_patterns(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
-        "  return match value { case Idle | Idle => 0; case Stop => 1; };\n"
+        "  return match value { Idle | Idle => 0, Stop => 1, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Idle",
@@ -751,7 +760,7 @@ void mmay_test_checker_enum_or_patterns(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
-        "  return match value { case Idle => 0; case Idle | Stop => 1; };\n"
+        "  return match value { Idle => 0, Idle | Stop => 1, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Idle",
@@ -760,7 +769,7 @@ void mmay_test_checker_enum_or_patterns(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
-        "  return match value { case _ | Idle => 0; };\n"
+        "  return match value { _ | Idle => 0, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Idle",
@@ -769,7 +778,7 @@ void mmay_test_checker_enum_or_patterns(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
-        "  return match value { case Idle | _ => 0; };\n"
+        "  return match value { Idle | _ => 0, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "Idle",
@@ -778,10 +787,10 @@ void mmay_test_checker_enum_or_patterns(void) {
     mmay_checker_expect_one_diagnostic(
         "enum Choice { Idle, Stop, }\n"
         "fn bad(value: Choice): int {\n"
-        "  return match value { case Idle | Stop if true => 0; };\n"
+        "  return match value { Idle | Stop if true => 0, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
-        "match value { case Idle | Stop if true => 0; }",
+        "match value { Idle | Stop if true => 0, }",
         0
     );
 }

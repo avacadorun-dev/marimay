@@ -6,6 +6,7 @@
 #include "checker_expr_interfaces_api.h"
 #include "checker_imported_nominal_api.h"
 #include "checker_expr_scalar_api.h"
+#include "checker_expr_tuples_api.h"
 #include "checker_lookup_api.h"
 #include "checker_statement_api.h"
 #include "checker_generic_types_api.h"
@@ -920,17 +921,17 @@ cleanup:
             &declaration->parameter_types,
             layout_index
         );
-        if (parameter_type == NULL || !mmay_function_ensure_array_layout(
-                &function,
-                *parameter_type
-            )) {
+        if (parameter_type == NULL
+            || !mmay_function_ensure_array_layout(&function, *parameter_type)
+            || !mmay_function_ensure_tuple_layout(&function, *parameter_type)) {
             if (parameter_type == NULL) {
                 mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             }
             goto cleanup;
         }
     }
-    if (!mmay_function_ensure_array_layout(
+    if (!mmay_function_ensure_array_layout(&function, function.result_type)
+        || !mmay_function_ensure_tuple_layout(
             &function,
             function.result_type
         )) {

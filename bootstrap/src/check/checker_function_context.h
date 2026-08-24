@@ -32,13 +32,6 @@ typedef struct MarimayInitializationSnapshot {
     size_t allocation_size;
 } MarimayInitializationSnapshot;
 
-typedef struct MarimayMatchYieldContext {
-    MarimayMirBlockId *join;
-    MarimayTypeId *match_type;
-    MarimayMirRegister *target;
-    bool yielded;
-} MarimayMatchYieldContext;
-
 typedef struct MarimayFunctionChecker {
     MarimayChecker *checker;
     MarimayVector locals;
@@ -49,7 +42,6 @@ typedef struct MarimayFunctionChecker {
     MarimayTypeId result_type;
     size_t diagnostic_start;
     size_t scope_depth;
-    MarimayMatchYieldContext *match_yield;
     bool mir_initialized;
     bool terminated;
     bool constant_evaluation;

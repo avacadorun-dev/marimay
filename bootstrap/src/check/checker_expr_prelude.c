@@ -55,6 +55,69 @@ static bool mmay_checker_private_prelude_constructor_name(
     return false;
 }
 
+bool mmay_checker_private_compile_prelude_unit_value(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    bool *resolved,
+    MarimayExpressionValue *result
+) {
+    const MarimaySyntaxToken *token = mmay_checker_private_check_child_token(
+        node,
+        MMAY_TOKEN_IDENTIFIER,
+        0
+    );
+    const MarimayTypeDescriptor *descriptor = NULL;
+    MarimayCheckEnumDeclaration *base = NULL;
+    MarimayCheckEnumDeclaration concrete;
+    if (function == NULL || node == NULL || resolved == NULL
+        || result == NULL) {
+        return false;
+    }
+    *resolved = false;
+    descriptor = expected != MMAY_TYPE_INVALID
+        ? mmay_type_descriptor(&function->checker->result->types, expected)
+        : NULL;
+    base = function->checker->prelude_enums.length != 0
+        ? mmay_vector_at(&function->checker->prelude_enums, 0)
+        : NULL;
+    if (token == NULL || token->synthetic
+        || !mmay_checker_private_check_text_equal(
+            function->checker,
+            token->start,
+            token->end,
+            "None"
+        )) {
+        return true;
+    }
+    *resolved = true;
+    if (base == NULL || descriptor == NULL
+        || descriptor->kind != MMAY_TYPE_KIND_NOMINAL
+        || !mmay_symbol_id_equal(descriptor->symbol, base->symbol)
+        || descriptor->argument_count != base->type_parameters.length) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "bare None requires an expected concrete Option<T> type",
+            node->start,
+            node->end
+        );
+        return false;
+    }
+    concrete = *base;
+    concrete.type = expected;
+    return mmay_checker_private_function_emit_enum_construction(
+        function,
+        &concrete,
+        1,
+        NULL,
+        0,
+        node->start,
+        node->end,
+        result
+    );
+}
+
 bool mmay_checker_private_compile_prelude_constructor(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node,

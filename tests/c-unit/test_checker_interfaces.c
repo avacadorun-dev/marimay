@@ -2,7 +2,7 @@
 
 static void mmay_test_checker_interface_diagnostics(void) {
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
+        "type Counter { value: int, }\n"
         "interface Show { show(): int; }\n"
         "fn consume(value: Show): int { return value.show(); }\n"
         "fn main(): int { return consume(Counter { value: 4 }); }\n",
@@ -11,7 +11,7 @@ static void mmay_test_checker_interface_diagnostics(void) {
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
+        "type Counter { value: int, }\n"
         "interface Show { show(): int; }\n"
         "fn show(value: Counter): bool { return true; }\n"
         "fn consume(value: Show): int { return value.show(); }\n"
@@ -21,7 +21,7 @@ static void mmay_test_checker_interface_diagnostics(void) {
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
+        "type Counter { value: int, }\n"
         "interface Show { show(flag: int): int; }\n"
         "fn show(value: Counter, flag: bool): int { return 1; }\n"
         "fn consume(value: Show): int { return value.show(1); }\n"
@@ -45,7 +45,7 @@ static void mmay_test_checker_interface_diagnostics(void) {
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
+        "type Counter { value: int, }\n"
         "interface Show { show(): int; }\n"
         "fn show(value: int): int { return value; }\n"
         "fn consume(value: Show): int { return value.show(); }\n"
@@ -55,8 +55,8 @@ static void mmay_test_checker_interface_diagnostics(void) {
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "type Counter { value: int; }\n"
-        "type Other { value: int; }\n"
+        "type Counter { value: int, }\n"
+        "type Other { value: int, }\n"
         "interface Show { show(): int; }\n"
         "fn show(value: Other): int { return value.value; }\n"
         "fn consume(value: Show): int { return value.show(); }\n"
@@ -69,7 +69,7 @@ static void mmay_test_checker_interface_diagnostics(void) {
 
 void mmay_test_checker_interfaces(void) {
     static const char source[] =
-        "public type Counter { mutable value: int; }\n"
+        "public type Counter { mutable value: int, }\n"
         "public interface Show { show(): int; }\n"
         "public fn show(value: Counter): int { return value.value; }\n"
         "public fn consume(value: Show): int { return value.show(); }\n"

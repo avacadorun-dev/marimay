@@ -14,7 +14,7 @@ public fn mutateAndScoreMarks(marks: []Mark): int {
 
 fn scoreMark(mark: Mark): int {
   return match mark {
-    case Low => 0;
-    case High(value) => value;
+    Low => 0,
+    High(value) => value,
   };
 }

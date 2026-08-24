@@ -5,7 +5,7 @@ void mmay_test_checker_strings_and_panic(void) {
         "fn direct(): int { panic(\"broken\\n\\u{26cf}\"); }\n"
         "fn selected(value: bool): int {\n"
         "  return match value {\n"
-        "    case true => panic(r\"path\\\\raw\"); case false => 7;\n"
+        "    true => panic(r\"path\\\\raw\"), false => 7,\n"
         "  };\n"
         "}\n"
         "fn conditional(value: bool): int {\n"
@@ -19,7 +19,7 @@ void mmay_test_checker_strings_and_panic(void) {
         "fn argument(): int { return accept(panic(\"argument\")); }\n"
         "fn allPanic(value: bool): int {\n"
         "  return match value {\n"
-        "    case true => panic(\"yes\"); case false => panic(\"no\");\n"
+        "    true => panic(\"yes\"), false => panic(\"no\"),\n"
         "  };\n"
         "}\n"
         "fn message(): string { return \"dynamic\"; }\n"
@@ -220,28 +220,28 @@ void mmay_test_checker_string_match(void) {
         "fn other(): string { return \"other\"; }\n"
         "fn classify(value: string): int {\n"
         "  return match value {\n"
-        "    case \"\" => 0; case \"ready\" => 1;\n"
-        "    case \"a\\0b\" => 2; case remaining => 3;\n"
+        "    \"\" => 0, \"ready\" => 1,\n"
+        "    \"a\\0b\" => 2, _ as remaining => 3,\n"
         "  };\n"
         "}\n"
         "fn rawClassify(value: string): int {\n"
-        "  return match value { case r\"ready\" => 4; case _ => 5; };\n"
+        "  return match value { r\"ready\" => 4, _ => 5, };\n"
         "}\n"
         "fn guarded(value: string, flag: bool): int {\n"
         "  return match value {\n"
-        "    case \"ready\" if flag => 6; case _ => 7;\n"
+        "    \"ready\" if flag => 6, _ => 7,\n"
         "  };\n"
         "}\n"
         "fn block(value: string): int {\n"
         "  return match value {\n"
-        "    case \"ready\" => { yield 8; } case _ => 9;\n"
+        "    \"ready\" => { 8 }, _ => 9,\n"
         "  };\n"
         "}\n"
         "fn composed(): string { return \"\\u{e9}\"; }\n"
         "fn decomposed(): string { return \"e\\u{301}\"; }\n"
         "fn accents(value: string): int {\n"
         "  return match value {\n"
-        "    case \"\\u{e9}\" => 10; case \"e\\u{301}\" => 11; case _ => 12;\n"
+        "    \"\\u{e9}\" => 10, \"e\\u{301}\" => 11, _ => 12,\n"
         "  };\n"
         "}\n";
     MarimayCheckerFixture fixture;
@@ -372,15 +372,15 @@ void mmay_test_checker_string_match(void) {
 
     mmay_checker_expect_one_diagnostic(
         "fn bad(value: string): int {\n"
-        "  return match value { case \"ready\" => 1; };\n"
+        "  return match value { \"ready\" => 1, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
-        "match value { case \"ready\" => 1; }",
+        "match value { \"ready\" => 1, }",
         0
     );
     mmay_checker_expect_one_diagnostic(
         "fn bad(value: string): int {\n"
-        "  return match value { case \"a\" => 1; case r\"a\" => 2; case _ => 3; };\n"
+        "  return match value { \"a\" => 1, r\"a\" => 2, _ => 3, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "r\"a\"",
@@ -388,7 +388,7 @@ void mmay_test_checker_string_match(void) {
     );
     mmay_checker_expect_one_diagnostic(
         "fn bad(value: string): int {\n"
-        "  return match value { case \"a\" | \"\\u{61}\" => 1; case _ => 2; };\n"
+        "  return match value { \"a\" | \"\\u{61}\" => 1, _ => 2, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
         "\"\\u{61}\"",
@@ -396,7 +396,7 @@ void mmay_test_checker_string_match(void) {
     );
     mmay_checker_expect_one_diagnostic(
         "fn bad(value: string): int {\n"
-        "  return match value { case 1 => 1; case _ => 2; };\n"
+        "  return match value { 1 => 1, _ => 2, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "1",
@@ -404,21 +404,21 @@ void mmay_test_checker_string_match(void) {
     );
     mmay_checker_expect_one_diagnostic(
         "fn bad(value: string): int {\n"
-        "  return match value { case \"a\" if true => 1; };\n"
+        "  return match value { \"a\" if true => 1, };\n"
         "}\n",
         MMAY_DIAGNOSTIC_NON_EXHAUSTIVE_MATCH,
-        "match value { case \"a\" if true => 1; }",
+        "match value { \"a\" if true => 1, }",
         0
     );
     mmay_checker_expect_diagnostic_message(
         "fn bad(value: string): int {\n"
-        "  return match value { case \"mmay#0\" => 1; };\n"
+        "  return match value { \"mmay#0\" => 1, };\n"
         "}\n",
         "string match is missing witness: \"mmay#1\""
     );
     mmay_checker_expect_diagnostic_message(
         "fn bad(value: string): int {\n"
-        "  return match value { case \"mmay#0\" if true => 1; };\n"
+        "  return match value { \"mmay#0\" if true => 1, };\n"
         "}\n",
         "string match is missing witness: \"mmay#0\"; guarded patterns do not count toward exhaustiveness"
     );
@@ -430,7 +430,7 @@ void mmay_test_checker_declared_never_calls(void) {
         "fn direct(): int { stop(\"direct\"); }\n"
         "fn selected(value: bool): int {\n"
         "  return match value {\n"
-        "    case true => stop(\"selected\"); case false => 7;\n"
+        "    true => stop(\"selected\"), false => 7,\n"
         "  };\n"
         "}\n"
         "fn nested(): never { return stop(\"nested\"); }\n"
@@ -646,18 +646,18 @@ static void mmay_test_checker_one_witness_allocation_failure(
 
 void mmay_test_checker_witness_allocation_failures(void) {
     static const char enum_source[] =
-        "enum Message { Quit, Write(int), Move { x: int; y: int; }, }\n"
+        "enum Message { Quit, Write(int), Move { x: int, y: int, }, }\n"
         "fn bad(value: Message): int {\n"
-        "  return match value { case Quit => 0; };\n"
+        "  return match value { Quit => 0, };\n"
         "}\n";
     static const char string_source[] =
         "fn bad(value: string): int {\n"
-        "  return match value { case \"mmay#0\" => 0; };\n"
+        "  return match value { \"mmay#0\" => 0, };\n"
         "}\n";
     static const char record_source[] =
-        "type Point { x: int; y: int; }\n"
+        "type Point { x: int, y: int, }\n"
         "fn bad(value: Point): int {\n"
-        "  return match value { case Point { x, y } if true => x + y; };\n"
+        "  return match value { Point { x, y } if true => x + y, };\n"
         "}\n";
     mmay_test_checker_one_witness_allocation_failure(
         enum_source,

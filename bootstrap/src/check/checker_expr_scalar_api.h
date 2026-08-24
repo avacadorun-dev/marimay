@@ -13,6 +13,7 @@
  bool mmay_checker_private_compile_name(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node,
+    MarimayTypeId expected,
     MarimayExpressionValue *result
 );
  const MarimayAstNode *mmay_checker_private_expression_only_node(

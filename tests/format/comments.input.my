@@ -2,7 +2,7 @@
 ///
 /// Third paragraph.
 @derive(Debug) // derives Item
-type Item{public value:int; // public field
+type Item{public value:int, // public field
 }
 fn main():void{
 const value=Item{value:1}; /* constructed */

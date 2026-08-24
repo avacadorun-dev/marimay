@@ -133,12 +133,12 @@ static void mmay_test_native_interface_without_construction(void) {
 
 static void mmay_test_native_nominal_boundary_cases(void) {
     static const char source[] =
-        "type Counter { label: string; mutable value: int; }\n"
+        "type Counter { label: string, mutable value: int, }\n"
         "enum Message {\n"
         "  Unit,\n"
         "  Pair(int, int),\n"
         "  Text(string, Counter),\n"
-        "  Named { x: int; y: int; },\n"
+        "  Named { x: int, y: int, },\n"
         "  Nested(Message),\n"
         "}\n"
         "interface Show { show(): int; }\n"

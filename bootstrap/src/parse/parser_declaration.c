@@ -129,111 +129,20 @@ static void mmay_parse_for_binding(MarimayParser *parser) {
     mmay_parser_expect_identifier(parser, "expected loop binding name");
 }
 
-static void mmay_parse_for_of_tail(MarimayParser *parser) {
-    mmay_parse_expression_until(
-        parser,
-        MMAY_TOKEN_LEFT_BRACE,
-        MMAY_TOKEN_EOF,
-        MMAY_TOKEN_EOF
-    );
-}
-
-static void mmay_parse_c_for_tail(MarimayParser *parser) {
-    mmay_parse_expression_until(
-        parser,
-        MMAY_TOKEN_SEMICOLON,
-        MMAY_TOKEN_EOF,
-        MMAY_TOKEN_EOF
-    );
-    mmay_parser_expect(
-        parser,
-        MMAY_TOKEN_SEMICOLON,
-        "expected ';' after for initializer"
-    );
-    mmay_parse_expression_until(
-        parser,
-        MMAY_TOKEN_SEMICOLON,
-        MMAY_TOKEN_EOF,
-        MMAY_TOKEN_EOF
-    );
-    mmay_parser_expect(
-        parser,
-        MMAY_TOKEN_SEMICOLON,
-        "expected ';' after for condition"
-    );
-    mmay_parse_expression_until(
-        parser,
-        MMAY_TOKEN_LEFT_BRACE,
-        MMAY_TOKEN_EOF,
-        MMAY_TOKEN_EOF
-    );
-}
-
 static void mmay_parse_for_header(MarimayParser *parser) {
     MarimayMarker marker = mmay_parser_start(parser);
-    if (mmay_parser_at(parser, MMAY_TOKEN_KW_CONST)) {
-        mmay_parser_bump(parser);
-        mmay_parse_for_binding(parser);
-        if (mmay_parser_eat(parser, MMAY_TOKEN_KW_OF)) {
-            mmay_parse_for_of_tail(parser);
-        } else if (mmay_parser_at(parser, MMAY_TOKEN_EQUAL)) {
-            size_t offset = mmay_parser_current_offset(parser);
-            mmay_parser_bump(parser);
-            (void)mmay_parser_add_diagnostic(
-                parser,
-                MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
-                "C-style for initializer requires 'let', not 'const'",
-                offset,
-                offset
-            );
-            mmay_parse_c_for_tail(parser);
-        } else {
-            mmay_parser_expect(
-                parser,
-                MMAY_TOKEN_KW_OF,
-                "expected 'of' in for-of loop"
-            );
-            mmay_parse_for_of_tail(parser);
-        }
-    } else if (mmay_parser_at(parser, MMAY_TOKEN_KW_LET)) {
-        mmay_parser_bump(parser);
-        mmay_parse_for_binding(parser);
-        if (mmay_parser_at(parser, MMAY_TOKEN_KW_OF)) {
-            size_t offset = mmay_parser_current_offset(parser);
-            mmay_parser_bump(parser);
-            (void)mmay_parser_add_diagnostic(
-                parser,
-                MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
-                "for-of binding requires 'const', not 'let'",
-                offset,
-                offset
-            );
-            mmay_parse_for_of_tail(parser);
-        } else {
-            mmay_parser_expect(parser, MMAY_TOKEN_EQUAL, "expected '=' in for initializer");
-            mmay_parse_c_for_tail(parser);
-        }
-    } else {
-        size_t offset = mmay_parser_current_offset(parser);
-        MarimayMarker error = mmay_parser_start(parser);
-        (void)mmay_parser_add_diagnostic(
-            parser,
-            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
-            "expected 'const' for for-of or 'let' for C-style for",
-            offset,
-            offset
-        );
-        while (!mmay_parser_at(parser, MMAY_TOKEN_LEFT_BRACE)
-            && !mmay_parser_at(parser, MMAY_TOKEN_EOF)
-            && !parser->allocation_failed && !parser->limit_reached) {
-            mmay_parser_bump(parser);
-        }
-        (void)mmay_parser_complete(parser, error, MMAY_SYNTAX_ERROR);
-    }
+    mmay_parse_for_binding(parser);
+    mmay_parser_expect(parser, MMAY_TOKEN_KW_IN, "expected 'in' after loop binding");
+    mmay_parse_expression_until(
+        parser,
+        MMAY_TOKEN_LEFT_BRACE,
+        MMAY_TOKEN_EOF,
+        MMAY_TOKEN_EOF
+    );
     (void)mmay_parser_complete(parser, marker, MMAY_SYNTAX_FOR_HEADER);
 }
 
-static void mmay_parse_statement(MarimayParser *parser) {
+void mmay_parse_statement(MarimayParser *parser) {
     MarimayTokenKind current = mmay_parser_current(parser);
     MarimayMarker marker = mmay_parser_start(parser);
     if (current == MMAY_TOKEN_KW_CONST
@@ -322,17 +231,6 @@ static void mmay_parse_statement(MarimayParser *parser) {
                 ? MMAY_SYNTAX_BREAK_STATEMENT
                 : MMAY_SYNTAX_CONTINUE_STATEMENT
         );
-    } else if (current == MMAY_TOKEN_KW_YIELD
-        && !mmay_parser_yield_is_name_expression(parser)) {
-        mmay_parser_bump(parser);
-        mmay_parse_expression_until(
-            parser,
-            MMAY_TOKEN_SEMICOLON,
-            MMAY_TOKEN_EOF,
-            MMAY_TOKEN_EOF
-        );
-        mmay_parser_expect(parser, MMAY_TOKEN_SEMICOLON, "expected ';' after yield");
-        mmay_parser_complete(parser, marker, MMAY_SYNTAX_YIELD_STATEMENT);
     } else {
         mmay_parse_expression_until(
             parser,
@@ -435,11 +333,10 @@ static void mmay_parse_field_decl(MarimayParser *parser) {
     mmay_parser_expect(parser, MMAY_TOKEN_COLON, "expected ':' after field name");
     mmay_parse_type_until(
         parser,
-        MMAY_TOKEN_SEMICOLON,
+        MMAY_TOKEN_COMMA,
         MMAY_TOKEN_RIGHT_BRACE,
         MMAY_TOKEN_EOF
     );
-    mmay_parser_expect(parser, MMAY_TOKEN_SEMICOLON, "expected ';' after field");
     mmay_parser_complete(parser, marker, MMAY_SYNTAX_FIELD_DECL);
 }
 
@@ -486,20 +383,18 @@ static void mmay_parse_named_payload(MarimayParser *parser) {
         );
         mmay_parse_type_until(
             parser,
-            MMAY_TOKEN_SEMICOLON,
+            MMAY_TOKEN_COMMA,
             MMAY_TOKEN_RIGHT_BRACE,
             MMAY_TOKEN_EOF
-        );
-        mmay_parser_expect(
-            parser,
-            MMAY_TOKEN_SEMICOLON,
-            "expected ';' after payload field"
         );
         (void)mmay_parser_complete(
             parser,
             field,
             MMAY_SYNTAX_PAYLOAD_FIELD
         );
+        if (!mmay_parser_eat(parser, MMAY_TOKEN_COMMA)) {
+            break;
+        }
         if (parser->raw_index == before && !parser->allocation_failed
             && !parser->limit_reached) {
             mmay_parser_bump(parser);
@@ -536,6 +431,9 @@ static void mmay_parse_type_decl(MarimayParser *parser, MarimayMarker marker) {
         && !mmay_parser_at(parser, MMAY_TOKEN_EOF)
         && !parser->allocation_failed && !parser->limit_reached) {
         mmay_parse_field_decl(parser);
+        if (!mmay_parser_eat(parser, MMAY_TOKEN_COMMA)) {
+            break;
+        }
     }
     mmay_parser_expect(parser, MMAY_TOKEN_RIGHT_BRACE, "expected '}' after record");
     mmay_parser_complete(parser, marker, MMAY_SYNTAX_RECORD_DECL);

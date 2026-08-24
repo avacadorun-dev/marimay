@@ -1,7 +1,7 @@
 // D041 lexical cleanup acceptance: capture-at-registration, LIFO, exactly
 // once, nested scopes, return, continue, break, and panic precedence helpers.
 type CleanupLog {
-  mutable value: int;
+  mutable value: int,
 }
 
 interface Cleanup {
@@ -39,8 +39,12 @@ fn loopTransfers(log: CleanupLog): void {
   while index < 4 {
     defer append(log, index + 1);
     index += 1;
-    if index == 1 { continue; }
-    if index == 3 { break; }
+    if index == 1 {
+      continue;
+    }
+    if index == 3 {
+      break;
+    }
     append(log, 9);
   }
 }
@@ -67,8 +71,8 @@ fn questionMarkExit(log: CleanupLog): Result<int, CleanupError> {
 
 fn observesQuestionMarkExit(log: CleanupLog): bool {
   return match questionMarkExit(log) {
-    case Ok(_) => false;
-    case Err(_) => true;
+    Ok(_) => false,
+    Err(_) => true,
   };
 }
 
@@ -97,11 +101,15 @@ fn twoCleanupPanics(): void {
 fn main(): int {
   const log = CleanupLog { value: 0 };
   normal(log);
-  if earlyReturn(log) != 7 { return -1; }
+  if earlyReturn(log) != 7 {
+    return -1;
+  }
   nested(log);
   loopTransfers(log);
   capturesArguments(log);
   interfaceCall(log);
-  if !observesQuestionMarkExit(log) { return -2; }
+  if !observesQuestionMarkExit(log) {
+    return -2;
+  }
   return log.value;
 }

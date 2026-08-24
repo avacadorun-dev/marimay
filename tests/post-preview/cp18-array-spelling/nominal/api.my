@@ -1,5 +1,5 @@
 public type Array<T> {
-  public value: T;
+  public value: T,
 }
 
 public fn make(): Array<int> {

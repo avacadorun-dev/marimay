@@ -1,5 +1,5 @@
 public type MinHeap {
-  values: []int;
+  values: []int,
 }
 
 public fn newMinHeap(): MinHeap {
@@ -7,7 +7,7 @@ public fn newMinHeap(): MinHeap {
 }
 
 public fn push(heap: MinHeap, value: int): void {
-  heap.values.push(value);
+  const _ = heap.values.push(value);
   let index = heap.values.length() - 1;
   while index > 0 {
     const parent = (index - 1) / 2;
@@ -42,12 +42,12 @@ fn siftDown(heap: MinHeap, start: int): void {
 
 public fn pop(heap: MinHeap): Option<int> {
   if heap.values.length() == 0 {
-    return None<int>();
+    return None;
   }
   const minimum = heap.values[0];
   const last = match heap.values.pop() {
-    case Some(value) => value;
-    case None => panic("non-empty heap lost its last value");
+    Some(value) => value,
+    None => panic("non-empty heap lost its last value"),
   };
   if heap.values.length() > 0 {
     heap.values[0] = last;
@@ -58,7 +58,7 @@ public fn pop(heap: MinHeap): Option<int> {
 
 public fn minimum(heap: MinHeap): Option<int> {
   if heap.values.length() == 0 {
-    return None<int>();
+    return None;
   }
   return Some(heap.values[0]);
 }

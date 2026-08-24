@@ -1,12 +1,12 @@
 public enum Error {
-  CapabilityDenied { capability: string; },
+  CapabilityDenied { capability: string, },
   WriteFailed,
 }
 
 public fn message(error: Error): string {
   return match error {
-    case CapabilityDenied { capability } => "capability io.stdout is not granted";
-    case WriteFailed => "stdout write failed";
+    CapabilityDenied { capability } => "capability io.stdout is not granted",
+    WriteFailed => "stdout write failed",
   };
 }
 

@@ -46,11 +46,45 @@
     bool has_value = false;
     memset(&value, 0, sizeof(value));
     if (discard != NULL) {
-        mmay_checker_fail(
-            function->checker,
-            MMAY_CHECK_INCOMPLETE_LANGUAGE
-        );
-        return false;
+        if (type_node != NULL
+            && !mmay_checker_private_check_exact_type(
+                function->checker,
+                type_node,
+                &declared_type
+            )) {
+            return false;
+        }
+        if (expression == NULL) {
+            (void)mmay_checker_add_diagnostic(
+                function->checker,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+                "a discard binding requires an initializer",
+                node->start,
+                node->end
+            );
+            return false;
+        }
+        if (!mmay_compile_expression(
+                function,
+                expression,
+                declared_type,
+                &value
+            )) {
+            return false;
+        }
+        if (declared_type != MMAY_TYPE_INVALID
+            && value.type != declared_type
+            && !mmay_expression_is_never(function, &value)) {
+            (void)mmay_checker_add_diagnostic(
+                function->checker,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+                "discarded initializer type does not match its declaration",
+                expression->start,
+                expression->end
+            );
+            return false;
+        }
+        return true;
     }
     if (name_token == NULL || name_token->synthetic) {
         mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
@@ -585,6 +619,35 @@ bool mmay_compound_assignment_kind(
                 inner->start, inner->end
             );
             return false;
+        }
+        if (inner->kind == MMAY_SYNTAX_CALL_EXPRESSION
+            && !mmay_expression_is_never(function, &value)) {
+            const MarimayTypeDescriptor *descriptor = mmay_type_descriptor(
+                &function->checker->result->types,
+                value.type
+            );
+            const MarimayCheckEnumDeclaration *result_base =
+                function->checker->prelude_enums.length > 1
+                ? mmay_vector_at_const(
+                    &function->checker->prelude_enums,
+                    1
+                )
+                : NULL;
+            if (descriptor != NULL && result_base != NULL
+                && descriptor->kind == MMAY_TYPE_KIND_NOMINAL
+                && mmay_symbol_id_equal(
+                    descriptor->symbol,
+                    result_base->symbol
+                )) {
+                (void)mmay_checker_add_diagnostic(
+                    function->checker,
+                    MMAY_DIAGNOSTIC_IGNORED_RESULT,
+                    "Result-returning call must be handled; use postfix '?', match, or 'const _ =' for a deliberate discard",
+                    inner->start,
+                    inner->end
+                );
+                return false;
+            }
         }
         return true;
     }

@@ -1,7 +1,7 @@
 import { println } from "std/io";
 
 fn printCleanup(): void {
-  println("cleanup");
+  const _ = println("cleanup");
 }
 
 @test
@@ -38,7 +38,7 @@ fn exactOutputIncludesLexicalCleanup(): void {
     "body\ncleanup\n",
     (): void => {
       defer printCleanup();
-      println("body");
+      const _ = println("body");
     },
   );
 }

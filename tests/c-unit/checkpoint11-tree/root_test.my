@@ -1,12 +1,12 @@
 import { println } from "std/io";
 
 type Counter {
-  mutable value: int;
+  mutable value: int,
 }
 
 type Pair {
-  first: int;
-  second: int;
+  first: int,
+  second: int,
 }
 
 enum CheckError {
@@ -18,7 +18,7 @@ fn privateAnswer(): int {
 }
 
 fn printCleanup(): void {
-  println("cleanup");
+  const _ = println("cleanup");
 }
 
 fn next(counter: Counter): int {
@@ -48,13 +48,13 @@ fn recordsOptionsResultsAndMatch(): void {
   }
   const option: Option<int> = Some(7);
   const optionValue = match option {
-    case Some(value) => value;
-    case None => 0;
+    Some(value) => value,
+    None => 0,
   };
   const result: Result<int, CheckError> = Ok(9);
   const resultValue = match result {
-    case Ok(value) => value;
-    case Err(_) => 0;
+    Ok(value) => value,
+    Err(_) => 0,
   };
   if optionValue != 7 || resultValue != 9 {
     panic("Option, Result, or match changed");
@@ -65,9 +65,9 @@ fn recordsOptionsResultsAndMatch(): void {
 fn exactOutputAndCleanup(): void {
   expect.output("body\ncleanup\n", (): void => {
     defer printCleanup();
-    println("body");
+    const _ = println("body");
   });
   expect.output("a\0b\n", (): void => {
-    println("a\0b");
+    const _ = println("a\0b");
   });
 }

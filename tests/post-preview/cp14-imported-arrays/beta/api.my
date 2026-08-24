@@ -1,5 +1,5 @@
 public type Row {
-  public mutable right: string;
+  public mutable right: string,
 }
 
 public type Rows = []Row;

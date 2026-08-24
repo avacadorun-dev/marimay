@@ -808,12 +808,18 @@ static bool mmay_lexer_emit_operator(MarimayLexer *lexer) {
     MarimayTokenKind kind = MMAY_TOKEN_INVALID;
     size_t width = 1;
 
-    if (byte == '<' && next == '<' && third == '=') {
+    if (byte == '.' && next == '.' && third == '=') {
+        kind = MMAY_TOKEN_DOT_DOT_EQUAL;
+        width = 3;
+    } else if (byte == '<' && next == '<' && third == '=') {
         kind = MMAY_TOKEN_SHIFT_LEFT_EQUAL;
         width = 3;
     } else if (byte == '>' && next == '>' && third == '=') {
         kind = MMAY_TOKEN_SHIFT_RIGHT_EQUAL;
         width = 3;
+    } else if (byte == '.' && next == '.') {
+        kind = MMAY_TOKEN_DOT_DOT;
+        width = 2;
     } else if (byte == '=' && next == '>') {
         kind = MMAY_TOKEN_FAT_ARROW;
         width = 2;

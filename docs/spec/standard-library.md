@@ -97,7 +97,7 @@ public fn format(error: Error): string;
 ```marimay
 public enum ParseError {
   Empty,
-  InvalidDigit { offset: int; },
+  InvalidDigit { offset: int, },
   OutOfRange,
   InvalidRadix,
 }
@@ -145,7 +145,7 @@ does not specify `f32` arithmetic.
 
 ```marimay
 public enum Error {
-  CapabilityDenied { capability: string; },
+  CapabilityDenied { capability: string, },
   WriteFailed,
 }
 
@@ -189,14 +189,14 @@ current reservation is allocation-free. The policy is identical in VM and
 native execution and preserves D055's established resource and failure
 boundary.
 
-The normative array iteration spelling is `for const item of values`. The
+The normative array iteration spelling is `for item in values`. The
 iterator is obtained once, yields each initialized element in ascending index
 order, and is closed on every control-flow exit. `item` is immutable and has
 the exact `T` type. It captures the D053 mutation generation and checks it
-before every subsequent loop test or yield. A mismatch panics with `G4005`;
+before every subsequent loop test or element production. A mismatch panics with `G4005`;
 `reserve` does not invalidate because initialized values do not change.
-Indexed `for let` loops remain available for algorithms that intentionally
-mutate an array.
+Algorithms that intentionally mutate an array use an integer range over its
+indices or an explicit `while`, because iterator invalidation still applies.
 
 Map/set iteration is insertion-ordered. Updating retains position; delete then reinsert appends. Hash seeding may be process-randomized for attack resistance without changing visible order.
 
@@ -287,8 +287,7 @@ public fn close<T>(channel: Channel<T>): void;
 Timeout cancellation joins the nested work before returning. The D029 structured coordination surface additionally provides a first-completion race over nested operations and readiness selection over a finite set of task-completion, channel, timer, or cancellation-aware I/O cases. The race cancels and joins losing nested work. Selection unregisters losing waits but does not cancel an independently owned task. Both return a tagged winner rather than erasing result types; the I6 prototype freezes exact generic signatures only after inference, diagnostics, allocation, and cancellation measurements.
 
 This ordinary function may be called as `yield()` or by its explicitly
-qualified package name. It is distinct from the contextual
-`yield expression;` transfer inside a block match arm. The scheduler
+qualified package name. `yield` has no grammar role and the scheduler
 hint/safepoint does not promise another specific task will run.
 
 ## 8. Isolates
@@ -315,12 +314,12 @@ Baseline signatures used by examples:
 import { Error as CoreError } from "std/core";
 
 public enum Error {
-  InvalidUrl { reason: string; },
+  InvalidUrl { reason: string, },
   Dns(net.Error),
   Connect(net.Error),
-  Protocol { reason: string; },
+  Protocol { reason: string, },
   Timeout,
-  BodyLimit { limit: int; },
+  BodyLimit { limit: int, },
 }
 
 public fn message(error: Error): string;
@@ -328,9 +327,9 @@ public fn message(error: Error): string;
 public fn get(url: string): Result<Response, http.Error>;
 
 public type Response {
-  public status: int;
-  public headers: Headers;
-  public body: Bytes;
+  public status: int,
+  public headers: Headers,
+  public body: Bytes,
 }
 
 public fn pathParameter(request: Request, name: string): Option<string>;

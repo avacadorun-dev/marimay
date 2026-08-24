@@ -1,8 +1,8 @@
 import { Error as IoError, println } from "std/io";
 
 enum LookupError {
-  NotFound { id: int; },
-  Denied { reason: string; },
+  NotFound { id: int, },
+  Denied { reason: string, },
 }
 
 enum AppError {
@@ -12,15 +12,15 @@ enum AppError {
 
 fn message(error: LookupError): string {
   return match error {
-    case NotFound { id } => $"user {id} was not found";
-    case Denied { reason } => $"access denied: {reason}";
+    NotFound { id } => $"user {id} was not found",
+    Denied { reason } => $"access denied: {reason}",
   };
 }
 
 fn message(error: AppError): string {
   return match error {
-    case Lookup(inner) => inner.message();
-    case Io(inner) => inner.message();
+    Lookup(inner) => inner.message(),
+    Io(inner) => inner.message(),
   };
 }
 
@@ -34,9 +34,9 @@ fn ioError(error: IoError): AppError {
 
 @derive(Debug)
 type User {
-  public id: int;
-  public name: string;
-  public mutable visits: int;
+  public id: int,
+  public name: string,
+  public mutable visits: int,
 }
 
 interface Stringer {

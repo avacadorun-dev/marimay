@@ -13,7 +13,7 @@ void mmay_test_parser_pratt_expressions(void) {
         "  const record = Box { value: a };\n"
         "  const closure = (error: Error): Result<int, Error> => service.handle(error);\n"
         "  const spawned = spawn service.load(a);\n"
-        "  const matched = match a { case 0 => b; case _ if c > 0 => c; };\n"
+        "  const matched = match a { 0 => b, _ if c > 0 => c, };\n"
         "}\n";
     MarimayParseFixture fixture;
     const MarimayGreenNode *plus = NULL;
@@ -122,11 +122,13 @@ void mmay_test_parser_expression_grammar(void) {
         "  const postfix = service.member<Result<int, Error>>(a)[b]?.next;\n"
         "  const values = [0, 1.5, \"s\", r\"\\\\\", b\"x\", 'x', true, false, $\"x {a}\"];\n"
         "  const grouped = (a + b);\n"
+        "  const tuple = (a, b);\n"
         "  const converted = a as u64;\n"
         "  const empty = [];\n"
         "  const record = pkg.Item {};\n"
         "  const closure = (value: int): int => { return value; };\n"
-        "  const matched = match a { case 0 => b; case _ => { yield c; } };\n"
+        "  const inferredClosure = (value) => value;\n"
+        "  const matched = match a { 0 => b, _ => { c }, };\n"
         "  const task = spawn service.call(a);\n"
         "}\n";
     static const struct {
@@ -158,12 +160,6 @@ void mmay_test_parser_expression_grammar(void) {
             MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
-            "fn broken(a: int, b: int): void { const x = (a, b); } "
-            "fn after(): void {}",
-            MMAY_SYNTAX_PAREN_GROUP,
-            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
-        },
-        {
             "fn broken(): void { const x = _; } fn after(): void {}",
             MMAY_SYNTAX_EXPRESSION,
             MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
@@ -181,8 +177,7 @@ void mmay_test_parser_expression_grammar(void) {
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
-            "fn broken(value: Value): void { const x = match value { "
-            "case _ => return; }; } fn after(): void {}",
+            "fn broken(value: Value): void { const x = match value { _ => return, }; } fn after(): void {}",
             MMAY_SYNTAX_MATCH_ARM,
             MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         }
@@ -209,7 +204,7 @@ void mmay_test_parser_expression_grammar(void) {
         MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
             MMAY_SYNTAX_CLOSURE_EXPRESSION
-        ) == 1);
+        ) == 2);
         MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
             MMAY_SYNTAX_CONVERSION_EXPRESSION
@@ -334,22 +329,24 @@ void mmay_test_parser_expression_recovery(void) {
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
-            "fn broken(): void { const x = match { case _ => 1; }; } "
-            "fn after(): void {}",
+            "fn broken(): void { const x = match { _ => 1, }; } fn after(): void {}",
             MMAY_SYNTAX_MATCH_EXPRESSION,
             MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
-            "fn broken(): void { const x = match value { _ => 1; }; } "
-            "fn after(): void {}",
+            "fn broken(): void { const x = match value { _ => 1 _ => 2, }; } fn after(): void {}",
             MMAY_SYNTAX_MATCH_ARM,
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
-            "fn broken(): void { const x = match value { case => 1; }; } "
-            "fn after(): void {}",
+            "fn broken(): void { const x = match value { => 1, }; } fn after(): void {}",
             MMAY_SYNTAX_PATTERN,
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN
+        },
+        {
+            "fn broken(value: Value): int { return match value { case Ready => 1, _ => 0, }; } fn after(): void {}",
+            MMAY_SYNTAX_MATCH_ARM,
+            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
             "fn broken(): void { const x = call(, value); } fn after(): void {}",
@@ -387,12 +384,12 @@ void mmay_test_parser_pattern_grammar(void) {
     static const char valid[] =
         "fn patterns(value: Value): int {\n"
         "  return match value {\n"
-        "    case _ => 0;\n"
-        "    case 1 => 1;\n"
-        "    case binding => 2;\n"
-        "    case pkg.Some(inner, [left, right]) => inner;\n"
-        "    case User { id, name: alias } => id;\n"
-        "    case None | Gone => 3;\n"
+        "    _ => 0,\n"
+        "    1 => 1,\n"
+        "    _ as binding => 2,\n"
+        "    pkg.Some(inner, (left, right)) => inner,\n"
+        "    User { id, name: alias } => id,\n"
+        "    None | Gone => 3,\n"
         "  };\n"
         "}\n";
     static const struct {
@@ -402,9 +399,9 @@ void mmay_test_parser_pattern_grammar(void) {
         {"", MMAY_DIAGNOSTIC_EXPECTED_TOKEN},
         {"Some(value]", MMAY_DIAGNOSTIC_UNTERMINATED_DELIMITER},
         {"Some { : value }", MMAY_DIAGNOSTIC_EXPECTED_TOKEN},
-        {"[left right]", MMAY_DIAGNOSTIC_UNTERMINATED_DELIMITER},
+        {"[left, right]", MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN},
         {"None |", MMAY_DIAGNOSTIC_EXPECTED_TOKEN},
-        {"(value)", MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN}
+        {"(value)", MMAY_DIAGNOSTIC_EXPECTED_TOKEN}
     };
     MarimayParseFixture fixture;
     size_t index = 0;
@@ -424,7 +421,7 @@ void mmay_test_parser_pattern_grammar(void) {
         MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
             MMAY_SYNTAX_WILDCARD_PATTERN
-        ) == 1);
+        ) == 2);
         MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
             MMAY_SYNTAX_LITERAL_PATTERN
@@ -457,9 +454,7 @@ void mmay_test_parser_pattern_grammar(void) {
         int length = snprintf(
             source,
             sizeof(source),
-            "fn broken(value: Value): int { const x = match value { "
-            "case %s => 1; case _ => 0; }; return x; } "
-            "fn after(): void {}",
+            "fn broken(value: Value): int { const x = match value { %s => 1, _ => 0, }; return x; } fn after(): void {}",
             invalid[index].pattern
         );
         bool initialized = length > 0 && (size_t)length < sizeof(source)
@@ -568,11 +563,12 @@ void mmay_test_parser_exact_delimited_grammar(void) {
         "@meta(1, call(2), Item { value: 3 },)\n"
         "enum Payload {\n"
         "  Pos(int, pkg.Value),\n"
-        "  Named { id: int; value: pkg.Value; },\n"
+        "  Named { id: int, value: pkg.Value, },\n"
         "}\n"
         "fn exact(value: int): void {\n"
         "  const item = values[call(value)];\n"
         "  const closure = (item: int): int => item;\n"
+        "  const inferredClosure = (item) => item;\n"
         "}\n";
     static const struct {
         const char *source;
@@ -595,15 +591,14 @@ void mmay_test_parser_exact_delimited_grammar(void) {
             MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
-            "enum Bad { Broken { public id: int; }, Good } "
-            "fn after(): void {}",
+            "enum Bad { Broken { public id: int, }, Good } fn after(): void {}",
             MMAY_SYNTAX_PAYLOAD_FIELD,
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
-            "enum Bad { Broken { id: int }, Good } fn after(): void {}",
+            "enum Bad { Broken { id: int value: int }, Good } fn after(): void {}",
             MMAY_SYNTAX_NAMED_PAYLOAD,
-            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
+            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
             "fn broken(): void { const x = values[]; } fn after(): void {}",
@@ -615,12 +610,6 @@ void mmay_test_parser_exact_delimited_grammar(void) {
             "fn after(): void {}",
             MMAY_SYNTAX_INDEX_EXPRESSION,
             MMAY_DIAGNOSTIC_UNTERMINATED_DELIMITER
-        },
-        {
-            "fn broken(): void { const x = (item) => item; } "
-            "fn after(): void {}",
-            MMAY_SYNTAX_CLOSURE_EXPRESSION,
-            MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         }
     };
     MarimayParseFixture fixture;
@@ -649,7 +638,7 @@ void mmay_test_parser_exact_delimited_grammar(void) {
         MMAY_EXPECT(mmay_syntax_count_kind(
             fixture.parsed.tree.root,
             MMAY_SYNTAX_CLOSURE_EXPRESSION
-        ) == 1);
+        ) == 2);
         mmay_parse_fixture_dispose(&fixture);
     }
 
@@ -679,22 +668,23 @@ void mmay_test_parser_exact_delimited_grammar(void) {
 
 void mmay_test_parser_statement_forms(void) {
     static const char source[] =
+        "fn yield(value: int): void {}\n"
         "fn nested(value: Option<[]Result<int, Error>>): Option<[]int> {\n"
         "  let delayed: int;\n"
         "  let _ = 0;\n"
         "  const _ = 0;\n"
         "  call();\n"
         "  defer cleanup();\n"
-        "  for const item of value {\n"
+        "  for item in value {\n"
         "    use(item);\n"
         "  }\n"
-        "  for let index = 0; index < 3; index += 1 {\n"
+        "  for index in 0..3 {\n"
         "    if index == 1 { continue; } else if false { break; } else { use(index); }\n"
         "  }\n"
         "  while false { break; }\n"
         "  scope { const task = spawn service.call(); task.wait(); }\n"
         "  unsafe { panic(\"checked\"); }\n"
-        "  { yield value; }\n"
+        "  { yield(1); }\n"
         "  { return; }\n"
         "  return value;\n"
         "}\n";
@@ -738,10 +728,6 @@ void mmay_test_parser_statement_forms(void) {
     MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
         MMAY_SYNTAX_DEFER_STATEMENT
-    ) == 1);
-    MMAY_EXPECT(mmay_syntax_count_kind(
-        fixture.parsed.tree.root,
-        MMAY_SYNTAX_YIELD_STATEMENT
     ) == 1);
     MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
@@ -792,65 +778,43 @@ void mmay_test_parser_statement_recovery(void) {
             2
         },
         {
-            "fn broken(): void { for const of values {} } fn after(): void {}",
-            MMAY_SYNTAX_FOR_STATEMENT,
-            MMAY_DIAGNOSTIC_EXPECTED_TOKEN,
-            2
-        },
-        {
-            "fn broken(): void { for let i = 0 i < 3; i += 1 {} } "
+            "fn broken(values: Values): void { for in values {} } "
             "fn after(): void {}",
             MMAY_SYNTAX_FOR_HEADER,
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN,
             2
         },
         {
-            "fn broken(): void { for const i = 0; i < 3; i += 1 {} } "
-            "fn after(): void {}",
-            MMAY_SYNTAX_FOR_HEADER,
-            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
-            2
-        },
-        {
-            "fn broken(values: Values): void { for let item of values {} } "
-            "fn after(): void {}",
-            MMAY_SYNTAX_FOR_HEADER,
-            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
-            2
-        },
-        {
-            "fn broken(values: Values): void { for item of values {} } "
-            "fn after(): void {}",
-            MMAY_SYNTAX_FOR_HEADER,
-            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
-            2
-        },
-        {
-            "fn broken(values: Values): void { for const _ of values {} } "
+            "fn broken(values: Values): void { for item values {} } "
             "fn after(): void {}",
             MMAY_SYNTAX_FOR_HEADER,
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN,
             2
         },
         {
-            "fn broken(): void { for let i = ; true; i += 1 {} } "
-            "fn after(): void {}",
+            "fn broken(): void { for item in {} } fn after(): void {}",
             MMAY_SYNTAX_FOR_HEADER,
             MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
             2
         },
         {
-            "fn broken(): void { for let i = 0; ; i += 1 {} } "
+            "fn broken(values: Values): void { for const item of values {} } "
             "fn after(): void {}",
             MMAY_SYNTAX_FOR_HEADER,
-            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
-            2
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN,
+            1
         },
         {
-            "fn broken(): void { for let i = 0; true; {} } "
+            "fn broken(): void { for let index = 0; index < 3; index += 1 {} } "
             "fn after(): void {}",
             MMAY_SYNTAX_FOR_HEADER,
-            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN,
+            1
+        },
+        {
+            "fn broken(): void { yield 1; } fn after(): void {}",
+            MMAY_SYNTAX_EXPRESSION_STATEMENT,
+            MMAY_DIAGNOSTIC_EXPECTED_TOKEN,
             2
         },
         {
@@ -869,12 +833,6 @@ void mmay_test_parser_statement_recovery(void) {
             "fn broken(): void { continue } fn after(): void {}",
             MMAY_SYNTAX_CONTINUE_STATEMENT,
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN,
-            2
-        },
-        {
-            "fn broken(): void { yield; } fn after(): void {}",
-            MMAY_SYNTAX_YIELD_STATEMENT,
-            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
             2
         },
         {

@@ -6,7 +6,7 @@ void mmay_test_formatter_array_type_spelling(void) {
         "type Nested = [ ] [ ] int;\n"
         "type Qualified = [ ] pkg.Edge;\n"
         "type Generic = Option < [ ] int >;\n"
-        "type TupleElement = [ ] [ int,string ];\n"
+        "type TupleElement = [ ] ( int,string );\n"
         "type FunctionElement = [ ] ( int,string ) => [ ] int;\n"
         "type Commented = [ ] /* element */ [ ] int;\n";
     static const char expected[] =
@@ -14,7 +14,7 @@ void mmay_test_formatter_array_type_spelling(void) {
         "type Nested = [][]int;\n\n"
         "type Qualified = []pkg.Edge;\n\n"
         "type Generic = Option<[]int>;\n\n"
-        "type TupleElement = [][int, string];\n\n"
+        "type TupleElement = [](int, string);\n\n"
         "type FunctionElement = [](int, string) => []int;\n\n"
         "type Commented = [] /* element */[]int;\n";
     MarimayFormatterFixture fixture;

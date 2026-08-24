@@ -1,9 +1,9 @@
 public type User {
-  public mutable value: int;
+  public mutable value: int,
 }
 
 public type Box<T> {
-  public mutable value: T;
+  public mutable value: T,
 }
 
 public type Users = []User;
@@ -14,7 +14,7 @@ public fn makeUsers(): Users {
 
 public fn mutateUsers(users: Users): Users {
   users[0].value += users[1].value;
-  users.push(users[0]);
+  const _ = users.push(users[0]);
   return users;
 }
 

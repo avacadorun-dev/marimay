@@ -137,6 +137,133 @@ static bool mmay_checker_numeric_expected(
     MarimayTypeId expected,
     MarimayTypeId actual,
     const MarimayAstNode *node
+);
+
+static bool mmay_checker_compile_try_convert(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    const MarimayAstNode *arguments,
+    MarimayTypeId expected,
+    MarimayExpressionValue *result
+) {
+    const MarimayAstNode *type_arguments =
+        mmay_checker_private_check_child_node(
+            node,
+            MMAY_SYNTAX_TYPE_ARGUMENTS,
+            0
+        );
+    const MarimayAstNode *argument_nodes[1] = {NULL};
+    const MarimayAstNode *target_node = NULL;
+    MarimayExpressionValue source;
+    MarimayTypeId target_type = MMAY_TYPE_INVALID;
+    MarimayTypeId result_type = MMAY_TYPE_INVALID;
+    MarimayMirEnumId option_layout = MMAY_MIR_NO_ENUM;
+    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+    MarimayMirInstruction instruction;
+    size_t type_count = 0;
+    size_t index = 0;
+    for (index = 0; type_arguments != NULL
+        && index < type_arguments->child_count; index += 1) {
+        const MarimayAstElement *element = mmay_ast_child(
+            type_arguments,
+            index
+        );
+        if (element != NULL && element->kind == MMAY_AST_ELEMENT_NODE
+            && element->as.node != NULL
+            && element->as.node->kind == MMAY_SYNTAX_TYPE) {
+            if (type_count == 0) {
+                target_node = element->as.node;
+            }
+            type_count += 1;
+        }
+    }
+    if (type_count != 1 || target_node == NULL) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "tryConvert requires exactly one target type argument",
+            node->start,
+            node->end
+        );
+        return false;
+    }
+    if (mmay_checker_numeric_arguments(arguments, argument_nodes, 1) != 1) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker,
+            MMAY_DIAGNOSTIC_CALL_ARITY,
+            "tryConvert requires exactly one value argument",
+            node->start,
+            node->end
+        );
+        return false;
+    }
+    if (!mmay_checker_private_check_exact_type(
+            function->checker,
+            target_node,
+            &target_type
+        )) {
+        return false;
+    }
+    memset(&source, 0, sizeof(source));
+    if (!mmay_compile_expression(
+            function,
+            argument_nodes[0],
+            MMAY_TYPE_INVALID,
+            &source
+        )) {
+        return false;
+    }
+    if (mmay_expression_is_never(function, &source)) {
+        *result = source;
+        return true;
+    }
+    if (!mmay_checker_numeric_integer(source.type)
+        || !mmay_checker_numeric_integer(target_type)) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "tryConvert requires primitive integer source and target types",
+            node->start,
+            node->end
+        );
+        return false;
+    }
+    if (!mmay_checker_numeric_option(
+            function,
+            target_type,
+            &result_type,
+            &option_layout
+        ) || !mmay_checker_numeric_expected(
+            function,
+            expected,
+            result_type,
+            node
+        ) || !mmay_function_add_register(function, result_type, &target)) {
+        return false;
+    }
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = MMAY_MIR_INTEGER_CONVERT;
+    instruction.target = target;
+    instruction.first = source.register_id;
+    instruction.second = source.register_id;
+    instruction.enum_id = option_layout;
+    instruction.integer_target_type = target_type;
+    instruction.span.start = node->start;
+    instruction.span.end = node->end;
+    if (!mmay_function_append_instruction(function, &instruction)) {
+        return false;
+    }
+    result->type = result_type;
+    result->register_id = target;
+    result->valid = true;
+    return true;
+}
+
+static bool mmay_checker_numeric_expected(
+    MarimayFunctionChecker *function,
+    MarimayTypeId expected,
+    MarimayTypeId actual,
+    const MarimayAstNode *node
 ) {
     if (expected == MMAY_TYPE_INVALID || expected == actual) {
         return true;
@@ -170,6 +297,13 @@ bool mmay_checker_private_compile_numeric_call(
     const MarimayCheckerNumericBuiltin *builtin = mmay_checker_numeric_builtin(
         function != NULL ? function->checker : NULL, token
     );
+    bool try_convert = token != NULL && !token->synthetic
+        && mmay_checker_private_check_text_equal(
+            function->checker,
+            token->start,
+            token->end,
+            "tryConvert"
+        );
     const MarimayAstNode *argument_nodes[2] = {NULL, NULL};
     MarimayExpressionValue first;
     MarimayExpressionValue second;
@@ -182,7 +316,7 @@ bool mmay_checker_private_compile_numeric_call(
         return false;
     }
     *resolved = false;
-    if (builtin == NULL) {
+    if (builtin == NULL && !try_convert) {
         return true;
     }
     {
@@ -197,6 +331,15 @@ bool mmay_checker_private_compile_numeric_call(
         }
     }
     *resolved = true;
+    if (try_convert) {
+        return mmay_checker_compile_try_convert(
+            function,
+            node,
+            arguments,
+            expected,
+            result
+        );
+    }
     if (mmay_checker_private_check_child_node(
             node, MMAY_SYNTAX_TYPE_ARGUMENTS, 0
         ) != NULL) {
@@ -346,10 +489,14 @@ bool mmay_checker_private_compile_integer_conversion(
         return false;
     }
     result_type = target_type;
-    if (!mmay_checker_numeric_range_preserving(source.type, target_type)
-        && !mmay_checker_numeric_option(
-            function, target_type, &result_type, &option_layout
-        )) {
+    if (!mmay_checker_numeric_range_preserving(source.type, target_type)) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker,
+            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "'as' requires a lossless integer conversion; use tryConvert<Target>(value) for a fallible conversion",
+            node->start,
+            node->end
+        );
         return false;
     }
     if (!mmay_checker_numeric_expected(function, expected, result_type, node)

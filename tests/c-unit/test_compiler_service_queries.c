@@ -9,8 +9,8 @@
 #include "mmay/check/service.h"
 
 static const char mmay_query_store_source[] =
-    "public type User { public id: int; }\n"
-    "public type Order { public id: int; }\n"
+    "public type User { public id: int, }\n"
+    "public type Order { public id: int, }\n"
     "public fn label(user: User): int { return user.id; }\n"
     "public fn score(user: User): int { return user.id; }\n"
     "fn secret(user: User): int { return user.id; }\n"

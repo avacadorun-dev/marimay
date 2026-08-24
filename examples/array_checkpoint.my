@@ -1,9 +1,9 @@
 fn main(): int {
   let values = arrayOf(1, 2, 3);
-  values.push(4);
+  const _ = values.push(4);
   values[1] += 4;
   let total = 0;
-  for const value of values {
+  for value in values {
     total += value;
   }
   return total;

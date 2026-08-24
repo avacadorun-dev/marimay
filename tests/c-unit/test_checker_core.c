@@ -337,44 +337,21 @@ void mmay_test_checker_function_attributes_and_panic_shadow(void) {
 
 void mmay_test_checker_contextual_word_symbols(void) {
     static const char source[] =
-        "type Context { as: int; break: int; case: int; const: int; "
-        "continue: int; else: int; enum: int; extern: int; fn: int; "
-        "for: int; from: int; import: int; interface: int; let: int; "
-        "mutable: int; of: int; public: int; scope: int; type: int; "
-        "unsafe: int; yield: int; }\n"
-        "type C17Words { auto: int; break: int; case: int; char: int; "
-        "const: int; continue: int; default: int; do: int; double: int; "
-        "else: int; enum: int; extern: int; float: int; for: int; "
-        "goto: int; inline: int; int: int; long: int; register: int; "
-        "restrict: int; short: int; signed: int; sizeof: int; static: int; "
-        "struct: int; switch: int; typedef: int; union: int; unsigned: int; "
-        "void: int; volatile: int; }\n"
-        "fn as(): int { return 1; }\n"
-        "fn break(): int { return 2; }\n"
-        "fn case(): int { return 3; }\n"
-        "fn const(): int { return 4; }\n"
-        "fn continue(): int { return 5; }\n"
-        "fn else(): int { return 6; }\n"
-        "fn enum(): int { return 7; }\n"
-        "fn extern(): int { return 8; }\n"
-        "fn fn(): int { return 9; }\n"
-        "fn for(): int { return 10; }\n"
-        "fn from(): int { return 11; }\n"
-        "fn import(): int { return 12; }\n"
-        "fn interface(): int { return 13; }\n"
-        "fn let(): int { return 14; }\n"
-        "fn mutable(): int { return 15; }\n"
-        "fn of(): int { return 16; }\n"
-        "fn public(): int { return 17; }\n"
-        "fn scope(): int { return 18; }\n"
-        "fn type(): int { return 19; }\n"
-        "fn unsafe(): int { return 20; }\n"
-        "fn yield(): int { return 21; }\n"
+        "type Context { case: int, of: int, yield: int, test: int, fuzz: int, any: int, async: int, await: int, class: int, extends: int, impl: int, throws: int, }\n"
+        "fn case(): int { return 1; }\n"
+        "fn of(): int { return 2; }\n"
+        "fn yield(): int { return 3; }\n"
+        "fn test(): int { return 4; }\n"
+        "fn fuzz(): int { return 5; }\n"
+        "fn any(): int { return 6; }\n"
+        "fn async(): int { return 7; }\n"
+        "fn await(): int { return 8; }\n"
+        "fn class(): int { return 9; }\n"
+        "fn extends(): int { return 10; }\n"
+        "fn impl(): int { return 11; }\n"
+        "fn throws(): int { return 12; }\n"
         "fn total(): int {\n"
-        "  return as() + break() + case() + const() + continue() + else() "
-        "+ enum() + extern() + fn() + for() + from() + import() "
-        "+ interface() + let() + mutable() + of() + public() + scope() "
-        "+ type() + unsafe() + yield();\n"
+        "  return case() + of() + yield() + test() + fuzz() + any() + async() + await() + class() + extends() + impl() + throws();\n"
         "}\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
@@ -390,14 +367,14 @@ void mmay_test_checker_contextual_word_symbols(void) {
     ) == MMAY_CHECK_OK);
     if (checked.initialized) {
         MMAY_EXPECT(checked.diagnostics.length == 0);
-        MMAY_EXPECT(checked.records.length == 2);
-        MMAY_EXPECT(checked.functions.length == 22);
-        total = mmay_checked_function(&checked, 21);
+        MMAY_EXPECT(checked.records.length == 1);
+        MMAY_EXPECT(checked.functions.length == 13);
+        total = mmay_checked_function(&checked, 12);
         MMAY_EXPECT(total != NULL);
         if (total != NULL) {
             MMAY_EXPECT(mmay_check_interpret_function(
                 &checked,
-                21,
+                12,
                 NULL,
                 0,
                 mmay_system_allocator(),
@@ -405,7 +382,7 @@ void mmay_test_checker_contextual_word_symbols(void) {
                 &result
             ) == MMAY_MIR_INTERPRET_OK);
             MMAY_EXPECT(result.type == MMAY_TYPE_I64);
-            MMAY_EXPECT(result.as.i64 == 231);
+            MMAY_EXPECT(result.as.i64 == 78);
         }
         mmay_check_result_dispose(&checked);
     }

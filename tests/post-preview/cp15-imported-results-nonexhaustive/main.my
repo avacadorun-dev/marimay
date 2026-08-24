@@ -2,7 +2,7 @@ import { Choice } from "example/cp15-imported-results-nonexhaustive/producer";
 
 fn score(value: Choice<int>): int {
   return match value {
-    case Empty => 0;
+    Empty => 0,
   };
 }
 

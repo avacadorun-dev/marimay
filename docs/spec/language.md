@@ -55,41 +55,30 @@ Under D023, identifiers use Unicode 17.0.0 and the UAX #31 R1-1 form `XID_Start 
 
 `//` starts a line comment. `/* ... */` is a nestable block comment. Documentation comments are `///` for the next declaration and `/** ... */` for block documentation. The formatter preserves documentation attachment and never silently converts comment kind.
 
-### 2.3 Hard keywords, contextual words, and reserved sentinels
+### 2.3 Hard keywords, ordinary words, and reserved sentinels
 
-The 0.1 hard keywords are unavailable as identifiers in every source context:
-
-```text
-defer false if match return spawn true while
-```
-
-The following words are contextual. They retain their grammatical role only
-where that role is unambiguous and otherwise become ordinary identifiers in
-the syntax tree, including declaration names, field/member names, parameters,
-locals, and call expressions:
+Under D072, the active 0.1 grammar words are hard keywords and are unavailable
+as identifiers in every source context:
 
 ```text
-as break case const continue else enum extern fn for from import interface let
-mutable of public scope type unsafe yield
+as break const continue defer else enum extern false fn for from if import in
+interface let match mutable public return scope spawn true type unsafe while
 ```
 
-In particular, `yield expression;` is the contextual match-arm transfer form,
-while `yield()`, `task.yield()`, and a declaration named `yield` use the ordinary
-identifier. The words `test`, `fuzz`, `panic`, `in`, `any`, `async`, `await`,
-`class`, `extends`, `impl`, and `throws` are ordinary identifiers. The absence
+The following removed grammar words are ordinary identifiers:
+
+```text
+case of yield
+```
+
+The words `test`, `fuzz`, `panic`, `any`, `async`, `await`,
+`class`, `extends`, `impl`, and `throws` are also ordinary identifiers. The absence
 of nullability, source async coloring, classes, inheritance, `impl` blocks,
 exception syntax, and an `any` escape type is enforced by grammar and types;
 it is not implemented by occupying those useful API names.
 
-Contextual construct recognition is bounded and deterministic. `break;` and
-`continue;` are loop-control statements; call, member, postfix, and declaration
-uses of those spellings are names. `const`/`let` introduce bindings only before
-a binding name or `_`; `for` introduces the specified loop headers; and
-`scope`/`unsafe` introduce statement blocks at a statement boundary and remain
-names in an already established expression context. At top level the declaration
-starters keep their roles at a declaration boundary. An `else` attaches to an
-`if` only before another `if` or a block. Recovery accepts the incomplete
-prefixes needed for targeted diagnostics without changing valid name uses.
+Parser recovery accepts incomplete keyword-led constructs for targeted
+diagnostics, but recovery never turns a hard keyword into an identifier.
 
 Only `null` and `undefined` are reserved sentinels. They produce targeted
 diagnostics and cannot act as identifiers, so the language cannot accidentally
@@ -97,7 +86,11 @@ acquire null-like value spellings through ordinary name resolution.
 
 ### 2.4 Semicolons
 
-There is no automatic semicolon insertion. A semicolon terminates simple statements, field signatures, interface call signatures, type aliases, and imports. Record, function, interface, enum, control-flow, and `scope` blocks do not receive a trailing semicolon unless the whole block is used as a subexpression requiring one.
+There is no automatic semicolon insertion. A semicolon terminates simple
+statements, interface call signatures, type aliases, and imports. Record and
+named enum-payload fields are comma-separated data items. Record, function,
+interface, enum, control-flow, and `scope` blocks do not receive a trailing
+semicolon unless the whole block is used as a subexpression requiring one.
 
 ### 2.5 Literals
 
@@ -161,8 +154,8 @@ Top-level declarations are package-private unless prefixed with `public`. The sa
 
 ```marimay
 public type User {
-  public id: int;
-  public name: string;
+  public id: int,
+  public name: string,
 }
 
 public fn findUser(id: int): Result<User, StoreError> {
@@ -217,7 +210,7 @@ Assignments evaluate the target location first and the value second, each exactl
 | `void` | successful absence of a value |
 | `never` | an uninhabited result of an expression that cannot complete normally |
 
-Integer overflow traps in all build modes. Explicit operations such as `wrappingAdd`, `saturatingAdd`, and `checkedAdd` request other behavior. Integer division and remainder by zero and an out-of-range shift panic. Narrowing and signedness-changing integer conversions are explicit and return `Option` where information may be lost.
+Integer overflow traps in all build modes. Explicit operations such as `wrappingAdd`, `saturatingAdd`, and `checkedAdd` request other behavior. Integer division and remainder by zero and an out-of-range shift panic. Lossless integer conversion uses `as`; a potentially lossy conversion uses `tryConvert` and returns `Option`.
 
 Under D047 the compiler-known prelude exposes checked, wrapping, and
 saturating `Add`, `Subtract`, `Multiply`, `Divide`, `Remainder`, `Negate`,
@@ -227,12 +220,13 @@ wrapping and saturating functions return `T` and retain the ordinary panic for
 zero divisors and invalid shift counts. Exact signatures and the `MIN / -1`
 outcomes are defined by D047.
 
-An explicit integer conversion is `value as Target`. When the entire source
-range fits in `Target`, the expression has type `Target`; otherwise it has type
-`Option<Target>` and returns `None` for an unrepresentable runtime value. The
-form does not define integer/float conversion and never wraps or saturates.
-`as` binds between prefix unary and multiplicative operators and associates
-left to right.
+An explicit total integer conversion is `value as Target`; it is accepted only
+when the entire source range fits in `Target`, and its type is always `Target`.
+A potentially narrowing or signedness-changing conversion is
+`tryConvert<Target>(value)`. It has type `Option<Target>` and returns `None` for
+an unrepresentable runtime value. Neither form defines integer/float conversion,
+wraps, saturates, or panics. `as` binds between prefix unary and multiplicative
+operators and associates left to right.
 
 Signed `/` rounds its mathematical quotient toward zero. Signed `%` is
 defined by `left - (left / right) * right`; a nonzero remainder has the sign of
@@ -293,10 +287,18 @@ Any nominal type whose dot-call set contains an exact visible `message(): string
 
 When a positional enum variant's instantiated payload type is `void`, its constructor takes no argument. Thus a function returning `Result<void,E>` completes with `Ok()`.
 
+Unit constructors are values under D069. Expected-type inference therefore
+permits `return None;` in a function returning `Option<T>`. Positional enum
+constructors may be used in exact compiler-known unary-mapper positions; for
+example, `result.mapError(AppError.Network)` selects the mapping from `E` to
+`AppError` when `Network(E)` is visible and unambiguous. This contextual form
+does not make the constructor a storable or otherwise first-class function
+value in 0.1.
+
 `[]T` is an ordered mutable managed-reference collection under D045. The
 prefix associates to the right: `[][]int` is an array of `[]int`. Its element
 may be a qualified (`[]pkg.Item`), generic (`[]Option<int>`), tuple (for
-example, an array of `[int, string]`), or function (for example, an array whose
+example, an array of `(int, string)`), or function (for example, an array whose
 element is `(int) => string`) type.
 In grammar terms,
 `array_type` is `"[" "]" type`; expression context continues to parse `[]` as
@@ -327,9 +329,9 @@ A scalar or compound alias creates another spelling of the same type. The equals
 
 ```marimay
 public type Account {
-  public id: int;
-  public owner: string;
-  mutable balance: int;
+  public id: int,
+  public owner: string,
+  mutable balance: int,
 }
 ```
 
@@ -361,8 +363,8 @@ The closed compiler derive set is written before a declaration:
 ```marimay
 @derive(Debug, Eq, Hash)
 type Coordinate {
-  public x: int;
-  public y: int;
+  public x: int,
+  public y: int,
 }
 ```
 
@@ -378,7 +380,7 @@ Enums are closed nominal sums:
 enum Message {
   Quit,
   Write(string),
-  Move { x: int; y: int },
+  Move { x: int, y: int },
 }
 ```
 
@@ -390,7 +392,10 @@ const b = Message.Write("hello");
 const c = Message.Move { x: 10, y: 20 };
 ```
 
-Under D025, named payload declarations use semicolon-terminated field signatures, as in `Move { x: int; y: int; }`; the optional comma after the closing brace separates enum variants. Construction and pattern fields remain comma-separated values or bindings.
+Under D071, named payload declarations, record declarations, constructions,
+and patterns all use comma-separated data items with an optional trailing
+comma. The optional comma after a named payload's closing brace still separates
+enum variants.
 
 Prelude constructors `Some`, `None`, `Ok`, and `Err` are available unqualified. All other variants are qualified outside a pattern. The compiler owns tag layout; safe code cannot inspect or forge the integer tag.
 
@@ -398,11 +403,14 @@ Enums are immutable. Adding, removing, renaming, or changing a public variant is
 
 ### 5.6 Tuples and function types
 
-Tuple types use brackets in type position and values use brackets with a fixed arity:
+Tuple types, values, and patterns use parentheses:
 
 ```marimay
-const pair: [string, int] = ["port", 8080];
+const pair: (string, int) = ("port", 8080);
 ```
+
+A one-element tuple is `(value,)` / `(T,)`; `(value)` remains grouping. A
+function type retains the arrow, for example `(string, int) => bool`.
 
 `[]T` construction uses the compiler-known variadic prelude
 `arrayOf(...)` function or a contextual array literal. This avoids inventing
@@ -431,12 +439,12 @@ public fn reserve<T>(
 ): Result<void, ArrayGrowthError>;
 
 public enum ArrayGrowthError {
-  LengthLimit { limit: int; },
-  NegativeAdditional { additional: int; },
+  LengthLimit { limit: int },
+  NegativeAdditional { additional: int },
 }
 
 public enum ArrayTruncateError {
-  InvalidLength { requested: int; length: int; },
+  InvalidLength { requested: int, length: int },
 }
 ```
 
@@ -602,7 +610,17 @@ const doubled = values.map((value: int): int => value * 2);
 const handler = (request: Request): Response => {
   return route(request);
 };
+
+const mapped = result.mapError(
+  (error) => AppError.Network(error),
+);
 ```
+
+The compiler-known `Result.mapError` operation supplies one exact contextual
+parameter and result type, so its expression-bodied closure may omit those
+annotations. The same omission is not available merely because an ordinary
+parameter has a function type in 0.1. A contextual closure body is evaluated
+only on the `Err` path.
 
 Closures capture lexical `const` bindings by value and `let` bindings through a managed mutable cell. Each iteration of a `for` loop creates a fresh iteration binding. The compiler warns when a closure captures a mutable local and escapes the declaring block.
 
@@ -661,28 +679,30 @@ while queue.notEmpty() {
 }
 ```
 
-Iterable and C-style loops are supported:
+All iteration uses one header:
 
 ```marimay
-for const item of items {
+for item in items {
   process(item);
 }
 
-for let index = 0; index < count; index += 1 {
+for index in 0..count {
   visit(index);
 }
 ```
 
-These are the two complete 0.1 header forms. A for-of header is exactly
-`const` followed by an identifier, `of`, and an expression. A C-style header is
-exactly `let` followed by an identifier, `=`, and three required expressions
-separated by semicolons. It does not admit an arbitrary initializer, `const`,
-an `_` binding, or an omitted initializer, condition, or step; the for-of form
-does not admit `let`. D033 fixes this source grammar without changing the
-existing iterator-cleanup or control-flow semantics.
+The header is exactly an identifier, `in`, and an iterable expression. Its
+binding is immutable and fresh for each iteration; `_` is not accepted.
+`start..end` is an `int` range excluding `end`, while `start..=end` includes
+it. Bounds evaluate once from left to right before iteration. A range whose
+start is greater than its end is empty, and advancing the inclusive
+`int::MAX` endpoint does not overflow. In 0.1 these range forms are legal only
+as the direct iterable in a `for` header; they are not storable or passable
+first-class values. Stateful loops use `while`; the former
+`for const ... of ...` and C-style headers are rejected under D068.
 
 `break;` and `continue;` target the nearest loop. Either statement outside a
-loop is a compile error. Labels are not supported in 1.0. A `for-of` loop
+loop is a compile error. Labels are not supported in 1.0. A `for` loop
 obtains an iterator once and guarantees its cleanup through the standard
 resource protocol.
 
@@ -699,9 +719,9 @@ therefore cannot depend on a stable raw storage address.
 ```marimay
 fn describe(value: Result<User, LookupError>): string {
   return match value {
-    case Ok(user) => user.string();
-    case Err(NotFound) => "missing";
-    case Err(Denied { reason }) => $"denied: {reason}";
+    Ok(user) => user.string(),
+    Err(NotFound) => "missing",
+    Err(Denied { reason }) => $"denied: {reason}",
   };
 }
 ```
@@ -709,11 +729,11 @@ fn describe(value: Result<User, LookupError>): string {
 Patterns include:
 
 - wildcard: `_`;
-- new binding: `value`;
+- explicit remainder binding: `_ as value`;
 - literals: `0`, `"ready"`, `true`;
 - enum variants: `None`, `Some(value)`, `Move { x, y }`;
 - records: `User { id, name }`;
-- tuples: `[name, count]`;
+- tuples: `(name, count)`;
 - alternatives: `NotFound | Gone`;
 - nested forms of the above.
 
@@ -735,34 +755,37 @@ case folding, or Unicode normalization.
 A guard follows the pattern:
 
 ```marimay
-case Ok(value) if value > 0 => value;
+Ok(value) if value > 0 => value,
 ```
 
 Every alternative in an OR pattern must bind the same names with identical types. A guard is evaluated only after its pattern matches and does not contribute to exhaustiveness because it may be false.
 
-A multi-statement arm uses the contextual `yield expression;` form for the
-match value:
+A multi-statement arm uses its final expression as the match value:
 
 ```marimay
 const label = match status {
-  case Ready => "ready";
-  case Failed(error) => {
+  Ready => "ready",
+  Failed(error) => {
     log.warn(error);
-    yield "failed";
-  }
+    "failed"
+  },
 };
 ```
 
-Every reachable path of a block arm must `yield`, `return`, `panic`, or otherwise have type `never`. A `return` exits the enclosing function, not merely the arm.
+Every reachable path of a block arm must reach the tail expression, `return`,
+`panic`, or otherwise have type `never`. A `return` exits the enclosing
+function, not merely the arm. `yield` has no match role and is an ordinary
+identifier.
 
-Outside a block match arm, the same statement-shaped form is rejected as a
-misplaced match transfer. Call-shaped `yield()` and member-shaped
-`task.yield()` remain ordinary name resolution and do not transfer a match
-value.
+Arms are comma-separated and may have a trailing comma. At an arm's root a
+bare identifier must resolve as a unit constructor; it never introduces a new
+catch-all binding. `_` discards the remainder and `_ as remaining` retains it.
+Payload and named-field binding shorthand remains available inside a resolved
+constructor or record pattern.
 
 A match over a closed enum or finite boolean domain must be exhaustive. Numeric
 and string domains are not finite, so literal arms alone cannot exhaust them;
-an unguarded wildcard or name binding must cover the remainder. Missing cases
+an unguarded `_` or `_ as name` remainder pattern must cover them. Missing cases
 are an error listing uncovered witnesses. Redundant and unreachable arms are
 errors by default. A wildcard covers remaining cases but is discouraged by
 `mmay vet` when all variants are locally visible.
@@ -797,6 +820,11 @@ obligations; until the `std/fs` surface is present in the I2 checker they are
 parser-backed and cannot be reported as type-check evidence.
 
 The operator does not catch panic, cancellation, or an engine fault. It is deliberately visible at the propagation site.
+
+A standalone expression statement may not discard `Result<T,E>`. It must be
+propagated, matched, returned, consumed by another operation, or deliberately
+discarded as `const _ = expression;`. A `void` call remains a valid expression
+statement.
 
 ### 10.2 Panic
 

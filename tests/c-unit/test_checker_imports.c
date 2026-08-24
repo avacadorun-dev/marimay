@@ -3,7 +3,7 @@
 #include "mmay/generated/diagnostic_codes.h"
 
 static const char mmay_import_store_types[] =
-    "public type User { public value: int; }\n"
+    "public type User { public value: int, }\n"
     "public enum Level { Basic, Advanced(int), }\n";
 
 static const char mmay_import_store_functions[] =
@@ -16,8 +16,8 @@ static const char mmay_import_store_functions[] =
     "public fn score(user: User): int { return user.value; }\n"
     "public fn score(level: Level): int {\n"
     "  return match level {\n"
-    "    case Basic => 0;\n"
-    "    case Advanced(value) => value;\n"
+    "    Basic => 0,\n"
+    "    Advanced(value) => value,\n"
     "  };\n"
     "}\n";
 
@@ -364,7 +364,7 @@ static void mmay_checker_import_diagnostics(void) {
             "import { User, makeUser } from \"lib\";\n"
             "fn read(): int { const user = makeUser(1); return user.hidden; }\n"},
         {"lib", "lib.my",
-            "public type User { public visible: int; hidden: int; }\n"
+            "public type User { public visible: int, hidden: int, }\n"
             "public fn makeUser(value: int): User {\n"
             "  return User { visible: value, hidden: value };\n"
             "}\n"}
@@ -374,7 +374,7 @@ static void mmay_checker_import_diagnostics(void) {
             "import { User } from \"lib\";\n"
             "fn bad(user: User): int { return score(user); }\n"},
         {"lib", "lib.my",
-            "public type User { public value: int; }\n"
+            "public type User { public value: int, }\n"
             "public fn score(user: User): int { return user.value; }\n"}
     };
     static const MarimayTestImportSource unknown_namespace_member[] = {
@@ -394,14 +394,14 @@ static void mmay_checker_import_diagnostics(void) {
             "import * as library from \"lib\";\n"
             "fn bad(user: library.User): int { return score(user); }\n"},
         {"lib", "lib.my",
-            "public type User { public value: int; }\n"
+            "public type User { public value: int, }\n"
             "public fn score(user: User): int { return user.value; }\n"}
     };
     static const MarimayTestImportSource private_namespace_type[] = {
         {"app", "app.my",
             "import * as library from \"lib\";\n"
             "fn bad(user: library.Hidden): int { return 0; }\n"},
-        {"lib", "lib.my", "type Hidden { public value: int; }\n"}
+        {"lib", "lib.my", "type Hidden { public value: int, }\n"}
     };
     mmay_checker_import_expect_diagnostic(
         unknown_package, 1, "app", MMAY_DIAGNOSTIC_UNKNOWN_PACKAGE,
@@ -465,7 +465,7 @@ static void mmay_checker_import_aliases_and_public_field(void) {
             "  return named(user) + qualified(user) + user.visible;\n"
             "}\n"},
         {"lib", "lib.my",
-            "public type User { public visible: int; hidden: int; }\n"
+            "public type User { public visible: int, hidden: int, }\n"
             "public fn makeUser(value: int): User {\n"
             "  return User { visible: value, hidden: value };\n"
             "}\n"
@@ -505,7 +505,7 @@ static void mmay_checker_import_foreign_extension_excluded(void) {
             "import { User } from \"lib\";\n"
             "fn extra(user: User): int { return 9; }\n"
             "fn bad(user: User): int { return user.extra(); }\n"},
-        {"lib", "lib.my", "public type User { public value: int; }\n"}
+        {"lib", "lib.my", "public type User { public value: int, }\n"}
     };
     mmay_checker_import_expect_diagnostic(
         sources, 2, "app", MMAY_DIAGNOSTIC_TYPE_MISMATCH, "extra"
@@ -518,9 +518,9 @@ static void mmay_checker_import_nominal_ownership_is_exact(void) {
             "import * as left from \"left\";\n"
             "import * as right from \"right\";\n"
             "fn bad(user: left.User): int { return user.score(); }\n"},
-        {"left", "left.my", "public type User { public value: int; }\n"},
+        {"left", "left.my", "public type User { public value: int, }\n"},
         {"right", "right.my",
-            "public type User { public value: int; }\n"
+            "public type User { public value: int, }\n"
             "public fn score(user: User): int { return user.value; }\n"}
     };
     mmay_checker_import_expect_diagnostic(
@@ -535,7 +535,7 @@ static void mmay_checker_import_interface_mismatch(void) {
             "interface Scored { score(): int; }\n"
             "fn through(value: Scored): int { return value.score(); }\n"
             "fn bad(user: User): int { return through(user); }\n"},
-        {"lib", "lib.my", "public type User { public value: int; }\n"}
+        {"lib", "lib.my", "public type User { public value: int, }\n"}
     };
     mmay_checker_import_expect_diagnostic(
         sources, 2, "app", MMAY_DIAGNOSTIC_TYPE_MISMATCH, "user"
@@ -672,7 +672,7 @@ static void mmay_checker_import_diagnostic_allocation_failures(void) {
             "import { User, makeUser } from \"lib\";\n"
             "fn read(): int { const user = makeUser(1); return user.hidden; }\n"},
         {"lib", "lib.my",
-            "public type User { public visible: int; hidden: int; }\n"
+            "public type User { public visible: int, hidden: int, }\n"
             "public fn makeUser(value: int): User {\n"
             "  return User { visible: value, hidden: value };\n"
             "}\n"}

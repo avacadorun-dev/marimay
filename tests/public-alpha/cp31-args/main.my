@@ -3,7 +3,7 @@ import { println } from "std/io";
 fn main(arguments: []string): int {
   let index = 0;
   while index < arguments.length() {
-    println(arguments[index]);
+    const _ = println(arguments[index]);
     index += 1;
   }
   return 0;

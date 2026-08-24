@@ -7,23 +7,23 @@ void mmay_test_checker_enum_declarations(void) {
         "public enum Message {\n"
         "  Quit,\n"
         "  Write(string, Code),\n"
-        "  Move { x: int; y: Code; },\n"
+        "  Move { x: int, y: Code, },\n"
         "  Chain(Message),\n"
         "}\n"
         "enum Shadow {\n"
         "  Quit,\n"
         "  Write(string, Code),\n"
-        "  Move { x: int; y: Code; },\n"
+        "  Move { x: int, y: Code, },\n"
         "  Chain(Message),\n"
         "}\n"
         "public fn keep(value: Message): Alias { return value; }\n";
     static const char mutual[] =
-        "type Node { event: Event; }\n"
+        "type Node { event: Event, }\n"
         "enum Event { Attach(Node), Next(Event), }\n";
     static const char duplicate_variant[] =
         "enum State { Ready, Ready, }\n";
     static const char duplicate_payload_field[] =
-        "enum Event { Move { x: int; x: int; }, }\n";
+        "enum Event { Move { x: int, x: int, }, }\n";
     static const char unknown_payload_type[] =
         "enum Event { Value(Missing), }\n";
     static const char primitive_redefinition[] =
@@ -301,13 +301,13 @@ void mmay_test_checker_enum_package_order(void) {
         "fn empty(): Event { return Event.Empty; }\n"
         "fn kind(value: Event): int {\n"
         "  return match value {\n"
-        "    case Empty => 0;\n"
-        "    case Link(node) | Peer(node) => 1;\n"
+        "    Empty => 0,\n"
+        "    Link(node) | Peer(node) => 1,\n"
         "  };\n"
         "}\n";
     static const char types_source[] =
         "enum Event { Empty, Link(Node), Peer(Node), }\n"
-        "type Node { event: Event; }\n";
+        "type Node { event: Event, }\n";
     MarimayCheckerFixture entry;
     MarimayCheckerFixture types;
     MarimayCheckerFixture missing_entry;
@@ -410,7 +410,7 @@ void mmay_test_checker_enum_package_order(void) {
         "b_missing.my",
         "type Alias = Event;\n"
         "fn kind(value: Alias): int {\n"
-        "  return match value { case Empty => 0; case Link(_) => 1; };\n"
+        "  return match value { Empty => 0, Link(_) => 1, };\n"
         "}\n"
     ));
     asts[0] = &types.ast;
@@ -449,7 +449,7 @@ void mmay_test_checker_enum_execution(void) {
         "enum Message {\n"
         "  Quit,\n"
         "  Write(int, int),\n"
-        "  Move { x: int; y: int; },\n"
+        "  Move { x: int, y: int, },\n"
         "}\n"
         "type MessageAlias = Message;\n"
         "fn quit(): Message { return Message.Quit; }\n"
@@ -718,7 +718,7 @@ void mmay_test_checker_enum_execution(void) {
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "enum Message { Move { x: int; }, }\n"
+        "enum Message { Move { x: int, }, }\n"
         "fn bad(): Message { return Message.Move(1); }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "Message.Move(1)",
@@ -732,35 +732,35 @@ void mmay_test_checker_enum_execution(void) {
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "enum Message { Move { x: int; }, }\n"
+        "enum Message { Move { x: int, }, }\n"
         "fn bad(): Message { return Message.Move { y: 1 }; }\n",
         MMAY_DIAGNOSTIC_UNKNOWN_FIELD,
         "y",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "enum Message { Move { x: int; }, }\n"
+        "enum Message { Move { x: int, }, }\n"
         "fn bad(): Message { return Message.Move { x: 1, x: 2 }; }\n",
         MMAY_DIAGNOSTIC_DUPLICATE_FIELD,
         "x",
         2
     );
     mmay_checker_expect_one_diagnostic(
-        "enum Message { Move { x: int; y: int; }, }\n"
+        "enum Message { Move { x: int, y: int, }, }\n"
         "fn bad(): Message { return Message.Move { x: 1 }; }\n",
         MMAY_DIAGNOSTIC_MISSING_FIELD,
         "Message.Move { x: 1 }",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "enum Message { Move { x: int; }, }\n"
+        "enum Message { Move { x: int, }, }\n"
         "fn bad(): Message { return Message.Move { x: true }; }\n",
         MMAY_DIAGNOSTIC_TYPE_MISMATCH,
         "true",
         0
     );
     mmay_checker_expect_one_diagnostic(
-        "enum Message { Move { x: int; }, }\n"
+        "enum Message { Move { x: int, }, }\n"
         "fn bad(): Message { return Message.Move { x }; }\n",
         MMAY_DIAGNOSTIC_UNKNOWN_NAME,
         "x",

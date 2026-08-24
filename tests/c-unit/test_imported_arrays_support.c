@@ -1,8 +1,8 @@
 #include "test_imported_arrays_support.h"
 
 static const char mmay_imported_arrays_producer[] =
-    "public type Cell { public mutable value: int; }\n"
-    "public type Box<T> { public mutable value: T; }\n"
+    "public type Cell { public mutable value: int, }\n"
+    "public type Box<T> { public mutable value: T, }\n"
     "public type Cells = []Cell;\n"
     "public enum Mark { Low, High(int), }\n"
     "public fn makeCells(): Cells {\n"
@@ -10,7 +10,7 @@ static const char mmay_imported_arrays_producer[] =
     "}\n"
     "public fn mutateCells(values: Cells): Cells {\n"
     "  values[0].value += values[1].value;\n"
-    "  values.push(values[0]);\n"
+    "  const _ = values.push(values[0]);\n"
     "  return values;\n"
     "}\n"
     "public fn replaceCell(values: Cells): Cells {\n"
@@ -19,7 +19,7 @@ static const char mmay_imported_arrays_producer[] =
     "}\n"
     "public fn sumCells(values: Cells): int {\n"
     "  let total = 0;\n"
-    "  for const value of values { total += value.value; }\n"
+    "  for value in values { total += value.value; }\n"
     "  return total;\n"
     "}\n"
     "public fn makeBoxes(): []Box<int> {\n"
@@ -37,7 +37,7 @@ static const char mmay_imported_arrays_producer[] =
     "}\n"
     "public fn makeNames(): []string { return [\"ada\"]; }\n"
     "public fn extendNames(values: []string): []string {\n"
-    "  values.push(\"grace\");\n"
+    "  const _ = values.push(\"grace\");\n"
     "  return values;\n"
     "}\n"
     "public fn makeMarks(): []Mark {\n"
@@ -45,8 +45,8 @@ static const char mmay_imported_arrays_producer[] =
     "}\n"
     "public fn scoreMarks(values: []Mark): int {\n"
     "  return match values[1] {\n"
-    "    case Low => 0;\n"
-    "    case High(value) => value;\n"
+    "    Low => 0,\n"
+    "    High(value) => value,\n"
     "  };\n"
     "}\n";
 

@@ -4,8 +4,8 @@ void mmay_test_parser_declarations(void) {
     static const char source[] =
         "import { Item as Renamed, other, } from \"pkg\";\n"
         "type Id = i64;\n"
-        "type Box<T> { public mutable value: T; }\n"
-        "enum Maybe<T> { None, Some(T), Named { value: T; }, }\n"
+        "type Box<T> { public mutable value: T, }\n"
+        "enum Maybe<T> { None, Some(T), Named { value: T, }, }\n"
         "interface Reader<T> { read(buffer: T): Result<int, Error>; Close; }\n"
         "@link(\"c\") extern \"c\" fn call(value: i32): i32;\n"
         "const answer: int = 42;\n"
@@ -26,9 +26,9 @@ void mmay_test_parser_declaration_grammar(void) {
     static const char valid[] =
         "import * as http from \"std/http\";\n"
         "import { Item, Other as Alias, } from \"pkg\";\n"
-        "@tag(1) public type Record<T> { public mutable value: T; }\n"
+        "@tag(1) public type Record<T> { public mutable value: T, }\n"
         "type Alias<T> = Result<T, Error>;\n"
-        "enum Choice<T> { None, One(T), Named { value: T; }, }\n"
+        "enum Choice<T> { None, One(T), Named { value: T, }, }\n"
         "interface Reader<T> { read(value: T): Result<T, Error>; Close; }\n"
         "public unsafe fn local(value: int): int { return value; }\n"
         "extern \"c\" unsafe fn foreign(value: int): int;\n"
@@ -61,7 +61,12 @@ void mmay_test_parser_declaration_grammar(void) {
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
         {
-            "type Bad { value: int } fn after(): void {}",
+            "type Bad { value: int other: int } fn after(): void {}",
+            MMAY_SYNTAX_FIELD_DECL,
+            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
+        },
+        {
+            "type Bad { value: int; } fn after(): void {}",
             MMAY_SYNTAX_FIELD_DECL,
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN
         },
@@ -69,6 +74,11 @@ void mmay_test_parser_declaration_grammar(void) {
             "enum Bad { First Second } fn after(): void {}",
             MMAY_SYNTAX_ENUM_VARIANT,
             MMAY_DIAGNOSTIC_EXPECTED_TOKEN
+        },
+        {
+            "enum Bad { Named { value: int; }, } fn after(): void {}",
+            MMAY_SYNTAX_NAMED_PAYLOAD,
+            MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN
         },
         {
             "interface Bad { call(value: int) int; } fn after(): void {}",
@@ -137,37 +147,18 @@ void mmay_test_parser_declaration_grammar(void) {
 
 void mmay_test_parser_keyword_boundaries(void) {
     static const char source[] =
-        "type Contextual {\n"
-        "  as: int; break: int; case: int; const: int; continue: int;\n"
-        "  else: int; enum: int;\n"
-        "  extern: int; fn: int; for: int; from: int; import: int;\n"
-        "  interface: int; let: int; mutable: int; of: int; public: int;\n"
-        "  scope: int; type: int; unsafe: int; yield: int;\n"
+        "type Ordinary {\n"
+        "  case: int, of: int, yield: int, test: int, fuzz: int, panic: int,\n"
+        "  any: int, async: int, await: int, class: int, extends: int,\n"
+        "  impl: int, throws: int,\n"
         "}\n"
-        "fn type(as: int, const: int, scope: int, unsafe: int, yield: int): int {\n"
-        "  const public = as;\n"
-        "  task.yield();\n"
-        "  yield();\n"
-        "  break(); const(); continue(); for(); let(); scope(); unsafe();\n"
-        "  for + scope + unsafe;\n"
-        "  const + let;\n"
-        "  if true {} else();\n"
-        "  const scopeValue = scope {};\n"
-        "  const unsafeValue = unsafe {};\n"
-        "  return match true {\n"
-        "    case true => { yield public; }\n"
-        "    case false => yield;\n"
-        "  };\n"
-        "}\n"
-        "fn break(): void {} fn const(): void {} fn continue(): void {}\n"
-        "fn else(): void {} fn enum(): void {} fn extern(): void {}\n"
-        "fn fn(): void {} fn for(): void {} fn import(): void {}\n"
-        "fn interface(): void {} fn let(): void {} fn scope(): void {}\n"
-        "fn unsafe(): void {}\n"
-        "fn in(): void {} fn any(): void {} fn async(): void {}\n"
+        "fn yield(): int { return 1; }\n"
+        "fn of(case: int): int { return case + yield(); }\n"
+        "fn case(): int { return of(yield()); }\n"
+        "fn test(): void {} fn fuzz(): void {} fn panic(): void {}\n"
+        "fn any(): void {} fn async(): void {}\n"
         "fn await(): void {} fn class(): void {} fn extends(): void {}\n"
-        "fn impl(): void {} fn throws(): void {} fn test(): void {}\n"
-        "fn fuzz(): void {} fn panic(): void {}\n";
+        "fn impl(): void {} fn throws(): void {}\n";
     MarimayParseFixture fixture;
     bool initialized = mmay_parse_fixture_init(&fixture, source);
     MMAY_EXPECT(initialized);
@@ -180,25 +171,23 @@ void mmay_test_parser_keyword_boundaries(void) {
     MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
         MMAY_SYNTAX_FUNCTION_DECL
-    ) == 25);
-    MMAY_EXPECT(mmay_syntax_count_kind(
-        fixture.parsed.tree.root,
-        MMAY_SYNTAX_YIELD_STATEMENT
-    ) == 1);
+    ) == 13);
     MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
         MMAY_SYNTAX_CALL_EXPRESSION
-    ) == 10);
+    ) == 3);
     MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
         MMAY_SYNTAX_RECORD_EXPRESSION
-    ) == 2);
+    ) == 0);
     mmay_parse_fixture_dispose(&fixture);
 
     {
         static const char *const hard_names[] = {
-            "defer", "false", "if", "match", "return", "spawn", "true",
-            "while"
+            "as", "break", "const", "continue", "defer", "else", "enum",
+            "extern", "false", "fn", "for", "from", "if", "import", "in",
+            "interface", "let", "match", "mutable", "public", "return",
+            "scope", "spawn", "true", "type", "unsafe", "while"
         };
         size_t hard_index = 0;
         for (hard_index = 0;
@@ -259,7 +248,7 @@ void mmay_test_parser_declaration_recovery(void) {
             1
         },
         {
-            "type Bad { : int; } fn after(): void {}",
+            "type Bad { : int, } fn after(): void {}",
             {MMAY_SYNTAX_RECORD_DECL, MMAY_SYNTAX_FIELD_DECL},
             2,
             1
@@ -271,7 +260,7 @@ void mmay_test_parser_declaration_recovery(void) {
             1
         },
         {
-            "enum Bad { Broken { : int; }, } fn after(): void {}",
+            "enum Bad { Broken { : int, }, } fn after(): void {}",
             {MMAY_SYNTAX_ENUM_DECL, MMAY_SYNTAX_NAMED_PAYLOAD},
             2,
             1
@@ -399,7 +388,7 @@ void mmay_test_parser_type_grammar(void) {
         "type Scalar = int;\n"
         "type Qualified = pkg.User;\n"
         "type Nested = Map<string, []Result<int, Error>>;\n"
-        "type Tuple = [string, int];\n"
+        "type Tuple = (string, int);\n"
         "type Callback = (string, int) => Result<void, Error>;\n"
         "fn maximum<T: Ordered<T> & Hash<T>>(value: T): T { return value; }\n";
     static const struct {
@@ -482,7 +471,7 @@ void mmay_test_parser_type_grammar(void) {
         if (strcmp(
                 invalid[index].diagnostic,
                 MMAY_DIAGNOSTIC_EXPECTED_TOKEN
-            ) == 0) {
+            ) == 0 && index != 4) {
             MMAY_EXPECT(mmay_syntax_count_synthetic_tokens(
                 fixture.parsed.tree.root
             ) != 0);

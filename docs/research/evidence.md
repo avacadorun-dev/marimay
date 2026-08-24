@@ -110,7 +110,8 @@ Marimay adopts the invariant, not Java's API: a task may not outlive its nearest
 
 The following are hypotheses, not facts, and must be validated with prototypes and user tests:
 
-- `case Pattern => expression` is more immediately readable than Rust-style bare arms for the target audience.
+- D067's comma-delimited `Pattern => expression` arms remain immediately
+  readable for the target audience without a `case` introducer.
 - `fn` and `scope` reduce common-path typing cost while remaining immediately legible in whole programs.
 - ordinary first-parameter functions preserve dot-call ergonomics without a second behavior declaration system.
 - compiler-inferred suspension is understandable if diagnostics and observability expose suspension points.

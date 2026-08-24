@@ -12,6 +12,7 @@ typedef struct MarimayFormatToken {
     MarimaySyntaxKind parent_kind;
     MarimaySyntaxKind top_level_kind;
     size_t top_level_id;
+    size_t statement_id;
     bool in_for_header;
     bool in_attribute;
     bool in_record_expression;
@@ -24,14 +25,17 @@ typedef struct MarimayFormatCollector {
     size_t max_tokens;
     size_t max_nesting;
     size_t next_top_level_id;
+    size_t next_statement_id;
     MarimayFormatStatus status;
 } MarimayFormatCollector;
 
 typedef struct MarimayFormatDelimiter {
     MarimayTokenKind open;
     MarimaySyntaxKind parent_kind;
+    size_t comma_count;
     bool empty;
     bool grouped;
+    bool compact;
     bool trailing_comma;
 } MarimayFormatDelimiter;
 
@@ -48,11 +52,16 @@ typedef struct MarimayFormatter {
     MarimayFormatStatus status;
     MarimayTokenKind previous_code_kind;
     size_t last_top_level_id;
+    size_t last_statement_id;
+    size_t active_statement_id;
+    size_t statement_group_depth;
     bool has_previous_code;
     bool pending_space;
     bool at_line_start;
     bool after_flexible_line;
     bool last_was_comment;
+    bool statement_grouped;
+    bool statement_continuation_indented;
 } MarimayFormatter;
 
 typedef struct MarimayFormatOutput {
@@ -71,7 +80,7 @@ MarimayFormatStatus mmay_format_decode_ordinary_string(
     MarimayOwnedBytes *decoded);
 bool mmay_format_collect_node(MarimayFormatCollector *collector,
     const MarimayGreenNode *node, size_t depth, MarimaySyntaxKind top_level_kind,
-    size_t top_level_id, bool in_for_header, bool in_attribute,
+    size_t top_level_id, size_t statement_id, bool in_for_header, bool in_attribute,
     bool in_record_expression, bool in_interpolation);
 MarimayFormatStatus mmay_format_order_imports(MarimayVector *tokens,
     const unsigned char *source, size_t source_length, MarimayAllocator allocator);

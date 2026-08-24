@@ -38,11 +38,11 @@ FOR_STATEMENT	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-pro
 SCOPE_STATEMENT	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_statement_recovery	c:mmay_test_parser_statement_recovery	covered
 BREAK_STATEMENT	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_statement_recovery	c:mmay_test_parser_statement_recovery	covered
 CONTINUE_STATEMENT	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_statement_recovery	c:mmay_test_parser_statement_recovery	covered
-YIELD_STATEMENT	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_statement_recovery	c:mmay_test_parser_statement_recovery	covered
 NAME_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
 LITERAL_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
 UNARY_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
 BINARY_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
+RANGE_EXPRESSION	tests/syntax/parser/all-productions.my	tests/format/revision-surface.expected.my	c:mmay_test_parser_expression_grammar	c:mmay_test_parser_expression_recovery	covered
 ASSIGNMENT_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
 CONVERSION_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_grammar	c:mmay_test_parser_expression_grammar	covered
 MEMBER_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
@@ -51,12 +51,14 @@ INDEX_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-
 TRY_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
 SPAWN_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
 ARRAY_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
+TUPLE_EXPRESSION	tests/syntax/parser/all-productions.my	tests/format/revision-surface.expected.my	c:mmay_test_parser_expression_grammar	c:mmay_test_parser_expression_recovery	covered
 RECORD_EXPRESSION	tests/syntax/parser/all-productions.my	tests/format/braced-groups.expected.my	c:mmay_test_parser_record_field_grammar	c:mmay_test_parser_record_field_grammar	covered
 RECORD_FIELDS	tests/syntax/parser/all-productions.my	tests/format/braced-groups.expected.my	c:mmay_test_parser_record_field_grammar	c:mmay_test_parser_record_field_grammar	covered
 FIELD_VALUE	tests/syntax/parser/all-productions.my	tests/format/braced-groups.expected.my	c:mmay_test_parser_record_field_grammar	c:mmay_test_parser_record_field_grammar	covered
 CLOSURE_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_exact_delimited_grammar	c:mmay_test_parser_exact_delimited_grammar	covered
 MATCH_EXPRESSION	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
 MATCH_ARM	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_expression_recovery	c:mmay_test_parser_expression_recovery	covered
+MATCH_ARM_TAIL	tests/syntax/parser/all-productions.my	tests/format/revision-surface.expected.my	c:mmay_test_parser_expression_grammar	c:mmay_test_parser_expression_recovery	covered
 PATTERN	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_pattern_grammar	c:mmay_test_parser_pattern_grammar	covered
 OR_PATTERN	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_pattern_grammar	c:mmay_test_parser_pattern_grammar	covered
 NAME_PATTERN	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_pattern_grammar	c:mmay_test_parser_pattern_grammar	covered

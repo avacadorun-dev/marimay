@@ -1,8 +1,10 @@
 #include "checker_lookup_api.h"
 #include "checker_array_types_api.h"
 #include "checker_cfg_api.h"
+#include "checker_compound_types_api.h"
 #include "checker_core_api.h"
 #include "checker_expr_records_api.h"
+#include "checker_expr_tuples_api.h"
 #include "checker_generic_types_api.h"
 #include "package_imports_api.h"
 
@@ -29,6 +31,7 @@
     MarimayVector generic_arguments;
     bool generic_arguments_initialized = false;
     bool array_type_resolved = false;
+    bool compound_type_resolved = false;
     memset(&generic_arguments, 0, sizeof(generic_arguments));
     if (node == NULL || result == NULL || node->kind != MMAY_SYNTAX_TYPE) {
         mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
@@ -43,6 +46,17 @@
         return false;
     }
     if (array_type_resolved) {
+        return *result != MMAY_TYPE_INVALID;
+    }
+    if (!mmay_checker_private_resolve_compound_type(
+            checker,
+            node,
+            result,
+            &compound_type_resolved
+        )) {
+        return false;
+    }
+    if (compound_type_resolved) {
         return *result != MMAY_TYPE_INVALID;
     }
     name = mmay_checker_private_check_child_token(node, MMAY_TOKEN_IDENTIFIER, 0);
@@ -474,7 +488,8 @@ bool mmay_function_add_register(
         mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
         return false;
     }
-    if (!mmay_function_ensure_array_layout(function, type)) {
+    if (!mmay_function_ensure_array_layout(function, type)
+        || !mmay_function_ensure_tuple_layout(function, type)) {
         return false;
     }
     if (!mmay_mir_add_register(&function->mir, type, result)) {

@@ -4,7 +4,7 @@ enum AppError {
 
 fn message(error: AppError): string {
   return match error {
-    case Failed => "a\0b";
+    Failed => "a\0b",
   };
 }
 

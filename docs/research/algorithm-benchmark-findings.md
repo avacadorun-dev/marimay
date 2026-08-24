@@ -193,8 +193,8 @@ test should prove which archive and flags reached the final executable.
 
 ### 2. Add MIR range analysis and bounds-check elimination
 
-Loops such as `for let i = 0; i < length(values); i += 1` provide enough facts
-to eliminate or hoist many repeated length and bounds checks. The optimizer must
+Loops such as `for i in 0..values.length()` provide enough facts to eliminate
+or hoist many repeated length and bounds checks. The optimizer must
 preserve left-to-right evaluation, mutation invalidation, exact panic identity,
 and the source span of any check that remains.
 

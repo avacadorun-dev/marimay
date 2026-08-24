@@ -69,11 +69,11 @@ error[M1001]: match does not cover `Lookup.Denied`
   --> src/user.my:18:10
    |
 18 |   return match result {
-   |          ^^^^^^^^^^^^ missing case `Denied { reason: _ }`
+   |          ^^^^^^^^^^^^ missing arm `Denied { reason: _ }`
    |
 help: add an arm before the closing brace
    |
-21 |     case Denied { reason } => ...;
+21 |     Denied { reason } => ...,
    |
 ```
 
@@ -249,7 +249,7 @@ The same controlled program yields equivalent source frames under VM/native. Raw
 Under D053, use of an array iterator after an initialized-sequence mutation
 panics with `G4005` and the exact locale-independent message `array iterator
 invalidated by mutation`. The primary span is the complete
-`for const name of expression` header. `reserve` cannot produce this panic;
+`for name in expression` header. `reserve` cannot produce this panic;
 empty/no-op/error mutation paths do not change the generation. VM and native
 preserve the same code, message, span, and caller frames.
 

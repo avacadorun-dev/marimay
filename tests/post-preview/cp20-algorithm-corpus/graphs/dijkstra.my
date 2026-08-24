@@ -1,6 +1,6 @@
 public type Edge {
-  public to: int;
-  public weight: int;
+  public to: int,
+  public weight: int,
 }
 
 public type WeightedAdjacency = [][]Edge;
@@ -12,19 +12,19 @@ public fn edge(to: int, weight: int): Edge {
 public fn dijkstra(adjacency: WeightedAdjacency, start: int): Option<[]int> {
   const nodeCount = adjacency.length();
   if start < 0 || start >= nodeCount {
-    return None<[]int>();
+    return None;
   }
   const infinity = 1_000_000_000;
   let distances: []int = [];
   let visited: []bool = [];
-  for let index = 0; index < nodeCount; index += 1 {
-    distances.push(infinity);
-    visited.push(false);
+  for index in 0..nodeCount {
+    const _ = distances.push(infinity);
+    const _ = visited.push(false);
   }
   distances[start] = 0;
-  for let iteration = 0; iteration < nodeCount; iteration += 1 {
+  for iteration in 0..nodeCount {
     let selected = -1;
-    for let node = 0; node < nodeCount; node += 1 {
+    for node in 0..nodeCount {
       if !visited[node] && distances[node] < infinity && (
         selected == -1 || distances[node] < distances[selected]
       ) {
@@ -35,9 +35,9 @@ public fn dijkstra(adjacency: WeightedAdjacency, start: int): Option<[]int> {
       return Some(distances);
     }
     visited[selected] = true;
-    for const currentEdge of adjacency[selected] {
+    for currentEdge in adjacency[selected] {
       if currentEdge.to < 0 || currentEdge.to >= nodeCount || currentEdge.weight < 0 {
-        return None<[]int>();
+        return None;
       }
       const candidate = distances[selected] + currentEdge.weight;
       if candidate < distances[currentEdge.to] {

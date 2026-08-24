@@ -1,5 +1,5 @@
 public type Row {
-  public mutable left: int;
+  public mutable left: int,
 }
 
 public type Rows = []Row;

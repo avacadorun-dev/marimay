@@ -3,7 +3,7 @@
 /// Third paragraph.
 @derive(Debug) // derives Item
 type Item {
-  public value: int; // public field
+  public value: int, // public field
 }
 
 fn main(): void {

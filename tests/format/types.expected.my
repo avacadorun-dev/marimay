@@ -4,7 +4,7 @@ type Qualified = pkg.User;
 
 type Nested = Map<string, []Result<int, Error>>;
 
-type Tuple = [string, int];
+type Tuple = (string, int);
 
 type Callback = (string, int) => Result<void, Error>;
 
@@ -14,7 +14,7 @@ type ArrayNested = [][]pkg.Edge;
 
 type ArrayGeneric = Option<[]int>;
 
-type ArrayTuple = [][int, string];
+type ArrayTuple = [](int, string);
 
 type ArrayFunction = [](int, string) => []int;
 

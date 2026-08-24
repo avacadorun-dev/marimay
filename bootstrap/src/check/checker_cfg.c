@@ -6,6 +6,7 @@
 #include "checker_lookup_api.h"
 #include "checker_match_lower_api.h"
 #include "checker_match_pattern_api.h"
+#include "checker_range_loop_api.h"
 #include "checker_statement_api.h"
 
 
@@ -13,7 +14,7 @@
 
 
 
- bool mmay_checker_private_compile_return(
+bool mmay_checker_private_compile_return(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node
 ) {
@@ -84,12 +85,12 @@
     );
 }
 
- bool mmay_checker_private_compile_block(
+bool mmay_checker_private_compile_block(
     MarimayFunctionChecker *function,
     const MarimayAstNode *block
 );
 
- bool mmay_checker_private_compile_condition(
+bool mmay_checker_private_compile_condition(
     MarimayFunctionChecker *function,
     const MarimayAstNode *expression,
     MarimayExpressionValue *result
@@ -122,7 +123,7 @@
     return true;
 }
 
- bool mmay_checker_private_compile_scoped_block(
+bool mmay_checker_private_compile_scoped_block(
     MarimayFunctionChecker *function,
     const MarimayAstNode *block
 ) {
@@ -152,7 +153,7 @@
     return compiled;
 }
 
- bool mmay_checker_private_merge_initialization_states(
+bool mmay_checker_private_merge_initialization_states(
     MarimayFunctionChecker *function,
     const MarimayInitializationSnapshot *when_true,
     bool true_continues,
@@ -188,7 +189,7 @@
     return true;
 }
 
- bool mmay_checker_private_compile_if(
+bool mmay_checker_private_compile_if(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node
 ) {
@@ -359,7 +360,7 @@ cleanup:
     return accepted && !mmay_checker_has_failed(function->checker);
 }
 
- bool mmay_checker_private_compile_while(
+bool mmay_checker_private_compile_while(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node
 ) {
@@ -478,7 +479,7 @@ cleanup:
     return accepted && !mmay_checker_has_failed(function->checker);
 }
 
- bool mmay_checker_private_compile_c_for(
+bool mmay_checker_private_compile_array_for(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node
 ) {
@@ -492,244 +493,9 @@ cleanup:
         MMAY_SYNTAX_BLOCK,
         0
     );
-    const MarimaySyntaxToken *let_token = mmay_checker_private_check_child_token(
+    const MarimaySyntaxToken *in_token = mmay_checker_private_check_child_token(
         header,
-        MMAY_TOKEN_KW_LET,
-        0
-    );
-    const MarimaySyntaxToken *name_token = mmay_checker_private_check_child_token(
-        header,
-        MMAY_TOKEN_IDENTIFIER,
-        0
-    );
-    const MarimayAstNode *initializer = mmay_checker_private_check_child_node(
-        header,
-        MMAY_SYNTAX_EXPRESSION,
-        0
-    );
-    const MarimayAstNode *condition = mmay_checker_private_check_child_node(
-        header,
-        MMAY_SYNTAX_EXPRESSION,
-        1
-    );
-    const MarimayAstNode *step = mmay_checker_private_check_child_node(
-        header,
-        MMAY_SYNTAX_EXPRESSION,
-        2
-    );
-    const MarimayAstNode *step_inner = NULL;
-    MarimayCheckName name;
-    MarimayCheckLocal *local = NULL;
-    MarimayExpressionValue initial_value;
-    MarimayExpressionValue condition_value;
-    MarimayInitializationSnapshot initial_state;
-    MarimayLoopContext loop;
-    MarimayMirBlockId entry = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId condition_block = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId condition_end = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId body_block = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId step_block = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId exit_block = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId body_end = MMAY_MIR_NO_BLOCK;
-    size_t outer_local_count = function->locals.length;
-    size_t previous_depth = function->scope_depth;
-    bool scope_entered = false;
-    bool initial_state_initialized = false;
-    bool loop_pushed = false;
-    bool body_continues = false;
-    bool accepted = false;
-    memset(&initial_value, 0, sizeof(initial_value));
-    memset(&condition_value, 0, sizeof(condition_value));
-    memset(&initial_state, 0, sizeof(initial_state));
-    if (header == NULL || body == NULL) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
-        goto cleanup;
-    }
-    if (let_token == NULL) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
-        goto cleanup;
-    }
-    if (name_token == NULL || name_token->synthetic || initializer == NULL
-        || condition == NULL || step == NULL || previous_depth == SIZE_MAX) {
-        mmay_checker_fail(
-            function->checker,
-            previous_depth == SIZE_MAX
-                ? MMAY_CHECK_LIMIT_REACHED
-                : MMAY_CHECK_INVALID_ARGUMENT
-        );
-        goto cleanup;
-    }
-    function->scope_depth = previous_depth + 1;
-    scope_entered = true;
-    name.snapshot = function->checker->ast->snapshot;
-    name.start = name_token->start;
-    name.end = name_token->end;
-    if (!mmay_compile_expression(
-            function,
-            initializer,
-            MMAY_TYPE_INVALID,
-            &initial_value
-        )) {
-        goto cleanup;
-    }
-    if (mmay_expression_is_never(function, &initial_value)) {
-        accepted = true;
-        goto cleanup;
-    }
-    if (!mmay_checker_private_function_add_local(
-            function,
-            name,
-            initial_value.type,
-            true,
-            true,
-            &local
-        ) || local == NULL
-        || !mmay_checker_private_function_emit_copy(
-            function,
-            local->register_id,
-            initial_value.register_id,
-            initializer->start,
-            initializer->end
-        )) {
-        goto cleanup;
-    }
-    entry = function->block;
-    initial_state_initialized = mmay_checker_private_initialization_snapshot_init(
-        function,
-        outer_local_count,
-        &initial_state
-    );
-    if (!initial_state_initialized
-        || !mmay_checker_private_function_add_block(function, &condition_block)
-        || !mmay_checker_private_function_set_goto(
-            function,
-            entry,
-            condition_block,
-            node->start,
-            node->start
-        )) {
-        goto cleanup;
-    }
-    function->block = condition_block;
-    function->terminated = false;
-    if (!mmay_checker_private_compile_condition(function, condition, &condition_value)) {
-        goto cleanup;
-    }
-    if (mmay_expression_is_never(function, &condition_value)) {
-        accepted = true;
-        goto cleanup;
-    }
-    condition_end = function->block;
-    if (!mmay_checker_private_function_add_block(function, &body_block)
-        || !mmay_checker_private_function_add_block(function, &step_block)
-        || !mmay_checker_private_function_add_block(function, &exit_block)
-        || !mmay_checker_private_function_set_branch(
-            function,
-            condition_end,
-            condition_value.register_id,
-            body_block,
-            exit_block,
-            condition->start,
-            condition->end
-        )) {
-        goto cleanup;
-    }
-    loop.break_target = exit_block;
-    loop.continue_target = step_block;
-    loop.scope_depth = function->scope_depth;
-    if (function->loops.length >= function->mir.options.max_blocks) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
-        goto cleanup;
-    }
-    if (!mmay_vector_push(&function->loops, &loop)) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_ALLOCATION_FAILED);
-        goto cleanup;
-    }
-    loop_pushed = true;
-    function->block = body_block;
-    function->terminated = false;
-    if (!mmay_checker_private_compile_scoped_block(function, body)) {
-        goto cleanup;
-    }
-    body_continues = !function->terminated;
-    body_end = function->block;
-    function->loops.length -= 1;
-    loop_pushed = false;
-    if (body_continues && !mmay_checker_private_function_set_goto(
-            function,
-            body_end,
-            step_block,
-            body->end,
-            body->end
-        )) {
-        goto cleanup;
-    }
-    step_inner = mmay_checker_private_expression_only_node(step);
-    function->block = step_block;
-    function->terminated = false;
-    if (step_inner == NULL
-        || step_inner->kind != MMAY_SYNTAX_ASSIGNMENT_EXPRESSION) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
-        goto cleanup;
-    }
-    if (!mmay_checker_private_compile_assignment(function, step_inner)) {
-        goto cleanup;
-    }
-    if ((!function->terminated && !mmay_checker_private_function_set_goto(
-            function,
-            function->block,
-            condition_block,
-            step->end,
-            step->end
-        )) || !mmay_checker_private_initialization_snapshot_restore(
-            function,
-            &initial_state
-        )) {
-        goto cleanup;
-    }
-    function->locals.length = outer_local_count;
-    function->scope_depth = previous_depth;
-    scope_entered = false;
-    function->block = exit_block;
-    function->terminated = false;
-    accepted = true;
-
-cleanup:
-    if (loop_pushed) {
-        function->loops.length -= 1;
-    }
-    if (initial_state_initialized) {
-        mmay_checker_private_initialization_snapshot_dispose(&initial_state);
-    }
-    if (scope_entered) {
-        function->locals.length = outer_local_count;
-        function->scope_depth = previous_depth;
-    }
-    return accepted && !mmay_checker_has_failed(function->checker);
-}
-
- bool mmay_checker_private_compile_array_for(
-    MarimayFunctionChecker *function,
-    const MarimayAstNode *node
-) {
-    const MarimayAstNode *header = mmay_checker_private_check_child_node(
-        node,
-        MMAY_SYNTAX_FOR_HEADER,
-        0
-    );
-    const MarimayAstNode *body = mmay_checker_private_check_child_node(
-        node,
-        MMAY_SYNTAX_BLOCK,
-        0
-    );
-    const MarimaySyntaxToken *const_token = mmay_checker_private_check_child_token(
-        header,
-        MMAY_TOKEN_KW_CONST,
-        0
-    );
-    const MarimaySyntaxToken *of_token = mmay_checker_private_check_child_token(
-        header,
-        MMAY_TOKEN_KW_OF,
+        MMAY_TOKEN_KW_IN,
         0
     );
     const MarimaySyntaxToken *name_token = mmay_checker_private_check_child_token(
@@ -777,8 +543,8 @@ cleanup:
     memset(&condition, 0, sizeof(condition));
     memset(&next, 0, sizeof(next));
     memset(&initial_state, 0, sizeof(initial_state));
-    if (header == NULL || body == NULL || const_token == NULL
-        || of_token == NULL || name_token == NULL || name_token->synthetic
+    if (header == NULL || body == NULL || in_token == NULL
+        || name_token == NULL || name_token->synthetic
         || iterable_node == NULL || previous_depth == SIZE_MAX) {
         mmay_checker_fail(
             function->checker,
@@ -808,7 +574,7 @@ cleanup:
         (void)mmay_checker_add_diagnostic(
             function->checker,
             MMAY_DIAGNOSTIC_TYPE_MISMATCH,
-            "for-of expression must have type []T",
+            "for-in expression must have type []T or an int range",
             iterable_node->start,
             iterable_node->end
         );
@@ -1044,7 +810,7 @@ cleanup:
     return accepted && !mmay_checker_has_failed(function->checker);
 }
 
- bool mmay_checker_private_compile_loop_control(
+bool mmay_checker_private_compile_loop_control(
     MarimayFunctionChecker *function,
     const MarimayAstNode *statement
 ) {
@@ -1092,7 +858,7 @@ cleanup:
     return true;
 }
 
- bool mmay_checker_private_compile_statement(
+bool mmay_checker_private_compile_statement(
     MarimayFunctionChecker *function,
     const MarimayAstNode *statement
 ) {
@@ -1111,9 +877,6 @@ cleanup:
     if (statement->kind == MMAY_SYNTAX_DEFER_STATEMENT) {
         return mmay_checker_private_compile_defer(function, statement);
     }
-    if (statement->kind == MMAY_SYNTAX_YIELD_STATEMENT) {
-        return mmay_checker_private_compile_yield(function, statement);
-    }
     if (statement->kind == MMAY_SYNTAX_EXPRESSION_STATEMENT) {
         return mmay_checker_private_compile_expression_statement(function, statement);
     }
@@ -1129,13 +892,16 @@ cleanup:
             MMAY_SYNTAX_FOR_HEADER,
             0
         );
-        return mmay_checker_private_check_child_token(
-                header,
-                MMAY_TOKEN_KW_CONST,
-                0
-            ) != NULL
-            ? mmay_checker_private_compile_array_for(function, statement)
-            : mmay_checker_private_compile_c_for(function, statement);
+        const MarimayAstNode *iterable = mmay_checker_private_check_child_node(
+            header,
+            MMAY_SYNTAX_EXPRESSION,
+            0
+        );
+        const MarimayAstNode *inner = iterable == NULL ? NULL
+            : mmay_checker_private_expression_only_node(iterable);
+        return inner != NULL && inner->kind == MMAY_SYNTAX_RANGE_EXPRESSION
+            ? mmay_checker_private_compile_range_for(function, statement)
+            : mmay_checker_private_compile_array_for(function, statement);
     }
     if (statement->kind == MMAY_SYNTAX_BREAK_STATEMENT
         || statement->kind == MMAY_SYNTAX_CONTINUE_STATEMENT) {
@@ -1149,7 +915,7 @@ cleanup:
     return false;
 }
 
- bool mmay_checker_private_compile_block(
+bool mmay_checker_private_compile_block(
     MarimayFunctionChecker *function,
     const MarimayAstNode *block
 ) {

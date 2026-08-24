@@ -13,7 +13,7 @@ import * as convert from "std/convert";
 import { Error as IoError, println } from "std/io";
 
 type Counter {
-  public mutable value: int;
+  public mutable value: int,
 }
 
 fn next(counter: Counter): int {
@@ -61,17 +61,17 @@ fn orderedLine(): string {
 
 fn parsedError(error: convert.ParseError): string {
   return match error {
-    case convert.Empty => "empty";
-    case convert.InvalidDigit { offset } => $"digit:{offset}";
-    case convert.OutOfRange => "range";
-    case convert.InvalidRadix => "radix";
+    convert.Empty => "empty",
+    convert.InvalidDigit { offset } => $"digit:{offset}",
+    convert.OutOfRange => "range",
+    convert.InvalidRadix => "radix",
   };
 }
 
 fn parsed(value: Result<int, convert.ParseError>): string {
   return match value {
-    case Ok(number) => $"ok:{number}";
-    case Err(error) => parsedError(error);
+    Ok(number) => $"ok:{number}",
+    Err(error) => parsedError(error),
   };
 }
 

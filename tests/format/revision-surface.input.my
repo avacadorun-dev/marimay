@@ -1,0 +1,15 @@
+type Entry{key:string,value:int,}
+type Singleton=(int,);
+enum State{Ready,Failed{code:int,message:string,},}
+fn unpack(value:(int,)):int{return match value{(item,)=>item,};}
+fn inspect(values:[]int,state:State):bool{
+const tuple=("port",8080);
+const singleton=(7,);
+
+
+const first=values[0];
+const chosen=match state{Ready=>first,Failed{code,message:_}=>{const adjusted=code+1;adjusted},};
+for index in 0..=2{const _=values.push(index);}
+
+return values[0]==-1&&values[1]==0&&values[2]==1&&tuple==("port",8080)&&unpack(singleton)==7&&chosen>=0;
+}

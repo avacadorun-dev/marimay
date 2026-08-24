@@ -1808,3 +1808,185 @@ Reason: a root parameter and return value make both inputs and termination
 visible in ordinary typed control flow. They preserve lexical cleanup and
 avoid a hidden global accessor, shell semantics, an immediate `exit`, or a
 second test-only entry path.
+
+## D067 — Match arms are comma-separated expressions with explicit remainder capture
+
+Status: accepted.
+
+`match` is expression-oriented throughout. An arm is `pattern [if guard] =>
+body`, arms are separated by commas, and a trailing comma is accepted. The
+`case` introducer and semicolon-terminated expression arms are removed. An arm
+body is either one expression or a block whose final non-terminated expression
+is the arm value. Every reachable block-arm path must reach that tail
+expression, return from the enclosing function, panic, or otherwise have type
+`never`. The contextual `yield expression;` transfer form is removed; `yield`
+is again an ordinary identifier in every context.
+
+An unguarded wildcard `_` remains a discard catch-all. A catch-all that retains
+the matched value is written `_ as name`. A bare identifier at an arm's root is
+always interpreted as a unit constructor and an unknown spelling is an unknown
+variant, never a new binding. Payload and named-field positions retain ordinary
+binding shorthand, so `Failed(error)` and `Point { x, y }` remain compact.
+
+This decision supersedes D005 only for arm spelling and remainder capture,
+D038 for `case`/`yield`, and D031 where match layout assumed semicolon arms. It
+does not change exhaustiveness, guard, OR-pattern, evaluation-order, or nominal
+pattern semantics.
+
+Reason: a match is already an expression, so statement punctuation and a
+generator-associated transfer word add a second local value model. Commas make
+the arms visibly a list, a tail expression matches other expression blocks,
+and explicit remainder capture prevents a misspelled unit variant from silently
+becoming an exhaustive binding.
+
+## D068 — One `for name in iterable` model with closed integer ranges
+
+Status: accepted.
+
+Marimay has one `for` header: `for name in expression`. The iteration binding
+is an immutable identifier and is freshly created for each iteration. `_` is
+not a loop binding. Arrays and standard iterators use the existing single-
+evaluation, cleanup, and invalidation contracts.
+
+The language adds integer range forms `start..end` and `start..=end` in the
+iterable position of a `for` header. Both operands must have exact type
+`int`/`i64` and are evaluated exactly once from left to right before iteration.
+`..` excludes `end`; `..=` includes it. A range with `start > end` is empty.
+Range iteration cannot overflow when advancing the final `int::MAX` element.
+In 0.1 a range is a compiler-known loop iterable, not a first-class value: it
+cannot be stored, returned, passed, or constructed outside that header.
+Stateful loops use `while`; the C-style `for let ...; ...; ...` header and
+`for const name of expression` are removed without compatibility aliases.
+
+This decision supersedes D033 and the loop-header portion of D038. D053 array
+iterator generations, lexical loop control, and closure capture remain intact.
+
+Reason: iteration is the common operation, while a second declaration and
+punctuation-heavy C header duplicates `while`. A closed range type covers
+ordinary counters without implicit conversion or backend-specific arithmetic.
+
+## D069 — Enum constructors participate in expected-type and contextual mapper inference
+
+Status: accepted.
+
+A unit enum constructor is a value. When the expected type uniquely selects a
+concrete enum instantiation, `None` is sufficient for `Option<T>.None`; explicit
+`None<T>()` remains unnecessary and is removed from canonical examples. A
+positional enum constructor may occupy an exact contextual unary-mapper
+position whose input is its payload and whose output is its enum. In 0.1,
+compiler-known `Result.mapError` provides such a position, so it may select
+`AppError.Network` as the mapping from `http.Error` to `AppError`. This is a
+contextual constructor application, not a materialized first-class function:
+the constructor cannot be stored, returned, or passed through an ordinary
+function-typed value. Unit and named-payload constructors are not implicitly
+callable.
+
+Generic arguments are inferred from the expected result/function type and from
+payload arguments. Inference must still produce one complete concrete nominal
+type; ambiguity is a type error. Ordinary shadowing and visibility apply before
+prelude or enum-constructor interpretation. Closure parameter and result types
+may be omitted for an expression-bodied closure only when a compiler-known
+higher-order operation supplies one exact input and result type. In 0.1 this
+contextual closure rule is implemented for `Result.mapError`; expanding it to
+ordinary function-valued parameters requires a separate decision and runtime
+representation.
+
+Reason: constructors already have deterministic typed call behavior. The
+contextual mapper form removes mechanical mapping lambdas at the supported
+higher-order boundary without claiming a general closure representation,
+implicit error conversion, or an overload facility.
+
+## D070 — `as` is total; fallible integer conversion is named
+
+Status: accepted.
+
+`value as Target` is valid only when every value of the source integer type is
+representable in `Target`; its type is always `Target`. Potentially narrowing
+or signedness-changing conversion is `tryConvert<Target>(value)` and has type
+`Option<Target>`. Both forms cover exactly the eight D047 integer primitives,
+perform no implicit integer/float conversion, and never wrap, saturate, or
+panic. `tryConvert` evaluates its argument once and returns `None` when the
+runtime value is not representable.
+
+This decision supersedes the conversion-expression result rule in D047 while
+retaining its arithmetic policy families and runtime representability rules.
+
+Reason: the spelling of an operation should reveal whether failure is part of
+its type. A single `as` whose result alternates between `T` and `Option<T>`
+requires readers to reproduce the integer range table at every use site.
+
+## D071 — Tuples use parentheses and data declarations use commas
+
+Status: accepted.
+
+Tuple types, values, and patterns use parentheses: `(string, int)`,
+`("port", 8080)`, and `(name, count)`. A one-element tuple requires a trailing
+comma; ordinary `(expression)` remains grouping and `(T) => U` remains a
+function type. Brackets are reserved for `[]T`, array literals, and indexing.
+
+Record fields and named enum-payload fields are comma-separated data items with
+an optional trailing comma. Enum variants, construction fields, and pattern
+fields already follow the same rule. Interface/function signatures, imports,
+aliases, and executable statements retain semicolons.
+
+This decision supersedes D025, the tuple/data examples in D031 and D054, and
+the corresponding sections of the baseline grammar.
+
+Reason: tuple/array identity should be visible without contextual typing, and
+data-member lists should not alternate between statement punctuation inside an
+item and list punctuation immediately outside it.
+
+## D072 — Every active 0.1 grammar word is a hard keyword
+
+Status: accepted.
+
+The hard-keyword set is `as break const continue defer else enum extern false
+fn for from if import in interface let match mutable public return scope spawn
+true type unsafe while`. These spellings are unavailable as identifiers in all
+source contexts. `case`, `of`, and `yield` no longer have grammar roles and are
+ordinary identifiers. `test`, `fuzz`, `panic`, `any`, `async`, `await`,
+`class`, `extends`, `impl`, and `throws` remain ordinary identifiers. `null`
+and `undefined` remain reserved sentinels.
+
+This decision supersedes D038's contextual-keyword boundary. It does not
+reserve words for constructs absent from the language.
+
+Reason: active grammar spellings used as API names complicate recovery,
+highlighting, documentation, and human scanning. Reserving only words that
+actually participate in 0.1 keeps the boundary finite without occupying
+hypothetical future syntax.
+
+## D073 — Canonical formatting preserves statement grouping and breaks boolean chains
+
+Status: accepted.
+
+Within a statement block, the formatter preserves at most one user-authored
+empty line between adjacent statements. Additional blank lines collapse to
+one; a source gap without an empty line is not expanded except by existing
+structural rules. At a required line break, a chain of `&&` or `||` breaks
+before each operator with the operator aligned at the continuation indent.
+Index brackets stay attached to a single scalar or otherwise-fitting index
+expression; the formatter does not produce a three-line `values[\n  0\n]`
+shape merely because the surrounding expression exceeds the target width.
+
+This refines D015, D026, and D031 without adding configuration or changing the
+100-column metric.
+
+Reason: blank lines communicate local statement groups, while leading boolean
+operators make long conditions and returns scan predictably. Isolating a short
+index on its own lines spends vertical space without exposing structure.
+
+## D074 — Discarding `Result` requires explicit source intent
+
+Status: accepted.
+
+An expression statement whose value has type `Result<T,E>` is a type-check
+error. The programmer must propagate with `?`, inspect with `match` or a
+consuming API, return it, or explicitly discard it through `const _ =
+expression;`. Calls returning `void` remain valid expression statements.
+This rule applies equally to free calls, dot calls, compiler-known operations,
+and both execution engines; it introduces no implicit unwrap or cleanup policy.
+
+Reason: expected failure is part of the type. Making accidental discard look
+identical to a `void` call defeats that visibility, while the existing discard
+binding gives deliberate fire-and-forget code an explicit spelling.

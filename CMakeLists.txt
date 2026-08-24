@@ -307,6 +307,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_cfg.c
   bootstrap/src/check/checker_defer.c
   bootstrap/src/check/checker_core.c
+  bootstrap/src/check/checker_compound_types.c
   bootstrap/src/check/checker_declaration_constants.c
   bootstrap/src/check/checker_declaration_enums.c
   bootstrap/src/check/checker_declaration_functions.c
@@ -331,6 +332,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_expr_records.c
   bootstrap/src/check/checker_expr_scalar.c
   bootstrap/src/check/checker_expr_string.c
+  bootstrap/src/check/checker_expr_tuples.c
   bootstrap/src/check/checker_expression.c
   bootstrap/src/check/checker_interpret.c
   bootstrap/src/check/checker_imported_nominal.c
@@ -344,7 +346,9 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_match_pattern.c
   bootstrap/src/check/checker_match_witness.c
   bootstrap/src/check/checker_publication.c
+  bootstrap/src/check/checker_range_loop.c
   bootstrap/src/check/checker_statement.c
+  bootstrap/src/check/checker_tuple_match.c
   bootstrap/src/check/entry.c
   bootstrap/src/check/facts.c
   bootstrap/src/check/package_graph.c
@@ -375,6 +379,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/format/document.c
   bootstrap/src/format/formatter.c
   bootstrap/src/format/formatter_collect.c
+  bootstrap/src/format/formatter_layout.c
   bootstrap/src/format/formatter_types.c
   bootstrap/src/lex/lexer.c
   bootstrap/src/lex/lexer_scan.c
@@ -424,8 +429,10 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/native/c_emitter_numeric.c
   bootstrap/src/native/c_emitter_validate.c
   bootstrap/src/parse/parser.c
+  bootstrap/src/parse/parser_closure.c
   bootstrap/src/parse/parser_declaration.c
   bootstrap/src/parse/parser_expression.c
+  bootstrap/src/parse/parser_match.c
   bootstrap/src/session.c
   bootstrap/src/source/source_manager.c
   bootstrap/src/syntax/syntax.c

@@ -28,21 +28,21 @@ void mmay_test_mir_array_mutation(void) {
     static const char source[] =
         "fn probe(): int {\n"
         "  let values = [1, 2, 3]; let alias = values;\n"
-        "  alias.reserve(8); alias.push(4);\n"
+        "  const _ = alias.reserve(8); const _ = alias.push(4);\n"
         "  const popped = match values.pop() {\n"
-        "    case Some(value) => value; case None => 0;\n"
+        "    Some(value) => value, None => 0,\n"
         "  };\n"
-        "  alias.truncate(1); const shortened = values.length();\n"
-        "  values.clear();\n"
+        "  const _ = alias.truncate(1); const shortened = values.length();\n"
+        "  const _ = values.clear();\n"
         "  return popped * 100 + shortened * 10 + alias.length();\n"
         "}\n"
         "fn invalidated(): void {\n"
         "  let values = [1, 2];\n"
-        "  for const value of values { values.clear(); }\n"
+        "  for value in values { const _ = values.clear(); }\n"
         "}\n";
     static const unsigned char panic_message[] =
         "array iterator invalidated by mutation";
-    static const char loop_header[] = "for const value of values";
+    static const char loop_header[] = "for value in values";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     MarimayCheckInterpretOptions options = mmay_check_interpret_default_options();

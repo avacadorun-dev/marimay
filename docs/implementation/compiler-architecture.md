@@ -187,6 +187,11 @@ bootstrap/src/check/
                         and publication phases
   checker_expression.c  expression dispatcher only
   checker_expr_*.c      scalar, call, nominal, and record expression owners
+  checker_compound_types.c
+                        tuple/function type recognition and interning
+  checker_expr_tuples.c tuple value lowering and recursive MIR layout ownership
+  checker_tuple_match.c tuple-pattern binding and match lowering
+  checker_range_loop.c  exact D068 integer-range loop CFG lowering
   checker_expr_io.c     exact imported std/io.println recognition and lowering
   checker_expr_string.c interpolation plus closed std/convert lowering
   checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
@@ -306,6 +311,8 @@ tests/c-unit/
   test_formatter_{core,trivia,failures,support}.c
   test_formatter_array_types.c
   test_checker_array_types.c
+  test_pre1_surface_differential.c
+                        D067-D074 checker/MIR/VM/native integration contract
   test_compiler_service_array_types.c
   test_cli_cp18_array_spelling.c
   test_check_entry.c
@@ -588,6 +595,14 @@ checkpoint:
 | `tests/c-unit/test_compiler_service_array_types.c` | 0 | 194 | canonical nested/generic signatures, stale results, limits, and output allocation cleanup |
 | `tests/c-unit/test_cli_cp18_array_spelling.c` | 0 | 132 | public fmt/check/run/test-both/build/G4002 differential acceptance |
 | `tests/c-unit/test_cli_cp17_array_mutation.c` | 0 | 135 | public fmt/check/run/test-both/build/artifact and VM/native G4005 acceptance |
+| `bootstrap/src/parse/parser_match.c` | 0 | 94 | D067 block-arm tail-expression recognition without a contextual transfer statement |
+| `bootstrap/src/parse/parser_closure.c` | 0 | 105 | closure lookahead and optional contextual parameter/result annotations |
+| `bootstrap/src/check/checker_range_loop.c` | 0 | 287 | D068 exact-once integer bounds, immutable binding, loop CFG, and inclusive-maximum safety |
+| `bootstrap/src/check/checker_compound_types.c` | 0 | 125 | parenthesized tuple/function type recognition and deterministic interning |
+| `bootstrap/src/check/checker_expr_tuples.c` | 0 | 262 | tuple construction plus recursive tuple layout availability across function boundaries |
+| `bootstrap/src/check/checker_tuple_match.c` | 0 | 417 | tuple destructuring bindings, exhaustiveness, scoped projection, and typed arm joining |
+| `bootstrap/src/format/formatter_layout.c` | 0 | 221 | D071 required singleton-tuple commas plus D073 blank-line preservation, boolean-chain breaks, and compact index grouping |
+| `tests/c-unit/test_pre1_surface_differential.c` | 0 | 254 | D067-D074 positive integration, ignored-Result and range-value negatives, MIR oracle, VM, and native parity |
 | `bootstrap/src/cli/cli_display.c` | 0 | 61 | bounded UTF-8-safe command-argument display escaping shared by diagnostics and formatter reporting |
 | `bootstrap/src/cli/cli_heap_limit.c` | 0 | 83 | D055 decimal range, default, duplicate, and argument-location policy |
 | `bootstrap/src/cli/cli_resource_report.c` | 0 | 48 | D055 classified human/short/JSON runtime-resource rendering shared by run and test |

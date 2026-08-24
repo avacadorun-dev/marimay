@@ -22,17 +22,20 @@ checker-backed private-preview corpus. The implemented language slice includes
 scalar control flow, checked integer behavior, deterministic `f64`, dynamic
 primitive interpolation, integer parse/format, and `println(string)`, nominal
 records/enums/interfaces, `Option`/`Result`/`?`, lexical `defer`, local packages
-and owned dot calls, and managed `[]T` arrays.
+and owned dot calls, managed `[]T` arrays, parenthesized tuples, comma-delimited
+data declarations and match arms with block-tail values, unified iterable
+`for`, compiler-known integer ranges, total `as`, `tryConvert`, contextual
+`mapError` mappers, and explicit diagnostics for discarded `Result` values.
 
 ## Exclusions
 
 - Program argument access, typed standard streams, `Bytes`/builders,
   paths/files/environment, `Map`/`Set`, `std/cli`, and typed JSON remain
   CP31–CP38. User-defined formatting remains deliberately deferred by D065.
-- Contextual inference for a generic constructor is incomplete: despite the
-  language return-context rule, `return None;` can report `R0001`. Use the
-  explicit working form `return None<T>();` until the I2 baseline-conformance
-  owner closes this gap.
+- Generic unit constructors now use their expected nominal type, including
+  nested contexts such as `Ok(None)`. Positional constructor shorthand and
+  annotation-free expression closures are contextual only at compiler-known
+  `Result.mapError` in 0.1; they are not general storable function values.
 - Native `mmay run`, `mmay init`, `mmay doctor`, and complete install artifacts
   remain CP39. Commands shown as staged are not executable promises.
 - Portable public `.myb`/`mmay exec`, networking and direct-style tasks,

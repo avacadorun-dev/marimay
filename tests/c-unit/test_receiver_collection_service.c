@@ -18,15 +18,14 @@ static const char mmay_receiver_service_store[] =
 static const char mmay_receiver_service_type_only[] =
     "import { Stack } from \"acme/store\";\n"
     "fn typeOnly(stack: Stack): int {\n"
-    "  stack.push(1); const taken = stack.pop(); stack.clear();\n"
+    "  const _ = stack.push(1); const taken = stack.pop(); const _ = stack.clear();\n"
     "  return taken + stack.length();\n"
     "}\n";
 
 static const char mmay_receiver_service_named[] =
-    "import { Stack, clear as reset, length as size, pop as take, push as put } "
-    "from \"acme/store\";\n"
+    "import { Stack, clear as reset, length as size, pop as take, push as put } from \"acme/store\";\n"
     "fn named(stack: Stack): int {\n"
-    "  put(stack, 1); stack.push(2);\n"
+    "  put(stack, 1); const _ = stack.push(2);\n"
     "  const taken = take(stack) + stack.pop();\n"
     "  reset(stack); return taken + size(stack) + stack.length();\n"
     "}\n";
@@ -34,9 +33,9 @@ static const char mmay_receiver_service_named[] =
 static const char mmay_receiver_service_namespace[] =
     "import * as store from \"acme/store\";\n"
     "fn namespaced(stack: store.Stack): int {\n"
-    "  store.push(stack, 1); stack.push(2);\n"
+    "  const _ = store.push(stack, 1); const _ = stack.push(2);\n"
     "  const taken = store.pop(stack) + stack.pop();\n"
-    "  store.clear(stack);\n"
+    "  const _ = store.clear(stack);\n"
     "  return taken + store.length(stack) + stack.length();\n"
     "}\n";
 
