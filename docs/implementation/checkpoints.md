@@ -1,9 +1,9 @@
 # Marimay checkpoint ledger
 
 Status: authoritative execution queue.
-Audit date: 2026-08-23.
+Audit date: 2026-08-24.
 
-This ledger contains every checkpoint CP0–CP40 exactly once. Product gate
+This ledger contains every checkpoint CP0–CP41 exactly once. Product gate
 state and release sequencing live in the [product roadmap](roadmap.md); direct
 reports live in the [evidence index](evidence/README.md); compact IDs, states,
 dependencies, evidence scope, and next actions live in
@@ -89,7 +89,7 @@ git diff --check
 
 ## Active checkpoint card contract
 
-Every CP29–CP40 card has exactly these sections: `Outcome`, `Why now /
+Every CP29–CP41 card has exactly these sections: `Outcome`, `Why now /
 dependencies`, `Authority and decisions`, `In scope`, `Out of scope`, `Owners
 to inspect`, `Required vertical coverage`, `Focused tests and acceptance
 commands`, `Evidence and completion rule`, `Removal gates / remaining
@@ -359,13 +359,15 @@ registry/dependency workflows, production LSP/test tooling, FFI, public
 portable bytecode, cross compilation, desktop support, and self-hosting are
 excluded. N0 and claimed platform evidence still block publication. CP28→CP29
 is the explicit transition from the completed algorithm foundation to product
-alpha work.
+alpha work. CP41 changes no CLI0 source surface; it is the separate I4
+performance prerequisite inserted between CP38 and CP39.
 
-## Active sequence CP29-CP40
+## Active sequence CP29-CP41
 
 The sequence is deliberately linear so exactly one card is executable. CP29
 and CP30 are `verified`; CP31 is `ready`, and every later card is `planned`
-behind its immediate predecessor.
+behind its declared predecessor. Execution order is CP31–CP38, CP41, CP39,
+then CP40; numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
 
@@ -1255,11 +1257,12 @@ streaming remains I6/I9; schema/registry work remains outside CLI0.
 ### Handoff packet for the next agent
 
 Pass the JSON codec contract and package, generated metadata if any, fuzz/
-allocation evidence, public transformer, and CP39 card.
+allocation evidence, public transformer, and CP41 card. CP39 waits for the
+separate native-code pressure checkpoint.
 
 ## CP39 - Native run init doctor and installable artifacts
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP38.
+State: `planned`. Parent gate: CLI0. Predecessor: CP41.
 
 ### Outcome
 
@@ -1270,8 +1273,9 @@ without per-project compiler/linker/SDK selection.
 ### Why now / dependencies
 
 CP29–CP38 provide the complete bounded application surface; CP10/CP13 provide
-native build/runtime artifacts. Installation and native run must be proven only
-after the shipped workloads and standard packages exist.
+native build/runtime artifacts; CP41 closes the measured x86_64 code-pressure
+gap. Installation and native run must be proven only after the shipped
+workloads, standard packages, and required native performance repair exist.
 
 ### Authority and decisions
 
@@ -1366,13 +1370,14 @@ bounded local CLI claim and enumerates every exclusion without publishing it.
 
 ### Why now / dependencies
 
-CP40 integrates CP29–CP39 only after each is verified. It is the CLI0 closure
-audit, not a semantic implementation checkpoint or P0.
+CP40 integrates CP29–CP39 only after each is verified and audits the separate
+CP41 I4 evidence as a release prerequisite. It is the CLI0 closure audit, not
+a semantic implementation checkpoint or P0.
 
 ### Authority and decisions
 
 Use accepted decisions/specs, N0, the product roadmap release ladder, CP29
-closure matrix, and all CP29–CP39 evidence. This card may change release
+closure matrix, all CP29–CP39 evidence, and CP41. This card may change release
 metadata/docs only. Any semantic/API defect returns to its owning checkpoint or
 receives a newly planned atomic checkpoint. Publication additionally requires
 N0 verified, a repository license, controlled public repository/docs/security
@@ -1399,12 +1404,13 @@ upload, namespace reservation, or stable 0.1.0 claim.
 
 Only focused integration/release fixtures; version/help/doctor/artifact owners;
 public examples; release/security/support docs; CI/release-manifest generation;
-roadmap/register/evidence index; CP29 closure matrix and CP30–CP39 evidence.
+roadmap/register/evidence index; CP29 closure matrix, CP30–CP39 evidence, and
+the CP41 before/after performance and equivalence report.
 Do not turn an existing broad final-preview test into a new semantic owner.
 
 ### Required vertical coverage
 
-Map every CLI0 claim and CP29–CP40-assigned requirement to direct evidence;
+Map every CLI0 claim and CP29–CP41-assigned requirement to direct evidence;
 run fmt/check/all tests, VM/native run, native builds, installed/build-tree and
 debug/release comparisons on all claimed hosts; compare stdout/stderr/exits,
 diagnostics, file outputs, resources, panics/spans; run sanitizers, LSan,
@@ -1451,6 +1457,155 @@ notes and the product roadmap; they are absent, not stubbed behind public names.
 
 Pass the final claim/evidence audit, exact source and artifact hashes, known
 limitations, N0/publication authorization status, and the roadmap's post-CLI0
-I6/E0 requirements. Do not assign CP41+ until the focused I6 planning audit
-proves atomicity.
+I6/E0 requirements. CP41 is already a verified prerequisite at this point;
+the focused I6 planning audit assigns CP42+.
+
+## CP41 - x86_64 native code-generation pressure
+
+State: `planned`. Parent gate: I4. Predecessor: CP38. Evidence scope: `pushed-ci`.
+Trigger evidence:
+[CP41 x86_64 code-generation trigger](evidence/cp41-x86-codegen-trigger-2026-08-24.md).
+
+### Outcome
+
+Portable C17 emitted from the same typed MIR no longer amplifies managed
+record, array, enum, status, and cleanup state into the demonstrated x86_64
+spill/branch penalty. Safe bounds and overflow checks, managed identity and
+rooting, panic spans, allocation failures, and VM/native observations remain
+exactly unchanged. Completion uses platform-local D056 budgets; it does not
+promise universal parity with Go or Rust.
+
+### Why now / dependencies
+
+The exact CP30 compiler and unchanged eight-workload corpus exposed a selective
+Linux x86_64 slowdown: stack, queue, heap-sort, and min-heap lose materially
+more relative to the same Go/Rust participants than on macOS arm64, while the
+nine focused array probes scale normally. Same-source cross-target assembly
+then showed approximately one-third larger x86_64 hot functions and many more
+stack-addressed operations. This is a separate backend-efficiency problem, not
+a reason to rewrite the benchmark algorithms or weaken VM semantics. CP41 is
+scheduled after CP38 and before CP39–CP40: it does not displace the current
+CP31 or the semantic cards, avoids a CLI0/I4 dependency cycle, and repairs the
+backend before installation evidence and before I6 adds more long-lived task
+and cleanup state.
+
+### Authority and decisions
+
+Use D013, D040, D045, D053, D055–D063, the C17 AOT and VM/native-equivalence
+contracts in `docs/spec/execution.md`, the compiler architecture, and the D056
+measurement protocol. D056 makes Go/Rust ratios exploratory only; formal
+regression and improvement gates are per-platform Marimay distributions. D059
+forbids making LTO the semantic/runtime boundary, and D063 views remain
+non-escaping and safepoint-aware. No source semantic or public API change is
+authorized. A native ABI version, observable failure/resource-order change, or
+new representation rule requires an accepted decision and corresponding spec
+and test changes before implementation.
+
+### In scope
+
+Capture a clean before-baseline on a dedicated Linux x86_64 runner and a
+supplemental macOS arm64 report; retain emitted C, compiler optimization
+remarks, symbolized assembly, and stable hardware-counter observations for the
+affected workloads. Attribute live ranges and spills across managed handles,
+record/array activation views, immediate enums, status values, cleanup state,
+and panic/error edges. Apply only verified-MIR/native-C17 changes such as
+shorter temporary live ranges, reuse of validated views, narrower materialized
+state, cold-path outlining, or nonescaping internal scalar-enum transport when
+the existing ABI and exact fallback remain intact. Cover the nine focused
+probes and all eight canonical algorithms without changing their work counts,
+checksums, or language implementations.
+
+### Out of scope
+
+No unchecked source operation, removed bounds/overflow/identity/generation
+check, changed panic or allocation behavior, benchmark-specific opcode,
+algorithm/corpus rewrite, mandatory `-march=native`, target-specific assembly
+or C++, LTO-only correctness boundary, cross-language ranking budget, public
+ABI promise, I6 scheduler work, or release claim enters CP41.
+
+### Owners to inspect
+
+Inspect `docs/implementation/compiler-architecture.md`, typed-MIR range and
+verification owners, `bootstrap/src/native/c_emitter_emit.c`,
+`c_emitter_managed.c`, `c_emitter_range.c`,
+`c_emitter_array_mutation.c`, their narrow private headers, generated runtime
+headers, and the focused native-emitter/MIR/VM/differential tests. Inspect the
+sibling `algorithm-benchmarks` protocol, probe, corpus, budget, and CI owners.
+Do not add optimization policy to the broad emitter coordinator or duplicate
+source semantics in a lowering/backend owner.
+
+### Required vertical coverage
+
+Pin typed-MIR and bytecode shapes before and after; prove the VM oracle and
+observable native results are unchanged at O0/O2 under Clang/GCC and the
+applicable MSVC matrix. Cover call-free and allocating/safepoint paths,
+reference and scalar layouts, alias replacement, nested views, growth and
+generation invalidation, Option success/empty paths, cleanup/panic edges, and
+every reachable deterministic allocation-failure index. Add structural x86_64
+and arm64 code-generation fixtures plus exact-checksum performance runs.
+Sanitizer, LSan, architecture, memory-policy, generated-artifact, and full
+VM/native differential gates remain mandatory.
+
+### Focused tests and acceptance commands
+
+Before editing and after the candidate revision, run from the sibling corpus:
+
+```sh
+MMAY=/absolute/path/to/release/mmay ./benchmarks/probes.py \
+  --samples 11 --warmups 3 \
+  --output benchmarks/results/cp41-probes-linux-x86_64.json
+MMAY=/absolute/path/to/release/mmay ./benchmarks/run.py \
+  --languages marimay,go,rust --samples 11 --warmups 3 \
+  --output benchmarks/results/cp41-algorithms-linux-x86_64.md
+./benchmarks/validate_results.py \
+  benchmarks/results/cp41-probes-linux-x86_64.json \
+  benchmarks/results/cp41-algorithms-linux-x86_64.json
+```
+
+Compile the same retained generated C and runtime with the same C compiler and
+flags for arm64 and x86_64; archive optimization remarks, symbol sizes,
+disassembly, and a scripted count of stack-addressed operations. On an eligible
+Linux runner, collect at least eleven balanced observations of cycles,
+instructions, branches, branch misses, cache references, and cache misses for
+stack, queue, heap-sort, and min-heap. Run the focused MIR/native-emitter tests,
+exact workload checksums, full VM/native differential, and the common tail.
+
+### Evidence and completion rule
+
+The 2026-08-24 trigger run is diagnostic only: its host load and Go queue noise
+make it ineligible as a new D056 baseline. CP41 first records a D056-compatible
+before-run and then an identical-protocol after-run at exact pushed revisions
+on a dedicated Linux x86_64 runner. All nine probes and eight algorithms must
+remain within reviewed platform budgets. Stack and queue must each reduce the
+Marimay median and retired instructions by more than the greater of 15%, the
+before noise fraction, and the after noise fraction. Heap-sort and min-heap
+must not regress, and at least one must improve by more than the greater of
+10% and both run noise fractions. Retained same-compiler disassembly must show
+at least 20% fewer stack-addressed operations across the stack and queue hot
+symbols without increasing their arm64 count. Exact outputs, stderr, exits,
+panic spans, allocation/resource behavior, and VM/native results must match.
+
+The report publishes every raw sample/order event, metadata/hash, perf command
+and counter, generated-C/disassembly artifact hash, and an explanatory before/
+after table. Go/Rust and macOS ratios remain labeled exploratory and cannot
+pass or fail CP41. Hardware counters are required for the selected completion
+runner; an environment that cannot expose stable counters is supplemental
+only. State becomes `verified` only after the exact candidate passes pushed CI
+and the complete evidence is linked here and in the evidence index.
+
+### Removal gates / remaining limitations
+
+Remove diagnostic emitter dumps, duplicated fast/slow lowering, target-name
+conditionals, benchmark-specific special cases, and any optimization whose
+fallback cannot preserve the existing portable ABI and failure order. Keep the
+general checked path and D063 invalidation rules. CP41 does not close the D057
+five-platform public-alpha registry or prove parity with another language.
+
+### Handoff packet for the next agent
+
+Pass the exact before/after revisions and artifact hashes, raw D056 reports,
+perf and cross-target assembly bundle, retained correctness/sanitizer results,
+remaining target-specific limitations, and the CP39 install/native-run card.
+CP39 and CP40 must retain this evidence in the CLI0 artifact and claim audits;
+the first atomic I6 card remains CP42 or later.
 <!-- checkpoint-register:end -->

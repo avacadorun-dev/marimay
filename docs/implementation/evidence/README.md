@@ -63,6 +63,10 @@ legal/search/control/PATH evidence and an accepted follow-up identity decision.
 ## I4
 
 - [Scalar C17 emitter](i4-scalar-c17-emitter-iteration-1-2026-08-13.md), [strings/panic/never](i4-string-panic-never-iteration-2-2026-08-13.md), [managed arrays](i4-managed-arrays-iteration-9-2026-08-14.md), [f64/matrix](i3-f64-iteration-8-2026-08-13.md), [native build CP10](cp10-native-build-2026-08-18.md), [test equivalence CP11](cp11-ruda-test-2026-08-18.md), [profile runtime CP13](cp13-release-runtime-2026-08-19.md), [resource policy CP19](cp19-resource-limits-2026-08-21.md), [algorithm rebaseline CP28](cp28-release-rebaseline-2026-08-22.md), and [release hardening](cp28-release-hardening-2026-08-23.md).
+- [CP41 x86_64 code-generation trigger](cp41-x86-codegen-trigger-2026-08-24.md)
+  records a pushed-run performance anomaly and same-source cross-target
+  narrowing. It plans the checkpoint but is not its clean D056 baseline or
+  completion evidence.
 
 ## I5
 
@@ -77,10 +81,19 @@ differential, allocation, performance, and sustained-fuzz evidence. Neither
 report closes CLI0 or any parent product gate; CP31 is the sole ready
 checkpoint, and CP31–CP40 must each add direct evidence.
 
+## CP41
+
+[The x86_64 code-generation trigger](cp41-x86-codegen-trigger-2026-08-24.md)
+localizes selective stack/queue/heap pressure in generated native C. CP41 is
+planned after CP38 and before CP39–CP40 so the installed CLI0 artifact contains
+the repair. Its trigger run is too noisy to become a new D056 baseline; a clean
+before/after pushed-run evidence pair is still required. Go/Rust ratios remain
+exploratory.
+
 ## I6 and E0
 
 No direct implementation or external-pilot evidence exists. I6 and E0 remain
-planned after CLI0.
+planned after CLI0, whose I4 path now includes CP41.
 
 ## Historical checkpoint evidence
 

@@ -11,7 +11,7 @@ direct reports out of status cells. Their IDs and states are checked against
 [`roadmap.tsv`](docs/implementation/roadmap.tsv).
 
 Current execution links: [CLI0](docs/implementation/roadmap.md#cli0-boundary),
-[post-CLI0 I6/E0](docs/implementation/roadmap.md#post-cli0-i6-and-e0), and the
+[CP41/I6/E0 sequencing](docs/implementation/roadmap.md#cli0-cp41-boundary-and-post-cli0-i6e0), and the
 sole ready card,
 [CP31](docs/implementation/checkpoints.md#cp31-program-arguments-and-controlled-exit).
 

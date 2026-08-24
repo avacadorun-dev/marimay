@@ -1,8 +1,8 @@
 # Marimay product roadmap
 
 Status: authoritative product gate state and release sequencing.
-Audit date: 2026-08-23.
-Audit base revision: `45ead300367488c0e85b95eb47777ab8051b3349`.
+Audit date: 2026-08-24.
+Audit base revision: `97cbc0e152bfbdc06a9806bafbf8515dd6ee17e3`.
 
 This file answers what the product can claim and what blocks the next release.
 The [checkpoint ledger](checkpoints.md) is the only execution queue, the
@@ -55,19 +55,24 @@ sanitizer, allocation, differential, and performance gates are verified.
 
 - **Now:** [CP31 — program arguments](checkpoints.md#cp31-program-arguments-and-controlled-exit).
 - **Next:** [CP32 — typed standard streams](checkpoints.md#cp32-typed-standard-streams-and-flush), then [CP33 — UTF-8, bytes, and builders](checkpoints.md#cp33-utf-8-text-bytes-and-bounded-builders).
-- **Later:** CP33–CP40 finish CLI0; immediately afterward I6 proves one real
-  direct-style concurrent I/O vertical slice, E0 tests the semantic hypotheses
-  externally, I7–I9 productize the ecosystem/platform, and only then do the
-  broader alpha, self-hosting, beta, reference-service, RC, and 1.0 gates close.
+- **Later:** CP33–CP38 finish the bounded language/core surface; CP41 then
+  closes the measured x86_64 native-code pressure gap before CP39–CP40 finish
+  installation and the CLI0 audit. I6 next proves one real direct-style
+  concurrent I/O vertical slice. E0 tests the semantic hypotheses externally,
+  I7–I9 productize the ecosystem/platform, and only then do the broader alpha,
+  self-hosting, beta, reference-service, RC, and 1.0 gates close.
 
-No new array-only micro-optimization enters this sequence before CLI0 and the
-I6 slice unless a correctness or security blocker requires it.
+No new array-only micro-optimization enters CP31–CP40 unless a correctness or
+security blocker requires it. CP41 is the separately evidenced cross-target
+native-code checkpoint; it does not reopen the earlier array-only sequence.
 
 ## Critical path
 
 ```text
 D0 + bounded N0/I0/A0/I1-I5 prerequisites
-  -> CLI0: CP29-CP40 bounded local CLI alpha
+  -> CP29-CP38: bounded local CLI language/core surface
+  -> CP41: I4 x86_64 generated-C live-state and spill/branch pressure
+  -> CP39-CP40: installable artifact and CLI0 audit
   -> I6: typed JSON/config -> concurrent HTTP fan-out -> timeout/race/cancel
          -> lexical defer cleanup -> deterministic VM/native trace
   -> E0: external ergonomics pilot
@@ -99,10 +104,10 @@ authorization. These are never synonyms.
 | I1 | Lossless frontend and formatter | `in-progress` | `pushed-ci` | Remaining production fixtures and the accepted sustained fuzz gate are not closed on Tier 1. | Every grammar production has positive/negative/recovery/formatter evidence and parser/formatter campaigns meet the test-strategy budget; [evidence](evidence/README.md#i1). |
 | I2 | Typed core and MIR oracle | `in-progress` | `pushed-ci` | The CP29 matrix assigns the remaining baseline-language gaps, but those criteria are not yet closed. | Execute the CP29 closure assignments; complete conformance, verifier, evaluator, completion, and invalidation gates pass; [matrix](cli0-closure-matrix.md). |
 | I3 | Typed bytecode VM | `in-progress` | `pushed-ci` | Portable public bundles and the full hostile-verifier/fuzz/limit gate remain open. | Every opcode and required bundle boundary passes verifier/execution/fuzz/limit tests and MIR/VM differential on Tier 1; [evidence](evidence/README.md#i3). |
-| I4 | C17 AOT and equivalence | `in-progress` | `pushed-ci` | Native run/install/doctor and the full compiler/platform differential matrix remain open. | CP39 plus complete O0/O2 Clang/GCC/MSVC sanitizer and engine-equivalence evidence meet the I4 gate; [CP39](checkpoints.md#cp39-native-run-init-doctor-and-installable-artifacts). |
-| I5 | Managed data and standard core | `in-progress` | `pushed-ci` | CLI text/bytes/files/collections plus D007/D013 workload budgets are incomplete. | CP30–CP38 and managed-heap/property/GC/workload gates close with VM/native evidence; [queue](checkpoints.md#active-sequence-cp29-cp40). |
-| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP31–CP40 and the CP29 matrix remain open. | CP29–CP40 are verified, N0 and all claimed platform gates are closed, and the CP40 release audit supports only the bounded CLI claim. |
-| I6 | Direct-style tasks, scheduler, and I/O | `planned` | `none` | CLI0 precedes the executable I6 prototype. | Suspension, scope/task lifetime, cancellation, race/select, non-blocking I/O, and deterministic VM/native traces pass the defined vertical scenario. |
+| I4 | C17 AOT and equivalence | `in-progress` | `pushed-ci` | Native run/install/doctor, the full compiler/platform differential matrix, and the measured x86_64 code-pressure gap remain open. | CP39 and CP41 plus complete O0/O2 Clang/GCC/MSVC sanitizer and engine-equivalence evidence meet the I4 gate; [CP41](checkpoints.md#cp41-x86_64-native-code-generation-pressure). |
+| I5 | Managed data and standard core | `in-progress` | `pushed-ci` | CLI text/bytes/files/collections plus D007/D013 workload budgets are incomplete. | CP30–CP38 and managed-heap/property/GC/workload gates close with VM/native evidence; [queue](checkpoints.md#active-sequence-cp29-cp41). |
+| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP31–CP40, the CP41 I4 prerequisite, and the CP29 matrix remain open. | CP29–CP41 are verified, N0 and all claimed platform gates are closed, and the CP40 release audit supports only the bounded CLI claim. |
+| I6 | Direct-style tasks, scheduler, and I/O | `planned` | `none` | CLI0 and CP41 precede the executable I6 prototype. | Suspension, scope/task lifetime, cancellation, race/select, non-blocking I/O, and deterministic VM/native traces pass the defined vertical scenario. |
 | E0 | Pre-self-host ergonomics pilot | `planned` | `none` | A working I6 vertical slice is unavailable. | At least five external developers on two Tier 1 host families complete the defined tasks and every semantic finding is resolved or accepted. |
 | I7 | Packages, cache, and supply chain | `planned` | `none` | N0 and external semantic feedback are not verified. | Deterministic offline lock/cache, hostile archive, provenance, and registry-prototype gates pass without dependency code execution. |
 | I8 | Complete first-party developer loop | `planned` | `none` | The bounded CLI/package foundations are incomplete. | A fresh user completes init/fmt/check/test/run/build/doc/dependency workflows; test/LSP/doc/fuzz event contracts pass end to end. |
@@ -124,7 +129,7 @@ dashboard cells.
 | Stage | Allowed claim | Additional release gate |
 |---|---|---|
 | Private preview | Checker-backed local/private C17 bootstrap slices work at named revisions. | No public identity or compatibility claim. |
-| Bounded CLI alpha (`CLI0`) | Small local CLI programs using only the CP29–CP40 surface on explicitly verified hosts. | N0, claimed Tier 1 matrices, CP40 audit, and user authorization. No I6/network/registry/FFI/public-bytecode/self-hosting claim. |
+| Bounded CLI alpha (`CLI0`) | Small local CLI programs using only the CP29–CP40 surface on explicitly verified hosts. | N0, CP41, claimed Tier 1 matrices, CP40 audit, and user authorization. No I6/network/registry/FFI/public-bytecode/self-hosting claim. |
 | Concurrency/service pilot (`I6` + `E0`) | Working direct-style concurrent I/O prototype evaluated by external developers. | I6 deterministic prototype plus verified E0 findings. |
 | Ecosystem alpha (`P0`) | Broader packages/platform/service-oriented alpha using public APIs. | N0, E0, I7–I9, public package/workload evidence. |
 | Beta (`P1`) | Compatibility and security hardening with a frozen surface except blockers. | Self-hosting, compatibility, fuzz, supply-chain and security gates. |
@@ -151,11 +156,21 @@ the release contract and closure matrix for N0, A0, I0, I1, and the applicable
 I2–I5 slices. That matrix assigns missing evidence; it does not mark those gates
 verified. CP30 is verified, and CP31 is now the sole ready card.
 
-## Post-CLI0 I6 and E0
+## CLI0 CP41 boundary and post-CLI0 I6/E0
 
-After CLI0, audit D010–D012, D029, D041, the execution prototype gates, and the
-current runtime owners before assigning any CP41+ numbers. The first I6 plan
-must prove an atomic executable scenario:
+After CP38 and before CP39, execute
+[CP41](checkpoints.md#cp41-x86_64-native-code-generation-pressure) against a
+clean D056 Linux x86_64 baseline. It closes the already observed generated-C
+live-state/spill gap without weakening typed MIR, runtime checks, or VM/native
+semantics. This ordering prevents a cycle between CLI0 and its I4 prerequisite
+and ensures the installed/audited artifact contains the repair. Cross-language
+ratios remain diagnostic and the full D057 Tier 1 registry remains a separate
+release gate.
+
+After CP41, CP39, and CP40 are verified and CLI0 is closed, audit D010–D012,
+D029, D041, the execution prototype gates, and the current runtime owners
+before assigning CP42+. The first I6 plan must prove an atomic executable
+scenario:
 
 ```text
 typed JSON/config
