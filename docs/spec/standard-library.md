@@ -99,13 +99,37 @@ public enum ParseError {
   Empty,
   InvalidDigit { offset: int; },
   OutOfRange,
+  InvalidRadix,
 }
 
 public fn parseInt(text: string): Result<int, ParseError>;
 public fn parseIntRadix(text: string, radix: int): Result<int, ParseError>;
 public fn formatF32(value: f32): string;
 public fn formatF64(value: f64): string;
+public fn formatBool(value: bool): string;
+public fn formatI8(value: i8): string;
+public fn formatI16(value: i16): string;
+public fn formatI32(value: i32): string;
+public fn formatI64(value: i64): string;
+public fn formatU8(value: u8): string;
+public fn formatU16(value: u16): string;
+public fn formatU32(value: u32): string;
+public fn formatU64(value: u64): string;
 ```
+
+The boolean and integer formatters are total and locale-independent. Booleans
+are `true` and `false`. Integers use base ten, lower-case digits, one leading
+minus only when negative, at least one digit, and no prefix, plus sign,
+grouping, whitespace, or padding. These are the D065 interpolation spellings.
+
+`parseInt(text)` is equivalent to `parseIntRadix(text, 10)`. Radices 2 through
+36 accept ASCII digits `0`–`9`, `a`–`z`, and `A`–`Z`. A single leading minus
+is allowed. A plus sign, whitespace, radix prefix, underscore, missing digit,
+or trailing byte is invalid. Leading zeroes are accepted but never preserved.
+`InvalidDigit.offset` is a zero-based byte offset. Values outside `i64` return
+`OutOfRange`; an unsupported radix returns `InvalidRadix` before inspecting
+the text. Conversion uses counted bytes and does not consult host locale or
+NUL termination.
 
 Under D046, `formatF32` and `formatF64` are total bit-to-text functions. They
 return the unique locale-independent ASCII spelling specified by that decision

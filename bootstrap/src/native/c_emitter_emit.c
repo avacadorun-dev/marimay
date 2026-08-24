@@ -1119,7 +1119,13 @@ bool mmay_native_c_emit_function(
                     break;
                 case MMAY_MIR_FORMAT_F32:
                 case MMAY_MIR_FORMAT_F64:
-                    if (!mmay_native_c_emit_format_instruction(buffer, i)) {
+                case MMAY_MIR_FORMAT_BOOL:
+                case MMAY_MIR_FORMAT_INTEGER:
+                case MMAY_MIR_STRING_CONCAT:
+                case MMAY_MIR_PARSE_INTEGER:
+                    if (!mmay_native_c_emit_format_instruction(
+                            buffer, function, i
+                        )) {
                         return false;
                     }
                     break;

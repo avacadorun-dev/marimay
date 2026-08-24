@@ -19,16 +19,20 @@ The portable C17 Stage 0 provides human/JSON version metadata, task help,
 canonical `fmt`, authoritative local `check`, verified VM-default `run`,
 host-native `build`, and deterministic `test --engine both` for the current
 checker-backed private-preview corpus. The implemented language slice includes
-scalar control flow, checked integer behavior, deterministic `f64`, literal
-strings and `println(string)`, nominal records/enums/interfaces,
-`Option`/`Result`/`?`, lexical `defer`, local packages and owned dot calls, and
-managed `[]T` arrays.
+scalar control flow, checked integer behavior, deterministic `f64`, dynamic
+primitive interpolation, integer parse/format, and `println(string)`, nominal
+records/enums/interfaces, `Option`/`Result`/`?`, lexical `defer`, local packages
+and owned dot calls, and managed `[]T` arrays.
 
 ## Exclusions
 
-- Dynamic interpolation and complete primitive formatting, program argument
-  access, typed standard streams, `Bytes`/builders, paths/files/environment,
-  `Map`/`Set`, `std/cli`, and typed JSON remain CP30–CP38.
+- Program argument access, typed standard streams, `Bytes`/builders,
+  paths/files/environment, `Map`/`Set`, `std/cli`, and typed JSON remain
+  CP31–CP38. User-defined formatting remains deliberately deferred by D065.
+- Contextual inference for a generic constructor is incomplete: despite the
+  language return-context rule, `return None;` can report `R0001`. Use the
+  explicit working form `return None<T>();` until the I2 baseline-conformance
+  owner closes this gap.
 - Native `mmay run`, `mmay init`, `mmay doctor`, and complete install artifacts
   remain CP39. Commands shown as staged are not executable promises.
 - Portable public `.myb`/`mmay exec`, networking and direct-style tasks,

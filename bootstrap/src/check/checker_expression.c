@@ -7,6 +7,7 @@
 #include "checker_lookup_api.h"
 #include "checker_expr_try_api.h"
 #include "checker_expr_numeric_api.h"
+#include "checker_expr_string_api.h"
 
 
 
@@ -42,6 +43,11 @@ bool mmay_checker_private_compile_expression_raw(
     }
     if (node->kind == MMAY_SYNTAX_LITERAL_EXPRESSION) {
         return mmay_checker_private_compile_literal(function, node, expected, result);
+    }
+    if (node->kind == MMAY_SYNTAX_INTERPOLATED_EXPRESSION) {
+        return mmay_checker_private_compile_interpolation(
+            function, node, expected, result
+        );
     }
     if (node->kind == MMAY_SYNTAX_ARRAY_EXPRESSION) {
         return mmay_compile_array_literal(function, node, expected, result);

@@ -1,0 +1,3 @@
+fn render(value: int, enabled: bool): string {
+  return $"{{value:{value}}}|nested:{$"{enabled}"}";
+}

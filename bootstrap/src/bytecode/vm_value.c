@@ -385,8 +385,15 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         );
     }
     if (instruction->opcode == MMAY_OPCODE_FORMAT_F32
-        || instruction->opcode == MMAY_OPCODE_FORMAT_F64) {
+        || instruction->opcode == MMAY_OPCODE_FORMAT_F64
+        || instruction->opcode == MMAY_OPCODE_FORMAT_BOOL
+        || instruction->opcode == MMAY_OPCODE_FORMAT_INTEGER) {
         return mmay_bytecode_run_format_instruction(
+            instruction, registers, execution
+        );
+    }
+    if (instruction->opcode == MMAY_OPCODE_STRING_CONCAT) {
+        return mmay_bytecode_run_string_concat_instruction(
             instruction, registers, execution
         );
     }
@@ -1155,8 +1162,18 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
             );
         case MMAY_OPCODE_FORMAT_F32:
         case MMAY_OPCODE_FORMAT_F64:
+        case MMAY_OPCODE_FORMAT_BOOL:
+        case MMAY_OPCODE_FORMAT_INTEGER:
             return mmay_bytecode_run_format_instruction(
                 instruction, registers, execution
+            );
+        case MMAY_OPCODE_STRING_CONCAT:
+            return mmay_bytecode_run_string_concat_instruction(
+                instruction, registers, execution
+            );
+        case MMAY_OPCODE_PARSE_INTEGER:
+            return mmay_bytecode_run_parse_instruction(
+                instruction, registers, execution, function
             );
         case MMAY_OPCODE_IO_PRINTLN:
             return mmay_bytecode_run_io_instruction(

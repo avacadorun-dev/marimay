@@ -10,8 +10,25 @@ typedef struct MarimayCliStandardSource {
 } MarimayCliStandardSource;
 
 static const unsigned char mmay_cli_std_convert_source[] =
+    "public enum ParseError {\n"
+    "  Empty,\n"
+    "  InvalidDigit { offset: int; },\n"
+    "  OutOfRange,\n"
+    "  InvalidRadix,\n"
+    "}\n\n"
+    "public extern \"c\" fn parseInt(text: string): Result<int, ParseError>;\n"
+    "public extern \"c\" fn parseIntRadix(text: string, radix: int): Result<int, ParseError>;\n"
     "public extern \"c\" fn formatF32(value: f32): string;\n"
-    "public extern \"c\" fn formatF64(value: f64): string;\n";
+    "public extern \"c\" fn formatF64(value: f64): string;\n"
+    "public extern \"c\" fn formatBool(value: bool): string;\n"
+    "public extern \"c\" fn formatI8(value: i8): string;\n"
+    "public extern \"c\" fn formatI16(value: i16): string;\n"
+    "public extern \"c\" fn formatI32(value: i32): string;\n"
+    "public extern \"c\" fn formatI64(value: i64): string;\n"
+    "public extern \"c\" fn formatU8(value: u8): string;\n"
+    "public extern \"c\" fn formatU16(value: u16): string;\n"
+    "public extern \"c\" fn formatU32(value: u32): string;\n"
+    "public extern \"c\" fn formatU64(value: u64): string;\n";
 
 static const unsigned char mmay_cli_std_io_source[] =
     "public enum Error {\n"

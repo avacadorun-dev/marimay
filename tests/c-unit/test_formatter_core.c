@@ -198,6 +198,10 @@ void mmay_test_formatter_fixture_file(void) {
         {
             "format/fuzz-index-regression.input.my",
             "format/fuzz-index-regression.expected.my"
+        },
+        {
+            "format/cp30-interpolation.input.my",
+            "format/cp30-interpolation.expected.my"
         }
     };
     unsigned char input[32768];

@@ -105,7 +105,20 @@ Normal strings and runes accept `\\`, `\"`, `\'`, `\n`, `\r`, `\t`, `\0`, and `\
 
 String indexing by integer is forbidden because it is ambiguous between bytes and Unicode scalars. Use explicit byte, rune, or grapheme APIs.
 
-An interpolated string starts with `$"` and ends with `"`. `{expression}` inserts the standard string representation of an expression; `{{` and `}}` produce literal braces. Interpolations are parsed and typed as ordinary expressions, evaluated left to right exactly once, and cannot contain statements. That interpolation representation is not the D046 stdout contract and is not an implicit conversion into `println`; a non-`string` interpolation result cannot be passed to `println` until a later decision specifies the interpolation type rule.
+An interpolated string starts with `$"` and ends with `"`. `{expression}`
+inserts the D065 primitive string representation; `{{` and `}}` produce
+literal braces. The result type is `string`. The accepted expression types are
+`string`, `bool`, every exact-width signed and unsigned integer, and `f64`.
+Strings are unchanged, booleans and integers use the canonical spellings in
+the standard-library specification, and `f64` uses D046. Other types are
+errors; in particular, `f32` requires explicit `formatF32` and records, enums,
+arrays, and interfaces have no implicit formatting.
+
+Interpolation expressions are ordinary expressions, cannot contain
+statements, and are evaluated left to right exactly once. Each completed text
+or value fragment is appended before evaluation proceeds to the next
+expression. Interpolation is not an implicit conversion into `println`;
+`println` accepts the completed `string` through its ordinary signature.
 
 Interpolated text uses the normal-string escape set. The lossless token stream retains the `$"`, text, expression-boundary braces, and final `"` separately. A single `}` in text is invalid; nested strings and balanced expression braces are permitted within the implementation's documented defensive nesting limit.
 

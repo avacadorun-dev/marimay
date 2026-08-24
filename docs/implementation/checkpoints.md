@@ -363,9 +363,9 @@ alpha work.
 
 ## Active sequence CP29-CP40
 
-The sequence is deliberately linear so exactly one card is executable. CP29 is
-`verified`; CP30 is `ready`, and every later card is `planned` behind its
-immediate predecessor.
+The sequence is deliberately linear so exactly one card is executable. CP29
+and CP30 are `verified`; CP31 is `ready`, and every later card is `planned`
+behind its immediate predecessor.
 
 ## CP29 - Public release contract and closure matrix
 
@@ -474,7 +474,8 @@ agent should not reread CP0–CP28 instructions.
 
 ## CP30 - Dynamic strings interpolation and primitive formatting
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP29.
+State: `verified`. Parent gate: CLI0. Predecessor: CP29. Evidence scope:
+`local`. Evidence: [CP30](evidence/cp30-dynamic-strings-2026-08-23.md).
 
 ### Outcome
 
@@ -566,7 +567,7 @@ not unrelated compiler internals.
 
 ## CP31 - Program arguments and controlled exit
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP30.
+State: `ready`. Parent gate: CLI0. Predecessor: CP30.
 
 ### Outcome
 

@@ -111,3 +111,7 @@ Stage 0 codec.
 | 98 | `i64_add_proven` | `destination:register`, `left:register`, `right:register` | — | Add i64 operands under a verifier-proven no-overflow interval fact. |
 | 99 | `i64_subtract_proven` | `destination:register`, `left:register`, `right:register` | — | Subtract i64 operands under a verifier-proven no-overflow interval fact. |
 | 100 | `i64_multiply_proven` | `destination:register`, `left:register`, `right:register` | — | Multiply i64 operands under a verifier-proven no-overflow interval fact. |
+| 101 | `format_bool` | `destination:register`, `source:register` | `may_panic` | Format a boolean as its canonical lower-case string spelling. |
+| 102 | `format_integer` | `destination:register`, `source:register` | `may_panic` | Format an exact-width integer as canonical base-ten text. |
+| 103 | `string_concat` | `destination:register`, `left:register`, `right:register` | `may_panic` | Concatenate two counted immutable strings with bounded allocation. |
+| 104 | `parse_integer` | `destination:register`, `text:register`, `radix:register` | `may_panic` | Parse counted ASCII integer text into Result<int, std/convert.ParseError>. |

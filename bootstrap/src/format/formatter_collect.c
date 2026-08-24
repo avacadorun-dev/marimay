@@ -37,7 +37,8 @@ static bool mmay_format_collect_token(
     size_t top_level_id,
     bool in_for_header,
     bool in_attribute,
-    bool in_record_expression
+    bool in_record_expression,
+    bool in_interpolation
 ) {
     MarimayFormatToken formatted;
     if (token->synthetic) {
@@ -55,6 +56,7 @@ static bool mmay_format_collect_token(
     formatted.in_for_header = in_for_header;
     formatted.in_attribute = in_attribute;
     formatted.in_record_expression = in_record_expression;
+    formatted.in_interpolation = in_interpolation;
     formatted.import_group = 0;
     if (!mmay_vector_push(&collector->tokens, &formatted)) {
         collector->status = MMAY_FORMAT_ALLOCATION_FAILED;
@@ -361,7 +363,8 @@ bool mmay_format_collect_node(
     size_t top_level_id,
     bool in_for_header,
     bool in_attribute,
-    bool in_record_expression
+    bool in_record_expression,
+    bool in_interpolation
 ) {
     size_t index = 0;
     if (node == NULL) {
@@ -376,6 +379,8 @@ bool mmay_format_collect_node(
     in_attribute = in_attribute || node->kind == MMAY_SYNTAX_ATTRIBUTE;
     in_record_expression = in_record_expression
         || node->kind == MMAY_SYNTAX_RECORD_EXPRESSION;
+    in_interpolation = in_interpolation
+        || node->kind == MMAY_SYNTAX_INTERPOLATED_EXPRESSION;
     for (index = 0; index < node->child_count; index += 1) {
         const MarimaySyntaxElement *element = mmay_syntax_child(node, index);
         size_t child_top_level_id = top_level_id;
@@ -405,7 +410,8 @@ bool mmay_format_collect_node(
                     child_top_level_id,
                     in_for_header,
                     in_attribute,
-                    in_record_expression
+                    in_record_expression,
+                    in_interpolation
                 )) {
                 return false;
             }
@@ -418,7 +424,8 @@ bool mmay_format_collect_node(
                     top_level_id,
                     in_for_header,
                     in_attribute,
-                    in_record_expression
+                    in_record_expression,
+                    in_interpolation
                 )) {
                 return false;
             }

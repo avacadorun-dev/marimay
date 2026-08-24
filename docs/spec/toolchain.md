@@ -171,6 +171,9 @@ Marimay 1.x has no formatter configuration. The style is:
 - canonical declarations use `fn`, nominal records use `type Name { ... }`, and aliases alone use `=`;
 - record construction and named enum payloads use `Name { ... }`; control-flow scrutinees are not parenthesized;
 - interpolated strings use `$"...{expression}..."`, and visibility uses only `public`;
+- interpolation expression groups are never split by a physical newline;
+  when the complete token sequence exceeds the target width it remains one
+  deterministic unbreakable overflow rather than changing string syntax;
 - one space around binary operators and after commas;
 - no padding inside ordinary parentheses;
 - multiline lists use one item per line and a trailing comma;

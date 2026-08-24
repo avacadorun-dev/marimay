@@ -26,5 +26,10 @@ MarimayMirBytecodeLowerStatus mmay_mir_bytecode_lower_nominals(
     MarimayBytecodeFunction *output,
     MarimayAllocator allocator
 );
+MarimayMirBytecodeLowerStatus mmay_mir_bytecode_lower_format_instruction(
+    const MarimayMirInstruction *input,
+    MarimayBytecodeInstruction *output,
+    bool *handled
+);
 
 #endif

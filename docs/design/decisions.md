@@ -1692,3 +1692,58 @@ tool from target-design prose, while the implementation still needs honest
 room to correct alpha APIs. Separating version, channel, and claim prevents a
 locally versioned binary from pretending that naming, platform, compatibility,
 or publication gates have closed.
+
+## D065 — Primitive text conversion is closed and locale-independent
+
+Status: accepted.
+
+An interpolated string has type `string`. Its expressions are evaluated once
+each, from left to right, and each completed fragment is appended before the
+next expression is evaluated. The closed 0.1 set is `string`, `bool`, `i8`,
+`i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, and `f64`. Strings are
+unchanged; booleans are `true` or `false`; integers use canonical base-ten
+text; and `f64` uses D046. Unsupported types are type errors. There is no
+implicit conversion into `println`, open `Display` contract, reflection,
+overload set, or user-defined formatter in this release.
+
+`std/convert` adds total `formatBool` and one exact-width function named
+`formatI8` through `formatU64`. They return the same spelling used by
+interpolation. Integer formatting emits one or more lower-case digits, a
+leading `-` only for a negative signed value, and no prefix, plus sign,
+grouping, whitespace, or padding. `formatF32` and `formatF64` retain D046's
+raw-bit contracts; interpolation does not widen `f32` implicitly.
+
+`parseInt(text)` is `parseIntRadix(text, 10)`. Both return
+`Result<int, ParseError>`, where `int` is `i64` and:
+
+```marimay
+public enum ParseError {
+  Empty,
+  InvalidDigit { offset: int; },
+  OutOfRange,
+  InvalidRadix,
+}
+```
+
+A radix from 2 through 36 is accepted. Digits are ASCII `0`–`9`, `a`–`z`, or
+`A`–`Z`; the case variants have the same value. One leading `-` is accepted,
+but `+`, whitespace, prefixes, separators, and trailing text are not. Leading
+zeroes are accepted and ignored, including negative zero; formatting never
+preserves them. Empty means exactly zero input bytes. A sign without a digit
+is `InvalidDigit` at offset 1. `InvalidDigit.offset` is the zero-based byte
+offset of the first unacceptable byte. Magnitudes outside `i64`, including
+one beyond either endpoint, are `OutOfRange`. A radix outside the closed range
+is `InvalidRadix` before text inspection.
+
+All conversion operates on counted UTF-8 bytes and never calls host locale,
+`printf`, `strto*`, or NUL-terminated text authority. Dynamic construction is
+bounded by the existing MIR string-byte and managed-heap budgets. Overflow,
+limit, or allocation failure follows the existing deterministic resource
+outcome; partial strings are not observable, and every temporary allocation
+is released on all paths. `println` still accepts only the resulting `string`
+and publishes it under D046.
+
+Reason: CLI diagnostics need useful deterministic text before general builders
+or streams exist. A closed primitive family provides that vertical slice
+without committing the language to an open formatting protocol or hidden
+conversion graph.

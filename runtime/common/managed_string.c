@@ -78,3 +78,42 @@ MarimayManagedStatus mmay_managed_string_bytes(
     *length = slot->as.string->length;
     return MMAY_MANAGED_OK;
 }
+
+MarimayManagedStatus mmay_managed_string_concat(
+    MarimayManagedHeap *heap,
+    const unsigned char *left,
+    size_t left_length,
+    const unsigned char *right,
+    size_t right_length,
+    MarimayManagedReference *result
+) {
+    size_t length = 0;
+    unsigned char *joined = NULL;
+    MarimayManagedStatus status;
+    if (result != NULL) {
+        *result = mmay_managed_invalid_reference();
+    }
+    if (!mmay_managed_heap_valid(heap) || result == NULL
+        || (left == NULL && left_length != 0)
+        || (right == NULL && right_length != 0)
+        || !mmay_size_add(left_length, right_length, &length)) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
+    }
+    if (length != 0) {
+        joined = mmay_allocate(&heap->allocator, length);
+        if (joined == NULL) {
+            return mmay_managed_resource_host_failure(heap, length);
+        }
+        if (left_length != 0) {
+            memcpy(joined, left, left_length);
+        }
+        if (right_length != 0) {
+            memcpy(joined + left_length, right, right_length);
+        }
+    }
+    status = mmay_managed_string_new(heap, joined, length, result);
+    if (joined != NULL) {
+        mmay_deallocate(&heap->allocator, joined, length);
+    }
+    return status;
+}

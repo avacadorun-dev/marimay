@@ -88,12 +88,27 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
     uint64_t source,
     MarimayBytecodeInstruction *output
 ) {
+    bool format_handled = false;
+    MarimayMirBytecodeLowerStatus format_status;
     memset(output, 0, sizeof(*output));
     if (!mmay_mir_bytecode_span(input->span, source, &output->span)) {
         return MMAY_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
     }
     output->operands[0].unsigned_value = input->target;
+    format_status = mmay_mir_bytecode_lower_format_instruction(
+        input, output, &format_handled
+    );
+    if (format_handled || format_status != MMAY_MIR_BYTECODE_LOWER_OK) {
+        return format_status;
+    }
     switch (input->kind) {
+        case MMAY_MIR_FORMAT_F32:
+        case MMAY_MIR_FORMAT_F64:
+        case MMAY_MIR_FORMAT_BOOL:
+        case MMAY_MIR_FORMAT_INTEGER:
+        case MMAY_MIR_STRING_CONCAT:
+        case MMAY_MIR_PARSE_INTEGER:
+            return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
         case MMAY_MIR_CONSTANT_I64:
             output->opcode = MMAY_OPCODE_CONST_I64;
             output->operands[1].signed_value = input->integer;
@@ -427,12 +442,6 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
             output->operands[1].unsigned_value = input->first;
             break;
         }
-        case MMAY_MIR_FORMAT_F32:
-        case MMAY_MIR_FORMAT_F64:
-            output->opcode = input->kind == MMAY_MIR_FORMAT_F32
-                ? MMAY_OPCODE_FORMAT_F32 : MMAY_OPCODE_FORMAT_F64;
-            output->operands[1].unsigned_value = input->first;
-            break;
         case MMAY_MIR_IO_PRINTLN:
             output->opcode = MMAY_OPCODE_IO_PRINTLN;
             output->operands[1].unsigned_value = input->first;

@@ -139,3 +139,63 @@ MarimayStringLiteralStatus mmay_string_literal_decode(
     mmay_vector_dispose(&bytes);
     return status;
 }
+
+MarimayStringLiteralStatus mmay_interpolated_text_decode(
+    const unsigned char *spelling,
+    size_t length,
+    MarimayAllocator allocator,
+    MarimayOwnedBytes *decoded
+) {
+    MarimayVector wrapped;
+    MarimayOwnedBytes unescaped;
+    size_t source = 0;
+    size_t target = 0;
+    MarimayStringLiteralStatus status;
+    if (decoded == NULL) {
+        return MMAY_STRING_LITERAL_INVALID;
+    }
+    memset(decoded, 0, sizeof(*decoded));
+    memset(&wrapped, 0, sizeof(wrapped));
+    memset(&unescaped, 0, sizeof(unescaped));
+    if ((spelling == NULL && length != 0)
+        || allocator.allocate == NULL || allocator.resize == NULL
+        || allocator.deallocate == NULL) {
+        return MMAY_STRING_LITERAL_INVALID;
+    }
+    if (!mmay_vector_init(&wrapped, allocator, sizeof(unsigned char))) {
+        return MMAY_STRING_LITERAL_ALLOCATION_FAILED;
+    }
+    {
+        unsigned char quote = '"';
+        if (!mmay_vector_push(&wrapped, &quote)
+            || !mmay_vector_append(&wrapped, spelling, length)
+            || !mmay_vector_push(&wrapped, &quote)) {
+            mmay_vector_dispose(&wrapped);
+            return MMAY_STRING_LITERAL_ALLOCATION_FAILED;
+        }
+    }
+    status = mmay_string_literal_decode(
+        wrapped.data, wrapped.length, false, allocator, &unescaped
+    );
+    mmay_vector_dispose(&wrapped);
+    if (status != MMAY_STRING_LITERAL_OK) {
+        return status;
+    }
+    for (source = 0; source < unescaped.length; source += 1U) {
+        unsigned char byte = unescaped.data[source];
+        if ((byte == '{' || byte == '}')
+            && source + 1U < unescaped.length
+            && unescaped.data[source + 1U] == byte) {
+            source += 1U;
+        }
+        unescaped.data[target++] = byte;
+    }
+    if (!mmay_owned_bytes_copy(
+            decoded, allocator, unescaped.data, target
+        )) {
+        mmay_owned_bytes_dispose(&unescaped);
+        return MMAY_STRING_LITERAL_ALLOCATION_FAILED;
+    }
+    mmay_owned_bytes_dispose(&unescaped);
+    return MMAY_STRING_LITERAL_OK;
+}

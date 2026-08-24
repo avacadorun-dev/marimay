@@ -514,6 +514,10 @@ MarimayNativeCEmitStatus mmay_native_c_validate_function(
                 case MMAY_MIR_INTEGER_CONVERT:
                 case MMAY_MIR_FORMAT_F32:
                 case MMAY_MIR_FORMAT_F64:
+                case MMAY_MIR_FORMAT_BOOL:
+                case MMAY_MIR_FORMAT_INTEGER:
+                case MMAY_MIR_STRING_CONCAT:
+                case MMAY_MIR_PARSE_INTEGER:
                 case MMAY_MIR_IO_PRINTLN:
                 case MMAY_MIR_TEST_OUTPUT_BEGIN:
                 case MMAY_MIR_TEST_OUTPUT_END:

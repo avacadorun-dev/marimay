@@ -3,6 +3,10 @@
 These examples are executable specification fixtures once the parser exists. Until then they are reviewed manually and by the documentation consistency checks.
 
 - `tour.my` exercises records, algebraic enums, exhaustive match, first-parameter dot calls, structural interfaces, deterministic `f64` arithmetic, and the absence of `impl`.
+- `../tests/public-alpha/cp30-formatting` is the executable D065 text example:
+  closed primitive interpolation, explicit boolean/integer formatters,
+  `parseInt`/`parseIntRadix`, NUL/Unicode bytes, side-effect order, and exact
+  VM/native output.
 - `concurrency.my` exercises direct-style I/O, `Result`, explicit error mapping, scoped `spawn`, and cancellation by early `?`.
 - `service.my` sketches a production HTTP handler without async-colored signatures.
 - `tour_test.my` shows the built-in test syntax.

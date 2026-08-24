@@ -72,8 +72,10 @@ legal/search/control/PATH evidence and an accepted follow-up identity decision.
 
 [CP29](cp29-release-contract-2026-08-23.md) supplies the local release contract,
 version/help/install metadata, runnable quick start, and 42-row closure matrix.
-It does not close CLI0 or any parent product gate. CP30 is the sole ready
-checkpoint; CP30–CP40 must each add direct evidence.
+[CP30](cp30-dynamic-strings-2026-08-23.md) supplies verified local dynamic-text,
+differential, allocation, performance, and sustained-fuzz evidence. Neither
+report closes CLI0 or any parent product gate; CP31 is the sole ready
+checkpoint, and CP31–CP40 must each add direct evidence.
 
 ## I6 and E0
 
@@ -114,6 +116,7 @@ planned after CLI0.
 | CP27 | [Integer proofs](cp27-integer-proofs-2026-08-22.md) | Verified checked-integer elimination. |
 | CP28 | [Rebaseline](cp28-release-rebaseline-2026-08-22.md); [hardening](cp28-release-hardening-2026-08-23.md) | Algorithm integration boundary before product work. |
 | CP29 | [Release contract](cp29-release-contract-2026-08-23.md) | Local metadata/help/install contract and closure assignment; no publication claim. |
+| CP30 | [Dynamic strings](cp30-dynamic-strings-2026-08-23.md) | Verified local primitive interpolation, format/parse, VM/native, allocation, performance, and fuzz vertical. |
 
 The [planning migration record](../planning-migration.md) maps retired planning
 sections to the consolidated roadmap, ledger, and this index without altering

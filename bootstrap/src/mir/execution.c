@@ -297,8 +297,18 @@ static MarimayMirInterpretStatus mmay_mir_execute_instruction(
             );
         case MMAY_MIR_FORMAT_F32:
         case MMAY_MIR_FORMAT_F64:
+        case MMAY_MIR_FORMAT_BOOL:
+        case MMAY_MIR_FORMAT_INTEGER:
             return mmay_mir_execute_format_instruction(
                 instruction, first, target, options
+            );
+        case MMAY_MIR_STRING_CONCAT:
+            return mmay_mir_execute_string_concat_instruction(
+                first, second, target, options
+            );
+        case MMAY_MIR_PARSE_INTEGER:
+            return mmay_mir_execute_parse_instruction(
+                function, instruction, first, second, target, options
             );
         case MMAY_MIR_IO_PRINTLN:
             return mmay_mir_execute_io_instruction(function, instruction,

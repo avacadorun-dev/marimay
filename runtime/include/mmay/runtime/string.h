@@ -15,5 +15,13 @@ MarimayManagedStatus mmay_managed_string_bytes(
     const unsigned char **bytes,
     size_t *length
 );
+MarimayManagedStatus mmay_managed_string_concat(
+    MarimayManagedHeap *heap,
+    const unsigned char *left,
+    size_t left_length,
+    const unsigned char *right,
+    size_t right_length,
+    MarimayManagedReference *result
+);
 
 #endif

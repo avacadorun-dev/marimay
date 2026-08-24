@@ -78,6 +78,17 @@ MarimayBytecodeRunStatus mmay_bytecode_run_array_mutation_instruction(
     MarimayAllocator allocator, MarimayBytecodePanic *panic, MarimaySymbolId symbol,
     bool *handled
 );
+MarimayBytecodeRunStatus mmay_bytecode_run_string_concat_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution
+);
+MarimayBytecodeRunStatus mmay_bytecode_run_parse_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function
+);
 MarimayBytecodeRunStatus mmay_bytecode_run_range_instruction(
     const MarimayBytecodeInstruction *instruction,
     MarimayBytecodeValue *registers,

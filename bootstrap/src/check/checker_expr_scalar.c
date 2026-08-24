@@ -1,6 +1,7 @@
 #include "checker_expr_scalar_api.h"
 #include "checker_core_api.h"
 #include "checker_lookup_api.h"
+#include "checker_expr_string_api.h"
 
 #include <limits.h>
 #include <string.h>
@@ -156,10 +157,6 @@
         || token->kind == MMAY_TOKEN_RAW_STRING) {
         MarimayOwnedBytes decoded;
         MarimayStringLiteralStatus decode_status;
-        MarimayMirStringId string_constant = MMAY_MIR_NO_STRING;
-        MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
-        MarimayMirInstruction instruction;
-        size_t new_string_bytes = 0;
         if (expected != MMAY_TYPE_INVALID && expected != MMAY_TYPE_STRING) {
             (void)mmay_checker_add_diagnostic(
                 checker,
@@ -186,46 +183,14 @@
             );
             return false;
         }
-        if (function->mir.string_constants.length
-                >= function->mir.options.max_string_constants
-            || !mmay_size_add(
-                function->mir.string_bytes,
-                decoded.length,
-                &new_string_bytes
-            ) || new_string_bytes > function->mir.options.max_string_bytes) {
+        {
+            bool emitted = mmay_checker_private_emit_string_constant(
+                function, decoded.data, decoded.length,
+                token->start, token->end, result
+            );
             mmay_owned_bytes_dispose(&decoded);
-            mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
-            return false;
+            return emitted;
         }
-        if (!mmay_function_add_register(function, MMAY_TYPE_STRING, &target)
-            || !mmay_mir_add_string_constant(
-                &function->mir,
-                decoded.data,
-                decoded.length,
-                &string_constant
-            )) {
-            mmay_owned_bytes_dispose(&decoded);
-            if (!mmay_checker_has_failed(checker)) {
-                mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
-            }
-            return false;
-        }
-        mmay_owned_bytes_dispose(&decoded);
-        memset(&instruction, 0, sizeof(instruction));
-        instruction.kind = MMAY_MIR_CONSTANT_STRING;
-        instruction.target = target;
-        instruction.first = MMAY_MIR_NO_REGISTER;
-        instruction.second = MMAY_MIR_NO_REGISTER;
-        instruction.string_constant = string_constant;
-        instruction.span.start = token->start;
-        instruction.span.end = token->end;
-        if (!mmay_function_append_instruction(function, &instruction)) {
-            return false;
-        }
-        result->type = MMAY_TYPE_STRING;
-        result->register_id = target;
-        result->valid = true;
-        return true;
     }
     mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
     return false;

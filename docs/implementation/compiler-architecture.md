@@ -151,10 +151,14 @@ bootstrap/src/mir/
   integer_range.c       MIR adapter, transactional arithmetic rewrite, proof validation
   verify_interfaces.c   interface metadata and nominal payload verification
   verify_io.c           exact D046 stdout instruction/layout verification
+  verify_format.c       D065 primitive-format and concat verification
+  verify_parse.c        D065 Result<int, ParseError> layout verification
   execution.c           oracle graph and interpreter dispatch
   execution_array.c     checked and verifier-gated in-bounds array execution
   execution_heap.c      execution state and managed allocations
   execution_io.c        D046 oracle publication and Result construction
+  execution_format.c    locale-independent formatting and counted concat
+  execution_parse.c     D065 integer parsing and ParseError construction
 ```
 
 `mmay_mir_verify` and `mmay_mir_interpret` retain their public signatures. No
@@ -184,6 +188,7 @@ bootstrap/src/check/
   checker_expression.c  expression dispatcher only
   checker_expr_*.c      scalar, call, nominal, and record expression owners
   checker_expr_io.c     exact imported std/io.println recognition and lowering
+  checker_expr_string.c interpolation plus closed std/convert lowering
   checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
                         and lowering
   checker_cfg.c         block/edge/value-state ownership

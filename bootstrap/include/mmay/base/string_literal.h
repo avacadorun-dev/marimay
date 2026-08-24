@@ -25,4 +25,12 @@ MarimayStringLiteralStatus mmay_string_literal_decode(
     MarimayOwnedBytes *decoded
 );
 
+/* Decodes one INTERPOLATED_TEXT token, including escapes and doubled braces. */
+MarimayStringLiteralStatus mmay_interpolated_text_decode(
+    const unsigned char *spelling,
+    size_t length,
+    MarimayAllocator allocator,
+    MarimayOwnedBytes *decoded
+);
+
 #endif

@@ -158,8 +158,19 @@ MarimayMirVerifyStatus mmay_mir_verify_io_instruction(
     const MarimayMirFunction *function,
     const MarimayMirInstruction *instruction
 );
+MarimayMirVerifyStatus mmay_mir_verify_format_instruction(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction
+);
+MarimayMirVerifyStatus mmay_mir_verify_parse_instruction(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction
+);
 MarimayMirInterpretStatus mmay_mir_execute_format_instruction(
     const MarimayMirInstruction *instruction, const MarimayMirValue *source,
+    MarimayMirValue *target, MarimayMirInterpretOptions options);
+MarimayMirInterpretStatus mmay_mir_execute_string_concat_instruction(
+    const MarimayMirValue *left, const MarimayMirValue *right,
     MarimayMirValue *target, MarimayMirInterpretOptions options);
 MarimayMirInterpretStatus mmay_mir_execute_io_instruction(
     const MarimayMirFunction *function,
@@ -167,6 +178,14 @@ MarimayMirInterpretStatus mmay_mir_execute_io_instruction(
     const MarimayMirValue *source,
     MarimayMirValue *target,
     const MarimayAllocator *allocator,
+    MarimayMirInterpretOptions options
+);
+MarimayMirInterpretStatus mmay_mir_execute_parse_instruction(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    const MarimayMirValue *text,
+    const MarimayMirValue *radix,
+    MarimayMirValue *target,
     MarimayMirInterpretOptions options
 );
 MarimayMirInterpretStatus mmay_mir_execute_test_output_instruction(

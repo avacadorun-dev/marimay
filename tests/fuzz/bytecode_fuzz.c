@@ -30,6 +30,39 @@ static bool mmay_fuzz_run_status_expected(MarimayBytecodeRunStatus status) {
         || status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
 }
 
+static bool mmay_fuzz_standalone_invalid_bytecode_expected(
+    const MarimayBytecodeFunction *function
+) {
+    size_t block_index;
+    if (function == NULL) return false;
+    for (block_index = 0; block_index < function->blocks.length;
+        block_index += 1) {
+        const MarimayBytecodeBlock *block = mmay_vector_at_const(
+            &function->blocks, block_index
+        );
+        size_t instruction_index;
+        if (block == NULL) return false;
+        for (instruction_index = 0;
+            instruction_index < block->instructions.length;
+            instruction_index += 1) {
+            const MarimayBytecodeInstruction *instruction =
+                mmay_vector_at_const(
+                    &block->instructions, instruction_index
+                );
+            /*
+             * The verifier proves test_output_end's `void <- bool` shape,
+             * while the VM must also reject a false or stale begin marker.
+             * That runtime state precondition is not a verifier mismatch.
+             */
+            if (instruction != NULL
+                && instruction->opcode == MMAY_OPCODE_TEST_OUTPUT_END) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
 static void mmay_fuzz_program(const uint8_t *data, size_t size) {
     MarimayBytecodeProgram program;
     MarimayBytecodeProgramOptions options = mmay_bytecode_program_default_options();
@@ -246,7 +279,11 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
             &result
         );
         if (function.calls.length == 0
-            && !mmay_fuzz_run_status_expected(run_status)) {
+            && !mmay_fuzz_run_status_expected(run_status)
+            && !(run_status == MMAY_BYTECODE_RUN_INVALID_BYTECODE
+                && mmay_fuzz_standalone_invalid_bytecode_expected(
+                    &function
+                ))) {
             abort();
         }
         if (function.calls.length != 0

@@ -142,9 +142,28 @@ def validate_rows(rows: list[dict[str, str]], root: Path = ROOT) -> list[str]:
             if dependency not in by_id:
                 findings.append(f"{prefix}: unknown dependency {dependency}")
 
-    ready = [row["id"] for row in rows if row["kind"] == "checkpoint" and row["state"] == "ready"]
-    if not ready:
-        findings.append("docs/implementation/roadmap.tsv: no ready checkpoint")
+    ready = [
+        row["id"]
+        for row in rows
+        if row["kind"] == "checkpoint" and row["state"] == "ready"
+    ]
+    in_progress = [
+        row["id"]
+        for row in rows
+        if row["kind"] == "checkpoint" and row["state"] == "in-progress"
+    ]
+    if len(in_progress) > 1:
+        findings.append(
+            "docs/implementation/roadmap.tsv: more than one in-progress "
+            f"checkpoint: {in_progress}"
+        )
+    if in_progress and ready:
+        findings.append(
+            "docs/implementation/roadmap.tsv: ready checkpoint exists while "
+            f"checkpoint is in progress: ready={ready}, in-progress={in_progress}"
+        )
+    elif not in_progress and not ready:
+        findings.append("docs/implementation/roadmap.tsv: no active checkpoint")
     elif len(ready) > 1:
         findings.append(f"docs/implementation/roadmap.tsv: more than one ready checkpoint: {ready}")
     for row in rows:
@@ -296,12 +315,22 @@ def run_self_tests(rows: list[dict[str, str]]) -> list[str]:
     cases.append(("dependency cycle", sample, "dependency cycle"))
 
     sample = mutated()
+    next(row for row in sample if row["id"] == "CP30")["state"] = "ready"
     next(row for row in sample if row["id"] == "CP31")["state"] = "ready"
     cases.append(("duplicate ready", sample, "more than one ready checkpoint"))
 
     sample = mutated()
-    next(row for row in sample if row["id"] == "CP30")["state"] = "planned"
-    cases.append(("missing ready", sample, "no ready checkpoint"))
+    next(row for row in sample if row["id"] == "CP31")["state"] = "planned"
+    cases.append(("missing active", sample, "no active checkpoint"))
+
+    sample = mutated()
+    next(row for row in sample if row["id"] == "CP30")["state"] = "in-progress"
+    next(row for row in sample if row["id"] == "CP31")["state"] = "in-progress"
+    cases.append(("duplicate in-progress", sample, "more than one in-progress"))
+
+    sample = mutated()
+    next(row for row in sample if row["id"] == "CP30")["state"] = "in-progress"
+    cases.append(("mixed active states", sample, "ready checkpoint exists while"))
 
     sample = mutated()
     next(row for row in sample if row["id"] == "D0")["evidence"] = "-"
@@ -340,7 +369,7 @@ def main() -> int:
     print(
         "roadmap ok: "
         f"{sum(row['kind'] == 'gate' for row in rows)} gates, "
-        "41 checkpoints, one ready checkpoint, mutation self-tests passed"
+        "41 checkpoints, one active checkpoint, mutation self-tests passed"
     )
     return 0
 

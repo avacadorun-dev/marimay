@@ -1,0 +1,4 @@
+fn render(value:int,ready:bool):string{return $"{{prefix}}:{value+1}:{$"nested {ready}"}:this-tail-is-deliberately-long-and-must-remain-inside-one-interpolated-string-token-sequence";}
+fn empty():string{return $"";}
+type Pair{left:int;right:int;}
+fn complex(left:int,right:int):string{return $"pair {Pair{left:left,right:right}} call {choose(left,right)} array {[left,right]}";}

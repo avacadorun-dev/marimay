@@ -1,5 +1,7 @@
 #include "test_bytecode_support.h"
 
+#include "mmay/bytecode/vm.h"
+
 static bool mmay_test_cp11_bytecode_build(MarimayBytecodeFunction *function) {
     static const unsigned char expected[] = {'o', 'k', '\n'};
     uint32_t expected_register = UINT32_MAX;
@@ -45,6 +47,56 @@ static bool mmay_test_cp11_bytecode_build(MarimayBytecodeFunction *function) {
     return true;
 }
 
+static bool mmay_test_cp11_stale_marker_build(
+    MarimayBytecodeFunction *function
+) {
+    const MarimayBytecodeType parameter = MMAY_BYTECODE_TYPE_BOOL;
+    uint32_t result = UINT32_MAX;
+    uint32_t block = UINT32_MAX;
+    size_t span = 0;
+    bool built;
+    memset(function, 0, sizeof(*function));
+    built = mmay_bytecode_function_init(
+            function, mmay_system_allocator(), MMAY_BYTECODE_TYPE_VOID,
+            1, &parameter, 1, mmay_bytecode_function_default_options()
+        ) && mmay_bytecode_add_register(
+            function, MMAY_BYTECODE_TYPE_VOID, &result
+        ) && mmay_bytecode_add_block(function, &block)
+        && mmay_test_bytecode_append(
+            function, block, MMAY_OPCODE_TEST_OUTPUT_END,
+            result, 0, 0, &span
+        ) && mmay_test_bytecode_append(
+            function, block, MMAY_OPCODE_RETURN_VOID, 0, 0, 0, &span
+        );
+    if (!built) mmay_bytecode_function_dispose(function);
+    return built;
+}
+
+static void mmay_test_cp11_stale_marker_runtime_contract(void) {
+    MarimayBytecodeFunction function;
+    MarimayBytecodeExecution execution;
+    MarimayBytecodeRunOptions options = mmay_bytecode_run_default_options();
+    MarimayBytecodeValue argument;
+    MarimayBytecodeValue result;
+    memset(&execution, 0, sizeof(execution));
+    memset(&argument, 0, sizeof(argument));
+    memset(&result, 0, sizeof(result));
+    MMAY_EXPECT(mmay_test_cp11_stale_marker_build(&function));
+    MMAY_EXPECT(mmay_bytecode_verify(&function) == MMAY_BYTECODE_VERIFY_OK);
+    MMAY_EXPECT(mmay_bytecode_execution_init(
+        &execution, mmay_system_allocator(),
+        mmay_bytecode_execution_default_options()
+    ));
+    argument.type = MMAY_BYTECODE_TYPE_BOOL;
+    argument.as.boolean = false;
+    options.execution = &execution;
+    MMAY_EXPECT(mmay_bytecode_run(
+        &function, &argument, 1, mmay_system_allocator(), options, &result
+    ) == MMAY_BYTECODE_RUN_INVALID_BYTECODE);
+    mmay_bytecode_execution_dispose(&execution);
+    mmay_bytecode_function_dispose(&function);
+}
+
 void mmay_test_cp11_test_pipeline(void) {
     MarimayBytecodeFunction function;
     MarimayBytecodeInstruction *begin = NULL;
@@ -72,4 +124,5 @@ void mmay_test_cp11_test_pipeline(void) {
             == MMAY_BYTECODE_VERIFY_TYPE_MISMATCH);
     }
     mmay_bytecode_function_dispose(&function);
+    mmay_test_cp11_stale_marker_runtime_contract();
 }

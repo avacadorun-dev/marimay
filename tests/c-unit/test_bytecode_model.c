@@ -241,7 +241,19 @@ void mmay_test_bytecode_metadata(void) {
         {MMAY_OPCODE_I64_MULTIPLY_PROVEN, 100, "i64_multiply_proven", 3,
             {MMAY_BYTECODE_OPERAND_REGISTER,
                 MMAY_BYTECODE_OPERAND_REGISTER,
-                MMAY_BYTECODE_OPERAND_REGISTER}, 0}
+                MMAY_BYTECODE_OPERAND_REGISTER}, 0},
+        MMAY_NUMERIC_UNARY(MMAY_OPCODE_FORMAT_BOOL, 101,
+            "format_bool", MMAY_OPCODE_FLAG_MAY_PANIC),
+        MMAY_NUMERIC_UNARY(MMAY_OPCODE_FORMAT_INTEGER, 102,
+            "format_integer", MMAY_OPCODE_FLAG_MAY_PANIC),
+        {MMAY_OPCODE_STRING_CONCAT, 103, "string_concat", 3,
+            {MMAY_BYTECODE_OPERAND_REGISTER,
+                MMAY_BYTECODE_OPERAND_REGISTER,
+                MMAY_BYTECODE_OPERAND_REGISTER}, MMAY_OPCODE_FLAG_MAY_PANIC},
+        {MMAY_OPCODE_PARSE_INTEGER, 104, "parse_integer", 3,
+            {MMAY_BYTECODE_OPERAND_REGISTER,
+                MMAY_BYTECODE_OPERAND_REGISTER,
+                MMAY_BYTECODE_OPERAND_REGISTER}, MMAY_OPCODE_FLAG_MAY_PANIC}
 #undef MMAY_NUMERIC_UNARY
 #undef MMAY_NUMERIC_BINARY
     };
@@ -322,6 +334,10 @@ void mmay_test_bytecode_metadata(void) {
     MMAY_EXPECT(MMAY_OPCODE_I64_ADD_PROVEN == 98);
     MMAY_EXPECT(MMAY_OPCODE_I64_SUBTRACT_PROVEN == 99);
     MMAY_EXPECT(MMAY_OPCODE_I64_MULTIPLY_PROVEN == 100);
+    MMAY_EXPECT(MMAY_OPCODE_FORMAT_BOOL == 101);
+    MMAY_EXPECT(MMAY_OPCODE_FORMAT_INTEGER == 102);
+    MMAY_EXPECT(MMAY_OPCODE_STRING_CONCAT == 103);
+    MMAY_EXPECT(MMAY_OPCODE_PARSE_INTEGER == 104);
     MMAY_EXPECT(MMAY_OPCODE_COUNT == sizeof(expected) / sizeof(expected[0]));
     for (index = 0; index < sizeof(expected) / sizeof(expected[0]); index += 1) {
         const MarimayOpcodeMetadata *metadata = mmay_opcode_metadata(expected[index].opcode);

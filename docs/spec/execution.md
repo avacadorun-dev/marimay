@@ -701,6 +701,15 @@ sequence, including embedded zero bytes. Engines cannot delegate that operation
 to a NUL-terminated C string API, locale collation, case folding, or Unicode
 normalization.
 
+D065 interpolation lowers to typed primitive-format and counted-string
+concatenation operations. Each engine observes the same left-to-right,
+once-only source evaluation and the same fragment boundary before proceeding
+to the next expression. Boolean, integer, floating, parsing, and concatenation
+helpers are locale-independent and length-aware. String-byte arithmetic is
+checked before allocation; allocation or managed-budget failure exposes no
+partial result. MIR, VM, and native comparison includes the exact resulting
+bytes, including embedded NUL and non-ASCII UTF-8.
+
 For an explicit source `panic(message)`, that observable tuple begins with code
 `G4000`, the complete call-expression location, and the exact runtime string
 value. MIR represents this as a typed panic terminator rather than a return or

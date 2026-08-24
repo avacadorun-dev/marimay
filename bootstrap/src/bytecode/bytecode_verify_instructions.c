@@ -125,6 +125,10 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
         case MMAY_OPCODE_INTEGER_CONVERT_OPTION:
         case MMAY_OPCODE_FORMAT_F32:
         case MMAY_OPCODE_FORMAT_F64:
+        case MMAY_OPCODE_FORMAT_BOOL:
+        case MMAY_OPCODE_FORMAT_INTEGER:
+        case MMAY_OPCODE_STRING_CONCAT:
+        case MMAY_OPCODE_PARSE_INTEGER:
         case MMAY_OPCODE_IO_PRINTLN:
         case MMAY_OPCODE_TEST_OUTPUT_BEGIN:
         case MMAY_OPCODE_TEST_OUTPUT_END:
@@ -1187,21 +1191,17 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
             break;
         case MMAY_OPCODE_FORMAT_F32:
         case MMAY_OPCODE_FORMAT_F64:
-            first = instruction->operands[1].unsigned_value;
-            status = mmay_bytecode_require_assigned(
-                assigned, function->register_types.length, first
+        case MMAY_OPCODE_FORMAT_BOOL:
+        case MMAY_OPCODE_FORMAT_INTEGER:
+        case MMAY_OPCODE_STRING_CONCAT:
+            status = mmay_bytecode_verify_format_instruction(
+                function, instruction, assigned
             );
-            if (status != MMAY_BYTECODE_VERIFY_OK) {
-                return status;
-            }
-            first_type = mmay_bytecode_register_type(function, first);
-            status = first_type != NULL
-                    && *target_type == MMAY_BYTECODE_TYPE_STRING
-                    && *first_type == (instruction->opcode
-                            == MMAY_OPCODE_FORMAT_F32
-                        ? MMAY_BYTECODE_TYPE_F32 : MMAY_BYTECODE_TYPE_F64)
-                ? MMAY_BYTECODE_VERIFY_OK
-                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            break;
+        case MMAY_OPCODE_PARSE_INTEGER:
+            status = mmay_bytecode_verify_parse_instruction(
+                function, instruction, assigned
+            );
             break;
         case MMAY_OPCODE_IO_PRINTLN:
             first = instruction->operands[1].unsigned_value;

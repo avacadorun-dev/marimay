@@ -242,7 +242,9 @@ bool mmay_native_c_emit_numeric_instruction(
     MarimayNativeCBuffer *buffer, const MarimayMirFunction *function,
     const MarimayMirInstruction *instruction);
 bool mmay_native_c_emit_format_instruction(
-    MarimayNativeCBuffer *buffer, const MarimayMirInstruction *instruction);
+    MarimayNativeCBuffer *buffer, const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction);
+bool mmay_native_c_emit_format_runtime(MarimayNativeCBuffer *buffer);
 bool mmay_native_c_emit_io_runtime(MarimayNativeCBuffer *buffer);
 bool mmay_native_c_emit_io_instruction(
     MarimayNativeCBuffer *buffer, const MarimayMirFunction *function,

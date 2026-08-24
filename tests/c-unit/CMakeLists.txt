@@ -9,9 +9,14 @@ add_executable(mmay_c_unit
   test_base.c
   test_checked_integer.c
   test_integer_range.c
+  test_integer_text.c
+  test_string_interpolation.c
   test_bytecode.c
   test_bytecode_support.c
   test_bytecode_model.c
+  test_cp30_bytecode.c
+  test_cp30_checker.c
+  test_cp30_mir.c
   test_bytecode_program.c
   test_bytecode_program_nominal.c
   test_bytecode_verify_provenance.c
@@ -102,6 +107,7 @@ add_executable(mmay_c_unit
   test_manifest.c
   test_managed.c
   runtime/test_managed_resource.c
+  runtime/test_managed_string.c
   runtime/test_managed_array_access.c
   runtime/test_managed_array_capacity.c
   runtime/test_managed_array_nested.c

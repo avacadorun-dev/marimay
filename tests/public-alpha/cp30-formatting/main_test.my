@@ -1,0 +1,16 @@
+import { println } from "std/io";
+
+@test
+fn interpolationOutput(): void {
+  expect.output(
+    "true|false|-128|-32768|-2147483648|-9223372036854775808|255|65535|4294967295|18446744073709551615\ntrue|-128|-32768|-2147483648|-9223372036854775808|255|65535|4294967295|18446744073709551615\n0.0|-0.0|inf|-inf|nan\n1:2:3\nok:-9223372036854775808|ok:9223372036854775807|ok:42|empty|digit:2|range|radix\n{unicode λ}|nul:\0|nested true\n",
+    (): void => {
+      println(primitiveLine());
+      println(explicitLine());
+      println(floatLine());
+      println(orderedLine());
+      println(parseLine());
+      println($"{{unicode λ}}|nul:\0|{$"nested {true}"}");
+    },
+  );
+}

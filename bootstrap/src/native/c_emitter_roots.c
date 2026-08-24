@@ -200,6 +200,10 @@ static bool mmay_native_c_instruction_is_safepoint(
         case MMAY_MIR_CALL_INTERFACE:
         case MMAY_MIR_FORMAT_F32:
         case MMAY_MIR_FORMAT_F64:
+        case MMAY_MIR_FORMAT_BOOL:
+        case MMAY_MIR_FORMAT_INTEGER:
+        case MMAY_MIR_STRING_CONCAT:
+        case MMAY_MIR_PARSE_INTEGER:
         case MMAY_MIR_IO_PRINTLN:
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
             return true;

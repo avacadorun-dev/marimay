@@ -147,6 +147,7 @@ bool mmay_native_c_emit_runtime(
         && mmay_native_c_write(buffer,
             "static int mmay_g_managed_status(MarimayManagedStatus status) { if (status == MMAY_MANAGED_OK) return 0; if (status == MMAY_MANAGED_ALLOCATION_FAILED) return 5; if (status == MMAY_MANAGED_LIMIT_REACHED) return 6; return 7; }\n")
         && mmay_native_c_emit_array_mutation_runtime(buffer)
+        && mmay_native_c_emit_format_runtime(buffer)
         && mmay_native_c_emit_io_runtime(buffer)
         && mmay_native_c_write(buffer,
             "static void mmay_g_print_hex(const unsigned char *data, size_t length) { size_t i; for (i = 0; i < length; i += 1) printf(\"%%02x\", (unsigned int)data[i]); }\n")
@@ -358,7 +359,7 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
     if (!mmay_vector_init(&buffer.bytes, allocator, sizeof(char))) { status = MMAY_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup; }
     if (!mmay_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"mmay/base/checked_i64_fast.h\"\n#include \"mmay/base/allocator.h\"\n#include \"mmay/runtime/managed.h\"\n#include \"mmay/runtime/string.h\"\n#include \"mmay/runtime/test_output.h\"\n")
         || !mmay_native_c_write(&buffer, "#include \"mmay/base/checked_integer.h\"\n")
-        || !mmay_native_c_write(&buffer, "#include \"mmay/base/number_format.h\"\n")
+        || !mmay_native_c_write(&buffer, "#include \"mmay/base/number_format.h\"\n#include \"mmay/base/integer_text.h\"\n")
         || (uses_f64 && !mmay_native_c_write(
             &buffer,
             "#include \"mmay/base/f64.h\"\n"

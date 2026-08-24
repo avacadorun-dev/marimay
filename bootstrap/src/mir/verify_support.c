@@ -37,13 +37,12 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
             );
         case MMAY_MIR_FORMAT_F32:
         case MMAY_MIR_FORMAT_F64:
-            if (first_type == MMAY_TYPE_INVALID) {
-                return MMAY_MIR_VERIFY_INVALID_REGISTER;
-            }
-            return target_type == MMAY_TYPE_STRING
-                    && first_type == (instruction->kind == MMAY_MIR_FORMAT_F32
-                        ? MMAY_TYPE_F32 : MMAY_TYPE_F64)
-                ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+        case MMAY_MIR_FORMAT_BOOL:
+        case MMAY_MIR_FORMAT_INTEGER:
+        case MMAY_MIR_STRING_CONCAT:
+            return mmay_mir_verify_format_instruction(function, instruction);
+        case MMAY_MIR_PARSE_INTEGER:
+            return mmay_mir_verify_parse_instruction(function, instruction);
         case MMAY_MIR_IO_PRINTLN:
             return mmay_mir_verify_io_instruction(function, instruction);
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
@@ -811,12 +810,17 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
         case MMAY_MIR_INTEGER_CONVERT:
         case MMAY_MIR_FORMAT_F32:
         case MMAY_MIR_FORMAT_F64:
+        case MMAY_MIR_FORMAT_BOOL:
+        case MMAY_MIR_FORMAT_INTEGER:
         case MMAY_MIR_IO_PRINTLN:
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
         case MMAY_MIR_TEST_OUTPUT_END:
         case MMAY_MIR_DEFER_REGISTER:
         case MMAY_MIR_DEFER_CALL:
             return false;
+        case MMAY_MIR_STRING_CONCAT:
+        case MMAY_MIR_PARSE_INTEGER:
+            return true;
     }
     return false;
 }

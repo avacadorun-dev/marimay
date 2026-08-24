@@ -43,6 +43,10 @@ build/debug/cp29-quick-start
 ```
 <!-- cp29-quick-start:end -->
 
+The current source surface also includes CP30 dynamic primitive interpolation,
+boolean/all-width integer formatting, and `parseInt`/`parseIntRadix` with exact
+VM/native behavior.
+
 Both run paths print `Marimay CP29 quick start`. The
 [known limitations](docs/known-limitations.md) distinguish this executable
 slice from CLI0 and the 1.0 target. `mmay help` lists only seven commands as
@@ -51,8 +55,9 @@ available; recognized future commands are visibly staged and return `U0003`.
 ## Target design: read the language in one minute
 
 The following example describes the accepted target language. It is parsed and
-formatter-checked as documentation, but dynamic interpolation remains CP30 and
-the complete program is not part of the executable CP29 quick start.
+formatter-checked as documentation; its primitive interpolation is executable
+under CP30, while the complete program remains separate from the deliberately
+smaller CP29 quick start.
 
 ```marimay
 import { Error as IoError, println } from "std/io";

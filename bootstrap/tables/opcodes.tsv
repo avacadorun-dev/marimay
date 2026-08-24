@@ -100,3 +100,7 @@
 98	I64_ADD_PROVEN	i64_add_proven	destination:register,left:register,right:register	none	Add i64 operands under a verifier-proven no-overflow interval fact.
 99	I64_SUBTRACT_PROVEN	i64_subtract_proven	destination:register,left:register,right:register	none	Subtract i64 operands under a verifier-proven no-overflow interval fact.
 100	I64_MULTIPLY_PROVEN	i64_multiply_proven	destination:register,left:register,right:register	none	Multiply i64 operands under a verifier-proven no-overflow interval fact.
+101	FORMAT_BOOL	format_bool	destination:register,source:register	may_panic	Format a boolean as its canonical lower-case string spelling.
+102	FORMAT_INTEGER	format_integer	destination:register,source:register	may_panic	Format an exact-width integer as canonical base-ten text.
+103	STRING_CONCAT	string_concat	destination:register,left:register,right:register	may_panic	Concatenate two counted immutable strings with bounded allocation.
+104	PARSE_INTEGER	parse_integer	destination:register,text:register,radix:register	may_panic	Parse counted ASCII integer text into Result<int, std/convert.ParseError>.

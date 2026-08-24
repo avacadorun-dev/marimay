@@ -161,6 +161,7 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/checked_i64.c
   bootstrap/src/base/checked_integer.c
   bootstrap/src/base/f64_runtime.c
+  bootstrap/src/base/integer_text.c
   bootstrap/src/base/number_format.c
   bootstrap/src/base/owned_bytes.c
   bootstrap/src/base/provenance.c
@@ -240,6 +241,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/base/f64_runtime.c
   bootstrap/src/base/hash.c
   bootstrap/src/base/integer_range.c
+  bootstrap/src/base/integer_text.c
   bootstrap/src/base/map.c
   bootstrap/src/base/number_format.c
   bootstrap/src/base/owned_bytes.c
@@ -260,6 +262,8 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_verify.c
   bootstrap/src/bytecode/bytecode_verify_defer.c
   bootstrap/src/bytecode/bytecode_verify_instructions.c
+  bootstrap/src/bytecode/bytecode_verify_format.c
+  bootstrap/src/bytecode/bytecode_verify_parse.c
   bootstrap/src/bytecode/bytecode_verify_integer_range.c
   bootstrap/src/bytecode/bytecode_verify_io.c
   bootstrap/src/bytecode/bytecode_verify_nominal.c
@@ -269,6 +273,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/program_limits.c
   bootstrap/src/bytecode/program_verify_nominal.c
   bootstrap/src/bytecode/mir_lower.c
+  bootstrap/src/bytecode/mir_lower_format.c
   bootstrap/src/bytecode/mir_lower_nominal.c
   bootstrap/src/bytecode/vm.c
   bootstrap/src/bytecode/vm_array.c
@@ -278,6 +283,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_interface.c
   bootstrap/src/bytecode/vm_io.c
   bootstrap/src/bytecode/vm_format.c
+  bootstrap/src/bytecode/vm_parse.c
   bootstrap/src/bytecode/vm_nominal.c
   bootstrap/src/bytecode/vm_numeric.c
   bootstrap/src/bytecode/vm_prepare.c
@@ -312,6 +318,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_expr_nominal.c
   bootstrap/src/check/checker_expr_records.c
   bootstrap/src/check/checker_expr_scalar.c
+  bootstrap/src/check/checker_expr_string.c
   bootstrap/src/check/checker_expression.c
   bootstrap/src/check/checker_interpret.c
   bootstrap/src/check/checker_imported_nominal.c
@@ -366,6 +373,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/execution_array.c
   bootstrap/src/mir/execution_defer.c
   bootstrap/src/mir/execution_format.c
+  bootstrap/src/mir/execution_parse.c
   bootstrap/src/mir/execution_io.c
   bootstrap/src/mir/execution_heap.c
   bootstrap/src/mir/execution_numeric.c
@@ -377,6 +385,8 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/verify_range.c
   bootstrap/src/mir/verify_interfaces.c
   bootstrap/src/mir/verify_io.c
+  bootstrap/src/mir/verify_format.c
+  bootstrap/src/mir/verify_parse.c
   bootstrap/src/mir/verify_managed.c
   bootstrap/src/mir/verify_numeric.c
   bootstrap/src/mir/verify_defer.c

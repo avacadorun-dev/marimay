@@ -1,2 +1,20 @@
+public enum ParseError {
+  Empty,
+  InvalidDigit { offset: int; },
+  OutOfRange,
+  InvalidRadix,
+}
+
+public extern "c" fn parseInt(text: string): Result<int, ParseError>;
+public extern "c" fn parseIntRadix(text: string, radix: int): Result<int, ParseError>;
 public extern "c" fn formatF32(value: f32): string;
 public extern "c" fn formatF64(value: f64): string;
+public extern "c" fn formatBool(value: bool): string;
+public extern "c" fn formatI8(value: i8): string;
+public extern "c" fn formatI16(value: i16): string;
+public extern "c" fn formatI32(value: i32): string;
+public extern "c" fn formatI64(value: i64): string;
+public extern "c" fn formatU8(value: u8): string;
+public extern "c" fn formatU16(value: u16): string;
+public extern "c" fn formatU32(value: u32): string;
+public extern "c" fn formatU64(value: u64): string;

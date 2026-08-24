@@ -1,0 +1,90 @@
+import {
+  formatBool,
+  formatI8,
+  formatI16,
+  formatI32,
+  formatI64,
+  formatU8,
+  formatU16,
+  formatU32,
+  formatU64,
+} from "std/convert";
+import * as convert from "std/convert";
+import { Error as IoError, println } from "std/io";
+
+type Counter {
+  public mutable value: int;
+}
+
+fn next(counter: Counter): int {
+  counter.value += 1;
+  return counter.value;
+}
+
+fn primitiveLine(): string {
+  const i8Min: i8 = -128;
+  const i16Min: i16 = -32768;
+  const i32Min: i32 = -2147483648;
+  const i64Min: i64 = -9223372036854775807 - 1;
+  const u8Max: u8 = 255;
+  const u16Max: u16 = 65535;
+  const u32Max: u32 = 4294967295;
+  const u64Max: u64 = 18446744073709551615;
+  return $"{true}|{false}|{i8Min}|{i16Min}|{i32Min}|{i64Min}|{u8Max}|{u16Max}|{u32Max}|{u64Max}";
+}
+
+fn explicitLine(): string {
+  const i8Min: i8 = -128;
+  const i16Min: i16 = -32768;
+  const i32Min: i32 = -2147483648;
+  const i64Min: i64 = -9223372036854775807 - 1;
+  const u8Max: u8 = 255;
+  const u16Max: u16 = 65535;
+  const u32Max: u32 = 4294967295;
+  const u64Max: u64 = 18446744073709551615;
+  return $"{formatBool(true)}|{formatI8(i8Min)}|{formatI16(i16Min)}|{formatI32(i32Min)}|{formatI64(i64Min)}|{formatU8(u8Max)}|{formatU16(u16Max)}|{formatU32(u32Max)}|{formatU64(u64Max)}";
+}
+
+fn floatLine(): string {
+  const positiveZero: f64 = 0.0;
+  const negativeZero: f64 = -0.0;
+  const positiveInfinity: f64 = 1.0 / positiveZero;
+  const negativeInfinity: f64 = -positiveInfinity;
+  const notANumber: f64 = positiveZero / positiveZero;
+  return $"{positiveZero}|{negativeZero}|{positiveInfinity}|{negativeInfinity}|{notANumber}";
+}
+
+fn orderedLine(): string {
+  const counter = Counter { value: 0 };
+  return $"{next(counter)}:{next(counter)}:{next(counter)}";
+}
+
+fn parsedError(error: convert.ParseError): string {
+  return match error {
+    case convert.Empty => "empty";
+    case convert.InvalidDigit { offset } => $"digit:{offset}";
+    case convert.OutOfRange => "range";
+    case convert.InvalidRadix => "radix";
+  };
+}
+
+fn parsed(value: Result<int, convert.ParseError>): string {
+  return match value {
+    case Ok(number) => $"ok:{number}";
+    case Err(error) => parsedError(error);
+  };
+}
+
+fn parseLine(): string {
+  return $"{parsed(convert.parseInt("-9223372036854775808"))}|{parsed(convert.parseIntRadix("7fffffffffffffff", 16))}|{parsed(convert.parseIntRadix("101010", 2))}|{parsed(convert.parseInt(""))}|{parsed(convert.parseInt("12x"))}|{parsed(convert.parseInt("9223372036854775808"))}|{parsed(convert.parseIntRadix("1", 1))}";
+}
+
+fn main(): Result<void, IoError> {
+  println(primitiveLine())?;
+  println(explicitLine())?;
+  println(floatLine())?;
+  println(orderedLine())?;
+  println(parseLine())?;
+  println($"{{unicode λ}}|nul:\0|{$"nested {true}"}")?;
+  return Ok();
+}

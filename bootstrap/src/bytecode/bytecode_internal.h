@@ -52,6 +52,16 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_io_instruction(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction
 );
+MarimayBytecodeVerifyStatus mmay_bytecode_verify_format_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
+    const unsigned char *assigned
+);
+MarimayBytecodeVerifyStatus mmay_bytecode_verify_parse_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
+    const unsigned char *assigned
+);
 void mmay_bytecode_transfer_assignments(
     const MarimayBytecodeBlock *block,
     unsigned char *assigned,

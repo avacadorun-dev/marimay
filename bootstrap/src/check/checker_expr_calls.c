@@ -13,6 +13,7 @@
 #include "checker_expr_numeric_api.h"
 #include "checker_expr_io_api.h"
 #include "checker_expr_test_api.h"
+#include "checker_expr_string_api.h"
 
 
 
@@ -1005,6 +1006,8 @@ bool mmay_checker_private_compile_ordinary_call(
     bool map_error_resolved = false;
     bool numeric_resolved = false;
     bool convert_format_resolved = false;
+    bool convert_string_resolved = false;
+    bool convert_parse_resolved = false;
     bool io_resolved = false;
     bool test_resolved = false;
     const MarimayAstNode *member_callee = mmay_checker_private_check_child_node(
@@ -1034,6 +1037,24 @@ bool mmay_checker_private_compile_ordinary_call(
         goto cleanup;
     }
     if (convert_format_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!mmay_checker_private_compile_convert_string_call(
+            function, node, expected, &convert_string_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (convert_string_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!mmay_checker_private_compile_convert_parse_call(
+            function, node, expected, &convert_parse_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (convert_parse_resolved) {
         accepted = true;
         goto cleanup;
     }
