@@ -128,6 +128,11 @@ static bool mmay_fuzz_list_kind(MarimaySyntaxKind kind) {
         || kind == MMAY_SYNTAX_PARAMETERS
         || kind == MMAY_SYNTAX_IMPORT_CLAUSE
         || kind == MMAY_SYNTAX_ARRAY_EXPRESSION
+        || kind == MMAY_SYNTAX_ENUM_DECL
+        || kind == MMAY_SYNTAX_ENUM_VARIANT
+        || kind == MMAY_SYNTAX_MATCH_EXPRESSION
+        || kind == MMAY_SYNTAX_NAMED_PAYLOAD
+        || kind == MMAY_SYNTAX_RECORD_DECL
         || kind == MMAY_SYNTAX_RECORD_EXPRESSION
         || kind == MMAY_SYNTAX_RECORD_FIELDS
         || kind == MMAY_SYNTAX_PAREN_GROUP

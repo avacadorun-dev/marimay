@@ -201,6 +201,10 @@ void mmay_test_formatter_fixture_file(void) {
             "format/fuzz-index-regression.expected.my"
         },
         {
+            "format/fuzz-match-trailing-comma.input.my",
+            "format/fuzz-match-trailing-comma.expected.my"
+        },
+        {
             "format/cp30-interpolation.input.my",
             "format/cp30-interpolation.expected.my"
         },

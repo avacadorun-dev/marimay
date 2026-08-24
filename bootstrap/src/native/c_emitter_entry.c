@@ -105,7 +105,7 @@ bool mmay_native_c_emit_executable_host_arguments(
 ) {
     return mmay_native_c_write(
         buffer,
-        "if (mmay_g_argc < 1) { mmay_g_exit = mmay_g_public_argument_status(MMAY_PROGRAM_ARGUMENTS_INVALID_ARGUMENT); goto mmay_g_public_host_cleanup; } mmay_g_argument_status = mmay_host_arguments_import(mmay_g_x.allocator, mmay_g_argc > 1 ? (const MarimayHostArgumentChar *const *)(mmay_g_argv + 1) : NULL, mmay_g_argc > 1 ? (size_t)(mmay_g_argc - 1) : 0, MMAY_PROGRAM_ARGUMENT_MAX_COUNT, MMAY_PROGRAM_ARGUMENT_MAX_BYTES, &mmay_g_host_arguments); if (mmay_g_argument_status != MMAY_PROGRAM_ARGUMENTS_OK) { mmay_g_exit = mmay_g_public_argument_status(mmay_g_argument_status); goto mmay_g_public_host_cleanup; } mmay_g_argument_list.values = mmay_g_host_arguments.views; mmay_g_argument_list.count = mmay_g_host_arguments.count; "
+        "if (mmay_g_argc < 1) { mmay_g_exit = mmay_g_public_argument_status(MMAY_PROGRAM_ARGUMENTS_INVALID_ARGUMENT); goto mmay_g_public_host_cleanup; } mmay_g_argument_status = mmay_host_arguments_import(mmay_g_x.allocator, mmay_g_argc > 1 ? (const MarimayHostArgumentChar *const *)(mmay_g_argv + 1) : NULL, mmay_g_argc > 1 ? (size_t)(mmay_g_argc - 1) : 0, MMAY_PROGRAM_ARGUMENT_MAX_COUNT, MMAY_PROGRAM_ARGUMENT_MAX_BYTES, &mmay_g_host_arguments); if (mmay_g_argument_status != MMAY_PROGRAM_ARGUMENTS_OK) { mmay_g_exit = mmay_g_public_argument_status(mmay_g_argument_status); goto mmay_g_public_host_cleanup; } mmay_g_argument_list.values = mmay_g_host_arguments.views; mmay_g_argument_list.count = mmay_g_host_arguments.count; (void)mmay_g_argument_list; "
     );
 }
 

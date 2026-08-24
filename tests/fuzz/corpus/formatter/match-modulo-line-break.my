@@ -1,0 +1,8 @@
+import { Item as Renamed, other } from "pkg";
+
+fn inspect(value: int): int {
+  return match va%ue {
+    0 => 1,
+    _ => 
+f};
+}
