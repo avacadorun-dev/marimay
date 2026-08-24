@@ -10,6 +10,7 @@
 static int mmay_cli_build_status_error(
     const MarimayCliOptions *options,
     MarimayNativeBuildStatus status,
+    const MarimayOwnedBytes *tool_output,
     MarimayWriter standard_error
 ) {
     const char *code = MMAY_DIAGNOSTIC_NATIVE_EMIT_FAILED;
@@ -52,10 +53,23 @@ static int mmay_cli_build_status_error(
         code = MMAY_DIAGNOSTIC_NATIVE_EMIT_FAILED;
         message = "canonical typed MIR did not lower to portable C17";
     }
-    return mmay_cli_plain_error(
+    exit_code = mmay_cli_plain_error(
         standard_error, options->diagnostic_style,
         code, message, exit_code
     );
+    if (status == MMAY_NATIVE_BUILD_COMPILE_FAILED
+        && tool_output != NULL && tool_output->length != 0
+        && options->diagnostic_style != MMAY_DIAGNOSTIC_JSON) {
+        if (!mmay_writer_write_cstr(standard_error, "compiler output:\n")
+            || !mmay_writer_write(
+                standard_error, (const char *)tool_output->data,
+                tool_output->length
+            ) || (tool_output->data[tool_output->length - 1] != '\n'
+                && !mmay_writer_write_cstr(standard_error, "\n"))) {
+            return MMAY_EXIT_INTERNAL;
+        }
+    }
+    return exit_code;
 }
 
 static int mmay_cli_build_execute(
@@ -116,7 +130,7 @@ static int mmay_cli_build_execute(
     status = mmay_native_build(session->allocator, &request, &result);
     if (status != MMAY_NATIVE_BUILD_OK) {
         exit_code = mmay_cli_build_status_error(
-            options, status, standard_error
+            options, status, &result.tool_output, standard_error
         );
     } else if (options->quiet
         || (mmay_writer_write(

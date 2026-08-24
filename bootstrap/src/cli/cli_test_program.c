@@ -295,7 +295,8 @@ static bool mmay_cli_test_native(
     const MarimayCliTestCase *test,
     MarimayCliTestObservation *observation,
     MarimayNativeBuildStatus *build_status,
-    MarimayProcessStatus *process_status
+    MarimayProcessStatus *process_status,
+    MarimayOwnedBytes *tool_output
 ) {
     MarimayNativeBuildRequest request;
     MarimayNativeBuildResult build;
@@ -309,6 +310,7 @@ static bool mmay_cli_test_native(
     memset(&build, 0, sizeof(build));
     memset(&capture, 0, sizeof(capture));
     memset(observation, 0, sizeof(*observation));
+    memset(tool_output, 0, sizeof(*tool_output));
     request.functions = context->functions;
     request.function_count = context->function_count;
     request.entry_symbol = test->function->mir.symbol;
@@ -319,7 +321,11 @@ static bool mmay_cli_test_native(
     *build_status = mmay_native_build(
         context->session->allocator, &request, &build
     );
-    if (*build_status != MMAY_NATIVE_BUILD_OK) goto cleanup;
+    if (*build_status != MMAY_NATIVE_BUILD_OK) {
+        *tool_output = build.tool_output;
+        memset(&build.tool_output, 0, sizeof(build.tool_output));
+        goto cleanup;
+    }
     if (!mmay_size_multiply(
             argument_count + 1, sizeof(*arguments), &argument_bytes
         )) goto cleanup;
@@ -439,7 +445,8 @@ static int mmay_cli_test_pipeline_error(
 static int mmay_cli_test_build_error(
     const MarimayCliOptions *options,
     MarimayWriter standard_error,
-    MarimayNativeBuildStatus status
+    MarimayNativeBuildStatus status,
+    const MarimayOwnedBytes *tool_output
 ) {
     const char *code = MMAY_DIAGNOSTIC_NATIVE_EMIT_FAILED;
     const char *message = "native test build failed inside the compiler";
@@ -461,10 +468,23 @@ static int mmay_cli_test_build_error(
         message = "the selected host cannot preserve native test semantics";
         exit_code = MMAY_EXIT_SOURCE_FAILURE;
     }
-    return mmay_cli_plain_error(
+    exit_code = mmay_cli_plain_error(
         standard_error, options->diagnostic_style,
         code, message, exit_code
     );
+    if (status == MMAY_NATIVE_BUILD_COMPILE_FAILED
+        && tool_output != NULL && tool_output->length != 0
+        && options->diagnostic_style != MMAY_DIAGNOSTIC_JSON) {
+        if (!mmay_writer_write_cstr(standard_error, "compiler output:\n")
+            || !mmay_writer_write(
+                standard_error, (const char *)tool_output->data,
+                tool_output->length
+            ) || (tool_output->data[tool_output->length - 1] != '\n'
+                && !mmay_writer_write_cstr(standard_error, "\n"))) {
+            return MMAY_EXIT_INTERNAL;
+        }
+    }
+    return exit_code;
 }
 
 static int mmay_cli_test_execute(
@@ -486,20 +506,23 @@ static int mmay_cli_test_execute(
         const MarimayCliTestObservation *observed = NULL;
         MarimayNativeBuildStatus build_status = MMAY_NATIVE_BUILD_OK;
         MarimayProcessStatus process_status = MMAY_PROCESS_OK;
+        MarimayOwnedBytes tool_output = {0};
         bool ready = true;
         memset(&vm, 0, sizeof(vm));
         memset(&native, 0, sizeof(native));
         if (use_vm) ready = mmay_cli_test_vm(context, test, &vm);
         if (ready && use_native) ready = mmay_cli_test_native(
-            context, test, &native, &build_status, &process_status
+            context, test, &native, &build_status, &process_status, &tool_output
         );
         if (!ready) {
             mmay_cli_test_observation_dispose(&native);
             mmay_cli_test_observation_dispose(&vm);
             if (build_status != MMAY_NATIVE_BUILD_OK) {
-                return mmay_cli_test_build_error(
-                    context->options, standard_error, build_status
+                int error = mmay_cli_test_build_error(
+                    context->options, standard_error, build_status, &tool_output
                 );
+                mmay_owned_bytes_dispose(&tool_output);
+                return error;
             }
             if (process_status != MMAY_PROCESS_OK) {
                 return mmay_cli_test_pipeline_error(
@@ -512,6 +535,7 @@ static int mmay_cli_test_execute(
                 "test execution pipeline failed"
             );
         }
+        mmay_owned_bytes_dispose(&tool_output);
         if (use_native && native.exit_code == MMAY_EXIT_INTERNAL
             && !mmay_cli_test_resource_failure(&native)) {
             mmay_cli_test_observation_dispose(&native);
