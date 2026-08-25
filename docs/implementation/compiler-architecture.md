@@ -192,7 +192,7 @@ bootstrap/src/check/
   checker_expr_tuples.c tuple value lowering and recursive MIR layout ownership
   checker_tuple_match.c tuple-pattern binding and match lowering
   checker_range_loop.c  exact D068 integer-range loop CFG lowering
-  checker_expr_io.c     exact imported std/io.println recognition and lowering
+  checker_expr_io.c     exact imported std/io operation/alias recognition and lowering
   checker_expr_string.c interpolation plus closed std/convert lowering
   checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
                         and lowering

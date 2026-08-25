@@ -40,9 +40,7 @@ static size_t mmay_checker_io_arguments(
 static const MarimayCheckImportBinding *mmay_checker_io_binding(
     MarimayFunctionChecker *function,
     const MarimaySyntaxToken *namespace_token,
-    const MarimaySyntaxToken *name_token,
-    const unsigned char *function_name,
-    size_t function_name_length
+    const MarimaySyntaxToken *name_token
 ) {
     static const unsigned char package_name[] = "std/io";
     const MarimayCheckImportEnvironment *imports = function != NULL
@@ -60,12 +58,6 @@ static const MarimayCheckImportBinding *mmay_checker_io_binding(
         size_t local_length = namespace_token != NULL
             ? namespace_token->end - namespace_token->start
             : name_token->end - name_token->start;
-        const unsigned char *original = namespace_token != NULL
-            ? function->checker->source + name_token->start
-            : binding->original;
-        size_t original_length = namespace_token != NULL
-            ? name_token->end - name_token->start
-            : binding->original_length;
         if (binding->ast == function->checker->ast
             && binding->is_namespace == (namespace_token != NULL)
             && surface != NULL
@@ -74,9 +66,6 @@ static const MarimayCheckImportBinding *mmay_checker_io_binding(
                 package_name, sizeof(package_name) - 1
             ) && mmay_checker_io_bytes_equal(
                 binding->local, binding->local_length, local, local_length
-            ) && mmay_checker_io_bytes_equal(
-                original, original_length,
-                function_name, function_name_length
             )) {
             return binding;
         }
@@ -142,8 +131,16 @@ bool mmay_checker_private_compile_io_call(
         || (namespace_token != NULL && namespace_token->synthetic)) {
         return true;
     }
-    io_name = function->checker->source + name_token->start;
-    io_name_length = name_token->end - name_token->start;
+    binding = mmay_checker_io_binding(function, namespace_token, name_token);
+    if (binding == NULL) {
+        return true;
+    }
+    io_name = namespace_token != NULL
+        ? function->checker->source + name_token->start
+        : binding->original;
+    io_name_length = namespace_token != NULL
+        ? name_token->end - name_token->start
+        : binding->original_length;
     if (mmay_checker_io_bytes_equal(io_name, io_name_length, "print", 5)) {
         operation = MMAY_MIR_IO_STDOUT_WRITE; takes_text = true;
     } else if (mmay_checker_io_bytes_equal(io_name, io_name_length, "println", 7)) {
@@ -159,12 +156,6 @@ bool mmay_checker_private_compile_io_call(
     } else if (mmay_checker_io_bytes_equal(io_name, io_name_length, "flushStderr", 11)) {
         operation = MMAY_MIR_IO_STDERR_FLUSH;
     } else {
-        return true;
-    }
-    binding = mmay_checker_io_binding(
-        function, namespace_token, name_token, io_name, io_name_length
-    );
-    if (binding == NULL) {
         return true;
     }
     {

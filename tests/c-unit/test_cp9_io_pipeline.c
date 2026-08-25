@@ -39,13 +39,13 @@ static const char mmay_cp9_io_package[] =
     "public extern \"c\" fn println(text: string): Result<void, Error>;\n";
 
 static const char mmay_cp9_io_application[] =
-    "import { Error as IoError, println } from \"std/io\";\n"
+    "import { Error as IoError, println as line } from \"std/io\";\n"
     "fn main(): Result<void, IoError> {\n"
-    "  println(\"vm\\0payload\")?;\n"
+    "  line(\"vm\\0payload\")?;\n"
     "  return Ok();\n"
     "}\n"
     "fn nativeEntry(): void {\n"
-    "  const ignored = println(\"native\");\n"
+    "  const ignored = line(\"native\");\n"
     "  return;\n"
     "}\n";
 
