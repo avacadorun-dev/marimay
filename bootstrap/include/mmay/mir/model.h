@@ -4,18 +4,10 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "mmay/types/model.h"
-typedef uint32_t MarimayMirRegister;
-typedef uint32_t MarimayMirBlockId;
-typedef uint32_t MarimayMirCallId;
-typedef uint32_t MarimayMirRecordId;
-typedef uint32_t MarimayMirRecordConstructionId;
-typedef uint32_t MarimayMirEnumId;
-typedef uint32_t MarimayMirEnumConstructionId;
-typedef uint32_t MarimayMirStringId;
-typedef uint32_t MarimayMirArrayId;
-typedef uint32_t MarimayMirArrayConstructionId;
-typedef uint32_t MarimayMirInterfaceId;
-typedef uint32_t MarimayMirInterfaceConstructionId;
+typedef uint32_t MarimayMirRegister, MarimayMirBlockId, MarimayMirCallId;
+typedef uint32_t MarimayMirRecordId, MarimayMirRecordConstructionId, MarimayMirEnumId;
+typedef uint32_t MarimayMirEnumConstructionId, MarimayMirStringId, MarimayMirArrayId;
+typedef uint32_t MarimayMirArrayConstructionId, MarimayMirInterfaceId, MarimayMirInterfaceConstructionId;
 #define MMAY_MIR_NO_REGISTER UINT32_MAX
 #define MMAY_MIR_NO_BLOCK UINT32_MAX
 #define MMAY_MIR_NO_CALL UINT32_MAX
@@ -95,7 +87,8 @@ typedef enum MarimayMirInstructionKind {
     MMAY_MIR_INTEGER_CONVERT,
     MMAY_MIR_FORMAT_F32, MMAY_MIR_FORMAT_F64, MMAY_MIR_FORMAT_BOOL,
     MMAY_MIR_FORMAT_INTEGER, MMAY_MIR_STRING_CONCAT, MMAY_MIR_PARSE_INTEGER,
-    MMAY_MIR_IO_PRINTLN,
+    MMAY_MIR_IO_PRINTLN, MMAY_MIR_IO_WRITE, MMAY_MIR_IO_FLUSH,
+    MMAY_MIR_IO_READ_LINE,
     MMAY_MIR_TEST_OUTPUT_BEGIN,
     MMAY_MIR_TEST_OUTPUT_END,
     MMAY_MIR_DEFER_REGISTER,
@@ -103,6 +96,11 @@ typedef enum MarimayMirInstructionKind {
     MMAY_MIR_ADD_PROVEN_I64, MMAY_MIR_SUBTRACT_PROVEN_I64,
     MMAY_MIR_MULTIPLY_PROVEN_I64
 } MarimayMirInstructionKind;
+typedef enum MarimayMirIoOperation {
+    MMAY_MIR_IO_STDOUT_WRITE, MMAY_MIR_IO_STDOUT_LINE,
+    MMAY_MIR_IO_STDERR_WRITE, MMAY_MIR_IO_STDERR_LINE,
+    MMAY_MIR_IO_STDOUT_FLUSH, MMAY_MIR_IO_STDERR_FLUSH
+} MarimayMirIoOperation;
 typedef enum MarimayMirIntegerPolicy {
     MMAY_MIR_INTEGER_CHECKED_OPTION,
     MMAY_MIR_INTEGER_WRAPPING,
@@ -125,6 +123,7 @@ typedef struct MarimayMirInstruction {
     MarimayMirRecordId record;
     MarimayMirRecordConstructionId record_construction;
     MarimayMirEnumId enum_id;
+    MarimayMirEnumId option_enum_id;
     MarimayMirEnumConstructionId enum_construction;
     MarimayMirStringId string_constant;
     MarimayMirArrayId array;
@@ -133,6 +132,7 @@ typedef struct MarimayMirInstruction {
     MarimayMirInterfaceConstructionId interface_construction;
     MarimayMirIntegerPolicy integer_policy;
     MarimayMirIntegerOperation integer_operation;
+    MarimayMirIoOperation io_operation;
     MarimayTypeId integer_target_type;
     size_t variant;
     size_t field;

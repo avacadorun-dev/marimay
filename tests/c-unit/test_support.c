@@ -33,6 +33,7 @@ MarimayWriter mmay_test_buffer_writer(MarimayTestBuffer *buffer) {
     MarimayWriter writer;
     writer.context = buffer;
     writer.write = mmay_test_buffer_write;
+    writer.flush = NULL;
     return writer;
 }
 

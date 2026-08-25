@@ -28,6 +28,16 @@ static bool mmay_cli_stdout_publish(
         );
 }
 
+static bool mmay_cli_stdin_read(
+    void *context, unsigned char *destination, size_t capacity, size_t *count
+) {
+    MarimayReadStream *stream = context;
+    MarimayReadStatus status = stream != NULL && stream->read != NULL
+        ? stream->read(stream->context, destination, capacity, count)
+        : MMAY_READ_ERROR;
+    return status == MMAY_READ_OK || status == MMAY_READ_END;
+}
+
 static const MarimayBytecodeEnumPayload *mmay_cli_run_error_payload(
     const MarimayBytecodeFunction *function
 ) {
@@ -212,6 +222,7 @@ static int mmay_cli_run_execute(
     const MarimayCompilerResult *compiler,
     const MarimayCheckedEntry *entry,
     MarimayProgramArgumentList program_arguments,
+    MarimayReadStream standard_input,
     MarimayWriter standard_output,
     MarimayWriter standard_error
 ) {
@@ -229,6 +240,7 @@ static int mmay_cli_run_execute(
     MarimayBytecodeValue result;
     MarimayBytecodeRunOptions run_options;
     MarimayCliStdoutContext stdout_context;
+    MarimayCliStdoutContext stderr_context;
     MarimayIoStdout stdout_sink;
     MarimayBytecodeRunStatus run_status;
     MarimayMirBytecodeLowerStatus lower_status;
@@ -309,9 +321,18 @@ static int mmay_cli_run_execute(
     if (!mmay_bytecode_panic_init(&panic, session->allocator)) goto cleanup;
     panic_ready = true;
     stdout_context.writer = standard_output;
+    stderr_context.writer = standard_error;
     stdout_sink.capability_granted = true;
     stdout_sink.context = &stdout_context;
     stdout_sink.publish = mmay_cli_stdout_publish;
+    stdout_sink.stderr_capability_granted = true;
+    stdout_sink.stderr_context = &stderr_context;
+    stdout_sink.publish_stderr = mmay_cli_stdout_publish;
+    stdout_sink.flush_stdout = NULL;
+    stdout_sink.flush_stderr = NULL;
+    stdout_sink.stdin_capability_granted = standard_input.read != NULL;
+    stdout_sink.stdin_context = &standard_input;
+    stdout_sink.read_stdin = mmay_cli_stdin_read;
     run_options = mmay_bytecode_run_default_options();
     run_options.execution = &execution;
     run_options.stdout_sink = &stdout_sink;
@@ -371,6 +392,7 @@ cleanup:
 int mmay_cli_run_program(
     MarimaySession *session,
     const MarimayCliOptions *options,
+    MarimayReadStream standard_input,
     MarimayWriter standard_output,
     MarimayWriter standard_error
 ) {
@@ -438,7 +460,7 @@ int mmay_cli_run_program(
     }
     exit_code = mmay_cli_run_execute(
         session, options, &compiler, &entry,
-        program_arguments.list,
+        program_arguments.list, standard_input,
         standard_output, standard_error
     );
 cleanup:

@@ -1107,6 +1107,7 @@ MarimayFormatStatus mmay_format_source(
     }
     writer.context = &output;
     writer.write = mmay_format_output_write;
+    writer.flush = NULL;
     render_options = mmay_document_default_render_options();
     render_options.max_nesting = options.max_nesting;
     render_options.max_scan_steps = options.max_render_steps;

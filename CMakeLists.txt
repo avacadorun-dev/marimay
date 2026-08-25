@@ -176,6 +176,7 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/utf8.c
   bootstrap/src/base/vector.c
   runtime/common/io_stdout.c
+  runtime/common/io.c
   runtime/common/managed.c
   runtime/common/managed_array_access.c
   runtime/common/managed_array_capacity.c
@@ -433,6 +434,7 @@ add_library(mmay_bootstrap STATIC
   runtime/common/directory.c
   runtime/common/file.c
   runtime/common/io_stdout.c
+  runtime/common/io.c
   runtime/common/test_output.c
   runtime/common/managed.c
   runtime/common/managed_array_access.c

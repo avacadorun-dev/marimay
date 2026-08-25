@@ -1,5 +1,6 @@
 #include "mir_internal.h"
 
+
 static bool mmay_mir_io_symbol(
     const char *package_name,
     const char *source_path,
@@ -50,7 +51,7 @@ MarimayMirVerifyStatus mmay_mir_verify_io_instruction(
         function, io_error, 0
     );
     const MarimayMirEnumVariant *write_failed = mmay_mir_enum_variant(
-        function, io_error, 1
+        function, io_error, instruction->kind == MMAY_MIR_IO_PRINTLN ? 1 : 2
     );
     const MarimayMirEnumPayload *capability_payload = mmay_mir_enum_payload(
         function, capability, 0
@@ -63,8 +64,10 @@ MarimayMirVerifyStatus mmay_mir_verify_io_instruction(
     MarimayTypeId source_type = mmay_mir_register_type(
         function, instruction->first
     );
+    bool takes_text = instruction->kind != MMAY_MIR_IO_FLUSH
+        && instruction->kind != MMAY_MIR_IO_READ_LINE;
     if (target_type == MMAY_TYPE_INVALID
-        || source_type == MMAY_TYPE_INVALID) {
+        || (takes_text && source_type == MMAY_TYPE_INVALID)) {
         return MMAY_MIR_VERIFY_INVALID_REGISTER;
     }
     if (!mmay_mir_io_symbol("std", "prelude", "Result", &result_symbol)
@@ -73,7 +76,20 @@ MarimayMirVerifyStatus mmay_mir_verify_io_instruction(
         )) {
         return MMAY_MIR_VERIFY_INVALID_ARGUMENT;
     }
-    if (source_type != MMAY_TYPE_STRING || result_layout == NULL
+    if (instruction->kind == MMAY_MIR_IO_READ_LINE) {
+        const MarimayMirEnum *option = mmay_mir_enum(
+            function, instruction->option_enum_id
+        );
+        return source_type == MMAY_TYPE_I64 && result_layout != NULL
+            && target_type == result_layout->type && option != NULL
+            && result_layout->variant_count == 2
+            && ok != NULL && ok->payload_count == 1
+            && error != NULL && error->payload_count == 1
+            ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+    }
+    if ((takes_text && source_type != MMAY_TYPE_STRING)
+        || (instruction->kind == MMAY_MIR_IO_READ_LINE
+            && source_type != MMAY_TYPE_I64) || result_layout == NULL
         || target_type != result_layout->type || ok == NULL || error == NULL
         || error_payload == NULL || io_error == NULL
         || capability == NULL || write_failed == NULL
@@ -82,15 +98,26 @@ MarimayMirVerifyStatus mmay_mir_verify_io_instruction(
         || !mmay_symbol_id_equal(io_error->symbol, error_symbol)
         || result_layout->variant_count != 2
         || ok->kind != MMAY_MIR_ENUM_VARIANT_POSITIONAL
-        || ok->payload_count != 0
+        || (instruction->kind == MMAY_MIR_IO_READ_LINE
+            ? ok->payload_count != 1 : ok->payload_count != 0)
         || error->kind != MMAY_MIR_ENUM_VARIANT_POSITIONAL
         || error->payload_count != 1
-        || io_error->variant_count != 2
+        || io_error->variant_count != (instruction->kind == MMAY_MIR_IO_PRINTLN
+            ? 2 : 6)
         || capability->kind != MMAY_MIR_ENUM_VARIANT_NAMED
         || capability->payload_count != 1
         || capability_payload->type != MMAY_TYPE_STRING
         || write_failed->kind != MMAY_MIR_ENUM_VARIANT_UNIT
-        || write_failed->payload_count != 0) {
+        || write_failed->payload_count != 0
+        || (instruction->kind == MMAY_MIR_IO_WRITE
+            && (instruction->io_operation < MMAY_MIR_IO_STDOUT_WRITE
+                || instruction->io_operation > MMAY_MIR_IO_STDERR_LINE))
+        || (instruction->kind == MMAY_MIR_IO_FLUSH
+            && instruction->io_operation != MMAY_MIR_IO_STDOUT_FLUSH
+            && instruction->io_operation != MMAY_MIR_IO_STDERR_FLUSH)
+        || (instruction->kind == MMAY_MIR_IO_READ_LINE
+            && (instruction->option_enum_id == MMAY_MIR_NO_ENUM
+                || ok->payload_count != 1))) {
         return MMAY_MIR_VERIFY_TYPE_MISMATCH;
     }
     return MMAY_MIR_VERIFY_OK;

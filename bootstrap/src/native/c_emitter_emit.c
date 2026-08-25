@@ -1130,6 +1130,9 @@ bool mmay_native_c_emit_function(
                     }
                     break;
                 case MMAY_MIR_IO_PRINTLN:
+                case MMAY_MIR_IO_WRITE:
+                case MMAY_MIR_IO_FLUSH:
+                case MMAY_MIR_IO_READ_LINE:
                     if (!mmay_native_c_emit_io_instruction(
                             buffer, function, i
                         )) return false;

@@ -40,10 +40,11 @@ static size_t mmay_checker_io_arguments(
 static const MarimayCheckImportBinding *mmay_checker_io_binding(
     MarimayFunctionChecker *function,
     const MarimaySyntaxToken *namespace_token,
-    const MarimaySyntaxToken *name_token
+    const MarimaySyntaxToken *name_token,
+    const unsigned char *function_name,
+    size_t function_name_length
 ) {
     static const unsigned char package_name[] = "std/io";
-    static const unsigned char function_name[] = "println";
     const MarimayCheckImportEnvironment *imports = function != NULL
         ? function->checker->imports : NULL;
     size_t index = 0;
@@ -75,7 +76,7 @@ static const MarimayCheckImportBinding *mmay_checker_io_binding(
                 binding->local, binding->local_length, local, local_length
             ) && mmay_checker_io_bytes_equal(
                 original, original_length,
-                function_name, sizeof(function_name) - 1
+                function_name, function_name_length
             )) {
             return binding;
         }
@@ -106,6 +107,11 @@ bool mmay_checker_private_compile_io_call(
         callee, MMAY_TOKEN_IDENTIFIER, 0
     );
     const MarimayCheckImportBinding *binding = NULL;
+    const unsigned char *io_name = NULL;
+    size_t io_name_length = 0;
+    MarimayMirIoOperation operation = MMAY_MIR_IO_STDOUT_LINE;
+    bool takes_text = false;
+    bool reads_line = false;
     MarimayCheckName namespace_name = {0};
     MarimayCheckName function_name = {0};
     MarimayCheckCallable callable;
@@ -114,8 +120,10 @@ bool mmay_checker_private_compile_io_call(
     const MarimayCheckedEnum *error_enum = NULL;
     MarimayCheckEnumDeclaration *result_enum = NULL;
     MarimayCheckEnumDeclaration concrete_result;
+    MarimayCheckEnumDeclaration concrete_option;
     MarimayMirEnumId error_layout = MMAY_MIR_NO_ENUM;
     MarimayMirEnumId result_layout = MMAY_MIR_NO_ENUM;
+    MarimayMirEnumId option_layout = MMAY_MIR_NO_ENUM;
     MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
     MarimayMirInstruction instruction;
     if (function == NULL || node == NULL || resolved == NULL || result == NULL) {
@@ -134,7 +142,28 @@ bool mmay_checker_private_compile_io_call(
         || (namespace_token != NULL && namespace_token->synthetic)) {
         return true;
     }
-    binding = mmay_checker_io_binding(function, namespace_token, name_token);
+    io_name = function->checker->source + name_token->start;
+    io_name_length = name_token->end - name_token->start;
+    if (mmay_checker_io_bytes_equal(io_name, io_name_length, "print", 5)) {
+        operation = MMAY_MIR_IO_STDOUT_WRITE; takes_text = true;
+    } else if (mmay_checker_io_bytes_equal(io_name, io_name_length, "println", 7)) {
+        operation = MMAY_MIR_IO_STDOUT_LINE; takes_text = true;
+    } else if (mmay_checker_io_bytes_equal(io_name, io_name_length, "eprint", 6)) {
+        operation = MMAY_MIR_IO_STDERR_WRITE; takes_text = true;
+    } else if (mmay_checker_io_bytes_equal(io_name, io_name_length, "eprintln", 8)) {
+        operation = MMAY_MIR_IO_STDERR_LINE; takes_text = true;
+    } else if (mmay_checker_io_bytes_equal(io_name, io_name_length, "readLine", 8)) {
+        reads_line = true;
+    } else if (mmay_checker_io_bytes_equal(io_name, io_name_length, "flushStdout", 11)) {
+        operation = MMAY_MIR_IO_STDOUT_FLUSH;
+    } else if (mmay_checker_io_bytes_equal(io_name, io_name_length, "flushStderr", 11)) {
+        operation = MMAY_MIR_IO_STDERR_FLUSH;
+    } else {
+        return true;
+    }
+    binding = mmay_checker_io_binding(
+        function, namespace_token, name_token, io_name, io_name_length
+    );
     if (binding == NULL) {
         return true;
     }
@@ -153,9 +182,8 @@ bool mmay_checker_private_compile_io_call(
     *resolved = true;
     if (mmay_checker_private_check_child_node(
             node, MMAY_SYNTAX_TYPE_ARGUMENTS, 0
-        ) != NULL || mmay_checker_io_arguments(
-            arguments, argument_nodes, 1
-        ) != 1) {
+        ) != NULL || mmay_checker_io_arguments(arguments, argument_nodes, 1)
+            != ((takes_text || reads_line) ? 1U : 0U)) {
         (void)mmay_checker_add_diagnostic(
             function->checker,
             mmay_checker_private_check_child_node(
@@ -163,7 +191,7 @@ bool mmay_checker_private_compile_io_call(
                 ) != NULL
                 ? MMAY_DIAGNOSTIC_TYPE_MISMATCH
                 : MMAY_DIAGNOSTIC_CALL_ARITY,
-            "std/io.println requires exactly one string argument and no type arguments",
+            "std/io stream operation has an invalid argument list",
             node->start, node->end
         );
         return false;
@@ -188,32 +216,38 @@ bool mmay_checker_private_compile_io_call(
             MMAY_TYPE_INVALID,
             &callable
         ) != MMAY_CHECK_CALL_FOUND
-        || callable.parameter_count != 1
-        || callable.parameter_types == NULL
-        || callable.parameter_types[0] != MMAY_TYPE_STRING
+        || callable.parameter_count != ((takes_text || reads_line) ? 1U : 0U)
+        || (takes_text && (callable.parameter_types == NULL
+            || callable.parameter_types[0] != MMAY_TYPE_STRING))
+        || (reads_line && (callable.parameter_types == NULL
+            || callable.parameter_types[0] != MMAY_TYPE_I64))
         || !callable.is_external) {
         mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
     memset(&text, 0, sizeof(text));
-    if (!mmay_compile_expression(
-            function, argument_nodes[0], MMAY_TYPE_STRING, &text
-        )) {
-        return false;
+    if (takes_text) {
+        if (!mmay_compile_expression(
+                function, argument_nodes[0], MMAY_TYPE_STRING, &text
+            )) return false;
+        if (mmay_expression_is_never(function, &text)) {
+            *result = text;
+            return true;
+        }
     }
-    if (mmay_expression_is_never(function, &text)) {
-        *result = text;
-        return true;
-    }
+    if (reads_line && !mmay_compile_expression(
+            function, argument_nodes[0], MMAY_TYPE_I64, &text
+        )) return false;
     result_descriptor = mmay_type_descriptor(
         &function->checker->result->types, callable.result_type
     );
-    if (text.type != MMAY_TYPE_STRING
+    if ((takes_text && text.type != MMAY_TYPE_STRING)
         || (expected != MMAY_TYPE_INVALID && expected != callable.result_type)
         || result_descriptor == NULL
         || result_descriptor->kind != MMAY_TYPE_KIND_NOMINAL
         || result_descriptor->argument_count != 2
-        || result_descriptor->arguments[0] != MMAY_TYPE_VOID) {
+        || (reads_line ? result_descriptor->arguments[0] == MMAY_TYPE_VOID
+            : result_descriptor->arguments[0] != MMAY_TYPE_VOID)) {
         (void)mmay_checker_add_diagnostic(
             function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "std/io.println argument or Result<void, io.Error> type does not match",
@@ -247,12 +281,30 @@ bool mmay_checker_private_compile_io_call(
         )) {
         return false;
     }
+    if (reads_line) {
+        MarimayCheckEnumDeclaration *option =
+            mmay_checker_private_checker_find_enum_by_type(
+                function->checker, result_descriptor->arguments[0]
+            );
+        if (option == NULL) { mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR); return false; }
+        concrete_option = *option;
+        concrete_option.type = result_descriptor->arguments[0];
+        if (!mmay_checker_private_function_enum_layout(
+                function, &concrete_option, &option_layout
+            )) return false;
+    }
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = MMAY_MIR_IO_PRINTLN;
+    instruction.kind = reads_line ? MMAY_MIR_IO_READ_LINE
+        : operation == MMAY_MIR_IO_STDOUT_LINE
+        ? MMAY_MIR_IO_PRINTLN
+        : takes_text ? MMAY_MIR_IO_WRITE : MMAY_MIR_IO_FLUSH;
     instruction.target = target;
-    instruction.first = text.register_id;
+    instruction.first = takes_text || reads_line
+        ? text.register_id : MMAY_MIR_NO_REGISTER;
     instruction.second = MMAY_MIR_NO_REGISTER;
     instruction.enum_id = result_layout;
+    instruction.option_enum_id = option_layout;
+    instruction.io_operation = operation;
     instruction.span.start = node->start;
     instruction.span.end = node->end;
     if (!mmay_function_append_instruction(function, &instruction)) {

@@ -707,7 +707,7 @@ int mmay_cli_run(
     }
     if (strcmp(task->name, "run") == 0) {
         return mmay_cli_run_program(
-            session, &options, standard_output, standard_error
+            session, &options, standard_input, standard_output, standard_error
         );
     }
     if (strcmp(task->name, "build") == 0) {

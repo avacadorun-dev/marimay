@@ -12,6 +12,49 @@ typedef struct MarimayRuntimeIoSink {
     bool accept;
 } MarimayRuntimeIoSink;
 
+typedef struct MarimayRuntimeIoStream {
+    const unsigned char *input;
+    size_t input_length;
+    size_t input_offset;
+    unsigned char output[64];
+    size_t output_length;
+    size_t write_chunk;
+    bool fail_read;
+    bool fail_write;
+    bool fail_flush;
+} MarimayRuntimeIoStream;
+
+static bool mmay_test_runtime_io_read(
+    void *context, unsigned char *destination, size_t capacity, size_t *count
+) {
+    MarimayRuntimeIoStream *stream = context;
+    if (stream == NULL || destination == NULL || count == NULL || capacity == 0
+        || stream->fail_read) return false;
+    if (stream->input_offset == stream->input_length) { *count = 0; return true; }
+    destination[0] = stream->input[stream->input_offset++];
+    *count = 1;
+    return true;
+}
+
+static bool mmay_test_runtime_io_write(
+    void *context, const unsigned char *bytes, size_t length, size_t *count
+) {
+    MarimayRuntimeIoStream *stream = context;
+    size_t amount = length;
+    if (stream == NULL || bytes == NULL || count == NULL || stream->fail_write) return false;
+    if (stream->write_chunk != 0 && amount > stream->write_chunk) amount = stream->write_chunk;
+    if (amount > sizeof(stream->output) - stream->output_length) return false;
+    memcpy(stream->output + stream->output_length, bytes, amount);
+    stream->output_length += amount;
+    *count = amount;
+    return true;
+}
+
+static bool mmay_test_runtime_io_flush(void *context) {
+    MarimayRuntimeIoStream *stream = context;
+    return stream != NULL && !stream->fail_flush;
+}
+
 static bool mmay_test_runtime_io_publish(
     void *context,
     const unsigned char *line_bytes,
@@ -38,6 +81,14 @@ static MarimayIoStdout mmay_test_runtime_io_stdout(
     stdout_sink.capability_granted = granted;
     stdout_sink.context = sink;
     stdout_sink.publish = mmay_test_runtime_io_publish;
+    stdout_sink.stderr_capability_granted = granted;
+    stdout_sink.stderr_context = sink;
+    stdout_sink.publish_stderr = mmay_test_runtime_io_publish;
+    stdout_sink.flush_stdout = NULL;
+    stdout_sink.flush_stderr = NULL;
+    stdout_sink.stdin_capability_granted = false;
+    stdout_sink.stdin_context = NULL;
+    stdout_sink.read_stdin = NULL;
     return stdout_sink;
 }
 
@@ -104,6 +155,68 @@ static void mmay_test_runtime_io_invalid_line(void) {
         &stdout_sink, no_lf, sizeof(no_lf)
     ) == MMAY_IO_STDOUT_INVALID_ARGUMENT);
     MMAY_EXPECT(sink.calls == 0);
+}
+
+static void mmay_test_runtime_io_stream_contract(void) {
+    static const unsigned char crlf[] = {'a', '\0', 'b', '\r', '\n'};
+    static const unsigned char invalid_utf8[] = {0xff, '\n'};
+    static const unsigned char long_line[] = {'a', 'b', '\n'};
+    MarimayRuntimeIoStream stream = {0};
+    MarimayIoInput input = {true, &stream, mmay_test_runtime_io_read};
+    MarimayIoOutput output = {true, &stream, mmay_test_runtime_io_write, mmay_test_runtime_io_flush};
+    MarimayOwnedBytes line = {0};
+    bool eof = false;
+    stream.input = crlf;
+    stream.input_length = sizeof(crlf);
+    MMAY_EXPECT(mmay_io_read_line(&input, mmay_system_allocator(), 8, &line, &eof) == MMAY_IO_OK);
+    MMAY_EXPECT(!eof && line.length == 3 && memcmp(line.data, "a\0b", 3) == 0);
+    mmay_owned_bytes_dispose(&line);
+    MMAY_EXPECT(mmay_io_read_line(&input, mmay_system_allocator(), 8, &line, &eof) == MMAY_IO_OK);
+    MMAY_EXPECT(eof && line.length == 0);
+    mmay_owned_bytes_dispose(&line);
+    stream.input = invalid_utf8; stream.input_length = sizeof(invalid_utf8); stream.input_offset = 0;
+    MMAY_EXPECT(mmay_io_read_line(&input, mmay_system_allocator(), 8, &line, &eof) == MMAY_IO_INVALID_UTF8);
+    stream.input = long_line; stream.input_length = sizeof(long_line); stream.input_offset = 0;
+    MMAY_EXPECT(mmay_io_read_line(&input, mmay_system_allocator(), 1, &line, &eof) == MMAY_IO_LINE_TOO_LONG);
+    stream.write_chunk = 1;
+    MMAY_EXPECT(mmay_io_write(&output, (const unsigned char *)"abc", 3) == MMAY_IO_OK);
+    MMAY_EXPECT(stream.output_length == 3 && memcmp(stream.output, "abc", 3) == 0);
+    MMAY_EXPECT(mmay_io_flush(&output) == MMAY_IO_OK);
+    stream.fail_flush = true;
+    MMAY_EXPECT(mmay_io_flush(&output) == MMAY_IO_FLUSH_FAILED);
+    output.capability_granted = false;
+    MMAY_EXPECT(mmay_io_write(&output, (const unsigned char *)"x", 1) == MMAY_IO_CAPABILITY_DENIED);
+    MMAY_EXPECT(mmay_io_flush(&output) == MMAY_IO_CAPABILITY_DENIED);
+}
+
+static void mmay_test_runtime_io_stream_allocations(void) {
+    static const unsigned char input_bytes[] = {'o', 'k', '\n'};
+    size_t failure_index = 0;
+    bool reached_success = false;
+    for (failure_index = 0; failure_index < 16; failure_index += 1) {
+        MarimayFailAllocator state;
+        MarimayRuntimeIoStream stream = {0};
+        MarimayIoInput input = {true, &stream, mmay_test_runtime_io_read};
+        MarimayOwnedBytes line = {0};
+        MarimayAllocator allocator;
+        MarimayIoStatus status;
+        stream.input = input_bytes;
+        stream.input_length = sizeof(input_bytes);
+        mmay_fail_allocator_init(&state, mmay_system_allocator(), failure_index);
+        allocator = mmay_fail_allocator(&state);
+        status = mmay_io_read_line(&input, allocator, 8, &line, &(bool){false});
+        if (status == MMAY_IO_OK) {
+            reached_success = true;
+            MMAY_EXPECT(line.length == 2 && memcmp(line.data, "ok", 2) == 0);
+        } else {
+            MMAY_EXPECT(status == MMAY_IO_ALLOCATION_FAILED);
+        }
+        mmay_owned_bytes_dispose(&line);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
+        if (reached_success) break;
+    }
+    MMAY_EXPECT(reached_success);
 }
 
 static void mmay_test_runtime_output_expectations(void) {
@@ -204,6 +317,8 @@ void mmay_test_runtime_io(void) {
     mmay_test_runtime_io_exact_line_bytes();
     mmay_test_runtime_io_denial_and_failure();
     mmay_test_runtime_io_invalid_line();
+    mmay_test_runtime_io_stream_contract();
+    mmay_test_runtime_io_stream_allocations();
     mmay_test_runtime_output_expectations();
     mmay_test_runtime_output_allocations();
     mmay_test_runtime_output_depth_limit();

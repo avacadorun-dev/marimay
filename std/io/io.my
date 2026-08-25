@@ -1,13 +1,27 @@
 public enum Error {
   CapabilityDenied { capability: string; },
+  ReadFailed,
   WriteFailed,
+  FlushFailed,
+  InvalidUtf8,
+  LineTooLong { limit: int; },
 }
 
 public fn message(error: Error): string {
   return match error {
     case CapabilityDenied { capability } => "capability io.stdout is not granted";
+    case ReadFailed => "standard input read failed";
     case WriteFailed => "stdout write failed";
+    case FlushFailed => "standard stream flush failed";
+    case InvalidUtf8 => "standard input is not valid UTF-8";
+    case LineTooLong { limit } => "standard input line exceeds limit";
   };
 }
 
+public extern "c" fn readLine(limit: int): Result<Option<string>, Error>;
+public extern "c" fn print(text: string): Result<void, Error>;
 public extern "c" fn println(text: string): Result<void, Error>;
+public extern "c" fn eprint(text: string): Result<void, Error>;
+public extern "c" fn eprintln(text: string): Result<void, Error>;
+public extern "c" fn flushStdout(): Result<void, Error>;
+public extern "c" fn flushStderr(): Result<void, Error>;

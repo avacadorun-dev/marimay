@@ -1,0 +1,25 @@
+import { flushStdout, print, println, readLine } from "std/io";
+
+@test
+fn stdoutWriteAndFlush(): void {
+  expect.output(
+    "out line\n",
+    (): void => {
+      print("out");
+      println(" line");
+      flushStdout();
+    },
+  );
+}
+
+@test
+fn readLineReturnsOkAtEof(): void {
+  const input = readLine(32);
+  const accepted = match input {
+    case Ok(_) => true;
+    case Err(_) => false;
+  };
+  if !accepted {
+    panic("expected EOF");
+  }
+}

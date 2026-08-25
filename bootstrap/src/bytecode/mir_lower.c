@@ -1,6 +1,7 @@
 #include "mmay/bytecode/mir_lower.h"
 
 #include "mir_lower_internal.h"
+
 #include "bytecode_internal.h"
 
 #include <limits.h>
@@ -445,6 +446,20 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
         case MMAY_MIR_IO_PRINTLN:
             output->opcode = MMAY_OPCODE_IO_PRINTLN;
             output->operands[1].unsigned_value = input->first;
+            break;
+        case MMAY_MIR_IO_WRITE:
+            output->opcode = MMAY_OPCODE_IO_WRITE;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].signed_value = (int64_t)input->io_operation;
+            break;
+        case MMAY_MIR_IO_FLUSH:
+            output->opcode = MMAY_OPCODE_IO_FLUSH;
+            output->operands[1].signed_value = (int64_t)input->io_operation;
+            break;
+        case MMAY_MIR_IO_READ_LINE:
+            output->opcode = MMAY_OPCODE_IO_READ_LINE;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].signed_value = (int64_t)input->option_enum_id;
             break;
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
             output->opcode = MMAY_OPCODE_TEST_OUTPUT_BEGIN;

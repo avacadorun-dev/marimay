@@ -44,6 +44,9 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
         case MMAY_MIR_PARSE_INTEGER:
             return mmay_mir_verify_parse_instruction(function, instruction);
         case MMAY_MIR_IO_PRINTLN:
+        case MMAY_MIR_IO_WRITE:
+        case MMAY_MIR_IO_FLUSH:
+        case MMAY_MIR_IO_READ_LINE:
             return mmay_mir_verify_io_instruction(function, instruction);
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
             if (first_type == MMAY_TYPE_INVALID) {
@@ -740,6 +743,7 @@ bool mmay_mir_instruction_uses_first(MarimayMirInstructionKind kind) {
         && kind != MMAY_MIR_INTERFACE_NEW && kind != MMAY_MIR_CALL
         && kind != MMAY_MIR_DEFER_REGISTER
         && kind != MMAY_MIR_DEFER_CALL
+        && kind != MMAY_MIR_IO_FLUSH
         && kind != MMAY_MIR_CALL_INTERFACE;
 }
 bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
@@ -813,6 +817,9 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
         case MMAY_MIR_FORMAT_BOOL:
         case MMAY_MIR_FORMAT_INTEGER:
         case MMAY_MIR_IO_PRINTLN:
+        case MMAY_MIR_IO_WRITE:
+        case MMAY_MIR_IO_FLUSH:
+        case MMAY_MIR_IO_READ_LINE:
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
         case MMAY_MIR_TEST_OUTPUT_END:
         case MMAY_MIR_DEFER_REGISTER:

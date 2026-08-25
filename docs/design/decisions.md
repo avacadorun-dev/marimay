@@ -1808,3 +1808,55 @@ Reason: a root parameter and return value make both inputs and termination
 visible in ordinary typed control flow. They preserve lexical cleanup and
 avoid a hidden global accessor, shell semantics, an immediate `exit`, or a
 second test-only entry path.
+
+## D067 — Bounded typed standard streams
+
+Status: accepted.
+
+CP32 replaces D046's stdout-only preview with this synchronous `std/io` API:
+
+```marimay
+public enum Error {
+  CapabilityDenied { capability: string; },
+  ReadFailed,
+  WriteFailed,
+  FlushFailed,
+  InvalidUtf8,
+  LineTooLong { limit: int; },
+}
+
+public fn readLine(limit: int): Result<Option<string>, Error>;
+public fn print(text: string): Result<void, Error>;
+public fn println(text: string): Result<void, Error>;
+public fn eprint(text: string): Result<void, Error>;
+public fn eprintln(text: string): Result<void, Error>;
+public fn flushStdout(): Result<void, Error>;
+public fn flushStderr(): Result<void, Error>;
+```
+
+`readLine` requires `io.stdin`, stdout operations require `io.stdout`, and
+stderr operations require `io.stderr`. Denial returns `CapabilityDenied` with
+that exact spelling and causes no stream effect. `readLine` reads at most
+`limit` UTF-8 bytes before LF or EOF; `limit` must be in `0..1048576`. It
+removes one LF and one immediately preceding CR. EOF before bytes is
+`Ok(None)`; EOF after bytes is `Ok(Some(text))`. NUL is ordinary data. Invalid
+UTF-8 returns `InvalidUtf8`; an over-limit line returns `LineTooLong` and never
+publishes a partial string. Host locale and `errno` text never enter values.
+
+`print`/`eprint` publish exact string bytes, while `println`/`eprintln` append
+one LF. A successful operation publishes its entire requested sequence before
+`Ok()`; operations on the same stream cannot interleave. stdout and stderr are
+independent ordered streams. Each flush affects only its named stream, and a
+failure returns `FlushFailed` without retracting bytes already published.
+`ReadFailed` and `WriteFailed` likewise expose no host detail or partial count.
+
+The Stage 0 adapter may block the isolate carrier and retries bounded partial
+host operations and interruption internally. This is an I6 parking removal
+gate: I6 must replace it with task parking without changing API, ordering,
+bytes, EOF, or error semantics. The adapter never invokes a shell.
+
+This supersedes D046's prohibition on stdin, `print`, `eprint`, and public
+flush, retaining its string-only and UTF-8 output rules.
+
+Reason: CLI programs need a bounded pipeline boundary before Bytes, files,
+CLI parsing, and JSON, without prematurely promising task-aware or binary I/O.

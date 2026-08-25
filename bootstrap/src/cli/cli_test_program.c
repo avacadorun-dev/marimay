@@ -104,6 +104,17 @@ static bool mmay_cli_test_capture_publish(
         && mmay_vector_append(&capture->bytes, bytes, length);
 }
 
+static bool mmay_cli_test_eof_read(
+    void *context, unsigned char *destination, size_t capacity, size_t *count
+) {
+    (void)context;
+    (void)destination;
+    (void)capacity;
+    if (count == NULL) return false;
+    *count = 0;
+    return true;
+}
+
 static bool mmay_cli_test_capture_write(
     void *context,
     const char *bytes,
@@ -223,6 +234,14 @@ static bool mmay_cli_test_vm(
     sink.capability_granted = true;
     sink.context = &capture;
     sink.publish = mmay_cli_test_capture_publish;
+    sink.stderr_capability_granted = true;
+    sink.stderr_context = &capture;
+    sink.publish_stderr = mmay_cli_test_capture_publish;
+    sink.flush_stdout = NULL;
+    sink.flush_stderr = NULL;
+    sink.stdin_capability_granted = true;
+    sink.stdin_context = NULL;
+    sink.read_stdin = mmay_cli_test_eof_read;
     run_options = mmay_bytecode_run_default_options();
     run_options.execution = &execution;
     run_options.stdout_sink = &sink;
@@ -258,6 +277,7 @@ static bool mmay_cli_test_vm(
         error_capture_ready = true;
         error_writer.context = &error_capture;
         error_writer.write = mmay_cli_test_capture_write;
+        error_writer.flush = NULL;
         if (!mmay_cli_resource_render(
                 MMAY_DIAGNOSTIC_HUMAN, run_status,
                 &execution.managed_heap, error_writer, &classified

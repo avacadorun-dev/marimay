@@ -1,5 +1,6 @@
 #include "bytecode_internal.h"
 
+
 static const MarimayBytecodeEnumVariant *mmay_bytecode_io_variant(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeEnumLayout *layout,
@@ -65,20 +66,61 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_io_instruction(
         function, io_error, 0
     );
     const MarimayBytecodeEnumVariant *write_failed = mmay_bytecode_io_variant(
-        function, io_error, 1
+        function, io_error,
+        instruction->opcode == MMAY_OPCODE_IO_PRINTLN ? 1 : 2
+    );
+    const MarimayBytecodeEnumLayout *option = instruction->opcode
+            == MMAY_OPCODE_IO_READ_LINE
+        ? mmay_bytecode_enum_layout(
+            function, (uint32_t)instruction->operands[2].signed_value
+        ) : NULL;
+    const MarimayBytecodeEnumVariant *some = mmay_bytecode_io_variant(
+        function, option, 0
+    );
+    const MarimayBytecodeEnumPayload *ok_payload = mmay_bytecode_io_payload(
+        function, result_layout, ok, 0
+    );
+    const MarimayBytecodeEnumPayload *some_payload = mmay_bytecode_io_payload(
+        function, option, some, 0
     );
     const MarimayBytecodeEnumPayload *capability_payload =
         mmay_bytecode_io_payload(function, io_error, capability, 0);
-    if (target_type == NULL || text_type == NULL) {
+    if (instruction->opcode == MMAY_OPCODE_IO_FLUSH) text_type = NULL;
+    if (target_type == NULL || (instruction->opcode != MMAY_OPCODE_IO_FLUSH && text_type == NULL)) {
         return MMAY_BYTECODE_VERIFY_INVALID_REGISTER;
     }
+    if (instruction->opcode == MMAY_OPCODE_IO_WRITE
+        && (instruction->operands[2].signed_value < 0
+            || instruction->operands[2].signed_value > 3)) {
+        return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
+    if (instruction->opcode == MMAY_OPCODE_IO_FLUSH
+        && instruction->operands[1].signed_value != 4
+        && instruction->operands[1].signed_value != 5) {
+        return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
+    if (instruction->opcode == MMAY_OPCODE_IO_READ_LINE
+        && (instruction->operands[2].signed_value < 0 || text_type == NULL
+            || *text_type != MMAY_BYTECODE_TYPE_I64 || option == NULL
+            || option->variant_count != 2 || ok == NULL
+            || ok->payload_count != 1 || ok_payload == NULL
+            || ok_payload->layout != (uint32_t)instruction->operands[2].signed_value
+            || mmay_bytecode_io_variant(function, option, 1)->payload_count != 0
+            || some == NULL || some->payload_count != 1 || some_payload == NULL
+            || some_payload->type != MMAY_BYTECODE_TYPE_STRING)) {
+        return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
     return *target_type == MMAY_BYTECODE_TYPE_ENUM
-            && *text_type == MMAY_BYTECODE_TYPE_STRING
+            && (instruction->opcode == MMAY_OPCODE_IO_FLUSH
+                || instruction->opcode == MMAY_OPCODE_IO_READ_LINE
+                || *text_type == MMAY_BYTECODE_TYPE_STRING)
             && result_layout != NULL && result_layout->variant_count == 2
-            && ok != NULL && ok->payload_count == 0
+            && ok != NULL && (instruction->opcode == MMAY_OPCODE_IO_READ_LINE
+                ? ok->payload_count == 1 : ok->payload_count == 0)
             && error != NULL && error->payload_count == 1
             && error_payload != NULL
-            && io_error != NULL && io_error->variant_count == 2
+            && io_error != NULL && io_error->variant_count
+                == (instruction->opcode == MMAY_OPCODE_IO_PRINTLN ? 2 : 6)
             && capability != NULL && capability->payload_count == 1
             && capability_payload != NULL
             && capability_payload->type == MMAY_BYTECODE_TYPE_STRING

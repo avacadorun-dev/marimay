@@ -103,7 +103,8 @@ int mmay_cli_format_target(MarimaySession *session, const MarimayCliOptions *opt
 int mmay_cli_check(MarimaySession *session, const MarimayCliOptions *options,
     MarimayWriter standard_output, MarimayWriter standard_error);
 int mmay_cli_run_program(MarimaySession *session, const MarimayCliOptions *options,
-    MarimayWriter standard_output, MarimayWriter standard_error);
+    MarimayReadStream standard_input, MarimayWriter standard_output,
+    MarimayWriter standard_error);
 int mmay_cli_build_program(MarimaySession *session, const MarimayCliOptions *options,
     MarimayWriter standard_output, MarimayWriter standard_error);
 int mmay_cli_test_program(MarimaySession *session, const MarimayCliOptions *options,

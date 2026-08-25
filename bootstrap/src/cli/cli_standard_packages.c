@@ -33,15 +33,29 @@ static const unsigned char mmay_cli_std_convert_source[] =
 static const unsigned char mmay_cli_std_io_source[] =
     "public enum Error {\n"
     "  CapabilityDenied { capability: string; },\n"
+    "  ReadFailed,\n"
     "  WriteFailed,\n"
+    "  FlushFailed,\n"
+    "  InvalidUtf8,\n"
+    "  LineTooLong { limit: int; },\n"
     "}\n\n"
     "public fn message(error: Error): string {\n"
     "  return match error {\n"
     "    case CapabilityDenied { capability } => \"capability io.stdout is not granted\";\n"
+    "    case ReadFailed => \"standard input read failed\";\n"
     "    case WriteFailed => \"stdout write failed\";\n"
+    "    case FlushFailed => \"standard stream flush failed\";\n"
+    "    case InvalidUtf8 => \"standard input is not valid UTF-8\";\n"
+    "    case LineTooLong { limit } => \"standard input line exceeds limit\";\n"
     "  };\n"
     "}\n\n"
-    "public extern \"c\" fn println(text: string): Result<void, Error>;\n";
+    "public extern \"c\" fn readLine(limit: int): Result<Option<string>, Error>;\n"
+    "public extern \"c\" fn print(text: string): Result<void, Error>;\n"
+    "public extern \"c\" fn println(text: string): Result<void, Error>;\n"
+    "public extern \"c\" fn eprint(text: string): Result<void, Error>;\n"
+    "public extern \"c\" fn eprintln(text: string): Result<void, Error>;\n"
+    "public extern \"c\" fn flushStdout(): Result<void, Error>;\n"
+    "public extern \"c\" fn flushStderr(): Result<void, Error>;\n";
 
 static MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
     MarimayCliCheckTarget *target,
