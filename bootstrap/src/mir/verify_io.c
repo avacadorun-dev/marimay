@@ -51,7 +51,8 @@ MarimayMirVerifyStatus mmay_mir_verify_io_instruction(
         function, io_error, 0
     );
     const MarimayMirEnumVariant *write_failed = mmay_mir_enum_variant(
-        function, io_error, instruction->kind == MMAY_MIR_IO_PRINTLN ? 1 : 2
+        function, io_error, io_error != NULL && io_error->variant_count == 2
+            ? 1 : 2
     );
     const MarimayMirEnumPayload *capability_payload = mmay_mir_enum_payload(
         function, capability, 0
@@ -102,8 +103,9 @@ MarimayMirVerifyStatus mmay_mir_verify_io_instruction(
             ? ok->payload_count != 1 : ok->payload_count != 0)
         || error->kind != MMAY_MIR_ENUM_VARIANT_POSITIONAL
         || error->payload_count != 1
-        || io_error->variant_count != (instruction->kind == MMAY_MIR_IO_PRINTLN
-            ? 2 : 6)
+        || (instruction->kind == MMAY_MIR_IO_PRINTLN
+            ? (io_error->variant_count != 2 && io_error->variant_count != 6)
+            : io_error->variant_count != 6)
         || capability->kind != MMAY_MIR_ENUM_VARIANT_NAMED
         || capability->payload_count != 1
         || capability_payload->type != MMAY_TYPE_STRING

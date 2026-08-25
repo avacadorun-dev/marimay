@@ -66,8 +66,8 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_io_instruction(
         function, io_error, 0
     );
     const MarimayBytecodeEnumVariant *write_failed = mmay_bytecode_io_variant(
-        function, io_error,
-        instruction->opcode == MMAY_OPCODE_IO_PRINTLN ? 1 : 2
+        function, io_error, io_error != NULL && io_error->variant_count == 2
+            ? 1 : 2
     );
     const MarimayBytecodeEnumLayout *option = instruction->opcode
             == MMAY_OPCODE_IO_READ_LINE
@@ -119,8 +119,9 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_io_instruction(
                 ? ok->payload_count == 1 : ok->payload_count == 0)
             && error != NULL && error->payload_count == 1
             && error_payload != NULL
-            && io_error != NULL && io_error->variant_count
-                == (instruction->opcode == MMAY_OPCODE_IO_PRINTLN ? 2 : 6)
+            && io_error != NULL && (instruction->opcode == MMAY_OPCODE_IO_PRINTLN
+                ? (io_error->variant_count == 2 || io_error->variant_count == 6)
+                : io_error->variant_count == 6)
             && capability != NULL && capability->payload_count == 1
             && capability_payload != NULL
             && capability_payload->type == MMAY_BYTECODE_TYPE_STRING

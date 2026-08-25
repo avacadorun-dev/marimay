@@ -52,7 +52,8 @@ static MarimayMirInterpretStatus mmay_mir_execute_io_error(
         );
     } else {
         status = mmay_mir_execution_new_enum(
-            execution, function, error_layout, 2,
+            execution, function, error_layout,
+            error_layout->variant_count == 2 ? 1 : 2,
             NULL, 0, &error_value.as.reference
         );
     }

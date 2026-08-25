@@ -197,6 +197,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
     );
     const MarimayBytecodeEnumPayload *error_payload =
         mmay_bytecode_run_io_payload(function, result_layout, 1, 0);
+    const MarimayBytecodeEnumLayout *io_error_layout = error_payload != NULL
+        ? mmay_bytecode_enum_layout(function, error_payload->layout) : NULL;
     const void *result_descriptor_raw = NULL;
     const void *error_descriptor_raw = NULL;
     const unsigned char *text = NULL;
@@ -349,7 +351,9 @@ MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
     return mmay_bytecode_run_io_error(
         execution, result_descriptor_raw, error_descriptor_raw,
         output_status == MMAY_TEST_OUTPUT_CAPABILITY_DENIED,
-        stdout_name, sizeof(stdout_name) - 1, cp32 ? 2 : 1,
+        stdout_name, sizeof(stdout_name) - 1,
+        cp32 || io_error_layout == NULL || io_error_layout->variant_count != 2
+            ? 2 : 1,
         &registers[target_index]
     );
 }
