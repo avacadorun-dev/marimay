@@ -370,10 +370,68 @@ static MarimayProcessStatus mmay_windows_capture_available(
     return MMAY_PROCESS_OK;
 }
 
-MarimayProcessStatus mmay_process_run_capture(
+static MarimayProcessStatus mmay_windows_stdin_file(
+    const unsigned char *bytes,
+    size_t length,
+    HANDLE *handle
+) {
+    SECURITY_ATTRIBUTES security;
+    wchar_t directory[MAX_PATH + 1];
+    wchar_t path[MAX_PATH + 1];
+    HANDLE file = INVALID_HANDLE_VALUE;
+    size_t offset = 0;
+    LARGE_INTEGER beginning;
+    DWORD directory_length = 0;
+    if (handle == NULL || (bytes == NULL && length != 0)) {
+        return MMAY_PROCESS_INVALID_ARGUMENT;
+    }
+    directory_length = GetTempPathW(
+        (DWORD)(sizeof(directory) / sizeof(directory[0])), directory
+    );
+    if (directory_length == 0
+        || directory_length >= sizeof(directory) / sizeof(directory[0])
+        || GetTempFileNameW(directory, L"mmy", 0, path) == 0) {
+        return MMAY_PROCESS_IO_FAILED;
+    }
+    ZeroMemory(&security, sizeof(security));
+    security.nLength = (DWORD)sizeof(security);
+    security.bInheritHandle = TRUE;
+    file = CreateFileW(
+        path, GENERIC_READ | GENERIC_WRITE,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+        &security, TRUNCATE_EXISTING,
+        FILE_ATTRIBUTE_TEMPORARY | FILE_FLAG_DELETE_ON_CLOSE, NULL
+    );
+    if (file == INVALID_HANDLE_VALUE) {
+        (void)DeleteFileW(path);
+        return MMAY_PROCESS_IO_FAILED;
+    }
+    while (offset < length) {
+        DWORD amount = length - offset > (size_t)UINT32_MAX
+            ? (DWORD)UINT32_MAX : (DWORD)(length - offset);
+        DWORD count = 0;
+        if (!WriteFile(file, bytes + offset, amount, &count, NULL)
+            || count == 0) {
+            CloseHandle(file);
+            return MMAY_PROCESS_IO_FAILED;
+        }
+        offset += (size_t)count;
+    }
+    beginning.QuadPart = 0;
+    if (!SetFilePointerEx(file, beginning, NULL, FILE_BEGIN)) {
+        CloseHandle(file);
+        return MMAY_PROCESS_IO_FAILED;
+    }
+    *handle = file;
+    return MMAY_PROCESS_OK;
+}
+
+MarimayProcessStatus mmay_process_run_capture_input(
     MarimayAllocator allocator,
     const char *const arguments[],
     size_t argument_count,
+    const unsigned char *standard_input,
+    size_t standard_input_length,
     size_t max_output,
     size_t max_error,
     MarimayProcessCaptureResult *result
@@ -383,6 +441,7 @@ MarimayProcessStatus mmay_process_run_capture(
     HANDLE output_write = INVALID_HANDLE_VALUE;
     HANDLE error_read = INVALID_HANDLE_VALUE;
     HANDLE error_write = INVALID_HANDLE_VALUE;
+    HANDLE input_file = INVALID_HANDLE_VALUE;
     STARTUPINFOW startup;
     PROCESS_INFORMATION process;
     wchar_t *command = NULL;
@@ -399,7 +458,8 @@ MarimayProcessStatus mmay_process_run_capture(
     result->standard_output.allocator = allocator;
     result->standard_error.allocator = allocator;
     if (arguments == NULL || argument_count == 0 || arguments[0] == NULL
-        || arguments[argument_count] != NULL) {
+        || arguments[argument_count] != NULL
+        || (standard_input == NULL && standard_input_length != 0)) {
         return MMAY_PROCESS_INVALID_ARGUMENT;
     }
     for (index = 0; index < argument_count; index += 1) {
@@ -419,6 +479,10 @@ MarimayProcessStatus mmay_process_run_capture(
         status = MMAY_PROCESS_ALLOCATION_FAILED;
         goto cleanup;
     }
+    status = mmay_windows_stdin_file(
+        standard_input, standard_input_length, &input_file
+    );
+    if (status != MMAY_PROCESS_OK) goto cleanup;
     ZeroMemory(&security, sizeof(security));
     security.nLength = (DWORD)sizeof(security);
     security.bInheritHandle = TRUE;
@@ -432,7 +496,7 @@ MarimayProcessStatus mmay_process_run_capture(
     ZeroMemory(&startup, sizeof(startup));
     startup.cb = (DWORD)sizeof(startup);
     startup.dwFlags = STARTF_USESTDHANDLES;
-    startup.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    startup.hStdInput = input_file;
     startup.hStdOutput = output_write;
     startup.hStdError = error_write;
     ZeroMemory(&process, sizeof(process));
@@ -444,6 +508,8 @@ MarimayProcessStatus mmay_process_run_capture(
         goto cleanup;
     }
     process_started = true;
+    CloseHandle(input_file);
+    input_file = INVALID_HANDLE_VALUE;
     CloseHandle(output_write);
     output_write = INVALID_HANDLE_VALUE;
     CloseHandle(error_write);
@@ -510,6 +576,7 @@ cleanup:
     if (output_write != INVALID_HANDLE_VALUE) CloseHandle(output_write);
     if (error_read != INVALID_HANDLE_VALUE) CloseHandle(error_read);
     if (error_write != INVALID_HANDLE_VALUE) CloseHandle(error_write);
+    if (input_file != INVALID_HANDLE_VALUE) CloseHandle(input_file);
     if (command != NULL) mmay_deallocate(&allocator, command, command_size);
     mmay_vector_dispose(&output);
     mmay_vector_dispose(&error);
@@ -517,6 +584,20 @@ cleanup:
         mmay_process_capture_result_dispose(result);
     }
     return status;
+}
+
+MarimayProcessStatus mmay_process_run_capture(
+    MarimayAllocator allocator,
+    const char *const arguments[],
+    size_t argument_count,
+    size_t max_output,
+    size_t max_error,
+    MarimayProcessCaptureResult *result
+) {
+    return mmay_process_run_capture_input(
+        allocator, arguments, argument_count, NULL, 0,
+        max_output, max_error, result
+    );
 }
 
 void mmay_process_capture_result_dispose(MarimayProcessCaptureResult *result) {

@@ -10,7 +10,7 @@ static MarimayBytecodeRunStatus mmay_bytecode_run_io_error(
     const MarimayManagedEnumDescriptor *result_descriptor,
     const MarimayManagedEnumDescriptor *error_descriptor,
     bool denied, const unsigned char *capability_name, size_t capability_length,
-    size_t error_variant, MarimayBytecodeValue *target
+    size_t error_variant, int64_t error_limit, MarimayBytecodeValue *target
 );
 
 static const MarimayBytecodeEnumPayload *mmay_bytecode_run_io_payload(
@@ -86,12 +86,18 @@ static MarimayBytecodeRunStatus mmay_bytecode_run_io_read_line(
     limit = registers[limit_register].as.i64;
     if (limit < 0 || (uint64_t)limit > MMAY_IO_MAX_LINE_BYTES) {
         return mmay_bytecode_run_io_error(execution, result_descriptor, error_descriptor,
-            false, NULL, 0, 5, &registers[target]);
+            false, NULL, 0, 5, limit, &registers[target]);
     }
     io_status = mmay_io_read_line(&input, execution->allocator, (size_t)limit, &line, &eof);
     if (io_status != MMAY_IO_OK) {
+        if (io_status == MMAY_IO_ALLOCATION_FAILED) {
+            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+        }
+        if (io_status == MMAY_IO_INVALID_ARGUMENT) {
+            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+        }
         size_t variant = io_status == MMAY_IO_CAPABILITY_DENIED ? 0 : io_status == MMAY_IO_READ_FAILED ? 1 : io_status == MMAY_IO_INVALID_UTF8 ? 4 : io_status == MMAY_IO_LINE_TOO_LONG ? 5 : 1;
-        return mmay_bytecode_run_io_error(execution, result_descriptor, error_descriptor, variant == 0, (const unsigned char *)"io.stdin", variant == 5 ? (size_t)limit : 8, variant, &registers[target]);
+        return mmay_bytecode_run_io_error(execution, result_descriptor, error_descriptor, variant == 0, (const unsigned char *)"io.stdin", 8, variant, limit, &registers[target]);
     }
     managed_status = mmay_managed_root_push(&execution->managed_heap, &roots, locations, 2);
     if (managed_status == MMAY_MANAGED_OK && !eof) managed_status = mmay_managed_string_new(&execution->managed_heap, line.data, line.length, &string);
@@ -119,6 +125,7 @@ static MarimayBytecodeRunStatus mmay_bytecode_run_io_error(
     const unsigned char *capability_name,
     size_t capability_length,
     size_t error_variant,
+    int64_t error_limit,
     MarimayBytecodeValue *target
 ) {
     MarimayManagedReference capability = mmay_managed_invalid_reference();
@@ -150,7 +157,7 @@ static MarimayBytecodeRunStatus mmay_bytecode_run_io_error(
             );
         }
     } else if (error_variant == 5) {
-        payload.f64_bits = (uint64_t)capability_length;
+        payload.f64_bits = (uint64_t)error_limit;
         managed_status = mmay_managed_enum_new(
             &execution->managed_heap, error_descriptor, error_variant,
             &payload, 1, &error
@@ -211,9 +218,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
         || instruction->opcode == MMAY_OPCODE_IO_FLUSH;
     bool stderr_stream = false;
     bool newline = true;
-    bool granted = false;
-    MarimayIoStdoutPublishFn publish = NULL;
-    MarimayIoFlushFn flush = NULL;
+    MarimayIoStatus io_status;
+    MarimayIoOutput output;
     static const unsigned char stdout_name[] = "io.stdout";
     static const unsigned char stderr_name[] = "io.stderr";
     if (execution == NULL || !execution->initialized || stdout_sink == NULL
@@ -252,19 +258,25 @@ MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
     }
     if (instruction->opcode == MMAY_OPCODE_IO_FLUSH) {
         stderr_stream = instruction->operands[1].signed_value == 5;
-        granted = stderr_stream ? stdout_sink->stderr_capability_granted
+        output.capability_granted = stderr_stream
+            ? stdout_sink->stderr_capability_granted
             : stdout_sink->capability_granted;
-        flush = stderr_stream ? stdout_sink->flush_stderr : stdout_sink->flush_stdout;
-        if (granted && (flush == NULL || flush(
-                stderr_stream ? stdout_sink->stderr_context : stdout_sink->context
-            ))) {
+        output.context = stderr_stream
+            ? stdout_sink->stderr_context : stdout_sink->context;
+        output.write = stderr_stream
+            ? stdout_sink->write_stderr : stdout_sink->write_stdout;
+        output.flush = stderr_stream
+            ? stdout_sink->flush_stderr : stdout_sink->flush_stdout;
+        io_status = mmay_io_flush(&output);
+        if (io_status == MMAY_IO_OK) {
             return MMAY_BYTECODE_RUN_OK;
         }
         return mmay_bytecode_run_io_error(
             execution, result_descriptor_raw, error_descriptor_raw,
-            !granted, stderr_stream ? stderr_name : stdout_name,
+            io_status == MMAY_IO_CAPABILITY_DENIED,
+            stderr_stream ? stderr_name : stdout_name,
             stderr_stream ? sizeof(stderr_name) - 1 : sizeof(stdout_name) - 1,
-            3, &registers[target_index]
+            3, 0, &registers[target_index]
         );
     }
     if (!mmay_bytecode_execution_string_bytes(
@@ -290,7 +302,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
     }
     if (newline) line[text_length] = '\n';
     if (cp32) {
-        if (!stderr_stream
+        if (line_length != 0 && !stderr_stream
             && mmay_test_output_depth(&execution->test_output) != 0) {
             output_status = mmay_test_output_publish(
                 &execution->test_output, stdout_sink, line, line_length
@@ -308,27 +320,31 @@ MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
             return mmay_bytecode_run_io_error(
                 execution, result_descriptor_raw, error_descriptor_raw,
                 output_status == MMAY_TEST_OUTPUT_CAPABILITY_DENIED,
-                stdout_name, sizeof(stdout_name) - 1, 2,
+                stdout_name, sizeof(stdout_name) - 1, 2, 0,
                 &registers[target_index]
             );
         }
-        granted = stderr_stream ? stdout_sink->stderr_capability_granted
+        output.capability_granted = stderr_stream
+            ? stdout_sink->stderr_capability_granted
             : stdout_sink->capability_granted;
-        publish = stderr_stream ? stdout_sink->publish_stderr : stdout_sink->publish;
-        if (granted && publish != NULL
-            && publish(
-                stderr_stream ? stdout_sink->stderr_context : stdout_sink->context,
-                line, line_length
-            )) {
+        output.context = stderr_stream
+            ? stdout_sink->stderr_context : stdout_sink->context;
+        output.write = stderr_stream
+            ? stdout_sink->write_stderr : stdout_sink->write_stdout;
+        output.flush = stderr_stream
+            ? stdout_sink->flush_stderr : stdout_sink->flush_stdout;
+        io_status = mmay_io_write(&output, line, line_length);
+        if (io_status == MMAY_IO_OK) {
             if (line != NULL) mmay_deallocate(&allocator, line, line_length);
             return MMAY_BYTECODE_RUN_OK;
         }
         if (line != NULL) mmay_deallocate(&allocator, line, line_length);
         return mmay_bytecode_run_io_error(
             execution, result_descriptor_raw, error_descriptor_raw,
-            !granted, stderr_stream ? stderr_name : stdout_name,
+            io_status == MMAY_IO_CAPABILITY_DENIED,
+            stderr_stream ? stderr_name : stdout_name,
             stderr_stream ? sizeof(stderr_name) - 1 : sizeof(stdout_name) - 1,
-            2, &registers[target_index]
+            2, 0, &registers[target_index]
         );
     }
     output_status = mmay_test_output_publish(
@@ -353,7 +369,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
         output_status == MMAY_TEST_OUTPUT_CAPABILITY_DENIED,
         stdout_name, sizeof(stdout_name) - 1,
         cp32 || io_error_layout == NULL || io_error_layout->variant_count != 2
-            ? 2 : 1,
+            ? 2 : 1, 0,
         &registers[target_index]
     );
 }

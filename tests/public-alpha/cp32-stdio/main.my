@@ -1,9 +1,14 @@
 import { Error as IoError, eprint, eprintln, flushStderr, flushStdout, print, println, readLine } from "std/io";
 
 fn main(): Result<void, IoError> {
-  const ignored = readLine(32)?;
+  const input = readLine(32)?;
+  const text = match input {
+    Some(value) => value,
+    None => "<eof>",
+  };
   print("out")?;
   println(" line")?;
+  println(text)?;
   eprint("err")?;
   eprintln(" line")?;
   flushStdout()?;

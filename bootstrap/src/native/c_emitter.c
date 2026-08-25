@@ -358,7 +358,7 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
     }
     memset(&buffer, 0, sizeof(buffer)); buffer.limit = options.max_generated_bytes;
     if (!mmay_vector_init(&buffer.bytes, allocator, sizeof(char))) { status = MMAY_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup; }
-    if (!mmay_native_c_write(&buffer, "#include <stdbool.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <stdio.h>\n#include <string.h>\n#include \"mmay/base/checked_i64_fast.h\"\n#include \"mmay/base/allocator.h\"\n#include \"mmay/runtime/managed.h\"\n#include \"mmay/runtime/program_arguments.h\"\n#include \"mmay/runtime/string.h\"\n#include \"mmay/runtime/test_output.h\"\n")
+    if (!mmay_native_c_write(&buffer, "#include <stdbool.h>\n#include <errno.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <signal.h>\n#include <stdio.h>\n#include <string.h>\n#include \"mmay/base/checked_i64_fast.h\"\n#include \"mmay/base/allocator.h\"\n#include \"mmay/runtime/managed.h\"\n#include \"mmay/runtime/program_arguments.h\"\n#include \"mmay/runtime/string.h\"\n#include \"mmay/runtime/test_output.h\"\n")
         || !mmay_native_c_write(&buffer, "#include \"mmay/base/checked_integer.h\"\n")
         || !mmay_native_c_write(&buffer, "#include \"mmay/base/number_format.h\"\n#include \"mmay/base/integer_text.h\"\n")
         || (uses_f64 && !mmay_native_c_write(

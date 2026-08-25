@@ -62,6 +62,18 @@ MarimayProcessStatus mmay_process_run_capture(
     MarimayProcessCaptureResult *result
 );
 
+/* As above, with an exact borrowed byte sequence exposed as child stdin. */
+MarimayProcessStatus mmay_process_run_capture_input(
+    MarimayAllocator allocator,
+    const char *const arguments[],
+    size_t argument_count,
+    const unsigned char *standard_input,
+    size_t standard_input_length,
+    size_t max_output,
+    size_t max_error,
+    MarimayProcessCaptureResult *result
+);
+
 void mmay_process_result_dispose(MarimayProcessResult *result);
 void mmay_process_capture_result_dispose(MarimayProcessCaptureResult *result);
 

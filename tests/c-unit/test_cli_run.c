@@ -212,7 +212,9 @@ static void mmay_cli_run_test_writer_failures(MarimaySession *session) {
     );
     MMAY_EXPECT(status == MMAY_EXIT_SOURCE_FAILURE);
     MMAY_EXPECT(output.length == 0);
-    MMAY_EXPECT(strcmp(error.bytes, "error[G4003]: stdout write failed\n") == 0);
+    MMAY_EXPECT(strcmp(
+        error.bytes, "error[G4003]: standard stream write failed\n"
+    ) == 0);
 
     mmay_test_buffer_init(&output);
     mmay_test_buffer_init(&error);

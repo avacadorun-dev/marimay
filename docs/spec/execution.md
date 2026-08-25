@@ -610,21 +610,36 @@ Standard file, socket, DNS, timer, process, and HTTP APIs use direct-style signa
 
 Potentially blocking operations without a portable non-blocking primitive run on a bounded blocking pool. Saturation suspends callers rather than creating unbounded OS threads. Completion re-enters the owning isolate through its event queue; foreign worker threads never mutate the isolate heap directly.
 
-### 10.1 Preview user stdout
+### 10.1 Bounded typed standard streams
 
-D046 is the 0.1-dev user stdout contract. `std/io.println` writes the exact
-UTF-8 bytes of one `string` plus a single LF to the isolate's program-ordered
-stdout stream. It requires capability `"io.stdout"`, returns
-`Result<void, io.Error>`, and may suspend. A successful call publishes the
-complete line so the host or test capture can observe it before `Ok()`
-returns. Capability denial writes no program stdout. The internal harness
-spelling `ok:f64:` followed by hexadecimal bits is not this stream and must
-not be emitted by a public `println` path.
+D075 supersedes D046's stdout-only preview. `std/io` owns three independent
+program streams and exact capabilities: `readLine` uses `io.stdin`, output and
+flush operations use either `io.stdout` or `io.stderr`, and tool/compiler
+diagnostics are not part of any program stream. Each output stream is ordered;
+no cross-stream merge order is promised. `print`/`eprint` write exact counted
+UTF-8 bytes, `println`/`eprintln` append one LF, and none flushes implicitly.
+The two explicit flush operations affect only their selected stream.
 
-Until I6 parks I/O, a Stage 0 implementation may lower `println` to a blocking
-host write only if the published bytes, `Result` classification, capability
-check, and publish-before-`Ok` rule remain identical. That shortcut is a
-removal-gated implementation detail, not a second stdout semantics.
+`readLine(limit)` accepts `0..1048576`, returns `Ok(None)` only for EOF before
+bytes, returns an unterminated final line as `Some`, strips LF and a directly
+preceding CR, retains NUL, and validates the complete returned bytes as UTF-8.
+The byte limit is measured after terminator removal. Invalid signed limits win
+over capability denial and return `LineTooLong` with the original value. No
+read error publishes a partial source value.
+
+The Stage 0 blocking adapter completes positive short transfers in order and
+allows at most 1024 consecutive zero-progress retries after the initial host
+attempt. A write or flush failure can occur after a prefix became visible, but
+the source error reveals neither a partial count nor host error text. On POSIX,
+the CLI and generated executable suppress process termination by `SIGPIPE` so
+a closed reader reaches this typed boundary. Internal allocation/resource
+failure stays an `I0002` runtime outcome.
+
+Until I6 parks I/O, this blocking adapter is permitted only while the bytes,
+EOF, error, capability, retry-bound, and separate-stream observations remain
+identical. It is a removal-gated implementation detail, not a second stream
+semantics. The internal harness spelling `ok:f64:` followed by hexadecimal
+bits is not program output.
 
 ## 11. FFI interaction
 

@@ -104,15 +104,32 @@ static bool mmay_cli_test_capture_publish(
         && mmay_vector_append(&capture->bytes, bytes, length);
 }
 
-static bool mmay_cli_test_eof_read(
+static MarimayIoTransferStatus mmay_cli_test_eof_read(
     void *context, unsigned char *destination, size_t capacity, size_t *count
 ) {
     (void)context;
     (void)destination;
     (void)capacity;
-    if (count == NULL) return false;
+    if (count == NULL) return MMAY_IO_TRANSFER_FAILED;
     *count = 0;
-    return true;
+    return MMAY_IO_TRANSFER_END;
+}
+
+static MarimayIoTransferStatus mmay_cli_test_capture_transfer(
+    void *context,
+    const unsigned char *bytes,
+    size_t length,
+    size_t *count
+) {
+    if (count == NULL || !mmay_cli_test_capture_publish(
+            context, bytes, length
+        )) return MMAY_IO_TRANSFER_FAILED;
+    *count = length;
+    return MMAY_IO_TRANSFER_OK;
+}
+
+static MarimayIoTransferStatus mmay_cli_test_capture_flush(void *context) {
+    return context != NULL ? MMAY_IO_TRANSFER_OK : MMAY_IO_TRANSFER_FAILED;
 }
 
 static bool mmay_cli_test_capture_write(
@@ -203,6 +220,11 @@ static bool mmay_cli_test_vm(
             &capture.bytes, context->session->allocator,
             sizeof(unsigned char)
         )) goto cleanup;
+    if (!mmay_vector_init(
+            &error_capture.bytes, context->session->allocator,
+            sizeof(unsigned char)
+        )) goto cleanup;
+    error_capture_ready = true;
     lower_status = mmay_mir_lower_bytecode_program(
         context->functions, context->function_count,
         test->function->mir.symbol, context->session->allocator,
@@ -235,13 +257,15 @@ static bool mmay_cli_test_vm(
     sink.context = &capture;
     sink.publish = mmay_cli_test_capture_publish;
     sink.stderr_capability_granted = true;
-    sink.stderr_context = &capture;
+    sink.stderr_context = &error_capture;
     sink.publish_stderr = mmay_cli_test_capture_publish;
-    sink.flush_stdout = NULL;
-    sink.flush_stderr = NULL;
+    sink.flush_stdout = mmay_cli_test_capture_flush;
+    sink.flush_stderr = mmay_cli_test_capture_flush;
     sink.stdin_capability_granted = true;
     sink.stdin_context = NULL;
     sink.read_stdin = mmay_cli_test_eof_read;
+    sink.write_stdout = mmay_cli_test_capture_transfer;
+    sink.write_stderr = mmay_cli_test_capture_transfer;
     run_options = mmay_bytecode_run_default_options();
     run_options.execution = &execution;
     run_options.stdout_sink = &sink;
@@ -270,11 +294,6 @@ static bool mmay_cli_test_vm(
             )) goto cleanup;
     } else {
         bool classified = false;
-        if (!mmay_vector_init(
-                &error_capture.bytes, context->session->allocator,
-                sizeof(unsigned char)
-            )) goto cleanup;
-        error_capture_ready = true;
         error_writer.context = &error_capture;
         error_writer.write = mmay_cli_test_capture_write;
         error_writer.flush = NULL;
@@ -295,7 +314,7 @@ static bool mmay_cli_test_vm(
         )) goto cleanup;
     if (observation->exit_code == 0 && !mmay_owned_bytes_copy(
             &observation->standard_error, context->session->allocator,
-            NULL, 0
+            error_capture.bytes.data, error_capture.bytes.length
         )) goto cleanup;
     accepted = true;
 cleanup:

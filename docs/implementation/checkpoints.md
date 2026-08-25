@@ -365,8 +365,8 @@ performance prerequisite inserted between CP38 and CP39.
 ## Active sequence CP29-CP41
 
 The sequence is deliberately linear so exactly one card is executable. CP29
-through CP31 are `verified`; CP32 is `ready`, and every later card is `planned`
-behind its declared predecessor. Execution order is CP32–CP38, CP41, CP39,
+through CP32 are `verified`; CP33 is `ready`, and every later card is `planned`
+behind its declared predecessor. Execution order is CP33–CP38, CP41, CP39,
 then CP40; numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
@@ -653,7 +653,8 @@ evidence, and the CP32 card. Include exact encoding and limit constants.
 
 ## CP32 - Typed standard streams and flush
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP31.
+State: `verified`. Parent gate: CLI0. Predecessor: CP31. Evidence scope:
+`local`. Evidence: [CP32](evidence/cp32-typed-standard-streams-2026-08-25.md).
 
 ### Outcome
 
@@ -740,7 +741,7 @@ contracts, exact capture records, focused tests/evidence, and CP33 card.
 
 ## CP33 - UTF-8 text Bytes and bounded builders
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP32.
+State: `ready`. Parent gate: CLI0. Predecessor: CP32.
 
 ### Outcome
 

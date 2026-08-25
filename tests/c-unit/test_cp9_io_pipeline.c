@@ -69,7 +69,7 @@ static MarimayIoStdout mmay_cp9_io_stdout(
     MarimayCp9IoSink *sink,
     bool granted
 ) {
-    MarimayIoStdout result;
+    MarimayIoStdout result = {0};
     result.capability_granted = granted;
     result.context = sink;
     result.publish = mmay_cp9_io_publish;

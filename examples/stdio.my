@@ -1,0 +1,15 @@
+import { Error as IoError, eprintln, flushStderr, flushStdout, println, readLine } from "std/io";
+
+fn main(): Result<void, IoError> {
+  const input = readLine(4096)?;
+  const text = match input {
+    Some(line) => line,
+    None => "<eof>",
+  };
+
+  println(text)?;
+  eprintln("processed one bounded line")?;
+  flushStdout()?;
+  flushStderr()?;
+  return Ok();
+}

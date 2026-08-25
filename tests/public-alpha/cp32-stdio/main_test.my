@@ -1,4 +1,4 @@
-import { flushStdout, print, println, readLine } from "std/io";
+import { eprint, eprintln, flushStderr, flushStdout, print, println, readLine } from "std/io";
 
 @test
 fn stdoutWriteAndFlush(): void {
@@ -10,6 +10,23 @@ fn stdoutWriteAndFlush(): void {
       const _ = flushStdout();
     },
   );
+}
+
+@test
+fn emptyWriteIsAValidNoOp(): void {
+  expect.output(
+    "",
+    (): void => {
+      const _ = print("");
+    },
+  );
+}
+
+@test
+fn stderrWriteAndFlushIsIndependent(): void {
+  const _ = eprint("err");
+  const _ = eprintln(" line");
+  const _ = flushStderr();
 }
 
 @test

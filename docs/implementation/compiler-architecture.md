@@ -150,13 +150,13 @@ bootstrap/src/mir/
   range.c               transactional checked-to-in-bounds MIR rewrite
   integer_range.c       MIR adapter, transactional arithmetic rewrite, proof validation
   verify_interfaces.c   interface metadata and nominal payload verification
-  verify_io.c           exact D046 stdout instruction/layout verification
+  verify_io.c           exact D075 stream instruction/layout verification
   verify_format.c       D065 primitive-format and concat verification
   verify_parse.c        D065 Result<int, ParseError> layout verification
   execution.c           oracle graph and interpreter dispatch
   execution_array.c     checked and verifier-gated in-bounds array execution
   execution_heap.c      execution state and managed allocations
-  execution_io.c        D046 oracle publication and Result construction
+  execution_io.c        D075 stdin/stdout/stderr oracle and Result construction
   execution_format.c    locale-independent formatting and counted concat
   execution_parse.c     D065 integer parsing and ParseError construction
 ```
@@ -321,6 +321,9 @@ tests/c-unit/
   test_runtime_io.c
   test_cp31_program_arguments.c
   runtime/test_program_arguments.c
+  test_cp32_streams.c             D075 checker/MIR/bytecode/VM vertical owner
+  cp32_process_fixture.c          exact counted-stdin process fixture
+  test_cp32_process_streams.cmake VM/native three-stream process comparison
 ```
 
 The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
@@ -637,6 +640,16 @@ checkpoint:
 | `bootstrap/src/cli/cli_program_arguments.c` | 0 | 114 | D066 shared run/test separator-value validation and diagnostics |
 | `tests/c-unit/runtime/test_program_arguments.c` | 0 | 253 | D066 validation, Unicode/platform conversion, managed values, and allocation cleanup |
 | `tests/c-unit/test_cp31_program_arguments.c` | 0 | 556 | D066 run/test/build/native arguments, status, Result, panic, cleanup, diagnostics, and allocation coverage |
+| `bootstrap/main.c` | 61 | 68 | D075 CLI host startup suppresses POSIX broken-pipe termination before typed stream execution |
+| `runtime/common/io.c` | 78 | 110 | D075 bounded read/short-write/retry/flush core with exact EOF, CRLF, UTF-8, and failure classification |
+| `runtime/include/mmay/runtime/io.h` | 106 | 116 | D075 typed transfer callback and independent stdin/stdout/stderr sink contract |
+| `runtime/include/mmay/platform/process.h` | 68 | 80 | exact counted-stdin process-capture API used by cross-engine fixtures |
+| `runtime/platform/posix/process.c` | 410 | 472 | deadlock-free exact-stdin child capture through an unlinked temporary file |
+| `runtime/platform/windows/process.c` | 529 | 610 | inherited delete-on-close exact-stdin child capture for the Windows owner |
+| `tests/c-unit/test_runtime_io.c` | 325 | 474 | D075 EOF/LF/CRLF/NUL/UTF-8/limit, partial/retry/failure, and allocation coverage |
+| `tests/c-unit/test_cp32_streams.c` | 0 | 743 | D075 checker/MIR/hostile bytecode/VM/native capability/stream/allocation vertical coverage |
+| `tests/c-unit/cp32_process_fixture.c` | 0 | 14 | exact binary stdin echo plus independent stderr process observation fixture |
+| `tests/c-unit/test_cp32_process_streams.cmake` | 0 | 122 | VM/native status/stdout/stderr parity including invalid bytes, limits, EOF, CRLF, and closed pipe |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `mmay_test_mir` registration. The service checkpoint

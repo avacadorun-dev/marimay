@@ -2,6 +2,9 @@ set_source_files_properties(runtime_profile_probe.c PROPERTIES
   HEADER_FILE_ONLY TRUE
 )
 
+add_executable(mmay_cp32_process_fixture cp32_process_fixture.c)
+mmay_target_warnings(mmay_cp32_process_fixture)
+
 add_executable(mmay_c_unit
   runtime_profile_probe.c
   test_allocator.c
@@ -18,6 +21,7 @@ add_executable(mmay_c_unit
   test_cp30_checker.c
   test_cp30_mir.c
   test_cp31_program_arguments.c
+  test_cp32_streams.c
   test_bytecode_program.c
   test_bytecode_program_nominal.c
   test_bytecode_verify_provenance.c
@@ -192,6 +196,7 @@ target_compile_definitions(mmay_c_unit PRIVATE
   MMAY_TEST_NATIVE_RUNTIME_RELEASE_MANIFEST="${MMAY_NATIVE_RUNTIME_RELEASE_MANIFEST}"
   MMAY_TEST_NATIVE_BOOTSTRAP_INCLUDE="${CMAKE_SOURCE_DIR}/bootstrap/include"
   MMAY_TEST_NATIVE_RUNTIME_INCLUDE="${CMAKE_SOURCE_DIR}/runtime/include"
+  MMAY_TEST_CP32_PROCESS_FIXTURE="$<TARGET_FILE:mmay_cp32_process_fixture>"
 )
 if(MMAY_NATIVE_C_SANITIZER_FLAG)
   target_compile_definitions(mmay_c_unit PRIVATE
@@ -204,6 +209,7 @@ add_dependencies(mmay_c_unit
   mmay
   mmay_native_runtime_debug
   mmay_native_runtime_release
+  mmay_cp32_process_fixture
 )
 
 file(COPY snapshots DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
@@ -261,6 +267,14 @@ add_test(NAME mmay_c_unit COMMAND mmay_c_unit "$<TARGET_FILE:mmay>")
 set_tests_properties(mmay_c_unit PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 add_test(
+  NAME mmay_cp32_unit
+  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp32
+)
+set_tests_properties(
+  mmay_cp32_unit PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+)
+
+add_test(
   NAME mmay_install_relocation
   COMMAND "${CMAKE_COMMAND}"
     "-DMMAY_TEST_BINARY_DIR=${CMAKE_BINARY_DIR}"
@@ -284,4 +298,13 @@ add_test(
     "-DMMAY_TEST_VERSION=${MMAY_COMPILER_VERSION}"
     "-DMMAY_TEST_EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp29_release_contract.cmake"
+)
+
+add_test(
+  NAME mmay_cp32_process_streams
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp32-stdio"
+    "-DMMAY_TEST_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp32-process-streams-native${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp32_process_streams.cmake"
 )

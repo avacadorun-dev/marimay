@@ -41,7 +41,7 @@ mmay fmt ./src
 mmay run ./cmd/admin -- --repair account-42
 ```
 
-A standalone `.my` file without `mmay.mod` can be checked, formatted, tested, or run in script mode. Script mode has no third-party dependencies and receives no filesystem/network/process capability unless explicitly granted. D046 capability `"io.stdout"` is granted by default for `mmay run` of a local module or script and for a native executable from `mmay build`; it is not a filesystem, network, or process grant.
+A standalone `.my` file without `mmay.mod` can be checked, formatted, tested, or run in script mode. Script mode has no third-party dependencies and receives no filesystem/network/process capability unless explicitly granted. D075 capabilities `"io.stdin"`, `"io.stdout"`, and `"io.stderr"` are granted by default for `mmay run` of a local module or script and for a native executable from `mmay build`; they are not filesystem, network, or process grants.
 
 ### 1.1 Batch check discovery
 
@@ -289,10 +289,12 @@ later test observes the failed execution's heap state.
 
 Tests execute concurrently across runtime isolates by default. Results are printed in deterministic package/source order. On failure, captured stdout/stderr for that test is printed without interleaving.
 
-`expect.output(expected, closure)` compares the exact D046 stdout bytes
+`expect.output(expected, closure)` compares the exact D075 stdout bytes
 published by that closure, including the trailing LF from each `println`.
-Tests grant a captured `"io.stdout"` sink by default; they do not inherit the
-host process stdout unless an opt-in host-stdio capability is requested.
+Tests grant captured `"io.stdout"` and `"io.stderr"` sinks plus deterministic
+EOF on `"io.stdin"` by default; they do not inherit host standard streams
+unless an opt-in host-stdio capability is requested. `expect.output` observes
+only program stdout, while failure reporting keeps captured stderr separate.
 
 A test that exits while child tasks or resources remain is failed even if assertions passed. Children owned by a structured `scope` are cancelled/joined normally; leaked runtime resources are separately reported with allocation/open spans.
 
@@ -398,8 +400,9 @@ return the selected `0..255` status after cleanup. Root `Err` is `G4003` on stde
 and exit `1`; explicit, arithmetic, and bounds panics are respectively
 `G4000`, `G4001`, and `G4002` on stderr and exit `1`. Invalid entry is `T0017`
 and exit `1`. Bytecode pipeline failure `B0001` and runtime integrity/resource
-failure `I0002` exit `70`. Program stdout contains only D046 bytes and never an
-internal engine-result envelope. `io.stdout` is the sole default local grant.
+failure `I0002` exit `70`. Program stdout/stderr contain only D075 program bytes
+and never an internal engine-result envelope or compiler diagnostic. The three
+D075 standard-stream capabilities are the only default local grants.
 Arguments after the first `--` are validated under D066 and passed in order;
 the executable name is not present. Invalid argument bytes/limits use `G4006`,
 and a returned status outside `0..255` uses `G4007` rather than host truncation.
@@ -481,7 +484,7 @@ mmay exec --allow-read ./data app.myb
 mmay exec --max-memory 256MiB --max-tasks 10000 app.myb
 ```
 
-`exec` verifies the entire bundle, resolves declared capabilities, and starts it in the VM. Untrusted bundles receive no ambient capabilities, including `"io.stdout"`. A grant is required before D046 `println` can publish to the invoking process. Verification happens before package initialization or FFI loading.
+`exec` verifies the entire bundle, resolves declared capabilities, and starts it in the VM. Untrusted bundles receive no ambient capabilities, including the three D075 standard-stream capabilities. Exact grants are required before the corresponding stream operation can reach the invoking process. Verification happens before package initialization or FFI loading.
 
 ## 7. Project and dependency commands
 

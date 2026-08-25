@@ -44,8 +44,9 @@ build/debug/cp29-quick-start
 <!-- cp29-quick-start:end -->
 
 The current source surface also includes CP30 dynamic primitive interpolation,
-boolean/all-width integer formatting, and `parseInt`/`parseIntRadix`, plus CP31
-bounded UTF-8 program arguments and cleanup-safe process statuses with exact
+boolean/all-width integer formatting, and `parseInt`/`parseIntRadix`; CP31
+bounded UTF-8 program arguments and cleanup-safe process statuses; and CP32
+bounded typed stdin, independent stdout/stderr, and explicit flush with exact
 VM/native behavior. For an argument-taking package, for example:
 
 ```sh
@@ -57,6 +58,20 @@ build/debug/cp31-args alpha "two words"
 
 The executable name is excluded from source `[]string`; empty strings, Unicode,
 leading dashes, and a literal `--` after the separator are preserved exactly.
+
+The CP32 stream fixture can be exercised through either engine:
+
+```sh
+printf 'hello\r\n' | build/debug/mmay run tests/public-alpha/cp32-stdio
+build/debug/mmay test tests/public-alpha/cp32-stdio --engine both
+build/debug/mmay build tests/public-alpha/cp32-stdio --output build/debug/cp32-stdio
+printf 'hello\r\n' | build/debug/cp32-stdio
+```
+
+Both run paths keep program stdout, program stderr, and tool diagnostics
+separate. `readLine` is bounded to at most 1048576 returned UTF-8 bytes;
+printing never flushes implicitly, so durable/interactive boundaries use
+`flushStdout` or `flushStderr` explicitly.
 
 Both run paths print `Marimay CP29 quick start`. The
 [known limitations](docs/known-limitations.md) distinguish this executable

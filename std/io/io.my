@@ -9,12 +9,12 @@ public enum Error {
 
 public fn message(error: Error): string {
   return match error {
-    CapabilityDenied { capability } => "capability io.stdout is not granted",
+    CapabilityDenied { capability } => $"capability {capability} is not granted",
     ReadFailed => "standard input read failed",
-    WriteFailed => "stdout write failed",
+    WriteFailed => "standard stream write failed",
     FlushFailed => "standard stream flush failed",
     InvalidUtf8 => "standard input is not valid UTF-8",
-    LineTooLong { limit } => "standard input line exceeds limit",
+    LineTooLong { limit } => $"standard input line exceeds {limit}-byte limit",
   };
 }
 

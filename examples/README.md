@@ -7,6 +7,10 @@ These examples are executable specification fixtures once the parser exists. Unt
   closed primitive interpolation, explicit boolean/integer formatters,
   `parseInt`/`parseIntRadix`, NUL/Unicode bytes, side-effect order, and exact
   VM/native output.
+- `stdio.my` shows the executable D075 boundary: bounded `readLine`, explicit
+  EOF, independent stdout/stderr, typed propagation, and explicit per-stream
+  flushes. The deeper `../tests/public-alpha/cp32-stdio` corpus supplies exact
+  VM/native process coverage.
 - `concurrency.my` exercises direct-style I/O, `Result`, explicit error mapping, scoped `spawn`, and cancellation by early `?`.
 - `service.my` sketches a production HTTP handler without async-colored signatures.
 - `tour_test.my` shows the built-in test syntax.

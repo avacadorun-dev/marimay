@@ -3,12 +3,14 @@
 #include "mmay/platform/process.h"
 
 #include <errno.h>
+#include <fcntl.h>
 #include <signal.h>
 #include <spawn.h>
 #include <poll.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -257,14 +259,48 @@ static MarimayProcessStatus mmay_process_capture_read(
         ? MMAY_PROCESS_OK : MMAY_PROCESS_ALLOCATION_FAILED;
 }
 
-MarimayProcessStatus mmay_process_run_capture(
+static MarimayProcessStatus mmay_process_stdin_file(
+    const unsigned char *bytes,
+    size_t length,
+    int *descriptor
+) {
+    char path[] = "/tmp/mmay-process-stdin-XXXXXX";
+    size_t offset = 0;
+    int file = -1;
+    if (descriptor == NULL || (bytes == NULL && length != 0)) {
+        return MMAY_PROCESS_INVALID_ARGUMENT;
+    }
+    file = mkstemp(path);
+    if (file < 0) return MMAY_PROCESS_IO_FAILED;
+    (void)unlink(path);
+    while (offset < length) {
+        ssize_t count = write(file, bytes + offset, length - offset);
+        if (count < 0 && errno == EINTR) continue;
+        if (count <= 0) {
+            (void)close(file);
+            return MMAY_PROCESS_IO_FAILED;
+        }
+        offset += (size_t)count;
+    }
+    if (lseek(file, 0, SEEK_SET) < 0) {
+        (void)close(file);
+        return MMAY_PROCESS_IO_FAILED;
+    }
+    *descriptor = file;
+    return MMAY_PROCESS_OK;
+}
+
+MarimayProcessStatus mmay_process_run_capture_input(
     MarimayAllocator allocator,
     const char *const arguments[],
     size_t argument_count,
+    const unsigned char *standard_input,
+    size_t standard_input_length,
     size_t max_output,
     size_t max_error,
     MarimayProcessCaptureResult *result
 ) {
+    int input_file = -1;
     int output_pipe[2] = {-1, -1};
     int error_pipe[2] = {-1, -1};
     posix_spawn_file_actions_t actions;
@@ -283,7 +319,8 @@ MarimayProcessStatus mmay_process_run_capture(
     memset(result, 0, sizeof(*result));
     result->standard_output.allocator = allocator;
     result->standard_error.allocator = allocator;
-    if (!mmay_process_capture_arguments_valid(arguments, argument_count)) {
+    if (!mmay_process_capture_arguments_valid(arguments, argument_count)
+        || (standard_input == NULL && standard_input_length != 0)) {
         return MMAY_PROCESS_INVALID_ARGUMENT;
     }
     if (!mmay_vector_init(&output, allocator, sizeof(unsigned char))
@@ -291,6 +328,10 @@ MarimayProcessStatus mmay_process_run_capture(
         status = MMAY_PROCESS_ALLOCATION_FAILED;
         goto cleanup;
     }
+    status = mmay_process_stdin_file(
+        standard_input, standard_input_length, &input_file
+    );
+    if (status != MMAY_PROCESS_OK) goto cleanup;
     if (pipe(output_pipe) != 0 || pipe(error_pipe) != 0
         || posix_spawn_file_actions_init(&actions) != 0) {
         status = MMAY_PROCESS_SPAWN_FAILED;
@@ -298,9 +339,13 @@ MarimayProcessStatus mmay_process_run_capture(
     }
     actions_ready = true;
     if (posix_spawn_file_actions_adddup2(
+            &actions, input_file, STDIN_FILENO
+        ) != 0 || posix_spawn_file_actions_adddup2(
             &actions, output_pipe[1], STDOUT_FILENO
         ) != 0 || posix_spawn_file_actions_adddup2(
             &actions, error_pipe[1], STDERR_FILENO
+        ) != 0 || posix_spawn_file_actions_addclose(
+            &actions, input_file
         ) != 0 || posix_spawn_file_actions_addclose(
             &actions, output_pipe[0]
         ) != 0 || posix_spawn_file_actions_addclose(
@@ -321,6 +366,8 @@ MarimayProcessStatus mmay_process_run_capture(
         status = MMAY_PROCESS_SPAWN_FAILED;
         goto cleanup;
     }
+    (void)close(input_file);
+    input_file = -1;
     (void)close(output_pipe[1]);
     output_pipe[1] = -1;
     (void)close(error_pipe[1]);
@@ -387,6 +434,7 @@ terminate:
     process = 0;
 cleanup:
     if (process != 0) mmay_process_stop_and_wait(process);
+    if (input_file >= 0) (void)close(input_file);
     if (output_pipe[0] >= 0) (void)close(output_pipe[0]);
     if (output_pipe[1] >= 0) (void)close(output_pipe[1]);
     if (error_pipe[0] >= 0) (void)close(error_pipe[0]);
@@ -398,6 +446,20 @@ cleanup:
         mmay_process_capture_result_dispose(result);
     }
     return status;
+}
+
+MarimayProcessStatus mmay_process_run_capture(
+    MarimayAllocator allocator,
+    const char *const arguments[],
+    size_t argument_count,
+    size_t max_output,
+    size_t max_error,
+    MarimayProcessCaptureResult *result
+) {
+    return mmay_process_run_capture_input(
+        allocator, arguments, argument_count, NULL, 0,
+        max_output, max_error, result
+    );
 }
 
 void mmay_process_capture_result_dispose(MarimayProcessCaptureResult *result) {

@@ -28,14 +28,39 @@ static bool mmay_cli_stdout_publish(
         );
 }
 
-static bool mmay_cli_stdin_read(
+static MarimayIoTransferStatus mmay_cli_stdout_write(
+    void *context,
+    const unsigned char *bytes,
+    size_t length,
+    size_t *count
+) {
+    MarimayCliStdoutContext *stdout_context = context;
+    if (count == NULL || stdout_context == NULL || (bytes == NULL && length != 0)
+        || !mmay_writer_write(
+            stdout_context->writer, (const char *)bytes, length
+        )) {
+        return MMAY_IO_TRANSFER_FAILED;
+    }
+    *count = length;
+    return MMAY_IO_TRANSFER_OK;
+}
+
+static MarimayIoTransferStatus mmay_cli_stdout_flush(void *context) {
+    MarimayCliStdoutContext *stdout_context = context;
+    return stdout_context != NULL && mmay_writer_flush(stdout_context->writer)
+        ? MMAY_IO_TRANSFER_OK : MMAY_IO_TRANSFER_FAILED;
+}
+
+static MarimayIoTransferStatus mmay_cli_stdin_read(
     void *context, unsigned char *destination, size_t capacity, size_t *count
 ) {
     MarimayReadStream *stream = context;
     MarimayReadStatus status = stream != NULL && stream->read != NULL
         ? stream->read(stream->context, destination, capacity, count)
         : MMAY_READ_ERROR;
-    return status == MMAY_READ_OK || status == MMAY_READ_END;
+    if (status == MMAY_READ_OK) return MMAY_IO_TRANSFER_OK;
+    if (status == MMAY_READ_END) return MMAY_IO_TRANSFER_END;
+    return MMAY_IO_TRANSFER_FAILED;
 }
 
 static const MarimayBytecodeEnumPayload *mmay_cli_run_error_payload(
@@ -328,11 +353,13 @@ static int mmay_cli_run_execute(
     stdout_sink.stderr_capability_granted = true;
     stdout_sink.stderr_context = &stderr_context;
     stdout_sink.publish_stderr = mmay_cli_stdout_publish;
-    stdout_sink.flush_stdout = NULL;
-    stdout_sink.flush_stderr = NULL;
+    stdout_sink.flush_stdout = mmay_cli_stdout_flush;
+    stdout_sink.flush_stderr = mmay_cli_stdout_flush;
     stdout_sink.stdin_capability_granted = standard_input.read != NULL;
     stdout_sink.stdin_context = &standard_input;
     stdout_sink.read_stdin = mmay_cli_stdin_read;
+    stdout_sink.write_stdout = mmay_cli_stdout_write;
+    stdout_sink.write_stderr = mmay_cli_stdout_write;
     run_options = mmay_bytecode_run_default_options();
     run_options.execution = &execution;
     run_options.stdout_sink = &stdout_sink;

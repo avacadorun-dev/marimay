@@ -9,12 +9,18 @@
 #include "mmay/platform/process.h"
 
 void mmay_test_process(void) {
+    static const unsigned char exact_input[] = {
+        'a', 0, 0xff, '\r', '\n'
+    };
     const char *executable = mmay_test_toolchain_executable();
     const char *version_arguments[4];
     const char *unknown_arguments[4];
     const char *space_arguments[5];
     const char *invalid_arguments[2];
     const char *missing_arguments[2] = {"mmay-definitely-missing-i0", NULL};
+    const char *fixture_arguments[2] = {
+        MMAY_TEST_CP32_PROCESS_FIXTURE, NULL
+    };
     MarimayProcessResult result;
     MarimayProcessCaptureResult capture;
     MarimayOwnedBytes executable_path = {0};
@@ -96,6 +102,31 @@ void mmay_test_process(void) {
         (const char *)capture.standard_error.data, "error[U0001]"
     ) != NULL);
     mmay_process_capture_result_dispose(&capture);
+
+    memset(&capture, 0, sizeof(capture));
+    status = mmay_process_run_capture_input(
+        mmay_system_allocator(), fixture_arguments, 1,
+        exact_input, sizeof(exact_input), 16384, 16384, &capture
+    );
+    MMAY_EXPECT(status == MMAY_PROCESS_OK);
+    MMAY_EXPECT(capture.exit_code == 0 && !capture.signaled);
+    MMAY_EXPECT(capture.standard_output.length == sizeof(exact_input));
+    MMAY_EXPECT(capture.standard_output.length != sizeof(exact_input)
+        || memcmp(
+            capture.standard_output.data, exact_input, sizeof(exact_input)
+        ) == 0);
+    MMAY_EXPECT(capture.standard_error.length == sizeof("fixture-error\n") - 1);
+    MMAY_EXPECT(capture.standard_error.length != sizeof("fixture-error\n") - 1
+        || memcmp(
+            capture.standard_error.data, "fixture-error\n",
+            sizeof("fixture-error\n") - 1
+        ) == 0);
+    mmay_process_capture_result_dispose(&capture);
+
+    MMAY_EXPECT(mmay_process_run_capture_input(
+        mmay_system_allocator(), fixture_arguments, 1,
+        NULL, 1, 16384, 16384, &capture
+    ) == MMAY_PROCESS_INVALID_ARGUMENT);
 
     status = mmay_process_run(
         mmay_system_allocator(),

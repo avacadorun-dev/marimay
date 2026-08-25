@@ -286,9 +286,11 @@ bool mmay_checker_private_compile_io_call(
     }
     memset(&instruction, 0, sizeof(instruction));
     instruction.kind = reads_line ? MMAY_MIR_IO_READ_LINE
-        : operation == MMAY_MIR_IO_STDOUT_LINE
-        ? MMAY_MIR_IO_PRINTLN
-        : takes_text ? MMAY_MIR_IO_WRITE : MMAY_MIR_IO_FLUSH;
+        : takes_text
+        ? (operation == MMAY_MIR_IO_STDOUT_LINE
+                && error_enum->variants.length == 2
+            ? MMAY_MIR_IO_PRINTLN : MMAY_MIR_IO_WRITE)
+        : MMAY_MIR_IO_FLUSH;
     instruction.target = target;
     instruction.first = takes_text || reads_line
         ? text.register_id : MMAY_MIR_NO_REGISTER;

@@ -8,6 +8,7 @@
 #include "mmay/base/owned_bytes.h"
 
 #define MMAY_IO_MAX_LINE_BYTES ((size_t)1048576)
+#define MMAY_IO_MAX_CONSECUTIVE_RETRIES ((size_t)1024)
 
 typedef enum MarimayIoStatus {
     MMAY_IO_OK,
@@ -21,15 +22,22 @@ typedef enum MarimayIoStatus {
     MMAY_IO_INVALID_ARGUMENT
 } MarimayIoStatus;
 
-/* A read callback returns bytes copied into destination; it may return fewer
- * bytes than requested. false is a deterministic read failure. */
-typedef bool (*MarimayIoReadFn)(
+typedef enum MarimayIoTransferStatus {
+    MMAY_IO_TRANSFER_OK,
+    MMAY_IO_TRANSFER_END,
+    MMAY_IO_TRANSFER_RETRY,
+    MMAY_IO_TRANSFER_FAILED
+} MarimayIoTransferStatus;
+
+/* OK carries a non-zero count no larger than capacity. END and RETRY carry a
+ * zero count. FAILED is a deterministic host failure. */
+typedef MarimayIoTransferStatus (*MarimayIoReadFn)(
     void *context, unsigned char *destination, size_t capacity, size_t *count
 );
-typedef bool (*MarimayIoWriteFn)(
+typedef MarimayIoTransferStatus (*MarimayIoWriteFn)(
     void *context, const unsigned char *bytes, size_t length, size_t *count
 );
-typedef bool (*MarimayIoFlushFn)(void *context);
+typedef MarimayIoTransferStatus (*MarimayIoFlushFn)(void *context);
 
 typedef struct MarimayIoInput {
     bool capability_granted;
@@ -84,6 +92,8 @@ typedef struct MarimayIoStdout {
     bool stdin_capability_granted;
     void *stdin_context;
     MarimayIoReadFn read_stdin;
+    MarimayIoWriteFn write_stdout;
+    MarimayIoWriteFn write_stderr;
 } MarimayIoStdout;
 
 typedef enum MarimayIoStdoutStatus {

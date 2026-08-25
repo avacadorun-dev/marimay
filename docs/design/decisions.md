@@ -2008,6 +2008,25 @@ ordered and flush affects only its own stream. Failures expose no host error
 text or partial count. The Stage 0 adapter may block and retry bounded host
 operations; I6 must replace it without changing observable behavior.
 
+The limit counts bytes in the returned line after LF/CRLF removal, so a CRLF
+terminator does not consume the limit; a CR at EOF is data. An invalid limit
+returns `LineTooLong { limit }` before a capability check and preserves the
+requested signed value. EOF after one or more bytes returns `Ok(Some(text))`.
+`print` and `eprint` append nothing, while `println` and `eprintln` append one
+LF; none flushes implicitly. An empty output request still checks its exact
+capability but performs no host write. Only `flushStdout` or `flushStderr`
+requests a flush.
+
+A zero-progress interrupted host operation may be retried at most 1024 times
+after its initial attempt. A positive short write commits that prefix, resets
+the consecutive-retry budget, and continues in order. A final write or flush
+failure may therefore leave a prefix externally visible, but its source error
+contains neither a byte count nor host text. A read failure, invalid UTF-8, or
+line-limit failure publishes no `string`. Internal allocation, integrity, or
+resource-budget failures remain runtime `I0002` outcomes rather than invented
+`std/io.Error` variants. The stable `message` spellings are the declarations
+in `std/io`; they contain no `errno`, locale, or backend name.
+
 This supersedes D046's stdout-only preview while retaining its string-only,
 UTF-8 output contract.
 

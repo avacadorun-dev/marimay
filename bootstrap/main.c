@@ -1,3 +1,4 @@
+#include <signal.h>
 #include <stdio.h>
 
 #include "mmay/base/allocator.h"
@@ -23,6 +24,12 @@ int main(int argument_count, char **host_arguments) {
     MarimayProgramArgumentsStatus import_status;
     MarimaySession session;
     int exit_code = 0;
+#if defined(SIGPIPE)
+    if (signal(SIGPIPE, SIG_IGN) == SIG_ERR) {
+        fputs("error[I0002]: runtime host signal setup failed\n", stderr);
+        return 70;
+    }
+#endif
     mmay_session_init(&session, mmay_system_allocator());
     import_status = argument_count < 1
         ? MMAY_PROGRAM_ARGUMENTS_INVALID_ARGUMENT

@@ -172,6 +172,36 @@ stderr, and compiler diagnostics remain separate byte streams. D075 defines
 error spelling, atomicity, partial-operation retries, flush, and the I6
 blocking-adapter removal gate.
 
+The line limit counts the returned bytes after terminator removal. Thus a line
+whose payload is exactly `limit` bytes followed by LF or CRLF succeeds, while
+a CR not followed by LF is ordinary data. EOF after data returns that data as
+`Some`; embedded NUL is retained. An invalid signed limit returns
+`Err(LineTooLong { limit })` before checking `io.stdin`. Read, UTF-8, and limit
+failures publish no partial `string`.
+
+Output calls check only their named stream capability. Empty `print`/`eprint`
+requests are successful no-write operations after that check. No print
+operation flushes implicitly; the two explicit flush functions affect only
+their named stream. Short writes are completed in order, and an interrupted
+zero-progress host operation receives at most 1024 retries after its first
+attempt. If a later write or flush fails, an already written prefix may remain
+visible, but the typed error exposes no partial count or host error text.
+Compiler/tool diagnostics never enter either program stream.
+
+`message` returns exactly:
+
+| Variant | Text |
+|---|---|
+| `CapabilityDenied { capability }` | `capability {capability} is not granted` |
+| `ReadFailed` | `standard input read failed` |
+| `WriteFailed` | `standard stream write failed` |
+| `FlushFailed` | `standard stream flush failed` |
+| `InvalidUtf8` | `standard input is not valid UTF-8` |
+| `LineTooLong { limit }` | `standard input line exceeds {limit}-byte limit` |
+
+Allocation, managed-budget, and runtime-integrity failures are classified by
+the execution contract and do not masquerade as one of these source errors.
+
 ## 4. Collections and iteration
 
 `[]T`, `Map<K,V>`, and `Set<T>` are mutable managed containers. An
