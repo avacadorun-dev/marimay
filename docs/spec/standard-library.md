@@ -146,17 +146,31 @@ does not specify `f32` arithmetic.
 ```marimay
 public enum Error {
   CapabilityDenied { capability: string, },
+  ReadFailed,
   WriteFailed,
+  FlushFailed,
+  InvalidUtf8,
+  LineTooLong { limit: int, },
 }
 
 public fn message(error: Error): string;
+public fn readLine(limit: int): Result<Option<string>, Error>;
+public fn print(text: string): Result<void, Error>;
 public fn println(text: string): Result<void, Error>;
+public fn eprint(text: string): Result<void, Error>;
+public fn eprintln(text: string): Result<void, Error>;
+public fn flushStdout(): Result<void, Error>;
+public fn flushStderr(): Result<void, Error>;
 ```
 
-`println` accepts only `string`. It publishes those UTF-8 bytes plus one LF
-under the D046 capability, buffering, and error rules. `message` returns the
-stable strings `capability io.stdout is not granted` and `stdout write failed`.
-`print`, `eprintln`, and a public `flush` are absent from this preview.
+All output functions accept only `string`. `print` and `eprint` publish exact
+UTF-8 bytes; `println` and `eprintln` append one LF. `readLine` returns
+`Ok(None)` only at EOF before bytes, normalizes LF and CRLF terminators, and
+rejects invalid UTF-8 or a line longer than its `0..1048576` byte limit.
+`io.stdin`, `io.stdout`, and `io.stderr` are separate capabilities and stdout,
+stderr, and compiler diagnostics remain separate byte streams. D075 defines
+error spelling, atomicity, partial-operation retries, flush, and the I6
+blocking-adapter removal gate.
 
 ## 4. Collections and iteration
 

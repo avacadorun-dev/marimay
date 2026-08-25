@@ -228,6 +228,7 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
     }
     writer.context = NULL;
     writer.write = mmay_fuzz_discard_write;
+    writer.flush = NULL;
     if (mmay_bytecode_disassemble(&function, writer)
         != MMAY_BYTECODE_DISASSEMBLE_OK) {
         abort();

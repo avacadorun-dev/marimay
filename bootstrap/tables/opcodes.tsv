@@ -104,3 +104,6 @@
 102	FORMAT_INTEGER	format_integer	destination:register,source:register	may_panic	Format an exact-width integer as canonical base-ten text.
 103	STRING_CONCAT	string_concat	destination:register,left:register,right:register	may_panic	Concatenate two counted immutable strings with bounded allocation.
 104	PARSE_INTEGER	parse_integer	destination:register,text:register,radix:register	may_panic	Parse counted ASCII integer text into Result<int, std/convert.ParseError>.
+105	IO_WRITE	io_write	destination:register,text:register,operation:i64	may_panic	Publish exact string bytes to stdout or stderr under a typed CP32 stream operation.
+106	IO_FLUSH	io_flush	destination:register,operation:i64	may_panic	Flush exactly stdout or stderr under a typed CP32 stream operation.
+107	IO_READ_LINE	io_read_line	destination:register,limit:register,option_layout:i64	may_panic	Read one bounded UTF-8 line from stdin into Result<Option<string>, std/io.Error>.

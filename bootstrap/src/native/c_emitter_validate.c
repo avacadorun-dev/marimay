@@ -519,6 +519,9 @@ MarimayNativeCEmitStatus mmay_native_c_validate_function(
                 case MMAY_MIR_STRING_CONCAT:
                 case MMAY_MIR_PARSE_INTEGER:
                 case MMAY_MIR_IO_PRINTLN:
+                case MMAY_MIR_IO_WRITE:
+                case MMAY_MIR_IO_FLUSH:
+                case MMAY_MIR_IO_READ_LINE:
                 case MMAY_MIR_TEST_OUTPUT_BEGIN:
                 case MMAY_MIR_TEST_OUTPUT_END:
                     break;

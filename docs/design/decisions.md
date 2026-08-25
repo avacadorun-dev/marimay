@@ -1990,3 +1990,26 @@ and both execution engines; it introduces no implicit unwrap or cleanup policy.
 Reason: expected failure is part of the type. Making accidental discard look
 identical to a `void` call defeats that visibility, while the existing discard
 binding gives deliberate fire-and-forget code an explicit spelling.
+
+## D075 — Bounded typed standard streams
+
+Status: accepted.
+
+`std/io` provides `readLine(limit)`, `print`, `println`, `eprint`, `eprintln`,
+`flushStdout`, and `flushStderr`, all returning typed `Result` values. Its
+`Error` variants are `CapabilityDenied`, `ReadFailed`, `WriteFailed`,
+`FlushFailed`, `InvalidUtf8`, and `LineTooLong { limit }`.
+
+`readLine` requires `io.stdin`, accepts limits in `0..1048576`, strips LF and
+an immediately preceding CR, and returns `Ok(None)` only for EOF before bytes.
+It retains NUL, rejects invalid UTF-8, and never publishes partial text. Output
+operations require their exact stdout or stderr capability; each stream stays
+ordered and flush affects only its own stream. Failures expose no host error
+text or partial count. The Stage 0 adapter may block and retry bounded host
+operations; I6 must replace it without changing observable behavior.
+
+This supersedes D046's stdout-only preview while retaining its string-only,
+UTF-8 output contract.
+
+Reason: synchronous typed streams provide the bounded CLI boundary required
+before Bytes, files, parsing, and JSON without promising task-aware I/O early.

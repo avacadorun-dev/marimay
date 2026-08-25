@@ -1,10 +1,7 @@
 #include "mmay/bytecode/bytecode.h"
-
 #include <limits.h>
 #include <string.h>
-
 #include "bytecode_internal.h"
-
 static const MarimayBytecodeType *mmay_bytecode_register_type(
     const MarimayBytecodeFunction *function,
     uint64_t register_id
@@ -17,19 +14,12 @@ static const MarimayBytecodeType *mmay_bytecode_register_type(
         (size_t)register_id
     );
 }
-
 static MarimayBytecodeVerifyStatus mmay_bytecode_require_assigned(
     const unsigned char *assigned,
     size_t register_count,
     uint64_t register_id
 );
-static bool mmay_bytecode_register_matches(
-    const MarimayBytecodeFunction *function,
-    uint64_t register_id,
-    MarimayBytecodeType expected,
-    uint32_t expected_layout
-);
-
+static bool mmay_bytecode_register_matches(const MarimayBytecodeFunction *function, uint64_t register_id, MarimayBytecodeType expected, uint32_t expected_layout);
 const MarimayBytecodeInstruction *mmay_bytecode_block_terminator(
     const MarimayBytecodeBlock *block
 ) {
@@ -41,7 +31,6 @@ const MarimayBytecodeInstruction *mmay_bytecode_block_terminator(
         block->instructions.length - 1
     );
 }
-
 bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
     if (mmay_bytecode_opcode_is_numeric(opcode)) {
         return true;
@@ -130,6 +119,9 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
         case MMAY_OPCODE_STRING_CONCAT:
         case MMAY_OPCODE_PARSE_INTEGER:
         case MMAY_OPCODE_IO_PRINTLN:
+        case MMAY_OPCODE_IO_WRITE:
+        case MMAY_OPCODE_IO_FLUSH:
+        case MMAY_OPCODE_IO_READ_LINE:
         case MMAY_OPCODE_TEST_OUTPUT_BEGIN:
         case MMAY_OPCODE_TEST_OUTPUT_END:
         case MMAY_OPCODE_DEFER_REGISTER:
@@ -154,7 +146,6 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
     }
     return false;
 }
-
 static MarimayBytecodeVerifyStatus mmay_bytecode_verify_defer_instruction(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
@@ -212,7 +203,6 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_defer_instruction(
     assigned[(size_t)marker] = 1;
     return MMAY_BYTECODE_VERIFY_OK;
 }
-
 void mmay_bytecode_transfer_assignments(
     const MarimayBytecodeBlock *block,
     unsigned char *assigned,
@@ -236,7 +226,6 @@ void mmay_bytecode_transfer_assignments(
         }
     }
 }
-
 static MarimayBytecodeVerifyStatus mmay_bytecode_require_assigned(
     const unsigned char *assigned,
     size_t register_count,
@@ -249,7 +238,6 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_require_assigned(
         ? MMAY_BYTECODE_VERIFY_OK
         : MMAY_BYTECODE_VERIFY_UNINITIALIZED_REGISTER;
 }
-
 static bool mmay_bytecode_register_matches(
     const MarimayBytecodeFunction *function,
     uint64_t register_id,
@@ -267,7 +255,6 @@ static bool mmay_bytecode_register_matches(
             (uint32_t)register_id
         ) == layout;
 }
-
 static const MarimayBytecodeEnumVariant *mmay_bytecode_enum_variant(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeEnumLayout *layout,
@@ -280,7 +267,6 @@ static const MarimayBytecodeEnumVariant *mmay_bytecode_enum_variant(
         )
         : NULL;
 }
-
 static const MarimayBytecodeEnumPayload *mmay_bytecode_enum_payload(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeEnumLayout *layout,
@@ -297,7 +283,6 @@ static const MarimayBytecodeEnumPayload *mmay_bytecode_enum_payload(
         )
         : NULL;
 }
-
 static MarimayBytecodeVerifyStatus mmay_bytecode_verify_record_instruction(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
@@ -456,7 +441,6 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_record_instruction(
     assigned[(size_t)target] = 1;
     return MMAY_BYTECODE_VERIFY_OK;
 }
-
 static MarimayBytecodeVerifyStatus mmay_bytecode_verify_enum_instruction(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
@@ -598,7 +582,6 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_enum_instruction(
     assigned[(size_t)target] = 1;
     return MMAY_BYTECODE_VERIFY_OK;
 }
-
 static MarimayBytecodeVerifyStatus mmay_bytecode_verify_call_instruction(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
@@ -669,7 +652,6 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_call_instruction(
     }
     return MMAY_BYTECODE_VERIFY_OK;
 }
-
 static MarimayBytecodeVerifyStatus mmay_bytecode_verify_interface_new(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
@@ -717,7 +699,6 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_interface_new(
     assigned[(size_t)target] = 1;
     return MMAY_BYTECODE_VERIFY_OK;
 }
-
 static MarimayBytecodeVerifyStatus mmay_bytecode_verify_interface_call(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
@@ -781,7 +762,6 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_interface_call(
     assigned[(size_t)target] = 1;
     return MMAY_BYTECODE_VERIFY_OK;
 }
-
 MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
@@ -1215,6 +1195,25 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
                 function, instruction
             );
             break;
+        case MMAY_OPCODE_IO_WRITE:
+            first = instruction->operands[1].unsigned_value;
+            status = mmay_bytecode_require_assigned(
+                assigned, function->register_types.length, first
+            );
+            if (status != MMAY_BYTECODE_VERIFY_OK) return status;
+            status = mmay_bytecode_verify_io_instruction(function, instruction);
+            break;
+        case MMAY_OPCODE_IO_FLUSH:
+            status = mmay_bytecode_verify_io_instruction(function, instruction);
+            break;
+        case MMAY_OPCODE_IO_READ_LINE:
+            first = instruction->operands[1].unsigned_value;
+            status = mmay_bytecode_require_assigned(
+                assigned, function->register_types.length, first
+            );
+            if (status != MMAY_BYTECODE_VERIFY_OK) return status;
+            status = mmay_bytecode_verify_io_instruction(function, instruction);
+            break;
         case MMAY_OPCODE_TEST_OUTPUT_BEGIN:
         case MMAY_OPCODE_TEST_OUTPUT_END:
             first = instruction->operands[1].unsigned_value;
@@ -1416,7 +1415,6 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
     }
     return status;
 }
-
 MarimayBytecodeVerifyStatus mmay_bytecode_verify_terminator(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,

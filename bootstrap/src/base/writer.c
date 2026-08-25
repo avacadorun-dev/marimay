@@ -10,10 +10,16 @@ static bool mmay_file_write(void *context, const char *bytes, size_t length) {
     return fwrite(bytes, 1, length, file) == length;
 }
 
+static bool mmay_file_flush(void *context) {
+    FILE *file = context;
+    return file != NULL && fflush(file) == 0;
+}
+
 MarimayWriter mmay_file_writer(FILE *file) {
     MarimayWriter writer;
     writer.context = file;
     writer.write = mmay_file_write;
+    writer.flush = mmay_file_flush;
     return writer;
 }
 
@@ -32,4 +38,8 @@ bool mmay_writer_write_cstr(MarimayWriter writer, const char *text) {
         return false;
     }
     return mmay_writer_write(writer, text, strlen(text));
+}
+
+bool mmay_writer_flush(MarimayWriter writer) {
+    return writer.flush == NULL || writer.flush(writer.context);
 }

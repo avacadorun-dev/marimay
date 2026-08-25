@@ -115,3 +115,6 @@ Stage 0 codec.
 | 102 | `format_integer` | `destination:register`, `source:register` | `may_panic` | Format an exact-width integer as canonical base-ten text. |
 | 103 | `string_concat` | `destination:register`, `left:register`, `right:register` | `may_panic` | Concatenate two counted immutable strings with bounded allocation. |
 | 104 | `parse_integer` | `destination:register`, `text:register`, `radix:register` | `may_panic` | Parse counted ASCII integer text into Result<int, std/convert.ParseError>. |
+| 105 | `io_write` | `destination:register`, `text:register`, `operation:i64` | `may_panic` | Publish exact string bytes to stdout or stderr under a typed CP32 stream operation. |
+| 106 | `io_flush` | `destination:register`, `operation:i64` | `may_panic` | Flush exactly stdout or stderr under a typed CP32 stream operation. |
+| 107 | `io_read_line` | `destination:register`, `limit:register`, `option_layout:i64` | `may_panic` | Read one bounded UTF-8 line from stdin into Result<Option<string>, std/io.Error>. |

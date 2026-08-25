@@ -311,6 +311,9 @@ static MarimayMirInterpretStatus mmay_mir_execute_instruction(
                 function, instruction, first, second, target, options
             );
         case MMAY_MIR_IO_PRINTLN:
+        case MMAY_MIR_IO_WRITE:
+        case MMAY_MIR_IO_FLUSH:
+        case MMAY_MIR_IO_READ_LINE:
             return mmay_mir_execute_io_instruction(function, instruction,
                 first, target, allocator, options);
         case MMAY_MIR_TEST_OUTPUT_BEGIN:

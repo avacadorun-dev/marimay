@@ -1176,6 +1176,9 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
                 instruction, registers, execution, function
             );
         case MMAY_OPCODE_IO_PRINTLN:
+        case MMAY_OPCODE_IO_WRITE:
+        case MMAY_OPCODE_IO_FLUSH:
+        case MMAY_OPCODE_IO_READ_LINE:
             return mmay_bytecode_run_io_instruction(
                 instruction, registers, execution, function,
                 allocator, stdout_sink
