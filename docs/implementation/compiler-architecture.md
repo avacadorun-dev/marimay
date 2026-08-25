@@ -312,7 +312,7 @@ tests/c-unit/
   test_formatter_array_types.c
   test_checker_array_types.c
   test_pre1_surface_differential.c
-                        D067-D074 checker/MIR/VM/native integration contract
+                        D067-D075 checker/MIR/VM/native integration contract
   test_compiler_service_array_types.c
   test_cli_cp18_array_spelling.c
   test_check_entry.c
@@ -602,7 +602,7 @@ checkpoint:
 | `bootstrap/src/check/checker_expr_tuples.c` | 0 | 262 | tuple construction plus recursive tuple layout availability across function boundaries |
 | `bootstrap/src/check/checker_tuple_match.c` | 0 | 417 | tuple destructuring bindings, exhaustiveness, scoped projection, and typed arm joining |
 | `bootstrap/src/format/formatter_layout.c` | 0 | 221 | D071 required singleton-tuple commas plus D073 blank-line preservation, boolean-chain breaks, and compact index grouping |
-| `tests/c-unit/test_pre1_surface_differential.c` | 0 | 254 | D067-D074 positive integration, ignored-Result and range-value negatives, MIR oracle, VM, and native parity |
+| `tests/c-unit/test_pre1_surface_differential.c` | 0 | 254 | D067-D075 positive integration, ignored-Result and range-value negatives, MIR oracle, VM, and native parity |
 | `bootstrap/src/cli/cli_display.c` | 0 | 61 | bounded UTF-8-safe command-argument display escaping shared by diagnostics and formatter reporting |
 | `bootstrap/src/cli/cli_heap_limit.c` | 0 | 83 | D055 decimal range, default, duplicate, and argument-location policy |
 | `bootstrap/src/cli/cli_resource_report.c` | 0 | 48 | D055 classified human/short/JSON runtime-resource rendering shared by run and test |

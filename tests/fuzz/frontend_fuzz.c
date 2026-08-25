@@ -58,7 +58,8 @@ int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
                 abort();
             }
             mmay_parse_result_dispose(&parsed);
-        } else if (parse_status != MMAY_PARSE_LIMIT_REACHED) {
+        } else if (parse_status != MMAY_PARSE_LIMIT_REACHED
+            && parse_status != MMAY_PARSE_ALLOCATION_FAILED) {
             (void)fprintf(
                 stderr,
                 "unexpected parser status: %d\n",
