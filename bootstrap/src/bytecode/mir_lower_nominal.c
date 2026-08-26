@@ -67,6 +67,10 @@ bool mmay_mir_bytecode_type(
         *output = MMAY_BYTECODE_TYPE_U32;
         return true;
     }
+    if (input == MMAY_TYPE_RUNE) {
+        *output = MMAY_BYTECODE_TYPE_U32;
+        return true;
+    }
     if (input == MMAY_TYPE_U64) {
         *output = MMAY_BYTECODE_TYPE_U64;
         return true;

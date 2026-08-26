@@ -81,6 +81,8 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_io_instruction(
     const MarimayBytecodeEnumVariant *line_too_long = mmay_bytecode_io_variant(
         function, io_error, 5
     );
+    const MarimayBytecodeEnumVariant *input_too_long =
+        mmay_bytecode_io_variant(function, io_error, 6);
     const MarimayBytecodeEnumLayout *option = instruction->opcode
             == MMAY_OPCODE_IO_READ_LINE
         ? mmay_bytecode_enum_layout(
@@ -102,6 +104,20 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_io_instruction(
         mmay_bytecode_io_payload(function, io_error, capability, 0);
     const MarimayBytecodeEnumPayload *line_limit_payload =
         mmay_bytecode_io_payload(function, io_error, line_too_long, 0);
+    const MarimayBytecodeEnumPayload *input_limit_payload =
+        mmay_bytecode_io_payload(function, io_error, input_too_long, 0);
+    uint32_t source_element_layout = MMAY_BYTECODE_NO_LAYOUT;
+    MarimayBytecodeType source_element = text_type != NULL
+            && mmay_bytecode_type_is_array(*text_type)
+        ? mmay_bytecode_function_array_element_type(
+            function, *text_type,
+            mmay_bytecode_register_layout(function, (uint32_t)text),
+            &source_element_layout
+        ) : MMAY_BYTECODE_TYPE_INVALID;
+    int64_t read_array_wire = instruction->opcode == MMAY_OPCODE_IO_READ_BYTES
+        ? instruction->operands[2].signed_value : -1;
+    const MarimayBytecodeArrayType *read_array = read_array_wire >= 0
+        ? mmay_bytecode_array_type(function, (uint32_t)read_array_wire) : NULL;
     if (instruction->opcode == MMAY_OPCODE_IO_FLUSH) text_type = NULL;
     if (target_type == NULL || (instruction->opcode != MMAY_OPCODE_IO_FLUSH && text_type == NULL)) {
         return MMAY_BYTECODE_VERIFY_INVALID_REGISTER;
@@ -109,6 +125,11 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_io_instruction(
     if (instruction->opcode == MMAY_OPCODE_IO_WRITE
         && (instruction->operands[2].signed_value < 0
             || instruction->operands[2].signed_value > 3)) {
+        return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
+    if (instruction->opcode == MMAY_OPCODE_IO_WRITE_BYTES
+        && instruction->operands[2].signed_value != 0
+        && instruction->operands[2].signed_value != 2) {
         return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
     if (instruction->opcode == MMAY_OPCODE_IO_FLUSH
@@ -127,24 +148,48 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_io_instruction(
             || some_payload->type != MMAY_BYTECODE_TYPE_STRING)) {
         return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
+    if (instruction->opcode == MMAY_OPCODE_IO_READ_BYTES
+        && (text_type == NULL || *text_type != MMAY_BYTECODE_TYPE_I64
+            || read_array == NULL
+            || read_array->element_type != MMAY_BYTECODE_TYPE_U8
+            || read_array->element_layout != MMAY_BYTECODE_NO_LAYOUT
+            || ok == NULL || ok->payload_count != 1 || ok_payload == NULL
+            || ok_payload->type != MMAY_BYTECODE_TYPE_ARRAY
+            || ok_payload->layout != (uint32_t)read_array_wire)) {
+        return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
+    if (instruction->opcode == MMAY_OPCODE_IO_WRITE_BYTES
+        && (text_type == NULL || source_element != MMAY_BYTECODE_TYPE_U8
+            || source_element_layout != MMAY_BYTECODE_NO_LAYOUT)) {
+        return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+    }
     return *target_type == MMAY_BYTECODE_TYPE_ENUM
             && (instruction->opcode == MMAY_OPCODE_IO_FLUSH
                 || instruction->opcode == MMAY_OPCODE_IO_READ_LINE
+                || instruction->opcode == MMAY_OPCODE_IO_READ_BYTES
+                || instruction->opcode == MMAY_OPCODE_IO_WRITE_BYTES
                 || *text_type == MMAY_BYTECODE_TYPE_STRING)
             && result_layout != NULL && result_layout->variant_count == 2
-            && ok != NULL && (instruction->opcode == MMAY_OPCODE_IO_READ_LINE
+            && ok != NULL && ((instruction->opcode == MMAY_OPCODE_IO_READ_LINE
+                    || instruction->opcode == MMAY_OPCODE_IO_READ_BYTES)
                 ? ok->payload_count == 1 : ok->payload_count == 0)
             && error != NULL && error->payload_count == 1
             && error_payload != NULL
             && io_error != NULL && (instruction->opcode == MMAY_OPCODE_IO_PRINTLN
-                ? (io_error->variant_count == 2 || io_error->variant_count == 6)
-                : io_error->variant_count == 6)
+                ? (io_error->variant_count == 2
+                    || io_error->variant_count == 6
+                    || io_error->variant_count == 7)
+                : (instruction->opcode == MMAY_OPCODE_IO_READ_BYTES
+                    || instruction->opcode == MMAY_OPCODE_IO_WRITE_BYTES)
+                ? io_error->variant_count == 7
+                : (io_error->variant_count == 6
+                    || io_error->variant_count == 7))
             && capability != NULL && capability->payload_count == 1
             && capability_payload != NULL
             && capability_payload->type == MMAY_BYTECODE_TYPE_STRING
             && capability_payload->layout == MMAY_BYTECODE_NO_LAYOUT
             && write_failed != NULL && write_failed->payload_count == 0
-            && (io_error->variant_count != 6
+            && (io_error->variant_count < 6
                 || (read_failed != NULL && read_failed->payload_count == 0
                     && flush_failed != NULL
                     && flush_failed->payload_count == 0
@@ -154,6 +199,14 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_io_instruction(
                     && line_too_long->payload_count == 1
                     && line_limit_payload != NULL
                     && line_limit_payload->type == MMAY_BYTECODE_TYPE_I64
-                    && line_limit_payload->layout == MMAY_BYTECODE_NO_LAYOUT))
+                    && line_limit_payload->layout == MMAY_BYTECODE_NO_LAYOUT
+                    && (io_error->variant_count != 7
+                        || (input_too_long != NULL
+                            && input_too_long->payload_count == 1
+                            && input_limit_payload != NULL
+                            && input_limit_payload->type
+                                == MMAY_BYTECODE_TYPE_I64
+                            && input_limit_payload->layout
+                                == MMAY_BYTECODE_NO_LAYOUT))))
         ? MMAY_BYTECODE_VERIFY_OK : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
 }

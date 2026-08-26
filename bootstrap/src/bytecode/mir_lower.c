@@ -90,7 +90,9 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
     MarimayBytecodeInstruction *output
 ) {
     bool format_handled = false;
+    bool text_handled = false;
     MarimayMirBytecodeLowerStatus format_status;
+    MarimayMirBytecodeLowerStatus text_status;
     memset(output, 0, sizeof(*output));
     if (!mmay_mir_bytecode_span(input->span, source, &output->span)) {
         return MMAY_MIR_BYTECODE_LOWER_INVALID_ARGUMENT;
@@ -102,6 +104,12 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
     if (format_handled || format_status != MMAY_MIR_BYTECODE_LOWER_OK) {
         return format_status;
     }
+    text_status = mmay_mir_bytecode_lower_text_instruction(
+        input, output, &text_handled
+    );
+    if (text_handled || text_status != MMAY_MIR_BYTECODE_LOWER_OK) {
+        return text_status;
+    }
     switch (input->kind) {
         case MMAY_MIR_FORMAT_F32:
         case MMAY_MIR_FORMAT_F64:
@@ -109,6 +117,10 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
         case MMAY_MIR_FORMAT_INTEGER:
         case MMAY_MIR_STRING_CONCAT:
         case MMAY_MIR_PARSE_INTEGER:
+        case MMAY_MIR_TEXT_UNARY:
+        case MMAY_MIR_TEXT_BINARY:
+        case MMAY_MIR_IO_READ_BYTES:
+        case MMAY_MIR_IO_WRITE_BYTES:
             return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
         case MMAY_MIR_CONSTANT_I64:
             output->opcode = MMAY_OPCODE_CONST_I64;

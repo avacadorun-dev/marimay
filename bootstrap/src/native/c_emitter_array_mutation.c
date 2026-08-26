@@ -505,16 +505,6 @@ static bool mmay_native_c_emit_array_generation_check(
     const MarimayMirArray *array = mmay_native_c_mutation_array(
         function, instruction
     );
-    if (array != NULL && mmay_native_c_array_register_unmodified(
-            function, instruction->first
-        )) {
-        return mmay_native_c_write(
-            buffer,
-            "  mmay_g_v_%u = mmay_g_v_%u; mmay_g_av_%u = mmay_g_av_%u;\n",
-            instruction->target, instruction->first,
-            instruction->target, instruction->first
-        );
-    }
     if (array == NULL || !mmay_native_c_write(
             buffer,
             "  { if (mmay_g_av_%u.object == NULL) { mmay_g_m = mmay_managed_array_generated_bind(&mmay_g_x->heap, mmay_g_v_%u, %s, &mmay_g_av_%u); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } } if (mmay_g_av_%u.object->mutation_generation != mmay_g_v_%u) { mmay_g_s = mmay_g_begin_array_iterator_mutation(mmay_g_p, ",

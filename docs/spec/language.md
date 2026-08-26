@@ -110,6 +110,12 @@ Normal strings and runes accept `\\`, `\"`, `\'`, `\n`, `\r`, `\t`, `\0`, and `\
 
 String indexing by integer is forbidden because it is ambiguous between bytes and Unicode scalars. Use explicit byte, rune, or grapheme APIs.
 
+Under D076 those APIs are ordinary visible functions owned by `std/text`.
+They are eligible for both free and dot-call spelling when imported, operate
+on exact counted UTF-8, and return owned values. CP33 introduces no string
+index expression, implicit `string`/`Bytes` conversion, normalization, or
+borrowed value that can escape a call.
+
 An interpolated string starts with `$"` and ends with `"`. `{expression}`
 inserts the D065 primitive string representation; `{{` and `}}` produce
 literal braces. The result type is `string`. The accepted expression types are

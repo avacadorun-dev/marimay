@@ -1,0 +1,7 @@
+import { encodeUtf8 } from "std/bytes";
+import { Error as IoError, writeBytes } from "std/io";
+
+fn main(): Result<void, IoError> {
+  writeBytes(encodeUtf8("cp33\n"))?;
+  return Ok();
+}

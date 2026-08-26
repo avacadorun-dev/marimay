@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include "mmay/mir/operations.h"
 #include "mmay/types/model.h"
 typedef uint32_t MarimayMirRegister, MarimayMirBlockId, MarimayMirCallId;
 typedef uint32_t MarimayMirRecordId, MarimayMirRecordConstructionId, MarimayMirEnumId;
@@ -89,6 +90,10 @@ typedef enum MarimayMirInstructionKind {
     MMAY_MIR_FORMAT_INTEGER, MMAY_MIR_STRING_CONCAT, MMAY_MIR_PARSE_INTEGER,
     MMAY_MIR_IO_PRINTLN, MMAY_MIR_IO_WRITE, MMAY_MIR_IO_FLUSH,
     MMAY_MIR_IO_READ_LINE,
+    MMAY_MIR_TEXT_UNARY,
+    MMAY_MIR_TEXT_BINARY,
+    MMAY_MIR_IO_READ_BYTES,
+    MMAY_MIR_IO_WRITE_BYTES,
     MMAY_MIR_TEST_OUTPUT_BEGIN,
     MMAY_MIR_TEST_OUTPUT_END,
     MMAY_MIR_DEFER_REGISTER,
@@ -96,26 +101,6 @@ typedef enum MarimayMirInstructionKind {
     MMAY_MIR_ADD_PROVEN_I64, MMAY_MIR_SUBTRACT_PROVEN_I64,
     MMAY_MIR_MULTIPLY_PROVEN_I64
 } MarimayMirInstructionKind;
-typedef enum MarimayMirIoOperation {
-    MMAY_MIR_IO_STDOUT_WRITE, MMAY_MIR_IO_STDOUT_LINE,
-    MMAY_MIR_IO_STDERR_WRITE, MMAY_MIR_IO_STDERR_LINE,
-    MMAY_MIR_IO_STDOUT_FLUSH, MMAY_MIR_IO_STDERR_FLUSH
-} MarimayMirIoOperation;
-typedef enum MarimayMirIntegerPolicy {
-    MMAY_MIR_INTEGER_CHECKED_OPTION,
-    MMAY_MIR_INTEGER_WRAPPING,
-    MMAY_MIR_INTEGER_SATURATING
-} MarimayMirIntegerPolicy;
-typedef enum MarimayMirIntegerOperation {
-    MMAY_MIR_POLICY_ADD,
-    MMAY_MIR_POLICY_SUBTRACT,
-    MMAY_MIR_POLICY_MULTIPLY,
-    MMAY_MIR_POLICY_DIVIDE,
-    MMAY_MIR_POLICY_REMAINDER,
-    MMAY_MIR_POLICY_NEGATE,
-    MMAY_MIR_POLICY_SHIFT_LEFT,
-    MMAY_MIR_POLICY_SHIFT_RIGHT
-} MarimayMirIntegerOperation;
 typedef struct MarimayMirInstruction {
     MarimayMirInstructionKind kind;
     MarimayMirRegister target, first, second, third;
@@ -133,6 +118,7 @@ typedef struct MarimayMirInstruction {
     MarimayMirIntegerPolicy integer_policy;
     MarimayMirIntegerOperation integer_operation;
     MarimayMirIoOperation io_operation;
+    MarimayMirTextOperation text_operation;
     MarimayTypeId integer_target_type;
     size_t variant;
     size_t field;

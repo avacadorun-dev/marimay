@@ -295,6 +295,9 @@ Tests grant captured `"io.stdout"` and `"io.stderr"` sinks plus deterministic
 EOF on `"io.stdin"` by default; they do not inherit host standard streams
 unless an opt-in host-stdio capability is requested. `expect.output` observes
 only program stdout, while failure reporting keeps captured stderr separate.
+The capture is byte-oriented: D076 `writeBytes`, including embedded NUL and
+invalid UTF-8 byte sequences, participates in the same ordered comparison and
+never passes through host text conversion.
 
 A test that exits while child tasks or resources remain is failed even if assertions passed. Children owned by a structured `scope` are cancelled/joined normally; leaked runtime resources are separately reported with allocation/open spans.
 

@@ -87,7 +87,7 @@ const char *mmay_native_c_type(
     if (type == MMAY_TYPE_U16) {
         return "uint16_t";
     }
-    if (type == MMAY_TYPE_U32) {
+    if (type == MMAY_TYPE_U32 || type == MMAY_TYPE_RUNE) {
         return "uint32_t";
     }
     if (type == MMAY_TYPE_U64) {
@@ -518,10 +518,14 @@ MarimayNativeCEmitStatus mmay_native_c_validate_function(
                 case MMAY_MIR_FORMAT_INTEGER:
                 case MMAY_MIR_STRING_CONCAT:
                 case MMAY_MIR_PARSE_INTEGER:
+                case MMAY_MIR_TEXT_UNARY:
+                case MMAY_MIR_TEXT_BINARY:
                 case MMAY_MIR_IO_PRINTLN:
                 case MMAY_MIR_IO_WRITE:
                 case MMAY_MIR_IO_FLUSH:
                 case MMAY_MIR_IO_READ_LINE:
+                case MMAY_MIR_IO_READ_BYTES:
+                case MMAY_MIR_IO_WRITE_BYTES:
                 case MMAY_MIR_TEST_OUTPUT_BEGIN:
                 case MMAY_MIR_TEST_OUTPUT_END:
                     break;

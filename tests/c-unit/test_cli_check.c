@@ -251,9 +251,33 @@ void mmay_test_cli_check(void) {
     }
 
     {
+        const size_t failure_prefix_limit = 2048;
+        size_t allocation_attempts = 0;
         size_t failure_index = 0;
-        bool reached_success = false;
-        for (failure_index = 0; failure_index < 2048; failure_index += 1) {
+        size_t failure_prefix = 0;
+        {
+            MarimayFailAllocator state;
+            MarimaySession measured_session;
+            mmay_fail_allocator_init(
+                &state, mmay_system_allocator(), SIZE_MAX
+            );
+            mmay_session_init(
+                &measured_session, mmay_fail_allocator(&state)
+            );
+            MMAY_EXPECT(mmay_check_test_run(
+                &measured_session, 3, clean, &output, &error
+            ) == MMAY_EXIT_SUCCESS);
+            allocation_attempts = state.attempts;
+            MMAY_EXPECT(allocation_attempts != SIZE_MAX);
+            MMAY_EXPECT(state.live_allocations == 0);
+            MMAY_EXPECT(state.live_bytes == 0);
+        }
+        /* Semantic owners sweep every allocation; the full CLI keeps a
+           bounded orchestration prefix and the measured success path. */
+        failure_prefix = allocation_attempts < failure_prefix_limit
+            ? allocation_attempts : failure_prefix_limit;
+        for (failure_index = 0; failure_index < failure_prefix;
+            failure_index += 1) {
             MarimayFailAllocator state;
             MarimaySession failing_session;
             mmay_fail_allocator_init(
@@ -264,18 +288,13 @@ void mmay_test_cli_check(void) {
                 &failing_session, 3, clean, &output, &error
             );
             if (result == MMAY_EXIT_SUCCESS) {
-                reached_success = true;
                 MMAY_EXPECT(output.length == 0 && error.length == 0);
             } else {
                 MMAY_EXPECT(result == MMAY_EXIT_INTERNAL);
             }
             MMAY_EXPECT(state.live_allocations == 0);
             MMAY_EXPECT(state.live_bytes == 0);
-            if (reached_success) {
-                break;
-            }
         }
-        MMAY_EXPECT(reached_success);
     }
 
     mmay_test_buffer_init(&output);

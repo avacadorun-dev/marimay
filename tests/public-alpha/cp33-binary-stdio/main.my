@@ -1,0 +1,7 @@
+import { readBytes, writeBytes, Error as IoError } from "std/io";
+
+fn main(): Result<void, IoError> {
+  const input = readBytes(8)?;
+  writeBytes(input)?;
+  return Ok();
+}

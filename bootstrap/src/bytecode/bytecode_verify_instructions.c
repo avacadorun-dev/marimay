@@ -32,7 +32,10 @@ const MarimayBytecodeInstruction *mmay_bytecode_block_terminator(
     );
 }
 bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
-    if (mmay_bytecode_opcode_is_numeric(opcode)) {
+    if (mmay_bytecode_opcode_is_numeric(opcode)
+        || mmay_bytecode_opcode_is_text(opcode)
+        || opcode == MMAY_OPCODE_IO_READ_BYTES
+        || opcode == MMAY_OPCODE_IO_WRITE_BYTES) {
         return true;
     }
     switch (opcode) {
@@ -142,6 +145,8 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
         case MMAY_OPCODE_ARRAY_CLEAR:
         case MMAY_OPCODE_ARRAY_RESERVE:
         case MMAY_OPCODE_RECORD_SET:
+            return false;
+        default:
             return false;
     }
     return false;
@@ -582,7 +587,7 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_enum_instruction(
     assigned[(size_t)target] = 1;
     return MMAY_BYTECODE_VERIFY_OK;
 }
-static MarimayBytecodeVerifyStatus mmay_bytecode_verify_call_instruction(
+MarimayBytecodeVerifyStatus mmay_bytecode_verify_call_instruction(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
     unsigned char *assigned
@@ -979,6 +984,13 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
     if (target_type == NULL) {
         return MMAY_BYTECODE_VERIFY_INVALID_REGISTER;
     }
+    if (mmay_bytecode_opcode_is_text(instruction->opcode)) {
+        status = mmay_bytecode_verify_text_instruction(
+            function, instruction, assigned
+        );
+        if (status == MMAY_BYTECODE_VERIFY_OK) assigned[(size_t)target] = 1;
+        return status;
+    }
     switch (instruction->opcode) {
         case MMAY_OPCODE_CONST_I64:
             status = *target_type == MMAY_BYTECODE_TYPE_I64
@@ -1207,6 +1219,8 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
             status = mmay_bytecode_verify_io_instruction(function, instruction);
             break;
         case MMAY_OPCODE_IO_READ_LINE:
+        case MMAY_OPCODE_IO_READ_BYTES:
+        case MMAY_OPCODE_IO_WRITE_BYTES:
             first = instruction->operands[1].unsigned_value;
             status = mmay_bytecode_require_assigned(
                 assigned, function->register_types.length, first
@@ -1409,88 +1423,11 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
         case MMAY_OPCODE_DEFER_REGISTER:
         case MMAY_OPCODE_DEFER_CALL:
             return MMAY_BYTECODE_VERIFY_INVALID_OPCODE;
+        default:
+            return MMAY_BYTECODE_VERIFY_INVALID_OPCODE;
     }
     if (status == MMAY_BYTECODE_VERIFY_OK) {
         assigned[(size_t)target] = 1;
     }
     return status;
-}
-MarimayBytecodeVerifyStatus mmay_bytecode_verify_terminator(
-    const MarimayBytecodeFunction *function,
-    const MarimayBytecodeInstruction *instruction,
-    const unsigned char *assigned
-) {
-    MarimayBytecodeVerifyStatus status = MMAY_BYTECODE_VERIFY_OK;
-    const MarimayBytecodeType *type = NULL;
-    if (instruction->opcode == MMAY_OPCODE_JUMP) {
-        return MMAY_BYTECODE_VERIFY_OK;
-    }
-    if (instruction->opcode == MMAY_OPCODE_BRANCH_BOOL) {
-        status = mmay_bytecode_require_assigned(
-            assigned,
-            function->register_types.length,
-            instruction->operands[0].unsigned_value
-        );
-        if (status != MMAY_BYTECODE_VERIFY_OK) {
-            return status;
-        }
-        type = mmay_bytecode_register_type(
-            function,
-            instruction->operands[0].unsigned_value
-        );
-        return type != NULL && *type == MMAY_BYTECODE_TYPE_BOOL
-            ? MMAY_BYTECODE_VERIFY_OK
-            : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
-    }
-    if (instruction->opcode == MMAY_OPCODE_RETURN) {
-        if (function->result_type == MMAY_BYTECODE_TYPE_VOID
-            || function->result_type == MMAY_BYTECODE_TYPE_NEVER) {
-            return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
-        }
-        status = mmay_bytecode_require_assigned(
-            assigned,
-            function->register_types.length,
-            instruction->operands[0].unsigned_value
-        );
-        if (status != MMAY_BYTECODE_VERIFY_OK) {
-            return status;
-        }
-        type = mmay_bytecode_register_type(
-            function,
-            instruction->operands[0].unsigned_value
-        );
-        return type != NULL && *type == function->result_type
-            ? MMAY_BYTECODE_VERIFY_OK
-            : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
-    }
-    if (instruction->opcode == MMAY_OPCODE_RETURN_VOID) {
-        return function->result_type == MMAY_BYTECODE_TYPE_VOID
-            ? MMAY_BYTECODE_VERIFY_OK
-            : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
-    }
-    if (instruction->opcode == MMAY_OPCODE_PANIC_STRING) {
-        status = mmay_bytecode_require_assigned(
-            assigned,
-            function->register_types.length,
-            instruction->operands[0].unsigned_value
-        );
-        type = status == MMAY_BYTECODE_VERIFY_OK
-            ? mmay_bytecode_register_type(
-                function,
-                instruction->operands[0].unsigned_value
-            )
-            : NULL;
-        return status != MMAY_BYTECODE_VERIFY_OK ? status
-            : type != NULL && *type == MMAY_BYTECODE_TYPE_STRING
-                ? MMAY_BYTECODE_VERIFY_OK
-                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
-    }
-    if (instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER) {
-        return mmay_bytecode_verify_call_instruction(
-            function,
-            instruction,
-            (unsigned char *)assigned
-        );
-    }
-    return MMAY_BYTECODE_VERIFY_INVALID_OPCODE;
 }

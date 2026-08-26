@@ -59,6 +59,7 @@ static bool mmay_native_c_instruction_uses_second(
         case MMAY_MIR_ARRAY_RESERVE:
         case MMAY_MIR_ARRAY_REQUIRE_GENERATION:
         case MMAY_MIR_INTEGER_POLICY:
+        case MMAY_MIR_TEXT_BINARY:
             return true;
         default:
             return false;
@@ -205,6 +206,13 @@ static bool mmay_native_c_instruction_is_safepoint(
         case MMAY_MIR_STRING_CONCAT:
         case MMAY_MIR_PARSE_INTEGER:
         case MMAY_MIR_IO_PRINTLN:
+        case MMAY_MIR_IO_WRITE:
+        case MMAY_MIR_IO_FLUSH:
+        case MMAY_MIR_IO_READ_LINE:
+        case MMAY_MIR_IO_READ_BYTES:
+        case MMAY_MIR_IO_WRITE_BYTES:
+        case MMAY_MIR_TEXT_UNARY:
+        case MMAY_MIR_TEXT_BINARY:
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
             return true;
         case MMAY_MIR_ENUM_NEW:

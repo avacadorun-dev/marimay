@@ -1,0 +1,8 @@
+import { fromArray, iterator, next, set } from "std/bytes";
+
+fn main(): void {
+  const bytes = fromArray([1, 2]);
+  const cursor = iterator(bytes);
+  set(bytes, 0, 3);
+  const _ = next(cursor);
+}

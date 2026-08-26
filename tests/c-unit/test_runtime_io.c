@@ -203,6 +203,7 @@ static void mmay_test_runtime_io_stream_contract(void) {
     MarimayIoInput input = {true, &stream, mmay_test_runtime_io_read};
     MarimayIoOutput output = {true, &stream, mmay_test_runtime_io_write, mmay_test_runtime_io_flush};
     MarimayOwnedBytes line = {0};
+    MarimayOwnedBytes bytes = {0};
     bool eof = false;
     stream.input = crlf;
     stream.input_length = sizeof(crlf);
@@ -216,6 +217,17 @@ static void mmay_test_runtime_io_stream_contract(void) {
     MMAY_EXPECT(mmay_io_read_line(&input, mmay_system_allocator(), 8, &line, &eof) == MMAY_IO_INVALID_UTF8);
     stream.input = long_line; stream.input_length = sizeof(long_line); stream.input_offset = 0;
     MMAY_EXPECT(mmay_io_read_line(&input, mmay_system_allocator(), 1, &line, &eof) == MMAY_IO_LINE_TOO_LONG);
+    stream.input = crlf; stream.input_length = sizeof(crlf); stream.input_offset = 0;
+    MMAY_EXPECT(mmay_io_read_bytes(
+        &input, mmay_system_allocator(), sizeof(crlf), &bytes
+    ) == MMAY_IO_OK);
+    MMAY_EXPECT(bytes.length == sizeof(crlf));
+    MMAY_EXPECT(memcmp(bytes.data, crlf, sizeof(crlf)) == 0);
+    mmay_owned_bytes_dispose(&bytes);
+    stream.input_offset = 0;
+    MMAY_EXPECT(mmay_io_read_bytes(
+        &input, mmay_system_allocator(), sizeof(crlf) - 1, &bytes
+    ) == MMAY_IO_INPUT_TOO_LONG);
     stream.write_chunk = 1;
     MMAY_EXPECT(mmay_io_write(&output, (const unsigned char *)"abc", 3) == MMAY_IO_OK);
     MMAY_EXPECT(stream.output_length == 3 && memcmp(stream.output, "abc", 3) == 0);
@@ -241,6 +253,7 @@ static void mmay_test_runtime_io_partial_retry_and_failures(void) {
         mmay_test_runtime_io_flush
     };
     MarimayOwnedBytes line = {0};
+    MarimayOwnedBytes bytes = {0};
     bool eof = false;
 
     stream.input = unterminated;
@@ -335,6 +348,20 @@ static void mmay_test_runtime_io_partial_retry_and_failures(void) {
     ) == MMAY_IO_CAPABILITY_DENIED);
     MMAY_EXPECT(stream.read_calls == MMAY_IO_MAX_CONSECUTIVE_RETRIES + 1);
     mmay_owned_bytes_dispose(&line);
+
+    MMAY_EXPECT(mmay_io_read_bytes(
+        &input, mmay_system_allocator(), 1, &bytes
+    ) == MMAY_IO_CAPABILITY_DENIED);
+    input.capability_granted = true;
+    stream.read_retries = MMAY_IO_MAX_CONSECUTIVE_RETRIES + 1;
+    MMAY_EXPECT(mmay_io_read_bytes(
+        &input, mmay_system_allocator(), 1, &bytes
+    ) == MMAY_IO_READ_FAILED);
+    MMAY_EXPECT(mmay_io_read_bytes(
+        &input, mmay_system_allocator(), MMAY_IO_MAX_BYTES + 1, &bytes
+    ) == MMAY_IO_INVALID_ARGUMENT);
+    MMAY_EXPECT(mmay_io_read_bytes(NULL, mmay_system_allocator(), 1, &bytes)
+        == MMAY_IO_INVALID_ARGUMENT);
 }
 
 static void mmay_test_runtime_io_stream_allocations(void) {
@@ -360,6 +387,39 @@ static void mmay_test_runtime_io_stream_allocations(void) {
             MMAY_EXPECT(status == MMAY_IO_ALLOCATION_FAILED);
         }
         mmay_owned_bytes_dispose(&line);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
+        if (reached_success) break;
+    }
+    MMAY_EXPECT(reached_success);
+
+    reached_success = false;
+    for (failure_index = 0; failure_index < 16; failure_index += 1) {
+        MarimayFailAllocator state;
+        MarimayRuntimeIoStream stream = {0};
+        MarimayIoInput input = {true, &stream, mmay_test_runtime_io_read};
+        MarimayOwnedBytes bytes = {0};
+        MarimayAllocator allocator;
+        MarimayIoStatus status;
+        stream.input = input_bytes;
+        stream.input_length = sizeof(input_bytes);
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
+        );
+        allocator = mmay_fail_allocator(&state);
+        status = mmay_io_read_bytes(
+            &input, allocator, sizeof(input_bytes), &bytes
+        );
+        if (status == MMAY_IO_OK) {
+            reached_success = true;
+            MMAY_EXPECT(bytes.length == sizeof(input_bytes));
+            MMAY_EXPECT(memcmp(
+                bytes.data, input_bytes, sizeof(input_bytes)
+            ) == 0);
+        } else {
+            MMAY_EXPECT(status == MMAY_IO_ALLOCATION_FAILED);
+        }
+        mmay_owned_bytes_dispose(&bytes);
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);
         if (reached_success) break;

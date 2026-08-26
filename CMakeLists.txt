@@ -173,6 +173,8 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/number_format.c
   bootstrap/src/base/owned_bytes.c
   bootstrap/src/base/provenance.c
+  bootstrap/src/base/text.c
+  bootstrap/src/base/unicode.c
   bootstrap/src/base/utf8.c
   bootstrap/src/base/vector.c
   runtime/common/io_stdout.c
@@ -261,6 +263,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/base/provenance.c
   bootstrap/src/base/stream.c
   bootstrap/src/base/string_literal.c
+  bootstrap/src/base/text.c
   bootstrap/src/base/unicode.c
   bootstrap/src/base/utf8.c
   bootstrap/src/base/vector.c
@@ -274,8 +277,10 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_verify.c
   bootstrap/src/bytecode/bytecode_verify_defer.c
   bootstrap/src/bytecode/bytecode_verify_instructions.c
+  bootstrap/src/bytecode/bytecode_verify_terminator.c
   bootstrap/src/bytecode/bytecode_verify_format.c
   bootstrap/src/bytecode/bytecode_verify_parse.c
+  bootstrap/src/bytecode/bytecode_verify_text.c
   bootstrap/src/bytecode/bytecode_verify_integer_range.c
   bootstrap/src/bytecode/bytecode_verify_io.c
   bootstrap/src/bytecode/bytecode_verify_nominal.c
@@ -286,6 +291,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/program_verify_nominal.c
   bootstrap/src/bytecode/mir_lower.c
   bootstrap/src/bytecode/mir_lower_format.c
+  bootstrap/src/bytecode/mir_lower_text.c
   bootstrap/src/bytecode/mir_lower_nominal.c
   bootstrap/src/bytecode/vm.c
   bootstrap/src/bytecode/vm_array.c
@@ -295,6 +301,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_interface.c
   bootstrap/src/bytecode/vm_io.c
   bootstrap/src/bytecode/vm_format.c
+  bootstrap/src/bytecode/vm_text.c
   bootstrap/src/bytecode/vm_parse.c
   bootstrap/src/bytecode/vm_nominal.c
   bootstrap/src/bytecode/vm_numeric.c
@@ -333,6 +340,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_expr_records.c
   bootstrap/src/check/checker_expr_scalar.c
   bootstrap/src/check/checker_expr_string.c
+  bootstrap/src/check/checker_expr_text.c
   bootstrap/src/check/checker_expr_tuples.c
   bootstrap/src/check/checker_expression.c
   bootstrap/src/check/checker_interpret.c
@@ -392,6 +400,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/execution_array.c
   bootstrap/src/mir/execution_defer.c
   bootstrap/src/mir/execution_format.c
+  bootstrap/src/mir/execution_text.c
   bootstrap/src/mir/execution_parse.c
   bootstrap/src/mir/execution_io.c
   bootstrap/src/mir/execution_heap.c
@@ -405,6 +414,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/verify_interfaces.c
   bootstrap/src/mir/verify_io.c
   bootstrap/src/mir/verify_format.c
+  bootstrap/src/mir/verify_text.c
   bootstrap/src/mir/verify_parse.c
   bootstrap/src/mir/verify_managed.c
   bootstrap/src/mir/verify_numeric.c
@@ -424,6 +434,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/native/c_emitter_emit.c
     bootstrap/src/native/c_emitter_format.c
     bootstrap/src/native/c_emitter_io.c
+    bootstrap/src/native/c_emitter_text.c
   bootstrap/src/native/c_emitter_managed.c
   bootstrap/src/native/c_emitter_roots.c
   bootstrap/src/native/c_emitter_range.c

@@ -85,6 +85,17 @@ bool mmay_check_owned_receiver(
     if (checker == NULL || checker->result == NULL || receiver == NULL) {
         return false;
     }
+    if (type == MMAY_TYPE_STRING
+        && checker->package_name_length == sizeof("std/text") - 1
+        && memcmp(
+            checker->package_name,
+            "std/text",
+            sizeof("std/text") - 1
+        ) == 0) {
+        return mmay_symbol_id_from_parts(
+            "std/text", "std/text/text.my", "TextOwner", 0, receiver
+        );
+    }
     descriptor = mmay_type_descriptor(&checker->result->types, type);
     owned = mmay_map_get_const(
         &checker->local_nominal_index,

@@ -563,6 +563,18 @@ stores preserve D053 generation saturation and commit order. Reference layouts
 retain exact type validation, and nested aliases, collection, growth, iterator
 G4005 behavior, panic identity, and VM observations are unchanged.
 
+Under D076, `Bytes`, both bounded builders, `Bytes.Iterator`, and every owned
+text collection are ordinary managed record/array/string graphs. A text or
+binary operation that may construct an owned result is a native safepoint and
+roots every live carrier, separator, builder, intermediate string, and result
+array until publication. `Bytes` mutation delegates to the D053 array owner;
+copy/from-array/to-array/slice and builder `finish` construct independent
+storage, while ordinary record copies preserve alias identity. Limit checks
+precede output construction, and a failed declared limit publishes no managed
+prefix. Host allocation and managed-budget failures retain D055 classification
+and do not become a source `BoundaryError`, `LimitError`, `SplitError`,
+`BuildError`, or `Utf8Error`.
+
 Generated native code links a precise shadow-root frame whenever the function
 or any reachable direct callee may allocate, collect, suspend, dispatch through
 an unknown interface, or otherwise reach a managed safepoint. A conservative
@@ -627,6 +639,16 @@ The byte limit is measured after terminator removal. Invalid signed limits win
 over capability denial and return `LineTooLong` with the original value. No
 read error publishes a partial source value.
 
+D076 adds `readBytes(limit)`, `writeBytes`, and `ewriteBytes` to these same
+streams. `readBytes` accepts `0..1048576`, reads exact bytes through EOF, and
+returns an owned empty `Bytes` at immediate EOF. The first byte beyond the
+limit returns `InputTooLong { limit }`; an invalid signed limit wins over
+capability denial and carries the original value, and no prefix is published.
+Binary output preserves embedded NUL and arbitrary byte values, selects exactly
+the requested stdout/stderr capability, performs the same ordered short-write
+and retry protocol, and does not flush implicitly. Text and binary calls on one
+stream share one program order and the same test capture owner.
+
 The Stage 0 blocking adapter completes positive short transfers in order and
 allows at most 1024 consecutive zero-progress retries after the initial host
 attempt. A write or flush failure can occur after a prefix became visible, but
@@ -688,6 +710,13 @@ For D053 arrays this agreement includes `Option`/`Result` removal and sizing
 cases, exact post-operation length/elements, mutation-generation invalidation,
 removed-reference reachability, reserve failure atomicity, and `G4005` panic
 identity.
+
+For D076 text and bytes, agreement additionally includes exact UTF-8 validation
+offsets, byte/rune/alpha-grapheme counts and partitions, substring boundaries,
+split trailing empties, owned-copy versus alias mutation, builder snapshots and
+limit failures, iterator invalidation, and binary stdin/stdout/stderr bytes.
+The MIR oracle, verified bytecode VM, and generated C may not select different
+normalization, locale, grapheme, host-string, or partial-publication behavior.
 
 D058/D059 optimized accesses additionally preserve the same G4002 code,
 primary span, observed failing index and length, result bits, alias-visible

@@ -151,18 +151,26 @@ bootstrap/src/mir/
   integer_range.c       MIR adapter, transactional arithmetic rewrite, proof validation
   verify_interfaces.c   interface metadata and nominal payload verification
   verify_io.c           exact D075 stream instruction/layout verification
+  verify_text.c         D076 text, UTF-8 array-layout, and binary-I/O verification
   verify_format.c       D065 primitive-format and concat verification
   verify_parse.c        D065 Result<int, ParseError> layout verification
   execution.c           oracle graph and interpreter dispatch
   execution_array.c     checked and verifier-gated in-bounds array execution
   execution_heap.c      execution state and managed allocations
   execution_io.c        D075 stdin/stdout/stderr oracle and Result construction
+  execution_text.c      D076 text transforms and UTF-8 array construction
   execution_format.c    locale-independent formatting and counted concat
   execution_parse.c     D065 integer parsing and ParseError construction
 ```
 
 `mmay_mir_verify` and `mmay_mir_interpret` retain their public signatures. No
 representation or runtime semantics change in these extraction commits.
+
+D076 keeps the public representation declarations in `model.h` and moves the
+text/binary operation vocabulary to the narrow `operations.h` API. Shared text
+verification and execution helpers live in owner-private `text_internal.h`;
+backend owners consume verified operations without reconstructing source-level
+UTF-8 policy.
 
 ### Checker owner
 
@@ -324,6 +332,9 @@ tests/c-unit/
   test_cp32_streams.c             D075 checker/MIR/bytecode/VM vertical owner
   cp32_process_fixture.c          exact counted-stdin process fixture
   test_cp32_process_streams.cmake VM/native three-stream process comparison
+  test_cp33_text_bytes.c          D076 text/MIR/bytecode/VM/native vertical owner
+  test_cp33_process_text_bytes.cmake
+                        VM/native binary-I/O and iterator-invalidated parity
 ```
 
 The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
@@ -650,6 +661,16 @@ checkpoint:
 | `tests/c-unit/test_cp32_streams.c` | 0 | 743 | D075 checker/MIR/hostile bytecode/VM/native capability/stream/allocation vertical coverage |
 | `tests/c-unit/cp32_process_fixture.c` | 0 | 14 | exact binary stdin echo plus independent stderr process observation fixture |
 | `tests/c-unit/test_cp32_process_streams.cmake` | 0 | 122 | VM/native status/stdout/stderr parity including invalid bytes, limits, EOF, CRLF, and closed pipe |
+| `bootstrap/src/base/text.c` | 0 | 160 | D076 counted UTF-8 byte/rune/grapheme queries and exact split/trim primitives |
+| `bootstrap/src/mir/verify_text.c` | 0 | 119 | D076 text operation and result-layout verification |
+| `bootstrap/src/mir/execution_text.c` | 0 | 404 | D076 oracle text transforms and managed result construction |
+| `bootstrap/src/bytecode/bytecode_verify_text.c` | 0 | 143 | D076 hostile bytecode text-operation verification |
+| `bootstrap/src/bytecode/bytecode_verify_terminator.c` | 0 | 92 | independently compiled terminator verifier extracted to retain the owner ceiling |
+| `bootstrap/src/bytecode/mir_lower_text.c` | 0 | 67 | D076 verified MIR-to-bytecode text lowering |
+| `bootstrap/src/bytecode/vm_text.c` | 0 | 465 | D076 VM text transforms and managed result construction |
+| `bootstrap/src/native/c_emitter_text.c` | 0 | 190 | D076 portable-C text helper and instruction emission |
+| `tests/c-unit/test_cp33_text_bytes.c` | 0 | 696 | D076 randomized UTF-8, hostile MIR/bytecode, VM/native differential, and allocation coverage |
+| `tests/c-unit/test_cp33_process_text_bytes.cmake` | 0 | 108 | VM/native binary stdin/stdout and iterator-invalidated parity |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `mmay_test_mir` registration. The service checkpoint

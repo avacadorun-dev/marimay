@@ -397,6 +397,12 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
             instruction, registers, execution
         );
     }
+    if (mmay_bytecode_opcode_is_text(instruction->opcode)) {
+        return mmay_bytecode_run_text_instruction(
+            instruction, registers, execution, function, allocator,
+            stdout_sink
+        );
+    }
     switch (instruction->opcode) {
         case MMAY_OPCODE_CONST_I64:
             registers[target].as.i64 = instruction->operands[1].signed_value;
@@ -1179,6 +1185,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         case MMAY_OPCODE_IO_WRITE:
         case MMAY_OPCODE_IO_FLUSH:
         case MMAY_OPCODE_IO_READ_LINE:
+        case MMAY_OPCODE_IO_READ_BYTES:
+        case MMAY_OPCODE_IO_WRITE_BYTES:
             return mmay_bytecode_run_io_instruction(
                 instruction, registers, execution, function,
                 allocator, stdout_sink
@@ -1189,6 +1197,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
                 instruction, registers, execution, function,
                 allocator, panic, symbol
             );
+        default:
+            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
     return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
 }

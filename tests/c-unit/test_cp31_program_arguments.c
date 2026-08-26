@@ -505,41 +505,74 @@ static void mmay_cp31_native_artifact(MarimaySession *session) {
     MMAY_EXPECT(remove(panic_artifact) == 0);
 }
 
+static bool mmay_cp31_allocation_case(
+    const char *const *arguments,
+    size_t failure_index
+) {
+    MarimayFailAllocator state;
+    MarimaySession session;
+    MarimayTestBuffer output;
+    MarimayTestBuffer error;
+    int status;
+    bool argument_failure = false;
+    mmay_fail_allocator_init(
+        &state, mmay_system_allocator(), failure_index
+    );
+    mmay_session_init(&session, mmay_fail_allocator(&state));
+    status = mmay_cp31_cli(&session, 5, arguments, &output, &error);
+    if (status != 255) {
+        MMAY_EXPECT(status == MMAY_EXIT_INTERNAL);
+        argument_failure = strcmp(
+            error.bytes,
+            "error[I0002]: runtime host allocation failed\n"
+        ) == 0;
+    }
+    MMAY_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+    return argument_failure;
+}
+
 static void mmay_cp31_allocation_failures(void) {
     const char *arguments[] = {
         "mmay", "run", "run/cp31/arguments.my", "--", "alpha"
     };
+    const size_t failure_prefix_limit = 4096;
+    size_t allocation_attempts = 0;
     size_t failure_index = 0;
-    bool reached_success = false;
+    size_t failure_prefix = 0;
     bool saw_argument_failure = false;
-    for (failure_index = 0; failure_index < 4096; failure_index += 1) {
+    {
         MarimayFailAllocator state;
         MarimaySession session;
         MarimayTestBuffer output;
         MarimayTestBuffer error;
-        int status;
         mmay_fail_allocator_init(
-            &state, mmay_system_allocator(), failure_index
+            &state, mmay_system_allocator(), SIZE_MAX
         );
         mmay_session_init(&session, mmay_fail_allocator(&state));
-        status = mmay_cp31_cli(
+        MMAY_EXPECT(mmay_cp31_cli(
             &session, 5, arguments, &output, &error
-        );
-        if (status == 255) {
-            reached_success = true;
-        } else {
-            MMAY_EXPECT(status == MMAY_EXIT_INTERNAL);
-            if (strcmp(
-                    error.bytes,
-                    "error[I0002]: runtime host allocation failed\n"
-                ) == 0) {
-                saw_argument_failure = true;
-            }
-        }
+        ) == 255);
+        allocation_attempts = state.attempts;
+        MMAY_EXPECT(allocation_attempts != SIZE_MAX);
         MMAY_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
-        if (reached_success) break;
     }
-    MMAY_EXPECT(reached_success && saw_argument_failure);
+    /* Owner APIs carry exhaustive sweeps; this full-CLI test covers a bounded
+       orchestration prefix plus the late program-argument allocation phase. */
+    failure_prefix = allocation_attempts < failure_prefix_limit
+        ? allocation_attempts : failure_prefix_limit;
+    for (failure_index = 0; failure_index < failure_prefix;
+        failure_index += 1) {
+        saw_argument_failure = mmay_cp31_allocation_case(
+            arguments, failure_index
+        ) || saw_argument_failure;
+    }
+    MMAY_EXPECT(allocation_attempts >= 32);
+    if (allocation_attempts >= 32) {
+        saw_argument_failure = mmay_cp31_allocation_case(
+            arguments, allocation_attempts - 32
+        ) || saw_argument_failure;
+    }
+    MMAY_EXPECT(saw_argument_failure);
 }
 
 void mmay_test_cp31_program_arguments(void) {

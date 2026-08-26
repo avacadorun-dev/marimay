@@ -37,6 +37,150 @@ static size_t mmay_checker_io_arguments(
     return count;
 }
 
+static bool mmay_checker_io_local_package(const MarimayChecker *checker) {
+    return checker != NULL
+        && checker->package_name_length == sizeof("std/io") - 1
+        && memcmp(
+            checker->package_name, "std/io", sizeof("std/io") - 1
+        ) == 0;
+}
+
+static bool mmay_checker_io_compile_binary_primitive(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *node,
+    MarimayTypeId expected,
+    bool *resolved,
+    MarimayExpressionValue *result
+) {
+    const MarimayAstNode *callee = mmay_checker_private_check_child_node(
+        node, MMAY_SYNTAX_NAME_EXPRESSION, 0
+    );
+    const MarimayAstNode *arguments = mmay_checker_private_check_child_node(
+        node, MMAY_SYNTAX_ARGUMENTS, 0
+    );
+    const MarimaySyntaxToken *name = mmay_checker_private_check_child_token(
+        callee, MMAY_TOKEN_IDENTIFIER, 0
+    );
+    const MarimayAstNode *argument_nodes[1] = {NULL};
+    MarimayCheckCallable callable;
+    MarimayExpressionValue value;
+    const MarimayTypeDescriptor *descriptor = NULL;
+    MarimayCheckEnumDeclaration *result_enum = NULL;
+    MarimayCheckEnumDeclaration *error_enum = NULL;
+    MarimayCheckEnumDeclaration concrete;
+    MarimayMirEnumId result_layout = MMAY_MIR_NO_ENUM;
+    MarimayMirEnumId error_layout = MMAY_MIR_NO_ENUM;
+    MarimayMirArrayId array_layout = MMAY_MIR_NO_ARRAY;
+    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+    MarimayMirInstruction instruction;
+    bool reads = false;
+    bool stderr_stream = false;
+    MarimayCheckName check_name;
+    if (!mmay_checker_io_local_package(function->checker)
+        || name == NULL || name->synthetic) return true;
+    reads = mmay_checker_private_check_text_equal(
+        function->checker, name->start, name->end, "mmayReadBytes"
+    );
+    stderr_stream = mmay_checker_private_check_text_equal(
+        function->checker, name->start, name->end, "mmayEwriteBytes"
+    );
+    if (!reads && !stderr_stream && !mmay_checker_private_check_text_equal(
+            function->checker, name->start, name->end, "mmayWriteBytes"
+        )) return true;
+    *resolved = true;
+    if (mmay_checker_private_check_child_node(
+            node, MMAY_SYNTAX_TYPE_ARGUMENTS, 0
+        ) != NULL || mmay_checker_io_arguments(arguments, argument_nodes, 1)
+            != 1U) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker, MMAY_DIAGNOSTIC_CALL_ARITY,
+            "binary std/io primitive requires one argument",
+            node->start, node->end
+        );
+        return false;
+    }
+    memset(&callable, 0, sizeof(callable));
+    check_name = (MarimayCheckName){
+        function->checker->ast->snapshot, name->start, name->end
+    };
+    if (mmay_check_resolve_call(
+            function->checker, check_name, false, MMAY_TYPE_INVALID,
+            &callable
+        ) != MMAY_CHECK_CALL_FOUND || !callable.is_external
+        || callable.parameter_count != 1U
+        || callable.parameter_types == NULL) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
+        return false;
+    }
+    memset(&value, 0, sizeof(value));
+    if (!mmay_compile_expression(
+            function, argument_nodes[0], callable.parameter_types[0], &value
+        )) return false;
+    if (mmay_expression_is_never(function, &value)) {
+        *result = value;
+        return true;
+    }
+    descriptor = mmay_type_descriptor(
+        &function->checker->result->types, callable.result_type
+    );
+    if (value.type != callable.parameter_types[0]
+        || (expected != MMAY_TYPE_INVALID && expected != callable.result_type)
+        || descriptor == NULL || descriptor->kind != MMAY_TYPE_KIND_NOMINAL
+        || descriptor->argument_count != 2
+        || (reads
+            ? (callable.parameter_types[0] != MMAY_TYPE_I64
+                || descriptor->arguments[0] < MMAY_TYPE_FIRST_DYNAMIC)
+            : descriptor->arguments[0] != MMAY_TYPE_VOID)) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "binary std/io primitive type does not match its contract",
+            node->start, node->end
+        );
+        return false;
+    }
+    result_enum = mmay_checker_private_checker_find_enum_by_type(
+        function->checker, callable.result_type
+    );
+    error_enum = mmay_checker_private_checker_find_enum_by_type(
+        function->checker, descriptor->arguments[1]
+    );
+    if (result_enum == NULL || error_enum == NULL) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
+        return false;
+    }
+    concrete = *result_enum;
+    concrete.type = callable.result_type;
+    if (!mmay_checker_private_function_enum_layout(
+            function, &concrete, &result_layout
+        )) return false;
+    concrete = *error_enum;
+    concrete.type = descriptor->arguments[1];
+    if (!mmay_checker_private_function_enum_layout(
+            function, &concrete, &error_layout
+        ) || (reads && !mmay_array_layout(
+            function, descriptor->arguments[0], &array_layout
+        )) || !mmay_function_add_register(
+            function, callable.result_type, &target
+        )) return false;
+    (void)error_layout;
+    memset(&instruction, 0, sizeof(instruction));
+    instruction.kind = reads
+        ? MMAY_MIR_IO_READ_BYTES : MMAY_MIR_IO_WRITE_BYTES;
+    instruction.target = target;
+    instruction.first = value.register_id;
+    instruction.second = MMAY_MIR_NO_REGISTER;
+    instruction.enum_id = result_layout;
+    instruction.array = array_layout;
+    instruction.io_operation = stderr_stream
+        ? MMAY_MIR_IO_STDERR_WRITE : MMAY_MIR_IO_STDOUT_WRITE;
+    instruction.span = (MarimayMirSpan){node->start, node->end};
+    if (!mmay_function_append_instruction(function, &instruction)) return false;
+    result->type = callable.result_type;
+    result->register_id = target;
+    result->valid = true;
+    return true;
+}
+
 static const MarimayCheckImportBinding *mmay_checker_io_binding(
     MarimayFunctionChecker *function,
     const MarimaySyntaxToken *namespace_token,
@@ -119,6 +263,10 @@ bool mmay_checker_private_compile_io_call(
         return false;
     }
     *resolved = false;
+    if (!mmay_checker_io_compile_binary_primitive(
+            function, node, expected, resolved, result
+        )) return false;
+    if (*resolved) return true;
     if (name_token == NULL && member != NULL
         && mmay_checker_private_member_parts(member, &receiver, &name_token)
         && receiver != NULL

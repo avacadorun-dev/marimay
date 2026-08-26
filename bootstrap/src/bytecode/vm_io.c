@@ -13,6 +13,48 @@ static MarimayBytecodeRunStatus mmay_bytecode_run_io_error(
     size_t error_variant, int64_t error_limit, MarimayBytecodeValue *target
 );
 
+static MarimayBytecodeRunStatus mmay_bytecode_run_io_array_bytes(
+    MarimayBytecodeExecution *execution,
+    MarimayBytecodeValue array,
+    MarimayAllocator allocator,
+    unsigned char **bytes,
+    size_t *length
+) {
+    MarimayManagedStatus managed_status;
+    size_t count = 0;
+    size_t index = 0;
+    unsigned char *copy = NULL;
+    if (bytes == NULL || length == NULL) {
+        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
+    }
+    managed_status = mmay_managed_array_length(
+        &execution->managed_heap, array.as.managed_reference, &count
+    );
+    if (managed_status != MMAY_MANAGED_OK) {
+        return mmay_bytecode_run_managed_status(managed_status);
+    }
+    copy = count == 0 ? NULL : mmay_allocate(&allocator, count);
+    if (count != 0 && copy == NULL) {
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    for (index = 0; index < count; index += 1) {
+        MarimayManagedCell cell = {0};
+        size_t ignored = 0;
+        managed_status = mmay_managed_array_get(
+            &execution->managed_heap, array.as.managed_reference,
+            (int64_t)index, &cell, &ignored
+        );
+        if (managed_status != MMAY_MANAGED_OK) {
+            mmay_deallocate(&allocator, copy, count);
+            return mmay_bytecode_run_managed_status(managed_status);
+        }
+        copy[index] = (unsigned char)cell.f64_bits;
+    }
+    *bytes = copy;
+    *length = count;
+    return MMAY_BYTECODE_RUN_OK;
+}
+
 static const MarimayBytecodeEnumPayload *mmay_bytecode_run_io_payload(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeEnumLayout *layout,
@@ -156,7 +198,7 @@ static MarimayBytecodeRunStatus mmay_bytecode_run_io_error(
                 &payload, 1, &error
             );
         }
-    } else if (error_variant == 5) {
+    } else if (error_variant == 5 || error_variant == 6) {
         payload.f64_bits = (uint64_t)error_limit;
         managed_status = mmay_managed_enum_new(
             &execution->managed_heap, error_descriptor, error_variant,
@@ -184,6 +226,227 @@ static MarimayBytecodeRunStatus mmay_bytecode_run_io_error(
         }
     }
     return mmay_bytecode_run_managed_status(managed_status);
+}
+
+static MarimayBytecodeRunStatus mmay_bytecode_run_io_read_bytes(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    const MarimayIoStdout *stdout_sink
+) {
+    size_t target = (size_t)instruction->operands[0].unsigned_value;
+    size_t limit_register = (size_t)instruction->operands[1].unsigned_value;
+    uint32_t result_id = mmay_bytecode_register_layout(
+        function, (uint32_t)target
+    );
+    const MarimayBytecodeEnumLayout *result_layout =
+        mmay_bytecode_enum_layout(function, result_id);
+    const MarimayBytecodeEnumPayload *ok_payload =
+        mmay_bytecode_run_io_payload(function, result_layout, 0, 0);
+    const MarimayBytecodeEnumPayload *error_payload =
+        mmay_bytecode_run_io_payload(function, result_layout, 1, 0);
+    const void *result_descriptor = NULL;
+    const void *error_descriptor = NULL;
+    const MarimayManagedArrayDescriptor *array_descriptor = NULL;
+    MarimayIoInput input = {
+        stdout_sink->stdin_capability_granted,
+        stdout_sink->stdin_context,
+        stdout_sink->read_stdin
+    };
+    MarimayOwnedBytes bytes = {0};
+    MarimayManagedCell *cells = NULL;
+    size_t cell_bytes = 0;
+    MarimayManagedReference array = mmay_managed_invalid_reference();
+    MarimayManagedReference *locations[1] = {&array};
+    MarimayManagedRootFrame roots = {0};
+    MarimayManagedCell payload = {0};
+    MarimayManagedStatus managed_status;
+    MarimayBytecodeRunStatus status;
+    MarimayIoStatus io_status;
+    int64_t limit = registers[limit_register].as.i64;
+    size_t index = 0;
+    if (result_layout == NULL || ok_payload == NULL || error_payload == NULL
+        || error_payload->type != MMAY_BYTECODE_TYPE_ENUM) {
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    }
+    status = mmay_bytecode_run_nominal_descriptor(
+        execution, function, MMAY_BYTECODE_TYPE_ENUM,
+        result_id, &result_descriptor
+    );
+    if (status == MMAY_BYTECODE_RUN_OK) {
+        status = mmay_bytecode_run_nominal_descriptor(
+            execution, function, MMAY_BYTECODE_TYPE_ENUM,
+            error_payload->layout, &error_descriptor
+        );
+    }
+    if (status != MMAY_BYTECODE_RUN_OK) return status;
+    if (limit < 0 || (uint64_t)limit > MMAY_IO_MAX_BYTES) {
+        return mmay_bytecode_run_io_error(
+            execution, result_descriptor, error_descriptor,
+            false, NULL, 0, 6, limit, &registers[target]
+        );
+    }
+    io_status = mmay_io_read_bytes(
+        &input, execution->allocator, (size_t)limit, &bytes
+    );
+    if (io_status != MMAY_IO_OK) {
+        if (io_status == MMAY_IO_ALLOCATION_FAILED) {
+            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+        }
+        if (io_status == MMAY_IO_INVALID_ARGUMENT) {
+            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+        }
+        return mmay_bytecode_run_io_error(
+            execution, result_descriptor, error_descriptor,
+            io_status == MMAY_IO_CAPABILITY_DENIED,
+            (const unsigned char *)"io.stdin", 8,
+            io_status == MMAY_IO_INPUT_TOO_LONG ? 6 : 1,
+            limit, &registers[target]
+        );
+    }
+    array_descriptor = mmay_bytecode_array_descriptor_for(
+        execution, function, ok_payload->type, ok_payload->layout
+    );
+    if (array_descriptor == NULL
+        || !mmay_size_multiply(
+            bytes.length, sizeof(*cells), &cell_bytes
+        )) {
+        mmay_owned_bytes_dispose(&bytes);
+        return array_descriptor == NULL
+            ? (execution->array_descriptor_allocation_failed
+                ? MMAY_BYTECODE_RUN_ALLOCATION_FAILED
+                : MMAY_BYTECODE_RUN_INVALID_BYTECODE)
+            : MMAY_BYTECODE_RUN_LIMIT_REACHED;
+    }
+    cells = cell_bytes == 0 ? NULL
+        : mmay_allocate(&execution->allocator, cell_bytes);
+    if (cell_bytes != 0 && cells == NULL) {
+        mmay_owned_bytes_dispose(&bytes);
+        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+    }
+    for (index = 0; index < bytes.length; index += 1) {
+        cells[index].f64_bits = bytes.data[index];
+    }
+    managed_status = mmay_managed_root_push(
+        &execution->managed_heap, &roots, locations, 1
+    );
+    if (managed_status == MMAY_MANAGED_OK) {
+        managed_status = mmay_managed_array_new(
+            &execution->managed_heap, array_descriptor,
+            cells, bytes.length, &array
+        );
+    }
+    if (managed_status == MMAY_MANAGED_OK) {
+        payload.reference = array;
+        managed_status = mmay_managed_enum_new(
+            &execution->managed_heap, result_descriptor, 0,
+            &payload, 1, &registers[target].as.managed_reference
+        );
+    }
+    {
+        MarimayManagedStatus pop_status = mmay_managed_root_pop(
+            &execution->managed_heap, &roots
+        );
+        if (managed_status == MMAY_MANAGED_OK) managed_status = pop_status;
+    }
+    mmay_deallocate(&execution->allocator, cells, cell_bytes);
+    mmay_owned_bytes_dispose(&bytes);
+    return mmay_bytecode_run_managed_status(managed_status);
+}
+
+static MarimayBytecodeRunStatus mmay_bytecode_run_io_write_bytes(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator,
+    const MarimayIoStdout *stdout_sink
+) {
+    size_t target = (size_t)instruction->operands[0].unsigned_value;
+    size_t source = (size_t)instruction->operands[1].unsigned_value;
+    uint32_t result_id = mmay_bytecode_register_layout(
+        function, (uint32_t)target
+    );
+    const MarimayBytecodeEnumLayout *result_layout =
+        mmay_bytecode_enum_layout(function, result_id);
+    const MarimayBytecodeEnumPayload *error_payload =
+        mmay_bytecode_run_io_payload(function, result_layout, 1, 0);
+    const void *result_descriptor = NULL;
+    const void *error_descriptor = NULL;
+    unsigned char *bytes = NULL;
+    size_t length = 0;
+    bool stderr_stream = instruction->operands[2].signed_value == 2;
+    MarimayIoOutput output = {
+        stderr_stream ? stdout_sink->stderr_capability_granted
+            : stdout_sink->capability_granted,
+        stderr_stream ? stdout_sink->stderr_context : stdout_sink->context,
+        stderr_stream ? stdout_sink->write_stderr : stdout_sink->write_stdout,
+        stderr_stream ? stdout_sink->flush_stderr : stdout_sink->flush_stdout
+    };
+    MarimayBytecodeRunStatus status;
+    MarimayIoStatus io_status;
+    if (result_layout == NULL || error_payload == NULL
+        || error_payload->type != MMAY_BYTECODE_TYPE_ENUM) {
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    }
+    status = mmay_bytecode_run_nominal_descriptor(
+        execution, function, MMAY_BYTECODE_TYPE_ENUM,
+        result_id, &result_descriptor
+    );
+    if (status == MMAY_BYTECODE_RUN_OK) {
+        status = mmay_bytecode_run_nominal_descriptor(
+            execution, function, MMAY_BYTECODE_TYPE_ENUM,
+            error_payload->layout, &error_descriptor
+        );
+    }
+    if (status == MMAY_BYTECODE_RUN_OK) {
+        status = mmay_bytecode_run_io_array_bytes(
+            execution, registers[source], allocator, &bytes, &length
+        );
+    }
+    if (status == MMAY_BYTECODE_RUN_OK) {
+        status = mmay_bytecode_run_managed_status(mmay_managed_enum_new(
+            &execution->managed_heap, result_descriptor, 0, NULL, 0,
+            &registers[target].as.managed_reference
+        ));
+    }
+    if (status != MMAY_BYTECODE_RUN_OK) {
+        mmay_deallocate(&allocator, bytes, length);
+        return status;
+    }
+    if (!stderr_stream && length != 0
+        && mmay_test_output_depth(&execution->test_output) != 0) {
+        MarimayTestOutputStatus output_status = mmay_test_output_publish(
+            &execution->test_output, stdout_sink, bytes, length
+        );
+        mmay_deallocate(&allocator, bytes, length);
+        if (output_status == MMAY_TEST_OUTPUT_OK) {
+            return MMAY_BYTECODE_RUN_OK;
+        }
+        if (output_status == MMAY_TEST_OUTPUT_ALLOCATION_FAILED) {
+            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+        }
+        if (output_status == MMAY_TEST_OUTPUT_LIMIT_REACHED) {
+            return MMAY_BYTECODE_RUN_LIMIT_REACHED;
+        }
+        return mmay_bytecode_run_io_error(
+            execution, result_descriptor, error_descriptor,
+            output_status == MMAY_TEST_OUTPUT_CAPABILITY_DENIED,
+            (const unsigned char *)"io.stdout", 9, 2, 0,
+            &registers[target]
+        );
+    }
+    io_status = mmay_io_write(&output, bytes, length);
+    mmay_deallocate(&allocator, bytes, length);
+    if (io_status == MMAY_IO_OK) return MMAY_BYTECODE_RUN_OK;
+    return mmay_bytecode_run_io_error(
+        execution, result_descriptor, error_descriptor,
+        io_status == MMAY_IO_CAPABILITY_DENIED,
+        stderr_stream ? (const unsigned char *)"io.stderr"
+            : (const unsigned char *)"io.stdout",
+        9, 2, 0, &registers[target]
+    );
 }
 
 MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
@@ -230,6 +493,17 @@ MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
     if (instruction->opcode == MMAY_OPCODE_IO_READ_LINE) {
         return mmay_bytecode_run_io_read_line(
             instruction, registers, execution, function, stdout_sink
+        );
+    }
+    if (instruction->opcode == MMAY_OPCODE_IO_READ_BYTES) {
+        return mmay_bytecode_run_io_read_bytes(
+            instruction, registers, execution, function, stdout_sink
+        );
+    }
+    if (instruction->opcode == MMAY_OPCODE_IO_WRITE_BYTES) {
+        return mmay_bytecode_run_io_write_bytes(
+            instruction, registers, execution, function,
+            allocator, stdout_sink
         );
     }
     status = mmay_bytecode_run_nominal_descriptor(

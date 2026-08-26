@@ -253,6 +253,15 @@ invalidated by mutation`. The primary span is the complete
 empty/no-op/error mutation paths do not change the generation. VM and native
 preserve the same code, message, span, and caller frames.
 
+D076 `Bytes.Iterator.next` uses that same `G4005` code and exact message after
+any successful initialized-sequence mutation of its aliased `Bytes`; reserve,
+failed growth, and other no-op/error paths do not invalidate it. VM and native
+must report the same standard-library/user call-frame sequence. Text boundary,
+split, UTF-8, builder-limit, and binary-stream failures are the declared typed
+`Result.Err` values, not `G4000`/`G4005` panics. If such an error reaches the
+root entry, ordinary `G4003` rendering uses its package's visible structural
+`message` contract where one is required.
+
 Under D066, malformed UTF-8, an interior NUL, or an exceeded argument count or
 byte limit is `G4006` and exits `1` before source execution. A root status
 outside `0..255` is `G4007` with exact message
@@ -339,6 +348,11 @@ and exit `70`; addresses and allocator-dependent text are forbidden. A native
 executable uses the same human message and exit. Unclassified integrity or
 other resource failures may retain a narrower generic `I0002`, but cannot be
 used for either classified case.
+
+D076 allocation failure while copying text/bytes, creating a builder snapshot,
+decoding UTF-8, splitting/joining, or reading binary stdin remains this `I0002`
+host-memory or managed-heap classification. It must not fabricate a source
+limit/UTF-8/I/O error or publish a partial owned result.
 
 For D050 native construction, `B0002` means the distribution-selected host C
 toolchain could not be started or did not pass its preflight; it is an expected

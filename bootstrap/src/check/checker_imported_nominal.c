@@ -187,6 +187,52 @@ static bool mmay_checker_private_layout_is_visiting(
     return false;
 }
 
+static const MarimayCheckedRecord *mmay_checker_private_dependency_record(
+    const MarimayFunctionChecker *function,
+    MarimayTypeId type
+) {
+    size_t index = 0;
+    const MarimayCheckResult *result = function != NULL
+        ? function->checker->result : NULL;
+    for (index = 0; result != NULL && index < result->records.length;
+        index += 1) {
+        const MarimayCheckedRecord *record = mmay_checked_record(result, index);
+        if (record != NULL && record->is_public
+            && mmay_checker_private_type_matches_nominal(
+                function->checker,
+                type,
+                record->symbol,
+                record->type_parameters.length
+            )) {
+            return record;
+        }
+    }
+    return NULL;
+}
+
+static const MarimayCheckedEnum *mmay_checker_private_dependency_enum(
+    const MarimayFunctionChecker *function,
+    MarimayTypeId type
+) {
+    size_t index = 0;
+    const MarimayCheckResult *result = function != NULL
+        ? function->checker->result : NULL;
+    for (index = 0; result != NULL && index < result->enums.length;
+        index += 1) {
+        const MarimayCheckedEnum *enum_value = mmay_checked_enum(result, index);
+        if (enum_value != NULL && enum_value->is_public
+            && mmay_checker_private_type_matches_nominal(
+                function->checker,
+                type,
+                enum_value->symbol,
+                enum_value->type_parameters.length
+            )) {
+            return enum_value;
+        }
+    }
+    return NULL;
+}
+
 static bool mmay_checker_private_ensure_layout_closure(
     MarimayFunctionChecker *function,
     MarimayTypeId type,
@@ -209,6 +255,15 @@ static bool mmay_checker_private_ensure_layout_closure(
     const MarimayCheckedEnum *imported_enum = record == NULL
             && enum_value == NULL && imported_record == NULL
         ? mmay_check_imported_enum_by_type(function->checker, type) : NULL;
+    if (record == NULL && enum_value == NULL && imported_record == NULL) {
+        imported_record = mmay_checker_private_dependency_record(
+            function, type
+        );
+    }
+    if (record == NULL && enum_value == NULL && imported_record == NULL
+        && imported_enum == NULL) {
+        imported_enum = mmay_checker_private_dependency_enum(function, type);
+    }
     bool accepted = true;
     if (type < MMAY_TYPE_FIRST_DYNAMIC) return true;
     if (descriptor == NULL) {

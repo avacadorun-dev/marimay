@@ -83,6 +83,14 @@ MarimayBytecodeRunStatus mmay_bytecode_run_string_concat_instruction(
     MarimayBytecodeValue *registers,
     MarimayBytecodeExecution *execution
 );
+MarimayBytecodeRunStatus mmay_bytecode_run_text_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator,
+    const MarimayIoStdout *stdout_sink
+);
 MarimayBytecodeRunStatus mmay_bytecode_run_parse_instruction(
     const MarimayBytecodeInstruction *instruction,
     MarimayBytecodeValue *registers,

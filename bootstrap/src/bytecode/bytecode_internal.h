@@ -39,6 +39,7 @@ const MarimayBytecodeInstruction *mmay_bytecode_block_terminator(
 );
 bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode);
 bool mmay_bytecode_opcode_is_numeric(MarimayOpcode opcode);
+bool mmay_bytecode_opcode_is_text(MarimayOpcode opcode);
 bool mmay_bytecode_numeric_option_symbol(
     MarimayBytecodeType payload_type,
     MarimaySymbolId *symbol
@@ -62,6 +63,11 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_parse_instruction(
     const MarimayBytecodeInstruction *instruction,
     const unsigned char *assigned
 );
+MarimayBytecodeVerifyStatus mmay_bytecode_verify_text_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
+    const unsigned char *assigned
+);
 void mmay_bytecode_transfer_assignments(
     const MarimayBytecodeBlock *block,
     unsigned char *assigned,
@@ -76,6 +82,11 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_terminator(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
     const unsigned char *assigned
+);
+MarimayBytecodeVerifyStatus mmay_bytecode_verify_call_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
+    unsigned char *assigned
 );
 MarimayBytecodeVerifyStatus mmay_bytecode_verify_nominal_metadata(
     const MarimayBytecodeFunction *function,

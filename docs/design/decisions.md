@@ -2032,3 +2032,68 @@ UTF-8 output contract.
 
 Reason: synchronous typed streams provide the bounded CLI boundary required
 before Bytes, files, parsing, and JSON without promising task-aware I/O early.
+
+## D076 — Owned UTF-8 views, nominal Bytes, and bounded builders
+
+Status: accepted.
+
+The CLI alpha keeps `string` immutable and valid UTF-8. `std/text` owns the
+dot-call set for `string` and exposes counted byte length, Unicode-scalar
+count/copy, an alpha grapheme copy, byte-offset substring, exact-byte
+contains/prefix/suffix, split, join, and ASCII trim. Integer indexing remains
+invalid. Every operation is locale-independent and compares exact counted
+bytes without normalization.
+
+Substring offsets are zero-based byte offsets. Both endpoints must be in
+`0..byteLength(text)`, `start <= end`, and Unicode-scalar boundaries; failure
+is a typed `BoundaryError`, and success returns an owned `string`. Rune and
+grapheme APIs also return owned arrays. The alpha grapheme rule starts a new
+cluster at each scalar except CRLF stays together and a scalar whose pinned
+Unicode 17 formatter width is zero stays with the preceding cluster. This is
+an explicit bounded preview subset, not a claim of complete UAX #29
+segmentation. `trimAscii` removes only ASCII space, tab, LF, CR, vertical tab,
+and form feed from both ends.
+
+`split(text, separator, limit)` rejects an empty separator and accepts a part
+limit in `0..65536`; exact non-overlapping byte matches are selected from left
+to right, trailing empty parts are retained, and exceeding the limit is typed.
+`join(parts, separator, limit)` and rune/grapheme copies accept byte/item limits
+in `0..1048576` and publish nothing when the required count exceeds the limit.
+Limits are checked before result construction. Internal allocation or managed-
+heap failure remains D055 `I0002`, never a fabricated text error.
+
+`std/bytes.Bytes` is a nominal managed record whose private storage is an exact
+`[]byte`. Copy/from-array/to-array/slice create independent storage; assigning
+or passing `Bytes` aliases the same identity, so mutation through either alias
+is observable. Index access and mutation retain D045 bounds behavior. Push,
+append, reserve, clear, and iteration use the underlying D053 generation and
+growth contracts. A `Bytes.Iterator` captures that generation and `next`
+panics with `G4005` after any initialized-sequence mutation. No private array
+or borrowed view escapes the owner in the alpha API.
+
+UTF-8 conversion is explicit. `encodeUtf8(string)` copies exact bytes into a
+new `Bytes`; `decodeUtf8(Bytes)` returns `Result<string, Utf8Error>` and reports
+the first malformed byte offset. Neither conversion accepts replacement,
+normalization, host locale, NUL termination, or implicit coercion. Embedded
+NUL is ordinary data in both directions.
+
+`std/text.Builder` and `std/bytes.Builder` are nominal mutable builders created
+with a byte limit in `0..1048576`. Each append is failure-atomic with respect
+to the declared limit, `finish` returns an owned snapshot, later appends do not
+change an earlier result, and no input or output can bypass the limit. Text
+builders retain string chunks and perform one measured join at `finish`;
+byte builders reserve once before copying an append. Allocation/resource
+failures retain D055 classification.
+
+D075 is extended with `readBytes(limit)`, `writeBytes`, and `ewriteBytes`.
+`readBytes` requires `io.stdin`, accepts `0..1048576`, reads through EOF, and
+returns an empty `Bytes` at immediate EOF. More than `limit` bytes is
+`InputTooLong { limit }`; no prefix escapes. Binary writes require the exact
+stdout/stderr capability and use D075 partial-write/retry ordering. Text and
+binary operations share the same stream, capture, flush, and diagnostic
+separation contracts.
+
+Reason: files, CLI parsing, and JSON need a safe counted data foundation now,
+while suspension-safe borrowed lifetimes do not exist until I6. Owned copies
+and explicit limits make the alpha semantics complete without freezing a
+borrowed-view ABI or introducing implicit text/byte conversions.

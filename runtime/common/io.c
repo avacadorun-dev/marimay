@@ -108,3 +108,52 @@ MarimayIoStatus mmay_io_read_line(
     mmay_deallocate(&allocator, buffer, limit + 1);
     return MMAY_IO_OK;
 }
+
+MarimayIoStatus mmay_io_read_bytes(
+    const MarimayIoInput *input,
+    MarimayAllocator allocator,
+    size_t limit,
+    MarimayOwnedBytes *bytes
+) {
+    unsigned char *buffer = NULL;
+    size_t allocation_size = 0;
+    size_t length = 0;
+    size_t retries = 0;
+    if (input == NULL || bytes == NULL || input->read == NULL
+        || limit > MMAY_IO_MAX_BYTES
+        || !mmay_size_add(limit, 1, &allocation_size)) {
+        return MMAY_IO_INVALID_ARGUMENT;
+    }
+    mmay_owned_bytes_dispose(bytes);
+    if (!input->capability_granted) return MMAY_IO_CAPABILITY_DENIED;
+    buffer = mmay_allocate(&allocator, allocation_size);
+    if (buffer == NULL) return MMAY_IO_ALLOCATION_FAILED;
+    for (;;) {
+        unsigned char byte = 0;
+        size_t count = 0;
+        MarimayIoTransferStatus transfer = input->read(
+            input->context, &byte, 1, &count
+        );
+        if (transfer == MMAY_IO_TRANSFER_RETRY && count == 0
+            && retries < MMAY_IO_MAX_CONSECUTIVE_RETRIES) {
+            retries += 1;
+            continue;
+        }
+        if (transfer == MMAY_IO_TRANSFER_END && count == 0) break;
+        if (transfer != MMAY_IO_TRANSFER_OK || count != 1) {
+            mmay_deallocate(&allocator, buffer, allocation_size);
+            return MMAY_IO_READ_FAILED;
+        }
+        retries = 0;
+        if (length == limit) {
+            mmay_deallocate(&allocator, buffer, allocation_size);
+            return MMAY_IO_INPUT_TOO_LONG;
+        }
+        buffer[length++] = byte;
+    }
+    buffer[length] = 0;
+    bytes->allocator = allocator;
+    bytes->data = buffer;
+    bytes->length = length;
+    return MMAY_IO_OK;
+}

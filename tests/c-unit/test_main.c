@@ -16,6 +16,7 @@ void mmay_test_cp30_checker(void);
 void mmay_test_cp30_mir(void);
 void mmay_test_cp31_program_arguments(void);
 void mmay_test_cp32_streams(void);
+void mmay_test_cp33_text_bytes(void);
 void mmay_test_bytecode_vm(void);
 void mmay_test_checker(void);
 void mmay_test_checker_arrays(void);
@@ -96,6 +97,20 @@ void mmay_test_unicode(void);
 void mmay_test_utf8(void);
 
 int main(int argument_count, char **arguments) {
+    if (argument_count == 3 && strcmp(arguments[2], "--cp33") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_cp33_text_bytes();
+        mmay_test_runtime_io();
+        if (mmay_test_failure_count() != 0) {
+            fprintf(
+                stderr, "mmay_cp33_unit: %d failure(s)\n",
+                mmay_test_failure_count()
+            );
+            return 1;
+        }
+        printf("mmay_cp33_unit: ok\n");
+        return 0;
+    }
     if (argument_count == 3 && strcmp(arguments[2], "--cp32") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
         mmay_test_cp32_streams();
@@ -132,6 +147,7 @@ int main(int argument_count, char **arguments) {
     mmay_test_cp30_mir();
     mmay_test_cp31_program_arguments();
     mmay_test_cp32_streams();
+    mmay_test_cp33_text_bytes();
     mmay_test_bytecode_vm();
     mmay_test_checker();
     mmay_test_checker_arrays();

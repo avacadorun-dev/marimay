@@ -8,6 +8,7 @@
 #include "mmay/base/owned_bytes.h"
 
 #define MMAY_IO_MAX_LINE_BYTES ((size_t)1048576)
+#define MMAY_IO_MAX_BYTES ((size_t)1048576)
 #define MMAY_IO_MAX_CONSECUTIVE_RETRIES ((size_t)1024)
 
 typedef enum MarimayIoStatus {
@@ -18,6 +19,7 @@ typedef enum MarimayIoStatus {
     MMAY_IO_FLUSH_FAILED,
     MMAY_IO_INVALID_UTF8,
     MMAY_IO_LINE_TOO_LONG,
+    MMAY_IO_INPUT_TOO_LONG,
     MMAY_IO_ALLOCATION_FAILED,
     MMAY_IO_INVALID_ARGUMENT
 } MarimayIoStatus;
@@ -59,6 +61,14 @@ MarimayIoStatus mmay_io_read_line(
     size_t limit,
     MarimayOwnedBytes *line,
     bool *eof
+);
+
+/* Reads through EOF into one owned byte buffer, subject to the exact limit. */
+MarimayIoStatus mmay_io_read_bytes(
+    const MarimayIoInput *input,
+    MarimayAllocator allocator,
+    size_t limit,
+    MarimayOwnedBytes *bytes
 );
 
 /* Completes the whole request through bounded short writes. */

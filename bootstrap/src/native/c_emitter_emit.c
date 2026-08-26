@@ -1129,10 +1129,18 @@ bool mmay_native_c_emit_function(
                         return false;
                     }
                     break;
+                case MMAY_MIR_TEXT_UNARY:
+                case MMAY_MIR_TEXT_BINARY:
+                    if (!mmay_native_c_emit_text_instruction(
+                            buffer, function, i
+                        )) return false;
+                    break;
                 case MMAY_MIR_IO_PRINTLN:
                 case MMAY_MIR_IO_WRITE:
                 case MMAY_MIR_IO_FLUSH:
                 case MMAY_MIR_IO_READ_LINE:
+                case MMAY_MIR_IO_READ_BYTES:
+                case MMAY_MIR_IO_WRITE_BYTES:
                     if (!mmay_native_c_emit_io_instruction(
                             buffer, function, i
                         )) return false;

@@ -200,6 +200,7 @@ bool mmay_native_c_program_type_supported(
         || type == MMAY_TYPE_I16 || type == MMAY_TYPE_I32
         || type == MMAY_TYPE_I64 || type == MMAY_TYPE_U8
         || type == MMAY_TYPE_U16 || type == MMAY_TYPE_U32
+        || type == MMAY_TYPE_RUNE
         || type == MMAY_TYPE_U64 || type == MMAY_TYPE_F32
         || type == MMAY_TYPE_F64
         || type == MMAY_TYPE_STRING) {
@@ -569,6 +570,7 @@ static bool mmay_native_c_emit_array_element_descriptor(
             stride = "sizeof(uint16_t)";
         } else if (array->element_type == MMAY_TYPE_I32
             || array->element_type == MMAY_TYPE_U32
+            || array->element_type == MMAY_TYPE_RUNE
             || array->element_type == MMAY_TYPE_F32) {
             storage = "MMAY_MANAGED_ARRAY_STORAGE_RAW32";
             stride = "sizeof(uint32_t)";

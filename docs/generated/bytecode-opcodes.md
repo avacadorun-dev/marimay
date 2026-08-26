@@ -118,3 +118,23 @@ Stage 0 codec.
 | 105 | `io_write` | `destination:register`, `text:register`, `operation:i64` | `may_panic` | Publish exact string bytes to stdout or stderr under a typed CP32 stream operation. |
 | 106 | `io_flush` | `destination:register`, `operation:i64` | `may_panic` | Flush exactly stdout or stderr under a typed CP32 stream operation. |
 | 107 | `io_read_line` | `destination:register`, `limit:register`, `option_layout:i64` | `may_panic` | Read one bounded UTF-8 line from stdin into Result<Option<string>, std/io.Error>. |
+| 108 | `text_byte_length` | `destination:register`, `text:register` | — | Return exact counted UTF-8 byte length. |
+| 109 | `text_rune_count` | `destination:register`, `text:register` | — | Return the Unicode scalar count of valid UTF-8 text. |
+| 110 | `text_grapheme_count` | `destination:register`, `text:register` | — | Return the D076 alpha grapheme count. |
+| 111 | `text_is_rune_boundary` | `destination:register`, `text:register`, `offset:register` | — | Test one byte offset for a Unicode scalar boundary. |
+| 112 | `text_drop_prefix` | `destination:register`, `text:register`, `offset:register` | `may_panic` | Copy text after one verified scalar-boundary byte offset. |
+| 113 | `text_take_prefix` | `destination:register`, `text:register`, `offset:register` | `may_panic` | Copy text before one verified scalar-boundary byte offset. |
+| 114 | `text_contains` | `destination:register`, `text:register`, `needle:register` | — | Test exact counted-byte containment. |
+| 115 | `text_starts_with` | `destination:register`, `text:register`, `prefix:register` | — | Test an exact counted-byte prefix. |
+| 116 | `text_ends_with` | `destination:register`, `text:register`, `suffix:register` | — | Test an exact counted-byte suffix. |
+| 117 | `text_trim_ascii` | `destination:register`, `text:register` | `may_panic` | Copy text after D076 ASCII edge trimming. |
+| 118 | `text_split_count` | `destination:register`, `text:register`, `separator:register` | — | Count D076 non-overlapping exact split parts. |
+| 119 | `text_split` | `destination:register`, `text:register`, `separator:register` | `may_panic` | Construct owned D076 exact split parts. |
+| 120 | `text_join` | `destination:register`, `parts:register`, `separator:register` | `may_panic` | Join an exact []string in one measured construction. |
+| 121 | `text_runes` | `destination:register`, `text:register` | `may_panic` | Copy Unicode scalars into []rune. |
+| 122 | `text_graphemes` | `destination:register`, `text:register` | `may_panic` | Copy D076 alpha graphemes into []string. |
+| 123 | `text_encode_utf8` | `destination:register`, `text:register` | `may_panic` | Copy exact string bytes into []byte. |
+| 124 | `text_invalid_utf8_offset` | `destination:register`, `bytes:register` | — | Return the first malformed UTF-8 byte offset or -1. |
+| 125 | `text_decode_utf8` | `destination:register`, `bytes:register` | `may_panic` | Copy verified []byte into immutable string. |
+| 126 | `io_read_bytes` | `destination:register`, `limit:register`, `array_layout:i64` | `may_panic` | Read bounded binary stdin through EOF into Result<[]byte, std/io.Error>. |
+| 127 | `io_write_bytes` | `destination:register`, `bytes:register`, `operation:i64` | `may_panic` | Publish exact []byte data to stdout or stderr under D076. |

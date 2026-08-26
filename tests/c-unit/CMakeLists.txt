@@ -22,6 +22,7 @@ add_executable(mmay_c_unit
   test_cp30_mir.c
   test_cp31_program_arguments.c
   test_cp32_streams.c
+  test_cp33_text_bytes.c
   test_bytecode_program.c
   test_bytecode_program_nominal.c
   test_bytecode_verify_provenance.c
@@ -270,6 +271,14 @@ add_test(
   NAME mmay_cp32_unit
   COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp32
 )
+
+add_test(
+  NAME mmay_cp33_unit
+  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp33
+)
+set_tests_properties(
+  mmay_cp33_unit PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+)
 set_tests_properties(
   mmay_cp32_unit PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
@@ -307,4 +316,15 @@ add_test(
     "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp32-stdio"
     "-DMMAY_TEST_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp32-process-streams-native${CMAKE_EXECUTABLE_SUFFIX}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp32_process_streams.cmake"
+)
+
+add_test(
+  NAME mmay_cp33_process_text_bytes
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_BINARY_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp33-binary-stdio"
+    "-DMMAY_TEST_ITERATOR_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp33-bytes-iterator-invalidated"
+    "-DMMAY_TEST_BINARY_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp33-binary-native${CMAKE_EXECUTABLE_SUFFIX}"
+    "-DMMAY_TEST_ITERATOR_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp33-iterator-native${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp33_process_text_bytes.cmake"
 )

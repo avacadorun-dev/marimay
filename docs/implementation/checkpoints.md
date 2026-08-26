@@ -365,8 +365,8 @@ performance prerequisite inserted between CP38 and CP39.
 ## Active sequence CP29-CP41
 
 The sequence is deliberately linear so exactly one card is executable. CP29
-through CP32 are `verified`; CP33 is `ready`, and every later card is `planned`
-behind its declared predecessor. Execution order is CP33–CP38, CP41, CP39,
+through CP33 are `verified`; CP34 is `ready`, and every later card is `planned`
+behind its declared predecessor. Execution order is CP34–CP38, CP41, CP39,
 then CP40; numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
@@ -741,7 +741,8 @@ contracts, exact capture records, focused tests/evidence, and CP33 card.
 
 ## CP33 - UTF-8 text Bytes and bounded builders
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP32.
+State: `verified`. Parent gate: CLI0. Predecessor: CP32. Evidence scope:
+`local`. Evidence: [CP33](evidence/cp33-text-bytes-2026-08-26.md).
 
 ### Outcome
 
@@ -828,7 +829,7 @@ tests/evidence, binary-stdio contract, and CP34 card.
 
 ## CP34 - Paths and filesystem slice
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP33.
+State: `ready`. Parent gate: CLI0. Predecessor: CP33.
 
 ### Outcome
 

@@ -1,0 +1,322 @@
+import {
+  append as appendBytes,
+  appendByte,
+  appendBytes as appendBuilderBytes,
+  clear,
+  copy,
+  decodeUtf8,
+  encodeUtf8,
+  finish as finishBytes,
+  fromArray,
+  get,
+  iterator,
+  length,
+  new as newBytes,
+  newBuilder as newBytesBuilder,
+  next,
+  push,
+  reserve as reserveBytes,
+  set,
+  slice as sliceBytes,
+  toArray,
+} from "std/bytes";
+import { readBytes, writeBytes } from "std/io";
+import {
+  append as appendText,
+  byteLength,
+  contains,
+  endsWith,
+  finish as finishText,
+  graphemes,
+  join,
+  newBuilder as newTextBuilder,
+  runeCount,
+  runes,
+  split,
+  startsWith,
+  substring,
+  trimAscii,
+} from "std/text";
+
+fn require(condition: bool, message: string): void {
+  if !condition {
+    panic(message);
+  }
+}
+
+fn equalText(left: string, right: string): bool {
+  return byteLength(left) == byteLength(right) && startsWith(left, right);
+}
+
+@test
+fn textQueriesAndOwnedResults(): void {
+  require(byteLength("") == 0 && byteLength("A\0B") == 3, "counted bytes");
+  require("hé".byteLength() == 3, "byte length");
+  require(runeCount("hé") == 2, "rune count");
+  require(contains("alpha", "ph"), "contains");
+  require(startsWith("alpha", "al"), "startsWith");
+  require(endsWith("alpha", "ha"), "endsWith");
+  require(contains("A\0B", "\0") && contains("", ""), "exact bytes");
+  require(equalText(trimAscii(" \talpha\r\n"), "alpha"), "trimAscii");
+  require(
+    match substring("hé", 0, 1) {
+      Ok(value) => equalText(value, "h"),
+      Err(_) => false,
+    },
+    "substring",
+  );
+  const invalid = substring("hé", 1, 2);
+  require(
+    match invalid {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "boundary",
+  );
+  require(
+    match substring("abc", 2, 1) {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "ordered boundary",
+  );
+}
+
+@test
+fn textCollectionsAndLimits(): void {
+  const pieces = split("a::b::", "::", 4);
+  require(
+    match pieces {
+      Ok(values) => values.length() == 3
+        && byteLength(values[2]) == 0,
+        Err(_) => false,
+      },
+      "split",
+    );
+  require(
+    match join(["a", "b", "c"], "-", 5) {
+      Ok(value) => equalText(value, "a-b-c"),
+      Err(_) => false,
+    },
+    "join",
+  );
+  require(
+    match split("a", "", 2) {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "empty separator",
+  );
+  require(
+    match split("", ",", 65536) {
+      Ok(values) => values.length() == 1,
+      Err(_) => false,
+    },
+    "maximum split limit",
+  );
+  require(
+    match split("", ",", 65537) {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "split limit above maximum",
+  );
+  require(
+    match runes("Aé", 2) {
+      Ok(values) => values.length() == 2,
+      Err(_) => false,
+    },
+    "runes",
+  );
+  require(
+    match runes("", 0) {
+      Ok(values) => values.length() == 0,
+      Err(_) => false,
+    },
+    "empty runes",
+  );
+  require(
+    match graphemes("á\r\nb", 3) {
+      Ok(values) => values.length() == 3
+        && equalText(values[1], "\r\n"),
+        Err(_) => false,
+      },
+      "graphemes",
+    );
+  require(
+    match graphemes("", 0) {
+      Ok(values) => values.length() == 0,
+      Err(_) => false,
+    },
+    "empty graphemes",
+  );
+  require(
+    match runes("é", 0) {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "rune limit",
+  );
+  require(
+    match join([], ",", 0) {
+      Ok(value) => byteLength(value) == 0,
+      Err(_) => false,
+    },
+    "empty join",
+  );
+}
+
+@test
+fn textBuilderIsBoundedAndOwned(): void {
+  const builder = match newTextBuilder(5) {
+    Ok(value) => value,
+    Err(_) => panic("builder"),
+  };
+  const _ = appendText(builder, "ab");
+  const snapshot = finishText(builder);
+  const _ = appendText(builder, "cde");
+  require(equalText(snapshot, "ab"), "text builder snapshot");
+  require(equalText(finishText(builder), "abcde"), "text builder");
+  require(
+    match appendText(builder, "!") {
+      Err(_) => true,
+      _ => false,
+    },
+    "text builder limit",
+  );
+  require(
+    match newTextBuilder(1048576) {
+      Ok(value) => byteLength(finishText(value)) == 0,
+      Err(_) => false,
+    },
+    "maximum text builder limit",
+  );
+  require(
+    match newTextBuilder(1048577) {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "text builder limit above maximum",
+  );
+}
+
+@test
+fn bytesMutationCopySliceAndIterator(): void {
+  let source: []byte = [1, 2];
+  const bytes = fromArray(source);
+  source[0] = 7;
+  require(get(bytes, 0) == 1, "fromArray ownership");
+  const _ = push(bytes, 3);
+  set(bytes, 0, 9);
+  require(length(bytes) == 3 && get(bytes, 0) == 9, "bytes mutation");
+  const clone = copy(bytes);
+  const alias = bytes;
+  set(alias, 0, 8);
+  require(get(bytes, 0) == 8, "bytes alias");
+  set(bytes, 0, 8);
+  require(get(clone, 0) == 9, "bytes copy");
+  require(
+    match sliceBytes(bytes, 1, 3) {
+      Ok(value) => length(value) == 2
+        && get(value, 1) == 3,
+        Err(_) => false,
+      },
+      "bytes slice",
+    );
+  const suffix = fromArray([4, 5]);
+  const _ = appendBytes(bytes, suffix);
+  require(length(bytes) == 5, "bytes append");
+  const self = fromArray([6, 7]);
+  const _ = appendBytes(self, self);
+  require(length(self) == 4 && get(self, 2) == 6, "self append");
+  const values = toArray(bytes);
+  values[0] = 0;
+  require(get(bytes, 0) == 8, "toArray ownership");
+  const cursor = iterator(bytes);
+  const _ = reserveBytes(bytes, 8);
+  require(
+    match next(cursor) {
+      Some(value) => value == 8,
+      None => false,
+    },
+    "iterator first",
+  );
+  clear(bytes);
+  require(length(bytes) == 0, "clear");
+}
+
+@test
+fn utf8AndBytesBuilder(): void {
+  const encoded = encodeUtf8("hé");
+  require(length(encoded) == 3, "encodeUtf8");
+  require(
+    match decodeUtf8(encoded) {
+      Ok(value) => equalText(value, "hé"),
+      Err(_) => false,
+    },
+    "decodeUtf8",
+  );
+  require(
+    match decodeUtf8(fromArray([255])) {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "invalid utf8",
+  );
+  const builder = match newBytesBuilder(4) {
+    Ok(value) => value,
+    Err(_) => panic("bytes builder"),
+  };
+  const _ = appendByte(builder, 1);
+  const _ = appendBuilderBytes(builder, fromArray([2, 3]));
+  const built = finishBytes(builder);
+  const _ = appendByte(builder, 4);
+  require(length(built) == 3 && get(built, 2) == 3, "bytes builder");
+  require(length(finishBytes(builder)) == 4, "bytes builder snapshot");
+  require(
+    match appendBuilderBytes(builder, fromArray([5])) {
+      Err(_) => true,
+      _ => false,
+    },
+    "bytes builder limit",
+  );
+  require(length(newBytes()) == 0, "new bytes");
+  require(
+    match newBytesBuilder(-1) {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "bytes builder invalid limit",
+  );
+  require(
+    match newBytesBuilder(1048576) {
+      Ok(value) => length(finishBytes(value)) == 0,
+      Err(_) => false,
+    },
+    "maximum bytes builder limit",
+  );
+  require(
+    match newBytesBuilder(1048577) {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "bytes builder limit above maximum",
+  );
+}
+
+@test
+fn binaryStdoutAndEofRead(): void {
+  expect.output(
+    "A\0B",
+    (): void => {
+      const _ = writeBytes(fromArray([65, 0, 66]));
+    },
+  );
+  require(
+    match readBytes(8) {
+      Ok(value) => length(value) == 0,
+      Err(_) => false,
+    },
+    "readBytes EOF",
+  );
+}

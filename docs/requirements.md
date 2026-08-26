@@ -113,7 +113,8 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | ID | Requirement | Normative source | First full gate |
 |---|---|---|---|
 | STD-001 | prelude remains small and contains Option/Result/Error/collections only | standard library §§1–2 | I5 |
-| STD-002 | strings are valid UTF-8 with explicit byte/rune/grapheme views | standard library §3 | I5 |
+| STD-002 | strings are valid UTF-8; D076 provides exact-byte inspection, owned rune/alpha-grapheme copies, boundary-checked substrings, explicit Bytes conversion, and no integer indexing or escaping borrowed view | standard library §3; D076 | I5/CLI0 |
+| STD-012 | nominal `Bytes`, text/byte builders, and binary stdio preserve bounded failure-atomic growth, exact UTF-8 errors, D053 iterator invalidation, D055 resource classification, and VM/native parity | standard library §§3,3.1; execution §§5,10.1; D076 | I3/I4/I5/CLI0 |
 | STD-003 | collections are bounded and map/set iteration insertion-ordered | standard library §4 | I5 |
 | STD-004 | resource and whole-input APIs expose cleanup and size limits | standard library §§5,9–10 | I9 |
 | STD-005 | timeouts, structured race/select, channels, and isolate APIs preserve task-scope invariants | standard library §§6–8; D029 | I6 |

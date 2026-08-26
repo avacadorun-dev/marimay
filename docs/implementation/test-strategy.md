@@ -223,6 +223,11 @@ Run fixtures record typed result, stdout, stderr, exit, panic, source frames, ca
   encoded VM, generated-C debug/release, stdout/stderr/exit/panic equivalence;
 - left-to-right evaluation with side effects;
 - strings, Unicode, collection ordering, equality/hash laws;
+- D076 text/bytes: randomized valid and hostile UTF-8 round trips, every byte
+  boundary, CRLF/zero-width alpha grapheme partitions, exact ASCII trim,
+  split/join identities and part limits, Bytes copy/alias mutation, iterator
+  invalidation, builder snapshots/overflow, binary stream partial operations,
+  malformed MIR/bytecode, and every reachable allocation failure;
 - nominal-record identity: aliases compare equal, distinct allocations with
   equal fields compare unequal, operands evaluate once left-to-right, moving
   collectors preserve the result, and forged handles/layouts are rejected;

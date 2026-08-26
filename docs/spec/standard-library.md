@@ -88,9 +88,91 @@ public fn format(error: Error): string;
 
 ## 3. Text, bytes, conversion, and paths
 
-`string` is immutable valid UTF-8. Packages expose explicit iteration/views for bytes, Unicode scalars, and grapheme clusters. Slicing at a non-boundary returns an error; integer indexing is absent.
+`string` is immutable valid UTF-8. The executable CLI-alpha surface is:
 
-`Bytes` is a managed byte buffer with bounded growth, slicing, copy, and explicit isolate-transfer support. A borrowed byte view cannot cross a suspension point or outlive its owner.
+```marimay
+// std/text
+public enum BoundaryError {
+  OutOfBounds { start: int, end: int, length: int, },
+  NotRuneBoundary { offset: int, },
+}
+public enum LimitError {
+  InvalidLimit { limit: int, },
+  LimitExceeded { limit: int, required: int, },
+}
+public enum SplitError {
+  EmptySeparator,
+  InvalidLimit { limit: int, },
+  LimitExceeded { limit: int, required: int, },
+}
+public type Builder;
+public fn byteLength(text: string): int;
+public fn runeCount(text: string): int;
+public fn runes(text: string, limit: int): Result<[]rune, LimitError>;
+public fn graphemes(text: string, limit: int): Result<[]string, LimitError>;
+public fn substring(text: string, start: int, end: int): Result<string, BoundaryError>;
+public fn contains(text: string, needle: string): bool;
+public fn startsWith(text: string, prefix: string): bool;
+public fn endsWith(text: string, suffix: string): bool;
+public fn split(text: string, separator: string, limit: int): Result<[]string, SplitError>;
+public fn join(parts: []string, separator: string, limit: int): Result<string, LimitError>;
+public fn trimAscii(text: string): string;
+public fn newBuilder(limit: int): Result<Builder, LimitError>;
+public fn append(builder: Builder, text: string): Result<void, LimitError>;
+public fn finish(builder: Builder): string;
+```
+
+Byte offsets are zero-based. `substring` requires ordered in-range scalar
+boundaries and copies the selected bytes. Exact-byte contains/prefix/suffix and
+left-to-right non-overlapping split perform no normalization. Split retains
+trailing empty parts. The alpha `graphemes` copy uses D076's pinned CRLF plus
+zero-formatter-width rule; it is not full UAX #29. `trimAscii` removes exactly
+space, tab, LF, CR, vertical tab, and form feed. Limits are accepted only in
+the ranges fixed by D076 and are checked before output allocation.
+
+`Bytes` is a nominal managed byte buffer implemented over private `[]byte`
+storage. The executable surface is:
+
+```marimay
+// std/bytes
+public type Bytes;
+public type Iterator;
+public type Builder;
+public enum SliceError { OutOfBounds { start: int, end: int, length: int, }, }
+public enum Utf8Error { Invalid { offset: int, }, }
+public enum BuildError {
+  InvalidLimit { limit: int, },
+  LimitExceeded { limit: int, required: int, },
+}
+public fn new(): Bytes;
+public fn fromArray(values: []byte): Bytes;
+public fn toArray(bytes: Bytes): []byte;
+public fn length(bytes: Bytes): int;
+public fn get(bytes: Bytes, index: int): byte;
+public fn set(bytes: Bytes, index: int, value: byte): void;
+public fn push(bytes: Bytes, value: byte): Result<void, ArrayGrowthError>;
+public fn reserve(bytes: Bytes, additional: int): Result<void, ArrayGrowthError>;
+public fn append(bytes: Bytes, suffix: Bytes): Result<void, ArrayGrowthError>;
+public fn clear(bytes: Bytes): void;
+public fn copy(bytes: Bytes): Bytes;
+public fn slice(bytes: Bytes, start: int, end: int): Result<Bytes, SliceError>;
+public fn iterator(bytes: Bytes): Iterator;
+public fn next(iterator: Iterator): Option<byte>;
+public fn encodeUtf8(text: string): Bytes;
+public fn decodeUtf8(bytes: Bytes): Result<string, Utf8Error>;
+public fn newBuilder(limit: int): Result<Builder, BuildError>;
+public fn appendBytes(builder: Builder, value: Bytes): Result<void, BuildError>;
+public fn appendByte(builder: Builder, value: byte): Result<void, BuildError>;
+public fn finish(builder: Builder): Bytes;
+```
+
+`fromArray`, `toArray`, copies, and slices own independent storage; `toArray`
+therefore exposes a copy, never the owner's private array. Ordinary `Bytes`
+aliases retain identity and observe mutation. `reserve` follows the exact D053
+additional-capacity and failure-atomic growth contract. Iterator generation
+checks use D053/G4005. UTF-8 decoding reports the first malformed byte and
+publishes no partial string. Borrowed views and isolate transfer remain outside
+this alpha slice.
 
 `std/convert` defines parsing errors and explicit numeric/text conversions:
 
@@ -161,6 +243,9 @@ public fn eprint(text: string): Result<void, Error>;
 public fn eprintln(text: string): Result<void, Error>;
 public fn flushStdout(): Result<void, Error>;
 public fn flushStderr(): Result<void, Error>;
+public fn readBytes(limit: int): Result<Bytes, Error>;
+public fn writeBytes(value: Bytes): Result<void, Error>;
+public fn ewriteBytes(value: Bytes): Result<void, Error>;
 ```
 
 All output functions accept only `string`. `print` and `eprint` publish exact
@@ -198,6 +283,7 @@ Compiler/tool diagnostics never enter either program stream.
 | `FlushFailed` | `standard stream flush failed` |
 | `InvalidUtf8` | `standard input is not valid UTF-8` |
 | `LineTooLong { limit }` | `standard input line exceeds {limit}-byte limit` |
+| `InputTooLong { limit }` | `standard input exceeds {limit}-byte limit` |
 
 Allocation, managed-budget, and runtime-integrity failures are classified by
 the execution contract and do not masquerade as one of these source errors.
