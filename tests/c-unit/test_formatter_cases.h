@@ -2,6 +2,7 @@
 #define MMAY_TEST_FORMATTER_CASES_H
 
 void mmay_test_formatter_round_trip(void);
+void mmay_test_formatter_type_closer_regression(void);
 void mmay_test_formatter_fixture_file(void);
 void mmay_test_formatter_long_list(void);
 void mmay_test_formatter_example_corpus(void);

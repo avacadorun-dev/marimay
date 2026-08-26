@@ -166,6 +166,20 @@ static bool mmay_fuzz_trailing_comma(
             || next->as.token.kind == MMAY_TOKEN_RIGHT_BRACE);
 }
 
+static bool mmay_fuzz_type_closer(
+    const MarimayAstNode *parent,
+    const MarimayAstElement *element
+) {
+    /* Canonical `>>` is one token plus a parser-owned pending closer, while
+       source `> >` is two tokens. The nested type nodes carry the same meaning. */
+    return parent != NULL && element != NULL
+        && element->kind == MMAY_AST_ELEMENT_TOKEN
+        && (parent->kind == MMAY_SYNTAX_TYPE_ARGUMENTS
+            || parent->kind == MMAY_SYNTAX_TYPE_PARAMETERS)
+        && (element->as.token.kind == MMAY_TOKEN_GREATER
+            || element->as.token.kind == MMAY_TOKEN_SHIFT_RIGHT);
+}
+
 static bool mmay_fuzz_serialize_node(
     const MarimayAstNode *node,
     const MarimaySourceSnapshot *source,
@@ -338,7 +352,8 @@ static bool mmay_fuzz_serialize_node(
     } else {
         for (index = 0; index < node->child_count; index += 1) {
             const MarimayAstElement *element = mmay_ast_child(node, index);
-            if (mmay_fuzz_trailing_comma(node, index)) {
+            if (mmay_fuzz_trailing_comma(node, index)
+                || mmay_fuzz_type_closer(node, element)) {
                 continue;
             }
             if (element == NULL

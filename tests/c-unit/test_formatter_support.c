@@ -209,6 +209,20 @@ static bool mmay_formatter_ast_tokens_equal(
         ) == 0;
 }
 
+static bool mmay_formatter_ast_type_closer(
+    const MarimayAstNode *parent,
+    const MarimayAstElement *element
+) {
+    /* Canonical `>>` is one token plus a parser-owned pending closer, while
+       source `> >` is two tokens. The nested type nodes carry the same meaning. */
+    return parent != NULL && element != NULL
+        && element->kind == MMAY_AST_ELEMENT_TOKEN
+        && (parent->kind == MMAY_SYNTAX_TYPE_ARGUMENTS
+            || parent->kind == MMAY_SYNTAX_TYPE_PARAMETERS)
+        && (element->as.token.kind == MMAY_TOKEN_GREATER
+            || element->as.token.kind == MMAY_TOKEN_SHIFT_RIGHT);
+}
+
 bool mmay_formatter_fixture_init(
     MarimayFormatterFixture *fixture,
     const char *path,
@@ -337,6 +351,14 @@ static bool mmay_formatter_ast_equal_internal(
             continue;
         }
         if (right_trailing_comma) {
+            right_index += 1;
+            continue;
+        }
+        if (mmay_formatter_ast_type_closer(left, left_element)) {
+            left_index += 1;
+            continue;
+        }
+        if (mmay_formatter_ast_type_closer(right, right_element)) {
             right_index += 1;
             continue;
         }

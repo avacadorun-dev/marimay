@@ -107,6 +107,125 @@ void mmay_test_formatter_round_trip(void) {
     mmay_formatter_fixture_dispose(&original);
 }
 
+void mmay_test_formatter_type_closer_regression(void) {
+    static const unsigned char source[] =
+        "fn main(): void {\n"
+        "  const path = r\"C:\\u\0\0\0~\\name\";\n"
+        "  cponsoad<Result<int, Error>"
+        "\f\f\f\f\f\f\f\f\f\f"
+        "\f\f\f\f\f\f\f\f\f\f"
+        "\f\f\f\f\f\f\f\f\f\f\f"
+        ">(path)?;\n"
+        "sulte(result);\n"
+        "}\n";
+    static const unsigned char expected[] =
+        "fn main(): void {\n"
+        "  const path = \"C:\\\\u\\0\\0\\0~\\\\name\";\n"
+        "  cponsoad<Result<int, Error>>(path)?;\n"
+        "  sulte(result);\n"
+        "}\n";
+    MarimayFormatterFixture original;
+    MarimayFormatterFixture formatted;
+    MarimayFormatResult first;
+    MarimayFormatResult second;
+    MarimayAstTree original_ast;
+    MarimayAstTree formatted_ast;
+    bool formatted_ready = false;
+    memset(&first, 0, sizeof(first));
+    memset(&second, 0, sizeof(second));
+    memset(&original_ast, 0, sizeof(original_ast));
+    memset(&formatted_ast, 0, sizeof(formatted_ast));
+    MMAY_EXPECT(sizeof(source) - 1 == 138);
+    if (!mmay_formatter_fixture_init(
+            &original,
+            "formatter-type-closer-regression.my",
+            source,
+            sizeof(source) - 1
+        )) {
+        MMAY_EXPECT(false);
+        return;
+    }
+    MMAY_EXPECT(original.lexed.diagnostics.length == 0);
+    MMAY_EXPECT(original.parsed.diagnostics.length == 0);
+    MMAY_EXPECT(mmay_format_source(
+        &original.lexed,
+        &original.parsed,
+        mmay_system_allocator(),
+        mmay_format_default_options(),
+        &first
+    ) == MMAY_FORMAT_OK);
+    if (!first.initialized) {
+        mmay_formatter_fixture_dispose(&original);
+        return;
+    }
+    MMAY_EXPECT(first.output.length == sizeof(expected) - 1);
+    MMAY_EXPECT(first.output.length != sizeof(expected) - 1
+        || memcmp(first.output.data, expected, sizeof(expected) - 1) == 0);
+    formatted_ready = mmay_formatter_fixture_init(
+        &formatted,
+        "formatter-type-closer-regression-formatted.my",
+        first.output.data,
+        first.output.length
+    );
+    MMAY_EXPECT(formatted_ready);
+    if (!formatted_ready) {
+        mmay_format_result_dispose(&first);
+        mmay_formatter_fixture_dispose(&original);
+        return;
+    }
+    MMAY_EXPECT(formatted.lexed.diagnostics.length == 0);
+    MMAY_EXPECT(formatted.parsed.diagnostics.length == 0);
+    MMAY_EXPECT(mmay_ast_project(
+        &original.parsed.tree,
+        mmay_system_allocator(),
+        mmay_ast_default_options(),
+        &original_ast
+    ) == MMAY_AST_OK);
+    MMAY_EXPECT(mmay_ast_project(
+        &formatted.parsed.tree,
+        mmay_system_allocator(),
+        mmay_ast_default_options(),
+        &formatted_ast
+    ) == MMAY_AST_OK);
+    if (original_ast.initialized && formatted_ast.initialized) {
+        MMAY_EXPECT(mmay_formatter_ast_semantically_equal(
+            original_ast.root,
+            original.snapshot,
+            formatted_ast.root,
+            formatted.snapshot
+        ));
+        MMAY_EXPECT(mmay_fuzz_ast_semantically_equal(
+            &original_ast,
+            original.snapshot,
+            &formatted_ast,
+            formatted.snapshot
+        ));
+    }
+    MMAY_EXPECT(mmay_format_source(
+        &formatted.lexed,
+        &formatted.parsed,
+        mmay_system_allocator(),
+        mmay_format_default_options(),
+        &second
+    ) == MMAY_FORMAT_OK);
+    if (second.initialized) {
+        MMAY_EXPECT(!second.changed);
+        MMAY_EXPECT(second.output.length == first.output.length);
+        MMAY_EXPECT(second.output.length != first.output.length
+            || memcmp(
+                second.output.data,
+                first.output.data,
+                first.output.length
+            ) == 0);
+        mmay_format_result_dispose(&second);
+    }
+    mmay_ast_tree_dispose(&formatted_ast);
+    mmay_ast_tree_dispose(&original_ast);
+    mmay_formatter_fixture_dispose(&formatted);
+    mmay_format_result_dispose(&first);
+    mmay_formatter_fixture_dispose(&original);
+}
+
 void mmay_test_formatter_fixture_file(void) {
     static const struct {
         const char *input_path;

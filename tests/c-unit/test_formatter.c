@@ -2,6 +2,7 @@
 
 void mmay_test_formatter(void) {
     mmay_test_formatter_round_trip();
+    mmay_test_formatter_type_closer_regression();
     mmay_test_formatter_fixture_file();
     mmay_test_formatter_long_list();
     mmay_test_formatter_example_corpus();
