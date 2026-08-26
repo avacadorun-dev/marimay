@@ -265,7 +265,11 @@ configure_file(
 )
 
 add_test(NAME mmay_c_unit COMMAND mmay_c_unit "$<TARGET_FILE:mmay>")
-set_tests_properties(mmay_c_unit PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+set_tests_properties(
+  mmay_c_unit PROPERTIES
+  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+  TIMEOUT 3600
+)
 
 add_test(
   NAME mmay_cp32_unit
