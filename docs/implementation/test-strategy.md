@@ -32,6 +32,23 @@ prove balance only for calls routed through `MarimayAllocator` with correct size
 arguments; they do not track pointer identity and do not replace LeakSanitizer
 or Valgrind. All error paths run under sanitizers.
 
+An expensive deterministic allocation sweep may be split into fixed CTest
+shards only when their index sets are disjoint and their union is the original
+failure range. Changing the shard count must not reduce that range. Each shard
+independently measures the successful-path allocation count and asserts clean
+teardown; any late-phase probe is assigned to exactly one shard. Only shards
+whose fixtures and outputs are read-only may run concurrently. Tests that
+create shared build-tree artifacts remain serial.
+
+The C-unit coordinator is registered in CTest as fixed owner-aligned suite
+shards. Every coordinator call belongs to exactly one shard, while the direct
+runner still executes their union. Each suite shard receives a private copy of
+the fixture tree and a private working directory, so generated native outputs
+and temporary files cannot collide. Local CTest presets use a bounded
+four-process pool; sanitizer CI may use up to eight isolated processes and
+starts the historically expensive owner groups first. Shared resources use a
+narrow CTest resource lock rather than forcing unrelated tests to run serially.
+
 Production code under `bootstrap/` and `runtime/` must not reference raw
 process-heap APIs outside `bootstrap/src/base/allocator.c`;
 `tools/check-c-memory-policy` enforces that boundary across compiled C headers,

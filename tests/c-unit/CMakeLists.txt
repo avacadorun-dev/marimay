@@ -2,6 +2,8 @@ set_source_files_properties(runtime_profile_probe.c PROPERTIES
   HEADER_FILE_ONLY TRUE
 )
 
+set(MMAY_C_UNIT_SHARD_COUNT 16)
+
 add_executable(mmay_cp32_process_fixture cp32_process_fixture.c)
 mmay_target_warnings(mmay_cp32_process_fixture)
 
@@ -198,6 +200,7 @@ target_compile_definitions(mmay_c_unit PRIVATE
   MMAY_TEST_NATIVE_BOOTSTRAP_INCLUDE="${CMAKE_SOURCE_DIR}/bootstrap/include"
   MMAY_TEST_NATIVE_RUNTIME_INCLUDE="${CMAKE_SOURCE_DIR}/runtime/include"
   MMAY_TEST_CP32_PROCESS_FIXTURE="$<TARGET_FILE:mmay_cp32_process_fixture>"
+  MMAY_TEST_C_UNIT_SHARD_COUNT=${MMAY_C_UNIT_SHARD_COUNT}
 )
 if(MMAY_NATIVE_C_SANITIZER_FLAG)
   target_compile_definitions(mmay_c_unit PRIVATE
@@ -213,63 +216,135 @@ add_dependencies(mmay_c_unit
   mmay_cp32_process_fixture
 )
 
-file(COPY snapshots DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../syntax" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../format" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/format-tree" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../../examples" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-tree" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-tree" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-mismatch" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-private" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-alloc" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-invalid-expect" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint31-args" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-manifest" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity-nul" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../run" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../preview/checkpoint12" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays-private" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays-bounds" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results-private" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results-nonexhaustive" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp16-receiver-names" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-mutation" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-iterator-invalidated" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling-bounds" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp19-resource-limits" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp20-algorithm-corpus" DESTINATION "${CMAKE_CURRENT_BINARY_DIR}")
-file(COPY
-  "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.my"
-  "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.my"
-  DESTINATION "${CMAKE_CURRENT_BINARY_DIR}"
-)
-configure_file(
-  snapshots/version.json.in
-  "${CMAKE_CURRENT_BINARY_DIR}/snapshots/version.json"
-  @ONLY
-)
-configure_file(
-  snapshots/version.txt.in
-  "${CMAKE_CURRENT_BINARY_DIR}/snapshots/version.txt"
-  @ONLY
-)
-configure_file(
-  "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md"
-  "${CMAKE_CURRENT_BINARY_DIR}/README.fixture"
-  COPYONLY
+set(MMAY_C_UNIT_FIXTURE_DIRECTORIES
+  "${CMAKE_CURRENT_SOURCE_DIR}/snapshots"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../syntax"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../format"
+  "${CMAKE_CURRENT_SOURCE_DIR}/format-tree"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../../examples"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check-tree"
+  "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-tree"
+  "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-mismatch"
+  "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-private"
+  "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-alloc"
+  "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-invalid-expect"
+  "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint31-args"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-manifest"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity"
+  "${CMAKE_CURRENT_SOURCE_DIR}/check-invalid-identity-nul"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../run"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../preview/checkpoint12"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays-private"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp14-imported-arrays-bounds"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results-private"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp15-imported-results-nonexhaustive"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp16-receiver-names"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-mutation"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp17-array-iterator-invalidated"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp18-array-spelling-bounds"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp19-resource-limits"
+  "${CMAKE_CURRENT_SOURCE_DIR}/../post-preview/cp20-algorithm-corpus"
 )
 
-add_test(NAME mmay_c_unit COMMAND mmay_c_unit "$<TARGET_FILE:mmay>")
-set_tests_properties(
-  mmay_c_unit PROPERTIES
-  WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-  TIMEOUT 3600
+function(mmay_prepare_c_unit_working_directory destination)
+  file(MAKE_DIRECTORY "${destination}")
+  foreach(fixture_directory IN LISTS MMAY_C_UNIT_FIXTURE_DIRECTORIES)
+    file(COPY "${fixture_directory}" DESTINATION "${destination}")
+  endforeach()
+  file(COPY
+    "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.my"
+    "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.my"
+    DESTINATION "${destination}"
+  )
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/snapshots/version.json.in"
+    "${destination}/snapshots/version.json"
+    @ONLY
+  )
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/snapshots/version.txt.in"
+    "${destination}/snapshots/version.txt"
+    @ONLY
+  )
+  configure_file(
+    "${CMAKE_CURRENT_SOURCE_DIR}/../../README.md"
+    "${destination}/README.fixture"
+    COPYONLY
+  )
+endfunction()
+
+mmay_prepare_c_unit_working_directory("${CMAKE_CURRENT_BINARY_DIR}")
+
+math(EXPR MMAY_C_UNIT_LAST_SHARD "${MMAY_C_UNIT_SHARD_COUNT} - 1")
+set(MMAY_C_UNIT_SHARD_NAMES
+  frontend
+  checker
+  bytecode
+  runtime
+  native
+  cp31
+  final-preview
+  cli-core
+  cli-build
+  cli-check
+  cli-heap
+  cli-run
+  cli-test
+  cp14-cp15
+  cp16-cp17
+  cp18-cp20
 )
+set(MMAY_C_UNIT_SHARD_COSTS
+  2 80 25 70 440 640 480 1 225 75 330 265 375 420 505 625
+)
+foreach(shard RANGE 0 ${MMAY_C_UNIT_LAST_SHARD})
+  list(GET MMAY_C_UNIT_SHARD_NAMES ${shard} shard_name)
+  list(GET MMAY_C_UNIT_SHARD_COSTS ${shard} shard_cost)
+  set(test_name "mmay_c_unit_${shard_name}")
+  set(test_directory "${CMAKE_CURRENT_BINARY_DIR}/suite-${shard}")
+  mmay_prepare_c_unit_working_directory("${test_directory}")
+  add_test(
+    NAME "${test_name}"
+    COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --suite-shard "${shard}"
+  )
+  set_tests_properties(
+    "${test_name}" PROPERTIES
+    WORKING_DIRECTORY "${test_directory}"
+    LABELS "c-unit;${shard_name}"
+    COST "${shard_cost}"
+    TIMEOUT 3600
+  )
+  add_custom_command(TARGET mmay_c_unit POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+      "$<TARGET_FILE:mmay_c_unit>"
+      "${test_directory}/$<TARGET_FILE_NAME:mmay_c_unit>"
+    VERBATIM
+  )
+endforeach()
+
+set(MMAY_CP31_ALLOCATION_SHARD_COUNT 8)
+math(EXPR MMAY_CP31_ALLOCATION_LAST_SHARD
+  "${MMAY_CP31_ALLOCATION_SHARD_COUNT} - 1"
+)
+foreach(shard RANGE 0 ${MMAY_CP31_ALLOCATION_LAST_SHARD})
+  set(test_name "mmay_cp31_allocation_${shard}")
+  add_test(
+    NAME "${test_name}"
+    COMMAND mmay_c_unit "$<TARGET_FILE:mmay>"
+      --cp31-allocation-shard "${shard}"
+      "${MMAY_CP31_ALLOCATION_SHARD_COUNT}"
+  )
+  set_tests_properties(
+    "${test_name}" PROPERTIES
+    WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+    LABELS "allocation"
+    COST 70
+  )
+endforeach()
+set_tests_properties(mmay_cp31_allocation_0 PROPERTIES COST 100)
 
 add_test(
   NAME mmay_cp32_unit
@@ -331,4 +406,21 @@ add_test(
     "-DMMAY_TEST_BINARY_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp33-binary-native${CMAKE_EXECUTABLE_SUFFIX}"
     "-DMMAY_TEST_ITERATOR_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp33-iterator-native${CMAKE_EXECUTABLE_SUFFIX}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp33_process_text_bytes.cmake"
+)
+
+# The install contracts both update CMake's build-tree install manifest. They
+# may overlap all other isolated tests, but not each other.
+set_tests_properties(
+  mmay_install_relocation
+  mmay_cp29_release_contract
+  PROPERTIES RESOURCE_LOCK "mmay_install_manifest"
+)
+set_tests_properties(mmay_install_relocation PROPERTIES COST 320)
+set_tests_properties(mmay_cp29_release_contract PROPERTIES COST 200)
+set_tests_properties(mmay_cp32_process_streams PROPERTIES COST 320)
+set_tests_properties(mmay_cp33_process_text_bytes PROPERTIES COST 380)
+
+# Focused checkpoint runners still share the legacy root fixture directory.
+set_tests_properties(
+  mmay_cp32_unit mmay_cp33_unit PROPERTIES RUN_SERIAL TRUE COST 10
 )

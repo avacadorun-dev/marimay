@@ -60,7 +60,7 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
       - name: Test
-        run: ctest --test-dir build --output-on-failure
+        run: ctest --test-dir build --parallel 4 --output-on-failure
 
   sanitizers:
     name: Linux x86_64 ASan+UBSan+LSan
@@ -84,7 +84,10 @@ jobs:
       - name: Build
         run: cmake --build --preset asan-ubsan --parallel
       - name: Test
-        run: ctest --preset asan-ubsan --output-on-failure
+        run: |
+          test_jobs=$(nproc)
+          if [ "${test_jobs}" -gt 8 ]; then test_jobs=8; fi
+          ctest --preset asan-ubsan --parallel "${test_jobs}" --output-on-failure
 
   fuzz:
     name: Linux x86_64 fuzz / ${{ matrix.target }}
@@ -148,4 +151,7 @@ jobs:
       - name: Build
         run: cmake --build --preset tsan --parallel
       - name: Test
-        run: ctest --preset tsan --output-on-failure
+        run: |
+          test_jobs=$(nproc)
+          if [ "${test_jobs}" -gt 8 ]; then test_jobs=8; fi
+          ctest --preset tsan --parallel "${test_jobs}" --output-on-failure

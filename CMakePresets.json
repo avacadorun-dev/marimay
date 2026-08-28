@@ -103,31 +103,36 @@
       "name": "debug",
       "configurePreset": "debug",
       "configuration": "Debug",
-      "output": { "outputOnFailure": true }
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4 }
     },
     {
       "name": "release",
       "configurePreset": "release",
       "configuration": "Release",
-      "output": { "outputOnFailure": true }
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4 }
     },
     {
       "name": "asan",
       "configurePreset": "asan",
       "configuration": "Debug",
-      "output": { "outputOnFailure": true }
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4 }
     },
     {
       "name": "asan-ubsan",
       "configurePreset": "asan-ubsan",
       "configuration": "Debug",
-      "output": { "outputOnFailure": true }
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4 }
     },
     {
       "name": "tsan",
       "configurePreset": "tsan",
       "configuration": "Debug",
-      "output": { "outputOnFailure": true }
+      "output": { "outputOnFailure": true },
+      "execution": { "jobs": 4 }
     }
   ]
 }

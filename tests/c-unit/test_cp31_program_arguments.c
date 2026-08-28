@@ -531,7 +531,10 @@ static bool mmay_cp31_allocation_case(
     return argument_failure;
 }
 
-static void mmay_cp31_allocation_failures(void) {
+void mmay_test_cp31_program_argument_allocation_shard(
+    size_t shard_index,
+    size_t shard_count
+) {
     const char *arguments[] = {
         "mmay", "run", "run/cp31/arguments.my", "--", "alpha"
     };
@@ -539,7 +542,8 @@ static void mmay_cp31_allocation_failures(void) {
     size_t allocation_attempts = 0;
     size_t failure_index = 0;
     size_t failure_prefix = 0;
-    bool saw_argument_failure = false;
+    MMAY_EXPECT(shard_count != 0 && shard_index < shard_count);
+    if (shard_count == 0 || shard_index >= shard_count) return;
     {
         MarimayFailAllocator state;
         MarimaySession session;
@@ -560,19 +564,16 @@ static void mmay_cp31_allocation_failures(void) {
        orchestration prefix plus the late program-argument allocation phase. */
     failure_prefix = allocation_attempts < failure_prefix_limit
         ? allocation_attempts : failure_prefix_limit;
-    for (failure_index = 0; failure_index < failure_prefix;
-        failure_index += 1) {
-        saw_argument_failure = mmay_cp31_allocation_case(
-            arguments, failure_index
-        ) || saw_argument_failure;
+    for (failure_index = shard_index; failure_index < failure_prefix;
+        failure_index += shard_count) {
+        (void)mmay_cp31_allocation_case(arguments, failure_index);
     }
     MMAY_EXPECT(allocation_attempts >= 32);
-    if (allocation_attempts >= 32) {
-        saw_argument_failure = mmay_cp31_allocation_case(
+    if (allocation_attempts >= 32 && shard_index == 0) {
+        MMAY_EXPECT(mmay_cp31_allocation_case(
             arguments, allocation_attempts - 32
-        ) || saw_argument_failure;
+        ));
     }
-    MMAY_EXPECT(saw_argument_failure);
 }
 
 void mmay_test_cp31_program_arguments(void) {
@@ -585,5 +586,4 @@ void mmay_test_cp31_program_arguments(void) {
     mmay_cp31_vm_argument_boundary();
     mmay_cp31_test_injection(&session);
     mmay_cp31_native_artifact(&session);
-    mmay_cp31_allocation_failures();
 }
