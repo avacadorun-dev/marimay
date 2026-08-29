@@ -1135,6 +1135,13 @@ bool mmay_native_c_emit_function(
                             buffer, function, i
                         )) return false;
                     break;
+                case MMAY_MIR_PATH:
+                case MMAY_MIR_FS_UNARY:
+                case MMAY_MIR_FS_BINARY:
+                    if (!mmay_native_c_emit_fs_instruction(
+                            buffer, function, i
+                        )) return false;
+                    break;
                 case MMAY_MIR_IO_PRINTLN:
                 case MMAY_MIR_IO_WRITE:
                 case MMAY_MIR_IO_FLUSH:

@@ -365,8 +365,8 @@ performance prerequisite inserted between CP38 and CP39.
 ## Active sequence CP29-CP41
 
 The sequence is deliberately linear so exactly one card is executable. CP29
-through CP33 are `verified`; CP34 is `ready`, and every later card is `planned`
-behind its declared predecessor. Execution order is CP34–CP38, CP41, CP39,
+through CP34 are `verified`; CP35 is `ready`, and every later card is `planned`
+behind its declared predecessor. Execution order is CP35–CP38, CP41, CP39,
 then CP40; numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
@@ -829,7 +829,8 @@ tests/evidence, binary-stdio contract, and CP34 card.
 
 ## CP34 - Paths and filesystem slice
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP33.
+State: `verified`. Parent gate: CLI0. Predecessor: CP33. Evidence scope:
+`local`. Evidence: [CP34](evidence/cp34-paths-filesystem-2026-08-29.md).
 
 ### Outcome
 
@@ -920,7 +921,7 @@ platform adapters, focused tests/evidence, and CP35 card.
 
 ## CP35 - Environment and process context
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP34.
+State: `ready`. Parent gate: CLI0. Predecessor: CP34.
 
 ### Outcome
 

@@ -1,0 +1,192 @@
+import * as bytes from "std/bytes";
+import * as fs from "std/fs";
+import { println } from "std/io";
+import * as paths from "std/path";
+import { byteLength, startsWith } from "std/text";
+
+fn require(condition: bool, message: string): void {
+  if !condition {
+    panic(message);
+  }
+}
+
+fn same(left: string, right: string): bool {
+  return byteLength(left) == byteLength(right) && startsWith(left, right);
+}
+
+fn path(text: string): paths.Path {
+  return match paths.fromString(text) {
+    Ok(value) => value,
+    Err(_) => panic("path"),
+  };
+}
+
+fn child(root: paths.Path, name: string): paths.Path {
+  return match paths.join(root, path(name)) {
+    Ok(value) => value,
+    Err(_) => panic("join"),
+  };
+}
+
+fn main(arguments: []string): void {
+  require(arguments.length() == 3, "arguments");
+  const root = path(arguments[0]);
+  const outside = path(arguments[1]);
+  const hasLink = same(arguments[2], "link");
+  const input = child(root, "alpha input.txt");
+  const invalid = child(root, "invalid.bin");
+  const directory = child(root, "dir");
+  const link = child(root, "link");
+  const output = child(root, "written ü.txt");
+
+  require(
+    match fs.readText(input, 64) {
+      Ok(value) => same(value, "hello cp34\n"),
+      Err(_) => false,
+    },
+    "readText",
+  );
+
+  const file = match fs.open(input) {
+    Ok(value) => value,
+    Err(_) => panic("open"),
+  };
+  const opened = match fs.read(file, 64) {
+    Ok(value) => match bytes.decodeUtf8(value) {
+      Ok(text) => text,
+      Err(_) => panic("decode"),
+    },
+    Err(_) => panic("read"),
+  };
+  require(same(opened, "hello cp34\n"), "opened bytes");
+  require(
+    match fs.close(file) {
+      Err(_) => false,
+      _ => true,
+    },
+    "close",
+  );
+  require(
+    match fs.close(file) {
+      Err(_) => false,
+      _ => true,
+    },
+    "close twice",
+  );
+
+  require(
+    match fs.writeText(output, "written cp34\n") {
+      Err(_) => false,
+      _ => true,
+    },
+    "writeText",
+  );
+  require(
+    match fs.readText(output, 64) {
+      Ok(value) => same(value, "written cp34\n"),
+      Err(_) => false,
+    },
+    "read written",
+  );
+
+  const info = match fs.metadata(output) {
+    Ok(value) => value,
+    Err(_) => panic("metadata"),
+  };
+  require(
+    match info.kind {
+      fs.File => true,
+      _ => false,
+    },
+    "file kind",
+  );
+  require(info.size == 13, "file size");
+
+  const entries = match fs.readDirectory(root, 16) {
+    Ok(value) => value,
+    Err(_) => panic("directory"),
+  };
+  let expectedEntries = 4;
+  if hasLink {
+    expectedEntries = 5;
+  }
+  require(entries.length() == expectedEntries, "entry count");
+  require(same(entries[0].name, "alpha input.txt"), "entry 0");
+  require(same(entries[1].name, "dir"), "entry 1");
+  require(same(entries[2].name, "invalid.bin"), "entry 2");
+  if hasLink {
+    require(same(entries[3].name, "link"), "entry 3");
+    require(same(entries[4].name, "written ü.txt"), "entry 4");
+    require(
+      match entries[3].kind {
+        fs.Symlink => true,
+        _ => false,
+      },
+      "symlink kind",
+    );
+  } else {
+    require(same(entries[3].name, "written ü.txt"), "entry 3");
+  }
+
+  require(
+    match fs.readBytes(input, 2) {
+      Err(fs.LimitExceeded { limit }) => limit == 2,
+      _ => false,
+    },
+    "limit",
+  );
+  require(
+    match fs.readText(invalid, 64) {
+      Err(fs.InvalidUtf8 { offset }) => offset == 0,
+      _ => false,
+    },
+    "invalid UTF-8",
+  );
+  require(
+    match fs.readText(directory, 64) {
+      Err(fs.NotFile) => true,
+      _ => false,
+    },
+    "not file",
+  );
+  require(
+    match fs.readDirectory(input, 4) {
+      Err(fs.NotDirectory) => true,
+      _ => false,
+    },
+    "not directory",
+  );
+  require(
+    match fs.readDirectory(root, 1) {
+      Err(fs.TooManyEntries { limit }) => limit == 1,
+      _ => false,
+    },
+    "directory limit",
+  );
+  if hasLink {
+    require(
+      match fs.readText(link, 64) {
+        Err(fs.Symlink) => true,
+        _ => false,
+      },
+      "symlink",
+    );
+  }
+  require(
+    match fs.readText(child(root, "missing"), 64) {
+      Err(fs.NotFound) => true,
+      _ => false,
+    },
+    "missing",
+  );
+  require(
+    match fs.readText(outside, 64) {
+      Err(fs.CapabilityDenied { capability, path: deniedPath }) => same(capability, "fs.read")
+        && same(deniedPath, paths.string(outside)),
+        _ => false,
+      },
+      "denied",
+    );
+
+  const _ = println("cp34-io");
+}

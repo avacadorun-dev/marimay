@@ -89,6 +89,8 @@ Every command supports:
 --diagnostic human|short|json
 --quiet
 --verbose
+--allow-read PATH
+--allow-write PATH
 ```
 
 Unknown commands and flags report a spelling suggestion. They use stable diagnostics `U0001` and `U0002` respectively; JSON output follows the nullable-primary rule in the diagnostics specification. `mmay help` lists only top-level user tasks; `mmay help <command>` gives examples before exhaustive flags. The CLI does not automatically execute `mmay-<name>` binaries from `PATH`, preventing typos from invoking untrusted plugins.
@@ -406,6 +408,14 @@ and exit `1`. Bytecode pipeline failure `B0001` and runtime integrity/resource
 failure `I0002` exit `70`. Program stdout/stderr contain only D075 program bytes
 and never an internal engine-result envelope or compiler diagnostic. The three
 D075 standard-stream capabilities are the only default local grants.
+Under D077, repeatable `--allow-read` and `--allow-write` each accept at most
+64 roots. Each root is resolved against the launch directory, must normalize
+to an absolute path of at most 4096 bytes, and is embedded unchanged into a
+native build request when supplied to `mmay build`. Missing values are
+`U0004`; empty post-option spellings, invalid host encoding/path syntax, and
+excess roots are `U0005`; use on a command other than run/test/build is
+`U0002`. Each exits with status `2`, and no filesystem capability is granted
+by default.
 Arguments after the first `--` are validated under D066 and passed in order;
 the executable name is not present. Invalid argument bytes/limits use `G4006`,
 and a returned status outside `0..255` uses `G4007` rather than host truncation.

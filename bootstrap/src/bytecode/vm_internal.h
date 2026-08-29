@@ -111,6 +111,12 @@ MarimayBytecodeRunStatus mmay_bytecode_run_io_instruction(
     MarimayAllocator allocator,
     const MarimayIoStdout *stdout_sink
 );
+MarimayBytecodeRunStatus mmay_bytecode_run_fs_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function
+);
 MarimayBytecodeRunStatus mmay_bytecode_run_test_output_instruction(
     const MarimayBytecodeInstruction *instruction,
     MarimayBytecodeValue *registers,

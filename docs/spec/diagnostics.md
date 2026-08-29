@@ -354,6 +354,18 @@ decoding UTF-8, splitting/joining, or reading binary stdin remains this `I0002`
 host-memory or managed-heap classification. It must not fabricate a source
 limit/UTF-8/I/O error or publish a partial owned result.
 
+D077 path and filesystem source failures are the closed `std/path.Error` and
+`std/fs.Error` variants. `CapabilityDenied` carries exactly `fs.read` or
+`fs.write` plus the requested normalized path, never an unrelated absolute
+host path. Stable file errors contain no `errno`, platform code, localized
+text, partial byte count, temporary sibling name, or raw handle. Allocation,
+managed-root, descriptor, and internal table exhaustion remain `I0002`/status
+`70`; they must not be rewritten as `OpenFailed`, `ReadFailed`,
+`DirectoryFailed`, or another expected source error. CLI capability option
+syntax and root-normalization failures use `U0005`/status `2` before program
+execution. A missing root value is `U0004`; use on a command without this
+option is `U0002`.
+
 For D050 native construction, `B0002` means the distribution-selected host C
 toolchain could not be started or did not pass its preflight; it is an expected
 build failure and exits `1`. `B0003` means verified typed MIR could not emit

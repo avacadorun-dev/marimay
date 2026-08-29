@@ -2097,3 +2097,73 @@ Reason: files, CLI parsing, and JSON need a safe counted data foundation now,
 while suspension-safe borrowed lifetimes do not exist until I6. Owned copies
 and explicit limits make the alpha semantics complete without freezing a
 borrowed-view ABI or introducing implicit text/byte conversions.
+
+## D077 — Typed paths and capability-confined synchronous files
+
+Status: accepted.
+
+The CLI alpha `std/path.Path` is a nominal owned path whose counted UTF-8
+spelling is lexically normalized for the target host. POSIX accepts `/` as a
+separator. Windows accepts `/` and `\\`, emits `/`, upper-cases an ASCII drive
+letter, accepts absolute drive/UNC/root forms, and rejects drive-relative,
+device, extended-length, reserved-device, trailing-dot/space, and other
+non-portable component spellings. Empty and dot-only input normalize to `.`;
+repeated separators and `.` are removed, and `..` removes one preceding
+ordinary component. An absolute path may not ascend above its root. Every
+normalized path is at most 4096 bytes including neither a terminator nor hidden
+host state. Normalization is lexical and never claims symlink resolution.
+
+`mmay run`, `mmay test`, and `mmay build` accept repeatable
+`--allow-read PATH` and `--allow-write PATH`. A root is resolved against the
+launch working directory, lexically normalized into an absolute path, and
+stored as a component-bounded capability. A requested relative `Path` is
+resolved against that same directory. Matching uses whole components (and
+ASCII case folding for Windows drive and ordinary ASCII path bytes); write
+does not imply read, while write is sufficient for the tool-created sibling
+temporary used by atomic publication. Invalid or oversized resolved roots and
+more than 64 roots of either class are `U0005` command errors; a missing option
+value is `U0004`, and use on an unsupported command is the existing `U0002`
+unknown-option error.
+
+Capability matching happens on the normalized absolute spelling before any
+target open, read, write, metadata lookup, or directory traversal. After a
+match, every existing component from the capability root through the target is
+inspected without following links. A POSIX symbolic link or Windows reparse
+point is `Symlink`, including the final target. Thus no capability-authorized
+operation can escape through a host alias. Missing final write targets are
+allowed only when their existing parent chain is symlink-free; all other
+missing components are `NotFound`. This deliberately conservative alpha
+policy avoids freezing a canonicalization/alias ABI before broader sandbox
+work.
+
+`std/fs` exposes read-only `open`, bounded `read`, idempotent fallible `close`,
+and idempotent non-panicking `closeBestEffort`. Handles are execution-local,
+non-forgeable integers wrapped by a nominal `File`; a closed/foreign handle is
+`Closed`. Every surviving handle is best-effort closed by VM/oracle/native
+execution teardown on normal return, `Err`, panic, resource failure, or host
+adapter failure. An explicit close failure is returned when no earlier
+operation failed; convenience reads preserve their read/open failure and
+attempt best-effort cleanup, following D041.
+
+Whole-file byte and text reads accept limits in `0..1048576`, never publish a
+prefix on failure, and distinguish invalid limits, over-limit input, invalid
+UTF-8, missing, wrong-kind, denied, link, open/read/close, and internal resource
+failure. Text decoding reports the first invalid byte. Atomic byte/text writes
+create an exclusive same-directory tool-owned sibling, consume short writes in
+order, sync, close, then replace; every failure removes the temporary when
+possible and leaves the prior destination unchanged until replace. Stable
+source errors expose no `errno`, locale text, host path outside the requested
+bounded spelling, or partial byte count.
+
+Metadata reports `File`/`Directory` plus a non-negative byte size for regular
+files and zero for directories. Directory enumeration accepts an entry limit
+in `0..65536`, excludes `.` and `..`, retains an explicit
+file/directory/symlink/other kind, owns every UTF-8 name, and publishes only
+after sorting by unsigned UTF-8 bytes. Exceeding the limit, invalid host text,
+iteration failure, allocation failure, or close failure publishes no array.
+The Stage 0 adapters may block; I6 must replace blocking waits without changing
+these observable results.
+
+Reason: local CLI workloads need files now, but ambient access, link-following
+policy, unbounded whole-input helpers, and host-error leakage would create a
+security and portability contract that cannot safely be repaired later.

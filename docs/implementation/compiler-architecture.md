@@ -1,7 +1,7 @@
 # Marimay Stage 0 compiler architecture
 
 Status: implementation architecture for the C17 bootstrap.
-Last reviewed: 2026-08-24.
+Last reviewed: 2026-08-29.
 
 This document maps the normative compiler and execution contracts to physical
 owners. It changes no language semantics. When it conflicts with `docs/spec/`
@@ -152,6 +152,7 @@ bootstrap/src/mir/
   verify_interfaces.c   interface metadata and nominal payload verification
   verify_io.c           exact D075 stream instruction/layout verification
   verify_text.c         D076 text, UTF-8 array-layout, and binary-I/O verification
+  verify_fs.c           D077 path/fs operation and result-layout verification
   verify_format.c       D065 primitive-format and concat verification
   verify_parse.c        D065 Result<int, ParseError> layout verification
   execution.c           oracle graph and interpreter dispatch
@@ -159,6 +160,8 @@ bootstrap/src/mir/
   execution_heap.c      execution state and managed allocations
   execution_io.c        D075 stdin/stdout/stderr oracle and Result construction
   execution_text.c      D076 text transforms and UTF-8 array construction
+  execution_fs.c        D077 capability-confined path/fs oracle operations
+  fs_internal.h         narrow D077 verifier/oracle result-layout contract
   execution_format.c    locale-independent formatting and counted concat
   execution_parse.c     D065 integer parsing and ParseError construction
 ```
@@ -201,6 +204,8 @@ bootstrap/src/check/
   checker_tuple_match.c tuple-pattern binding and match lowering
   checker_range_loop.c  exact D068 integer-range loop CFG lowering
   checker_expr_io.c     exact imported std/io operation/alias recognition and lowering
+  checker_expr_fs.c     exact imported std/path and std/fs recognition and lowering
+  checker_expr_fs_api.h narrow D077 checker owner contract
   checker_expr_string.c interpolation plus closed std/convert lowering
   checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
                         and lowering
@@ -335,6 +340,9 @@ tests/c-unit/
   test_cp33_text_bytes.c          D076 text/MIR/bytecode/VM/native vertical owner
   test_cp33_process_text_bytes.cmake
                         VM/native binary-I/O and iterator-invalidated parity
+  test_cp34_fs.c                  D077 runtime/path/capability/allocation owner
+  test_cp34_fs_pipeline.c         D077 checker/MIR/bytecode hostile vertical owner
+  test_cp34_process_files.cmake   real VM/native filesystem and CLI comparison
 ```
 
 The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
@@ -671,6 +679,18 @@ checkpoint:
 | `bootstrap/src/native/c_emitter_text.c` | 0 | 190 | D076 portable-C text helper and instruction emission |
 | `tests/c-unit/test_cp33_text_bytes.c` | 0 | 696 | D076 randomized UTF-8, hostile MIR/bytecode, VM/native differential, and allocation coverage |
 | `tests/c-unit/test_cp33_process_text_bytes.cmake` | 0 | 108 | VM/native binary stdin/stdout and iterator-invalidated parity |
+| `runtime/common/fs.c` | 0 | 865 | D077 lexical normalization, capability matching, handle ownership, bounded I/O, atomic publication, metadata, and deterministic directories |
+| `runtime/include/mmay/runtime/fs.h` | 0 | 133 | D077 closed runtime filesystem request/result/capability contract |
+| `bootstrap/src/check/checker_expr_fs.c` | 0 | 173 | D077 exact std/path and std/fs call recognition and typed MIR lowering |
+| `bootstrap/src/mir/verify_fs.c` | 0 | 249 | D077 exact filesystem operation and result-layout verification |
+| `bootstrap/src/mir/execution_fs.c` | 0 | 597 | D077 MIR-oracle path/filesystem execution and managed result construction |
+| `bootstrap/src/bytecode/bytecode_verify_fs.c` | 0 | 315 | D077 hostile bytecode filesystem-operation verification |
+| `bootstrap/src/bytecode/mir_lower_fs.c` | 0 | 42 | D077 verified MIR-to-bytecode filesystem lowering |
+| `bootstrap/src/bytecode/vm_fs.c` | 0 | 676 | D077 VM filesystem execution and managed result construction |
+| `bootstrap/src/native/c_emitter_fs.c` | 0 | 338 | D077 portable-C capability roots, filesystem helpers, and instruction emission |
+| `tests/c-unit/test_cp34_fs.c` | 0 | 692 | D077 path/capability/partial-I/O/atomicity/resource/allocation-failure coverage |
+| `tests/c-unit/test_cp34_fs_pipeline.c` | 0 | 204 | D077 exact checker signatures plus hostile MIR/bytecode verification and codec coverage |
+| `tests/c-unit/test_cp34_process_files.cmake` | 0 | 208 | real VM/native capability, symlink, atomic file, cleanup, CLI, and output parity |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `mmay_test_mir` registration. The service checkpoint

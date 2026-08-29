@@ -22,6 +22,8 @@ void mmay_test_cp31_program_argument_allocation_shard(
 );
 void mmay_test_cp32_streams(void);
 void mmay_test_cp33_text_bytes(void);
+void mmay_test_cp34_fs(void);
+void mmay_test_cp34_fs_pipeline(void);
 void mmay_test_bytecode_vm(void);
 void mmay_test_checker(void);
 void mmay_test_checker_arrays(void);
@@ -171,6 +173,8 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_defer_cp7();
         mmay_test_cp30_mir();
         mmay_test_cp32_streams();
+        mmay_test_cp34_fs();
+        mmay_test_cp34_fs_pipeline();
         mmay_test_mir_array_mutation();
         mmay_test_cp9_io_pipeline();
         mmay_test_cp11_test_pipeline();
@@ -282,6 +286,20 @@ int main(int argument_count, char **arguments) {
             return 1;
         }
         printf("mmay_cp33_unit: ok\n");
+        return 0;
+    }
+    if (argument_count == 3 && strcmp(arguments[2], "--cp34") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_cp34_fs();
+        mmay_test_cp34_fs_pipeline();
+        if (mmay_test_failure_count() != 0) {
+            fprintf(
+                stderr, "mmay_cp34_unit: %d failure(s)\n",
+                mmay_test_failure_count()
+            );
+            return 1;
+        }
+        printf("mmay_cp34_unit: ok\n");
         return 0;
     }
     if (argument_count == 3 && strcmp(arguments[2], "--cp32") == 0) {

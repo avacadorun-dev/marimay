@@ -11,6 +11,7 @@
 #include "mmay/bytecode/program.h"
 #include "mmay/runtime/managed.h"
 #include "mmay/runtime/io.h"
+#include "mmay/runtime/fs.h"
 #include "mmay/runtime/test_output.h"
 typedef uint32_t MarimayBytecodeReference;
 #define MMAY_BYTECODE_INVALID_REFERENCE UINT32_MAX
@@ -26,7 +27,7 @@ typedef struct MarimayBytecodeValue {
 } MarimayBytecodeValue;
 typedef struct MarimayBytecodeExecutionOptions {
     size_t max_strings; size_t max_total_string_bytes;
-    MarimayManagedHeapOptions managed_heap;
+    MarimayManagedHeapOptions managed_heap; const MarimayFsOptions *fs;
 } MarimayBytecodeExecutionOptions;
 typedef struct MarimayBytecodeExecution {
     MarimayAllocator allocator;
@@ -44,8 +45,8 @@ typedef struct MarimayBytecodeExecution {
     MarimayVector owned_interface_tables;
     MarimayVector array_descriptors;
     MarimayTestOutput test_output;
-    bool array_descriptor_allocation_failed;
-    bool initialized;
+    MarimayFsContext fs; bool fs_initialized;
+    bool array_descriptor_allocation_failed; bool initialized;
 } MarimayBytecodeExecution;
 /*
  * Managed values are bound to this execution's heap. Active VM frames root
@@ -56,8 +57,7 @@ typedef struct MarimayBytecodeExecution {
  * managed_reference through the public MarimayManagedRootFrame API.
  */
 typedef struct MarimayBytecodePanicFrame {
-    MarimaySymbolId symbol;
-    MarimayBytecodeSpan call_span;
+    MarimaySymbolId symbol; MarimayBytecodeSpan call_span;
 } MarimayBytecodePanicFrame;
 typedef struct MarimayBytecodeSuppressedPanic {
     const char *code;

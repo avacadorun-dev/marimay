@@ -12,6 +12,7 @@
 #include "checker_generic_types_api.h"
 
 
+
 static bool mmay_checker_test_arguments_type(
     const MarimayChecker *checker,
     MarimayTypeId type

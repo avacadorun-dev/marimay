@@ -15,6 +15,7 @@
 #include "checker_expr_test_api.h"
 #include "checker_expr_string_api.h"
 #include "checker_expr_text_api.h"
+#include "checker_expr_fs_api.h"
 
 
 
@@ -1011,6 +1012,7 @@ bool mmay_checker_private_compile_ordinary_call(
     bool convert_parse_resolved = false;
     bool io_resolved = false;
     bool text_primitive_resolved = false;
+    bool fs_primitive_resolved = false;
     bool test_resolved = false;
     const MarimayAstNode *member_callee = mmay_checker_private_check_child_node(
         node,
@@ -1066,6 +1068,15 @@ bool mmay_checker_private_compile_ordinary_call(
         goto cleanup;
     }
     if (text_primitive_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!mmay_checker_private_compile_fs_primitive_call(
+            function, node, expected, &fs_primitive_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (fs_primitive_resolved) {
         accepted = true;
         goto cleanup;
     }

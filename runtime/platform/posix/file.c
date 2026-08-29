@@ -221,6 +221,41 @@ MarimayFileReadOps mmay_platform_file_read_ops(void) {
     return ops;
 }
 
+MarimayFileStatus mmay_file_metadata(
+    MarimayAllocator allocator,
+    const char *path,
+    size_t path_length,
+    MarimayFileMetadata *metadata
+) {
+    MarimayOwnedBytes owned = {0};
+    struct stat information;
+    MarimayFileStatus status;
+    if (metadata == NULL || path == NULL || path_length == 0
+        || memchr(path, 0, path_length) != NULL) {
+        return MMAY_FILE_INVALID_ARGUMENT;
+    }
+    memset(metadata, 0, sizeof(*metadata));
+    if (!mmay_utf8_validate(path, path_length, NULL)) {
+        return MMAY_FILE_INVALID_UTF8;
+    }
+    status = mmay_posix_owned_path(allocator, path, path_length, &owned);
+    if (status != MMAY_FILE_OK) return status;
+    if (lstat((const char *)owned.data, &information) != 0) {
+        status = errno == ENOENT || errno == ENOTDIR
+            ? MMAY_FILE_LIMIT_EXCEEDED : MMAY_FILE_IO_FAILED;
+    } else {
+        metadata->regular = S_ISREG(information.st_mode);
+        metadata->directory = S_ISDIR(information.st_mode);
+        metadata->symlink = S_ISLNK(information.st_mode);
+        if (metadata->regular) {
+            if (information.st_size < 0) status = MMAY_FILE_IO_FAILED;
+            else metadata->size = (uint64_t)information.st_size;
+        }
+    }
+    mmay_owned_bytes_dispose(&owned);
+    return status;
+}
+
 MarimayFileStatus mmay_file_replace_executable(
     MarimayAllocator allocator,
     const char *temporary_path,

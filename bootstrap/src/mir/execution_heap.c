@@ -82,6 +82,7 @@ MarimayMirExecutionOptions mmay_mir_execution_default_options(void) {
     options.max_arrays = 1000000;
     options.max_array_length = 1000000;
     options.max_total_array_elements = 10000000;
+    options.fs = NULL;
     return options;
 }
 bool mmay_mir_execution_init(
@@ -134,10 +135,21 @@ bool mmay_mir_execution_init(
         mmay_vector_dispose(&execution->objects);
         return false;
     }
+    if (options.fs != NULL && !mmay_fs_init(
+            &execution->fs, allocator, options.fs
+        )) {
+        mmay_vector_dispose(&execution->interface_values);
+        mmay_vector_dispose(&execution->arrays);
+        mmay_vector_dispose(&execution->strings);
+        mmay_vector_dispose(&execution->enums);
+        mmay_vector_dispose(&execution->objects);
+        return false;
+    }
     execution->allocator = allocator;
     execution->options = options;
     execution->provenance = provenance;
     execution->initialized = true;
+    execution->fs_initialized = options.fs != NULL;
     return true;
 }
 void mmay_mir_execution_dispose(MarimayMirExecution *execution) {
@@ -145,6 +157,7 @@ void mmay_mir_execution_dispose(MarimayMirExecution *execution) {
     if (execution == NULL || !execution->initialized) {
         return;
     }
+    if (execution->fs_initialized) mmay_fs_dispose(&execution->fs);
     for (index = 0; index < execution->objects.length; index += 1) {
         MarimayMirManagedRecord **record = mmay_vector_at(
             &execution->objects,

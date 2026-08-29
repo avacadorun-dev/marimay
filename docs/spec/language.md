@@ -822,8 +822,7 @@ This exactness remains subject to the E0 ergonomics gate, not to silent implemen
 In the example, omitting `.mapError(configError)` is a compile error because
 `fs.Error` and `ConfigError` are distinct, and omitting `limit` is a call-arity
 error. The documentation corpus contains matching compile-pass and compile-fail
-obligations; until the `std/fs` surface is present in the I2 checker they are
-parser-backed and cannot be reported as type-check evidence.
+obligations; the CP34 checker makes them executable type-check evidence.
 
 The operator does not catch panic, cancellation, or an engine fault. It is deliberately visible at the propagation site.
 

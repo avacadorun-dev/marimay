@@ -255,6 +255,139 @@ static const unsigned char mmay_cli_std_text_tail[] =
     "public fn append(builder: Builder, text: string): Result<void, LimitError> { const amount = mmayByteLength(text); if amount > builder.limit - builder.length { return Err(LimitError.LimitExceeded { limit: builder.limit, required: builder.limit + 1 }); } const _ = builder.chunks.push(text); builder.length += amount; return Ok(); }\n"
     "public fn finish(builder: Builder): string { return mmayJoin(builder.chunks, \"\"); }\n";
 
+static const unsigned char mmay_cli_std_path_source[] =
+    "public enum Error {\n"
+    "  InvalidCharacter,\n"
+    "  UnsupportedPrefix,\n"
+    "  EscapesRoot,\n"
+    "  TooLong { limit: int, },\n"
+    "}\n\n"
+    "public type Path { text: string, absolute: bool, }\n\n"
+    "extern \"c\" fn mmayPathNormalize(text: string): Result<string, Error>;\n"
+    "extern \"c\" fn mmayPathIsAbsolute(text: string): bool;\n\n"
+    "public fn fromString(text: string): Result<Path, Error> {\n"
+    "  return match mmayPathNormalize(text) {\n"
+    "    Ok(value) => Ok(Path { text: value, absolute: mmayPathIsAbsolute(value) }),\n"
+    "    Err(error) => Err(error),\n"
+    "  };\n"
+    "}\n\n"
+    "public fn string(path: Path): string { return path.text; }\n"
+    "public fn isAbsolute(path: Path): bool { return path.absolute; }\n\n"
+    "public fn join(base: Path, child: Path): Result<Path, Error> {\n"
+    "  if child.absolute { return Ok(child); }\n"
+    "  return fromString($\"{base.text}/{child.text}\");\n"
+    "}\n";
+
+static const unsigned char mmay_cli_std_fs_source[] =
+    "import * as bytes from \"std/bytes\";\n"
+    "import * as paths from \"std/path\";\n\n"
+    "public enum Error {\n"
+    "  CapabilityDenied { capability: string, path: string, },\n"
+    "  InvalidLimit { limit: int, },\n"
+    "  LimitExceeded { limit: int, },\n"
+    "  NotFound,\n"
+    "  NotFile,\n"
+    "  NotDirectory,\n"
+    "  Symlink,\n"
+    "  Closed,\n"
+    "  OpenFailed,\n"
+    "  ReadFailed,\n"
+    "  WriteFailed,\n"
+    "  SyncFailed,\n"
+    "  CloseFailed,\n"
+    "  ReplaceFailed,\n"
+    "  InvalidUtf8 { offset: int, },\n"
+    "  TooManyEntries { limit: int, },\n"
+    "  DirectoryFailed,\n"
+    "}\n\n"
+    "public enum Kind { File, Directory, }\n"
+    "public enum EntryKind { File, Directory, Symlink, Other, }\n"
+    "public type File { handle: int, mutable closed: bool, }\n"
+    "public type Metadata { public kind: Kind, public size: int, }\n"
+    "public type Entry { public name: string, public kind: EntryKind, }\n\n"
+    "extern \"c\" fn mmayFsOpen(text: string): Result<int, Error>;\n"
+    "extern \"c\" fn mmayFsRead(handle: int, limit: int): Result<[]byte, Error>;\n"
+    "extern \"c\" fn mmayFsClose(handle: int): Result<void, Error>;\n"
+    "extern \"c\" fn mmayFsCloseBestEffort(handle: int): void;\n"
+    "extern \"c\" fn mmayFsReadAll(text: string, limit: int): Result<[]byte, Error>;\n"
+    "extern \"c\" fn mmayFsWriteAtomic(text: string, values: []byte): Result<void, Error>;\n"
+    "extern \"c\" fn mmayFsMetadata(text: string): Result<Metadata, Error>;\n"
+    "extern \"c\" fn mmayFsReadDirectory(text: string, limit: int): Result<[]Entry, Error>;\n\n"
+    "public fn message(error: Error): string {\n"
+    "  return match error {\n"
+    "    CapabilityDenied { capability, path } => $\"{capability} capability denied for {path}\",\n"
+    "    InvalidLimit { limit } => $\"invalid filesystem limit {limit}\",\n"
+    "    LimitExceeded { limit } => $\"file exceeds {limit}-byte limit\",\n"
+    "    NotFound => \"filesystem path was not found\",\n"
+    "    NotFile => \"filesystem path is not a file\",\n"
+    "    NotDirectory => \"filesystem path is not a directory\",\n"
+    "    Symlink => \"symbolic links are not followed\",\n"
+    "    Closed => \"file is closed\",\n"
+    "    OpenFailed => \"file open failed\",\n"
+    "    ReadFailed => \"file read failed\",\n"
+    "    WriteFailed => \"file write failed\",\n"
+    "    SyncFailed => \"file sync failed\",\n"
+    "    CloseFailed => \"file close failed\",\n"
+    "    ReplaceFailed => \"atomic file replacement failed\",\n"
+    "    InvalidUtf8 { offset } => $\"file is not valid UTF-8 at byte {offset}\",\n"
+    "    TooManyEntries { limit } => $\"directory exceeds {limit}-entry limit\",\n"
+    "    DirectoryFailed => \"directory enumeration failed\",\n"
+    "  };\n"
+    "}\n\n"
+    "public fn open(filePath: paths.Path): Result<File, Error> {\n"
+    "  return match mmayFsOpen(paths.string(filePath)) {\n"
+    "    Ok(handle) => Ok(File { handle, closed: false }),\n"
+    "    Err(error) => Err(error),\n"
+    "  };\n"
+    "}\n\n"
+    "public fn read(file: File, limit: int): Result<bytes.Bytes, Error> {\n"
+    "  if file.closed { return Err(Error.Closed); }\n"
+    "  return match mmayFsRead(file.handle, limit) {\n"
+    "    Ok(values) => Ok(bytes.fromArray(values)),\n"
+    "    Err(error) => Err(error),\n"
+    "  };\n"
+    "}\n\n"
+    "public fn close(file: File): Result<void, Error> {\n"
+    "  if file.closed { return Ok(); }\n"
+    "  const result = mmayFsClose(file.handle);\n"
+    "  file.closed = true;\n"
+    "  return result;\n"
+    "}\n\n"
+    "public fn closeBestEffort(file: File): void {\n"
+    "  if !file.closed { mmayFsCloseBestEffort(file.handle); file.closed = true; }\n"
+    "}\n\n"
+    "public fn readBytes(filePath: paths.Path, limit: int): Result<bytes.Bytes, Error> {\n"
+    "  return match mmayFsReadAll(paths.string(filePath), limit) {\n"
+    "    Ok(values) => Ok(bytes.fromArray(values)),\n"
+    "    Err(error) => Err(error),\n"
+    "  };\n"
+    "}\n";
+
+static const unsigned char mmay_cli_std_fs_tail[] =
+    "import * as bytes from \"std/bytes\";\n"
+    "import * as paths from \"std/path\";\n\n"
+    "fn fromUtf8Error(error: bytes.Utf8Error): Error {\n"
+    "  return match error {\n"
+    "    bytes.Invalid { offset } => Error.InvalidUtf8 { offset },\n"
+    "  };\n"
+    "}\n\n"
+    "public fn readText(filePath: paths.Path, limit: int): Result<string, Error> {\n"
+    "  const value = readBytes(filePath, limit)?;\n"
+    "  return bytes.decodeUtf8(value).mapError(fromUtf8Error);\n"
+    "}\n\n"
+    "public fn writeBytes(filePath: paths.Path, value: bytes.Bytes): Result<void, Error> {\n"
+    "  return mmayFsWriteAtomic(paths.string(filePath), bytes.toArray(value));\n"
+    "}\n"
+    "public fn writeText(filePath: paths.Path, value: string): Result<void, Error> {\n"
+    "  return writeBytes(filePath, bytes.encodeUtf8(value));\n"
+    "}\n"
+    "public fn metadata(filePath: paths.Path): Result<Metadata, Error> {\n"
+    "  return mmayFsMetadata(paths.string(filePath));\n"
+    "}\n"
+    "public fn readDirectory(filePath: paths.Path, limit: int): Result<[]Entry, Error> {\n"
+    "  return mmayFsReadDirectory(paths.string(filePath), limit);\n"
+    "}\n";
+
 static MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
     MarimayCliCheckTarget *target,
     const MarimayCliStandardSource *standard
@@ -350,6 +483,20 @@ MarimayCliCheckTargetStatus mmay_cli_standard_packages_add(
             "std/text/builders.my",
             mmay_cli_std_text_tail,
             sizeof(mmay_cli_std_text_tail) - 1
+        },
+        {
+            "std/path", "std/path/path.my",
+            mmay_cli_std_path_source,
+            sizeof(mmay_cli_std_path_source) - 1,
+            NULL, NULL, 0
+        },
+        {
+            "std/fs", "std/fs/fs.my",
+            mmay_cli_std_fs_source,
+            sizeof(mmay_cli_std_fs_source) - 1,
+            "std/fs/text.my",
+            mmay_cli_std_fs_tail,
+            sizeof(mmay_cli_std_fs_tail) - 1
         }
     };
     size_t index = 0;

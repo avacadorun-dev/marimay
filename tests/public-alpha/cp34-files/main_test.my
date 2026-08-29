@@ -1,0 +1,50 @@
+import { fromString, isAbsolute, join, string } from "std/path";
+import { byteLength, startsWith } from "std/text";
+
+fn require(condition: bool, message: string): void {
+  if !condition {
+    panic(message);
+  }
+}
+
+fn same(left: string, right: string): bool {
+  return byteLength(left) == byteLength(right) && startsWith(left, right);
+}
+
+@test
+fn pathsAreNormalizedAndTyped(): void {
+  const path = match fromString("folder/./space and ünicode.txt") {
+    Ok(value) => value,
+    Err(_) => panic("path"),
+  };
+  require(same(string(path), "folder/space and ünicode.txt"), "normalized path");
+  require(!isAbsolute(path), "relative path");
+}
+
+@test
+fn joinsNormalizeDotDotWithoutEscaping(): void {
+  const base = match fromString("alpha/beta") {
+    Ok(value) => value,
+    Err(_) => panic("base"),
+  };
+  const child = match fromString("../gamma") {
+    Ok(value) => value,
+    Err(_) => panic("child"),
+  };
+  const combined = match join(base, child) {
+    Ok(value) => value,
+    Err(_) => panic("join"),
+  };
+  require(same(string(combined), "alpha/gamma"), "joined path");
+}
+
+@test
+fn rootEscapeIsRejected(): void {
+  require(
+    match fromString("/../../outside") {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "root escape",
+  );
+}

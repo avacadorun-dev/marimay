@@ -11,6 +11,8 @@
 static const char *const mmay_global_options[] = {
     "--check",
     "--all-targets",
+    "--allow-read",
+    "--allow-write",
     "--color",
     "--diagnostic",
     "--diff",
@@ -156,6 +158,9 @@ static int mmay_unknown_option(
     const char *suggestion = mmay_suggest_option(option);
     int length = 0;
     mmay_display_argument(option, display, sizeof(display));
+    if (suggestion != NULL && strcmp(suggestion, option) == 0) {
+        suggestion = NULL;
+    }
     if (suggestion != NULL) {
         length = snprintf(
             message,
@@ -249,6 +254,8 @@ static int mmay_parse_options(
     options->build_emit_index = 0;
     options->build_release = false;
     options->build_release_index = 0;
+    options->allow_read_count = 0;
+    options->allow_write_count = 0;
     options->program_arguments = NULL;
     options->program_argument_start = 0;
     options->program_argument_count = 0;
@@ -275,6 +282,12 @@ static int mmay_parse_options(
                     || strcmp(options->command, "build") == 0
                     || strcmp(options->command, "test") == 0))
             || (strcmp(argument, "--max-heap-bytes") == 0
+                && options->command != NULL
+                && (strcmp(options->command, "run") == 0
+                    || strcmp(options->command, "build") == 0
+                    || strcmp(options->command, "test") == 0))
+            || ((strcmp(argument, "--allow-read") == 0
+                    || strcmp(argument, "--allow-write") == 0)
                 && options->command != NULL
                 && (strcmp(options->command, "run") == 0
                     || strcmp(options->command, "build") == 0
@@ -359,6 +372,25 @@ static int mmay_parse_options(
                     error_writer
                 );
                 if (heap_result != MMAY_EXIT_SUCCESS) return heap_result;
+            } else if (strcmp(argument, "--allow-read") == 0
+                || strcmp(argument, "--allow-write") == 0) {
+                const char **roots = strcmp(argument, "--allow-read") == 0
+                    ? options->allow_read : options->allow_write;
+                size_t *count = strcmp(argument, "--allow-read") == 0
+                    ? &options->allow_read_count : &options->allow_write_count;
+                if (value[0] == '\0' || strlen(value) > MMAY_FS_MAX_PATH_BYTES
+                    || *count >= MMAY_CLI_MAX_FS_ROOTS) {
+                    return mmay_option_value_error(
+                        error_writer, options->diagnostic_style,
+                        MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE, (size_t)index,
+                        "filesystem capability root is empty, too long, or exceeds the 64-root limit"
+                    );
+                }
+                roots[*count] = value;
+                (strcmp(argument, "--allow-read") == 0
+                    ? options->allow_read_index
+                    : options->allow_write_index)[*count] = (size_t)index;
+                *count += 1;
             }
         } else if (mmay_starts_with(argument, "--diagnostic=")) {
             value = argument + strlen("--diagnostic=");
@@ -420,6 +452,31 @@ static int mmay_parse_options(
                 (size_t)index, (size_t)index, error_writer
             );
             if (heap_result != MMAY_EXIT_SUCCESS) return heap_result;
+        } else if ((mmay_starts_with(argument, "--allow-read=")
+                || mmay_starts_with(argument, "--allow-write="))
+            && options->command != NULL
+            && (strcmp(options->command, "run") == 0
+                || strcmp(options->command, "build") == 0
+                || strcmp(options->command, "test") == 0)) {
+            bool read = mmay_starts_with(argument, "--allow-read=");
+            size_t prefix = strlen(read ? "--allow-read=" : "--allow-write=");
+            const char *root = argument + prefix;
+            const char **roots = read
+                ? options->allow_read : options->allow_write;
+            size_t *count = read
+                ? &options->allow_read_count : &options->allow_write_count;
+            if (root[0] == '\0' || strlen(root) > MMAY_FS_MAX_PATH_BYTES
+                || *count >= MMAY_CLI_MAX_FS_ROOTS) {
+                return mmay_option_value_error(
+                    error_writer, options->diagnostic_style,
+                    MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE, (size_t)index,
+                    "filesystem capability root is empty, too long, or exceeds the 64-root limit"
+                );
+            }
+            roots[*count] = root;
+            (read ? options->allow_read_index
+                : options->allow_write_index)[*count] = (size_t)index;
+            *count += 1;
         } else if (mmay_starts_with(argument, "--output=")
             && options->command != NULL
             && strcmp(options->command, "build") == 0) {
@@ -641,6 +698,12 @@ int mmay_cli_run(
             options.command_index,
             message
         );
+    }
+    if (options.allow_read_count != 0 || options.allow_write_count != 0) {
+        int capability_status = mmay_cli_validate_fs_capabilities(
+            session, &options, standard_error
+        );
+        if (capability_status != MMAY_EXIT_SUCCESS) return capability_status;
     }
     if (options.version_json && strcmp(task->name, "version") != 0) {
         return mmay_unknown_option(

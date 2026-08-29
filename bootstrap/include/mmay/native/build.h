@@ -8,6 +8,7 @@
 #include "mmay/base/owned_bytes.h"
 #include "mmay/mir/mir.h"
 #include "mmay/native/runtime_artifact.h"
+#include "mmay/runtime/fs.h"
 
 typedef struct MarimayNativeBuildRequest {
     const MarimayMirFunction *const *functions;
@@ -22,6 +23,10 @@ typedef struct MarimayNativeBuildRequest {
     const MarimayNativeRuntimePaths *runtime_paths;
     /* Zero selects the documented 64 MiB default. */
     size_t max_heap_bytes;
+    const MarimayFsPathView *read_roots;
+    size_t read_root_count;
+    const MarimayFsPathView *write_roots;
+    size_t write_root_count;
     bool takes_arguments;
     bool returns_status;
     bool returns_result;

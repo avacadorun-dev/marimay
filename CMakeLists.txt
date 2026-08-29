@@ -49,6 +49,10 @@ if(WIN32)
   set(MMAY_NATIVE_PROGRAM_ARGUMENTS_SOURCE
     runtime/platform/windows/program_arguments.c
   )
+  set(MMAY_NATIVE_FS_SOURCES
+    runtime/platform/windows/directory.c
+    runtime/platform/windows/file.c
+  )
 elseif(UNIX)
   set(MMAY_PLATFORM_SOURCES
     runtime/platform/posix/directory.c
@@ -58,6 +62,10 @@ elseif(UNIX)
   )
   set(MMAY_NATIVE_PROGRAM_ARGUMENTS_SOURCE
     runtime/platform/posix/program_arguments.c
+  )
+  set(MMAY_NATIVE_FS_SOURCES
+    runtime/platform/posix/directory.c
+    runtime/platform/posix/file.c
   )
 else()
   message(FATAL_ERROR "No Stage 0 platform adapter for this host")
@@ -172,6 +180,7 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/integer_text.c
   bootstrap/src/base/number_format.c
   bootstrap/src/base/owned_bytes.c
+  bootstrap/src/base/path.c
   bootstrap/src/base/provenance.c
   bootstrap/src/base/text.c
   bootstrap/src/base/unicode.c
@@ -179,6 +188,9 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/vector.c
   runtime/common/io_stdout.c
   runtime/common/io.c
+  runtime/common/directory.c
+  runtime/common/file.c
+  runtime/common/fs.c
   runtime/common/managed.c
   runtime/common/managed_array_access.c
   runtime/common/managed_array_capacity.c
@@ -194,6 +206,7 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   runtime/common/profile.c
   runtime/common/test_output.c
   ${MMAY_NATIVE_PROGRAM_ARGUMENTS_SOURCE}
+  ${MMAY_NATIVE_FS_SOURCES}
 )
 
 function(mmay_add_native_runtime target profile optimization output_directory)
@@ -283,6 +296,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_verify_text.c
   bootstrap/src/bytecode/bytecode_verify_integer_range.c
   bootstrap/src/bytecode/bytecode_verify_io.c
+  bootstrap/src/bytecode/bytecode_verify_fs.c
   bootstrap/src/bytecode/bytecode_verify_nominal.c
   bootstrap/src/bytecode/bytecode_verify_numeric.c
   bootstrap/src/bytecode/bytecode_verify_provenance.c
@@ -291,6 +305,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/program_verify_nominal.c
   bootstrap/src/bytecode/mir_lower.c
   bootstrap/src/bytecode/mir_lower_format.c
+  bootstrap/src/bytecode/mir_lower_fs.c
   bootstrap/src/bytecode/mir_lower_text.c
   bootstrap/src/bytecode/mir_lower_nominal.c
   bootstrap/src/bytecode/vm.c
@@ -300,6 +315,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_defer.c
   bootstrap/src/bytecode/vm_interface.c
   bootstrap/src/bytecode/vm_io.c
+  bootstrap/src/bytecode/vm_fs.c
   bootstrap/src/bytecode/vm_format.c
   bootstrap/src/bytecode/vm_text.c
   bootstrap/src/bytecode/vm_parse.c
@@ -332,6 +348,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_expr_numeric.c
   bootstrap/src/check/checker_expr_interfaces.c
   bootstrap/src/check/checker_expr_io.c
+  bootstrap/src/check/checker_expr_fs.c
   bootstrap/src/check/checker_expr_test.c
   bootstrap/src/check/checker_generic_types.c
   bootstrap/src/check/checker_generic_specialization.c
@@ -372,6 +389,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/cli/cli_display.c
   bootstrap/src/cli/cli_heap_limit.c
   bootstrap/src/cli/cli_build_program.c
+  bootstrap/src/cli/cli_capabilities.c
     bootstrap/src/cli/cli_check.c
     bootstrap/src/cli/cli_compile_report.c
     bootstrap/src/cli/cli_mir_pipeline.c
@@ -400,6 +418,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/execution_array.c
   bootstrap/src/mir/execution_defer.c
   bootstrap/src/mir/execution_format.c
+  bootstrap/src/mir/execution_fs.c
   bootstrap/src/mir/execution_text.c
   bootstrap/src/mir/execution_parse.c
   bootstrap/src/mir/execution_io.c
@@ -414,6 +433,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/verify_interfaces.c
   bootstrap/src/mir/verify_io.c
   bootstrap/src/mir/verify_format.c
+  bootstrap/src/mir/verify_fs.c
   bootstrap/src/mir/verify_text.c
   bootstrap/src/mir/verify_parse.c
   bootstrap/src/mir/verify_managed.c
@@ -433,7 +453,8 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/native/c_emitter_entry.c
   bootstrap/src/native/c_emitter_emit.c
     bootstrap/src/native/c_emitter_format.c
-    bootstrap/src/native/c_emitter_io.c
+  bootstrap/src/native/c_emitter_io.c
+  bootstrap/src/native/c_emitter_fs.c
     bootstrap/src/native/c_emitter_text.c
   bootstrap/src/native/c_emitter_managed.c
   bootstrap/src/native/c_emitter_roots.c
@@ -451,6 +472,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/types/type.c
   runtime/common/directory.c
   runtime/common/file.c
+  runtime/common/fs.c
   runtime/common/io_stdout.c
   runtime/common/io.c
   runtime/common/test_output.c

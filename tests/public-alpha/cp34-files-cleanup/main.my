@@ -1,0 +1,18 @@
+import * as fs from "std/fs";
+import { fromString } from "std/path";
+
+fn main(arguments: []string): void {
+  if arguments.length() != 1 {
+    panic("arguments");
+  }
+  const filePath = match fromString(arguments[0]) {
+    Ok(value) => value,
+    Err(_) => panic("path"),
+  };
+  const file = match fs.open(filePath) {
+    Ok(value) => value,
+    Err(_) => panic("open"),
+  };
+  defer fs.closeBestEffort(file);
+  panic("cp34 primary");
+}

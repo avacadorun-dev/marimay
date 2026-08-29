@@ -8,6 +8,7 @@
 #include "mmay/base/allocator.h"
 #include "mmay/base/vector.h"
 #include "mmay/runtime/test_output.h"
+#include "mmay/runtime/fs.h"
 #include "mmay/types/type.h"
 
 /*
@@ -43,6 +44,7 @@ typedef struct MarimayMirExecutionOptions {
     size_t max_arrays;
     size_t max_array_length;
     size_t max_total_array_elements;
+    const MarimayFsOptions *fs;
 } MarimayMirExecutionOptions;
 
 typedef struct MarimayMirExecution {
@@ -58,6 +60,8 @@ typedef struct MarimayMirExecution {
     /* Oracle-owned immutable interface payloads and selected method tables. */
     MarimayVector interface_values;
     MarimayTestOutput test_output;
+    MarimayFsContext fs;
+    bool fs_initialized;
     MarimayMirExecutionOptions options;
     size_t total_fields;
     size_t total_string_bytes;

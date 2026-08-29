@@ -1,0 +1,15 @@
+import { readText } from "std/fs";
+import { print } from "std/io";
+import { fromString } from "std/path";
+
+fn main(): void {
+  const filePath = match fromString("tests/public-alpha/cp34-files/fixtures/hello world.txt") {
+    Ok(value) => value,
+    Err(_) => panic("path normalization failed"),
+  };
+  const text = match readText(filePath, 64) {
+    Ok(value) => value,
+    Err(_) => panic("file read failed"),
+  };
+  const _ = print(text);
+}

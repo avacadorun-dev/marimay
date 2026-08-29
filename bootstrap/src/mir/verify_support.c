@@ -1,4 +1,5 @@
 #include "mir_internal.h"
+#include "fs_internal.h"
 #include "text_internal.h"
 #include <limits.h>
 #include <string.h>
@@ -54,6 +55,10 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
         case MMAY_MIR_IO_READ_BYTES:
         case MMAY_MIR_IO_WRITE_BYTES:
             return mmay_mir_verify_io_instruction(function, instruction);
+        case MMAY_MIR_PATH:
+        case MMAY_MIR_FS_UNARY:
+        case MMAY_MIR_FS_BINARY:
+            return mmay_mir_verify_fs_instruction(function, instruction);
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
             if (first_type == MMAY_TYPE_INVALID) {
                 return MMAY_MIR_VERIFY_INVALID_REGISTER;
@@ -836,8 +841,11 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
         case MMAY_MIR_STRING_CONCAT:
         case MMAY_MIR_PARSE_INTEGER:
         case MMAY_MIR_TEXT_BINARY:
+        case MMAY_MIR_FS_BINARY:
             return true;
         case MMAY_MIR_TEXT_UNARY:
+        case MMAY_MIR_PATH:
+        case MMAY_MIR_FS_UNARY:
             return false;
     }
     return false;

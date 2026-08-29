@@ -28,6 +28,19 @@ typedef enum MarimayMirIoOperation {
     MMAY_MIR_IO_STDOUT_FLUSH, MMAY_MIR_IO_STDERR_FLUSH
 } MarimayMirIoOperation;
 
+typedef enum MarimayMirFsOperation {
+    MMAY_MIR_PATH_NORMALIZE,
+    MMAY_MIR_PATH_IS_ABSOLUTE,
+    MMAY_MIR_FS_OPEN_READ,
+    MMAY_MIR_FS_READ,
+    MMAY_MIR_FS_CLOSE,
+    MMAY_MIR_FS_CLOSE_BEST_EFFORT,
+    MMAY_MIR_FS_READ_ALL,
+    MMAY_MIR_FS_WRITE_ATOMIC,
+    MMAY_MIR_FS_METADATA,
+    MMAY_MIR_FS_READ_DIRECTORY
+} MarimayMirFsOperation;
+
 typedef enum MarimayMirIntegerPolicy {
     MMAY_MIR_INTEGER_CHECKED_OPTION,
     MMAY_MIR_INTEGER_WRAPPING,

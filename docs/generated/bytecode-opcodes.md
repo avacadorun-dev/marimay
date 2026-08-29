@@ -138,3 +138,13 @@ Stage 0 codec.
 | 125 | `text_decode_utf8` | `destination:register`, `bytes:register` | `may_panic` | Copy verified []byte into immutable string. |
 | 126 | `io_read_bytes` | `destination:register`, `limit:register`, `array_layout:i64` | `may_panic` | Read bounded binary stdin through EOF into Result<[]byte, std/io.Error>. |
 | 127 | `io_write_bytes` | `destination:register`, `bytes:register`, `operation:i64` | `may_panic` | Publish exact []byte data to stdout or stderr under D076. |
+| 128 | `path_normalize` | `destination:register`, `text:register` | `may_panic` | Lexically normalize one bounded target-host path into Result<string, std/path.Error>. |
+| 129 | `path_is_absolute` | `destination:register`, `text:register` | — | Test whether one normalized target-host path is absolute. |
+| 130 | `fs_open_read` | `destination:register`, `path:register` | `may_panic` | Capability-check and open one symlink-free regular file for reading. |
+| 131 | `fs_read` | `destination:register`, `handle:register`, `limit:register` | `may_panic` | Read one bounded open file through EOF without publishing a failed prefix. |
+| 132 | `fs_close` | `destination:register`, `handle:register` | `may_panic` | Idempotently close one execution-local file handle with a typed result. |
+| 133 | `fs_close_best_effort` | `destination:register`, `handle:register` | — | Idempotently attempt non-panicking cleanup of one execution-local file handle. |
+| 134 | `fs_read_all` | `destination:register`, `path:register`, `limit:register` | `may_panic` | Capability-check and boundedly read one whole regular file. |
+| 135 | `fs_write_atomic` | `destination:register`, `path:register`, `bytes:register` | `may_panic` | Capability-check and atomically publish one bounded byte array. |
+| 136 | `fs_metadata` | `destination:register`, `path:register` | `may_panic` | Inspect bounded file or directory metadata without following links. |
+| 137 | `fs_read_directory` | `destination:register`, `path:register`, `limit:register` | `may_panic` | Enumerate owned directory entries in deterministic UTF-8 order. |

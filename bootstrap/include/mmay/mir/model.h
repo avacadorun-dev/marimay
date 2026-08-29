@@ -94,6 +94,9 @@ typedef enum MarimayMirInstructionKind {
     MMAY_MIR_TEXT_BINARY,
     MMAY_MIR_IO_READ_BYTES,
     MMAY_MIR_IO_WRITE_BYTES,
+    MMAY_MIR_PATH,
+    MMAY_MIR_FS_UNARY,
+    MMAY_MIR_FS_BINARY,
     MMAY_MIR_TEST_OUTPUT_BEGIN,
     MMAY_MIR_TEST_OUTPUT_END,
     MMAY_MIR_DEFER_REGISTER,
@@ -119,6 +122,7 @@ typedef struct MarimayMirInstruction {
     MarimayMirIntegerOperation integer_operation;
     MarimayMirIoOperation io_operation;
     MarimayMirTextOperation text_operation;
+    MarimayMirFsOperation fs_operation;
     MarimayTypeId integer_target_type;
     size_t variant;
     size_t field;

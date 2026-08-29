@@ -20,6 +20,11 @@ typedef enum MarimayFileStatus {
 
 typedef uintptr_t MarimayFileHandle;
 
+typedef struct MarimayFileMetadata {
+    bool regular; bool directory; bool symlink;
+    uint64_t size;
+} MarimayFileMetadata;
+
 typedef MarimayFileStatus (*MarimayFileCreateExclusiveFn)(
     void *context,
     MarimayAllocator allocator,
@@ -86,6 +91,14 @@ typedef struct MarimayFileReadOps {
 /* Returns the host implementation. The returned value owns no state. */
 MarimayFileOps mmay_platform_file_ops(void);
 MarimayFileReadOps mmay_platform_file_read_ops(void);
+
+/* Inspects one path without following its final symbolic-link component. */
+MarimayFileStatus mmay_file_metadata(
+    MarimayAllocator allocator,
+    const char *path,
+    size_t path_length,
+    MarimayFileMetadata *metadata
+);
 
 /* Reads one UTF-8 host path into an exact owned buffer under a byte limit. */
 MarimayFileStatus mmay_file_read_all_with_ops(

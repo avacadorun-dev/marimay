@@ -188,6 +188,7 @@ static bool mmay_cli_test_vm(
     MarimayOwnedBytes encoded;
     MarimayBytecodeExecution execution;
     MarimayBytecodeExecutionOptions execution_options;
+    MarimayCliFsCapabilities fs_capabilities;
     MarimayBytecodePanic panic;
     MarimayBytecodeValue result;
     MarimayBytecodeRunOptions run_options;
@@ -210,6 +211,7 @@ static bool mmay_cli_test_vm(
     memset(&decoded, 0, sizeof(decoded));
     memset(&encoded, 0, sizeof(encoded));
     memset(&execution, 0, sizeof(execution));
+    memset(&fs_capabilities, 0, sizeof(fs_capabilities));
     memset(&panic, 0, sizeof(panic));
     memset(&result, 0, sizeof(result));
     memset(&argument, 0, sizeof(argument));
@@ -245,6 +247,10 @@ static bool mmay_cli_test_vm(
     execution_options = mmay_bytecode_execution_default_options();
     execution_options.managed_heap.max_live_bytes =
         context->options->max_heap_bytes;
+    if (!mmay_cli_fs_capabilities(
+            context->options, &fs_capabilities
+        )) goto cleanup;
+    execution_options.fs = &fs_capabilities.options;
     if (!mmay_bytecode_execution_init(
             &execution, context->session->allocator, execution_options
         )) goto cleanup;
@@ -344,12 +350,17 @@ static bool mmay_cli_test_native(
     size_t argument_bytes = 0;
     size_t argument_count = context->options->program_argument_count + 1;
     size_t index = 0;
+    MarimayCliFsCapabilities fs_capabilities;
     bool accepted = false;
     memset(&request, 0, sizeof(request));
     memset(&build, 0, sizeof(build));
     memset(&capture, 0, sizeof(capture));
     memset(observation, 0, sizeof(*observation));
     memset(tool_output, 0, sizeof(*tool_output));
+    memset(&fs_capabilities, 0, sizeof(fs_capabilities));
+    if (!mmay_cli_fs_capabilities(
+            context->options, &fs_capabilities
+        )) goto cleanup;
     request.functions = context->functions;
     request.function_count = context->function_count;
     request.entry_symbol = test->function->mir.symbol;
@@ -357,6 +368,10 @@ static bool mmay_cli_test_native(
     request.root_directory = (const char *)context->target->root_directory.data;
     request.root_directory_length = context->target->root_directory.length;
     request.max_heap_bytes = context->options->max_heap_bytes;
+    request.read_roots = fs_capabilities.options.read_roots;
+    request.read_root_count = fs_capabilities.options.read_root_count;
+    request.write_roots = fs_capabilities.options.write_roots;
+    request.write_root_count = fs_capabilities.options.write_root_count;
     *build_status = mmay_native_build(
         context->session->allocator, &request, &build
     );

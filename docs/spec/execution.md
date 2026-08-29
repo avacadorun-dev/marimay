@@ -588,6 +588,13 @@ separately linked call but retain D035/D062 arithmetic and panic semantics.
 
 Garbage collection is not resource management. Safe APIs for files, sockets, transactions, and foreign handles expose explicit `close`/`finish` operations intended for lexical `defer`. User-defined finalizers are not supported in 1.0. Internal emergency cleanup for leaked OS handles must be reported and cannot define correctness.
 
+D077 file handles are execution-local resources. VM, MIR-oracle, and native
+execution contexts own one bounded handle table and best-effort close every
+still-open entry during complete teardown, including `Err`, panic, and internal
+resource failure. Source code still owns correctness through explicit
+`close`/`closeBestEffort`; teardown is a leak backstop and cannot convert or
+hide the already selected source outcome.
+
 ### 9.4 Limits and allocation failure
 
 VM runs may set heap, task, instruction, and wall-time limits. D055's
@@ -663,6 +670,24 @@ identical. It is a removal-gated implementation detail, not a second stream
 semantics. The internal harness spelling `ok:f64:` followed by hexadecimal
 bits is not program output.
 
+### 10.2 Capability-confined files
+
+D077 file operations share one closed runtime request model across the MIR
+oracle, verified bytecode VM, and native C17. A request carries a normalized
+typed path plus its exact read/write operation. The engine resolves relative
+paths against the captured launch directory, performs a component-boundary
+capability match, and only then invokes the symlink-free platform adapter.
+Denied requests produce no target metadata/open/read/write/directory call.
+
+Read handles consume partial transfers in order and allow no zero-progress
+success. Bounded whole-file reads publish only after EOF and successful close;
+input beyond the caller limit publishes no prefix. Atomic writes create one
+exclusive sibling temporary, consume positive short writes, sync, close, and
+atomically replace. A failure before replace leaves the previous destination
+observable and attempts temporary removal. Directory results are fully owned
+and unsigned-UTF-8 sorted before publication. The Stage 0 adapters may block;
+I6 owns parking without changing this request/result/capability trace.
+
 ## 11. FFI interaction
 
 ### 11.1 Calls from Marimay to C
@@ -686,6 +711,13 @@ An FFI declaration and wrapper live in a package that declares the `ffi` capabil
 The root application declares the ambient capabilities it requires, such as filesystem roots, network endpoints, environment names, subprocess execution, clock/randomness, dynamic FFI libraries, and resource ceilings.
 
 Libraries cannot broaden the root set. Standard APIs check the current runtime capability context. Tests replace capabilities with deterministic in-memory implementations.
+
+For D077, read and write roots are separate, repeatable, absolute normalized
+component prefixes with a maximum of 64 roots per class and 4096 bytes per
+path. A write root authorizes the same-directory temporary needed for atomic
+publication but does not authorize source reads. Existing symbolic-link or
+reparse-point components are rejected after the lexical capability match and
+are never followed.
 
 For `.myb` execution, capabilities are denied unless granted by the invoking command or accepted root manifest. The VM verifier and runtime enforce them. Native binaries perform the same standard-library checks, but unsafe native FFI can escape process-level enforcement; production hard isolation also uses operating-system sandboxing.
 
@@ -785,7 +817,8 @@ Tests intentionally exercising real nondeterminism may opt out of byte-for-byte 
 
 D051's checkpoint-11 implementation applies this contract to the currently
 executable deterministic subset before the I6 scheduler, clock, random, and
-temporary-filesystem surfaces exist. Its record is the exact termination
+temporary-filesystem surfaces exist. D077 extends the record with normalized
+filesystem requests, structured results, and cleanup events. Its record is the exact termination
 classification plus separate counted stdout and stderr byte streams. Every VM
 test receives a new bytecode execution and managed heap; every native test is
 a separately invoked process. Both executions consume the same verified typed

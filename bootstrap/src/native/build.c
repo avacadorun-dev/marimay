@@ -494,6 +494,10 @@ MarimayNativeBuildStatus mmay_native_build(
     emit_options.executable_returns_status = request->returns_status;
     emit_options.executable_returns_result = request->returns_result;
     emit_options.error_message_symbol = request->error_message_symbol;
+    emit_options.read_roots = request->read_roots;
+    emit_options.read_root_count = request->read_root_count;
+    emit_options.write_roots = request->write_roots;
+    emit_options.write_root_count = request->write_root_count;
     if (request->max_heap_bytes != 0) {
         emit_options.max_heap_bytes = request->max_heap_bytes;
     }

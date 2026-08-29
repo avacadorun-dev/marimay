@@ -294,6 +294,50 @@ MarimayFileReadOps mmay_platform_file_read_ops(void) {
     return ops;
 }
 
+MarimayFileStatus mmay_file_metadata(
+    MarimayAllocator allocator,
+    const char *path,
+    size_t path_length,
+    MarimayFileMetadata *metadata
+) {
+    wchar_t *wide_path = NULL;
+    size_t allocation_size = 0;
+    WIN32_FILE_ATTRIBUTE_DATA information;
+    MarimayFileStatus status;
+    if (metadata == NULL || path == NULL || path_length == 0
+        || memchr(path, 0, path_length) != NULL) {
+        return MMAY_FILE_INVALID_ARGUMENT;
+    }
+    memset(metadata, 0, sizeof(*metadata));
+    if (!mmay_utf8_validate(path, path_length, NULL)) {
+        return MMAY_FILE_INVALID_UTF8;
+    }
+    status = mmay_windows_owned_path(
+        allocator, path, path_length, &wide_path, &allocation_size
+    );
+    if (status != MMAY_FILE_OK) return status;
+    if (!GetFileAttributesExW(
+            wide_path, GetFileExInfoStandard, &information
+        )) {
+        DWORD error = GetLastError();
+        status = error == ERROR_FILE_NOT_FOUND || error == ERROR_PATH_NOT_FOUND
+            ? MMAY_FILE_LIMIT_EXCEEDED : MMAY_FILE_IO_FAILED;
+    } else {
+        metadata->symlink =
+            (information.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) != 0;
+        metadata->directory =
+            (information.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0;
+        metadata->regular = !metadata->symlink && !metadata->directory
+            && (information.dwFileAttributes & FILE_ATTRIBUTE_DEVICE) == 0;
+        if (metadata->regular) {
+            metadata->size = ((uint64_t)information.nFileSizeHigh << 32)
+                | (uint64_t)information.nFileSizeLow;
+        }
+    }
+    mmay_deallocate(&allocator, wide_path, allocation_size);
+    return status;
+}
+
 MarimayFileStatus mmay_file_replace_executable(
     MarimayAllocator allocator,
     const char *temporary_path,

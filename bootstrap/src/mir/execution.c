@@ -1,4 +1,5 @@
 #include "mir_internal.h"
+#include "fs_internal.h"
 #include "text_internal.h"
 #include "mmay/base/checked_i64.h"
 #include "mmay/base/checked_integer.h"
@@ -325,6 +326,13 @@ static MarimayMirInterpretStatus mmay_mir_execute_instruction(
         case MMAY_MIR_IO_WRITE_BYTES:
             return mmay_mir_execute_io_instruction(function, instruction,
                 first, target, allocator, options);
+        case MMAY_MIR_PATH:
+        case MMAY_MIR_FS_UNARY:
+        case MMAY_MIR_FS_BINARY:
+            return mmay_mir_execute_fs_instruction(
+                function, instruction, first, second, target, allocator,
+                options
+            );
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
         case MMAY_MIR_TEST_OUTPUT_END:
             return mmay_mir_execute_test_output_instruction(

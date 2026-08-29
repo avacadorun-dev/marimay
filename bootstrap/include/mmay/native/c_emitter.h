@@ -6,6 +6,7 @@
 #include "mmay/base/allocator.h"
 #include "mmay/base/owned_bytes.h"
 #include "mmay/mir/mir.h"
+#include "mmay/runtime/fs.h"
 
 typedef struct MarimayNativeCProgram {
     const MarimayMirFunction *const *functions;
@@ -22,6 +23,10 @@ typedef struct MarimayNativeCEmitOptions {
     bool executable_returns_status;
     bool executable_returns_result;
     MarimaySymbolId error_message_symbol;
+    const MarimayFsPathView *read_roots;
+    size_t read_root_count;
+    const MarimayFsPathView *write_roots;
+    size_t write_root_count;
 } MarimayNativeCEmitOptions;
 
 typedef enum MarimayNativeCEmitStatus {

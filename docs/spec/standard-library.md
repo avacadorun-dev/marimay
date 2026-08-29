@@ -219,7 +219,31 @@ and do not write stdout, append a newline, or perform I/O. They are not an
 implicit conversion into `println`. `formatF32` formats raw binary32 bits; it
 does not specify `f32` arithmetic.
 
-`std/path` distinguishes portable logical paths from platform-native behavior. Normalization is lexical and never claims to resolve symlinks; filesystem canonicalization is a separate capability-checked operation.
+`std/path` distinguishes typed logical paths from host operations. The
+executable CLI-alpha surface is:
+
+```marimay
+public enum Error {
+  InvalidCharacter,
+  UnsupportedPrefix,
+  EscapesRoot,
+  TooLong { limit: int, },
+}
+public type Path;
+public fn fromString(text: string): Result<Path, Error>;
+public fn string(path: Path): string;
+public fn isAbsolute(path: Path): bool;
+public fn join(base: Path, child: Path): Result<Path, Error>;
+```
+
+`Path` owns a normalized counted UTF-8 spelling of at most 4096 bytes. Empty
+input denotes `.`, normalization removes repeated separators and lexical dot
+segments, and an absolute path cannot ascend above its root. The accepted
+separator/prefix/component spellings are the target-host rules in D077, but
+the stored spelling always uses `/`. `join` returns an absolute child
+unchanged and otherwise normalizes `base/string(child)`. None of these
+operations queries the filesystem, follows links, grants authority, or exposes
+a platform-native byte or wide-character handle.
 
 ### 3.1 Preview standard output
 
@@ -355,15 +379,54 @@ public interface Stream<T, E> {
 
 ## 5. Filesystem, environment, and processes
 
-`std/fs` functions require root filesystem capabilities and return structured `fs.Error` cases. Paths are checked against capabilities after safe canonicalization rules appropriate to the operation. APIs cover partial reads/writes and do not assume one call transfers the entire buffer.
+`std/fs` functions require root filesystem capabilities and return the closed
+CLI-alpha error set below. Matching and symlink-free traversal follow D077;
+host error strings, numeric codes, and partial byte counts are never exposed.
 
 ```marimay
-public fn open(path: path.Path, options: OpenOptions): Result<File, Error>;
-public fn readText(path: path.Path, limit: int): Result<string, Error>;
-public fn writeText(path: path.Path, value: string): Result<void, Error>;
+public enum Error {
+  CapabilityDenied { capability: string, path: string, },
+  InvalidLimit { limit: int, },
+  LimitExceeded { limit: int, },
+  NotFound,
+  NotFile,
+  NotDirectory,
+  Symlink,
+  Closed,
+  OpenFailed,
+  ReadFailed,
+  WriteFailed,
+  SyncFailed,
+  CloseFailed,
+  ReplaceFailed,
+  InvalidUtf8 { offset: int, },
+  TooManyEntries { limit: int, },
+  DirectoryFailed,
+}
+public enum Kind { File, Directory, }
+public enum EntryKind { File, Directory, Symlink, Other, }
+public type File;
+public type Metadata { kind: Kind, size: int, }
+public type Entry { name: string, kind: EntryKind, }
+public fn message(error: Error): string;
+public fn open(path: path.Path): Result<File, Error>;
+public fn read(file: File, limit: int): Result<bytes.Bytes, Error>;
 public fn close(file: File): Result<void, Error>;
 public fn closeBestEffort(file: File): void;
+public fn readBytes(path: path.Path, limit: int): Result<bytes.Bytes, Error>;
+public fn readText(path: path.Path, limit: int): Result<string, Error>;
+public fn writeBytes(path: path.Path, value: bytes.Bytes): Result<void, Error>;
+public fn writeText(path: path.Path, value: string): Result<void, Error>;
+public fn metadata(path: path.Path): Result<Metadata, Error>;
+public fn readDirectory(path: path.Path, limit: int): Result<[]Entry, Error>;
 ```
+
+`open` is read-only in this bounded slice. `read` and both whole-file helpers
+accept `0..1048576`; an over-limit or failed read publishes no bytes or text.
+`readText` additionally validates UTF-8 and reports the first malformed byte.
+The whole-file helpers consume partial host reads internally. Atomic writes
+consume short writes, sync, close, and replace through a same-directory
+exclusive temporary; the destination is not changed before replace succeeds.
 
 `File.close()` is idempotent and returns `Result<void,fs.Error>`; it is used
 when release failure must affect the operation's result. `File.closeBestEffort()`
@@ -374,7 +437,14 @@ not as a substitute for explicit `close()` when the failure matters.
 Applications that require observation on every exit defer their own `void`
 adapter that matches `close()` and sends failures to an explicit sink.
 Convenience helpers close resources internally. Production APIs that read an
-entire input require a limit.
+entire input require a limit. Runtime teardown best-effort closes every
+execution-local handle that source did not close.
+
+Metadata accepts only regular files and directories. File size is an exact
+non-negative byte count representable by `int`; directory size is zero.
+`readDirectory` accepts `0..65536`, excludes `.` and `..`, owns every name,
+retains explicit symlink/other entry kinds without following them, and sorts
+the complete result by unsigned UTF-8 name bytes before publication.
 
 `std/env` distinguishes missing values from invalid encoding and requires named `env.read` capabilities. Enumerating the entire environment needs a separate grant.
 

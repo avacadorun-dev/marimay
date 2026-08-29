@@ -12,6 +12,9 @@
 #include "mmay/diagnostic.h"
 #include "mmay/manifest/manifest.h"
 #include "mmay/platform/file.h"
+#include "mmay/runtime/fs.h"
+
+#define MMAY_CLI_MAX_FS_ROOTS 64U
 
 typedef struct MarimayCliOptions {
     const char *tool_executable_path;
@@ -45,6 +48,12 @@ typedef struct MarimayCliOptions {
     size_t build_emit_index;
     bool build_release;
     size_t build_release_index;
+    const char *allow_read[MMAY_CLI_MAX_FS_ROOTS];
+    size_t allow_read_index[MMAY_CLI_MAX_FS_ROOTS];
+    size_t allow_read_count;
+    const char *allow_write[MMAY_CLI_MAX_FS_ROOTS];
+    size_t allow_write_index[MMAY_CLI_MAX_FS_ROOTS];
+    size_t allow_write_count;
     const char *const *program_arguments;
     size_t program_argument_start;
     size_t program_argument_count;
@@ -110,5 +119,21 @@ int mmay_cli_build_program(MarimaySession *session, const MarimayCliOptions *opt
 int mmay_cli_test_program(MarimaySession *session, const MarimayCliOptions *options,
     MarimayWriter standard_output, MarimayWriter standard_error);
 bool mmay_cli_optimize_checked_mir(MarimayCompilerResult *compiler);
+
+typedef struct MarimayCliFsCapabilities {
+    MarimayFsOptions options;
+    MarimayFsPathView read_roots[MMAY_CLI_MAX_FS_ROOTS];
+    MarimayFsPathView write_roots[MMAY_CLI_MAX_FS_ROOTS];
+} MarimayCliFsCapabilities;
+
+bool mmay_cli_fs_capabilities(
+    const MarimayCliOptions *options,
+    MarimayCliFsCapabilities *capabilities
+);
+int mmay_cli_validate_fs_capabilities(
+    MarimaySession *session,
+    const MarimayCliOptions *options,
+    MarimayWriter error_writer
+);
 
 #endif
