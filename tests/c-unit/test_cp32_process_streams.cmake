@@ -79,6 +79,9 @@ cp32_compare_case(
 )
 
 if(UNIX)
+  if(NOT DEFINED MMAY_TEST_BROKEN_PIPE_LAUNCHER)
+    message(FATAL_ERROR "CP32 broken-pipe launcher is missing")
+  endif()
   set(cp32_broken_input "${cp32_directory}/broken-pipe.input")
   set(cp32_broken_expected
     "657272206c696e650a6572726f725b47343030335d3a207374616e646172642073747265616d20666c757368206661696c65640a"
@@ -86,34 +89,28 @@ if(UNIX)
   file(WRITE "${cp32_broken_input}" "pipe\n")
   foreach(engine IN ITEMS vm native)
     set(cp32_broken_error "${cp32_directory}/broken-pipe.${engine}.stderr")
-    set(cp32_broken_status "${cp32_directory}/broken-pipe.${engine}.status")
     if(engine STREQUAL "vm")
       set(cp32_broken_command
-        "(\"$MMAY_TOOL\" run \"$MMAY_SOURCE\" <\"$MMAY_INPUT\" 2>\"$MMAY_ERROR\"; printf '%s' \"$?\" >\"$MMAY_STATUS\") | :"
+        "${MMAY_TEST_BROKEN_PIPE_LAUNCHER}"
+        "${MMAY_TEST_TOOL}" run "${MMAY_TEST_SOURCE}"
       )
     else()
       set(cp32_broken_command
-        "(\"$MMAY_ARTIFACT\" <\"$MMAY_INPUT\" 2>\"$MMAY_ERROR\"; printf '%s' \"$?\" >\"$MMAY_STATUS\") | :"
+        "${MMAY_TEST_BROKEN_PIPE_LAUNCHER}"
+        "${MMAY_TEST_ARTIFACT}"
       )
     endif()
     execute_process(
-      COMMAND "${CMAKE_COMMAND}" -E env
-        "MMAY_TOOL=${MMAY_TEST_TOOL}"
-        "MMAY_SOURCE=${MMAY_TEST_SOURCE}"
-        "MMAY_ARTIFACT=${MMAY_TEST_ARTIFACT}"
-        "MMAY_INPUT=${cp32_broken_input}"
-        "MMAY_ERROR=${cp32_broken_error}"
-        "MMAY_STATUS=${cp32_broken_status}"
-        /bin/sh -c "${cp32_broken_command}"
-      RESULT_VARIABLE cp32_broken_launcher_status
+      COMMAND ${cp32_broken_command}
+      INPUT_FILE "${cp32_broken_input}"
+      ERROR_FILE "${cp32_broken_error}"
+      RESULT_VARIABLE cp32_broken_child_status
     )
-    file(READ "${cp32_broken_status}" cp32_broken_child_status)
     file(READ "${cp32_broken_error}" cp32_broken_error_hex HEX)
-    if(NOT cp32_broken_launcher_status EQUAL 0
-        OR NOT cp32_broken_child_status STREQUAL "1"
+    if(NOT cp32_broken_child_status EQUAL 1
         OR NOT cp32_broken_error_hex STREQUAL cp32_broken_expected)
       message(FATAL_ERROR
-        "CP32 broken-pipe ${engine}: launcher=${cp32_broken_launcher_status}; child=${cp32_broken_child_status}; stderr=${cp32_broken_error_hex}"
+        "CP32 broken-pipe ${engine}: child=${cp32_broken_child_status}; stderr=${cp32_broken_error_hex}"
       )
     endif()
   endforeach()

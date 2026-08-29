@@ -6,6 +6,13 @@ set(MMAY_C_UNIT_SHARD_COUNT 16)
 
 add_executable(mmay_cp32_process_fixture cp32_process_fixture.c)
 mmay_target_warnings(mmay_cp32_process_fixture)
+if(UNIX)
+  add_executable(
+    mmay_cp32_broken_pipe_launcher
+    cp32_broken_pipe_launcher.c
+  )
+  mmay_target_warnings(mmay_cp32_broken_pipe_launcher)
+endif()
 
 add_executable(mmay_c_unit
   runtime_profile_probe.c
@@ -217,6 +224,9 @@ add_dependencies(mmay_c_unit
   mmay_native_runtime_release
   mmay_cp32_process_fixture
 )
+if(UNIX)
+  add_dependencies(mmay_c_unit mmay_cp32_broken_pipe_launcher)
+endif()
 
 set(MMAY_C_UNIT_FIXTURE_DIRECTORIES
   "${CMAKE_CURRENT_SOURCE_DIR}/snapshots"
@@ -395,12 +405,20 @@ add_test(
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp29_release_contract.cmake"
 )
 
+set(mmay_cp32_process_test_arguments
+  "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+  "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp32-stdio"
+  "-DMMAY_TEST_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp32-process-streams-native${CMAKE_EXECUTABLE_SUFFIX}"
+)
+if(UNIX)
+  list(APPEND mmay_cp32_process_test_arguments
+    "-DMMAY_TEST_BROKEN_PIPE_LAUNCHER=$<TARGET_FILE:mmay_cp32_broken_pipe_launcher>"
+  )
+endif()
 add_test(
   NAME mmay_cp32_process_streams
   COMMAND "${CMAKE_COMMAND}"
-    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
-    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp32-stdio"
-    "-DMMAY_TEST_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp32-process-streams-native${CMAKE_EXECUTABLE_SUFFIX}"
+    ${mmay_cp32_process_test_arguments}
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp32_process_streams.cmake"
 )
 
