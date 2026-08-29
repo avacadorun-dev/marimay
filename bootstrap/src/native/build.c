@@ -498,6 +498,8 @@ MarimayNativeBuildStatus mmay_native_build(
     emit_options.read_root_count = request->read_root_count;
     emit_options.write_roots = request->write_roots;
     emit_options.write_root_count = request->write_root_count;
+    emit_options.env_grants = request->env_grants;
+    emit_options.env_grant_count = request->env_grant_count;
     if (request->max_heap_bytes != 0) {
         emit_options.max_heap_bytes = request->max_heap_bytes;
     }

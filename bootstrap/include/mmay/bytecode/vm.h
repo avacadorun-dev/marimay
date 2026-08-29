@@ -10,8 +10,10 @@
 #include "mmay/bytecode/bytecode.h"
 #include "mmay/bytecode/program.h"
 #include "mmay/runtime/managed.h"
+#include "mmay/runtime/env.h"
 #include "mmay/runtime/io.h"
 #include "mmay/runtime/fs.h"
+#include "mmay/runtime/process_context.h"
 #include "mmay/runtime/test_output.h"
 typedef uint32_t MarimayBytecodeReference;
 #define MMAY_BYTECODE_INVALID_REFERENCE UINT32_MAX
@@ -27,7 +29,9 @@ typedef struct MarimayBytecodeValue {
 } MarimayBytecodeValue;
 typedef struct MarimayBytecodeExecutionOptions {
     size_t max_strings; size_t max_total_string_bytes;
-    MarimayManagedHeapOptions managed_heap; const MarimayFsOptions *fs;
+    MarimayManagedHeapOptions managed_heap;
+    const MarimayEnvOptions *env; const MarimayFsOptions *fs;
+    const MarimayProcessContextOptions *process_context;
 } MarimayBytecodeExecutionOptions;
 typedef struct MarimayBytecodeExecution {
     MarimayAllocator allocator;
@@ -45,7 +49,9 @@ typedef struct MarimayBytecodeExecution {
     MarimayVector owned_interface_tables;
     MarimayVector array_descriptors;
     MarimayTestOutput test_output;
+    MarimayEnvContext env;
     MarimayFsContext fs; bool fs_initialized;
+    MarimayProcessContextOptions process_context; bool env_initialized;
     bool array_descriptor_allocation_failed; bool initialized;
 } MarimayBytecodeExecution;
 /*
@@ -119,7 +125,9 @@ bool mmay_bytecode_execution_string_bytes(
     const unsigned char **bytes,
     size_t *length
 );
-bool mmay_bytecode_panic_init(MarimayBytecodePanic *panic, MarimayAllocator allocator);
+bool mmay_bytecode_panic_init(
+    MarimayBytecodePanic *panic, MarimayAllocator allocator
+);
 void mmay_bytecode_panic_dispose(MarimayBytecodePanic *panic);
 const MarimayBytecodePanicFrame *mmay_bytecode_panic_frame(
     const MarimayBytecodePanic *panic,
@@ -129,13 +137,7 @@ const MarimayBytecodeSuppressedPanic *mmay_bytecode_panic_suppressed(
     const MarimayBytecodePanic *panic,
     size_t index
 );
-/*
- * Verifies the complete function before allocating its register frame or
- * dispatching any instruction. Each instruction, including a terminator,
- * consumes one step. The result is published only on success. A standalone
- * panic has no program symbol, so its panic symbol and primary frame symbol
- * are the all-zero sentinel; program execution always records exact symbols.
- */
+/* Verifies before allocation; standalone panics use the zero symbol. */
 MarimayBytecodeRunStatus mmay_bytecode_run(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeValue *arguments,
@@ -144,11 +146,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run(
     MarimayBytecodeRunOptions options,
     MarimayBytecodeValue *result
 );
-/*
- * Verifies the complete program before allocating execution frames. Direct
- * calls use an explicit heap frame stack, never C recursion. The entry result
- * and call destinations are published only after successful returns.
- */
+/* Program calls use an explicit heap frame stack, never C recursion. */
 MarimayBytecodeRunStatus mmay_bytecode_run_program(
     const MarimayBytecodeProgram *program,
     const MarimayBytecodeValue *arguments,

@@ -82,7 +82,9 @@ MarimayMirExecutionOptions mmay_mir_execution_default_options(void) {
     options.max_arrays = 1000000;
     options.max_array_length = 1000000;
     options.max_total_array_elements = 10000000;
+    options.env = NULL;
     options.fs = NULL;
+    options.process_context = NULL;
     return options;
 }
 bool mmay_mir_execution_init(
@@ -135,9 +137,18 @@ bool mmay_mir_execution_init(
         mmay_vector_dispose(&execution->objects);
         return false;
     }
+    if (!mmay_env_init(&execution->env, allocator, options.env)) {
+        mmay_vector_dispose(&execution->interface_values);
+        mmay_vector_dispose(&execution->arrays);
+        mmay_vector_dispose(&execution->strings);
+        mmay_vector_dispose(&execution->enums);
+        mmay_vector_dispose(&execution->objects);
+        return false;
+    }
     if (options.fs != NULL && !mmay_fs_init(
             &execution->fs, allocator, options.fs
         )) {
+        mmay_env_dispose(&execution->env);
         mmay_vector_dispose(&execution->interface_values);
         mmay_vector_dispose(&execution->arrays);
         mmay_vector_dispose(&execution->strings);
@@ -149,7 +160,10 @@ bool mmay_mir_execution_init(
     execution->options = options;
     execution->provenance = provenance;
     execution->initialized = true;
+    execution->env_initialized = true;
     execution->fs_initialized = options.fs != NULL;
+    execution->process_context = options.process_context != NULL
+        ? *options.process_context : mmay_process_context_default_options();
     return true;
 }
 void mmay_mir_execution_dispose(MarimayMirExecution *execution) {
@@ -158,6 +172,7 @@ void mmay_mir_execution_dispose(MarimayMirExecution *execution) {
         return;
     }
     if (execution->fs_initialized) mmay_fs_dispose(&execution->fs);
+    if (execution->env_initialized) mmay_env_dispose(&execution->env);
     for (index = 0; index < execution->objects.length; index += 1) {
         MarimayMirManagedRecord **record = mmay_vector_at(
             &execution->objects,

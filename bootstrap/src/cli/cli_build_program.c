@@ -89,6 +89,7 @@ static int mmay_cli_build_execute(
     MarimayNativeBuildResult result;
     MarimayNativeBuildStatus status;
     MarimayCliFsCapabilities fs_capabilities;
+    MarimayCliEnvCapabilities env_capabilities;
     int exit_code = MMAY_EXIT_INTERNAL;
     for (index = 0; index < compiler->checked.functions.length; index += 1) {
         const MarimayCheckedFunction *function = mmay_checked_function(
@@ -113,7 +114,12 @@ static int mmay_cli_build_execute(
     memset(&request, 0, sizeof(request));
     memset(&result, 0, sizeof(result));
     memset(&fs_capabilities, 0, sizeof(fs_capabilities));
+    memset(&env_capabilities, 0, sizeof(env_capabilities));
     if (!mmay_cli_fs_capabilities(options, &fs_capabilities)) {
+        mmay_deallocate(&session->allocator, functions, function_bytes);
+        return MMAY_EXIT_INTERNAL;
+    }
+    if (!mmay_cli_env_capabilities(options, &env_capabilities)) {
         mmay_deallocate(&session->allocator, functions, function_bytes);
         return MMAY_EXIT_INTERNAL;
     }
@@ -132,6 +138,8 @@ static int mmay_cli_build_execute(
     request.read_root_count = fs_capabilities.options.read_root_count;
     request.write_roots = fs_capabilities.options.write_roots;
     request.write_root_count = fs_capabilities.options.write_root_count;
+    request.env_grants = env_capabilities.options.grants;
+    request.env_grant_count = env_capabilities.options.grant_count;
     request.takes_arguments = entry->takes_arguments;
     request.returns_status = entry->returns_status;
     request.returns_result = entry->returns_result;

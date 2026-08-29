@@ -11,6 +11,7 @@
 static const char *const mmay_global_options[] = {
     "--check",
     "--all-targets",
+    "--allow-env",
     "--allow-read",
     "--allow-write",
     "--color",
@@ -31,6 +32,29 @@ static const char *const mmay_global_options[] = {
 static bool mmay_starts_with(const char *text, const char *prefix) {
     size_t prefix_length = strlen(prefix);
     return strncmp(text, prefix, prefix_length) == 0;
+}
+
+static bool mmay_cli_env_option_add(
+    MarimayCliOptions *options,
+    const char *name,
+    size_t argument_index
+) {
+    MarimayEnvOptions env = mmay_env_default_options();
+    size_t length = name != NULL ? strlen(name) : 0;
+    size_t index = 0;
+    if (!mmay_env_name_valid(name, length)
+        || options->allow_env_count >= MMAY_ENV_MAX_GRANTS) return false;
+    for (index = 0; index < options->allow_env_count; index += 1) {
+        const char *existing = options->allow_env[index];
+        if (mmay_env_names_equal(
+                existing, strlen(existing), name, length,
+                env.ascii_case_insensitive
+            )) return false;
+    }
+    options->allow_env[options->allow_env_count] = name;
+    options->allow_env_index[options->allow_env_count] = argument_index;
+    options->allow_env_count += 1;
+    return true;
 }
 
 static size_t mmay_minimum3(size_t first, size_t second, size_t third) {
@@ -256,6 +280,7 @@ static int mmay_parse_options(
     options->build_release_index = 0;
     options->allow_read_count = 0;
     options->allow_write_count = 0;
+    options->allow_env_count = 0;
     options->program_arguments = NULL;
     options->program_argument_start = 0;
     options->program_argument_count = 0;
@@ -287,7 +312,8 @@ static int mmay_parse_options(
                     || strcmp(options->command, "build") == 0
                     || strcmp(options->command, "test") == 0))
             || ((strcmp(argument, "--allow-read") == 0
-                    || strcmp(argument, "--allow-write") == 0)
+                    || strcmp(argument, "--allow-write") == 0
+                    || strcmp(argument, "--allow-env") == 0)
                 && options->command != NULL
                 && (strcmp(options->command, "run") == 0
                     || strcmp(options->command, "build") == 0
@@ -372,6 +398,14 @@ static int mmay_parse_options(
                     error_writer
                 );
                 if (heap_result != MMAY_EXIT_SUCCESS) return heap_result;
+            } else if (strcmp(argument, "--allow-env") == 0) {
+                if (!mmay_cli_env_option_add(options, value, (size_t)index)) {
+                    return mmay_option_value_error(
+                        error_writer, options->diagnostic_style,
+                        MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE, (size_t)index,
+                        "environment grant must be a unique ASCII name and stay within the 64-name limit"
+                    );
+                }
             } else if (strcmp(argument, "--allow-read") == 0
                 || strcmp(argument, "--allow-write") == 0) {
                 const char **roots = strcmp(argument, "--allow-read") == 0
@@ -452,6 +486,19 @@ static int mmay_parse_options(
                 (size_t)index, (size_t)index, error_writer
             );
             if (heap_result != MMAY_EXIT_SUCCESS) return heap_result;
+        } else if (mmay_starts_with(argument, "--allow-env=")
+            && options->command != NULL
+            && (strcmp(options->command, "run") == 0
+                || strcmp(options->command, "build") == 0
+                || strcmp(options->command, "test") == 0)) {
+            const char *name = argument + strlen("--allow-env=");
+            if (!mmay_cli_env_option_add(options, name, (size_t)index)) {
+                return mmay_option_value_error(
+                    error_writer, options->diagnostic_style,
+                    MMAY_DIAGNOSTIC_INVALID_OPTION_VALUE, (size_t)index,
+                    "environment grant must be a unique ASCII name and stay within the 64-name limit"
+                );
+            }
         } else if ((mmay_starts_with(argument, "--allow-read=")
                 || mmay_starts_with(argument, "--allow-write="))
             && options->command != NULL

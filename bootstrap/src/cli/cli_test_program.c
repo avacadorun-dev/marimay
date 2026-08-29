@@ -189,6 +189,7 @@ static bool mmay_cli_test_vm(
     MarimayBytecodeExecution execution;
     MarimayBytecodeExecutionOptions execution_options;
     MarimayCliFsCapabilities fs_capabilities;
+    MarimayCliEnvCapabilities env_capabilities;
     MarimayBytecodePanic panic;
     MarimayBytecodeValue result;
     MarimayBytecodeRunOptions run_options;
@@ -212,6 +213,7 @@ static bool mmay_cli_test_vm(
     memset(&encoded, 0, sizeof(encoded));
     memset(&execution, 0, sizeof(execution));
     memset(&fs_capabilities, 0, sizeof(fs_capabilities));
+    memset(&env_capabilities, 0, sizeof(env_capabilities));
     memset(&panic, 0, sizeof(panic));
     memset(&result, 0, sizeof(result));
     memset(&argument, 0, sizeof(argument));
@@ -251,6 +253,10 @@ static bool mmay_cli_test_vm(
             context->options, &fs_capabilities
         )) goto cleanup;
     execution_options.fs = &fs_capabilities.options;
+    if (!mmay_cli_env_capabilities(
+            context->options, &env_capabilities
+        )) goto cleanup;
+    execution_options.env = &env_capabilities.options;
     if (!mmay_bytecode_execution_init(
             &execution, context->session->allocator, execution_options
         )) goto cleanup;
@@ -351,6 +357,7 @@ static bool mmay_cli_test_native(
     size_t argument_count = context->options->program_argument_count + 1;
     size_t index = 0;
     MarimayCliFsCapabilities fs_capabilities;
+    MarimayCliEnvCapabilities env_capabilities;
     bool accepted = false;
     memset(&request, 0, sizeof(request));
     memset(&build, 0, sizeof(build));
@@ -358,8 +365,12 @@ static bool mmay_cli_test_native(
     memset(observation, 0, sizeof(*observation));
     memset(tool_output, 0, sizeof(*tool_output));
     memset(&fs_capabilities, 0, sizeof(fs_capabilities));
+    memset(&env_capabilities, 0, sizeof(env_capabilities));
     if (!mmay_cli_fs_capabilities(
             context->options, &fs_capabilities
+        )) goto cleanup;
+    if (!mmay_cli_env_capabilities(
+            context->options, &env_capabilities
         )) goto cleanup;
     request.functions = context->functions;
     request.function_count = context->function_count;
@@ -372,6 +383,8 @@ static bool mmay_cli_test_native(
     request.read_root_count = fs_capabilities.options.read_root_count;
     request.write_roots = fs_capabilities.options.write_roots;
     request.write_root_count = fs_capabilities.options.write_root_count;
+    request.env_grants = env_capabilities.options.grants;
+    request.env_grant_count = env_capabilities.options.grant_count;
     *build_status = mmay_native_build(
         context->session->allocator, &request, &build
     );

@@ -1,0 +1,56 @@
+import * as env from "std/env";
+import * as paths from "std/path";
+import * as process from "std/process";
+import { byteLength, startsWith } from "std/text";
+
+fn require(condition: bool, message: string): void {
+  if !condition {
+    panic(message);
+  }
+}
+
+fn same(left: string, right: string): bool {
+  return byteLength(left) == byteLength(right) && startsWith(left, right);
+}
+
+@test
+fn undeclaredEnvironmentIsDeniedWithoutLeakingAValue(): void {
+  require(
+    match env.get("MMAY_CP35_UNDECLARED_SECRET") {
+      Err(env.CapabilityDenied { name }) => same(name, "MMAY_CP35_UNDECLARED_SECRET"),
+      _ => false,
+    },
+    "environment capability denial",
+  );
+}
+
+@test
+fn invalidEnvironmentNameIsRejectedBeforeCapabilityLookup(): void {
+  require(
+    match env.get("BAD-NAME") {
+      Err(env.InvalidName) => true,
+      _ => false,
+    },
+    "invalid environment name",
+  );
+}
+
+@test
+fn currentDirectoryIsAnAbsoluteTypedPath(): void {
+  const path = match process.currentDirectory() {
+    Ok(value) => value,
+    Err(_) => panic("current directory"),
+  };
+  require(paths.isAbsolute(path), "absolute current directory");
+  require(byteLength(paths.string(path)) > 1, "non-empty current directory");
+}
+
+@test
+fn executableIdentityIsAnAbsoluteTypedPath(): void {
+  const path = match process.executablePath() {
+    Ok(value) => value,
+    Err(_) => panic("executable path"),
+  };
+  require(paths.isAbsolute(path), "absolute executable path");
+  require(byteLength(paths.string(path)) > 1, "non-empty executable path");
+}

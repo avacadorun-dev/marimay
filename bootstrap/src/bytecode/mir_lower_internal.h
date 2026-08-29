@@ -41,5 +41,10 @@ MarimayMirBytecodeLowerStatus mmay_mir_bytecode_lower_fs_instruction(
     MarimayBytecodeInstruction *output,
     bool *handled
 );
+MarimayMirBytecodeLowerStatus mmay_mir_bytecode_lower_context_instruction(
+    const MarimayMirInstruction *input,
+    MarimayBytecodeInstruction *output,
+    bool *handled
+);
 
 #endif

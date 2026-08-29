@@ -9,6 +9,7 @@
 #include "mmay/mir/mir.h"
 #include "mmay/native/runtime_artifact.h"
 #include "mmay/runtime/fs.h"
+#include "mmay/runtime/env.h"
 
 typedef struct MarimayNativeBuildRequest {
     const MarimayMirFunction *const *functions;
@@ -27,6 +28,8 @@ typedef struct MarimayNativeBuildRequest {
     size_t read_root_count;
     const MarimayFsPathView *write_roots;
     size_t write_root_count;
+    const MarimayEnvNameView *env_grants;
+    size_t env_grant_count;
     bool takes_arguments;
     bool returns_status;
     bool returns_result;

@@ -1,0 +1,8 @@
+import * as env from "std/env";
+import * as process from "std/process";
+
+fn context(): void {
+  const value = env.get("MMAY_ALPHA_TEST");
+  const directory = process.currentDirectory();
+  const executable = process.executablePath();
+}

@@ -1,0 +1,11 @@
+import { get } from "std/env";
+import { print } from "std/io";
+
+fn main(): void {
+  const value = match get("MMAY_ALPHA_TEST") {
+    Ok(Some(text)) => text,
+    Ok(None) => "missing",
+    Err(_) => "denied",
+  };
+  const _ = print(value);
+}

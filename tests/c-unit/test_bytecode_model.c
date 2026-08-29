@@ -356,7 +356,18 @@ void mmay_test_bytecode_metadata(void) {
                 MMAY_BYTECODE_OPERAND_NONE}, MMAY_OPCODE_FLAG_MAY_PANIC},
         {MMAY_OPCODE_FS_READ_DIRECTORY, 137, "fs_read_directory", 3,
             {MMAY_BYTECODE_OPERAND_REGISTER, MMAY_BYTECODE_OPERAND_REGISTER,
-                MMAY_BYTECODE_OPERAND_REGISTER}, MMAY_OPCODE_FLAG_MAY_PANIC}
+                MMAY_BYTECODE_OPERAND_REGISTER}, MMAY_OPCODE_FLAG_MAY_PANIC},
+        {MMAY_OPCODE_ENV_GET, 138, "env_get", 2,
+            {MMAY_BYTECODE_OPERAND_REGISTER, MMAY_BYTECODE_OPERAND_REGISTER,
+                MMAY_BYTECODE_OPERAND_NONE}, MMAY_OPCODE_FLAG_MAY_PANIC},
+        {MMAY_OPCODE_PROCESS_CURRENT_DIRECTORY, 139,
+            "process_current_directory", 1,
+            {MMAY_BYTECODE_OPERAND_REGISTER, MMAY_BYTECODE_OPERAND_NONE,
+                MMAY_BYTECODE_OPERAND_NONE}, MMAY_OPCODE_FLAG_MAY_PANIC},
+        {MMAY_OPCODE_PROCESS_EXECUTABLE_PATH, 140,
+            "process_executable_path", 1,
+            {MMAY_BYTECODE_OPERAND_REGISTER, MMAY_BYTECODE_OPERAND_NONE,
+                MMAY_BYTECODE_OPERAND_NONE}, MMAY_OPCODE_FLAG_MAY_PANIC}
 #undef MMAY_NUMERIC_UNARY
 #undef MMAY_NUMERIC_BINARY
     };
@@ -458,6 +469,9 @@ void mmay_test_bytecode_metadata(void) {
     MMAY_EXPECT(MMAY_OPCODE_FS_WRITE_ATOMIC == 135);
     MMAY_EXPECT(MMAY_OPCODE_FS_METADATA == 136);
     MMAY_EXPECT(MMAY_OPCODE_FS_READ_DIRECTORY == 137);
+    MMAY_EXPECT(MMAY_OPCODE_ENV_GET == 138);
+    MMAY_EXPECT(MMAY_OPCODE_PROCESS_CURRENT_DIRECTORY == 139);
+    MMAY_EXPECT(MMAY_OPCODE_PROCESS_EXECUTABLE_PATH == 140);
     MMAY_EXPECT(MMAY_OPCODE_COUNT == sizeof(expected) / sizeof(expected[0]));
     for (index = 0; index < sizeof(expected) / sizeof(expected[0]); index += 1) {
         const MarimayOpcodeMetadata *metadata = mmay_opcode_metadata(expected[index].opcode);

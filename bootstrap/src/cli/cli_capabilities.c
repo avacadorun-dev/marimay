@@ -4,6 +4,30 @@
 
 #include "mmay/generated/diagnostic_codes.h"
 
+bool mmay_cli_env_capabilities(
+    const MarimayCliOptions *options,
+    MarimayCliEnvCapabilities *capabilities
+) {
+    size_t index = 0;
+    if (options == NULL || capabilities == NULL
+        || options->allow_env_count > MMAY_ENV_MAX_GRANTS) return false;
+    memset(capabilities, 0, sizeof(*capabilities));
+    capabilities->options = mmay_env_default_options();
+    for (index = 0; index < options->allow_env_count; index += 1) {
+        size_t length = options->allow_env[index] != NULL
+            ? strlen(options->allow_env[index]) : 0;
+        if (!mmay_env_name_valid(options->allow_env[index], length)) {
+            return false;
+        }
+        capabilities->grants[index] = (MarimayEnvNameView){
+            options->allow_env[index], length
+        };
+    }
+    capabilities->options.grants = capabilities->grants;
+    capabilities->options.grant_count = options->allow_env_count;
+    return true;
+}
+
 bool mmay_cli_fs_capabilities(
     const MarimayCliOptions *options,
     MarimayCliFsCapabilities *capabilities

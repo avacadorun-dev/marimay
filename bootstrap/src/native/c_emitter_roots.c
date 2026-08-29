@@ -14,7 +14,8 @@ static bool mmay_native_c_instruction_uses_first(
         && kind != MMAY_MIR_INTERFACE_NEW && kind != MMAY_MIR_CALL
         && kind != MMAY_MIR_DEFER_REGISTER
         && kind != MMAY_MIR_DEFER_CALL
-        && kind != MMAY_MIR_CALL_INTERFACE;
+        && kind != MMAY_MIR_CALL_INTERFACE
+        && kind != MMAY_MIR_PROCESS_CONTEXT;
 }
 
 static bool mmay_native_c_instruction_uses_second(
@@ -217,6 +218,8 @@ static bool mmay_native_c_instruction_is_safepoint(
         case MMAY_MIR_PATH:
         case MMAY_MIR_FS_UNARY:
         case MMAY_MIR_FS_BINARY:
+        case MMAY_MIR_ENV_READ:
+        case MMAY_MIR_PROCESS_CONTEXT:
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
             return true;
         case MMAY_MIR_ENUM_NEW:

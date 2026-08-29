@@ -91,6 +91,7 @@ Every command supports:
 --verbose
 --allow-read PATH
 --allow-write PATH
+--allow-env NAME
 ```
 
 Unknown commands and flags report a spelling suggestion. They use stable diagnostics `U0001` and `U0002` respectively; JSON output follows the nullable-primary rule in the diagnostics specification. `mmay help` lists only top-level user tasks; `mmay help <command>` gives examples before exhaustive flags. The CLI does not automatically execute `mmay-<name>` binaries from `PATH`, preventing typos from invoking untrusted plugins.
@@ -305,6 +306,12 @@ A test that exits while child tasks or resources remain is failed even if assert
 
 Real network, environment, process, and host filesystem access is denied unless the test explicitly requests an opt-in capability flag. Tests using real nondeterminism are never cached.
 
+Under D078, a test with one or more `--allow-env` grants reads the real host
+environment through only those names and is never result-cached. Tests without
+such a grant receive no host environment access. Internal conformance harnesses
+may inject an explicit name/value table and process-context paths; those bytes,
+not the ambient host environment, are part of the deterministic input.
+
 ### 5.4 Test cache
 
 Successful deterministic test results may be cached by the hash of compiler/runtime version, engine, target, package/dependency sources, relevant manifest/lock entries, declared test capabilities, and deterministic inputs. A changed transitive implementation invalidates dependents whose compiled interface or behavior hash changed.
@@ -416,6 +423,12 @@ native build request when supplied to `mmay build`. Missing values are
 excess roots are `U0005`; use on a command other than run/test/build is
 `U0002`. Each exits with status `2`, and no filesystem capability is granted
 by default.
+Under D078, repeatable `--allow-env NAME` accepts at most 64 portable names for
+`run`, `test`, and `build`. Names match `[A-Za-z_][A-Za-z0-9_]*`, contain at
+most 255 bytes, and may occur only once after platform matching. POSIX
+duplicates are byte-exact; Windows duplicates use ASCII case folding. Missing
+values are `U0004`; invalid, duplicate, or excessive names are `U0005`; use on
+another command is `U0002`. No environment name is granted by default.
 Arguments after the first `--` are validated under D066 and passed in order;
 the executable name is not present. Invalid argument bytes/limits use `G4006`,
 and a returned status outside `0..255` uses `G4007` rather than host truncation.
@@ -442,6 +455,11 @@ Native is default. Development builds retain checked semantics and source diagno
 For a supported host target, D030 makes native-toolchain provisioning part of the official Marimay distribution experience. A fresh user does not select `CC`, linker, SDK paths, or runtime objects per project. Installation either supplies the reviewed version-matched native tools or verifies the platform toolchain and gives one precise platform-owned installation action. `mmay doctor` reports the selected identities and compatibility in human and stable machine-readable form. Once installation succeeds, `mmay build` performs no network access. Missing tools are diagnosed before code generation and never surface as an unexplained raw linker failure.
 
 Build cache keys include source/content hashes, public and behavior interfaces, compiler/runtime version, language version, target, profile, backend options, C compiler identity, and relevant environment explicitly admitted by the tool. Absolute workspace paths and undeclared environment values do not affect semantic outputs.
+
+D078 native policy hashes the ordered accepted `--allow-env` names because the
+generated artifact embeds those grants. It never hashes or snapshots their
+ambient values. No environment variable selects a compiler, linker, runtime,
+heap limit, capability, build profile, output path, or cache directory.
 
 Under D050, checkpoint 10 exposes the host-native subset of this contract.
 The accepted options are `--engine native`, `--release`, `--output PATH`, and

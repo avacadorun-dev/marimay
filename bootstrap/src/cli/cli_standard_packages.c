@@ -1,16 +1,7 @@
 #include "cli_standard_packages.h"
+#include "cli_standard_packages_internal.h"
 
 #include <string.h>
-
-typedef struct MarimayCliStandardSource {
-    const char *import_path;
-    const char *source_path;
-    const unsigned char *source;
-    size_t source_length;
-    const char *tail_path;
-    const unsigned char *tail;
-    size_t tail_length;
-} MarimayCliStandardSource;
 
 static const unsigned char mmay_cli_std_convert_source[] =
     "public enum ParseError {\n"
@@ -388,7 +379,7 @@ static const unsigned char mmay_cli_std_fs_tail[] =
     "  return mmayFsReadDirectory(paths.string(filePath), limit);\n"
     "}\n";
 
-static MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
+MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
     MarimayCliCheckTarget *target,
     const MarimayCliStandardSource *standard
 ) {
@@ -512,5 +503,5 @@ MarimayCliCheckTargetStatus mmay_cli_standard_packages_add(
             return status;
         }
     }
-    return MMAY_CLI_CHECK_TARGET_OK;
+    return mmay_cli_standard_context_packages_add(target);
 }

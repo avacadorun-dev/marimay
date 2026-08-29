@@ -328,6 +328,10 @@ void mmay_test_formatter_fixture_file(void) {
             "format/cp30-interpolation.expected.my"
         },
         {
+            "format/cp35-context.input.my",
+            "format/cp35-context.expected.my"
+        },
+        {
             "format/revision-surface.input.my",
             "format/revision-surface.expected.my"
         }

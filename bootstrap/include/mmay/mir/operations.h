@@ -41,6 +41,12 @@ typedef enum MarimayMirFsOperation {
     MMAY_MIR_FS_READ_DIRECTORY
 } MarimayMirFsOperation;
 
+typedef enum MarimayMirContextOperation {
+    MMAY_MIR_CONTEXT_ENV_GET,
+    MMAY_MIR_CONTEXT_CURRENT_DIRECTORY,
+    MMAY_MIR_CONTEXT_EXECUTABLE_PATH
+} MarimayMirContextOperation;
+
 typedef enum MarimayMirIntegerPolicy {
     MMAY_MIR_INTEGER_CHECKED_OPTION,
     MMAY_MIR_INTEGER_WRAPPING,

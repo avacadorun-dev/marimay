@@ -12,7 +12,9 @@ MarimayBytecodeExecutionOptions mmay_bytecode_execution_default_options(void) {
     options.max_strings = 1000000;
     options.max_total_string_bytes = 64U * 1024U * 1024U;
     options.managed_heap = mmay_managed_heap_default_options();
+    options.env = NULL;
     options.fs = NULL;
+    options.process_context = NULL;
     return options;
 }
 
@@ -38,9 +40,11 @@ bool mmay_bytecode_execution_init(
         ) || !mmay_bytecode_nominal_cache_init(execution, allocator)
         || !mmay_vector_init(&execution->owned_interface_tables, allocator, sizeof(void *))
         || !mmay_bytecode_array_cache_init(execution, allocator)
+        || !mmay_env_init(&execution->env, allocator, options.env)
         || (options.fs != NULL
             && !mmay_fs_init(&execution->fs, allocator, options.fs))) {
         if (execution->fs.initialized) mmay_fs_dispose(&execution->fs);
+        if (execution->env.initialized) mmay_env_dispose(&execution->env);
         mmay_managed_heap_dispose(&execution->managed_heap);
         mmay_map_dispose(&execution->string_index);
         mmay_vector_dispose(&execution->strings);
@@ -51,7 +55,10 @@ bool mmay_bytecode_execution_init(
     }
     execution->allocator = allocator;
     execution->options = options;
+    execution->env_initialized = true;
     execution->fs_initialized = options.fs != NULL;
+    execution->process_context = options.process_context != NULL
+        ? *options.process_context : mmay_process_context_default_options();
     execution->initialized = true;
     return true;
 }
@@ -62,6 +69,7 @@ void mmay_bytecode_execution_dispose(MarimayBytecodeExecution *execution) {
         return;
     }
     if (execution->fs_initialized) mmay_fs_dispose(&execution->fs);
+    if (execution->env_initialized) mmay_env_dispose(&execution->env);
     for (index = 0; index < execution->strings.length; index += 1) {
         MarimayOwnedBytes *string = mmay_vector_at(&execution->strings, index);
         if (string != NULL) {
@@ -411,6 +419,11 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
     }
     if (mmay_bytecode_opcode_is_fs(instruction->opcode)) {
         return mmay_bytecode_run_fs_instruction(
+            instruction, registers, execution, function
+        );
+    }
+    if (mmay_bytecode_opcode_is_context(instruction->opcode)) {
+        return mmay_bytecode_run_context_instruction(
             instruction, registers, execution, function
         );
     }

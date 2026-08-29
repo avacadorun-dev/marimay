@@ -446,7 +446,49 @@ non-negative byte count representable by `int`; directory size is zero.
 retains explicit symlink/other entry kinds without following them, and sorts
 the complete result by unsigned UTF-8 name bytes before publication.
 
-`std/env` distinguishes missing values from invalid encoding and requires named `env.read` capabilities. Enumerating the entire environment needs a separate grant.
+`std/env` is lookup-only in CLI alpha. It distinguishes missing from empty,
+validates every published value as UTF-8, and requires an exact named
+`env.read` capability:
+
+```marimay
+public enum Error {
+  InvalidName,
+  CapabilityDenied { name: string, },
+  InvalidUtf8 { offset: int, },
+  LimitExceeded { limit: int, },
+  ReadFailed,
+}
+public fn message(error: Error): string;
+public fn get(name: string): Result<Option<string>, Error>;
+```
+
+Names match `[A-Za-z_][A-Za-z0-9_]*` and contain at most 255 bytes. A missing
+name is `Ok(None)` and an empty value is `Ok(Some(""))`. A value may contain at
+most 1048576 UTF-8 bytes. On POSIX, grants and lookups are byte-exact. On
+Windows they use ASCII case folding. A denied request performs no host lookup.
+No error or `message` result contains an environment value or host error text.
+Enumerating the environment is unavailable; it requires a future separately
+accepted capability and API.
+
+The CLI-alpha process-context surface is:
+
+```marimay
+public enum ContextError {
+  CurrentDirectoryUnavailable,
+  ExecutablePathUnavailable,
+  InvalidUtf8 { offset: int, },
+  InvalidPath,
+}
+public fn message(error: ContextError): string;
+public fn currentDirectory(): Result<path.Path, ContextError>;
+public fn executablePath(): Result<path.Path, ContextError>;
+```
+
+Both results are absolute D077 paths. The current directory is captured before
+source execution. The executable path identifies the process hosting that
+execution. Tests can inject both paths; equal injected process context is part
+of the VM/native differential input. Host encoding errors report only the
+first invalid byte offset, and platform error codes/text are not observable.
 
 `std/process` uses an explicit command record, no implicit shell, bounded captured output, cancellation, timeout, and process-tree termination policy. Shell evaluation is a separately named unsafe-by-construction convenience and is not used by package builds.
 

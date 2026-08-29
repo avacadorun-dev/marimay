@@ -1142,6 +1142,12 @@ bool mmay_native_c_emit_function(
                             buffer, function, i
                         )) return false;
                     break;
+                case MMAY_MIR_ENV_READ:
+                case MMAY_MIR_PROCESS_CONTEXT:
+                    if (!mmay_native_c_emit_context_instruction(
+                            buffer, function, i
+                        )) return false;
+                    break;
                 case MMAY_MIR_IO_PRINTLN:
                 case MMAY_MIR_IO_WRITE:
                 case MMAY_MIR_IO_FLUSH:

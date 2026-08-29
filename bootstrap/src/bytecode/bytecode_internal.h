@@ -41,6 +41,7 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode);
 bool mmay_bytecode_opcode_is_numeric(MarimayOpcode opcode);
 bool mmay_bytecode_opcode_is_text(MarimayOpcode opcode);
 bool mmay_bytecode_opcode_is_fs(MarimayOpcode opcode);
+bool mmay_bytecode_opcode_is_context(MarimayOpcode opcode);
 bool mmay_bytecode_numeric_option_symbol(
     MarimayBytecodeType payload_type,
     MarimaySymbolId *symbol
@@ -70,6 +71,11 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_text_instruction(
     const unsigned char *assigned
 );
 MarimayBytecodeVerifyStatus mmay_bytecode_verify_fs_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
+    const unsigned char *assigned
+);
+MarimayBytecodeVerifyStatus mmay_bytecode_verify_context_instruction(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,
     const unsigned char *assigned

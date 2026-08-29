@@ -108,8 +108,8 @@ bool mmay_native_c_emit_runtime(
         )
         && mmay_native_c_write(buffer,
         "typedef struct { MarimayAllocator delegate; size_t attempts; size_t failure_index; } mmay_g_fail_allocator;\n"
-        "typedef struct { MarimayAllocator allocator; MarimayManagedHeap heap; MarimayTestOutput test_output; MarimayFsContext fs; bool fs_initialized; mmay_g_fail_allocator fail_allocator; } mmay_g_execution;\n"
-        "static void mmay_g_execution_dispose(mmay_g_execution *x) { if (x == NULL) return; if (x->fs_initialized) mmay_fs_dispose(&x->fs); mmay_test_output_dispose(&x->test_output); mmay_managed_heap_dispose(&x->heap); }\n")
+        "typedef struct { MarimayAllocator allocator; MarimayManagedHeap heap; MarimayTestOutput test_output; MarimayEnvContext env; MarimayFsContext fs; MarimayProcessContextOptions process_context; bool env_initialized; bool fs_initialized; mmay_g_fail_allocator fail_allocator; } mmay_g_execution;\n"
+        "static void mmay_g_execution_dispose(mmay_g_execution *x) { if (x == NULL) return; if (x->env_initialized) mmay_env_dispose(&x->env); if (x->fs_initialized) mmay_fs_dispose(&x->fs); mmay_test_output_dispose(&x->test_output); mmay_managed_heap_dispose(&x->heap); }\n")
         && mmay_native_c_write(buffer,
             "#ifndef MMAY_G_COLLECT_BEFORE_ALLOCATION\n#define MMAY_G_COLLECT_BEFORE_ALLOCATION 0\n#endif\n"
             "#ifndef MMAY_G_FAIL_ALLOCATION_AT\n#define MMAY_G_FAIL_ALLOCATION_AT SIZE_MAX\n#endif\n"
@@ -153,6 +153,7 @@ bool mmay_native_c_emit_runtime(
         )
         && mmay_native_c_emit_io_runtime(buffer)
         && mmay_native_c_emit_fs_runtime(buffer)
+        && mmay_native_c_emit_context_runtime(buffer)
         && mmay_native_c_emit_text_runtime(buffer)
         && mmay_native_c_write(buffer,
             "static void mmay_g_print_hex(const unsigned char *data, size_t length) { size_t i; for (i = 0; i < length; i += 1) printf(\"%%02x\", (unsigned int)data[i]); }\n")
@@ -193,7 +194,7 @@ bool mmay_native_c_emit_keep_assets(
     }
     return mmay_native_c_write(
         buffer,
-        "  (void)&mmay_g_string_equal;\n  (void)&mmay_g_begin_panic;\n  (void)&mmay_g_begin_bounds;\n  (void)&mmay_g_begin_array_iterator_mutation;\n  (void)&mmay_g_append_suppressed_panic;\n  (void)&mmay_g_managed_status;\n  (void)&mmay_g_io_println;\n  (void)&mmay_g_path_normalize;\n  (void)&mmay_g_path_absolute;\n  (void)&mmay_g_fs_open;\n  (void)&mmay_g_fs_read;\n  (void)&mmay_g_fs_close;\n  (void)&mmay_g_fs_read_all;\n  (void)&mmay_g_fs_write;\n  (void)&mmay_g_fs_metadata;\n  (void)&mmay_g_fs_directory;\n  (void)&mmay_g_test_output_begin;\n  (void)&mmay_g_test_output_end;\n  (void)&mmay_g_print_panic;\n  mmay_g_keep_managed();\n}\n\n"
+        "  (void)&mmay_g_string_equal;\n  (void)&mmay_g_begin_panic;\n  (void)&mmay_g_begin_bounds;\n  (void)&mmay_g_begin_array_iterator_mutation;\n  (void)&mmay_g_append_suppressed_panic;\n  (void)&mmay_g_managed_status;\n  (void)&mmay_g_io_println;\n  (void)&mmay_g_path_normalize;\n  (void)&mmay_g_path_absolute;\n  (void)&mmay_g_fs_open;\n  (void)&mmay_g_fs_read;\n  (void)&mmay_g_fs_close;\n  (void)&mmay_g_fs_read_all;\n  (void)&mmay_g_fs_write;\n  (void)&mmay_g_fs_metadata;\n  (void)&mmay_g_fs_directory;\n  (void)&mmay_g_env_get;\n  (void)&mmay_g_process_context;\n  (void)&mmay_g_test_output_begin;\n  (void)&mmay_g_test_output_end;\n  (void)&mmay_g_print_panic;\n  mmay_g_keep_managed();\n}\n\n"
     );
 }
 
@@ -229,6 +230,7 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
     if (program == NULL || program->functions == NULL || program->function_count == 0
         || options.max_functions == 0
         || options.max_generated_bytes == 0 || options.max_heap_bytes == 0
+        || !mmay_native_c_context_options_valid(&options)
         || allocator.allocate == NULL
         || allocator.resize == NULL || allocator.deallocate == NULL) {
         return MMAY_NATIVE_C_EMIT_INVALID_ARGUMENT;
@@ -363,7 +365,7 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
     }
     memset(&buffer, 0, sizeof(buffer)); buffer.limit = options.max_generated_bytes;
     if (!mmay_vector_init(&buffer.bytes, allocator, sizeof(char))) { status = MMAY_NATIVE_C_EMIT_ALLOCATION_FAILED; goto cleanup; }
-    if (!mmay_native_c_write(&buffer, "#include <stdbool.h>\n#include <errno.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <signal.h>\n#include <stdio.h>\n#include <string.h>\n#include \"mmay/base/checked_i64_fast.h\"\n#include \"mmay/base/allocator.h\"\n#include \"mmay/base/path.h\"\n#include \"mmay/base/text.h\"\n#include \"mmay/base/utf8.h\"\n#include \"mmay/runtime/fs.h\"\n#include \"mmay/runtime/io.h\"\n#include \"mmay/runtime/managed.h\"\n#include \"mmay/runtime/program_arguments.h\"\n#include \"mmay/runtime/string.h\"\n#include \"mmay/runtime/test_output.h\"\n")
+    if (!mmay_native_c_write(&buffer, "#include <stdbool.h>\n#include <errno.h>\n#include <stdint.h>\n#include <stddef.h>\n#include <signal.h>\n#include <stdio.h>\n#include <string.h>\n#include \"mmay/base/checked_i64_fast.h\"\n#include \"mmay/base/allocator.h\"\n#include \"mmay/base/path.h\"\n#include \"mmay/base/text.h\"\n#include \"mmay/base/utf8.h\"\n#include \"mmay/runtime/env.h\"\n#include \"mmay/runtime/fs.h\"\n#include \"mmay/runtime/io.h\"\n#include \"mmay/runtime/managed.h\"\n#include \"mmay/runtime/process_context.h\"\n#include \"mmay/runtime/program_arguments.h\"\n#include \"mmay/runtime/string.h\"\n#include \"mmay/runtime/test_output.h\"\n")
         || !mmay_native_c_write(&buffer, "#include \"mmay/base/checked_integer.h\"\n")
         || !mmay_native_c_write(&buffer, "#include \"mmay/base/number_format.h\"\n#include \"mmay/base/integer_text.h\"\n")
         || (uses_f64 && !mmay_native_c_write(
@@ -373,7 +375,10 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
         || !mmay_native_c_write(&buffer, "\n")
         || !mmay_native_c_emit_runtime(
             &buffer, program->function_count, max_suppressed
-        ) || !mmay_native_c_emit_fs_configuration(&buffer, &options)) goto emit_fail;
+        ) || !mmay_native_c_emit_fs_configuration(&buffer, &options)
+        || !mmay_native_c_emit_context_configuration(
+            &buffer, &options
+        )) goto emit_fail;
     for (index = 0; index < program->function_count; index += 1) {
         if (!mmay_native_c_emit_symbol_and_strings(&buffer, ordered[index])) goto emit_fail;
     }
@@ -428,6 +433,9 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
     if (!mmay_native_c_write(&buffer, options.executable_entry
             ? "if (!mmay_g_fs_init(&mmay_g_x)) { mmay_g_exit = mmay_g_public_message(\"error\", \"I0002\", (const unsigned char *)\"filesystem runtime initialization failed\", sizeof(\"filesystem runtime initialization failed\") - 1, 70); goto mmay_g_public_cleanup; } "
             : "if (!mmay_g_fs_init(&mmay_g_x)) { mmay_g_execution_dispose(&mmay_g_x); fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
+    if (!mmay_native_c_write(&buffer, options.executable_entry
+            ? "if (!mmay_g_context_init(&mmay_g_x)) { mmay_g_exit = mmay_g_public_message(\"error\", \"I0002\", (const unsigned char *)\"environment runtime initialization failed\", sizeof(\"environment runtime initialization failed\") - 1, 70); goto mmay_g_public_cleanup; } "
+            : "if (!mmay_g_context_init(&mmay_g_x)) { mmay_g_execution_dispose(&mmay_g_x); fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
     if (!mmay_native_c_write(&buffer, options.executable_entry
             ? "if (mmay_g_register_immediate_enums(&mmay_g_x.heap) != MMAY_MANAGED_OK) { mmay_g_exit = mmay_g_public_message(\"error\", \"I0002\", (const unsigned char *)\"runtime host allocation failed\", sizeof(\"runtime host allocation failed\") - 1, 70); goto mmay_g_public_cleanup; } "
             : "if (mmay_g_register_immediate_enums(&mmay_g_x.heap) != MMAY_MANAGED_OK) { mmay_g_execution_dispose(&mmay_g_x); fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;

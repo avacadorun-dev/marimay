@@ -2167,3 +2167,53 @@ these observable results.
 Reason: local CLI workloads need files now, but ambient access, link-following
 policy, unbounded whole-input helpers, and host-error leakage would create a
 security and portability contract that cannot safely be repaired later.
+
+## D078 — Named environment reads and explicit process context
+
+Status: accepted.
+
+The CLI-alpha environment surface is lookup-only. `std/env.get(name)` returns
+`Result<Option<string>, env.Error>`: an absent variable is `Ok(None)`, an
+empty value is `Ok(Some(""))`, and a present value is published only after
+strict UTF-8 validation and the one-mebibyte value limit. Names are portable
+ASCII identifiers matching `[A-Za-z_][A-Za-z0-9_]*` and are at most 255 bytes.
+Invalid source names, denied names, malformed host text, over-limit values,
+and host lookup failures remain distinct. Environment enumeration is not part
+of this decision.
+
+`mmay run`, `mmay test`, and `mmay build` accept repeatable
+`--allow-env NAME`. A grant authorizes exactly one name. POSIX matching is
+byte-exact; Windows matching and duplicate detection use ASCII case folding,
+matching the platform environment namespace. Exact duplicates, Windows-folded
+duplicates on Windows, invalid names, and more than 64 grants are `U0005`.
+The grant list is the complete environment capability input to VM and native
+execution. A denied lookup performs no host environment query.
+
+`std/process.currentDirectory()` and `std/process.executablePath()` return
+`Result<path.Path, process.ContextError>`. The current directory is captured
+for each fresh execution before source code starts. The executable path is the
+absolute identity of the process hosting that execution: the `mmay` process
+for VM execution and the generated artifact for native execution. Controlled
+tests may replace both values with the same injected context; VM/native
+equivalence is required for the same injected context, not for two different
+host executable identities. Both paths use D077 normalization and reject
+invalid host encoding, an unavailable host value, or a non-portable path
+without exposing raw host error text.
+
+Environment values are controlled nondeterministic inputs. Tests receive no
+host environment access by default; a real `--allow-env` grant opts the test
+out of deterministic result caching. Build cache keys include the ordered,
+deduplicated grant names because generated native policy changes, but never an
+ambient value. No environment variable overrides compiler selection, heap
+limits, capabilities, paths, runtime policy, or another semantic option.
+
+Stable errors and diagnostics may contain the requested environment name, the
+fixed capability name `env.read`, a byte offset, or a fixed limit. They never
+contain an environment value, a value prefix, host error text/code, or an
+ungranted name discovered from the host. Allocation and internal descriptor
+failure remain `I0002` rather than a fabricated source `ReadFailed`.
+
+Reason: local CLI programs need configuration and process location before the
+first-party option parser, while ambient enumeration, hidden policy overrides,
+and secret-bearing diagnostics would make builds non-hermetic and capability
+auditing unreliable.

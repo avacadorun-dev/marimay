@@ -1,0 +1,16 @@
+import { println } from "std/io";
+import * as paths from "std/path";
+import * as process from "std/process";
+
+fn main(): void {
+  const directory = match process.currentDirectory() {
+    Ok(value) => paths.string(value),
+    Err(_) => panic("current directory unavailable"),
+  };
+  const executable = match process.executablePath() {
+    Ok(value) => paths.string(value),
+    Err(_) => panic("executable path unavailable"),
+  };
+  const _ = println(directory);
+  const _ = println(executable);
+}

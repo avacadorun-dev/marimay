@@ -117,6 +117,12 @@ MarimayBytecodeRunStatus mmay_bytecode_run_fs_instruction(
     MarimayBytecodeExecution *execution,
     const MarimayBytecodeFunction *function
 );
+MarimayBytecodeRunStatus mmay_bytecode_run_context_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function
+);
 MarimayBytecodeRunStatus mmay_bytecode_run_test_output_instruction(
     const MarimayBytecodeInstruction *instruction,
     MarimayBytecodeValue *registers,

@@ -256,6 +256,19 @@ bool mmay_native_c_emit_fs_instruction(
     const MarimayMirFunction *function,
     const MarimayMirInstruction *instruction
 );
+bool mmay_native_c_emit_context_runtime(MarimayNativeCBuffer *buffer);
+bool mmay_native_c_context_options_valid(
+    const MarimayNativeCEmitOptions *options
+);
+bool mmay_native_c_emit_context_configuration(
+    MarimayNativeCBuffer *buffer,
+    const MarimayNativeCEmitOptions *options
+);
+bool mmay_native_c_emit_context_instruction(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction
+);
 bool mmay_native_c_emit_text_runtime(MarimayNativeCBuffer *buffer);
 bool mmay_native_c_emit_text_instruction(
     MarimayNativeCBuffer *buffer, const MarimayMirFunction *function,

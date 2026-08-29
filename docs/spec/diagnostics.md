@@ -366,6 +366,19 @@ syntax and root-normalization failures use `U0005`/status `2` before program
 execution. A missing root value is `U0004`; use on a command without this
 option is `U0002`.
 
+D078 environment source failures are the closed `std/env.Error` variants.
+`CapabilityDenied` carries only the requested portable name; `InvalidUtf8`
+carries only the first malformed byte offset; `LimitExceeded` carries only the
+fixed 1048576-byte limit. Neither those values nor `env.message` contain an
+environment value, prefix, host error code/text, or any name discovered by
+enumeration. Process-context failures are the closed
+`std/process.ContextError` variants and expose at most an invalid UTF-8 offset,
+never a raw platform error or unnormalized host path. Allocation and descriptor
+failure remain `I0002`/status `70`, not `ReadFailed` or `InvalidPath`.
+CLI `--allow-env` name, duplicate, and count failures use `U0005`/status `2`
+before execution; a missing value is `U0004`, and use on an unsupported command
+is `U0002`.
+
 For D050 native construction, `B0002` means the distribution-selected host C
 toolchain could not be started or did not pass its preflight; it is an expected
 build failure and exits `1`. `B0003` means verified typed MIR could not emit

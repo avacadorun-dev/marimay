@@ -153,6 +153,7 @@ bootstrap/src/mir/
   verify_io.c           exact D075 stream instruction/layout verification
   verify_text.c         D076 text, UTF-8 array-layout, and binary-I/O verification
   verify_fs.c           D077 path/fs operation and result-layout verification
+  verify_context.c      D078 environment/process result-layout verification
   verify_format.c       D065 primitive-format and concat verification
   verify_parse.c        D065 Result<int, ParseError> layout verification
   execution.c           oracle graph and interpreter dispatch
@@ -162,6 +163,8 @@ bootstrap/src/mir/
   execution_text.c      D076 text transforms and UTF-8 array construction
   execution_fs.c        D077 capability-confined path/fs oracle operations
   fs_internal.h         narrow D077 verifier/oracle result-layout contract
+  execution_context.c   D078 injected environment/process oracle operations
+  context_internal.h    narrow D078 verifier/oracle result-layout contract
   execution_format.c    locale-independent formatting and counted concat
   execution_parse.c     D065 integer parsing and ParseError construction
 ```
@@ -206,6 +209,10 @@ bootstrap/src/check/
   checker_expr_io.c     exact imported std/io operation/alias recognition and lowering
   checker_expr_fs.c     exact imported std/path and std/fs recognition and lowering
   checker_expr_fs_api.h narrow D077 checker owner contract
+  checker_expr_context.c
+                        exact imported std/env and std/process primitive lowering
+  checker_expr_context_api.h
+                        narrow D078 checker owner contract
   checker_expr_string.c interpolation plus closed std/convert lowering
   checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
                         and lowering
@@ -343,6 +350,9 @@ tests/c-unit/
   test_cp34_fs.c                  D077 runtime/path/capability/allocation owner
   test_cp34_fs_pipeline.c         D077 checker/MIR/bytecode hostile vertical owner
   test_cp34_process_files.cmake   real VM/native filesystem and CLI comparison
+  test_cp35_environment.c         D078 runtime/capability/allocation owner
+  test_cp35_context_pipeline.c    D078 checker/MIR/bytecode/native hostile owner
+  test_cp35_process_context.cmake real env/cwd/relocation/cache/CLI comparison
 ```
 
 The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
@@ -691,6 +701,23 @@ checkpoint:
 | `tests/c-unit/test_cp34_fs.c` | 0 | 692 | D077 path/capability/partial-I/O/atomicity/resource/allocation-failure coverage |
 | `tests/c-unit/test_cp34_fs_pipeline.c` | 0 | 204 | D077 exact checker signatures plus hostile MIR/bytecode verification and codec coverage |
 | `tests/c-unit/test_cp34_process_files.cmake` | 0 | 208 | real VM/native capability, symlink, atomic file, cleanup, CLI, and output parity |
+| `runtime/common/env.c` | 0 | 209 | D078 portable-name grants, denied-before-host lookup, bounded UTF-8 values, and owned cleanup |
+| `runtime/common/process_context.c` | 0 | 171 | D078 injected/default cwd and executable identity normalization and stable errors |
+| `runtime/include/mmay/runtime/env.h` | 0 | 76 | D078 environment capability and result contract |
+| `runtime/include/mmay/runtime/process_context.h` | 0 | 59 | D078 injected process-context contract |
+| `runtime/include/mmay/platform/environment.h` | 0 | 36 | counted host environment lookup adapter boundary |
+| `runtime/platform/posix/environment.c` | 0 | 42 | POSIX exact-name environment lookup adapter |
+| `runtime/platform/windows/environment.c` | 0 | 112 | Windows UTF-16 and ASCII-case-insensitive environment lookup adapter |
+| `bootstrap/src/check/checker_expr_context.c` | 0 | 159 | D078 exact std/env and std/process primitive recognition and typed MIR lowering |
+| `bootstrap/src/mir/verify_context.c` | 0 | 134 | D078 exact environment/process operation and nominal-result verification |
+| `bootstrap/src/mir/execution_context.c` | 0 | 237 | D078 injected MIR-oracle environment/process execution and result construction |
+| `bootstrap/src/bytecode/bytecode_verify_context.c` | 0 | 159 | D078 hostile bytecode environment/process verification |
+| `bootstrap/src/bytecode/mir_lower_context.c` | 0 | 31 | D078 verified MIR-to-bytecode context lowering |
+| `bootstrap/src/bytecode/vm_context.c` | 0 | 319 | D078 VM environment/process execution and managed result construction |
+| `bootstrap/src/native/c_emitter_context.c` | 0 | 208 | D078 native grants, context helpers, and portable-C instruction emission |
+| `tests/c-unit/test_cp35_environment.c` | 0 | 383 | D078 name/value/error/path and exhaustive allocation-failure coverage |
+| `tests/c-unit/test_cp35_context_pipeline.c` | 0 | 560 | D078 exact checker signatures, injected MIR/VM oracles, hostile MIR/bytecode, native redaction, and exhaustive allocation coverage |
+| `tests/c-unit/test_cp35_process_context.cmake` | 0 | 283 | real VM/native env timing, cwd, relocation, cache-input, redaction, and CLI parity |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `mmay_test_mir` registration. The service checkpoint

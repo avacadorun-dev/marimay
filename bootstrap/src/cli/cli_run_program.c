@@ -261,6 +261,7 @@ static int mmay_cli_run_execute(
     MarimayBytecodeExecution execution;
     MarimayBytecodeExecutionOptions execution_options;
     MarimayCliFsCapabilities fs_capabilities;
+    MarimayCliEnvCapabilities env_capabilities;
     MarimayBytecodePanic panic;
     MarimayBytecodeTrap trap;
     MarimayBytecodeValue result;
@@ -281,6 +282,7 @@ static int mmay_cli_run_execute(
     memset(&encoded, 0, sizeof(encoded));
     memset(&execution, 0, sizeof(execution));
     memset(&fs_capabilities, 0, sizeof(fs_capabilities));
+    memset(&env_capabilities, 0, sizeof(env_capabilities));
     memset(&panic, 0, sizeof(panic));
     memset(&trap, 0, sizeof(trap));
     memset(&result, 0, sizeof(result));
@@ -342,7 +344,9 @@ static int mmay_cli_run_execute(
     execution_options = mmay_bytecode_execution_default_options();
     execution_options.managed_heap.max_live_bytes = options->max_heap_bytes;
     if (!mmay_cli_fs_capabilities(options, &fs_capabilities)) goto cleanup;
+    if (!mmay_cli_env_capabilities(options, &env_capabilities)) goto cleanup;
     execution_options.fs = &fs_capabilities.options;
+    execution_options.env = &env_capabilities.options;
     if (!mmay_bytecode_execution_init(
             &execution, session->allocator, execution_options
         )) goto cleanup;

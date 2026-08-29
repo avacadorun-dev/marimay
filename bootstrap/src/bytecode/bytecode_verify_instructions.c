@@ -35,6 +35,7 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
     if (mmay_bytecode_opcode_is_numeric(opcode)
         || mmay_bytecode_opcode_is_text(opcode)
         || mmay_bytecode_opcode_is_fs(opcode)
+        || mmay_bytecode_opcode_is_context(opcode)
         || opcode == MMAY_OPCODE_IO_READ_BYTES
         || opcode == MMAY_OPCODE_IO_WRITE_BYTES) {
         return true;
@@ -994,6 +995,13 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
     }
     if (mmay_bytecode_opcode_is_fs(instruction->opcode)) {
         status = mmay_bytecode_verify_fs_instruction(
+            function, instruction, assigned
+        );
+        if (status == MMAY_BYTECODE_VERIFY_OK) assigned[(size_t)target] = 1;
+        return status;
+    }
+    if (mmay_bytecode_opcode_is_context(instruction->opcode)) {
+        status = mmay_bytecode_verify_context_instruction(
             function, instruction, assigned
         );
         if (status == MMAY_BYTECODE_VERIFY_OK) assigned[(size_t)target] = 1;

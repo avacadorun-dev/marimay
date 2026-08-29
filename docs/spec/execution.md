@@ -688,6 +688,27 @@ observable and attempts temporary removal. Directory results are fully owned
 and unsigned-UTF-8 sorted before publication. The Stage 0 adapters may block;
 I6 owns parking without changing this request/result/capability trace.
 
+### 10.3 Environment and process context
+
+D078 environment reads use one closed request carrying only the requested
+source string. The runtime first validates the portable name, then matches the
+named grant, and only then invokes the host or injected lookup adapter. Denial
+therefore produces no host query. A successful adapter response is copied,
+bounded to 1048576 bytes, and strictly UTF-8 validated before construction of
+`Some(string)`; missing constructs `None`, while no failure publishes a value.
+POSIX names are byte-exact. Windows name matching and duplicate detection fold
+ASCII case only. Environment enumeration has no request operation.
+
+D078 process-context reads use zero-argument current-directory and executable-
+path requests. A fresh execution captures or injects their absolute UTF-8
+spellings before source code runs. Each response must normalize as an absolute
+D077 path before publication. Platform failures, malformed encoding, and
+invalid paths remain closed typed errors and expose no platform code or text.
+The VM, MIR oracle, and native runtime consume the same injected context in
+differential tests. A real VM run and a real native artifact may have different
+executable paths because those are different controlled process inputs, not an
+engine-identity operation.
+
 ## 11. FFI interaction
 
 ### 11.1 Calls from Marimay to C
@@ -719,6 +740,13 @@ publication but does not authorize source reads. Existing symbolic-link or
 reparse-point components are rejected after the lexical capability match and
 are never followed.
 
+For D078, `env.read` grants are separate named capabilities with at most 64
+portable names. The runtime holds only the accepted names, never an ambient
+environment snapshot. No environment value changes compiler/runtime policy,
+and an ungranted value cannot enter a semantic result, cache key, trace, or
+diagnostic. Process current-directory and executable-path context is explicit
+execution input but does not itself grant filesystem access.
+
 For `.myb` execution, capabilities are denied unless granted by the invoking command or accepted root manifest. The VM verifier and runtime enforce them. Native binaries perform the same standard-library checks, but unsafe native FFI can escape process-level enforcement; production hard isolation also uses operating-system sandboxing.
 
 Package build and constant evaluation have no ambient runtime capabilities and cannot access the network or filesystem outside declared source inputs.
@@ -749,6 +777,12 @@ split trailing empties, owned-copy versus alias mutation, builder snapshots and
 limit failures, iterator invalidation, and binary stdin/stdout/stderr bytes.
 The MIR oracle, verified bytecode VM, and generated C may not select different
 normalization, locale, grapheme, host-string, or partial-publication behavior.
+
+For D078 environment and process context, agreement additionally includes
+missing versus empty values, the first invalid UTF-8 offset, limit and host-
+failure classification, exact capability denial, requested-name trace,
+Windows ASCII folding, and normalized current-directory/executable paths for
+the same injected context.
 
 D058/D059 optimized accesses additionally preserve the same G4002 code,
 primary span, observed failing index and length, result bits, alias-visible

@@ -148,3 +148,6 @@ Stage 0 codec.
 | 135 | `fs_write_atomic` | `destination:register`, `path:register`, `bytes:register` | `may_panic` | Capability-check and atomically publish one bounded byte array. |
 | 136 | `fs_metadata` | `destination:register`, `path:register` | `may_panic` | Inspect bounded file or directory metadata without following links. |
 | 137 | `fs_read_directory` | `destination:register`, `path:register`, `limit:register` | `may_panic` | Enumerate owned directory entries in deterministic UTF-8 order. |
+| 138 | `env_get` | `destination:register`, `name:register` | `may_panic` | Read one explicitly granted environment name into Result<Option<string>, std/env.Error>. |
+| 139 | `process_current_directory` | `destination:register` | `may_panic` | Return the captured absolute current directory as Result<string, std/process.ContextError>. |
+| 140 | `process_executable_path` | `destination:register` | `may_panic` | Return the hosting process executable path as Result<string, std/process.ContextError>. |

@@ -13,6 +13,7 @@
 #include "mmay/manifest/manifest.h"
 #include "mmay/platform/file.h"
 #include "mmay/runtime/fs.h"
+#include "mmay/runtime/env.h"
 
 #define MMAY_CLI_MAX_FS_ROOTS 64U
 
@@ -54,6 +55,9 @@ typedef struct MarimayCliOptions {
     const char *allow_write[MMAY_CLI_MAX_FS_ROOTS];
     size_t allow_write_index[MMAY_CLI_MAX_FS_ROOTS];
     size_t allow_write_count;
+    const char *allow_env[MMAY_ENV_MAX_GRANTS];
+    size_t allow_env_index[MMAY_ENV_MAX_GRANTS];
+    size_t allow_env_count;
     const char *const *program_arguments;
     size_t program_argument_start;
     size_t program_argument_count;
@@ -125,6 +129,16 @@ typedef struct MarimayCliFsCapabilities {
     MarimayFsPathView read_roots[MMAY_CLI_MAX_FS_ROOTS];
     MarimayFsPathView write_roots[MMAY_CLI_MAX_FS_ROOTS];
 } MarimayCliFsCapabilities;
+
+typedef struct MarimayCliEnvCapabilities {
+    MarimayEnvOptions options;
+    MarimayEnvNameView grants[MMAY_ENV_MAX_GRANTS];
+} MarimayCliEnvCapabilities;
+
+bool mmay_cli_env_capabilities(
+    const MarimayCliOptions *options,
+    MarimayCliEnvCapabilities *capabilities
+);
 
 bool mmay_cli_fs_capabilities(
     const MarimayCliOptions *options,

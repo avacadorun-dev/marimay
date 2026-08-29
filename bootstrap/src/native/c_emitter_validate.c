@@ -523,6 +523,8 @@ MarimayNativeCEmitStatus mmay_native_c_validate_function(
                 case MMAY_MIR_PATH:
                 case MMAY_MIR_FS_UNARY:
                 case MMAY_MIR_FS_BINARY:
+                case MMAY_MIR_ENV_READ:
+                case MMAY_MIR_PROCESS_CONTEXT:
                 case MMAY_MIR_IO_PRINTLN:
                 case MMAY_MIR_IO_WRITE:
                 case MMAY_MIR_IO_FLUSH:

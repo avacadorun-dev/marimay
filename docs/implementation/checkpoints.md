@@ -365,8 +365,8 @@ performance prerequisite inserted between CP38 and CP39.
 ## Active sequence CP29-CP41
 
 The sequence is deliberately linear so exactly one card is executable. CP29
-through CP34 are `verified`; CP35 is `ready`, and every later card is `planned`
-behind its declared predecessor. Execution order is CP35–CP38, CP41, CP39,
+through CP35 are `verified`; CP36 is `ready`, and every later card is `planned`
+behind its declared predecessor. Execution order is CP36–CP38, CP41, CP39,
 then CP40; numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
@@ -921,7 +921,8 @@ platform adapters, focused tests/evidence, and CP35 card.
 
 ## CP35 - Environment and process context
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP34.
+State: `verified`. Parent gate: CLI0. Predecessor: CP34. Evidence scope:
+`local`. Evidence: [CP35](evidence/cp35-environment-process-context-2026-08-29.md).
 
 ### Outcome
 
@@ -1005,7 +1006,7 @@ focused tests/evidence, and CP36 card.
 
 ## CP36 - Map Set and iterator core
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP35.
+State: `ready`. Parent gate: CLI0. Predecessor: CP35.
 
 ### Outcome
 

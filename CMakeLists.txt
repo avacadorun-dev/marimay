@@ -42,6 +42,7 @@ endif()
 if(WIN32)
   set(MMAY_PLATFORM_SOURCES
     runtime/platform/windows/directory.c
+    runtime/platform/windows/environment.c
     runtime/platform/windows/file.c
     runtime/platform/windows/program_arguments.c
     runtime/platform/windows/process.c
@@ -53,9 +54,14 @@ if(WIN32)
     runtime/platform/windows/directory.c
     runtime/platform/windows/file.c
   )
+  set(MMAY_NATIVE_CONTEXT_SOURCES
+    runtime/platform/windows/environment.c
+    runtime/platform/windows/process.c
+  )
 elseif(UNIX)
   set(MMAY_PLATFORM_SOURCES
     runtime/platform/posix/directory.c
+    runtime/platform/posix/environment.c
     runtime/platform/posix/file.c
     runtime/platform/posix/program_arguments.c
     runtime/platform/posix/process.c
@@ -66,6 +72,10 @@ elseif(UNIX)
   set(MMAY_NATIVE_FS_SOURCES
     runtime/platform/posix/directory.c
     runtime/platform/posix/file.c
+  )
+  set(MMAY_NATIVE_CONTEXT_SOURCES
+    runtime/platform/posix/environment.c
+    runtime/platform/posix/process.c
   )
 else()
   message(FATAL_ERROR "No Stage 0 platform adapter for this host")
@@ -189,6 +199,8 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   runtime/common/io_stdout.c
   runtime/common/io.c
   runtime/common/directory.c
+  runtime/common/env.c
+  runtime/common/process_context.c
   runtime/common/file.c
   runtime/common/fs.c
   runtime/common/managed.c
@@ -207,6 +219,7 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   runtime/common/test_output.c
   ${MMAY_NATIVE_PROGRAM_ARGUMENTS_SOURCE}
   ${MMAY_NATIVE_FS_SOURCES}
+  ${MMAY_NATIVE_CONTEXT_SOURCES}
 )
 
 function(mmay_add_native_runtime target profile optimization output_directory)
@@ -297,6 +310,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_verify_integer_range.c
   bootstrap/src/bytecode/bytecode_verify_io.c
   bootstrap/src/bytecode/bytecode_verify_fs.c
+  bootstrap/src/bytecode/bytecode_verify_context.c
   bootstrap/src/bytecode/bytecode_verify_nominal.c
   bootstrap/src/bytecode/bytecode_verify_numeric.c
   bootstrap/src/bytecode/bytecode_verify_provenance.c
@@ -304,6 +318,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/program_limits.c
   bootstrap/src/bytecode/program_verify_nominal.c
   bootstrap/src/bytecode/mir_lower.c
+  bootstrap/src/bytecode/mir_lower_context.c
   bootstrap/src/bytecode/mir_lower_format.c
   bootstrap/src/bytecode/mir_lower_fs.c
   bootstrap/src/bytecode/mir_lower_text.c
@@ -316,6 +331,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_interface.c
   bootstrap/src/bytecode/vm_io.c
   bootstrap/src/bytecode/vm_fs.c
+  bootstrap/src/bytecode/vm_context.c
   bootstrap/src/bytecode/vm_format.c
   bootstrap/src/bytecode/vm_text.c
   bootstrap/src/bytecode/vm_parse.c
@@ -349,6 +365,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_expr_interfaces.c
   bootstrap/src/check/checker_expr_io.c
   bootstrap/src/check/checker_expr_fs.c
+  bootstrap/src/check/checker_expr_context.c
   bootstrap/src/check/checker_expr_test.c
   bootstrap/src/check/checker_generic_types.c
   bootstrap/src/check/checker_generic_specialization.c
@@ -400,6 +417,7 @@ add_library(mmay_bootstrap STATIC
     bootstrap/src/cli/cli_resource_report.c
   bootstrap/src/cli/cli_check_targets.c
   bootstrap/src/cli/cli_standard_packages.c
+  bootstrap/src/cli/cli_standard_context_packages.c
   bootstrap/src/cli/cli_format.c
   bootstrap/src/cli/cli_format_targets.c
   bootstrap/src/diagnostic/diagnostic.c
@@ -415,6 +433,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/manifest/manifest_format.c
   bootstrap/src/manifest/manifest_parse.c
   bootstrap/src/mir/execution.c
+  bootstrap/src/mir/execution_context.c
   bootstrap/src/mir/execution_array.c
   bootstrap/src/mir/execution_defer.c
   bootstrap/src/mir/execution_format.c
@@ -429,6 +448,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/integer_range.c
   bootstrap/src/mir/range.c
   bootstrap/src/mir/verify.c
+  bootstrap/src/mir/verify_context.c
   bootstrap/src/mir/verify_range.c
   bootstrap/src/mir/verify_interfaces.c
   bootstrap/src/mir/verify_io.c
@@ -455,6 +475,7 @@ add_library(mmay_bootstrap STATIC
     bootstrap/src/native/c_emitter_format.c
   bootstrap/src/native/c_emitter_io.c
   bootstrap/src/native/c_emitter_fs.c
+  bootstrap/src/native/c_emitter_context.c
     bootstrap/src/native/c_emitter_text.c
   bootstrap/src/native/c_emitter_managed.c
   bootstrap/src/native/c_emitter_roots.c
@@ -471,6 +492,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/syntax/syntax.c
   bootstrap/src/types/type.c
   runtime/common/directory.c
+  runtime/common/env.c
   runtime/common/file.c
   runtime/common/fs.c
   runtime/common/io_stdout.c
@@ -488,6 +510,7 @@ add_library(mmay_bootstrap STATIC
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
   runtime/common/program_arguments.c
+  runtime/common/process_context.c
   ${MMAY_PLATFORM_SOURCES}
 )
 
