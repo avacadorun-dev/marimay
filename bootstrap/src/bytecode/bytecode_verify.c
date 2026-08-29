@@ -88,6 +88,8 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_with_work_limit(
         || function->array_constructions.length > UINT32_MAX
         || function->array_arguments.length
             > function->options.max_array_arguments
+        || function->collection_types.length
+            > function->options.max_collection_layouts
         || function->options.max_registers == 0
         || function->options.max_blocks == 0
         || function->options.max_instructions == 0
@@ -97,6 +99,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_with_work_limit(
         || function->options.max_string_bytes == 0
         || function->options.max_array_constructions == 0
         || function->options.max_array_arguments == 0
+        || function->options.max_collection_layouts == 0
         || function->options.max_source_files == 0
         || function->options.max_encoded_bytes < MMAY_BYTECODE_MAGIC_LENGTH
         || function->options.max_verify_work == 0) {
@@ -125,6 +128,29 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_with_work_limit(
                     && array_type->element_layout >= array_index)) {
                 return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
             }
+            if (!mmay_bytecode_consume_verify_work(&work, 1, work_limit)) {
+                return MMAY_BYTECODE_VERIFY_LIMIT_REACHED;
+            }
+        }
+    }
+    {
+        size_t collection_index = 0;
+        for (collection_index = 0;
+            collection_index < function->collection_types.length;
+            collection_index += 1) {
+            const MarimayBytecodeCollectionType *collection =
+                mmay_bytecode_collection_type(
+                    function, (uint32_t)collection_index
+                );
+            if (collection == NULL
+                || !mmay_bytecode_type_layout_is_valid(
+                    function, collection->key_type, collection->key_layout
+                ) || (!collection->is_set
+                    && !mmay_bytecode_type_layout_is_valid(
+                        function,
+                        collection->value_type,
+                        collection->value_layout
+                    ))) return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
             if (!mmay_bytecode_consume_verify_work(&work, 1, work_limit)) {
                 return MMAY_BYTECODE_VERIFY_LIMIT_REACHED;
             }

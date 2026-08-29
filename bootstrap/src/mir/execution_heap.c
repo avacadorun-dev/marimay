@@ -1,4 +1,5 @@
 #include "mir_internal.h"
+#include "execution_collections_internal.h"
 #include "mmay/base/provenance.h"
 #include <limits.h>
 #include <string.h>
@@ -11,14 +12,16 @@ typedef enum MarimayMirReferenceKind {
     MMAY_MIR_REFERENCE_ENUM = 1,
     MMAY_MIR_REFERENCE_STRING = 2,
     MMAY_MIR_REFERENCE_ARRAY = 3,
-    MMAY_MIR_REFERENCE_INTERFACE = 4
+    MMAY_MIR_REFERENCE_INTERFACE = 4,
+    MMAY_MIR_REFERENCE_COLLECTION = MMAY_MIR_REFERENCE_COLLECTION_KIND
 } MarimayMirReferenceKind;
-static bool mmay_mir_reference_encode(
+bool mmay_mir_reference_encode(
     const MarimayMirExecution *execution,
-    MarimayMirReferenceKind kind,
+    unsigned int raw_kind,
     size_t index,
     MarimayMirReference *result
 ) {
+    const MarimayMirReferenceKind kind = (MarimayMirReferenceKind)raw_kind;
     uint32_t encoded = 0;
     if (execution == NULL || !execution->initialized
         || execution->provenance == 0
@@ -35,12 +38,14 @@ static bool mmay_mir_reference_encode(
     result->slot = encoded;
     return true;
 }
-static bool mmay_mir_reference_decode(
+bool mmay_mir_reference_decode(
     const MarimayMirExecution *execution,
     MarimayMirReference reference,
-    MarimayMirReferenceKind expected,
+    unsigned int raw_expected,
     size_t *index
 ) {
+    const MarimayMirReferenceKind expected =
+        (MarimayMirReferenceKind)raw_expected;
     MarimayMirReferenceKind actual;
     if (execution == NULL || !execution->initialized
         || execution->provenance == 0
@@ -82,6 +87,9 @@ MarimayMirExecutionOptions mmay_mir_execution_default_options(void) {
     options.max_arrays = 1000000;
     options.max_array_length = 1000000;
     options.max_total_array_elements = 10000000;
+    options.max_collections = 1000000;
+    options.max_collection_length = 1000000;
+    options.max_total_collection_entries = 10000000;
     options.env = NULL;
     options.fs = NULL;
     options.process_context = NULL;
@@ -105,6 +113,10 @@ bool mmay_mir_execution_init(
         || options.max_arrays > MMAY_MIR_REFERENCE_INDEX_MASK
         || options.max_array_length == 0
         || options.max_total_array_elements == 0
+        || options.max_collections == 0
+        || options.max_collections > MMAY_MIR_REFERENCE_INDEX_MASK
+        || options.max_collection_length == 0
+        || options.max_total_collection_entries == 0
         || !mmay_new_provenance(&provenance)) {
         return false;
     }
@@ -126,11 +138,16 @@ bool mmay_mir_execution_init(
             allocator,
             sizeof(MarimayMirManagedArray *)
         ) || !mmay_vector_init(
+            &execution->collections,
+            allocator,
+            sizeof(MarimayMirManagedCollection *)
+        ) || !mmay_vector_init(
             &execution->interface_values,
             allocator,
             sizeof(MarimayMirManagedInterface *)
         )) {
         mmay_vector_dispose(&execution->interface_values);
+        mmay_vector_dispose(&execution->collections);
         mmay_vector_dispose(&execution->arrays);
         mmay_vector_dispose(&execution->strings);
         mmay_vector_dispose(&execution->enums);
@@ -139,6 +156,7 @@ bool mmay_mir_execution_init(
     }
     if (!mmay_env_init(&execution->env, allocator, options.env)) {
         mmay_vector_dispose(&execution->interface_values);
+        mmay_vector_dispose(&execution->collections);
         mmay_vector_dispose(&execution->arrays);
         mmay_vector_dispose(&execution->strings);
         mmay_vector_dispose(&execution->enums);
@@ -150,6 +168,7 @@ bool mmay_mir_execution_init(
         )) {
         mmay_env_dispose(&execution->env);
         mmay_vector_dispose(&execution->interface_values);
+        mmay_vector_dispose(&execution->collections);
         mmay_vector_dispose(&execution->arrays);
         mmay_vector_dispose(&execution->strings);
         mmay_vector_dispose(&execution->enums);
@@ -243,7 +262,21 @@ void mmay_mir_execution_dispose(MarimayMirExecution *execution) {
             *value = NULL;
         }
     }
+    for (index = 0; index < execution->collections.length; index += 1) {
+        MarimayMirManagedCollection **value = mmay_vector_at(
+            &execution->collections, index
+        );
+        if (value != NULL && *value != NULL) {
+            mmay_deallocate(
+                &execution->allocator,
+                *value,
+                (*value)->allocation_size
+            );
+            *value = NULL;
+        }
+    }
     mmay_vector_dispose(&execution->interface_values);
+    mmay_vector_dispose(&execution->collections);
     mmay_vector_dispose(&execution->arrays);
     mmay_vector_dispose(&execution->strings);
     mmay_vector_dispose(&execution->enums);
@@ -519,6 +552,12 @@ bool mmay_mir_execution_owns_reference(
     return mmay_mir_execution_string_value(execution, value) != NULL
         || mmay_mir_execution_enum_value(execution, value) != NULL
         || mmay_mir_execution_array_value(execution, value) != NULL
+        || (mmay_mir_reference_decode(
+                execution,
+                value.as.reference,
+                MMAY_MIR_REFERENCE_COLLECTION,
+                &index
+            ) && mmay_vector_at_const(&execution->collections, index) != NULL)
         || mmay_mir_execution_interface_value(execution, value) != NULL
         || (record != NULL && *record != NULL && (*record)->type == value.type);
 }

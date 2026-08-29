@@ -48,11 +48,13 @@ typedef struct MarimayBytecodeExecution {
     MarimayVector interned_enum_payloads;
     MarimayVector owned_interface_tables;
     MarimayVector array_descriptors;
+    MarimayVector collection_descriptors;
     MarimayTestOutput test_output;
     MarimayEnvContext env;
     MarimayFsContext fs; bool fs_initialized;
     MarimayProcessContextOptions process_context; bool env_initialized;
-    bool array_descriptor_allocation_failed; bool initialized;
+    bool array_descriptor_allocation_failed;
+    bool collection_descriptor_allocation_failed; bool initialized;
 } MarimayBytecodeExecution;
 /*
  * Managed values are bound to this execution's heap. Active VM frames root

@@ -8,7 +8,7 @@
 typedef uint32_t MarimayMirRegister, MarimayMirBlockId, MarimayMirCallId;
 typedef uint32_t MarimayMirRecordId, MarimayMirRecordConstructionId, MarimayMirEnumId;
 typedef uint32_t MarimayMirEnumConstructionId, MarimayMirStringId, MarimayMirArrayId;
-typedef uint32_t MarimayMirArrayConstructionId, MarimayMirInterfaceId, MarimayMirInterfaceConstructionId;
+typedef uint32_t MarimayMirArrayConstructionId, MarimayMirInterfaceId, MarimayMirInterfaceConstructionId, MarimayMirCollectionId;
 #define MMAY_MIR_NO_REGISTER UINT32_MAX
 #define MMAY_MIR_NO_BLOCK UINT32_MAX
 #define MMAY_MIR_NO_CALL UINT32_MAX
@@ -21,9 +21,9 @@ typedef uint32_t MarimayMirArrayConstructionId, MarimayMirInterfaceId, MarimayMi
 #define MMAY_MIR_NO_ARRAY_CONSTRUCTION UINT32_MAX
 #define MMAY_MIR_NO_INTERFACE UINT32_MAX
 #define MMAY_MIR_NO_INTERFACE_CONSTRUCTION UINT32_MAX
+#define MMAY_MIR_NO_COLLECTION UINT32_MAX
 typedef struct MarimayMirSpan {
-    size_t start;
-    size_t end;
+    size_t start, end;
 } MarimayMirSpan;
 typedef enum MarimayMirInstructionKind {
     MMAY_MIR_CONSTANT_I64,
@@ -104,7 +104,13 @@ typedef enum MarimayMirInstructionKind {
     MMAY_MIR_DEFER_REGISTER,
     MMAY_MIR_DEFER_CALL,
     MMAY_MIR_ADD_PROVEN_I64, MMAY_MIR_SUBTRACT_PROVEN_I64,
-    MMAY_MIR_MULTIPLY_PROVEN_I64
+    MMAY_MIR_MULTIPLY_PROVEN_I64,
+    MMAY_MIR_COLLECTION_NEW, MMAY_MIR_COLLECTION_LENGTH,
+    MMAY_MIR_COLLECTION_CONTAINS, MMAY_MIR_COLLECTION_GET,
+    MMAY_MIR_COLLECTION_PUT, MMAY_MIR_COLLECTION_ADD,
+    MMAY_MIR_COLLECTION_REMOVE, MMAY_MIR_COLLECTION_CLEAR,
+    MMAY_MIR_COLLECTION_GENERATION, MMAY_MIR_COLLECTION_REQUIRE_GENERATION,
+    MMAY_MIR_COLLECTION_ENTRY_KEY, MMAY_MIR_COLLECTION_ENTRY_VALUE
 } MarimayMirInstructionKind;
 typedef struct MarimayMirInstruction {
     MarimayMirInstructionKind kind;
@@ -120,6 +126,7 @@ typedef struct MarimayMirInstruction {
     MarimayMirArrayConstructionId array_construction;
     MarimayMirInterfaceId interface_id;
     MarimayMirInterfaceConstructionId interface_construction;
+    MarimayMirCollectionId collection;
     MarimayMirIntegerPolicy integer_policy;
     MarimayMirIntegerOperation integer_operation;
     MarimayMirIoOperation io_operation;

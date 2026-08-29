@@ -962,6 +962,22 @@ bool mmay_native_c_emit_function(
                             instruction_index, i
                         )) return false;
                     break;
+                case MMAY_MIR_COLLECTION_NEW:
+                case MMAY_MIR_COLLECTION_LENGTH:
+                case MMAY_MIR_COLLECTION_CONTAINS:
+                case MMAY_MIR_COLLECTION_GET:
+                case MMAY_MIR_COLLECTION_PUT:
+                case MMAY_MIR_COLLECTION_ADD:
+                case MMAY_MIR_COLLECTION_REMOVE:
+                case MMAY_MIR_COLLECTION_CLEAR:
+                case MMAY_MIR_COLLECTION_GENERATION:
+                case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
+                case MMAY_MIR_COLLECTION_ENTRY_KEY:
+                case MMAY_MIR_COLLECTION_ENTRY_VALUE:
+                    if (!mmay_native_c_emit_collection_instruction(
+                            buffer, function, i
+                        )) return false;
+                    break;
                 case MMAY_MIR_BITWISE_NOT_I64:
                     if (mmay_native_c_register_type(function, i->target)
                             != MMAY_TYPE_I64) {

@@ -4,6 +4,7 @@
 #include "checker_core_api.h"
 #include "checker_declaration_lifecycle_api.h"
 #include "checker_expr_interfaces_api.h"
+#include "checker_expr_collections_api.h"
 #include "checker_imported_nominal_api.h"
 #include "checker_expr_scalar_api.h"
 #include "checker_expr_tuples_api.h"
@@ -269,6 +270,13 @@ static bool mmay_checker_test_arguments_type(
         if (mmay_checker_has_failed(checker)) {
             goto cleanup;
         }
+        declaration.signature_valid = false;
+    }
+    if (declaration.signature_valid && declaration.is_generic
+        && !mmay_checker_private_validate_generic_collection_keys(
+            checker, declaration.block
+        )) {
+        if (mmay_checker_has_failed(checker)) goto cleanup;
         declaration.signature_valid = false;
     }
     if (checker->result->diagnostics.length != diagnostics_before) {
@@ -923,21 +931,43 @@ cleanup:
             &declaration->parameter_types,
             layout_index
         );
+        MarimayMirCollectionId collection = MMAY_MIR_NO_COLLECTION;
+        bool is_collection = parameter_type != NULL
+            && (mmay_type_kind(&checker->result->types, *parameter_type)
+                == MMAY_TYPE_KIND_MAP
+                || mmay_type_kind(&checker->result->types, *parameter_type)
+                == MMAY_TYPE_KIND_SET);
         if (parameter_type == NULL
             || !mmay_function_ensure_array_layout(&function, *parameter_type)
-            || !mmay_function_ensure_tuple_layout(&function, *parameter_type)) {
+            || !mmay_function_ensure_tuple_layout(&function, *parameter_type)
+            || (is_collection
+                && !mmay_checker_private_collection_layout(
+                    &function, *parameter_type, declaration->node->start,
+                    declaration->node->end, &collection, NULL, NULL, NULL
+                ))) {
             if (parameter_type == NULL) {
                 mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             }
             goto cleanup;
         }
     }
+    {
+        MarimayMirCollectionId collection = MMAY_MIR_NO_COLLECTION;
+        bool is_collection = mmay_type_kind(
+                &checker->result->types, function.result_type
+            ) == MMAY_TYPE_KIND_MAP
+            || mmay_type_kind(&checker->result->types, function.result_type)
+                == MMAY_TYPE_KIND_SET;
     if (!mmay_function_ensure_array_layout(&function, function.result_type)
         || !mmay_function_ensure_tuple_layout(
             &function,
             function.result_type
-        )) {
+        ) || (is_collection && !mmay_checker_private_collection_layout(
+            &function, function.result_type, declaration->node->start,
+            declaration->node->end, &collection, NULL, NULL, NULL
+        ))) {
         goto cleanup;
+    }
     }
     if (!mmay_checker_private_function_add_block(&function, &function.block)) {
         goto cleanup;

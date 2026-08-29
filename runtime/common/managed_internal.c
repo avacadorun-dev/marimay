@@ -95,6 +95,8 @@ bool mmay_managed_slot_occupied(const MarimayManagedSlot *slot) {
             return slot->as.enumeration != NULL;
         case MMAY_MANAGED_OBJECT_INTERFACE:
             return slot->as.iface != NULL;
+        case MMAY_MANAGED_OBJECT_MAP:
+            return slot->as.map != NULL;
         case MMAY_MANAGED_OBJECT_INVALID:
             break;
     }
@@ -129,6 +131,11 @@ size_t mmay_managed_slot_object_bytes(const MarimayManagedSlot *slot) {
                 : 0;
         case MMAY_MANAGED_OBJECT_INTERFACE:
             return slot->as.iface != NULL ? sizeof(MarimayManagedInterface) : 0;
+        case MMAY_MANAGED_OBJECT_MAP:
+            return slot->as.map != NULL
+                ? sizeof(MarimayManagedMap)
+                    + mmay_managed_map_storage_bytes(slot->as.map)
+                : 0;
         case MMAY_MANAGED_OBJECT_INVALID:
             break;
     }
@@ -162,6 +169,10 @@ void mmay_managed_slot_dispose_object(
         case MMAY_MANAGED_OBJECT_INTERFACE:
             mmay_managed_interface_dispose(heap, slot->as.iface);
             slot->as.iface = NULL;
+            break;
+        case MMAY_MANAGED_OBJECT_MAP:
+            mmay_managed_map_dispose(heap, slot->as.map);
+            slot->as.map = NULL;
             break;
         case MMAY_MANAGED_OBJECT_INVALID:
             break;
@@ -276,6 +287,10 @@ MarimayManagedStatus mmay_managed_trace_slot(
                 slot->as.iface->payload,
                 gray_head
             );
+        case MMAY_MANAGED_OBJECT_MAP:
+            return slot->as.map != NULL
+                ? mmay_managed_map_trace(heap, slot->as.map, gray_head)
+                : MMAY_MANAGED_INVALID_REFERENCE;
         case MMAY_MANAGED_OBJECT_INVALID:
             break;
     }
@@ -414,6 +429,9 @@ retry:
         case MMAY_MANAGED_OBJECT_INTERFACE:
             heap->slots[slot_index].as.iface = object;
             break;
+        case MMAY_MANAGED_OBJECT_MAP:
+            heap->slots[slot_index].as.map = object;
+            break;
         case MMAY_MANAGED_OBJECT_ARRAY:
         case MMAY_MANAGED_OBJECT_INVALID:
             return MMAY_MANAGED_INVALID_ARGUMENT;
@@ -541,6 +559,12 @@ MarimayManagedStatus mmay_managed_validate_field(
         case MMAY_MANAGED_OBJECT_INTERFACE:
             return slot->as.iface != NULL
                     && slot->as.iface->descriptor
+                        == field->reference_descriptor
+                ? MMAY_MANAGED_OK
+                : MMAY_MANAGED_TYPE_MISMATCH;
+        case MMAY_MANAGED_OBJECT_MAP:
+            return slot->as.map != NULL
+                    && slot->as.map->descriptor
                         == field->reference_descriptor
                 ? MMAY_MANAGED_OK
                 : MMAY_MANAGED_TYPE_MISMATCH;

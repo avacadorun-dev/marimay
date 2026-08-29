@@ -40,6 +40,7 @@ typedef struct MarimayBytecodeProgramOptions {
     size_t max_total_enum_payloads;
     size_t max_total_enum_constructions;
     size_t max_total_enum_arguments;
+    size_t max_total_collection_layouts;
     size_t max_total_interface_layouts;
     size_t max_total_interface_constructions;
     size_t max_total_interface_methods;

@@ -113,7 +113,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_text_instruction(
                 ? MMAY_BYTECODE_VERIFY_OK : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         case MMAY_OPCODE_TEXT_RUNES:
             return mmay_bytecode_text_array(
-                    function, target, MMAY_BYTECODE_TYPE_U32
+                    function, target, MMAY_BYTECODE_TYPE_RUNE
                 ) && *first_type == MMAY_BYTECODE_TYPE_STRING
                 ? MMAY_BYTECODE_VERIFY_OK : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         case MMAY_OPCODE_TEXT_GRAPHEMES:

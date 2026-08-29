@@ -26,11 +26,28 @@ bool mmay_bytecode_array_cache_init(
 void mmay_bytecode_array_cache_dispose(MarimayBytecodeExecution *execution);
 void mmay_bytecode_array_cache_rollback(
     MarimayBytecodeExecution *execution, size_t length);
+bool mmay_bytecode_collection_cache_init(
+    MarimayBytecodeExecution *execution, MarimayAllocator allocator);
+void mmay_bytecode_collection_cache_dispose(
+    MarimayBytecodeExecution *execution);
+const MarimayManagedMapDescriptor *mmay_bytecode_collection_descriptor_for(
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    uint32_t layout
+);
 MarimayManagedObjectKind mmay_bytecode_nominal_object_kind(
     MarimayBytecodeType type);
 const void *mmay_bytecode_nominal_reference_descriptor(
     MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
     MarimayBytecodeType type, uint32_t layout);
+bool mmay_bytecode_managed_field_descriptor(
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeType type,
+    uint32_t layout,
+    bool is_mutable,
+    MarimayManagedFieldDescriptor *output
+);
 MarimayBytecodeRunStatus mmay_bytecode_run_managed_status(
     MarimayManagedStatus status);
 MarimayBytecodeRunStatus mmay_bytecode_execution_intern(
@@ -76,6 +93,16 @@ MarimayBytecodeRunStatus mmay_bytecode_run_array_mutation_instruction(
     const MarimayBytecodeInstruction *instruction, MarimayBytecodeValue *registers,
     MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
     MarimayAllocator allocator, MarimayBytecodePanic *panic, MarimaySymbolId symbol,
+    bool *handled
+);
+MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
+    const MarimayBytecodeInstruction *instruction,
+    MarimayBytecodeValue *registers,
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator,
+    MarimayBytecodePanic *panic,
+    MarimaySymbolId symbol,
     bool *handled
 );
 MarimayBytecodeRunStatus mmay_bytecode_run_string_concat_instruction(

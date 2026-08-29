@@ -214,6 +214,13 @@ bool mmay_native_c_write_to_managed_cell(
             register_id
         );
     }
+    if (type == MMAY_TYPE_RUNE) {
+        return mmay_native_c_write(
+            buffer,
+            "mmay_g_cell.f64_bits = (uint64_t)mmay_g_v_%u",
+            register_id
+        );
+    }
     if (type == MMAY_TYPE_F64) {
         return mmay_native_c_write(
             buffer, "mmay_g_cell.f64_bits = mmay_g_v_%u", register_id
@@ -265,6 +272,13 @@ bool mmay_native_c_write_from_managed_cell(
     if (type == MMAY_TYPE_BOOL) {
         return mmay_native_c_write(
             buffer, "mmay_g_v_%u = mmay_g_cell.f64_bits != 0", target
+        );
+    }
+    if (type == MMAY_TYPE_RUNE) {
+        return mmay_native_c_write(
+            buffer,
+            "mmay_g_v_%u = (uint32_t)mmay_g_cell.f64_bits",
+            target
         );
     }
     if (type == MMAY_TYPE_F64) {

@@ -3,6 +3,7 @@
 #include "checker_core_api.h"
 #include "checker_array_mutation_api.h"
 #include "checker_expr_calls_api.h"
+#include "checker_expr_collections_api.h"
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
 
@@ -38,6 +39,14 @@ static bool mmay_receiver_is_collection_name(
         || mmay_checker_private_check_text_equal(checker, token->start, token->end, "truncate")
         || mmay_checker_private_check_text_equal(checker, token->start, token->end, "clear")
         || mmay_checker_private_check_text_equal(checker, token->start, token->end, "reserve")) {
+        return true;
+    }
+    if (mmay_checker_private_check_text_equal(checker, token->start, token->end, "containsKey")
+        || mmay_checker_private_check_text_equal(checker, token->start, token->end, "get")
+        || mmay_checker_private_check_text_equal(checker, token->start, token->end, "put")
+        || mmay_checker_private_check_text_equal(checker, token->start, token->end, "remove")
+        || mmay_checker_private_check_text_equal(checker, token->start, token->end, "contains")
+        || mmay_checker_private_check_text_equal(checker, token->start, token->end, "add")) {
         return true;
     }
     if (mmay_checker_private_check_text_equal(
@@ -183,6 +192,22 @@ bool mmay_checker_private_compile_receiver_collection_call(
         return mmay_checker_private_compile_ordinary_call_with_receiver(
             function, node, receiver_node, &receiver, result
         );
+    }
+    {
+        MarimayTypeId collection_key = MMAY_TYPE_INVALID;
+        MarimayTypeId collection_value = MMAY_TYPE_INVALID;
+        if (mmay_type_map_parts(
+            &function->checker->result->types,
+            receiver.type,
+            &collection_key,
+            &collection_value
+        ) || mmay_type_set_element(
+            &function->checker->result->types, receiver.type, &collection_key
+        )) {
+            return mmay_checker_private_compile_collection_call(
+                function, node, receiver_node, &receiver, resolved, result
+            );
+        }
     }
     if (!mmay_type_array_element(
             &function->checker->result->types, receiver.type, &element

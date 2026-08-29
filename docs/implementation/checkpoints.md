@@ -365,8 +365,8 @@ performance prerequisite inserted between CP38 and CP39.
 ## Active sequence CP29-CP41
 
 The sequence is deliberately linear so exactly one card is executable. CP29
-through CP35 are `verified`; CP36 is `ready`, and every later card is `planned`
-behind its declared predecessor. Execution order is CP36–CP38, CP41, CP39,
+through CP36 are `verified`; CP37 is `ready`, and every later card is `planned`
+behind its declared predecessor. Execution order is CP37–CP38, CP41, CP39,
 then CP40; numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
@@ -1006,7 +1006,8 @@ focused tests/evidence, and CP36 card.
 
 ## CP36 - Map Set and iterator core
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP35.
+State: `verified`. Parent gate: CLI0. Predecessor: CP35. Evidence scope:
+`local`. Evidence: [CP36](evidence/cp36-map-set-iterators-2026-08-30.md).
 
 ### Outcome
 
@@ -1094,7 +1095,7 @@ owners, evidence, and CP37 card. Do not pass broad managed-runtime internals.
 
 ## CP37 - First-party CLI parser
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP36.
+State: `ready`. Parent gate: CLI0. Predecessor: CP36.
 
 ### Outcome
 

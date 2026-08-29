@@ -35,6 +35,7 @@ bool mmay_bytecode_program_valid_options(MarimayBytecodeProgramOptions options) 
         && options.max_total_enum_payloads != 0
         && options.max_total_enum_constructions != 0
         && options.max_total_enum_arguments != 0
+        && options.max_total_collection_layouts != 0
         && options.max_total_interface_layouts != 0
         && options.max_total_interface_constructions != 0
         && options.max_total_interface_methods != 0
@@ -59,6 +60,7 @@ bool mmay_bytecode_program_valid_options(MarimayBytecodeProgramOptions options) 
         && options.function_options.max_enum_payloads != 0
         && options.function_options.max_enum_constructions != 0
         && options.function_options.max_enum_arguments != 0
+        && options.function_options.max_collection_layouts != 0
         && options.function_options.max_interface_layouts != 0
         && options.function_options.max_interface_constructions != 0
         && options.function_options.max_interface_methods != 0
@@ -89,6 +91,7 @@ bool mmay_bytecode_program_function_options_within(
         && actual.max_enum_payloads <= limit.max_enum_payloads
         && actual.max_enum_constructions <= limit.max_enum_constructions
         && actual.max_enum_arguments <= limit.max_enum_arguments
+        && actual.max_collection_layouts <= limit.max_collection_layouts
         && actual.max_interface_layouts <= limit.max_interface_layouts
         && actual.max_interface_constructions
             <= limit.max_interface_constructions
@@ -148,6 +151,11 @@ bool mmay_bytecode_program_accumulate_function(
             max_total_enum_constructions
         )
         && MMAY_ADD_TOTAL(enum_arguments, enum_arguments, max_total_enum_arguments)
+        && MMAY_ADD_TOTAL(
+            collection_layouts,
+            collection_types,
+            max_total_collection_layouts
+        )
         && MMAY_ADD_TOTAL(
             interface_layouts,
             interface_layouts,

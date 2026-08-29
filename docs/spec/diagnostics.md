@@ -262,6 +262,11 @@ split, UTF-8, builder-limit, and binary-stream failures are the declared typed
 root entry, ordinary `G4003` rendering uses its package's visible structural
 `message` contract where one is required.
 
+D079 map and set loops use `G4005` at the complete loop header with exact
+messages `map iterator invalidated by mutation` and
+`set iterator invalidated by mutation`. The panic contains no hash, seed,
+bucket, capacity, or host-allocation detail.
+
 Under D066, malformed UTF-8, an interior NUL, or an exceeded argument count or
 byte limit is `G4006` and exits `1` before source execution. A root status
 outside `0..255` is `G4007` with exact message

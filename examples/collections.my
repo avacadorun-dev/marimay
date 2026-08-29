@@ -1,0 +1,25 @@
+@derive(Eq, Hash)
+type User {
+  id: int,
+  name: string,
+}
+
+fn collectionExample(): int {
+  const scores: Map<User, int> = mapOf<User, int>();
+  const ada = User { id: 1, name: "Ada" };
+  const _ = scores.put(ada, 10);
+  const _ = scores.put(User { id: 2, name: "Grace" }, 20);
+
+  let total = 0;
+  for entry in scores {
+    total += match entry {
+      (_, score) => score,
+    };
+  }
+
+  const selected: Set<string> = setOf<string>();
+  const _ = selected.add("compiler");
+  const _ = selected.add("compiler");
+  const _ = selected.add("runtime");
+  return total + selected.length();
+}

@@ -315,9 +315,12 @@ The formatter emits adjacent prefixes and never rewrites a nominal name based
 on resolution. The prelude does not define `Array`; unresolved legacy
 `Array<T>` source is rejected under D054, while a package-owned declaration
 with that name is ordinary nominal syntax. `Slice<T>` remains distinct.
-`Map<K,V>` preserves insertion iteration order and requires keys supporting
-equality and hashing. Updating an existing key retains its position; deleting
-and reinserting appends it. `Set<T>` follows the same order rule. `Slice<T>` is
+Under D079, `Map<K,V>` preserves insertion iteration order and requires a
+supported coherent hash key. Updating an existing key retains its position;
+deleting and reinserting appends it. `Set<T>` follows the same order and key
+rules. The supported primitive/string and `@derive(Eq, Hash)` nominal key set,
+closed operation inventory, length boundary, and mutation rules are specified
+by the standard-library collection contract. `Slice<T>` is
 a non-owning, scope-bounded view supplied by compiler-known library types; it
 cannot outlive its owner and does not expose lifetime syntax.
 
@@ -717,6 +720,12 @@ checks the snapshot before every subsequent loop test or element yield. A
 mismatch panics with `G4005` at the complete loop header. `reserve` does not
 invalidate an iterator because it changes no initialized element; an iterator
 therefore cannot depend on a stable raw storage address.
+
+Under D079 a map iterator yields an exact `(K, V)` tuple and a set iterator
+yields exact `T`, both in insertion order. They capture the collection's
+non-wrapping mutation generation and check it at the same loop boundary as an
+array iterator. A map update is invalidating even when it retains insertion
+position. A duplicate set add, absent removal, and empty clear are nonmutating.
 
 ## 9. Pattern matching
 

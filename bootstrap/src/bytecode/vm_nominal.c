@@ -177,6 +177,7 @@ static MarimayManagedCellKind mmay_bytecode_nominal_cell_kind(
 ) {
     return mmay_bytecode_type_is_integer(type)
             || type == MMAY_BYTECODE_TYPE_BOOL || type == MMAY_BYTECODE_TYPE_F64
+            || type == MMAY_BYTECODE_TYPE_RUNE
             || type == MMAY_BYTECODE_TYPE_VOID
         ? MMAY_MANAGED_CELL_RAW64
         : MMAY_MANAGED_CELL_REFERENCE;
@@ -200,6 +201,9 @@ MarimayManagedObjectKind mmay_bytecode_nominal_object_kind(
     if (mmay_bytecode_type_is_array(type)) {
         return MMAY_MANAGED_OBJECT_ARRAY;
     }
+    if (type == MMAY_BYTECODE_TYPE_MAP || type == MMAY_BYTECODE_TYPE_SET) {
+        return MMAY_MANAGED_OBJECT_MAP;
+    }
     return MMAY_MANAGED_OBJECT_INVALID;
 }
 
@@ -221,6 +225,13 @@ const void *mmay_bytecode_nominal_reference_descriptor(
     MarimayBytecodeType type,
     uint32_t layout
 ) {
+    if ((type == MMAY_BYTECODE_TYPE_MAP
+            || type == MMAY_BYTECODE_TYPE_SET)
+        && layout != MMAY_BYTECODE_NO_LAYOUT) {
+        return mmay_bytecode_collection_descriptor_for(
+            execution, function, layout
+        );
+    }
     if (type == MMAY_BYTECODE_TYPE_RECORD
         && layout != MMAY_BYTECODE_NO_LAYOUT) {
         return mmay_bytecode_record_descriptor(execution, function, layout);
@@ -240,7 +251,7 @@ const void *mmay_bytecode_nominal_reference_descriptor(
     return mmay_bytecode_array_descriptor_for(execution, function, type, layout);
 }
 
-static bool mmay_bytecode_nominal_field_descriptor(
+bool mmay_bytecode_managed_field_descriptor(
     MarimayBytecodeExecution *execution,
     const MarimayBytecodeFunction *function,
     MarimayBytecodeType type,
@@ -364,7 +375,7 @@ static const MarimayManagedRecordDescriptor *mmay_bytecode_record_descriptor(
         const MarimayBytecodeRecordField *field = mmay_bytecode_record_field(
             function, layout, field_index
         );
-        if (field == NULL || !mmay_bytecode_nominal_field_descriptor(
+        if (field == NULL || !mmay_bytecode_managed_field_descriptor(
                 execution, function, field->type, field->layout,
                 field->is_mutable, &fields[field_index]
             )) {
@@ -473,7 +484,7 @@ static const MarimayManagedEnumDescriptor *mmay_bytecode_enum_descriptor(
         const MarimayBytecodeEnumPayload *payload = mmay_vector_at_const(
             &function->enum_payloads, layout->payload_start + payload_index
         );
-        if (payload == NULL || !mmay_bytecode_nominal_field_descriptor(
+        if (payload == NULL || !mmay_bytecode_managed_field_descriptor(
                 execution, function, payload->type, payload->layout, false,
                 &payloads[payload_index]
             )) {
@@ -596,7 +607,8 @@ MarimayBytecodeRunStatus mmay_bytecode_value_to_managed_cell(
     MarimayManagedCell *cell
 ) {
     memset(cell, 0, sizeof(*cell));
-    if (mmay_bytecode_type_is_integer(value->type)) {
+    if (mmay_bytecode_type_is_integer(value->type)
+        || value->type == MMAY_BYTECODE_TYPE_RUNE) {
         cell->f64_bits = value->as.integer_bits;
     } else if (value->type == MMAY_BYTECODE_TYPE_BOOL) {
         cell->f64_bits = value->as.boolean ? 1 : 0;
@@ -628,7 +640,8 @@ MarimayBytecodeRunStatus mmay_bytecode_managed_cell_to_value(
     MarimayManagedCell cell,
     MarimayBytecodeValue *value
 ) {
-    if (mmay_bytecode_type_is_integer(value->type)) {
+    if (mmay_bytecode_type_is_integer(value->type)
+        || value->type == MMAY_BYTECODE_TYPE_RUNE) {
         value->as.integer_bits = cell.f64_bits;
     } else if (value->type == MMAY_BYTECODE_TYPE_BOOL) {
         value->as.boolean = cell.f64_bits != 0;

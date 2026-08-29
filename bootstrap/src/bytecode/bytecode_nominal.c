@@ -6,7 +6,8 @@ bool mmay_bytecode_type_requires_layout(MarimayBytecodeType type) {
     return type == MMAY_BYTECODE_TYPE_ARRAY
         || type == MMAY_BYTECODE_TYPE_RECORD
         || type == MMAY_BYTECODE_TYPE_ENUM
-        || type == MMAY_BYTECODE_TYPE_INTERFACE;
+        || type == MMAY_BYTECODE_TYPE_INTERFACE
+        || type == MMAY_BYTECODE_TYPE_MAP || type == MMAY_BYTECODE_TYPE_SET;
 }
 
 bool mmay_bytecode_type_layout_is_valid(
@@ -28,6 +29,12 @@ bool mmay_bytecode_type_layout_is_valid(
     }
     if (type == MMAY_BYTECODE_TYPE_ARRAY) {
         return layout < function->array_types.length;
+    }
+    if (type == MMAY_BYTECODE_TYPE_MAP || type == MMAY_BYTECODE_TYPE_SET) {
+        const MarimayBytecodeCollectionType *collection =
+            mmay_bytecode_collection_type(function, layout);
+        return collection != NULL
+            && collection->is_set == (type == MMAY_BYTECODE_TYPE_SET);
     }
     return layout == MMAY_BYTECODE_NO_LAYOUT;
 }

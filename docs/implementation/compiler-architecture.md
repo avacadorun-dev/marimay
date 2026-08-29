@@ -146,6 +146,9 @@ bootstrap/src/mir/
   verify.c              local, CFG, and initialization verification
   verify_support.c      type/dataflow verifier primitives
   verify_managed.c      string/record/enum/array layout verification
+  mir_collections.c     D079 collection-layout lifecycle and exact interning
+  execution_collections.c
+                        D079 ordered Map/Set oracle state and operations
   verify_range.c        verified array proof-capability validation
   range.c               transactional checked-to-in-bounds MIR rewrite
   integer_range.c       MIR adapter, transactional arithmetic rewrite, proof validation
@@ -213,6 +216,13 @@ bootstrap/src/check/
                         exact imported std/env and std/process primitive lowering
   checker_expr_context_api.h
                         narrow D078 checker owner contract
+  checker_collection_types.c
+                        compiler-owned Map/Set type recognition and interning
+  checker_derive.c      closed D079 Eq/Hash derive-pair validation
+  checker_expr_collections.c
+                        D079 exact operation typing and MIR lowering
+  checker_collection_loop.c
+                        insertion-order loop CFG and generation checks
   checker_expr_string.c interpolation plus closed std/convert lowering
   checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
                         and lowering
@@ -353,6 +363,9 @@ tests/c-unit/
   test_cp35_environment.c         D078 runtime/capability/allocation owner
   test_cp35_context_pipeline.c    D078 checker/MIR/bytecode/native hostile owner
   test_cp35_process_context.cmake real env/cwd/relocation/cache/CLI comparison
+  test_cp36_collections.c         D079 checker/MIR/bytecode/VM/native vertical owner
+  runtime/test_managed_map_set.c  D079 order/hash/GC/allocation property owner
+  test_cp36_map_set.cmake         public VM/native Map/Set acceptance owner
 ```
 
 The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
@@ -408,6 +421,18 @@ sequencing; none duplicates descriptor selection or raw/reference semantics.
 types to the same closed runtime layout tags without changing MIR or bytecode
 wire identity. Focused storage tests inspect private layout/accounting while
 native descriptor tests prove the emitted mapping.
+
+D079 assigns source collection recognition and lowering to the four focused
+checker owners above. `mir_collections.c` owns only layout metadata, while
+`execution_collections.c` owns the independent semantic oracle.
+`bytecode_collections.c`, `bytecode_verify_collections.c`, and
+`vm_collection.c` respectively own wire layout metadata, hostile instruction
+validation, and managed execution. `c_emitter_collections.c` consumes verified
+typed MIR without reconstructing source key eligibility. The runtime boundary
+is `mmay/runtime/map.h` plus `mmay/runtime/set.h`: `managed_map.c` owns coherent
+hash/equality, insertion order, growth, and precise tracing; the small set
+owner delegates storage to that exact map contract and exposes no duplicate
+table implementation.
 
 D061 assigns capacity rounding, checked maximum clamping, rooted collection
 retry, resize accounting, and failure-atomic commit to
@@ -718,6 +743,23 @@ checkpoint:
 | `tests/c-unit/test_cp35_environment.c` | 0 | 383 | D078 name/value/error/path and exhaustive allocation-failure coverage |
 | `tests/c-unit/test_cp35_context_pipeline.c` | 0 | 560 | D078 exact checker signatures, injected MIR/VM oracles, hostile MIR/bytecode, native redaction, and exhaustive allocation coverage |
 | `tests/c-unit/test_cp35_process_context.cmake` | 0 | 283 | real VM/native env timing, cwd, relocation, cache-input, redaction, and CLI parity |
+| `bootstrap/src/check/checker_collection_types.c` | 0 | 108 | compiler-owned D079 Map/Set recognition and deterministic type interning |
+| `bootstrap/src/check/checker_derive.c` | 0 | 91 | closed Eq/Hash derive-pair validation without arbitrary user hashing |
+| `bootstrap/src/check/checker_expr_collections.c` | 0 | 1,122 | exact Map/Set operation typing, key eligibility, Result/Option construction, and typed MIR lowering |
+| `bootstrap/src/check/checker_collection_loop.c` | 0 | 291 | insertion-order tuple/value loops and exact mutation-generation guard lowering |
+| `bootstrap/src/mir/mir_collections.c` | 0 | 68 | collection layout lifecycle and exact interning |
+| `bootstrap/src/mir/execution_collections.c` | 0 | 470 | independent ordered collection oracle, mutation, and exact G4005 behavior |
+| `bootstrap/src/bytecode/bytecode_collections.c` | 0 | 58 | append-only typed collection layout table ownership |
+| `bootstrap/src/bytecode/bytecode_verify_collections.c` | 0 | 188 | hostile collection opcode register/layout validation |
+| `bootstrap/src/bytecode/vm_collection.c` | 0 | 450 | managed descriptor cache, cell conversion, collection execution, and G4005 mapping |
+| `bootstrap/src/native/c_emitter_collections.c` | 0 | 337 | portable-C descriptors, instructions, and iterator panic emission |
+| `runtime/common/managed_map.c` | 0 | 1,205 | D079 coherent SipHash keys, insertion order, failure-atomic growth, mutation generation, and precise tracing |
+| `runtime/common/managed_set.c` | 0 | 161 | narrow Set API over the single map-storage implementation |
+| `runtime/include/mmay/runtime/map.h` | 0 | 78 | narrow owner API for managed ordered maps |
+| `runtime/include/mmay/runtime/set.h` | 0 | 56 | narrow owner API for managed ordered sets |
+| `tests/c-unit/runtime/test_managed_map_set.c` | 0 | 704 | dual-seed order, counted UTF-8/NUL and nominal key laws, randomized cyclic GC graph, limits, failure atomicity, and exhaustive Map/Set allocation cleanup |
+| `tests/c-unit/test_cp36_collections.c` | 0 | 709 | checker/MIR/hostile bytecode/codec/VM/native/formatter/allocation vertical coverage |
+| `tests/c-unit/test_cp36_map_set.cmake` | 0 | 56 | public fmt/check/run/test-both/Release artifact acceptance across every key family |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `mmay_test_mir` registration. The service checkpoint

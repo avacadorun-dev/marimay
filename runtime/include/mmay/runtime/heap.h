@@ -14,6 +14,11 @@ typedef struct MarimayManagedHeapOptions {
     size_t max_live_bytes;
     /* Configured array-length ceiling; reaching it reports LIMIT_REACHED. */
     size_t max_array_length;
+    /* Configured Map/Set entry ceiling; reaching it reports LIMIT_REACHED. */
+    size_t max_collection_length;
+    /* Controlled D079 hash seed; placement is never observable. */
+    uint64_t collection_hash_seed0;
+    uint64_t collection_hash_seed1;
     /* Collect before every operation that may allocate or grow storage. */
     bool collect_before_allocation;
 } MarimayManagedHeapOptions;

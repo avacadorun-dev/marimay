@@ -93,6 +93,14 @@ bool mmay_mir_add_array_construction(
     size_t argument_count,
     MarimayMirArrayConstructionId *result
 );
+bool mmay_mir_add_collection(
+    MarimayMirFunction *function,
+    MarimayTypeId type,
+    MarimayTypeId key_type,
+    MarimayTypeId value_type,
+    bool is_set,
+    MarimayMirCollectionId *result
+);
 bool mmay_mir_add_interface(
     MarimayMirFunction *function,
     MarimayTypeId type,

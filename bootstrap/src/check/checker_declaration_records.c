@@ -3,6 +3,7 @@
 #include "checker_declaration_lifecycle_api.h"
 #include "checker_lookup_api.h"
 #include "checker_generic_types_api.h"
+#include "checker_derive_api.h"
 
 
 
@@ -20,7 +21,6 @@
     );
     MarimayCheckRecordDeclaration declaration;
     MarimayCheckTopLevelEntry top_level_entry;
-    size_t index = 0;
     bool duplicate_name = false;
     bool top_level_index_inserted = false;
     bool local_nominal_inserted = false;
@@ -29,15 +29,6 @@
     if (name_token == NULL || name_token->synthetic) {
         mmay_checker_fail(checker, MMAY_CHECK_INVALID_ARGUMENT);
         goto cleanup;
-    }
-    for (index = 0; index < node->child_count; index += 1) {
-        const MarimayAstElement *element = mmay_ast_child(node, index);
-        if (element != NULL && element->kind == MMAY_AST_ELEMENT_NODE
-            && element->as.node != NULL
-            && element->as.node->kind == MMAY_SYNTAX_ATTRIBUTE) {
-            mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
-            goto cleanup;
-        }
     }
     if (checker->records.length >= checker->options.max_records) {
         mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
@@ -55,6 +46,12 @@
         0
     ) != NULL;
     declaration.declaration_valid = true;
+    if (!mmay_checker_private_collect_eq_hash_derive(
+            checker,
+            node,
+            &declaration.derives_eq_hash,
+            &declaration.declaration_valid
+        )) goto cleanup;
     duplicate_name = mmay_checker_private_declaration_name_is_duplicate(
         checker,
         declaration.name
@@ -222,7 +219,6 @@ cleanup:
     );
     MarimayCheckEnumDeclaration declaration;
     MarimayCheckTopLevelEntry top_level_entry;
-    size_t index = 0;
     bool duplicate_name = false;
     bool top_level_index_inserted = false;
     bool local_nominal_inserted = false;
@@ -231,15 +227,6 @@ cleanup:
     if (name_token == NULL || name_token->synthetic) {
         mmay_checker_fail(checker, MMAY_CHECK_INVALID_ARGUMENT);
         goto cleanup;
-    }
-    for (index = 0; index < node->child_count; index += 1) {
-        const MarimayAstElement *element = mmay_ast_child(node, index);
-        if (element != NULL && element->kind == MMAY_AST_ELEMENT_NODE
-            && element->as.node != NULL
-            && element->as.node->kind == MMAY_SYNTAX_ATTRIBUTE) {
-            mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
-            goto cleanup;
-        }
     }
     if (checker->enums.length >= checker->options.max_enums) {
         mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
@@ -257,6 +244,12 @@ cleanup:
         0
     ) != NULL;
     declaration.declaration_valid = true;
+    if (!mmay_checker_private_collect_eq_hash_derive(
+            checker,
+            node,
+            &declaration.derives_eq_hash,
+            &declaration.declaration_valid
+        )) goto cleanup;
     duplicate_name = mmay_checker_private_declaration_name_is_duplicate(
         checker,
         declaration.name

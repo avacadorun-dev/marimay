@@ -1,0 +1,73 @@
+import * as model from "tests.public-alpha.cp36-map-set/model";
+
+fn require(condition: bool, message: string): void {
+  if !condition {
+    panic(message);
+  }
+}
+
+fn collectionScore(): int {
+  const weights = model.emptyWeights();
+  const first = model.key(1, "first");
+  const second = model.key(2, "second");
+  const _ = weights.put(first, 3);
+  const _ = weights.put(second, 4);
+  const _ = weights.put(model.key(1, "first"), 5);
+
+  let initialOrder = 0;
+  for entry in weights {
+    const value = match entry {
+      (_, item) => item,
+    };
+    initialOrder = initialOrder * 10 + value;
+  }
+
+  const removed = match weights.remove(second) {
+    Some(value) => value,
+    None => 0,
+  };
+  const _ = weights.put(second, 6);
+  let reinsertedOrder = 0;
+  for entry in weights {
+    const value = match entry {
+      (_, item) => item,
+    };
+    reinsertedOrder = reinsertedOrder * 10 + value;
+  }
+
+  const values: Set<int> = setOf<int>();
+  const _ = values.add(2);
+  const _ = values.add(2);
+  const _ = values.add(3);
+  const _ = values.remove(2);
+  const _ = values.add(2);
+  let setOrder = 0;
+  for value in values {
+    setOrder = setOrder * 10 + value;
+  }
+
+  const tokens: Set<model.Token> = setOf<model.Token>();
+  const _ = tokens.add(model.Token.Index(7));
+  const _ = tokens.add(model.Token.Index(7));
+  const _ = tokens.add(model.Token.Name("name"));
+  require(tokens.length() == 2, "derived enum key equality");
+  require(tokens.contains(model.Token.Index(7)), "derived enum key lookup");
+  require(initialOrder == 54, "map update retains position");
+  require(reinsertedOrder == 56, "map reinsert appends");
+  require(setOrder == 32, "set duplicate and reinsert order");
+  require(weights.containsKey(first), "map contains imported key");
+  require(values.contains(2), "set contains value");
+  require(weights.length() == 2, "map length");
+
+  const selected = match weights.get(model.key(1, "first")) {
+    Some(value) => value,
+    None => 0,
+  };
+  values.clear();
+  require(values.length() == 0, "set clear");
+  return reinsertedOrder + setOrder + selected + removed + weights.length();
+}
+
+fn main(): void {
+  require(collectionScore() == 99, "ordered Map and Set score");
+}

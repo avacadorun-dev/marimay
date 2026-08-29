@@ -14,7 +14,8 @@ enum {
     MMAY_BYTECODE_FEATURE_ARRAYS = 1U << 3,
     MMAY_BYTECODE_FEATURE_NOMINAL = 1U << 4,
     /* The extended envelope carries canonical []T descriptors. */
-    MMAY_BYTECODE_FEATURE_ARRAY_TYPES = 1U << 5
+    MMAY_BYTECODE_FEATURE_ARRAY_TYPES = 1U << 5,
+    MMAY_BYTECODE_FEATURE_COLLECTIONS = 1U << 6
 };
 
 typedef struct MarimayBytecodeEncodeBuffer {

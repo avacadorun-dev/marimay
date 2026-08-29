@@ -1,0 +1,55 @@
+@derive(Eq, Hash)
+type Key {
+  id: int,
+  label: string,
+}
+
+@derive(Eq, Hash)
+enum Token {
+  Index { value: int },
+  Name { value: string },
+}
+
+fn main(): int {
+  const values: Map<Key, int> = mapOf<Key, int>();
+  const first = Key { id: 1, label: "a" };
+  const second = Key { id: 2, label: "b" };
+  const _ = values.put(first, 3);
+  const _ = values.put(second, 4);
+  const _ = values.put(Key { id: 1, label: "a" }, 5);
+  const removed = match values.remove(second) {
+    Some(value) => value,
+    None => 0,
+  };
+  const _ = values.put(second, 6);
+  let mapCount = 0;
+  for entry in values {
+    const _ = entry;
+    mapCount += 1;
+  }
+  const selected = match values.get(Key { id: 1, label: "a" }) {
+    Some(value) => value,
+    None => 0,
+  };
+  const seen: Set<int> = setOf<int>();
+  const _ = seen.add(2);
+  const _ = seen.add(2);
+  const _ = seen.add(3);
+  if !seen.remove(2) {
+    return -1;
+  }
+  const _ = seen.add(2);
+  let setSum = 0;
+  for item in seen {
+    setSum += item;
+  }
+  const cleared: Set<int> = setOf<int>();
+  const _ = cleared.add(99);
+  cleared.clear();
+  const tokens: Set<Token> = setOf<Token>();
+  tokens.clear();
+  if !values.containsKey(first) || !seen.contains(2) || cleared.length() != 0 {
+    return -2;
+  }
+  return selected + removed + mapCount + setSum;
+}

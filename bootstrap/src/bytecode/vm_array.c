@@ -145,6 +145,7 @@ static bool mmay_bytecode_build_array_element_descriptor(
         descriptor->storage_stride = sizeof(uint16_t);
     } else if (type == MMAY_BYTECODE_TYPE_I32
         || type == MMAY_BYTECODE_TYPE_U32
+        || type == MMAY_BYTECODE_TYPE_RUNE
         || type == MMAY_BYTECODE_TYPE_F32) {
         descriptor->storage_kind = MMAY_MANAGED_ARRAY_STORAGE_RAW32;
         descriptor->storage_stride = sizeof(uint32_t);

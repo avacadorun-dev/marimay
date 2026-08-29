@@ -36,6 +36,7 @@ add_executable(mmay_c_unit
   test_cp34_fs_pipeline.c
   test_cp35_environment.c
   test_cp35_context_pipeline.c
+  test_cp36_collections.c
   test_bytecode_program.c
   test_bytecode_program_nominal.c
   test_bytecode_verify_provenance.c
@@ -133,6 +134,7 @@ add_executable(mmay_c_unit
   runtime/test_managed_array_storage.c
   runtime/test_managed_record_view.c
   runtime/test_managed_mutation.c
+  runtime/test_managed_map_set.c
   runtime/test_program_arguments.c
   test_managed_objects.c
   test_number_format.c
@@ -377,8 +379,12 @@ add_test(
   NAME mmay_cp35_unit
   COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp35
 )
+add_test(
+  NAME mmay_cp36_unit
+  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp36
+)
 set_tests_properties(
-  mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit
+  mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit mmay_cp36_unit
   PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 set_tests_properties(
@@ -461,6 +467,15 @@ add_test(
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp35_process_context.cmake"
 )
 
+add_test(
+  NAME mmay_cp36_map_set
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp36-map-set"
+    "-DMMAY_TEST_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp36-map-set${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp36_map_set.cmake"
+)
+
 # The install contracts both update CMake's build-tree install manifest. They
 # may overlap all other isolated tests, but not each other.
 set_tests_properties(
@@ -474,9 +489,11 @@ set_tests_properties(mmay_cp32_process_streams PROPERTIES COST 320)
 set_tests_properties(mmay_cp33_process_text_bytes PROPERTIES COST 380)
 set_tests_properties(mmay_cp34_process_files PROPERTIES COST 380)
 set_tests_properties(mmay_cp35_process_context PROPERTIES COST 380)
+set_tests_properties(mmay_cp36_map_set PROPERTIES COST 400)
 
 # Focused checkpoint runners still share the legacy root fixture directory.
 set_tests_properties(
   mmay_cp32_unit mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit
+  mmay_cp36_unit
   PROPERTIES RUN_SERIAL TRUE COST 10
 )

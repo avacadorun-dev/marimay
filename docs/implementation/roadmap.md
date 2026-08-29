@@ -57,7 +57,7 @@ cache-independence, and VM/native process gates are verified.
 
 - The implemented source surface is not the complete 1.0 specification; I1–I5
   remain `in-progress` and unsupported accepted constructs fail closed.
-- `Map`, `Set`, `std/cli`, and typed JSON remain CP36–CP38 work.
+- `std/cli` and typed JSON remain CP37–CP38 work.
 - Native `mmay run`, `mmay init`, `mmay doctor`, relocatable install lifecycle,
   and publication-ready artifacts remain CP39–CP40 work.
 - Portable public `.myb`, untrusted `mmay exec`, dependency resolution,
@@ -73,8 +73,8 @@ cache-independence, and VM/native process gates are verified.
 
 ## Now / Next / Later
 
-- **Now:** [CP36 — Map, Set, and iterators](checkpoints.md#cp36-map-set-and-iterator-core).
-- **Next:** [CP37 — first-party CLI parser](checkpoints.md#cp37-first-party-cli-parser), then [CP38 — bounded typed JSON](checkpoints.md#cp38-bounded-typed-json).
+- **Now:** [CP37 — first-party CLI parser](checkpoints.md#cp37-first-party-cli-parser).
+- **Next:** [CP38 — bounded typed JSON](checkpoints.md#cp38-bounded-typed-json).
 - **Later:** CP38 finishes the bounded language/core surface; CP41 then
   closes the measured x86_64 native-code pressure gap before CP39–CP40 finish
   installation and the CLI0 audit. I6 next proves one real direct-style
@@ -174,7 +174,7 @@ self-hosting.
 CP28 is the fixed algorithm/performance integration boundary. CP29 established
 the release contract and closure matrix for N0, A0, I0, I1, and the applicable
 I2–I5 slices. That matrix assigns missing evidence; it does not mark those gates
-verified. CP35 is verified, and CP36 is now the sole ready card.
+verified. CP36 is verified, and CP37 is now the sole ready card.
 
 ## CLI0 CP41 boundary and post-CLI0 I6/E0
 

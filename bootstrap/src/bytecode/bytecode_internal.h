@@ -80,6 +80,11 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_context_instruction(
     const MarimayBytecodeInstruction *instruction,
     const unsigned char *assigned
 );
+MarimayBytecodeVerifyStatus mmay_bytecode_verify_collection_instruction(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
+    unsigned char *assigned
+);
 void mmay_bytecode_transfer_assignments(
     const MarimayBytecodeBlock *block,
     unsigned char *assigned,

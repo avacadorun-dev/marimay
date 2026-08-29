@@ -187,6 +187,7 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/checked_i64.c
   bootstrap/src/base/checked_integer.c
   bootstrap/src/base/f64_runtime.c
+  bootstrap/src/base/hash.c
   bootstrap/src/base/integer_text.c
   bootstrap/src/base/number_format.c
   bootstrap/src/base/owned_bytes.c
@@ -214,6 +215,8 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   runtime/common/managed_record.c
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
+  runtime/common/managed_map.c
+  runtime/common/managed_set.c
   runtime/common/program_arguments.c
   runtime/common/profile.c
   runtime/common/test_output.c
@@ -296,6 +299,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/base/writer.c
   bootstrap/src/bytecode/bytecode.c
   bootstrap/src/bytecode/bytecode_arrays.c
+  bootstrap/src/bytecode/bytecode_collections.c
   bootstrap/src/bytecode/bytecode_nominal.c
   bootstrap/src/bytecode/bytecode_codec.c
   bootstrap/src/bytecode/bytecode_codec_nominal.c
@@ -311,6 +315,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_verify_io.c
   bootstrap/src/bytecode/bytecode_verify_fs.c
   bootstrap/src/bytecode/bytecode_verify_context.c
+  bootstrap/src/bytecode/bytecode_verify_collections.c
   bootstrap/src/bytecode/bytecode_verify_nominal.c
   bootstrap/src/bytecode/bytecode_verify_numeric.c
   bootstrap/src/bytecode/bytecode_verify_provenance.c
@@ -327,6 +332,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_array.c
   bootstrap/src/bytecode/vm_range.c
   bootstrap/src/bytecode/vm_array_mutation.c
+  bootstrap/src/bytecode/vm_collection.c
   bootstrap/src/bytecode/vm_defer.c
   bootstrap/src/bytecode/vm_interface.c
   bootstrap/src/bytecode/vm_io.c
@@ -348,8 +354,12 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_defer.c
   bootstrap/src/check/checker_core.c
   bootstrap/src/check/checker_compound_types.c
+  bootstrap/src/check/checker_collection_types.c
+  bootstrap/src/check/checker_collection_loop.c
+  bootstrap/src/check/checker_expr_collections.c
   bootstrap/src/check/checker_declaration_constants.c
   bootstrap/src/check/checker_declaration_enums.c
+  bootstrap/src/check/checker_derive.c
   bootstrap/src/check/checker_declaration_functions.c
   bootstrap/src/check/checker_declaration_interfaces.c
   bootstrap/src/check/checker_declaration_lifecycle.c
@@ -435,6 +445,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/execution.c
   bootstrap/src/mir/execution_context.c
   bootstrap/src/mir/execution_array.c
+  bootstrap/src/mir/execution_collections.c
   bootstrap/src/mir/execution_defer.c
   bootstrap/src/mir/execution_format.c
   bootstrap/src/mir/execution_fs.c
@@ -444,6 +455,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/execution_heap.c
   bootstrap/src/mir/execution_numeric.c
   bootstrap/src/mir/mir.c
+  bootstrap/src/mir/mir_collections.c
   bootstrap/src/mir/mir_interfaces.c
   bootstrap/src/mir/integer_range.c
   bootstrap/src/mir/range.c
@@ -476,7 +488,8 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/native/c_emitter_io.c
   bootstrap/src/native/c_emitter_fs.c
   bootstrap/src/native/c_emitter_context.c
-    bootstrap/src/native/c_emitter_text.c
+  bootstrap/src/native/c_emitter_collections.c
+  bootstrap/src/native/c_emitter_text.c
   bootstrap/src/native/c_emitter_managed.c
   bootstrap/src/native/c_emitter_roots.c
   bootstrap/src/native/c_emitter_range.c
@@ -509,6 +522,8 @@ add_library(mmay_bootstrap STATIC
   runtime/common/managed_record.c
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
+  runtime/common/managed_map.c
+  runtime/common/managed_set.c
   runtime/common/program_arguments.c
   runtime/common/process_context.c
   ${MMAY_PLATFORM_SOURCES}

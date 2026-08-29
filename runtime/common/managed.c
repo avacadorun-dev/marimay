@@ -40,6 +40,9 @@ MarimayManagedHeapOptions mmay_managed_heap_default_options(void) {
     options.max_objects = 1000000;
     options.max_live_bytes = 64U * 1024U * 1024U;
     options.max_array_length = mmay_managed_language_max_array_length();
+    options.max_collection_length = mmay_managed_language_max_array_length();
+    options.collection_hash_seed0 = UINT64_C(0x736f6d6570736575);
+    options.collection_hash_seed1 = UINT64_C(0x646f72616e646f6d);
     options.collect_before_allocation = false;
     return options;
 }
@@ -79,6 +82,8 @@ bool mmay_managed_heap_init(
         || allocator.deallocate == NULL || options.max_objects == 0
         || options.max_objects > UINT32_MAX || options.max_live_bytes == 0
         || options.max_array_length > mmay_managed_language_max_array_length()
+        || options.max_collection_length
+            > mmay_managed_language_max_array_length()
         || !mmay_new_provenance(&provenance)) {
         return false;
     }

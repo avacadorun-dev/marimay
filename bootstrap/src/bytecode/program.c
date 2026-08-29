@@ -201,6 +201,7 @@ MarimayBytecodeProgramOptions mmay_bytecode_program_default_options(void) {
     options.max_total_enum_payloads = 10000000;
     options.max_total_enum_constructions = 1000000;
     options.max_total_enum_arguments = 10000000;
+    options.max_total_collection_layouts = 1000000;
     options.max_total_interface_layouts = 1000000;
     options.max_total_interface_constructions = 1000000;
     options.max_total_interface_methods = 10000000;

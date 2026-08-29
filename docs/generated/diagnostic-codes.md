@@ -23,7 +23,7 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `G4002` | runtime | Array indexing panicked on an out-of-bounds index. |
 | `G4003` | runtime | Root main returned an expected error. |
 | `G4004` | test | A compiler-known test expectation observed a mismatching value or byte stream. |
-| `G4005` | runtime | An array iterator observed an intervening initialized-sequence mutation. |
+| `G4005` | runtime | A managed collection iterator observed an intervening invalidating mutation. |
 | `G4006` | runtime | Program arguments failed UTF-8, NUL, count, or byte-limit validation. |
 | `G4007` | runtime | Root main returned a status outside the portable process range. |
 | `I0001` | compiler | Compiler does not implement an accepted language construct. |

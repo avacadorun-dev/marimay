@@ -87,6 +87,7 @@ typedef struct MarimayCheckRecordDeclaration {
     bool fields_resolved;
     bool type_parameters_initialized;
     bool is_generic;
+    bool derives_eq_hash;
 } MarimayCheckRecordDeclaration;
 
 typedef struct MarimayCheckEnumPayloadItemDeclaration {
@@ -125,6 +126,7 @@ typedef struct MarimayCheckEnumDeclaration {
     bool type_parameters_initialized;
     bool is_generic;
     bool is_builtin;
+    bool derives_eq_hash;
 } MarimayCheckEnumDeclaration;
 
 typedef struct MarimayCheckInterfaceMethodDeclaration {

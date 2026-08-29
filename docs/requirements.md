@@ -50,6 +50,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | LANG-040 | managed arrays expose typed pop/truncate/clear/reserve operations, precisely release removed reference elements, keep capacity unobservable, and invalidate iteration through the non-wrapping D053 mutation generation | language §§5.6,8; standard library §4; execution §§9,13; D053 | I2/I3/I4/I5 |
 | LANG-041 | the existing managed array identity has canonical right-associative `[]T` source, formatter, diagnostic, and compiler-service spelling; unresolved prelude-era `Array<T>` is rejected without capturing package-owned nominal `Array` or `Slice<T>` | language §5.2; diagnostics §5; toolchain §6.1; D054 | I1/I2/I8 |
 | LANG-042 | a root `main` optionally accepts exact `[]string` arguments and returns `void`, `int`, `Result<void,E>`, or `Result<int,E>`; selected status is bounded to 0–255 and every return, error, and panic preserves lexical cleanup | language §6.1; execution §§3,13.1; D041/D066 | I2/I4 |
+| LANG-043 | `Map<K,V>` and `Set<T>` accept only the closed D079 coherent hash-key set, preserve insertion-ordered `for` semantics, and enforce failure-atomic length and mutation-generation behavior | language §§5.2,8; standard library §4; execution §§9,13; D079 | I2/I3/I4/I5/CLI0 |
 
 ## Execution and concurrency
 
@@ -117,6 +118,7 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | STD-012 | nominal `Bytes`, text/byte builders, and binary stdio preserve bounded failure-atomic growth, exact UTF-8 errors, D053 iterator invalidation, D055 resource classification, and VM/native parity | standard library §§3,3.1; execution §§5,10.1; D076 | I3/I4/I5/CLI0 |
 | STD-013 | D077 typed lexical paths and synchronous files use separate normalized read/write root capabilities, symlink-free traversal, bounded reads, failure-atomic writes, owned handles, portable metadata/errors, deterministic directory order, and VM/native parity | standard library §§3.2–3.3; execution §§5,9–10.1; toolchain §§6; D077 | I3/I4/I5/CLI0 |
 | STD-014 | D078 environment reads are exact named capabilities with missing/empty/UTF-8/limit distinctions and no value leakage; typed current-directory/executable context is explicit, injectable, normalized, and VM/native equivalent for equal input | standard library §5; execution §§10.3,12–13; toolchain §§5–6; D078 | I3/I4/I5/CLI0 |
+| STD-015 | D079 ordered Map/Set operations, coherent primitive/string/derived-nominal hashing, controlled seeds, exact absence/growth results, iterator invalidation, and precise managed roots agree across MIR, VM, and native | standard library §4; execution §§9,13; D079 | I3/I4/I5/CLI0 |
 | STD-003 | collections are bounded and map/set iteration insertion-ordered | standard library §4 | I5 |
 | STD-004 | resource and whole-input APIs expose cleanup and size limits | standard library §§5,9–10 | I9 |
 | STD-005 | timeouts, structured race/select, channels, and isolate APIs preserve task-scope invariants | standard library §§6–8; D029 | I6 |

@@ -13,6 +13,7 @@ typedef struct MarimayBytecodeFunctionOptions {
     size_t max_string_bytes;
     size_t max_array_constructions;
     size_t max_array_arguments;
+    size_t max_collection_layouts;
     size_t max_record_layouts;
     size_t max_record_fields;
     size_t max_record_constructions;
@@ -43,8 +44,7 @@ typedef struct MarimayBytecodeFunction {
     MarimayVector string_constants;
     MarimayVector array_constructions;
     MarimayVector array_arguments;
-    /* Canonical serialized type table for generic []T descriptors. */
-    MarimayVector array_types;
+    MarimayVector array_types, collection_types;
     MarimayVector register_layouts;
     MarimayVector record_layouts;
     MarimayVector record_fields;
@@ -53,8 +53,7 @@ typedef struct MarimayBytecodeFunction {
     MarimayVector enum_layouts;
     MarimayVector enum_variants;
     MarimayVector enum_payloads;
-    MarimayVector enum_constructions;
-    MarimayVector enum_arguments;
+    MarimayVector enum_constructions, enum_arguments;
     MarimayVector interface_layouts;
     MarimayVector interface_constructions;
     MarimayVector interface_methods;

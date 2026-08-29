@@ -4,6 +4,7 @@
 #include "mmay/runtime/enum.h"
 #include "mmay/runtime/generated_record.h"
 #include "mmay/runtime/interface.h"
+#include "mmay/runtime/generated_map.h"
 #include "mmay/runtime/string.h"
 
 /* Exact managed storage layouts reserved for compiler-generated C. */
@@ -32,6 +33,7 @@ typedef struct MarimayManagedSlot {
         MarimayManagedRecord *record;
         MarimayManagedEnum *enumeration;
         MarimayManagedInterface *iface;
+        MarimayManagedMap *map;
     } as;
     uint32_t generation;
     uint32_t next_free;
@@ -155,5 +157,4 @@ static inline MarimayManagedStatus mmay_managed_record_generated_bind(
     heap->cached_record_object = view->object;
     return MMAY_MANAGED_OK;
 }
-
 #endif

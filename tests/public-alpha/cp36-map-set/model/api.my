@@ -1,0 +1,19 @@
+@derive(Eq, Hash)
+public type Key {
+  public id: int,
+  public label: string,
+}
+
+@derive(Eq, Hash)
+public enum Token {
+  Index(int),
+  Name(string),
+}
+
+public fn key(id: int, label: string): Key {
+  return Key { id: id, label: label };
+}
+
+public fn emptyWeights(): Map<Key, int> {
+  return mapOf<Key, int>();
+}

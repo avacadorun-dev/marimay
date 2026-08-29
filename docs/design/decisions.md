@@ -2217,3 +2217,88 @@ Reason: local CLI programs need configuration and process location before the
 first-party option parser, while ambient enumeration, hidden policy overrides,
 and secret-bearing diagnostics would make builds non-hermetic and capability
 auditing unreliable.
+
+## D079 — Ordered Map Set and checked hash-key coherence
+
+Status: accepted.
+
+The CLI-alpha collection surface adds compiler-known managed `Map<K,V>` and
+`Set<T>` types. They have stable reference identity, never expose capacity or
+hash-table position, and use these ordinary free/dot-call-equivalent
+operations:
+
+```marimay
+public fn mapOf<K, V>(): Map<K, V>;
+public fn length<K, V>(values: Map<K, V>): int;
+public fn containsKey<K, V>(values: Map<K, V>, key: K): bool;
+public fn get<K, V>(values: Map<K, V>, key: K): Option<V>;
+public fn put<K, V>(
+  values: Map<K, V>,
+  key: K,
+  value: V,
+): Result<bool, CollectionGrowthError>;
+public fn remove<K, V>(values: Map<K, V>, key: K): Option<V>;
+public fn clear<K, V>(values: Map<K, V>): void;
+
+public fn setOf<T>(): Set<T>;
+public fn length<T>(values: Set<T>): int;
+public fn contains<T>(values: Set<T>, value: T): bool;
+public fn add<T>(
+  values: Set<T>,
+  value: T,
+): Result<bool, CollectionGrowthError>;
+public fn remove<T>(values: Set<T>, value: T): bool;
+public fn clear<T>(values: Set<T>): void;
+
+public enum CollectionGrowthError {
+  LengthLimit { limit: int },
+}
+```
+
+`put` returns `Ok(true)` for a newly inserted key and `Ok(false)` for an
+update. An update replaces only the value and retains the key's position.
+`add` returns `Ok(true)` for a newly inserted value and `Ok(false)` for an
+already-present value. A new entry at `int::MAX` returns
+`Err(CollectionGrowthError.LengthLimit { limit: int::MAX })` without
+mutation; updating an existing map key or adding an existing set value remains
+valid at that length. Managed-budget and host-allocation failures retain D055
+`I0002` classification and never become a source growth error. `get` and map
+`remove` use `None` for absence. Set `remove` returns whether it removed a
+value. An empty `clear` is a no-op.
+
+Iteration uses the existing `for item in values` spelling. A map item has exact
+tuple type `(K, V)` and a set item has exact type `T`. Iteration is insertion
+ordered. Updating a map retains position; removing and later reinserting a key
+or value appends it. Resizing, hash-table layout, tombstones, and hash seeds
+are unobservable. A runtime may randomize hashing, but a controlled execution
+can inject both 64-bit seed words; changing them cannot change visible order
+or any result.
+
+Supported hash keys are `bool`, every integer width, `rune`, `string`, and an
+immutable nominal record or enum with the closed `@derive(Eq, Hash)` pair whose
+complete stored payload recursively has supported key types. Floating-point,
+arrays, maps, sets, functions, interfaces, mutable records, incomplete derive
+pairs, and unconstrained generic parameters are rejected as keys. Integer
+keys compare at their exact declared width, strings compare complete counted
+UTF-8 bytes without normalization, and derived nominals compare their exact
+nominal type followed by declaration-order payload values. Equality must be
+reflexive, symmetric, and transitive, and equal values must hash equally.
+
+Each collection has one non-wrapping mutation generation. A new map insertion,
+map value update, successful removal, or nonempty clear increments it once
+after commit. A new set insertion, successful removal, or nonempty clear does
+the same; a duplicate `add` does not. Absence, growth errors, and allocation or
+resource failures do not increment it and are failure-atomic. Iteration
+captures the generation and checks it before every subsequent test or item
+yield. A mismatch panics with `G4005`, respectively
+`map iterator invalidated by mutation` or
+`set iterator invalidated by mutation`, at the complete loop header. Every
+normal, break, continue, return, and panic exit closes the compiler-owned
+iterator state without a further check.
+
+Reason: CLI parsing and typed JSON need deterministic keyed collections, but
+iteration cannot depend on hash bucket order and user hashing cannot be
+accepted without equality coherence. A closed derive/key set and
+failure-atomic managed layout provide a complete alpha contract without
+freezing custom hashing, concurrent collections, allocators, weak keys, or
+observable capacity.

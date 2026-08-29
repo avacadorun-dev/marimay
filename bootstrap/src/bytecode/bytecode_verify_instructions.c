@@ -131,6 +131,15 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
         case MMAY_OPCODE_TEST_OUTPUT_END:
         case MMAY_OPCODE_DEFER_REGISTER:
         case MMAY_OPCODE_DEFER_CALL:
+        case MMAY_OPCODE_COLLECTION_NEW:
+        case MMAY_OPCODE_COLLECTION_LENGTH:
+        case MMAY_OPCODE_COLLECTION_CONTAINS:
+        case MMAY_OPCODE_COLLECTION_GET:
+        case MMAY_OPCODE_COLLECTION_REMOVE:
+        case MMAY_OPCODE_COLLECTION_GENERATION:
+        case MMAY_OPCODE_COLLECTION_REQUIRE_GENERATION:
+        case MMAY_OPCODE_COLLECTION_ENTRY_KEY:
+        case MMAY_OPCODE_COLLECTION_ENTRY_VALUE:
             return true;
         case MMAY_OPCODE_INVALID:
         case MMAY_OPCODE_JUMP:
@@ -147,6 +156,9 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
         case MMAY_OPCODE_ARRAY_CLEAR:
         case MMAY_OPCODE_ARRAY_RESERVE:
         case MMAY_OPCODE_RECORD_SET:
+        case MMAY_OPCODE_COLLECTION_PUT:
+        case MMAY_OPCODE_COLLECTION_ADD:
+        case MMAY_OPCODE_COLLECTION_CLEAR:
             return false;
         default:
             return false;
@@ -961,6 +973,12 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
                 ? MMAY_BYTECODE_VERIFY_OK
                 : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
         }
+    }
+    if (instruction->opcode >= MMAY_OPCODE_COLLECTION_NEW
+        && instruction->opcode <= MMAY_OPCODE_COLLECTION_ENTRY_VALUE) {
+        return mmay_bytecode_verify_collection_instruction(
+            function, instruction, assigned
+        );
     }
     if (instruction->opcode == MMAY_OPCODE_RECORD_NEW
         || instruction->opcode == MMAY_OPCODE_RECORD_GET

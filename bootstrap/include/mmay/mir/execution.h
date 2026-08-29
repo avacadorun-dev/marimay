@@ -46,6 +46,9 @@ typedef struct MarimayMirExecutionOptions {
     size_t max_arrays;
     size_t max_array_length;
     size_t max_total_array_elements;
+    size_t max_collections;
+    size_t max_collection_length;
+    size_t max_total_collection_entries;
     const MarimayEnvOptions *env;
     const MarimayFsOptions *fs;
     const MarimayProcessContextOptions *process_context;
@@ -61,6 +64,8 @@ typedef struct MarimayMirExecution {
     MarimayVector strings;
     /* Oracle-owned mutable arrays, indexed separately by exact type. */
     MarimayVector arrays;
+    /* Oracle-owned insertion-ordered Map/Set values. */
+    MarimayVector collections;
     /* Oracle-owned immutable interface payloads and selected method tables. */
     MarimayVector interface_values;
     MarimayTestOutput test_output;
@@ -73,6 +78,7 @@ typedef struct MarimayMirExecution {
     size_t total_fields;
     size_t total_string_bytes;
     size_t total_array_elements;
+    size_t total_collection_entries;
     uint64_t provenance;
     bool initialized;
 } MarimayMirExecution;

@@ -28,6 +28,7 @@ typedef enum MarimayNativeCArrayKind {
 typedef enum MarimayNativeCManagedKind {
     MMAY_NATIVE_C_MANAGED_NONE,
     MMAY_NATIVE_C_MANAGED_ARRAY,
+    MMAY_NATIVE_C_MANAGED_COLLECTION,
     MMAY_NATIVE_C_MANAGED_RECORD,
     MMAY_NATIVE_C_MANAGED_ENUM,
     MMAY_NATIVE_C_MANAGED_INTERFACE,
@@ -100,6 +101,22 @@ bool mmay_native_c_write_interface_table_name(
 bool mmay_native_c_emit_managed_descriptors(
     MarimayNativeCBuffer *buffer, const MarimayMirFunction *const *functions,
     size_t count);
+bool mmay_native_c_emit_collection_descriptor_declarations(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
+    size_t count
+);
+bool mmay_native_c_emit_collection_descriptors(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *const *functions,
+    size_t count
+);
+bool mmay_native_c_emit_collection_runtime(MarimayNativeCBuffer *buffer);
+bool mmay_native_c_emit_collection_instruction(
+    MarimayNativeCBuffer *buffer,
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction
+);
 bool mmay_native_c_emit_managed_parameter_check(
     MarimayNativeCBuffer *buffer, const MarimayMirFunction *function,
     const MarimayMirFunction *const *functions, size_t count, size_t parameter);

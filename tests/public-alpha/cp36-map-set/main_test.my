@@ -1,0 +1,73 @@
+import { runes } from "std/text";
+
+@test
+fn importedDerivedKeysAndOrderedIterationWork(): void {
+  if collectionScore() != 99 {
+    panic("Map and Set behavior changed");
+  }
+}
+
+@test
+fn emptyAndAbsentOperationsAreStable(): void {
+  const values: Map<string, int> = mapOf<string, int>();
+  const seen: Set<int> = setOf<int>();
+  values.clear();
+  seen.clear();
+  if values.containsKey("missing") || seen.contains(1) || seen.remove(1) || match values.get(
+    "missing",
+  ) {
+    Some(_) => true,
+    None => false,
+  } || match values.remove("missing") {
+    Some(_) => true,
+    None => false,
+  } {
+    panic("empty or absent collection operation changed");
+  }
+}
+
+@test
+fn everyPrimitiveKeyFamilyWorks(): void {
+  const booleans: Set<bool> = setOf<bool>();
+  const signed8: Set<i8> = setOf<i8>();
+  const signed16: Set<i16> = setOf<i16>();
+  const signed32: Set<i32> = setOf<i32>();
+  const signed64: Set<i64> = setOf<i64>();
+  const unsigned8: Set<u8> = setOf<u8>();
+  const unsigned16: Set<u16> = setOf<u16>();
+  const unsigned32: Set<u32> = setOf<u32>();
+  const unsigned64: Set<u64> = setOf<u64>();
+  const runeKeys: Set<rune> = setOf<rune>();
+  const booleanValue: bool = true;
+  const signed8Value: i8 = -8;
+  const signed16Value: i16 = -16;
+  const signed32Value: i32 = -32;
+  const signed64Value: i64 = -64;
+  const unsigned8Value: u8 = 8;
+  const unsigned16Value: u16 = 16;
+  const unsigned32Value: u32 = 32;
+  const unsigned64Value: u64 = 64;
+  const runeValue: rune = match runes("λ", 1) {
+    Ok(values) => values[0],
+    Err(_) => panic("rune key setup"),
+  };
+  const _ = booleans.add(booleanValue);
+  const _ = signed8.add(signed8Value);
+  const _ = signed16.add(signed16Value);
+  const _ = signed32.add(signed32Value);
+  const _ = signed64.add(signed64Value);
+  const _ = unsigned8.add(unsigned8Value);
+  const _ = unsigned16.add(unsigned16Value);
+  const _ = unsigned32.add(unsigned32Value);
+  const _ = unsigned64.add(unsigned64Value);
+  const _ = runeKeys.add(runeValue);
+  if !booleans.contains(booleanValue) || !signed8.contains(signed8Value) || !signed16.contains(
+    signed16Value,
+  ) || !signed32.contains(signed32Value) || !signed64.contains(signed64Value) || !unsigned8.contains(
+    unsigned8Value,
+  ) || !unsigned16.contains(unsigned16Value) || !unsigned32.contains(unsigned32Value) || !unsigned64.contains(
+    unsigned64Value,
+  ) || !runeKeys.contains(runeValue) {
+    panic("primitive collection key family changed");
+  }
+}

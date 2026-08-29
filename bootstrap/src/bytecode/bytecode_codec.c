@@ -152,6 +152,9 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
     MarimayBytecodeCodecStatus status = MMAY_BYTECODE_CODEC_OK;
     size_t block_index = 0;
     bool generic_arrays = function != NULL && function->array_types.length != 0;
+    bool collections = function != NULL
+        && function->collection_types.length != 0;
+    bool typed_layouts = generic_arrays || collections;
     if (output == NULL) {
         return MMAY_BYTECODE_CODEC_INVALID_ARGUMENT;
     }
@@ -192,9 +195,10 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
                     ? MMAY_BYTECODE_FEATURE_NOMINAL
                     : 0)
                 | (generic_arrays ? MMAY_BYTECODE_FEATURE_ARRAY_TYPES : 0)
+                | (collections ? MMAY_BYTECODE_FEATURE_COLLECTIONS : 0)
         )
         || !mmay_bytecode_codec_encode_u64(&buffer, (uint64_t)function->result_type)
-        || (generic_arrays && !mmay_bytecode_codec_encode_u64(
+        || (typed_layouts && !mmay_bytecode_codec_encode_u64(
             &buffer, (uint64_t)function->result_layout
         ))
         || !mmay_bytecode_codec_encode_u64(&buffer, (uint64_t)function->source_count)
@@ -219,7 +223,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
         );
         if (type == NULL || layout == NULL
             || !mmay_bytecode_codec_encode_u64(&buffer, (uint64_t)*type)
-            || (generic_arrays && !mmay_bytecode_codec_encode_u64(
+            || (typed_layouts && !mmay_bytecode_codec_encode_u64(
                 &buffer, (uint64_t)*layout
             ))) {
             status = buffer.limit_reached
@@ -253,6 +257,31 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
                     : MMAY_BYTECODE_CODEC_ALLOCATION_FAILED;
                 goto cleanup;
             }
+        }
+    }
+    if (collections) {
+        if (!mmay_bytecode_codec_encode_u64(
+                &buffer, (uint64_t)function->collection_types.length
+            )) goto encode_failure;
+        for (block_index = 0;
+            block_index < function->collection_types.length;
+            block_index += 1) {
+            const MarimayBytecodeCollectionType *collection =
+                mmay_bytecode_collection_type(
+                    function, (uint32_t)block_index
+                );
+            if (collection == NULL
+                || !mmay_bytecode_codec_encode_u64(
+                    &buffer, (uint64_t)collection->key_type
+                ) || !mmay_bytecode_codec_encode_u64(
+                    &buffer, collection->key_layout
+                ) || !mmay_bytecode_codec_encode_u64(
+                    &buffer, (uint64_t)collection->value_type
+                ) || !mmay_bytecode_codec_encode_u64(
+                    &buffer, collection->value_layout
+                ) || !mmay_bytecode_codec_encode_u64(
+                    &buffer, collection->is_set ? 1U : 0U
+                )) goto encode_failure;
         }
     }
     if (!mmay_bytecode_codec_encode_u64(&buffer, (uint64_t)function->blocks.length)) {
@@ -349,7 +378,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
                 ) || !mmay_bytecode_codec_encode_u64(
                     &buffer,
                     (uint64_t)call->result_type
-                ) || (generic_arrays && !mmay_bytecode_codec_encode_u64(
+                ) || (typed_layouts && !mmay_bytecode_codec_encode_u64(
                     &buffer, (uint64_t)call->result_layout
                 )) || !mmay_bytecode_codec_encode_u64(
                     &buffer,
@@ -374,7 +403,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
                     ) || !mmay_bytecode_codec_encode_u64(
                         &buffer,
                         (uint64_t)argument->type
-                    ) || (generic_arrays && !mmay_bytecode_codec_encode_u64(
+                    ) || (typed_layouts && !mmay_bytecode_codec_encode_u64(
                         &buffer, (uint64_t)argument->layout
                     ))) {
                     status = buffer.limit_reached
@@ -460,7 +489,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
                         &buffer, argument->register_id
                     ) || !mmay_bytecode_codec_encode_u64(
                         &buffer, (uint64_t)argument->type
-                    ) || (generic_arrays && !mmay_bytecode_codec_encode_u64(
+                    ) || (typed_layouts && !mmay_bytecode_codec_encode_u64(
                         &buffer, (uint64_t)argument->layout
                     ))) {
                     status = buffer.limit_reached
@@ -477,6 +506,13 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
             goto cleanup;
         }
     }
+    goto encode_complete;
+encode_failure:
+    status = buffer.limit_reached
+        ? MMAY_BYTECODE_CODEC_LIMIT_REACHED
+        : MMAY_BYTECODE_CODEC_ALLOCATION_FAILED;
+    goto cleanup;
+encode_complete:
     if (!mmay_owned_bytes_copy(
             output,
             allocator,
@@ -507,6 +543,8 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
     uint64_t value = 0;
     uint64_t features = 0;
     bool generic_arrays = false;
+    bool collections = false;
+    bool typed_layouts = false;
     size_t register_count = 0;
     size_t block_count = 0;
     size_t index = 0;
@@ -547,6 +585,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
                 | MMAY_BYTECODE_FEATURE_F64 | MMAY_BYTECODE_FEATURE_ARRAYS
                 | MMAY_BYTECODE_FEATURE_NOMINAL
                 | MMAY_BYTECODE_FEATURE_ARRAY_TYPES
+                | MMAY_BYTECODE_FEATURE_COLLECTIONS
         )) != 0) {
         return MMAY_BYTECODE_CODEC_UNSUPPORTED_VERSION;
     }
@@ -556,13 +595,16 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
     }
     features = value;
     generic_arrays = (features & MMAY_BYTECODE_FEATURE_ARRAY_TYPES) != 0;
+    collections = (features & MMAY_BYTECODE_FEATURE_COLLECTIONS) != 0;
+    typed_layouts = generic_arrays || collections;
     status = mmay_bytecode_codec_decode_u64(&cursor, &value);
     if (status != MMAY_BYTECODE_CODEC_OK) {
         return status;
     }
-    if ((value > ((features & MMAY_BYTECODE_FEATURE_NOMINAL) != 0
+    if ((value > (collections ? MMAY_BYTECODE_TYPE_SET
+            : ((features & MMAY_BYTECODE_FEATURE_NOMINAL) != 0
             ? MMAY_BYTECODE_TYPE_INTERFACE
-            : MMAY_BYTECODE_TYPE_ARRAY)
+            : MMAY_BYTECODE_TYPE_ARRAY))
             && !mmay_bytecode_type_is_extended_scalar((MarimayBytecodeType)value))
         || !mmay_bytecode_type_is_result((MarimayBytecodeType)value)) {
         return MMAY_BYTECODE_CODEC_INVALID_ENCODING;
@@ -575,7 +617,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
         uint64_t register_count_wire = 0;
         size_t source_count = 0;
         size_t parameter_count = 0;
-        if (generic_arrays) {
+        if (typed_layouts) {
             status = mmay_bytecode_codec_decode_u64(
                 &cursor, &result_layout_wire
             );
@@ -619,11 +661,11 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
             return MMAY_BYTECODE_CODEC_INVALID_ARGUMENT;
         }
         function.parameter_count = parameter_count;
-        if (generic_arrays && result_layout_wire > UINT32_MAX) {
+        if (typed_layouts && result_layout_wire > UINT32_MAX) {
             mmay_bytecode_function_dispose(&function);
             return MMAY_BYTECODE_CODEC_INVALID_ENCODING;
         }
-        if (generic_arrays) {
+        if (typed_layouts) {
             function.result_layout = (uint32_t)result_layout_wire;
         }
     }
@@ -634,9 +676,10 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
         if (status != MMAY_BYTECODE_CODEC_OK) {
             goto cleanup;
         }
-        if ((value > ((features & MMAY_BYTECODE_FEATURE_NOMINAL) != 0
+        if ((value > (collections ? MMAY_BYTECODE_TYPE_SET
+                : ((features & MMAY_BYTECODE_FEATURE_NOMINAL) != 0
                 ? MMAY_BYTECODE_TYPE_INTERFACE
-                : MMAY_BYTECODE_TYPE_ARRAY)
+                : MMAY_BYTECODE_TYPE_ARRAY))
                 && !mmay_bytecode_type_is_extended_scalar((MarimayBytecodeType)value))
             || !mmay_bytecode_type_is_local((MarimayBytecodeType)value)
             || (index < function.parameter_count
@@ -645,7 +688,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
             goto cleanup;
         }
         type = (MarimayBytecodeType)value;
-        if (generic_arrays) {
+        if (typed_layouts) {
             status = mmay_bytecode_codec_decode_u64(&cursor, &value);
             if (status != MMAY_BYTECODE_CODEC_OK || value > UINT32_MAX) {
                 status = MMAY_BYTECODE_CODEC_INVALID_ENCODING;
@@ -704,6 +747,60 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
                     &function, element_type, element_layout, &array_layout
                 ) || array_layout != index) {
                 status = MMAY_BYTECODE_CODEC_INVALID_ENCODING;
+                goto cleanup;
+            }
+        }
+    }
+    if (collections) {
+        size_t collection_count = 0;
+        status = mmay_bytecode_codec_decode_u64(&cursor, &value);
+        if (status != MMAY_BYTECODE_CODEC_OK
+            || !mmay_bytecode_codec_u64_to_size(value, &collection_count)
+            || collection_count > options.max_collection_layouts
+            || collection_count > UINT32_MAX
+            || !mmay_vector_reserve(
+                &function.collection_types, collection_count
+            )) {
+            status = status == MMAY_BYTECODE_CODEC_OK
+                ? MMAY_BYTECODE_CODEC_LIMIT_REACHED : status;
+            goto cleanup;
+        }
+        for (index = 0; index < collection_count; index += 1) {
+            MarimayBytecodeCollectionType collection;
+            uint64_t fields[5];
+            size_t field = 0;
+            memset(&collection, 0, sizeof(collection));
+            for (field = 0; field < 5; field += 1) {
+                status = mmay_bytecode_codec_decode_u64(
+                    &cursor, &fields[field]
+                );
+                if (status != MMAY_BYTECODE_CODEC_OK) break;
+            }
+            if (status != MMAY_BYTECODE_CODEC_OK) goto cleanup;
+            if (fields[0] > MMAY_BYTECODE_TYPE_RUNE
+                || fields[1] > UINT32_MAX
+                || fields[2] > MMAY_BYTECODE_TYPE_RUNE
+                || fields[3] > UINT32_MAX || fields[4] > 1
+                || !mmay_bytecode_type_is_register(
+                    (MarimayBytecodeType)fields[0]
+                ) || (fields[4] != 0
+                    ? (fields[2] != MMAY_BYTECODE_TYPE_INVALID
+                        || fields[3] != MMAY_BYTECODE_NO_LAYOUT)
+                    : !mmay_bytecode_type_is_register(
+                        (MarimayBytecodeType)fields[2]
+                    ))) {
+                status = MMAY_BYTECODE_CODEC_INVALID_ENCODING;
+                goto cleanup;
+            }
+            collection.key_type = (MarimayBytecodeType)fields[0];
+            collection.key_layout = (uint32_t)fields[1];
+            collection.value_type = (MarimayBytecodeType)fields[2];
+            collection.value_layout = (uint32_t)fields[3];
+            collection.is_set = fields[4] != 0;
+            if (!mmay_vector_push(
+                    &function.collection_types, &collection
+                )) {
+                status = MMAY_BYTECODE_CODEC_ALLOCATION_FAILED;
                 goto cleanup;
             }
         }
@@ -844,16 +941,17 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
             if (status != MMAY_BYTECODE_CODEC_OK) {
                 goto cleanup;
             }
-            if ((value > ((features & MMAY_BYTECODE_FEATURE_NOMINAL) != 0
+            if ((value > (collections ? MMAY_BYTECODE_TYPE_SET
+                    : ((features & MMAY_BYTECODE_FEATURE_NOMINAL) != 0
                     ? MMAY_BYTECODE_TYPE_INTERFACE
-                    : MMAY_BYTECODE_TYPE_ARRAY)
+                    : MMAY_BYTECODE_TYPE_ARRAY))
                     && !mmay_bytecode_type_is_extended_scalar((MarimayBytecodeType)value))
                 || !mmay_bytecode_type_is_result((MarimayBytecodeType)value)) {
                 status = MMAY_BYTECODE_CODEC_INVALID_ENCODING;
                 goto cleanup;
             }
             result_type = (MarimayBytecodeType)value;
-            if (generic_arrays) {
+            if (typed_layouts) {
                 status = mmay_bytecode_codec_decode_u64(&cursor, &value);
                 if (status != MMAY_BYTECODE_CODEC_OK || value > UINT32_MAX) {
                     status = MMAY_BYTECODE_CODEC_INVALID_ENCODING;
@@ -915,9 +1013,10 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
                 if (status != MMAY_BYTECODE_CODEC_OK) {
                     break;
                 }
-                if ((value > ((features & MMAY_BYTECODE_FEATURE_NOMINAL) != 0
+                if ((value > (collections ? MMAY_BYTECODE_TYPE_SET
+                        : ((features & MMAY_BYTECODE_FEATURE_NOMINAL) != 0
                         ? MMAY_BYTECODE_TYPE_INTERFACE
-                        : MMAY_BYTECODE_TYPE_ARRAY)
+                        : MMAY_BYTECODE_TYPE_ARRAY))
                         && !mmay_bytecode_type_is_extended_scalar((MarimayBytecodeType)value))
                     || !mmay_bytecode_type_is_register(
                         (MarimayBytecodeType)value
@@ -926,7 +1025,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
                     break;
                 }
                 arguments[argument_index].type = (MarimayBytecodeType)value;
-                if (generic_arrays) {
+                if (typed_layouts) {
                     status = mmay_bytecode_codec_decode_u64(&cursor, &value);
                     if (status != MMAY_BYTECODE_CODEC_OK || value > UINT32_MAX) {
                         status = MMAY_BYTECODE_CODEC_INVALID_ENCODING;
@@ -942,7 +1041,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
                         );
                     if (register_type == NULL
                         || *register_type != arguments[argument_index].type
-                        || (generic_arrays && mmay_bytecode_register_layout(
+                        || (typed_layouts && mmay_bytecode_register_layout(
                             &function,
                             arguments[argument_index].register_id
                         ) != arguments[argument_index].layout)) {
@@ -1145,7 +1244,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
                     break;
                 }
                 argument->type = (MarimayBytecodeType)value;
-                if (generic_arrays) {
+                if (typed_layouts) {
                     status = mmay_bytecode_codec_decode_u64(&cursor, &value);
                     if (status != MMAY_BYTECODE_CODEC_OK || value > UINT32_MAX) {
                         status = MMAY_BYTECODE_CODEC_INVALID_ENCODING;
@@ -1161,7 +1260,7 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
                         );
                     if (register_type == NULL
                         || *register_type != element_type
-                        || (generic_arrays && (array_type == MMAY_BYTECODE_TYPE_ARRAY
+                        || (typed_layouts && (array_type == MMAY_BYTECODE_TYPE_ARRAY
                             && mmay_bytecode_register_layout(
                                 &function, argument->register_id
                             ) != argument->layout))) {
@@ -1206,6 +1305,10 @@ MarimayBytecodeCodecStatus mmay_bytecode_decode_function(
     }
     if (((features & MMAY_BYTECODE_FEATURE_NOMINAL) != 0)
         != mmay_bytecode_function_uses_nominal(&function)) {
+        status = MMAY_BYTECODE_CODEC_INVALID_ENCODING;
+        goto cleanup;
+    }
+    if (collections != (function.collection_types.length != 0)) {
         status = MMAY_BYTECODE_CODEC_INVALID_ENCODING;
         goto cleanup;
     }

@@ -532,6 +532,64 @@ bool mmay_type_array_element(
     return true;
 }
 
+bool mmay_type_intern_map(
+    MarimayTypeTable *table,
+    MarimayTypeId key,
+    MarimayTypeId value,
+    MarimayTypeId *result
+) {
+    MarimaySymbolId symbol;
+    MarimayTypeId arguments[] = {key, value};
+    memset(&symbol, 0, sizeof(symbol));
+    return mmay_type_intern(
+        table, MMAY_TYPE_KIND_MAP, symbol, 0, arguments, 2, result
+    );
+}
+
+bool mmay_type_map_parts(
+    const MarimayTypeTable *table,
+    MarimayTypeId map,
+    MarimayTypeId *key,
+    MarimayTypeId *value
+) {
+    const MarimayTypeDescriptor *descriptor = mmay_type_descriptor(table, map);
+    if (descriptor == NULL || descriptor->kind != MMAY_TYPE_KIND_MAP
+        || descriptor->parameter_count != 0
+        || descriptor->argument_count != 2 || key == NULL || value == NULL) {
+        return false;
+    }
+    *key = descriptor->arguments[0];
+    *value = descriptor->arguments[1];
+    return true;
+}
+
+bool mmay_type_intern_set(
+    MarimayTypeTable *table,
+    MarimayTypeId element,
+    MarimayTypeId *result
+) {
+    MarimaySymbolId symbol;
+    memset(&symbol, 0, sizeof(symbol));
+    return mmay_type_intern(
+        table, MMAY_TYPE_KIND_SET, symbol, 0, &element, 1, result
+    );
+}
+
+bool mmay_type_set_element(
+    const MarimayTypeTable *table,
+    MarimayTypeId set,
+    MarimayTypeId *element
+) {
+    const MarimayTypeDescriptor *descriptor = mmay_type_descriptor(table, set);
+    if (descriptor == NULL || descriptor->kind != MMAY_TYPE_KIND_SET
+        || descriptor->parameter_count != 0
+        || descriptor->argument_count != 1 || element == NULL) {
+        return false;
+    }
+    *element = descriptor->arguments[0];
+    return true;
+}
+
 bool mmay_type_intern_tuple(
     MarimayTypeTable *table,
     const MarimayTypeId *elements,

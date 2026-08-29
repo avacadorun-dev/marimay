@@ -42,6 +42,7 @@ static bool mmay_mir_bytecode_options_valid(
         && options.function_options.max_string_bytes != 0
         && options.function_options.max_array_constructions != 0
         && options.function_options.max_array_arguments != 0
+        && options.function_options.max_collection_layouts != 0
         && options.function_options.max_source_files != 0
         && options.function_options.max_encoded_bytes >= 8U
         && options.function_options.max_verify_work != 0;
@@ -417,6 +418,62 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
             break;
+        case MMAY_MIR_COLLECTION_NEW:
+            output->opcode = MMAY_OPCODE_COLLECTION_NEW;
+            break;
+        case MMAY_MIR_COLLECTION_LENGTH:
+            output->opcode = MMAY_OPCODE_COLLECTION_LENGTH;
+            output->operands[1].unsigned_value = input->first;
+            break;
+        case MMAY_MIR_COLLECTION_CONTAINS:
+            output->opcode = MMAY_OPCODE_COLLECTION_CONTAINS;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_GET:
+            output->opcode = MMAY_OPCODE_COLLECTION_GET;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_PUT:
+            output->opcode = MMAY_OPCODE_COLLECTION_PUT;
+            output->operands[0].unsigned_value = input->first;
+            output->operands[1].unsigned_value = input->second;
+            output->operands[2].unsigned_value = input->third;
+            break;
+        case MMAY_MIR_COLLECTION_ADD:
+            output->opcode = MMAY_OPCODE_COLLECTION_ADD;
+            output->operands[0].unsigned_value = input->first;
+            output->operands[1].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_REMOVE:
+            output->opcode = MMAY_OPCODE_COLLECTION_REMOVE;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_CLEAR:
+            output->opcode = MMAY_OPCODE_COLLECTION_CLEAR;
+            output->operands[0].unsigned_value = input->first;
+            break;
+        case MMAY_MIR_COLLECTION_GENERATION:
+            output->opcode = MMAY_OPCODE_COLLECTION_GENERATION;
+            output->operands[1].unsigned_value = input->first;
+            break;
+        case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
+            output->opcode = MMAY_OPCODE_COLLECTION_REQUIRE_GENERATION;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_ENTRY_KEY:
+            output->opcode = MMAY_OPCODE_COLLECTION_ENTRY_KEY;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_ENTRY_VALUE:
+            output->opcode = MMAY_OPCODE_COLLECTION_ENTRY_VALUE;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case MMAY_MIR_CALL: {
             const MarimayMirCall *call = input->call < function->calls.length
                 ? mmay_vector_at_const(&function->calls, input->call)
@@ -655,7 +712,9 @@ MarimayMirBytecodeLowerStatus mmay_mir_lower_bytecode_function(
         || input->array_constructions.length
             > options.function_options.max_array_constructions
         || input->array_arguments.length
-            > options.function_options.max_array_arguments) {
+            > options.function_options.max_array_arguments
+        || input->collections.length
+            > options.function_options.max_collection_layouts) {
         return MMAY_MIR_BYTECODE_LOWER_LIMIT_REACHED;
     }
     if (!mmay_size_multiply(
@@ -817,6 +876,41 @@ MarimayMirBytecodeLowerStatus mmay_mir_lower_bytecode_function(
     status = mmay_mir_bytecode_lower_nominals(input, &lowered, allocator);
     if (status != MMAY_MIR_BYTECODE_LOWER_OK) {
         goto cleanup;
+    }
+    if (!mmay_vector_reserve(
+            &lowered.collection_types, input->collections.length
+        )) {
+        status = MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
+        goto cleanup;
+    }
+    for (index = 0; index < input->collections.length; index += 1) {
+        const MarimayMirCollection *collection = mmay_vector_at_const(
+            &input->collections, index
+        );
+        MarimayBytecodeType key_type = MMAY_BYTECODE_TYPE_INVALID;
+        MarimayBytecodeType value_type = MMAY_BYTECODE_TYPE_INVALID;
+        uint32_t stored = UINT32_MAX;
+        if (collection == NULL || !mmay_mir_bytecode_type(
+                input, collection->key_type, false, false, &key_type
+            ) || (!collection->is_set && !mmay_mir_bytecode_type(
+                input, collection->value_type, false, false, &value_type
+            )) || !mmay_bytecode_add_collection_type(
+                &lowered,
+                key_type,
+                mmay_mir_bytecode_layout_for_type(
+                    input, collection->key_type
+                ),
+                value_type,
+                collection->is_set ? MMAY_BYTECODE_NO_LAYOUT
+                    : mmay_mir_bytecode_layout_for_type(
+                        input, collection->value_type
+                    ),
+                collection->is_set,
+                &stored
+            ) || stored != index) {
+            status = MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
+            goto cleanup;
+        }
     }
     for (index = 0; index < input->array_constructions.length; index += 1) {
         const MarimayMirArrayConstruction *construction = mmay_vector_at_const(

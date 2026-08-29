@@ -56,7 +56,8 @@ static const char *mmay_type_spelling_primitive(MarimayTypeKind kind) {
 
 static const char *mmay_type_spelling_prelude_name(MarimaySymbolId symbol) {
     static const char *const names[] = {
-        "Option", "Result", "ArrayGrowthError", "ArrayTruncateError"
+        "Option", "Result", "ArrayGrowthError", "ArrayTruncateError",
+        "CollectionGrowthError"
     };
     size_t index = 0;
     for (index = 0; index < sizeof(names) / sizeof(names[0]); index += 1) {
@@ -184,6 +185,19 @@ static bool mmay_type_spelling_render(
             && mmay_type_spelling_render(
                 context, descriptor->arguments[0], depth + 1
             );
+    }
+    if (kind == MMAY_TYPE_KIND_MAP || kind == MMAY_TYPE_KIND_SET) {
+        const size_t expected = kind == MMAY_TYPE_KIND_MAP ? 2 : 1;
+        const char *name = kind == MMAY_TYPE_KIND_MAP ? "Map" : "Set";
+        if (descriptor->argument_count != expected
+            || !mmay_type_spelling_append(context, name, strlen(name))) {
+            context->status = descriptor->argument_count != expected
+                ? MMAY_TYPE_SPELLING_UNAVAILABLE : context->status;
+            return false;
+        }
+        return mmay_type_spelling_arguments(
+            context, descriptor, depth, "<", ">"
+        );
     }
     if (kind == MMAY_TYPE_KIND_TUPLE) {
         return mmay_type_spelling_arguments(

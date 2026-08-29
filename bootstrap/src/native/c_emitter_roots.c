@@ -11,6 +11,7 @@ static bool mmay_native_c_instruction_uses_first(
         && kind != MMAY_MIR_CONSTANT_BOOL
         && kind != MMAY_MIR_CONSTANT_STRING && kind != MMAY_MIR_RECORD_NEW
         && kind != MMAY_MIR_ENUM_NEW && kind != MMAY_MIR_ARRAY_NEW
+        && kind != MMAY_MIR_COLLECTION_NEW
         && kind != MMAY_MIR_INTERFACE_NEW && kind != MMAY_MIR_CALL
         && kind != MMAY_MIR_DEFER_REGISTER
         && kind != MMAY_MIR_DEFER_CALL
@@ -59,6 +60,14 @@ static bool mmay_native_c_instruction_uses_second(
         case MMAY_MIR_ARRAY_TRUNCATE:
         case MMAY_MIR_ARRAY_RESERVE:
         case MMAY_MIR_ARRAY_REQUIRE_GENERATION:
+        case MMAY_MIR_COLLECTION_CONTAINS:
+        case MMAY_MIR_COLLECTION_GET:
+        case MMAY_MIR_COLLECTION_PUT:
+        case MMAY_MIR_COLLECTION_ADD:
+        case MMAY_MIR_COLLECTION_REMOVE:
+        case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
+        case MMAY_MIR_COLLECTION_ENTRY_KEY:
+        case MMAY_MIR_COLLECTION_ENTRY_VALUE:
         case MMAY_MIR_INTEGER_POLICY:
         case MMAY_MIR_TEXT_BINARY:
         case MMAY_MIR_FS_BINARY:
@@ -163,7 +172,8 @@ static void mmay_native_c_add_instruction_uses(
         mmay_native_c_add_register(live, register_count, instruction->second);
     }
     if (instruction->kind == MMAY_MIR_ARRAY_SET
-        || instruction->kind == MMAY_MIR_ARRAY_SET_IN_BOUNDS) {
+        || instruction->kind == MMAY_MIR_ARRAY_SET_IN_BOUNDS
+        || instruction->kind == MMAY_MIR_COLLECTION_PUT) {
         mmay_native_c_add_register(live, register_count, instruction->third);
     }
     if (instruction->kind == MMAY_MIR_CALL
@@ -450,6 +460,8 @@ static bool mmay_native_c_root_alias_source(
         case MMAY_MIR_ARRAY_CLEAR:
         case MMAY_MIR_ARRAY_RESERVE:
         case MMAY_MIR_ARRAY_REQUIRE_GENERATION:
+        case MMAY_MIR_COLLECTION_CLEAR:
+        case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
             *source = instruction->first;
             return true;
         case MMAY_MIR_RECORD_SET:
@@ -482,7 +494,10 @@ static bool mmay_native_c_root_child_source(
     }
     if (instruction->kind == MMAY_MIR_RECORD_GET
         || instruction->kind == MMAY_MIR_ARRAY_GET
-        || instruction->kind == MMAY_MIR_ARRAY_GET_IN_BOUNDS) {
+        || instruction->kind == MMAY_MIR_ARRAY_GET_IN_BOUNDS
+        || instruction->kind == MMAY_MIR_COLLECTION_GET
+        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_KEY
+        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE) {
         *source = instruction->first;
         *immutable = false;
         return true;
@@ -502,6 +517,10 @@ static bool mmay_native_c_instruction_mutates_owner(
         case MMAY_MIR_ARRAY_TRUNCATE:
         case MMAY_MIR_ARRAY_CLEAR:
         case MMAY_MIR_ARRAY_RESERVE:
+        case MMAY_MIR_COLLECTION_PUT:
+        case MMAY_MIR_COLLECTION_ADD:
+        case MMAY_MIR_COLLECTION_REMOVE:
+        case MMAY_MIR_COLLECTION_CLEAR:
             return true;
         default:
             return false;

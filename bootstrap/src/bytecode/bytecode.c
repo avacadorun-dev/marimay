@@ -15,13 +15,15 @@ bool mmay_bytecode_type_is_register(MarimayBytecodeType type) {
         || type == MMAY_BYTECODE_TYPE_I32 || type == MMAY_BYTECODE_TYPE_U8
         || type == MMAY_BYTECODE_TYPE_U16 || type == MMAY_BYTECODE_TYPE_U32
         || type == MMAY_BYTECODE_TYPE_U64
+        || type == MMAY_BYTECODE_TYPE_RUNE
         || type == MMAY_BYTECODE_TYPE_F64 || type == MMAY_BYTECODE_TYPE_F32
         || type == MMAY_BYTECODE_TYPE_STRING
         || type == MMAY_BYTECODE_TYPE_ARRAY_F64
         || type == MMAY_BYTECODE_TYPE_ARRAY_ARRAY_F64
         || type == MMAY_BYTECODE_TYPE_ARRAY
         || type == MMAY_BYTECODE_TYPE_RECORD || type == MMAY_BYTECODE_TYPE_ENUM
-        || type == MMAY_BYTECODE_TYPE_INTERFACE;
+        || type == MMAY_BYTECODE_TYPE_INTERFACE
+        || type == MMAY_BYTECODE_TYPE_MAP || type == MMAY_BYTECODE_TYPE_SET;
 }
 
 bool mmay_bytecode_type_is_integer(MarimayBytecodeType type) {
@@ -40,7 +42,8 @@ bool mmay_bytecode_type_is_signed_integer(MarimayBytecodeType type) {
 
 bool mmay_bytecode_type_is_extended_scalar(MarimayBytecodeType type) {
     return mmay_bytecode_type_is_integer(type)
-        || type == MMAY_BYTECODE_TYPE_F32;
+        || type == MMAY_BYTECODE_TYPE_F32
+        || type == MMAY_BYTECODE_TYPE_RUNE;
 }
 
 bool mmay_bytecode_type_is_array(MarimayBytecodeType type) {
@@ -53,7 +56,8 @@ bool mmay_bytecode_type_is_managed(MarimayBytecodeType type) {
     return mmay_bytecode_type_is_array(type)
         || type == MMAY_BYTECODE_TYPE_RECORD
         || type == MMAY_BYTECODE_TYPE_ENUM
-        || type == MMAY_BYTECODE_TYPE_INTERFACE;
+        || type == MMAY_BYTECODE_TYPE_INTERFACE
+        || type == MMAY_BYTECODE_TYPE_MAP || type == MMAY_BYTECODE_TYPE_SET;
 }
 
 MarimayBytecodeType mmay_bytecode_array_element_type(
@@ -120,6 +124,8 @@ const char *mmay_bytecode_type_name(MarimayBytecodeType type) {
             return "u32";
         case MMAY_BYTECODE_TYPE_U64:
             return "u64";
+        case MMAY_BYTECODE_TYPE_RUNE:
+            return "rune";
         case MMAY_BYTECODE_TYPE_F64:
             return "f64";
         case MMAY_BYTECODE_TYPE_F32:
@@ -142,6 +148,10 @@ const char *mmay_bytecode_type_name(MarimayBytecodeType type) {
             return "enum";
         case MMAY_BYTECODE_TYPE_INTERFACE:
             return "interface";
+        case MMAY_BYTECODE_TYPE_MAP:
+            return "Map";
+        case MMAY_BYTECODE_TYPE_SET:
+            return "Set";
         case MMAY_BYTECODE_TYPE_INVALID:
             break;
     }
@@ -278,6 +288,7 @@ MarimayBytecodeFunctionOptions mmay_bytecode_function_default_options(void) {
     options.max_string_bytes = 16U * 1024U * 1024U;
     options.max_array_constructions = 100000;
     options.max_array_arguments = 1000000;
+    options.max_collection_layouts = 100000;
     options.max_record_layouts = 100000;
     options.max_record_fields = 1000000;
     options.max_record_constructions = 100000;
@@ -335,7 +346,8 @@ bool mmay_bytecode_function_init(
         || options.max_instructions == 0 || options.max_calls == 0
         || options.max_call_arguments == 0 || options.max_string_constants == 0
         || options.max_string_bytes == 0 || options.max_array_constructions == 0
-        || options.max_array_arguments == 0 || options.max_record_layouts == 0
+        || options.max_array_arguments == 0 || options.max_collection_layouts == 0
+        || options.max_record_layouts == 0
         || options.max_record_fields == 0 || options.max_record_constructions == 0
         || options.max_record_arguments == 0 || options.max_enum_layouts == 0
         || options.max_enum_variants == 0 || options.max_enum_payloads == 0
@@ -385,6 +397,10 @@ bool mmay_bytecode_function_init(
             &function->array_types,
             allocator,
             sizeof(MarimayBytecodeArrayType)
+        ) || !mmay_vector_init(
+            &function->collection_types,
+            allocator,
+            sizeof(MarimayBytecodeCollectionType)
         ) || !mmay_vector_init(&function->register_layouts, allocator, sizeof(uint32_t))
         || !mmay_vector_init(&function->record_layouts, allocator, sizeof(MarimayBytecodeRecordLayout))
         || !mmay_vector_init(&function->record_fields, allocator, sizeof(MarimayBytecodeRecordField))
@@ -440,6 +456,7 @@ void mmay_bytecode_function_dispose(MarimayBytecodeFunction *function) {
     mmay_vector_dispose(&function->string_constants);
     mmay_vector_dispose(&function->array_arguments);
     mmay_vector_dispose(&function->array_types);
+    mmay_vector_dispose(&function->collection_types);
     mmay_vector_dispose(&function->array_constructions);
     mmay_vector_dispose(&function->register_layouts);
     mmay_vector_dispose(&function->record_arguments);

@@ -1,4 +1,5 @@
 #include "mir_internal.h"
+#include "mir_collections_internal.h"
 #include "mmay/base/utf8.h"
 #include <string.h>
 bool mmay_mir_reference_is_invalid(MarimayMirReference reference) {
@@ -33,6 +34,7 @@ MarimayMirFunctionOptions mmay_mir_function_default_options(void) {
     options.max_array_layouts = 100000;
     options.max_array_constructions = 100000;
     options.max_array_arguments = 1000000;
+    options.max_collection_layouts = 100000;
     options.max_interface_layouts = 100000;
     options.max_interface_constructions = 100000;
     options.max_interface_methods = 1000000;
@@ -66,6 +68,7 @@ bool mmay_mir_function_init(
     bool arrays_initialized = false;
     bool array_constructions_initialized = false;
     bool array_arguments_initialized = false;
+    bool collections_initialized = false;
     bool interfaces_initialized = false;
     bool interface_constructions_initialized = false;
     bool interface_methods_initialized = false;
@@ -100,6 +103,8 @@ bool mmay_mir_function_init(
         || options.max_array_constructions == 0
         || options.max_array_constructions > UINT32_MAX
         || options.max_array_arguments == 0
+        || options.max_collection_layouts == 0
+        || options.max_collection_layouts > UINT32_MAX
         || options.max_interface_layouts == 0
         || options.max_interface_layouts > UINT32_MAX
         || options.max_interface_constructions == 0
@@ -199,6 +204,7 @@ bool mmay_mir_function_init(
         allocator,
         sizeof(MarimayMirArrayArgument)
     );
+    collections_initialized = mmay_mir_collections_init(function, allocator);
     interfaces_initialized = mmay_vector_init(
         &function->interfaces, allocator, sizeof(MarimayMirInterface)
     );
@@ -217,6 +223,7 @@ bool mmay_mir_function_init(
         || !enum_constructions_initialized || !enum_arguments_initialized
         || !string_constants_initialized || !arrays_initialized
         || !array_constructions_initialized || !array_arguments_initialized
+        || !collections_initialized
         || !interfaces_initialized || !interface_constructions_initialized
         || !interface_methods_initialized
         || (parameter_count != 0 && !mmay_vector_append(
@@ -224,6 +231,7 @@ bool mmay_mir_function_init(
             parameter_types,
             parameter_count
         ))) {
+        if (collections_initialized) mmay_mir_collections_dispose(function);
         if (interface_methods_initialized) {
             mmay_vector_dispose(&function->interface_methods);
         }
@@ -321,6 +329,7 @@ void mmay_mir_function_dispose(MarimayMirFunction *function) {
     mmay_vector_dispose(&function->interface_constructions);
     mmay_vector_dispose(&function->interfaces);
     mmay_vector_dispose(&function->array_arguments);
+    mmay_mir_collections_dispose(function);
     mmay_vector_dispose(&function->array_constructions);
     mmay_vector_dispose(&function->arrays);
     mmay_vector_dispose(&function->call_arguments);

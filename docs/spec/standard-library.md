@@ -24,7 +24,7 @@ The prelude is imported implicitly and intentionally small. It contains primitiv
 Option, Some, None
 Result, Ok, Err
 Error
-ArrayGrowthError, ArrayTruncateError, Map, Set, Bytes
+ArrayGrowthError, ArrayTruncateError, CollectionGrowthError, Map, Set, Bytes
 Iterator
 Task
 expect          # @test/@fuzz functions only
@@ -352,7 +352,46 @@ before every subsequent loop test or element production. A mismatch panics with 
 Algorithms that intentionally mutate an array use an integer range over its
 indices or an explicit `while`, because iterator invalidation still applies.
 
-Map/set iteration is insertion-ordered. Updating retains position; delete then reinsert appends. Hash seeding may be process-randomized for attack resistance without changing visible order.
+Under D079 the complete map/set surface is:
+
+```marimay
+public fn mapOf<K, V>(): Map<K, V>;
+public fn length<K, V>(values: Map<K, V>): int;
+public fn containsKey<K, V>(values: Map<K, V>, key: K): bool;
+public fn get<K, V>(values: Map<K, V>, key: K): Option<V>;
+public fn put<K, V>(values: Map<K, V>, key: K, value: V):
+  Result<bool, CollectionGrowthError>;
+public fn remove<K, V>(values: Map<K, V>, key: K): Option<V>;
+public fn clear<K, V>(values: Map<K, V>): void;
+
+public fn setOf<T>(): Set<T>;
+public fn length<T>(values: Set<T>): int;
+public fn contains<T>(values: Set<T>, value: T): bool;
+public fn add<T>(values: Set<T>, value: T):
+  Result<bool, CollectionGrowthError>;
+public fn remove<T>(values: Set<T>, value: T): bool;
+public fn clear<T>(values: Set<T>): void;
+
+public enum CollectionGrowthError {
+  LengthLimit { limit: int },
+}
+```
+
+Map/set iteration is insertion-ordered. A map loop yields `(K, V)` and a set
+loop yields `T`. Updating retains position; delete then reinsert appends. Hash
+seeding may be process-randomized for attack resistance without changing
+visible order. The supported key set is the exact primitive/string and closed
+derived-nominal set in D079. Capacity and hashes are never observable.
+
+`put` and `add` return `Ok(true)` for insertion and `Ok(false)` for update or a
+duplicate respectively. New entries are bounded by `int::MAX` and use
+`CollectionGrowthError.LengthLimit`; D055 budget and host-allocation failures
+remain execution outcomes. Map `get`/`remove` return `None` for absence, set
+`remove` reports a boolean, and empty clear is a no-op. Every committed map
+insert/update/remove and set insert/remove advances a non-wrapping mutation
+generation; nonempty clear does likewise. An intervening mutation makes the
+next iterator check panic with `G4005` and the exact collection-specific D079
+message.
 
 Collection APIs use checked sizes and return `Result` for recoverable logical
 growth limits documented by that API. Configured VM/isolate heap ceilings and

@@ -57,6 +57,8 @@ MarimayMirVerifyStatus mmay_mir_verify(const MarimayMirFunction *function) {
             > function->options.max_array_constructions
         || function->array_arguments.length
             > function->options.max_array_arguments
+        || function->collections.length
+            > function->options.max_collection_layouts
         || function->interfaces.length
             > function->options.max_interface_layouts
         || function->interface_constructions.length
@@ -67,7 +69,8 @@ MarimayMirVerifyStatus mmay_mir_verify(const MarimayMirFunction *function) {
         return MMAY_MIR_VERIFY_INVALID_ARGUMENT;
     }
     if (function->records.length != 0 || function->enums.length != 0
-        || function->arrays.length != 0 || function->interfaces.length != 0
+        || function->arrays.length != 0 || function->collections.length != 0
+        || function->interfaces.length != 0
         || function->interface_constructions.length != 0
         || function->interface_methods.length != 0) {
         if (!mmay_map_init(

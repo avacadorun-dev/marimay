@@ -1,4 +1,5 @@
 #include "mir_internal.h"
+#include "mir_collections_internal.h"
 #include "fs_internal.h"
 #include "context_internal.h"
 #include "text_internal.h"
@@ -28,6 +29,10 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
     MarimayTypeId second_type = mmay_mir_register_type(
         function,
         instruction->second
+    );
+    MarimayTypeId third_type = mmay_mir_register_type(
+        function,
+        instruction->third
     );
     if (target_type == MMAY_TYPE_INVALID) {
         return MMAY_MIR_VERIFY_INVALID_REGISTER;
@@ -319,6 +324,88 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
                 return MMAY_MIR_VERIFY_TYPE_MISMATCH;
             }
             return MMAY_MIR_VERIFY_OK;
+        }
+        case MMAY_MIR_COLLECTION_NEW:
+        case MMAY_MIR_COLLECTION_LENGTH:
+        case MMAY_MIR_COLLECTION_CONTAINS:
+        case MMAY_MIR_COLLECTION_GET:
+        case MMAY_MIR_COLLECTION_PUT:
+        case MMAY_MIR_COLLECTION_ADD:
+        case MMAY_MIR_COLLECTION_REMOVE:
+        case MMAY_MIR_COLLECTION_CLEAR:
+        case MMAY_MIR_COLLECTION_GENERATION:
+        case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
+        case MMAY_MIR_COLLECTION_ENTRY_KEY:
+        case MMAY_MIR_COLLECTION_ENTRY_VALUE: {
+            const MarimayMirCollection *collection = mmay_mir_collection(
+                function, instruction->collection
+            );
+            if (collection == NULL) {
+                return MMAY_MIR_VERIFY_INVALID_ARGUMENT;
+            }
+            if (instruction->kind == MMAY_MIR_COLLECTION_NEW) {
+                return target_type == collection->type
+                    ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (first_type == MMAY_TYPE_INVALID) {
+                return MMAY_MIR_VERIFY_INVALID_REGISTER;
+            }
+            if (first_type != collection->type) {
+                return MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == MMAY_MIR_COLLECTION_LENGTH) {
+                return target_type == MMAY_TYPE_I64
+                    ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == MMAY_MIR_COLLECTION_CLEAR) {
+                return target_type == collection->type
+                    ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == MMAY_MIR_COLLECTION_GENERATION) {
+                return target_type == MMAY_TYPE_U64
+                    ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (second_type == MMAY_TYPE_INVALID) {
+                return MMAY_MIR_VERIFY_INVALID_REGISTER;
+            }
+            if (instruction->kind == MMAY_MIR_COLLECTION_REQUIRE_GENERATION) {
+                return second_type == MMAY_TYPE_U64
+                        && target_type == collection->type
+                    ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == MMAY_MIR_COLLECTION_ENTRY_KEY
+                || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE) {
+                const MarimayTypeId entry_type = instruction->kind
+                        == MMAY_MIR_COLLECTION_ENTRY_KEY
+                    ? collection->key_type : collection->value_type;
+                return second_type == MMAY_TYPE_I64
+                        && entry_type != MMAY_TYPE_INVALID
+                        && target_type == entry_type
+                    ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (second_type != collection->key_type) {
+                return MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == MMAY_MIR_COLLECTION_CONTAINS
+                || instruction->kind == MMAY_MIR_COLLECTION_REMOVE) {
+                return target_type == MMAY_TYPE_BOOL
+                    ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == MMAY_MIR_COLLECTION_ADD) {
+                return collection->is_set && target_type == collection->type
+                    ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (collection->is_set) {
+                return MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            if (instruction->kind == MMAY_MIR_COLLECTION_GET) {
+                return target_type == collection->value_type
+                    ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            }
+            return third_type != MMAY_TYPE_INVALID
+                    && third_type == collection->value_type
+                    && target_type == collection->type
+                ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
         }
         case MMAY_MIR_ARRAY_NEW: {
             const MarimayMirArrayConstruction *construction =
@@ -755,6 +842,7 @@ bool mmay_mir_instruction_uses_first(MarimayMirInstructionKind kind) {
         && kind != MMAY_MIR_CONSTANT_BOOL
         && kind != MMAY_MIR_CONSTANT_STRING && kind != MMAY_MIR_RECORD_NEW
         && kind != MMAY_MIR_ENUM_NEW && kind != MMAY_MIR_ARRAY_NEW
+        && kind != MMAY_MIR_COLLECTION_NEW
         && kind != MMAY_MIR_INTERFACE_NEW && kind != MMAY_MIR_CALL
         && kind != MMAY_MIR_DEFER_REGISTER
         && kind != MMAY_MIR_DEFER_CALL
@@ -801,6 +889,14 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
         case MMAY_MIR_ARRAY_TRUNCATE:
         case MMAY_MIR_ARRAY_RESERVE:
         case MMAY_MIR_ARRAY_REQUIRE_GENERATION:
+        case MMAY_MIR_COLLECTION_CONTAINS:
+        case MMAY_MIR_COLLECTION_GET:
+        case MMAY_MIR_COLLECTION_PUT:
+        case MMAY_MIR_COLLECTION_ADD:
+        case MMAY_MIR_COLLECTION_REMOVE:
+        case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
+        case MMAY_MIR_COLLECTION_ENTRY_KEY:
+        case MMAY_MIR_COLLECTION_ENTRY_VALUE:
         case MMAY_MIR_INTEGER_POLICY:
             return true;
         case MMAY_MIR_CONSTANT_I64:
@@ -820,6 +916,10 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
         case MMAY_MIR_ARRAY_POP:
         case MMAY_MIR_ARRAY_CLEAR:
         case MMAY_MIR_ARRAY_GENERATION:
+        case MMAY_MIR_COLLECTION_NEW:
+        case MMAY_MIR_COLLECTION_LENGTH:
+        case MMAY_MIR_COLLECTION_CLEAR:
+        case MMAY_MIR_COLLECTION_GENERATION:
         case MMAY_MIR_ENUM_NEW:
         case MMAY_MIR_ENUM_IS_VARIANT:
         case MMAY_MIR_ENUM_REQUIRE_VARIANT:
@@ -860,7 +960,8 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
 }
 bool mmay_mir_instruction_uses_third(MarimayMirInstructionKind kind) {
     return kind == MMAY_MIR_ARRAY_SET
-        || kind == MMAY_MIR_ARRAY_SET_IN_BOUNDS;
+        || kind == MMAY_MIR_ARRAY_SET_IN_BOUNDS
+        || kind == MMAY_MIR_COLLECTION_PUT;
 }
 bool mmay_mir_assigned_register(
     const unsigned char *assigned,

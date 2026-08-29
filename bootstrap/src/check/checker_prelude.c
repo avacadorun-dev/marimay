@@ -419,7 +419,7 @@ bool mmay_checker_private_prelude_init(MarimayChecker *checker) {
         return false;
     }
     original_max_types = checker->options.type_options.max_types;
-    prelude_max_types = MMAY_TYPE_FIRST_DYNAMIC + 7;
+    prelude_max_types = MMAY_TYPE_FIRST_DYNAMIC + 8;
     if (prelude_max_types < original_max_types) {
         prelude_max_types = original_max_types;
     }
@@ -438,6 +438,7 @@ bool mmay_checker_private_prelude_init(MarimayChecker *checker) {
     checker->prelude_enums_initialized = true;
     {
         static const char *const invalid_length[] = {"requested", "length"};
+        static const char *const collection_limit[] = {"limit"};
         if (!mmay_checker_private_prelude_enum(
         checker, "Option", "T", NULL, "Some", "None",
             MMAY_CHECKED_ENUM_VARIANT_POSITIONAL,
@@ -450,6 +451,9 @@ bool mmay_checker_private_prelude_init(MarimayChecker *checker) {
         || !mmay_checker_private_prelude_error_enum(
             checker, "ArrayTruncateError", "InvalidLength",
             invalid_length, 2
+        ) || !mmay_checker_private_prelude_error_enum(
+            checker, "CollectionGrowthError", "LengthLimit",
+            collection_limit, 1
         )) {
         mmay_checker_fail(
             checker,

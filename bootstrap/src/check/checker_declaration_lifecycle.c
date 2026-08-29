@@ -356,7 +356,13 @@ void mmay_checker_private_interface_declaration_dispose(
         bool arguments_public = true;
         record = mmay_checker_private_checker_find_record(checker, name);
         enum_declaration = mmay_checker_private_checker_find_enum(checker, name);
-        if (record != NULL) {
+        if (mmay_checker_private_check_text_equal(
+                checker, name.start, name.end, "Map"
+            ) || mmay_checker_private_check_text_equal(
+                checker, name.start, name.end, "Set"
+            )) {
+            is_public = true;
+        } else if (record != NULL) {
             is_public = record->is_public;
         } else if (enum_declaration != NULL) {
             is_public = enum_declaration->is_public;

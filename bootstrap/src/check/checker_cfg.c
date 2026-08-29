@@ -1,5 +1,6 @@
 #include "checker_cfg_api.h"
 #include "checker_array_mutation_api.h"
+#include "checker_collection_loop_api.h"
 #include "checker_core_api.h"
 #include "checker_defer_api.h"
 #include "checker_expr_scalar_api.h"
@@ -571,10 +572,20 @@ bool mmay_checker_private_compile_array_for(
             iterable.type,
             &element_type
         )) {
+        bool resolved = false;
+        if (!mmay_checker_private_compile_collection_for(
+                function, node, &iterable, &resolved
+            )) {
+            goto cleanup;
+        }
+        if (resolved) {
+            accepted = true;
+            goto cleanup;
+        }
         (void)mmay_checker_add_diagnostic(
             function->checker,
             MMAY_DIAGNOSTIC_TYPE_MISMATCH,
-            "for-in expression must have type []T or an int range",
+            "for-in expression must have type []T, Map<K, V>, Set<T>, or an int range",
             iterable_node->start,
             iterable_node->end
         );

@@ -342,6 +342,21 @@ bool mmay_checker_private_substitute_type(
                 &checker->result->types, substituted[0], result
             );
             break;
+        case MMAY_TYPE_KIND_MAP:
+            accepted = descriptor->argument_count == 2
+                && mmay_type_intern_map(
+                    &checker->result->types,
+                    substituted[0],
+                    substituted[1],
+                    result
+                );
+            break;
+        case MMAY_TYPE_KIND_SET:
+            accepted = descriptor->argument_count == 1
+                && mmay_type_intern_set(
+                    &checker->result->types, substituted[0], result
+                );
+            break;
         case MMAY_TYPE_KIND_FUNCTION:
             accepted = mmay_type_intern_function(
                 &checker->result->types,

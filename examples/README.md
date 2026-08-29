@@ -38,6 +38,11 @@ These examples are executable specification fixtures once the parser exists. Unt
 - `array_mutation.my` shows the D053 typed `pop`, `truncate`, `clear`, and
   `reserve` surface over scalar and nested managed arrays. Iteration mutation
   is rejected through the separate exact-G4005 acceptance corpus.
+- `collections.my` shows the D079 ordered `Map`/`Set` surface, immutable
+  `@derive(Eq, Hash)` nominal keys, tuple-valued map iteration, duplicate set
+  insertion, and the shared free/dot-call operation spelling. The deeper
+  `../tests/public-alpha/cp36-map-set` corpus covers imported record and enum
+  keys plus VM/native behavior.
 - `receiver_collection_names.my` demonstrates receiver-directed resolution
   when ordinary `Stack` functions and compiler-known `[]T` operations
   share `push` and `length`: free and dot forms preserve one symbol per exact

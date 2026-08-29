@@ -50,6 +50,13 @@ typedef struct MarimayMirArrayConstruction {
     size_t argument_count;
 } MarimayMirArrayConstruction;
 
+typedef struct MarimayMirCollection {
+    MarimayTypeId type;
+    MarimayTypeId key_type;
+    MarimayTypeId value_type;
+    bool is_set;
+} MarimayMirCollection;
+
 typedef struct MarimayMirFunctionOptions {
     size_t max_registers;
     size_t max_blocks;
@@ -70,6 +77,7 @@ typedef struct MarimayMirFunctionOptions {
     size_t max_array_layouts;
     size_t max_array_constructions;
     size_t max_array_arguments;
+    size_t max_collection_layouts;
     size_t max_interface_layouts;
     size_t max_interface_constructions;
     size_t max_interface_methods;
@@ -97,6 +105,7 @@ typedef struct MarimayMirFunction {
     MarimayVector arrays;
     MarimayVector array_constructions;
     MarimayVector array_arguments;
+    MarimayVector collections;
     MarimayVector interfaces;
     MarimayVector interface_constructions;
     MarimayVector interface_methods;

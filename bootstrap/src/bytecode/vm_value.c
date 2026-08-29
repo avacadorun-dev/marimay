@@ -40,6 +40,7 @@ bool mmay_bytecode_execution_init(
         ) || !mmay_bytecode_nominal_cache_init(execution, allocator)
         || !mmay_vector_init(&execution->owned_interface_tables, allocator, sizeof(void *))
         || !mmay_bytecode_array_cache_init(execution, allocator)
+        || !mmay_bytecode_collection_cache_init(execution, allocator)
         || !mmay_env_init(&execution->env, allocator, options.env)
         || (options.fs != NULL
             && !mmay_fs_init(&execution->fs, allocator, options.fs))) {
@@ -51,6 +52,7 @@ bool mmay_bytecode_execution_init(
         mmay_bytecode_nominal_cache_dispose(execution);
         mmay_vector_dispose(&execution->owned_interface_tables);
         mmay_vector_dispose(&execution->array_descriptors);
+        mmay_vector_dispose(&execution->collection_descriptors);
         return false;
     }
     execution->allocator = allocator;
@@ -82,6 +84,7 @@ void mmay_bytecode_execution_dispose(MarimayBytecodeExecution *execution) {
     mmay_bytecode_nominal_cache_dispose(execution);
     mmay_bytecode_run_interface_tables_dispose(execution);
     mmay_bytecode_array_cache_dispose(execution);
+    mmay_bytecode_collection_cache_dispose(execution);
     mmay_test_output_dispose(&execution->test_output);
     memset(execution, 0, sizeof(*execution));
 }
@@ -392,6 +395,15 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         );
     if (array_mutation_handled) {
         return array_mutation_status;
+    }
+    {
+        bool collection_handled = false;
+        MarimayBytecodeRunStatus collection_status =
+            mmay_bytecode_run_collection_instruction(
+                instruction, registers, execution, function, allocator,
+                panic, symbol, &collection_handled
+            );
+        if (collection_handled) return collection_status;
     }
     if (mmay_bytecode_opcode_is_numeric(instruction->opcode)) {
         return mmay_bytecode_run_numeric_instruction(

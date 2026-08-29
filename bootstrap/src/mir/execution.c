@@ -1,4 +1,5 @@
 #include "mir_internal.h"
+#include "execution_collections_internal.h"
 #include "fs_internal.h"
 #include "text_internal.h"
 #include "context_internal.h"
@@ -768,6 +769,22 @@ static MarimayMirInterpretStatus mmay_mir_execute_instruction(
         case MMAY_MIR_ARRAY_GENERATION:
         case MMAY_MIR_ARRAY_REQUIRE_GENERATION:
             return mmay_mir_execute_array_instruction(
+                function, instruction, first, second, third, target,
+                allocator, options
+            );
+        case MMAY_MIR_COLLECTION_NEW:
+        case MMAY_MIR_COLLECTION_LENGTH:
+        case MMAY_MIR_COLLECTION_CONTAINS:
+        case MMAY_MIR_COLLECTION_GET:
+        case MMAY_MIR_COLLECTION_PUT:
+        case MMAY_MIR_COLLECTION_ADD:
+        case MMAY_MIR_COLLECTION_REMOVE:
+        case MMAY_MIR_COLLECTION_CLEAR:
+        case MMAY_MIR_COLLECTION_GENERATION:
+        case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
+        case MMAY_MIR_COLLECTION_ENTRY_KEY:
+        case MMAY_MIR_COLLECTION_ENTRY_VALUE:
+            return mmay_mir_execute_collection_instruction(
                 function, instruction, first, second, third, target,
                 allocator, options
             );

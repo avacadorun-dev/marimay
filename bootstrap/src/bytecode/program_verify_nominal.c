@@ -87,6 +87,22 @@ bool mmay_bytecode_program_same_type(
                 right->element_layout
             );
     }
+    if (left_type == MMAY_BYTECODE_TYPE_MAP
+        || left_type == MMAY_BYTECODE_TYPE_SET) {
+        const MarimayBytecodeCollectionType *left =
+            mmay_bytecode_collection_type(left_function, left_layout);
+        const MarimayBytecodeCollectionType *right =
+            mmay_bytecode_collection_type(right_function, right_layout);
+        return left != NULL && right != NULL
+            && left->is_set == right->is_set
+            && mmay_bytecode_program_same_type(
+                left_function, left->key_type, left->key_layout,
+                right_function, right->key_type, right->key_layout
+            ) && (left->is_set || mmay_bytecode_program_same_type(
+                left_function, left->value_type, left->value_layout,
+                right_function, right->value_type, right->value_layout
+            ));
+    }
     if (!nominal) {
         return left_layout == MMAY_BYTECODE_NO_LAYOUT
             && right_layout == MMAY_BYTECODE_NO_LAYOUT;

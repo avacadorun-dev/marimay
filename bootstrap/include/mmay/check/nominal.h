@@ -22,6 +22,7 @@ typedef struct MarimayCheckedRecord {
     MarimayVector type_parameters;
     MarimayVector fields;
     bool is_public;
+    bool derives_eq_hash;
 } MarimayCheckedRecord;
 
 typedef enum MarimayCheckedEnumVariantKind {
@@ -50,6 +51,7 @@ typedef struct MarimayCheckedEnum {
     MarimayVector type_parameters;
     MarimayVector variants;
     bool is_public;
+    bool derives_eq_hash;
 } MarimayCheckedEnum;
 
 typedef struct MarimayCheckedInterfaceMethod {

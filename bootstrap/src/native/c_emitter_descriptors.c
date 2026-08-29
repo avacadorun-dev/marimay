@@ -31,6 +31,17 @@ static bool mmay_native_c_function_layout(
             return true;
         }
     }
+    for (index = 0; index < function->collections.length; index += 1) {
+        const MarimayMirCollection *layout = mmay_vector_at_const(
+            &function->collections, index
+        );
+        if (layout != NULL && layout->type == type) {
+            *result = (MarimayNativeCManagedLayout){
+                function, MMAY_NATIVE_C_MANAGED_COLLECTION, index
+            };
+            return true;
+        }
+    }
     for (index = 0; index < function->records.length; index += 1) {
         const MarimayMirRecord *layout = mmay_vector_at_const(
             &function->records, index
@@ -171,6 +182,16 @@ static bool mmay_native_c_same_layout(
         );
         return a != NULL && b != NULL && a->element_type == b->element_type;
     }
+    if (left.kind == MMAY_NATIVE_C_MANAGED_COLLECTION) {
+        const MarimayMirCollection *a = mmay_vector_at_const(
+            &left.function->collections, left.index
+        );
+        const MarimayMirCollection *b = mmay_vector_at_const(
+            &right.function->collections, right.index
+        );
+        return a != NULL && b != NULL && a->key_type == b->key_type
+            && a->value_type == b->value_type && a->is_set == b->is_set;
+    }
     if (left.kind == MMAY_NATIVE_C_MANAGED_RECORD) {
         return mmay_native_c_same_record(left, right);
     }
@@ -232,6 +253,18 @@ static bool mmay_native_c_layout_fields_supported(
             functions, count, array->element_type, false
         );
     }
+    if (layout.kind == MMAY_NATIVE_C_MANAGED_COLLECTION) {
+        const MarimayMirCollection *collection = mmay_vector_at_const(
+            &layout.function->collections, layout.index
+        );
+        return collection != NULL
+            && mmay_native_c_program_type_supported(
+                functions, count, collection->key_type, false
+            ) && (collection->is_set
+                || mmay_native_c_program_type_supported(
+                    functions, count, collection->value_type, false
+                ));
+    }
     if (layout.kind == MMAY_NATIVE_C_MANAGED_RECORD) {
         const MarimayMirRecord *record = mmay_vector_at_const(
             &layout.function->records, layout.index
@@ -276,9 +309,10 @@ bool mmay_native_c_managed_layouts_valid(
         for (kind = MMAY_NATIVE_C_MANAGED_ARRAY;
             kind <= MMAY_NATIVE_C_MANAGED_INTERFACE; kind += 1) {
             const MarimayVector *layouts = kind == MMAY_NATIVE_C_MANAGED_ARRAY
-                ? &function->arrays : (kind == MMAY_NATIVE_C_MANAGED_RECORD
+                ? &function->arrays : (kind == MMAY_NATIVE_C_MANAGED_COLLECTION
+                    ? &function->collections : (kind == MMAY_NATIVE_C_MANAGED_RECORD
                     ? &function->records : (kind == MMAY_NATIVE_C_MANAGED_ENUM
-                        ? &function->enums : &function->interfaces));
+                        ? &function->enums : &function->interfaces)));
             size_t index = 0;
             for (index = 0; index < layouts->length; index += 1) {
                 MarimayTypeId type = MMAY_TYPE_INVALID;
@@ -286,6 +320,10 @@ bool mmay_native_c_managed_layouts_valid(
                 MarimayNativeCManagedLayout canonical;
                 if (kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
                     const MarimayMirArray *value = mmay_vector_at_const(layouts, index);
+                    if (value != NULL) type = value->type;
+                } else if (kind == MMAY_NATIVE_C_MANAGED_COLLECTION) {
+                    const MarimayMirCollection *value =
+                        mmay_vector_at_const(layouts, index);
                     if (value != NULL) type = value->type;
                 } else if (kind == MMAY_NATIVE_C_MANAGED_RECORD) {
                     const MarimayMirRecord *value = mmay_vector_at_const(layouts, index);
@@ -354,9 +392,10 @@ bool mmay_native_c_write_descriptor_name(
     MarimayNativeCManagedKind kind,
     MarimayTypeId type
 ) {
-    const char *prefix = kind == MMAY_NATIVE_C_MANAGED_RECORD ? "rd"
+    const char *prefix = kind == MMAY_NATIVE_C_MANAGED_COLLECTION ? "md"
+        : (kind == MMAY_NATIVE_C_MANAGED_RECORD ? "rd"
         : (kind == MMAY_NATIVE_C_MANAGED_ENUM ? "ed"
-            : (kind == MMAY_NATIVE_C_MANAGED_INTERFACE ? "id" : NULL));
+            : (kind == MMAY_NATIVE_C_MANAGED_INTERFACE ? "id" : NULL)));
     return prefix != NULL && mmay_native_c_write(
         buffer, "mmay_g_%s_%u", prefix, (unsigned int)type
     );
@@ -403,6 +442,16 @@ static bool mmay_native_c_emit_field_descriptor(
             is_mutable ? "true" : "false",
             mmay_native_c_array_descriptor(layout.function, type)
         );
+    }
+    if (layout.kind == MMAY_NATIVE_C_MANAGED_COLLECTION) {
+        if (!mmay_native_c_write(
+                buffer,
+                "{MMAY_MANAGED_CELL_REFERENCE, %s, MMAY_MANAGED_OBJECT_MAP, &",
+                is_mutable ? "true" : "false"
+            ) || !mmay_native_c_write_descriptor_name(
+                buffer, layout.kind, type
+            )) return false;
+        return mmay_native_c_write(buffer, "}");
     }
     if (!mmay_native_c_write(
             buffer, "{MMAY_MANAGED_CELL_REFERENCE, %s, %s, &",
@@ -597,6 +646,15 @@ static bool mmay_native_c_emit_array_element_descriptor(
                 layout.function, array->element_type
             )
         );
+    }
+    if (layout.kind == MMAY_NATIVE_C_MANAGED_COLLECTION) {
+        if (!mmay_native_c_write(
+                buffer,
+                "MMAY_MANAGED_CELL_REFERENCE, MMAY_MANAGED_ARRAY_STORAGE_CELL, sizeof(MarimayManagedCell), MMAY_MANAGED_OBJECT_MAP, &"
+            ) || !mmay_native_c_write_descriptor_name(
+                buffer, layout.kind, array->element_type
+            )) return false;
+        return true;
     }
     if (!mmay_native_c_write(
         buffer,
@@ -830,6 +888,8 @@ bool mmay_native_c_emit_managed_descriptors(
     }
     if (!mmay_native_c_emit_nominal_forward_declarations(
             buffer, functions, count
+        ) || !mmay_native_c_emit_collection_descriptor_declarations(
+            buffer, functions, count
         )) return false;
     for (function_index = 0; function_index < count; function_index += 1) {
         const MarimayMirFunction *function = functions[function_index];
@@ -856,6 +916,9 @@ bool mmay_native_c_emit_managed_descriptors(
             }
         }
     }
+    if (!mmay_native_c_emit_collection_descriptors(
+            buffer, functions, count
+        )) return false;
     for (function_index = 0; function_index < count; function_index += 1) {
         const MarimayMirFunction *function = functions[function_index];
         size_t index = 0;
@@ -913,6 +976,20 @@ bool mmay_native_c_emit_managed_descriptors(
     for (function_index = 0; function_index < count; function_index += 1) {
         const MarimayMirFunction *function = functions[function_index];
         size_t index = 0;
+        for (index = 0; index < function->collections.length; index += 1) {
+            const MarimayMirCollection *value = mmay_vector_at_const(
+                &function->collections, index
+            );
+            MarimayNativeCManagedLayout layout = {
+                function, MMAY_NATIVE_C_MANAGED_COLLECTION, index
+            };
+            if (value != NULL && mmay_native_c_layout_is_canonical(
+                    functions, count, layout, value->type
+                ) && (!mmay_native_c_write(buffer, "  (void)&")
+                    || !mmay_native_c_write_descriptor_name(
+                        buffer, layout.kind, value->type
+                    ) || !mmay_native_c_write(buffer, ";\n"))) return false;
+        }
         for (index = 0; index < function->records.length; index += 1) {
             const MarimayMirRecord *value = mmay_vector_at_const(&function->records, index);
             MarimayNativeCManagedLayout layout = {function, MMAY_NATIVE_C_MANAGED_RECORD, index};
@@ -1005,6 +1082,18 @@ bool mmay_native_c_emit_managed_parameter_check(
             parameter,
             mmay_native_c_array_descriptor(layout.function, *type),
             parameter
+        );
+    } else if (layout.kind == MMAY_NATIVE_C_MANAGED_COLLECTION) {
+        if (!mmay_native_c_write(
+                buffer,
+                "  { MarimayManagedSlot *mmay_g_slot = mmay_managed_generated_resolve(&mmay_g_x->heap, mmay_g_v_%zu); if (mmay_g_slot == NULL || mmay_g_slot->kind != MMAY_MANAGED_OBJECT_MAP || mmay_g_slot->as.map == NULL || mmay_g_slot->as.map->descriptor != &",
+                parameter
+            ) || !mmay_native_c_write_descriptor_name(
+                buffer, layout.kind, *type
+            )) return false;
+        return mmay_native_c_write(
+            buffer,
+            ") { mmay_g_s = 7; goto mmay_g_cleanup; } }\n"
         );
     } else if (layout.kind == MMAY_NATIVE_C_MANAGED_RECORD) {
         const MarimayMirRecord *record = mmay_vector_at_const(

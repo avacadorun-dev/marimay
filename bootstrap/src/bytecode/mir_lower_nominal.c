@@ -68,7 +68,7 @@ bool mmay_mir_bytecode_type(
         return true;
     }
     if (input == MMAY_TYPE_RUNE) {
-        *output = MMAY_BYTECODE_TYPE_U32;
+        *output = MMAY_BYTECODE_TYPE_RUNE;
         return true;
     }
     if (input == MMAY_TYPE_U64) {
@@ -139,6 +139,16 @@ bool mmay_mir_bytecode_type(
             return true;
         }
     }
+    for (index = 0; index < function->collections.length; index += 1) {
+        const MarimayMirCollection *collection = mmay_vector_at_const(
+            &function->collections, index
+        );
+        if (collection != NULL && collection->type == input) {
+            *output = collection->is_set
+                ? MMAY_BYTECODE_TYPE_SET : MMAY_BYTECODE_TYPE_MAP;
+            return true;
+        }
+    }
     for (index = 0; index < function->enums.length; index += 1) {
         const MarimayMirEnum *enumeration = mmay_vector_at_const(
             &function->enums,
@@ -187,6 +197,13 @@ uint32_t mmay_mir_bytecode_layout_for_type(
         if (record != NULL && record->type == type && index <= UINT32_MAX) {
             return (uint32_t)index;
         }
+    }
+    for (index = 0; index < function->collections.length; index += 1) {
+        const MarimayMirCollection *collection = mmay_vector_at_const(
+            &function->collections, index
+        );
+        if (collection != NULL && collection->type == type
+            && index <= UINT32_MAX) return (uint32_t)index;
     }
     for (index = 0; index < function->enums.length; index += 1) {
         const MarimayMirEnum *enumeration = mmay_vector_at_const(

@@ -1,5 +1,6 @@
 #include "checker_lookup_api.h"
 #include "checker_array_types_api.h"
+#include "checker_collection_types_api.h"
 #include "checker_cfg_api.h"
 #include "checker_compound_types_api.h"
 #include "checker_core_api.h"
@@ -31,6 +32,7 @@
     MarimayVector generic_arguments;
     bool generic_arguments_initialized = false;
     bool array_type_resolved = false;
+    bool collection_type_resolved = false;
     bool compound_type_resolved = false;
     memset(&generic_arguments, 0, sizeof(generic_arguments));
     if (node == NULL || result == NULL || node->kind != MMAY_SYNTAX_TYPE) {
@@ -46,6 +48,17 @@
         return false;
     }
     if (array_type_resolved) {
+        return *result != MMAY_TYPE_INVALID;
+    }
+    if (!mmay_checker_private_resolve_collection_type(
+            checker,
+            node,
+            result,
+            &collection_type_resolved
+        )) {
+        return false;
+    }
+    if (collection_type_resolved) {
         return *result != MMAY_TYPE_INVALID;
     }
     if (!mmay_checker_private_resolve_compound_type(

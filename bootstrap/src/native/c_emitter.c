@@ -147,6 +147,7 @@ bool mmay_native_c_emit_runtime(
         && mmay_native_c_write(buffer,
             "static int mmay_g_managed_status(MarimayManagedStatus status) { if (status == MMAY_MANAGED_OK) return 0; if (status == MMAY_MANAGED_ALLOCATION_FAILED) return 5; if (status == MMAY_MANAGED_LIMIT_REACHED) return 6; return 7; }\n")
         && mmay_native_c_emit_array_mutation_runtime(buffer)
+        && mmay_native_c_emit_collection_runtime(buffer)
         && mmay_native_c_emit_format_runtime(buffer)
         && mmay_native_c_write(buffer,
             "static int mmay_g_text_array_bytes(mmay_g_execution *, MarimayManagedReference, unsigned char **, size_t *);\n"
@@ -194,7 +195,7 @@ bool mmay_native_c_emit_keep_assets(
     }
     return mmay_native_c_write(
         buffer,
-        "  (void)&mmay_g_string_equal;\n  (void)&mmay_g_begin_panic;\n  (void)&mmay_g_begin_bounds;\n  (void)&mmay_g_begin_array_iterator_mutation;\n  (void)&mmay_g_append_suppressed_panic;\n  (void)&mmay_g_managed_status;\n  (void)&mmay_g_io_println;\n  (void)&mmay_g_path_normalize;\n  (void)&mmay_g_path_absolute;\n  (void)&mmay_g_fs_open;\n  (void)&mmay_g_fs_read;\n  (void)&mmay_g_fs_close;\n  (void)&mmay_g_fs_read_all;\n  (void)&mmay_g_fs_write;\n  (void)&mmay_g_fs_metadata;\n  (void)&mmay_g_fs_directory;\n  (void)&mmay_g_env_get;\n  (void)&mmay_g_process_context;\n  (void)&mmay_g_test_output_begin;\n  (void)&mmay_g_test_output_end;\n  (void)&mmay_g_print_panic;\n  mmay_g_keep_managed();\n}\n\n"
+        "  (void)&mmay_g_string_equal;\n  (void)&mmay_g_begin_panic;\n  (void)&mmay_g_begin_bounds;\n  (void)&mmay_g_begin_array_iterator_mutation;\n  (void)&mmay_g_begin_collection_iterator_mutation;\n  (void)&mmay_g_append_suppressed_panic;\n  (void)&mmay_g_managed_status;\n  (void)&mmay_g_io_println;\n  (void)&mmay_g_path_normalize;\n  (void)&mmay_g_path_absolute;\n  (void)&mmay_g_fs_open;\n  (void)&mmay_g_fs_read;\n  (void)&mmay_g_fs_close;\n  (void)&mmay_g_fs_read_all;\n  (void)&mmay_g_fs_write;\n  (void)&mmay_g_fs_metadata;\n  (void)&mmay_g_fs_directory;\n  (void)&mmay_g_env_get;\n  (void)&mmay_g_process_context;\n  (void)&mmay_g_test_output_begin;\n  (void)&mmay_g_test_output_end;\n  (void)&mmay_g_print_panic;\n  mmay_g_keep_managed();\n}\n\n"
     );
 }
 

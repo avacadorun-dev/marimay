@@ -94,6 +94,28 @@ bool mmay_type_array_element(
     MarimayTypeId array,
     MarimayTypeId *element
 );
+bool mmay_type_intern_map(
+    MarimayTypeTable *table,
+    MarimayTypeId key,
+    MarimayTypeId value,
+    MarimayTypeId *result
+);
+bool mmay_type_map_parts(
+    const MarimayTypeTable *table,
+    MarimayTypeId map,
+    MarimayTypeId *key,
+    MarimayTypeId *value
+);
+bool mmay_type_intern_set(
+    MarimayTypeTable *table,
+    MarimayTypeId element,
+    MarimayTypeId *result
+);
+bool mmay_type_set_element(
+    const MarimayTypeTable *table,
+    MarimayTypeId set,
+    MarimayTypeId *element
+);
 bool mmay_type_intern_tuple(
     MarimayTypeTable *table,
     const MarimayTypeId *elements,

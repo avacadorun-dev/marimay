@@ -17,6 +17,7 @@
 #include "checker_expr_text_api.h"
 #include "checker_expr_fs_api.h"
 #include "checker_expr_context_api.h"
+#include "checker_expr_collections_api.h"
 
 
 
@@ -1016,6 +1017,7 @@ bool mmay_checker_private_compile_ordinary_call(
     bool fs_primitive_resolved = false;
     bool context_primitive_resolved = false;
     bool test_resolved = false;
+    bool collection_constructor_resolved = false;
     const MarimayAstNode *member_callee = mmay_checker_private_check_child_node(
         node,
         MMAY_SYNTAX_MEMBER_EXPRESSION,
@@ -1144,6 +1146,15 @@ bool mmay_checker_private_compile_ordinary_call(
         goto cleanup;
     }
     if (prelude_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
+    if (!mmay_checker_private_compile_collection_constructor(
+            function, node, expected, &collection_constructor_resolved, result
+        )) {
+        goto cleanup;
+    }
+    if (collection_constructor_resolved) {
         accepted = true;
         goto cleanup;
     }

@@ -26,6 +26,7 @@ typedef struct MarimayBytecodeProgramTotals {
     size_t enum_payloads;
     size_t enum_constructions;
     size_t enum_arguments;
+    size_t collection_layouts;
     size_t interface_layouts;
     size_t interface_constructions;
     size_t interface_methods;

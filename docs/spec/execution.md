@@ -784,6 +784,13 @@ failure classification, exact capability denial, requested-name trace,
 Windows ASCII folding, and normalized current-directory/executable paths for
 the same injected context.
 
+For D079 maps and sets, agreement additionally includes exact key eligibility,
+equality/hash coherence, collision behavior, insertion order across resize and
+delete/reinsert, put/add insertion booleans, absence/removal results,
+non-observable capacity and seed, mutation-generation changes, `G4005` panic
+identity, and precise tracing of every live key and value. A different hash
+seed may change only internal placement.
+
 D058/D059 optimized accesses additionally preserve the same G4002 code,
 primary span, observed failing index and length, result bits, alias-visible
 mutation, and stale/wrong-descriptor rejection as the checked VM path. Link

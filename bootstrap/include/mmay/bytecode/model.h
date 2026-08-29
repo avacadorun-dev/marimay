@@ -70,7 +70,11 @@ typedef enum MarimayBytecodeType {
     MMAY_BYTECODE_TYPE_U16,
     MMAY_BYTECODE_TYPE_U32,
     MMAY_BYTECODE_TYPE_U64,
-    MMAY_BYTECODE_TYPE_F32
+    MMAY_BYTECODE_TYPE_F32,
+    MMAY_BYTECODE_TYPE_MAP,
+    MMAY_BYTECODE_TYPE_SET,
+    /* Appended to preserve rune identity instead of erasing it to u32. */
+    MMAY_BYTECODE_TYPE_RUNE
 } MarimayBytecodeType;
 
 typedef struct MarimayBytecodeSpan {

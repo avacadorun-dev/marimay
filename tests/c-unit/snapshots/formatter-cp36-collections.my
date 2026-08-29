@@ -1,0 +1,13 @@
+@derive(Eq, Hash)
+type Pair {
+  left: int,
+  right: int,
+}
+
+fn collect(): Map<Pair, Set<string>> {
+  const values: Map<Pair, Set<string>> = mapOf<Pair, Set<string>>();
+  for entry in values {
+    const _ = entry;
+  }
+  return values;
+}

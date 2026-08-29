@@ -151,3 +151,15 @@ Stage 0 codec.
 | 138 | `env_get` | `destination:register`, `name:register` | `may_panic` | Read one explicitly granted environment name into Result<Option<string>, std/env.Error>. |
 | 139 | `process_current_directory` | `destination:register` | `may_panic` | Return the captured absolute current directory as Result<string, std/process.ContextError>. |
 | 140 | `process_executable_path` | `destination:register` | `may_panic` | Return the hosting process executable path as Result<string, std/process.ContextError>. |
+| 141 | `collection_new` | `destination:register` | `may_panic` | Create one empty exact managed Map or Set value. |
+| 142 | `collection_length` | `destination:register`, `collection:register` | — | Read the active entry count as i64. |
+| 143 | `collection_contains` | `destination:register`, `collection:register`, `key:register` | — | Test exact key membership. |
+| 144 | `collection_get` | `destination:register`, `collection:register`, `key:register` | — | Read a compiler-proven present Map value with defensive runtime validation. |
+| 145 | `collection_put` | `collection:register`, `key:register`, `value:register` | `may_panic` | Insert or update one exact Map entry failure-atomically. |
+| 146 | `collection_add` | `collection:register`, `key:register` | `may_panic` | Insert one absent exact Set element failure-atomically. |
+| 147 | `collection_remove` | `destination:register`, `collection:register`, `key:register` | — | Remove one entry and report whether it existed. |
+| 148 | `collection_clear` | `collection:register` | — | Remove every active entry. |
+| 149 | `collection_generation` | `destination:register`, `collection:register` | — | Read the exact collection mutation generation as u64. |
+| 150 | `collection_require_generation` | `destination:register`, `collection:register`, `generation:register` | `may_panic` | Copy a collection only when its iterator generation still matches. |
+| 151 | `collection_entry_key` | `destination:register`, `collection:register`, `index:register` | — | Read an insertion-order key at a defensively checked active index. |
+| 152 | `collection_entry_value` | `destination:register`, `collection:register`, `index:register` | — | Read an insertion-order Map value at a defensively checked active index. |

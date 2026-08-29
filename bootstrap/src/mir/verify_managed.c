@@ -1,4 +1,5 @@
 #include "mir_internal.h"
+#include "mir_collections_internal.h"
 #include "mmay/base/utf8.h"
 MarimayMirVerifyStatus mmay_mir_verify_managed_layouts(
     const MarimayMirFunction *function,
@@ -294,6 +295,42 @@ MarimayMirVerifyStatus mmay_mir_verify_managed_layouts(
                 work,
                 1,
                 function->options.max_verify_work
+            )) {
+            return MMAY_MIR_VERIFY_LIMIT_REACHED;
+        }
+    }
+    for (block_index = 0; block_index < function->collections.length;
+        block_index += 1) {
+        const MarimayMirCollection *collection = mmay_mir_collection(
+            function, (MarimayMirCollectionId)block_index
+        );
+        MarimayMirManagedLayoutInfo info = {
+            MMAY_MIR_MANAGED_LAYOUT_COLLECTION,
+            (uint32_t)block_index
+        };
+        if (collection == NULL || collection->type < MMAY_TYPE_FIRST_DYNAMIC
+            || collection->key_type == MMAY_TYPE_INVALID
+            || (collection->is_set
+                != (collection->value_type == MMAY_TYPE_INVALID))) {
+            return MMAY_MIR_VERIFY_INVALID_ARGUMENT;
+        }
+        if (mmay_map_get_const(
+                managed_types,
+                &collection->type,
+                sizeof(collection->type)
+            ) != NULL) {
+            return MMAY_MIR_VERIFY_INVALID_ARGUMENT;
+        }
+        if (!mmay_map_put(
+                managed_types,
+                &collection->type,
+                sizeof(collection->type),
+                &info
+            )) {
+            return MMAY_MIR_VERIFY_ALLOCATION_FAILED;
+        }
+        if (!mmay_mir_consume_verify_work(
+                work, 1, function->options.max_verify_work
             )) {
             return MMAY_MIR_VERIFY_LIMIT_REACHED;
         }

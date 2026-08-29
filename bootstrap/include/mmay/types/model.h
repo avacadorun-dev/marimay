@@ -52,7 +52,9 @@ typedef enum MarimayTypeKind {
     MMAY_TYPE_KIND_FUNCTION,
     MMAY_TYPE_KIND_TYPE_PARAMETER,
     /* Compiler-owned generic container kind; appended for API stability. */
-    MMAY_TYPE_KIND_ARRAY
+    MMAY_TYPE_KIND_ARRAY,
+    MMAY_TYPE_KIND_MAP,
+    MMAY_TYPE_KIND_SET
 } MarimayTypeKind;
 
 typedef struct MarimaySymbolId {
