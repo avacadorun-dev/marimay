@@ -532,9 +532,55 @@ static void mmay_cp36_formatter(void) {
     mmay_formatter_fixture_dispose(&fixture);
 }
 
+static void mmay_cp36_nested_collection_layout(void) {
+    static const char source[] =
+        "type Holder { values: Map<string, int>, }\n"
+        "fn ignore(holder: Holder): int { return 0; }\n";
+    MarimayCheckerFixture fixture;
+    MarimayCheckResult checked;
+    MarimayBytecodeFunction lowered;
+    MarimayBytecodeFunction decoded;
+    MarimayOwnedBytes encoded;
+    const MarimayCheckedFunction *function = NULL;
+    memset(&checked, 0, sizeof(checked));
+    memset(&lowered, 0, sizeof(lowered));
+    memset(&decoded, 0, sizeof(decoded));
+    memset(&encoded, 0, sizeof(encoded));
+    MMAY_EXPECT(mmay_checker_fixture_init(&fixture, source));
+    MMAY_EXPECT(mmay_check_ast(
+        &fixture.ast, "test/cp36-nested-collection",
+        mmay_system_allocator(), mmay_check_default_options(), &checked
+    ) == MMAY_CHECK_OK);
+    if (checked.initialized) {
+        function = mmay_checked_function(&checked, 0);
+        MMAY_EXPECT(function != NULL);
+        MMAY_EXPECT(function != NULL && function->mir.records.length == 1);
+        MMAY_EXPECT(function != NULL && function->mir.collections.length == 1);
+        MMAY_EXPECT(function != NULL && mmay_mir_lower_bytecode_function(
+            &function->mir, mmay_system_allocator(),
+            mmay_mir_bytecode_lower_default_options(), &lowered
+        ) == MMAY_MIR_BYTECODE_LOWER_OK);
+        MMAY_EXPECT(mmay_bytecode_encode_function(
+            &lowered, mmay_system_allocator(), &encoded
+        ) == MMAY_BYTECODE_CODEC_OK);
+        MMAY_EXPECT(mmay_bytecode_decode_function(
+            encoded.data, encoded.length, mmay_system_allocator(),
+            mmay_bytecode_function_default_options(), &decoded
+        ) == MMAY_BYTECODE_CODEC_OK);
+        MMAY_EXPECT(mmay_bytecode_verify(&decoded) == MMAY_BYTECODE_VERIFY_OK);
+        mmay_bytecode_function_dispose(&decoded);
+        mmay_owned_bytes_dispose(&encoded);
+        mmay_bytecode_function_dispose(&lowered);
+        mmay_check_result_dispose(&checked);
+    }
+    mmay_checker_fixture_dispose(&fixture);
+}
+
 static void mmay_cp36_checker_allocation_failures(void) {
     static const char source[] =
         "@derive(Eq, Hash) type Key { value: int, }\n"
+        "type Holder { values: Map<Key, int>, }\n"
+        "fn ignore(holder: Holder): int { return 0; }\n"
         "fn values(): int {\n"
         " const map: Map<Key, int> = mapOf<Key, int>();\n"
         " const _ = map.put(Key { value: 1 }, 2);\n"
@@ -707,4 +753,5 @@ void mmay_test_cp36_collections(void) {
     mmay_cp36_checker_diagnostics();
     mmay_cp36_checker_allocation_failures();
     mmay_cp36_formatter();
+    mmay_cp36_nested_collection_layout();
 }

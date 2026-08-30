@@ -92,9 +92,12 @@ environment grants, exact lookup, redaction, normalized process paths,
 relocation, allocation, sanitizer, and VM/native evidence.
 [CP36](cp36-map-set-iterators-2026-08-30.md) supplies insertion-ordered
 `Map`/`Set`, coherent closed keys, iterator invalidation, precise tracing,
-allocation, fuzz, and VM/native evidence. None of these reports closes CLI0
-or any parent product gate; CP37 is the sole ready checkpoint, and CP37–CP40
-must each add direct evidence.
+allocation, fuzz, and VM/native evidence.
+[CP37](cp37-cli-parser-2026-08-30.md) supplies ordinary `std/cli`, typed
+definition/usage errors, deterministic help, allocation, fuzz, and
+VM/native evidence. None of these reports closes CLI0 or any parent product
+gate; CP38 is the sole ready checkpoint, and CP38–CP40 must each add direct
+evidence.
 
 ## CP41
 

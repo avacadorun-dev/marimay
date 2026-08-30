@@ -29,7 +29,9 @@ data declarations and match arms with block-tail values, unified iterable
 bounded program arguments and controlled exit, typed standard streams,
 owned UTF-8 text and `Bytes` builders, capability-confined paths/files and
 environment access, normalized process context, and insertion-ordered
-`Map`/`Set` collections with mutation-checked iterators. Counted string,
+`Map`/`Set` collections with mutation-checked iterators. The ordinary
+first-party `std/cli` package provides bounded declarative options,
+positionals, typed usage errors, and deterministic help. Counted string,
 closed enum, `Option`/`Result`, and immutable `@derive(Eq)` record equality are
 executable through typed MIR on VM and native. The built-in preview test
 surface includes `expect.output`, `equal`, `notEqual`, `true`, `false`,
@@ -38,8 +40,8 @@ five VM/native differential tests.
 
 ## Exclusions
 
-- The first-party `std/cli` parser and typed JSON remain CP37–CP38.
-  User-defined formatting remains deliberately deferred by D065.
+- Bounded typed JSON remains CP38. User-defined formatting remains
+  deliberately deferred by D065.
 - Recursively self-referential nominal equality remains staged. Preview
   `@derive(Debug)` publishes compiler metadata but does not create a
   user-callable formatter; user-defined formatting remains deferred by D065.

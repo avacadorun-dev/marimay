@@ -4,6 +4,7 @@
 
 #include "mmay/bytecode/codec.h"
 #include "mmay/bytecode/mir_lower.h"
+#include "mmay/bytecode/vm.h"
 
 typedef struct MarimayCp34PipelineFixture {
     MarimayCheckerImportFixture source;
@@ -173,6 +174,50 @@ static size_t mmay_cp34_verify_hostile_bytecode(
     return count;
 }
 
+static void mmay_cp34_close_best_effort_fuzz_regression(void) {
+    static const unsigned char encoded[] = {
+        0x52, 0x55, 0x44, 0x41, 0x42, 0x43, 0x46, 0x00,
+        0x01, 0x02, 0x02, 0x02, 0x05, 0x09, 0x02, 0x02,
+        0x01, 0x02, 0x02, 0x03, 0x03, 0x14, 0x03, 0x01,
+        0x03, 0x05, 0x00, 0x00, 0x00, 0x00, 0x01, 0x3f,
+        0x85, 0x01, 0x08, 0x01, 0x01, 0x00, 0x03, 0x11,
+        0x00, 0x00, 0x01, 0x01, 0x03, 0x00, 0x00, 0x00
+    };
+    MarimayBytecodeExecution execution;
+    MarimayBytecodeFunction function;
+    MarimayBytecodeRunOptions run_options = mmay_bytecode_run_default_options();
+    MarimayBytecodeValue arguments[5] = {{0}};
+    MarimayBytecodeValue result = {0};
+    size_t index = 0;
+    memset(&execution, 0, sizeof(execution));
+    memset(&function, 0, sizeof(function));
+    MMAY_EXPECT(mmay_bytecode_decode_function(
+        encoded, sizeof(encoded), mmay_system_allocator(),
+        mmay_bytecode_function_default_options(), &function
+    ) == MMAY_BYTECODE_CODEC_OK);
+    MMAY_EXPECT(mmay_bytecode_verify(&function) == MMAY_BYTECODE_VERIFY_OK);
+    for (index = 0; index < sizeof(arguments) / sizeof(arguments[0]);
+        index += 1U) {
+        const MarimayBytecodeType *type = mmay_vector_at_const(
+            &function.register_types, index
+        );
+        MMAY_EXPECT(type != NULL);
+        if (type != NULL) arguments[index].type = *type;
+    }
+    MMAY_EXPECT(mmay_bytecode_execution_init(
+        &execution, mmay_system_allocator(),
+        mmay_bytecode_execution_default_options()
+    ));
+    run_options.execution = &execution;
+    MMAY_EXPECT(mmay_bytecode_run(
+        &function, arguments, sizeof(arguments) / sizeof(arguments[0]),
+        mmay_system_allocator(), run_options, &result
+    ) == MMAY_BYTECODE_RUN_OK);
+    MMAY_EXPECT(result.type == MMAY_BYTECODE_TYPE_I64 && result.as.i64 == 0);
+    mmay_bytecode_execution_dispose(&execution);
+    mmay_bytecode_function_dispose(&function);
+}
+
 void mmay_test_cp34_fs_pipeline(void) {
     MarimayCp34PipelineFixture fixture;
     size_t function_index = 0;
@@ -201,4 +246,5 @@ void mmay_test_cp34_fs_pipeline(void) {
     MMAY_EXPECT(mir_count == 10);
     MMAY_EXPECT(bytecode_count == 10);
     mmay_cp34_pipeline_dispose(&fixture);
+    mmay_cp34_close_best_effort_fuzz_regression();
 }

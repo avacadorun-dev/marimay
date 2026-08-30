@@ -1,0 +1,94 @@
+import * as cli from "std/cli";
+import { eprintln, print, println } from "std/io";
+
+fn commandParser(): cli.Parser {
+  return match cli.newParser(
+    "cp37-demo",
+    "Parse a bounded deterministic command line.",
+    [
+      cli.flagOption("help", Some("h"), false, false, "Show this help text."),
+      cli.flagOption("verbose", Some("v"), false, true, "Increase diagnostic detail."),
+      cli.flagOption("quiet", Some("q"), false, false, "Suppress ordinary output."),
+      cli.requiredValueOption(
+        "count",
+        Some("c"),
+        "COUNT",
+        false,
+        false,
+        "Select a signed item count.",
+      ),
+      cli.optionalValueOption(
+        "color",
+        Some("C"),
+        "WHEN",
+        false,
+        false,
+        "Enable color with an optional policy.",
+      ),
+      cli.requiredValueOption("tag", Some("t"), "TAG", false, true, "Attach a repeatable tag."),
+    ],
+    [
+      cli.positional("input", false, false, "Input path to process."),
+      cli.positional("extra", false, true, "Additional input values."),
+    ],
+    cli.defaultLimits(),
+  ) {
+    Ok(parser) => parser,
+    Err(error) => panic(cli.message(error)),
+  };
+}
+
+fn firstOptionValue(parsed: cli.Parsed, name: string, fallback: string): string {
+  const values = cli.occurrences(parsed, name);
+  if values.length() == 0 {
+    return fallback;
+  }
+  return match values[0] {
+    Some(value) => value,
+    None => fallback,
+  };
+}
+
+fn firstPositional(parsed: cli.Parsed, name: string, fallback: string): string {
+  const values = cli.positionalValues(parsed, name);
+  if values.length() == 0 {
+    return fallback;
+  }
+  return values[0];
+}
+
+fn main(arguments: []string): int {
+  const parser = commandParser();
+  return match cli.parse(parser, arguments) {
+    Err(error) => {
+      const _ = eprintln(cli.message(error));
+      cli.usageExitStatus()
+    },
+    Ok(parsed) => {
+      if cli.count(parsed, "help") != 0 {
+        return match cli.help(parser, 64) {
+          Ok(value) => match print(value) {
+            Ok(_) => 0,
+            Err(error) => {
+              const _ = eprintln(error.message());
+              1
+            },
+          },
+          Err(error) => {
+            const _ = eprintln(cli.message(error));
+            1
+          },
+        };
+      }
+      const count = firstOptionValue(parsed, "count", "0");
+      const input = firstPositional(parsed, "input", "-");
+      return match println($"count={count} input={input}") {
+        Ok(_) => 0,
+        Err(error) => {
+          const _ = eprintln(error.message());
+          1
+        },
+      };
+    },
+  };
+}

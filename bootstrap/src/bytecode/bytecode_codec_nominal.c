@@ -430,9 +430,7 @@ static MarimayBytecodeCodecStatus mmay_bytecode_nominal_decode_type_layout(
     if (status != MMAY_BYTECODE_CODEC_OK) {
         return status;
     }
-    if ((value > MMAY_BYTECODE_TYPE_INTERFACE
-        && !mmay_bytecode_type_is_extended_scalar((MarimayBytecodeType)value))
-        || !mmay_bytecode_type_is_register((MarimayBytecodeType)value)) {
+    if (!mmay_bytecode_type_is_register((MarimayBytecodeType)value)) {
         return MMAY_BYTECODE_CODEC_INVALID_ENCODING;
     }
     *type = (MarimayBytecodeType)value;

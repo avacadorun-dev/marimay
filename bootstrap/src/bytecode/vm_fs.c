@@ -523,6 +523,12 @@ MarimayBytecodeRunStatus mmay_bytecode_run_fs_instruction(
         mmay_path_dispose(&normalized);
         return MMAY_BYTECODE_RUN_OK;
     }
+    if (instruction->opcode == MMAY_OPCODE_FS_CLOSE_BEST_EFFORT) {
+        if (execution->fs_initialized) mmay_fs_close_best_effort(
+            &execution->fs, registers[first_index].as.i64
+        );
+        return MMAY_BYTECODE_RUN_OK;
+    }
     status = mmay_bytecode_vm_fs_descriptors(
         execution, function, result_id, &result, &error, &ok_payload
     );
@@ -564,12 +570,6 @@ MarimayBytecodeRunStatus mmay_bytecode_run_fs_instruction(
                     execution, result, &payload, &registers[target_index]
                 ) : mmay_bytecode_run_managed_status(managed);
         }
-    }
-    if (instruction->opcode == MMAY_OPCODE_FS_CLOSE_BEST_EFFORT) {
-        if (execution->fs_initialized) mmay_fs_close_best_effort(
-            &execution->fs, registers[first_index].as.i64
-        );
-        return MMAY_BYTECODE_RUN_OK;
     }
     if (instruction->opcode == MMAY_OPCODE_FS_READ
         || instruction->opcode == MMAY_OPCODE_FS_READ_ALL

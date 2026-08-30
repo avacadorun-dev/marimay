@@ -1,0 +1,143 @@
+import * as text from "std/text";
+
+fn appendHelp(builder: text.Builder, value: string, limit: int): Result<void, HelpError> {
+  return match text.append(builder, value) {
+    Ok(_) => Ok(),
+    Err(_) => Err(HelpError.LimitExceeded { limit }),
+  };
+}
+
+fn appendWrapped(builder: text.Builder, value: string, width: int, limit: int): Result<void, HelpError> {
+  if text.byteLength(value) == 0 {
+    return Ok();
+  }
+  const words = match text.split(value, " ", 4096) {
+    Ok(parts) => parts,
+    Err(_) => {
+      return Err(HelpError.LimitExceeded { limit });
+    },
+  };
+  let lineLength = 4;
+  appendHelp(builder, "    ", limit)?;
+  for word in words {
+    const wordLength = text.byteLength(word);
+    if wordLength > width - 4 {
+      return Err(HelpError.LineTooLong { width, required: wordLength + 4 });
+    }
+    if lineLength == 4 {
+      appendHelp(builder, word, limit)?;
+      lineLength += wordLength;
+    } else if wordLength + 1 <= width - lineLength {
+      appendHelp(builder, " ", limit)?;
+      appendHelp(builder, word, limit)?;
+      lineLength += wordLength + 1;
+    } else {
+      appendHelp(builder, "\n    ", limit)?;
+      appendHelp(builder, word, limit)?;
+      lineLength = wordLength + 4;
+    }
+  }
+  appendHelp(builder, "\n", limit)?;
+  return Ok();
+}
+
+fn appendUsageToken(builder: text.Builder, token: string, width: int, limit: int, current: int): Result<int, HelpError> {
+  const amount = text.byteLength(token);
+  if amount + 2 > width {
+    return Err(HelpError.LineTooLong { width, required: amount + 2 });
+  }
+  if amount + 1 <= width - current {
+    appendHelp(builder, " ", limit)?;
+    appendHelp(builder, token, limit)?;
+    return Ok(current + amount + 1);
+  }
+  appendHelp(builder, "\n  ", limit)?;
+  appendHelp(builder, token, limit)?;
+  return Ok(amount + 2);
+}
+
+fn optionSynopsis(option: OptionSpec): string {
+  const prefix = match option.short {
+    Some(name) => $"-{name}, --{option.long}",
+    None => $"--{option.long}",
+  };
+  return match option.value {
+    Flag => prefix,
+    Required { name } => $"{prefix} <{name}>",
+    Optional { name } => $"{prefix}[=<{name}>]",
+  };
+}
+
+fn positionalSynopsis(positional: PositionalSpec): string {
+  if positional.repeatable {
+    if positional.required {
+      return $"<{positional.name}>...";
+    }
+    return $"[<{positional.name}>...]";
+  }
+  if positional.required {
+    return $"<{positional.name}>";
+  }
+  return $"[<{positional.name}>]";
+}
+
+public fn help(parser: Parser, width: int): Result<string, HelpError> {
+  if width < 40 || width > 120 {
+    return Err(HelpError.InvalidWidth { width });
+  }
+  const builder = match text.newBuilder(parser.limits.helpBytes) {
+    Ok(value) => value,
+    Err(_) => {
+      return Err(HelpError.LimitExceeded { limit: parser.limits.helpBytes });
+    },
+  };
+  appendHelp(builder, "Usage: ", parser.limits.helpBytes)?;
+  appendHelp(builder, parser.program, parser.limits.helpBytes)?;
+  let lineLength = text.byteLength(parser.program) + 7;
+  if parser.options.length() != 0 {
+    lineLength = appendUsageToken(builder, "[options]", width, parser.limits.helpBytes, lineLength)?;
+  }
+  for positional in parser.positionals {
+    lineLength = appendUsageToken(
+      builder,
+      positionalSynopsis(positional),
+      width,
+      parser.limits.helpBytes,
+      lineLength,
+    )?;
+  }
+  appendHelp(builder, "\n", parser.limits.helpBytes)?;
+  if text.byteLength(parser.summary) != 0 {
+    appendHelp(builder, "\n", parser.limits.helpBytes)?;
+    appendWrapped(builder, parser.summary, width, parser.limits.helpBytes)?;
+  }
+  if parser.options.length() != 0 {
+    appendHelp(builder, "\nOptions:\n", parser.limits.helpBytes)?;
+    for option in parser.options {
+      const synopsis = optionSynopsis(option);
+      const required = text.byteLength(synopsis) + 2;
+      if required > width {
+        return Err(HelpError.LineTooLong { width, required });
+      }
+      appendHelp(builder, "  ", parser.limits.helpBytes)?;
+      appendHelp(builder, synopsis, parser.limits.helpBytes)?;
+      appendHelp(builder, "\n", parser.limits.helpBytes)?;
+      appendWrapped(builder, option.help, width, parser.limits.helpBytes)?;
+    }
+  }
+  if parser.positionals.length() != 0 {
+    appendHelp(builder, "\nArguments:\n", parser.limits.helpBytes)?;
+    for positional in parser.positionals {
+      const synopsis = positionalSynopsis(positional);
+      const required = text.byteLength(synopsis) + 2;
+      if required > width {
+        return Err(HelpError.LineTooLong { width, required });
+      }
+      appendHelp(builder, "  ", parser.limits.helpBytes)?;
+      appendHelp(builder, synopsis, parser.limits.helpBytes)?;
+      appendHelp(builder, "\n", parser.limits.helpBytes)?;
+      appendWrapped(builder, positional.help, width, parser.limits.helpBytes)?;
+    }
+  }
+  return Ok(text.finish(builder));
+}

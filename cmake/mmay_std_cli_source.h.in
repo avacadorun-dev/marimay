@@ -1,0 +1,16 @@
+#ifndef MMAY_STD_CLI_SOURCE_H
+#define MMAY_STD_CLI_SOURCE_H
+
+static const unsigned char mmay_cli_std_cli_model_source[] = {
+    @MMAY_STD_CLI_MODEL_SOURCE_BYTES@
+};
+
+static const unsigned char mmay_cli_std_cli_parse_source[] = {
+    @MMAY_STD_CLI_PARSE_SOURCE_BYTES@
+};
+
+static const unsigned char mmay_cli_std_cli_help_source[] = {
+    @MMAY_STD_CLI_HELP_SOURCE_BYTES@
+};
+
+#endif

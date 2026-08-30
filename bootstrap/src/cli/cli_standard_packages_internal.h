@@ -11,6 +11,9 @@ typedef struct MarimayCliStandardSource {
     const char *tail_path;
     const unsigned char *tail;
     size_t tail_length;
+    const char *third_path;
+    const unsigned char *third;
+    size_t third_length;
 } MarimayCliStandardSource;
 
 MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
@@ -18,6 +21,9 @@ MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
     const MarimayCliStandardSource *standard
 );
 MarimayCliCheckTargetStatus mmay_cli_standard_context_packages_add(
+    MarimayCliCheckTarget *target
+);
+MarimayCliCheckTargetStatus mmay_cli_standard_cli_package_add(
     MarimayCliCheckTarget *target
 );
 

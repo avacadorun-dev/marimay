@@ -386,6 +386,7 @@ MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
     MarimayCliCheckPackage package;
     MarimayFileId file_id = 0;
     MarimayFileId tail_id = 0;
+    MarimayFileId third_id = 0;
     MarimayCompilerStatus compiler_status;
     memset(&package, 0, sizeof(package));
     compiler_status = mmay_compiler_service_add_document(
@@ -422,6 +423,24 @@ MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
                     : MMAY_CLI_CHECK_TARGET_INTERNAL_ERROR);
         }
     }
+    if (standard->third != NULL) {
+        compiler_status = mmay_compiler_service_add_document(
+            &target->service,
+            standard->third_path,
+            strlen(standard->third_path),
+            1,
+            standard->third,
+            standard->third_length,
+            &third_id
+        );
+        if (compiler_status != MMAY_COMPILER_OK) {
+            return compiler_status == MMAY_COMPILER_ALLOCATION_FAILED
+                ? MMAY_CLI_CHECK_TARGET_ALLOCATION_FAILED
+                : (compiler_status == MMAY_COMPILER_LIMIT_REACHED
+                    ? MMAY_CLI_CHECK_TARGET_LIMIT_REACHED
+                    : MMAY_CLI_CHECK_TARGET_INTERNAL_ERROR);
+        }
+    }
     if (!mmay_owned_bytes_copy(
             &package.import_path, target->allocator,
             standard->import_path, strlen(standard->import_path)
@@ -433,6 +452,8 @@ MarimayCliCheckTargetStatus mmay_cli_standard_package_add(
         ) || !mmay_vector_push(&package.file_ids, &file_id)
         || (standard->tail != NULL
             && !mmay_vector_push(&package.file_ids, &tail_id))
+        || (standard->third != NULL
+            && !mmay_vector_push(&package.file_ids, &third_id))
         || !mmay_vector_push(&target->packages, &package)) {
         mmay_vector_dispose(&package.file_ids);
         mmay_owned_bytes_dispose(&package.directory);
@@ -451,12 +472,14 @@ MarimayCliCheckTargetStatus mmay_cli_standard_packages_add(
             "std/convert", "std/convert/convert.my",
             mmay_cli_std_convert_source,
             sizeof(mmay_cli_std_convert_source) - 1,
+            NULL, NULL, 0,
             NULL, NULL, 0
         },
         {
             "std/io", "std/io/io.my",
             mmay_cli_std_io_source,
             sizeof(mmay_cli_std_io_source) - 1,
+            NULL, NULL, 0,
             NULL, NULL, 0
         },
         {
@@ -465,7 +488,8 @@ MarimayCliCheckTargetStatus mmay_cli_standard_packages_add(
             sizeof(mmay_cli_std_bytes_source) - 1,
             "std/bytes/builders.my",
             mmay_cli_std_bytes_tail,
-            sizeof(mmay_cli_std_bytes_tail) - 1
+            sizeof(mmay_cli_std_bytes_tail) - 1,
+            NULL, NULL, 0
         },
         {
             "std/text", "std/text/text.my",
@@ -473,12 +497,14 @@ MarimayCliCheckTargetStatus mmay_cli_standard_packages_add(
             sizeof(mmay_cli_std_text_source) - 1,
             "std/text/builders.my",
             mmay_cli_std_text_tail,
-            sizeof(mmay_cli_std_text_tail) - 1
+            sizeof(mmay_cli_std_text_tail) - 1,
+            NULL, NULL, 0
         },
         {
             "std/path", "std/path/path.my",
             mmay_cli_std_path_source,
             sizeof(mmay_cli_std_path_source) - 1,
+            NULL, NULL, 0,
             NULL, NULL, 0
         },
         {
@@ -487,7 +513,8 @@ MarimayCliCheckTargetStatus mmay_cli_standard_packages_add(
             sizeof(mmay_cli_std_fs_source) - 1,
             "std/fs/text.my",
             mmay_cli_std_fs_tail,
-            sizeof(mmay_cli_std_fs_tail) - 1
+            sizeof(mmay_cli_std_fs_tail) - 1,
+            NULL, NULL, 0
         }
     };
     size_t index = 0;
@@ -503,5 +530,10 @@ MarimayCliCheckTargetStatus mmay_cli_standard_packages_add(
             return status;
         }
     }
-    return mmay_cli_standard_context_packages_add(target);
+    {
+        MarimayCliCheckTargetStatus status =
+            mmay_cli_standard_context_packages_add(target);
+        if (status != MMAY_CLI_CHECK_TARGET_OK) return status;
+    }
+    return mmay_cli_standard_cli_package_add(target);
 }

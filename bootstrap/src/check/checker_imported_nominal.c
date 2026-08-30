@@ -1,6 +1,7 @@
 #include "checker_imported_nominal_api.h"
 
 #include "checker_core_api.h"
+#include "checker_expr_collections_api.h"
 #include "checker_generic_types_api.h"
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
@@ -275,6 +276,23 @@ static bool mmay_checker_private_ensure_layout_closure(
         mmay_checker_fail(function->checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
+    if (descriptor->kind == MMAY_TYPE_KIND_MAP
+        || descriptor->kind == MMAY_TYPE_KIND_SET) {
+        MarimayMirCollectionId layout = MMAY_MIR_NO_COLLECTION;
+        MarimayTypeId key = MMAY_TYPE_INVALID;
+        MarimayTypeId value = MMAY_TYPE_INVALID;
+        bool is_set = false;
+        if (!mmay_checker_private_collection_layout(
+                function, type, 0, 0, &layout, &key, &value, &is_set
+            ) || !mmay_checker_private_ensure_layout_closure(
+                function, key, visiting
+            ) || (!is_set && !mmay_checker_private_ensure_layout_closure(
+                function, value, visiting
+            ))) {
+            accepted = false;
+        }
+        goto cleanup;
+    }
     if (descriptor->kind == MMAY_TYPE_KIND_ARRAY) {
         MarimayMirArrayId layout = MMAY_MIR_NO_ARRAY;
         if (descriptor->argument_count != 1
@@ -297,11 +315,13 @@ static bool mmay_checker_private_ensure_layout_closure(
             ? mmay_vector_at_const(&function->mir.records, layout) : NULL;
         for (field_index = 0; accepted && mir_record != NULL
             && field_index < mir_record->field_count; field_index += 1) {
+            mir_record = mmay_vector_at_const(&function->mir.records, layout);
             const MarimayMirRecordField *field = mmay_vector_at_const(
                 &function->mir.record_fields,
-                mir_record->field_start + field_index
+                mir_record != NULL ? mir_record->field_start + field_index : 0
             );
-            if (field == NULL || !mmay_checker_private_ensure_layout_closure(
+            if (mir_record == NULL || field == NULL
+                || !mmay_checker_private_ensure_layout_closure(
                     function, field->type, visiting
                 )) accepted = false;
         }
@@ -320,11 +340,13 @@ static bool mmay_checker_private_ensure_layout_closure(
             ? mmay_vector_at_const(&function->mir.enums, layout) : NULL;
         for (payload_index = 0; accepted && mir_enum != NULL
             && payload_index < mir_enum->payload_count; payload_index += 1) {
+            mir_enum = mmay_vector_at_const(&function->mir.enums, layout);
             const MarimayMirEnumPayload *payload = mmay_vector_at_const(
                 &function->mir.enum_payloads,
-                mir_enum->payload_start + payload_index
+                mir_enum != NULL ? mir_enum->payload_start + payload_index : 0
             );
-            if (payload == NULL || !mmay_checker_private_ensure_layout_closure(
+            if (mir_enum == NULL || payload == NULL
+                || !mmay_checker_private_ensure_layout_closure(
                     function, payload->type, visiting
                 )) accepted = false;
         }
@@ -339,11 +361,13 @@ static bool mmay_checker_private_ensure_layout_closure(
             ? mmay_vector_at_const(&function->mir.records, layout) : NULL;
         for (field_index = 0; accepted && mir_record != NULL
             && field_index < mir_record->field_count; field_index += 1) {
+            mir_record = mmay_vector_at_const(&function->mir.records, layout);
             const MarimayMirRecordField *field = mmay_vector_at_const(
                 &function->mir.record_fields,
-                mir_record->field_start + field_index
+                mir_record != NULL ? mir_record->field_start + field_index : 0
             );
-            if (field == NULL || !mmay_checker_private_ensure_layout_closure(
+            if (mir_record == NULL || field == NULL
+                || !mmay_checker_private_ensure_layout_closure(
                     function, field->type, visiting
                 )) accepted = false;
         }
@@ -358,11 +382,13 @@ static bool mmay_checker_private_ensure_layout_closure(
             ? mmay_vector_at_const(&function->mir.enums, layout) : NULL;
         for (payload_index = 0; accepted && mir_enum != NULL
             && payload_index < mir_enum->payload_count; payload_index += 1) {
+            mir_enum = mmay_vector_at_const(&function->mir.enums, layout);
             const MarimayMirEnumPayload *payload = mmay_vector_at_const(
                 &function->mir.enum_payloads,
-                mir_enum->payload_start + payload_index
+                mir_enum != NULL ? mir_enum->payload_start + payload_index : 0
             );
-            if (payload == NULL || !mmay_checker_private_ensure_layout_closure(
+            if (mir_enum == NULL || payload == NULL
+                || !mmay_checker_private_ensure_layout_closure(
                     function, payload->type, visiting
                 )) accepted = false;
         }

@@ -2359,3 +2359,58 @@ returning the incomplete status; CLI commands render it and exit `70`.
 Reason: the language tour, ordinary equality, and basic test helpers are one
 user-facing slice. Leaving any one of them as a spanless internal failure makes
 the others impossible to validate through the documented VM/native workflow.
+
+## D081 — Bounded declarative first-party command-line parsing
+
+Status: accepted.
+
+The CLI-alpha application parser is the ordinary `std/cli` package. A parser
+declares one program name, a single-line summary, an ordered option list, an
+ordered positional list, and explicit `Limits`. Options have an exact UTF-8
+long name, an optional one-byte ASCII alphanumeric short name, a flag,
+required-value, or optional-value mode, and independent required/repeatable
+bits. Positionals have an exact UTF-8 name plus required/repeatable bits. A
+repeatable positional must be last, and a required positional cannot follow an
+optional positional. Duplicate long, short, or positional names and every
+malformed or over-limit definition are typed `DefinitionError` values.
+
+Long options accept `--name` and `--name=value`. A required value may instead
+be the next argument, including a spelling beginning with `-`; an attached
+empty value is still a present value. An optional value is consumed only when
+attached with `=`. Short flags may cluster. The first short value-taking option
+consumes the rest of its token when nonempty; otherwise a required value
+consumes the next argument and an optional value is absent. The exact `--`
+token disables option recognition and is not itself positional. A lone `-` is
+positional. No shell quoting, expansion, environment lookup, abbreviation,
+negated flag, or implicit conversion is performed.
+
+Parsing preserves occurrence and positional order. A nonrepeatable duplicate,
+unknown option, unexpected or missing value, unexpected positional, missing
+required declaration, or argument-count overflow is a typed `UsageError`.
+Argument indices are zero-based indices into the caller-supplied `[]string`.
+The recommended usage exit status is exactly 2. Runtime managed-budget or host
+allocation failure remains the existing `I0002` execution outcome rather than
+a fabricated usage error.
+
+Help is deterministic declaration-order UTF-8 text. Width is a byte width in
+`40..120`; synopsis tokens and words are never split, continuation text uses a
+four-space indent, and an unrepresentable line or help-byte budget produces a
+typed `HelpError`. Default limits are 4096 arguments, 128 options, 64
+positionals, and 65536 help bytes. Accepted custom maxima are respectively
+4096, 256, 256, and 1048576, with a 256-byte minimum help budget. The complete
+API and validation grammar are normative in the standard-library
+specification.
+
+Subcommands, aliases beyond one long/short pair, automatic completion,
+environment/config defaults, and localized or terminal-display-width help are
+absent rather than stubbed. A later subcommand model requires a separate
+decision because it changes error routing, help shape, and positional scope.
+
+`std/cli` is implemented only with shipped public string/text, array,
+`Option`/`Result`, `Map`, and `Set` contracts. The C17 toolchain embeds its
+ordinary source documents but does not recognize parser symbols, add MIR or
+bytecode operations, or delegate parsing to host C.
+
+Reason: real CLI applications need a reusable deterministic boundary, while a
+host parser or unbounded reflection-based schema would bypass the language
+surface that CLI0 is intended to prove.

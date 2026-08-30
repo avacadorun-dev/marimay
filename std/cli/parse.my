@@ -1,0 +1,248 @@
+import * as text from "std/text";
+
+fn addOccurrence(parsed: Parsed, option: OptionSpec, value: Option<string>, argumentIndex: int): Result<void, UsageError> {
+  return match parsed.optionValues.get(option.long) {
+    Some(values) => {
+      if !option.repeatable
+        && values.length() != 0 {
+          return Err(UsageError.RepeatedOption { name: option.long, index: argumentIndex });
+        }
+        const _ = values.push(value);
+        Ok()
+      },
+      None => panic("std/cli option result table is incomplete"),
+    };
+}
+
+fn parseLong(parser: Parser, parsed: Parsed, arguments: []string, argumentIndex: int): Result<int, UsageError> {
+  const argument = arguments[argumentIndex];
+  const length = text.byteLength(argument);
+  let equals = -1;
+  for offset in 2..length {
+    const _ = match text.substring(argument, offset, offset + 1) {
+      Ok(part) => {
+        if part == "="
+          && equals < 0 {
+            equals = offset;
+          }
+          true
+        },
+        Err(_) => true,
+      };
+  }
+  let name = "";
+  if equals < 0 {
+    name = match text.substring(argument, 2, length) {
+      Ok(value) => value,
+      Err(_) => panic("std/cli long option boundary"),
+    };
+  } else {
+    name = match text.substring(argument, 2, equals) {
+      Ok(value) => value,
+      Err(_) => panic("std/cli long option value boundary"),
+    };
+  }
+  const option = match parser.longNames.get(name) {
+    Some(index) => parser.options[index],
+    None => {
+      return Err(UsageError.UnknownOption { argument, index: argumentIndex });
+    },
+  };
+  return match option.value {
+    Flag => {
+      if equals >= 0 {
+        return Err(UsageError.UnexpectedOptionValue { name: option.long, index: argumentIndex });
+      }
+      addOccurrence(parsed, option, None, argumentIndex)?;
+      Ok(argumentIndex)
+    },
+    Required { name: _ } => {
+      if equals >= 0 {
+        const value = match text.substring(argument, equals + 1, length) {
+          Ok(item) => item,
+          Err(_) => panic("std/cli attached long value boundary"),
+        };
+        addOccurrence(parsed, option, Some(value), argumentIndex)?;
+        return Ok(argumentIndex);
+      }
+      if argumentIndex + 1 == arguments.length() {
+        return Err(UsageError.MissingOptionValue { name: option.long, index: argumentIndex });
+      }
+      addOccurrence(parsed, option, Some(arguments[argumentIndex + 1]), argumentIndex)?;
+      Ok(argumentIndex + 1)
+    },
+    Optional { name: _ } => {
+      if equals < 0 {
+        addOccurrence(parsed, option, None, argumentIndex)?;
+      } else {
+        const value = match text.substring(argument, equals + 1, length) {
+          Ok(item) => item,
+          Err(_) => panic("std/cli optional long value boundary"),
+        };
+        addOccurrence(parsed, option, Some(value), argumentIndex)?;
+      }
+      Ok(argumentIndex)
+    },
+  };
+}
+
+fn parseShort(parser: Parser, parsed: Parsed, arguments: []string, argumentIndex: int): Result<int, UsageError> {
+  const argument = arguments[argumentIndex];
+  const length = text.byteLength(argument);
+  let offset = 1;
+  while offset < length {
+    const name = match text.substring(argument, offset, offset + 1) {
+      Ok(value) => value,
+      Err(_) => {
+        return Err(UsageError.UnknownOption { argument, index: argumentIndex });
+      },
+    };
+    const option = match parser.shortNames.get(name) {
+      Some(index) => parser.options[index],
+      None => {
+        return Err(UsageError.UnknownOption { argument, index: argumentIndex });
+      },
+    };
+    const _ = match option.value {
+      Flag => {
+        addOccurrence(parsed, option, None, argumentIndex)?;
+        offset += 1;
+        true
+      },
+      Required { name: _ } => {
+        if offset + 1 < length {
+          const value = match text.substring(argument, offset + 1, length) {
+            Ok(item) => item,
+            Err(_) => panic("std/cli attached short value boundary"),
+          };
+          addOccurrence(parsed, option, Some(value), argumentIndex)?;
+          return Ok(argumentIndex);
+        }
+        if argumentIndex + 1 == arguments.length() {
+          return Err(UsageError.MissingOptionValue { name: option.long, index: argumentIndex });
+        }
+        addOccurrence(parsed, option, Some(arguments[argumentIndex + 1]), argumentIndex)?;
+        return Ok(argumentIndex + 1);
+      },
+      Optional { name: _ } => {
+        if offset + 1 < length {
+          const value = match text.substring(argument, offset + 1, length) {
+            Ok(item) => item,
+            Err(_) => panic("std/cli optional short value boundary"),
+          };
+          addOccurrence(parsed, option, Some(value), argumentIndex)?;
+        } else {
+          addOccurrence(parsed, option, None, argumentIndex)?;
+        }
+        return Ok(argumentIndex);
+      },
+    };
+  }
+  return Ok(argumentIndex);
+}
+
+fn addPositional(
+  parser: Parser,
+  parsed: Parsed,
+  positionalIndex: int,
+  value: string,
+  argumentIndex: int,
+): Result<int, UsageError> {
+  if positionalIndex == parser.positionals.length() {
+    return Err(UsageError.UnexpectedPositional { value, index: argumentIndex });
+  }
+  const positional = parser.positionals[positionalIndex];
+  const _ = match parsed.positionalValues.get(positional.name) {
+    Some(values) => {
+      const _ = values.push(value);
+      true
+    },
+    None => panic("std/cli positional result table is incomplete"),
+  };
+  if positional.repeatable {
+    return Ok(positionalIndex);
+  }
+  return Ok(positionalIndex + 1);
+}
+
+public fn parse(parser: Parser, arguments: []string): Result<Parsed, UsageError> {
+  if arguments.length() > parser.limits.arguments {
+    return Err(UsageError.TooManyArguments { limit: parser.limits.arguments });
+  }
+  const optionValues: Map<string, []Option<string>> = mapOf<string, []Option<string>>();
+  for option in parser.options {
+    const values: []Option<string> = [];
+    const _ = optionValues.put(option.long, values);
+  }
+  const positionalValues: Map<string, []string> = mapOf<string, []string>();
+  for positional in parser.positionals {
+    const values: []string = [];
+    const _ = positionalValues.put(positional.name, values);
+  }
+  const parsed = Parsed { optionValues, positionalValues };
+  let argumentIndex = 0;
+  let positionalIndex = 0;
+  let optionsEnabled = true;
+  while argumentIndex < arguments.length() {
+    const argument = arguments[argumentIndex];
+    if optionsEnabled && argument == "--" {
+      optionsEnabled = false;
+    } else if optionsEnabled && text.startsWith(argument, "--") && text.byteLength(argument) > 2 {
+      argumentIndex = parseLong(parser, parsed, arguments, argumentIndex)?;
+    } else if optionsEnabled && text.startsWith(argument, "-") && text.byteLength(argument) > 1 {
+      argumentIndex = parseShort(parser, parsed, arguments, argumentIndex)?;
+    } else {
+      positionalIndex = addPositional(parser, parsed, positionalIndex, argument, argumentIndex)?;
+    }
+    argumentIndex += 1;
+  }
+  for option in parser.options {
+    if option.required && count(parsed, option.long) == 0 {
+      return Err(UsageError.MissingRequiredOption { name: option.long });
+    }
+  }
+  for positional in parser.positionals {
+    if positional.required && match parsed.positionalValues.get(positional.name) {
+      Some(values) => values.length() == 0,
+      None => true,
+    } {
+      return Err(UsageError.MissingRequiredPositional { name: positional.name });
+    }
+  }
+  return Ok(parsed);
+}
+
+public fn count(parsed: Parsed, name: string): int {
+  return match parsed.optionValues.get(name) {
+    Some(values) => values.length(),
+    None => 0,
+  };
+}
+
+public fn occurrences(parsed: Parsed, name: string): []Option<string> {
+  let result: []Option<string> = [];
+  const _ = match parsed.optionValues.get(name) {
+    Some(values) => {
+      for value in values {
+        const _ = result.push(value);
+      }
+      true
+    },
+    None => true,
+  };
+  return result;
+}
+
+public fn positionalValues(parsed: Parsed, name: string): []string {
+  let result: []string = [];
+  const _ = match parsed.positionalValues.get(name) {
+    Some(values) => {
+      for value in values {
+        const _ = result.push(value);
+      }
+      true
+    },
+    None => true,
+  };
+  return result;
+}

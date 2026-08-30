@@ -164,6 +164,34 @@ configure_file(
   "${CMAKE_CURRENT_BINARY_DIR}/generated/mmay-release-metadata.json"
   @ONLY
 )
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
+  "${CMAKE_CURRENT_SOURCE_DIR}/std/cli/cli.my"
+  "${CMAKE_CURRENT_SOURCE_DIR}/std/cli/parse.my"
+  "${CMAKE_CURRENT_SOURCE_DIR}/std/cli/help.my"
+)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/std/cli/cli.my"
+  MMAY_STD_CLI_MODEL_SOURCE_HEX HEX
+)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/std/cli/parse.my"
+  MMAY_STD_CLI_PARSE_SOURCE_HEX HEX
+)
+file(READ "${CMAKE_CURRENT_SOURCE_DIR}/std/cli/help.my"
+  MMAY_STD_CLI_HELP_SOURCE_HEX HEX
+)
+string(REGEX REPLACE "(..)" "0x\\1," MMAY_STD_CLI_MODEL_SOURCE_BYTES
+  "${MMAY_STD_CLI_MODEL_SOURCE_HEX}"
+)
+string(REGEX REPLACE "(..)" "0x\\1," MMAY_STD_CLI_PARSE_SOURCE_BYTES
+  "${MMAY_STD_CLI_PARSE_SOURCE_HEX}"
+)
+string(REGEX REPLACE "(..)" "0x\\1," MMAY_STD_CLI_HELP_SOURCE_BYTES
+  "${MMAY_STD_CLI_HELP_SOURCE_HEX}"
+)
+configure_file(
+  cmake/mmay_std_cli_source.h.in
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/mmay_std_cli_source.h"
+  @ONLY
+)
 
 file(MAKE_DIRECTORY
   "${MMAY_NATIVE_RUNTIME_DEBUG_DIRECTORY}"
@@ -428,6 +456,7 @@ add_library(mmay_bootstrap STATIC
     bootstrap/src/cli/cli_resource_report.c
   bootstrap/src/cli/cli_check_targets.c
   bootstrap/src/cli/cli_standard_packages.c
+  bootstrap/src/cli/cli_standard_cli_package.c
   bootstrap/src/cli/cli_standard_context_packages.c
   bootstrap/src/cli/cli_format.c
   bootstrap/src/cli/cli_format_targets.c

@@ -1,0 +1,328 @@
+import * as cli from "std/cli";
+
+fn require(condition: bool, message: string): void {
+  if !condition {
+    panic(message);
+  }
+}
+
+fn parsed(arguments: []string): cli.Parsed {
+  return match cli.parse(commandParser(), arguments) {
+    Ok(value) => value,
+    Err(error) => panic(cli.message(error)),
+  };
+}
+
+fn occurrence(value: cli.Parsed, name: string, index: int): Option<string> {
+  return cli.occurrences(value, name)[index];
+}
+
+@test
+fn emptyArgumentsAreAccepted(): void {
+  const value = parsed([]);
+  require(cli.count(value, "help") == 0, "empty help count");
+  require(cli.positionalValues(value, "input").length() == 0, "empty input");
+}
+
+@test
+fn clustersAttachedValuesAndRepetitionAreAccepted(): void {
+  const value = parsed(["-vhq", "--count=3", "-tone", "-t", "two", "-Cauto", "input.txt", "λ.txt"]);
+  require(cli.count(value, "verbose") == 1, "cluster verbose");
+  require(cli.count(value, "help") == 1, "cluster help");
+  require(cli.count(value, "quiet") == 1, "cluster quiet");
+  require(occurrence(value, "count", 0) == Some("3"), "attached long value");
+  require(occurrence(value, "tag", 0) == Some("one"), "attached short value");
+  require(occurrence(value, "tag", 1) == Some("two"), "separated short value");
+  require(occurrence(value, "color", 0) == Some("auto"), "optional value");
+  require(cli.positionalValues(value, "input")[0] == "input.txt", "input value");
+  require(cli.positionalValues(value, "extra")[0] == "λ.txt", "Unicode extra");
+}
+
+@test
+fn separatedRequiredValueAcceptsNegativeNumbers(): void {
+  const value = parsed(["--count", "-3"]);
+  require(occurrence(value, "count", 0) == Some("-3"), "negative value");
+  require(cli.positionalValues(value, "input").length() == 0, "negative positional");
+}
+
+@test
+fn optionalValueDoesNotConsumeTheNextArgument(): void {
+  const value = parsed(["--color", "input.txt"]);
+  require(occurrence(value, "color", 0) == None, "optional absence");
+  require(cli.positionalValues(value, "input")[0] == "input.txt", "optional boundary");
+}
+
+@test
+fn separatorMakesEveryRemainingValuePositional(): void {
+  const value = parsed(["--", "--count", "λ.txt"]);
+  require(cli.count(value, "count") == 0, "separator option count");
+  require(cli.positionalValues(value, "input")[0] == "--count", "separator input");
+  require(cli.positionalValues(value, "extra")[0] == "λ.txt", "separator extra");
+}
+
+@test
+fn usageErrorsRemainTypedAndIndexed(): void {
+  require(
+    match cli.parse(commandParser(), ["--unknown"]) {
+      Err(cli.UnknownOption { argument, index }) => argument == "--unknown"
+        && index == 0,
+        _ => false,
+      },
+      "unknown option",
+    );
+  require(
+    match cli.parse(commandParser(), ["--count"]) {
+      Err(cli.MissingOptionValue { name, index }) => name == "count"
+        && index == 0,
+        _ => false,
+      },
+      "missing option value",
+    );
+  require(
+    match cli.parse(commandParser(), ["--quiet", "--quiet"]) {
+      Err(cli.RepeatedOption { name, index }) => name == "quiet"
+        && index == 1,
+        _ => false,
+      },
+      "repeated option",
+    );
+  require(
+    match cli.parse(commandParser(), ["--help=yes"]) {
+      Err(cli.UnexpectedOptionValue { name, index }) => name == "help"
+        && index == 0,
+        _ => false,
+      },
+      "unexpected option value",
+    );
+}
+
+@test
+fn declarationErrorsRejectAmbiguity(): void {
+  const duplicate = [
+    cli.flagOption("same", Some("s"), false, false, "First value."),
+    cli.flagOption("same", Some("t"), false, false, "Second value."),
+  ];
+  require(
+    match cli.newParser("demo", "", duplicate, [], cli.defaultLimits()) {
+      Err(cli.DuplicateLong { name }) => name == "same",
+      _ => false,
+    },
+    "duplicate long declaration",
+  );
+
+  const badPositionals = [
+    cli.positional("optional", false, false, "Optional value."),
+    cli.positional("required", true, false, "Required value."),
+  ];
+  require(
+    match cli.newParser("demo", "", [], badPositionals, cli.defaultLimits()) {
+      Err(cli.RequiredPositionalAfterOptional { index }) => index == 1,
+      _ => false,
+    },
+    "required positional ordering",
+  );
+}
+
+@test
+fn declarationValidationRejectsMalformedAndUnboundedDefinitions(): void {
+  require(
+    match cli.newParser("demo", "", [], [], cli.limits(-1, 8, 8, 256)) {
+      Err(cli.InvalidLimits) => true,
+      _ => false,
+    },
+    "invalid limits",
+  );
+  require(
+    match cli.newParser("-demo", "", [], [], cli.defaultLimits()) {
+      Err(cli.InvalidProgram) => true,
+      _ => false,
+    },
+    "invalid program",
+  );
+  require(
+    match cli.newParser(
+      "demo",
+      "",
+      [
+        cli.flagOption("one", None, false, false, "One."),
+        cli.flagOption("two", None, false, false, "Two."),
+      ],
+      [],
+      cli.limits(8, 1, 1, 256),
+    ) {
+      Err(cli.TooManyOptions { limit }) => limit == 1,
+      _ => false,
+    },
+    "option declaration limit",
+  );
+  require(
+    match cli.newParser(
+      "demo",
+      "",
+      [
+        cli.flagOption("one", Some("x"), false, false, "One."),
+        cli.flagOption("two", Some("x"), false, false, "Two."),
+      ],
+      [],
+      cli.defaultLimits(),
+    ) {
+      Err(cli.DuplicateShort { name }) => name == "x",
+      _ => false,
+    },
+    "duplicate short",
+  );
+  require(
+    match cli.newParser(
+      "demo",
+      "",
+      [cli.requiredValueOption("bad", None, "-VALUE", false, false, "Bad.")],
+      [],
+      cli.defaultLimits(),
+    ) {
+      Err(cli.InvalidValueName { index }) => index == 0,
+      _ => false,
+    },
+    "invalid value name",
+  );
+  require(
+    match cli.newParser(
+      "demo",
+      "",
+      [],
+      [cli.positional("many", true, true, "Many."), cli.positional("tail", false, false, "Tail.")],
+      cli.defaultLimits(),
+    ) {
+      Err(cli.RepeatedPositionalNotLast { index }) => index == 0,
+      _ => false,
+    },
+    "repeated positional placement",
+  );
+}
+
+@test
+fn limitsAndRequiredDeclarationsAreEnforced(): void {
+  const limits = cli.limits(1, 8, 8, 256);
+  const parser = match cli.newParser("demo", "", [], [], limits) {
+    Ok(value) => value,
+    Err(error) => panic(cli.message(error)),
+  };
+  require(
+    match cli.parse(parser, ["one", "two"]) {
+      Err(cli.TooManyArguments { limit }) => limit == 1,
+      _ => false,
+    },
+    "argument limit",
+  );
+
+  const required = match cli.newParser(
+    "demo",
+    "",
+    [cli.requiredValueOption("token", None, "TOKEN", true, false, "Required token.")],
+    [],
+    cli.defaultLimits(),
+  ) {
+    Ok(value) => value,
+    Err(error) => panic(cli.message(error)),
+  };
+  require(
+    match cli.parse(required, []) {
+      Err(cli.MissingRequiredOption { name }) => name == "token",
+      _ => false,
+    },
+    "required option",
+  );
+
+  const requiredPositional = match cli.newParser(
+    "demo",
+    "",
+    [],
+    [cli.positional("input", true, false, "Required input.")],
+    cli.defaultLimits(),
+  ) {
+    Ok(value) => value,
+    Err(error) => panic(cli.message(error)),
+  };
+  require(
+    match cli.parse(requiredPositional, []) {
+      Err(cli.MissingRequiredPositional { name }) => name == "input",
+      _ => false,
+    },
+    "required positional",
+  );
+  require(
+    match cli.parse(requiredPositional, ["one", "two"]) {
+      Err(cli.UnexpectedPositional { value, index }) => value == "two"
+        && index == 1,
+        _ => false,
+      },
+      "unexpected positional",
+    );
+}
+
+@test
+fn UnicodeLongNamesAndEmptyAttachedValuesArePreserved(): void {
+  const parser = match cli.newParser(
+    "demo",
+    "",
+    [
+      cli.flagOption("λ", None, false, false, "Unicode flag."),
+      cli.requiredValueOption("value", None, "VALUE", false, false, "Value."),
+    ],
+    [cli.positional("input", false, false, "Input.")],
+    cli.defaultLimits(),
+  ) {
+    Ok(value) => value,
+    Err(error) => panic(cli.message(error)),
+  };
+  const value = match cli.parse(parser, ["--λ", "--value=", "-"]) {
+    Ok(result) => result,
+    Err(error) => panic(cli.message(error)),
+  };
+  require(cli.count(value, "λ") == 1, "Unicode option");
+  require(cli.occurrences(value, "value")[0] == Some(""), "empty attached value");
+  require(cli.positionalValues(value, "input")[0] == "-", "lone dash positional");
+}
+
+@test
+fn generatedFlagCasesPreserveCounts(): void {
+  for mask in 0..8 {
+    let arguments: []string = [];
+    let expected = 0;
+    if mask % 2 == 1 {
+      const _ = arguments.push("-v");
+      expected += 1;
+    }
+    if mask / 2 % 2 == 1 {
+      const _ = arguments.push("--verbose");
+      expected += 1;
+    }
+    if mask / 4 % 2 == 1 {
+      const _ = arguments.push("-v");
+      expected += 1;
+    }
+    const value = parsed(arguments);
+    require(cli.count(value, "verbose") == expected, "generated flag count");
+  }
+}
+
+@test
+fn helpIsDeterministicAndWidthBounded(): void {
+  const first = cli.help(commandParser(), 64);
+  const second = cli.help(commandParser(), 64);
+  require(first == second, "deterministic help");
+  require(
+    match first {
+      Ok(value) => value == "Usage: cp37-demo [options] [<input>] [<extra>...]\n\n    Parse a bounded deterministic command line.\n\nOptions:\n  -h, --help\n    Show this help text.\n  -v, --verbose\n    Increase diagnostic detail.\n  -q, --quiet\n    Suppress ordinary output.\n  -c, --count <COUNT>\n    Select a signed item count.\n  -C, --color[=<WHEN>]\n    Enable color with an optional policy.\n  -t, --tag <TAG>\n    Attach a repeatable tag.\n\nArguments:\n  [<input>]\n    Input path to process.\n  [<extra>...]\n    Additional input values.\n",
+      Err(_) => false,
+    },
+    "help snapshot",
+  );
+  require(
+    match cli.help(commandParser(), 39) {
+      Err(cli.InvalidWidth { width }) => width == 39,
+      _ => false,
+    },
+    "help minimum width",
+  );
+  require(cli.usageExitStatus() == 2, "usage status");
+}

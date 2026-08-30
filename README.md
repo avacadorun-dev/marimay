@@ -47,7 +47,10 @@ The current source surface also includes CP30 dynamic primitive interpolation,
 boolean/all-width integer formatting, and `parseInt`/`parseIntRadix`; CP31
 bounded UTF-8 program arguments and cleanup-safe process statuses; and CP32
 bounded typed stdin, independent stdout/stderr, and explicit flush with exact
-VM/native behavior. For an argument-taking package, for example:
+VM/native behavior. CP33-CP36 add bounded owned text/bytes, capability-confined
+paths/files and process context, and insertion-ordered `Map`/`Set`. CP37 adds
+the ordinary first-party `std/cli` parser with typed definition/usage errors
+and deterministic bounded help. For an argument-taking package, for example:
 
 ```sh
 build/debug/mmay run tests/public-alpha/cp31-args -- alpha "two words"
@@ -72,6 +75,15 @@ Both run paths keep program stdout, program stderr, and tool diagnostics
 separate. `readLine` is bounded to at most 1048576 returned UTF-8 bytes;
 printing never flushes implicitly, so durable/interactive boundaries use
 `flushStdout` or `flushStderr` explicitly.
+
+The CP37 parser example exposes long/short flags, required and optional
+values, repeatable options, positionals, `--`, exact usage errors, and help:
+
+```sh
+build/debug/mmay run tests/public-alpha/cp37-cli-parser -- --help
+build/debug/mmay run tests/public-alpha/cp37-cli-parser -- --count 3 input.txt
+build/debug/mmay test tests/public-alpha/cp37-cli-parser --engine both
+```
 
 Both run paths print `Marimay CP29 quick start`. The
 [known limitations](docs/known-limitations.md) distinguish this executable

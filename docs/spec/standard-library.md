@@ -416,7 +416,207 @@ public interface Stream<T, E> {
 
 `next` may suspend through the ordinary inferred effect.
 
-## 5. Filesystem, environment, and processes
+## 5. Command-line parsing
+
+D081 defines `std/cli` as the first-party declarative application parser. It
+is an ordinary source package over `std/text`, arrays, `Map`, `Set`, `Option`,
+and `Result`; importing it introduces no compiler-known operation or host
+parser. Its public model and constructors are:
+
+```marimay
+public enum ValueMode {
+  Flag,
+  Required { name: string },
+  Optional { name: string },
+}
+
+public type OptionSpec {
+  public long: string,
+  public short: Option<string>,
+  public value: ValueMode,
+  public required: bool,
+  public repeatable: bool,
+  public help: string,
+}
+
+public type PositionalSpec {
+  public name: string,
+  public required: bool,
+  public repeatable: bool,
+  public help: string,
+}
+
+public type Limits {
+  public arguments: int,
+  public options: int,
+  public positionals: int,
+  public helpBytes: int,
+}
+
+public type Parser;
+public type Parsed;
+
+public fn defaultLimits(): Limits;
+public fn limits(
+  arguments: int,
+  options: int,
+  positionals: int,
+  helpBytes: int,
+): Limits;
+public fn flagOption(
+  long: string,
+  short: Option<string>,
+  required: bool,
+  repeatable: bool,
+  help: string,
+): OptionSpec;
+public fn requiredValueOption(
+  long: string,
+  short: Option<string>,
+  valueName: string,
+  required: bool,
+  repeatable: bool,
+  help: string,
+): OptionSpec;
+public fn optionalValueOption(
+  long: string,
+  short: Option<string>,
+  valueName: string,
+  required: bool,
+  repeatable: bool,
+  help: string,
+): OptionSpec;
+public fn positional(
+  name: string,
+  required: bool,
+  repeatable: bool,
+  help: string,
+): PositionalSpec;
+```
+
+`Parser` and `Parsed` have no public fields. `newParser` validates and copies
+the declarative boundary into lookup state; its array order remains the help
+and positional order:
+
+```marimay
+public fn newParser(
+  program: string,
+  summary: string,
+  options: []OptionSpec,
+  positionals: []PositionalSpec,
+  limits: Limits,
+): Result<Parser, DefinitionError>;
+
+public fn parse(
+  parser: Parser,
+  arguments: []string,
+): Result<Parsed, UsageError>;
+public fn count(parsed: Parsed, name: string): int;
+public fn occurrences(
+  parsed: Parsed,
+  name: string,
+): []Option<string>;
+public fn positionalValues(
+  parsed: Parsed,
+  name: string,
+): []string;
+public fn help(parser: Parser, width: int): Result<string, HelpError>;
+public fn usageExitStatus(): int;
+public fn message(error: DefinitionError): string;
+public fn message(error: UsageError): string;
+public fn message(error: HelpError): string;
+```
+
+`defaultLimits()` is `{ arguments: 4096, options: 128, positionals: 64,
+helpBytes: 65536 }`. Custom argument, option, and positional limits are
+nonnegative and at most 4096, 256, and 256. The help limit is in
+`256..1048576`. A program or declaration name is nonempty, at most 64 UTF-8
+bytes, does not begin with `-`, and contains no `=`, ASCII space, tab, CR, or
+LF. Unicode long and positional names are exact counted-UTF-8 names. A short
+name is exactly one ASCII letter or digit. Summaries are single-line and at
+most 4096 bytes. Help strings additionally have no leading/trailing ASCII
+whitespace or adjacent ASCII spaces. Value names follow the declaration-name
+grammar. Duplicate names are compared as exact counted strings. A repeatable
+positional is last, and no required positional follows an optional one.
+
+The closed definition errors are:
+
+```marimay
+public enum DefinitionError {
+  InvalidLimits,
+  InvalidProgram,
+  TooManyOptions { limit: int },
+  TooManyPositionals { limit: int },
+  InvalidLongName { index: int },
+  InvalidShortName { index: int },
+  InvalidValueName { index: int },
+  InvalidOptionHelp { index: int },
+  DuplicateLong { name: string },
+  DuplicateShort { name: string },
+  InvalidPositionalName { index: int },
+  InvalidPositionalHelp { index: int },
+  DuplicatePositional { name: string },
+  RequiredPositionalAfterOptional { index: int },
+  RepeatedPositionalNotLast { index: int },
+}
+```
+
+`parse` excludes an executable name; it receives exactly the D066 program
+argument array. Long options use `--name` or `--name=value`. Flags reject an
+attached value. A required value uses its attached suffix or consumes the next
+argument even when that argument begins with `-`; `--name=` is a present empty
+value. An optional value is present only when attached and never consumes the
+next argument. Short flags cluster. A short required/optional value consumes
+the rest of that token when present and ends the cluster; otherwise only a
+required value consumes the next argument. `--` disables option recognition,
+is not emitted as positional data, and makes all later strings positional. A
+lone `-` is positional. Parsing performs no shell expansion, abbreviation,
+case folding, environment/config lookup, or type conversion.
+
+Occurrences and positionals retain input order. Nonrepeatable options reject a
+second occurrence regardless of spelling. Positional declarations consume in
+order; a repeatable final positional consumes the remainder. Required options
+and positionals are checked after input consumption. Error indices are
+zero-based indices into `arguments`. Unknown names passed to `count`,
+`occurrences`, or `positionalValues` return zero or a fresh empty array. The
+closed usage errors are:
+
+```marimay
+public enum UsageError {
+  TooManyArguments { limit: int },
+  UnknownOption { argument: string, index: int },
+  UnexpectedOptionValue { name: string, index: int },
+  MissingOptionValue { name: string, index: int },
+  RepeatedOption { name: string, index: int },
+  UnexpectedPositional { value: string, index: int },
+  MissingRequiredOption { name: string },
+  MissingRequiredPositional { name: string },
+}
+```
+
+`usageExitStatus()` is exactly 2. `message` is deterministic English text and
+contains only the stored spelling, zero-based index, or declared limit.
+Managed-budget or host-allocation failure remains `I0002`, not `UsageError`.
+
+Help width is a byte width in `40..120`. `help` emits `Usage:`, then the
+optional `[options]` token, positional synopsis tokens, the summary, `Options:`
+entries, and `Arguments:` entries in declaration order. Descriptions wrap only
+at their validated single ASCII spaces, use a four-space continuation indent,
+and never split a token or word. The result always ends with LF. Its errors are:
+
+```marimay
+public enum HelpError {
+  InvalidWidth { width: int },
+  LineTooLong { width: int, required: int },
+  LimitExceeded { limit: int },
+}
+```
+
+Subcommands, multiple aliases, automatic completion, localized help, and
+terminal column-width or grapheme-width measurement are not part of this
+surface.
+
+## 6. Filesystem, environment, and processes
 
 `std/fs` functions require root filesystem capabilities and return the closed
 CLI-alpha error set below. Matching and symlink-free traversal follow D077;
@@ -531,7 +731,7 @@ first invalid byte offset, and platform error codes/text are not observable.
 
 `std/process` uses an explicit command record, no implicit shell, bounded captured output, cancellation, timeout, and process-tree termination policy. Shell evaluation is a separately named unsafe-by-construction convenience and is not used by package builds.
 
-## 6. Time and randomness
+## 7. Time and randomness
 
 `std/time` distinguishes wall clock, monotonic instant, and duration. Deadline calculations use monotonic time. Tests receive a controllable logical clock.
 
@@ -545,7 +745,7 @@ public fn sleep(duration: Duration): void;
 
 Secure randomness is in `std/crypto/random` and fails explicitly when the platform cannot provide it. Deterministic pseudo-random generators require an explicit seed and are reproducible across engines for a declared algorithm/version.
 
-## 7. Tasks, timeouts, and channels
+## 8. Tasks, timeouts, and channels
 
 `scope`, `spawn`, `Task<T>`, and `wait` are compiler/runtime primitives specified in `execution.md`. `std/task` adds policies without allowing escape:
 
@@ -571,7 +771,7 @@ This ordinary function may be called as `yield()` or by its explicitly
 qualified package name. `yield` has no grammar role and the scheduler
 hint/safepoint does not promise another specific task will run.
 
-## 8. Isolates
+## 9. Isolates
 
 `std/isolate` provides structured CPU-parallel execution:
 
@@ -583,7 +783,7 @@ The operation must be a statically named non-capturing function and input/output
 
 Persistent actor/supervisor APIs are deferred until their lifecycle and upgrade semantics are separately specified. `isolate.run` is sufficient for 1.0 CPU fan-out and multi-worker service internals.
 
-## 9. Networking and HTTP
+## 10. Networking and HTTP
 
 `std/net` provides DNS, TCP, UDP, address parsing, deadlines, streaming I/O, half-close, and listener backpressure. All waits are cancellation-responsive. Accept/connect/read/write return structured cases and retain partial-progress counts where needed.
 
@@ -628,7 +828,7 @@ The full body-in-memory `get` convenience enforces a conservative default size. 
 
 HTTP parsing rejects request smuggling ambiguities and configurable-limit violations. TLS defaults follow current security policy and are updated as data, not by changing application source signatures.
 
-## 10. JSON and serialization
+## 11. JSON and serialization
 
 `std/json` exposes a bounded streaming token reader/writer and typed codec functions:
 
@@ -641,7 +841,7 @@ Typed codecs require compiler derives or explicit codec values; there is no unre
 
 Derive metadata supports field rename/omit/default only through a closed declarative attribute set added by a separate decision before freeze. Arbitrary serialization macros are not introduced.
 
-## 11. Logging, metrics, and tracing
+## 12. Logging, metrics, and tracing
 
 `std/log` offers leveled messages, structured typed fields, sinks, redaction markers, and task-context propagation. A simple call is valid:
 
@@ -653,7 +853,7 @@ Logging is backpressured or drops according to an explicit sink policy; it never
 
 Runtime task, GC, I/O, and capability trace events use stable schemas. Metrics APIs define counters, gauges, and histograms without requiring a particular exporter.
 
-## 12. Testing surface
+## 13. Testing surface
 
 `std/test` and its implicit `expect` namespace implement the toolchain specification. Tests get deterministic clock/random/filesystem/output and a root task/resource tracker.
 
@@ -661,13 +861,13 @@ Expectation structural diffs respect derived `Debug`/`Eq`, bound output size, an
 
 `std/test/property` provides deterministic generators/shrinkers. The same test declaration and process are used by `mmay test`; no plugin runner is required.
 
-## 13. C interoperation
+## 14. C interoperation
 
 `std/c` is not in the prelude. It contains explicit-width C ABI integers, `Opaque`, raw pointer wrappers, C strings, owned/borrowed buffers, handle scopes, callbacks, layout queries, and dynamic-library operations where supported.
 
 Every operation requiring caller invariants is `unsafe`. Safe wrapper packages expose normal nominal types and `Result` errors. C views cannot cross a suspension; `@blocking` calls copy or otherwise marshal data before leaving the isolate.
 
-## 14. Production acceptance for a package
+## 15. Production acceptance for a package
 
 A first-party package is complete only when it has:
 

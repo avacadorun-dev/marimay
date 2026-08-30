@@ -1,0 +1,320 @@
+import * as text from "std/text";
+
+public enum ValueMode {
+  Flag,
+  Required { name: string, },
+  Optional { name: string, },
+}
+
+public type OptionSpec {
+  public long: string,
+  public short: Option<string>,
+  public value: ValueMode,
+  public required: bool,
+  public repeatable: bool,
+  public help: string,
+}
+
+public type PositionalSpec {
+  public name: string,
+  public required: bool,
+  public repeatable: bool,
+  public help: string,
+}
+
+public type Limits {
+  public arguments: int,
+  public options: int,
+  public positionals: int,
+  public helpBytes: int,
+}
+
+public enum DefinitionError {
+  InvalidLimits,
+  InvalidProgram,
+  TooManyOptions { limit: int, },
+  TooManyPositionals { limit: int, },
+  InvalidLongName { index: int, },
+  InvalidShortName { index: int, },
+  InvalidValueName { index: int, },
+  InvalidOptionHelp { index: int, },
+  DuplicateLong { name: string, },
+  DuplicateShort { name: string, },
+  InvalidPositionalName { index: int, },
+  InvalidPositionalHelp { index: int, },
+  DuplicatePositional { name: string, },
+  RequiredPositionalAfterOptional { index: int, },
+  RepeatedPositionalNotLast { index: int, },
+}
+
+public enum UsageError {
+  TooManyArguments { limit: int, },
+  UnknownOption { argument: string, index: int, },
+  UnexpectedOptionValue { name: string, index: int, },
+  MissingOptionValue { name: string, index: int, },
+  RepeatedOption { name: string, index: int, },
+  UnexpectedPositional { value: string, index: int, },
+  MissingRequiredOption { name: string, },
+  MissingRequiredPositional { name: string, },
+}
+
+public enum HelpError {
+  InvalidWidth { width: int, },
+  LineTooLong { width: int, required: int, },
+  LimitExceeded { limit: int, },
+}
+
+public type Parser {
+  program: string,
+  summary: string,
+  options: []OptionSpec,
+  positionals: []PositionalSpec,
+  limits: Limits,
+  longNames: Map<string, int>,
+  shortNames: Map<string, int>,
+}
+
+public type Parsed {
+  optionValues: Map<string, []Option<string>>,
+  positionalValues: Map<string, []string>,
+}
+
+public fn defaultLimits(): Limits {
+  return Limits { arguments: 4096, options: 128, positionals: 64, helpBytes: 65536 };
+}
+
+public fn limits(arguments: int, options: int, positionals: int, helpBytes: int): Limits {
+  return Limits { arguments, options, positionals, helpBytes };
+}
+
+public fn flagOption(
+  long: string,
+  short: Option<string>,
+  required: bool,
+  repeatable: bool,
+  help: string,
+): OptionSpec {
+  return OptionSpec { long, short, value: ValueMode.Flag, required, repeatable, help };
+}
+
+public fn requiredValueOption(
+  long: string,
+  short: Option<string>,
+  valueName: string,
+  required: bool,
+  repeatable: bool,
+  help: string,
+): OptionSpec {
+  return OptionSpec {
+    long,
+    short,
+    value: ValueMode.Required { name: valueName },
+    required,
+    repeatable,
+    help,
+  };
+}
+
+public fn optionalValueOption(
+  long: string,
+  short: Option<string>,
+  valueName: string,
+  required: bool,
+  repeatable: bool,
+  help: string,
+): OptionSpec {
+  return OptionSpec {
+    long,
+    short,
+    value: ValueMode.Optional { name: valueName },
+    required,
+    repeatable,
+    help,
+  };
+}
+
+public fn positional(name: string, required: bool, repeatable: bool, help: string): PositionalSpec {
+  return PositionalSpec { name, required, repeatable, help };
+}
+
+fn validLimits(limits: Limits): bool {
+  return limits.arguments >= 0
+    && limits.arguments <= 4096
+    && limits.options >= 0
+    && limits.options <= 256
+    && limits.positionals >= 0
+    && limits.positionals <= 256
+    && limits.helpBytes >= 256
+    && limits.helpBytes <= 1048576;
+}
+
+fn validSingleLine(value: string, limit: int): bool {
+  const length = text.byteLength(value);
+  return length <= limit
+    && !text.contains(value, "\n")
+    && !text.contains(value, "\r")
+    && !text.contains(value, "\t");
+}
+
+fn validName(value: string): bool {
+  const length = text.byteLength(value);
+  return length > 0
+    && length <= 64
+    && !text.startsWith(value, "-")
+    && !text.contains(value, "=")
+    && !text.contains(value, " ")
+    && validSingleLine(value, 64);
+}
+
+fn asciiShort(value: string): bool {
+  const alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  if text.byteLength(value) != 1 {
+    return false;
+  }
+  return text.contains(alphabet, value);
+}
+
+fn validHelp(value: string): bool {
+  return validSingleLine(value, 4096)
+    && text.trimAscii(value) == value
+    && !text.contains(value, "  ");
+}
+
+fn valueName(mode: ValueMode): Option<string> {
+  return match mode {
+    Flag => None,
+    Required { name } => Some(name),
+    Optional { name } => Some(name),
+  };
+}
+
+public fn newParser(
+  program: string,
+  summary: string,
+  options: []OptionSpec,
+  positionals: []PositionalSpec,
+  limits: Limits,
+): Result<Parser, DefinitionError> {
+  if !validLimits(limits) {
+    return Err(DefinitionError.InvalidLimits);
+  }
+  if !validName(program) || !validSingleLine(summary, 4096) {
+    return Err(DefinitionError.InvalidProgram);
+  }
+  if options.length() > limits.options {
+    return Err(DefinitionError.TooManyOptions { limit: limits.options });
+  }
+  if positionals.length() > limits.positionals {
+    return Err(DefinitionError.TooManyPositionals { limit: limits.positionals });
+  }
+
+  const longNames: Map<string, int> = mapOf<string, int>();
+  const shortNames: Map<string, int> = mapOf<string, int>();
+  for index in 0..options.length() {
+    const option = options[index];
+    if !validName(option.long) {
+      return Err(DefinitionError.InvalidLongName { index });
+    }
+    if longNames.containsKey(option.long) {
+      return Err(DefinitionError.DuplicateLong { name: option.long });
+    }
+    const _ = longNames.put(option.long, index);
+    const _ = match option.short {
+      Some(name) => {
+        if !asciiShort(name) {
+          return Err(DefinitionError.InvalidShortName { index });
+        }
+        if shortNames.containsKey(name) {
+          return Err(DefinitionError.DuplicateShort { name });
+        }
+        const _ = shortNames.put(name, index);
+        true
+      },
+      None => true,
+    };
+    const _ = match valueName(option.value) {
+      Some(name) => {
+        if !validName(name) {
+          return Err(DefinitionError.InvalidValueName { index });
+        }
+        true
+      },
+      None => true,
+    };
+    if !validHelp(option.help) {
+      return Err(DefinitionError.InvalidOptionHelp { index });
+    }
+  }
+
+  const positionalNames: Set<string> = setOf<string>();
+  let optionalSeen = false;
+  for index in 0..positionals.length() {
+    const positional = positionals[index];
+    if !validName(positional.name) {
+      return Err(DefinitionError.InvalidPositionalName { index });
+    }
+    if positionalNames.contains(positional.name) {
+      return Err(DefinitionError.DuplicatePositional { name: positional.name });
+    }
+    const _ = positionalNames.add(positional.name);
+    if optionalSeen && positional.required {
+      return Err(DefinitionError.RequiredPositionalAfterOptional { index });
+    }
+    if !positional.required {
+      optionalSeen = true;
+    }
+    if positional.repeatable && index + 1 != positionals.length() {
+      return Err(DefinitionError.RepeatedPositionalNotLast { index });
+    }
+    if !validHelp(positional.help) {
+      return Err(DefinitionError.InvalidPositionalHelp { index });
+    }
+  }
+
+  return Ok(Parser { program, summary, options, positionals, limits, longNames, shortNames });
+}
+
+public fn usageExitStatus(): int {
+  return 2;
+}
+
+public fn message(error: DefinitionError): string {
+  return match error {
+    InvalidLimits => "invalid CLI parser limits",
+    InvalidProgram => "invalid CLI program name or summary",
+    TooManyOptions { limit } => $"CLI definition exceeds {limit} options",
+    TooManyPositionals { limit } => $"CLI definition exceeds {limit} positionals",
+    InvalidLongName { index } => $"invalid long option name at declaration {index}",
+    InvalidShortName { index } => $"invalid short option name at declaration {index}",
+    InvalidValueName { index } => $"invalid option value name at declaration {index}",
+    InvalidOptionHelp { index } => $"invalid option help at declaration {index}",
+    DuplicateLong { name } => $"duplicate long option --{name}",
+    DuplicateShort { name } => $"duplicate short option -{name}",
+    InvalidPositionalName { index } => $"invalid positional name at declaration {index}",
+    InvalidPositionalHelp { index } => $"invalid positional help at declaration {index}",
+    DuplicatePositional { name } => $"duplicate positional {name}",
+    RequiredPositionalAfterOptional { index } => $"required positional follows optional declaration {index}",
+    RepeatedPositionalNotLast { index } => $"repeated positional is not last at declaration {index}",
+  };
+}
+
+public fn message(error: UsageError): string {
+  return match error {
+    TooManyArguments { limit } => $"argument count exceeds {limit}",
+    UnknownOption { argument, index } => $"unknown option {argument} at argument {index}",
+    UnexpectedOptionValue { name, index } => $"option --{name} does not accept a value at argument {index}",
+    MissingOptionValue { name, index } => $"option --{name} requires a value at argument {index}",
+    RepeatedOption { name, index } => $"option --{name} cannot be repeated at argument {index}",
+    UnexpectedPositional { value, index } => $"unexpected positional {value} at argument {index}",
+    MissingRequiredOption { name } => $"required option --{name} is missing",
+    MissingRequiredPositional { name } => $"required positional {name} is missing",
+  };
+}
+
+public fn message(error: HelpError): string {
+  return match error {
+    InvalidWidth { width } => $"help width {width} is outside 40..120",
+    LineTooLong { width, required } => $"help line requires {required} bytes at width {width}",
+    LimitExceeded { limit } => $"help exceeds {limit}-byte limit",
+  };
+}

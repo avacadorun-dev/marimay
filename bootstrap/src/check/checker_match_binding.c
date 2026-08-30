@@ -457,6 +457,25 @@ static bool mmay_checker_private_compile_enum_payloads_cps(
                 && !mmay_checker_private_function_add_block(function, &next))) {
             return false;
         }
+        if (payload_type == MMAY_TYPE_VOID) {
+            if (child == NULL
+                || child->kind != MMAY_SYNTAX_WILDCARD_PATTERN
+                || !mmay_checker_private_function_set_goto(
+                    function, function->block, next,
+                    field->end, field->end
+                )) {
+                if (child == NULL
+                    || child->kind != MMAY_SYNTAX_WILDCARD_PATTERN) {
+                    mmay_checker_fail(
+                        function->checker, MMAY_CHECK_INTERNAL_ERROR
+                    );
+                }
+                return false;
+            }
+            function->block = next;
+            function->terminated = false;
+            continue;
+        }
         memset(&projected, 0, sizeof(projected));
         if (!mmay_checker_private_function_emit_enum_access(
                 function, MMAY_MIR_ENUM_GET_PAYLOAD, payload_type, receiver,

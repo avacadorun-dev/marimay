@@ -365,8 +365,8 @@ performance prerequisite inserted between CP38 and CP39.
 ## Active sequence CP29-CP41
 
 The sequence is deliberately linear so exactly one card is executable. CP29
-through CP36 are `verified`; CP37 is `ready`, and every later card is `planned`
-behind its declared predecessor. Execution order is CP37–CP38, CP41, CP39,
+through CP37 are `verified`; CP38 is `ready`, and every later card is `planned`
+behind its declared predecessor. Execution order is CP38, CP41, CP39,
 then CP40; numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
@@ -1095,7 +1095,8 @@ owners, evidence, and CP37 card. Do not pass broad managed-runtime internals.
 
 ## CP37 - First-party CLI parser
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP36.
+State: `verified`. Parent gate: CLI0. Predecessor: CP36. Evidence scope:
+`local`. Evidence: [CP37](evidence/cp37-cli-parser-2026-08-30.md).
 
 ### Outcome
 
@@ -1180,7 +1181,7 @@ tests/evidence, and CP38 card.
 
 ## CP38 - Bounded typed JSON
 
-State: `planned`. Parent gate: CLI0. Predecessor: CP37.
+State: `ready`. Parent gate: CLI0. Predecessor: CP37.
 
 ### Outcome
 

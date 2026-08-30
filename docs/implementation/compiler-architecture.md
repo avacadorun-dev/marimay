@@ -368,6 +368,10 @@ tests/c-unit/
   test_cp36_collections.c         D079 checker/MIR/bytecode/VM/native vertical owner
   runtime/test_managed_map_set.c  D079 order/hash/GC/allocation property owner
   test_cp36_map_set.cmake         public VM/native Map/Set acceptance owner
+  test_cp37_cli_parser.c          D081 standard-package embedding allocation owner
+  test_cp37_cli_parser.cmake      exact VM/Release-native CLI process owner
+  ../public-alpha/cp37-cli-parser/
+                        D081 package/formatter/property/differential corpus
 ```
 
 The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
@@ -435,6 +439,31 @@ is `mmay/runtime/map.h` plus `mmay/runtime/set.h`: `managed_map.c` owns coherent
 hash/equality, insertion order, growth, and precise tracing; the small set
 owner delegates storage to that exact map contract and exposes no duplicate
 table implementation.
+
+D081 adds no compiler-known semantic owner. `std/cli/cli.my` owns the public
+model, factories, definition validation, and stable messages;
+`std/cli/parse.my` owns argument consumption and typed usage errors; and
+`std/cli/help.my` owns deterministic bounded rendering. The toolchain embeds
+those three ordinary documents through the narrow
+`cli_standard_cli_package.c` integration owner and passes them through the
+same package graph, checker, typed MIR, bytecode VM, and C17 emitter as user
+source. No C owner recognizes a `std/cli` symbol or reconstructs its parsing
+semantics.
+
+The D081 workload exposed three pre-existing generic-nominal boundary defects.
+`checker_match_binding.c` now omits an impossible payload projection for the
+wildcard of an erased `Result<void,E>.Ok`; `checker_imported_nominal.c` closes
+record/enum layouts over nested Map/Set fields and reacquires vector elements
+after recursive appends; and `bytecode_codec_nominal.c` accepts every verified
+register type while decoding nominal layouts, including collection fields.
+These remain within their existing owners, and focused checker/CP36 codec
+regressions prove the repairs independently of the CLI parser.
+
+A separate CP37 bytecode-fuzz input round-tripped the codec and verifier, then
+failed the call-free run-status contract: `FS_CLOSE_BEST_EFFORT` is a void
+opcode, so `vm_fs.c` must dispatch it before Result-layout intern. The repair
+stays in that VM owner; `test_cp34_fs_pipeline.c` and the bytecode fuzz corpus
+pin the saved input.
 
 D061 assigns capacity rounding, checked maximum clamping, rooted collection
 retry, resize accounting, and failure-atomic commit to
@@ -726,7 +755,7 @@ checkpoint:
 | `bootstrap/src/bytecode/vm_fs.c` | 0 | 676 | D077 VM filesystem execution and managed result construction |
 | `bootstrap/src/native/c_emitter_fs.c` | 0 | 338 | D077 portable-C capability roots, filesystem helpers, and instruction emission |
 | `tests/c-unit/test_cp34_fs.c` | 0 | 692 | D077 path/capability/partial-I/O/atomicity/resource/allocation-failure coverage |
-| `tests/c-unit/test_cp34_fs_pipeline.c` | 0 | 204 | D077 exact checker signatures plus hostile MIR/bytecode verification and codec coverage |
+| `tests/c-unit/test_cp34_fs_pipeline.c` | 0 | 250 | D077 hostile MIR/bytecode verification plus FS_CLOSE_BEST_EFFORT fuzz regression |
 | `tests/c-unit/test_cp34_process_files.cmake` | 0 | 208 | real VM/native capability, symlink, atomic file, cleanup, CLI, and output parity |
 | `runtime/common/env.c` | 0 | 209 | D078 portable-name grants, denied-before-host lookup, bounded UTF-8 values, and owned cleanup |
 | `runtime/common/process_context.c` | 0 | 171 | D078 injected/default cwd and executable identity normalization and stable errors |
@@ -764,8 +793,19 @@ checkpoint:
 | `runtime/include/mmay/runtime/map.h` | 0 | 78 | narrow owner API for managed ordered maps |
 | `runtime/include/mmay/runtime/set.h` | 0 | 56 | narrow owner API for managed ordered sets |
 | `tests/c-unit/runtime/test_managed_map_set.c` | 0 | 704 | dual-seed order, counted UTF-8/NUL and nominal key laws, randomized cyclic GC graph, limits, failure atomicity, and exhaustive Map/Set allocation cleanup |
-| `tests/c-unit/test_cp36_collections.c` | 0 | 709 | checker/MIR/hostile bytecode/codec/VM/native/formatter/allocation vertical coverage |
+| `tests/c-unit/test_cp36_collections.c` | 0 | 757 | checker/MIR/hostile bytecode/codec/VM/native/formatter/allocation vertical coverage |
 | `tests/c-unit/test_cp36_map_set.cmake` | 0 | 56 | public fmt/check/run/test-both/Release artifact acceptance across every key family |
+| `std/cli/cli.my` | 0 | 320 | D081 public parser model, factories, validation, limits, and stable messages |
+| `std/cli/parse.my` | 0 | 248 | D081 ordered long/short/positional parsing and typed usage results |
+| `std/cli/help.my` | 0 | 143 | D081 deterministic byte-width help rendering and bounded builder errors |
+| `bootstrap/src/cli/cli_standard_cli_package.c` | 0 | 18 | narrow three-document ordinary-package embedding owner |
+| `bootstrap/src/cli/cli_standard_packages.c` | 507 | 539 | generic embedded-package support for a third independently checked document |
+| `bootstrap/src/check/checker_imported_nominal.c` | 414 | 440 | recursive imported nominal layout closure over nested Map/Set fields |
+| `bootstrap/src/check/checker_match_binding.c` | 1,050 | 1,069 | erased-void wildcard binding without an invalid payload projection |
+| `bootstrap/src/bytecode/bytecode_codec_nominal.c` | 1,059 | 1,057 | nominal layout decoding admits the complete verified register-type set |
+| `tests/c-unit/test_cp37_cli_parser.c` | 0 | 69 | every standard-package embedding allocation failure with zero-counter teardown |
+| `tests/c-unit/test_cp37_cli_parser.cmake` | 0 | 157 | exact help/error/status and heap-limit VM/Release-native process parity |
+| `tests/public-alpha/cp37-cli-parser/main_test.my` | 0 | 328 | D081 definition, usage, Unicode, generated, help, limit, and both-engine coverage |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `mmay_test_mir` registration. The service checkpoint

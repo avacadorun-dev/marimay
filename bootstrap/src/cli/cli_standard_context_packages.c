@@ -63,12 +63,14 @@ MarimayCliCheckTargetStatus mmay_cli_standard_context_packages_add(
         {
             "std/env", "std/env/env.my",
             mmay_cli_std_env_source, sizeof(mmay_cli_std_env_source) - 1,
+            NULL, NULL, 0,
             NULL, NULL, 0
         },
         {
             "std/process", "std/process/process.my",
             mmay_cli_std_process_source,
             sizeof(mmay_cli_std_process_source) - 1,
+            NULL, NULL, 0,
             NULL, NULL, 0
         }
     };
