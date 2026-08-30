@@ -93,7 +93,11 @@
         && !mmay_checker_private_type_is_integer(declaration->type)
         && declaration->type != MMAY_TYPE_F64
         && declaration->type != MMAY_TYPE_BOOL) {
-        mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
+        mmay_checker_fail_incomplete(
+            checker,
+            declaration->initializer,
+            "constant evaluation for this value type"
+        );
         goto cleanup;
     }
     function.checker = checker;

@@ -76,6 +76,15 @@ static bool mmay_expression_is_literal(MarimayTokenKind kind) {
         || kind == MMAY_TOKEN_KW_TRUE || kind == MMAY_TOKEN_KW_FALSE;
 }
 
+static void mmay_parser_expect_member_name(MarimayParser *parser) {
+    MarimayTokenKind kind = mmay_parser_current(parser);
+    if (kind == MMAY_TOKEN_KW_TRUE || kind == MMAY_TOKEN_KW_FALSE) {
+        mmay_parser_bump_as(parser, MMAY_TOKEN_IDENTIFIER);
+        return;
+    }
+    mmay_parser_expect_identifier(parser, "expected member name after '.'");
+}
+
 static bool mmay_expression_is_assignment(MarimayTokenKind kind) {
     return kind == MMAY_TOKEN_EQUAL || kind == MMAY_TOKEN_PLUS_EQUAL
         || kind == MMAY_TOKEN_MINUS_EQUAL || kind == MMAY_TOKEN_STAR_EQUAL
@@ -865,7 +874,7 @@ static MarimayCompletedMarker mmay_parse_expression_bp(
         if (current == MMAY_TOKEN_DOT) {
             parent = mmay_parser_precede(parser, left);
             mmay_parser_bump(parser);
-            mmay_parser_expect_identifier(parser, "expected member name after '.'");
+            mmay_parser_expect_member_name(parser);
             left = mmay_parser_complete(parser, parent, MMAY_SYNTAX_MEMBER_EXPRESSION);
             continue;
         }

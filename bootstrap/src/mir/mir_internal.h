@@ -193,6 +193,7 @@ MarimayMirInterpretStatus mmay_mir_execute_test_output_instruction(
     const MarimayMirFunction *function,
     const MarimayMirInstruction *instruction,
     const MarimayMirValue *source,
+    const MarimayMirValue *message,
     MarimayMirValue *target,
     const MarimayAllocator *allocator,
     MarimayMirInterpretOptions options

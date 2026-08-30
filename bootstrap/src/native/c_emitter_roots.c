@@ -230,6 +230,7 @@ static bool mmay_native_c_instruction_is_safepoint(
         case MMAY_MIR_FS_BINARY:
         case MMAY_MIR_ENV_READ:
         case MMAY_MIR_PROCESS_CONTEXT:
+        case MMAY_MIR_TEST_ASSERT:
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
             return true;
         case MMAY_MIR_ENUM_NEW:

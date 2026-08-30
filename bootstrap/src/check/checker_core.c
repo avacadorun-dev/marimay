@@ -9,6 +9,7 @@
 
 #include <limits.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -34,9 +35,69 @@
 );
 
 void mmay_checker_fail(MarimayChecker *checker, MarimayCheckStatus status) {
-    if (checker->failure == MMAY_CHECK_OK) {
-        checker->failure = status;
+    if (checker == NULL || checker->failure != MMAY_CHECK_OK) {
+        return;
     }
+    if (status == MMAY_CHECK_INCOMPLETE_LANGUAGE) {
+        const MarimayAstNode *node = checker->incomplete_context;
+        const char *construct = checker->incomplete_construct;
+        char message[256];
+        int length;
+        if (node == NULL && checker->ast != NULL) {
+            node = checker->ast->root;
+        }
+        if (construct == NULL && node != NULL) {
+            construct = mmay_syntax_kind_name(node->kind);
+        }
+        if (node == NULL || construct == NULL) {
+            checker->failure = MMAY_CHECK_INTERNAL_ERROR;
+            return;
+        }
+        length = snprintf(
+            message,
+            sizeof(message),
+            "compiler does not implement accepted %s construct",
+            construct
+        );
+        if (length < 0 || (size_t)length >= sizeof(message)) {
+            checker->failure = MMAY_CHECK_INTERNAL_ERROR;
+            return;
+        }
+        if (!mmay_checker_private_checker_add_owned_diagnostic(
+                checker,
+                MMAY_DIAGNOSTIC_COMPILER_INCOMPLETE,
+                (const unsigned char *)message,
+                (size_t)length,
+                node->start,
+                node->end
+            )) {
+            return;
+        }
+    }
+    checker->failure = status;
+}
+
+void mmay_checker_set_incomplete_context(
+    MarimayChecker *checker,
+    const MarimayAstNode *node
+) {
+    if (checker == NULL || node == NULL) {
+        return;
+    }
+    checker->incomplete_context = node;
+    checker->incomplete_construct = NULL;
+}
+
+void mmay_checker_fail_incomplete(
+    MarimayChecker *checker,
+    const MarimayAstNode *node,
+    const char *construct
+) {
+    mmay_checker_set_incomplete_context(checker, node);
+    if (checker != NULL) {
+        checker->incomplete_construct = construct;
+    }
+    mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
 }
 
  void mmay_checker_private_expression_set_never(
@@ -74,6 +135,8 @@ bool mmay_checker_has_failed(const MarimayChecker *checker) {
     checker->ast = ast;
     checker->source = mmay_source_bytes(ast->snapshot);
     checker->source_length = mmay_source_length(ast->snapshot);
+    checker->incomplete_context = ast->root;
+    checker->incomplete_construct = NULL;
     return checker->source != NULL || checker->source_length == 0;
 }
 

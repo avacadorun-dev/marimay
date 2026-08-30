@@ -340,10 +340,12 @@ static MarimayMirInterpretStatus mmay_mir_execute_instruction(
             return mmay_mir_execute_context_instruction(
                 function, instruction, first, target, options
             );
+        case MMAY_MIR_TEST_ASSERT:
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
         case MMAY_MIR_TEST_OUTPUT_END:
             return mmay_mir_execute_test_output_instruction(
-                function, instruction, first, target, allocator, options
+                function, instruction, first, second, target,
+                allocator, options
             );
         case MMAY_MIR_CONSTANT_I64:
             target->as.i64 = instruction->integer;

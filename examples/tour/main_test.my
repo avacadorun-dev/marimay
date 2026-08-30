@@ -1,0 +1,49 @@
+@test
+fn dotCallAndFreeCallAreEquivalent(): void {
+  const user = User { id: 7, name: "Mara", visits: 0 };
+  expect.equal(user.string(), string(user));
+}
+
+@test
+fn matchReportsEveryLookupOutcome(): void {
+  const error = LookupError.NotFound { id: 9 };
+  expect.equal(error.message(), "user 9 was not found");
+}
+
+@test
+fn mutableFieldsRequireExplicitDeclaration(): void {
+  const user = User { id: 7, name: "Mara", visits: 0 };
+  user.visit();
+  expect.equal(user.visits, 1);
+}
+
+@test
+fn structuralEqualityCoversPreviewValues(): void {
+  expect.true("Mara" == "Mara");
+  expect.false("Mara" != "Mara");
+  expect.equal("a\0b", "a\0b");
+  expect.notEqual("é", "e");
+  expect.equal(LookupError.NotFound { id: 9 }, LookupError.NotFound { id: 9 });
+  expect.notEqual(LookupError.NotFound { id: 9 }, LookupError.Denied { reason: "private" });
+  expect.equal(Coordinate { row: 2, column: 3 }, Coordinate { row: 2, column: 3 });
+  const some: Option<int> = Some(1);
+  const other: Option<int> = Some(1);
+  expect.equal(some, other);
+  const ok: Result<int, string> = Ok(1);
+  const otherOk: Result<int, string> = Ok(1);
+  const err: Result<int, string> = Err("failed");
+  expect.equal(ok, otherOk);
+  expect.notEqual(ok, err);
+}
+
+@test
+fn variantExpectationsUseTypedOptionAndResult(): void {
+  const some: Option<int> = Some(1);
+  const none: Option<int> = None;
+  const ok: Result<int, string> = Ok(1);
+  const err: Result<int, string> = Err("failed");
+  expect.some(some);
+  expect.none(none);
+  expect.ok(ok);
+  expect.err(err);
+}

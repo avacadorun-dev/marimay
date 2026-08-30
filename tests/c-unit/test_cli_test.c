@@ -98,6 +98,10 @@ static void mmay_cli_test_acceptance(MarimaySession *session) {
     MMAY_EXPECT(strstr(output.bytes, "panic[G4004]") != NULL);
     MMAY_EXPECT(strstr(output.bytes, "panic[G4000]: boom") != NULL);
     MMAY_EXPECT(strstr(output.bytes, "expected 9 bytes") != NULL);
+    MMAY_EXPECT(strstr(
+        output.bytes,
+        "expect.equal failed: values differ at root"
+    ) != NULL);
     MMAY_EXPECT(strstr(error.bytes, "B0007") == NULL);
     MMAY_EXPECT(error.length == 0);
 

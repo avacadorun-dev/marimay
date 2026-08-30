@@ -666,6 +666,23 @@ MarimayBytecodeRunStatus mmay_bytecode_run_test_output_instruction(
     if (execution == NULL || !execution->initialized || function == NULL) {
         return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
+    if (instruction->opcode == MMAY_OPCODE_TEST_ASSERT) {
+        size_t message = (size_t)instruction->operands[2].unsigned_value;
+        const unsigned char *message_bytes = NULL;
+        size_t message_length = 0;
+        if (!mmay_bytecode_execution_string_bytes(
+                execution, registers[message],
+                &message_bytes, &message_length
+            )) {
+            return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
+        }
+        return registers[source].as.boolean
+            ? MMAY_BYTECODE_RUN_OK
+            : mmay_bytecode_run_begin_test_panic(
+                panic, allocator, message_bytes, message_length,
+                symbol, instruction->span
+            );
+    }
     if (instruction->opcode == MMAY_OPCODE_TEST_OUTPUT_BEGIN) {
         if (!mmay_bytecode_execution_string_bytes(
                 execution, registers[source], &expected, &expected_length

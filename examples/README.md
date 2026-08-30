@@ -1,8 +1,13 @@
 # Normative readability examples
 
-These examples are executable specification fixtures once the parser exists. Until then they are reviewed manually and by the documentation consistency checks.
+These examples are executable specification fixtures for the implemented
+preview surface and design fixtures for staged language areas.
 
-- `tour.my` exercises records, algebraic enums, exhaustive match, first-parameter dot calls, structural interfaces, deterministic `f64` arithmetic, and the absence of `impl`.
+- `tour/` is an executable module exercising records, algebraic enums,
+  exhaustive match, first-parameter dot calls, structural interfaces,
+  deterministic `f64` arithmetic, `@derive(Debug)`, and built-in expectations.
+  Run it with `mmay run examples/tour` and verify both engines with
+  `mmay test examples/tour --engine both`.
 - `../tests/public-alpha/cp30-formatting` is the executable D065 text example:
   closed primitive interpolation, explicit boolean/integer formatters,
   `parseInt`/`parseIntRadix`, NUL/Unicode bytes, side-effect order, and exact
@@ -13,7 +18,7 @@ These examples are executable specification fixtures once the parser exists. Unt
   VM/native process coverage.
 - `concurrency.my` exercises direct-style I/O, `Result`, explicit error mapping, scoped `spawn`, and cancellation by early `?`.
 - `service.my` sketches a production HTTP handler without async-colored signatures.
-- `tour_test.my` shows the built-in test syntax.
+- `tour/main_test.my` shows the built-in test syntax.
 - `testing_checkpoint_test.my` is the runnable checkpoint-11 test example:
   package-local `@test` discovery, record identity, D041 cleanup, and exact
   D046 `expect.output` capture. It runs with VM, native, or `--engine both`.

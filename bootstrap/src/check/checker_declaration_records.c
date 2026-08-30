@@ -46,9 +46,11 @@
         0
     ) != NULL;
     declaration.declaration_valid = true;
-    if (!mmay_checker_private_collect_eq_hash_derive(
+    if (!mmay_checker_private_collect_derives(
             checker,
             node,
+            &declaration.derives_debug,
+            &declaration.derives_eq,
             &declaration.derives_eq_hash,
             &declaration.declaration_valid
         )) goto cleanup;
@@ -244,9 +246,11 @@ cleanup:
         0
     ) != NULL;
     declaration.declaration_valid = true;
-    if (!mmay_checker_private_collect_eq_hash_derive(
+    if (!mmay_checker_private_collect_derives(
             checker,
             node,
+            &declaration.derives_debug,
+            &declaration.derives_eq,
             &declaration.derives_eq_hash,
             &declaration.declaration_valid
         )) goto cleanup;
@@ -528,6 +532,20 @@ cleanup:
             valid = false;
         } else if (declaration->is_public && field.is_public
             && !mmay_checker_private_check_public_type_reference(checker, type_node)) {
+            if (mmay_checker_has_failed(checker)) {
+                mmay_checker_private_record_field_declaration_dispose(&field);
+                return false;
+            }
+            valid = false;
+        }
+        if (field.is_mutable
+            && (declaration->derives_eq
+                || declaration->derives_eq_hash)) {
+            (void)mmay_checker_add_diagnostic(
+                checker, MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
+                "Eq and Hash cannot be derived for a record with mutable fields",
+                field.node->start, field.node->end
+            );
             if (mmay_checker_has_failed(checker)) {
                 mmay_checker_private_record_field_declaration_dispose(&field);
                 return false;

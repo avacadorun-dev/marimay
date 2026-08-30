@@ -572,8 +572,8 @@ void mmay_test_formatter_example_corpus(void) {
         "examples/nominal_cp1.my",
         "examples/numeric_cp6.my",
         "examples/service.my",
-        "examples/tour.my",
-        "examples/tour_test.my"
+        "examples/tour/main.my",
+        "examples/tour/main_test.my"
     };
     unsigned char source[131072];
     size_t path_index = 0;

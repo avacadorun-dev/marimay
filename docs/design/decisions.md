@@ -2302,3 +2302,60 @@ accepted without equality coherence. A closed derive/key set and
 failure-atomic managed layout provide a complete alpha contract without
 freezing custom hashing, concurrent collections, allocators, weak keys, or
 observable capacity.
+
+## D080 — Preview structural equality, expectations, and actionable incompleteness
+
+Status: accepted.
+
+The checker-backed preview executes `==` and `!=` for identical primitive
+types, counted UTF-8 `string`, closed enums including `Option` and `Result`,
+and immutable records marked `@derive(Eq)`. Strings compare their complete
+counted bytes without normalization. Enums compare the selected variant and
+then its payload in declaration order. Records compare fields in declaration
+order. A compound type is equatable only when every reachable compared field
+or payload is equatable; recursively self-referential nominal equality remains
+staged until compiler-generated recursive functions exist. Both operands are
+evaluated exactly once, left to right. Record identity remains exclusively
+`identity.same`.
+
+The closed derive inventory is `Debug`, `Eq`, and `Hash`. They may be listed
+independently except that `Hash` requires `Eq` in the same attribute. `Eq` and
+`Hash` remain invalid on a record with any mutable field. In this preview,
+`Debug` publishes compiler metadata for diagnostics and test tooling but does
+not create a user-callable formatter; D065 still defers user-defined
+formatting. The C17 bootstrap may lower derived equality directly into typed
+MIR at its use site instead of materializing the 1.0 ordinary-HIR function,
+provided name resolution, evaluation order, result, panic behavior, and both
+engines are observationally identical.
+
+Inside `@test` and `@fuzz`, the compiler-known expectations `equal`,
+`notEqual`, `true`, `false`, `some`, `none`, `ok`, and `err` are executable.
+They evaluate arguments once from left to right and emit a typed
+`TEST_ASSERT(bool, string)` MIR operation. Failure uses `G4004` at the complete
+expectation call with one of these exact bounded messages:
+
+```text
+expect.equal failed: values differ at root
+expect.notEqual failed: values are equal at root
+expect.true failed: value is false
+expect.false failed: value is true
+expect.some failed: value is None
+expect.none failed: value is Some
+expect.ok failed: value is Err
+expect.err failed: value is Ok
+```
+
+The root mismatch is the bounded preview structural diff; richer nested paths
+and rendered values may be added without changing equality. `expect.matches`
+and `expect.panics` remain staged. VM and native consume the same assertion and
+structural-equality MIR, and differential tests compare their exact status,
+output, panic code, message, and span.
+
+Every accepted construct that reaches an incomplete checker path produces an
+owned `I0001` diagnostic naming the construct and pointing at its exact source
+node. Checker and compiler-service results retain that diagnostic while
+returning the incomplete status; CLI commands render it and exit `70`.
+
+Reason: the language tour, ordinary equality, and basic test helpers are one
+user-facing slice. Leaving any one of them as a spanless internal failure makes
+the others impossible to validate through the documented VM/native workflow.

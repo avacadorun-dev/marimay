@@ -1,4 +1,5 @@
 #include "checker_expression_api.h"
+#include "checker_core_api.h"
 #include "checker_expr_calls_api.h"
 #include "checker_expr_nominal_api.h"
 #include "checker_expr_records_api.h"
@@ -22,6 +23,7 @@ bool mmay_checker_private_compile_expression_raw(
         mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
+    mmay_checker_set_incomplete_context(function->checker, node);
     memset(result, 0, sizeof(*result));
     result->register_id = MMAY_MIR_NO_REGISTER;
     if (node->kind == MMAY_SYNTAX_EXPRESSION

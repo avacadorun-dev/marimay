@@ -559,6 +559,11 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
             output->opcode = MMAY_OPCODE_TEST_OUTPUT_END;
             output->operands[1].unsigned_value = input->first;
             break;
+        case MMAY_MIR_TEST_ASSERT:
+            output->opcode = MMAY_OPCODE_TEST_ASSERT;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
     }
     return MMAY_MIR_BYTECODE_LOWER_OK;
 }

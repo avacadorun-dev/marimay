@@ -54,6 +54,8 @@
         record.symbol = declaration->symbol;
         record.type = declaration->type;
         record.is_public = declaration->is_public;
+        record.derives_debug = declaration->derives_debug;
+        record.derives_eq = declaration->derives_eq;
         record.derives_eq_hash = declaration->derives_eq_hash;
         for (field_index = 0;
             field_index < declaration->type_parameters.length;
@@ -155,6 +157,8 @@
         enum_value.symbol = declaration->symbol;
         enum_value.type = declaration->type;
         enum_value.is_public = declaration->is_public;
+        enum_value.derives_debug = declaration->derives_debug;
+        enum_value.derives_eq = declaration->derives_eq;
         enum_value.derives_eq_hash = declaration->derives_eq_hash;
         for (variant_index = 0;
             variant_index < declaration->type_parameters.length;

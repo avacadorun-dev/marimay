@@ -878,6 +878,7 @@ bool mmay_checker_private_compile_statement(
         mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
+    mmay_checker_set_incomplete_context(function->checker, statement);
     if (statement->kind == MMAY_SYNTAX_CONST_DECL
         || statement->kind == MMAY_SYNTAX_LET_DECL) {
         return mmay_checker_private_compile_binding(function, statement);

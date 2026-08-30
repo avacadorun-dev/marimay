@@ -35,6 +35,8 @@ void mmay_test_checker_declared_never_calls(void);
 void mmay_test_checker_calls(void);
 void mmay_test_checker_top_level_constants(void);
 void mmay_test_checker_constant_diagnostics(void);
+void mmay_test_checker_equality(void);
+void mmay_test_checker_expectations(void);
 void mmay_test_checker_short_circuit(void);
 void mmay_test_checker_bitwise(void);
 void mmay_test_checker_numeric_widths(void);

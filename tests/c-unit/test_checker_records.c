@@ -208,8 +208,17 @@ void mmay_test_checker_record_declarations(void) {
         mmay_system_allocator(),
         mmay_check_default_options(),
         &checked
-    ) == MMAY_CHECK_INCOMPLETE_LANGUAGE);
-    MMAY_EXPECT(!checked.initialized);
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.initialized);
+    if (checked.initialized) {
+        const MarimayCheckedRecord *record = mmay_checked_record(&checked, 0);
+        MMAY_EXPECT(record != NULL);
+        if (record != NULL) {
+            MMAY_EXPECT(record->derives_debug);
+            MMAY_EXPECT(!record->derives_eq);
+        }
+        mmay_check_result_dispose(&checked);
+    }
     mmay_checker_fixture_dispose(&fixture);
 
 }

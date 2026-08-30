@@ -670,7 +670,11 @@ cleanup:
         && !mmay_checker_private_type_is_integer(declaration.type)
         && declaration.type != MMAY_TYPE_F64
         && declaration.type != MMAY_TYPE_BOOL) {
-        mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
+        mmay_checker_fail_incomplete(
+            checker,
+            initializer,
+            "constant evaluation for this value type"
+        );
         goto cleanup;
     }
     if (checker->result->diagnostics.length != diagnostics_before) {
@@ -1103,6 +1107,7 @@ cleanup:
         mmay_checker_fail(checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
+    mmay_checker_set_incomplete_context(checker, node);
     if (node->kind == MMAY_SYNTAX_EXPRESSION
         || node->kind == MMAY_SYNTAX_PAREN_GROUP) {
         inner = mmay_checker_private_expression_only_node(node);
@@ -1131,7 +1136,11 @@ cleanup:
             *result = MMAY_TYPE_BOOL;
             return true;
         }
-        mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
+        mmay_checker_fail_incomplete(
+            checker,
+            node,
+            "constant evaluation for this literal type"
+        );
         return false;
     }
     if (node->kind == MMAY_SYNTAX_NAME_EXPRESSION) {

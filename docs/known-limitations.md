@@ -29,24 +29,24 @@ data declarations and match arms with block-tail values, unified iterable
 bounded program arguments and controlled exit, typed standard streams,
 owned UTF-8 text and `Bytes` builders, capability-confined paths/files and
 environment access, normalized process context, and insertion-ordered
-`Map`/`Set` collections with mutation-checked iterators.
+`Map`/`Set` collections with mutation-checked iterators. Counted string,
+closed enum, `Option`/`Result`, and immutable `@derive(Eq)` record equality are
+executable through typed MIR on VM and native. The built-in preview test
+surface includes `expect.output`, `equal`, `notEqual`, `true`, `false`,
+`some`, `none`, `ok`, and `err`. `examples/tour` is an executable module with
+five VM/native differential tests.
 
 ## Exclusions
 
 - The first-party `std/cli` parser and typed JSON remain CP37–CP38.
   User-defined formatting remains deliberately deferred by D065.
-- Accepted `==`/`!=` semantics are not yet executable for `string`, closed
-  enums, or `Option` payloads. These forms currently reach the generic I0001
-  implementation diagnostic; that fallback also lacks the required primary
-  source span and construct-specific detail.
-- CP36 implements only the closed `@derive(Eq, Hash)` pair required for
-  coherent nominal collection keys. General `@derive(Debug)`, standalone
-  derived equality, and the corresponding ordinary equality operators remain
-  incomplete, so `examples/tour.my` is not yet an executable language tour.
-- The executable test surface currently provides `expect.output`; the
-  specified `expect.equal`, `expect.true`, and `expect.ok` helpers remain
-  unavailable. Preview fixtures continue to use explicit conditions and
-  `panic` until that test-library surface is implemented.
+- Recursively self-referential nominal equality remains staged. Preview
+  `@derive(Debug)` publishes compiler metadata but does not create a
+  user-callable formatter; user-defined formatting remains deferred by D065.
+  The richer `expect.matches` and `expect.panics` helpers are also staged.
+- Accepted constructs that are still checker-incomplete produce an exact
+  source-owned `I0001` diagnostic and exit `70`; they remain exclusions rather
+  than silent feature claims.
 - Generic unit constructors now use their expected nominal type, including
   nested contexts such as `Ok(None)`. Positional constructor shorthand and
   annotation-free expression closures are contextual only at compiler-known

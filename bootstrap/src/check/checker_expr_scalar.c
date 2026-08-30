@@ -1,4 +1,5 @@
 #include "checker_expr_scalar_api.h"
+#include "checker_equality_api.h"
 #include "checker_core_api.h"
 #include "checker_lookup_api.h"
 #include "checker_expr_prelude_api.h"
@@ -915,7 +916,9 @@
     }
     if (!(operand_type >= MMAY_TYPE_I8 && operand_type <= MMAY_TYPE_U64)
         && operand_type != MMAY_TYPE_F64
-        && !(equality_operator && operand_type == MMAY_TYPE_BOOL)) {
+        && !(equality_operator && operand_type == MMAY_TYPE_BOOL)
+        && !(equality_operator && operand_type == MMAY_TYPE_STRING)
+        && !(equality_operator && operand_type >= MMAY_TYPE_FIRST_DYNAMIC)) {
         if ((numeric_operator || comparison_operator)
             && mmay_checker_private_type_is_numeric(operand_type)) {
             mmay_checker_fail(
@@ -938,13 +941,9 @@
             );
             return false;
         }
-        if (equality_operator) {
-            mmay_checker_fail(
-                function->checker,
-                MMAY_CHECK_INCOMPLETE_LANGUAGE
-            );
-            return false;
-        }
+        if (equality_operator) return mmay_checker_private_compile_equality(
+            function, node, left, right, negate, result
+        );
         (void)mmay_checker_add_diagnostic(
             function->checker,
             MMAY_DIAGNOSTIC_INVALID_OPERATOR,
@@ -991,8 +990,15 @@
         }
     }
     if (equality_operator) {
+        if (operand_type >= MMAY_TYPE_FIRST_DYNAMIC) {
+            return mmay_checker_private_compile_equality(
+                function, node, left, right, negate, result
+            );
+        }
         if (operand_type == MMAY_TYPE_BOOL) {
             kind = MMAY_MIR_EQUAL_BOOL;
+        } else if (operand_type == MMAY_TYPE_STRING) {
+            kind = MMAY_MIR_EQUAL_STRING;
         } else if (operand_type >= MMAY_TYPE_I8
             && operand_type <= MMAY_TYPE_U64) {
             kind = MMAY_MIR_EQUAL_I64;

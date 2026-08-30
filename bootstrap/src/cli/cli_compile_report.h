@@ -12,6 +12,7 @@ int mmay_cli_compile_target_error(
 int mmay_cli_compile_status_error(
     const MarimayCliOptions *options,
     MarimayCompilerStatus status,
+    const MarimayCompilerResult *result,
     MarimayWriter standard_error
 );
 int mmay_cli_compile_render_result(

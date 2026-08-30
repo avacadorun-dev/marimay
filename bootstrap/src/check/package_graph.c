@@ -1020,6 +1020,10 @@ static MarimayCheckStatus mmay_check_graph(
 fail:
     mmay_graph_dispose(&graph);
     if (graph.failure != MMAY_CHECK_OK) {
+        if (graph.failure == MMAY_CHECK_INCOMPLETE_LANGUAGE
+            && result->initialized && result->diagnostics.length != 0) {
+            return graph.failure;
+        }
         mmay_check_result_dispose(result);
         return graph.failure;
     }

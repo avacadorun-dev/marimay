@@ -269,6 +269,11 @@ the `f64` rules.
 
 Conditions require `bool`; there is no truthiness.
 
+Primitive `==` and `!=` require identical operand types. `string` equality
+compares the complete counted UTF-8 byte sequence, including embedded NUL,
+without normalization or locale behavior. Both operands are evaluated exactly
+once from left to right.
+
 ### 5.2 Standard generic types
 
 The prelude defines at least:
@@ -377,9 +382,15 @@ type Coordinate {
 }
 ```
 
-`Eq` and `Hash` are rejected for records containing mutable fields. A derive expands to ordinary typed HIR before interface checking and has no arbitrary user code execution.
+`Debug`, `Eq`, and `Hash` form the closed derive inventory. `Hash` requires
+`Eq` in the same attribute. `Eq` and `Hash` are rejected for records containing
+mutable fields. A derive has no arbitrary user code execution. The 1.0 model
+expands derives to ordinary typed HIR before interface checking; D080 permits
+the C17 preview to lower derived equality directly to equivalent typed MIR.
+Preview `Debug` is compiler metadata for diagnostics and tests, not a
+user-callable formatter.
 
-The prelude equality contract is `equal(other: T): bool`. `==` and `!=` are compiler-bound to that exact dot-call signature for types that satisfy the contract; this is the only user-type operator hook in 1.0 and does not permit arbitrary operator declarations. `@derive(Eq)` generates an ordinary eligible `equal(value, other)` function; `@derive(Hash)` generates the matching stable value hash contract. Reference identity remains the separate `identity.same` operation.
+The prelude equality contract is `equal(other: T): bool`. `==` and `!=` are compiler-bound to that exact dot-call signature for types that satisfy the contract; this is the only user-type operator hook in 1.0 and does not permit arbitrary operator declarations. `@derive(Eq)` supplies declaration-order structural equality when every field is equatable; `@derive(Hash)` supplies the matching stable value hash contract. A recursively self-referential nominal is not equatable in the preview. Reference identity remains the separate `identity.same` operation.
 
 ### 5.5 Algebraic enums
 
@@ -394,6 +405,12 @@ enum Message {
 ```
 
 The three forms are unit, positional, and named payload variants. Construction is qualified:
+
+Two values of the same closed enum type support `==` and `!=` when every
+payload type is equatable. Different variants are unequal. Equal variants
+compare payload values in declaration order. This rule includes instantiated
+`Option<T>` and `Result<T, E>` and requires their reachable payload types to be
+equatable. No comparison crosses nominal enum identities.
 
 ```marimay
 const a = Message.Quit;

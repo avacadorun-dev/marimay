@@ -2,21 +2,26 @@
 
 #include "checker_core_api.h"
 
-bool mmay_checker_private_collect_eq_hash_derive(
+bool mmay_checker_private_collect_derives(
     MarimayChecker *checker,
     const MarimayAstNode *declaration,
+    bool *derives_debug,
+    bool *derives_eq,
     bool *derives_eq_hash,
     bool *valid
 ) {
     size_t child_index = 0;
     bool saw_derive = false;
+    bool saw_debug = false;
     bool saw_eq = false;
     bool saw_hash = false;
-    if (checker == NULL || declaration == NULL || derives_eq_hash == NULL
-        || valid == NULL) {
+    if (checker == NULL || declaration == NULL || derives_debug == NULL
+        || derives_eq == NULL || derives_eq_hash == NULL || valid == NULL) {
         mmay_checker_fail(checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
+    *derives_debug = false;
+    *derives_eq = false;
     *derives_eq_hash = false;
     for (child_index = 0; child_index < declaration->child_count;
         child_index += 1) {
@@ -33,9 +38,23 @@ bool mmay_checker_private_collect_eq_hash_derive(
         }
         if (!mmay_checker_private_check_attribute_is(
                 checker, attribute, "derive"
-            ) || saw_derive) {
-            mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
-            return false;
+            )) {
+            (void)mmay_checker_add_diagnostic(
+                checker, MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
+                "only the closed @derive(Debug, Eq, Hash) attribute is supported on nominal types",
+                attribute->start, attribute->end
+            );
+            *valid = false;
+            continue;
+        }
+        if (saw_derive) {
+            (void)mmay_checker_add_diagnostic(
+                checker, MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
+                "derive may be declared only once",
+                attribute->start, attribute->end
+            );
+            *valid = false;
+            continue;
         }
         saw_derive = true;
         arguments = mmay_checker_private_check_child_node(
@@ -63,6 +82,10 @@ bool mmay_checker_private_collect_eq_hash_derive(
                 ) : NULL;
             if (token == NULL || token->synthetic) continue;
             if (mmay_checker_private_check_text_equal(
+                    checker, token->start, token->end, "Debug"
+                ) && !saw_debug) {
+                saw_debug = true;
+            } else if (mmay_checker_private_check_text_equal(
                     checker, token->start, token->end, "Eq"
                 ) && !saw_eq) {
                 saw_eq = true;
@@ -71,21 +94,27 @@ bool mmay_checker_private_collect_eq_hash_derive(
                 ) && !saw_hash) {
                 saw_hash = true;
             } else {
-                mmay_checker_fail(checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
-                return false;
+                (void)mmay_checker_add_diagnostic(
+                    checker, MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
+                    "derive accepts each of Debug, Eq, and Hash at most once",
+                    token->start, token->end
+                );
+                *valid = false;
             }
         }
     }
-    if (saw_derive && (!saw_eq || !saw_hash)) {
+    if (saw_hash && !saw_eq) {
         *valid = false;
         (void)mmay_checker_add_diagnostic(
             checker,
             MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
-            "derive requires the exact Eq and Hash pair",
+            "Hash derive requires Eq in the same derive attribute",
             declaration->start,
             declaration->end
         );
     }
+    *derives_debug = saw_debug;
+    *derives_eq = saw_eq;
     *derives_eq_hash = saw_derive && saw_eq && saw_hash;
     return !mmay_checker_has_failed(checker);
 }

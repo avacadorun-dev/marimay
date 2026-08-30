@@ -87,6 +87,8 @@ typedef struct MarimayCheckRecordDeclaration {
     bool fields_resolved;
     bool type_parameters_initialized;
     bool is_generic;
+    bool derives_debug;
+    bool derives_eq;
     bool derives_eq_hash;
 } MarimayCheckRecordDeclaration;
 
@@ -126,6 +128,8 @@ typedef struct MarimayCheckEnumDeclaration {
     bool type_parameters_initialized;
     bool is_generic;
     bool is_builtin;
+    bool derives_debug;
+    bool derives_eq;
     bool derives_eq_hash;
 } MarimayCheckEnumDeclaration;
 

@@ -39,6 +39,12 @@ type User {
   public mutable visits: int,
 }
 
+@derive(Eq)
+type Coordinate {
+  public row: int,
+  public column: int,
+}
+
 interface Stringer {
   string(): string;
 }

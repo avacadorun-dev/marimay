@@ -129,6 +129,7 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
         case MMAY_OPCODE_IO_READ_LINE:
         case MMAY_OPCODE_TEST_OUTPUT_BEGIN:
         case MMAY_OPCODE_TEST_OUTPUT_END:
+        case MMAY_OPCODE_TEST_ASSERT:
         case MMAY_OPCODE_DEFER_REGISTER:
         case MMAY_OPCODE_DEFER_CALL:
         case MMAY_OPCODE_COLLECTION_NEW:
@@ -1279,6 +1280,27 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
                     && *first_type == (instruction->opcode
                             == MMAY_OPCODE_TEST_OUTPUT_BEGIN
                         ? MMAY_BYTECODE_TYPE_STRING : MMAY_BYTECODE_TYPE_BOOL)
+                ? MMAY_BYTECODE_VERIFY_OK
+                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            break;
+        case MMAY_OPCODE_TEST_ASSERT:
+            first = instruction->operands[1].unsigned_value;
+            second = instruction->operands[2].unsigned_value;
+            status = mmay_bytecode_require_assigned(
+                assigned, function->register_types.length, first
+            );
+            if (status == MMAY_BYTECODE_VERIFY_OK) {
+                status = mmay_bytecode_require_assigned(
+                    assigned, function->register_types.length, second
+                );
+            }
+            if (status != MMAY_BYTECODE_VERIFY_OK) return status;
+            first_type = mmay_bytecode_register_type(function, first);
+            second_type = mmay_bytecode_register_type(function, second);
+            status = first_type != NULL && second_type != NULL
+                    && *target_type == MMAY_BYTECODE_TYPE_VOID
+                    && *first_type == MMAY_BYTECODE_TYPE_BOOL
+                    && *second_type == MMAY_BYTECODE_TYPE_STRING
                 ? MMAY_BYTECODE_VERIFY_OK
                 : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;

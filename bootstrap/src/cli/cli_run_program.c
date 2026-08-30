@@ -467,7 +467,7 @@ int mmay_cli_run_program(
     );
     if (compiler_status != MMAY_COMPILER_OK) {
         exit_code = mmay_cli_compile_status_error(
-            options, compiler_status, standard_error
+            options, compiler_status, &compiler, standard_error
         );
         goto cleanup;
     }

@@ -34,8 +34,10 @@ Batch checker discovery, read, or defensive traversal/source-limit failures use
 nonempty, NUL-free `module` and `language` identity uses `K0005`. Lexical, parser, resolver, type,
 match, and effect failures discovered by `mmay check` retain their originating
 codes and exact source spans. If accepted syntax reaches an unimplemented
-checker path, `mmay check` emits `I0001` and exits 70; it must never turn that
-condition into a successful or diagnostic-free check.
+checker path, `mmay check` emits `I0001` and exits 70. Its primary span is the
+exact accepted source node that selected the incomplete path, and its message
+names that construct. It must never turn that condition into a successful,
+spanless, or diagnostic-free check.
 
 The allocated codes and summaries are published in the generated [diagnostic code registry](../generated/diagnostic-codes.md).
 
@@ -221,7 +223,10 @@ returned by the selected structural `message(error)` function. Both classes
 exit `1` and write only stderr. An invalid executable entry uses `T0017` and
 exit `1`.
 
-Within an `@test` function, a failed compiler-known expectation uses `G4004`.
+Within an `@test` or `@fuzz` function, a failed compiler-known expectation uses
+`G4004`. The executable preview messages for `equal`, `notEqual`, `true`,
+`false`, `some`, `none`, `ok`, and `err` are fixed by D080 and identify at
+least the root mismatch without serializing unbounded values.
 For `expect.output`, its counted message contains a bounded deterministic
 expected/actual byte diff; the captured bytes do not escape to program stdout.
 The test runner classifies this as a failed expectation rather than an engine

@@ -68,6 +68,15 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
         case MMAY_MIR_ENV_READ:
         case MMAY_MIR_PROCESS_CONTEXT:
             return mmay_mir_verify_context_instruction(function, instruction);
+        case MMAY_MIR_TEST_ASSERT:
+            if (first_type == MMAY_TYPE_INVALID
+                || second_type == MMAY_TYPE_INVALID) {
+                return MMAY_MIR_VERIFY_INVALID_REGISTER;
+            }
+            return target_type == MMAY_TYPE_VOID
+                    && first_type == MMAY_TYPE_BOOL
+                    && second_type == MMAY_TYPE_STRING
+                ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
         case MMAY_MIR_TEST_OUTPUT_BEGIN:
             if (first_type == MMAY_TYPE_INVALID) {
                 return MMAY_MIR_VERIFY_INVALID_REGISTER;
@@ -898,6 +907,7 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
         case MMAY_MIR_COLLECTION_ENTRY_KEY:
         case MMAY_MIR_COLLECTION_ENTRY_VALUE:
         case MMAY_MIR_INTEGER_POLICY:
+        case MMAY_MIR_TEST_ASSERT:
             return true;
         case MMAY_MIR_CONSTANT_I64:
         case MMAY_MIR_CONSTANT_INTEGER:

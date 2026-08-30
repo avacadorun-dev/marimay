@@ -58,8 +58,10 @@ bool mmay_check_options_valid(
  * source before any body is resolved. Accepted bodies in the implemented
  * pure-function subset are lowered to typed MIR and verified. Semantic source
  * errors produce diagnostics while status remains MMAY_CHECK_OK. Unsupported
- * accepted language returns MMAY_CHECK_INCOMPLETE_LANGUAGE. Source paths must
- * be unique. ASTs and snapshots remain borrowed; result owns all other data.
+ * accepted language returns MMAY_CHECK_INCOMPLETE_LANGUAGE with an initialized
+ * diagnostic-only result containing an exact I0001 source span and construct.
+ * Source paths must be unique. ASTs and snapshots remain borrowed; result owns
+ * all other data.
  */
 MarimayCheckStatus mmay_check_package(
     const MarimayAstTree *const *asts,

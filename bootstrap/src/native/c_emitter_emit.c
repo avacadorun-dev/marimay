@@ -1174,6 +1174,7 @@ bool mmay_native_c_emit_function(
                             buffer, function, i
                         )) return false;
                     break;
+                case MMAY_MIR_TEST_ASSERT:
                 case MMAY_MIR_TEST_OUTPUT_BEGIN:
                 case MMAY_MIR_TEST_OUTPUT_END:
                     if (!mmay_native_c_emit_test_output_instruction(

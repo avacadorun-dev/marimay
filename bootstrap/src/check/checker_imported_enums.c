@@ -158,6 +158,8 @@ static bool mmay_checker_private_imported_enum_view_init(
     view->symbol = source->symbol;
     view->type = type;
     view->is_public = true;
+    view->derives_debug = source->derives_debug;
+    view->derives_eq = source->derives_eq;
     view->derives_eq_hash = source->derives_eq_hash;
     view->declaration_valid = true;
     view->variants_resolved = true;

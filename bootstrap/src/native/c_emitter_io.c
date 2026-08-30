@@ -170,6 +170,19 @@ bool mmay_native_c_emit_test_output_instruction(
     if (buffer == NULL || function == NULL || instruction == NULL) {
         return false;
     }
+    if (instruction->kind == MMAY_MIR_TEST_ASSERT) {
+        return mmay_native_c_write(
+                buffer,
+                "  if (!mmay_g_v_%u) { mmay_g_s = mmay_g_begin_test_panic(mmay_g_p, mmay_g_v_%u, ",
+                instruction->first, instruction->second
+            ) && mmay_native_c_symbol_data(buffer, function->symbol)
+            && mmay_native_c_write(
+                buffer,
+                ", %zu, %zu); *mmay_g_start = %zu; *mmay_g_end = %zu; goto mmay_g_cleanup; }\n",
+                instruction->span.start, instruction->span.end,
+                instruction->span.start, instruction->span.end
+            );
+    }
     if (instruction->kind == MMAY_MIR_TEST_OUTPUT_BEGIN) {
         return mmay_native_c_write(
             buffer,

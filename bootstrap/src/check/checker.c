@@ -301,6 +301,9 @@ MarimayCheckStatus mmay_checker_check_package_unit(
                 mmay_checker_fail(&checker, MMAY_CHECK_INVALID_ARGUMENT);
                 break;
             }
+            mmay_checker_set_incomplete_context(
+                &checker, element->as.node
+            );
             if (element->as.node->kind == MMAY_SYNTAX_TYPE_ALIAS_DECL) {
                 (void)mmay_checker_private_collect_type_alias_declaration(
                     &checker,
@@ -362,6 +365,9 @@ MarimayCheckStatus mmay_checker_check_package_unit(
                 mmay_checker_fail(&checker, MMAY_CHECK_INVALID_ARGUMENT);
                 break;
             }
+            mmay_checker_set_incomplete_context(
+                &checker, element->as.node
+            );
             if (element->as.node->kind == MMAY_SYNTAX_FUNCTION_DECL
                 || element->as.node->kind == MMAY_SYNTAX_EXTERN_DECL) {
                 (void)mmay_checker_private_collect_function_signature(
@@ -463,7 +469,8 @@ MarimayCheckStatus mmay_checker_check_package_unit(
         && result->diagnostics.length == 0) {
         (void)mmay_check_finalize_semantic_facts(&checker);
     }
-    if (result->diagnostics.length != 0) {
+    if (!mmay_checker_has_failed(&checker)
+        && result->diagnostics.length != 0) {
         if (!mmay_check_clear_semantics(result)) {
             mmay_checker_fail(&checker, MMAY_CHECK_ALLOCATION_FAILED);
         }
@@ -472,8 +479,15 @@ MarimayCheckStatus mmay_checker_check_package_unit(
     mmay_vector_dispose(&sorted_asts);
     if (checker.failure != MMAY_CHECK_OK) {
         MarimayCheckStatus status = checker.failure;
+        if (status == MMAY_CHECK_INCOMPLETE_LANGUAGE
+            && result->initialized
+            && result->diagnostics.length != 0
+            && mmay_check_clear_semantics(result)) {
+            return status;
+        }
         mmay_check_result_dispose(result);
-        return status;
+        return status == MMAY_CHECK_INCOMPLETE_LANGUAGE
+            ? MMAY_CHECK_ALLOCATION_FAILED : status;
     }
     return MMAY_CHECK_OK;
 }

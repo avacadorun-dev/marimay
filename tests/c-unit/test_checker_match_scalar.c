@@ -317,7 +317,20 @@ void mmay_test_checker_boolean_match(void) {
         mmay_check_default_options(),
         &checked
     ) == MMAY_CHECK_INCOMPLETE_LANGUAGE);
-    MMAY_EXPECT(!checked.initialized);
+    MMAY_EXPECT(checked.initialized);
+    if (checked.initialized) {
+        const MarimayCheckDiagnostic *diagnostic =
+            mmay_check_diagnostic(&checked, 0);
+        MMAY_EXPECT(checked.diagnostics.length == 1);
+        MMAY_EXPECT(diagnostic != NULL && strcmp(
+            diagnostic->code, MMAY_DIAGNOSTIC_COMPILER_INCOMPLETE
+        ) == 0);
+        MMAY_EXPECT(diagnostic != NULL && diagnostic->snapshot
+            == fixture.ast.snapshot);
+        MMAY_EXPECT(diagnostic != NULL
+            && diagnostic->start < diagnostic->end);
+        mmay_check_result_dispose(&checked);
+    }
     mmay_checker_fixture_dispose(&fixture);
 }
 

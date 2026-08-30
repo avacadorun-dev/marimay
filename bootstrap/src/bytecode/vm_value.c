@@ -1227,6 +1227,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
                 instruction, registers, execution, function,
                 allocator, stdout_sink
             );
+        case MMAY_OPCODE_TEST_ASSERT:
         case MMAY_OPCODE_TEST_OUTPUT_BEGIN:
         case MMAY_OPCODE_TEST_OUTPUT_END:
             return mmay_bytecode_run_test_output_instruction(

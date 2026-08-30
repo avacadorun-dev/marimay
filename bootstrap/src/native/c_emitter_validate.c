@@ -543,6 +543,7 @@ MarimayNativeCEmitStatus mmay_native_c_validate_function(
                 case MMAY_MIR_IO_READ_LINE:
                 case MMAY_MIR_IO_READ_BYTES:
                 case MMAY_MIR_IO_WRITE_BYTES:
+                case MMAY_MIR_TEST_ASSERT:
                 case MMAY_MIR_TEST_OUTPUT_BEGIN:
                 case MMAY_MIR_TEST_OUTPUT_END:
                     break;

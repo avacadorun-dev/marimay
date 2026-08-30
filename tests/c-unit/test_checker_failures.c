@@ -1,6 +1,8 @@
 #include "test_checker_support.h"
 
 void mmay_test_checker_unsupported_is_explicit(void) {
+    static const char incomplete_source[] =
+        "const message: string = \"not implemented\";\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
 
@@ -45,7 +47,7 @@ void mmay_test_checker_unsupported_is_explicit(void) {
 
     MMAY_EXPECT(mmay_checker_fixture_init(
         &fixture,
-        "const message: string = \"not implemented\";\n"
+        incomplete_source
     ));
     MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,
@@ -54,7 +56,33 @@ void mmay_test_checker_unsupported_is_explicit(void) {
         mmay_check_default_options(),
         &checked
     ) == MMAY_CHECK_INCOMPLETE_LANGUAGE);
-    MMAY_EXPECT(!checked.initialized);
+    MMAY_EXPECT(checked.initialized);
+    if (checked.initialized) {
+        const MarimayCheckDiagnostic *diagnostic =
+            mmay_check_diagnostic(&checked, 0);
+        const char *literal = strstr(
+            incomplete_source,
+            "\"not implemented\""
+        );
+        MMAY_EXPECT(checked.diagnostics.length == 1);
+        MMAY_EXPECT(diagnostic != NULL);
+        if (diagnostic != NULL && literal != NULL) {
+            MMAY_EXPECT(strcmp(
+                diagnostic->code,
+                MMAY_DIAGNOSTIC_COMPILER_INCOMPLETE
+            ) == 0);
+            MMAY_EXPECT(diagnostic->snapshot == fixture.ast.snapshot);
+            MMAY_EXPECT(diagnostic->start == (size_t)(literal
+                - incomplete_source));
+            MMAY_EXPECT(diagnostic->end == diagnostic->start
+                + strlen("\"not implemented\""));
+            MMAY_EXPECT(strstr(
+                diagnostic->message,
+                "constant evaluation for this value type"
+            ) != NULL);
+        }
+        mmay_check_result_dispose(&checked);
+    }
     mmay_checker_fixture_dispose(&fixture);
 }
 

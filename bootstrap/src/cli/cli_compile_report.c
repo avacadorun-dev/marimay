@@ -4,6 +4,12 @@
 
 #include "mmay/generated/diagnostic_codes.h"
 
+static bool mmay_cli_compile_render_semantics(
+    const MarimayCompilerResult *result,
+    MarimayDiagnosticStyle style,
+    MarimayWriter standard_error
+);
+
 static bool mmay_cli_compile_render(
     MarimayWriter writer,
     MarimayDiagnosticStyle style,
@@ -68,9 +74,18 @@ int mmay_cli_compile_target_error(
 int mmay_cli_compile_status_error(
     const MarimayCliOptions *options,
     MarimayCompilerStatus status,
+    const MarimayCompilerResult *result,
     MarimayWriter standard_error
 ) {
     if (status == MMAY_COMPILER_INCOMPLETE_LANGUAGE) {
+        if (result != NULL && result->initialized
+            && result->checked.initialized
+            && result->checked.diagnostics.length != 0) {
+            (void)mmay_cli_compile_render_semantics(
+                result, options->diagnostic_style, standard_error
+            );
+            return MMAY_EXIT_INTERNAL;
+        }
         return mmay_cli_plain_error(
             standard_error, options->diagnostic_style,
             MMAY_DIAGNOSTIC_COMPILER_INCOMPLETE,

@@ -7,9 +7,10 @@
  * Compiles current snapshots in canonical exact-path order. Lexical, parse,
  * and type errors are owned diagnostics with MMAY_COMPILER_OK. A frontend
  * error suppresses AST publication and package checking. Unsupported accepted
- * language remains MMAY_COMPILER_INCOMPLETE_LANGUAGE. The result borrows
- * snapshots from service and must be disposed before service. result is
- * atomically replaced only on success.
+ * language remains MMAY_COMPILER_INCOMPLETE_LANGUAGE and atomically publishes
+ * a diagnostic-only result containing the exact I0001 source span and
+ * construct. The result borrows snapshots from service and must be disposed
+ * before service. Other failures leave result unchanged.
  */
 MarimayCompilerStatus mmay_compiler_service_check(
     const MarimayCompilerService *service,

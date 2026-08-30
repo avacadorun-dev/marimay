@@ -14,6 +14,8 @@ void mmay_test_parser_pratt_expressions(void) {
         "  const closure = (error: Error): Result<int, Error> => service.handle(error);\n"
         "  const spawned = spawn service.load(a);\n"
         "  const matched = match a { 0 => b, _ if c > 0 => c, };\n"
+        "  expect.true(true);\n"
+        "  expect.false(false);\n"
         "}\n";
     MarimayParseFixture fixture;
     const MarimayGreenNode *plus = NULL;
@@ -37,7 +39,7 @@ void mmay_test_parser_pratt_expressions(void) {
     MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
         MMAY_SYNTAX_MEMBER_EXPRESSION
-    ) >= 3);
+    ) >= 5);
     MMAY_EXPECT(mmay_syntax_count_kind(
         fixture.parsed.tree.root,
         MMAY_SYNTAX_CALL_EXPRESSION

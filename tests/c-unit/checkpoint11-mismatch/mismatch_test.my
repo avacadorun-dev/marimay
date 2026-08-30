@@ -13,6 +13,11 @@ fn explicitPanicParity(): void {
 }
 
 @test
+fn valueExpectationParity(): void {
+  expect.equal("left", "right");
+}
+
+@test
 fn cleanupExpectation(): void {
   expect.output("", (): void => {});
 }

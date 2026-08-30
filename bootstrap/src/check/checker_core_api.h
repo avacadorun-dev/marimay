@@ -19,6 +19,15 @@
 );
 
 void mmay_checker_fail(MarimayChecker *checker, MarimayCheckStatus status);
+void mmay_checker_fail_incomplete(
+    MarimayChecker *checker,
+    const MarimayAstNode *node,
+    const char *construct
+);
+void mmay_checker_set_incomplete_context(
+    MarimayChecker *checker,
+    const MarimayAstNode *node
+);
  void mmay_checker_private_expression_set_never(
     MarimayFunctionChecker *function,
     MarimayExpressionValue *result

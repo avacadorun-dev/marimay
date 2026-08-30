@@ -360,6 +360,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_declaration_constants.c
   bootstrap/src/check/checker_declaration_enums.c
   bootstrap/src/check/checker_derive.c
+  bootstrap/src/check/checker_equality.c
   bootstrap/src/check/checker_declaration_functions.c
   bootstrap/src/check/checker_declaration_interfaces.c
   bootstrap/src/check/checker_declaration_lifecycle.c

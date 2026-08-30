@@ -151,8 +151,8 @@ void mmay_test_parser_examples(void) {
         "examples/matrix.my",
         "examples/nominal_cp1.my",
         "examples/service.my",
-        "examples/tour.my",
-        "examples/tour_test.my",
+        "examples/tour/main.my",
+        "examples/tour/main_test.my",
         "syntax/parser/stdout-preview.my"
     };
     unsigned char source[32768];

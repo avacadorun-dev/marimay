@@ -152,3 +152,4 @@
 150	COLLECTION_REQUIRE_GENERATION	collection_require_generation	destination:register,collection:register,generation:register	may_panic	Copy a collection only when its iterator generation still matches.
 151	COLLECTION_ENTRY_KEY	collection_entry_key	destination:register,collection:register,index:register	none	Read an insertion-order key at a defensively checked active index.
 152	COLLECTION_ENTRY_VALUE	collection_entry_value	destination:register,collection:register,index:register	none	Read an insertion-order Map value at a defensively checked active index.
+153	TEST_ASSERT	test_assert	destination:register,condition:register,message:register	may_panic	Complete one compiler-known expectation or panic with G4004 at its source span.

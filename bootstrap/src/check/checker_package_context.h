@@ -30,6 +30,8 @@ typedef struct MarimayChecker {
     MarimayVector imported_enums;
     bool prelude_enums_initialized;
     bool imported_enums_initialized;
+    const MarimayAstNode *incomplete_context;
+    const char *incomplete_construct;
     MarimayCheckStatus failure;
 } MarimayChecker;
 

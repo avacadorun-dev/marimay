@@ -290,8 +290,17 @@ void mmay_test_checker_enum_declarations(void) {
         mmay_system_allocator(),
         mmay_check_default_options(),
         &checked
-    ) == MMAY_CHECK_INCOMPLETE_LANGUAGE);
-    MMAY_EXPECT(!checked.initialized);
+    ) == MMAY_CHECK_OK);
+    MMAY_EXPECT(checked.initialized);
+    if (checked.initialized) {
+        const MarimayCheckedEnum *enum_value = mmay_checked_enum(&checked, 0);
+        MMAY_EXPECT(enum_value != NULL);
+        if (enum_value != NULL) {
+            MMAY_EXPECT(enum_value->derives_debug);
+            MMAY_EXPECT(!enum_value->derives_eq);
+        }
+        mmay_check_result_dispose(&checked);
+    }
     mmay_checker_fixture_dispose(&fixture);
 }
 

@@ -163,3 +163,4 @@ Stage 0 codec.
 | 150 | `collection_require_generation` | `destination:register`, `collection:register`, `generation:register` | `may_panic` | Copy a collection only when its iterator generation still matches. |
 | 151 | `collection_entry_key` | `destination:register`, `collection:register`, `index:register` | — | Read an insertion-order key at a defensively checked active index. |
 | 152 | `collection_entry_value` | `destination:register`, `collection:register`, `index:register` | — | Read an insertion-order Map value at a defensively checked active index. |
+| 153 | `test_assert` | `destination:register`, `condition:register`, `message:register` | `may_panic` | Complete one compiler-known expectation or panic with G4004 at its source span. |

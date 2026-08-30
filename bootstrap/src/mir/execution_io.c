@@ -461,6 +461,7 @@ MarimayMirInterpretStatus mmay_mir_execute_test_output_instruction(
     const MarimayMirFunction *function,
     const MarimayMirInstruction *instruction,
     const MarimayMirValue *source,
+    const MarimayMirValue *message,
     MarimayMirValue *target,
     const MarimayAllocator *allocator,
     MarimayMirInterpretOptions options
@@ -471,6 +472,26 @@ MarimayMirInterpretStatus mmay_mir_execute_test_output_instruction(
     if (function == NULL || instruction == NULL || source == NULL
         || target == NULL || allocator == NULL || options.execution == NULL) {
         return MMAY_MIR_INTERPRET_INVALID_ARGUMENT;
+    }
+    if (instruction->kind == MMAY_MIR_TEST_ASSERT) {
+        const MarimayMirManagedString *failure_message = message != NULL
+            ? mmay_mir_execution_string_value(options.execution, *message)
+            : NULL;
+        if (failure_message == NULL) {
+            return MMAY_MIR_INTERPRET_INVALID_REFERENCE;
+        }
+        if (source->as.boolean) return MMAY_MIR_INTERPRET_OK;
+        if (options.panic == NULL) return MMAY_MIR_INTERPRET_PANIC;
+        if (!mmay_owned_bytes_copy(
+                &options.panic->message, *allocator,
+                failure_message->bytes, failure_message->length
+            )) {
+            return MMAY_MIR_INTERPRET_ALLOCATION_FAILED;
+        }
+        options.panic->code = "G4004";
+        options.panic->symbol = function->symbol;
+        options.panic->span = instruction->span;
+        return MMAY_MIR_INTERPRET_PANIC;
     }
     if (instruction->kind == MMAY_MIR_TEST_OUTPUT_BEGIN) {
         expected = mmay_mir_execution_string_value(

@@ -1,7 +1,7 @@
 # Marimay Stage 0 compiler architecture
 
 Status: implementation architecture for the C17 bootstrap.
-Last reviewed: 2026-08-29.
+Last reviewed: 2026-08-30.
 
 This document maps the normative compiler and execution contracts to physical
 owners. It changes no language semantics. When it conflicts with `docs/spec/`
@@ -218,7 +218,9 @@ bootstrap/src/check/
                         narrow D078 checker owner contract
   checker_collection_types.c
                         compiler-owned Map/Set type recognition and interning
-  checker_derive.c      closed D079 Eq/Hash derive-pair validation
+  checker_derive.c      closed D079/D080 Debug/Eq/Hash validation
+  checker_equality.c    D080 structural equality typing and explicit MIR CFG
+  checker_expr_test.c   D046/D080 compiler-known expectation lowering
   checker_expr_collections.c
                         D079 exact operation typing and MIR lowering
   checker_collection_loop.c
@@ -744,7 +746,11 @@ checkpoint:
 | `tests/c-unit/test_cp35_context_pipeline.c` | 0 | 560 | D078 exact checker signatures, injected MIR/VM oracles, hostile MIR/bytecode, native redaction, and exhaustive allocation coverage |
 | `tests/c-unit/test_cp35_process_context.cmake` | 0 | 283 | real VM/native env timing, cwd, relocation, cache-input, redaction, and CLI parity |
 | `bootstrap/src/check/checker_collection_types.c` | 0 | 108 | compiler-owned D079 Map/Set recognition and deterministic type interning |
-| `bootstrap/src/check/checker_derive.c` | 0 | 91 | closed Eq/Hash derive-pair validation without arbitrary user hashing |
+| `bootstrap/src/check/checker_derive.c` | 0 | 120 | closed Debug/Eq/Hash validation without arbitrary user execution |
+| `bootstrap/src/check/checker_equality.c` | 0 | 534 | D080 equatability checks and explicit scalar/record/enum MIR CFG lowering |
+| `bootstrap/src/check/checker_expr_test.c` | 0 | 417 | D046 output capture plus D080 typed expectation lowering |
+| `tests/c-unit/test_checker_equality.c` | 0 | 67 | counted string, enum, Option, derived-record equality and rejection coverage |
+| `tests/c-unit/test_checker_expectations.c` | 0 | 117 | typed expectation execution, G4004 span/message, scope, arity, and type coverage |
 | `bootstrap/src/check/checker_expr_collections.c` | 0 | 1,122 | exact Map/Set operation typing, key eligibility, Result/Option construction, and typed MIR lowering |
 | `bootstrap/src/check/checker_collection_loop.c` | 0 | 291 | insertion-order tuple/value loops and exact mutation-generation guard lowering |
 | `bootstrap/src/mir/mir_collections.c` | 0 | 68 | collection layout lifecycle and exact interning |

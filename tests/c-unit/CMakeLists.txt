@@ -76,6 +76,8 @@ add_executable(mmay_c_unit
   test_checker_match_scalar.c
   test_checker_match_control.c
   test_checker_calls_constants.c
+  test_checker_equality.c
+  test_checker_expectations.c
   test_checker_operators.c
   test_checker_numeric_policy.c
   test_checker_control.c

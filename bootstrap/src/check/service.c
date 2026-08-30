@@ -920,6 +920,17 @@ cleanup:
         mmay_vector_dispose(&sorted_documents);
     }
     if (failure != MMAY_COMPILER_OK) {
+        if (failure == MMAY_COMPILER_INCOMPLETE_LANGUAGE
+            && built->initialized && built->checked.initialized
+            && built->checked.diagnostics.length != 0) {
+            mmay_compiler_result_dispose(result);
+            *result = *built;
+            memset(built, 0, sizeof(*built));
+            if (request != NULL && request->stats != NULL) {
+                *request->stats = stats;
+            }
+            return failure;
+        }
         return mmay_compiler_result_fail(built, failure);
     }
     mmay_compiler_result_dispose(result);

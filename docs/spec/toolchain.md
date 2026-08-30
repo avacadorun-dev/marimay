@@ -257,7 +257,15 @@ expect.panics(code, closure)
 expect.output(expected, closure)
 ```
 
-Expectations report source expressions and a bounded structural diff. Tests use ordinary functions and lexical `defer` for fixtures; there is no hidden lifecycle annotation system in 1.0.
+The checker-backed preview executes `equal`, `notEqual`, `true`, `false`,
+`some`, `none`, `ok`, and `err`. The first pair requires identical equatable
+types; the boolean pair requires `bool`; the remaining pairs require the exact
+prelude `Option<T>` or `Result<T, E>`. Arguments are evaluated once from left
+to right. A failure is `G4004` at the complete call with the exact bounded root
+mismatch message specified by D080. `matches` and `panics` remain staged.
+Expectations report source expressions and a bounded structural diff. Tests
+use ordinary functions and lexical `defer` for fixtures; there is no hidden
+lifecycle annotation system in 1.0.
 
 ### 5.2 Commands
 

@@ -406,7 +406,10 @@ void mmay_test_bytecode_metadata(void) {
         {MMAY_OPCODE_COLLECTION_ENTRY_VALUE, 152,
             "collection_entry_value", 3,
             {MMAY_BYTECODE_OPERAND_REGISTER, MMAY_BYTECODE_OPERAND_REGISTER,
-                MMAY_BYTECODE_OPERAND_REGISTER}, 0}
+                MMAY_BYTECODE_OPERAND_REGISTER}, 0},
+        {MMAY_OPCODE_TEST_ASSERT, 153, "test_assert", 3,
+            {MMAY_BYTECODE_OPERAND_REGISTER, MMAY_BYTECODE_OPERAND_REGISTER,
+                MMAY_BYTECODE_OPERAND_REGISTER}, MMAY_OPCODE_FLAG_MAY_PANIC}
 #undef MMAY_NUMERIC_UNARY
 #undef MMAY_NUMERIC_BINARY
     };
@@ -523,6 +526,7 @@ void mmay_test_bytecode_metadata(void) {
     MMAY_EXPECT(MMAY_OPCODE_COLLECTION_REQUIRE_GENERATION == 150);
     MMAY_EXPECT(MMAY_OPCODE_COLLECTION_ENTRY_KEY == 151);
     MMAY_EXPECT(MMAY_OPCODE_COLLECTION_ENTRY_VALUE == 152);
+    MMAY_EXPECT(MMAY_OPCODE_TEST_ASSERT == 153);
     MMAY_EXPECT(MMAY_OPCODE_COUNT == sizeof(expected) / sizeof(expected[0]));
     for (index = 0; index < sizeof(expected) / sizeof(expected[0]); index += 1) {
         const MarimayOpcodeMetadata *metadata = mmay_opcode_metadata(expected[index].opcode);

@@ -483,12 +483,13 @@ static void mmay_cp36_checker_diagnostics(void) {
     mmay_checker_expect_one_diagnostic(
         "@derive(Eq, Hash) type Key { mutable value: int, }\n"
         "fn bad(): void { const value: Set<Key> = setOf<Key>(); }\n",
-        MMAY_DIAGNOSTIC_TYPE_MISMATCH, "setOf<Key>()", 0
+        MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE, "mutable value: int", 0
     );
     mmay_checker_expect_one_diagnostic(
-        "@derive(Eq) type Key { value: int, }\n",
-        MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
-        "@derive(Eq) type Key { value: int, }", 0
+        "@derive(Eq) type Key { value: int, }\n"
+        "fn bad(): void { const value: Set<Key> = setOf<Key>(); }\n",
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+        "setOf<Key>()", 0
     );
     mmay_checker_expect_one_diagnostic(
         "fn bad<T>(): void { const value: Set<T> = setOf<T>(); }\n",
