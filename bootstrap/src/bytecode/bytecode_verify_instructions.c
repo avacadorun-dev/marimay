@@ -1032,11 +1032,20 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
                 ? MMAY_BYTECODE_VERIFY_OK
                 : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
-        case MMAY_OPCODE_CONST_INTEGER:
-            status = mmay_bytecode_type_is_integer(*target_type)
-                ? MMAY_BYTECODE_VERIFY_OK
-                : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+        case MMAY_OPCODE_CONST_INTEGER: {
+            MarimayBytecodeType type = *target_type;
+            unsigned int width = 64U;
+            if (type == MMAY_BYTECODE_TYPE_I8 || type == MMAY_BYTECODE_TYPE_U8) width = 8U;
+            else if (type == MMAY_BYTECODE_TYPE_I16 || type == MMAY_BYTECODE_TYPE_U16) width = 16U;
+            else if (type == MMAY_BYTECODE_TYPE_I32 || type == MMAY_BYTECODE_TYPE_U32) width = 32U;
+            else if (!mmay_bytecode_type_is_integer(type)) width = 0U;
+            status = width == 0U ? MMAY_BYTECODE_VERIFY_TYPE_MISMATCH
+                : width < 64U && instruction->operands[1].unsigned_value
+                    >= (UINT64_C(1) << width)
+                ? MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT
+                : MMAY_BYTECODE_VERIFY_OK;
             break;
+        }
         case MMAY_OPCODE_CONST_F64:
             status = *target_type == MMAY_BYTECODE_TYPE_F64
                 ? MMAY_BYTECODE_VERIFY_OK

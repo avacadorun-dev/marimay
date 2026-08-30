@@ -1147,6 +1147,9 @@ void mmay_test_bytecode_integer_widths(void) {
         UINT64_C(0x8000000000000000), UINT64_C(0xff),
         UINT64_C(0xffff), UINT64_C(0xffffffff), UINT64_MAX
     };
+    static const unsigned int widths[] = {
+        8U, 16U, 32U, 64U, 8U, 16U, 32U, 64U
+    };
     size_t index = 0;
     for (index = 0; index < sizeof(types) / sizeof(types[0]); index += 1) {
         MarimayBytecodeFunction function;
@@ -1214,6 +1217,13 @@ void mmay_test_bytecode_integer_widths(void) {
             MMAY_EXPECT(decoded_instruction->opcode == MMAY_OPCODE_CONST_INTEGER);
             MMAY_EXPECT(decoded_instruction->operands[1].unsigned_value
                 == bits[index]);
+            if (widths[index] < 64U) {
+                decoded_instruction->operands[1].unsigned_value =
+                    UINT64_C(1) << widths[index];
+                MMAY_EXPECT(mmay_bytecode_verify(&decoded)
+                    == MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT);
+                decoded_instruction->operands[1].unsigned_value = bits[index];
+            }
         }
         if (decoded.register_types.data != NULL) {
             MarimayBytecodeType *register_type = mmay_vector_at(
