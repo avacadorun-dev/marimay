@@ -47,6 +47,30 @@ static bool mmay_final_preview_capture(
     ) == MMAY_PROCESS_OK;
 }
 
+static void mmay_final_preview_report_process_failure(
+    const char *operation,
+    const MarimayProcessCaptureResult *result
+) {
+    if (!result->signaled && result->exit_code == 0) {
+        return;
+    }
+    fprintf(
+        stderr, "%s failed: exit=%u signal=%u\n", operation,
+        (unsigned)result->exit_code, (unsigned)result->signal_code
+    );
+    if (result->standard_error.length != 0) {
+        (void)fwrite(
+            result->standard_error.data, 1,
+            result->standard_error.length, stderr
+        );
+        if (result->standard_error.data[
+                result->standard_error.length - 1
+            ] != '\n') {
+            (void)fputc('\n', stderr);
+        }
+    }
+}
+
 static void mmay_final_preview_expect_success(
     const char *const arguments[],
     size_t argument_count,
@@ -173,6 +197,7 @@ static void mmay_final_preview_test_cli_matrix(const char *executable) {
     captured = mmay_final_preview_capture(test, 3, &result);
     MMAY_EXPECT(captured);
     if (captured) {
+        mmay_final_preview_report_process_failure("mmay test", &result);
         MMAY_EXPECT(!result.signaled && result.exit_code == 0);
         MMAY_EXPECT(result.standard_error.length == 0);
         MMAY_EXPECT(strstr(
@@ -185,6 +210,9 @@ static void mmay_final_preview_test_cli_matrix(const char *executable) {
     captured = mmay_final_preview_capture(test_both, 5, &result);
     MMAY_EXPECT(captured);
     if (captured) {
+        mmay_final_preview_report_process_failure(
+            "mmay test --engine both", &result
+        );
         MMAY_EXPECT(!result.signaled && result.exit_code == 0);
         MMAY_EXPECT(result.standard_error.length == 0);
         MMAY_EXPECT(strstr(

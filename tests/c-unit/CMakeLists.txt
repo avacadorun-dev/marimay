@@ -345,6 +345,15 @@ foreach(shard RANGE 0 ${MMAY_C_UNIT_LAST_SHARD})
   )
 endforeach()
 
+# The final-preview shard nests `mmay test --engine both`, compiler processes,
+# and generated native test processes. Bound ASan's concurrent process fan-out
+# without slowing the lower-overhead Debug, Release, or TSan schedules.
+if(MMAY_ENABLE_ADDRESS_SANITIZER)
+  set_tests_properties(
+    mmay_c_unit_final-preview PROPERTIES PROCESSORS 2
+  )
+endif()
+
 set(MMAY_CP31_ALLOCATION_SHARD_COUNT 8)
 math(EXPR MMAY_CP31_ALLOCATION_LAST_SHARD
   "${MMAY_CP31_ALLOCATION_SHARD_COUNT} - 1"
