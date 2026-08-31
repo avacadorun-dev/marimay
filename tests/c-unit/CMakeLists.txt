@@ -508,9 +508,12 @@ set_tests_properties(mmay_cp33_process_text_bytes PROPERTIES COST 380)
 set_tests_properties(mmay_cp34_process_files PROPERTIES COST 380)
 set_tests_properties(mmay_cp35_process_context PROPERTIES COST 380)
 set_tests_properties(mmay_cp36_map_set PROPERTIES COST 400)
+# CP37 creates uniquely named artifacts, but launches several compiler and
+# native-program subprocesses. Reserve capacity without serializing every
+# unrelated CTest owner behind it.
 set_tests_properties(
   mmay_cp37_cli_parser
-  PROPERTIES RUN_SERIAL TRUE COST 500 TIMEOUT 1200
+  PROPERTIES PROCESSORS 2 COST 500 TIMEOUT 1200
 )
 
 # Focused checkpoint runners still share the legacy root fixture directory.

@@ -48,6 +48,15 @@ and temporary files cannot collide. Local CTest presets use a bounded
 four-process pool; sanitizer CI may use up to eight isolated processes and
 starts the historically expensive owner groups first. Shared resources use a
 narrow CTest resource lock rather than forcing unrelated tests to run serially.
+Process-integration tests whose artifacts are private reserve the number of
+CTest workers needed by their compiler and native subprocesses instead of
+serializing the entire test pool.
+
+Clang/GCC sanitizer presets compile host compiler and test targets with `-O1`
+while retaining Debug symbols and assertions. This keeps exhaustive
+allocation-failure coverage practical without changing its index range or
+error-path assertions. Generated and native runtime artifacts retain the exact
+optimization level of the requested debug (`-O0`) or release (`-O2`) profile.
 
 Production code under `bootstrap/` and `runtime/` must not reference raw
 process-heap APIs outside `bootstrap/src/base/allocator.c`;

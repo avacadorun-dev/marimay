@@ -33,9 +33,14 @@ function(mmay_target_sanitizers target)
     list(APPEND mmay_sanitizers "thread")
   endif()
   list(JOIN mmay_sanitizers "," mmay_sanitizer_list)
+  # Exhaustive allocation-failure sweeps are prohibitively slow at Debug's
+  # implicit -O0. Keep debug symbols and assertions, but use the optimization
+  # level recommended for practical sanitizer instrumentation. Native runtime
+  # profile targets append their exact -O0/-O2 contract after this helper.
   target_compile_options(${target} PRIVATE
     "-fsanitize=${mmay_sanitizer_list}"
     -fno-omit-frame-pointer
+    -O1
   )
   target_link_options(${target} PRIVATE "-fsanitize=${mmay_sanitizer_list}")
 endfunction()
