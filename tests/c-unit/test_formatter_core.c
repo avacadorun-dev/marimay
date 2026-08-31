@@ -324,6 +324,10 @@ void mmay_test_formatter_fixture_file(void) {
             "format/fuzz-match-trailing-comma.expected.my"
         },
         {
+            "format/fuzz-tuple-trailing-comma.input.my",
+            "format/fuzz-tuple-trailing-comma.expected.my"
+        },
+        {
             "format/cp30-interpolation.input.my",
             "format/cp30-interpolation.expected.my"
         },

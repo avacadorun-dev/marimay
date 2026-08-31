@@ -136,6 +136,7 @@ static bool mmay_fuzz_list_kind(MarimaySyntaxKind kind) {
         || kind == MMAY_SYNTAX_RECORD_EXPRESSION
         || kind == MMAY_SYNTAX_RECORD_FIELDS
         || kind == MMAY_SYNTAX_PAREN_GROUP
+        || kind == MMAY_SYNTAX_TUPLE_EXPRESSION
         || kind == MMAY_SYNTAX_BRACKET_GROUP
         || kind == MMAY_SYNTAX_POSITIONAL_PATTERN
         || kind == MMAY_SYNTAX_TUPLE_PATTERN

@@ -302,6 +302,7 @@ static bool mmay_formatter_ast_equal_internal(
             || left->kind == MMAY_SYNTAX_RECORD_EXPRESSION
             || left->kind == MMAY_SYNTAX_RECORD_FIELDS
             || left->kind == MMAY_SYNTAX_PAREN_GROUP
+            || left->kind == MMAY_SYNTAX_TUPLE_EXPRESSION
             || left->kind == MMAY_SYNTAX_BRACKET_GROUP
             || left->kind == MMAY_SYNTAX_POSITIONAL_PATTERN
             || left->kind == MMAY_SYNTAX_TUPLE_PATTERN
