@@ -535,5 +535,10 @@ MarimayCliCheckTargetStatus mmay_cli_standard_packages_add(
             mmay_cli_standard_context_packages_add(target);
         if (status != MMAY_CLI_CHECK_TARGET_OK) return status;
     }
+    {
+        MarimayCliCheckTargetStatus status =
+            mmay_cli_standard_json_package_add(target);
+        if (status != MMAY_CLI_CHECK_TARGET_OK) return status;
+    }
     return mmay_cli_standard_cli_package_add(target);
 }

@@ -366,7 +366,7 @@ static void mmay_native_c_transfer_block(
     }
 }
 
-static bool mmay_native_c_has_defer(const MarimayMirFunction *function) {
+bool mmay_native_c_function_has_defer(const MarimayMirFunction *function) {
     size_t block_index = 0;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
@@ -690,7 +690,7 @@ bool mmay_native_c_plan_root_registers(
     memset(*registers, 0, register_count);
     if (!mmay_native_c_function_requires_roots(
             function, functions, count, 0
-        ) || mmay_native_c_has_defer(function)) {
+        ) || mmay_native_c_function_has_defer(function)) {
         for (block_index = 0; block_index < register_count; block_index += 1) {
             if (mmay_native_c_register_is_managed(
                     function, functions, count, block_index

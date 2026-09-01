@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "id": 7,
+      "name": "Mara \uD83C\uDF3F",
+      "tags": ["alpha", "json"],
+      "labels": {"priority": 2, "attempts": 1},
+      "status": {"kind": "paused", "reason": "review"},
+      "ignored": {"nested": [true, null]}
+    }
+  ]
+}

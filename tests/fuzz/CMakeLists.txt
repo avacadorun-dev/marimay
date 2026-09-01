@@ -2,6 +2,7 @@ set(MMAY_FUZZ_TARGETS
   bytecode
   frontend
   formatter
+  json
 )
 
 foreach(mmay_fuzz_target IN LISTS MMAY_FUZZ_TARGETS)
@@ -13,6 +14,11 @@ foreach(mmay_fuzz_target IN LISTS MMAY_FUZZ_TARGETS)
   target_include_directories(mmay_fuzz_${mmay_fuzz_target} PRIVATE
     "${CMAKE_CURRENT_SOURCE_DIR}"
   )
+  if(mmay_fuzz_target STREQUAL "json")
+    target_include_directories(mmay_fuzz_json PRIVATE
+      "${CMAKE_SOURCE_DIR}/bootstrap/src/cli"
+    )
+  endif()
   target_compile_options(mmay_fuzz_${mmay_fuzz_target} PRIVATE -fsanitize=fuzzer)
   target_link_options(mmay_fuzz_${mmay_fuzz_target} PRIVATE -fsanitize=fuzzer)
   mmay_target_warnings(mmay_fuzz_${mmay_fuzz_target})

@@ -1,0 +1,76 @@
+import * as fs from "std/fs";
+import * as io from "std/io";
+import * as json from "std/json";
+import * as path from "std/path";
+
+import * as model from "tests.public-alpha.cp38-json/model";
+
+fn fail(message: string): int {
+  const _ = io.eprintln(message);
+  return 1;
+}
+
+fn main(arguments: []string): int {
+  if arguments.length() != 1 {
+    return fail("usage: cp38-json INPUT.json");
+  }
+  const inputPath = match path.fromString(arguments[0]) {
+    Ok(value) => value,
+    Err(_) => {
+      return fail("invalid input path");
+    },
+  };
+  const input = match fs.readBytes(inputPath, 1048576) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(fs.message(error));
+    },
+  };
+  const decoder = match json.newDecoder(input, json.defaultLimits()) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const codec = model.newCodec(json.UnknownFields.Skip);
+  const decoded = match codec.decode(decoder) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const _ = match json.finishDecoder(decoder) {
+    Ok(_) => true,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const encoder = match json.newEncoder(json.defaultLimits()) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const _ = match codec.encode(encoder, model.transform(decoded)) {
+    Ok(_) => true,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const output = match json.finishEncoder(encoder) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const _ = match io.writeBytes(output) {
+    Ok(_) => true,
+    Err(error) => {
+      return fail(io.message(error));
+    },
+  };
+  return match io.print("\n") {
+    Ok(_) => 0,
+    Err(error) => fail(io.message(error)),
+  };
+}

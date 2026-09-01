@@ -31,7 +31,10 @@ owned UTF-8 text and `Bytes` builders, capability-confined paths/files and
 environment access, normalized process context, and insertion-ordered
 `Map`/`Set` collections with mutation-checked iterators. The ordinary
 first-party `std/cli` package provides bounded declarative options,
-positionals, typed usage errors, and deterministic help. Counted string,
+positionals, typed usage errors, and deterministic help. The ordinary
+first-party `std/json` package provides bounded strict decoding, deterministic
+compact encoding, explicit package-owned typed codecs, byte-span errors, and
+unknown-field policies without reflection or a dynamic value tree. Counted string,
 closed enum, `Option`/`Result`, and immutable `@derive(Eq)` record equality are
 executable through typed MIR on VM and native. The built-in preview test
 surface includes `expect.output`, `equal`, `notEqual`, `true`, `false`,
@@ -40,8 +43,9 @@ five VM/native differential tests.
 
 ## Exclusions
 
-- Bounded typed JSON remains CP38. User-defined formatting remains
-  deliberately deferred by D065.
+- JSON derives, a schema registry, a dynamic DOM, network-body streaming, and
+  arbitrary/private reflection are absent; D082 deliberately keeps explicit
+  package-owned codecs. User-defined formatting remains deferred by D065.
 - Recursively self-referential nominal equality remains staged. Preview
   `@derive(Debug)` publishes compiler metadata but does not create a
   user-callable formatter; user-defined formatting remains deferred by D065.

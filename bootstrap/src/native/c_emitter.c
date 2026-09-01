@@ -288,7 +288,8 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
         if (status != MMAY_NATIVE_C_EMIT_OK) {
             goto cleanup;
         }
-        if (!mmay_size_add(
+        if (mmay_native_c_function_has_defer(ordered[index])
+            && !mmay_size_add(
                 max_suppressed,
                 ordered[index]->calls.length,
                 &max_suppressed

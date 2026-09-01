@@ -2414,3 +2414,62 @@ bytecode operations, or delegate parsing to host C.
 Reason: real CLI applications need a reusable deterministic boundary, while a
 host parser or unbounded reflection-based schema would bypass the language
 surface that CLI0 is intended to prove.
+
+## D082 — Explicit bounded typed JSON codecs
+
+Status: accepted.
+
+The CLI-alpha JSON surface is the ordinary first-party `std/json` package.
+It exposes stateful `Decoder` and `Encoder` cursor values, typed errors with
+byte spans, and explicit `Limits`. Application packages define ordinary
+nominal codec values and top-level `decode(codec, decoder)` and
+`encode(codec, encoder, value)` functions. The first parameter makes those
+functions dot-call eligible under D003. There is no compiler-known
+`decode<T>`, derive syntax, dynamic value tree, schema registry, or runtime
+reflection. A codec can read only fields visible to its package; private
+fields cannot be discovered or modified by `std/json`.
+
+The decoder accepts only valid UTF-8 and the JSON lexical grammar. Strings
+decode the defined escapes and paired UTF-16 surrogate escapes; unescaped
+control bytes, malformed escapes, and unpaired surrogates are errors. JSON
+numbers are grammar-validated and available as their exact source spelling;
+the typed integer reader additionally requires the signed 64-bit `int` range.
+Object keys are strings and duplicates are rejected before a codec receives a
+second value. A codec chooses `UnknownFields.Reject` or
+`UnknownFields.Skip`; skipping uses the same nesting, item, string, number,
+and byte budgets as ordinary decoding. Missing fields and unknown enum tags
+remain explicit typed codec errors. `Bytes` uses a JSON array of integers in
+`0..255`.
+
+Encoding is driven entirely by codec call order. Object fields therefore use
+the order in which the codec calls `writeKey`; map-backed fields use D079
+insertion order. The encoder emits no insignificant whitespace, uses the
+short escapes for quote, backslash, and the defined control characters,
+lowercase `\u00xx` for other controls, and literal UTF-8 for other scalar
+values. It does not escape `/`. `writeNumber` accepts only one complete JSON
+number spelling. A failed encoder is poisoned and cannot publish partial
+bytes through `finishEncoder`.
+
+Default limits are 1 MiB input, 1 MiB output, 256 KiB per decoded or encoded
+string, 128 number bytes, 128 nested containers, and 65,536 members per
+container. Custom limits remain within the exact maxima in the
+standard-library specification. Input is copied when a decoder is created,
+every limit is checked before publishing the affected result, and allocator
+or managed-heap exhaustion remains the existing `I0002` runtime outcome
+rather than a fabricated JSON error. Error spans are half-open byte offsets
+into the decoder's owned input. Messages contain fixed resource names,
+limits, field/tag text supplied by the input or codec, and offsets; they do
+not expose host errors, paths, capabilities, or unrelated data.
+
+The C17 toolchain embeds the three ordinary `std/json` source documents but
+does not recognize JSON symbols, lower a JSON-specific MIR/bytecode opcode,
+or call a host JSON library. VM and native execution consume the same typed
+MIR and shared managed collection contracts. File and stream integration is
+composition with `std/fs`, `std/io`, and `std/bytes`; JSON itself gains no
+ambient file, standard-stream, network, or environment access.
+
+Reason: typed local data transformation is required for CLI0, while generic
+reflection or an unbounded DOM would violate package privacy and resource
+contracts. Explicit owner-package codecs prove records, enums, arrays, maps,
+text, bytes, files, and both engines without freezing new derive syntax or a
+dynamic `any` escape hatch.

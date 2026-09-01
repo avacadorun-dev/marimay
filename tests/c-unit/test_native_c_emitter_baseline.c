@@ -170,6 +170,9 @@ void mmay_test_native_baseline(void) {
     MMAY_EXPECT(mmay_test_native_contains(&first, "mmay_g_b_"));
     MMAY_EXPECT(mmay_test_native_contains(&first, "mmay_g_f_"));
     MMAY_EXPECT(mmay_test_native_contains(
+        &first, "#define MMAY_G_MAX_SUPPRESSED 1"
+    ));
+    MMAY_EXPECT(!mmay_test_native_contains(
         &first, "(void)mmay_g_cleanup_p;"
     ));
 #if !defined(_WIN32)

@@ -459,7 +459,7 @@ bool mmay_native_c_emit_function(
         && !mmay_native_c_write(
             buffer, "  bool mmay_g_array_mutated = false;\n"
         )) return false;
-    if (function->calls.length != 0 && !mmay_native_c_write(
+    if (mmay_native_c_function_has_defer(function) && !mmay_native_c_write(
             buffer,
             "  uint32_t mmay_g_defers[%zu] = {0};\n  size_t mmay_g_defer_count = 0;\n  mmay_g_frame mmay_g_cleanup_frames[MMAY_G_MAX_FRAMES];\n  mmay_g_suppressed_panic mmay_g_cleanup_suppressed[MMAY_G_MAX_SUPPRESSED];\n  mmay_g_panic mmay_g_cleanup_p = {0};\n  mmay_g_cleanup_p.frames = mmay_g_cleanup_frames;\n  mmay_g_cleanup_p.frame_capacity = MMAY_G_MAX_FRAMES;\n  mmay_g_cleanup_p.suppressed = mmay_g_cleanup_suppressed;\n  mmay_g_cleanup_p.suppressed_capacity = MMAY_G_MAX_SUPPRESSED;\n  (void)mmay_g_defers;\n  (void)mmay_g_defer_count;\n  (void)mmay_g_cleanup_p;\n",
             function->calls.length

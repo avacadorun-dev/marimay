@@ -1,7 +1,7 @@
 # Marimay Stage 0 compiler architecture
 
 Status: implementation architecture for the C17 bootstrap.
-Last reviewed: 2026-08-30.
+Last reviewed: 2026-09-01.
 
 This document maps the normative compiler and execution contracts to physical
 owners. It changes no language semantics. When it conflicts with `docs/spec/`
@@ -372,6 +372,11 @@ tests/c-unit/
   test_cp37_cli_parser.cmake      exact VM/Release-native CLI process owner
   ../public-alpha/cp37-cli-parser/
                         D081 package/formatter/property/differential corpus
+  test_cp38_json.c                D082 JSON-package embedding allocation owner
+  test_cp38_json.cmake            hostile-input, limit, and both-engine process owner
+  ../public-alpha/cp38-json/
+                        D082 explicit-codec/formatter/differential corpus
+  ../fuzz/json_fuzz.c             real embedded-package/checker/bytecode/VM fuzz owner
 ```
 
 The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
@@ -458,6 +463,33 @@ after recursive appends; and `bytecode_codec_nominal.c` accepts every verified
 register type while decoding nominal layouts, including collection fields.
 These remain within their existing owners, and focused checker/CP36 codec
 regressions prove the repairs independently of the CLI parser.
+
+D082 likewise adds no compiler-known JSON semantics. `std/json/json.my` owns
+the public model, limits, and stable errors; `std/json/decode.my` owns the
+strict UTF-8/token/container cursor and iterative unknown-value skipping; and
+`std/json/encode.my` owns the poisoned encoder state machine and deterministic
+compact form. The narrow `cli_standard_json_package.c` owner embeds those
+three ordinary source documents. Application-owned ordinary codec functions
+then pass through the unchanged package graph, checker, typed MIR, bytecode VM,
+and C17 emitter. JSON has no host parser, dynamic value tree, ambient file
+access, or backend-specific opcode.
+
+`test_cp38_json.c` exhausts every deterministic allocation failure in the
+three-document embedding boundary. `test_cp38_json.cmake` owns exact public
+formatter/check/test/build behavior, hostile-input diagnostic parity, explicit
+VM/native capability denial, native heap pressure, and the file-transform
+example. `json_fuzz.c` compiles the real
+embedded package graph and a bounded driver once, then executes every fuzz
+input through verified bytecode and the VM; it neither substitutes a host JSON
+parser nor places fuzz-only parsing in production.
+
+The CP38 call graph also exposed a native-emitter resource issue independent
+of JSON semantics: functions with ordinary calls but no `defer` reserved the
+program-wide maximum suppressed-cleanup stack arrays. The existing native
+owners now compute and emit those arrays only for functions that actually
+contain a defer operation. `c_emitter_roots.c` owns that MIR scan,
+`c_emitter.c` owns the global bound, and the emit/defer owners consume it;
+the baseline emitter test pins the call-only case.
 
 A separate CP37 bytecode-fuzz input round-tripped the codec and verifier, then
 failed the call-free run-status contract: `FS_CLOSE_BEST_EFFORT` is a void
@@ -603,9 +635,9 @@ criterion. Both must pass.
 
 ### Checkpoint 0 result
 
-The completed local tree has 94 production/platform C translation units and 82
-unit/fuzz C translation units. The largest handwritten production or test file
-is 1,175 lines; the largest owner-private header is 221 lines; the largest
+The completed local tree has focused production/platform and unit/fuzz C
+translation units behind the owner boundaries below. The largest handwritten
+production or test file is 1,304 lines; the largest owner-private header is 333 lines; the largest
 checker owner API is 139 lines. The exception registry is empty. No handwritten
 `.inc` shard or `.c` inclusion is used.
 
@@ -806,6 +838,18 @@ checkpoint:
 | `tests/c-unit/test_cp37_cli_parser.c` | 0 | 69 | every standard-package embedding allocation failure with zero-counter teardown |
 | `tests/c-unit/test_cp37_cli_parser.cmake` | 0 | 157 | exact help/error/status and heap-limit VM/Release-native process parity |
 | `tests/public-alpha/cp37-cli-parser/main_test.my` | 0 | 328 | D081 definition, usage, Unicode, generated, help, limit, and both-engine coverage |
+| `std/json/json.my` | 0 | 132 | D082 public cursor/error/limit model and stable messages |
+| `std/json/decode.my` | 0 | 593 | strict UTF-8, token, duplicate, container, typed-read, and iterative-skip decoding |
+| `std/json/encode.my` | 0 | 274 | bounded poisoned state machine and deterministic compact encoding |
+| `bootstrap/src/cli/cli_standard_json_package.c` | 0 | 18 | narrow three-document ordinary-package embedding owner |
+| `bootstrap/src/cli/cli_standard_packages.c` | 539 | 544 | generic embedded-package support for the fourth independently checked package |
+| `tests/c-unit/test_cp38_json.c` | 0 | 69 | exhaustive embedded JSON-package allocation failure with zero-counter teardown |
+| `tests/c-unit/test_cp38_json.cmake` | 0 | 186 | public file transform, capability denial, hostile diagnostics, heap pressure, and VM/native parity |
+| `tests/public-alpha/cp38-json/main_test.my` | 0 | 330 | explicit records/enums/collections, policies, Unicode, limits, and deterministic form |
+| `tests/fuzz/json_fuzz.c` | 0 | 315 | embedded-package/checker/verified-bytecode/VM JSON fuzz boundary |
+| `bootstrap/src/native/c_emitter.c` | 477 | 478 | defer-only suppressed-cleanup global bound accounting |
+| `bootstrap/src/native/c_emitter_internal.h` | 332 | 333 | narrow owner-private defer-presence query declaration |
+| `tests/c-unit/test_native_c_emitter_baseline.c` | 290 | 293 | call-only generated C excludes defer cleanup stacks |
 
 The earlier mechanical split preserves assertion order within the array suite
 and the single external `mmay_test_mir` registration. The service checkpoint

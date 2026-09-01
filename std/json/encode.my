@@ -1,0 +1,274 @@
+import * as bytes from "std/bytes";
+import * as convert from "std/convert";
+
+fn encoderError(encoder: Encoder, message: string): Error {
+  encoder.failed = true;
+  return Error.InvalidEncoderState { message };
+}
+
+fn outputLimitError(encoder: Encoder): Error {
+  encoder.failed = true;
+  return Error.LimitExceeded {
+    resource: "output bytes",
+    limit: encoder.limits.outputBytes,
+    span: emptySpan(0),
+  };
+}
+
+fn appendOutputByte(encoder: Encoder, value: byte): Result<void, Error> {
+  return match bytes.appendByte(encoder.builder, value) {
+    Ok(_) => Ok(),
+    Err(_) => Err(outputLimitError(encoder)),
+  };
+}
+
+fn appendOutput(encoder: Encoder, value: string): Result<void, Error> {
+  return match bytes.appendBytes(encoder.builder, bytes.encodeUtf8(value)) {
+    Ok(_) => Ok(),
+    Err(_) => Err(outputLimitError(encoder)),
+  };
+}
+
+fn beforeValue(encoder: Encoder): Result<void, Error> {
+  if encoder.failed {
+    return Err(Error.InvalidEncoderState { message: "the encoder already failed" });
+  }
+  if encoder.frames.length() == 0 {
+    if encoder.rootWritten {
+      return Err(encoderError(encoder, "more than one root value"));
+    }
+    encoder.rootWritten = true;
+    return Ok();
+  }
+  const frame = encoder.frames[encoder.frames.length() - 1];
+  if frame.kind == 1 {
+    if !frame.expectingValue {
+      return Err(encoderError(encoder, "an object value requires writeKey"));
+    }
+    frame.expectingValue = false;
+    return Ok();
+  }
+  if frame.count == encoder.limits.items {
+    encoder.failed = true;
+    return Err(Error.LimitExceeded {
+      resource: "array items",
+      limit: encoder.limits.items,
+      span: emptySpan(0),
+    });
+  }
+  if frame.count != 0 {
+    appendOutputByte(encoder, 44)?;
+  }
+  frame.count += 1;
+  return Ok();
+}
+
+fn appendHexControl(encoder: Encoder, value: int): Result<void, Error> {
+  const digits = "0123456789abcdef";
+  appendOutput(encoder, "\\u00")?;
+  const encoded = bytes.encodeUtf8(digits);
+  appendOutputByte(encoder, bytes.get(encoded, value / 16))?;
+  return appendOutputByte(encoder, bytes.get(encoded, value % 16));
+}
+
+fn appendQuoted(encoder: Encoder, value: string): Result<void, Error> {
+  const input = bytes.encodeUtf8(value);
+  if bytes.length(input) > encoder.limits.stringBytes {
+    encoder.failed = true;
+    return Err(Error.LimitExceeded {
+      resource: "string bytes",
+      limit: encoder.limits.stringBytes,
+      span: emptySpan(0),
+    });
+  }
+  appendOutputByte(encoder, 34)?;
+  for index in 0..bytes.length(input) {
+    const item = bytes.get(input, index);
+    const number = item as int;
+    if number == 34 {
+      appendOutput(encoder, "\\\"")?;
+    } else if number == 92 {
+      appendOutput(encoder, "\\\\")?;
+    } else if number == 8 {
+      appendOutput(encoder, "\\b")?;
+    } else if number == 12 {
+      appendOutput(encoder, "\\f")?;
+    } else if number == 10 {
+      appendOutput(encoder, "\\n")?;
+    } else if number == 13 {
+      appendOutput(encoder, "\\r")?;
+    } else if number == 9 {
+      appendOutput(encoder, "\\t")?;
+    } else if number < 32 {
+      appendHexControl(encoder, number)?;
+    } else {
+      appendOutputByte(encoder, item)?;
+    }
+  }
+  return appendOutputByte(encoder, 34);
+}
+
+public fn newEncoder(limits: Limits): Result<Encoder, Error> {
+  if !validLimits(limits) {
+    return Err(Error.InvalidLimits);
+  }
+  const builder = match bytes.newBuilder(limits.outputBytes) {
+    Ok(value) => value,
+    Err(_) => panic("std/json validated output limit"),
+  };
+  return Ok(Encoder {
+    builder,
+    limits,
+    frames: [],
+    rootWritten: false,
+    failed: false,
+  });
+}
+
+public fn finishEncoder(encoder: Encoder): Result<bytes.Bytes, Error> {
+  if encoder.failed {
+    return Err(Error.InvalidEncoderState { message: "the encoder failed" });
+  }
+  if !encoder.rootWritten {
+    return Err(encoderError(encoder, "no root value was written"));
+  }
+  if encoder.frames.length() != 0 {
+    return Err(encoderError(encoder, "a container remains open"));
+  }
+  return Ok(bytes.finish(encoder.builder));
+}
+
+public fn writeNull(encoder: Encoder): Result<void, Error> {
+  beforeValue(encoder)?;
+  return appendOutput(encoder, "null");
+}
+
+public fn writeBool(encoder: Encoder, value: bool): Result<void, Error> {
+  beforeValue(encoder)?;
+  return appendOutput(encoder, convert.formatBool(value));
+}
+
+public fn writeInt(encoder: Encoder, value: int): Result<void, Error> {
+  beforeValue(encoder)?;
+  return appendOutput(encoder, convert.formatI64(value));
+}
+
+public fn writeNumber(encoder: Encoder, value: string): Result<void, Error> {
+  if !validNumberText(value, encoder.limits) {
+    encoder.failed = true;
+    return Err(Error.InvalidNumber { span: emptySpan(0) });
+  }
+  beforeValue(encoder)?;
+  return appendOutput(encoder, value);
+}
+
+public fn writeString(encoder: Encoder, value: string): Result<void, Error> {
+  beforeValue(encoder)?;
+  return appendQuoted(encoder, value);
+}
+
+fn pushEncodeFrame(encoder: Encoder, kind: int): Result<void, Error> {
+  if encoder.frames.length() == encoder.limits.nesting {
+    encoder.failed = true;
+    return Err(Error.LimitExceeded {
+      resource: "nesting",
+      limit: encoder.limits.nesting,
+      span: emptySpan(0),
+    });
+  }
+  const _ = encoder.frames.push(EncoderFrame { kind, count: 0, expectingValue: false });
+  return Ok();
+}
+
+fn popEncodeFrame(encoder: Encoder): void {
+  const _ = encoder.frames.pop();
+}
+
+public fn beginObject(encoder: Encoder): Result<void, Error> {
+  if encoder.frames.length() == encoder.limits.nesting {
+    encoder.failed = true;
+    return Err(Error.LimitExceeded {
+      resource: "nesting",
+      limit: encoder.limits.nesting,
+      span: emptySpan(0),
+    });
+  }
+  beforeValue(encoder)?;
+  appendOutputByte(encoder, 123)?;
+  return pushEncodeFrame(encoder, 1);
+}
+
+public fn writeKey(encoder: Encoder, key: string): Result<void, Error> {
+  if encoder.failed {
+    return Err(Error.InvalidEncoderState { message: "the encoder already failed" });
+  }
+  if encoder.frames.length() == 0
+    || encoder.frames[encoder.frames.length() - 1].kind != 1 {
+    return Err(encoderError(encoder, "writeKey requires an open object"));
+  }
+  const frame = encoder.frames[encoder.frames.length() - 1];
+  if frame.expectingValue {
+    return Err(encoderError(encoder, "the previous object key has no value"));
+  }
+  if frame.count == encoder.limits.items {
+    encoder.failed = true;
+    return Err(Error.LimitExceeded {
+      resource: "object fields",
+      limit: encoder.limits.items,
+      span: emptySpan(0),
+    });
+  }
+  if frame.count != 0 {
+    appendOutputByte(encoder, 44)?;
+  }
+  appendQuoted(encoder, key)?;
+  appendOutputByte(encoder, 58)?;
+  frame.count += 1;
+  frame.expectingValue = true;
+  return Ok();
+}
+
+public fn endObject(encoder: Encoder): Result<void, Error> {
+  if encoder.frames.length() == 0
+    || encoder.frames[encoder.frames.length() - 1].kind != 1 {
+    return Err(encoderError(encoder, "endObject requires an open object"));
+  }
+  if encoder.frames[encoder.frames.length() - 1].expectingValue {
+    return Err(encoderError(encoder, "the final object key has no value"));
+  }
+  appendOutputByte(encoder, 125)?;
+  popEncodeFrame(encoder);
+  return Ok();
+}
+
+public fn beginArray(encoder: Encoder): Result<void, Error> {
+  if encoder.frames.length() == encoder.limits.nesting {
+    encoder.failed = true;
+    return Err(Error.LimitExceeded {
+      resource: "nesting",
+      limit: encoder.limits.nesting,
+      span: emptySpan(0),
+    });
+  }
+  beforeValue(encoder)?;
+  appendOutputByte(encoder, 91)?;
+  return pushEncodeFrame(encoder, 0);
+}
+
+public fn endArray(encoder: Encoder): Result<void, Error> {
+  if encoder.frames.length() == 0
+    || encoder.frames[encoder.frames.length() - 1].kind != 0 {
+    return Err(encoderError(encoder, "endArray requires an open array"));
+  }
+  appendOutputByte(encoder, 93)?;
+  popEncodeFrame(encoder);
+  return Ok();
+}
+
+public fn writeBytes(encoder: Encoder, value: bytes.Bytes): Result<void, Error> {
+  beginArray(encoder)?;
+  for index in 0..bytes.length(value) {
+    writeInt(encoder, bytes.get(value, index) as int)?;
+  }
+  return endArray(encoder);
+}

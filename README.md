@@ -50,7 +50,9 @@ bounded typed stdin, independent stdout/stderr, and explicit flush with exact
 VM/native behavior. CP33-CP36 add bounded owned text/bytes, capability-confined
 paths/files and process context, and insertion-ordered `Map`/`Set`. CP37 adds
 the ordinary first-party `std/cli` parser with typed definition/usage errors
-and deterministic bounded help. For an argument-taking package, for example:
+and deterministic bounded help. CP38 adds ordinary `std/json` bounded cursors,
+explicit package-owned typed codecs, strict UTF-8/number/container handling,
+and deterministic compact encoding. For an argument-taking package, for example:
 
 ```sh
 build/debug/mmay run tests/public-alpha/cp31-args -- alpha "two words"
@@ -85,7 +87,18 @@ build/debug/mmay run tests/public-alpha/cp37-cli-parser -- --count 3 input.txt
 build/debug/mmay test tests/public-alpha/cp37-cli-parser --engine both
 ```
 
-Both run paths print `Marimay CP29 quick start`. The
+The CP38 transformer reads capability-granted JSON bytes, decodes records,
+enums, arrays, and insertion-ordered maps through an explicit codec, updates
+the typed model, and writes deterministic JSON:
+
+```sh
+build/debug/mmay run tests/public-alpha/cp38-json \
+  --allow-read tests/public-alpha/cp38-json \
+  -- tests/public-alpha/cp38-json/input.json
+build/debug/mmay test tests/public-alpha/cp38-json --engine both
+```
+
+The quick-start VM and native paths print `Marimay CP29 quick start`. The
 [known limitations](docs/known-limitations.md) distinguish this executable
 slice from CLI0 and the 1.0 target. `mmay help` lists only seven commands as
 available; recognized future commands are visibly staged and return `U0003`.

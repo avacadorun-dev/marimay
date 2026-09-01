@@ -38,6 +38,7 @@ add_executable(mmay_c_unit
   test_cp35_context_pipeline.c
   test_cp36_collections.c
   test_cp37_cli_parser.c
+  test_cp38_json.c
   test_bytecode_program.c
   test_bytecode_program_nominal.c
   test_bytecode_verify_provenance.c
@@ -400,9 +401,13 @@ add_test(
   NAME mmay_cp37_unit
   COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp37
 )
+add_test(
+  NAME mmay_cp38_unit
+  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp38
+)
 set_tests_properties(
   mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit mmay_cp36_unit
-  mmay_cp37_unit
+  mmay_cp37_unit mmay_cp38_unit
   PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 set_tests_properties(
@@ -503,6 +508,17 @@ add_test(
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp37_cli_parser.cmake"
 )
 
+add_test(
+  NAME mmay_cp38_json
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp38-json"
+    "-DMMAY_TEST_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp38-json${CMAKE_EXECUTABLE_SUFFIX}"
+    "-DMMAY_TEST_INPUT=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp38-json/input.json"
+    "-DMMAY_TEST_EXPECTED=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp38-json/expected.json"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp38_json.cmake"
+)
+
 # The install contracts both update CMake's build-tree install manifest. They
 # may overlap all other isolated tests, but not each other.
 set_tests_properties(
@@ -524,10 +540,14 @@ set_tests_properties(
   mmay_cp37_cli_parser
   PROPERTIES PROCESSORS 2 COST 500 TIMEOUT 1200
 )
+set_tests_properties(
+  mmay_cp38_json
+  PROPERTIES PROCESSORS 2 COST 600 TIMEOUT 1200
+)
 
 # Focused checkpoint runners still share the legacy root fixture directory.
 set_tests_properties(
   mmay_cp32_unit mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit
-  mmay_cp36_unit mmay_cp37_unit
+  mmay_cp36_unit mmay_cp37_unit mmay_cp38_unit
   PROPERTIES RUN_SERIAL TRUE COST 10
 )

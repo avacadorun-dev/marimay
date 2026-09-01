@@ -51,8 +51,8 @@ static void mmay_cp37_standard_package_allocation_failures(void) {
         MMAY_EXPECT(reached_success
             || status == MMAY_CLI_CHECK_TARGET_ALLOCATION_FAILED);
         if (reached_success) {
-            MMAY_EXPECT(target.packages.length == 9);
-            MMAY_EXPECT(target.service.documents.length == 14);
+            MMAY_EXPECT(target.packages.length == 10);
+            MMAY_EXPECT(target.service.documents.length == 17);
             allocation_attempts = state.attempts;
         }
         mmay_cli_check_target_dispose(&target);

@@ -1242,8 +1242,8 @@ and every allocation failure. Run:
 build/debug/mmay fmt tests/public-alpha/cp38-json --check
 build/debug/mmay check tests/public-alpha/cp38-json
 build/debug/mmay test tests/public-alpha/cp38-json --engine both
-build/debug/mmay run tests/public-alpha/cp38-json -- tests/public-alpha/cp38-json/input.json
-build/debug/mmay build tests/public-alpha/cp38-json --release --output build/debug/cp38-json
+build/debug/mmay run tests/public-alpha/cp38-json --allow-read tests/public-alpha/cp38-json -- tests/public-alpha/cp38-json/input.json
+build/debug/mmay build tests/public-alpha/cp38-json --release --allow-read tests/public-alpha/cp38-json --output build/debug/cp38-json
 build/debug/cp38-json tests/public-alpha/cp38-json/input.json
 ```
 

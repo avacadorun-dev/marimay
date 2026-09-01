@@ -26,5 +26,8 @@ MarimayCliCheckTargetStatus mmay_cli_standard_context_packages_add(
 MarimayCliCheckTargetStatus mmay_cli_standard_cli_package_add(
     MarimayCliCheckTarget *target
 );
+MarimayCliCheckTargetStatus mmay_cli_standard_json_package_add(
+    MarimayCliCheckTarget *target
+);
 
 #endif

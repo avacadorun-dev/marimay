@@ -1,0 +1,330 @@
+import * as bytes from "std/bytes";
+import * as json from "std/json";
+
+import * as model from "tests.public-alpha.cp38-json/model";
+
+fn require(condition: bool, message: string): void {
+  if !condition {
+    panic(message);
+  }
+}
+
+fn decoder(text: string, limits: json.Limits): json.Decoder {
+  return match json.newDecoder(bytes.encodeUtf8(text), limits) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+}
+
+fn decodeCatalog(text: string, unknownFields: json.UnknownFields): model.Catalog {
+  const value = decoder(text, json.defaultLimits());
+  const result = match model.decode(model.newCodec(unknownFields), value) {
+    Ok(decoded) => decoded,
+    Err(error) => panic(json.message(error)),
+  };
+  const _ = match json.finishDecoder(value) {
+    Ok(_) => true,
+    Err(error) => panic(json.message(error)),
+  };
+  return result;
+}
+
+fn encodeCatalog(value: model.Catalog): string {
+  const encoder = match json.newEncoder(json.defaultLimits()) {
+    Ok(result) => result,
+    Err(error) => panic(json.message(error)),
+  };
+  const codec = model.newCodec(json.UnknownFields.Reject);
+  const _ = match model.encode(codec, encoder, value) {
+    Ok(_) => true,
+    Err(error) => panic(json.message(error)),
+  };
+  const encoded = match json.finishEncoder(encoder) {
+    Ok(result) => result,
+    Err(error) => panic(json.message(error)),
+  };
+  return match bytes.decodeUtf8(encoded) {
+    Ok(text) => text,
+    Err(_) => panic("encoder produced invalid UTF-8"),
+  };
+}
+
+@test
+fn typedCodecRoundTripIsDeterministicAndPrivate(): void {
+  const input = "{\"version\":1,\"items\":[{\"id\":7,\"name\":\"Mara \\uD83C\\uDF3F\",\"tags\":[\"alpha\",\"json\"],\"labels\":{\"priority\":2,\"attempts\":1},\"status\":{\"kind\":\"paused\",\"reason\":\"review\"},\"ignored\":{\"nested\":[true,null]}}]}";
+  const value = decodeCatalog(input, json.UnknownFields.Skip);
+  require(model.privateStateIntact(value), "private codec state");
+  require(
+    encodeCatalog(model.transform(value)) == "{\"version\":2,\"items\":[{\"id\":7,\"name\":\"Mara 🌿\",\"tags\":[\"alpha\",\"json\"],\"labels\":{\"priority\":2,\"attempts\":1},\"status\":{\"kind\":\"paused\",\"reason\":\"review\"}}]}",
+    "deterministic typed encoding",
+  );
+}
+
+@test
+fn UnicodeEscapesAndCanonicalStringOutput(): void {
+  const input = decoder("\"a\\u0062\\uD83C\\uDF3F\\n\"", json.defaultLimits());
+  const text = match json.readString(input) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  require(text == "ab🌿\n", "Unicode escape decode");
+  const _ = json.finishDecoder(input);
+
+  const encoder = match json.newEncoder(json.defaultLimits()) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  const _ = json.writeString(encoder, "quote \" slash \\ line\nλ");
+  const output = match json.finishEncoder(encoder) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  require(
+    match bytes.decodeUtf8(output) {
+      Ok(value) => value == "\"quote \\\" slash \\\\ line\\nλ\"",
+      Err(_) => false,
+    },
+    "canonical string escaping",
+  );
+}
+
+@test
+fn DuplicateUnknownAndMissingFieldsStayTyped(): void {
+  const duplicate = decoder("{\"version\":1,\"version\":2,\"items\":[]}", json.defaultLimits());
+  require(
+    match model.decode(model.newCodec(json.UnknownFields.Reject), duplicate) {
+      Err(error) => match error {
+        json.DuplicateField { name, span } => name == "version"
+          && span.start == 13,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "duplicate field",
+    );
+
+  const unknown = decoder("{\"version\":1,\"items\":[],\"extra\":false}", json.defaultLimits());
+  require(
+    match model.decode(model.newCodec(json.UnknownFields.Reject), unknown) {
+      Err(error) => match error {
+        json.UnknownField { name, span } => name == "extra"
+          && span.start == 24,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "unknown field policy",
+    );
+
+  const missing = decoder("{\"version\":1}", json.defaultLimits());
+  require(
+    match model.decode(model.newCodec(json.UnknownFields.Reject), missing) {
+      Err(error) => match error {
+        json.MissingField { name, span } => name == "items"
+          && span.start == 13,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "missing field",
+    );
+}
+
+@test
+fn InvalidAndTruncatedInputsReportByteSpans(): void {
+  const badEscape = decoder("\"\\x\"", json.defaultLimits());
+  require(
+    match json.readString(badEscape) {
+      Err(error) => match error {
+        json.InvalidEscape { span } => span.start == 1
+          && span.end == 3,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "invalid escape span",
+    );
+
+  const badSurrogate = decoder("\"\\uD800x\"", json.defaultLimits());
+  require(
+    match json.readString(badSurrogate) {
+      Err(error) => match error {
+        json.InvalidUnicodeEscape { span } => span.start == 1,
+        _ => false,
+      },
+      Ok(_) => false,
+    },
+    "surrogate span",
+  );
+
+  const truncated = decoder("[1,", json.defaultLimits());
+  const _ = json.beginArray(truncated);
+  const _ = json.nextElement(truncated);
+  const _ = json.readInt(truncated);
+  require(
+    match json.nextElement(truncated) {
+      Err(error) => match error {
+        json.UnexpectedEnd { span, expected: _ } => span.start == 3
+          && span.end == 3,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "truncated array span",
+    );
+}
+
+@test
+fn NumbersAreValidatedAndRangeChecked(): void {
+  const invalid = decoder("01", json.defaultLimits());
+  require(
+    match json.readNumber(invalid) {
+      Err(error) => match error {
+        json.InvalidNumber { span } => span.start == 0,
+        _ => false,
+      },
+      Ok(_) => false,
+    },
+    "leading zero",
+  );
+
+  const fractional = decoder("-12.50e+2", json.defaultLimits());
+  require(
+    match json.readNumber(fractional) {
+      Ok(value) => value == "-12.50e+2",
+      Err(_) => false,
+    },
+    "full JSON number grammar",
+  );
+
+  const range = decoder("9223372036854775808", json.defaultLimits());
+  require(
+    match json.readInt(range) {
+      Err(error) => match error {
+        json.NumberOutOfRange { span } => span.start == 0
+          && span.end == 19,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "signed integer range",
+    );
+}
+
+@test
+fn DecoderLimitsRejectAmplificationBoundaries(): void {
+  const smallInput = json.limits(2, 32, 16, 8, 2, 2);
+  require(
+    match json.newDecoder(bytes.encodeUtf8("true"), smallInput) {
+      Err(error) => match error {
+        json.LimitExceeded { resource, limit, span } => resource == "input bytes"
+          && limit == 2
+          && span.end == 4,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "input limit",
+    );
+
+  const nested = decoder("[[[]]]", json.limits(32, 32, 16, 8, 2, 4));
+  require(
+    match json.skipValue(nested) {
+      Err(error) => match error {
+        json.LimitExceeded { resource, limit, span: _ } => resource == "nesting"
+          && limit == 2,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "nesting limit",
+    );
+
+  const many = decoder("[1,2,3]", json.limits(32, 32, 16, 8, 4, 2));
+  require(
+    match json.skipValue(many) {
+      Err(error) => match error {
+        json.LimitExceeded { resource, limit, span: _ } => resource == "array items"
+          && limit == 2,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "item limit",
+    );
+
+  const longString = decoder("\"abc\"", json.limits(32, 32, 2, 8, 4, 4));
+  require(
+    match json.readString(longString) {
+      Err(error) => match error {
+        json.LimitExceeded { resource, limit, span: _ } => resource == "string bytes"
+          && limit == 2,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "decoded string limit",
+    );
+}
+
+@test
+fn EncoderLimitsAndStateAreExplicit(): void {
+  const limited = match json.newEncoder(json.limits(32, 4, 16, 8, 4, 4)) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  require(
+    match json.writeString(limited, "abcd") {
+      Err(error) => match error {
+        json.LimitExceeded { resource, limit, span: _ } => resource == "output bytes"
+          && limit == 4,
+          _ => false,
+        },
+        Ok(_) => false,
+      },
+      "output limit",
+    );
+
+  const invalid = match json.newEncoder(json.defaultLimits()) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  const _ = json.beginObject(invalid);
+  require(
+    match json.writeInt(invalid, 1) {
+      Err(error) => match error {
+        json.InvalidEncoderState { message } => message == "an object value requires writeKey",
+        _ => false,
+      },
+      Ok(_) => false,
+    },
+    "object state",
+  );
+}
+
+@test
+fn BytesCodecUsesBoundedJsonArrays(): void {
+  const input = decoder("[0,255,10]", json.defaultLimits());
+  const value = match json.readBytes(input) {
+    Ok(result) => result,
+    Err(error) => panic(json.message(error)),
+  };
+  require(bytes.length(value) == 3 && bytes.get(value, 1) == 255, "bytes decode");
+
+  const encoder = match json.newEncoder(json.defaultLimits()) {
+    Ok(result) => result,
+    Err(error) => panic(json.message(error)),
+  };
+  const _ = json.writeBytes(encoder, value);
+  const output = match json.finishEncoder(encoder) {
+    Ok(result) => result,
+    Err(error) => panic(json.message(error)),
+  };
+  require(
+    match bytes.decodeUtf8(output) {
+      Ok(text) => text == "[0,255,10]",
+      Err(_) => false,
+    },
+    "bytes encode",
+  );
+}

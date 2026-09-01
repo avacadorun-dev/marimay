@@ -122,11 +122,11 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | STD-003 | collections are bounded and map/set iteration insertion-ordered | standard library §4 | I5 |
 | STD-004 | resource and whole-input APIs expose cleanup and size limits | standard library §§5,9–10 | I9 |
 | STD-005 | timeouts, structured race/select, channels, and isolate APIs preserve task-scope invariants | standard library §§6–8; D029 | I6 |
-| STD-006 | HTTP/TLS support streaming, limits, cancellation, graceful shutdown | standard library §9 | I9/P2 |
-| STD-007 | JSON typed codecs do not use unrestricted private reflection | standard library §10 | I8 |
-| STD-008 | logging/tracing are bounded, contextual, and redactable | standard library §11 | P2 |
-| STD-009 | C API is outside prelude and enforces handle/suspension safety | standard library §13 | I9 |
-| STD-010 | every production std package meets tests/platform/security/benchmark gate | standard library §14 | P1 |
+| STD-006 | HTTP/TLS support streaming, limits, cancellation, graceful shutdown | standard library §10 | I9/P2 |
+| STD-007 | D082 bounded JSON uses explicit owner-package codecs, strict UTF-8/number/container parsing, deterministic compact encoding, typed byte-span errors and limits, and no unrestricted private reflection, DOM, dynamic `any`, or host-library bypass | standard library §11; D082 | I2/I3/I4/I5/CLI0 |
+| STD-008 | logging/tracing are bounded, contextual, and redactable | standard library §12 | P2 |
+| STD-009 | C API is outside prelude and enforces handle/suspension safety | standard library §14 | I9 |
+| STD-010 | every production std package meets tests/platform/security/benchmark gate | standard library §15 | P1 |
 | STD-011 | `std/io` exposes the exact D075 bounded typed `readLine`, stdout/stderr print, and explicit flush surface with three capabilities, UTF-8/EOF/limit rules, bounded retries, and no diagnostic pollution | standard library §§3,3.1; D075 | I3/I4/I5/I6/I8 |
 
 ## Implementation, bootstrap, and production

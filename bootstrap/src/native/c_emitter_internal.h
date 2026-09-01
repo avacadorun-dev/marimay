@@ -299,6 +299,7 @@ bool mmay_native_c_emit_test_output_instruction(
 bool mmay_native_c_emit_function(MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *function, const MarimayMirFunction *const *functions,
     size_t count, const unsigned char *root_registers, size_t root_count);
+bool mmay_native_c_function_has_defer(const MarimayMirFunction *function);
 bool mmay_native_c_emit_symbol_and_strings(MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *function);
 bool mmay_native_c_emit_runtime(

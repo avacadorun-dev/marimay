@@ -1,0 +1,132 @@
+import * as bytes from "std/bytes";
+
+public type Span {
+  public start: int,
+  public end: int,
+}
+
+public type Limits {
+  public inputBytes: int,
+  public outputBytes: int,
+  public stringBytes: int,
+  public numberBytes: int,
+  public nesting: int,
+  public items: int,
+}
+
+public enum UnknownFields {
+  Reject,
+  Skip,
+}
+
+public enum Error {
+  InvalidLimits,
+  InvalidUtf8 { span: Span, },
+  UnexpectedToken { expected: string, span: Span, },
+  UnexpectedEnd { expected: string, span: Span, },
+  InvalidEscape { span: Span, },
+  InvalidUnicodeEscape { span: Span, },
+  InvalidNumber { span: Span, },
+  NumberOutOfRange { span: Span, },
+  DuplicateField { name: string, span: Span, },
+  UnknownField { name: string, span: Span, },
+  MissingField { name: string, span: Span, },
+  LimitExceeded { resource: string, limit: int, span: Span, },
+  InvalidEncoderState { message: string, },
+}
+
+public type DecoderFrame {
+  kind: int,
+  mutable first: bool,
+  mutable count: int,
+  keys: Map<string, bool>,
+}
+
+public type EncoderFrame {
+  kind: int,
+  mutable count: int,
+  mutable expectingValue: bool,
+}
+
+public type Decoder {
+  input: bytes.Bytes,
+  limits: Limits,
+  mutable offset: int,
+  frames: []DecoderFrame,
+  mutable lastKeyStart: int,
+  mutable lastKeyEnd: int,
+}
+
+public type Encoder {
+  builder: bytes.Builder,
+  limits: Limits,
+  frames: []EncoderFrame,
+  mutable rootWritten: bool,
+  mutable failed: bool,
+}
+
+public fn defaultLimits(): Limits {
+  return Limits {
+    inputBytes: 1048576,
+    outputBytes: 1048576,
+    stringBytes: 262144,
+    numberBytes: 128,
+    nesting: 128,
+    items: 65536,
+  };
+}
+
+public fn limits(
+  inputBytes: int,
+  outputBytes: int,
+  stringBytes: int,
+  numberBytes: int,
+  nesting: int,
+  items: int,
+): Limits {
+  return Limits { inputBytes, outputBytes, stringBytes, numberBytes, nesting, items };
+}
+
+fn validLimits(value: Limits): bool {
+  return value.inputBytes >= 0
+    && value.inputBytes <= 1048576
+    && value.outputBytes >= 0
+    && value.outputBytes <= 1048576
+    && value.stringBytes >= 0
+    && value.stringBytes <= 1048576
+    && value.numberBytes >= 1
+    && value.numberBytes <= 1024
+    && value.nesting >= 1
+    && value.nesting <= 256
+    && value.items >= 0
+    && value.items <= 1048576;
+}
+
+fn emptySpan(offset: int): Span {
+  return Span { start: offset, end: offset };
+}
+
+fn byteSpan(offset: int, length: int): Span {
+  if offset >= length {
+    return emptySpan(length);
+  }
+  return Span { start: offset, end: offset + 1 };
+}
+
+public fn message(error: Error): string {
+  return match error {
+    InvalidLimits => "invalid JSON limits",
+    InvalidUtf8 { span } => $"JSON input is not valid UTF-8 at byte {span.start}",
+    UnexpectedToken { expected, span } => $"expected {expected} at byte {span.start}",
+    UnexpectedEnd { expected, span } => $"expected {expected} before byte {span.start}",
+    InvalidEscape { span } => $"invalid JSON escape at byte {span.start}",
+    InvalidUnicodeEscape { span } => $"invalid JSON Unicode escape at byte {span.start}",
+    InvalidNumber { span } => $"invalid JSON number at byte {span.start}",
+    NumberOutOfRange { span } => $"JSON integer is outside the signed 64-bit range at byte {span.start}",
+    DuplicateField { name, span } => $"duplicate JSON field {name} at byte {span.start}",
+    UnknownField { name, span } => $"unknown JSON field {name} at byte {span.start}",
+    MissingField { name, span } => $"missing JSON field {name} at byte {span.start}",
+    LimitExceeded { resource, limit, span } => $"JSON {resource} exceeds limit {limit} at byte {span.start}",
+    InvalidEncoderState { message } => $"invalid JSON encoder state: {message}",
+  };
+}

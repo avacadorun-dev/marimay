@@ -190,7 +190,7 @@ bool mmay_native_c_emit_defer_cleanup(
     size_t count
 ) {
     size_t call_index = 0;
-    if (function->calls.length == 0) {
+    if (!mmay_native_c_function_has_defer(function)) {
         return true;
     }
     if (!mmay_native_c_write(

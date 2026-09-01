@@ -830,16 +830,233 @@ HTTP parsing rejects request smuggling ambiguities and configurable-limit violat
 
 ## 11. JSON and serialization
 
-`std/json` exposes a bounded streaming token reader/writer and typed codec functions:
+`std/json` is an ordinary source package implementing the D082 bounded cursor
+and explicit-codec model. It does not expose a DOM or dynamic `any` value and
+does not use compiler or runtime reflection.
+
+### 11.1 Public model and limits
+
+The public model is:
 
 ```marimay
-public fn decode<T>(input: Bytes): Result<T, json.Error>;
-public fn encode<T>(value: T): Result<Bytes, json.Error>;
+public type Span {
+  public start: int,
+  public end: int,
+}
+
+public type Limits {
+  public inputBytes: int,
+  public outputBytes: int,
+  public stringBytes: int,
+  public numberBytes: int,
+  public nesting: int,
+  public items: int,
+}
+
+public enum UnknownFields { Reject, Skip }
+
+public enum Error {
+  InvalidLimits,
+  InvalidUtf8 { span: Span, },
+  UnexpectedToken { expected: string, span: Span, },
+  UnexpectedEnd { expected: string, span: Span, },
+  InvalidEscape { span: Span, },
+  InvalidUnicodeEscape { span: Span, },
+  InvalidNumber { span: Span, },
+  NumberOutOfRange { span: Span, },
+  DuplicateField { name: string, span: Span, },
+  UnknownField { name: string, span: Span, },
+  MissingField { name: string, span: Span, },
+  LimitExceeded { resource: string, limit: int, span: Span, },
+  InvalidEncoderState { message: string, },
+}
+
+public type DecoderFrame;
+public type EncoderFrame;
+public type Decoder;
+public type Encoder;
+
+public fn defaultLimits(): Limits;
+public fn limits(
+  inputBytes: int,
+  outputBytes: int,
+  stringBytes: int,
+  numberBytes: int,
+  nesting: int,
+  items: int,
+): Limits;
+public fn message(error: Error): string;
 ```
 
-Typed codecs require compiler derives or explicit codec values; there is no unrestricted runtime reflection into private fields. Unknown/missing/duplicate-field behavior is explicit per codec policy. Nesting, number size, string size, and total bytes are limited.
+`Decoder` and `Encoder` are public nominal handles whose stored state is
+private. The public `DecoderFrame` and `EncoderFrame` nominal declarations are
+opaque state carriers needed by the Stage 0 imported-record layout contract;
+their fields are private and application code cannot construct or inspect
+them. This representation detail grants no reflective access.
 
-Derive metadata supports field rename/omit/default only through a closed declarative attribute set added by a separate decision before freeze. Arbitrary serialization macros are not introduced.
+`Span` is a half-open byte range in the decoder's owned input. Encoder errors
+that do not correspond to input use `Span { start: 0, end: 0 }`. Default limits
+are:
+
+| Resource | Default | Accepted custom range |
+|---|---:|---:|
+| input bytes | 1,048,576 | 0..1,048,576 |
+| output bytes | 1,048,576 | 0..1,048,576 |
+| decoded/encoded string bytes | 262,144 | 0..1,048,576 |
+| number bytes | 128 | 1..1,024 |
+| nested containers | 128 | 1..256 |
+| members in one object or array | 65,536 | 0..1,048,576 |
+
+`items` is per open container, not a whole-document allocation allowance. The
+managed-heap budget remains the whole-execution bound. Invalid limit tuples
+return `InvalidLimits`. Managed-budget and allocator exhaustion remain
+`I0002`; a JSON operation does not translate them into `InvalidLimits` or
+`LimitExceeded`.
+
+### 11.2 Decoder
+
+The decoder API is:
+
+```marimay
+public fn newDecoder(input: Bytes, limits: Limits): Result<Decoder, Error>;
+public fn finishDecoder(decoder: Decoder): Result<void, Error>;
+public fn readString(decoder: Decoder): Result<string, Error>;
+public fn readBool(decoder: Decoder): Result<bool, Error>;
+public fn readNull(decoder: Decoder): Result<void, Error>;
+public fn readNumber(decoder: Decoder): Result<string, Error>;
+public fn readInt(decoder: Decoder): Result<int, Error>;
+public fn beginObject(decoder: Decoder): Result<void, Error>;
+public fn nextField(decoder: Decoder): Result<Option<string>, Error>;
+public fn beginArray(decoder: Decoder): Result<void, Error>;
+public fn nextElement(decoder: Decoder): Result<bool, Error>;
+public fn readBytes(decoder: Decoder): Result<Bytes, Error>;
+public fn skipValue(decoder: Decoder): Result<void, Error>;
+public fn handleUnknown(
+  decoder: Decoder,
+  name: string,
+  policy: UnknownFields,
+): Result<void, Error>;
+public fn missingField(decoder: Decoder, name: string): Error;
+public fn unknownVariant(decoder: Decoder, name: string): Error;
+```
+
+`newDecoder` validates the complete input as UTF-8, applies the input-byte
+limit, and owns a copy before returning. The JSON grammar is strict: only the
+four JSON whitespace bytes are ignored; strings reject unescaped controls;
+escapes are `\"`, `\\`, `\/`, `\b`, `\f`, `\n`, `\r`, `\t`, and `\u` with
+exactly four hexadecimal digits; UTF-16 surrogate escapes must be a valid
+high/low pair. Other input UTF-8 remains unchanged and is not normalized.
+
+`readNumber` accepts exactly the JSON number grammar and returns the original
+number spelling after leading/trailing whitespace handling. Leading zeroes,
+missing integer/fraction/exponent digits, and a following non-delimiter byte
+are `InvalidNumber`. `readInt` additionally parses the value as signed 64-bit
+`int` and reports `NumberOutOfRange`. Floating-point conversion is not implied
+by either operation.
+
+`beginObject`/`nextField` and `beginArray`/`nextElement` are paired cursor
+operations. `nextField` returns the decoded key, consumes its colon, and
+positions the cursor at the value; `None` consumes the closing brace.
+`nextElement` returns `true` at the next value and `false` after consuming the
+closing bracket. Trailing commas are rejected. Every object tracks complete
+decoded key strings and rejects a duplicate with the second key's span before
+its value is decoded. Duplicate behavior is not configurable.
+
+`skipValue` recognizes one complete value iteratively and applies the same
+grammar and limits as typed reads. `handleUnknown` either returns
+`UnknownField` at the most recent key span or calls `skipValue`.
+`missingField` reports the current cursor as an empty span.
+`unknownVariant` uses the same typed `UnknownField` shape at the current
+cursor; the variant name is codec-supplied. `readBytes` is a JSON array whose
+members must be signed integers in `0..255`.
+
+`finishDecoder` succeeds only when no container remains open and, after JSON
+whitespace, the owned input is exhausted. A caller must not publish a decoded
+root value before both its codec and `finishDecoder` succeed.
+
+### 11.3 Encoder and deterministic form
+
+The encoder API is:
+
+```marimay
+public fn newEncoder(limits: Limits): Result<Encoder, Error>;
+public fn finishEncoder(encoder: Encoder): Result<Bytes, Error>;
+public fn writeNull(encoder: Encoder): Result<void, Error>;
+public fn writeBool(encoder: Encoder, value: bool): Result<void, Error>;
+public fn writeInt(encoder: Encoder, value: int): Result<void, Error>;
+public fn writeNumber(encoder: Encoder, value: string): Result<void, Error>;
+public fn writeString(encoder: Encoder, value: string): Result<void, Error>;
+public fn beginObject(encoder: Encoder): Result<void, Error>;
+public fn writeKey(encoder: Encoder, key: string): Result<void, Error>;
+public fn endObject(encoder: Encoder): Result<void, Error>;
+public fn beginArray(encoder: Encoder): Result<void, Error>;
+public fn endArray(encoder: Encoder): Result<void, Error>;
+public fn writeBytes(encoder: Encoder, value: Bytes): Result<void, Error>;
+```
+
+The encoder accepts exactly one root value and enforces the object key/value
+and container state machine. Exceeding any limit or violating that state
+poisons the encoder. `finishEncoder` publishes bytes only when one root is
+complete, every container is closed, and no earlier error occurred.
+
+Output contains no insignificant whitespace. Object order is exactly
+`writeKey` call order; array order is write call order. A codec encoding a
+`Map` inherits D079 insertion order. Strings escape quote and backslash, use
+the short escape for backspace/form-feed/newline/carriage-return/tab, use
+lowercase `\u00xx` for other controls, leave `/` unescaped, and emit all other
+valid UTF-8 literally. `writeNumber` first validates one complete JSON number
+under the encoder's number limit. `writeBytes` emits a JSON array of decimal
+integers.
+
+This is a deterministic compact form, not a general canonicalization scheme:
+it does not reorder object fields, normalize Unicode, or rewrite a valid
+`writeNumber` spelling.
+
+### 11.4 Explicit typed codecs, privacy, and integration
+
+A typed codec is ordinary package-owned code. The conventional shape is:
+
+```marimay
+public type Codec { /* policy owned by this package */ }
+
+public fn decode(
+  codec: Codec,
+  decoder: json.Decoder,
+): Result<Record, json.Error>;
+
+public fn encode(
+  codec: Codec,
+  encoder: json.Encoder,
+  value: Record,
+): Result<void, json.Error>;
+```
+
+These functions are dot-call eligible through their exact first parameter;
+the convention does not create a special method or interface. A codec owns
+field names, declaration/write order, required/default/omitted behavior,
+unknown-field policy, enum tag representation, and conversions. It explicitly
+builds records/enums/arrays/maps from the cursor operations. Because normal
+visibility rules apply, it can access private fields only when it is declared
+in their owning package. `std/json` cannot enumerate or mutate them.
+
+Files and streams are composed explicitly: bounded bytes come from `std/fs`
+or `std/io`, are passed to `newDecoder`, and encoded bytes are passed back to
+those packages. JSON grants no filesystem, standard-stream, environment, or
+network capability. There is no host JSON library, unbounded DOM, dynamic
+tree, schema registry, arbitrary macro, or reflection escape hatch in this
+surface.
+
+For untrusted input, callers choose limits no larger than the enclosing file,
+stream, and managed-heap budgets, reject or deliberately skip unknown fields,
+require `finishDecoder`, and avoid echoing complete attacker-controlled input
+in surrounding diagnostics. JSON error messages are bounded structural text
+containing a fixed expectation/resource, a limit, a field/tag name, and/or a
+byte offset; they never include host error codes, ambient paths, capability
+roots, or unrelated input bytes.
+
+Any future derive or attribute syntax requires its own accepted decision and
+the complete semantic-change protocol; it cannot silently replace the D082
+explicit codec contract.
 
 ## 12. Logging, metrics, and tracing
 
