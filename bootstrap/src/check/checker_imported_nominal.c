@@ -306,6 +306,7 @@ static bool mmay_checker_private_ensure_layout_closure(
         MarimayMirRecordId layout = MMAY_MIR_NO_RECORD;
         MarimayCheckRecordDeclaration concrete = *record;
         const MarimayMirRecord *mir_record = NULL;
+        size_t field_count = 0;
         size_t field_index = 0;
         if (record->is_generic) concrete.type = type;
         if (!mmay_checker_private_function_record_layout(
@@ -313,8 +314,9 @@ static bool mmay_checker_private_ensure_layout_closure(
             )) accepted = false;
         mir_record = accepted
             ? mmay_vector_at_const(&function->mir.records, layout) : NULL;
-        for (field_index = 0; accepted && mir_record != NULL
-            && field_index < mir_record->field_count; field_index += 1) {
+        field_count = mir_record != NULL ? mir_record->field_count : 0;
+        for (field_index = 0; accepted && field_index < field_count;
+            field_index += 1) {
             mir_record = mmay_vector_at_const(&function->mir.records, layout);
             const MarimayMirRecordField *field = mmay_vector_at_const(
                 &function->mir.record_fields,
@@ -329,6 +331,7 @@ static bool mmay_checker_private_ensure_layout_closure(
         MarimayMirEnumId layout = MMAY_MIR_NO_ENUM;
         MarimayCheckEnumDeclaration concrete = *enum_value;
         const MarimayMirEnum *mir_enum = NULL;
+        size_t payload_count = 0;
         size_t payload_index = 0;
         if (enum_value->is_generic) {
             concrete.type = type;
@@ -338,8 +341,9 @@ static bool mmay_checker_private_ensure_layout_closure(
             )) accepted = false;
         mir_enum = accepted
             ? mmay_vector_at_const(&function->mir.enums, layout) : NULL;
-        for (payload_index = 0; accepted && mir_enum != NULL
-            && payload_index < mir_enum->payload_count; payload_index += 1) {
+        payload_count = mir_enum != NULL ? mir_enum->payload_count : 0;
+        for (payload_index = 0; accepted && payload_index < payload_count;
+            payload_index += 1) {
             mir_enum = mmay_vector_at_const(&function->mir.enums, layout);
             const MarimayMirEnumPayload *payload = mmay_vector_at_const(
                 &function->mir.enum_payloads,
@@ -353,14 +357,16 @@ static bool mmay_checker_private_ensure_layout_closure(
     } else if (imported_record != NULL) {
         MarimayMirRecordId layout = MMAY_MIR_NO_RECORD;
         const MarimayMirRecord *mir_record = NULL;
+        size_t field_count = 0;
         size_t field_index = 0;
         if (!mmay_checker_private_imported_record_layout(
                 function, imported_record, type, &layout
             )) accepted = false;
         mir_record = accepted
             ? mmay_vector_at_const(&function->mir.records, layout) : NULL;
-        for (field_index = 0; accepted && mir_record != NULL
-            && field_index < mir_record->field_count; field_index += 1) {
+        field_count = mir_record != NULL ? mir_record->field_count : 0;
+        for (field_index = 0; accepted && field_index < field_count;
+            field_index += 1) {
             mir_record = mmay_vector_at_const(&function->mir.records, layout);
             const MarimayMirRecordField *field = mmay_vector_at_const(
                 &function->mir.record_fields,
@@ -374,14 +380,16 @@ static bool mmay_checker_private_ensure_layout_closure(
     } else if (imported_enum != NULL) {
         MarimayMirEnumId layout = MMAY_MIR_NO_ENUM;
         const MarimayMirEnum *mir_enum = NULL;
+        size_t payload_count = 0;
         size_t payload_index = 0;
         if (!mmay_checker_private_imported_enum_layout(
                 function, imported_enum, type, &layout
             )) accepted = false;
         mir_enum = accepted
             ? mmay_vector_at_const(&function->mir.enums, layout) : NULL;
-        for (payload_index = 0; accepted && mir_enum != NULL
-            && payload_index < mir_enum->payload_count; payload_index += 1) {
+        payload_count = mir_enum != NULL ? mir_enum->payload_count : 0;
+        for (payload_index = 0; accepted && payload_index < payload_count;
+            payload_index += 1) {
             mir_enum = mmay_vector_at_const(&function->mir.enums, layout);
             const MarimayMirEnumPayload *payload = mmay_vector_at_const(
                 &function->mir.enum_payloads,
