@@ -542,7 +542,9 @@ set_tests_properties(
 )
 set_tests_properties(
   mmay_cp38_json
-  PROPERTIES PROCESSORS 2 COST 600 TIMEOUT 1200
+  # This end-to-end contract recompiles and runs the package several times.
+  # Sanitizer instrumentation can push a healthy run past twenty minutes.
+  PROPERTIES PROCESSORS 2 COST 600 TIMEOUT 3600
 )
 
 # Focused checkpoint runners still share the legacy root fixture directory.
