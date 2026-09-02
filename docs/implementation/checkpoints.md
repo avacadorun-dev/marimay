@@ -365,9 +365,9 @@ performance prerequisite inserted between CP38 and CP39.
 ## Active sequence CP29-CP41
 
 The sequence is deliberately linear so exactly one card is executable. CP29
-through CP37 are `verified`; CP38 is `ready`, and every later card is `planned`
-behind its declared predecessor. Execution order is CP38, CP41, CP39,
-then CP40; numeric order does not override those explicit dependencies.
+through CP38 are `verified`; CP41 is `ready`, and CP39–CP40 remain `planned`
+behind their declared predecessors. Execution order is CP41, CP39, then CP40;
+numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
 
@@ -1181,7 +1181,9 @@ tests/evidence, and CP38 card.
 
 ## CP38 - Bounded typed JSON
 
-State: `ready`. Parent gate: CLI0. Predecessor: CP37.
+State: `verified`. Parent gate: CLI0. Predecessor: CP37. Evidence scope:
+`pushed-ci`. Evidence:
+[CP38](evidence/cp38-bounded-typed-json-2026-09-01.md).
 
 ### Outcome
 
@@ -1254,7 +1256,8 @@ Then run the common tail and sustained JSON/parser/bytecode fuzz campaigns.
 CP38 evidence links the codec decision, exact API/representation/privacy/limit
 rules, fuzz statistics/corpora, allocation sweeps, transformer outputs, and
 VM/native/Tier 1 results. An unresolved crash, hang, OOM amplification,
-reflection privacy breach, or host-dependent output blocks verification.
+reflection privacy breach, or host-dependent output blocks verification. The
+linked CP38 report satisfies this rule for the pushed-CI scope recorded above.
 
 ### Removal gates / remaining limitations
 
@@ -1469,7 +1472,7 @@ the focused I6 planning audit assigns CP42+.
 
 ## CP41 - x86_64 native code-generation pressure
 
-State: `planned`. Parent gate: I4. Predecessor: CP38. Evidence scope: `pushed-ci`.
+State: `ready`. Parent gate: I4. Predecessor: CP38. Evidence scope: `pushed-ci`.
 Trigger evidence:
 [CP41 x86_64 code-generation trigger](evidence/cp41-x86-codegen-trigger-2026-08-24.md).
 
@@ -1491,10 +1494,10 @@ nine focused array probes scale normally. Same-source cross-target assembly
 then showed approximately one-third larger x86_64 hot functions and many more
 stack-addressed operations. This is a separate backend-efficiency problem, not
 a reason to rewrite the benchmark algorithms or weaken VM semantics. CP41 is
-scheduled after CP38 and before CP39–CP40: it does not displace the current
-CP31 or the semantic cards, avoids a CLI0/I4 dependency cycle, and repairs the
-backend before installation evidence and before I6 adds more long-lived task
-and cleanup state.
+scheduled after CP38 and before CP39–CP40: it does not displace the semantic
+cards, avoids a CLI0/I4 dependency cycle, and repairs the backend before
+installation evidence and before I6 adds more long-lived task and cleanup
+state.
 
 ### Authority and decisions
 

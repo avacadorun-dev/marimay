@@ -13,7 +13,7 @@ direct reports out of status cells. Their IDs and states are checked against
 Current execution links: [CLI0](docs/implementation/roadmap.md#cli0-boundary),
 [CP41/I6/E0 sequencing](docs/implementation/roadmap.md#cli0-cp41-boundary-and-post-cli0-i6e0), and the
 sole ready card,
-[CP38](docs/implementation/checkpoints.md#cp38-bounded-typed-json).
+[CP41](docs/implementation/checkpoints.md#cp41-x86_64-native-code-generation-pressure).
 
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

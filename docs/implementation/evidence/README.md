@@ -55,22 +55,29 @@ legal/search/control/PATH evidence and an accepted follow-up identity decision.
 - Nominals and matching: [record declarations](i2-record-declarations-iteration-13-2026-08-11.md), [visibility](i2-public-visibility-iteration-14-2026-08-11.md), [enum declarations](i2-enum-declarations-iteration-15-2026-08-11.md), [record oracle](i2-managed-record-oracle-iteration-16-2026-08-11.md), [enum construction](i2-enum-construction-oracle-iteration-17-2026-08-11.md), [enum match](i2-enum-match-oracle-iteration-18-2026-08-11.md), [guards](i2-guarded-enum-match-iteration-19-2026-08-11.md), [OR patterns](i2-enum-or-patterns-iteration-20-2026-08-11.md), [bool match](i2-boolean-match-iteration-21-2026-08-11.md), [witnesses](i2-match-witnesses-iteration-22-2026-08-11.md), [i64 literal match](i2-i64-literal-match-iteration-23-2026-08-11.md), [block arms](i2-match-block-arms-iteration-24-2026-08-11.md), [return arms](i2-match-return-arms-iteration-25-2026-08-11.md), [all-never matches](i2-all-never-match-iteration-26-2026-08-11.md), [never conditions/guards](i2-never-conditions-guards-iteration-27-2026-08-11.md), [never loop conditions](i2-never-loop-conditions-iteration-28-2026-08-11.md), [never loop steps](i2-never-loop-steps-iteration-29-2026-08-12.md), [strings/panic](i2-string-panic-oracle-iteration-30-2026-08-12.md), [declared never](i2-declared-never-calls-iteration-31-2026-08-12.md), [string patterns](i2-string-literal-match-iteration-32-2026-08-12.md), [record patterns](i2-record-patterns-iteration-33-2026-08-12.md), [record identity](i2-record-identity-iteration-34-2026-08-12.md), and [array oracle](i2-managed-array-oracle-iteration-35-2026-08-13.md).
 - Compiler service: [foundation](i2-compiler-service-foundation-iteration-36-2026-08-14.md), [incremental requests](i2-compiler-service-incremental-iteration-37-2026-08-14.md), [checker facts](i2-checker-facts-iteration-38-2026-08-14.md), and [dot-call resolver](i2-dot-call-resolution-iteration-39-2026-08-14.md).
 - Vertical/checkpoint evidence: [f64 matrix](v0-f64-matrix-iteration-10-2026-08-14.md), [source arrays](v0-source-arrays-iteration-11-2026-08-14.md), [nominal engines](v0-nominal-engines-checkpoint-1-2026-08-15.md), [local packages CP2](i2-local-packages-checkpoint-2-2026-08-16.md), [service queries CP3](i2-compiler-service-queries-checkpoint-3-2026-08-17.md), [generics CP4](i2-generics-checkpoint-4-2026-08-17.md), [batch check CP8](cp8-authoritative-check-2026-08-18.md), [receiver resolution CP16](cp16-receiver-collection-names-2026-08-20.md), [array spelling CP18](cp18-array-spelling-2026-08-21.md), [program entry/status CP31](cp31-program-arguments-2026-08-24.md), [typed streams CP32](cp32-typed-standard-streams-2026-08-25.md), [text/Bytes CP33](cp33-text-bytes-2026-08-26.md), [paths/files CP34](cp34-paths-filesystem-2026-08-29.md), [environment/process CP35](cp35-environment-process-context-2026-08-29.md), and [Map/Set CP36](cp36-map-set-iterators-2026-08-30.md).
+- [Bounded typed JSON CP38](cp38-bounded-typed-json-2026-09-01.md)
+  supplies explicit-codec privacy, typed error, and package-boundary evidence.
 
 ## I3
 
 - [Bytecode foundation](i3-bytecode-foundation-iteration-1-2026-08-12.md), [scalar VM](i3-scalar-vm-iteration-2-2026-08-13.md), [bitwise/shifts](i3-bitwise-shifts-iteration-3-2026-08-13.md), [direct calls](i3-direct-calls-iteration-4-2026-08-13.md), [strings/panic/never](i3-string-panic-never-iteration-5-2026-08-13.md), [f64](i3-f64-iteration-8-2026-08-13.md), [managed arrays](i3-managed-arrays-iteration-9-2026-08-14.md), [source arrays](v0-source-arrays-iteration-11-2026-08-14.md), [test loop CP11](cp11-ruda-test-2026-08-18.md), [resource policy CP19](cp19-resource-limits-2026-08-21.md), [program arguments/status CP31](cp31-program-arguments-2026-08-24.md), [typed streams CP32](cp32-typed-standard-streams-2026-08-25.md), [text/Bytes CP33](cp33-text-bytes-2026-08-26.md), [paths/files CP34](cp34-paths-filesystem-2026-08-29.md), [environment/process CP35](cp35-environment-process-context-2026-08-29.md), and [Map/Set CP36](cp36-map-set-iterators-2026-08-30.md).
+- [Bounded typed JSON CP38](cp38-bounded-typed-json-2026-09-01.md)
+  supplies verified-bytecode, VM, hostile-input, and sustained-fuzz evidence.
 
 ## I4
 
 - [Scalar C17 emitter](i4-scalar-c17-emitter-iteration-1-2026-08-13.md), [strings/panic/never](i4-string-panic-never-iteration-2-2026-08-13.md), [managed arrays](i4-managed-arrays-iteration-9-2026-08-14.md), [f64/matrix](i3-f64-iteration-8-2026-08-13.md), [native build CP10](cp10-native-build-2026-08-18.md), [test equivalence CP11](cp11-ruda-test-2026-08-18.md), [profile runtime CP13](cp13-release-runtime-2026-08-19.md), [resource policy CP19](cp19-resource-limits-2026-08-21.md), [algorithm rebaseline CP28](cp28-release-rebaseline-2026-08-22.md), [release hardening](cp28-release-hardening-2026-08-23.md), [program arguments/status CP31](cp31-program-arguments-2026-08-24.md), [typed streams CP32](cp32-typed-standard-streams-2026-08-25.md), [text/Bytes CP33](cp33-text-bytes-2026-08-26.md), [paths/files CP34](cp34-paths-filesystem-2026-08-29.md), [environment/process CP35](cp35-environment-process-context-2026-08-29.md), and [Map/Set CP36](cp36-map-set-iterators-2026-08-30.md).
+- [Bounded typed JSON CP38](cp38-bounded-typed-json-2026-09-01.md)
+  supplies generated-C, VM/native differential, sanitizer, and resource
+  evidence.
 - [CP41 x86_64 code-generation trigger](cp41-x86-codegen-trigger-2026-08-24.md)
   records a pushed-run performance anomaly and same-source cross-target
-  narrowing. It plans the checkpoint but is not its clean D056 baseline or
-  completion evidence.
+  narrowing. It scopes the ready checkpoint but is not its clean D056 baseline
+  or completion evidence.
 
 ## I5
 
-- [Managed arrays foundation](i5-managed-arrays-iteration-1-2026-08-13.md), [generic arrays CP5](i5-arrays-checkpoint-5-2026-08-17.md), [nominal engines](v0-nominal-engines-checkpoint-1-2026-08-15.md), [array mutation CP17](cp17-array-mutation-2026-08-21.md), [array spelling CP18](cp18-array-spelling-2026-08-21.md), [resource policy CP19](cp19-resource-limits-2026-08-21.md), [typed streams CP32](cp32-typed-standard-streams-2026-08-25.md), [text/Bytes CP33](cp33-text-bytes-2026-08-26.md), [paths/files CP34](cp34-paths-filesystem-2026-08-29.md), [environment/process CP35](cp35-environment-process-context-2026-08-29.md), [Map/Set CP36](cp36-map-set-iterators-2026-08-30.md), and CP20–CP28 reports indexed below.
+- [Managed arrays foundation](i5-managed-arrays-iteration-1-2026-08-13.md), [generic arrays CP5](i5-arrays-checkpoint-5-2026-08-17.md), [nominal engines](v0-nominal-engines-checkpoint-1-2026-08-15.md), [array mutation CP17](cp17-array-mutation-2026-08-21.md), [array spelling CP18](cp18-array-spelling-2026-08-21.md), [resource policy CP19](cp19-resource-limits-2026-08-21.md), [typed streams CP32](cp32-typed-standard-streams-2026-08-25.md), [text/Bytes CP33](cp33-text-bytes-2026-08-26.md), [paths/files CP34](cp34-paths-filesystem-2026-08-29.md), [environment/process CP35](cp35-environment-process-context-2026-08-29.md), [Map/Set CP36](cp36-map-set-iterators-2026-08-30.md), [bounded typed JSON CP38](cp38-bounded-typed-json-2026-09-01.md), and CP20–CP28 reports indexed below.
 
 ## CLI0
 
@@ -95,15 +102,17 @@ relocation, allocation, sanitizer, and VM/native evidence.
 allocation, fuzz, and VM/native evidence.
 [CP37](cp37-cli-parser-2026-08-30.md) supplies ordinary `std/cli`, typed
 definition/usage errors, deterministic help, allocation, fuzz, and
-VM/native evidence. None of these reports closes CLI0 or any parent product
-gate; CP38 is the sole ready checkpoint, and CP38–CP40 must each add direct
-evidence.
+VM/native evidence. [CP38](cp38-bounded-typed-json-2026-09-01.md) supplies
+explicit bounded codecs, privacy, hostile-input, allocation, sustained-fuzz,
+sanitizer, and VM/native evidence. None of these reports closes CLI0 or any
+parent product gate; CP41 is the sole ready checkpoint, and CP39–CP41 must
+each add completion evidence.
 
 ## CP41
 
 [The x86_64 code-generation trigger](cp41-x86-codegen-trigger-2026-08-24.md)
 localizes selective stack/queue/heap pressure in generated native C. CP41 is
-planned after CP38 and before CP39–CP40 so the installed CLI0 artifact contains
+ready after CP38 and before CP39–CP40 so the installed CLI0 artifact contains
 the repair. Its trigger run is too noisy to become a new D056 baseline; a clean
 before/after pushed-run evidence pair is still required. Go/Rust ratios remain
 exploratory.
@@ -154,6 +163,8 @@ planned after CLI0, whose I4 path now includes CP41.
 | CP34 | [Paths and filesystem](cp34-paths-filesystem-2026-08-29.md) | Verified local typed paths, capability-confined bounded files, atomic writes, metadata, sorted directories, cleanup, allocation, sanitizer, and VM/native process evidence. |
 | CP35 | [Environment and process context](cp35-environment-process-context-2026-08-29.md) | Verified local explicit environment grants, exact lookup, redaction, normalized process paths, relocation, allocation, sanitizer, and VM/native process evidence. |
 | CP36 | [Map, Set, and iterators](cp36-map-set-iterators-2026-08-30.md) | Verified local insertion order, coherent key laws, iterator invalidation, managed tracing, exhaustive allocation cleanup, fuzz, and VM/native evidence. |
+| CP37 | [First-party CLI parser](cp37-cli-parser-2026-08-30.md) | Verified local ordinary `std/cli`, typed errors, deterministic help, allocation, fuzz, and VM/native evidence. |
+| CP38 | [Bounded typed JSON](cp38-bounded-typed-json-2026-09-01.md) | Verified pushed-CI explicit codecs, deterministic transformation, privacy, allocation, sanitizers, sustained fuzz, and VM/native evidence. |
 
 The [planning migration record](../planning-migration.md) maps retired planning
 sections to the consolidated roadmap, ledger, and this index without altering
