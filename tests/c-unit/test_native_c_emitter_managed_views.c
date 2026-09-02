@@ -29,9 +29,19 @@ void mmay_test_native_c_emitter_managed_views(void) {
         "fn afterReplace(bag: Bag): int {\n"
         "  const before = bag.values[0];\n"
         "  replace(bag);\n"
-        "  return before + bag.values[0];\n"
+        "  return before + first(bag);\n"
         "}\n"
-        "fn main(): int { return afterReplace(Bag { values: [7] }); }\n";
+        "type StableBag { values: []int, }\n"
+        "fn stableFirst(bag: StableBag): int { return bag.values[0]; }\n"
+        "fn makeStable(): StableBag { return StableBag { values: [5] }; }\n"
+        "fn copiedStable(): int {\n"
+        "  const original = makeStable();\n"
+        "  const copied = original;\n"
+        "  return stableFirst(copied);\n"
+        "}\n"
+        "fn main(): int {\n"
+        "  return afterReplace(Bag { values: [7] }) + copiedStable();\n"
+        "}\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     const MarimayCheckedFunction *main_function = NULL;
@@ -102,6 +112,9 @@ void mmay_test_native_c_emitter_managed_views(void) {
             &generated, "= mmay_g_rv_0_f_0;"
         ));
         MMAY_EXPECT(mmay_test_native_contains(
+            &generated, "_f_0 = mmay_g_rv_"
+        ));
+        MMAY_EXPECT(mmay_test_native_contains(
             &generated, "mmay_managed_array_generated_get_scalar("
         ));
         MMAY_EXPECT(mmay_test_native_contains(
@@ -110,7 +123,7 @@ void mmay_test_native_c_emitter_managed_views(void) {
             "#if MMAY_G_FAIL_ALLOCATION_AT != SIZE_MAX\n"
         ));
 #if !defined(_WIN32)
-        mmay_test_native_compile_and_run(&generated, "ok:i64:16\n", 0);
+        mmay_test_native_compile_and_run(&generated, "ok:i64:21\n", 0);
 #endif
     }
     mmay_owned_bytes_dispose(&generated);
