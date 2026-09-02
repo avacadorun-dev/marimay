@@ -546,6 +546,11 @@ set_tests_properties(
   # Sanitizer instrumentation can push a healthy run past twenty minutes.
   PROPERTIES PROCESSORS 2 COST 600 TIMEOUT 3600
 )
+if(MMAY_ENABLE_ADDRESS_SANITIZER)
+  # The instrumented nested compiler has enough peak working set to be killed
+  # externally when it overlaps the heaviest C-unit shards under parallel CTest.
+  set_tests_properties(mmay_cp38_json PROPERTIES RUN_SERIAL TRUE)
+endif()
 
 # Focused checkpoint runners still share the legacy root fixture directory.
 set_tests_properties(
