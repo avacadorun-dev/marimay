@@ -95,6 +95,8 @@ void mmay_test_mir_interfaces(void);
 void mmay_test_mir_bytecode(void);
 void mmay_test_native_c_emitter(void);
 void mmay_test_native_c_emitter_array_mutation(void);
+void mmay_test_native_c_emitter_managed_views(void);
+void mmay_test_native_c_emitter_call_policy(void);
 void mmay_test_native_generics_differential(void);
 void mmay_test_native_matrix(void);
 void mmay_test_nominal_engine_allocations(void);
@@ -363,6 +365,20 @@ int main(int argument_count, char **arguments) {
             return 1;
         }
         printf("mmay_cp38_unit: ok\n");
+        return 0;
+    }
+    if (argument_count == 3 && strcmp(arguments[2], "--cp41") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_native_c_emitter_managed_views();
+        mmay_test_native_c_emitter_call_policy();
+        if (mmay_test_failure_count() != 0) {
+            fprintf(
+                stderr, "mmay_cp41_unit: %d failure(s)\n",
+                mmay_test_failure_count()
+            );
+            return 1;
+        }
+        printf("mmay_cp41_unit: ok\n");
         return 0;
     }
     if (argument_count == 3 && strcmp(arguments[2], "--cp32") == 0) {

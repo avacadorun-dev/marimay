@@ -1038,3 +1038,16 @@ bool mmay_native_c_negate_proven(
             function, instruction->first, 0, &value
         ) && value != INT64_MIN;
 }
+
+bool mmay_native_c_divisor_proven(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction
+) {
+    int64_t divisor = 0;
+    return function != NULL && instruction != NULL
+        && (instruction->kind == MMAY_MIR_DIVIDE_CHECKED_I64
+            || instruction->kind == MMAY_MIR_REMAINDER_CHECKED_I64)
+        && mmay_native_c_relation_constant(
+            function, instruction->second, 0, &divisor
+        ) && divisor != 0 && divisor != -1;
+}

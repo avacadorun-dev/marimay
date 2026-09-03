@@ -165,6 +165,7 @@ add_executable(mmay_c_unit
   test_native_c_emitter_array_access.c
   test_native_c_emitter_array_storage.c
   test_native_c_emitter_managed_views.c
+  test_native_c_emitter_call_policy.c
   test_native_c_emitter_array_mutation.c
   test_native_c_emitter_baseline.c
   test_native_c_emitter_matrix.c
@@ -405,9 +406,13 @@ add_test(
   NAME mmay_cp38_unit
   COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp38
 )
+add_test(
+  NAME mmay_cp41_unit
+  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp41
+)
 set_tests_properties(
   mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit mmay_cp36_unit
-  mmay_cp37_unit mmay_cp38_unit
+  mmay_cp37_unit mmay_cp38_unit mmay_cp41_unit
   PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 set_tests_properties(
@@ -555,6 +560,6 @@ endif()
 # Focused checkpoint runners still share the legacy root fixture directory.
 set_tests_properties(
   mmay_cp32_unit mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit
-  mmay_cp36_unit mmay_cp37_unit mmay_cp38_unit
+  mmay_cp36_unit mmay_cp37_unit mmay_cp38_unit mmay_cp41_unit
   PROPERTIES RUN_SERIAL TRUE COST 10
 )

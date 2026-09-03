@@ -2,6 +2,13 @@
 
 #include <string.h>
 
+enum {
+    /* Keep large cold/error state out of hot callers without forcing an
+       already pressure-heavy record leaf into the outlined frame. */
+    MMAY_NATIVE_C_OUTLINE_REGISTER_LIMIT = 32,
+    MMAY_NATIVE_C_INLINE_PRESSURE_LIMIT = 32
+};
+
 static MarimayTypeId mmay_native_c_register_type(
     const MarimayMirFunction *function,
     MarimayMirRegister register_id
@@ -89,6 +96,53 @@ static bool mmay_native_c_emit_generic_bitwise(
     );
 }
 
+static bool mmay_native_c_inline_record_leaf(
+    const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
+    size_t count
+) {
+    const MarimayTypeId *receiver = NULL;
+    MarimayNativeCManagedLayout receiver_layout;
+    if (function == NULL || function->calls.length != 0
+        || function->parameter_count == 0) {
+        return false;
+    }
+    receiver = mmay_vector_at_const(&function->register_types, 0);
+    return receiver != NULL && *receiver >= MMAY_TYPE_FIRST_DYNAMIC
+        && mmay_native_c_find_managed_layout(
+            functions, count, *receiver, &receiver_layout
+        ) && receiver_layout.kind == MMAY_NATIVE_C_MANAGED_RECORD;
+}
+
+static bool mmay_native_c_outline_large_function(
+    const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
+    size_t count
+) {
+    size_t call_index = 0;
+    if (function == NULL || function->calls.length == 0
+        || function->register_types.length
+            < MMAY_NATIVE_C_OUTLINE_REGISTER_LIMIT) {
+        return false;
+    }
+    for (call_index = 0; call_index < function->calls.length;
+        call_index += 1) {
+        const MarimayMirCall *call = mmay_vector_at_const(
+            &function->calls, call_index
+        );
+        const MarimayMirFunction *callee = call != NULL
+            ? mmay_native_c_find(functions, count, call->callee) : NULL;
+        if (callee == NULL) return false;
+        if (callee->register_types.length > MMAY_NATIVE_C_INLINE_PRESSURE_LIMIT
+            && mmay_native_c_inline_record_leaf(
+                callee, functions, count
+            )) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool mmay_native_c_emit_signature(
     MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *function,
@@ -97,22 +151,18 @@ bool mmay_native_c_emit_signature(
     bool prototype
 ) {
     size_t index = 0;
-    bool inline_record_leaf = false;
-    if (function->calls.length == 0 && function->parameter_count != 0) {
-        const MarimayTypeId *receiver = mmay_vector_at_const(
-            &function->register_types, 0
-        );
-        MarimayNativeCManagedLayout receiver_layout;
-        inline_record_leaf = receiver != NULL
-            && *receiver >= MMAY_TYPE_FIRST_DYNAMIC
-            && mmay_native_c_find_managed_layout(
-                functions, count, *receiver, &receiver_layout
-            ) && receiver_layout.kind == MMAY_NATIVE_C_MANAGED_RECORD;
-    }
+    bool inline_record_leaf = mmay_native_c_inline_record_leaf(
+        function, functions, count
+    );
+    bool outline_large_function = mmay_native_c_outline_large_function(
+        function, functions, count
+    );
     if (!mmay_native_c_write(
             buffer,
             inline_record_leaf
-                ? "static MMAY_G_ALWAYS_INLINE int " : "static int "
+                ? "static MMAY_G_ALWAYS_INLINE int "
+                : outline_large_function
+                    ? "static MMAY_G_NOINLINE int " : "static int "
         )
         || !mmay_native_c_symbol(buffer, function->symbol)
         || !mmay_native_c_write(buffer, "(mmay_g_execution *mmay_g_x, mmay_g_panic *mmay_g_p")) return false;
@@ -1128,8 +1178,25 @@ bool mmay_native_c_emit_function(
                             i->target, i->first, i->second
                         )) return false;
                     break;
-                case MMAY_MIR_DIVIDE_CHECKED_I64: helper = "mmay_checked_i64_divide_fast"; break;
-                case MMAY_MIR_REMAINDER_CHECKED_I64: helper = "mmay_checked_i64_remainder_fast"; break;
+                case MMAY_MIR_DIVIDE_CHECKED_I64:
+                case MMAY_MIR_REMAINDER_CHECKED_I64:
+                    if (mmay_native_c_register_type(function, i->target)
+                            == MMAY_TYPE_I64
+                        && mmay_native_c_divisor_proven(function, i)) {
+                        if (!mmay_native_c_write(
+                                buffer,
+                                "  mmay_g_v_%u = mmay_g_v_%u %s mmay_g_v_%u;\n",
+                                i->target, i->first,
+                                i->kind == MMAY_MIR_DIVIDE_CHECKED_I64
+                                    ? "/" : "%",
+                                i->second
+                            )) return false;
+                    } else {
+                        helper = i->kind == MMAY_MIR_DIVIDE_CHECKED_I64
+                            ? "mmay_checked_i64_divide_fast"
+                            : "mmay_checked_i64_remainder_fast";
+                    }
+                    break;
                 case MMAY_MIR_SHIFT_LEFT_CHECKED_I64: helper = "mmay_checked_i64_shift_left"; break;
                 case MMAY_MIR_SHIFT_RIGHT_I64: helper = "mmay_checked_i64_shift_right"; break;
                 case MMAY_MIR_NEGATE_CHECKED_I64:

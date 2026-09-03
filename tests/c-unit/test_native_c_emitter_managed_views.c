@@ -109,6 +109,16 @@ void mmay_test_native_c_emitter_managed_views(void) {
             "mmay_managed_array_generated_bind(&mmay_g_x->heap, mmay_g_rv_0.object->fields[0].reference"
         ));
         MMAY_EXPECT(mmay_test_native_contains(
+            &generated,
+            "if (mmay_g_ro_0 != NULL) { mmay_g_rv_0.reference = mmay_g_v_0; mmay_g_rv_0.object = mmay_g_ro_0; } else {"
+        ));
+        MMAY_EXPECT(!mmay_test_native_contains(
+            &generated, "mmay_g_ro_0->descriptor =="
+        ));
+        MMAY_EXPECT(!mmay_test_native_contains(
+            &generated, "mmay_g_ro_0_f_0->descriptor =="
+        ));
+        MMAY_EXPECT(mmay_test_native_contains(
             &generated, "= mmay_g_rv_0_f_0;"
         ));
         MMAY_EXPECT(mmay_test_native_contains(
