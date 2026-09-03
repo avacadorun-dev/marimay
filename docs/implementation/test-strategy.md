@@ -413,6 +413,13 @@ failure-artifact owner, and independent exit status; sharing compilation does
 not share mutable corpus state or reduce executions by running targets in one
 contended process pool.
 
+On a bounded three-executor validation host, the C17 compiler/configuration
+matrix depends on the short documentation/architecture gate. This leaves the
+initial executor wave for that gate, ASan/LSan, and the shared fuzz build; TSan
+enters as soon as the gate frees its slot. The dependency is fail-fast resource
+control rather than coverage filtering: every matrix row still runs after the
+gate passes.
+
 Corpora and dictionaries are committed when legally/operationally appropriate. Every found failure is minimized and promoted to a deterministic regression test. Release reports state engine, sanitizer, target, corpus size, total executions/core-hours, unique coverage movement, and unresolved findings.
 
 ## 6. Runtime stress and fault injection
