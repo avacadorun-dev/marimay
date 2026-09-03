@@ -107,6 +107,7 @@ add_executable(mmay_c_unit
   test_cli_cp17_array_mutation.c
   test_cli_cp18_array_spelling.c
   test_cli_cp20_algorithm_corpus.c
+  test_cli_cp39.c
   test_compiler_service.c
   test_compiler_service_array_types.c
   test_compiler_service_incremental.c
@@ -410,9 +411,13 @@ add_test(
   NAME mmay_cp41_unit
   COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp41
 )
+add_test(
+  NAME mmay_cp39_unit
+  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp39
+)
 set_tests_properties(
   mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit mmay_cp36_unit
-  mmay_cp37_unit mmay_cp38_unit mmay_cp41_unit
+  mmay_cp37_unit mmay_cp38_unit mmay_cp39_unit mmay_cp41_unit
   PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
 )
 set_tests_properties(
@@ -443,6 +448,26 @@ add_test(
     "-DMMAY_TEST_VERSION=${MMAY_COMPILER_VERSION}"
     "-DMMAY_TEST_EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp29_release_contract.cmake"
+)
+
+if(WIN32)
+  set(MMAY_TEST_CP39_ARCHIVE_FORMAT "zip")
+else()
+  set(MMAY_TEST_CP39_ARCHIVE_FORMAT "tar.gz")
+endif()
+string(TOLOWER "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}"
+  MMAY_TEST_CP39_HOST)
+add_test(
+  NAME mmay_cp39_distribution
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_BINARY_DIR=${CMAKE_BINARY_DIR}"
+    "-DMMAY_TEST_CONFIG=$<CONFIG>"
+    "-DMMAY_TEST_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
+    "-DMMAY_TEST_VERSION=${MMAY_COMPILER_VERSION}"
+    "-DMMAY_TEST_HOST=${MMAY_TEST_CP39_HOST}"
+    "-DMMAY_TEST_ARCHIVE_FORMAT=${MMAY_TEST_CP39_ARCHIVE_FORMAT}"
+    "-DMMAY_TEST_EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp39_distribution.cmake"
 )
 
 set(mmay_cp32_process_test_arguments
@@ -529,10 +554,15 @@ add_test(
 set_tests_properties(
   mmay_install_relocation
   mmay_cp29_release_contract
+  mmay_cp39_distribution
   PROPERTIES RESOURCE_LOCK "mmay_install_manifest"
 )
 set_tests_properties(mmay_install_relocation PROPERTIES COST 320)
 set_tests_properties(mmay_cp29_release_contract PROPERTIES COST 200)
+set_tests_properties(
+  mmay_cp39_distribution
+  PROPERTIES PROCESSORS 2 COST 800 TIMEOUT 3600 LABELS "cp39;distribution"
+)
 set_tests_properties(mmay_cp32_process_streams PROPERTIES COST 320)
 set_tests_properties(mmay_cp33_process_text_bytes PROPERTIES COST 380)
 set_tests_properties(mmay_cp34_process_files PROPERTIES COST 380)
@@ -560,6 +590,6 @@ endif()
 # Focused checkpoint runners still share the legacy root fixture directory.
 set_tests_properties(
   mmay_cp32_unit mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit
-  mmay_cp36_unit mmay_cp37_unit mmay_cp38_unit mmay_cp41_unit
+  mmay_cp36_unit mmay_cp37_unit mmay_cp38_unit mmay_cp39_unit mmay_cp41_unit
   PROPERTIES RUN_SERIAL TRUE COST 10
 )

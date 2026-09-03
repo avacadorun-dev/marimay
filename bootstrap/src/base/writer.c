@@ -23,6 +23,11 @@ MarimayWriter mmay_file_writer(FILE *file) {
     return writer;
 }
 
+FILE *mmay_writer_file(MarimayWriter writer) {
+    return writer.write == mmay_file_write && writer.flush == mmay_file_flush
+        ? writer.context : NULL;
+}
+
 bool mmay_writer_write(MarimayWriter writer, const char *bytes, size_t length) {
     if (writer.write == NULL || (bytes == NULL && length != 0)) {
         return false;

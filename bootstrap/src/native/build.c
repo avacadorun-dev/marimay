@@ -7,6 +7,7 @@
 #include "mmay/base/hash.h"
 #include "mmay/build_config.h"
 #include "mmay/native/c_emitter.h"
+#include "mmay/native/toolchain.h"
 #include "mmay/platform/directory.h"
 #include "mmay/platform/file.h"
 #include "mmay/platform/process.h"
@@ -186,41 +187,6 @@ static bool mmay_native_build_hash(
     mmay_sha256_final(&hash, digest);
     mmay_sha256_hex(digest, output);
     return true;
-}
-
-static MarimayNativeBuildStatus mmay_native_build_probe(
-    MarimayAllocator allocator,
-    const char *compiler,
-    MarimayOwnedBytes *tool_output
-) {
-    const char *arguments[3];
-    MarimayProcessResult process;
-    MarimayProcessStatus status;
-    memset(&process, 0, sizeof(process));
-    arguments[0] = compiler;
-#if defined(_WIN32)
-    arguments[1] = "/Bv";
-#else
-    arguments[1] = "--version";
-#endif
-    arguments[2] = NULL;
-    status = mmay_process_run(
-        allocator, arguments, 2, MMAY_NATIVE_BUILD_MAX_TOOL_OUTPUT, &process
-    );
-    if (status != MMAY_PROCESS_OK) {
-        mmay_process_result_dispose(&process);
-        return status == MMAY_PROCESS_ALLOCATION_FAILED
-            ? MMAY_NATIVE_BUILD_ALLOCATION_FAILED
-            : MMAY_NATIVE_BUILD_TOOLCHAIN_MISSING;
-    }
-    if (process.signaled || process.exit_code != 0) {
-        mmay_process_result_dispose(&process);
-        return MMAY_NATIVE_BUILD_TOOLCHAIN_MISSING;
-    }
-    *tool_output = process.output;
-    memset(&process.output, 0, sizeof(process.output));
-    mmay_process_result_dispose(&process);
-    return MMAY_NATIVE_BUILD_OK;
 }
 
 static MarimayNativeBuildStatus mmay_native_build_write_source(
@@ -475,13 +441,23 @@ MarimayNativeBuildStatus mmay_native_build(
             status = mmay_native_build_runtime_status(runtime_status);
             goto cleanup;
         }
-        status = mmay_native_build_probe(
-            allocator,
-            request->compiler_path != NULL
-                ? request->compiler_path : MMAY_NATIVE_C_COMPILER,
-            &result->tool_output
-        );
-        if (status != MMAY_NATIVE_BUILD_OK) goto cleanup;
+        {
+            MarimayNativeToolchainStatus toolchain_status =
+                mmay_native_toolchain_probe(
+                    allocator,
+                    request->compiler_path != NULL
+                        ? request->compiler_path : MMAY_NATIVE_C_COMPILER,
+                    MMAY_NATIVE_C_COMPILER_VERSION,
+                    &result->tool_output
+                );
+            if (toolchain_status != MMAY_NATIVE_TOOLCHAIN_OK) {
+                status = toolchain_status
+                        == MMAY_NATIVE_TOOLCHAIN_ALLOCATION_FAILED
+                    ? MMAY_NATIVE_BUILD_ALLOCATION_FAILED
+                    : MMAY_NATIVE_BUILD_TOOLCHAIN_MISSING;
+                goto cleanup;
+            }
+        }
         mmay_owned_bytes_dispose(&result->tool_output);
     }
     memset(&program, 0, sizeof(program));

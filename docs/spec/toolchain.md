@@ -411,9 +411,11 @@ the cross product of an optional exact `[]string` parameter with `void`, `int`,
 `Result<void, E>`, and `Result<int, E>`, with the root-visible structural Error contract.
 It then lowers canonical verified typed MIR, encodes the complete bytecode
 program, decodes it into a new program, verifies that program, and only then
-executes it. The Stage 0 checkpoint-9 command accepts `vm` only; `native` is a
-`U0005` invalid option until the checkpoint-10 build/cache path exists. This
-staging restriction does not change the final native-run contract above.
+executes it. Before CP39 the Stage 0 command accepts `vm` only. CP39 accepts
+exactly `vm` and `native`; `native` uses the same checked result, optimized
+typed MIR, entry selection, debug runtime profile, heap budget, and ordered
+capability grants as an equivalent native build. It never performs a second
+source lowering.
 
 Successful `void` and `Ok()` returns exit `0`; direct `int` and `Ok(int)`
 return the selected `0..255` status after cleanup. Root `Err` is `G4003` on stderr
@@ -443,6 +445,15 @@ and a returned status outside `0..255` uses `G4007` rather than host truncation.
 `--max-heap-bytes N` and `--max-heap-bytes=N` apply D055's decimal byte budget
 to the fresh VM execution. The option occurs at most once and is parsed before
 program arguments; the default is `67108864`.
+
+The native artifact is executed directly without a command shell. The
+executable name is added only as host `argv[0]`; it is absent from the Marimay
+`[]string`. The invoking stdin is supplied byte-for-byte, child stdout and
+stderr remain separate and are published only to their corresponding invoking
+streams, and the child's validated `0..255` status is returned. A source,
+entry, runtime-profile, compiler, link, or atomic-cache failure executes no
+artifact, including a file left by an earlier key. Process creation, capture,
+or bounded-stream failure is `I0002` and exits `70`.
 
 ### 6.3 `mmay build`
 
@@ -515,7 +526,44 @@ artifacts produce `B0008`/exit `1` with a reinstall action and never expose raw
 linker output. `--emit c` does not link or require a runtime artifact. No
 profile lookup reads project configuration, `CC`, or the network.
 
-### 6.4 `mmay exec`
+### 6.4 `mmay doctor`
+
+```sh
+mmay doctor
+mmay doctor --json
+```
+
+`doctor` is project-independent and offline. It resolves the running `mmay`
+executable, classifies its layout as `build-tree` or `installed`, starts the
+distribution-pinned host C compiler with its harmless identity probe, and
+validates both debug and release runtime manifests, embedded markers, archives,
+headers, and common version/host/compiler identities. It does not create
+`.mmay`, emit C, link, read a module, inspect `CC`, search `PATH` for a different
+compiler, or contact a network.
+
+Human output contains the fixed ordered rows `toolchain`, `host`, `layout`,
+`compiler`, `runtime-debug`, and `runtime-release`, followed by `doctor: ok` or
+`doctor: failed`. Every row is reported even when an earlier independent row
+fails. `--json` writes one compact object and LF with this required shape:
+
+```text
+{"schema":"marimay.doctor/1","ok":BOOL,
+ "toolchain":{"compiler":"V","runtime":"V"},
+ "host":{"system":"S","processor":"P"},
+ "layout":"build-tree|installed",
+ "compiler":{"path":"...","id":"...","version":"...","available":BOOL},
+ "runtimes":{"debug":{"status":"ok|missing|incompatible","path":"..."},
+             "release":{"status":"ok|missing|incompatible","path":"..."}}}
+```
+
+Strings use JSON escaping and paths are the exact bounded UTF-8 paths selected
+by the distribution. Healthy output exits `0`; a missing or incompatible
+compiler/runtime/header layout exits `1`; invalid options exit `2`; allocation,
+path-discovery, or output failure exits `70`. Human wording can improve, but
+the schema name, fields, enum spellings, booleans, and exit classes are stable
+for this alpha candidate.
+
+### 6.5 `mmay exec`
 
 ```sh
 mmay exec app.myb
@@ -543,19 +591,45 @@ mmay vendor
 
 There is intentionally no required `mmay mod <subcommand>` hierarchy for common work.
 
-### 7.1 Resolution
+### 7.1 Local project initialization
+
+`mmay init` accepts no options and at most one path. The omitted path means a
+missing `marimay-app` child of the physical current directory; an explicit path
+is resolved from that directory.
+The final target must be missing, its parent must exist and be writable, and
+the normalized UTF-8 path must fit the ordinary 32768-byte tool path limit.
+Symlink destinations and existing empty directories are rejected rather than
+merged.
+
+Initialization writes exactly `mmay.mod`, `main.my`, and `main_test.my` in a
+new sibling temporary directory, syncs the files, and publishes the directory
+with one atomic rename. The temporary spelling is tool-owned and collision
+resistant; it is removed on every reported failure. The destination therefore
+contains either the whole canonical template or nothing from the invocation.
+The template module is `local/NAME`, where `NAME` is the final nonempty path
+component with every byte outside ASCII letters, digits, `_`, `-`, and `.`
+replaced by `-`; if that produces no non-hyphen byte, `app` is used.
+
+The emitted sources depend only on shipped `std/io`, print a deterministic help
+line when passed `--help`, and contain one ordinary test. With no edits, the
+installed `fmt --check`, `check`, VM/native `run`, `test --engine both`, and
+release `build` commands succeed offline. Initialization never contacts a
+registry, creates `mmay.lock`, changes `PATH`, or reads compiler-selection
+environment variables.
+
+### 7.2 Resolution
 
 Manifest constraints use semantic-version ranges. The resolver chooses one version per module, preferring the newest version satisfying all constraints, and records the exact graph in `mmay.lock`. Locked builds do not re-resolve. Conflicts report the shortest dependency paths and constraints that made the graph impossible.
 
 Published `(module, version)` pairs are immutable. Registry artifacts are content addressed and include source hash, manifest, license metadata, compiler-language range, and provenance signature when available. A changed artifact under the same identity is rejected even if a registry serves it.
 
-### 7.2 Hermeticity
+### 7.3 Hermeticity
 
 Dependencies cannot execute install hooks, build scripts, procedural macros, compiler plugins, or arbitrary code during resolution/build. Build and test do not access the network after the explicit fetch phase. `mmay build --offline` fails with a list of missing immutable artifacts rather than attempting access.
 
 External generation is an explicit `mmay generate` command driven by reviewed root-module declarations. It is not run by `build` or dependency installation, and generated `.my` files are ordinary formatter/checker inputs.
 
-### 7.3 Audit
+### 7.4 Audit
 
 `mmay audit` reports known advisories, yanked versions, source/provenance mismatch, licenses, unsafe packages, FFI libraries, capabilities reachable from the root, duplicate versions if a future resolver permits them, and stale/unmaintained metadata where the registry can support that claim.
 
@@ -584,6 +658,52 @@ mmay explain suspension loadDashboard
 Benchmark results include environment, engine, compiler/runtime version, sample distribution, allocations, GC/task metrics, and source revision when available. Benchmarks are not ordinary correctness tests and are not run by `mmay test`.
 
 ## 9. Release and CI profiles
+
+### 9.1 Installable CLI-alpha layout and artifacts
+
+An installable candidate is one relocatable prefix with this logical layout;
+platform library and executable suffixes follow the claimed host:
+
+```text
+bin/mmay
+include/mmay/**
+lib/mmay/V/native/debug/{runtime archive,mmay-native-runtime.manifest}
+lib/mmay/V/native/release/{runtime archive,mmay-native-runtime.manifest}
+share/mmay/V/{mmay-release-metadata.json,checksums.sha256,provenance.json,sbom.spdx.json}
+share/mmay/V/std/**
+share/doc/mmay/V/{README.md,IMPLEMENTATION-BRIEF.md,docs/**,examples/**,bootstrap/**,runtime/**}
+```
+
+All runtime and data lookup starts from the resolved invoked executable and is
+relative to that prefix; relocating the complete tree preserves behavior and
+native cache identity. Neither `ma`, `ruda`, legacy extensions/project files,
+nor a project-selected toolchain alias is installed. The standard-library
+source and offline documents report the same `V` as `mmay version --json`.
+
+The portable source archive is `marimay-V-source.tar.gz`. A host archive is
+`marimay-V-HOST.tar.gz` on POSIX and `marimay-V-HOST.zip` on Windows. Archive
+members use sorted prefix-relative UTF-8 names, normalized timestamps from
+`SOURCE_DATE_EPOCH`, numeric ownership, and stable permissions. Repeating a
+build from the same clean revision and explicit build inputs produces identical
+bytes. Every archive has a lowercase hexadecimal `.sha256` sibling.
+
+Installed `checksums.sha256` covers every regular distribution file except
+itself by exact relative path. `provenance.json` uses
+`marimay.provenance/1` and records source revision and epoch, builder identity,
+host, configured compiler identity/path, profile, and output SHA-256 values.
+`sbom.spdx.json` is deterministic SPDX 2.3 JSON and inventories the compiler,
+debug/release runtimes, standard packages, documentation, and source kit. These
+files make no signature or publication claim.
+
+The supported packaging driver stages a new tree and atomically publishes a
+previously missing prefix. An upgrade validates the existing Marimay ownership
+manifest, stages the replacement, and changes only matching tool-owned files;
+unrelated prefix files and projects outside the prefix are preserved. Uninstall
+removes only files whose current hashes match that manifest, refuses modified
+owned files, and removes only empty owned directories. It never edits shell
+profiles or `PATH`. A foreign existing `bin/mmay`, read-only destination,
+interruption, incomplete archive, or checksum mismatch fails without publishing
+a partial installed version.
 
 The following commands are the minimum project release gate:
 

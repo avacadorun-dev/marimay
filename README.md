@@ -8,7 +8,7 @@ Latin spelling: **Marimay**. Cyrillic spelling: **Ру́да**, pronounced «р�
 
 The name means ore: source material transformed by a clear language, strict types, and a cohesive toolchain into reliable native software.
 
-This is the canonical positioning of the intended product, not a claim that every subsystem is implemented today. The current portable C17 Stage 0 builds the `mmay` executable and provides help/version output, a lossless frontend, canonical formatting, authoritative batch `mmay check`, verified local VM execution, host-native `mmay build`, and deterministic VM/native `mmay test` for the checker-backed local/private preview surface. Portable bundles, native `mmay run`, networking, and desktop support remain gated roadmap work. [D001](docs/design/decisions.md) accepts the repository identity; [N0](docs/design/naming-audit.md) still blocks public distribution until legal review and external domains, accounts, namespaces, signing identity, and command/PATH coexistence have evidence. None of those external identities is claimed or reserved here.
+This is the canonical positioning of the intended product, not a claim that every subsystem is implemented today. The current portable C17 Stage 0 builds the `mmay` executable and provides help/version output, a lossless frontend, canonical formatting, authoritative batch `mmay check`, verified local VM/native execution, host-native `mmay build`, deterministic VM/native `mmay test`, local `mmay init`, offline `mmay doctor`, and inspectable installation artifacts for the checker-backed local/private preview surface. Portable bundles, networking, and desktop support remain gated roadmap work. [D001](docs/design/decisions.md) accepts the repository identity; [N0](docs/design/naming-audit.md) still blocks public distribution until legal review and external domains, accounts, namespaces, signing identity, and command/PATH coexistence have evidence. None of those external identities is claimed or reserved here.
 
 Marimay is not a dialect or a collage of borrowed keywords. It uses a compact C-family surface, but has its own semantic center:
 
@@ -27,7 +27,7 @@ The first implementation is written in portable C17. After the language and boot
 
 The current candidate is `0.1.0-alpha.1` on channel `private-preview`. The
 version identifies the contract; it is not a published alpha. From a checkout,
-this checked-in quick start exercises every currently available workflow:
+this checked-in quick start exercises the original CP29 workflow baseline:
 
 <!-- cp29-quick-start:begin -->
 ```sh
@@ -42,6 +42,34 @@ build/debug/mmay build tests/public-alpha/cp29-quick-start --output build/debug/
 build/debug/cp29-quick-start
 ```
 <!-- cp29-quick-start:end -->
+
+CP39 adds native execution, local project initialization, installed toolchain
+diagnostics, and deterministic distribution artifacts:
+
+```sh
+build/debug/mmay doctor --json
+build/debug/mmay run --engine native tests/public-alpha/cp29-quick-start
+build/debug/mmay init alpha-smoke
+build/debug/mmay fmt --check alpha-smoke
+build/debug/mmay check alpha-smoke
+build/debug/mmay test --engine both alpha-smoke
+cmake --build build/debug --target mmay_package --parallel
+```
+
+`build/debug/distribution` then contains one host archive, one portable source
+archive, and their SHA-256 siblings. Extracted host trees include
+`share/mmay/V/MarimayDistributionLifecycle.cmake`; its `install`, `upgrade`,
+and `uninstall` actions require an explicit prefix, validate the installed
+checksum manifest, preserve unrelated prefix files, and never edit `PATH`.
+For an extracted host tree in `./marimay-tree`, a clean explicit-prefix install
+uses:
+
+```sh
+cmake -DMMAY_DISTRIBUTION_ACTION=install \
+  -DMMAY_DISTRIBUTION_SOURCE=./marimay-tree \
+  -DMMAY_DISTRIBUTION_PREFIX=./marimay-prefix \
+  -P ./marimay-tree/share/mmay/0.1.0-alpha.1/MarimayDistributionLifecycle.cmake
+```
 
 The current source surface also includes CP30 dynamic primitive interpolation,
 boolean/all-width integer formatting, and `parseInt`/`parseIntRadix`; CP31
@@ -100,8 +128,9 @@ build/debug/mmay test tests/public-alpha/cp38-json --engine both
 
 The quick-start VM and native paths print `Marimay CP29 quick start`. The
 [known limitations](docs/known-limitations.md) distinguish this executable
-slice from CLI0 and the 1.0 target. `mmay help` lists only seven commands as
-available; recognized future commands are visibly staged and return `U0003`.
+slice from CLI0 and the 1.0 target. `mmay help` lists the nine implemented
+commands, including local `init`, installed-layout `doctor`, and VM/native
+`run`; recognized future commands are visibly staged and return `U0003`.
 
 ## Target design: read the language in one minute
 
@@ -170,11 +199,12 @@ mmay check                         # authoritative batch type checking
 ```
 
 These commands are the normative target product workflow, not the CP29 command
-inventory. In the current bootstrap, `mmay fmt`, `mmay check`, VM-only
-`mmay run`, host-native `mmay build`, and deterministic `mmay test` with
-VM/native comparison (plus help/version inspection) are available for the
-local/private preview surface; `mmay help` is authoritative for the exact
-inventory. The roadmap gates the remaining options and commands. `mmay check`
+inventory. In the current bootstrap, `mmay fmt`, `mmay check`, VM/native
+`mmay run`, host-native `mmay build`, deterministic `mmay test` with
+VM/native comparison, local `mmay init`, and offline `mmay doctor` (plus
+help/version inspection) are available for the local/private preview surface;
+`mmay help` is authoritative for the exact inventory. The roadmap gates the
+remaining options and commands. `mmay check`
 refuses success when accepted source reaches a checker path that is not
 implemented yet. The VM is not a looser or dynamically typed version of the
 language: both implemented execution paths consume code that passed the same

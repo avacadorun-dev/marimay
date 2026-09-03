@@ -101,8 +101,8 @@ static void mmay_cli_run_test_failures(MarimaySession *session) {
     const char *shift[] = {
         "mmay", "run", "run/cp9/panic-shift.my"
     };
-    const char *native[] = {
-        "mmay", "run", "--engine", "native", "run/cp9/void.my"
+    const char *invalid_engine[] = {
+        "mmay", "run", "--engine", "both", "run/cp9/void.my"
     };
     MarimayTestBuffer output;
     MarimayTestBuffer error;
@@ -189,7 +189,7 @@ static void mmay_cli_run_test_failures(MarimaySession *session) {
     ) == 0);
 
     status = mmay_cli_run_test_in_process(
-        session, 5, native, &output, &error
+        session, 5, invalid_engine, &output, &error
     );
     MMAY_EXPECT(status == MMAY_EXIT_USAGE && output.length == 0);
     MMAY_EXPECT(strstr(error.bytes, "error[U0005]") != NULL);

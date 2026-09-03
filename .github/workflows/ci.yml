@@ -78,6 +78,19 @@ jobs:
         run: cmake --build build --config ${{ matrix.configuration }} --parallel
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.configuration }} --output-on-failure
+      - name: Create deterministic CP39 distribution
+        if: matrix.configuration == 'Release'
+        run: cmake --build build --config ${{ matrix.configuration }} --target mmay_package --parallel
+      - name: Preserve CP39 host artifacts
+        if: matrix.configuration == 'Release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cp39-${{ matrix.target.name }}
+          path: |
+            build/distribution/*.tar.gz
+            build/distribution/*.zip
+            build/distribution/*.sha256
+          if-no-files-found: error
 
   unix-sanitizers:
     name: ${{ matrix.name }}

@@ -9,5 +9,5 @@ standard-library @MMAY_STANDARD_LIBRARY_VERSION@ (@MMAY_STANDARD_LIBRARY_SCOPE@;
 bootstrap-stage @MMAY_BOOTSTRAP_STAGE@
 host @CMAKE_SYSTEM_NAME@/@CMAKE_SYSTEM_PROCESSOR@
 targets native-host
-available-commands build check fmt help run test version
-staged-commands add audit bench doc exec explain fix fuzz generate init list outdated remove update vendor vet why
+available-commands build check doctor fmt help init run test version
+staged-commands add audit bench doc exec explain fix fuzz generate list outdated remove update vendor vet why

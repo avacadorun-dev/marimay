@@ -395,3 +395,97 @@ MarimayFileStatus mmay_directory_create(
     mmay_deallocate(&allocator, wide, allocation_size);
     return status;
 }
+
+MarimayFileStatus mmay_directory_create_exclusive(
+    MarimayAllocator allocator,
+    const char *path,
+    size_t path_length
+) {
+    wchar_t *wide = NULL;
+    size_t allocation_size = 0;
+    MarimayFileStatus status;
+    if (path == NULL || path_length == 0
+        || memchr(path, 0, path_length) != NULL) {
+        return MMAY_FILE_INVALID_ARGUMENT;
+    }
+    if (!mmay_utf8_validate(path, path_length, NULL)) {
+        return MMAY_FILE_INVALID_UTF8;
+    }
+    status = mmay_windows_directory_wide_path(
+        allocator, path, path_length, &wide, &allocation_size, NULL
+    );
+    if (status != MMAY_FILE_OK) return status;
+    if (!CreateDirectoryW(wide, NULL)) {
+        DWORD error = GetLastError();
+        status = error == ERROR_ALREADY_EXISTS || error == ERROR_FILE_EXISTS
+            ? MMAY_FILE_ALREADY_EXISTS : MMAY_FILE_IO_FAILED;
+    }
+    mmay_deallocate(&allocator, wide, allocation_size);
+    return status;
+}
+
+MarimayFileStatus mmay_directory_publish(
+    MarimayAllocator allocator,
+    const char *temporary_path,
+    size_t temporary_path_length,
+    const char *destination_path,
+    size_t destination_path_length
+) {
+    wchar_t *temporary = NULL;
+    wchar_t *destination = NULL;
+    size_t temporary_size = 0;
+    size_t destination_size = 0;
+    MarimayFileStatus status;
+    if (temporary_path == NULL || destination_path == NULL
+        || temporary_path_length == 0 || destination_path_length == 0
+        || memchr(temporary_path, 0, temporary_path_length) != NULL
+        || memchr(destination_path, 0, destination_path_length) != NULL) {
+        return MMAY_FILE_INVALID_ARGUMENT;
+    }
+    status = mmay_windows_directory_wide_path(
+        allocator, temporary_path, temporary_path_length,
+        &temporary, &temporary_size, NULL
+    );
+    if (status != MMAY_FILE_OK) return status;
+    status = mmay_windows_directory_wide_path(
+        allocator, destination_path, destination_path_length,
+        &destination, &destination_size, NULL
+    );
+    if (status != MMAY_FILE_OK) goto cleanup;
+    if (!MoveFileExW(temporary, destination, MOVEFILE_WRITE_THROUGH)) {
+        DWORD error = GetLastError();
+        status = error == ERROR_ALREADY_EXISTS || error == ERROR_FILE_EXISTS
+            ? MMAY_FILE_ALREADY_EXISTS : MMAY_FILE_IO_FAILED;
+    }
+cleanup:
+    if (destination != NULL) {
+        mmay_deallocate(&allocator, destination, destination_size);
+    }
+    if (temporary != NULL) {
+        mmay_deallocate(&allocator, temporary, temporary_size);
+    }
+    return status;
+}
+
+MarimayFileStatus mmay_directory_remove_empty(
+    MarimayAllocator allocator,
+    const char *path,
+    size_t path_length
+) {
+    wchar_t *wide = NULL;
+    size_t allocation_size = 0;
+    MarimayFileStatus status;
+    if (path == NULL || path_length == 0
+        || memchr(path, 0, path_length) != NULL) {
+        return MMAY_FILE_INVALID_ARGUMENT;
+    }
+    status = mmay_windows_directory_wide_path(
+        allocator, path, path_length, &wide, &allocation_size, NULL
+    );
+    if (status != MMAY_FILE_OK) return status;
+    if (!RemoveDirectoryW(wide) && GetLastError() != ERROR_PATH_NOT_FOUND) {
+        status = MMAY_FILE_IO_FAILED;
+    }
+    mmay_deallocate(&allocator, wide, allocation_size);
+    return status;
+}

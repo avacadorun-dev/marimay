@@ -7,15 +7,17 @@ Available workflow:
   fmt       Canonically format source and manifests
   check     Check the implemented source and typed MIR slice
   test      Run built-in tests (VM by default)
-  run       Run a program (VM only in this preview)
+  run       Run a program with the VM or native engine
   build     Build a host-native executable
+  init      Create a local canonical module
 
 Available inspection:
   version   Show release contract and build identity
+  doctor    Diagnose host compiler and runtime profiles
   help      Show help for a recognized command
 
 Staged (recognized but not executable):
-  add audit bench doc exec explain fix fuzz generate init list
+  add audit bench doc exec explain fix fuzz generate list
   outdated remove update vendor vet why
 
 Global options:

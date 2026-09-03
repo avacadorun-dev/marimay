@@ -29,6 +29,7 @@ void mmay_test_cp35_context_pipeline(void);
 void mmay_test_cp36_collections(void);
 void mmay_test_cp37_cli_parser(void);
 void mmay_test_cp38_json(void);
+void mmay_test_cli_cp39(void);
 void mmay_test_bytecode_vm(void);
 void mmay_test_checker(void);
 void mmay_test_checker_arrays(void);
@@ -379,6 +380,20 @@ int main(int argument_count, char **arguments) {
             return 1;
         }
         printf("mmay_cp41_unit: ok\n");
+        return 0;
+    }
+    if (argument_count == 3 && strcmp(arguments[2], "--cp39") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_directory();
+        mmay_test_cli_cp39();
+        if (mmay_test_failure_count() != 0) {
+            fprintf(
+                stderr, "mmay_cp39_unit: %d failure(s)\n",
+                mmay_test_failure_count()
+            );
+            return 1;
+        }
+        printf("mmay_cp39_unit: ok\n");
         return 0;
     }
     if (argument_count == 3 && strcmp(arguments[2], "--cp32") == 0) {

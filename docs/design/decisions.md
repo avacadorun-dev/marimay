@@ -2473,3 +2473,77 @@ reflection or an unbounded DOM would violate package privacy and resource
 contracts. Explicit owner-package codecs prove records, enums, arrays, maps,
 text, bytes, files, and both engines without freezing new derive syntax or a
 dynamic `any` escape hatch.
+
+## D083 — CLI-alpha installations are relocatable, inspectable, and local-only
+
+Status: accepted.
+
+An installable CLI-alpha candidate is one version-locked prefix. It contains
+exactly one user command `bin/mmay`; version-matched debug and release native
+runtime archives and manifests under `lib/mmay/V/native/{debug,release}`;
+public compiler/runtime headers under `include/mmay`; the shipped `std` source,
+release metadata, provenance statement, SPDX SBOM, and checksum manifest under
+`share/mmay/V`; and offline documentation plus the corresponding source kit
+under `share/doc/mmay/V`. `V` is the common compiler/runtime/standard-library
+version. Complete-prefix relocation does not change command behavior or cache
+keys. The old `ma` and `ruda` binaries and paths are never installed as aliases.
+
+Per-host archives are named `marimay-V-HOST.{tar.gz|zip}` and the portable
+source archive is `marimay-V-source.tar.gz`. Every archive has a sibling
+`.sha256`; the checksum manifest covers every shipped regular file by
+prefix-relative UTF-8 path. `provenance.json` records its versioned schema,
+source revision, source-date epoch, builder identity, host tuple, compiler
+identity, build profile, and artifact hashes. `sbom.spdx.json` is SPDX 2.3 and
+lists the Marimay compiler, both runtime profiles, shipped standard packages,
+offline docs, and source kit. Generation is deterministic from explicit CMake
+inputs and performs no signing, upload, or publication.
+
+The host C compiler and platform SDK remain platform-owned under D030. An
+installation pins one reviewed compiler identity at build time and uses that
+path; neither a project nor `CC`, `PATH`, nor another environment variable may
+select a replacement. `mmay doctor` preflights the pinned compiler and both
+runtime profiles without generating C, linking, reading a project, or using a
+network. Human output is a fixed ordered checklist. `mmay doctor --json` emits
+one `marimay.doctor/1` object with toolchain version/host, compiler configured
+identity and availability, per-profile runtime compatibility, installed-layout
+classification, and an overall `ok` boolean. An unhealthy installation exits
+1 after reporting every independent check; invocation or internal failures
+retain the ordinary CLI exit classifications.
+
+`mmay init [path]` is local-only and accepts exactly zero or one UTF-8 path;
+the default is a missing `marimay-app` child of the current directory. The final
+target must not exist. The command creates a complete sibling temporary
+directory, writes canonical `mmay.mod`, `main.my`, and `main_test.my`, syncs
+every file, and atomically renames the directory into place. Failure removes
+the temporary tree and never modifies an existing destination. The module
+identity is `local/NAME`, where `NAME` is the final nonempty path component
+after replacing bytes outside ASCII letters, digits, `_`, `-`, and `.` with
+`-`; an empty result is `app`. Templates have no network or third-party
+dependency and must pass the installed formatter, checker, both test engines,
+VM/native run, and native build unchanged.
+
+`mmay run --engine native` performs the same checker, MIR optimization, and
+entry selection as VM run, constructs the ordinary D050/D052 debug native
+build request, reuses its content-addressed cache, and executes only the
+returned artifact. It forwards validated arguments after `--` in order,
+applies the exact heap and environment/filesystem grants embedded in the
+build, supplies stdin bytes, and publishes the child stdout/stderr bytes on
+their corresponding streams. Source or build failure cannot execute an older
+artifact. A signal maps to the platform-derived nonzero child status; process
+launch, capture, or bounded-stream failure is `I0002`/70.
+
+Install, upgrade, and uninstall operate only on the selected prefix. A clean
+install is staged then atomically published by the packaging driver. Upgrade
+replaces only tool-owned versioned files and preserves unrelated prefix
+content and every project outside the prefix. Uninstall consumes the installed
+checksum manifest, removes only matching tool-owned files, refuses changed
+files, and prunes only empty tool-owned directories. Read-only destinations,
+interruption, collision with a non-Marimay `bin/mmay`, partial/stale runtime
+profiles, and paths containing spaces or Unicode have explicit tests. PATH
+editing is never automatic.
+
+Reason: CLI0 needs a reproducible artifact that can be inspected, moved, and
+removed without hidden host or project state. Keeping compiler selection,
+templates, native execution, and ownership metadata inside one versioned
+distribution contract prevents an apparently simple installer from becoming
+a second package manager or an ambient trust boundary.

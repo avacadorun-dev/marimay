@@ -33,6 +33,7 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `K0003` | manifest | Workspace use path is not a canonical relative path within the workspace root. |
 | `K0004` | check | Checker could not discover or read the selected source target. |
 | `K0005` | manifest | Module manifest does not provide one usable module and language identity. |
+| `K0006` | init | Project template could not be published atomically. |
 | `L0001` | lexer | Source contains malformed UTF-8. |
 | `L0002` | lexer | Source contains a character that cannot begin a token. |
 | `L0003` | lexer | Reserved word cannot be used as an identifier. |

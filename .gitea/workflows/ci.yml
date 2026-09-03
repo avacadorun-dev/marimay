@@ -61,6 +61,18 @@ jobs:
         run: cmake --build build --parallel
       - name: Test
         run: ctest --test-dir build --parallel 4 --output-on-failure
+      - name: Create deterministic CP39 distribution
+        if: ${{ matrix.compiler == 'gcc' && matrix.configuration == 'Release' }}
+        run: cmake --build build --target mmay_package --parallel
+      - name: Preserve CP39 Linux x86_64 artifacts
+        if: ${{ matrix.compiler == 'gcc' && matrix.configuration == 'Release' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: cp39-linux-x86_64
+          path: |
+            build/distribution/*.tar.gz
+            build/distribution/*.sha256
+          if-no-files-found: error
 
   sanitizers:
     name: Linux x86_64 ASan+UBSan+LSan

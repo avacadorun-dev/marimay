@@ -17,7 +17,8 @@ Bytecode: `unavailable`, compatibility `none`
 
 The portable C17 Stage 0 provides human/JSON version metadata, task help,
 canonical `fmt`, authoritative local `check`, verified VM-default `run`,
-host-native `build`, and deterministic `test --engine both` for the current
+native `run`, host-native `build`, deterministic `test --engine both`, local
+atomic `init`, and offline human/JSON `doctor` for the current
 checker-backed private-preview corpus. The implemented language slice includes
 scalar control flow, checked integer behavior, deterministic `f64`, dynamic
 primitive interpolation, integer parse/format, and `println(string)`, nominal
@@ -57,8 +58,9 @@ five VM/native differential tests.
   nested contexts such as `Ok(None)`. Positional constructor shorthand and
   annotation-free expression closures are contextual only at compiler-known
   `Result.mapError` in 0.1; they are not general storable function values.
-- Native `mmay run`, `mmay init`, `mmay doctor`, and complete install artifacts
-  remain CP39. Commands shown as staged are not executable promises.
+- Cross compilation, automatic PATH editing, signing, upload, and public
+  installer publication remain outside CP39. Commands shown as staged are not
+  executable promises.
 - Portable public `.myb`/`mmay exec`, networking and direct-style tasks,
   registry/dependencies, production LSP/test tooling, FFI, cross compilation,
   desktop support, and self-hosting are outside CLI0.

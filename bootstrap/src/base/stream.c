@@ -33,6 +33,10 @@ MarimayReadStream mmay_file_read_stream(FILE *file) {
     return stream;
 }
 
+FILE *mmay_read_stream_file(MarimayReadStream stream) {
+    return stream.read == mmay_file_read ? stream.context : NULL;
+}
+
 MarimayReadAllStatus mmay_read_all(
     MarimayReadStream stream,
     MarimayAllocator allocator,

@@ -36,6 +36,9 @@ typedef enum MarimayReadAllStatus {
 /* The FILE must remain open while the returned stream is used. */
 MarimayReadStream mmay_file_read_stream(FILE *file);
 
+/* Returns the wrapped FILE only for a stream made by mmay_file_read_stream. */
+FILE *mmay_read_stream_file(MarimayReadStream stream);
+
 /*
  * Reads to an owned exact byte buffer, rejecting data larger than max_bytes.
  * Output is initialized empty on every failure.

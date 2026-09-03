@@ -173,7 +173,6 @@ MarimayProcessStatus mmay_process_run(
     while (waitpid(process, &wait_status, 0) < 0) {
         if (errno != EINTR) {
             status = MMAY_PROCESS_WAIT_FAILED;
-            process = 0;
             goto cleanup;
         }
     }
@@ -210,6 +209,80 @@ cleanup:
     if (status != MMAY_PROCESS_OK) {
         mmay_owned_bytes_dispose(&result->output);
     }
+    return status;
+}
+
+MarimayProcessStatus mmay_process_run_stdio(
+    MarimayAllocator allocator,
+    const char *const arguments[],
+    size_t argument_count,
+    FILE *standard_input,
+    FILE *standard_output,
+    FILE *standard_error,
+    MarimayProcessResult *result
+) {
+    posix_spawn_file_actions_t actions;
+    bool actions_ready = false;
+    pid_t process = 0;
+    int wait_status = 0;
+    int input_descriptor;
+    int output_descriptor;
+    int error_descriptor;
+    size_t index = 0;
+    MarimayProcessStatus status = MMAY_PROCESS_OK;
+    if (result == NULL) return MMAY_PROCESS_INVALID_ARGUMENT;
+    mmay_process_result_init(result, allocator);
+    if (arguments == NULL || argument_count == 0 || arguments[0] == NULL
+        || arguments[argument_count] != NULL || standard_input == NULL
+        || standard_output == NULL || standard_error == NULL) {
+        return MMAY_PROCESS_INVALID_ARGUMENT;
+    }
+    for (index = 0; index < argument_count; index += 1) {
+        if (arguments[index] == NULL) return MMAY_PROCESS_INVALID_ARGUMENT;
+    }
+    input_descriptor = fileno(standard_input);
+    output_descriptor = fileno(standard_output);
+    error_descriptor = fileno(standard_error);
+    if (input_descriptor < 0 || output_descriptor < 0 || error_descriptor < 0
+        || fflush(standard_output) != 0 || fflush(standard_error) != 0) {
+        return MMAY_PROCESS_IO_FAILED;
+    }
+    if (posix_spawn_file_actions_init(&actions) != 0) {
+        return MMAY_PROCESS_SPAWN_FAILED;
+    }
+    actions_ready = true;
+    if (posix_spawn_file_actions_adddup2(
+            &actions, input_descriptor, STDIN_FILENO
+        ) != 0 || posix_spawn_file_actions_adddup2(
+            &actions, output_descriptor, STDOUT_FILENO
+        ) != 0 || posix_spawn_file_actions_adddup2(
+            &actions, error_descriptor, STDERR_FILENO
+        ) != 0 || posix_spawnp(
+            &process, arguments[0], &actions, NULL,
+            (char *const *)arguments, environ
+        ) != 0) {
+        status = MMAY_PROCESS_SPAWN_FAILED;
+        goto cleanup;
+    }
+    while (waitpid(process, &wait_status, 0) < 0) {
+        if (errno != EINTR) {
+            status = MMAY_PROCESS_WAIT_FAILED;
+            goto cleanup;
+        }
+    }
+    process = 0;
+    if (WIFEXITED(wait_status)) {
+        result->exit_code = (uint32_t)WEXITSTATUS(wait_status);
+    } else if (WIFSIGNALED(wait_status)) {
+        result->signaled = true;
+        result->signal_code = (uint32_t)WTERMSIG(wait_status);
+        result->exit_code = 128U + result->signal_code;
+    } else {
+        status = MMAY_PROCESS_WAIT_FAILED;
+    }
+cleanup:
+    if (process != 0) mmay_process_stop_and_wait(process);
+    if (actions_ready) (void)posix_spawn_file_actions_destroy(&actions);
     return status;
 }
 

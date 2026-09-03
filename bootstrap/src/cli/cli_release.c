@@ -15,6 +15,7 @@ static const MarimayCliTaskHelp mmay_release_tasks[] = {
     {"build", "Build a host-native executable for the implemented preview surface.", "build [target] [--allow-env name] [--allow-read path] [--allow-write path] [--max-heap-bytes bytes] [options]", "mmay build . --allow-env HOME --release", "CP35", true},
     {"check", "Check the implemented local preview surface and verified typed MIR.", "check [target] [--all-targets]", "mmay check --all-targets", "CP29", true},
     {"doc", "Build or check package documentation.", "doc [options]", "mmay doc --check", "I8", false},
+    {"doctor", "Diagnose the installed host toolchain and native runtimes.", "doctor [--json]", "mmay doctor --json", "CP39", true},
     {"exec", "Verify and execute a portable .myb bundle.", "exec bundle.myb [options]", "mmay exec app.myb", "I3", false},
     {"explain", "Explain a diagnostic or inferred compiler behavior.", "explain code|topic", "mmay explain T0017", "I8", false},
     {"fix", "Apply compiler-authored safe fixes.", "fix [target] [options]", "mmay fix", "I8", false},
@@ -22,11 +23,11 @@ static const MarimayCliTaskHelp mmay_release_tasks[] = {
     {"fuzz", "Run a first-party fuzz target.", "fuzz target [options]", "mmay fuzz \"decoder never panics\"", "I8", false},
     {"generate", "Run explicitly configured external generation.", "generate [target]", "mmay generate", "I8", false},
     {"help", "Show task-oriented command help.", "help [command]", "mmay help build", "CP29", true},
-    {"init", "Create a Marimay module.", "init [path]", "mmay init ./orders", "CP39", false},
+    {"init", "Create a local canonical Marimay module.", "init [path]", "mmay init ./orders", "CP39", true},
     {"list", "List package dependencies.", "list", "mmay list", "I7", false},
     {"outdated", "Report available dependency updates.", "outdated", "mmay outdated", "I7", false},
     {"remove", "Remove a package dependency.", "remove module", "mmay remove marimay.example/postgres", "I7", false},
-    {"run", "Run the implemented preview surface with the bytecode VM.", "run [target] [--allow-env name] [--allow-read path] [--allow-write path] [--max-heap-bytes bytes] [-- arguments]", "mmay run . --allow-env HOME", "CP35", true},
+    {"run", "Run the implemented preview surface with the VM or native engine.", "run [target] [--engine vm|native] [--allow-env name] [--allow-read path] [--allow-write path] [--max-heap-bytes bytes] [-- arguments]", "mmay run --engine native . --allow-env HOME", "CP39", true},
     {"test", "Run built-in preview tests with VM/native comparison available.", "test [target] [--engine vm|native|both] [--allow-env name] [--allow-read path] [--allow-write path] [--max-heap-bytes bytes] [-- arguments]", "mmay test . --engine both --allow-env MMAY_ALPHA_TEST", "CP35", true},
     {"update", "Update locked package versions.", "update [module]", "mmay update", "I7", false},
     {"vendor", "Vendor immutable locked dependencies.", "vendor", "mmay vendor", "I7", false},
@@ -120,15 +121,17 @@ bool mmay_cli_release_write_top_help(MarimayWriter writer) {
         "  fmt       Canonically format source and manifests\n"
         "  check     Check the implemented source and typed MIR slice\n"
         "  test      Run built-in tests (VM by default)\n"
-        "  run       Run a program (VM only in this preview)\n"
+        "  run       Run a program with the VM or native engine\n"
         "  build     Build a host-native executable\n"
+        "  init      Create a local canonical module\n"
         "\n"
         "Available inspection:\n"
         "  version   Show release contract and build identity\n"
+        "  doctor    Diagnose host compiler and runtime profiles\n"
         "  help      Show help for a recognized command\n"
         "\n"
         "Staged (recognized but not executable):\n"
-        "  add audit bench doc exec explain fix fuzz generate init list\n"
+        "  add audit bench doc exec explain fix fuzz generate list\n"
         "  outdated remove update vendor vet why\n"
         "\n"
         "Global options:\n"

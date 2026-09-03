@@ -216,8 +216,85 @@ static void mmay_test_directory_create_owner(void) {
     MMAY_EXPECT(mmay_test_remove_directory(path) == 0);
 }
 
+static void mmay_test_directory_publish_owner(void) {
+    static const char staging[] = "mmay-directory-publish-stage";
+    static const char destination[] = "mmay-directory-publish-destination";
+    size_t failure_index = 0;
+    bool reached_success = false;
+    (void)mmay_test_remove_directory(staging);
+    (void)mmay_test_remove_directory(destination);
+    for (failure_index = 0; failure_index < 8; failure_index += 1) {
+        MarimayFailAllocator state;
+        MarimayFileStatus status;
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
+        );
+        status = mmay_directory_create_exclusive(
+            mmay_fail_allocator(&state), staging, sizeof(staging) - 1
+        );
+        if (status == MMAY_FILE_OK) reached_success = true;
+        else MMAY_EXPECT(status == MMAY_FILE_ALLOCATION_FAILED);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
+        if (reached_success) break;
+    }
+    MMAY_EXPECT(reached_success);
+    MMAY_EXPECT(mmay_directory_create_exclusive(
+        mmay_system_allocator(), staging, sizeof(staging) - 1
+    ) == MMAY_FILE_ALREADY_EXISTS);
+    MMAY_EXPECT(mmay_directory_create_exclusive(
+        mmay_system_allocator(), NULL, 0
+    ) == MMAY_FILE_INVALID_ARGUMENT);
+
+    reached_success = false;
+    for (failure_index = 0; failure_index < 8; failure_index += 1) {
+        MarimayFailAllocator state;
+        MarimayFileStatus status;
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
+        );
+        status = mmay_directory_publish(
+            mmay_fail_allocator(&state),
+            staging, sizeof(staging) - 1,
+            destination, sizeof(destination) - 1
+        );
+        if (status == MMAY_FILE_OK) reached_success = true;
+        else MMAY_EXPECT(status == MMAY_FILE_ALLOCATION_FAILED);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
+        if (reached_success) break;
+    }
+    MMAY_EXPECT(reached_success);
+    MMAY_EXPECT(mmay_directory_publish(
+        mmay_system_allocator(), destination, sizeof(destination) - 1,
+        destination, sizeof(destination) - 1
+    ) == MMAY_FILE_ALREADY_EXISTS);
+    reached_success = false;
+    for (failure_index = 0; failure_index < 8; failure_index += 1) {
+        MarimayFailAllocator state;
+        MarimayFileStatus status;
+        mmay_fail_allocator_init(
+            &state, mmay_system_allocator(), failure_index
+        );
+        status = mmay_directory_remove_empty(
+            mmay_fail_allocator(&state),
+            destination, sizeof(destination) - 1
+        );
+        if (status == MMAY_FILE_OK) reached_success = true;
+        else MMAY_EXPECT(status == MMAY_FILE_ALLOCATION_FAILED);
+        MMAY_EXPECT(state.live_allocations == 0);
+        MMAY_EXPECT(state.live_bytes == 0);
+        if (reached_success) break;
+    }
+    MMAY_EXPECT(reached_success);
+    MMAY_EXPECT(mmay_directory_remove_empty(
+        mmay_system_allocator(), destination, sizeof(destination) - 1
+    ) == MMAY_FILE_OK);
+}
+
 void mmay_test_directory(void) {
     mmay_test_directory_real_adapter();
     mmay_test_directory_allocation_failures();
     mmay_test_directory_create_owner();
+    mmay_test_directory_publish_owner();
 }
