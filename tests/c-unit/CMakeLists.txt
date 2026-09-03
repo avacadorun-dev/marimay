@@ -378,51 +378,43 @@ foreach(shard RANGE 0 ${MMAY_CP31_ALLOCATION_LAST_SHARD})
 endforeach()
 set_tests_properties(mmay_cp31_allocation_0 PROPERTIES COST 100)
 
-add_test(
-  NAME mmay_cp32_unit
-  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp32
-)
+function(mmay_add_focused_checkpoint_test checkpoint cost)
+  set(test_name "mmay_${checkpoint}_unit")
+  set(test_directory
+    "${CMAKE_CURRENT_BINARY_DIR}/focused-${checkpoint}"
+  )
+  mmay_prepare_c_unit_working_directory("${test_directory}")
+  add_test(
+    NAME "${test_name}"
+    COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" "--${checkpoint}"
+  )
+  set_tests_properties(
+    "${test_name}" PROPERTIES
+    WORKING_DIRECTORY "${test_directory}"
+    LABELS "c-unit;focused;${checkpoint}"
+    COST "${cost}"
+    TIMEOUT 3600
+  )
+  add_custom_command(TARGET mmay_c_unit POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+      "$<TARGET_FILE:mmay_c_unit>"
+      "${test_directory}/$<TARGET_FILE_NAME:mmay_c_unit>"
+    VERBATIM
+  )
+endfunction()
 
-add_test(
-  NAME mmay_cp33_unit
-  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp33
-)
-add_test(
-  NAME mmay_cp34_unit
-  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp34
-)
-add_test(
-  NAME mmay_cp35_unit
-  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp35
-)
-add_test(
-  NAME mmay_cp36_unit
-  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp36
-)
-add_test(
-  NAME mmay_cp37_unit
-  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp37
-)
-add_test(
-  NAME mmay_cp38_unit
-  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp38
-)
-add_test(
-  NAME mmay_cp41_unit
-  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp41
-)
-add_test(
-  NAME mmay_cp39_unit
-  COMMAND mmay_c_unit "$<TARGET_FILE:mmay>" --cp39
-)
-set_tests_properties(
-  mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit mmay_cp36_unit
-  mmay_cp37_unit mmay_cp38_unit mmay_cp39_unit mmay_cp41_unit
-  PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-)
-set_tests_properties(
-  mmay_cp32_unit PROPERTIES WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
-)
+# Each leaf test function has exactly one CTest owner. These named checkpoint
+# owners contain the post-CP31 families that are intentionally absent from the
+# broad suite shards above, so a full suite does not execute them twice.
+mmay_add_focused_checkpoint_test(cp32 12)
+mmay_add_focused_checkpoint_test(cp33 12)
+mmay_add_focused_checkpoint_test(cp34 1)
+mmay_add_focused_checkpoint_test(cp35 5)
+mmay_add_focused_checkpoint_test(cp36 16)
+mmay_add_focused_checkpoint_test(cp37 1)
+mmay_add_focused_checkpoint_test(cp38 1)
+mmay_add_focused_checkpoint_test(cp41 10)
+mmay_add_focused_checkpoint_test(cp39 1)
 
 add_test(
   NAME mmay_install_relocation
@@ -468,6 +460,21 @@ add_test(
     "-DMMAY_TEST_ARCHIVE_FORMAT=${MMAY_TEST_CP39_ARCHIVE_FORMAT}"
     "-DMMAY_TEST_EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp39_distribution.cmake"
+)
+
+add_test(
+  NAME mmay_cp39_packaging
+  CONFIGURATIONS Release
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_BINARY_DIR=${CMAKE_BINARY_DIR}"
+    "-DMMAY_TEST_CONFIG=$<CONFIG>"
+    "-DMMAY_TEST_SOURCE_DIR=${CMAKE_SOURCE_DIR}"
+    "-DMMAY_TEST_VERSION=${MMAY_COMPILER_VERSION}"
+    "-DMMAY_TEST_HOST=${MMAY_TEST_CP39_HOST}"
+    "-DMMAY_TEST_ARCHIVE_FORMAT=${MMAY_TEST_CP39_ARCHIVE_FORMAT}"
+    "-DMMAY_TEST_SOURCE_DATE_EPOCH=${MMAY_SOURCE_DATE_EPOCH}"
+    "-DMMAY_TEST_EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp39_packaging.cmake"
 )
 
 set(mmay_cp32_process_test_arguments
@@ -549,19 +556,28 @@ add_test(
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp38_json.cmake"
 )
 
-# The install contracts both update CMake's build-tree install manifest. They
-# may overlap all other isolated tests, but not each other.
+# The install contracts update CMake's build-tree install manifest. They may
+# overlap all other isolated tests, but not each other.
 set_tests_properties(
   mmay_install_relocation
   mmay_cp29_release_contract
   mmay_cp39_distribution
+  mmay_cp39_packaging
   PROPERTIES RESOURCE_LOCK "mmay_install_manifest"
 )
 set_tests_properties(mmay_install_relocation PROPERTIES COST 320)
 set_tests_properties(mmay_cp29_release_contract PROPERTIES COST 200)
 set_tests_properties(
   mmay_cp39_distribution
-  PROPERTIES PROCESSORS 2 COST 800 TIMEOUT 3600 LABELS "cp39;distribution"
+  PROPERTIES PROCESSORS 2 COST 700 TIMEOUT 3600 LABELS "cp39;distribution"
+)
+set_tests_properties(
+  mmay_cp39_packaging
+  PROPERTIES
+    PROCESSORS 2
+    COST 680
+    TIMEOUT 3600
+    LABELS "cp39;distribution;packaging"
 )
 set_tests_properties(mmay_cp32_process_streams PROPERTIES COST 320)
 set_tests_properties(mmay_cp33_process_text_bytes PROPERTIES COST 380)
@@ -573,23 +589,16 @@ set_tests_properties(mmay_cp36_map_set PROPERTIES COST 400)
 # unrelated CTest owner behind it.
 set_tests_properties(
   mmay_cp37_cli_parser
-  PROPERTIES PROCESSORS 2 COST 500 TIMEOUT 1200
+  PROPERTIES PROCESSORS 2 COST 720 TIMEOUT 1200
 )
 set_tests_properties(
   mmay_cp38_json
   # This end-to-end contract recompiles and runs the package several times.
   # Sanitizer instrumentation can push a healthy run past twenty minutes.
-  PROPERTIES PROCESSORS 2 COST 600 TIMEOUT 3600
+  PROPERTIES PROCESSORS 2 COST 1500 TIMEOUT 3600
 )
 if(MMAY_ENABLE_ADDRESS_SANITIZER)
   # The instrumented nested compiler has enough peak working set to be killed
   # externally when it overlaps the heaviest C-unit shards under parallel CTest.
   set_tests_properties(mmay_cp38_json PROPERTIES RUN_SERIAL TRUE)
 endif()
-
-# Focused checkpoint runners still share the legacy root fixture directory.
-set_tests_properties(
-  mmay_cp32_unit mmay_cp33_unit mmay_cp34_unit mmay_cp35_unit
-  mmay_cp36_unit mmay_cp37_unit mmay_cp38_unit mmay_cp39_unit mmay_cp41_unit
-  PROPERTIES RUN_SERIAL TRUE COST 10
-)

@@ -41,16 +41,30 @@ whose fixtures and outputs are read-only may run concurrently. Tests that
 create shared build-tree artifacts remain serial.
 
 The C-unit coordinator is registered in CTest as fixed owner-aligned suite
-shards. Every coordinator call belongs to exactly one shard, while the direct
-runner still executes their union. Each suite shard receives a private copy of
-the fixture tree and a private working directory, so generated native outputs
-and temporary files cannot collide. Local CTest presets use a bounded
-four-process pool; sanitizer CI may use up to eight isolated processes and
-starts the historically expensive owner groups first. Shared resources use a
-narrow CTest resource lock rather than forcing unrelated tests to run serially.
+shards plus named focused checkpoint owners. Every leaf test function is
+reachable from exactly one CTest owner, while the direct runner executes the
+union of both owner families. `check-architecture` expands the coordinator call
+graph and rejects duplicate or orphaned leaf owners. Each owner receives a
+private copy of the fixture tree and a private working directory, so generated
+native outputs and temporary files cannot collide; a focused name is never a
+reason to repeat the same leaf function in a broad shard. Local CTest presets
+use a bounded four-process pool; sanitizer CI may use up to eight isolated
+processes. Fresh-build `COST` values are calibrated from the slowest supported
+instrumented profile so the two-worker CP38, CP37, and CP39 integration owners
+occupy the critical path first instead of serializing behind one-worker tests.
+The ASan CP38 owner retains its proven whole-pool memory exclusion and is
+therefore scheduled first. Shared filesystem resources use a narrow CTest
+resource lock rather than forcing unrelated tests to run serially.
 Process-integration tests whose artifacts are private reserve the number of
-CTest workers needed by their compiler and native subprocesses instead of
-serializing the entire test pool.
+CTest workers needed by their compiler and native subprocesses.
+
+CP39 lifecycle/native-run coverage remains in every Debug, Release, and
+sanitizer profile. Archive creation, reproducibility replay, offline source
+configuration, and archive relocation have a separate Release-only owner. That
+owner exercises the public `mmay_package` target, compares it with an
+independent packager invocation, and leaves the verified target output for CI
+upload. Debug and sanitizer jobs therefore do not repeat source archiving that
+cannot observe sanitizer instrumentation.
 
 Clang/GCC sanitizer presets compile host compiler and test targets with `-O1`
 while retaining Debug symbols and assertions. This keeps exhaustive
@@ -391,6 +405,13 @@ limit-contract failure, idempotence failure, or semantic-AST mismatch. Evidence
 records the exact compiler/runtime, target command, executions, corpus growth,
 coverage counters, peak RSS, and artifact disposition. Later sustained-release
 campaigns increase this budget; passing an I1 campaign is not P3/P4 evidence.
+
+CI configures and builds all fuzz executables once per revision and host, then
+fans the immutable executable bundle out to isolated target campaigns. Every
+campaign still receives its full time budget, corpus, sanitizer environment,
+failure-artifact owner, and independent exit status; sharing compilation does
+not share mutable corpus state or reduce executions by running targets in one
+contended process pool.
 
 Corpora and dictionaries are committed when legally/operationally appropriate. Every found failure is minimized and promoted to a deterministic regression test. Release reports state engine, sanitizer, target, corpus size, total executions/core-hours, unique coverage movement, and unresolved findings.
 

@@ -77,10 +77,7 @@ jobs:
       - name: Build
         run: cmake --build build --config ${{ matrix.configuration }} --parallel
       - name: Test
-        run: ctest --test-dir build -C ${{ matrix.configuration }} --output-on-failure
-      - name: Create deterministic CP39 distribution
-        if: matrix.configuration == 'Release'
-        run: cmake --build build --config ${{ matrix.configuration }} --target mmay_package --parallel
+        run: ctest --test-dir build -C ${{ matrix.configuration }} --parallel 4 --output-on-failure
       - name: Preserve CP39 host artifacts
         if: matrix.configuration == 'Release'
         uses: actions/upload-artifact@v4
@@ -179,13 +176,46 @@ jobs:
       - name: Test
         run: ctest --preset asan
 
+  fuzz-build:
+    name: Linux x86_64 fuzz / build once
+    runs-on: ubuntu-24.04
+    env:
+      CC: clang
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Configure
+        run: cmake --preset fuzz
+      - name: Build all fuzz targets
+        run: >-
+          cmake --build build/fuzz
+          --target mmay_fuzz_bytecode mmay_fuzz_frontend
+          mmay_fuzz_formatter mmay_fuzz_json
+          --parallel
+      - name: Bundle fuzz executables
+        run: >-
+          tar -czf fuzz-binaries.tar.gz
+          -C build/fuzz/tests/fuzz
+          mmay_fuzz_bytecode mmay_fuzz_frontend
+          mmay_fuzz_formatter mmay_fuzz_json
+      - name: Preserve fuzz executables
+        uses: actions/upload-artifact@v4
+        with:
+          name: fuzz-linux-x86_64-binaries
+          path: fuzz-binaries.tar.gz
+          if-no-files-found: error
+          retention-days: 1
+
   fuzz:
     name: Linux x86_64 fuzz / ${{ matrix.target }}
     runs-on: ubuntu-24.04
+    needs: fuzz-build
     strategy:
       fail-fast: false
       matrix:
-        target: [bytecode, frontend, formatter]
+        target: [bytecode, frontend, formatter, json]
     env:
       CC: clang
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:quarantine_size_mb=64
@@ -195,10 +225,14 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Configure
-        run: cmake --preset fuzz
-      - name: Build target
-        run: cmake --build build/fuzz --target mmay_fuzz_${{ matrix.target }} --parallel
+      - name: Restore fuzz executables
+        uses: actions/download-artifact@v4
+        with:
+          name: fuzz-linux-x86_64-binaries
+      - name: Extract fuzz executables
+        run: |
+          mkdir -p build/fuzz/tests/fuzz
+          tar -xzf fuzz-binaries.tar.gz -C build/fuzz/tests/fuzz
       - name: Run sustained campaign
         run: >-
           ./build/fuzz/tests/fuzz/mmay_fuzz_${{ matrix.target }}

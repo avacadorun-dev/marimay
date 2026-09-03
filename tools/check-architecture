@@ -24,6 +24,11 @@ COORDINATOR_LIMITS = {
 }
 EXCEPTIONS = ROOT / "docs/implementation/architecture-exceptions.tsv"
 INCLUDE = re.compile(r'^\s*#\s*include\s*["<]([^">]+)[">]', re.MULTILINE)
+TEST_FUNCTION = re.compile(
+    r"(?:^|\n)\s*(?:static\s+)?void\s+"
+    r"(mmay_test_[A-Za-z0-9_]+)\s*\(\s*void\s*\)\s*\{"
+)
+TEST_CALL = re.compile(r"\b(mmay_test_[A-Za-z0-9_]+)\s*\(\s*\)\s*;")
 
 
 @dataclass(frozen=True)
@@ -292,12 +297,160 @@ def cmake_registration_violations() -> list[str]:
     return violations
 
 
+def matching_c_brace(source: str, opening: int) -> int:
+    """Return the matching brace while ignoring C comments and literals."""
+    depth = 0
+    index = opening
+    state = "code"
+    while index < len(source):
+        char = source[index]
+        following = source[index + 1] if index + 1 < len(source) else ""
+        if state == "code":
+            if char == "/" and following == "/":
+                state = "line-comment"
+                index += 2
+                continue
+            if char == "/" and following == "*":
+                state = "block-comment"
+                index += 2
+                continue
+            if char == '"':
+                state = "string"
+            elif char == "'":
+                state = "character"
+            elif char == "{":
+                depth += 1
+            elif char == "}":
+                depth -= 1
+                if depth == 0:
+                    return index
+        elif state == "line-comment":
+            if char == "\n":
+                state = "code"
+        elif state == "block-comment":
+            if char == "*" and following == "/":
+                state = "code"
+                index += 2
+                continue
+        elif char == "\\":
+            index += 2
+            continue
+        elif (state == "string" and char == '"') or (
+            state == "character" and char == "'"
+        ):
+            state = "code"
+        index += 1
+    raise ValueError("unterminated C function body")
+
+
+def c_function_body(source: str, match: re.Match[str]) -> str:
+    opening = source.find("{", match.start(), match.end())
+    closing = matching_c_brace(source, opening)
+    return source[opening + 1 : closing]
+
+
+def test_owner_violations() -> list[str]:
+    """Require every no-argument C test function to have one CTest owner."""
+    definitions: dict[str, tuple[Path, str]] = {}
+    violations: list[str] = []
+    for path in sorted((ROOT / "tests/c-unit").rglob("*.c")):
+        source = path.read_text(encoding="utf-8")
+        for match in TEST_FUNCTION.finditer(source):
+            name = match.group(1)
+            if name in definitions:
+                violations.append(
+                    f"{relative(path)}: duplicate C test function {name}; first "
+                    f"defined in {relative(definitions[name][0])}"
+                )
+                continue
+            definitions[name] = (path, c_function_body(source, match))
+
+    main_path = ROOT / "tests/c-unit/test_main.c"
+    main_source = main_path.read_text(encoding="utf-8")
+    shard_match = re.search(
+        r"static\s+void\s+mmay_test_run_suite_shard\s*\([^)]*\)\s*\{",
+        main_source,
+    )
+    if shard_match is None:
+        return ["tests/c-unit/test_main.c: missing suite-shard coordinator"]
+    shard_body = c_function_body(main_source, shard_match)
+    owners: dict[str, set[str]] = {}
+    for case in re.finditer(
+        r"\bcase\s+(\d+)\s*:(.*?)\bbreak\s*;", shard_body, re.DOTALL
+    ):
+        owners[f"suite-shard-{case.group(1)}"] = set(
+            TEST_CALL.findall(case.group(2))
+        )
+
+    focused_helpers = sorted(
+        name for name in definitions if re.fullmatch(r"mmay_test_run_cp\d+", name)
+    )
+    for name in focused_helpers:
+        owners[name.removeprefix("mmay_test_run_")] = set(
+            TEST_CALL.findall(definitions[name][1])
+        )
+
+    cmake_source = (ROOT / "tests/c-unit/CMakeLists.txt").read_text(
+        encoding="utf-8"
+    )
+    registered_focused = re.findall(
+        r"^mmay_add_focused_checkpoint_test\((cp\d+)\s+\d+\)\s*$",
+        cmake_source,
+        re.MULTILINE,
+    )
+    expected_focused = [
+        name.removeprefix("mmay_test_run_") for name in focused_helpers
+    ]
+    if sorted(registered_focused) != sorted(expected_focused):
+        violations.append(
+            "tests/c-unit/CMakeLists.txt: focused CTest owners do not match "
+            f"test_main helpers: registered={registered_focused}, "
+            f"helpers={expected_focused}"
+        )
+
+    call_graph = {
+        name: set(TEST_CALL.findall(body)) & definitions.keys()
+        for name, (_, body) in definitions.items()
+    }
+    memberships: dict[str, set[str]] = {}
+    for owner, roots in owners.items():
+        pending = list(roots)
+        reached: set[str] = set()
+        while pending:
+            name = pending.pop()
+            if name in reached or name not in definitions:
+                continue
+            reached.add(name)
+            pending.extend(call_graph[name] - reached)
+        for name in reached:
+            if not name.startswith("mmay_test_run_"):
+                memberships.setdefault(name, set()).add(owner)
+
+    for name, owner_names in sorted(memberships.items()):
+        if len(owner_names) > 1:
+            path = relative(definitions[name][0])
+            violations.append(
+                f"{path}: {name} has multiple CTest owners: "
+                + ", ".join(sorted(owner_names))
+            )
+
+    coordinator_names = set(focused_helpers)
+    for name, (path, _) in sorted(definitions.items()):
+        if name not in memberships and name not in coordinator_names:
+            violations.append(
+                f"{relative(path)}: {name} has no CTest owner reachable from "
+                "the suite coordinator"
+            )
+    return violations
+
+
 def main() -> int:
     exceptions, violations = load_exceptions()
     violations.extend(public_header_policy_regression_violations())
     violations.extend(line_limit_violations(exceptions))
     violations.extend(include_violations())
     violations.extend(cmake_registration_violations())
+    violations.extend(test_owner_violations())
     if violations:
         print("check-architecture: failed")
         for violation in violations:

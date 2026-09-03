@@ -2,8 +2,7 @@ cmake_minimum_required(VERSION 3.25)
 
 foreach(required IN ITEMS
     MMAY_TEST_BINARY_DIR MMAY_TEST_CONFIG MMAY_TEST_SOURCE_DIR
-    MMAY_TEST_VERSION MMAY_TEST_HOST MMAY_TEST_ARCHIVE_FORMAT
-    MMAY_TEST_EXECUTABLE_SUFFIX)
+    MMAY_TEST_VERSION MMAY_TEST_EXECUTABLE_SUFFIX)
   if(NOT DEFINED ${required})
     message(FATAL_ERROR "missing CP39 test input: ${required}")
   endif()
@@ -16,7 +15,6 @@ set(mmay_relocated "${mmay_root}/relocated path ü")
 set(mmay_project "${mmay_root}/alpha smoke ü")
 set(mmay_lifecycle
   "${MMAY_TEST_SOURCE_DIR}/cmake/MarimayDistributionLifecycle.cmake")
-set(mmay_packager "${MMAY_TEST_SOURCE_DIR}/tools/package-distribution")
 set(mmay_program "${mmay_prefix}/bin/mmay${MMAY_TEST_EXECUTABLE_SUFFIX}")
 file(REMOVE_RECURSE "${mmay_root}")
 file(MAKE_DIRECTORY "${mmay_root}")
@@ -349,73 +347,6 @@ if(NOT EXISTS "${mmay_program}")
 endif()
 file(REMOVE "${mmay_owned_readme}")
 file(RENAME "${mmay_owned_readme}.backup" "${mmay_owned_readme}")
-
-find_package(Python3 COMPONENTS Interpreter REQUIRED)
-foreach(pass RANGE 1 2)
-  execute_process(
-    COMMAND "${Python3_EXECUTABLE}" "${mmay_packager}"
-      --install-root "${mmay_staged}"
-      --source-root "${MMAY_TEST_SOURCE_DIR}"
-      --output-directory "${mmay_root}/archives-${pass}"
-      --version "${MMAY_TEST_VERSION}"
-      --host "${MMAY_TEST_HOST}"
-      --epoch 1700000000
-      --host-format "${MMAY_TEST_ARCHIVE_FORMAT}"
-    RESULT_VARIABLE package_result
-    OUTPUT_VARIABLE package_output
-    ERROR_VARIABLE package_error
-    ENCODING UTF-8
-  )
-  if(NOT package_result EQUAL 0)
-    message(FATAL_ERROR
-      "deterministic package pass ${pass} failed\n${package_output}\n${package_error}")
-  endif()
-endforeach()
-set(host_archive
-  "marimay-${MMAY_TEST_VERSION}-${MMAY_TEST_HOST}.${MMAY_TEST_ARCHIVE_FORMAT}")
-set(source_archive "marimay-${MMAY_TEST_VERSION}-source.tar.gz")
-foreach(archive IN ITEMS "${host_archive}" "${source_archive}")
-  file(SHA256 "${mmay_root}/archives-1/${archive}" first_hash)
-  file(SHA256 "${mmay_root}/archives-2/${archive}" second_hash)
-  if(NOT first_hash STREQUAL second_hash)
-    message(FATAL_ERROR "archive is not reproducible: ${archive}")
-  endif()
-  file(READ "${mmay_root}/archives-1/${archive}.sha256" checksum)
-  if(NOT checksum STREQUAL "${first_hash}  ${archive}\n")
-    message(FATAL_ERROR "archive checksum sibling mismatch: ${archive}")
-  endif()
-endforeach()
-
-set(mmay_source_extract "${mmay_root}/source archive")
-file(MAKE_DIRECTORY "${mmay_source_extract}")
-file(ARCHIVE_EXTRACT
-  INPUT "${mmay_root}/archives-1/${source_archive}"
-  DESTINATION "${mmay_source_extract}")
-execute_process(
-  COMMAND "${CMAKE_COMMAND}"
-    -S "${mmay_source_extract}/marimay-${MMAY_TEST_VERSION}-source"
-    -B "${mmay_source_extract}/configured"
-    -DBUILD_TESTING=OFF
-  RESULT_VARIABLE source_configure_result
-  OUTPUT_VARIABLE source_configure_output
-  ERROR_VARIABLE source_configure_error
-  ENCODING UTF-8
-)
-if(NOT source_configure_result EQUAL 0)
-  message(FATAL_ERROR
-    "offline source archive does not configure\n${source_configure_output}\n${source_configure_error}")
-endif()
-
-set(mmay_extracted "${mmay_root}/archive relocation")
-file(MAKE_DIRECTORY "${mmay_extracted}")
-file(ARCHIVE_EXTRACT
-  INPUT "${mmay_root}/archives-1/${host_archive}"
-  DESTINATION "${mmay_extracted}")
-mmay_expect_exit(0 "host archive relocation"
-  "${mmay_extracted}/bin/mmay${MMAY_TEST_EXECUTABLE_SUFFIX}" doctor --json)
-if(NOT MMAY_LAST_OUTPUT MATCHES "\"ok\":true")
-  message(FATAL_ERROR "extracted host archive is unhealthy")
-endif()
 
 mmay_expect_exit(0 "checksum-driven uninstall"
   "${CMAKE_COMMAND}"
