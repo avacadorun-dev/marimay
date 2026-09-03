@@ -601,4 +601,8 @@ if(MMAY_ENABLE_ADDRESS_SANITIZER)
   # The instrumented nested compiler has enough peak working set to be killed
   # externally when it overlaps the heaviest C-unit shards under parallel CTest.
   set_tests_properties(mmay_cp38_json PROPERTIES RUN_SERIAL TRUE)
+  # Once the serial JSON owner releases the pool, overlap the longest remaining
+  # native owner with the two-worker CP37/CP39 chain instead of leaving it in
+  # the sanitizer tail behind allocation shards.
+  set_tests_properties(mmay_c_unit_native PROPERTIES COST 1000)
 endif()

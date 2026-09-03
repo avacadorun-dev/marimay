@@ -187,6 +187,7 @@ jobs:
   thread-sanitizer:
     name: Linux x86_64 TSan
     runs-on: ubuntu-latest
+    needs: sanitizers
     env:
       CC: clang
       TSAN_OPTIONS: halt_on_error=1

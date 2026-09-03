@@ -53,8 +53,10 @@ processes. Fresh-build `COST` values are calibrated from the slowest supported
 instrumented profile so the two-worker CP38, CP37, and CP39 integration owners
 occupy the critical path first instead of serializing behind one-worker tests.
 The ASan CP38 owner retains its proven whole-pool memory exclusion and is
-therefore scheduled first. Shared filesystem resources use a narrow CTest
-resource lock rather than forcing unrelated tests to run serially.
+therefore scheduled first. After that exclusion releases the pool, the long
+native owner overlaps the two-worker CP37/CP39 chain rather than waiting behind
+allocation shards. Shared filesystem resources use a narrow CTest resource
+lock rather than forcing unrelated tests to run serially.
 Process-integration tests whose artifacts are private reserve the number of
 CTest workers needed by their compiler and native subprocesses.
 
@@ -414,11 +416,13 @@ not share mutable corpus state or reduce executions by running targets in one
 contended process pool.
 
 On a bounded three-executor validation host, the C17 compiler/configuration
-matrix depends on the short documentation/architecture gate. This leaves the
-initial executor wave for that gate, ASan/LSan, and the shared fuzz build; TSan
-enters as soon as the gate frees its slot. The dependency is fail-fast resource
-control rather than coverage filtering: every matrix row still runs after the
-gate passes.
+matrix depends on the short documentation/architecture gate. The shared fuzz
+build runs in the initial wave and the C17/fuzz work fills free executors after
+the gate. TSan depends on completion of ASan/LSan because concurrent sanitizer
+instrumentation on the same host measurably increases both critical paths; it
+does not omit either suite. These dependencies are fail-fast resource control
+rather than coverage filtering: every matrix row still runs after its gate
+passes.
 
 Corpora and dictionaries are committed when legally/operationally appropriate. Every found failure is minimized and promoted to a deterministic regression test. Release reports state engine, sanitizer, target, corpus size, total executions/core-hours, unique coverage movement, and unresolved findings.
 
