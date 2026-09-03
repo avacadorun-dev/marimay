@@ -61,7 +61,10 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
       - name: Test
-        run: ctest --test-dir build --parallel 4 --output-on-failure
+        run: >-
+          ctest --test-dir build
+          -C ${{ matrix.configuration }}
+          --parallel 4 --output-on-failure
       - name: Preserve CP39 Linux x86_64 artifacts
         if: ${{ matrix.compiler == 'gcc' && matrix.configuration == 'Release' }}
         uses: actions/upload-artifact@v3
