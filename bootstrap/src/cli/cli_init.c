@@ -257,7 +257,7 @@ int mmay_cli_init_project(
     MarimayOwnedBytes temporary = {0};
     MarimayOwnedBytes module_name = {0};
     MarimayOwnedBytes manifest = {0};
-    MarimayOwnedBytes files[3] = {{0}, {0}, {0}};
+    MarimayOwnedBytes files[3] = {0};
     MarimayDirectoryEntryKind kind = MMAY_DIRECTORY_ENTRY_MISSING;
     MarimayFileStatus status = MMAY_FILE_IO_FAILED;
     bool temporary_created = false;
