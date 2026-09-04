@@ -718,6 +718,7 @@ install(DIRECTORY docs examples
     "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
   USE_SOURCE_PERMISSIONS
   FILES_MATCHING
+    PATTERN ".mmay" EXCLUDE
     PATTERN "*.cmake"
     PATTERN "*.in"
     PATTERN "*.py"
@@ -746,7 +747,9 @@ install(DIRECTORY bootstrap runtime
   FILES_MATCHING
     PATTERN "*.c"
     PATTERN "*.h"
+    PATTERN "*.inc"
     PATTERN "*.txt"
+    PATTERN "*.tsv"
 )
 install(DIRECTORY std
   DESTINATION

@@ -87,6 +87,69 @@ if(EXISTS "${mmay_invalid_prefix}"
     OR EXISTS "${mmay_invalid_prefix}.mmay-stage")
   message(FATAL_ERROR "incomplete source published partial install state")
 endif()
+file(COPY_FILE
+  "${mmay_staged}/include/mmay/runtime/core.h"
+  "${mmay_invalid_source}/include/mmay/runtime/core.h")
+file(WRITE "${mmay_invalid_source}/unlisted-payload" "unowned\n")
+mmay_expect_exit(1 "unlisted install payload"
+  "${CMAKE_COMMAND}"
+  "-DMMAY_DISTRIBUTION_ACTION=install"
+  "-DMMAY_DISTRIBUTION_SOURCE=${mmay_invalid_source}"
+  "-DMMAY_DISTRIBUTION_PREFIX=${mmay_invalid_prefix}"
+  -P "${mmay_lifecycle}")
+if(EXISTS "${mmay_invalid_prefix}"
+    OR EXISTS "${mmay_invalid_prefix}.mmay-stage")
+  message(FATAL_ERROR "unlisted payload published partial install state")
+endif()
+file(REMOVE "${mmay_invalid_source}/unlisted-payload")
+set(mmay_invalid_manifest
+  "${mmay_invalid_source}/share/mmay/${MMAY_TEST_VERSION}/checksums.sha256")
+file(STRINGS "${mmay_invalid_manifest}" first_manifest_line LIMIT_COUNT 1)
+file(APPEND "${mmay_invalid_manifest}" "${first_manifest_line}\n")
+mmay_expect_exit(1 "duplicate install manifest path"
+  "${CMAKE_COMMAND}"
+  "-DMMAY_DISTRIBUTION_ACTION=install"
+  "-DMMAY_DISTRIBUTION_SOURCE=${mmay_invalid_source}"
+  "-DMMAY_DISTRIBUTION_PREFIX=${mmay_invalid_prefix}"
+  -P "${mmay_lifecycle}")
+if(EXISTS "${mmay_invalid_prefix}"
+    OR EXISTS "${mmay_invalid_prefix}.mmay-stage")
+  message(FATAL_ERROR "duplicate manifest path published partial install state")
+endif()
+string(REGEX MATCH "^([0-9a-f]+)  (.+)$" unused "${first_manifest_line}")
+file(WRITE "${mmay_invalid_manifest}"
+  "${CMAKE_MATCH_1}  ./${CMAKE_MATCH_2}\n")
+mmay_expect_exit(1 "non-normalized install manifest path"
+  "${CMAKE_COMMAND}"
+  "-DMMAY_DISTRIBUTION_ACTION=install"
+  "-DMMAY_DISTRIBUTION_SOURCE=${mmay_invalid_source}"
+  "-DMMAY_DISTRIBUTION_PREFIX=${mmay_invalid_prefix}"
+  -P "${mmay_lifecycle}")
+if(EXISTS "${mmay_invalid_prefix}"
+    OR EXISTS "${mmay_invalid_prefix}.mmay-stage")
+  message(FATAL_ERROR "unsafe manifest path published partial install state")
+endif()
+file(COPY_FILE
+  "${mmay_staged}/share/mmay/${MMAY_TEST_VERSION}/checksums.sha256"
+  "${mmay_invalid_manifest}")
+if(UNIX)
+  file(REMOVE_RECURSE "${mmay_invalid_source}/include")
+  file(CREATE_LINK "${mmay_staged}/include"
+    "${mmay_invalid_source}/include" SYMBOLIC RESULT link_result)
+  if(NOT link_result STREQUAL "0")
+    message(FATAL_ERROR "cannot create CP39 distribution symlink fixture")
+  endif()
+  mmay_expect_exit(1 "linked install payload"
+    "${CMAKE_COMMAND}"
+    "-DMMAY_DISTRIBUTION_ACTION=install"
+    "-DMMAY_DISTRIBUTION_SOURCE=${mmay_invalid_source}"
+    "-DMMAY_DISTRIBUTION_PREFIX=${mmay_invalid_prefix}"
+    -P "${mmay_lifecycle}")
+  if(EXISTS "${mmay_invalid_prefix}"
+      OR EXISTS "${mmay_invalid_prefix}.mmay-stage")
+    message(FATAL_ERROR "linked payload published partial install state")
+  endif()
+endif()
 file(REMOVE_RECURSE "${mmay_invalid_source}")
 
 # POSIX permission bits are part of the currently claimed Linux lifecycle.
@@ -138,11 +201,29 @@ foreach(required_file IN ITEMS
     "share/doc/mmay/${MMAY_TEST_VERSION}/README.md"
     "share/doc/mmay/${MMAY_TEST_VERSION}/CMakeLists.txt"
     "share/doc/mmay/${MMAY_TEST_VERSION}/bootstrap/main.c"
+    "share/doc/mmay/${MMAY_TEST_VERSION}/bootstrap/src/generated/opcode_data.inc"
+    "share/doc/mmay/${MMAY_TEST_VERSION}/bootstrap/tables/opcodes.tsv"
     "share/doc/mmay/${MMAY_TEST_VERSION}/std/io/io.my")
   if(NOT EXISTS "${mmay_prefix}/${required_file}")
     message(FATAL_ERROR "installed distribution is missing ${required_file}")
   endif()
 endforeach()
+set(mmay_installed_source
+  "${mmay_prefix}/share/doc/mmay/${MMAY_TEST_VERSION}")
+set(mmay_installed_source_build "${mmay_root}/installed-source-build")
+execute_process(
+  COMMAND "${CMAKE_COMMAND}"
+    -S "${mmay_installed_source}"
+    -B "${mmay_installed_source_build}"
+    -DBUILD_TESTING=OFF
+  RESULT_VARIABLE source_configure_result
+  OUTPUT_VARIABLE source_configure_output
+  ERROR_VARIABLE source_configure_error
+  ENCODING UTF-8)
+if(NOT source_configure_result EQUAL 0)
+  message(FATAL_ERROR
+    "installed offline source kit does not configure\n${source_configure_output}\n${source_configure_error}")
+endif()
 foreach(forbidden IN ITEMS "bin/ma" "bin/ruda" ".ma" "ma.mod")
   if(EXISTS "${mmay_prefix}/${forbidden}")
     message(FATAL_ERROR "legacy alias was installed: ${forbidden}")
