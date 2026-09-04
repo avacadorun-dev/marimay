@@ -38,7 +38,7 @@ jobs:
     name: Linux x86_64 ${{ matrix.compiler }} / ${{ matrix.configuration }}
     runs-on: ubuntu-latest
     container:
-      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
     needs: documentation
     strategy:
       fail-fast: false
@@ -91,7 +91,7 @@ jobs:
     name: Linux x86_64 ASan+UBSan+LSan
     runs-on: ubuntu-latest
     container:
-      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
     env:
       CC: clang
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:symbolize=1:allow_addr2line=1
@@ -120,7 +120,7 @@ jobs:
     name: Linux x86_64 fuzz / build once
     runs-on: ubuntu-latest
     container:
-      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
     env:
       CC: clang
     steps:
@@ -157,7 +157,7 @@ jobs:
     name: Linux x86_64 fuzz / ${{ matrix.target }}
     runs-on: ubuntu-latest
     container:
-      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
     needs: fuzz-build
     strategy:
       fail-fast: false
@@ -204,7 +204,7 @@ jobs:
     name: Linux x86_64 TSan
     runs-on: ubuntu-latest
     container:
-      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
     needs: sanitizers
     env:
       CC: clang
