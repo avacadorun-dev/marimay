@@ -2505,7 +2505,9 @@ source revision, source-date epoch, builder identity, host tuple, compiler
 identity, build profile, and artifact hashes. `sbom.spdx.json` is SPDX 2.3 and
 lists the Marimay compiler, both runtime profiles, shipped standard packages,
 offline docs, and source kit. Generation is deterministic from explicit CMake
-inputs and performs no signing, upload, or publication.
+inputs and performs no signing, upload, or publication. Source archives include
+only tracked physical regular files, recursively omit `.git` and `.mmay`
+directories, and neither source nor host archives contain symbolic links.
 
 The host C compiler and platform SDK remain platform-owned under D030. An
 installation pins one reviewed compiler identity at build time and uses that

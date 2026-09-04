@@ -9,11 +9,16 @@ import hashlib
 import io
 import os
 from pathlib import Path, PurePosixPath
+import re
 import stat
 import subprocess
 import tarfile
 import time
 import zipfile
+
+
+EXCLUDED_SOURCE_DIRECTORIES = frozenset((".git", ".mmay"))
+ARCHIVE_COMPONENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
 
 
 def parse_arguments() -> argparse.Namespace:
@@ -28,10 +33,45 @@ def parse_arguments() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def distribution_files(root: Path) -> list[Path]:
+def validate_archive_component(value: str, description: str) -> str:
+    if value in (".", "..") or ARCHIVE_COMPONENT.fullmatch(value) is None:
+        raise SystemExit(f"{description} is not a safe archive-name component")
+    return value
+
+
+def checked_regular_files(root: Path, paths: list[Path], description: str) -> list[Path]:
+    root = root.resolve()
+    checked: list[Path] = []
+    names: set[str] = set()
+    for path in paths:
+        relative = path.relative_to(root)
+        name = relative.as_posix()
+        try:
+            name.encode("utf-8", errors="strict")
+        except UnicodeEncodeError as error:
+            raise SystemExit(f"{description} path is not valid UTF-8: {name!r}") from error
+        if name in names:
+            raise SystemExit(f"duplicate {description} path: {name}")
+        names.add(name)
+        if path.is_symlink() or not path.is_file():
+            raise SystemExit(f"{description} entry is not a physical regular file: {name}")
+        if path.resolve().parent != root and root not in path.resolve().parents:
+            raise SystemExit(f"{description} entry escapes its root: {name}")
+        checked.append(path)
     return sorted(
-        (path for path in root.rglob("*") if path.is_file()),
+        checked,
         key=lambda path: path.relative_to(root).as_posix().encode("utf-8"),
+    )
+
+
+def distribution_files(root: Path) -> list[Path]:
+    entries = list(root.rglob("*"))
+    linked = [path for path in entries if path.is_symlink()]
+    if linked:
+        name = linked[0].relative_to(root).as_posix()
+        raise SystemExit(f"installed distribution contains a symbolic link: {name}")
+    return checked_regular_files(
+        root, [path for path in entries if path.is_file()], "distribution"
     )
 
 
@@ -42,13 +82,22 @@ def source_files(root: Path) -> list[Path]:
         check=True,
         stdout=subprocess.PIPE,
     )
-    names = [name for name in result.stdout.split(b"\0") if name]
-    paths = [(root / os.fsdecode(name)).resolve() for name in names]
-    if any(not path.is_file() or root.resolve() not in path.parents for path in paths):
-        raise SystemExit("tracked source archive entry is missing or escapes the root")
-    return sorted(
-        paths,
-        key=lambda path: path.relative_to(root).as_posix().encode("utf-8"),
+    names: list[str] = []
+    for raw_name in result.stdout.split(b"\0"):
+        if not raw_name:
+            continue
+        try:
+            name = raw_name.decode("utf-8", errors="strict")
+        except UnicodeDecodeError as error:
+            raise SystemExit("tracked source archive path is not valid UTF-8") from error
+        parts = PurePosixPath(name).parts
+        if any(part in EXCLUDED_SOURCE_DIRECTORIES for part in parts):
+            continue
+        names.append(name)
+    return checked_regular_files(
+        root,
+        [root / Path(*PurePosixPath(name).parts) for name in names],
+        "tracked source",
     )
 
 
@@ -111,9 +160,16 @@ def main() -> int:
     options = parse_arguments()
     install_root = options.install_root.resolve()
     source_root = options.source_root.resolve()
-    if options.epoch < 0 or not install_root.is_dir() or not source_root.is_dir():
+    version = validate_archive_component(options.version, "version")
+    host = validate_archive_component(options.host, "host")
+    if (
+        options.epoch < 0
+        or options.epoch > 0xFFFFFFFF
+        or not install_root.is_dir()
+        or not source_root.is_dir()
+    ):
         raise SystemExit("epoch and source/install roots are invalid")
-    host_name = f"marimay-{options.version}-{options.host}.{options.host_format}"
+    host_name = f"marimay-{version}-{host}.{options.host_format}"
     host_files = distribution_files(install_root)
     if not host_files:
         raise SystemExit("installed distribution is empty")
@@ -121,14 +177,16 @@ def main() -> int:
         host_content = zip_bytes(install_root, host_files, options.epoch)
     else:
         host_content = tar_bytes(install_root, host_files, "", options.epoch)
-    publish(options.output_directory / host_name, host_content)
 
-    source_name = f"marimay-{options.version}-source.tar.gz"
-    source_prefix = str(PurePosixPath(f"marimay-{options.version}-source"))
-    publish(
-        options.output_directory / source_name,
-        tar_bytes(source_root, source_files(source_root), source_prefix, options.epoch),
+    source_name = f"marimay-{version}-source.tar.gz"
+    source_prefix = str(PurePosixPath(f"marimay-{version}-source"))
+    source_content = tar_bytes(
+        source_root, source_files(source_root), source_prefix, options.epoch
     )
+    # Finish all input validation and archive generation before publishing any
+    # member of the output bundle.
+    publish(options.output_directory / host_name, host_content)
+    publish(options.output_directory / source_name, source_content)
     return 0
 
 

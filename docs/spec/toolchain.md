@@ -685,7 +685,9 @@ The portable source archive is `marimay-V-source.tar.gz`. A host archive is
 members use sorted prefix-relative UTF-8 names, normalized timestamps from
 `SOURCE_DATE_EPOCH`, numeric ownership, and stable permissions. Repeating a
 build from the same clean revision and explicit build inputs produces identical
-bytes. Every archive has a lowercase hexadecimal `.sha256` sibling.
+bytes. Source archives contain tracked physical regular files but omit every
+`.git` and `.mmay` directory at any depth; archives never contain symbolic
+links. Every archive has a lowercase hexadecimal `.sha256` sibling.
 
 Installed `checksums.sha256` covers every regular distribution file except
 itself by exact relative path. `provenance.json` uses

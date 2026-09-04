@@ -44,6 +44,24 @@ foreach(archive IN ITEMS "${host_archive}" "${source_archive}")
   endforeach()
 endforeach()
 
+foreach(archive IN ITEMS "${host_archive}" "${source_archive}")
+  execute_process(
+    COMMAND "${CMAKE_COMMAND}" -E tar tf
+      "${mmay_distribution}/${archive}"
+    RESULT_VARIABLE archive_list_result
+    OUTPUT_VARIABLE archive_members
+    ERROR_VARIABLE archive_list_error
+    ENCODING UTF-8
+  )
+  if(NOT archive_list_result EQUAL 0)
+    message(FATAL_ERROR
+      "cannot list CP39 archive ${archive}: ${archive_list_error}")
+  endif()
+  if(archive_members MATCHES "(^|\n)([^\n]*/)?[.]mmay(/|\n)")
+    message(FATAL_ERROR "archive contains tool-owned .mmay state: ${archive}")
+  endif()
+endforeach()
+
 # Replay the packager from the exact staged install. Comparing independent
 # invocations keeps reproducibility coverage while avoiding two complete
 # packaging passes in every Debug and sanitizer profile.
@@ -99,6 +117,123 @@ execute_process(
 if(NOT source_configure_result EQUAL 0)
   message(FATAL_ERROR
     "offline source archive does not configure\n${source_configure_output}\n${source_configure_error}")
+endif()
+
+# The portable source packager excludes tracked tool-state fixtures by path,
+# rather than relying on the main repository to happen not to contain one.
+set(mmay_synthetic_source "${mmay_root}/synthetic source")
+set(mmay_synthetic_install "${mmay_root}/synthetic install")
+set(mmay_synthetic_output "${mmay_root}/synthetic output")
+file(MAKE_DIRECTORY
+  "${mmay_synthetic_source}/.mmay"
+  "${mmay_synthetic_install}/bin")
+file(WRITE "${mmay_synthetic_source}/CMakeLists.txt"
+  "cmake_minimum_required(VERSION 3.25)\nproject(cp39 NONE)\n")
+file(WRITE "${mmay_synthetic_source}/.mmay/private.my" "private\n")
+file(WRITE "${mmay_synthetic_install}/bin/mmay" "fixture\n")
+find_program(mmay_git git REQUIRED)
+execute_process(
+  COMMAND "${mmay_git}" init --quiet
+  WORKING_DIRECTORY "${mmay_synthetic_source}"
+  RESULT_VARIABLE synthetic_git_result
+)
+if(NOT synthetic_git_result EQUAL 0)
+  message(FATAL_ERROR "cannot initialize the synthetic source repository")
+endif()
+execute_process(
+  COMMAND "${mmay_git}" add -f CMakeLists.txt .mmay/private.my
+  WORKING_DIRECTORY "${mmay_synthetic_source}"
+  RESULT_VARIABLE synthetic_add_result
+)
+if(NOT synthetic_add_result EQUAL 0)
+  message(FATAL_ERROR "cannot populate the synthetic source repository")
+endif()
+execute_process(
+  COMMAND "${Python3_EXECUTABLE}" "${mmay_packager}"
+    --install-root "${mmay_synthetic_install}"
+    --source-root "${mmay_synthetic_source}"
+    --output-directory "${mmay_synthetic_output}"
+    --version "${MMAY_TEST_VERSION}"
+    --host "${MMAY_TEST_HOST}"
+    --epoch "${MMAY_TEST_SOURCE_DATE_EPOCH}"
+    --host-format "${MMAY_TEST_ARCHIVE_FORMAT}"
+  RESULT_VARIABLE synthetic_package_result
+  OUTPUT_VARIABLE synthetic_package_output
+  ERROR_VARIABLE synthetic_package_error
+  ENCODING UTF-8
+)
+if(NOT synthetic_package_result EQUAL 0)
+  message(FATAL_ERROR
+    "synthetic source packaging failed\n${synthetic_package_output}\n${synthetic_package_error}")
+endif()
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -E tar tf
+    "${mmay_synthetic_output}/${source_archive}"
+  RESULT_VARIABLE synthetic_list_result
+  OUTPUT_VARIABLE synthetic_members
+  ERROR_VARIABLE synthetic_list_error
+  ENCODING UTF-8
+)
+if(NOT synthetic_list_result EQUAL 0
+    OR synthetic_members MATCHES "(^|\n)([^\n]*/)?[.]mmay(/|\n)"
+    OR NOT synthetic_members MATCHES "CMakeLists[.]txt")
+  message(FATAL_ERROR
+    "source archive state exclusion failed: ${synthetic_members}/${synthetic_list_error}")
+endif()
+
+execute_process(
+  COMMAND "${Python3_EXECUTABLE}" "${mmay_packager}"
+    --install-root "${mmay_synthetic_install}"
+    --source-root "${mmay_synthetic_source}"
+    --output-directory "${mmay_root}/unsafe output"
+    --version "../escape"
+    --host "${MMAY_TEST_HOST}"
+    --epoch "${MMAY_TEST_SOURCE_DATE_EPOCH}"
+    --host-format "${MMAY_TEST_ARCHIVE_FORMAT}"
+  RESULT_VARIABLE unsafe_name_result
+  OUTPUT_VARIABLE unsafe_name_output
+  ERROR_VARIABLE unsafe_name_error
+  ENCODING UTF-8
+)
+if(unsafe_name_result EQUAL 0
+    OR EXISTS "${mmay_root}/marimay-escape-source.tar.gz")
+  message(FATAL_ERROR
+    "packager accepted an unsafe archive component: ${unsafe_name_output}/${unsafe_name_error}")
+endif()
+
+if(UNIX)
+  set(mmay_linked_output "${mmay_root}/linked output")
+  file(CREATE_LINK "${mmay_synthetic_source}/CMakeLists.txt"
+    "${mmay_synthetic_source}/linked.txt" SYMBOLIC RESULT source_link_result)
+  if(NOT source_link_result STREQUAL "0")
+    message(FATAL_ERROR "cannot create the tracked source-link fixture")
+  endif()
+  execute_process(
+    COMMAND "${mmay_git}" add linked.txt
+    WORKING_DIRECTORY "${mmay_synthetic_source}"
+    RESULT_VARIABLE source_link_add_result
+  )
+  if(NOT source_link_add_result EQUAL 0)
+    message(FATAL_ERROR "cannot track the source-link fixture")
+  endif()
+  execute_process(
+    COMMAND "${Python3_EXECUTABLE}" "${mmay_packager}"
+      --install-root "${mmay_synthetic_install}"
+      --source-root "${mmay_synthetic_source}"
+      --output-directory "${mmay_linked_output}"
+      --version "${MMAY_TEST_VERSION}"
+      --host "${MMAY_TEST_HOST}"
+      --epoch "${MMAY_TEST_SOURCE_DATE_EPOCH}"
+      --host-format "${MMAY_TEST_ARCHIVE_FORMAT}"
+    RESULT_VARIABLE linked_source_result
+    OUTPUT_VARIABLE linked_source_output
+    ERROR_VARIABLE linked_source_error
+    ENCODING UTF-8
+  )
+  if(linked_source_result EQUAL 0 OR EXISTS "${mmay_linked_output}")
+    message(FATAL_ERROR
+      "packager accepted a tracked source link: ${linked_source_output}/${linked_source_error}")
+  endif()
 endif()
 
 set(mmay_extracted "${mmay_root}/archive relocation")

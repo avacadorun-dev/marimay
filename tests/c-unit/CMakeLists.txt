@@ -278,6 +278,9 @@ function(mmay_prepare_c_unit_working_directory destination)
   foreach(fixture_directory IN LISTS MMAY_C_UNIT_FIXTURE_DIRECTORIES)
     file(COPY "${fixture_directory}" DESTINATION "${destination}")
   endforeach()
+  # Tool-owned state is generated for the traversal test rather than shipped
+  # as a tracked source-distribution member.
+  file(MAKE_DIRECTORY "${destination}/format-tree/.mmay")
   file(COPY
     "${CMAKE_CURRENT_SOURCE_DIR}/check-bad.my"
     "${CMAKE_CURRENT_SOURCE_DIR}/check-incomplete.my"
