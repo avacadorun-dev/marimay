@@ -519,6 +519,10 @@ compiler. Both profile artifacts are part of the toolchain distribution and
 are validated before C generation by an exact manifest plus embedded
 profile/version markers. Installed lookup is relative to the invoked `mmay`
 path and remains valid when the complete installation prefix is relocated.
+Every command that requests a native runtime forwards that invoked-tool path.
+If neither explicit runtime paths nor an invoked-tool path are supplied,
+runtime selection fails as missing and must not fall back to development
+metadata.
 
 The cache key includes the SHA-256 of the selected runtime archive bytes, not
 its absolute location. Missing, partial, stale, or wrong-profile distribution

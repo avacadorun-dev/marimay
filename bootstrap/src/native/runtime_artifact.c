@@ -471,6 +471,9 @@ MarimayNativeRuntimeArtifactStatus mmay_native_runtime_artifact_select(
         return status == MMAY_NATIVE_RUNTIME_ARTIFACT_OK && !present
             ? MMAY_NATIVE_RUNTIME_ARTIFACT_MISSING : status;
     }
+    if (tool_executable_path == NULL) {
+        return MMAY_NATIVE_RUNTIME_ARTIFACT_MISSING;
+    }
     memset(&installed_paths, 0, sizeof(installed_paths));
     status = mmay_native_runtime_installed_paths(
         allocator, profile, tool_executable_path,

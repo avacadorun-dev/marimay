@@ -1068,7 +1068,10 @@ and `../include` relative to the invoked `mmay` path. A partially present
 installed candidate is an error; only the absence of the complete installed
 candidate permits the development build-tree metadata fallback. Relocating a
 complete installed prefix therefore preserves native builds without retaining
-a dependency on the original build tree.
+a dependency on the original build tree. Every native-build consumer supplies
+the invoked tool identity. An absent identity is a missing runtime error, not
+permission to select build-tree metadata; this keeps an omitted caller field
+from passing only on a machine that happens to contain the development tree.
 
 The content-addressed build key hashes the selected runtime archive bytes,
 profile, version, host/compiler identity, generated C, and backend flag

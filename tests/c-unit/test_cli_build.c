@@ -314,6 +314,7 @@ static void mmay_cli_build_test_missing_toolchain(void) {
     request.root_directory = ".";
     request.root_directory_length = 1;
     request.compiler_path = "mmay-cp10-definitely-missing-compiler";
+    request.tool_executable_path = mmay_test_toolchain_executable();
     MMAY_EXPECT(mmay_native_build(
         mmay_system_allocator(), &request, &result
     ) == MMAY_NATIVE_BUILD_TOOLCHAIN_MISSING);

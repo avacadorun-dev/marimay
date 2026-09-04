@@ -378,6 +378,7 @@ static bool mmay_cli_test_native(
     request.takes_arguments = test->function->mir.parameter_count == 1;
     request.root_directory = (const char *)context->target->root_directory.data;
     request.root_directory_length = context->target->root_directory.length;
+    request.tool_executable_path = context->options->tool_executable_path;
     request.max_heap_bytes = context->options->max_heap_bytes;
     request.read_roots = fs_capabilities.options.read_roots;
     request.read_root_count = fs_capabilities.options.read_root_count;
@@ -521,6 +522,14 @@ static int mmay_cli_test_build_error(
     if (status == MMAY_NATIVE_BUILD_TOOLCHAIN_MISSING) {
         code = MMAY_DIAGNOSTIC_NATIVE_TOOLCHAIN_MISSING;
         message = "supported host C toolchain is unavailable for native tests";
+        exit_code = MMAY_EXIT_SOURCE_FAILURE;
+    } else if (status == MMAY_NATIVE_BUILD_RUNTIME_MISSING) {
+        code = MMAY_DIAGNOSTIC_NATIVE_RUNTIME_INCOMPATIBLE;
+        message = "the version-matched native runtime artifact is missing; reinstall the Marimay toolchain";
+        exit_code = MMAY_EXIT_SOURCE_FAILURE;
+    } else if (status == MMAY_NATIVE_BUILD_RUNTIME_INCOMPATIBLE) {
+        code = MMAY_DIAGNOSTIC_NATIVE_RUNTIME_INCOMPATIBLE;
+        message = "the selected native runtime has a stale version or wrong build profile; reinstall the Marimay toolchain";
         exit_code = MMAY_EXIT_SOURCE_FAILURE;
     } else if (status == MMAY_NATIVE_BUILD_IO_FAILED
         || status == MMAY_NATIVE_BUILD_LIMIT_REACHED) {

@@ -100,7 +100,9 @@ static bool mmay_cp13_select(
     MarimayNativeRuntimeArtifact *artifact
 ) {
     return mmay_native_runtime_artifact_select(
-        mmay_system_allocator(), profile, NULL, paths, artifact
+        mmay_system_allocator(), profile,
+        paths == NULL ? mmay_test_toolchain_executable() : NULL,
+        paths, artifact
     ) == MMAY_NATIVE_RUNTIME_ARTIFACT_OK;
 }
 
@@ -268,6 +270,11 @@ static void mmay_cp13_test_invalid_artifacts(void) {
         MMAY_TEST_NATIVE_RUNTIME_DEBUG_MANIFEST
     );
     MarimayNativeRuntimeArtifact artifact = {0};
+    MMAY_EXPECT(mmay_native_runtime_artifact_select(
+        mmay_system_allocator(), MMAY_NATIVE_RUNTIME_DEBUG,
+        NULL, NULL, &artifact
+    ) == MMAY_NATIVE_RUNTIME_ARTIFACT_MISSING);
+    mmay_native_runtime_artifact_dispose(&artifact);
     MMAY_EXPECT(mmay_native_runtime_artifact_select(
         mmay_system_allocator(), MMAY_NATIVE_RUNTIME_DEBUG,
         NULL, &paths, &artifact
