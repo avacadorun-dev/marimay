@@ -2,9 +2,11 @@
 
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <string.h>
 
+#include "cli_native_run.h"
 #include "mmay/base/allocator.h"
 #include "mmay/build_config.h"
 #include "mmay/cli.h"
@@ -175,6 +177,45 @@ static void mmay_cp39_expect_toolchain(void) {
     MMAY_EXPECT(reached_success);
 }
 
+static void mmay_cp39_expect_native_arguments(void) {
+    static const char artifact_text[] = "/installed path/bin/mmay-app";
+    const char *program_arguments[] = {"alpha", "two words"};
+    MarimayOwnedBytes artifact = {0};
+    MarimayCliOptions options;
+    MarimayCliNativeArguments arguments;
+    MarimayFailAllocator state;
+    memset(&options, 0, sizeof(options));
+    memset(&arguments, 0, sizeof(arguments));
+    artifact.data = (unsigned char *)artifact_text;
+    artifact.length = sizeof(artifact_text) - 1;
+    options.program_arguments = program_arguments;
+    options.program_argument_count = 2;
+    MMAY_EXPECT(mmay_cli_native_arguments_init(
+        mmay_system_allocator(), &artifact, &options, &arguments
+    ));
+    MMAY_EXPECT(arguments.count == 3);
+    MMAY_EXPECT(arguments.items != NULL);
+    MMAY_EXPECT(arguments.items[0] == (const char *)artifact.data);
+    MMAY_EXPECT(arguments.items[1] == program_arguments[0]);
+    MMAY_EXPECT(arguments.items[2] == program_arguments[1]);
+    MMAY_EXPECT(arguments.items[3] == NULL);
+    mmay_cli_native_arguments_dispose(&arguments);
+
+    mmay_fail_allocator_init(&state, mmay_system_allocator(), 0);
+    MMAY_EXPECT(!mmay_cli_native_arguments_init(
+        mmay_fail_allocator(&state), &artifact, &options, &arguments
+    ));
+    MMAY_EXPECT(arguments.items == NULL);
+    MMAY_EXPECT(state.live_allocations == 0);
+    MMAY_EXPECT(state.live_bytes == 0);
+
+    options.program_argument_count = SIZE_MAX;
+    MMAY_EXPECT(!mmay_cli_native_arguments_init(
+        mmay_system_allocator(), &artifact, &options, &arguments
+    ));
+    MMAY_EXPECT(arguments.items == NULL);
+}
+
 static void mmay_cp39_expect_doctor(void) {
     const char *tool = mmay_test_toolchain_executable();
     const char *arguments[] = {tool, "doctor", "--json"};
@@ -197,6 +238,7 @@ static void mmay_cp39_expect_doctor(void) {
 
 void mmay_test_cli_cp39(void) {
     mmay_cp39_expect_toolchain();
+    mmay_cp39_expect_native_arguments();
     mmay_cp39_expect_doctor();
     mmay_cp39_expect_init();
     mmay_cp39_expect_init_allocations();
