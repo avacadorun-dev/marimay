@@ -80,6 +80,15 @@ void mmay_test_native_c_emitter_relations(void) {
         "  }\n"
         "  return 0;\n"
         "}\n"
+        "fn lateFactAfterChange(values: []int): int {\n"
+        "  let root = 0;\n"
+        "  const original = root * 2;\n"
+        "  root = values.length();\n"
+        "  if original < values.length() {\n"
+        "    return values[root * 2];\n"
+        "  }\n"
+        "  return 0;\n"
+        "}\n"
         "fn main(): int {\n"
         "  return selected([9, 7, 5]) + selected([9, 5, 7]);\n"
         "}\n";
@@ -135,7 +144,7 @@ void mmay_test_native_c_emitter_relations(void) {
         ) == MMAY_NATIVE_C_EMIT_OK);
         MMAY_EXPECT(mmay_test_native_relations_count(
             &generated, "mmay_g_begin_bounds("
-        ) == 4);
+        ) == 5);
         MMAY_EXPECT(mmay_test_native_contains(
             &generated, "mmay_managed_array_generated_get_scalar("
         ));

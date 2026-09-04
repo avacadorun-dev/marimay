@@ -761,7 +761,7 @@ checkpoint:
 | `tests/c-unit/runtime/test_managed_record_view.c` | 0 | 95 | D063 exact record view, rooted collection, no-allocation, wrong-type, and stale-handle coverage |
 | `tests/c-unit/test_native_c_emitter_managed_views.c` | 0 | 118 | D063 nested record-array view, alias replacement, direct RAW64, rootless emission, and O0/O2 execution |
 | `bootstrap/src/native/c_emitter_relations.c` | 1,040 | 1,273 | D063 bit-packed, path-intersected current-value equality and branch-selected array-index proofs with conservative invalidation |
-| `tests/c-unit/test_native_c_emitter_relations.c` | 0 | 149 | D063 repeated-expression and branch-selection elimination plus retained checks after unsafe selection or immediate/delayed operand redefinition |
+| `tests/c-unit/test_native_c_emitter_relations.c` | 0 | 158 | D063 repeated-expression and branch-selection elimination plus retained checks after unsafe selection or immediate/delayed operand redefinition |
 | `runtime/common/program_arguments.c` | 0 | 113 | D066 counted UTF-8 validation and failure-atomic managed `[]string` construction |
 | `runtime/platform/posix/program_arguments.c` | 0 | 109 | D066 bounded POSIX argv import and owned UTF-8 views |
 | `runtime/platform/windows/program_arguments.c` | 0 | 146 | D066 bounded wide-CRT validation and strict UTF-16-to-UTF-8 import |
