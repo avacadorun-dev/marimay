@@ -68,6 +68,14 @@ independent packager invocation, and leaves the verified target output for CI
 upload. Debug and sanitizer jobs therefore do not repeat source archiving that
 cannot observe sanitizer instrumentation.
 
+Gitea jobs pin both action commits and the multi-platform runner-image digest.
+The shared `tools/ci-apt-install` bootstrap skips network access when every
+requested package is present and otherwise applies bounded retries plus hard
+update/install deadlines. A package mirror outage must fail setup promptly; it
+must not consume the checkpoint test budget or masquerade as a test timeout.
+Long-lived credentials are not retained by checkout, and artifact transport
+uses pinned action revisions.
+
 Clang/GCC sanitizer presets compile host compiler and test targets with `-O1`
 while retaining Debug symbols and assertions. This keeps exhaustive
 allocation-failure coverage practical without changing its index range or

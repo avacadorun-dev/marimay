@@ -8,15 +8,15 @@ jobs:
   documentation:
     name: Documentation and architecture invariants
     runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install documentation dependencies
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends python3
+        run: ./tools/ci-apt-install python3
       - name: Check generated artifacts
         run: ./tools/check-generated
       - name: Check roadmap and checkpoint invariants
@@ -37,6 +37,8 @@ jobs:
   c17:
     name: Linux x86_64 ${{ matrix.compiler }} / ${{ matrix.configuration }}
     runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
     needs: documentation
     strategy:
       fail-fast: false
@@ -45,13 +47,13 @@ jobs:
         configuration: [Debug, Release]
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install C17 toolchain
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev python3
+        run: >-
+          ./tools/ci-apt-install
+          build-essential clang cmake libclang-rt-18-dev python3
       - name: Configure
         run: >-
           cmake -S . -B build
@@ -67,7 +69,7 @@ jobs:
           --parallel 4 --output-on-failure
       - name: Preserve CP39 Linux x86_64 artifacts
         if: ${{ matrix.compiler == 'gcc' && matrix.configuration == 'Release' }}
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: cp39-linux-x86_64
           path: |
@@ -78,6 +80,8 @@ jobs:
   sanitizers:
     name: Linux x86_64 ASan+UBSan+LSan
     runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
     env:
       CC: clang
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:symbolize=1:allow_addr2line=1
@@ -85,13 +89,13 @@ jobs:
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install C17 toolchain
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev llvm-18 python3
+        run: >-
+          ./tools/ci-apt-install
+          build-essential clang cmake libclang-rt-18-dev llvm-18 python3
       - name: Configure
         run: cmake --preset asan-ubsan
       - name: Build
@@ -105,17 +109,19 @@ jobs:
   fuzz-build:
     name: Linux x86_64 fuzz / build once
     runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
     env:
       CC: clang
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install fuzz toolchain
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev llvm-18 python3
+        run: >-
+          ./tools/ci-apt-install
+          build-essential clang cmake libclang-rt-18-dev llvm-18 python3
       - name: Configure
         run: cmake --preset fuzz
       - name: Build all fuzz targets
@@ -131,7 +137,7 @@ jobs:
           mmay_fuzz_bytecode mmay_fuzz_frontend
           mmay_fuzz_formatter mmay_fuzz_json
       - name: Preserve fuzz executables
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: fuzz-linux-x86_64-binaries
           path: fuzz-binaries.tar.gz
@@ -140,6 +146,8 @@ jobs:
   fuzz:
     name: Linux x86_64 fuzz / ${{ matrix.target }}
     runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
     needs: fuzz-build
     strategy:
       fail-fast: false
@@ -151,15 +159,13 @@ jobs:
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install sanitizer runtime
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends libclang-rt-18-dev llvm-18
+        run: ./tools/ci-apt-install libclang-rt-18-dev llvm-18
       - name: Restore fuzz executables
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         with:
           name: fuzz-linux-x86_64-binaries
       - name: Extract fuzz executables
@@ -175,7 +181,7 @@ jobs:
           tests/fuzz/corpus/${{ matrix.target }}
       - name: Preserve fuzz failure inputs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: fuzz-${{ matrix.target }}-failure-inputs
           path: |
@@ -187,19 +193,21 @@ jobs:
   thread-sanitizer:
     name: Linux x86_64 TSan
     runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
     needs: sanitizers
     env:
       CC: clang
       TSAN_OPTIONS: halt_on_error=1
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install C17 toolchain
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev python3
+        run: >-
+          ./tools/ci-apt-install
+          build-essential clang cmake libclang-rt-18-dev python3
       - name: Configure
         run: cmake --preset tsan
       - name: Build
