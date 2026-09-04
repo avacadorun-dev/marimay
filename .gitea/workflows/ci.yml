@@ -50,11 +50,19 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Install C17 toolchain
+      - name: Install GCC C17 toolchain
+        if: ${{ matrix.compiler == 'gcc' }}
+        run: >-
+          ./tools/ci-apt-install
+          --command ar --command cmake --command gcc
+          --command make --command python3 --
+          build-essential cmake python3
+      - name: Install Clang C17 toolchain
+        if: ${{ matrix.compiler == 'clang' }}
         run: >-
           ./tools/ci-apt-install
           --command ar --command clang --command cmake
-          --command gcc --command make --command python3 --
+          --command make --command python3 --
           build-essential clang cmake python3
       - name: Configure
         run: >-
