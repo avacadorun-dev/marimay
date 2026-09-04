@@ -98,6 +98,7 @@ void mmay_test_native_c_emitter(void);
 void mmay_test_native_c_emitter_array_mutation(void);
 void mmay_test_native_c_emitter_managed_views(void);
 void mmay_test_native_c_emitter_call_policy(void);
+void mmay_test_native_c_emitter_relations(void);
 void mmay_test_native_generics_differential(void);
 void mmay_test_native_matrix(void);
 void mmay_test_nominal_engine_allocations(void);
@@ -288,6 +289,7 @@ static void mmay_test_run_cp38(void) {
 static void mmay_test_run_cp41(void) {
     mmay_test_native_c_emitter_managed_views();
     mmay_test_native_c_emitter_call_policy();
+    mmay_test_native_c_emitter_relations();
 }
 
 static void mmay_test_run_cp39(void) {

@@ -167,6 +167,7 @@ add_executable(mmay_c_unit
   test_native_c_emitter_array_storage.c
   test_native_c_emitter_managed_views.c
   test_native_c_emitter_call_policy.c
+  test_native_c_emitter_relations.c
   test_native_c_emitter_array_mutation.c
   test_native_c_emitter_baseline.c
   test_native_c_emitter_matrix.c

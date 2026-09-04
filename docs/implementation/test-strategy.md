@@ -611,7 +611,10 @@ companion copy/reset, iterator mutation, and allocation-free bind/get.
 Generated-C inspection requires direct C17 `RAW64` byte copies, eager exact
 record-field views, fixed small root-location storage, and transitive
 no-safepoint root elision; it rejects the former per-element exact-access calls
-on the selected path. O0/O2 execution preserves checksums, G4002/G4005 spans,
+on the selected path. A focused relation fixture also requires repeated safe
+index expressions and both arms of a safe index selection to omit redundant
+checks, while an unproved selection and an operand redefinition retain G4002.
+O0/O2 execution preserves checksums, G4002/G4005 spans,
 alias-driven record-field replacement forces a rebind, checked numeric Option
 construction remains a safepoint, and fail-injection builds preserve the
 allocating root path. Inline checked and proven `i64` helpers are compared at

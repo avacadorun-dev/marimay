@@ -1588,13 +1588,22 @@ that record's trace edge. Calls and mutations still invalidate D058 bounds
 capabilities; a cached view grants identity and layout only, never bounds.
 
 For verified `RAW64` arrays, generated C may load or store with `memcpy`
-through the bound storage field. Checked accesses perform the same signed
-G4002 comparison at the same span; proven accesses require the same D058
-capability. Stores check the non-wrapping D053 generation before writing and
-increment it only after the write is known to commit. Other layouts and
-reference-valued elements use the validated view ABI, including reference
-type checks and rooted growth. Iterator generation reads use the same bound
-field and preserve G4005 behavior.
+through the bound storage field. A checked access may omit its comparison only
+when the native relation analysis proves on every reaching path that the index
+is nonnegative and strictly below a length of the same array, and separately
+proves that the array size cannot change in the function. Recomputed
+checked/proven add, subtract, or multiply expressions may reuse an equality
+fact only while every operand value remains current; CFG joins intersect those
+facts, and a branch-selected index requires every assignment source to be
+proved at its own assignment point. Operand redefinition, calls, size mutation,
+unsupported instructions, ambiguous predecessors, or analysis resource
+failure conservatively retain the comparison. Every retained check performs
+the same signed G4002 comparison at the same span; MIR-proven accesses still
+require the same D058 capability. Stores check the non-wrapping D053 generation
+before writing and increment it only after the write is known to commit. Other
+layouts and reference-valued elements use the validated view ABI, including
+reference type checks and rooted growth. Iterator generation reads use the
+same bound field and preserve G4005 behavior.
 
 A native function may omit shadow-root linkage only when a conservative
 transitive analysis proves that neither it nor any direct callee can allocate,

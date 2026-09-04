@@ -68,7 +68,8 @@ static bool mmay_native_c_relation_has(
     MarimayMirRegister right
 ) {
     return left < facts->register_count && right < facts->register_count
-        && facts->strict[mmay_native_c_relation_cell(facts, left, right)] != 0;
+        && (facts->strict[
+            mmay_native_c_relation_cell(facts, left, right)] & 1U) != 0;
 }
 
 static void mmay_native_c_relation_add(
@@ -91,7 +92,7 @@ static void mmay_native_c_relation_add(
                 facts->strict[mmay_native_c_relation_cell(
                     facts, (MarimayMirRegister)lower,
                     (MarimayMirRegister)upper
-                )] = 1;
+                )] |= 1U;
             }
         }
     }
@@ -125,6 +126,78 @@ static const MarimayMirInstruction *mmay_native_c_relation_definition(
     return result;
 }
 
+static bool mmay_native_c_relation_arithmetic_kind_equal(
+    MarimayMirInstructionKind left,
+    MarimayMirInstructionKind right
+) {
+    return ((left == MMAY_MIR_ADD_CHECKED_I64
+                || left == MMAY_MIR_ADD_PROVEN_I64)
+            && (right == MMAY_MIR_ADD_CHECKED_I64
+                || right == MMAY_MIR_ADD_PROVEN_I64))
+        || ((left == MMAY_MIR_SUBTRACT_CHECKED_I64
+                || left == MMAY_MIR_SUBTRACT_PROVEN_I64)
+            && (right == MMAY_MIR_SUBTRACT_CHECKED_I64
+                || right == MMAY_MIR_SUBTRACT_PROVEN_I64))
+        || ((left == MMAY_MIR_MULTIPLY_CHECKED_I64
+                || left == MMAY_MIR_MULTIPLY_PROVEN_I64)
+            && (right == MMAY_MIR_MULTIPLY_CHECKED_I64
+                || right == MMAY_MIR_MULTIPLY_PROVEN_I64));
+}
+
+static bool mmay_native_c_relation_arithmetic_commutative(
+    MarimayMirInstructionKind kind
+) {
+    return kind == MMAY_MIR_ADD_CHECKED_I64
+        || kind == MMAY_MIR_ADD_PROVEN_I64
+        || kind == MMAY_MIR_MULTIPLY_CHECKED_I64
+        || kind == MMAY_MIR_MULTIPLY_PROVEN_I64;
+}
+
+static bool mmay_native_c_relation_expression_uses(
+    const MarimayMirFunction *function,
+    MarimayMirRegister expression,
+    MarimayMirRegister dependency,
+    size_t depth
+) {
+    const MarimayMirInstruction *definition = NULL;
+    if (function == NULL || expression >= function->register_types.length
+        || depth >= function->register_types.length) return false;
+    definition = mmay_native_c_relation_definition(function, expression);
+    if (definition == NULL || !mmay_native_c_relation_arithmetic_kind_equal(
+            definition->kind, definition->kind
+        )) return false;
+    return definition->first == dependency
+        || definition->second == dependency
+        || mmay_native_c_relation_expression_uses(
+            function, definition->first, dependency, depth + 1
+        ) || mmay_native_c_relation_expression_uses(
+            function, definition->second, dependency, depth + 1
+        );
+}
+
+static void mmay_native_c_relation_invalidate(
+    MarimayNativeCRelations *facts,
+    MarimayMirRegister target
+);
+
+static void mmay_native_c_relation_invalidate_expressions(
+    const MarimayMirFunction *function,
+    MarimayNativeCRelations *facts,
+    MarimayMirRegister dependency
+) {
+    size_t register_index = 0;
+    for (register_index = 0; register_index < facts->register_count;
+        register_index += 1) {
+        if (mmay_native_c_relation_expression_uses(
+                function, (MarimayMirRegister)register_index, dependency, 0
+            )) {
+            mmay_native_c_relation_invalidate(
+                facts, (MarimayMirRegister)register_index
+            );
+        }
+    }
+}
+
 static void mmay_native_c_relation_invalidate(
     MarimayNativeCRelations *facts,
     MarimayMirRegister target
@@ -143,6 +216,98 @@ static void mmay_native_c_relation_invalidate(
     }
 }
 
+static bool mmay_native_c_relation_equal(
+    const MarimayNativeCRelations *facts,
+    MarimayMirRegister left,
+    MarimayMirRegister right
+) {
+    if (left >= facts->register_count || right >= facts->register_count) {
+        return false;
+    }
+    return left == right || (facts->strict[
+        mmay_native_c_relation_cell(facts, left, right)] & 2U) != 0;
+}
+
+static bool mmay_native_c_relation_informative(
+    const MarimayNativeCRelations *facts,
+    MarimayMirRegister register_id
+) {
+    size_t other = 0;
+    if (register_id >= facts->register_count) return false;
+    if (facts->nonnegative[register_id] != 0) return true;
+    for (other = 0; other < facts->register_count; other += 1) {
+        if (mmay_native_c_relation_has(
+                facts, register_id, (MarimayMirRegister)other
+            ) || mmay_native_c_relation_has(
+                facts, (MarimayMirRegister)other, register_id
+            ) || (facts->strict[mmay_native_c_relation_cell(
+                facts, register_id, (MarimayMirRegister)other
+            )] & 2U) != 0) return true;
+    }
+    return false;
+}
+
+static bool mmay_native_c_relation_operand_equal(
+    const MarimayMirFunction *function,
+    const MarimayNativeCRelations *facts,
+    MarimayMirRegister left,
+    MarimayMirRegister right
+) {
+    int64_t left_constant = 0, right_constant = 0;
+    return mmay_native_c_relation_equal(facts, left, right)
+        || (mmay_native_c_relation_constant(
+                function, left, 0, &left_constant
+            ) && mmay_native_c_relation_constant(
+                function, right, 0, &right_constant
+            ) && left_constant == right_constant);
+}
+
+static bool mmay_native_c_relation_arithmetic_equal(
+    const MarimayMirFunction *function,
+    const MarimayNativeCRelations *facts,
+    const MarimayMirInstruction *left,
+    const MarimayMirInstruction *right
+) {
+    if (left == NULL || right == NULL
+        || !mmay_native_c_relation_arithmetic_kind_equal(
+            left->kind, right->kind
+        )) return false;
+    if (mmay_native_c_relation_operand_equal(
+            function, facts, left->first, right->first
+        ) && mmay_native_c_relation_operand_equal(
+            function, facts, left->second, right->second
+        )) return true;
+    return mmay_native_c_relation_arithmetic_commutative(left->kind)
+        && mmay_native_c_relation_arithmetic_commutative(right->kind)
+        && mmay_native_c_relation_operand_equal(
+            function, facts, left->first, right->second
+        ) && mmay_native_c_relation_operand_equal(
+            function, facts, left->second, right->first
+        );
+}
+
+static void mmay_native_c_relation_add_equal(
+    MarimayNativeCRelations *facts,
+    MarimayMirRegister left,
+    MarimayMirRegister right
+) {
+    size_t register_index = 0;
+    if (left >= facts->register_count || right >= facts->register_count) return;
+    for (register_index = 0; register_index < facts->register_count;
+        register_index += 1) {
+        if (mmay_native_c_relation_equal(
+                facts, right, (MarimayMirRegister)register_index
+            )) {
+            facts->strict[mmay_native_c_relation_cell(
+                facts, left, (MarimayMirRegister)register_index
+            )] |= 2U;
+            facts->strict[mmay_native_c_relation_cell(
+                facts, (MarimayMirRegister)register_index, left
+            )] |= 2U;
+        }
+    }
+}
+
 static void mmay_native_c_relation_copy(
     MarimayNativeCRelations *facts,
     MarimayMirRegister target,
@@ -157,6 +322,7 @@ static void mmay_native_c_relation_copy(
     if (target == source) return;
     mmay_native_c_relation_invalidate(facts, target);
     facts->nonnegative[target] = nonnegative ? 1 : 0;
+    mmay_native_c_relation_add_equal(facts, target, source);
     for (register_index = 0; register_index < facts->register_count;
         register_index += 1) {
         if (mmay_native_c_relation_has(
@@ -215,9 +381,13 @@ static bool mmay_native_c_relation_transfer(
     bool subtract_nonnegative = false;
     bool preserves_upper = false;
     int64_t positive_add = 0;
+    MarimayMirRegister equivalent = MMAY_MIR_NO_REGISTER;
     if (instruction == NULL || facts == NULL) return false;
     if (instruction->target >= facts->register_count) return true;
     if (instruction->kind == MMAY_MIR_COPY) {
+        mmay_native_c_relation_invalidate_expressions(
+            function, facts, instruction->target
+        );
         mmay_native_c_relation_copy(
             facts, instruction->target, instruction->first
         );
@@ -237,7 +407,32 @@ static bool mmay_native_c_relation_transfer(
         && mmay_native_c_relation_constant(
             function, instruction->second, 0, &value
         ) && value >= 0;
+    for (register_index = 0;
+        register_index < facts->register_count; register_index += 1) {
+        const MarimayMirInstruction *candidate =
+            mmay_native_c_relation_definition(
+                function, (MarimayMirRegister)register_index
+            );
+        if (register_index != instruction->target
+            && mmay_native_c_relation_informative(
+                facts, (MarimayMirRegister)register_index
+            )
+            && mmay_native_c_relation_arithmetic_equal(
+                function, facts, instruction, candidate
+            )) {
+            equivalent = (MarimayMirRegister)register_index;
+            break;
+        }
+    }
+    mmay_native_c_relation_invalidate_expressions(
+        function, facts, instruction->target
+    );
     mmay_native_c_relation_invalidate(facts, instruction->target);
+    if (equivalent != MMAY_MIR_NO_REGISTER) {
+        mmay_native_c_relation_copy(
+            facts, instruction->target, equivalent
+        );
+    }
     if (preserves_upper) {
         for (register_index = 0; register_index < facts->register_count;
             register_index += 1) {
@@ -492,8 +687,7 @@ static bool mmay_native_c_relation_joined_edge(
             const unsigned char *candidate_lower = outgoing_nonnegative
                 + candidate_index * register_count;
             for (cell = 0; cell < relation_count; cell += 1) {
-                edge_strict[cell] = edge_strict[cell]
-                    && candidate_strict[cell];
+                edge_strict[cell] &= candidate_strict[cell];
             }
             for (cell = 0; cell < register_count; cell += 1) {
                 edge_nonnegative[cell] = edge_nonnegative[cell]
@@ -715,8 +909,8 @@ static bool mmay_native_c_relations_analyze(
                     predecessor, (MarimayMirBlockId)block_index
                     )) continue;
                 if (!mmay_native_c_relation_joined_edge(
-                        function, outgoing_strict, outgoing_nonnegative,
-                        ready, relation_count, register_count,
+                        function, outgoing_strict, outgoing_nonnegative, ready,
+                        relation_count, register_count,
                         (MarimayMirBlockId)predecessor_index,
                         (MarimayMirBlockId)block_index,
                         edge_strict, edge_nonnegative
@@ -745,8 +939,7 @@ static bool mmay_native_c_relations_analyze(
                 } else {
                     size_t cell = 0;
                     for (cell = 0; cell < relation_count; cell += 1) {
-                        result->strict[cell] = result->strict[cell]
-                            && edge_strict[cell];
+                        result->strict[cell] &= edge_strict[cell];
                     }
                     for (cell = 0; cell < register_count; cell += 1) {
                         result->nonnegative[cell] =
@@ -890,6 +1083,78 @@ static bool mmay_native_c_array_size_unmodified(
     return true;
 }
 
+static bool mmay_native_c_register_array_upper_proven(
+    const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
+    size_t function_count,
+    const MarimayNativeCRelations *facts,
+    MarimayMirRegister array_origin,
+    MarimayMirRegister register_id,
+    size_t depth
+) {
+    size_t block_index = 0;
+    bool found_copy = false;
+    if (function == NULL || facts == NULL
+        || register_id >= function->register_types.length
+        || depth >= function->register_types.length) return false;
+    for (block_index = 0; block_index < function->blocks.length;
+        block_index += 1) {
+        const MarimayMirBlock *block = mmay_vector_at_const(
+            &function->blocks, block_index
+        );
+        size_t instruction_index = 0;
+        if (block == NULL) return false;
+        for (instruction_index = 0;
+            instruction_index < block->instructions.length;
+            instruction_index += 1) {
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(
+                &block->instructions, instruction_index
+            );
+            MarimayMirRegister length_origin = MMAY_MIR_NO_REGISTER;
+            if (instruction == NULL) return false;
+            if (instruction->kind == MMAY_MIR_ARRAY_LENGTH
+                && mmay_native_c_array_register_origin(
+                    function, instruction->first, &length_origin
+                ) && length_origin == array_origin
+                && mmay_native_c_relation_has(
+                    facts, register_id, instruction->target
+                )) return true;
+        }
+    }
+    for (block_index = 0; block_index < function->blocks.length;
+        block_index += 1) {
+        const MarimayMirBlock *block = mmay_vector_at_const(
+            &function->blocks, block_index
+        );
+        size_t instruction_index = 0;
+        if (block == NULL) return false;
+        for (instruction_index = 0;
+            instruction_index < block->instructions.length;
+            instruction_index += 1) {
+            const MarimayMirInstruction *definition = mmay_vector_at_const(
+                &block->instructions, instruction_index
+            );
+            MarimayNativeCRelations source_facts;
+            bool source_proven = false;
+            if (definition == NULL) return false;
+            if (definition->target != register_id) continue;
+            if (definition->kind != MMAY_MIR_COPY
+                || !mmay_native_c_relations_analyze(
+                    function, functions, function_count, definition,
+                    &source_facts
+                )) return false;
+            source_proven = mmay_native_c_register_array_upper_proven(
+                function, functions, function_count, &source_facts,
+                array_origin, definition->first, depth + 1
+            );
+            mmay_native_c_relations_dispose(function, &source_facts);
+            if (!source_proven) return false;
+            found_copy = true;
+        }
+    }
+    return found_copy;
+}
+
 bool mmay_native_c_array_relational_index_proven(
     const MarimayMirFunction *function,
     const MarimayMirFunction *const *functions,
@@ -900,7 +1165,6 @@ bool mmay_native_c_array_relational_index_proven(
 ) {
     MarimayNativeCRelations facts;
     MarimayMirRegister array_origin = MMAY_MIR_NO_REGISTER;
-    size_t block_index = 0;
     bool upper = false, result = false;
     if (function == NULL || instruction == NULL
         || index_register >= function->register_types.length
@@ -911,30 +1175,11 @@ bool mmay_native_c_array_relational_index_proven(
         ) || !mmay_native_c_relations_analyze(
             function, functions, function_count, instruction, &facts
         )) return false;
-    for (block_index = 0; block_index < function->blocks.length;
-        block_index += 1) {
-        const MarimayMirBlock *block = mmay_vector_at_const(
-            &function->blocks, block_index
-        );
-        size_t instruction_index = 0;
-        for (instruction_index = 0;
-            block != NULL && instruction_index < block->instructions.length;
-            instruction_index += 1) {
-            const MarimayMirInstruction *length = mmay_vector_at_const(
-                &block->instructions, instruction_index
-            );
-            MarimayMirRegister length_origin = MMAY_MIR_NO_REGISTER;
-            if (length != NULL && length->kind == MMAY_MIR_ARRAY_LENGTH
-                && mmay_native_c_array_register_origin(
-                    function, length->first, &length_origin
-                ) && length_origin == array_origin) {
-                if (mmay_native_c_relation_has(
-                    &facts, index_register, length->target
-                )) upper = true;
-            }
-        }
-    }
-    result = facts.nonnegative[index_register] != 0 && upper;
+    upper = mmay_native_c_register_array_upper_proven(
+        function, functions, function_count, &facts, array_origin,
+        index_register, 0
+    );
+    result = upper && facts.nonnegative[index_register] != 0;
     mmay_native_c_relations_dispose(function, &facts);
     return result;
 }
