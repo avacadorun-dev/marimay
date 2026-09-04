@@ -601,6 +601,16 @@ allocating root path. Inline checked and proven `i64` helpers are compared at
 extrema with the out-of-line semantic owner, including overflow and
 division-by-zero results.
 
+CP41 hardware-counter reports use six stable logical columns: cycles, retired
+instructions, branches, branch misses, cache references, and cache misses.
+Every report also retains the physical `perf` event map. Generalized events are
+preferred, but a virtual PMU that returns unavailable or nonpositive generalized
+cache samples may use one named architecture-specific paired cache-access and
+cache-miss profile after a positive preflight. The profile identifies its cache
+level and access class, is identical for before and after, and is rejected if
+mixed with another profile. This permits honest platform-local cache evidence
+without relabeling L1 data-cache loads as LLC observations.
+
 ## 11. Platform matrix
 
 Tier 1 target intent for 1.0:
