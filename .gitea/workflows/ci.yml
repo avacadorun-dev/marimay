@@ -53,7 +53,7 @@ jobs:
       - name: Install C17 toolchain
         run: >-
           ./tools/ci-apt-install
-          build-essential clang cmake libclang-rt-18-dev python3
+          build-essential clang cmake python3
       - name: Configure
         run: >-
           cmake -S . -B build
