@@ -80,6 +80,15 @@ mirror outage must fail setup promptly; it must not consume the checkpoint test
 budget or masquerade as a test timeout. Long-lived credentials are not retained
 by checkout, and artifact transport uses pinned action revisions.
 
+A path-classification job compares the pushed or pull-request base revision
+with the exact head. Revisions changing only `docs/**` and top-level Markdown
+run the complete documentation, generated-artifact, architecture, memory, and
+release-contract gate while skipping compiler, sanitizer, and fuzz work whose
+inputs are unchanged. A missing comparison base fails safe to the complete
+matrix, and every workflow, build, source, test, fixture, or tool change is
+classified as code. This keeps evidence-only commits fast without suppressing
+any affected executable test.
+
 Clang/GCC sanitizer presets compile host compiler and test targets with `-O1`
 while retaining Debug symbols and assertions. This keeps exhaustive
 allocation-failure coverage practical without changing its index range or

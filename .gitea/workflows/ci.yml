@@ -5,6 +5,31 @@ on:
   pull_request:
 
 jobs:
+  classify:
+    name: Classify documentation-only revisions
+    runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
+    outputs:
+      code_changed: ${{ steps.paths.outputs.code_changed }}
+    steps:
+      - name: Check out source and comparison base
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Classify changed paths
+        id: paths
+        env:
+          HEAD_REVISION: ${{ gitea.sha }}
+          PUSH_BASE: ${{ gitea.event.before }}
+          PULL_BASE: ${{ gitea.event.pull_request.base.sha }}
+        run: |
+          base_revision=$PUSH_BASE
+          if [ -z "$base_revision" ]; then base_revision=$PULL_BASE; fi
+          code_changed=$(./tools/classify-ci-change "$base_revision" "$HEAD_REVISION")
+          printf 'code_changed=%s\n' "$code_changed" | tee -a "$GITHUB_OUTPUT"
+
   documentation:
     name: Documentation and architecture invariants
     runs-on: ubuntu-latest
@@ -33,13 +58,16 @@ jobs:
         run: ./tools/check-c-memory-policy
       - name: Check architecture boundaries
         run: ./tools/check-architecture
+      - name: Check release contract
+        run: ./tools/check-release-contract
 
   c17:
     name: Linux x86_64 ${{ matrix.compiler }} / ${{ matrix.configuration }}
     runs-on: ubuntu-latest
     container:
       image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
-    needs: documentation
+    needs: [classify, documentation]
+    if: ${{ needs.classify.outputs.code_changed == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -92,6 +120,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
+    needs: classify
+    if: ${{ needs.classify.outputs.code_changed == 'true' }}
     env:
       CC: clang
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:symbolize=1:allow_addr2line=1
@@ -121,6 +151,8 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
+    needs: classify
+    if: ${{ needs.classify.outputs.code_changed == 'true' }}
     env:
       CC: clang
     steps:
