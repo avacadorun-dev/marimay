@@ -55,6 +55,78 @@ mmay_expect_exit(0 "clean lifecycle install"
   "-DMMAY_DISTRIBUTION_PREFIX=${mmay_prefix}"
   -P "${mmay_lifecycle}")
 
+# A damaged extracted archive must be rejected before either a staging sibling
+# or a partially published prefix can appear. Reuse one private copy so these
+# two integrity cases do not duplicate the complete distribution setup.
+set(mmay_invalid_source "${mmay_root}/invalid extracted tree")
+set(mmay_invalid_prefix "${mmay_root}/invalid install")
+file(COPY "${mmay_staged}/" DESTINATION "${mmay_invalid_source}")
+file(APPEND "${mmay_invalid_source}/bin/mmay${MMAY_TEST_EXECUTABLE_SUFFIX}"
+  "corrupt\n")
+mmay_expect_exit(1 "checksum-mismatched install source"
+  "${CMAKE_COMMAND}"
+  "-DMMAY_DISTRIBUTION_ACTION=install"
+  "-DMMAY_DISTRIBUTION_SOURCE=${mmay_invalid_source}"
+  "-DMMAY_DISTRIBUTION_PREFIX=${mmay_invalid_prefix}"
+  -P "${mmay_lifecycle}")
+if(EXISTS "${mmay_invalid_prefix}"
+    OR EXISTS "${mmay_invalid_prefix}.mmay-stage")
+  message(FATAL_ERROR "checksum failure published partial install state")
+endif()
+file(COPY_FILE
+  "${mmay_staged}/bin/mmay${MMAY_TEST_EXECUTABLE_SUFFIX}"
+  "${mmay_invalid_source}/bin/mmay${MMAY_TEST_EXECUTABLE_SUFFIX}")
+file(REMOVE "${mmay_invalid_source}/include/mmay/runtime/core.h")
+mmay_expect_exit(1 "incomplete install source"
+  "${CMAKE_COMMAND}"
+  "-DMMAY_DISTRIBUTION_ACTION=install"
+  "-DMMAY_DISTRIBUTION_SOURCE=${mmay_invalid_source}"
+  "-DMMAY_DISTRIBUTION_PREFIX=${mmay_invalid_prefix}"
+  -P "${mmay_lifecycle}")
+if(EXISTS "${mmay_invalid_prefix}"
+    OR EXISTS "${mmay_invalid_prefix}.mmay-stage")
+  message(FATAL_ERROR "incomplete source published partial install state")
+endif()
+file(REMOVE_RECURSE "${mmay_invalid_source}")
+
+# POSIX permission bits are part of the currently claimed Linux lifecycle.
+# Action containers execute as root, so drop to the standard unprivileged
+# account there; ordinary developer runs exercise the same command directly.
+if(UNIX)
+  set(mmay_readonly_parent "${mmay_root}/read-only parent")
+  set(mmay_readonly_prefix "${mmay_readonly_parent}/install")
+  file(MAKE_DIRECTORY "${mmay_readonly_parent}")
+  file(CHMOD "${mmay_readonly_parent}" PERMISSIONS
+    OWNER_READ OWNER_EXECUTE GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+  execute_process(
+    COMMAND id -u
+    RESULT_VARIABLE id_result
+    OUTPUT_VARIABLE user_id
+    OUTPUT_STRIP_TRAILING_WHITESPACE)
+  if(NOT id_result EQUAL 0)
+    message(FATAL_ERROR "cannot determine identity for read-only prefix test")
+  endif()
+  set(mmay_readonly_command "${CMAKE_COMMAND}")
+  if(user_id STREQUAL "0")
+    find_program(mmay_runuser runuser REQUIRED)
+    set(mmay_readonly_command "${mmay_runuser}" -u nobody --
+      "${CMAKE_COMMAND}")
+  endif()
+  mmay_expect_exit(1 "read-only install destination"
+    ${mmay_readonly_command}
+    "-DMMAY_DISTRIBUTION_ACTION=install"
+    "-DMMAY_DISTRIBUTION_SOURCE=${mmay_staged}"
+    "-DMMAY_DISTRIBUTION_PREFIX=${mmay_readonly_prefix}"
+    -P "${mmay_lifecycle}")
+  if(EXISTS "${mmay_readonly_prefix}"
+      OR EXISTS "${mmay_readonly_prefix}.mmay-stage")
+    message(FATAL_ERROR "read-only failure published partial install state")
+  endif()
+  file(CHMOD "${mmay_readonly_parent}" PERMISSIONS
+    OWNER_READ OWNER_WRITE OWNER_EXECUTE
+    GROUP_READ GROUP_EXECUTE WORLD_READ WORLD_EXECUTE)
+endif()
+
 foreach(required_file IN ITEMS
     "bin/mmay${MMAY_TEST_EXECUTABLE_SUFFIX}"
     "share/mmay/${MMAY_TEST_VERSION}/checksums.sha256"
