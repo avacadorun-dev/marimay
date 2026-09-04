@@ -441,9 +441,14 @@ matrix depends on the short documentation/architecture gate. The shared fuzz
 build runs in the initial wave and the C17/fuzz work fills free executors after
 the gate. TSan depends on completion of ASan/LSan because concurrent sanitizer
 instrumentation on the same host measurably increases both critical paths; it
-does not omit either suite. These dependencies are fail-fast resource control
-rather than coverage filtering: every matrix row still runs after its gate
-passes.
+executes every `c-unit` and allocation owner, including the runtime, CLI,
+native-emitter, generated-C, and focused checkpoint owners. External process
+integration, install, capability, and packaging wrappers create no shared
+threads before I6 and remain in every Debug/Release row plus ASan/UBSan/LSan;
+repeating them under TSan cannot observe an additional race boundary. These
+dependencies and the explicit TSan owner selection are fail-fast resource
+control rather than semantic-test filtering: every applicable matrix row still
+runs after its gate passes.
 
 Corpora and dictionaries are committed when legally/operationally appropriate. Every found failure is minimized and promoted to a deterministic regression test. Release reports state engine, sanitizer, target, corpus size, total executions/core-hours, unique coverage movement, and unresolved findings.
 
@@ -477,7 +482,10 @@ Inject partial reads/writes, EINTR/platform equivalents, slow peer, half-close, 
 
 ## 7. Security testing
 
-- Run all C and generated-C suites under available ASan, UBSan, MSan, TSan/platform analyzers.
+- Run all C and generated-C suites under available ASan, UBSan, and MSan.
+  TSan runs every in-process production C owner and every test that creates or
+  shares thread-visible state; single-threaded external lifecycle wrappers stay
+  under the memory/undefined-behavior sanitizers instead of being replayed.
 - Maintain static-analysis configurations and justify suppressions in source.
 - Fuzz all untrusted parsers/verifiers with resource limits.
 - Test capability path canonicalization against symlinks, traversal, alternate separators, case folding, races, and network endpoint ambiguity.

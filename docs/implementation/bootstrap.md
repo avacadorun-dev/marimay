@@ -60,6 +60,14 @@ cmake --build --preset tsan --parallel
 ctest --preset tsan
 ```
 
+The TSan test preset selects all `c-unit` and allocation owners. Those owners
+exercise the complete in-process compiler/runtime surface, including generated
+C, while single-threaded external install/capability/process wrappers remain in
+the complete Debug, Release, and ASan+UBSan+LSan matrices. When I6 introduces
+thread-visible scheduler or blocking-pool behavior, its process owners must
+carry the `c-unit` label or another TSan-selected shared-state label in the same
+change.
+
 The MSVC build uses `/std:c17`, `/W4`, and `/WX` through the same Debug/Release presets, and the `asan` preset selects MSVC AddressSanitizer. UBSan and TSan are not available in the MSVC presets.
 
 ## Fuzz targets

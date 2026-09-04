@@ -132,6 +132,9 @@
       "configurePreset": "tsan",
       "configuration": "Debug",
       "output": { "outputOnFailure": true },
+      "filter": {
+        "include": { "label": "^(c-unit|allocation)$" }
+      },
       "execution": { "jobs": 4 }
     }
   ]
