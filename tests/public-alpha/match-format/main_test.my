@@ -48,3 +48,29 @@ fn guardsAndNestedArmsPreserveShortCircuiting(): void {
   expect.false(selected(counter, false, true));
   expect.equal(counter.calls, 1);
 }
+
+type NamedFields {
+  aaaaaaaaaaaaaaaaaaa: int,
+  bbbbbbbbbbbbbbbbbbb: int,
+  cccccccccccccccccccccc: int,
+}
+
+fn sumNamedFields(value: NamedFields): int {
+  return match value {
+    NamedFields {
+      aaaaaaaaaaaaaaaaaaa: a,
+      bbbbbbbbbbbbbbbbbbb: b,
+      cccccccccccccccccccccc: c,
+    } => a + b + c,
+  };
+}
+
+@test
+fn namedPatternsPreserveTheirBindings(): void {
+  expect.equal(
+    sumNamedFields(
+      NamedFields { aaaaaaaaaaaaaaaaaaa: 2, bbbbbbbbbbbbbbbbbbb: 3, cccccccccccccccccccccc: 5 },
+    ),
+    10,
+  );
+}

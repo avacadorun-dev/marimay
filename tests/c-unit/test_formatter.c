@@ -11,4 +11,5 @@ void mmay_test_formatter(void) {
     mmay_test_formatter_rejects_invalid_types();
     mmay_test_formatter_array_type_spelling();
     mmay_test_formatter_boolean_groups();
+    mmay_test_formatter_braced_groups();
 }

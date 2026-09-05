@@ -89,6 +89,27 @@ static void mmay_formatter_boolean_case(const char *source, const char *expected
 
 void mmay_test_formatter_boolean_groups(void) {
     mmay_formatter_boolean_case(
+        "fn comments(a:bool,b:bool):bool{return match a{true=>a /* first\n"
+        "keep */ && b,\n// second arm\nfalse=>a||b,};}",
+        "fn comments(a: bool, b: bool): bool {\n"
+        "  return match a {\n"
+        "    true => a /* first\n"
+        "keep */\n"
+        "      && b,\n"
+        "    // second arm\n"
+        "    false => a || b,\n"
+        "  };\n"
+        "}\n"
+    );
+    mmay_formatter_boolean_case(
+        "fn comments(a:bool,b:bool):bool{return a // first\n&& b /* second */\n|| a;}",
+        "fn comments(a: bool, b: bool): bool {\n"
+        "  return a // first\n"
+        "    && b /* second */\n"
+        "    || a;\n"
+        "}\n"
+    );
+    mmay_formatter_boolean_case(
         "fn has(value:Result<[]string,string>):bool{return match value{"
         "Ok(values)=>values.length()==1&&values[0]==\"\",Err(_)=>false,};}\n",
         "fn has(value: Result<[]string, string>): bool {\n"
