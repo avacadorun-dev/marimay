@@ -30,15 +30,17 @@ fn emptyAndAbsentOperationsAreStable(): void {
   const seen: Set<int> = setOf<int>();
   values.clear();
   seen.clear();
-  if values.containsKey("missing") || seen.contains(1) || seen.remove(1) || match values.get(
-    "missing",
-  ) {
-    Some(_) => true,
-    None => false,
-  } || match values.remove("missing") {
-    Some(_) => true,
-    None => false,
-  } {
+  if values.containsKey("missing")
+    || seen.contains(1)
+    || seen.remove(1)
+    || match values.get("missing") {
+      Some(_) => true,
+      None => false,
+    }
+    || match values.remove("missing") {
+      Some(_) => true,
+      None => false,
+    } {
     panic("empty or absent collection operation changed");
   }
 }
@@ -78,13 +80,16 @@ fn everyPrimitiveKeyFamilyWorks(): void {
   const _ = unsigned32.add(unsigned32Value);
   const _ = unsigned64.add(unsigned64Value);
   const _ = runeKeys.add(runeValue);
-  if !booleans.contains(booleanValue) || !signed8.contains(signed8Value) || !signed16.contains(
-    signed16Value,
-  ) || !signed32.contains(signed32Value) || !signed64.contains(signed64Value) || !unsigned8.contains(
-    unsigned8Value,
-  ) || !unsigned16.contains(unsigned16Value) || !unsigned32.contains(unsigned32Value) || !unsigned64.contains(
-    unsigned64Value,
-  ) || !runeKeys.contains(runeValue) {
+  if !booleans.contains(booleanValue)
+    || !signed8.contains(signed8Value)
+    || !signed16.contains(signed16Value)
+    || !signed32.contains(signed32Value)
+    || !signed64.contains(signed64Value)
+    || !unsigned8.contains(unsigned8Value)
+    || !unsigned16.contains(unsigned16Value)
+    || !unsigned32.contains(unsigned32Value)
+    || !unsigned64.contains(unsigned64Value)
+    || !runeKeys.contains(runeValue) {
     panic("primitive collection key family changed");
   }
 }

@@ -183,10 +183,10 @@ fn main(arguments: []string): void {
     match fs.readText(outside, 64) {
       Err(fs.CapabilityDenied { capability, path: deniedPath }) => same(capability, "fs.read")
         && same(deniedPath, paths.string(outside)),
-        _ => false,
-      },
-      "denied",
-    );
+      _ => false,
+    },
+    "denied",
+  );
 
   const _ = println("cp34-io");
 }

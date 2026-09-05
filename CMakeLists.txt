@@ -546,6 +546,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/format/document.c
   bootstrap/src/format/formatter.c
   bootstrap/src/format/formatter_collect.c
+  bootstrap/src/format/formatter_groups.c
   bootstrap/src/format/formatter_layout.c
   bootstrap/src/format/formatter_types.c
   bootstrap/src/lex/lexer.c

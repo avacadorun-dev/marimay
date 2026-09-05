@@ -404,6 +404,9 @@ bootstrap/src/parse/       parser coordinator/tree builder, expression/pattern/
                            type grammar, declaration/statement grammar
 bootstrap/src/format/      formatter/render coordinator, token collection and
                            import ordering
+  formatter_groups.c      CST-derived logical-expression boundaries and
+                           statement/document group lifecycle; continuation
+                           indentation never leaks across expression owners
 bootstrap/src/bytecode/    model/builders, codec, verifier orchestration,
                            instruction verifier, CFG provenance verifier, MIR
                            lowering, VM coordinator, VM preflight, and VM value

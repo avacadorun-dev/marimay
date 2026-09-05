@@ -68,10 +68,9 @@ fn arrayMutationWorks(): bool {
   }
   const invalidTruncate = match invalidShrink(values) {
     Ok(value) => value,
-    Err(InvalidLength { requested, length }) => requested == 3
-      && length == 2,
-      Err(_) => false,
-    };
+    Err(InvalidLength { requested, length }) => requested == 3 && length == 2,
+    Err(_) => false,
+  };
   const negativeReserve = match negativeGrowth(values) {
     Ok(value) => value,
     Err(NegativeAdditional { additional }) => additional == -4,
@@ -84,10 +83,9 @@ fn arrayMutationWorks(): bool {
   };
   let nested = [[1], [2]];
   const nestedPop = match nested.pop() {
-    Some(row) => row.length() == 1
-      && row[0] == 2,
-      None => false,
-    };
+    Some(row) => row.length() == 1 && row[0] == 2,
+    None => false,
+  };
   const _ = nested.clear();
   const _ = values.clear();
   const empty = match values.pop() {

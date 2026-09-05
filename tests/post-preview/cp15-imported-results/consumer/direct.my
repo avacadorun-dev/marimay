@@ -57,7 +57,7 @@ fn directResults(): Result<bool, ConsumerError> {
       && explicitScore == 5
       && inferredScore == 6
       && failureScore == 9,
-    );
+  );
 }
 
 fn propagatedFailure(): Result<Choice<[]int>, ConsumerError> {

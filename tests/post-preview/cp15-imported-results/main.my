@@ -4,7 +4,11 @@ import { namespaceShadowingWorks } from "example/cp15-imported-results/collision
 import { directResultsWork, errorPropagationWorks, namespaceResultsWork, relayedResultsWork } from "example/cp15-imported-results/consumer";
 
 fn main(): Result<void, IoError> {
-  if !directResultsWork() || !errorPropagationWorks() || !namespaceResultsWork() || !namespaceShadowingWorks() || !relayedResultsWork() {
+  if !directResultsWork()
+    || !errorPropagationWorks()
+    || !namespaceResultsWork()
+    || !namespaceShadowingWorks()
+    || !relayedResultsWork() {
     panic("checkpoint 15 imported results changed");
   }
   println("cp15 imported results ok")?;

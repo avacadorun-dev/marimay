@@ -48,12 +48,11 @@ fn addFindAndRemoveNotes(): void {
   require(first.note.id == 1 && second.note.id == 2, "IDs must be monotonic");
   require(
     match second.database.find(1) {
-      Some(note) => note.text == "Buy tea"
-        && note.tags.length() == 2,
-        None => false,
-      },
-      "added note was not found",
-    );
+      Some(note) => note.text == "Buy tea" && note.tags.length() == 2,
+      None => false,
+    },
+    "added note was not found",
+  );
   require(second.database.remove(1), "existing note was not removed");
   require(!second.database.remove(1), "removed note remained in the database");
   require(second.database.notes.length() == 1, "remove changed the wrong number of notes");

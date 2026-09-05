@@ -1,4 +1,5 @@
 #include "formatter_internal.h"
+#include "formatter_groups_api.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -59,6 +60,9 @@ static bool mmay_format_collect_token(
     formatted.in_attribute = in_attribute;
     formatted.in_record_expression = in_record_expression;
     formatted.in_interpolation = in_interpolation;
+    formatted.boolean_begins = 0;
+    formatted.boolean_ends = 0;
+    formatted.boolean_indent = false;
     formatted.import_group = 0;
     if (!mmay_vector_push(&collector->tokens, &formatted)) {
         collector->status = MMAY_FORMAT_ALLOCATION_FAILED;
@@ -367,9 +371,12 @@ bool mmay_format_collect_node(
     bool in_for_header,
     bool in_attribute,
     bool in_record_expression,
-    bool in_interpolation
+    bool in_interpolation,
+    bool in_boolean_chain
 ) {
     size_t index = 0;
+    size_t start = collector->tokens.length;
+    bool boolean_chain;
     if (node == NULL) {
         collector->status = MMAY_FORMAT_INVALID_ARGUMENT;
         return false;
@@ -384,6 +391,7 @@ bool mmay_format_collect_node(
         || node->kind == MMAY_SYNTAX_RECORD_EXPRESSION;
     in_interpolation = in_interpolation
         || node->kind == MMAY_SYNTAX_INTERPOLATED_EXPRESSION;
+    boolean_chain = !in_interpolation && mmay_formatter_boolean_node(node);
     for (index = 0; index < node->child_count; index += 1) {
         const MarimaySyntaxElement *element = mmay_syntax_child(node, index);
         size_t child_top_level_id = top_level_id;
@@ -434,7 +442,8 @@ bool mmay_format_collect_node(
                     in_for_header,
                     in_attribute,
                     in_record_expression,
-                    in_interpolation
+                    in_interpolation,
+                    boolean_chain
                 )) {
                 return false;
             }
@@ -458,5 +467,6 @@ bool mmay_format_collect_node(
             return false;
         }
     }
-    return true;
+    return !boolean_chain || in_boolean_chain
+        || mmay_formatter_boolean_group(collector, start);
 }

@@ -10,5 +10,6 @@ void mmay_test_formatter_trivia_property(void);
 void mmay_test_formatter_rejection_limits_and_allocation(void);
 void mmay_test_formatter_rejects_invalid_types(void);
 void mmay_test_formatter_array_type_spelling(void);
+void mmay_test_formatter_boolean_groups(void);
 
 #endif

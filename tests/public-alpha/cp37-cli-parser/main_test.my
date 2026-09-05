@@ -64,36 +64,32 @@ fn separatorMakesEveryRemainingValuePositional(): void {
 fn usageErrorsRemainTypedAndIndexed(): void {
   require(
     match cli.parse(commandParser(), ["--unknown"]) {
-      Err(cli.UnknownOption { argument, index }) => argument == "--unknown"
-        && index == 0,
-        _ => false,
-      },
-      "unknown option",
-    );
+      Err(cli.UnknownOption { argument, index }) => argument == "--unknown" && index == 0,
+      _ => false,
+    },
+    "unknown option",
+  );
   require(
     match cli.parse(commandParser(), ["--count"]) {
-      Err(cli.MissingOptionValue { name, index }) => name == "count"
-        && index == 0,
-        _ => false,
-      },
-      "missing option value",
-    );
+      Err(cli.MissingOptionValue { name, index }) => name == "count" && index == 0,
+      _ => false,
+    },
+    "missing option value",
+  );
   require(
     match cli.parse(commandParser(), ["--quiet", "--quiet"]) {
-      Err(cli.RepeatedOption { name, index }) => name == "quiet"
-        && index == 1,
-        _ => false,
-      },
-      "repeated option",
-    );
+      Err(cli.RepeatedOption { name, index }) => name == "quiet" && index == 1,
+      _ => false,
+    },
+    "repeated option",
+  );
   require(
     match cli.parse(commandParser(), ["--help=yes"]) {
-      Err(cli.UnexpectedOptionValue { name, index }) => name == "help"
-        && index == 0,
-        _ => false,
-      },
-      "unexpected option value",
-    );
+      Err(cli.UnexpectedOptionValue { name, index }) => name == "help" && index == 0,
+      _ => false,
+    },
+    "unexpected option value",
+  );
 }
 
 @test
@@ -251,12 +247,11 @@ fn limitsAndRequiredDeclarationsAreEnforced(): void {
   );
   require(
     match cli.parse(requiredPositional, ["one", "two"]) {
-      Err(cli.UnexpectedPositional { value, index }) => value == "two"
-        && index == 1,
-        _ => false,
-      },
-      "unexpected positional",
-    );
+      Err(cli.UnexpectedPositional { value, index }) => value == "two" && index == 1,
+      _ => false,
+    },
+    "unexpected positional",
+  );
 }
 
 @test

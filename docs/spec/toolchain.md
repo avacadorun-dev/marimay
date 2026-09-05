@@ -187,6 +187,11 @@ Marimay 1.x has no formatter configuration. The style is:
   when the complete token sequence exceeds the target width it remains one
   deterministic unbreakable overflow rather than changing string syntax;
 - one space around binary operators and after commas;
+- D073 logical chains use expression-scoped continuation indentation. A short
+  `&&`/`||` chain stays flat when it fits, including in a multiline `match`;
+  a broken chain puts operators at one additional indentation level, ending
+  that indentation with the expression rather than carrying it into the next
+  arm, argument, field, or enclosing delimiter;
 - no padding inside ordinary parentheses;
 - multiline lists use one item per line and a trailing comma;
 - under D031, import name lists, record construction/pattern fields, and named enum payload fields remain braced formatter groups: compact groups use one inner space, while groups that do not fit break one item per line; named payload declaration fields keep semicolons rather than commas;

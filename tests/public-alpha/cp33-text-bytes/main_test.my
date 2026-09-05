@@ -103,21 +103,20 @@ fn emptyTextResultsCanBeUsedAgain(): void {
   );
   require(
     match split(empty, ",", 1) {
-      Ok(values) => values.length() == 1
-        && equalText(trimAscii(values[0]), ""),
-        Err(_) => false,
-      },
-      "split managed empty",
-    );
+      Ok(values) => values.length() == 1 && equalText(trimAscii(values[0]), ""),
+      Err(_) => false,
+    },
+    "split managed empty",
+  );
   require(
     match split(",", ",", 2) {
       Ok(values) => values.length() == 2
         && equalText(trimAscii(values[0]), "")
         && equalText(trimAscii(values[1]), ""),
-        Err(_) => false,
-      },
-      "leading and trailing empty split parts",
-    );
+      Err(_) => false,
+    },
+    "leading and trailing empty split parts",
+  );
   require(
     match join([empty, empty], "", 0) {
       Ok(value) => equalText(trimAscii(value), ""),
@@ -139,12 +138,11 @@ fn textCollectionsAndLimits(): void {
   const pieces = split("a::b::", "::", 4);
   require(
     match pieces {
-      Ok(values) => values.length() == 3
-        && byteLength(values[2]) == 0,
-        Err(_) => false,
-      },
-      "split",
-    );
+      Ok(values) => values.length() == 3 && byteLength(values[2]) == 0,
+      Err(_) => false,
+    },
+    "split",
+  );
   require(
     match join(["a", "b", "c"], "-", 5) {
       Ok(value) => equalText(value, "a-b-c"),
@@ -189,12 +187,11 @@ fn textCollectionsAndLimits(): void {
   );
   require(
     match graphemes("á\r\nb", 3) {
-      Ok(values) => values.length() == 3
-        && equalText(values[1], "\r\n"),
-        Err(_) => false,
-      },
-      "graphemes",
-    );
+      Ok(values) => values.length() == 3 && equalText(values[1], "\r\n"),
+      Err(_) => false,
+    },
+    "graphemes",
+  );
   require(
     match graphemes("", 0) {
       Ok(values) => values.length() == 0,
@@ -269,12 +266,11 @@ fn bytesMutationCopySliceAndIterator(): void {
   require(get(clone, 0) == 9, "bytes copy");
   require(
     match sliceBytes(bytes, 1, 3) {
-      Ok(value) => length(value) == 2
-        && get(value, 1) == 3,
-        Err(_) => false,
-      },
-      "bytes slice",
-    );
+      Ok(value) => length(value) == 2 && get(value, 1) == 3,
+      Err(_) => false,
+    },
+    "bytes slice",
+  );
   const suffix = fromArray([4, 5]);
   const _ = appendBytes(bytes, suffix);
   require(length(bytes) == 5, "bytes append");

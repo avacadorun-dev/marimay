@@ -17,6 +17,9 @@ typedef struct MarimayFormatToken {
     bool in_attribute;
     bool in_record_expression;
     bool in_interpolation;
+    size_t boolean_begins;
+    size_t boolean_ends;
+    bool boolean_indent;
     unsigned int import_group;
 } MarimayFormatToken;
 
@@ -61,7 +64,6 @@ typedef struct MarimayFormatter {
     bool after_flexible_line;
     bool last_was_comment;
     bool statement_grouped;
-    bool statement_continuation_indented;
 } MarimayFormatter;
 
 typedef struct MarimayFormatOutput {
@@ -81,7 +83,7 @@ MarimayFormatStatus mmay_format_decode_ordinary_string(
 bool mmay_format_collect_node(MarimayFormatCollector *collector,
     const MarimayGreenNode *node, size_t depth, MarimaySyntaxKind top_level_kind,
     size_t top_level_id, size_t statement_id, bool in_for_header, bool in_attribute,
-    bool in_record_expression, bool in_interpolation);
+    bool in_record_expression, bool in_interpolation, bool in_boolean_chain);
 MarimayFormatStatus mmay_format_order_imports(MarimayVector *tokens,
     const unsigned char *source, size_t source_length, MarimayAllocator allocator);
 bool mmay_formatter_type_prefix_is_adjacent(

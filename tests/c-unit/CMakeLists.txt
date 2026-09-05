@@ -133,6 +133,7 @@ add_executable(mmay_c_unit
   test_formatter_support.c
   test_formatter_core.c
   test_formatter_array_types.c
+  test_formatter_boolean_groups.c
   test_formatter_trivia.c
   test_formatter_failures.c
   test_hash_map.c
@@ -611,7 +612,12 @@ add_test(
   COMMAND "$<TARGET_FILE:mmay>" test
     "${CMAKE_SOURCE_DIR}/tests/public-alpha/cp33-text-bytes" --engine both
 )
-foreach(regression IN ITEMS record-imports match-void generic-lifetime map-error-imports enum-pattern-names cp33-text-bytes)
+add_test(
+  NAME mmay_match_format
+  COMMAND "$<TARGET_FILE:mmay>" test
+    "${CMAKE_SOURCE_DIR}/tests/public-alpha/match-format" --engine both
+)
+foreach(regression IN ITEMS record-imports match-void generic-lifetime map-error-imports enum-pattern-names cp33-text-bytes match-format)
   add_test(
     NAME "mmay_format_${regression}"
     COMMAND "$<TARGET_FILE:mmay>" fmt

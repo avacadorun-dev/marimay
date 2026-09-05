@@ -25,9 +25,9 @@ public fn dijkstra(adjacency: WeightedAdjacency, start: int): Option<[]int> {
   for iteration in 0..nodeCount {
     let selected = -1;
     for node in 0..nodeCount {
-      if !visited[node] && distances[node] < infinity && (
-        selected == -1 || distances[node] < distances[selected]
-      ) {
+      if !visited[node]
+        && distances[node] < infinity
+        && (selected == -1 || distances[node] < distances[selected]) {
         selected = node;
       }
     }

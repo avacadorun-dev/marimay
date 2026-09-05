@@ -1,0 +1,50 @@
+type Counter {
+  mutable calls: int,
+}
+
+fn counted(counter: Counter, value: bool): bool {
+  counter.calls += 1;
+  return value;
+}
+
+fn hasEmpty(value: Result<[]string, string>): bool {
+  return match value {
+    Ok(values) => values.length() == 1 && values[0] == "",
+    Err(_) => false,
+  };
+}
+
+fn selected(counter: Counter, value: bool, enabled: bool): bool {
+  return match value {
+    true if counted(counter, enabled) && counted(counter, value) => {
+      const result = match enabled {
+        true => counted(counter, true) && counted(counter, true),
+        false => counted(counter, false) || counted(counter, true),
+      };
+      result
+    },
+    // A failed guard continues here, without evaluating a short-circuited call.
+    _ => counted(counter, false) && counted(counter, true),
+  };
+}
+
+@test
+fn shortChainsAndFollowingArms(): void {
+  expect.true(hasEmpty(Ok([""])));
+  expect.false(hasEmpty(Ok([])));
+  expect.false(hasEmpty(Ok(["nonempty"])));
+  expect.false(hasEmpty(Err("unavailable")));
+}
+
+@test
+fn guardsAndNestedArmsPreserveShortCircuiting(): void {
+  const counter = Counter { calls: 0 };
+  expect.true(selected(counter, true, true));
+  expect.equal(counter.calls, 4);
+  counter.calls = 0;
+  expect.false(selected(counter, true, false));
+  expect.equal(counter.calls, 2);
+  counter.calls = 0;
+  expect.false(selected(counter, false, true));
+  expect.equal(counter.calls, 1);
+}

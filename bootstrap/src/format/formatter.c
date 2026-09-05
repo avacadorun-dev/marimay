@@ -1,5 +1,6 @@
 #include "formatter_internal.h"
 #include "formatter_layout_api.h"
+#include "formatter_groups_api.h"
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -746,8 +747,7 @@ static void mmay_formatter_comma(
         formatter->pending_space = true;
     } else if (delimiter != NULL && delimiter->grouped) {
         mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
-    } else if (next != NULL
-        && mmay_format_token_is_comment(next->token.kind)) {
+    } else if (mmay_formatter_next_comment_same_line(formatter, token, next)) {
         formatter->pending_space = true;
     } else if (delimiter != NULL && delimiter->open == MMAY_TOKEN_LEFT_BRACE) {
         mmay_formatter_ensure_hardlines(formatter, 1);
@@ -759,13 +759,12 @@ static void mmay_formatter_operator(
     MarimayFormatter *formatter,
     const MarimayFormatToken *token
 ) {
-    if (formatter->statement_grouped
+    if (!token->in_interpolation
         && (token->token.kind == MMAY_TOKEN_AMPERSAND_AMPERSAND
             || token->token.kind == MMAY_TOKEN_PIPE_PIPE)) {
         formatter->pending_space = false;
-        if (!formatter->statement_continuation_indented) {
+        if (token->boolean_indent) {
             mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_BEGIN);
-            formatter->statement_continuation_indented = true;
         }
         mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
         mmay_formatter_emit_token_text(formatter, token);
@@ -799,28 +798,6 @@ static void mmay_formatter_interpolation_token(
     mmay_formatter_emit_token_text(formatter, token);
     formatter->pending_space = kind == MMAY_TOKEN_INTERPOLATED_END;
 }
-static void mmay_formatter_begin_statement_group(
-    MarimayFormatter *formatter,
-    size_t statement_id
-) {
-    mmay_formatter_part(formatter, MMAY_DOCUMENT_GROUP_BEGIN);
-    formatter->active_statement_id = statement_id;
-    formatter->statement_group_depth = formatter->delimiters.length;
-    formatter->statement_grouped = true;
-    formatter->statement_continuation_indented = false;
-}
-
-static void mmay_formatter_end_statement_group(MarimayFormatter *formatter) {
-    if (formatter->statement_continuation_indented) {
-        mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_END);
-    }
-    mmay_formatter_part(formatter, MMAY_DOCUMENT_GROUP_END);
-    formatter->active_statement_id = 0;
-    formatter->statement_group_depth = 0;
-    formatter->statement_grouped = false;
-    formatter->statement_continuation_indented = false;
-}
-
 static void mmay_formatter_trim_final_lines(MarimayFormatter *formatter) {
     while (formatter->document.parts.length != 0) {
         const MarimayDocumentPart *part = mmay_vector_at_const(
@@ -905,10 +882,11 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
         formatter->last_was_comment = false;
         if (!formatter->statement_grouped && token->statement_id != 0
             && token->statement_id != formatter->last_statement_id) {
-            mmay_formatter_begin_statement_group(
-                formatter, token->statement_id
-            );
+            mmay_formatter_document_status(formatter, mmay_formatter_begin_statement_group(
+                formatter, token->statement_id));
         }
+        mmay_formatter_document_status(formatter, mmay_formatter_boolean_boundary(
+            &formatter->document, token, true));
         if (kind >= MMAY_TOKEN_INTERPOLATED_START
             && kind <= MMAY_TOKEN_INTERPOLATED_END) {
             mmay_formatter_interpolation_token(formatter, token);
@@ -951,7 +929,7 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
                 && token->statement_id == formatter->active_statement_id
                 && formatter->delimiters.length
                     == formatter->statement_group_depth) {
-                mmay_formatter_end_statement_group(formatter);
+                mmay_formatter_document_status(formatter, mmay_formatter_end_statement_group(formatter));
             }
             if (token->in_for_header) {
                 formatter->pending_space = true;
@@ -995,6 +973,8 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
             mmay_formatter_emit_token_text(formatter, token);
             formatter->pending_space = true;
         }
+        mmay_formatter_document_status(formatter, mmay_formatter_boolean_boundary(
+            &formatter->document, token, false));
         formatter->previous_code_kind = kind;
         formatter->has_previous_code = true;
         if (token->statement_id != 0) {
@@ -1087,6 +1067,7 @@ MarimayFormatStatus mmay_format_source(
             MMAY_SYNTAX_ROOT,
             0,
             0,
+            false,
             false,
             false,
             false,

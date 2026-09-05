@@ -46,6 +46,9 @@ legal/search/control/PATH evidence and an accepted follow-up identity decision.
 
 - Frontend: [lexer](i1-lexer-iteration-1-2026-08-10.md), [parser](i1-parser-iteration-2-2026-08-10.md), [AST/frontend](i1-frontend-iteration-3-2026-08-10.md), and [incremental/fuzz foundation](i1-frontend-iteration-6-2026-08-10.md).
 - Formatter: [library](i1-formatter-library-iteration-4-2026-08-10.md) and [CLI](i1-formatter-cli-iteration-5-2026-08-10.md).
+- [Expression-scoped boolean formatting](boolean-expression-formatting-2026-09-05.md)
+  corrects continuation indentation in matches, conditions and nested groups;
+  it does not establish public-alpha or Tier 1 acceptance.
 - Grammar/keywords: [registry](i1-grammar-registry-iteration-7-2026-08-10.md), [completion](i1-grammar-completion-iteration-8-2026-08-11.md), [keyword boundary 9](i1-keyword-boundary-iteration-9-2026-08-12.md), and [keyword boundary 10](i1-keyword-boundary-iteration-10-2026-08-12.md).
 - Later public syntax: [canonical managed-array spelling](cp18-array-spelling-2026-08-21.md).
 

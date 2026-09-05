@@ -1977,6 +1977,11 @@ empty line between adjacent statements. Additional blank lines collapse to
 one; a source gap without an empty line is not expanded except by existing
 structural rules. At a required line break, a chain of `&&` or `||` breaks
 before each operator with the operator aligned at the continuation indent.
+The continuation belongs to that logical expression, not to an enclosing
+statement: it ends before a following match arm, argument, field, or closing
+delimiter outside the expression. Short chains stay flat when they fit even
+inside an otherwise multiline match or statement. Parenthesized inner chains
+have their own group; interpolation remains an unbreakable group under D065.
 Index brackets stay attached to a single scalar or otherwise-fitting index
 expression; the formatter does not produce a three-line `values[\n  0\n]`
 shape merely because the surrounding expression exceeds the target width.

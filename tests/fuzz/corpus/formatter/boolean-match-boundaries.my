@@ -1,0 +1,5 @@
+fn has(value:Result<[]string,string>):bool{return match value{Ok(values)=>values.length()==1&&values[0]=="",Err(_)=>false,};}
+fn nested(a:bool,b:bool):bool{return match a{true if a&&b=>{const pair=(a&&b,a||b);return match b{true=>a&&b,false=>a||b};},_=>choose(a&&b,Flags{left:a||b,right:(a&&b)||a}),};}
+fn comments(a:bool,b:bool):bool{return match a{true=>a /* keep */ && b,
+// second arm
+false=>a||b,};}
