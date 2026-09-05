@@ -155,7 +155,7 @@ static MarimayMirInterpretStatus mmay_mir_text_string_array(
             if (separator_length > text_length - end) end = text_length;
         }
         status = mmay_mir_execution_new_string(
-            options.execution, text + start, end - start,
+            options.execution, mmay_text_range_start(text, start), end - start,
             &elements[index].as.reference
         );
         if (status != MMAY_MIR_INTERPRET_OK) break;
@@ -335,7 +335,7 @@ MarimayMirInterpretStatus mmay_mir_execute_text_instruction(
             }
             return instruction->text_operation == MMAY_MIR_TEXT_DROP_PREFIX
                 ? mmay_mir_text_string(
-                    options, left + (size_t)offset,
+                    options, mmay_text_range_start(left, (size_t)offset),
                     left_length - (size_t)offset, target
                 ) : mmay_mir_text_string(
                     options, left, (size_t)offset, target
@@ -346,7 +346,7 @@ MarimayMirInterpretStatus mmay_mir_execute_text_instruction(
             size_t end = 0;
             mmay_text_trim_ascii_range(left, left_length, &start, &end);
             return mmay_mir_text_string(
-                options, left + start, end - start, target
+                options, mmay_text_range_start(left, start), end - start, target
             );
         }
         case MMAY_MIR_TEXT_RUNES:

@@ -16,7 +16,12 @@ typedef struct MarimayCp33TextFixture {
     MarimayMirArrayId runes_array;
     MarimayMirArrayId bytes_array;
     MarimayMirRegister decoded;
+    bool empty;
 } MarimayCp33TextFixture;
+
+void mmay_test_native_text_failures(
+    const MarimayOwnedBytes *source, MarimaySymbolId entry, size_t expected_length
+);
 
 typedef struct MarimayCp33Token {
     const unsigned char *bytes;
@@ -150,6 +155,11 @@ static void mmay_cp33_text_base_edges(void) {
     size_t start = SIZE_MAX;
     size_t end = SIZE_MAX;
     int64_t count = -1;
+    MMAY_EXPECT(mmay_text_range_start(NULL, 0) == NULL);
+    MMAY_EXPECT(mmay_text_range_start(text, 0) == text);
+    MMAY_EXPECT(mmay_text_range_start(text, 2) == text + 2);
+    MMAY_EXPECT(mmay_text_range_start(text, sizeof(text) - 1U)
+        == text + sizeof(text) - 1U);
     MMAY_EXPECT(!mmay_text_byte_length(0, NULL));
     MMAY_EXPECT(!mmay_text_rune_count(NULL, 1, &count));
     MMAY_EXPECT(!mmay_text_rune_count(text, sizeof(text) - 1U, NULL));
@@ -243,7 +253,7 @@ static bool mmay_cp33_append_text(
     return mmay_mir_append_instruction(&fixture->function, block, &instruction);
 }
 
-static bool mmay_cp33_text_fixture_init(MarimayCp33TextFixture *fixture) {
+static bool mmay_cp33_text_fixture_init(MarimayCp33TextFixture *fixture, bool empty) {
     static const unsigned char text[] = {
         '\t', 'A', 0xc3U, 0xa9U, 0xccU, 0x81U, '\r', '\n', 'Z', ' '
     };
@@ -254,6 +264,7 @@ static bool mmay_cp33_text_fixture_init(MarimayCp33TextFixture *fixture) {
     MarimayMirBlockId block = MMAY_MIR_NO_BLOCK;
     MarimayMirInstruction integer;
     memset(fixture, 0, sizeof(*fixture));
+    fixture->empty = empty;
     fixture->strings_array = MMAY_MIR_NO_ARRAY;
     fixture->runes_array = MMAY_MIR_NO_ARRAY;
     fixture->bytes_array = MMAY_MIR_NO_ARRAY;
@@ -272,18 +283,23 @@ static bool mmay_cp33_text_fixture_init(MarimayCp33TextFixture *fixture) {
         ) || !mmay_cp33_add_registers(fixture, r)
         || !mmay_mir_add_block(&fixture->function, &block)
         || !mmay_cp33_append_constant_string(
-            &fixture->function, block, r[0], text, sizeof(text)
+            &fixture->function, block, r[0], text, empty ? 0 : sizeof(text)
         ) || !mmay_cp33_append_constant_string(
             &fixture->function, block, r[1], separator, sizeof(separator)
         ) || !mmay_cp33_append_constant_string(
             &fixture->function, block, r[2], needle, sizeof(needle)
         )) goto failure;
+    /* A managed empty value, not just a static empty literal, must feed every
+     * subsequent transform. Native empty string storage may legitimately be NULL. */
+    if (empty && !mmay_cp33_append_text(fixture, block, MMAY_MIR_TEXT_UNARY,
+            MMAY_MIR_TEXT_TRIM_ASCII, r[0], r[0], MMAY_MIR_NO_REGISTER,
+            MMAY_MIR_NO_ARRAY)) goto failure;
     memset(&integer, 0, sizeof(integer));
     integer.kind = MMAY_MIR_CONSTANT_I64;
     integer.target = r[3];
     integer.first = MMAY_MIR_NO_REGISTER;
     integer.second = MMAY_MIR_NO_REGISTER;
-    integer.integer = 4;
+    integer.integer = empty ? 0 : 4;
     if (!mmay_mir_append_instruction(&fixture->function, block, &integer)
         || !mmay_cp33_append_text(fixture, block, MMAY_MIR_TEXT_UNARY,
             MMAY_MIR_TEXT_BYTE_LENGTH, r[4], r[0], MMAY_MIR_NO_REGISTER,
@@ -348,6 +364,8 @@ static void mmay_cp33_expect_mir_result(
         '\t', 'A', 0xc3U, 0xa9U, 0xccU, 0x81U, '\r', '\n', 'Z', ' '
     };
     static const size_t expected_lengths[] = {2, 8, 6, 10};
+    static const size_t empty_lengths[] = {1, 0, 0, 0};
+    const size_t expected_length = fixture->empty ? 0 : sizeof(expected);
     MarimayMirExecution execution;
     MarimayMirInterpretOptions options = mmay_mir_interpret_default_options();
     MarimayMirValue result;
@@ -367,8 +385,8 @@ static void mmay_cp33_expect_mir_result(
     MMAY_EXPECT(mmay_mir_execution_string_bytes(
         &execution, result, &bytes, &length
     ));
-    MMAY_EXPECT(length == sizeof(expected)
-        && memcmp(bytes, expected, sizeof(expected)) == 0);
+    MMAY_EXPECT(length == expected_length
+        && (length == 0 || memcmp(bytes, expected, expected_length) == 0));
     for (index = 0; index < sizeof(expected_lengths)
         / sizeof(expected_lengths[0]); index += 1U) {
         MarimayMirValue array;
@@ -377,7 +395,8 @@ static void mmay_cp33_expect_mir_result(
         MMAY_EXPECT(mmay_mir_execution_array_length(
             &execution, array, &array_length
         ));
-        MMAY_EXPECT(array_length == expected_lengths[index]);
+        MMAY_EXPECT(array_length == (fixture->empty
+            ? empty_lengths[index] : expected_lengths[index]));
     }
     mmay_mir_execution_dispose(&execution);
 }
@@ -430,8 +449,8 @@ static void mmay_cp33_mir_allocation_failures(
     const MarimayCp33TextFixture *fixture
 ) {
     size_t failure_index = 0;
-    bool reached_success = false;
-    for (failure_index = 0; failure_index < 512; failure_index += 1U) {
+    size_t attempts = 0;
+    for (failure_index = 0; failure_index <= attempts; failure_index += 1U) {
         MarimayFailAllocator state;
         MarimayAllocator allocator;
         MarimayMirExecution execution;
@@ -441,7 +460,8 @@ static void mmay_cp33_mir_allocation_failures(
         memset(&execution, 0, sizeof(execution));
         memset(&result, 0, sizeof(result));
         mmay_fail_allocator_init(
-            &state, mmay_system_allocator(), failure_index
+            &state, mmay_system_allocator(),
+            failure_index == 0 ? SIZE_MAX : failure_index - 1
         );
         allocator = mmay_fail_allocator(&state);
         if (!mmay_mir_execution_init(
@@ -457,13 +477,15 @@ static void mmay_cp33_mir_allocation_failures(
         );
         MMAY_EXPECT(status == MMAY_MIR_INTERPRET_ALLOCATION_FAILED
             || status == MMAY_MIR_INTERPRET_OK);
-        reached_success = status == MMAY_MIR_INTERPRET_OK;
+        if (failure_index == 0) {
+            attempts = state.attempts;
+            MMAY_EXPECT(status == MMAY_MIR_INTERPRET_OK);
+        }
         mmay_mir_execution_dispose(&execution);
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);
-        if (reached_success) break;
     }
-    MMAY_EXPECT(reached_success);
+    MMAY_EXPECT(attempts > 0);
 }
 
 static void mmay_cp33_hostile_bytecode(MarimayBytecodeFunction *function) {
@@ -506,8 +528,8 @@ static void mmay_cp33_vm_allocation_failures(
     const MarimayBytecodeFunction *function
 ) {
     size_t failure_index = 0;
-    bool reached_success = false;
-    for (failure_index = 0; failure_index < 512; failure_index += 1U) {
+    size_t attempts = 0;
+    for (failure_index = 0; failure_index <= attempts; failure_index += 1U) {
         MarimayFailAllocator state;
         MarimayAllocator allocator;
         MarimayBytecodeExecution execution;
@@ -517,7 +539,8 @@ static void mmay_cp33_vm_allocation_failures(
         memset(&execution, 0, sizeof(execution));
         memset(&result, 0, sizeof(result));
         mmay_fail_allocator_init(
-            &state, mmay_system_allocator(), failure_index
+            &state, mmay_system_allocator(),
+            failure_index == 0 ? SIZE_MAX : failure_index - 1
         );
         allocator = mmay_fail_allocator(&state);
         if (!mmay_bytecode_execution_init(
@@ -534,27 +557,30 @@ static void mmay_cp33_vm_allocation_failures(
         );
         MMAY_EXPECT(status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED
             || status == MMAY_BYTECODE_RUN_OK);
-        reached_success = status == MMAY_BYTECODE_RUN_OK;
+        if (failure_index == 0) {
+            attempts = state.attempts;
+            MMAY_EXPECT(status == MMAY_BYTECODE_RUN_OK);
+        }
         mmay_bytecode_execution_dispose(&execution);
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);
-        if (reached_success) break;
     }
-    MMAY_EXPECT(reached_success);
+    MMAY_EXPECT(attempts > 0);
 }
 
 static void mmay_cp33_lowering_allocation_failures(
     const MarimayCp33TextFixture *fixture
 ) {
     size_t failure_index = 0;
-    bool reached_success = false;
-    for (failure_index = 0; failure_index < 512; failure_index += 1U) {
+    size_t attempts = 0;
+    for (failure_index = 0; failure_index <= attempts; failure_index += 1U) {
         MarimayFailAllocator state;
         MarimayBytecodeFunction lowered;
         MarimayMirBytecodeLowerStatus status;
         memset(&lowered, 0, sizeof(lowered));
         mmay_fail_allocator_init(
-            &state, mmay_system_allocator(), failure_index
+            &state, mmay_system_allocator(),
+            failure_index == 0 ? SIZE_MAX : failure_index - 1
         );
         status = mmay_mir_lower_bytecode_function(
             &fixture->function, mmay_fail_allocator(&state),
@@ -562,13 +588,15 @@ static void mmay_cp33_lowering_allocation_failures(
         );
         MMAY_EXPECT(status == MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED
             || status == MMAY_MIR_BYTECODE_LOWER_OK);
-        reached_success = status == MMAY_MIR_BYTECODE_LOWER_OK;
+        if (failure_index == 0) {
+            attempts = state.attempts;
+            MMAY_EXPECT(status == MMAY_MIR_BYTECODE_LOWER_OK);
+        }
         mmay_bytecode_function_dispose(&lowered);
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);
-        if (reached_success) break;
     }
-    MMAY_EXPECT(reached_success);
+    MMAY_EXPECT(attempts > 0);
 }
 
 static void mmay_cp33_native_text(
@@ -578,7 +606,7 @@ static void mmay_cp33_native_text(
     MarimayNativeCProgram program;
     MarimayOwnedBytes generated;
     size_t failure_index = 0;
-    bool reached_success = false;
+    size_t attempts = 0;
     memset(&program, 0, sizeof(program));
     memset(&generated, 0, sizeof(generated));
     program.functions = functions;
@@ -591,10 +619,20 @@ static void mmay_cp33_native_text(
     MMAY_EXPECT(mmay_test_native_contains(
         &generated, "mmay_g_text_string_array"
     ));
+    MMAY_EXPECT(mmay_test_native_contains(
+        &generated, "mmay_text_range_start(text.data, start)"
+    ));
+    MMAY_EXPECT(mmay_test_native_contains(
+        &generated, "mmay_text_range_start(mmay_g_v_0.data, (size_t)mmay_g_v_3)"
+    ));
+    MMAY_EXPECT(mmay_test_native_contains(
+        &generated, "mmay_text_range_start(mmay_g_v_0.data, mmay_g_text_start)"
+    ));
 #if !defined(_WIN32)
     if (generated.data != NULL) {
         mmay_test_native_compile_and_run(
-            &generated, "ok:string:10:0941c3a9cc810d0a5a20\n", 0
+            &generated, fixture->empty ? "ok:string:0:\n"
+                : "ok:string:10:0941c3a9cc810d0a5a20\n", 0
         );
         mmay_test_native_compile_and_run_configured(
             &generated, "trap:5:0:0\n", 1,
@@ -604,16 +642,20 @@ static void mmay_cp33_native_text(
             &generated, "trap:5:0:0\n", 1,
             "-DMMAY_G_FAIL_ALLOCATION_AT=1"
         );
+        mmay_test_native_text_failures(
+            &generated, fixture->function.symbol, fixture->empty ? 0 : 10
+        );
     }
 #endif
     mmay_owned_bytes_dispose(&generated);
 
-    for (failure_index = 0; failure_index < 4096; failure_index += 1U) {
+    for (failure_index = 0; failure_index <= attempts; failure_index += 1U) {
         MarimayFailAllocator state;
         MarimayNativeCEmitStatus status;
         memset(&generated, 0, sizeof(generated));
         mmay_fail_allocator_init(
-            &state, mmay_system_allocator(), failure_index
+            &state, mmay_system_allocator(),
+            failure_index == 0 ? SIZE_MAX : failure_index - 1
         );
         status = mmay_native_c_emit_program(
             &program, mmay_fail_allocator(&state),
@@ -621,19 +663,22 @@ static void mmay_cp33_native_text(
         );
         MMAY_EXPECT(status == MMAY_NATIVE_C_EMIT_ALLOCATION_FAILED
             || status == MMAY_NATIVE_C_EMIT_OK);
-        reached_success = status == MMAY_NATIVE_C_EMIT_OK;
+        if (failure_index == 0) {
+            attempts = state.attempts;
+            MMAY_EXPECT(status == MMAY_NATIVE_C_EMIT_OK);
+        }
         mmay_owned_bytes_dispose(&generated);
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);
-        if (reached_success) break;
     }
-    MMAY_EXPECT(reached_success);
+    MMAY_EXPECT(attempts > 0);
 }
 
 static void mmay_cp33_text_engines(MarimayCp33TextFixture *fixture) {
     static const unsigned char expected[] = {
         '\t', 'A', 0xc3U, 0xa9U, 0xccU, 0x81U, '\r', '\n', 'Z', ' '
     };
+    const size_t expected_length = fixture->empty ? 0 : sizeof(expected);
     MarimayBytecodeFunction lowered;
     MarimayBytecodeFunction decoded;
     MarimayOwnedBytes encoded;
@@ -652,7 +697,7 @@ static void mmay_cp33_text_engines(MarimayCp33TextFixture *fixture) {
         mmay_mir_bytecode_lower_default_options(), &lowered
     ) == MMAY_MIR_BYTECODE_LOWER_OK);
     MMAY_EXPECT(mmay_bytecode_verify(&lowered) == MMAY_BYTECODE_VERIFY_OK);
-    mmay_cp33_hostile_bytecode(&lowered);
+    if (!fixture->empty) mmay_cp33_hostile_bytecode(&lowered);
     MMAY_EXPECT(mmay_bytecode_encode_function(
         &lowered, mmay_system_allocator(), &encoded
     ) == MMAY_BYTECODE_CODEC_OK);
@@ -671,8 +716,8 @@ static void mmay_cp33_text_engines(MarimayCp33TextFixture *fixture) {
     MMAY_EXPECT(mmay_bytecode_execution_string_bytes(
         &execution, result, &bytes, &length
     ));
-    MMAY_EXPECT(length == sizeof(expected)
-        && memcmp(bytes, expected, sizeof(expected)) == 0);
+    MMAY_EXPECT(length == expected_length
+        && (length == 0 || memcmp(bytes, expected, expected_length) == 0));
     mmay_bytecode_execution_dispose(&execution);
     mmay_cp33_vm_allocation_failures(&decoded);
     mmay_cp33_lowering_allocation_failures(fixture);
@@ -685,9 +730,16 @@ void mmay_test_cp33_text_bytes(void) {
     MarimayCp33TextFixture fixture;
     mmay_cp33_text_properties();
     mmay_cp33_text_base_edges();
-    MMAY_EXPECT(mmay_cp33_text_fixture_init(&fixture));
+    MMAY_EXPECT(mmay_cp33_text_fixture_init(&fixture, false));
     MMAY_EXPECT(mmay_mir_verify(&fixture.function) == MMAY_MIR_VERIFY_OK);
     mmay_cp33_hostile_mir(&fixture);
+    mmay_cp33_expect_mir_result(&fixture);
+    mmay_cp33_mir_allocation_failures(&fixture);
+    mmay_cp33_text_engines(&fixture);
+    mmay_cp33_native_text(&fixture);
+    mmay_mir_function_dispose(&fixture.function);
+    MMAY_EXPECT(mmay_cp33_text_fixture_init(&fixture, true));
+    MMAY_EXPECT(mmay_mir_verify(&fixture.function) == MMAY_MIR_VERIFY_OK);
     mmay_cp33_expect_mir_result(&fixture);
     mmay_cp33_mir_allocation_failures(&fixture);
     mmay_cp33_text_engines(&fixture);

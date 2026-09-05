@@ -364,6 +364,7 @@ tests/c-unit/
   cp32_process_fixture.c          exact counted-stdin process fixture
   test_cp32_process_streams.cmake VM/native three-stream process comparison
   test_cp33_text_bytes.c          D076 text/MIR/bytecode/VM/native vertical owner
+  test_native_text_failures.c     generated text all-index allocation teardown
   test_cp33_process_text_bytes.cmake
                         VM/native binary-I/O and iterator-invalidated parity
   test_cp34_fs.c                  D077 runtime/path/capability/allocation owner

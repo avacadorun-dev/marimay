@@ -137,6 +137,14 @@ zero-formatter-width rule; it is not full UAX #29. `trimAscii` removes exactly
 space, tab, LF, CR, vertical tab, and form feed. Limits are accepted only in
 the ranges fixed by D076 and are checked before output allocation.
 
+The empty string is a valid input and owned result of these operations:
+`trimAscii("")` and trimming only ASCII whitespace yield `""`;
+`substring("", 0, 0)` yields `Ok("")`; and splitting empty text with a nonempty
+separator yields one empty part when the limit allows it. Empty results may
+be passed to subsequent text operations with the same behavior as an empty
+literal. No backing-storage representation may introduce a native/VM
+difference or C undefined behavior (D076).
+
 `Bytes` is a nominal managed byte buffer implemented over private `[]byte`
 storage. The executable surface is:
 

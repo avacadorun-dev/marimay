@@ -32,6 +32,7 @@ add_executable(mmay_c_unit
   test_cp31_program_arguments.c
   test_cp32_streams.c
   test_cp33_text_bytes.c
+  test_native_text_failures.c
   test_cp34_fs.c
   test_cp34_fs_pipeline.c
   test_cp35_environment.c
@@ -605,7 +606,12 @@ add_test(
   COMMAND "$<TARGET_FILE:mmay>" test
     "${CMAKE_SOURCE_DIR}/tests/public-alpha/enum-pattern-names" --engine both
 )
-foreach(regression IN ITEMS record-imports match-void generic-lifetime map-error-imports enum-pattern-names)
+add_test(
+  NAME mmay_cp33_text_bytes
+  COMMAND "$<TARGET_FILE:mmay>" test
+    "${CMAKE_SOURCE_DIR}/tests/public-alpha/cp33-text-bytes" --engine both
+)
+foreach(regression IN ITEMS record-imports match-void generic-lifetime map-error-imports enum-pattern-names cp33-text-bytes)
   add_test(
     NAME "mmay_format_${regression}"
     COMMAND "$<TARGET_FILE:mmay>" fmt

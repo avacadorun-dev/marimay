@@ -83,6 +83,58 @@ fn textQueriesAndOwnedResults(): void {
 }
 
 @test
+fn emptyTextResultsCanBeUsedAgain(): void {
+  const empty = trimAscii(" \t\r\n\u{b}\u{c}");
+  require(equalText(trimAscii(""), ""), "trim empty literal");
+  require(equalText(trimAscii(empty), ""), "trim managed empty");
+  require(
+    match substring(empty, 0, 0) {
+      Ok(value) => equalText(trimAscii(value), ""),
+      Err(_) => false,
+    },
+    "substring of managed empty",
+  );
+  require(
+    match substring("abc", 3, 3) {
+      Ok(value) => equalText(trimAscii(value), ""),
+      Err(_) => false,
+    },
+    "empty suffix",
+  );
+  require(
+    match split(empty, ",", 1) {
+      Ok(values) => values.length() == 1
+        && equalText(trimAscii(values[0]), ""),
+        Err(_) => false,
+      },
+      "split managed empty",
+    );
+  require(
+    match split(",", ",", 2) {
+      Ok(values) => values.length() == 2
+        && equalText(trimAscii(values[0]), "")
+        && equalText(trimAscii(values[1]), ""),
+        Err(_) => false,
+      },
+      "leading and trailing empty split parts",
+    );
+  require(
+    match join([empty, empty], "", 0) {
+      Ok(value) => equalText(trimAscii(value), ""),
+      Err(_) => false,
+    },
+    "all-empty join",
+  );
+  require(
+    match decodeUtf8(encodeUtf8(empty)) {
+      Ok(value) => equalText(trimAscii(value), ""),
+      Err(_) => false,
+    },
+    "empty UTF-8 round trip",
+  );
+}
+
+@test
 fn textCollectionsAndLimits(): void {
   const pieces = split("a::b::", "::", 4);
   require(

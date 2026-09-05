@@ -176,7 +176,7 @@ static MarimayBytecodeRunStatus mmay_vm_text_string_array(
             if (separator_length > text_length - end) end = text_length;
         }
         managed_status = mmay_managed_string_new(
-            &execution->managed_heap, text + start, end - start,
+            &execution->managed_heap, mmay_text_range_start(text, start), end - start,
             &cells[index].reference
         );
         start = graphemes ? end : end + separator_length;
@@ -392,7 +392,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_text_instruction(
         size_t end = 0;
         mmay_text_trim_ascii_range(left, left_length, &start, &end);
         return mmay_vm_text_intern(
-            execution, left + start, end - start, &registers[target]
+            execution, mmay_text_range_start(left, start), end - start, &registers[target]
         );
     }
     if (instruction->opcode == MMAY_OPCODE_TEXT_RUNES
@@ -425,7 +425,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_text_instruction(
         }
         return instruction->opcode == MMAY_OPCODE_TEXT_DROP_PREFIX
             ? mmay_vm_text_intern(
-                execution, left + (size_t)wire, left_length - (size_t)wire,
+                execution, mmay_text_range_start(left, (size_t)wire),
+                left_length - (size_t)wire,
                 &registers[target]
             ) : mmay_vm_text_intern(
                 execution, left, (size_t)wire, &registers[target]

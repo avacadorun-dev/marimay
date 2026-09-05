@@ -5,6 +5,14 @@
 #include <stddef.h>
 #include <stdint.h>
 
+/* Begin a previously validated range. For NULL-backed empty text only offset
+ * zero is valid; returning the original pointer avoids undefined NULL + 0. */
+static inline const unsigned char *mmay_text_range_start(
+    const unsigned char *text, size_t offset
+) {
+    return offset == 0 ? text : text + offset;
+}
+
 bool mmay_text_byte_length(size_t length, int64_t *result);
 bool mmay_text_rune_count(
     const unsigned char *bytes, size_t length, int64_t *result
