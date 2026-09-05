@@ -385,7 +385,7 @@ arm_cleanup:
             function->terminated = false;
         }
     }
-    if (target == MMAY_MIR_NO_REGISTER) {
+    if (join == MMAY_MIR_NO_BLOCK) {
         mmay_checker_private_expression_set_never(function, result);
     } else if (join == MMAY_MIR_NO_BLOCK
         || match_type == MMAY_TYPE_INVALID) {

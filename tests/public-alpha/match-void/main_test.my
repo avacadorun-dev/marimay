@@ -1,0 +1,59 @@
+type Item {
+  value: int,
+}
+
+fn add(counter: []int, value: int): void {
+  counter[0] = counter[0] + value;
+}
+
+@test
+fn returningVoidArmsJoinAcrossScrutineeKinds(): void {
+  const counter = [0];
+  match true {
+    true => add(counter, 1),
+    false => panic("unselected bool arm"),
+  };
+  match 7 {
+    7 if false => panic("false guard"),
+    7 => add(counter, 2),
+    _ => panic("unselected integer arm"),
+  };
+  match "чай" {
+    "чай" => add(counter, 4),
+    _ => panic("unselected string arm"),
+  };
+  const result: Result<int, string> = Err("expected");
+  match result {
+    Ok(_) => panic("unselected enum arm"),
+    Err(_) => add(counter, 8),
+  };
+  match (1, true) {
+    (first, second) if second => add(counter, first + 15),
+    (_, _) => panic("unselected tuple arm"),
+  };
+  match (Item { value: 32 }) {
+    Item { value } => add(counter, value),
+  };
+  expect.equal(counter[0], 63);
+}
+
+fn earlyReturn(counter: []int, stop: bool): void {
+  match stop {
+    true => {
+      return;
+    },
+    false => {
+      add(counter, 1)
+    },
+  };
+  add(counter, 2);
+}
+
+@test
+fn explicitVoidTailAndEnclosingReturnRemainDistinct(): void {
+  const counter = [0];
+  earlyReturn(counter, true);
+  expect.equal(counter[0], 0);
+  earlyReturn(counter, false);
+  expect.equal(counter[0], 3);
+}

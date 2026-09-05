@@ -387,8 +387,8 @@ i64_arm_cleanup:
             test_block = next_block;
         }
     }
-    if (target == MMAY_MIR_NO_REGISTER) {
-        if (join != MMAY_MIR_NO_BLOCK) {
+    if (join == MMAY_MIR_NO_BLOCK) {
+        if (target != MMAY_MIR_NO_REGISTER) {
             mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }
@@ -609,8 +609,8 @@ record_arm_cleanup:
             next_block = MMAY_MIR_NO_BLOCK;
         }
     }
-    if (target == MMAY_MIR_NO_REGISTER) {
-        if (join != MMAY_MIR_NO_BLOCK) {
+    if (join == MMAY_MIR_NO_BLOCK) {
+        if (target != MMAY_MIR_NO_REGISTER) {
             mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }
@@ -1109,8 +1109,8 @@ arm_cleanup:
             test_block = next_block;
         }
     }
-    if (target == MMAY_MIR_NO_REGISTER) {
-        if (join != MMAY_MIR_NO_BLOCK) {
+    if (join == MMAY_MIR_NO_BLOCK) {
+        if (target != MMAY_MIR_NO_REGISTER) {
             mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }

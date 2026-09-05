@@ -368,6 +368,13 @@ The formatter must preserve this order and must not require name resolution to
 format a construction. Unknown, duplicate, and missing fields are errors.
 There are no implicit default values.
 
+Under D004 and ordinary package visibility, construction also accepts a
+namespace-qualified imported record name, a named import (including a renamed
+import), or a transparent type alias. Construction outside the owning package
+requires public visibility for the type and every supplied field; it does not
+bypass private fields. Generic record construction uses the expected concrete
+type, with the same field checks and source-order evaluation as local records.
+
 Inside a named record or enum-payload construction, `{ id }` is shorthand for `{ id: id }` when a visible local named `id` exists with the required type.
 
 Record values have reference identity and are garbage collected. The compiler may stack-allocate or scalar-replace a record only when identity and lifetime observations remain unchanged. Identity comparison uses the prelude operation `identity.same(a, b)`. It accepts exactly two values of the same nominal record type after aliases are resolved, evaluates them once from left to right, and returns `true` exactly when both values denote the same managed record. Equal fields, mutation, object relocation, and engine-specific addresses do not affect this result. Strings, enums, primitive values, and two distinct nominal record types are not accepted by this operation. The prelude name `identity` follows ordinary lexical shadowing; it is not a keyword. Ordinary `==` is available only when the record has a valid compiler-derived or explicitly declared equality function in its dot-call set.
@@ -809,6 +816,12 @@ Every reachable path of a block arm must reach the tail expression, `return`,
 function, not merely the arm. `yield` has no match role and is an ordinary
 identifier.
 
+Under D067, an arm expression (including a block's explicit tail) may be a
+`void` call. If all non-diverging arms have type `void`, the match has type
+`void` and execution continues after it. A void arm cannot be mixed with a
+value-producing arm. A reachable block without a tail expression remains an
+error; it does not implicitly produce `void`.
+
 Arms are comma-separated and may have a trailing comma. At an arm's root a
 bare identifier must resolve as a unit constructor; it never introduces a new
 catch-all binding. `_` discards the remainder and `_ as remaining` retains it.
@@ -855,7 +868,9 @@ The operator does not catch panic, cancellation, or an engine fault. It is delib
 A standalone expression statement may not discard `Result<T,E>`. It must be
 propagated, matched, returned, consumed by another operation, or deliberately
 discarded as `const _ = expression;`. A `void` call remains a valid expression
-statement.
+statement. A standalone `match` may handle a result through side-effecting
+arms; if the match itself produces another `Result`, D074 still requires
+that resulting value to be handled or explicitly discarded.
 
 ### 10.2 Panic
 

@@ -1,4 +1,5 @@
 #include "cli_compile_report.h"
+#include "cli_bytecode_report.h"
 #include "cli_internal.h"
 #include "cli_program_arguments.h"
 #include "cli_resource_report.h"
@@ -181,7 +182,8 @@ static bool mmay_cli_test_panic_bytes(
 static bool mmay_cli_test_vm(
     const MarimayCliTestContext *context,
     const MarimayCliTestCase *test,
-    MarimayCliTestObservation *observation
+    MarimayCliTestObservation *observation,
+    const char **failure_reason
 ) {
     MarimayBytecodeProgram lowered;
     MarimayBytecodeProgram decoded;
@@ -234,18 +236,30 @@ static bool mmay_cli_test_vm(
         test->function->mir.symbol, context->session->allocator,
         mmay_mir_bytecode_program_lower_default_options(), &lowered
     );
-    if (lower_status != MMAY_MIR_BYTECODE_LOWER_OK) goto cleanup;
+    if (lower_status != MMAY_MIR_BYTECODE_LOWER_OK) {
+        *failure_reason = "test MIR could not lower to bytecode";
+        goto cleanup;
+    }
     codec_status = mmay_bytecode_encode_program(
         &lowered, context->session->allocator, &encoded
     );
-    if (codec_status != MMAY_BYTECODE_CODEC_OK) goto cleanup;
+    if (codec_status != MMAY_BYTECODE_CODEC_OK) {
+        *failure_reason = mmay_cli_bytecode_codec_message(codec_status);
+        goto cleanup;
+    }
     codec_status = mmay_bytecode_decode_program(
         encoded.data, encoded.length, context->session->allocator,
         mmay_bytecode_program_default_options(), &decoded
     );
-    if (codec_status != MMAY_BYTECODE_CODEC_OK
-        || mmay_bytecode_program_verify(&decoded)
-            != MMAY_BYTECODE_PROGRAM_VERIFY_OK) goto cleanup;
+    if (codec_status != MMAY_BYTECODE_CODEC_OK) {
+        *failure_reason = mmay_cli_bytecode_codec_message(codec_status);
+        goto cleanup;
+    }
+    if (mmay_bytecode_program_verify(&decoded)
+            != MMAY_BYTECODE_PROGRAM_VERIFY_OK) {
+        *failure_reason = "test bytecode program verification failed";
+        goto cleanup;
+    }
     execution_options = mmay_bytecode_execution_default_options();
     execution_options.managed_heap.max_live_bytes =
         context->options->max_heap_bytes;
@@ -575,9 +589,10 @@ static int mmay_cli_test_execute(
         MarimayProcessStatus process_status = MMAY_PROCESS_OK;
         MarimayOwnedBytes tool_output = {0};
         bool ready = true;
+        const char *failure_reason = "test execution pipeline failed";
         memset(&vm, 0, sizeof(vm));
         memset(&native, 0, sizeof(native));
-        if (use_vm) ready = mmay_cli_test_vm(context, test, &vm);
+        if (use_vm) ready = mmay_cli_test_vm(context, test, &vm, &failure_reason);
         if (ready && use_native) ready = mmay_cli_test_native(
             context, test, &native, &build_status, &process_status, &tool_output
         );
@@ -599,7 +614,7 @@ static int mmay_cli_test_execute(
             }
             return mmay_cli_test_pipeline_error(
                 context->options, standard_error,
-                "test execution pipeline failed"
+                failure_reason
             );
         }
         mmay_owned_bytes_dispose(&tool_output);

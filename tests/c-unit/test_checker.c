@@ -1,6 +1,9 @@
 #include "test_checker_cases.h"
 
+void mmay_test_checker_expression_statements(void);
+
 void mmay_test_checker(void) {
+    mmay_test_checker_expression_statements();
     mmay_test_checker_vertical_slice();
     mmay_test_checker_diagnostics();
     mmay_test_checker_signature_phase();

@@ -44,6 +44,7 @@ add_executable(mmay_c_unit
   test_bytecode_verify_provenance.c
   test_bytecode_verify_nominal_matrix.c
   test_bytecode_imported_arrays.c
+  test_bytecode_layout_features.c
   test_bytecode_imported_results.c
   test_bytecode_vm.c
   test_bytecode_vm_support.c
@@ -65,6 +66,7 @@ add_executable(mmay_c_unit
   test_checker_enums.c
   test_checker_interfaces.c
   test_checker_imports.c
+  test_checker_record_imports.c
   test_checker_imports_determinism.c
   test_checker_generics.c
   test_checker_generics_imports.c
@@ -80,6 +82,7 @@ add_executable(mmay_c_unit
   test_checker_calls_constants.c
   test_checker_equality.c
   test_checker_expectations.c
+  test_checker_expression_statements.c
   test_checker_operators.c
   test_checker_numeric_policy.c
   test_checker_control.c
@@ -506,6 +509,53 @@ add_test(
     "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp37-cli-parser"
     "-DMMAY_TEST_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/cp37-cli-parser${CMAKE_EXECUTABLE_SUFFIX}"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp37_cli_parser.cmake"
+)
+
+add_test(
+  NAME mmay_cli_notes
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cli-notes"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cli_notes.cmake"
+)
+
+add_test(
+  NAME mmay_cli_frequency
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cli-frequency"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cli_frequency.cmake"
+)
+
+add_test(
+  NAME mmay_cli_config_migrate
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cli-config-migrate"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cli_config_migrate.cmake"
+)
+
+add_test(
+  NAME mmay_record_imports
+  COMMAND "$<TARGET_FILE:mmay>" test
+    "${CMAKE_SOURCE_DIR}/tests/public-alpha/record-imports" --engine both
+)
+add_test(
+  NAME mmay_match_void
+  COMMAND "$<TARGET_FILE:mmay>" test
+    "${CMAKE_SOURCE_DIR}/tests/public-alpha/match-void" --engine both
+)
+foreach(regression IN ITEMS record-imports match-void)
+  add_test(
+    NAME "mmay_format_${regression}"
+    COMMAND "$<TARGET_FILE:mmay>" fmt
+      "${CMAKE_SOURCE_DIR}/tests/public-alpha/${regression}" --check
+  )
+endforeach()
+add_test(
+  NAME mmay_cli_notes_model
+  COMMAND "$<TARGET_FILE:mmay>" test
+    "${CMAKE_SOURCE_DIR}/tests/public-alpha/cli-notes" --engine both
 )
 
 add_test(

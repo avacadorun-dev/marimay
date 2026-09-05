@@ -1,0 +1,43 @@
+import * as model from "local/record-imports/model";
+import { Alias, Item as Entry } from "local/record-imports/model";
+
+type LocalAlias = model.Item;
+
+fn next(counter: []int): int {
+  counter[0] = counter[0] + 1;
+  return counter[0];
+}
+
+fn label(counter: []int): string {
+  const _ = next(counter);
+  return "Заметка 🌿";
+}
+
+@test
+fn importedConstructionPreservesSourceOrderAndAliases(): void {
+  const counter = [0];
+  const first = model.Item { text: label(counter), id: next(counter) };
+  expect.equal(first.id, 2);
+  expect.equal(counter[0], 2);
+  expect.equal(first.text, "Заметка 🌿");
+  const text = "named import";
+  const second = Entry { id: 3, text };
+  const third = Alias { id: 4, text };
+  const fourth = LocalAlias { id: 5, text };
+  expect.equal(second.id + third.id + fourth.id, 12);
+  expect.equal(second.text, text);
+  expect.equal(identity.same(first, second), false);
+}
+
+@test
+fn importedGenericRecordsUseConcreteFieldTypes(): void {
+  const integer: model.Box<int> = model.Box { value: 42 };
+  const stringValue: model.Box<string> = model.Box { value: "text" };
+  const aliased = model.IntBox { value: 7 };
+  const empty = model.Empty {};
+  expect.equal(integer.value + aliased.value, 49);
+  expect.equal(stringValue.value, "text");
+  expect.equal(identity.same(empty, empty), true);
+  expect.equal(identity.same(integer, integer), true);
+  expect.equal(identity.same(integer, aliased), false);
+}

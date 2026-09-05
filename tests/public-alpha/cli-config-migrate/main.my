@@ -1,0 +1,85 @@
+import * as fs from "std/fs";
+import * as io from "std/io";
+import * as json from "std/json";
+import * as path from "std/path";
+
+import * as model from "local/cli-config-migrate/model";
+
+fn fail(message: string): int {
+  const _ = io.eprintln(message);
+  return 1;
+}
+
+fn main(arguments: []string): int {
+  if arguments.length() != 2 {
+    return fail("usage: config-migrate INPUT.json OUTPUT.json");
+  }
+  const inputPath = match path.fromString(arguments[0]) {
+    Ok(value) => value,
+    Err(_) => {
+      return fail("invalid input path");
+    },
+  };
+  const input = match fs.readBytes(inputPath, 1048576) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(fs.message(error));
+    },
+  };
+  const decoder = match json.newDecoder(input, json.defaultLimits()) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const codec = model.newCodec(json.UnknownFields.Reject);
+  const decoded = match codec.decode(decoder) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const _ = match json.finishDecoder(decoder) {
+    Ok(_) => true,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  if decoded.version != 1 {
+    return fail("only version 1 can be migrated");
+  }
+  const destination = match path.fromString(arguments[1]) {
+    Ok(value) => value,
+    Err(_) => {
+      return fail("invalid output path");
+    },
+  };
+  const encoder = match json.newEncoder(json.defaultLimits()) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const _ = match codec.encode(encoder, model.transform(decoded)) {
+    Ok(_) => true,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const output = match json.finishEncoder(encoder) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const _ = match fs.writeBytes(destination, output) {
+    Ok(_) => true,
+    Err(error) => {
+      return fail(fs.message(error));
+    },
+  };
+  return match io.println("Migrated configuration to version 2.") {
+    Ok(_) => 0,
+    Err(error) => fail(io.message(error)),
+  };
+}

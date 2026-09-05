@@ -163,7 +163,8 @@ bool mmay_bytecode_function_uses_arrays(
 ) {
     size_t index = 0;
     if (function == NULL || mmay_bytecode_type_is_array(function->result_type)
-        || function->array_constructions.length != 0) {
+        || function->array_constructions.length != 0
+        || function->array_types.length != 0) {
         return function != NULL;
     }
     for (index = 0; index < function->register_types.length; index += 1) {

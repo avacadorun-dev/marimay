@@ -23,16 +23,6 @@ static bool mmay_checker_private_finish_match_value(
     if (mmay_expression_is_never(function, &value)) {
         return true;
     }
-    if (value.type == MMAY_TYPE_VOID) {
-        (void)mmay_checker_add_diagnostic(
-            function->checker,
-            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
-            "match arm value cannot have type void",
-            expression->start,
-            expression->end
-        );
-        return false;
-    }
     if (*match_type == MMAY_TYPE_INVALID) {
         *match_type = value.type;
     }
@@ -50,15 +40,15 @@ static bool mmay_checker_private_finish_match_value(
         && !mmay_checker_private_function_add_block(function, join)) {
         return false;
     }
-    if (*target == MMAY_MIR_NO_REGISTER
+    if (*match_type != MMAY_TYPE_VOID && *target == MMAY_MIR_NO_REGISTER
         && !mmay_function_add_register(function, *match_type, target)) {
         return false;
     }
-    if (*target == MMAY_MIR_NO_REGISTER
+    if ((*match_type != MMAY_TYPE_VOID && (*target == MMAY_MIR_NO_REGISTER
         || !mmay_checker_private_function_emit_copy(
             function, *target, value.register_id,
             expression->start, expression->end
-        ) || !mmay_checker_private_function_set_goto(
+        ))) || !mmay_checker_private_function_set_goto(
             function, function->block, *join,
             expression->end, expression->end
         )) {
@@ -507,8 +497,8 @@ bool_arm_cleanup:
             test_block = next_block;
         }
     }
-    if (target == MMAY_MIR_NO_REGISTER) {
-        if (join != MMAY_MIR_NO_BLOCK) {
+    if (join == MMAY_MIR_NO_BLOCK) {
+        if (target != MMAY_MIR_NO_REGISTER) {
             mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
             goto cleanup;
         }

@@ -2,6 +2,7 @@
 
 void mmay_test_bytecode_imported_arrays(void);
 void mmay_test_bytecode_imported_results(void);
+void mmay_test_bytecode_layout_features(void);
 
 void mmay_test_bytecode(void) {
     mmay_test_bytecode_metadata();
@@ -20,4 +21,5 @@ void mmay_test_bytecode(void) {
     mmay_test_bytecode_nominal_program_schemas();
     mmay_test_bytecode_imported_arrays();
     mmay_test_bytecode_imported_results();
+    mmay_test_bytecode_layout_features();
 }

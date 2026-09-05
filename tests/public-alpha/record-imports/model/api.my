@@ -1,0 +1,14 @@
+public type Item {
+  public id: int,
+  public text: string,
+}
+
+public type Alias = Item;
+
+public type Box<T> {
+  public value: T,
+}
+
+public type IntBox = Box<int>;
+
+public type Empty {}

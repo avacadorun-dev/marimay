@@ -31,6 +31,11 @@
         0
     );
     MarimayCheckName type_name;
+    MarimayCheckName namespace_name = {0};
+    const MarimayCheckedRecord *imported = NULL;
+    MarimayTypeId imported_type = MMAY_TYPE_INVALID;
+    bool has_namespace = false;
+    bool exists_private = false;
     MarimayCheckRecordDeclaration *declaration = NULL;
     MarimayCheckRecordDeclaration concrete;
     MarimayCheckTypeAliasDeclaration *alias = NULL;
@@ -54,6 +59,28 @@
         );
         goto cleanup;
     }
+    if (name_node == NULL) {
+        const MarimayAstNode *member = mmay_checker_private_check_child_node(
+            node, MMAY_SYNTAX_MEMBER_EXPRESSION, 0
+        );
+        const MarimaySyntaxToken *namespace_token = NULL;
+        if (member != NULL && mmay_checker_private_member_parts(
+                member, &name_node, &type_token
+            ) && name_node != NULL
+            && name_node->kind == MMAY_SYNTAX_NAME_EXPRESSION) {
+            namespace_token = mmay_checker_private_check_child_token(
+                name_node, MMAY_TOKEN_IDENTIFIER, 0
+            );
+        }
+        if (namespace_token != NULL && !namespace_token->synthetic) {
+            namespace_name.snapshot = function->checker->ast->snapshot;
+            namespace_name.start = namespace_token->start;
+            namespace_name.end = namespace_token->end;
+            has_namespace = true;
+        } else {
+            name_node = NULL;
+        }
+    }
     if (name_node == NULL || fields_node == NULL || type_token == NULL
         || type_token->synthetic) {
         mmay_checker_fail(
@@ -65,8 +92,10 @@
     type_name.snapshot = function->checker->ast->snapshot;
     type_name.start = type_token->start;
     type_name.end = type_token->end;
-    declaration = mmay_checker_private_checker_find_record(function->checker, type_name);
-    if (declaration == NULL) {
+    if (!has_namespace) {
+        declaration = mmay_checker_private_checker_find_record(function->checker, type_name);
+    }
+    if (declaration == NULL && !has_namespace) {
         alias = mmay_checker_private_checker_find_type_alias(function->checker, type_name);
         if (alias != NULL && mmay_checker_private_evaluate_type_alias(
                 function->checker,
@@ -81,7 +110,21 @@
         }
     }
     if (declaration == NULL) {
-        if (mmay_checker_private_checker_find_top_level(function->checker, type_name) != NULL) {
+        imported = alias != NULL
+            ? mmay_check_imported_record_by_type(function->checker, alias->type)
+            : mmay_check_imported_record_by_name(function->checker,
+                namespace_name, has_namespace, type_name,
+                &imported_type, &exists_private);
+        if (alias != NULL) imported_type = alias->type;
+    }
+    if (declaration == NULL && imported == NULL) {
+        if (exists_private) {
+            (void)mmay_checker_add_diagnostic(function->checker,
+                MMAY_DIAGNOSTIC_PRIVATE_IMPORT,
+                "record type is package-private in the owning package",
+                type_name.start, type_name.end);
+        } else if (mmay_checker_private_checker_find_top_level(
+                function->checker, type_name) != NULL) {
             (void)mmay_checker_add_diagnostic(
                 function->checker,
                 MMAY_DIAGNOSTIC_TYPE_MISMATCH,
@@ -100,7 +143,18 @@
         }
         goto cleanup;
     }
-    concrete = *declaration;
+    if (imported != NULL) {
+        memset(&concrete, 0, sizeof(concrete));
+        concrete.type = imported_type;
+        concrete.symbol = imported->symbol;
+        concrete.type_parameters = imported->type_parameters;
+        concrete.fields.length = imported->fields.length;
+        concrete.is_generic = imported->type_parameters.length != 0
+            && imported_type == imported->type;
+        declaration = &concrete;
+    } else {
+        concrete = *declaration;
+    }
     if (declaration->is_generic) {
         const MarimayTypeDescriptor *descriptor = expected == MMAY_TYPE_INVALID
             ? NULL : mmay_type_descriptor(
@@ -168,6 +222,7 @@
         const MarimaySyntaxToken *field_token = NULL;
         MarimayCheckName field_name;
         MarimayCheckRecordFieldDeclaration *field = NULL;
+        MarimayCheckRecordFieldDeclaration imported_field;
         MarimayExpressionValue value;
         MarimayTypeId expected_field_type = MMAY_TYPE_INVALID;
         size_t field_index = 0;
@@ -202,12 +257,38 @@
         field_name.snapshot = function->checker->ast->snapshot;
         field_name.start = field_token->start;
         field_name.end = field_token->end;
-        field = mmay_checker_private_checker_find_record_field(
-            function->checker,
-            declaration,
-            field_name,
-            &field_index
-        );
+        if (imported == NULL) {
+            field = mmay_checker_private_checker_find_record_field(
+                function->checker, declaration, field_name, &field_index
+            );
+        } else {
+            const unsigned char *bytes = NULL;
+            size_t length = 0;
+            if (!mmay_checker_private_check_name_bytes(field_name, &bytes, &length)) {
+                mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
+                goto cleanup;
+            }
+            for (field_index = 0; field_index < imported->fields.length;
+                field_index += 1) {
+                const MarimayCheckedRecordField *candidate = mmay_vector_at_const(
+                    &imported->fields, field_index
+                );
+                if (candidate != NULL && candidate->name.length == length
+                    && memcmp(candidate->name.data, bytes, length) == 0) {
+                    if (!candidate->is_public) {
+                        (void)mmay_checker_add_diagnostic(function->checker,
+                            MMAY_DIAGNOSTIC_PRIVATE_IMPORT,
+                            "record field is package-private in the owning package",
+                            field_name.start, field_name.end);
+                        goto cleanup;
+                    }
+                    memset(&imported_field, 0, sizeof(imported_field));
+                    imported_field.type = candidate->type;
+                    field = &imported_field;
+                    break;
+                }
+            }
+        }
         if (field == NULL) {
             (void)mmay_checker_add_diagnostic(
                 function->checker,
@@ -314,7 +395,10 @@
         );
         goto cleanup;
     }
-    if (!mmay_checker_private_function_record_layout(function, &concrete, &record)) {
+    if (!(imported != NULL
+            ? mmay_checker_private_imported_record_layout(
+                function, imported, concrete.type, &record)
+            : mmay_checker_private_function_record_layout(function, &concrete, &record))) {
         goto cleanup;
     }
     if (function->mir.record_constructions.length

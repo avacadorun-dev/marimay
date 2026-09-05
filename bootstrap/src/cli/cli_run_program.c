@@ -1,4 +1,5 @@
 #include "cli_compile_report.h"
+#include "cli_bytecode_report.h"
 #include "cli_program_arguments.h"
 #include "cli_run_report.h"
 
@@ -324,7 +325,7 @@ static int mmay_cli_run_execute(
     );
     if (codec_status != MMAY_BYTECODE_CODEC_OK) {
         exit_code = mmay_cli_run_pipeline_error(
-            options, "verified bytecode did not encode", standard_error
+            options, mmay_cli_bytecode_codec_message(codec_status), standard_error
         );
         goto cleanup;
     }
@@ -332,8 +333,13 @@ static int mmay_cli_run_execute(
         encoded.data, encoded.length, session->allocator,
         mmay_bytecode_program_default_options(), &decoded
     );
-    if (codec_status != MMAY_BYTECODE_CODEC_OK
-        || mmay_bytecode_program_verify(&decoded)
+    if (codec_status != MMAY_BYTECODE_CODEC_OK) {
+        exit_code = mmay_cli_run_pipeline_error(
+            options, mmay_cli_bytecode_codec_message(codec_status), standard_error
+        );
+        goto cleanup;
+    }
+    if (mmay_bytecode_program_verify(&decoded)
             != MMAY_BYTECODE_PROGRAM_VERIFY_OK) {
         exit_code = mmay_cli_run_pipeline_error(
             options, "encoded bytecode did not decode and verify",

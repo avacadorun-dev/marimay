@@ -206,6 +206,54 @@ static bool mmay_import_surface_type(
     return false;
 }
 
+const MarimayCheckedRecord *mmay_check_imported_record_by_name(
+    const MarimayChecker *checker,
+    MarimayCheckName namespace_name,
+    bool has_namespace,
+    MarimayCheckName name,
+    MarimayTypeId *type,
+    bool *exists_private
+) {
+    const unsigned char *bytes = NULL;
+    const unsigned char *namespace_bytes = NULL;
+    size_t length = 0;
+    size_t namespace_length = 0;
+    size_t arity = 0;
+    MarimaySymbolId symbol;
+    const MarimayCheckImportBinding *binding = NULL;
+    const MarimayCheckPackageSurface *surface = NULL;
+    *type = MMAY_TYPE_INVALID;
+    *exists_private = false;
+    if (!mmay_import_name(name, &bytes, &length)
+        || (has_namespace && !mmay_import_name(
+            namespace_name, &namespace_bytes, &namespace_length
+        ))) return NULL;
+    binding = mmay_import_binding(checker,
+        has_namespace ? namespace_bytes : bytes,
+        has_namespace ? namespace_length : length, has_namespace);
+    if (binding == NULL || (!has_namespace && binding->is_namespace)) {
+        return NULL;
+    }
+    surface = mmay_import_surface(checker, binding);
+    if (surface == NULL) return NULL;
+    if (!has_namespace) {
+        bytes = binding->original;
+        length = binding->original_length;
+    }
+    if (!mmay_import_surface_type(checker, surface, bytes, length,
+            type, &symbol, &arity, exists_private)) return NULL;
+    /* A generic declaration's unspecialized type has no concrete arguments;
+     * by-type lookup intentionally accepts only concrete nominal instances. */
+    for (size_t index = 0; index < surface->record_count; index += 1) {
+        const MarimayCheckedRecord *record = mmay_checked_record(
+            checker->result, surface->record_start + index
+        );
+        if (record != NULL && record->is_public
+            && mmay_symbol_id_equal(record->symbol, symbol)) return record;
+    }
+    return mmay_check_imported_record_by_type(checker, *type);
+}
+
 static bool mmay_import_specialize_type(
     MarimayChecker *checker,
     const MarimayAstNode *type_node,

@@ -1,0 +1,92 @@
+import * as bytes from "std/bytes";
+import * as cli from "std/cli";
+import * as io from "std/io";
+import * as json from "std/json";
+import * as text from "std/text";
+
+fn fail(message: string): int {
+  const _ = io.eprintln(message);
+  return 1;
+}
+
+fn main(arguments: []string): int {
+  const parser = match cli.newParser(
+    "frequency",
+    "Count input lines as JSON.",
+    [cli.flagOption("trim", Some("t"), false, false, "Trim ASCII whitespace.")],
+    [],
+    cli.defaultLimits(),
+  ) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(cli.message(error));
+    },
+  };
+  const parsed = match cli.parse(parser, arguments) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(cli.message(error));
+    },
+  };
+  const counts: Map<string, int> = mapOf<string, int>();
+  let lines = 0;
+  while true {
+    const input = match io.readLine(65536) {
+      Ok(value) => value,
+      Err(error) => {
+        return fail(io.message(error));
+      },
+    };
+    const line = match input {
+      Some(value) => value,
+      None => {
+        break;
+      },
+    };
+    if lines == 10000 {
+      return fail("line limit exceeded");
+    }
+    lines += 1;
+    let key = line;
+    if cli.count(parsed, "trim") != 0 {
+      key = text.trimAscii(line);
+    }
+    const count = match counts.get(key) {
+      Some(value) => value,
+      None => 0,
+    };
+    const _ = counts.put(key, count + 1);
+  }
+  const output = match encodeCounts(counts) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(json.message(error));
+    },
+  };
+  const _ = match io.writeBytes(output) {
+    Ok(_) => true,
+    Err(error) => {
+      return fail(io.message(error));
+    },
+  };
+  return match io.print("\n") {
+    Ok(_) => 0,
+    Err(error) => fail(io.message(error)),
+  };
+}
+
+fn encodeCounts(counts: Map<string, int>): Result<bytes.Bytes, json.Error> {
+  const encoder = json.newEncoder(json.defaultLimits())?;
+  json.beginObject(encoder)?;
+  for entry in counts {
+    const _ = match entry {
+      (key, value) => {
+        json.writeKey(encoder, key)?;
+        json.writeInt(encoder, value)?;
+        true
+      },
+    };
+  }
+  json.endObject(encoder)?;
+  return json.finishEncoder(encoder);
+}

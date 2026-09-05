@@ -6,6 +6,8 @@
 #include "mmay/cli.h"
 #include "mmay/platform/process.h"
 #include "mmay/session.h"
+#include "../../bootstrap/src/cli/cli_bytecode_report.h"
+#include "../../bootstrap/src/cli/cli_run_report.h"
 
 static int mmay_cli_run_test_in_process(
     MarimaySession *session,
@@ -287,6 +289,21 @@ static void mmay_cli_run_test_process(void) {
 
 void mmay_test_cli_run(void) {
     MarimaySession session;
+    {
+        MarimayCliOptions options;
+        MarimayTestBuffer error;
+        memset(&options, 0, sizeof(options));
+        options.diagnostic_style = MMAY_DIAGNOSTIC_JSON;
+        mmay_test_buffer_init(&error);
+        MMAY_EXPECT(mmay_cli_run_pipeline_error(
+            &options,
+            mmay_cli_bytecode_codec_message(MMAY_BYTECODE_CODEC_UNSUPPORTED_VERSION),
+            mmay_test_buffer_writer(&error)
+        ) == 70);
+        MMAY_EXPECT(strstr((const char *)error.bytes,
+            "unsupported format version or feature flags") != NULL);
+        MMAY_EXPECT(strstr((const char *)error.bytes, "B0001") != NULL);
+    }
     mmay_session_init(&session, mmay_system_allocator());
     mmay_cli_run_test_successes(&session);
     mmay_cli_run_test_failures(&session);

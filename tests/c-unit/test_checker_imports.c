@@ -819,7 +819,10 @@ static void mmay_checker_import_std_convert(void) {
     mmay_checker_import_fixture_dispose(&fixture);
 }
 
+void mmay_test_checker_record_imports(void);
+
 void mmay_test_checker_imports(void) {
+    mmay_test_checker_record_imports();
     mmay_checker_import_forms();
     mmay_checker_import_diagnostics();
     mmay_checker_import_aliases_and_public_field();

@@ -1,0 +1,142 @@
+import * as bytes from "std/bytes";
+import * as json from "std/json";
+
+import * as notes from "local/marimay-notes/notes";
+
+fn require(condition: bool, message: string): void {
+  if !condition {
+    panic(message);
+  }
+}
+
+fn decodeText(value: string): notes.Database {
+  return match notes.decode(bytes.encodeUtf8(value)) {
+    Ok(database) => database,
+    Err(error) => panic(error),
+  };
+}
+
+fn encodeText(database: notes.Database): string {
+  const encoded = match notes.encode(database) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  return match bytes.decodeUtf8(encoded) {
+    Ok(value) => value,
+    Err(_) => panic("JSON encoder returned invalid UTF-8"),
+  };
+}
+
+@test
+fn emptyDatabaseHasStableJson(): void {
+  require(
+    encodeText(notes.empty()) == "{\"version\":1,\"nextId\":1,\"notes\":[]}",
+    "empty database JSON changed",
+  );
+}
+
+@test
+fn addFindAndRemoveNotes(): void {
+  const first = match notes.add(notes.empty(), "Buy tea", ["home", "today"]) {
+    Ok(value) => value,
+    Err(error) => panic(error),
+  };
+  const second = match notes.add(first.database, "Read Marimay docs", ["work"]) {
+    Ok(value) => value,
+    Err(error) => panic(error),
+  };
+  require(first.note.id == 1 && second.note.id == 2, "IDs must be monotonic");
+  require(
+    match second.database.find(1) {
+      Some(note) => note.text == "Buy tea"
+        && note.tags.length() == 2,
+        None => false,
+      },
+      "added note was not found",
+    );
+  require(second.database.remove(1), "existing note was not removed");
+  require(!second.database.remove(1), "removed note remained in the database");
+  require(second.database.notes.length() == 1, "remove changed the wrong number of notes");
+}
+
+@test
+fn jsonRoundTripPreservesUnicodeAndTags(): void {
+  const source = "{\"version\":1,\"nextId\":8,\"notes\":[{\"id\":7,\"text\":\"Идея 🌿\",\"tags\":[\"русский\",\"json\"]}]}";
+  const database = decodeText(source);
+  require(database.nextId == 8, "next ID was not decoded");
+  require(database.notes.length() == 1, "note was not decoded");
+  require(database.notes[0].text == "Идея 🌿", "Unicode text changed");
+  require(encodeText(database) == source, "JSON round trip is not deterministic");
+}
+
+@test
+fn unknownFieldsAreRejected(): void {
+  const source = bytes.encodeUtf8("{\"version\":1,\"nextId\":1,\"notes\":[],\"extra\":true}");
+  require(
+    match notes.decode(source) {
+      Err(error) => error != "",
+      Ok(_) => false,
+    },
+    "unknown database field was accepted",
+  );
+}
+
+@test
+fn rejectsInvalidIdsAndVersion(): void {
+  const invalid = [
+    "{\"version\":2,\"nextId\":1,\"notes\":[]}",
+    "{\"version\":1,\"nextId\":0,\"notes\":[]}",
+    "{\"version\":1,\"nextId\":1,\"notes\":[{\"id\":1,\"text\":\"x\",\"tags\":[]}]}",
+    "{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"text\":\"x\",\"tags\":[]},{\"id\":1,\"text\":\"y\",\"tags\":[]}]}",
+  ];
+  for input in invalid {
+    require(
+      match notes.decode(bytes.encodeUtf8(input)) {
+        Err(_) => true,
+        Ok(_) => false,
+      },
+      "invalid database accepted",
+    );
+  }
+}
+
+@test
+fn addPreservesInputAndRejectsExhaustion(): void {
+  const original = notes.empty();
+  const added = match notes.add(original, "one", []) {
+    Ok(value) => value,
+    Err(error) => panic(error),
+  };
+  require(original.notes.length() == 0 && original.nextId == 1, "add mutated its input");
+  require(added.database.nextId == 2, "counter not advanced");
+  const exhausted = notes.Database { version: 1, nextId: 9223372036854775807, notes: [] };
+  require(
+    match notes.add(exhausted, "x", []) {
+      Err(error) => error == "note ID space is exhausted",
+      Ok(_) => false,
+    },
+    "ID exhaustion did not return an expected error",
+  );
+  require(
+    match notes.add(original, " \t", []) {
+      Err(_) => true,
+      Ok(_) => false,
+    },
+    "blank note accepted",
+  );
+}
+
+@test
+fn standaloneMatchHandlesExpectedErrors(): void {
+  const visited = [0];
+  const result: Result<int, string> = Err("expected");
+  match result {
+    Ok(_) => markVisited(visited, 1),
+    Err(_) => markVisited(visited, 2),
+  };
+  expect.equal(visited[0], 2);
+}
+
+fn markVisited(visited: []int, value: int): void {
+  visited[0] = value;
+}

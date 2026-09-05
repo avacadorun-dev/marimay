@@ -1,0 +1,271 @@
+import * as bytes from "std/bytes";
+import * as json from "std/json";
+import * as text from "std/text";
+
+public type Note {
+  public id: int,
+  public text: string,
+  public tags: []string,
+}
+
+public type Database {
+  public version: int,
+  public nextId: int,
+  public notes: []Note,
+}
+
+public type AddResult {
+  public database: Database,
+  public note: Note,
+}
+
+public fn empty(): Database {
+  return Database { version: 1, nextId: 1, notes: [] };
+}
+
+public fn validate(database: Database): Result<void, string> {
+  if database.version != 1 {
+    return Err("unsupported database version");
+  }
+  if database.nextId < 1 {
+    return Err("nextId must be positive");
+  }
+  const ids: Set<int> = setOf<int>();
+  for note in database.notes {
+    if note.id < 1 || note.id >= database.nextId {
+      return Err("note ID must be positive and below nextId");
+    }
+    if ids.contains(note.id) {
+      return Err("duplicate note ID");
+    }
+    const _ = ids.add(note.id);
+  }
+  return Ok();
+}
+
+public fn add(database: Database, value: string, tags: []string): Result<AddResult, string> {
+  validate(database)?;
+  if database.nextId == 9223372036854775807 {
+    return Err("note ID space is exhausted");
+  }
+  if text.trimAscii(value) == "" {
+    return Err("note text must not be empty");
+  }
+  let copied: []Note = [];
+  for existing in database.notes {
+    const _ = copied.push(existing);
+  }
+  const note = Note { id: database.nextId, text: value, tags };
+  const _ = copied.push(note);
+  return Ok(
+    AddResult {
+      database: Database { version: database.version, nextId: database.nextId + 1, notes: copied },
+      note,
+    },
+  );
+}
+
+public fn find(database: Database, id: int): Option<Note> {
+  for note in database.notes {
+    if note.id == id {
+      return Some(note);
+    }
+  }
+  return None;
+}
+
+public fn remove(database: Database, id: int): bool {
+  let found = -1;
+  let index = 0;
+  while index < database.notes.length() {
+    if database.notes[index].id == id {
+      found = index;
+      break;
+    }
+    index += 1;
+  }
+  if found < 0 {
+    return false;
+  }
+  index = found;
+  while index < database.notes.length() - 1 {
+    database.notes[index] = database.notes[index + 1];
+    index += 1;
+  }
+  const _ = database.notes.truncate(database.notes.length() - 1);
+  return true;
+}
+
+fn requiredInt(decoder: json.Decoder, value: Option<int>, name: string): Result<int, json.Error> {
+  return match value {
+    Some(item) => Ok(item),
+    None => Err(json.missingField(decoder, name)),
+  };
+}
+
+fn requiredString(decoder: json.Decoder, value: Option<string>, name: string): Result<string, json.Error> {
+  return match value {
+    Some(item) => Ok(item),
+    None => Err(json.missingField(decoder, name)),
+  };
+}
+
+fn decodeStrings(decoder: json.Decoder): Result<[]string, json.Error> {
+  let result: []string = [];
+  json.beginArray(decoder)?;
+  while json.nextElement(decoder)? {
+    const _ = result.push(json.readString(decoder)?);
+  }
+  return Ok(result);
+}
+
+fn encodeStrings(encoder: json.Encoder, values: []string): Result<void, json.Error> {
+  json.beginArray(encoder)?;
+  for value in values {
+    json.writeString(encoder, value)?;
+  }
+  return json.endArray(encoder);
+}
+
+fn decodeNote(decoder: json.Decoder): Result<Note, json.Error> {
+  let id: Option<int> = None;
+  let value: Option<string> = None;
+  let tags: Option<[]string> = None;
+  json.beginObject(decoder)?;
+  let field = json.nextField(decoder)?;
+  while match field {
+    Some(_) => true,
+    None => false,
+  } {
+    const name = match field {
+      Some(item) => item,
+      None => panic("std/json field presence changed"),
+    };
+    if name == "id" {
+      id = Some(json.readInt(decoder)?);
+    } else if name == "text" {
+      value = Some(json.readString(decoder)?);
+    } else if name == "tags" {
+      tags = Some(decodeStrings(decoder)?);
+    } else {
+      json.handleUnknown(decoder, name, json.UnknownFields.Reject)?;
+    }
+    field = json.nextField(decoder)?;
+  }
+  const decodedTags = match tags {
+    Some(item) => item,
+    None => {
+      return Err(json.missingField(decoder, "tags"));
+    },
+  };
+  return Ok(
+    Note {
+      id: requiredInt(decoder, id, "id")?,
+      text: requiredString(decoder, value, "text")?,
+      tags: decodedTags,
+    },
+  );
+}
+
+fn encodeNote(encoder: json.Encoder, note: Note): Result<void, json.Error> {
+  json.beginObject(encoder)?;
+  json.writeKey(encoder, "id")?;
+  json.writeInt(encoder, note.id)?;
+  json.writeKey(encoder, "text")?;
+  json.writeString(encoder, note.text)?;
+  json.writeKey(encoder, "tags")?;
+  encodeStrings(encoder, note.tags)?;
+  return json.endObject(encoder);
+}
+
+fn decodeNotes(decoder: json.Decoder): Result<[]Note, json.Error> {
+  let result: []Note = [];
+  json.beginArray(decoder)?;
+  while json.nextElement(decoder)? {
+    const _ = result.push(decodeNote(decoder)?);
+  }
+  return Ok(result);
+}
+
+fn encodeNotes(encoder: json.Encoder, values: []Note): Result<void, json.Error> {
+  json.beginArray(encoder)?;
+  for value in values {
+    encodeNote(encoder, value)?;
+  }
+  return json.endArray(encoder);
+}
+
+fn decodeDatabase(decoder: json.Decoder): Result<Database, json.Error> {
+  let version: Option<int> = None;
+  let nextId: Option<int> = None;
+  let notes: Option<[]Note> = None;
+  json.beginObject(decoder)?;
+  let field = json.nextField(decoder)?;
+  while match field {
+    Some(_) => true,
+    None => false,
+  } {
+    const name = match field {
+      Some(value) => value,
+      None => panic("std/json field presence changed"),
+    };
+    if name == "version" {
+      version = Some(json.readInt(decoder)?);
+    } else if name == "nextId" {
+      nextId = Some(json.readInt(decoder)?);
+    } else if name == "notes" {
+      notes = Some(decodeNotes(decoder)?);
+    } else {
+      json.handleUnknown(decoder, name, json.UnknownFields.Reject)?;
+    }
+    field = json.nextField(decoder)?;
+  }
+  const decodedNotes = match notes {
+    Some(value) => value,
+    None => {
+      return Err(json.missingField(decoder, "notes"));
+    },
+  };
+  return Ok(
+    Database {
+      version: requiredInt(decoder, version, "version")?,
+      nextId: requiredInt(decoder, nextId, "nextId")?,
+      notes: decodedNotes,
+    },
+  );
+}
+
+fn encodeDatabase(encoder: json.Encoder, database: Database): Result<void, json.Error> {
+  json.beginObject(encoder)?;
+  json.writeKey(encoder, "version")?;
+  json.writeInt(encoder, database.version)?;
+  json.writeKey(encoder, "nextId")?;
+  json.writeInt(encoder, database.nextId)?;
+  json.writeKey(encoder, "notes")?;
+  encodeNotes(encoder, database.notes)?;
+  return json.endObject(encoder);
+}
+
+fn decodeJson(contents: bytes.Bytes): Result<Database, json.Error> {
+  const decoder = json.newDecoder(contents, json.defaultLimits())?;
+  const database = decodeDatabase(decoder)?;
+  json.finishDecoder(decoder)?;
+  return Ok(database);
+}
+
+public fn decode(contents: bytes.Bytes): Result<Database, string> {
+  const database = match decodeJson(contents) {
+    Ok(value) => value,
+    Err(error) => {
+      return Err(json.message(error));
+    },
+  };
+  validate(database)?;
+  return Ok(database);
+}
+
+public fn encode(database: Database): Result<bytes.Bytes, json.Error> {
+  const encoder = json.newEncoder(json.defaultLimits())?;
+  encodeDatabase(encoder, database)?;
+  return json.finishEncoder(encoder);
+}

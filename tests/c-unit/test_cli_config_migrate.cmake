@@ -1,0 +1,50 @@
+if(NOT DEFINED MMAY_TEST_TOOL OR NOT DEFINED MMAY_TEST_SOURCE)
+  message(FATAL_ERROR "CLI migration test variables are missing")
+endif()
+string(RANDOM LENGTH 12 ALPHABET 0123456789abcdef nonce)
+set(root "${CMAKE_CURRENT_BINARY_DIR}/cli-migration-${nonce}")
+file(MAKE_DIRECTORY "${root}")
+execute_process(COMMAND "${MMAY_TEST_TOOL}" fmt "${MMAY_TEST_SOURCE}" --check
+  RESULT_VARIABLE status ERROR_VARIABLE error)
+if(NOT status EQUAL 0)
+  message(FATAL_ERROR "migration format: ${error}")
+endif()
+execute_process(COMMAND "${MMAY_TEST_TOOL}" build "${MMAY_TEST_SOURCE}" --release
+  --allow-read "${root}" --allow-write "${root}" --output "${root}/migrate"
+  RESULT_VARIABLE status ERROR_VARIABLE error)
+if(NOT status EQUAL 0)
+  message(FATAL_ERROR "migration build: ${error}")
+endif()
+set(input "{\"version\":1,\"items\":[{\"id\":7,\"name\":\"Mara 🌿\",\"tags\":[\"work\"],\"labels\":{\"priority\":2},\"status\":{\"kind\":\"active\"}}]}")
+string(REPLACE "\"version\":1" "\"version\":2" expected "${input}")
+foreach(engine vm native)
+  if(engine STREQUAL "vm")
+    set(command "${MMAY_TEST_TOOL}" run "${MMAY_TEST_SOURCE}"
+      --allow-read "${root}" --allow-write "${root}" --)
+  else()
+    set(command "${root}/migrate")
+  endif()
+  file(WRITE "${root}/input.json" "${input}")
+  set(destination "${root}/${engine}.json")
+  execute_process(COMMAND ${command} "${root}/input.json" "${destination}"
+    RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+  if(NOT status EQUAL 0 OR NOT output STREQUAL "Migrated configuration to version 2.\n"
+      OR NOT error STREQUAL "")
+    message(FATAL_ERROR "migration ${engine}: ${status}/${output}/${error}")
+  endif()
+  file(READ "${destination}" actual)
+  if(NOT actual STREQUAL expected)
+    message(FATAL_ERROR "migration output differs: ${actual}")
+  endif()
+  foreach(invalid IN ITEMS "{}" "{\"version\":2,\"items\":[]}"
+      "{\"version\":1,\"items\":[],\"unknown\":true}")
+    file(WRITE "${root}/input.json" "${invalid}")
+    execute_process(COMMAND ${command} "${root}/input.json" "${destination}"
+      RESULT_VARIABLE status OUTPUT_VARIABLE output ERROR_VARIABLE error)
+    file(READ "${destination}" actual)
+    if(NOT status EQUAL 1 OR NOT output STREQUAL "" OR error STREQUAL ""
+        OR NOT actual STREQUAL expected)
+      message(FATAL_ERROR "migration rejection ${engine}: ${status}/${output}/${error}/${actual}")
+    endif()
+  endforeach()
+endforeach()

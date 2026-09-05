@@ -605,6 +605,7 @@ bool mmay_compound_assignment_kind(
         return false;
     }
     if (inner->kind == MMAY_SYNTAX_CALL_EXPRESSION
+        || inner->kind == MMAY_SYNTAX_MATCH_EXPRESSION
         || inner->kind == MMAY_SYNTAX_TRY_EXPRESSION) {
         memset(&value, 0, sizeof(value));
         if (!mmay_compile_expression(
@@ -620,7 +621,8 @@ bool mmay_compound_assignment_kind(
             );
             return false;
         }
-        if (inner->kind == MMAY_SYNTAX_CALL_EXPRESSION
+        if ((inner->kind == MMAY_SYNTAX_CALL_EXPRESSION
+                || inner->kind == MMAY_SYNTAX_MATCH_EXPRESSION)
             && !mmay_expression_is_never(function, &value)) {
             const MarimayTypeDescriptor *descriptor = mmay_type_descriptor(
                 &function->checker->result->types,

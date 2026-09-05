@@ -97,6 +97,14 @@ const MarimayCheckedRecord *mmay_check_imported_record_by_type(
     const MarimayChecker *checker,
     MarimayTypeId type
 );
+const MarimayCheckedRecord *mmay_check_imported_record_by_name(
+    const MarimayChecker *checker,
+    MarimayCheckName namespace_name,
+    bool has_namespace,
+    MarimayCheckName name,
+    MarimayTypeId *type,
+    bool *exists_private
+);
 const MarimayCheckedEnum *mmay_check_imported_enum_by_type(
     const MarimayChecker *checker,
     MarimayTypeId type

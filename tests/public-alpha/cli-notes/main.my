@@ -1,0 +1,283 @@
+import * as cli from "std/cli";
+import * as convert from "std/convert";
+import * as fs from "std/fs";
+import * as io from "std/io";
+import * as json from "std/json";
+import * as path from "std/path";
+import * as text from "std/text";
+
+import * as notes from "local/marimay-notes/notes";
+
+fn fail(message: string): int {
+  const _ = io.eprintln($"marimay-notes: {message}");
+  return 1;
+}
+
+fn commandParser(): cli.Parser {
+  return match cli.newParser(
+    "marimay-notes",
+    "Keep a small local notes database in a bounded JSON file.",
+    [
+      cli.flagOption("help", Some("h"), false, false, "Show this help text."),
+      cli.requiredValueOption(
+        "db",
+        Some("d"),
+        "PATH",
+        false,
+        false,
+        "Use PATH instead of notes.json.",
+      ),
+      cli.requiredValueOption(
+        "tag",
+        Some("t"),
+        "TAG",
+        false,
+        true,
+        "Attach TAG when adding a note; may be repeated.",
+      ),
+    ],
+    [
+      cli.positional("command", false, false, "add, list, show, or remove"),
+      cli.positional("argument", false, true, "command argument"),
+    ],
+    cli.defaultLimits(),
+  ) {
+    Ok(parser) => parser,
+    Err(error) => panic(cli.message(error)),
+  };
+}
+
+fn firstOption(parsed: cli.Parsed, name: string): Option<string> {
+  const values = cli.occurrences(parsed, name);
+  if values.length() == 0 {
+    return None;
+  }
+  return values[0];
+}
+
+fn optionValueOr(parsed: cli.Parsed, name: string, fallback: string): string {
+  return match firstOption(parsed, name) {
+    Some(value) => value,
+    None => fallback,
+  };
+}
+
+fn tags(parsed: cli.Parsed): []string {
+  let result: []string = [];
+  for occurrence in cli.occurrences(parsed, "tag") {
+    const _ = match occurrence {
+      Some(value) => {
+        const _ = result.push(value);
+        true
+      },
+      None => false,
+    };
+  }
+  return result;
+}
+
+fn databasePath(parsed: cli.Parsed): Result<path.Path, path.Error> {
+  return path.fromString(optionValueOr(parsed, "db", "notes.json"));
+}
+
+fn loadDatabase(filePath: path.Path): Option<notes.Database> {
+  return match fs.readBytes(filePath, 1048576) {
+    Ok(contents) => match notes.decode(contents) {
+      Ok(database) => Some(database),
+      Err(error) => {
+        const _ = fail($"invalid notes database: {error}");
+        None
+      },
+    },
+    Err(error) => match error {
+      fs.NotFound => Some(notes.empty()),
+      _ => {
+        const _ = fail(fs.message(error));
+        None
+      },
+    },
+  };
+}
+
+fn saveDatabase(filePath: path.Path, database: notes.Database): bool {
+  const encoded = match notes.encode(database) {
+    Ok(value) => value,
+    Err(error) => {
+      const _ = fail($"could not encode notes database: {json.message(error)}");
+      return false;
+    },
+  };
+  return match fs.writeBytes(filePath, encoded) {
+    Ok(_) => true,
+    Err(error) => {
+      const _ = fail(fs.message(error));
+      false
+    },
+  };
+}
+
+fn printHelp(parser: cli.Parser): int {
+  const help = match cli.help(parser, 80) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(cli.message(error));
+    },
+  };
+  return match io.print(help) {
+    Ok(_) => 0,
+    Err(error) => fail(io.message(error)),
+  };
+}
+
+fn formatNote(note: notes.Note): string {
+  if note.tags.length() == 0 {
+    return $"#{note.id} {note.text}";
+  }
+  const joined = match text.join(note.tags, ", ", 1048576) {
+    Ok(value) => value,
+    Err(_) => "<tags exceed output limit>",
+  };
+  return $"#{note.id} {note.text} [{joined}]";
+}
+
+fn printNote(note: notes.Note): Result<void, io.Error> {
+  return io.println(formatNote(note));
+}
+
+fn parseId(value: string): Option<int> {
+  return match convert.parseInt(value) {
+    Ok(id) => {
+      if id > 0 {
+        return Some(id);
+      }
+      None
+    },
+    Err(_) => None,
+  };
+}
+
+fn addNote(parsed: cli.Parsed, filePath: path.Path, database: notes.Database, arguments: []string): int {
+  if arguments.length() != 1 {
+    return fail("usage: marimay-notes add TEXT [--tag TAG]...");
+  }
+  const added = match notes.add(database, arguments[0], tags(parsed)) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail(error);
+    },
+  };
+  if !saveDatabase(filePath, added.database) {
+    return 1;
+  }
+  return match io.println($"Added note #{added.note.id}.") {
+    Ok(_) => 0,
+    Err(error) => fail(io.message(error)),
+  };
+}
+
+fn listNotes(database: notes.Database, arguments: []string): int {
+  if arguments.length() != 0 {
+    return fail("usage: marimay-notes list");
+  }
+  if database.notes.length() == 0 {
+    return match io.println("No notes.") {
+      Ok(_) => 0,
+      Err(error) => fail(io.message(error)),
+    };
+  }
+  for note in database.notes {
+    const _ = match printNote(note) {
+      Ok(_) => true,
+      Err(error) => {
+        return fail(io.message(error));
+      },
+    };
+  }
+  return 0;
+}
+
+fn showNote(database: notes.Database, arguments: []string): int {
+  if arguments.length() != 1 {
+    return fail("usage: marimay-notes show ID");
+  }
+  const id = match parseId(arguments[0]) {
+    Some(value) => value,
+    None => {
+      return fail("ID must be a positive integer");
+    },
+  };
+  return match database.find(id) {
+    Some(note) => match printNote(note) {
+      Ok(_) => 0,
+      Err(error) => fail(io.message(error)),
+    },
+    None => fail($"note #{id} was not found"),
+  };
+}
+
+fn removeNote(database: notes.Database, filePath: path.Path, arguments: []string): int {
+  if arguments.length() != 1 {
+    return fail("usage: marimay-notes remove ID");
+  }
+  const id = match parseId(arguments[0]) {
+    Some(value) => value,
+    None => {
+      return fail("ID must be a positive integer");
+    },
+  };
+  if !database.remove(id) {
+    return fail($"note #{id} was not found");
+  }
+  if !saveDatabase(filePath, database) {
+    return 1;
+  }
+  return match io.println($"Removed note #{id}.") {
+    Ok(_) => 0,
+    Err(error) => fail(io.message(error)),
+  };
+}
+
+fn run(parsed: cli.Parsed, parser: cli.Parser): int {
+  const commands = cli.positionalValues(parsed, "command");
+  if cli.count(parsed, "help") != 0 || commands.length() == 0 {
+    return printHelp(parser);
+  }
+  const filePath = match databasePath(parsed) {
+    Ok(value) => value,
+    Err(_) => {
+      return fail("invalid database path");
+    },
+  };
+  const database = match loadDatabase(filePath) {
+    Some(value) => value,
+    None => {
+      return 1;
+    },
+  };
+  const command = commands[0];
+  const arguments = cli.positionalValues(parsed, "argument");
+  if command == "add" {
+    return addNote(parsed, filePath, database, arguments);
+  }
+  if command == "list" {
+    return listNotes(database, arguments);
+  }
+  if command == "show" {
+    return showNote(database, arguments);
+  }
+  if command == "remove" {
+    return removeNote(database, filePath, arguments);
+  }
+  return fail($"unknown command: {command}");
+}
+
+fn main(arguments: []string): int {
+  const parser = commandParser();
+  return match cli.parse(parser, arguments) {
+    Ok(parsed) => run(parsed, parser),
+    Err(error) => {
+      const _ = io.eprintln(cli.message(error));
+      cli.usageExitStatus()
+    },
+  };
+}

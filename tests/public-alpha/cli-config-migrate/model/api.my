@@ -1,0 +1,288 @@
+import * as json from "std/json";
+
+public enum Status {
+  Active,
+  Paused { reason: string, },
+}
+
+public type Item {
+  public id: int,
+  public name: string,
+  public tags: []string,
+  public labels: Map<string, int>,
+  public status: Status,
+  secret: string,
+}
+
+public type Catalog {
+  public version: int,
+  public items: []Item,
+}
+
+public type Codec {
+  unknownFields: json.UnknownFields,
+}
+
+public fn newCodec(unknownFields: json.UnknownFields): Codec {
+  return Codec { unknownFields };
+}
+
+fn requiredInt(decoder: json.Decoder, value: Option<int>, name: string): Result<int, json.Error> {
+  return match value {
+    Some(item) => Ok(item),
+    None => Err(json.missingField(decoder, name)),
+  };
+}
+
+fn requiredString(decoder: json.Decoder, value: Option<string>, name: string): Result<string, json.Error> {
+  return match value {
+    Some(item) => Ok(item),
+    None => Err(json.missingField(decoder, name)),
+  };
+}
+
+fn decodeStrings(decoder: json.Decoder): Result<[]string, json.Error> {
+  let result: []string = [];
+  json.beginArray(decoder)?;
+  while json.nextElement(decoder)? {
+    const _ = result.push(json.readString(decoder)?);
+  }
+  return Ok(result);
+}
+
+fn encodeStrings(encoder: json.Encoder, values: []string): Result<void, json.Error> {
+  json.beginArray(encoder)?;
+  for value in values {
+    json.writeString(encoder, value)?;
+  }
+  return json.endArray(encoder);
+}
+
+fn decodeLabels(decoder: json.Decoder): Result<Map<string, int>, json.Error> {
+  const result: Map<string, int> = mapOf<string, int>();
+  json.beginObject(decoder)?;
+  let field = json.nextField(decoder)?;
+  while match field {
+    Some(_) => true,
+    None => false,
+  } {
+    const name = match field {
+      Some(value) => value,
+      None => panic("std/json field presence changed"),
+    };
+    const _ = result.put(name, json.readInt(decoder)?);
+    field = json.nextField(decoder)?;
+  }
+  return Ok(result);
+}
+
+fn encodeLabels(encoder: json.Encoder, labels: Map<string, int>): Result<void, json.Error> {
+  json.beginObject(encoder)?;
+  for entry in labels {
+    const _ = match entry {
+      (name, value) => {
+        json.writeKey(encoder, name)?;
+        json.writeInt(encoder, value)?;
+        true
+      },
+    };
+  }
+  return json.endObject(encoder);
+}
+
+fn decodeStatus(codec: Codec, decoder: json.Decoder): Result<Status, json.Error> {
+  let kind: Option<string> = None;
+  let reason: Option<string> = None;
+  json.beginObject(decoder)?;
+  let field = json.nextField(decoder)?;
+  while match field {
+    Some(_) => true,
+    None => false,
+  } {
+    const name = match field {
+      Some(value) => value,
+      None => panic("std/json field presence changed"),
+    };
+    if name == "kind" {
+      kind = Some(json.readString(decoder)?);
+    } else if name == "reason" {
+      reason = Some(json.readString(decoder)?);
+    } else {
+      json.handleUnknown(decoder, name, codec.unknownFields)?;
+    }
+    field = json.nextField(decoder)?;
+  }
+  const tag = requiredString(decoder, kind, "kind")?;
+  if tag == "active" {
+    return Ok(Status.Active);
+  }
+  if tag == "paused" {
+    return Ok(Status.Paused { reason: requiredString(decoder, reason, "reason")? });
+  }
+  return Err(json.unknownVariant(decoder, tag));
+}
+
+fn encodeStatus(encoder: json.Encoder, value: Status): Result<void, json.Error> {
+  json.beginObject(encoder)?;
+  return match value {
+    Active => {
+      json.writeKey(encoder, "kind")?;
+      json.writeString(encoder, "active")?;
+      json.endObject(encoder)
+    },
+    Paused { reason } => {
+      json.writeKey(encoder, "kind")?;
+      json.writeString(encoder, "paused")?;
+      json.writeKey(encoder, "reason")?;
+      json.writeString(encoder, reason)?;
+      json.endObject(encoder)
+    },
+  };
+}
+
+fn decodeItem(codec: Codec, decoder: json.Decoder): Result<Item, json.Error> {
+  let id: Option<int> = None;
+  let name: Option<string> = None;
+  let tags: Option<[]string> = None;
+  let labels: Option<Map<string, int>> = None;
+  let status: Option<Status> = None;
+  json.beginObject(decoder)?;
+  let field = json.nextField(decoder)?;
+  while match field {
+    Some(_) => true,
+    None => false,
+  } {
+    const fieldName = match field {
+      Some(value) => value,
+      None => panic("std/json field presence changed"),
+    };
+    if fieldName == "id" {
+      id = Some(json.readInt(decoder)?);
+    } else if fieldName == "name" {
+      name = Some(json.readString(decoder)?);
+    } else if fieldName == "tags" {
+      tags = Some(decodeStrings(decoder)?);
+    } else if fieldName == "labels" {
+      labels = Some(decodeLabels(decoder)?);
+    } else if fieldName == "status" {
+      status = Some(decodeStatus(codec, decoder)?);
+    } else {
+      json.handleUnknown(decoder, fieldName, codec.unknownFields)?;
+    }
+    field = json.nextField(decoder)?;
+  }
+  const decodedTags = match tags {
+    Some(value) => value,
+    None => {
+      return Err(json.missingField(decoder, "tags"));
+    },
+  };
+  const decodedLabels = match labels {
+    Some(value) => value,
+    None => {
+      return Err(json.missingField(decoder, "labels"));
+    },
+  };
+  const decodedStatus = match status {
+    Some(value) => value,
+    None => {
+      return Err(json.missingField(decoder, "status"));
+    },
+  };
+  return Ok(
+    Item {
+      id: requiredInt(decoder, id, "id")?,
+      name: requiredString(decoder, name, "name")?,
+      tags: decodedTags,
+      labels: decodedLabels,
+      status: decodedStatus,
+      secret: "codec-owned-default",
+    },
+  );
+}
+
+fn encodeItem(encoder: json.Encoder, value: Item): Result<void, json.Error> {
+  json.beginObject(encoder)?;
+  json.writeKey(encoder, "id")?;
+  json.writeInt(encoder, value.id)?;
+  json.writeKey(encoder, "name")?;
+  json.writeString(encoder, value.name)?;
+  json.writeKey(encoder, "tags")?;
+  encodeStrings(encoder, value.tags)?;
+  json.writeKey(encoder, "labels")?;
+  encodeLabels(encoder, value.labels)?;
+  json.writeKey(encoder, "status")?;
+  encodeStatus(encoder, value.status)?;
+  return json.endObject(encoder);
+}
+
+fn decodeItems(codec: Codec, decoder: json.Decoder): Result<[]Item, json.Error> {
+  let result: []Item = [];
+  json.beginArray(decoder)?;
+  while json.nextElement(decoder)? {
+    const _ = result.push(decodeItem(codec, decoder)?);
+  }
+  return Ok(result);
+}
+
+fn encodeItems(encoder: json.Encoder, values: []Item): Result<void, json.Error> {
+  json.beginArray(encoder)?;
+  for value in values {
+    encodeItem(encoder, value)?;
+  }
+  return json.endArray(encoder);
+}
+
+public fn decode(codec: Codec, decoder: json.Decoder): Result<Catalog, json.Error> {
+  let version: Option<int> = None;
+  let items: Option<[]Item> = None;
+  json.beginObject(decoder)?;
+  let field = json.nextField(decoder)?;
+  while match field {
+    Some(_) => true,
+    None => false,
+  } {
+    const name = match field {
+      Some(value) => value,
+      None => panic("std/json field presence changed"),
+    };
+    if name == "version" {
+      version = Some(json.readInt(decoder)?);
+    } else if name == "items" {
+      items = Some(decodeItems(codec, decoder)?);
+    } else {
+      json.handleUnknown(decoder, name, codec.unknownFields)?;
+    }
+    field = json.nextField(decoder)?;
+  }
+  const decodedItems = match items {
+    Some(value) => value,
+    None => {
+      return Err(json.missingField(decoder, "items"));
+    },
+  };
+  return Ok(Catalog { version: requiredInt(decoder, version, "version")?, items: decodedItems });
+}
+
+public fn encode(codec: Codec, encoder: json.Encoder, value: Catalog): Result<void, json.Error> {
+  const _ = codec;
+  json.beginObject(encoder)?;
+  json.writeKey(encoder, "version")?;
+  json.writeInt(encoder, value.version)?;
+  json.writeKey(encoder, "items")?;
+  encodeItems(encoder, value.items)?;
+  return json.endObject(encoder);
+}
+
+public fn transform(value: Catalog): Catalog {
+  return Catalog { version: value.version + 1, items: value.items };
+}
+
+public fn privateStateIntact(value: Catalog): bool {
+  for item in value.items {
+    if item.secret != "codec-owned-default" {
+      return false;
+    }
+  }
+  return true;
+}

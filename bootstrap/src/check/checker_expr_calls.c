@@ -4,6 +4,7 @@
 #include "checker_expr_nominal_api.h"
 #include "checker_expr_interfaces_api.h"
 #include "checker_expr_records_api.h"
+#include "checker_imported_nominal_api.h"
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
 #include "checker_generic_specialization_api.h"
@@ -48,6 +49,8 @@
     MarimayExpressionValue left;
     MarimayExpressionValue right;
     MarimayCheckRecordDeclaration *record_declaration = NULL;
+    const MarimayCheckedRecord *imported_record = NULL;
+    MarimayCheckRecordDeclaration concrete_record;
     MarimayMirRecordId record = MMAY_MIR_NO_RECORD;
     MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
     MarimayMirInstruction instruction;
@@ -178,6 +181,9 @@
         left.type
     );
     if (record_declaration == NULL) {
+        imported_record = mmay_check_imported_record_by_type(function->checker, left.type);
+    }
+    if (record_declaration == NULL && imported_record == NULL) {
         (void)mmay_checker_add_diagnostic(
             function->checker,
             MMAY_DIAGNOSTIC_TYPE_MISMATCH,
@@ -209,7 +215,13 @@
         );
         return false;
     }
-    if (!mmay_checker_private_function_record_layout(function, record_declaration, &record)
+    if (record_declaration != NULL) {
+        concrete_record = *record_declaration;
+        concrete_record.type = left.type;
+    }
+    if (!(imported_record != NULL
+            ? mmay_checker_private_imported_record_layout(function, imported_record, left.type, &record)
+            : mmay_checker_private_function_record_layout(function, &concrete_record, &record))
         || !mmay_function_add_register(function, MMAY_TYPE_BOOL, &target)) {
         return false;
     }
