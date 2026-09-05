@@ -1,5 +1,16 @@
-import { interfaceStackScore, newHeap, newQueue, newStack } from "example/cp16-receiver-names/collections";
-import { namedStack, namespaceQueue, typeOnlyHeap, typeOnlyQueue, typeOnlyStack } from "example/cp16-receiver-names/consumer";
+import {
+  interfaceStackScore,
+  newHeap,
+  newQueue,
+  newStack,
+} from "example/cp16-receiver-names/collections";
+import {
+  namedStack,
+  namespaceQueue,
+  typeOnlyHeap,
+  typeOnlyQueue,
+  typeOnlyStack,
+} from "example/cp16-receiver-names/consumer";
 
 @test
 fn receiverCollectionNamesWork(): void {

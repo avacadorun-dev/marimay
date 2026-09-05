@@ -307,7 +307,9 @@ fn helpIsDeterministicAndWidthBounded(): void {
   require(first == second, "deterministic help");
   require(
     match first {
-      Ok(value) => value == "Usage: cp37-demo [options] [<input>] [<extra>...]\n\n    Parse a bounded deterministic command line.\n\nOptions:\n  -h, --help\n    Show this help text.\n  -v, --verbose\n    Increase diagnostic detail.\n  -q, --quiet\n    Suppress ordinary output.\n  -c, --count <COUNT>\n    Select a signed item count.\n  -C, --color[=<WHEN>]\n    Enable color with an optional policy.\n  -t, --tag <TAG>\n    Attach a repeatable tag.\n\nArguments:\n  [<input>]\n    Input path to process.\n  [<extra>...]\n    Additional input values.\n",
+      Ok(
+        value,
+      ) => value == "Usage: cp37-demo [options] [<input>] [<extra>...]\n\n    Parse a bounded deterministic command line.\n\nOptions:\n  -h, --help\n    Show this help text.\n  -v, --verbose\n    Increase diagnostic detail.\n  -q, --quiet\n    Suppress ordinary output.\n  -c, --count <COUNT>\n    Select a signed item count.\n  -C, --color[=<WHEN>]\n    Enable color with an optional policy.\n  -t, --tag <TAG>\n    Attach a repeatable tag.\n\nArguments:\n  [<input>]\n    Input path to process.\n  [<extra>...]\n    Additional input values.\n",
       Err(_) => false,
     },
     "help snapshot",

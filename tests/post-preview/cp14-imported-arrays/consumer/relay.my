@@ -1,4 +1,8 @@
-import { RelayedScores, makeRelayedScores, mutateRelayed } from "example/cp14-imported-arrays/relay";
+import {
+  RelayedScores,
+  makeRelayedScores,
+  mutateRelayed,
+} from "example/cp14-imported-arrays/relay";
 
 public fn relayArraysWork(): bool {
   const scores: RelayedScores = makeRelayedScores();

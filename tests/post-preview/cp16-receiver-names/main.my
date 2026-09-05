@@ -1,7 +1,18 @@
 import { Error as IoError, println } from "std/io";
 
-import { interfaceStackScore, newHeap, newQueue, newStack } from "example/cp16-receiver-names/collections";
-import { namedStack, namespaceQueue, typeOnlyHeap, typeOnlyQueue, typeOnlyStack } from "example/cp16-receiver-names/consumer";
+import {
+  interfaceStackScore,
+  newHeap,
+  newQueue,
+  newStack,
+} from "example/cp16-receiver-names/collections";
+import {
+  namedStack,
+  namespaceQueue,
+  typeOnlyHeap,
+  typeOnlyQueue,
+  typeOnlyStack,
+} from "example/cp16-receiver-names/consumer";
 
 fn checkpoint16Works(): bool {
   return typeOnlyStack(newStack()) == 170

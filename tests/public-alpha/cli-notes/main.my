@@ -156,7 +156,12 @@ fn parseId(value: string): Option<int> {
   };
 }
 
-fn addNote(parsed: cli.Parsed, filePath: path.Path, database: notes.Database, arguments: []string): int {
+fn addNote(
+  parsed: cli.Parsed,
+  filePath: path.Path,
+  database: notes.Database,
+  arguments: []string,
+): int {
   if arguments.length() != 1 {
     return fail("usage: marimay-notes add TEXT [--tag TAG]...");
   }

@@ -1,4 +1,8 @@
-import { Scores as ImportedScores, makeScores as createScores, mutateScores as amendScores } from "example/cp14-imported-arrays/producer";
+import {
+  Scores as ImportedScores,
+  makeScores as createScores,
+  mutateScores as amendScores,
+} from "example/cp14-imported-arrays/producer";
 
 public fn aliasedArraysWork(): bool {
   const scores: ImportedScores = createScores();

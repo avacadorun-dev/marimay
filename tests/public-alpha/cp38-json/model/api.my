@@ -34,7 +34,11 @@ fn requiredInt(decoder: json.Decoder, value: Option<int>, name: string): Result<
   };
 }
 
-fn requiredString(decoder: json.Decoder, value: Option<string>, name: string): Result<string, json.Error> {
+fn requiredString(
+  decoder: json.Decoder,
+  value: Option<string>,
+  name: string,
+): Result<string, json.Error> {
   return match value {
     Some(item) => Ok(item),
     None => Err(json.missingField(decoder, name)),

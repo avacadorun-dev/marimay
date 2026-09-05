@@ -112,3 +112,24 @@ close CP42/CLI0, claim a sustained fuzz campaign, or publish an artifact.
 Structured JSON field/index paths and intrinsic completion metadata still
 need completion; collection helpers, mutation return contracts, Option control
 flow and a consistent notes mutation API remain subsequent CP42 work.
+
+## Formatter integration before main handoff
+
+The JSON/startup commit `838191e` and formatter commit `5423e50` were joined
+at `93c8eaf`. The formatter now measures canonical group text, pending
+indentation and the same-line suffix rather than original source spacing.
+Fifteen existing source fixtures were mechanically reformatted to match;
+their assertions and application behavior were not changed.
+
+The merged Debug suite ran all 67 CTests in 352.23 seconds. It passed 65;
+the CP14/CP15 and CP16/CP17 shards failed only their canonical-format checks
+against old copied fixtures. After updating the source fixtures and running
+`cmake --preset debug` again to refresh the copied corpus, both failed shards
+passed `ctest --test-dir build/debug --rerun-failed --output-on-failure -j 2`
+in 44.99 seconds. Thus every registered test passed, with the two fixture
+corrections verified by a focused rerun rather than a second full-suite run.
+
+The merged ASan/UBSan frontend, match-format and `mmay_format_.*` selection
+passed all ten tests in 18.40 seconds. Each changed source file also passed
+`mmay fmt --check`. This integration result remains local macOS evidence;
+it does not establish a successful Linux CI or sustained fuzz campaign.

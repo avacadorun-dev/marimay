@@ -55,7 +55,9 @@ fn typedCodecRoundTripIsDeterministicAndPrivate(): void {
   const value = decodeCatalog(input, json.UnknownFields.Skip);
   require(model.privateStateIntact(value), "private codec state");
   require(
-    encodeCatalog(model.transform(value)) == "{\"version\":2,\"items\":[{\"id\":7,\"name\":\"Mara 🌿\",\"tags\":[\"alpha\",\"json\"],\"labels\":{\"priority\":2,\"attempts\":1},\"status\":{\"kind\":\"paused\",\"reason\":\"review\"}}]}",
+    encodeCatalog(
+      model.transform(value),
+    ) == "{\"version\":2,\"items\":[{\"id\":7,\"name\":\"Mara 🌿\",\"tags\":[\"alpha\",\"json\"],\"labels\":{\"priority\":2,\"attempts\":1},\"status\":{\"kind\":\"paused\",\"reason\":\"review\"}}]}",
     "deterministic typed encoding",
   );
 }

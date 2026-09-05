@@ -30,7 +30,9 @@ fn databaseRoundTrip(): void {
   };
   require(database.notes[0].text == "Hi 🌿", "typed nested record");
   require(
-    encoded(database) == "{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"text\":\"Hi 🌿\",\"tags\":[]}]}",
+    encoded(
+      database,
+    ) == "{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"text\":\"Hi 🌿\",\"tags\":[]}]}",
     "declaration order and empty array",
   );
 }

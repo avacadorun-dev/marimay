@@ -44,7 +44,9 @@ fn nested(value: Result<model.Choice<int>, int>): int {
   return match value {
     Ok(model.Choice.Empty) => 1,
     Ok(model.Choice.Value(item)) => item + 2,
-    Ok(model.Choice.Named { value: item }) => item + 3, // Existing nested coverage analysis still requires a remainder arm.
+    Ok(
+      model.Choice.Named { value: item },
+    ) => item + 3, // Existing nested coverage analysis still requires a remainder arm.
     Ok(_) => panic("all known Choice variants should match above"),
     Err(error) => -error,
   };

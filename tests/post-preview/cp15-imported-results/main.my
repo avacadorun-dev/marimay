@@ -1,7 +1,12 @@
 import { Error as IoError, println } from "std/io";
 
 import { namespaceShadowingWorks } from "example/cp15-imported-results/collision";
-import { directResultsWork, errorPropagationWorks, namespaceResultsWork, relayedResultsWork } from "example/cp15-imported-results/consumer";
+import {
+  directResultsWork,
+  errorPropagationWorks,
+  namespaceResultsWork,
+  relayedResultsWork,
+} from "example/cp15-imported-results/consumer";
 
 fn main(): Result<void, IoError> {
   if !directResultsWork()

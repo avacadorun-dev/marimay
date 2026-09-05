@@ -1,4 +1,12 @@
-import { Choice, Problem, failure, nestedNone, nestedSome, none, some } from "example/cp15-imported-results/producer";
+import {
+  Choice,
+  Problem,
+  failure,
+  nestedNone,
+  nestedSome,
+  none,
+  some,
+} from "example/cp15-imported-results/producer";
 
 enum ConsumerError {
   Producer(Problem),
