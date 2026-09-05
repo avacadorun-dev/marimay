@@ -517,6 +517,10 @@ MarimayNativeCEmitStatus mmay_native_c_validate_function(
                 case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
                 case MMAY_MIR_COLLECTION_ENTRY_KEY:
                 case MMAY_MIR_COLLECTION_ENTRY_VALUE:
+                case MMAY_MIR_COLLECTION_GET_OPTION:
+                case MMAY_MIR_COLLECTION_REMOVE_OPTION:
+                case MMAY_MIR_COLLECTION_PUT_RESULT:
+                case MMAY_MIR_COLLECTION_ADD_RESULT:
                 case MMAY_MIR_RECORD_NEW: case MMAY_MIR_RECORD_GET:
                 case MMAY_MIR_RECORD_SET: case MMAY_MIR_RECORD_IDENTITY_SAME:
                 case MMAY_MIR_ENUM_NEW: case MMAY_MIR_ENUM_IS_VARIANT:

@@ -164,3 +164,7 @@ Stage 0 codec.
 | 151 | `collection_entry_key` | `destination:register`, `collection:register`, `index:register` | — | Read an insertion-order key at a defensively checked active index. |
 | 152 | `collection_entry_value` | `destination:register`, `collection:register`, `index:register` | — | Read an insertion-order Map value at a defensively checked active index. |
 | 153 | `test_assert` | `destination:register`, `condition:register`, `message:register` | `may_panic` | Complete one compiler-known expectation or panic with G4004 at its source span. |
+| 154 | `collection_get_option` | `destination:register`, `collection:register`, `key:register` | `may_panic` | Read one Map key into Option with exactly one collection lookup. |
+| 155 | `collection_remove_option` | `destination:register`, `collection:register`, `key:register` | `may_panic` | Remove one Map key into Option with exactly one collection lookup. |
+| 156 | `collection_put_result` | `destination:register`, `collection:register`, `key:register`, `value:register` | `may_panic` | Insert or update one Map entry and return its typed growth result after one lookup. |
+| 157 | `collection_add_result` | `destination:register`, `collection:register`, `key:register` | `may_panic` | Insert one Set element and return its typed growth result after one lookup. |

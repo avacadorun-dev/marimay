@@ -100,6 +100,15 @@ static uint64_t mmay_managed_map_hash_words(
     return mmay_hash_sip24(words, sizeof(words), seed0, seed1);
 }
 
+static uint64_t mmay_managed_map_hash_raw64(
+    uint64_t value,
+    uint64_t seed0,
+    uint64_t seed1
+) {
+    /* Keep keyed SipHash; specialize dispatch, not collision resistance. */
+    return mmay_hash_sip24(&value, sizeof(value), seed0, seed1);
+}
+
 static MarimayManagedStatus mmay_managed_map_value_hash(
     const MarimayManagedHeap *heap,
     const MarimayManagedFieldDescriptor *field,
@@ -266,8 +275,8 @@ static MarimayManagedStatus mmay_managed_map_value_hash(
         if (!mmay_managed_map_field_valid(field, true)) {
             return MMAY_MANAGED_INVALID_ARGUMENT;
         }
-        *result = mmay_hash_sip24(
-            &value.f64_bits, sizeof(value.f64_bits),
+        *result = mmay_managed_map_hash_raw64(
+            value.f64_bits,
             heap->options.collection_hash_seed0,
             heap->options.collection_hash_seed1
         );
@@ -520,13 +529,19 @@ static MarimayManagedStatus mmay_managed_map_find(
             return MMAY_MANAGED_INVALID_REFERENCE;
         }
         if (map->entries[candidate].hash == hash) {
-            bool equal = false;
-            MarimayManagedStatus status = mmay_managed_map_value_equal(
-                heap, &map->descriptor->key, map->entries[candidate].key,
-                key, 0, &equal
-            );
-            if (status != MMAY_MANAGED_OK) {
-                return status;
+            bool equal = map->descriptor->key.cell_kind
+                    == MMAY_MANAGED_CELL_RAW64
+                ? map->entries[candidate].key.f64_bits == key.f64_bits
+                : false;
+            if (map->descriptor->key.cell_kind
+                != MMAY_MANAGED_CELL_RAW64) {
+                MarimayManagedStatus status = mmay_managed_map_value_equal(
+                    heap, &map->descriptor->key, map->entries[candidate].key,
+                    key, 0, &equal
+                );
+                if (status != MMAY_MANAGED_OK) {
+                    return status;
+                }
             }
             if (equal) {
                 *bucket = position;
@@ -873,7 +888,8 @@ static MarimayManagedStatus mmay_managed_map_lookup(
     const MarimayManagedMap **map_result,
     size_t *bucket,
     size_t *entry,
-    bool *found
+    bool *found,
+    uint64_t *hash_result
 ) {
     const MarimayManagedMap *map = NULL;
     uint64_t hash = 0;
@@ -883,16 +899,27 @@ static MarimayManagedStatus mmay_managed_map_lookup(
     if (status != MMAY_MANAGED_OK) {
         return status;
     }
-    status = mmay_managed_validate_field(heap, &map->descriptor->key, key);
-    if (status != MMAY_MANAGED_OK) {
-        return status;
+    if (map->descriptor->key.cell_kind == MMAY_MANAGED_CELL_RAW64) {
+        hash = mmay_managed_map_hash_raw64(
+            key.f64_bits,
+            heap->options.collection_hash_seed0,
+            heap->options.collection_hash_seed1
+        );
+    } else {
+        status = mmay_managed_validate_field(
+            heap, &map->descriptor->key, key
+        );
+        if (status != MMAY_MANAGED_OK) {
+            return status;
+        }
+        status = mmay_managed_map_value_hash(
+            heap, &map->descriptor->key, key, 0, &hash
+        );
+        if (status != MMAY_MANAGED_OK) {
+            return status;
+        }
     }
-    status = mmay_managed_map_value_hash(
-        heap, &map->descriptor->key, key, 0, &hash
-    );
-    if (status != MMAY_MANAGED_OK) {
-        return status;
-    }
+    if (hash_result != NULL) *hash_result = hash;
     if (map->bucket_capacity == 0) {
         *bucket = MMAY_MAP_EMPTY;
         *entry = MMAY_MAP_EMPTY;
@@ -927,7 +954,7 @@ MarimayManagedStatus mmay_managed_map_contains(
         return MMAY_MANAGED_INVALID_ARGUMENT;
     }
     status = mmay_managed_map_lookup(
-        heap, reference, key, &map, &bucket, &entry, &found
+        heap, reference, key, &map, &bucket, &entry, &found, NULL
     );
     (void)map;
     (void)bucket;
@@ -959,7 +986,7 @@ MarimayManagedStatus mmay_managed_map_get(
         return MMAY_MANAGED_INVALID_ARGUMENT;
     }
     status = mmay_managed_map_lookup(
-        heap, reference, key, &map, &bucket, &entry, found
+        heap, reference, key, &map, &bucket, &entry, found, NULL
     );
     (void)bucket;
     if (status == MMAY_MANAGED_OK && *found) {
@@ -984,6 +1011,8 @@ MarimayManagedStatus mmay_managed_map_put(
     size_t entry = MMAY_MAP_EMPTY;
     bool found = false;
     uint64_t hash = 0;
+    size_t previous_buckets = 0;
+    size_t previous_entries = 0;
     MarimayManagedStatus status;
     if (inserted != NULL) {
         *inserted = false;
@@ -992,7 +1021,7 @@ MarimayManagedStatus mmay_managed_map_put(
         return MMAY_MANAGED_INVALID_ARGUMENT;
     }
     status = mmay_managed_map_lookup(
-        heap, reference, key, &lookup_map, &bucket, &entry, &found
+        heap, reference, key, &lookup_map, &bucket, &entry, &found, &hash
     );
     if (status != MMAY_MANAGED_OK) {
         return status;
@@ -1017,18 +1046,17 @@ MarimayManagedStatus mmay_managed_map_put(
         map->mutation_generation += UINT64_C(1);
         return MMAY_MANAGED_OK;
     }
-    if (lookup_map->length >= heap->options.max_collection_length) {
+    if (lookup_map->length >= mmay_managed_language_max_array_length()) {
         return MMAY_MANAGED_LENGTH_LIMIT;
+    }
+    if (lookup_map->length >= heap->options.max_collection_length) {
+        return MMAY_MANAGED_LIMIT_REACHED;
     }
     if (lookup_map->mutation_generation == UINT64_MAX) {
         return MMAY_MANAGED_LIMIT_REACHED;
     }
-    status = mmay_managed_map_value_hash(
-        heap, &lookup_map->descriptor->key, key, 0, &hash
-    );
-    if (status != MMAY_MANAGED_OK) {
-        return status;
-    }
+    previous_buckets = lookup_map->bucket_capacity;
+    previous_entries = lookup_map->entry_count;
     status = mmay_managed_map_ensure_storage(
         heap, reference, &key,
         lookup_map->descriptor->is_set ? NULL : &value,
@@ -1037,9 +1065,13 @@ MarimayManagedStatus mmay_managed_map_put(
     if (status != MMAY_MANAGED_OK) {
         return status;
     }
-    status = mmay_managed_map_find(
-        heap, map, key, hash, &bucket, &entry, &found
-    );
+    /* Reuse the absent bucket unless growth or compaction rebuilt it. */
+    if (map->bucket_capacity != previous_buckets
+        || map->entry_count != previous_entries) {
+        status = mmay_managed_map_find(
+            heap, map, key, hash, &bucket, &entry, &found
+        );
+    }
     if (status != MMAY_MANAGED_OK || found || bucket == MMAY_MAP_EMPTY
         || map->entry_count >= map->entry_capacity) {
         return status != MMAY_MANAGED_OK
@@ -1081,7 +1113,7 @@ MarimayManagedStatus mmay_managed_map_remove(
         return MMAY_MANAGED_INVALID_ARGUMENT;
     }
     status = mmay_managed_map_lookup(
-        heap, reference, key, &lookup_map, &bucket, &entry, &found
+        heap, reference, key, &lookup_map, &bucket, &entry, &found, NULL
     );
     if (status != MMAY_MANAGED_OK || !found) {
         return status;

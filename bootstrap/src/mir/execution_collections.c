@@ -263,7 +263,9 @@ static MarimayMirInterpretStatus mmay_mir_collection_put(
     MarimayMirExecution *execution,
     MarimayMirValue collection_value,
     MarimayMirValue key,
-    const MarimayMirValue *value
+    const MarimayMirValue *value,
+    bool *inserted,
+    bool *length_limit
 ) {
     MarimayMirManagedCollection *collection = mmay_mir_collection_value(
         execution, collection_value
@@ -271,9 +273,12 @@ static MarimayMirInterpretStatus mmay_mir_collection_put(
     size_t entry = SIZE_MAX;
     bool found = false;
     MarimayMirInterpretStatus status;
-    if (collection == NULL || (collection->is_set != (value == NULL))) {
+    if (collection == NULL || inserted == NULL || length_limit == NULL
+        || (collection->is_set != (value == NULL))) {
         return MMAY_MIR_INTERPRET_INVALID_MIR;
     }
+    *inserted = false;
+    *length_limit = false;
     if (value != NULL && (value->type != collection->value_type
         || (mmay_mir_type_is_managed(value->type)
             && !mmay_mir_execution_owns_reference(execution, *value)))) {
@@ -294,8 +299,11 @@ static MarimayMirInterpretStatus mmay_mir_collection_put(
         collection->mutation_generation += 1;
         return MMAY_MIR_INTERPRET_OK;
     }
+    if (collection->length >= (size_t)INT64_MAX) {
+        *length_limit = true;
+        return MMAY_MIR_INTERPRET_OK;
+    }
     if (collection->length >= execution->options.max_collection_length
-        || collection->length >= (size_t)INT64_MAX
         || execution->total_collection_entries
             >= execution->options.max_total_collection_entries) {
         return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
@@ -316,6 +324,7 @@ static MarimayMirInterpretStatus mmay_mir_collection_put(
     collection->length += 1;
     collection->mutation_generation += 1;
     execution->total_collection_entries += 1;
+    *inserted = true;
     return MMAY_MIR_INTERPRET_OK;
 }
 
@@ -341,6 +350,98 @@ static MarimayMirInterpretStatus mmay_mir_collection_generation_panic(
     panic->symbol = function->symbol;
     panic->span = instruction->span;
     return MMAY_MIR_INTERPRET_PANIC;
+}
+
+static MarimayMirInterpretStatus mmay_mir_collection_option(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    MarimayMirManagedCollection *collection,
+    MarimayMirValue key,
+    MarimayMirValue *target,
+    MarimayMirInterpretOptions options
+) {
+    const MarimayMirEnum *option = mmay_mir_enum(
+        function, instruction->enum_id
+    );
+    MarimayMirValue payload;
+    size_t entry = SIZE_MAX;
+    bool found = false;
+    MarimayMirInterpretStatus status = mmay_mir_collection_find(
+        options.execution, collection, key, &entry, &found
+    );
+    if (option == NULL) return MMAY_MIR_INTERPRET_INVALID_MIR;
+    if (status != MMAY_MIR_INTERPRET_OK) return status;
+    memset(&payload, 0, sizeof(payload));
+    if (found) payload = collection->entries[entry].value;
+    if (found && instruction->kind == MMAY_MIR_COLLECTION_REMOVE_OPTION) {
+        if (collection->mutation_generation == UINT64_MAX) {
+            return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
+        }
+        memset(
+            &collection->entries[entry], 0, sizeof(collection->entries[entry])
+        );
+        collection->length -= 1;
+        collection->mutation_generation += 1;
+        options.execution->total_collection_entries -= 1;
+    }
+    return mmay_mir_execution_new_enum(
+        options.execution, function, option, found ? 0U : 1U,
+        found ? &payload : NULL, found ? 1U : 0U,
+        &target->as.reference
+    );
+}
+
+static MarimayMirInterpretStatus mmay_mir_collection_update_result(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction,
+    const MarimayMirValue *collection,
+    const MarimayMirValue *key,
+    const MarimayMirValue *value,
+    MarimayMirValue *target,
+    MarimayMirInterpretOptions options
+) {
+    const MarimayMirEnum *result = mmay_mir_enum(
+        function, instruction->enum_id
+    );
+    const MarimayMirEnum *error = mmay_mir_enum(
+        function, instruction->option_enum_id
+    );
+    MarimayMirValue payload;
+    MarimayMirValue error_value;
+    bool inserted = false;
+    bool length_limit = false;
+    MarimayMirInterpretStatus status;
+    if (result == NULL || error == NULL) {
+        return MMAY_MIR_INTERPRET_INVALID_MIR;
+    }
+    status = mmay_mir_collection_put(
+        options.execution, *collection, *key,
+        instruction->kind == MMAY_MIR_COLLECTION_PUT_RESULT ? value : NULL,
+        &inserted, &length_limit
+    );
+    if (status != MMAY_MIR_INTERPRET_OK) return status;
+    memset(&payload, 0, sizeof(payload));
+    if (!length_limit) {
+        payload.type = MMAY_TYPE_BOOL;
+        payload.as.boolean = inserted;
+        return mmay_mir_execution_new_enum(
+            options.execution, function, result, 0, &payload, 1,
+            &target->as.reference
+        );
+    }
+    payload.type = MMAY_TYPE_I64;
+    payload.as.i64 = INT64_MAX;
+    memset(&error_value, 0, sizeof(error_value));
+    error_value.type = error->type;
+    status = mmay_mir_execution_new_enum(
+        options.execution, function, error, 0, &payload, 1,
+        &error_value.as.reference
+    );
+    if (status != MMAY_MIR_INTERPRET_OK) return status;
+    return mmay_mir_execution_new_enum(
+        options.execution, function, result, 1, &error_value, 1,
+        &target->as.reference
+    );
 }
 
 MarimayMirInterpretStatus mmay_mir_execute_collection_instruction(
@@ -432,14 +533,34 @@ MarimayMirInterpretStatus mmay_mir_execute_collection_instruction(
     }
     if (instruction->kind == MMAY_MIR_COLLECTION_PUT
         || instruction->kind == MMAY_MIR_COLLECTION_ADD) {
+        bool inserted = false;
+        bool length_limit = false;
         status = mmay_mir_collection_put(
             options.execution,
             *first,
             *second,
-            instruction->kind == MMAY_MIR_COLLECTION_PUT ? third : NULL
+            instruction->kind == MMAY_MIR_COLLECTION_PUT ? third : NULL,
+            &inserted,
+            &length_limit
         );
+        if (status == MMAY_MIR_INTERPRET_OK && length_limit) {
+            status = MMAY_MIR_INTERPRET_OBJECT_LIMIT;
+        }
         if (status == MMAY_MIR_INTERPRET_OK) *target = *first;
         return status;
+    }
+    if (instruction->kind == MMAY_MIR_COLLECTION_PUT_RESULT
+        || instruction->kind == MMAY_MIR_COLLECTION_ADD_RESULT) {
+        return mmay_mir_collection_update_result(
+            function, instruction, first, second, third,
+            target, options
+        );
+    }
+    if (instruction->kind == MMAY_MIR_COLLECTION_GET_OPTION
+        || instruction->kind == MMAY_MIR_COLLECTION_REMOVE_OPTION) {
+        return mmay_mir_collection_option(
+            function, instruction, collection, *second, target, options
+        );
     }
     status = mmay_mir_collection_find(
         options.execution, collection, *second, &entry, &found

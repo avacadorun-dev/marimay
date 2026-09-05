@@ -657,7 +657,7 @@ static void mmay_test_managed_map_length_limit(void) {
     ) == MMAY_MANAGED_OK);
     MMAY_EXPECT(mmay_managed_map_put(
         &heap, map, mmay_test_map_raw(3), mmay_test_map_raw(3), &changed
-    ) == MMAY_MANAGED_LENGTH_LIMIT);
+    ) == MMAY_MANAGED_LIMIT_REACHED);
     MMAY_EXPECT(mmay_managed_map_mutation_generation(
         &heap, map, &generation
     ) == MMAY_MANAGED_OK && generation == 2);
@@ -676,7 +676,7 @@ static void mmay_test_managed_map_length_limit(void) {
     changed = true;
     MMAY_EXPECT(mmay_managed_set_add(
         &heap, set, mmay_test_map_raw(3), &changed
-    ) == MMAY_MANAGED_LENGTH_LIMIT && !changed);
+    ) == MMAY_MANAGED_LIMIT_REACHED && !changed);
     MMAY_EXPECT(mmay_managed_set_mutation_generation(
         &heap, set, &generation
     ) == MMAY_MANAGED_OK && generation == 2);

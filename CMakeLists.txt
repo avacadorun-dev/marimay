@@ -419,6 +419,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_verify_fs.c
   bootstrap/src/bytecode/bytecode_verify_context.c
   bootstrap/src/bytecode/bytecode_verify_collections.c
+  bootstrap/src/bytecode/bytecode_opcode_effects.c
   bootstrap/src/bytecode/bytecode_verify_nominal.c
   bootstrap/src/bytecode/bytecode_verify_numeric.c
   bootstrap/src/bytecode/bytecode_verify_provenance.c
@@ -582,6 +583,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/verify_numeric.c
   bootstrap/src/mir/verify_defer.c
   bootstrap/src/mir/verify_support.c
+  bootstrap/src/mir/verify_collections.c
   bootstrap/src/native/build.c
   bootstrap/src/native/runtime_artifact.c
   bootstrap/src/native/toolchain.c

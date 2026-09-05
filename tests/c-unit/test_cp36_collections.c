@@ -8,6 +8,10 @@
 #include "mmay/bytecode/codec.h"
 #include "mmay/check/interpret.h"
 
+void mmay_test_collection_native_failures(
+    const MarimayOwnedBytes *source, MarimaySymbolId entry
+);
+
 typedef struct MarimayCp36Fixture {
     MarimayCheckerImportFixture source;
     MarimayCheckResult checked;
@@ -27,6 +31,38 @@ static const char mmay_cp36_source[] =
     "@derive(Eq, Hash)\n"
     "enum Token { Index { value: int }, Name { value: string }, }\n"
     "public fn probe(): int {\n"
+    "  const refs: Map<string, []int> = mapOf<string, []int>();\n"
+    "  const inserted = match refs.put(\"key\", [41, 42]) {\n"
+    "    Ok(value) => value, Err(_) => false,\n"
+    "  };\n"
+    "  if !inserted { return -10; }\n"
+    "  const updated = match refs.put(\"key\", [43, 44]) {\n"
+    "    Ok(value) => value, Err(_) => true,\n"
+    "  };\n"
+    "  if updated { return -11; }\n"
+    "  const selectedRefs = match refs.get(\"key\") {\n"
+    "    Some(value) => value, None => [0, 0],\n"
+    "  };\n"
+    "  const removedRefs = match refs.remove(\"key\") {\n"
+    "    Some(value) => value, None => [0, 0],\n"
+    "  };\n"
+    "  const absentGet = match refs.get(\"key\") {\n"
+    "    Some(_) => false, None => true,\n"
+    "  };\n"
+    "  const absentRemove = match refs.remove(\"key\") {\n"
+    "    Some(_) => false, None => true,\n"
+    "  };\n"
+    "  const textSet: Set<string> = setOf<string>();\n"
+    "  const firstAdd = match textSet.add(\"ab\") {\n"
+    "    Ok(value) => value, Err(_) => false,\n"
+    "  };\n"
+    "  const secondAdd = match textSet.add(\"ab\") {\n"
+    "    Ok(value) => value, Err(_) => true,\n"
+    "  };\n"
+    "  if selectedRefs[0] != 43 || removedRefs[1] != 44\n"
+    "      || !absentGet || !absentRemove || !firstAdd || secondAdd {\n"
+    "    return -12;\n"
+    "  }\n"
     "  const values: Map<Key, int> = mapOf<Key, int>();\n"
     "  const first = Key { id: 1, label: \"a\" };\n"
     "  const second = Key { id: 2, label: \"b\" };\n"
@@ -132,11 +168,11 @@ static size_t mmay_cp36_functions(
 
 static bool mmay_cp36_collection_kind(MarimayMirInstructionKind kind) {
     return kind >= MMAY_MIR_COLLECTION_NEW
-        && kind <= MMAY_MIR_COLLECTION_ENTRY_VALUE;
+        && kind <= MMAY_MIR_COLLECTION_ADD_RESULT;
 }
 
 static void mmay_cp36_mir_contract(MarimayCp36Fixture *fixture) {
-    bool seen[MMAY_MIR_COLLECTION_ENTRY_VALUE + 1];
+    bool seen[MMAY_MIR_COLLECTION_ADD_RESULT + 1];
     size_t function_index = 0;
     size_t hostile = 0;
     memset(seen, 0, sizeof(seen));
@@ -171,6 +207,29 @@ static void mmay_cp36_mir_contract(MarimayCp36Fixture *fixture) {
                 MMAY_EXPECT(mmay_mir_verify(function)
                     == MMAY_MIR_VERIFY_INVALID_ARGUMENT);
                 instruction->collection = saved;
+                if (instruction->kind >= MMAY_MIR_COLLECTION_GET_OPTION) {
+                    MarimayMirEnumId saved_enum = instruction->enum_id;
+                    MarimayMirEnum *layout = mmay_vector_at(
+                        &function->enums, saved_enum
+                    );
+                    MarimaySymbolId saved_symbol = layout->symbol;
+                    instruction->enum_id = MMAY_MIR_NO_ENUM;
+                    MMAY_EXPECT(mmay_mir_verify(function)
+                        == MMAY_MIR_VERIFY_INVALID_ARGUMENT);
+                    instruction->enum_id = saved_enum;
+                    layout->symbol.bytes[0] ^= 1U;
+                    MMAY_EXPECT(mmay_mir_verify(function)
+                        == MMAY_MIR_VERIFY_TYPE_MISMATCH);
+                    layout->symbol = saved_symbol;
+                    if (instruction->kind == MMAY_MIR_COLLECTION_PUT_RESULT
+                        || instruction->kind == MMAY_MIR_COLLECTION_ADD_RESULT) {
+                        MarimayMirEnumId error = instruction->option_enum_id;
+                        instruction->option_enum_id = MMAY_MIR_NO_ENUM;
+                        MMAY_EXPECT(mmay_mir_verify(function)
+                            == MMAY_MIR_VERIFY_INVALID_ARGUMENT);
+                        instruction->option_enum_id = error;
+                    }
+                }
                 hostile += 1;
             }
         }
@@ -178,9 +237,16 @@ static void mmay_cp36_mir_contract(MarimayCp36Fixture *fixture) {
     }
     MMAY_EXPECT(hostile >= 30);
     for (function_index = MMAY_MIR_COLLECTION_NEW;
-        function_index <= MMAY_MIR_COLLECTION_ENTRY_VALUE;
+        function_index <= MMAY_MIR_COLLECTION_ADD_RESULT;
         function_index += 1) {
-        MMAY_EXPECT(seen[function_index]);
+        /* Public calls now lower to result-bearing operations. */
+        if (function_index == MMAY_MIR_COLLECTION_GET
+            || function_index == MMAY_MIR_COLLECTION_PUT
+            || function_index == MMAY_MIR_COLLECTION_ADD) {
+            MMAY_EXPECT(!seen[function_index]);
+        } else {
+            MMAY_EXPECT(seen[function_index]);
+        }
     }
 }
 
@@ -252,8 +318,10 @@ static void mmay_cp36_mir_oracle(MarimayCp36Fixture *fixture) {
 }
 
 static bool mmay_cp36_opcode(MarimayOpcode opcode) {
-    return opcode >= MMAY_OPCODE_COLLECTION_NEW
-        && opcode <= MMAY_OPCODE_COLLECTION_ENTRY_VALUE;
+    return (opcode >= MMAY_OPCODE_COLLECTION_NEW
+            && opcode <= MMAY_OPCODE_COLLECTION_ENTRY_VALUE)
+        || (opcode >= MMAY_OPCODE_COLLECTION_GET_OPTION
+            && opcode <= MMAY_OPCODE_COLLECTION_ADD_RESULT);
 }
 
 static size_t mmay_cp36_hostile_bytecode(MarimayBytecodeFunction *function) {
@@ -298,6 +366,34 @@ static size_t mmay_cp36_hostile_bytecode(MarimayBytecodeFunction *function) {
             MMAY_EXPECT(mmay_bytecode_verify(function)
                 == MMAY_BYTECODE_VERIFY_TYPE_MISMATCH);
             *layout = saved;
+            if (instruction->opcode >= MMAY_OPCODE_COLLECTION_GET_OPTION) {
+                uint64_t target = instruction->operands[0].unsigned_value;
+                uint32_t result_id = mmay_bytecode_register_layout(
+                    function, (uint32_t)target
+                );
+                const MarimayBytecodeEnumLayout *result =
+                    mmay_bytecode_enum_layout(function, result_id);
+                MarimayBytecodeEnumPayload *payload = mmay_vector_at(
+                    &function->enum_payloads, result->payload_start
+                );
+                MarimayBytecodeType original_type = payload->type;
+                uint64_t key = instruction->operands[2].unsigned_value;
+                payload->type = MMAY_BYTECODE_TYPE_F64;
+                MMAY_EXPECT(mmay_bytecode_verify(function)
+                    == MMAY_BYTECODE_VERIFY_TYPE_MISMATCH);
+                payload->type = original_type;
+                instruction->operands[2].unsigned_value = UINT64_MAX;
+                MMAY_EXPECT(mmay_bytecode_verify(function)
+                    == MMAY_BYTECODE_VERIFY_INVALID_REGISTER);
+                instruction->operands[2].unsigned_value = key;
+                if (instruction->opcode == MMAY_OPCODE_COLLECTION_PUT_RESULT) {
+                    uint64_t value = instruction->operands[3].unsigned_value;
+                    instruction->operands[3].unsigned_value = UINT64_MAX;
+                    MMAY_EXPECT(mmay_bytecode_verify(function)
+                        == MMAY_BYTECODE_VERIFY_INVALID_REGISTER);
+                    instruction->operands[3].unsigned_value = value;
+                }
+            }
             count += 1;
         }
     }
@@ -316,6 +412,8 @@ static void mmay_cp36_bytecode_program(
     MarimayBytecodeExecution execution;
     MarimayBytecodeRunOptions run = mmay_bytecode_run_default_options();
     MarimayBytecodeValue result = {0};
+    MarimayBytecodeExecutionOptions execution_options =
+        mmay_bytecode_execution_default_options();
     size_t function_index = 0;
     size_t hostile = 0;
     memset(&program, 0, sizeof(program));
@@ -346,9 +444,10 @@ static void mmay_cp36_bytecode_program(
         mmay_bytecode_program_default_options(), &decoded
     ) == MMAY_BYTECODE_CODEC_OK);
     MMAY_EXPECT(decoded.functions.length == program.functions.length);
+    execution_options.managed_heap.collect_before_allocation = true;
     MMAY_EXPECT(mmay_bytecode_execution_init(
         &execution, mmay_system_allocator(),
-        mmay_bytecode_execution_default_options()
+        execution_options
     ));
     run.execution = &execution;
     MMAY_EXPECT(mmay_bytecode_run_program(
@@ -431,6 +530,9 @@ static void mmay_cp36_native(
         if (index == 0) {
 #if !defined(_WIN32)
             mmay_test_native_compile_and_run(&source, "ok:i64:16\n", 0);
+            mmay_test_collection_native_failures(
+                &source, fixture->probe->mir.symbol
+            );
 #endif
         } else {
             const MarimayMirInstruction *require =
@@ -655,13 +757,16 @@ static void mmay_cp36_execution_allocation_failures(
                     || status == MMAY_MIR_INTERPRET_ALLOCATION_FAILED);
             } else {
                 MarimayBytecodeExecution execution;
+                MarimayBytecodeExecutionOptions execution_options =
+                    mmay_bytecode_execution_default_options();
                 MarimayBytecodeRunOptions run =
                     mmay_bytecode_run_default_options();
                 MarimayBytecodeValue result = {0};
                 memset(&execution, 0, sizeof(execution));
+                execution_options.managed_heap.collect_before_allocation = true;
                 if (mmay_bytecode_execution_init(
                         &execution, allocator,
-                        mmay_bytecode_execution_default_options()
+                        execution_options
                     )) {
                     MarimayBytecodeRunStatus status;
                     run.execution = &execution;

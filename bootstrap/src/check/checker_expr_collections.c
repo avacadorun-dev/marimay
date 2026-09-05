@@ -7,7 +7,6 @@
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
 
-#include <limits.h>
 #include <string.h>
 
 typedef enum MarimayCollectionOperation {
@@ -443,133 +442,63 @@ static bool mmay_collection_emit_raw(
     return true;
 }
 
-static bool mmay_collection_emit_enum(
+static bool mmay_collection_enum_layout(
     MarimayFunctionChecker *function,
-    MarimayCheckEnumDeclaration *base,
+    const char *base_name,
     MarimayTypeId concrete_type,
-    size_t variant,
-    const MarimayMirEnumArgument *arguments,
-    size_t argument_count,
-    size_t start,
-    size_t end,
-    MarimayExpressionValue *result
+    MarimayMirEnumId *layout
 ) {
+    MarimayCheckEnumDeclaration *base = mmay_collection_prelude_enum(
+        function, base_name
+    );
     MarimayCheckEnumDeclaration concrete;
     if (base == NULL) return false;
     concrete = *base;
     concrete.type = concrete_type;
-    return mmay_checker_private_function_emit_enum_construction(
-        function, &concrete, variant, arguments, argument_count,
-        start, end, result
+    return mmay_checker_private_function_enum_layout(
+        function, &concrete, layout
     );
 }
 
-static bool mmay_collection_emit_bool(
+static bool mmay_collection_emit_result_operation(
     MarimayFunctionChecker *function,
-    bool value,
+    MarimayMirInstructionKind kind,
+    MarimayTypeId target_type,
+    MarimayTypeId error_type,
+    MarimayMirRegister collection_register,
+    MarimayMirRegister key_register,
+    MarimayMirRegister value_register,
+    MarimayMirCollectionId collection_layout,
     size_t start,
     size_t end,
     MarimayExpressionValue *result
 ) {
-    return mmay_function_emit_instruction(
-        function,
-        MMAY_MIR_CONSTANT_BOOL,
-        MMAY_TYPE_BOOL,
-        MMAY_MIR_NO_REGISTER,
-        MMAY_MIR_NO_REGISTER,
-        0,
-        value,
-        start,
-        end,
-        result
-    );
-}
-
-static bool mmay_collection_emit_i64(
-    MarimayFunctionChecker *function,
-    int64_t value,
-    size_t start,
-    size_t end,
-    MarimayExpressionValue *result
-) {
-    return mmay_function_emit_instruction(
-        function,
-        MMAY_MIR_CONSTANT_I64,
-        MMAY_TYPE_I64,
-        MMAY_MIR_NO_REGISTER,
-        MMAY_MIR_NO_REGISTER,
-        value,
-        false,
-        start,
-        end,
-        result
-    );
-}
-
-static bool mmay_collection_emit_wrapped(
-    MarimayFunctionChecker *function,
-    const char *base_name,
-    MarimayTypeId concrete_type,
-    size_t variant,
-    const MarimayExpressionValue *payload,
-    size_t start,
-    size_t end,
-    MarimayMirRegister target
-) {
-    MarimayMirEnumArgument argument;
-    MarimayExpressionValue wrapped;
-    const MarimayMirEnumArgument *arguments = NULL;
-    size_t count = 0;
-    if (payload != NULL) {
-        argument.register_id = payload->register_id;
-        argument.type = payload->type;
-        arguments = &argument;
-        count = 1;
-    }
-    return mmay_collection_emit_enum(
+    MarimayMirInstruction instruction;
+    memset(&instruction, 0, sizeof(instruction));
+    if (!mmay_collection_enum_layout(
             function,
-            mmay_collection_prelude_enum(function, base_name),
-            concrete_type,
-            variant,
-            arguments,
-            count,
-            start,
-            end,
-            &wrapped
-        ) && mmay_checker_private_function_emit_copy(
-            function, target, wrapped.register_id, start, end
-        );
-}
-
-static bool mmay_collection_emit_growth_error(
-    MarimayFunctionChecker *function,
-    MarimayTypeId result_type,
-    MarimayExpressionValue maximum,
-    size_t start,
-    size_t end,
-    MarimayMirRegister target
-) {
-    MarimayExpressionValue error;
-    MarimayMirEnumArgument argument = {
-        .register_id = maximum.register_id,
-        .type = maximum.type
-    };
-    return mmay_collection_emit_enum(
-            function,
-            mmay_collection_prelude_enum(function, "CollectionGrowthError"),
-            mmay_collection_prelude_enum(
-                function, "CollectionGrowthError"
-            )->type,
-            0,
-            &argument,
-            1,
-            start,
-            end,
-            &error
-        ) && mmay_collection_emit_wrapped(
-            function, "Result", result_type, 1, &error,
-            start, end, target
-        );
+            error_type == MMAY_TYPE_INVALID ? "Option" : "Result",
+            target_type,
+            &instruction.enum_id
+        ) || (error_type != MMAY_TYPE_INVALID
+            && !mmay_collection_enum_layout(
+                function, "CollectionGrowthError", error_type,
+                &instruction.option_enum_id
+            )) || !mmay_function_add_register(
+                function, target_type, &instruction.target
+            )) return false;
+    instruction.kind = kind;
+    instruction.first = collection_register;
+    instruction.second = key_register;
+    instruction.third = value_register;
+    instruction.collection = collection_layout;
+    instruction.span.start = start;
+    instruction.span.end = end;
+    if (!mmay_function_append_instruction(function, &instruction)) return false;
+    result->type = target_type;
+    result->register_id = instruction.target;
+    result->valid = true;
+    return true;
 }
 
 bool mmay_checker_private_compile_collection_constructor(
@@ -786,58 +715,22 @@ static bool mmay_collection_option_result(
     MarimayExpressionValue *result
 ) {
     MarimayTypeId option_type = MMAY_TYPE_INVALID;
-    MarimayExpressionValue contains;
-    MarimayExpressionValue value;
-    MarimayExpressionValue ignored;
-    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
-    MarimayMirBlockId none_block = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId some_block = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId join = MMAY_MIR_NO_BLOCK;
-    const MarimayMirBlockId entry = function->block;
-    memset(&contains, 0, sizeof(contains));
-    memset(&value, 0, sizeof(value));
-    if (!mmay_collection_generic_type(
+    return mmay_collection_generic_type(
             function, "Option", value_type, MMAY_TYPE_INVALID, &option_type
-        ) || !mmay_function_add_register(function, option_type, &target)
-        || !mmay_collection_emit_raw(
-            function, MMAY_MIR_COLLECTION_CONTAINS, MMAY_TYPE_BOOL,
-            receiver.register_id, key_value.register_id,
-            MMAY_MIR_NO_REGISTER, layout, start, end, &contains
-        ) || !mmay_checker_private_function_add_block(function, &none_block)
-        || !mmay_checker_private_function_add_block(function, &some_block)
-        || !mmay_checker_private_function_add_block(function, &join)
-        || !mmay_checker_private_function_set_branch(
-            function, entry, contains.register_id, some_block, none_block,
-            start, end
-        )) return false;
-    function->block = none_block;
-    function->terminated = false;
-    if (!mmay_collection_emit_wrapped(
-            function, "Option", option_type, 1, NULL, start, end, target
-        ) || !mmay_checker_private_function_set_goto(
-            function, function->block, join, end, end
-        )) return false;
-    function->block = some_block;
-    function->terminated = false;
-    if (!mmay_collection_emit_raw(
-            function, MMAY_MIR_COLLECTION_GET, value_type,
-            receiver.register_id, key_value.register_id,
-            MMAY_MIR_NO_REGISTER, layout, start, end, &value
-        ) || (remove && !mmay_collection_emit_raw(
-            function, MMAY_MIR_COLLECTION_REMOVE, MMAY_TYPE_BOOL,
-            receiver.register_id, key_value.register_id,
-            MMAY_MIR_NO_REGISTER, layout, start, end, &ignored
-        )) || !mmay_collection_emit_wrapped(
-            function, "Option", option_type, 0, &value, start, end, target
-        ) || !mmay_checker_private_function_set_goto(
-            function, function->block, join, end, end
-        )) return false;
-    function->block = join;
-    function->terminated = false;
-    result->type = option_type;
-    result->register_id = target;
-    result->valid = true;
-    return true;
+        ) && mmay_collection_emit_result_operation(
+            function,
+            remove ? MMAY_MIR_COLLECTION_REMOVE_OPTION
+                : MMAY_MIR_COLLECTION_GET_OPTION,
+            option_type,
+            MMAY_TYPE_INVALID,
+            receiver.register_id,
+            key_value.register_id,
+            MMAY_MIR_NO_REGISTER,
+            layout,
+            start,
+            end,
+            result
+        );
 }
 
 static bool mmay_collection_update_result(
@@ -855,95 +748,22 @@ static bool mmay_collection_update_result(
         function, "CollectionGrowthError"
     );
     MarimayTypeId result_type = MMAY_TYPE_INVALID;
-    MarimayExpressionValue contains, length, maximum, at_limit;
-    MarimayExpressionValue false_value, true_value, ignored;
-    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
-    MarimayMirBlockId existing = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId missing = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId insert = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId limit = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId join = MMAY_MIR_NO_BLOCK;
-    const MarimayMirBlockId entry = function->block;
-    if (error == NULL || !mmay_collection_generic_type(
+    return error != NULL && mmay_collection_generic_type(
             function, "Result", MMAY_TYPE_BOOL, error->type, &result_type
-        ) || !mmay_function_add_register(function, result_type, &target)
-        || !mmay_collection_emit_raw(
-            function, MMAY_MIR_COLLECTION_CONTAINS, MMAY_TYPE_BOOL,
-            receiver.register_id, key_value.register_id,
-            MMAY_MIR_NO_REGISTER, layout, start, end, &contains
-        ) || !mmay_collection_emit_raw(
-            function, MMAY_MIR_COLLECTION_LENGTH, MMAY_TYPE_I64,
-            receiver.register_id, MMAY_MIR_NO_REGISTER,
-            MMAY_MIR_NO_REGISTER, layout, start, end, &length
-        ) || !mmay_collection_emit_i64(
-            function, INT64_MAX, start, end, &maximum
-        ) || !mmay_function_emit_instruction(
-            function, MMAY_MIR_EQUAL_I64, MMAY_TYPE_BOOL,
-            length.register_id, maximum.register_id, 0, false,
-            start, end, &at_limit
-        ) || !mmay_checker_private_function_add_block(function, &existing)
-        || !mmay_checker_private_function_add_block(function, &missing)
-        || !mmay_checker_private_function_add_block(function, &insert)
-        || !mmay_checker_private_function_add_block(function, &limit)
-        || !mmay_checker_private_function_add_block(function, &join)
-        || !mmay_checker_private_function_set_branch(
-            function, entry, contains.register_id, existing, missing,
-            start, end
-        )) return false;
-    function->block = existing;
-    function->terminated = false;
-    if ((!is_set && !mmay_collection_emit_raw(
-            function, MMAY_MIR_COLLECTION_PUT, receiver.type,
-            receiver.register_id, key_value.register_id,
-            map_value->register_id, layout, start, end, &ignored
-        )) || !mmay_collection_emit_bool(
-            function, false, start, end, &false_value
-        ) || !mmay_collection_emit_wrapped(
-            function, "Result", result_type, 0, &false_value,
-            start, end, target
-        ) || !mmay_checker_private_function_set_goto(
-            function, function->block, join, end, end
-        )) return false;
-    function->block = missing;
-    function->terminated = false;
-    if (!mmay_checker_private_function_set_branch(
-            function, missing, at_limit.register_id, limit, insert,
-            start, end
-        )) return false;
-    function->block = limit;
-    function->terminated = false;
-    if (!mmay_collection_emit_growth_error(
-            function, result_type, maximum, start, end, target
-        ) || !mmay_checker_private_function_set_goto(
-            function, function->block, join, end, end
-        )) return false;
-    function->block = insert;
-    function->terminated = false;
-    if (!mmay_collection_emit_raw(
+        ) && mmay_collection_emit_result_operation(
             function,
-            is_set ? MMAY_MIR_COLLECTION_ADD : MMAY_MIR_COLLECTION_PUT,
-            receiver.type,
+            is_set ? MMAY_MIR_COLLECTION_ADD_RESULT
+                : MMAY_MIR_COLLECTION_PUT_RESULT,
+            result_type,
+            error->type,
             receiver.register_id,
             key_value.register_id,
             is_set ? MMAY_MIR_NO_REGISTER : map_value->register_id,
             layout,
             start,
             end,
-            &ignored
-        ) || !mmay_collection_emit_bool(
-            function, true, start, end, &true_value
-        ) || !mmay_collection_emit_wrapped(
-            function, "Result", result_type, 0, &true_value,
-            start, end, target
-        ) || !mmay_checker_private_function_set_goto(
-            function, function->block, join, end, end
-        )) return false;
-    function->block = join;
-    function->terminated = false;
-    result->type = result_type;
-    result->register_id = target;
-    result->valid = true;
-    return true;
+            result
+        );
 }
 
 bool mmay_checker_private_compile_collection_call(

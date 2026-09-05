@@ -18,7 +18,7 @@ typedef struct MarimayTestOpcodeExpectation {
     uint8_t wire_id;
     const char *mnemonic;
     uint8_t operand_count;
-    MarimayBytecodeOperandKind operands[3];
+    MarimayBytecodeOperandKind operands[4];
     uint32_t flags;
 } MarimayTestOpcodeExpectation;
 

@@ -68,6 +68,10 @@ static bool mmay_native_c_instruction_uses_second(
         case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
         case MMAY_MIR_COLLECTION_ENTRY_KEY:
         case MMAY_MIR_COLLECTION_ENTRY_VALUE:
+        case MMAY_MIR_COLLECTION_GET_OPTION:
+        case MMAY_MIR_COLLECTION_REMOVE_OPTION:
+        case MMAY_MIR_COLLECTION_PUT_RESULT:
+        case MMAY_MIR_COLLECTION_ADD_RESULT:
         case MMAY_MIR_INTEGER_POLICY:
         case MMAY_MIR_TEXT_BINARY:
         case MMAY_MIR_FS_BINARY:
@@ -173,7 +177,8 @@ static void mmay_native_c_add_instruction_uses(
     }
     if (instruction->kind == MMAY_MIR_ARRAY_SET
         || instruction->kind == MMAY_MIR_ARRAY_SET_IN_BOUNDS
-        || instruction->kind == MMAY_MIR_COLLECTION_PUT) {
+        || instruction->kind == MMAY_MIR_COLLECTION_PUT
+        || instruction->kind == MMAY_MIR_COLLECTION_PUT_RESULT) {
         mmay_native_c_add_register(live, register_count, instruction->third);
     }
     if (instruction->kind == MMAY_MIR_CALL
@@ -207,6 +212,16 @@ static bool mmay_native_c_instruction_is_safepoint(
     switch (instruction->kind) {
         case MMAY_MIR_RECORD_NEW:
         case MMAY_MIR_ARRAY_NEW:
+        case MMAY_MIR_COLLECTION_NEW:
+        case MMAY_MIR_COLLECTION_CONTAINS:
+        case MMAY_MIR_COLLECTION_GET:
+        case MMAY_MIR_COLLECTION_REMOVE:
+        case MMAY_MIR_COLLECTION_PUT:
+        case MMAY_MIR_COLLECTION_ADD:
+        case MMAY_MIR_COLLECTION_GET_OPTION:
+        case MMAY_MIR_COLLECTION_REMOVE_OPTION:
+        case MMAY_MIR_COLLECTION_PUT_RESULT:
+        case MMAY_MIR_COLLECTION_ADD_RESULT:
         case MMAY_MIR_ARRAY_PUSH:
         case MMAY_MIR_ARRAY_RESERVE:
         case MMAY_MIR_INTERFACE_NEW:
@@ -522,6 +537,9 @@ static bool mmay_native_c_instruction_mutates_owner(
         case MMAY_MIR_COLLECTION_ADD:
         case MMAY_MIR_COLLECTION_REMOVE:
         case MMAY_MIR_COLLECTION_CLEAR:
+        case MMAY_MIR_COLLECTION_PUT_RESULT:
+        case MMAY_MIR_COLLECTION_ADD_RESULT:
+        case MMAY_MIR_COLLECTION_REMOVE_OPTION:
             return true;
         default:
             return false;

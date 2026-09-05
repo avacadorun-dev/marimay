@@ -153,3 +153,7 @@
 151	COLLECTION_ENTRY_KEY	collection_entry_key	destination:register,collection:register,index:register	none	Read an insertion-order key at a defensively checked active index.
 152	COLLECTION_ENTRY_VALUE	collection_entry_value	destination:register,collection:register,index:register	none	Read an insertion-order Map value at a defensively checked active index.
 153	TEST_ASSERT	test_assert	destination:register,condition:register,message:register	may_panic	Complete one compiler-known expectation or panic with G4004 at its source span.
+154	COLLECTION_GET_OPTION	collection_get_option	destination:register,collection:register,key:register	may_panic	Read one Map key into Option with exactly one collection lookup.
+155	COLLECTION_REMOVE_OPTION	collection_remove_option	destination:register,collection:register,key:register	may_panic	Remove one Map key into Option with exactly one collection lookup.
+156	COLLECTION_PUT_RESULT	collection_put_result	destination:register,collection:register,key:register,value:register	may_panic	Insert or update one Map entry and return its typed growth result after one lookup.
+157	COLLECTION_ADD_RESULT	collection_add_result	destination:register,collection:register,key:register	may_panic	Insert one Set element and return its typed growth result after one lookup.

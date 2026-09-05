@@ -827,6 +827,10 @@ checkpoint:
 | `bootstrap/src/check/checker_expr_collections.c` | 0 | 1,122 | exact Map/Set operation typing, key eligibility, Result/Option construction, and typed MIR lowering |
 | `bootstrap/src/check/checker_collection_loop.c` | 0 | 291 | insertion-order tuple/value loops and exact mutation-generation guard lowering |
 | `bootstrap/src/mir/mir_collections.c` | 0 | 68 | collection layout lifecycle and exact interning |
+| `bootstrap/include/mmay/mir/instruction_kinds.h` | 0 | 94 | append-only MIR operation vocabulary, separate from operand and control-flow structures |
+| `bootstrap/src/mir/verify_collections.c` | 0 | 158 | D079 exact receiver, operands, and prelude Option/Result layout verification |
+| `bootstrap/src/bytecode/bytecode_opcode_effects.c` | 0 | 141 | register-definition effects consumed by assignment and provenance analyses |
+| `tests/c-unit/test_collection_native_failures.c` | 0 | 79 | generated-C collection allocation-failure replay with full zero-counter teardown |
 | `bootstrap/src/mir/execution_collections.c` | 0 | 470 | independent ordered collection oracle, mutation, and exact G4005 behavior |
 | `bootstrap/src/bytecode/bytecode_collections.c` | 0 | 58 | append-only typed collection layout table ownership |
 | `bootstrap/src/bytecode/bytecode_verify_collections.c` | 0 | 188 | hostile collection opcode register/layout validation |

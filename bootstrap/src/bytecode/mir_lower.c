@@ -474,6 +474,27 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
             break;
+        case MMAY_MIR_COLLECTION_GET_OPTION:
+            output->opcode = MMAY_OPCODE_COLLECTION_GET_OPTION;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_REMOVE_OPTION:
+            output->opcode = MMAY_OPCODE_COLLECTION_REMOVE_OPTION;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_PUT_RESULT:
+            output->opcode = MMAY_OPCODE_COLLECTION_PUT_RESULT;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            output->operands[3].unsigned_value = input->third;
+            break;
+        case MMAY_MIR_COLLECTION_ADD_RESULT:
+            output->opcode = MMAY_OPCODE_COLLECTION_ADD_RESULT;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case MMAY_MIR_CALL: {
             const MarimayMirCall *call = input->call < function->calls.length
                 ? mmay_vector_at_const(&function->calls, input->call)

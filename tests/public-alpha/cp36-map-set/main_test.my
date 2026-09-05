@@ -1,6 +1,23 @@
 import { runes } from "std/text";
 
 @test
+fn resultBearingOperationsRetainReferenceValues(): void {
+  const values: Map<string, []int> = mapOf<string, []int>();
+  expect.equal(values.put("key", [7, 8]), Ok(true));
+  expect.equal(values.put("key", [9, 10]), Ok(false));
+  const removed = match values.remove("key") {
+    Some(value) => value,
+    None => panic("removed payload was lost"),
+  };
+  const set: Set<string> = setOf<string>();
+  expect.equal(set.add("λ"), Ok(true));
+  expect.equal(set.add("λ"), Ok(false));
+  expect.equal(removed[0], 9);
+  expect.equal(removed[1], 10);
+  expect.equal(values.length(), 0);
+}
+
+@test
 fn importedDerivedKeysAndOrderedIterationWork(): void {
   if collectionScore() != 99 {
     panic("Map and Set behavior changed");

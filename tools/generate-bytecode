@@ -89,8 +89,8 @@ def read_entries() -> List[Opcode]:
                     raise ValueError(f"{SOURCE}:{number}: duplicate or invalid operand")
                 operand_names.add(name)
                 operands.append((name, kind))
-        if len(operands) > 3:
-            raise ValueError(f"{SOURCE}:{number}: at most three operands are supported")
+        if len(operands) > 4:
+            raise ValueError(f"{SOURCE}:{number}: at most four operands are supported")
 
         flags = tuple(flag_text.split(",")) if flag_text != "none" else ()
         if len(set(flags)) != len(flags) or any(flag not in VALID_FLAGS for flag in flags):

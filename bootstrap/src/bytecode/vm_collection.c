@@ -186,26 +186,35 @@ static MarimayBytecodeRunStatus mmay_collection_status(
 
 static MarimayBytecodeRunStatus mmay_collection_cells(
     MarimayBytecodeExecution *execution,
+    const MarimayManagedMapDescriptor *descriptor,
     const MarimayBytecodeValue *key,
     const MarimayBytecodeValue *value,
     MarimayManagedCell *key_cell,
     MarimayManagedCell *value_cell,
+    MarimayManagedReference **locations,
     MarimayManagedRootFrame *roots
 ) {
-    MarimayManagedReference *locations[2] = {
-        &key_cell->reference, &value_cell->reference
-    };
+    size_t location_count = 0;
     MarimayManagedStatus root_status;
     MarimayBytecodeRunStatus status;
     memset(key_cell, 0, sizeof(*key_cell));
     memset(value_cell, 0, sizeof(*value_cell));
     key_cell->reference = mmay_managed_invalid_reference();
     value_cell->reference = mmay_managed_invalid_reference();
-    root_status = mmay_managed_root_push(
-        &execution->managed_heap, roots, locations, 2
-    );
-    if (root_status != MMAY_MANAGED_OK) {
-        return mmay_bytecode_run_managed_status(root_status);
+    if (descriptor->key.cell_kind == MMAY_MANAGED_CELL_REFERENCE) {
+        locations[location_count++] = &key_cell->reference;
+    }
+    if (value != NULL
+        && descriptor->value.cell_kind == MMAY_MANAGED_CELL_REFERENCE) {
+        locations[location_count++] = &value_cell->reference;
+    }
+    if (location_count != 0) {
+        root_status = mmay_managed_root_push(
+            &execution->managed_heap, roots, locations, location_count
+        );
+        if (root_status != MMAY_MANAGED_OK) {
+            return mmay_bytecode_run_managed_status(root_status);
+        }
     }
     status = mmay_bytecode_value_to_managed_cell(
         execution, key, key_cell
@@ -216,6 +225,152 @@ static MarimayBytecodeRunStatus mmay_collection_cells(
         );
     }
     return status;
+}
+
+static const MarimayBytecodeEnumPayload *mmay_collection_enum_payload(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeEnumLayout *layout,
+    size_t variant_index
+) {
+    const MarimayBytecodeEnumVariant *variant = function != NULL
+            && layout != NULL && variant_index < layout->variant_count
+            && layout->variant_start <= function->enum_variants.length
+            && variant_index
+                < function->enum_variants.length - layout->variant_start
+        ? mmay_vector_at_const(
+            &function->enum_variants, layout->variant_start + variant_index
+        ) : NULL;
+    size_t relative = 0;
+    if (variant == NULL || variant->payload_count != 1
+        || !mmay_size_add(variant->payload_start, 0, &relative)
+        || relative >= layout->payload_count
+        || layout->payload_start > function->enum_payloads.length
+        || relative >= function->enum_payloads.length - layout->payload_start) {
+        return NULL;
+    }
+    return mmay_vector_at_const(
+        &function->enum_payloads, layout->payload_start + relative
+    );
+}
+
+static MarimayBytecodeRunStatus mmay_collection_option_result(
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeValue *registers,
+    size_t target,
+    MarimayManagedCell *value,
+    bool found,
+    bool reference
+) {
+    uint32_t layout_id = mmay_bytecode_register_layout(
+        function, (uint32_t)target
+    );
+    const void *descriptor = NULL;
+    MarimayBytecodeRunStatus status = mmay_bytecode_run_nominal_descriptor(
+        execution, function, MMAY_BYTECODE_TYPE_ENUM, layout_id, &descriptor
+    );
+    MarimayManagedRootFrame roots;
+    MarimayManagedReference *locations[1] = {&value->reference};
+    MarimayManagedStatus managed;
+    memset(&roots, 0, sizeof(roots));
+    if (status != MMAY_BYTECODE_RUN_OK) return status;
+    if (found && reference) {
+        managed = mmay_managed_root_push(
+            &execution->managed_heap, &roots, locations, 1
+        );
+        if (managed != MMAY_MANAGED_OK) {
+            return mmay_bytecode_run_managed_status(managed);
+        }
+    }
+    managed = mmay_managed_enum_new(
+        &execution->managed_heap,
+        descriptor,
+        found ? 0U : 1U,
+        found ? value : NULL,
+        found ? 1U : 0U,
+        &registers[target].as.managed_reference
+    );
+    if (roots.linked) {
+        MarimayManagedStatus pop = mmay_managed_root_pop(
+            &execution->managed_heap, &roots
+        );
+        if (managed == MMAY_MANAGED_OK) managed = pop;
+    }
+    return mmay_bytecode_run_managed_status(managed);
+}
+
+static MarimayBytecodeRunStatus mmay_collection_update_result(
+    MarimayBytecodeExecution *execution,
+    const MarimayBytecodeFunction *function,
+    MarimayBytecodeValue *registers,
+    size_t target,
+    MarimayManagedCell *temporary,
+    bool inserted,
+    bool length_limit
+) {
+    uint32_t result_id = mmay_bytecode_register_layout(
+        function, (uint32_t)target
+    );
+    const MarimayBytecodeEnumLayout *result = mmay_bytecode_enum_layout(
+        function, result_id
+    );
+    const MarimayBytecodeEnumPayload *error_payload =
+        mmay_collection_enum_payload(function, result, 1);
+    const void *result_descriptor = NULL;
+    const void *error_descriptor = NULL;
+    MarimayManagedCell payload;
+    MarimayBytecodeRunStatus status = mmay_bytecode_run_nominal_descriptor(
+        execution, function, MMAY_BYTECODE_TYPE_ENUM,
+        result_id, &result_descriptor
+    );
+    if (status != MMAY_BYTECODE_RUN_OK) return status;
+    memset(&payload, 0, sizeof(payload));
+    if (!length_limit) {
+        payload.f64_bits = inserted ? UINT64_C(1) : UINT64_C(0);
+        return mmay_bytecode_run_managed_status(mmay_managed_enum_new(
+            &execution->managed_heap, result_descriptor, 0,
+            &payload, 1, &registers[target].as.managed_reference
+        ));
+    }
+    if (error_payload == NULL
+        || error_payload->type != MMAY_BYTECODE_TYPE_ENUM) {
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    }
+    status = mmay_bytecode_run_nominal_descriptor(
+        execution, function, MMAY_BYTECODE_TYPE_ENUM,
+        error_payload->layout, &error_descriptor
+    );
+    if (status != MMAY_BYTECODE_RUN_OK) return status;
+    {
+        MarimayManagedRootFrame roots;
+        MarimayManagedReference *locations[1] = {&temporary->reference};
+        MarimayManagedStatus managed;
+        memset(&roots, 0, sizeof(roots));
+        managed = mmay_managed_root_push(
+            &execution->managed_heap, &roots, locations, 1
+        );
+        if (managed != MMAY_MANAGED_OK) {
+            return mmay_bytecode_run_managed_status(managed);
+        }
+        payload.f64_bits = (uint64_t)INT64_MAX;
+        managed = mmay_managed_enum_new(
+            &execution->managed_heap, error_descriptor, 0,
+            &payload, 1, &temporary->reference
+        );
+        if (managed == MMAY_MANAGED_OK) {
+            managed = mmay_managed_enum_new(
+                &execution->managed_heap, result_descriptor, 1,
+                temporary, 1, &registers[target].as.managed_reference
+            );
+        }
+        {
+            MarimayManagedStatus pop = mmay_managed_root_pop(
+                &execution->managed_heap, &roots
+            );
+            if (managed == MMAY_MANAGED_OK) managed = pop;
+        }
+        return mmay_bytecode_run_managed_status(managed);
+    }
 }
 
 MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
@@ -235,6 +390,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
     const MarimayBytecodeCollectionType *collection = NULL;
     const MarimayManagedMapDescriptor *descriptor = NULL;
     MarimayManagedCell key_cell, value_cell, output_cell;
+    MarimayManagedReference *root_locations[2];
     MarimayManagedRootFrame roots;
     MarimayManagedStatus managed_status = MMAY_MANAGED_OK;
     MarimayBytecodeRunStatus status = MMAY_BYTECODE_RUN_OK;
@@ -243,7 +399,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
     *handled = false;
     if (instruction == NULL || registers == NULL || execution == NULL
         || function == NULL || instruction->opcode < MMAY_OPCODE_COLLECTION_NEW
-        || instruction->opcode > MMAY_OPCODE_COLLECTION_ENTRY_VALUE) {
+        || instruction->opcode > MMAY_OPCODE_COLLECTION_ADD_RESULT
+        || instruction->opcode == MMAY_OPCODE_TEST_ASSERT) {
         return MMAY_BYTECODE_RUN_OK;
     }
     *handled = true;
@@ -277,7 +434,14 @@ MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
         function, (uint32_t)collection_register
     );
     collection = mmay_bytecode_collection_type(function, layout);
-    if (collection == NULL) return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    descriptor = mmay_bytecode_collection_descriptor_for(
+        execution, function, layout
+    );
+    if (collection == NULL || descriptor == NULL) {
+        return execution->collection_descriptor_allocation_failed
+            ? MMAY_BYTECODE_RUN_ALLOCATION_FAILED
+            : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    }
     if (instruction->opcode == MMAY_OPCODE_COLLECTION_LENGTH) {
         size_t length = 0;
         managed_status = collection->is_set
@@ -371,14 +535,20 @@ MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
         ? (size_t)instruction->operands[1].unsigned_value
         : (size_t)instruction->operands[2].unsigned_value;
     memset(&roots, 0, sizeof(roots));
+    memset(&output_cell, 0, sizeof(output_cell));
+    output_cell.reference = mmay_managed_invalid_reference();
     status = mmay_collection_cells(
         execution,
+        descriptor,
         &registers[key_register],
         instruction->opcode == MMAY_OPCODE_COLLECTION_PUT
             ? &registers[(size_t)instruction->operands[2].unsigned_value]
+            : instruction->opcode == MMAY_OPCODE_COLLECTION_PUT_RESULT
+            ? &registers[(size_t)instruction->operands[3].unsigned_value]
             : NULL,
         &key_cell,
         &value_cell,
+        root_locations,
         &roots
     );
     if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
@@ -407,6 +577,24 @@ MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
                 execution, output_cell, &registers[target]
             );
         }
+    } else if (instruction->opcode == MMAY_OPCODE_COLLECTION_GET_OPTION
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_REMOVE_OPTION) {
+        managed_status = instruction->opcode == MMAY_OPCODE_COLLECTION_GET_OPTION
+            ? mmay_managed_map_get(
+                &execution->managed_heap,
+                registers[collection_register].as.managed_reference,
+                key_cell, &output_cell, &flag
+            ) : mmay_managed_map_remove(
+                &execution->managed_heap,
+                registers[collection_register].as.managed_reference,
+                key_cell, &output_cell, &flag
+            );
+        if (managed_status == MMAY_MANAGED_OK) {
+            status = mmay_collection_option_result(
+                execution, function, registers, target, &output_cell, flag,
+                descriptor->value.cell_kind == MMAY_MANAGED_CELL_REFERENCE
+            );
+        }
     } else if (instruction->opcode == MMAY_OPCODE_COLLECTION_PUT) {
         managed_status = mmay_managed_map_put(
             &execution->managed_heap,
@@ -419,6 +607,26 @@ MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
             registers[collection_register].as.managed_reference,
             key_cell, &flag
         );
+    } else if (instruction->opcode == MMAY_OPCODE_COLLECTION_PUT_RESULT
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_ADD_RESULT) {
+        managed_status = instruction->opcode == MMAY_OPCODE_COLLECTION_ADD_RESULT
+            ? mmay_managed_set_add(
+                &execution->managed_heap,
+                registers[collection_register].as.managed_reference,
+                key_cell, &flag
+            ) : mmay_managed_map_put(
+                &execution->managed_heap,
+                registers[collection_register].as.managed_reference,
+                key_cell, value_cell, &flag
+            );
+        if (managed_status == MMAY_MANAGED_OK
+            || managed_status == MMAY_MANAGED_LENGTH_LIMIT) {
+            status = mmay_collection_update_result(
+                execution, function, registers, target, &output_cell,
+                flag, managed_status == MMAY_MANAGED_LENGTH_LIMIT
+            );
+            managed_status = MMAY_MANAGED_OK;
+        }
     } else if (instruction->opcode == MMAY_OPCODE_COLLECTION_REMOVE) {
         managed_status = collection->is_set
             ? mmay_managed_set_remove(

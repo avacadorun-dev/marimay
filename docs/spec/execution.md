@@ -123,6 +123,30 @@ The two fixed f64 array tags are retained only as a compatibility decoder path
 for legacy f64-only preview bundles. They are not the representation of a new
 generic array bundle.
 
+#### 4.2.2 Result-bearing collection operations
+
+Under D079, collection operations may construct their typed source result
+directly, without a separate membership query. Wire opcodes 154
+`collection_get_option`, 155 `collection_remove_option`, and 157
+`collection_add_result` have destination, collection, and key registers.
+Opcode 156 `collection_put_result` additionally has a fourth value register.
+Earlier opcode IDs, including 153 `test_assert`, retain their meaning.
+
+The destination has an exact enum layout: Map get/remove require the
+`Some(V), None` shape with the collection's exact value layout; put/add require
+`Ok(bool), Err(CollectionGrowthError)`, with the error carrying an `int`
+length limit. MIR also verifies the corresponding prelude nominal identities.
+Bytecode verifies the instantiated destination and recursive payload layouts;
+source-level generic base symbols are not substituted for wire type identities.
+Map/Set receiver kind, key and value types, and all input register assignments
+are verified before execution. These operations are allocation safepoints;
+removed reference payloads remain rooted while their result is constructed.
+
+These instructions preserve D079 order, mutation generation, and result values.
+Only the language length limit becomes a growth error. Configured execution
+limits and allocation failures remain execution outcomes under D055. Hash and
+probe counts are internal: storage growth or compaction may require reprobing.
+
 ### 4.3 Verification
 
 The loader verifies a bundle before any module code becomes executable. Verification checks at least section bounds and overflow, UTF-8, symbol identity, control-flow targets, register definite assignment and types, call signatures, enum consistency, root maps, task-scope nesting, unsafe opcode placement, capabilities, and resource limits.

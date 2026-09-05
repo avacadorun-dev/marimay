@@ -3,8 +3,42 @@
 #include "bytecode_internal.h"
 
 static bool mmay_collection_opcode(MarimayOpcode opcode) {
-    return opcode >= MMAY_OPCODE_COLLECTION_NEW
-        && opcode <= MMAY_OPCODE_COLLECTION_ENTRY_VALUE;
+    return (opcode >= MMAY_OPCODE_COLLECTION_NEW
+            && opcode <= MMAY_OPCODE_COLLECTION_ENTRY_VALUE)
+        || (opcode >= MMAY_OPCODE_COLLECTION_GET_OPTION
+            && opcode <= MMAY_OPCODE_COLLECTION_ADD_RESULT);
+}
+
+static const MarimayBytecodeEnumVariant *mmay_collection_variant(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeEnumLayout *layout,
+    size_t variant
+) {
+    return function != NULL && layout != NULL && variant < layout->variant_count
+            && layout->variant_start <= function->enum_variants.length
+            && variant < function->enum_variants.length - layout->variant_start
+        ? mmay_vector_at_const(
+            &function->enum_variants, layout->variant_start + variant
+        ) : NULL;
+}
+
+static const MarimayBytecodeEnumPayload *mmay_collection_payload(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeEnumLayout *layout,
+    const MarimayBytecodeEnumVariant *variant
+) {
+    size_t relative = 0;
+    if (function == NULL || layout == NULL || variant == NULL
+        || variant->payload_count == 0
+        || !mmay_size_add(variant->payload_start, 0, &relative)
+        || relative >= layout->payload_count
+        || layout->payload_start > function->enum_payloads.length
+        || relative >= function->enum_payloads.length - layout->payload_start) {
+        return NULL;
+    }
+    return mmay_vector_at_const(
+        &function->enum_payloads, layout->payload_start + relative
+    );
 }
 
 static MarimayBytecodeVerifyStatus mmay_collection_assigned(
@@ -39,6 +73,61 @@ static bool mmay_collection_register_matches(
     return actual != NULL && *actual == type
         && mmay_bytecode_register_layout(function, (uint32_t)register_id)
             == layout;
+}
+
+static bool mmay_collection_result_matches(
+    const MarimayBytecodeFunction *function,
+    const MarimayBytecodeInstruction *instruction,
+    const MarimayBytecodeCollectionType *collection,
+    uint64_t target
+) {
+    const uint32_t layout_id = target <= UINT32_MAX
+        ? mmay_bytecode_register_layout(function, (uint32_t)target)
+        : MMAY_BYTECODE_NO_LAYOUT;
+    const MarimayBytecodeEnumLayout *layout = mmay_bytecode_enum_layout(
+        function, layout_id
+    );
+    const MarimayBytecodeEnumVariant *first = mmay_collection_variant(
+        function, layout, 0
+    );
+    const MarimayBytecodeEnumVariant *second = mmay_collection_variant(
+        function, layout, 1
+    );
+    const MarimayBytecodeEnumPayload *first_payload = mmay_collection_payload(
+        function, layout, first
+    );
+    bool option = instruction->opcode == MMAY_OPCODE_COLLECTION_GET_OPTION
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_REMOVE_OPTION;
+    if (!mmay_collection_register_matches(
+            function, target, MMAY_BYTECODE_TYPE_ENUM, layout_id
+        ) || layout == NULL || first == NULL || second == NULL
+        || layout->variant_count != 2 || first->payload_count != 1
+        || first_payload == NULL
+        || second->payload_count != (option ? 0U : 1U)) return false;
+    if (option) {
+        return !collection->is_set
+            && first_payload->type == collection->value_type
+            && first_payload->layout == collection->value_layout;
+    }
+    {
+        const MarimayBytecodeEnumPayload *error_payload =
+            mmay_collection_payload(function, layout, second);
+        const MarimayBytecodeEnumLayout *error = error_payload != NULL
+                && error_payload->type == MMAY_BYTECODE_TYPE_ENUM
+            ? mmay_bytecode_enum_layout(function, error_payload->layout) : NULL;
+        const MarimayBytecodeEnumVariant *limit = mmay_collection_variant(
+            function, error, 0
+        );
+        const MarimayBytecodeEnumPayload *limit_payload =
+            mmay_collection_payload(function, error, limit);
+        return first_payload->type == MMAY_BYTECODE_TYPE_BOOL
+            && first_payload->layout == MMAY_BYTECODE_NO_LAYOUT
+            && error != NULL && error->variant_count == 1
+            && limit != NULL && limit->payload_count == 1
+            && limit_payload != NULL
+            && limit_payload->type == MMAY_BYTECODE_TYPE_I64
+            && limit_payload->layout == MMAY_BYTECODE_NO_LAYOUT;
+    }
 }
 
 MarimayBytecodeVerifyStatus mmay_bytecode_verify_collection_instruction(
@@ -153,6 +242,30 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_collection_instruction(
     if (!mmay_collection_register_matches(
             function, argument, collection->key_type, collection->key_layout
         )) return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+    if (instruction->opcode == MMAY_OPCODE_COLLECTION_GET_OPTION
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_REMOVE_OPTION
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_PUT_RESULT
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_ADD_RESULT) {
+        if (!mmay_collection_result_matches(
+                function, instruction, collection, target
+            )) return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+        if (instruction->opcode == MMAY_OPCODE_COLLECTION_PUT_RESULT) {
+            uint64_t value = instruction->operands[3].unsigned_value;
+            status = mmay_collection_assigned(
+                assigned, function->register_types.length, value
+            );
+            if (status != MMAY_BYTECODE_VERIFY_OK) return status;
+            if (collection->is_set || !mmay_collection_register_matches(
+                    function, value, collection->value_type,
+                    collection->value_layout
+                )) return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+        } else if (instruction->opcode == MMAY_OPCODE_COLLECTION_ADD_RESULT
+            && !collection->is_set) {
+            return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+        }
+        assigned[target] = 1;
+        return MMAY_BYTECODE_VERIFY_OK;
+    }
     if (instruction->opcode == MMAY_OPCODE_COLLECTION_PUT) {
         uint64_t value = instruction->operands[2].unsigned_value;
         status = mmay_collection_assigned(

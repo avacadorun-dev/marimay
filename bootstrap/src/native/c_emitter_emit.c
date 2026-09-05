@@ -1093,6 +1093,10 @@ bool mmay_native_c_emit_function(
                 case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
                 case MMAY_MIR_COLLECTION_ENTRY_KEY:
                 case MMAY_MIR_COLLECTION_ENTRY_VALUE:
+                case MMAY_MIR_COLLECTION_GET_OPTION:
+                case MMAY_MIR_COLLECTION_REMOVE_OPTION:
+                case MMAY_MIR_COLLECTION_PUT_RESULT:
+                case MMAY_MIR_COLLECTION_ADD_RESULT:
                     if (!mmay_native_c_emit_collection_instruction(
                             buffer, function, i
                         )) return false;

@@ -786,6 +786,10 @@ static MarimayMirInterpretStatus mmay_mir_execute_instruction(
         case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
         case MMAY_MIR_COLLECTION_ENTRY_KEY:
         case MMAY_MIR_COLLECTION_ENTRY_VALUE:
+        case MMAY_MIR_COLLECTION_GET_OPTION:
+        case MMAY_MIR_COLLECTION_REMOVE_OPTION:
+        case MMAY_MIR_COLLECTION_PUT_RESULT:
+        case MMAY_MIR_COLLECTION_ADD_RESULT:
             return mmay_mir_execute_collection_instruction(
                 function, instruction, first, second, third, target,
                 allocator, options

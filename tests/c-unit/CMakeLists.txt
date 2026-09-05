@@ -37,6 +37,7 @@ add_executable(mmay_c_unit
   test_cp35_environment.c
   test_cp35_context_pipeline.c
   test_cp36_collections.c
+  test_collection_native_failures.c
   test_cp37_cli_parser.c
   test_cp38_json.c
   test_bytecode_program.c

@@ -43,7 +43,7 @@ typedef struct MarimayOpcodeMetadata {
     uint8_t wire_id;
     const char *mnemonic;
     uint8_t operand_count;
-    MarimayBytecodeOperandKind operands[3];
+    MarimayBytecodeOperandKind operands[4];
     uint32_t flags;
 } MarimayOpcodeMetadata;
 
@@ -90,7 +90,7 @@ typedef struct MarimayBytecodeOperand {
 
 typedef struct MarimayBytecodeInstruction {
     MarimayOpcode opcode;
-    MarimayBytecodeOperand operands[3];
+    MarimayBytecodeOperand operands[4];
     MarimayBytecodeSpan span;
 } MarimayBytecodeInstruction;
 

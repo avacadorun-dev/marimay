@@ -22,6 +22,9 @@ native, cli-build, cli-run and cli-test tests passed, as did the Release-only
 and generated-file gates passed. These are local integration checks, not a
 Tier 1 milestone verification or a release announcement.
 
+The subsequent Map/Set optimization and its verification are recorded in
+[the focused integration report](map-set-results-2026-09-05.md).
+
 This is a working-tree validation record, not CP39/CP40 verification or an alpha
 release claim. Work is isolated on `fix/cli-alpha-integration`, based on
 `efb0f56`, in the `marimay-cli-alpha` worktree. The original `marimay` checkout
