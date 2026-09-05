@@ -1,5 +1,6 @@
 #include "checker_match_pattern_api.h"
 #include "checker_core_api.h"
+#include "checker_enum_pattern_names_api.h"
 #include "checker_generic_types_api.h"
 #include "checker_lookup_api.h"
 #include "package_imports_api.h"
@@ -122,11 +123,18 @@ bool mmay_checker_private_record_match_validate_named(
         const unsigned char *namespace_bytes = NULL;
         size_t namespace_length = 0;
         MarimayCheckName namespace_name;
-        if (qualified->synthetic
-            || mmay_checker_private_check_child_token(
+        if (qualified->synthetic) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
+            return false;
+        }
+        if (mmay_checker_private_check_child_token(
                 node, MMAY_TOKEN_IDENTIFIER, 2
             ) != NULL) {
-            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
+            (void)mmay_checker_add_diagnostic(
+                function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+                "pattern name does not denote a binding or record type",
+                node->start, node->end
+            );
             return false;
         }
         namespace_name.snapshot = function->checker->ast->snapshot;
@@ -151,54 +159,6 @@ bool mmay_checker_private_record_match_validate_named(
     name->snapshot = function->checker->ast->snapshot;
     name->start = token->start;
     name->end = token->end;
-    return true;
-}
-
-static bool mmay_checker_private_enum_match_validate_namespace(
-    MarimayFunctionChecker *function,
-    const MarimayAstNode *node,
-    MarimayTypeId enum_type,
-    bool *qualified
-) {
-    const MarimaySyntaxToken *namespace_token = NULL;
-    const MarimaySyntaxToken *variant_token = NULL;
-    MarimayCheckName namespace_name;
-    if (function == NULL || node == NULL || qualified == NULL) {
-        if (function != NULL) {
-            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
-        }
-        return false;
-    }
-    namespace_token = mmay_checker_private_check_child_token(
-        node, MMAY_TOKEN_IDENTIFIER, 0
-    );
-    variant_token = mmay_checker_private_check_child_token(
-        node, MMAY_TOKEN_IDENTIFIER, 1
-    );
-    *qualified = variant_token != NULL;
-    if (!*qualified) {
-        return true;
-    }
-    if (namespace_token == NULL || namespace_token->synthetic
-        || variant_token->synthetic) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
-        return false;
-    }
-    namespace_name.snapshot = function->checker->ast->snapshot;
-    namespace_name.start = namespace_token->start;
-    namespace_name.end = namespace_token->end;
-    if (!mmay_check_import_namespace_owns_enum(
-            function->checker, namespace_name, enum_type
-        )) {
-        (void)mmay_checker_add_diagnostic(
-            function->checker,
-            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
-            "qualified enum pattern namespace does not expose the matched enum type",
-            namespace_token->start,
-            namespace_token->end
-        );
-        return false;
-    }
     return true;
 }
 
@@ -260,6 +220,23 @@ static bool mmay_checker_private_enum_match_validate_namespace(
             ));
     }
     if (node != NULL && node->kind == MMAY_SYNTAX_NAME_PATTERN) {
+        if (mmay_checker_private_check_child_token(
+                node, MMAY_TOKEN_IDENTIFIER, 1
+            ) != NULL) {
+            MarimayCheckEnumDeclaration *enum_declaration =
+                mmay_checker_private_checker_find_enum_by_type(function->checker, type);
+            MarimayCheckEnumMatchAlternative nested;
+            if (enum_declaration != NULL) {
+                return mmay_checker_private_analyze_enum_match_alternative(
+                    function, enum_declaration, type, node, bindings, &nested
+                );
+            }
+            (void)mmay_checker_add_diagnostic(
+                function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+                "qualified nested pattern requires an enum type", node->start, node->end
+            );
+            return false;
+        }
         return mmay_checker_private_enum_match_name(function, node, &name)
             && mmay_checker_private_enum_match_add_binding(
                 function,
@@ -274,16 +251,23 @@ static bool mmay_checker_private_enum_match_validate_namespace(
                 node, MMAY_SYNTAX_NAME_PATTERN, 0
             );
         MarimayCheckRecordDeclaration *record = NULL;
-        MarimayCheckEnumDeclaration *enum_declaration = NULL;
-        if (!mmay_checker_private_enum_match_name(
-                function, constructor_name, &name
-            )) {
-            return false;
+        MarimayCheckEnumDeclaration *enum_declaration =
+            mmay_checker_private_checker_find_enum_by_type(function->checker, type);
+        if (enum_declaration != NULL) {
+            MarimayCheckEnumMatchAlternative nested;
+            return mmay_checker_private_analyze_enum_match_alternative(
+                function, enum_declaration, type, node, bindings, &nested
+            );
         }
         record = mmay_checker_private_checker_find_record_by_type(
             function->checker, type
         );
         if (record != NULL) {
+            if (!mmay_checker_private_enum_match_name(
+                    function, constructor_name, &name
+                )) {
+                return false;
+            }
             MarimayCheckRecordDeclaration *named =
                 mmay_checker_private_checker_find_record(
                     function->checker, name
@@ -298,15 +282,6 @@ static bool mmay_checker_private_enum_match_validate_namespace(
             }
             return mmay_checker_private_record_match_validate_named(
                 function, node, record, bindings
-            );
-        }
-        enum_declaration = mmay_checker_private_checker_find_enum_by_type(
-            function->checker, type
-        );
-        if (enum_declaration != NULL) {
-            MarimayCheckEnumMatchAlternative nested;
-            return mmay_checker_private_analyze_enum_match_alternative(
-                function, enum_declaration, type, node, bindings, &nested
             );
         }
         (void)mmay_checker_add_diagnostic(
@@ -811,7 +786,6 @@ bool mmay_checker_private_analyze_enum_match_alternative(
     MarimayCheckName name;
     size_t variant_index = 0;
     MarimayCheckEnumVariantDeclaration *variant = NULL;
-    bool qualified = false;
     if (enum_declaration == NULL || pattern == NULL || bindings == NULL
         || alternative == NULL) {
         mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
@@ -834,10 +808,7 @@ bool mmay_checker_private_analyze_enum_match_alternative(
         alternative->has_catch_binding = has_binding;
         alternative->catch_binding = name;
     } else if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
-        if (!mmay_checker_private_enum_match_name(function, pattern, &name)
-            || !mmay_checker_private_enum_match_validate_namespace(
-                function, pattern, enum_type, &qualified
-            )) {
+        if (!mmay_checker_enum_pattern_name(function, pattern, enum_type, &name)) {
             return false;
         }
         variant = mmay_checker_private_checker_find_enum_variant(
@@ -847,7 +818,6 @@ bool mmay_checker_private_analyze_enum_match_alternative(
             &variant_index
         );
         if (variant == NULL) {
-            (void)qualified;
             (void)mmay_checker_add_diagnostic(
                 function->checker,
                 MMAY_DIAGNOSTIC_UNKNOWN_VARIANT,
@@ -872,10 +842,8 @@ bool mmay_checker_private_analyze_enum_match_alternative(
             MMAY_SYNTAX_NAME_PATTERN,
             0
         );
-        if (!mmay_checker_private_enum_match_name(
-                function, constructor_name, &name
-            ) || !mmay_checker_private_enum_match_validate_namespace(
-                function, constructor_name, enum_type, &qualified
+        if (!mmay_checker_enum_pattern_name(
+                function, constructor_name, enum_type, &name
             )) {
             return false;
         }
@@ -989,6 +957,10 @@ static bool mmay_checker_private_pattern_is_refutable(
     *result = false;
     if (pattern->kind == MMAY_SYNTAX_WILDCARD_PATTERN
         || pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
+        *result = pattern->kind == MMAY_SYNTAX_NAME_PATTERN
+            && mmay_checker_private_check_child_token(
+                pattern, MMAY_TOKEN_IDENTIFIER, 1
+            ) != NULL;
         return true;
     }
     if (pattern->kind != MMAY_SYNTAX_CONSTRUCTOR_PATTERN) {

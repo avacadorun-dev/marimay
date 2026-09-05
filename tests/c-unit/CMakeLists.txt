@@ -73,6 +73,7 @@ add_executable(mmay_c_unit
   test_checker_generic_lifetime.c
   test_checker_generics_imports.c
   test_checker_map_error_imports.c
+  test_checker_enum_pattern_names.c
   test_checker_imports_support.c
   test_checker_imported_arrays.c
   test_imported_arrays_support.c
@@ -599,7 +600,12 @@ add_test(
   COMMAND "$<TARGET_FILE:mmay>" test
     "${CMAKE_SOURCE_DIR}/tests/public-alpha/map-error-imports" --engine both
 )
-foreach(regression IN ITEMS record-imports match-void generic-lifetime map-error-imports)
+add_test(
+  NAME mmay_enum_pattern_names
+  COMMAND "$<TARGET_FILE:mmay>" test
+    "${CMAKE_SOURCE_DIR}/tests/public-alpha/enum-pattern-names" --engine both
+)
+foreach(regression IN ITEMS record-imports match-void generic-lifetime map-error-imports enum-pattern-names)
   add_test(
     NAME "mmay_format_${regression}"
     COMMAND "$<TARGET_FILE:mmay>" fmt

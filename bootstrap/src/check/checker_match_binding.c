@@ -1,5 +1,6 @@
 #include "checker_match_binding_api.h"
 #include "checker_core_api.h"
+#include "checker_enum_pattern_names_api.h"
 #include "checker_expr_nominal_api.h"
 #include "checker_lookup_api.h"
 #include "checker_match_pattern_api.h"
@@ -536,7 +537,10 @@ static bool mmay_checker_private_compile_nested_pattern_cps(
             function, function->block, success, pattern->end, pattern->end
         );
     }
-    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN) {
+    if (pattern->kind == MMAY_SYNTAX_NAME_PATTERN
+        && mmay_checker_private_check_child_token(
+            pattern, MMAY_TOKEN_IDENTIFIER, 1
+        ) == NULL) {
         return mmay_checker_private_enum_match_name(function, pattern, &name)
             && mmay_checker_private_assign_match_local(
                 function, name, type, source, pattern->start, pattern->end
@@ -544,7 +548,8 @@ static bool mmay_checker_private_compile_nested_pattern_cps(
                 function, function->block, success, pattern->end, pattern->end
             );
     }
-    if (pattern->kind != MMAY_SYNTAX_CONSTRUCTOR_PATTERN) {
+    if (pattern->kind != MMAY_SYNTAX_CONSTRUCTOR_PATTERN
+        && pattern->kind != MMAY_SYNTAX_NAME_PATTERN) {
         return false;
     }
     record = mmay_checker_private_checker_find_record_by_type(
@@ -558,11 +563,10 @@ static bool mmay_checker_private_compile_nested_pattern_cps(
     enum_declaration = mmay_checker_private_checker_find_enum_by_type(
         function->checker, type
     );
-    constructor_name = mmay_checker_private_check_child_node(
-        pattern, MMAY_SYNTAX_NAME_PATTERN, 0
-    );
+    constructor_name = pattern->kind == MMAY_SYNTAX_NAME_PATTERN ? pattern
+        : mmay_checker_private_check_child_node(pattern, MMAY_SYNTAX_NAME_PATTERN, 0);
     if (enum_declaration == NULL
-        || !mmay_checker_private_enum_match_name(function, constructor_name, &name)
+        || !mmay_checker_enum_pattern_name(function, constructor_name, type, &name)
         || (variant = mmay_checker_private_checker_find_enum_variant(
                 function->checker, enum_declaration, name, &variant_index
             )) == NULL

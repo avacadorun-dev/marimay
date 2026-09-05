@@ -776,6 +776,19 @@ Patterns include:
 - alternatives: `NotFound | Gone`;
 - nested forms of the above.
 
+Under D084, an enum pattern may spell `Variant`, `Enum.Variant`, or
+`namespace.Enum.Variant`. An explicit enum qualifier resolves as a visible
+enum type or alias and must identify the matched nominal enum. A concrete
+alias must match the entire instantiated type; a generic enum name uses the
+matched type's arguments. Renamed enum imports are valid qualifiers.
+The contextual shorthand `namespace.Variant` requires that file-local
+namespace to expose the matched enum or a public alias of its exact type.
+Lookup never falls back from a namespace to a different owner. Unknown,
+private, wrong-type or excessively long qualifiers are diagnosed source errors.
+The same rules apply recursively to unit, positional and named enum patterns;
+a qualified payload name matches a constructor rather than introducing a
+binding. Unqualified payload bindings keep their ordinary meaning.
+
 A record pattern is nominal: its constructor must resolve to the exact record
 type of the scrutinee, or to an alias of that type. Its named shape lists every
 declared field exactly once; field order is irrelevant, `field` is shorthand

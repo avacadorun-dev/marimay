@@ -63,10 +63,12 @@ Linux LeakSanitizer and the remaining Tier 1 CI matrix are still required.
 
 ## Separate follow-up found during testing
 
-A match arm spelling `failure.Wrapped.Input(value)` currently exits with
+A match arm spelling `failure.Wrapped.Input(value)` on this change's base exits with
 internal checker status 70 instead of a source diagnostic; nesting it inside
 `Err(...)` also fails. A debugger stops in
 `mmay_checker_private_enum_match_name`, called by positional-pattern analysis.
 This concerns qualified constructor **patterns**, not the corrected mapper
-expression. It remains an explicit frontend follow-up; this change does not
-claim that all enum-pattern or ergonomics defects have been resolved.
+expression. The subsequent [D084 correction](qualified-enum-patterns-2026-09-05.md)
+addresses qualifier resolution and records the separate remaining nested
+exhaustiveness defect. This mapper change does not claim that all enum-pattern
+or ergonomics defects have been resolved.

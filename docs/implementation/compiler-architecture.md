@@ -233,6 +233,8 @@ bootstrap/src/check/
   checker_expr_string.c interpolation plus closed std/convert lowering
   checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
                         and lowering
+  checker_enum_pattern_names.c
+                        exact D084 enum pattern qualifier/alias resolution
   checker_cfg.c         block/edge/value-state ownership
   checker_statement.c   lexical statement/control-flow lowering
   checker_publication.c checked-package publication

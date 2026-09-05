@@ -42,6 +42,7 @@ void mmay_test_checker_generics(void);
 void mmay_test_checker_generic_lifetime(void);
 void mmay_test_checker_generics_imports(void);
 void mmay_test_checker_map_error_imports(void);
+void mmay_test_checker_enum_pattern_names(void);
 void mmay_test_checker_imported_results(void);
 void mmay_test_checker_resolution(void);
 void mmay_test_receiver_collection_names(void);
@@ -165,6 +166,7 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_checker_generic_lifetime();
         mmay_test_checker_generics_imports();
         mmay_test_checker_map_error_imports();
+        mmay_test_checker_enum_pattern_names();
         mmay_test_checker_imported_results();
         mmay_test_checker_resolution();
         mmay_test_receiver_collection_names();

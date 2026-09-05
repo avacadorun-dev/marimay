@@ -1,0 +1,9 @@
+public enum Choice<T> {
+  Empty,
+  Value(T),
+  Named { value: T, },
+}
+
+public type IntChoice = Choice<int>;
+
+public type StringChoice = Choice<string>;

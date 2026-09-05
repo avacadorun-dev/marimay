@@ -109,13 +109,16 @@ const MarimayCheckedEnum *mmay_check_imported_enum_by_type(
     const MarimayChecker *checker,
     MarimayTypeId type
 );
+/* Optional alias_target_type retains the full concrete alias instantiation;
+ * it is MMAY_TYPE_INVALID when a declaration, rather than an alias, is found. */
 const MarimayCheckedEnum *mmay_check_imported_enum_by_name(
     const MarimayChecker *checker,
     MarimayCheckName namespace_name,
     bool has_namespace,
     MarimayCheckName enum_name,
     bool *resolved,
-    bool *exists_private
+    bool *exists_private,
+    MarimayTypeId *alias_target_type
 );
 
 #endif

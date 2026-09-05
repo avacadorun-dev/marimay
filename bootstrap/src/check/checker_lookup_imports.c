@@ -769,7 +769,8 @@ const MarimayCheckedEnum *mmay_check_imported_enum_by_name(
     bool has_namespace,
     MarimayCheckName enum_name,
     bool *resolved,
-    bool *exists_private
+    bool *exists_private,
+    MarimayTypeId *alias_target_type
 ) {
     const unsigned char *namespace_bytes = NULL;
     const unsigned char *enum_bytes = NULL;
@@ -787,6 +788,9 @@ const MarimayCheckedEnum *mmay_check_imported_enum_by_name(
     }
     *resolved = false;
     *exists_private = false;
+    if (alias_target_type != NULL) {
+        *alias_target_type = MMAY_TYPE_INVALID;
+    }
     binding = mmay_import_binding(
         checker,
         has_namespace ? namespace_bytes : enum_bytes,
@@ -849,6 +853,9 @@ const MarimayCheckedEnum *mmay_check_imported_enum_by_name(
                     enum_value->symbol,
                     enum_value->type_parameters.length
                 )) {
+                if (alias_target_type != NULL) {
+                    *alias_target_type = alias->target_type;
+                }
                 return enum_value;
             }
         }

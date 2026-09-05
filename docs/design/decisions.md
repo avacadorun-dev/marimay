@@ -2561,3 +2561,34 @@ removed without hidden host or project state. Keeping compiler selection,
 templates, native execution, and ownership metadata inside one versioned
 distribution contract prevents an apparently simple installer from becoming
 a second package manager or an ambient trust boundary.
+
+## D084 — Enum pattern qualifiers identify the matched nominal type
+
+Status: accepted.
+
+Enum patterns accept the existing qualified-identifier grammar in three
+explicit forms: `Variant`, `Enum.Variant`, and `namespace.Enum.Variant`.
+`Enum` may be a local enum, a named enum import (including a renamed import),
+or a type alias. The explicit enum qualifier must denote the scrutinee's
+nominal enum; a concrete alias must match its complete instantiated type.
+An uninstantiated generic enum qualifier takes its type arguments from the
+matched type, without changing inference elsewhere.
+
+The existing `namespace.Variant` pattern remains a contextual shorthand: the
+namespace must expose the matched enum or a public alias of its exact type.
+Namespace lookup is file-local and does not fall back to another package or
+a same-named local type. Private, unknown, wrong-type and excessively long
+qualifiers are source errors, never internal checker failures.
+
+These rules apply to unit, positional and named variants, including nested
+enum payload patterns. A qualified name inside a payload is a constructor
+pattern, not a binding. An ordinary unqualified payload binding remains a
+binding. Qualification does not change exhaustiveness, redundancy, guards,
+binding types, or execution behavior.
+
+Reason: the grammar already admits qualified constructor names, and expression
+construction already uses `Enum.Variant` and `namespace.Enum.Variant`, but the
+checker implemented only `namespace.Variant` in patterns and returned an
+internal failure for a third component. This decision resolves that missing
+name-resolution contract without removing the existing shorthand or accepting
+a different nominal type merely because it has a same-named variant.

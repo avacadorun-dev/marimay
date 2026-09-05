@@ -1,0 +1,92 @@
+import * as model from "local/enum-pattern-names/model";
+import { Choice as Selected, IntChoice } from "local/enum-pattern-names/model";
+
+enum Local {
+  Off,
+  On,
+}
+
+type LocalAlias = Local;
+
+fn score(value: model.Choice<int>): int {
+  return match value {
+    model.Choice.Empty => 1,
+    model.Choice.Value(item) => item + 2,
+    model.Choice.Named { value: item } => item + 3,
+  };
+}
+
+fn renamed(value: Selected<int>): int {
+  return match value {
+    Selected.Empty => 1,
+    Selected.Value(item) => item + 2,
+    Selected.Named { value: item } => item + 3,
+  };
+}
+
+fn aliases(value: IntChoice): int {
+  return match value {
+    IntChoice.Empty => 1,
+    model.IntChoice.Value(item) => item + 2,
+    IntChoice.Named { value: item } => item + 3,
+  };
+}
+
+fn shorthand(value: model.Choice<int>): int {
+  return match value {
+    model.Empty => 1,
+    model.Value(item) => item + 2,
+    model.Named { value: item } => item + 3,
+  };
+}
+
+fn nested(value: Result<model.Choice<int>, int>): int {
+  return match value {
+    Ok(model.Choice.Empty) => 1,
+    Ok(model.Choice.Value(item)) => item + 2,
+    Ok(model.Choice.Named { value: item }) => item + 3, // Existing nested coverage analysis still requires a remainder arm.
+    Ok(_) => panic("all known Choice variants should match above"),
+    Err(error) => -error,
+  };
+}
+
+fn guarded(value: model.Choice<int>): int {
+  return match value {
+    Selected.Value(item) if item < 0 => -1,
+    model.IntChoice.Value(item) => item,
+    model.Choice.Empty | IntChoice.Named { value: _ } => 0,
+  };
+}
+
+@test
+fn allQualifiedShapesPreserveValues(): void {
+  const values: []model.Choice<int> = [
+    model.Choice.Empty,
+    model.Choice.Value(10),
+    model.Choice.Named { value: 20 },
+  ];
+  const expected = [1, 12, 23];
+  for index in 0..values.length() {
+    expect.equal(score(values[index]), expected[index]);
+    expect.equal(renamed(values[index]), expected[index]);
+    expect.equal(aliases(values[index]), expected[index]);
+    expect.equal(shorthand(values[index]), expected[index]);
+    expect.equal(nested(Ok(values[index])), expected[index]);
+  }
+  expect.equal(nested(Err(7)), -7);
+}
+
+@test
+fn localEnumAndAliasPatternsKeepIdentity(): void {
+  expect.equal(
+    match Local.On {
+      Local.Off => 0,
+      LocalAlias.On => 1,
+    },
+    1,
+  );
+  expect.equal(guarded(model.Choice.Empty), 0);
+  expect.equal(guarded(model.Choice.Value(-4)), -1);
+  expect.equal(guarded(model.Choice.Value(7)), 7);
+  expect.equal(guarded(model.Choice.Named { value: 8 }), 0);
+}

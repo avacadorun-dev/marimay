@@ -120,7 +120,8 @@
             has_namespace,
             type_name,
             &import_resolved,
-            &exists_private
+            &exists_private,
+            NULL
         );
         if (import_resolved && imported == NULL) {
             *resolved = true;
