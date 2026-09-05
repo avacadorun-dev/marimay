@@ -442,7 +442,7 @@ MarimayCheckStatus mmay_checker_check_package_unit(
             if (declaration->is_generic && !declaration->is_instance) {
                 continue;
             }
-            (void)mmay_checker_private_check_function_body(&checker, declaration);
+            (void)mmay_checker_private_check_function_body(&checker, index);
         }
     }
     if (!mmay_checker_has_failed(&checker)

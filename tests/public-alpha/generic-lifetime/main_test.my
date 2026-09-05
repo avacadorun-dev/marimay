@@ -1,0 +1,73 @@
+import * as bytes from "std/bytes";
+import * as json from "std/json";
+
+fn identity<T>(value: T): T {
+  return value;
+}
+
+fn forward<T>(value: T): T {
+  const first = identity(value);
+  const typed: T = first;
+  return typed;
+}
+
+fn required<T>(decoder: json.Decoder, value: Option<T>, name: string): Result<T, json.Error> {
+  return match value {
+    Some(item) => Ok(item),
+    None => Err(json.missingField(decoder, name)),
+  };
+}
+
+@test
+fn nestedSpecializationsKeepTypeBindings(): void {
+  expect.equal(forward(7), 7);
+  expect.equal(forward(true), true);
+  expect.equal(forward("чай"), "чай");
+  const a: i8 = 7;
+  const b: u8 = 7;
+  const c: i16 = 7;
+  const d: u16 = 7;
+  const e: i32 = 7;
+  const f: u32 = 7;
+  expect.equal(forward(identity(a)), a);
+  expect.equal(forward(identity(b)), b);
+  expect.equal(forward(identity(c)), c);
+  expect.equal(forward(identity(d)), d);
+  expect.equal(forward(identity(e)), e);
+  expect.equal(forward(identity(f)), f);
+}
+
+@test
+fn genericJsonFieldsKeepPayloadsAndErrors(): void {
+  const decoder = match json.newDecoder(bytes.encodeUtf8("{}"), json.defaultLimits()) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  const id = match required(decoder, Some(7), "id") {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  const value = match required(decoder, Some("tea"), "text") {
+    Ok(item) => item,
+    Err(error) => panic(json.message(error)),
+  };
+  const tags = match required(decoder, Some(["one", "two"]), "tags") {
+    Ok(items) => items,
+    Err(error) => panic(json.message(error)),
+  };
+  expect.equal(id, 7);
+  expect.equal(value, "tea");
+  expect.equal(tags.length(), 2);
+  expect.equal(tags[1], "two");
+  const missingId: Option<int> = None;
+  const missingText: Option<string> = None;
+  const missingTags: Option<[]string> = None;
+  expect.err(required(decoder, missingId, "id"));
+  expect.err(required(decoder, missingText, "text"));
+  expect.err(required(decoder, missingTags, "tags"));
+}
+
+@test
+fn subsequentTestsKeepTheirNamesAndBodies(): void {
+  expect.equal(6 * 7, 42);
+}

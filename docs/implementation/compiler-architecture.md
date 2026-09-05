@@ -67,6 +67,11 @@ shortcut for sharing checker internals with a backend.
   bodies deterministically.
 - Recovery state can produce diagnostics but cannot be published as valid
   typed HIR or MIR.
+- Generic specialization may append to and relocate the function declaration
+  table during expression checking. Retain declaration indices across that
+  boundary. A body checker borrows a stable metadata snapshot (including type
+  binding vector descriptors); name publication transfers ownership from the
+  actual indexed declaration, never from that snapshot.
 
 ### Checker to MIR
 

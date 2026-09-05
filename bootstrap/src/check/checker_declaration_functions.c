@@ -855,8 +855,11 @@ cleanup:
 
  bool mmay_checker_private_check_function_body(
     MarimayChecker *checker,
-    MarimayCheckFunctionDeclaration *declaration
+    size_t declaration_index
 ) {
+    MarimayCheckFunctionDeclaration *declaration = checker == NULL ? NULL
+        : mmay_vector_at(&checker->declarations, declaration_index);
+    MarimayCheckFunctionDeclaration body_declaration;
     MarimayFunctionChecker function;
     MarimayCheckedFunction checked;
     MarimayMirVerifyStatus verify_status;
@@ -878,6 +881,11 @@ cleanup:
         mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
+    /* Specializing calls can relocate declarations while this body is checked.
+     * Borrow its immutable metadata, including stable vector descriptors for
+     * active type bindings. The table retains ownership of every allocation. */
+    body_declaration = *declaration;
+    declaration = &body_declaration;
     if (!mmay_checker_private_checker_set_ast(checker, declaration->ast)) {
         mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
@@ -1046,6 +1054,8 @@ cleanup:
         mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         goto cleanup;
     }
+    /* Move the name from its real owner, not the borrowed body snapshot. */
+    declaration = mmay_vector_at(&checker->declarations, declaration_index);
     checked.name = declaration->owned_name;
     memset(&declaration->owned_name, 0, sizeof(declaration->owned_name));
     declaration->name_initialized = false;

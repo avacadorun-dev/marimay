@@ -70,6 +70,7 @@ add_executable(mmay_c_unit
   test_checker_record_imports.c
   test_checker_imports_determinism.c
   test_checker_generics.c
+  test_checker_generic_lifetime.c
   test_checker_generics_imports.c
   test_checker_imports_support.c
   test_checker_imported_arrays.c
@@ -587,7 +588,12 @@ add_test(
   COMMAND "$<TARGET_FILE:mmay>" test
     "${CMAKE_SOURCE_DIR}/tests/public-alpha/match-void" --engine both
 )
-foreach(regression IN ITEMS record-imports match-void)
+add_test(
+  NAME mmay_generic_lifetime
+  COMMAND "$<TARGET_FILE:mmay>" test
+    "${CMAKE_SOURCE_DIR}/tests/public-alpha/generic-lifetime" --engine both
+)
+foreach(regression IN ITEMS record-imports match-void generic-lifetime)
   add_test(
     NAME "mmay_format_${regression}"
     COMMAND "$<TARGET_FILE:mmay>" fmt

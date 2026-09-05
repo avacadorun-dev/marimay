@@ -18,7 +18,7 @@
 );
  bool mmay_checker_private_check_function_body(
     MarimayChecker *checker,
-    MarimayCheckFunctionDeclaration *declaration
+    size_t declaration_index
 );
  bool mmay_checker_private_infer_constant_expression_type(
     MarimayChecker *checker,

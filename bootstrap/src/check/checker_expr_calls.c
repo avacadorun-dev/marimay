@@ -742,6 +742,11 @@ bool mmay_checker_private_compile_ordinary_call_with_receiver(
         }
         {
             MarimayVector inferred_arguments;
+            /* Argument expressions can specialize calls and relocate the
+             * declaration table. Only the saved base index survives them. */
+            generic_base = mmay_vector_at_const(
+                &function->checker->declarations, generic_base_index
+            );
             memset(&inferred_arguments, 0, sizeof(inferred_arguments));
             if (!mmay_vector_init(
                     &inferred_arguments,
