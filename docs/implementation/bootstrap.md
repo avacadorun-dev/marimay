@@ -2,7 +2,7 @@
 
 Status: I0 implementation instructions.
 
-The current slice builds the `mmay` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces include the verified typed MIR oracle, bytecode VM, portable C17 emitter, and version-matched debug/release native runtime archives. The CLI exposes formatting, authoritative batch `mmay check`, local VM-default `mmay run`, host-native `mmay build`, deterministic VM/default or VM/native `mmay test`, and D055 `--max-heap-bytes` propagation for the checker-backed local/private preview surface.
+The current slice builds the `mmay` C17 executable, central owned storage and containers, UTF-8/source snapshots, structured diagnostics, portable paths and hashing, platform-isolated file/process/directory operations, a lossless lexer, an immutable structural recovery tree with bounded top-level incremental reuse, manifest parsing, and the canonical formatter including D032 string spelling. Internal library surfaces include the verified typed MIR oracle, bytecode VM, portable C17 emitter, and version-matched debug/release native runtime archives. The CLI exposes formatting, authoritative batch `mmay check`, VM-default or native `mmay run`, host-native `mmay build`, deterministic VM/default or VM/native `mmay test`, local atomic `mmay init`, offline `mmay doctor`, and D055 `--max-heap-bytes` propagation for the checker-backed local/private preview surface. The CP39 CMake distribution installs version-matched runtimes, headers, standard sources, offline documentation/source material, checksums, provenance, SPDX SBOM, and a checksum-driven prefix lifecycle driver.
 
 ## Prerequisites
 
@@ -59,6 +59,14 @@ cmake --preset tsan
 cmake --build --preset tsan --parallel
 ctest --preset tsan
 ```
+
+The TSan test preset selects all `c-unit` and allocation owners. Those owners
+exercise the complete in-process compiler/runtime surface, including generated
+C, while single-threaded external install/capability/process wrappers remain in
+the complete Debug, Release, and ASan+UBSan+LSan matrices. When I6 introduces
+thread-visible scheduler or blocking-pool behavior, its process owners must
+carry the `c-unit` label or another TSan-selected shared-state label in the same
+change.
 
 The MSVC build uses `/std:c17`, `/W4`, and `/WX` through the same Debug/Release presets, and the `asan` preset selects MSVC AddressSanitizer. UBSan and TSan are not available in the MSVC presets.
 

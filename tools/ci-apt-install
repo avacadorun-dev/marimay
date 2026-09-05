@@ -1,0 +1,73 @@
+#!/bin/sh
+
+set -eu
+
+required_commands=""
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        --command)
+            if [ "$#" -lt 2 ]; then
+                echo "ci-apt-install: --command requires a name" >&2
+                exit 64
+            fi
+            required_commands="$required_commands $2"
+            shift 2
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            break
+            ;;
+    esac
+done
+
+if [ "$#" -eq 0 ]; then
+    echo "usage: ci-apt-install [--command NAME ... --] PACKAGE..." >&2
+    exit 64
+fi
+
+needs_install=false
+if [ -n "$required_commands" ]; then
+    for required_command in $required_commands; do
+        if ! command -v "$required_command" >/dev/null 2>&1; then
+            needs_install=true
+            break
+        fi
+    done
+else
+    for package in "$@"; do
+        if ! dpkg-query -W -f='${Status}\n' "$package" 2>/dev/null |
+            grep -qx 'install ok installed'; then
+            needs_install=true
+            break
+        fi
+    done
+fi
+
+if [ "$needs_install" = false ]; then
+    echo "requested CI packages are already installed"
+    exit 0
+fi
+
+export DEBIAN_FRONTEND=noninteractive
+
+timeout --signal=TERM --kill-after=15s 5m \
+    apt-get -o Acquire::Retries=3 \
+    -o Acquire::http::Timeout=20 \
+    -o Acquire::https::Timeout=20 \
+    -o Dpkg::Use-Pty=0 update
+
+timeout --signal=TERM --kill-after=15s 10m \
+    apt-get -o Acquire::Retries=3 \
+    -o Acquire::http::Timeout=20 \
+    -o Acquire::https::Timeout=20 \
+    -o Dpkg::Use-Pty=0 install --yes --no-install-recommends "$@"
+
+for required_command in $required_commands; do
+    command -v "$required_command" >/dev/null 2>&1 || {
+        echo "ci-apt-install: missing command after installation: $required_command" >&2
+        exit 1
+    }
+done

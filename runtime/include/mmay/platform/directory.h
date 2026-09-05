@@ -104,6 +104,29 @@ MarimayFileStatus mmay_directory_create(
     size_t path_length
 );
 
+/* Creates one previously missing directory without accepting a collision. */
+MarimayFileStatus mmay_directory_create_exclusive(
+    MarimayAllocator allocator,
+    const char *path,
+    size_t path_length
+);
+
+/* Publishes a complete sibling directory into a missing destination. */
+MarimayFileStatus mmay_directory_publish(
+    MarimayAllocator allocator,
+    const char *temporary_path,
+    size_t temporary_path_length,
+    const char *destination_path,
+    size_t destination_path_length
+);
+
+/* Removes one empty directory. */
+MarimayFileStatus mmay_directory_remove_empty(
+    MarimayAllocator allocator,
+    const char *path,
+    size_t path_length
+);
+
 MarimayFileStatus mmay_directory_open_with_ops(
     MarimayDirectoryOps ops,
     MarimayAllocator allocator,

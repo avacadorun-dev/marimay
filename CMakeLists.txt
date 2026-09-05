@@ -94,12 +94,55 @@ set(MMAY_RELEASE_CHANNEL "private-preview")
 set(MMAY_RELEASE_CLAIM "local-checker-backed-slice")
 set(MMAY_RELEASE_PUBLICATION_READY_JSON "false")
 set(MMAY_AVAILABLE_COMMANDS_JSON
-  "[\"build\",\"check\",\"fmt\",\"help\",\"run\",\"test\",\"version\"]"
+  "[\"build\",\"check\",\"doctor\",\"fmt\",\"help\",\"init\",\"run\",\"test\",\"version\"]"
 )
 set(MMAY_STAGED_COMMANDS_JSON
-  "[\"add\",\"audit\",\"bench\",\"doc\",\"exec\",\"explain\",\"fix\",\"fuzz\",\"generate\",\"init\",\"list\",\"outdated\",\"remove\",\"update\",\"vendor\",\"vet\",\"why\"]"
+  "[\"add\",\"audit\",\"bench\",\"doc\",\"exec\",\"explain\",\"fix\",\"fuzz\",\"generate\",\"list\",\"outdated\",\"remove\",\"update\",\"vendor\",\"vet\",\"why\"]"
 )
 set(MMAY_BOOTSTRAP_STAGE 0)
+
+execute_process(
+  COMMAND git rev-parse HEAD
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  RESULT_VARIABLE MMAY_GIT_REVISION_RESULT
+  OUTPUT_VARIABLE MMAY_SOURCE_REVISION
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
+)
+execute_process(
+  COMMAND git show -s --format=%ct HEAD
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  RESULT_VARIABLE MMAY_GIT_EPOCH_RESULT
+  OUTPUT_VARIABLE MMAY_SOURCE_DATE_EPOCH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
+)
+execute_process(
+  COMMAND "${CMAKE_COMMAND}" -E env TZ=UTC git show -s
+    --date=format-local:%Y-%m-%dT%H:%M:%SZ --format=%cd HEAD
+  WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+  RESULT_VARIABLE MMAY_GIT_DATE_RESULT
+  OUTPUT_VARIABLE MMAY_SOURCE_DATE_ISO
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+  ERROR_QUIET
+)
+if(NOT MMAY_GIT_REVISION_RESULT EQUAL 0)
+  set(MMAY_SOURCE_REVISION "unknown")
+endif()
+set(MMAY_SOURCE_DATE_FROM_ENV FALSE)
+if(DEFINED ENV{SOURCE_DATE_EPOCH} AND NOT "$ENV{SOURCE_DATE_EPOCH}" STREQUAL "")
+  set(MMAY_SOURCE_DATE_FROM_ENV TRUE)
+  set(MMAY_SOURCE_DATE_EPOCH "$ENV{SOURCE_DATE_EPOCH}")
+  string(TIMESTAMP MMAY_SOURCE_DATE_ISO "%Y-%m-%dT%H:%M:%SZ" UTC)
+elseif(NOT MMAY_GIT_EPOCH_RESULT EQUAL 0)
+  set(MMAY_SOURCE_DATE_EPOCH 0)
+endif()
+if(NOT MMAY_SOURCE_DATE_EPOCH MATCHES "^[0-9]+$")
+  message(FATAL_ERROR "SOURCE_DATE_EPOCH must be a nonnegative decimal integer")
+endif()
+if(NOT MMAY_SOURCE_DATE_FROM_ENV AND NOT MMAY_GIT_DATE_RESULT EQUAL 0)
+  set(MMAY_SOURCE_DATE_ISO "1970-01-01T00:00:00Z")
+endif()
 
 set(MMAY_NATIVE_RUNTIME_DEBUG_DIRECTORY
   "${CMAKE_CURRENT_BINARY_DIR}/native-runtime/debug"
@@ -162,6 +205,11 @@ configure_file(
 configure_file(
   cmake/mmay_release_metadata.json.in
   "${CMAKE_CURRENT_BINARY_DIR}/generated/mmay-release-metadata.json"
+  @ONLY
+)
+configure_file(
+  cmake/MarimayInstallMetadata.cmake.in
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/MarimayInstallMetadata.cmake"
   @ONLY
 )
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS
@@ -472,6 +520,10 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/cli/cli_display.c
   bootstrap/src/cli/cli_heap_limit.c
   bootstrap/src/cli/cli_build_program.c
+  bootstrap/src/cli/cli_native_build.c
+  bootstrap/src/cli/cli_native_run.c
+  bootstrap/src/cli/cli_doctor.c
+  bootstrap/src/cli/cli_init.c
   bootstrap/src/cli/cli_capabilities.c
     bootstrap/src/cli/cli_check.c
     bootstrap/src/cli/cli_compile_report.c
@@ -532,6 +584,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/verify_support.c
   bootstrap/src/native/build.c
   bootstrap/src/native/runtime_artifact.c
+  bootstrap/src/native/toolchain.c
   bootstrap/src/native/c_emitter.c
   bootstrap/src/native/c_emitter_array_fill.c
   bootstrap/src/native/c_emitter_bounds.c
@@ -644,19 +697,47 @@ install(DIRECTORY bootstrap/include/mmay runtime/include/mmay
 )
 install(FILES
   "${CMAKE_CURRENT_BINARY_DIR}/generated/mmay-release-metadata.json"
+  cmake/MarimayDistributionLifecycle.cmake
   DESTINATION
     "${CMAKE_INSTALL_DATADIR}/mmay/${MMAY_COMPILER_VERSION}"
+)
+install(DIRECTORY std
+  DESTINATION
+    "${CMAKE_INSTALL_DATADIR}/mmay/${MMAY_COMPILER_VERSION}"
+  FILES_MATCHING PATTERN "*.my"
 )
 install(FILES
   README.md
   IMPLEMENTATION-BRIEF.md
+  CMakeLists.txt
+  CMakePresets.json
   DESTINATION
     "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
 )
 install(DIRECTORY docs examples
   DESTINATION
     "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
+  USE_SOURCE_PERMISSIONS
   FILES_MATCHING
+    PATTERN ".mmay" EXCLUDE
+    PATTERN "*.cmake"
+    PATTERN "*.in"
+    PATTERN "*.py"
+    PATTERN "*.md"
+    PATTERN "*.tsv"
+    PATTERN "*.my"
+)
+install(DIRECTORY cmake tools
+  DESTINATION
+    "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
+  USE_SOURCE_PERMISSIONS
+  FILES_MATCHING
+    PATTERN "package-distribution"
+    PATTERN "check-*"
+    PATTERN "generate-*"
+    PATTERN "*.cmake"
+    PATTERN "*.in"
+    PATTERN "*.py"
     PATTERN "*.md"
     PATTERN "*.tsv"
     PATTERN "*.my"
@@ -667,8 +748,51 @@ install(DIRECTORY bootstrap runtime
   FILES_MATCHING
     PATTERN "*.c"
     PATTERN "*.h"
+    PATTERN "*.inc"
     PATTERN "*.txt"
+    PATTERN "*.tsv"
 )
+install(DIRECTORY std
+  DESTINATION
+    "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
+  FILES_MATCHING PATTERN "*.my"
+)
+install(SCRIPT
+  "${CMAKE_CURRENT_BINARY_DIR}/generated/MarimayInstallMetadata.cmake"
+)
+
+find_package(Python3 COMPONENTS Interpreter QUIET)
+if(Python3_Interpreter_FOUND)
+  if(WIN32)
+    set(MMAY_DISTRIBUTION_ARCHIVE_FORMAT "zip")
+  else()
+    set(MMAY_DISTRIBUTION_ARCHIVE_FORMAT "tar.gz")
+  endif()
+  set(MMAY_DISTRIBUTION_STAGE
+    "${CMAKE_CURRENT_BINARY_DIR}/distribution/stage"
+  )
+  string(TOLOWER "${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}"
+    MMAY_DISTRIBUTION_HOST
+  )
+  add_custom_target(mmay_package
+    COMMAND "${CMAKE_COMMAND}" -E rm -rf
+      "${CMAKE_CURRENT_BINARY_DIR}/distribution"
+    COMMAND "${CMAKE_COMMAND}" --install "${CMAKE_CURRENT_BINARY_DIR}"
+      --config "$<CONFIG>" --prefix "${MMAY_DISTRIBUTION_STAGE}"
+    COMMAND "${Python3_EXECUTABLE}"
+      "${CMAKE_CURRENT_SOURCE_DIR}/tools/package-distribution"
+      --install-root "${MMAY_DISTRIBUTION_STAGE}"
+      --source-root "${CMAKE_CURRENT_SOURCE_DIR}"
+      --output-directory "${CMAKE_CURRENT_BINARY_DIR}/distribution"
+      --version "${MMAY_COMPILER_VERSION}"
+      --host "${MMAY_DISTRIBUTION_HOST}"
+      --epoch "${MMAY_SOURCE_DATE_EPOCH}"
+      --host-format "${MMAY_DISTRIBUTION_ARCHIVE_FORMAT}"
+    DEPENDS mmay mmay_native_runtime_debug mmay_native_runtime_release
+    COMMENT "Creating deterministic Marimay host and source archives"
+    VERBATIM
+  )
+endif()
 
 if(BUILD_TESTING)
   add_subdirectory(tests/c-unit)

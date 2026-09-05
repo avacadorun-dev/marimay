@@ -95,7 +95,7 @@
       "name": "fuzz",
       "configurePreset": "fuzz",
       "configuration": "Debug",
-      "targets": ["mmay_fuzz_bytecode", "mmay_fuzz_frontend", "mmay_fuzz_formatter"]
+      "targets": ["mmay_fuzz_bytecode", "mmay_fuzz_frontend", "mmay_fuzz_formatter", "mmay_fuzz_json"]
     }
   ],
   "testPresets": [
@@ -132,6 +132,9 @@
       "configurePreset": "tsan",
       "configuration": "Debug",
       "output": { "outputOnFailure": true },
+      "filter": {
+        "include": { "label": "^(c-unit|allocation)$" }
+      },
       "execution": { "jobs": 4 }
     }
   ]

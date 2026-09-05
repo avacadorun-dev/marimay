@@ -5,18 +5,43 @@ on:
   pull_request:
 
 jobs:
+  classify:
+    name: Classify documentation-only revisions
+    runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
+    outputs:
+      code_changed: ${{ steps.paths.outputs.code_changed }}
+    steps:
+      - name: Check out source and comparison base
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Classify changed paths
+        id: paths
+        env:
+          HEAD_REVISION: ${{ gitea.sha }}
+          PUSH_BASE: ${{ gitea.event.before }}
+          PULL_BASE: ${{ gitea.event.pull_request.base.sha }}
+        run: |
+          base_revision=$PUSH_BASE
+          if [ -z "$base_revision" ]; then base_revision=$PULL_BASE; fi
+          code_changed=$(./tools/classify-ci-change "$base_revision" "$HEAD_REVISION")
+          printf 'code_changed=%s\n' "$code_changed" | tee -a "$GITHUB_OUTPUT"
+
   documentation:
     name: Documentation and architecture invariants
     runs-on: ubuntu-latest
+    container:
+      image: docker.gitea.com/runner-images:ubuntu-latest@sha256:fd911d7417bfbf0f454530e447da95b58001e1df41bbc5e1a8dd35d432575aae
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install documentation dependencies
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends python3
+        run: ./tools/ci-apt-install python3
       - name: Check generated artifacts
         run: ./tools/check-generated
       - name: Check roadmap and checkpoint invariants
@@ -33,10 +58,16 @@ jobs:
         run: ./tools/check-c-memory-policy
       - name: Check architecture boundaries
         run: ./tools/check-architecture
+      - name: Check release contract
+        run: ./tools/check-release-contract
 
   c17:
     name: Linux x86_64 ${{ matrix.compiler }} / ${{ matrix.configuration }}
     runs-on: ubuntu-latest
+    container:
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
+    needs: [classify, documentation]
+    if: ${{ needs.classify.outputs.code_changed == 'true' }}
     strategy:
       fail-fast: false
       matrix:
@@ -44,13 +75,23 @@ jobs:
         configuration: [Debug, Release]
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Install C17 toolchain
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev python3
+      - name: Install GCC C17 toolchain
+        if: ${{ matrix.compiler == 'gcc' }}
+        run: >-
+          ./tools/ci-apt-install
+          --command ar --command cmake --command gcc
+          --command make --command python3 --
+          build-essential cmake python3
+      - name: Install Clang C17 toolchain
+        if: ${{ matrix.compiler == 'clang' }}
+        run: >-
+          ./tools/ci-apt-install
+          --command ar --command clang --command cmake
+          --command make --command python3 --
+          build-essential clang cmake python3
       - name: Configure
         run: >-
           cmake -S . -B build
@@ -60,11 +101,27 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
       - name: Test
-        run: ctest --test-dir build --parallel 4 --output-on-failure
+        run: >-
+          ctest --test-dir build
+          -C ${{ matrix.configuration }}
+          --parallel 4 --output-on-failure
+      - name: Preserve CP39 Linux x86_64 artifacts
+        if: ${{ matrix.compiler == 'gcc' && matrix.configuration == 'Release' }}
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: cp39-linux-x86_64
+          path: |
+            build/distribution/*.tar.gz
+            build/distribution/*.sha256
+          if-no-files-found: error
 
   sanitizers:
     name: Linux x86_64 ASan+UBSan+LSan
     runs-on: ubuntu-latest
+    container:
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
+    needs: classify
+    if: ${{ needs.classify.outputs.code_changed == 'true' }}
     env:
       CC: clang
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:symbolize=1:allow_addr2line=1
@@ -72,13 +129,13 @@ jobs:
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install C17 toolchain
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev llvm-18 python3
+        run: >-
+          ./tools/ci-apt-install
+          build-essential clang cmake libclang-rt-18-dev llvm-18 python3
       - name: Configure
         run: cmake --preset asan-ubsan
       - name: Build
@@ -89,9 +146,51 @@ jobs:
           if [ "${test_jobs}" -gt 8 ]; then test_jobs=8; fi
           ctest --preset asan-ubsan --parallel "${test_jobs}" --output-on-failure
 
+  fuzz-build:
+    name: Linux x86_64 fuzz / build once
+    runs-on: ubuntu-latest
+    container:
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
+    needs: classify
+    if: ${{ needs.classify.outputs.code_changed == 'true' }}
+    env:
+      CC: clang
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install fuzz toolchain
+        run: >-
+          ./tools/ci-apt-install
+          build-essential clang cmake libclang-rt-18-dev llvm-18 python3
+      - name: Configure
+        run: cmake --preset fuzz
+      - name: Build all fuzz targets
+        run: >-
+          cmake --build build/fuzz
+          --target mmay_fuzz_bytecode mmay_fuzz_frontend
+          mmay_fuzz_formatter mmay_fuzz_json
+          --parallel
+      - name: Bundle fuzz executables
+        run: >-
+          tar -czf fuzz-binaries.tar.gz
+          -C build/fuzz/tests/fuzz
+          mmay_fuzz_bytecode mmay_fuzz_frontend
+          mmay_fuzz_formatter mmay_fuzz_json
+      - name: Preserve fuzz executables
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: fuzz-linux-x86_64-binaries
+          path: fuzz-binaries.tar.gz
+          if-no-files-found: error
+
   fuzz:
     name: Linux x86_64 fuzz / ${{ matrix.target }}
     runs-on: ubuntu-latest
+    container:
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
+    needs: fuzz-build
     strategy:
       fail-fast: false
       matrix:
@@ -102,17 +201,19 @@ jobs:
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
-      - name: Install fuzz toolchain
+      - name: Install sanitizer runtime
+        run: ./tools/ci-apt-install libclang-rt-18-dev llvm-18
+      - name: Restore fuzz executables
+        uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
+        with:
+          name: fuzz-linux-x86_64-binaries
+      - name: Extract fuzz executables
         run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev llvm-18 python3
-      - name: Configure
-        run: cmake --preset fuzz
-      - name: Build target
-        run: cmake --build build/fuzz --target mmay_fuzz_${{ matrix.target }} --parallel
+          mkdir -p build/fuzz/tests/fuzz
+          tar -xzf fuzz-binaries.tar.gz -C build/fuzz/tests/fuzz
       - name: Run sustained campaign
         run: >-
           ./build/fuzz/tests/fuzz/mmay_fuzz_${{ matrix.target }}
@@ -122,7 +223,7 @@ jobs:
           tests/fuzz/corpus/${{ matrix.target }}
       - name: Preserve fuzz failure inputs
         if: always()
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: fuzz-${{ matrix.target }}-failure-inputs
           path: |
@@ -134,18 +235,21 @@ jobs:
   thread-sanitizer:
     name: Linux x86_64 TSan
     runs-on: ubuntu-latest
+    container:
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
+    needs: sanitizers
     env:
       CC: clang
       TSAN_OPTIONS: halt_on_error=1
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
       - name: Install C17 toolchain
-        run: |
-          apt-get update
-          DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends build-essential clang cmake libclang-rt-18-dev python3
+        run: >-
+          ./tools/ci-apt-install
+          build-essential clang cmake libclang-rt-18-dev python3
       - name: Configure
         run: cmake --preset tsan
       - name: Build

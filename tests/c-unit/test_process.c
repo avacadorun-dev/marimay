@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "mmay/base/allocator.h"
@@ -127,6 +128,84 @@ void mmay_test_process(void) {
         mmay_system_allocator(), fixture_arguments, 1,
         NULL, 1, 16384, 16384, &capture
     ) == MMAY_PROCESS_INVALID_ARGUMENT);
+
+    {
+        FILE *input_file = tmpfile();
+        FILE *output_file = tmpfile();
+        FILE *error_file = tmpfile();
+        unsigned char actual_output[sizeof(exact_input)] = {0};
+        char actual_error[sizeof("fixture-error\n")] = {0};
+        MMAY_EXPECT(input_file != NULL && output_file != NULL
+            && error_file != NULL);
+        if (input_file != NULL && output_file != NULL && error_file != NULL) {
+            MMAY_EXPECT(fwrite(
+                exact_input, 1, sizeof(exact_input), input_file
+            ) == sizeof(exact_input));
+            MMAY_EXPECT(fseek(input_file, 0, SEEK_SET) == 0);
+            status = mmay_process_run_stdio(
+                mmay_system_allocator(), fixture_arguments, 1,
+                input_file, output_file, error_file, &result
+            );
+            MMAY_EXPECT(status == MMAY_PROCESS_OK);
+            MMAY_EXPECT(result.exit_code == 0 && !result.signaled);
+            MMAY_EXPECT(fflush(output_file) == 0 && fflush(error_file) == 0);
+            MMAY_EXPECT(fseek(output_file, 0, SEEK_SET) == 0);
+            MMAY_EXPECT(fseek(error_file, 0, SEEK_SET) == 0);
+            MMAY_EXPECT(fread(
+                actual_output, 1, sizeof(actual_output), output_file
+            ) == sizeof(actual_output));
+            MMAY_EXPECT(memcmp(
+                actual_output, exact_input, sizeof(exact_input)
+            ) == 0);
+            MMAY_EXPECT(fread(
+                actual_error, 1, sizeof(actual_error) - 1, error_file
+            ) == sizeof(actual_error) - 1);
+            MMAY_EXPECT(strcmp(actual_error, "fixture-error\n") == 0);
+            mmay_process_result_dispose(&result);
+        }
+        if (input_file != NULL) fclose(input_file);
+        if (output_file != NULL) fclose(output_file);
+        if (error_file != NULL) fclose(error_file);
+    }
+
+    MMAY_EXPECT(mmay_process_run_stdio(
+        mmay_system_allocator(), fixture_arguments, 1,
+        NULL, stdout, stderr, &result
+    ) == MMAY_PROCESS_INVALID_ARGUMENT);
+
+    {
+        FILE *input_file = tmpfile();
+        FILE *output_file = tmpfile();
+        FILE *error_file = tmpfile();
+        reached_success = false;
+        MMAY_EXPECT(input_file != NULL && output_file != NULL
+            && error_file != NULL);
+        if (input_file != NULL && output_file != NULL && error_file != NULL) {
+            for (failure_index = 0; failure_index < 16; failure_index += 1) {
+                MarimayFailAllocator state;
+                mmay_fail_allocator_init(
+                    &state, mmay_system_allocator(), failure_index
+                );
+                status = mmay_process_run_stdio(
+                    mmay_fail_allocator(&state), fixture_arguments, 1,
+                    input_file, output_file, error_file, &result
+                );
+                if (status == MMAY_PROCESS_OK) {
+                    reached_success = true;
+                    mmay_process_result_dispose(&result);
+                } else {
+                    MMAY_EXPECT(status == MMAY_PROCESS_ALLOCATION_FAILED);
+                }
+                MMAY_EXPECT(state.live_allocations == 0);
+                MMAY_EXPECT(state.live_bytes == 0);
+                if (reached_success) break;
+            }
+        }
+        MMAY_EXPECT(reached_success);
+        if (input_file != NULL) fclose(input_file);
+        if (output_file != NULL) fclose(output_file);
+        if (error_file != NULL) fclose(error_file);
+    }
 
     status = mmay_process_run(
         mmay_system_allocator(),

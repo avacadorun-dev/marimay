@@ -1,0 +1,94 @@
+set(mmay_prefix "$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}")
+set(mmay_metadata
+  "${mmay_prefix}/@CMAKE_INSTALL_DATADIR@/mmay/@MMAY_COMPILER_VERSION@"
+)
+set(mmay_program
+  "${mmay_prefix}/@CMAKE_INSTALL_BINDIR@/mmay@CMAKE_EXECUTABLE_SUFFIX@"
+)
+set(mmay_debug_runtime
+  "${mmay_prefix}/@CMAKE_INSTALL_LIBDIR@/mmay/@MMAY_RUNTIME_VERSION@/native/debug/@MMAY_NATIVE_RUNTIME_DEBUG_FILENAME@"
+)
+set(mmay_release_runtime
+  "${mmay_prefix}/@CMAKE_INSTALL_LIBDIR@/mmay/@MMAY_RUNTIME_VERSION@/native/release/@MMAY_NATIVE_RUNTIME_RELEASE_FILENAME@"
+)
+
+foreach(required IN ITEMS
+    "${mmay_program}" "${mmay_debug_runtime}" "${mmay_release_runtime}")
+  if(NOT EXISTS "${required}")
+    message(FATAL_ERROR "CP39 distribution metadata input missing: ${required}")
+  endif()
+endforeach()
+
+file(SHA256 "${mmay_program}" mmay_program_sha256)
+file(SHA256 "${mmay_debug_runtime}" mmay_debug_sha256)
+file(SHA256 "${mmay_release_runtime}" mmay_release_sha256)
+
+function(mmay_json_escape output input)
+  string(REPLACE "\\" "\\\\" escaped "${input}")
+  string(REPLACE "\"" "\\\"" escaped "${escaped}")
+  string(REPLACE "\n" "\\n" escaped "${escaped}")
+  string(REPLACE "\r" "\\r" escaped "${escaped}")
+  set(${output} "${escaped}" PARENT_SCOPE)
+endfunction()
+
+mmay_json_escape(mmay_source_revision "@MMAY_SOURCE_REVISION@")
+mmay_json_escape(mmay_builder "cmake-@CMAKE_VERSION@")
+mmay_json_escape(mmay_compiler_path "@CMAKE_C_COMPILER@")
+mmay_json_escape(mmay_compiler_id "@CMAKE_C_COMPILER_ID@")
+mmay_json_escape(mmay_compiler_version "@CMAKE_C_COMPILER_VERSION@")
+
+file(WRITE "${mmay_metadata}/provenance.json"
+  "{\"schema\":\"marimay.provenance/1\","
+  "\"version\":\"@MMAY_COMPILER_VERSION@\","
+  "\"source\":{\"revision\":\"${mmay_source_revision}\","
+  "\"epoch\":@MMAY_SOURCE_DATE_EPOCH@},"
+  "\"builder\":\"${mmay_builder}\","
+  "\"host\":{\"system\":\"@CMAKE_SYSTEM_NAME@\","
+  "\"processor\":\"@CMAKE_SYSTEM_PROCESSOR@\"},"
+  "\"compiler\":{\"path\":\"${mmay_compiler_path}\","
+  "\"id\":\"${mmay_compiler_id}\","
+  "\"version\":\"${mmay_compiler_version}\"},"
+  "\"profile\":\"debug-and-release\","
+  "\"artifacts\":{\"bin/mmay\":\"${mmay_program_sha256}\","
+  "\"runtime-debug\":\"${mmay_debug_sha256}\","
+  "\"runtime-release\":\"${mmay_release_sha256}\"}}\n"
+)
+
+file(WRITE "${mmay_metadata}/sbom.spdx.json"
+  "{\"spdxVersion\":\"SPDX-2.3\",\"dataLicense\":\"CC0-1.0\","
+  "\"SPDXID\":\"SPDXRef-DOCUMENT\",\"name\":\"Marimay @MMAY_COMPILER_VERSION@\","
+  "\"documentNamespace\":\"urn:marimay:spdx:@MMAY_COMPILER_VERSION@:${mmay_source_revision}\","
+  "\"creationInfo\":{\"created\":\"@MMAY_SOURCE_DATE_ISO@\","
+  "\"creators\":[\"Tool: ${mmay_builder}\"]},"
+  "\"packages\":["
+  "{\"name\":\"Marimay compiler\",\"SPDXID\":\"SPDXRef-Compiler\","
+  "\"versionInfo\":\"@MMAY_COMPILER_VERSION@\",\"downloadLocation\":\"NOASSERTION\","
+  "\"filesAnalyzed\":false,\"licenseConcluded\":\"NOASSERTION\",\"licenseDeclared\":\"NOASSERTION\"},"
+  "{\"name\":\"Marimay native runtime debug\",\"SPDXID\":\"SPDXRef-RuntimeDebug\","
+  "\"versionInfo\":\"@MMAY_RUNTIME_VERSION@\",\"downloadLocation\":\"NOASSERTION\","
+  "\"filesAnalyzed\":false,\"licenseConcluded\":\"NOASSERTION\",\"licenseDeclared\":\"NOASSERTION\"},"
+  "{\"name\":\"Marimay native runtime release\",\"SPDXID\":\"SPDXRef-RuntimeRelease\","
+  "\"versionInfo\":\"@MMAY_RUNTIME_VERSION@\",\"downloadLocation\":\"NOASSERTION\","
+  "\"filesAnalyzed\":false,\"licenseConcluded\":\"NOASSERTION\",\"licenseDeclared\":\"NOASSERTION\"},"
+  "{\"name\":\"Marimay bounded standard library\",\"SPDXID\":\"SPDXRef-Std\","
+  "\"versionInfo\":\"@MMAY_STANDARD_LIBRARY_VERSION@\",\"downloadLocation\":\"NOASSERTION\","
+  "\"filesAnalyzed\":false,\"licenseConcluded\":\"NOASSERTION\",\"licenseDeclared\":\"NOASSERTION\"},"
+  "{\"name\":\"Marimay offline documentation and source kit\",\"SPDXID\":\"SPDXRef-DocsSource\","
+  "\"versionInfo\":\"@MMAY_COMPILER_VERSION@\",\"downloadLocation\":\"NOASSERTION\","
+  "\"filesAnalyzed\":false,\"licenseConcluded\":\"NOASSERTION\",\"licenseDeclared\":\"NOASSERTION\"}]}\n"
+)
+
+file(GLOB_RECURSE mmay_distribution_files LIST_DIRECTORIES false
+  "${mmay_prefix}/*"
+)
+list(SORT mmay_distribution_files)
+set(mmay_checksums "")
+foreach(distribution_file IN LISTS mmay_distribution_files)
+  if(distribution_file STREQUAL "${mmay_metadata}/checksums.sha256")
+    continue()
+  endif()
+  file(SHA256 "${distribution_file}" distribution_sha256)
+  file(RELATIVE_PATH distribution_relative "${mmay_prefix}" "${distribution_file}")
+  string(APPEND mmay_checksums "${distribution_sha256}  ${distribution_relative}\n")
+endforeach()
+file(WRITE "${mmay_metadata}/checksums.sha256" "${mmay_checksums}")

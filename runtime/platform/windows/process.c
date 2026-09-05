@@ -4,6 +4,7 @@
 #include "mmay/platform/process.h"
 
 #include <stdbool.h>
+#include <io.h>
 #include <limits.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -328,6 +329,101 @@ cleanup:
     if (status != MMAY_PROCESS_OK) {
         mmay_owned_bytes_dispose(&result->output);
     }
+    return status;
+}
+
+static bool mmay_windows_inheritable_file(FILE *file, HANDLE *result) {
+    intptr_t raw;
+    if (file == NULL || result == NULL) return false;
+    raw = _get_osfhandle(_fileno(file));
+    if (raw == -1) return false;
+    return DuplicateHandle(
+        GetCurrentProcess(), (HANDLE)raw, GetCurrentProcess(), result,
+        0, TRUE, DUPLICATE_SAME_ACCESS
+    ) != 0;
+}
+
+MarimayProcessStatus mmay_process_run_stdio(
+    MarimayAllocator allocator,
+    const char *const arguments[],
+    size_t argument_count,
+    FILE *standard_input,
+    FILE *standard_output,
+    FILE *standard_error,
+    MarimayProcessResult *result
+) {
+    STARTUPINFOW startup;
+    PROCESS_INFORMATION process;
+    HANDLE input_handle = INVALID_HANDLE_VALUE;
+    HANDLE output_handle = INVALID_HANDLE_VALUE;
+    HANDLE error_handle = INVALID_HANDLE_VALUE;
+    wchar_t *command = NULL;
+    size_t command_size = 0;
+    size_t index = 0;
+    bool process_started = false;
+    MarimayProcessStatus status = MMAY_PROCESS_OK;
+    if (result == NULL) return MMAY_PROCESS_INVALID_ARGUMENT;
+    mmay_process_result_init(result, allocator);
+    if (arguments == NULL || argument_count == 0 || arguments[0] == NULL
+        || arguments[argument_count] != NULL || standard_input == NULL
+        || standard_output == NULL || standard_error == NULL) {
+        return MMAY_PROCESS_INVALID_ARGUMENT;
+    }
+    for (index = 0; index < argument_count; index += 1) {
+        if (arguments[index] == NULL || !mmay_utf8_validate(
+                arguments[index], strlen(arguments[index]), NULL
+            )) return MMAY_PROCESS_INVALID_ARGUMENT;
+    }
+    if (!mmay_windows_command_line(
+            allocator, arguments, argument_count, &command, &command_size
+        )) return MMAY_PROCESS_ALLOCATION_FAILED;
+    if (fflush(standard_output) != 0 || fflush(standard_error) != 0
+        || !mmay_windows_inheritable_file(standard_input, &input_handle)
+        || !mmay_windows_inheritable_file(standard_output, &output_handle)
+        || !mmay_windows_inheritable_file(standard_error, &error_handle)) {
+        status = MMAY_PROCESS_IO_FAILED;
+        goto cleanup;
+    }
+    ZeroMemory(&startup, sizeof(startup));
+    startup.cb = (DWORD)sizeof(startup);
+    startup.dwFlags = STARTF_USESTDHANDLES;
+    startup.hStdInput = input_handle;
+    startup.hStdOutput = output_handle;
+    startup.hStdError = error_handle;
+    ZeroMemory(&process, sizeof(process));
+    if (!CreateProcessW(
+            NULL, command, NULL, NULL, TRUE, 0,
+            NULL, NULL, &startup, &process
+        )) {
+        status = MMAY_PROCESS_SPAWN_FAILED;
+        goto cleanup;
+    }
+    process_started = true;
+    if (WaitForSingleObject(process.hProcess, INFINITE) != WAIT_OBJECT_0) {
+        status = MMAY_PROCESS_WAIT_FAILED;
+        goto terminate;
+    }
+    {
+        DWORD exit_code = 0;
+        if (!GetExitCodeProcess(process.hProcess, &exit_code)) {
+            status = MMAY_PROCESS_WAIT_FAILED;
+            goto terminate;
+        }
+        result->exit_code = (uint32_t)exit_code;
+    }
+    goto cleanup;
+terminate:
+    (void)TerminateProcess(process.hProcess, 70U);
+    (void)WaitForSingleObject(process.hProcess, INFINITE);
+cleanup:
+    if (process_started) {
+        CloseHandle(process.hThread);
+        CloseHandle(process.hProcess);
+    }
+    if (input_handle != INVALID_HANDLE_VALUE) CloseHandle(input_handle);
+    if (output_handle != INVALID_HANDLE_VALUE) CloseHandle(output_handle);
+    if (error_handle != INVALID_HANDLE_VALUE) CloseHandle(error_handle);
+    if (command != NULL) mmay_deallocate(&allocator, command, command_size);
     return status;
 }
 

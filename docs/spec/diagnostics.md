@@ -31,7 +31,10 @@ Formatter workflow failures use `F0001` when an input cannot be read, `F0002` wh
 
 Batch checker discovery, read, or defensive traversal/source-limit failures use
 `K0004`. A syntactically valid manifest that lacks exactly one usable,
-nonempty, NUL-free `module` and `language` identity uses `K0005`. Lexical, parser, resolver, type,
+nonempty, NUL-free `module` and `language` identity uses `K0005`. A local
+project template that cannot be staged and atomically published uses `K0006`;
+the command leaves an existing destination unchanged and removes its temporary
+tree. Allocation failure remains `I0002`, not `K0006`. Lexical, parser, resolver, type,
 match, and effect failures discovered by `mmay check` retain their originating
 codes and exact source spans. If accepted syntax reaches an unimplemented
 checker path, `mmay check` emits `I0001` and exits 70. Its primary span is the

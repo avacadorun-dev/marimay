@@ -41,16 +41,53 @@ whose fixtures and outputs are read-only may run concurrently. Tests that
 create shared build-tree artifacts remain serial.
 
 The C-unit coordinator is registered in CTest as fixed owner-aligned suite
-shards. Every coordinator call belongs to exactly one shard, while the direct
-runner still executes their union. Each suite shard receives a private copy of
-the fixture tree and a private working directory, so generated native outputs
-and temporary files cannot collide. Local CTest presets use a bounded
-four-process pool; sanitizer CI may use up to eight isolated processes and
-starts the historically expensive owner groups first. Shared resources use a
-narrow CTest resource lock rather than forcing unrelated tests to run serially.
+shards plus named focused checkpoint owners. Every leaf test function is
+reachable from exactly one CTest owner, while the direct runner executes the
+union of both owner families. `check-architecture` expands the coordinator call
+graph and rejects duplicate or orphaned leaf owners. Each owner receives a
+private copy of the fixture tree and a private working directory, so generated
+native outputs and temporary files cannot collide; a focused name is never a
+reason to repeat the same leaf function in a broad shard. Local CTest presets
+use a bounded four-process pool; sanitizer CI may use up to eight isolated
+processes. Fresh-build `COST` values are calibrated from the slowest supported
+instrumented profile so the two-worker CP38, CP37, and CP39 integration owners
+occupy the critical path first instead of serializing behind one-worker tests.
+The ASan CP38 owner retains its proven whole-pool memory exclusion and is
+therefore scheduled first. After that exclusion releases the pool, the long
+native owner overlaps the two-worker CP37/CP39 chain rather than waiting behind
+allocation shards. Shared filesystem resources use a narrow CTest resource
+lock rather than forcing unrelated tests to run serially.
 Process-integration tests whose artifacts are private reserve the number of
-CTest workers needed by their compiler and native subprocesses instead of
-serializing the entire test pool.
+CTest workers needed by their compiler and native subprocesses.
+
+CP39 lifecycle/native-run coverage remains in every Debug, Release, and
+sanitizer profile. Archive creation, reproducibility replay, offline source
+configuration, and archive relocation have a separate Release-only owner. That
+owner exercises the public `mmay_package` target, compares it with an
+independent packager invocation, and leaves the verified target output for CI
+upload. Debug and sanitizer jobs therefore do not repeat source archiving that
+cannot observe sanitizer instrumentation.
+
+Gitea jobs pin action commits and the documentation runner-image digest. C17,
+sanitizer, and fuzz jobs use the host-local image derived from the pinned
+`.gitea/images/c17-linux-x86_64.Dockerfile`; its full Dockerfile SHA-256 is the
+image tag, and `tools/build-gitea-ci-image --check` rejects workflow drift.
+Rebuild that image on every Gitea runner host before pushing a Dockerfile tag
+change. The shared `tools/ci-apt-install` bootstrap then proves the declared
+commands or packages are already present without network access; its bounded
+apt fallback remains only for an incompletely provisioned runner. A package
+mirror outage must fail setup promptly; it must not consume the checkpoint test
+budget or masquerade as a test timeout. Long-lived credentials are not retained
+by checkout, and artifact transport uses pinned action revisions.
+
+A path-classification job compares the pushed or pull-request base revision
+with the exact head. Revisions changing only `docs/**` and top-level Markdown
+run the complete documentation, generated-artifact, architecture, memory, and
+release-contract gate while skipping compiler, sanitizer, and fuzz work whose
+inputs are unchanged. A missing comparison base fails safe to the complete
+matrix, and every workflow, build, source, test, fixture, or tool change is
+classified as code. This keeps evidence-only commits fast without suppressing
+any affected executable test.
 
 Clang/GCC sanitizer presets compile host compiler and test targets with `-O1`
 while retaining Debug symbols and assertions. This keeps exhaustive
@@ -392,6 +429,27 @@ records the exact compiler/runtime, target command, executions, corpus growth,
 coverage counters, peak RSS, and artifact disposition. Later sustained-release
 campaigns increase this budget; passing an I1 campaign is not P3/P4 evidence.
 
+CI configures and builds all fuzz executables once per revision and host, then
+fans the immutable executable bundle out to isolated target campaigns. Every
+campaign still receives its full time budget, corpus, sanitizer environment,
+failure-artifact owner, and independent exit status; sharing compilation does
+not share mutable corpus state or reduce executions by running targets in one
+contended process pool.
+
+On a bounded three-executor validation host, the C17 compiler/configuration
+matrix depends on the short documentation/architecture gate. The shared fuzz
+build runs in the initial wave and the C17/fuzz work fills free executors after
+the gate. TSan depends on completion of ASan/LSan because concurrent sanitizer
+instrumentation on the same host measurably increases both critical paths; it
+executes every `c-unit` and allocation owner, including the runtime, CLI,
+native-emitter, generated-C, and focused checkpoint owners. External process
+integration, install, capability, and packaging wrappers create no shared
+threads before I6 and remain in every Debug/Release row plus ASan/UBSan/LSan;
+repeating them under TSan cannot observe an additional race boundary. These
+dependencies and the explicit TSan owner selection are fail-fast resource
+control rather than semantic-test filtering: every applicable matrix row still
+runs after its gate passes.
+
 Corpora and dictionaries are committed when legally/operationally appropriate. Every found failure is minimized and promoted to a deterministic regression test. Release reports state engine, sanitizer, target, corpus size, total executions/core-hours, unique coverage movement, and unresolved findings.
 
 ## 6. Runtime stress and fault injection
@@ -424,7 +482,10 @@ Inject partial reads/writes, EINTR/platform equivalents, slow peer, half-close, 
 
 ## 7. Security testing
 
-- Run all C and generated-C suites under available ASan, UBSan, MSan, TSan/platform analyzers.
+- Run all C and generated-C suites under available ASan, UBSan, and MSan.
+  TSan runs every in-process production C owner and every test that creates or
+  shares thread-visible state; single-threaded external lifecycle wrappers stay
+  under the memory/undefined-behavior sanitizers instead of being replayed.
 - Maintain static-analysis configurations and justify suppressions in source.
 - Fuzz all untrusted parsers/verifiers with resource limits.
 - Test capability path canonicalization against symlinks, traversal, alternate separators, case folding, races, and network endpoint ambiguity.
@@ -550,12 +611,25 @@ companion copy/reset, iterator mutation, and allocation-free bind/get.
 Generated-C inspection requires direct C17 `RAW64` byte copies, eager exact
 record-field views, fixed small root-location storage, and transitive
 no-safepoint root elision; it rejects the former per-element exact-access calls
-on the selected path. O0/O2 execution preserves checksums, G4002/G4005 spans,
+on the selected path. A focused relation fixture also requires repeated safe
+index expressions and both arms of a safe index selection to omit redundant
+checks, while an unproved selection and an operand redefinition retain G4002.
+O0/O2 execution preserves checksums, G4002/G4005 spans,
 alias-driven record-field replacement forces a rebind, checked numeric Option
 construction remains a safepoint, and fail-injection builds preserve the
 allocating root path. Inline checked and proven `i64` helpers are compared at
 extrema with the out-of-line semantic owner, including overflow and
 division-by-zero results.
+
+CP41 hardware-counter reports use six stable logical columns: cycles, retired
+instructions, branches, branch misses, cache references, and cache misses.
+Every report also retains the physical `perf` event map. Generalized events are
+preferred, but a virtual PMU that returns unavailable or nonpositive generalized
+cache samples may use one named architecture-specific paired cache-access and
+cache-miss profile after a positive preflight. The profile identifies its cache
+level and access class, is identical for before and after, and is rejected if
+mixed with another profile. This permits honest platform-local cache evidence
+without relabeling L1 data-cache loads as LLC observations.
 
 ## 11. Platform matrix
 

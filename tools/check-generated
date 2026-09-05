@@ -5,4 +5,5 @@ tool_directory=$(dirname "$0")
 "$tool_directory/generate-bytecode" --check
 "$tool_directory/generate-diagnostics" --check
 "$tool_directory/generate-unicode" --check
+"$tool_directory/build-gitea-ci-image" --check
 exec "$tool_directory/generate-syntax" --check

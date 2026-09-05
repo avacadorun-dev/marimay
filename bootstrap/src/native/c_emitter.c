@@ -117,7 +117,9 @@ bool mmay_native_c_emit_runtime(
         && mmay_native_c_write(buffer,
             "#if defined(__clang__) || defined(__GNUC__)\n"
             "#define MMAY_G_ALWAYS_INLINE inline __attribute__((always_inline))\n"
-            "#else\n#define MMAY_G_ALWAYS_INLINE inline\n#endif\n")
+            "#define MMAY_G_NOINLINE __attribute__((noinline))\n"
+            "#else\n#define MMAY_G_ALWAYS_INLINE inline\n"
+            "#define MMAY_G_NOINLINE\n#endif\n")
         && mmay_native_c_write(buffer,
         "typedef struct { const unsigned char *data; size_t length; MarimayManagedReference managed; } mmay_g_string;\n")
         && mmay_native_c_write(buffer,

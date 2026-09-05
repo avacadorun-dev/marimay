@@ -14,6 +14,14 @@ ctest --test-dir build/debug -R '^(mmay_c_unit_(checker|bytecode|cli-run|cli-tes
 
 The architecture, memory-policy and roadmap gates also passed on this baseline.
 
+The subsequent full integration includes all 24 CP39/CP41 commits through
+`efb0f56`, restoring native-run support and the private-preview availability
+statement. On macOS arm64 all six selected Debug distribution, relocation,
+native, cli-build, cli-run and cli-test tests passed, as did the Release-only
+`mmay_cp39_packaging` test (6.77 seconds). Architecture, memory-policy, roadmap
+and generated-file gates passed. These are local integration checks, not a
+Tier 1 milestone verification or a release announcement.
+
 This is a working-tree validation record, not CP39/CP40 verification or an alpha
 release claim. Work is isolated on `fix/cli-alpha-integration`, based on
 `efb0f56`, in the `marimay-cli-alpha` worktree. The original `marimay` checkout

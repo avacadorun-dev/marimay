@@ -2,6 +2,13 @@
 
 #include <string.h>
 
+enum {
+    /* Keep large cold/error state out of hot callers without forcing an
+       already pressure-heavy record leaf into the outlined frame. */
+    MMAY_NATIVE_C_OUTLINE_REGISTER_LIMIT = 32,
+    MMAY_NATIVE_C_INLINE_PRESSURE_LIMIT = 32
+};
+
 static MarimayTypeId mmay_native_c_register_type(
     const MarimayMirFunction *function,
     MarimayMirRegister register_id
@@ -89,6 +96,53 @@ static bool mmay_native_c_emit_generic_bitwise(
     );
 }
 
+static bool mmay_native_c_inline_record_leaf(
+    const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
+    size_t count
+) {
+    const MarimayTypeId *receiver = NULL;
+    MarimayNativeCManagedLayout receiver_layout;
+    if (function == NULL || function->calls.length != 0
+        || function->parameter_count == 0) {
+        return false;
+    }
+    receiver = mmay_vector_at_const(&function->register_types, 0);
+    return receiver != NULL && *receiver >= MMAY_TYPE_FIRST_DYNAMIC
+        && mmay_native_c_find_managed_layout(
+            functions, count, *receiver, &receiver_layout
+        ) && receiver_layout.kind == MMAY_NATIVE_C_MANAGED_RECORD;
+}
+
+static bool mmay_native_c_outline_large_function(
+    const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
+    size_t count
+) {
+    size_t call_index = 0;
+    if (function == NULL || function->calls.length == 0
+        || function->register_types.length
+            < MMAY_NATIVE_C_OUTLINE_REGISTER_LIMIT) {
+        return false;
+    }
+    for (call_index = 0; call_index < function->calls.length;
+        call_index += 1) {
+        const MarimayMirCall *call = mmay_vector_at_const(
+            &function->calls, call_index
+        );
+        const MarimayMirFunction *callee = call != NULL
+            ? mmay_native_c_find(functions, count, call->callee) : NULL;
+        if (callee == NULL) return false;
+        if (callee->register_types.length > MMAY_NATIVE_C_INLINE_PRESSURE_LIMIT
+            && mmay_native_c_inline_record_leaf(
+                callee, functions, count
+            )) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool mmay_native_c_emit_signature(
     MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *function,
@@ -97,22 +151,18 @@ bool mmay_native_c_emit_signature(
     bool prototype
 ) {
     size_t index = 0;
-    bool inline_record_leaf = false;
-    if (function->calls.length == 0 && function->parameter_count != 0) {
-        const MarimayTypeId *receiver = mmay_vector_at_const(
-            &function->register_types, 0
-        );
-        MarimayNativeCManagedLayout receiver_layout;
-        inline_record_leaf = receiver != NULL
-            && *receiver >= MMAY_TYPE_FIRST_DYNAMIC
-            && mmay_native_c_find_managed_layout(
-                functions, count, *receiver, &receiver_layout
-            ) && receiver_layout.kind == MMAY_NATIVE_C_MANAGED_RECORD;
-    }
+    bool inline_record_leaf = mmay_native_c_inline_record_leaf(
+        function, functions, count
+    );
+    bool outline_large_function = mmay_native_c_outline_large_function(
+        function, functions, count
+    );
     if (!mmay_native_c_write(
             buffer,
             inline_record_leaf
-                ? "static MMAY_G_ALWAYS_INLINE int " : "static int "
+                ? "static MMAY_G_ALWAYS_INLINE int "
+                : outline_large_function
+                    ? "static MMAY_G_NOINLINE int " : "static int "
         )
         || !mmay_native_c_symbol(buffer, function->symbol)
         || !mmay_native_c_write(buffer, "(mmay_g_execution *mmay_g_x, mmay_g_panic *mmay_g_p")) return false;
@@ -229,12 +279,16 @@ bool mmay_native_c_emit_call_arguments(
     return true;
 }
 
-static bool mmay_native_c_record_view_is_bound(
+static bool mmay_native_c_record_view_is_bound_at(
     const MarimayMirFunction *function,
-    MarimayMirRegister register_id
+    MarimayMirRegister register_id,
+    size_t depth
 ) {
     size_t block_index = 0;
-    if (function == NULL) return false;
+    bool found = false;
+    if (function == NULL || depth >= function->register_types.length) {
+        return false;
+    }
     if (register_id < function->parameter_count) return true;
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1) {
@@ -250,11 +304,27 @@ static bool mmay_native_c_record_view_is_bound(
                 &block->instructions, instruction_index
             );
             if (instruction != NULL && instruction->target == register_id) {
-                return instruction->kind == MMAY_MIR_CALL;
+                if (instruction->kind == MMAY_MIR_CALL) {
+                    found = true;
+                } else if (instruction->kind == MMAY_MIR_COPY
+                    && mmay_native_c_record_view_is_bound_at(
+                        function, instruction->first, depth + 1
+                    )) {
+                    found = true;
+                } else {
+                    return false;
+                }
             }
         }
     }
-    return false;
+    return found;
+}
+
+static bool mmay_native_c_record_view_is_bound(
+    const MarimayMirFunction *function,
+    MarimayMirRegister register_id
+) {
+    return mmay_native_c_record_view_is_bound_at(function, register_id, 0);
 }
 
 static bool mmay_native_c_emit_call_record_hints(
@@ -279,16 +349,33 @@ static bool mmay_native_c_emit_call_record_hints(
         MarimayNativeCManagedLayout layout;
         const MarimayMirRecord *record = NULL;
         size_t field_index = 0;
+        bool stable_hints = false;
         if (argument == NULL || parameter == NULL) return false;
         if (*parameter < MMAY_TYPE_FIRST_DYNAMIC
             || !mmay_native_c_find_managed_layout(
                 functions, count, *parameter, &layout
             ) || layout.kind != MMAY_NATIVE_C_MANAGED_RECORD) continue;
-        if (mmay_native_c_record_view_is_bound(
-                function, argument->register_id
-            )) continue;
         record = mmay_vector_at_const(&layout.function->records, layout.index);
-        if (record == NULL || !mmay_native_c_write(
+        if (record == NULL) return false;
+        stable_hints = mmay_native_c_record_view_is_bound(
+            function, argument->register_id
+        );
+        for (field_index = 0; stable_hints
+            && field_index < record->field_count; field_index += 1) {
+            const MarimayMirRecordField *field = mmay_vector_at_const(
+                &layout.function->record_fields,
+                record->field_start + field_index
+            );
+            MarimayNativeCManagedLayout field_layout;
+            if (field != NULL && field->is_mutable
+                && mmay_native_c_find_managed_layout(
+                    functions, count, field->type, &field_layout
+                ) && field_layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
+                stable_hints = false;
+            }
+        }
+        if (stable_hints) continue;
+        if (!mmay_native_c_write(
                 buffer,
                 "  if (mmay_g_rv_%u.object == NULL || !mmay_managed_generated_reference_equal(mmay_g_rv_%u.reference, mmay_g_v_%u)) { mmay_g_m = mmay_managed_record_generated_bind(&mmay_g_x->heap, mmay_g_v_%u, &",
                 argument->register_id, argument->register_id,
@@ -768,6 +855,9 @@ bool mmay_native_c_emit_function(
                 case MMAY_MIR_COPY:
                     {
                         MarimayNativeCManagedLayout copied_layout;
+                        const MarimayMirRecord *copied_record = NULL;
+                        size_t field_index = 0;
+                        bool copies_record_view = false;
                     if (!mmay_native_c_write(
                             buffer, "  mmay_g_v_%u = mmay_g_v_%u;\n",
                             i->target, i->first
@@ -778,17 +868,46 @@ bool mmay_native_c_emit_function(
                                 "  mmay_g_av_%u = mmay_g_av_%u;\n",
                                 i->target, i->first
                             )) return false;
-                    if (mmay_native_c_find_managed_layout(
+                    copies_record_view = mmay_native_c_find_managed_layout(
                             functions, count,
                             mmay_native_c_register_type(function, i->target),
                             &copied_layout
                         ) && copied_layout.kind
-                            == MMAY_NATIVE_C_MANAGED_RECORD
-                        && !mmay_native_c_write(
+                            == MMAY_NATIVE_C_MANAGED_RECORD;
+                    if (copies_record_view && !mmay_native_c_write(
                             buffer,
                             "  mmay_g_rv_%u = mmay_g_rv_%u;\n",
                             i->target, i->first
                         )) return false;
+                    if (copies_record_view) {
+                        copied_record = mmay_vector_at_const(
+                            &copied_layout.function->records,
+                            copied_layout.index
+                        );
+                        if (copied_record == NULL) return false;
+                        for (field_index = 0;
+                            field_index < copied_record->field_count;
+                            field_index += 1) {
+                            const MarimayMirRecordField *field =
+                                mmay_vector_at_const(
+                                    &copied_layout.function->record_fields,
+                                    copied_record->field_start + field_index
+                                );
+                            MarimayNativeCManagedLayout field_layout;
+                            if (field != NULL
+                                && mmay_native_c_find_managed_layout(
+                                    functions, count, field->type,
+                                    &field_layout
+                                ) && field_layout.kind
+                                    == MMAY_NATIVE_C_MANAGED_ARRAY
+                                && !mmay_native_c_write(
+                                    buffer,
+                                    "  mmay_g_rv_%u_f_%zu = mmay_g_rv_%u_f_%zu;\n",
+                                    i->target, field_index, i->first,
+                                    field_index
+                                )) return false;
+                        }
+                    }
                     break;
                     }
                 case MMAY_MIR_NOT_BOOL: if (!mmay_native_c_write(buffer, "  mmay_g_v_%u = !mmay_g_v_%u;\n", i->target, i->first)) return false; break;
@@ -1059,8 +1178,25 @@ bool mmay_native_c_emit_function(
                             i->target, i->first, i->second
                         )) return false;
                     break;
-                case MMAY_MIR_DIVIDE_CHECKED_I64: helper = "mmay_checked_i64_divide_fast"; break;
-                case MMAY_MIR_REMAINDER_CHECKED_I64: helper = "mmay_checked_i64_remainder_fast"; break;
+                case MMAY_MIR_DIVIDE_CHECKED_I64:
+                case MMAY_MIR_REMAINDER_CHECKED_I64:
+                    if (mmay_native_c_register_type(function, i->target)
+                            == MMAY_TYPE_I64
+                        && mmay_native_c_divisor_proven(function, i)) {
+                        if (!mmay_native_c_write(
+                                buffer,
+                                "  mmay_g_v_%u = mmay_g_v_%u %s mmay_g_v_%u;\n",
+                                i->target, i->first,
+                                i->kind == MMAY_MIR_DIVIDE_CHECKED_I64
+                                    ? "/" : "%",
+                                i->second
+                            )) return false;
+                    } else {
+                        helper = i->kind == MMAY_MIR_DIVIDE_CHECKED_I64
+                            ? "mmay_checked_i64_divide_fast"
+                            : "mmay_checked_i64_remainder_fast";
+                    }
+                    break;
                 case MMAY_MIR_SHIFT_LEFT_CHECKED_I64: helper = "mmay_checked_i64_shift_left"; break;
                 case MMAY_MIR_SHIFT_RIGHT_I64: helper = "mmay_checked_i64_shift_right"; break;
                 case MMAY_MIR_NEGATE_CHECKED_I64:

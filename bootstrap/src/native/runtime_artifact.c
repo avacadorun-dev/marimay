@@ -252,6 +252,27 @@ static MarimayNativeRuntimeArtifactStatus mmay_native_runtime_kind(
         : MMAY_NATIVE_RUNTIME_ARTIFACT_INCOMPATIBLE;
 }
 
+static MarimayNativeRuntimeArtifactStatus mmay_native_runtime_header(
+    MarimayAllocator allocator,
+    const char *include_root,
+    const char *relative
+) {
+    MarimayOwnedBytes path = {0};
+    bool missing = false;
+    MarimayNativeRuntimeArtifactStatus status = mmay_native_runtime_join(
+        allocator, include_root, strlen(include_root), relative, &path
+    );
+    if (status == MMAY_NATIVE_RUNTIME_ARTIFACT_OK) {
+        status = mmay_native_runtime_kind(
+            allocator, (const char *)path.data,
+            MMAY_DIRECTORY_ENTRY_REGULAR, &missing
+        );
+    }
+    mmay_owned_bytes_dispose(&path);
+    return status == MMAY_NATIVE_RUNTIME_ARTIFACT_OK && missing
+        ? MMAY_NATIVE_RUNTIME_ARTIFACT_MISSING : status;
+}
+
 static MarimayNativeRuntimeArtifactStatus mmay_native_runtime_inspect(
     MarimayAllocator allocator,
     MarimayNativeRuntimeProfile selected_profile,
@@ -309,6 +330,14 @@ static MarimayNativeRuntimeArtifactStatus mmay_native_runtime_inspect(
     );
     if (status != MMAY_NATIVE_RUNTIME_ARTIFACT_OK) return status;
     if (include_missing) return MMAY_NATIVE_RUNTIME_ARTIFACT_MISSING;
+    status = mmay_native_runtime_header(
+        allocator, paths->bootstrap_include, "mmay/base/allocator.h"
+    );
+    if (status != MMAY_NATIVE_RUNTIME_ARTIFACT_OK) return status;
+    status = mmay_native_runtime_header(
+        allocator, paths->runtime_include, "mmay/runtime/core.h"
+    );
+    if (status != MMAY_NATIVE_RUNTIME_ARTIFACT_OK) return status;
     status = mmay_native_runtime_manifest(
         allocator, paths->manifest, profile
     );
@@ -441,6 +470,9 @@ MarimayNativeRuntimeArtifactStatus mmay_native_runtime_artifact_select(
         );
         return status == MMAY_NATIVE_RUNTIME_ARTIFACT_OK && !present
             ? MMAY_NATIVE_RUNTIME_ARTIFACT_MISSING : status;
+    }
+    if (tool_executable_path == NULL) {
+        return MMAY_NATIVE_RUNTIME_ARTIFACT_MISSING;
     }
     memset(&installed_paths, 0, sizeof(installed_paths));
     status = mmay_native_runtime_installed_paths(

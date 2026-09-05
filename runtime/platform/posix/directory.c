@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <errno.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -302,6 +303,101 @@ MarimayFileStatus mmay_directory_create(
             && stat((const char *)owned.data, &information) == 0
             && S_ISDIR(information.st_mode)
             ? MMAY_FILE_OK : MMAY_FILE_IO_FAILED;
+    }
+    mmay_owned_bytes_dispose(&owned);
+    return status;
+}
+
+MarimayFileStatus mmay_directory_create_exclusive(
+    MarimayAllocator allocator,
+    const char *path,
+    size_t path_length
+) {
+    MarimayOwnedBytes owned = {0};
+    MarimayFileStatus status;
+    if (path == NULL || path_length == 0
+        || memchr(path, 0, path_length) != NULL) {
+        return MMAY_FILE_INVALID_ARGUMENT;
+    }
+    if (!mmay_utf8_validate(path, path_length, NULL)) {
+        return MMAY_FILE_INVALID_UTF8;
+    }
+    status = mmay_posix_directory_owned_path(
+        allocator, path, path_length, &owned
+    );
+    if (status != MMAY_FILE_OK) return status;
+    if (mkdir((const char *)owned.data, 0700) != 0) {
+        status = errno == EEXIST
+            ? MMAY_FILE_ALREADY_EXISTS : MMAY_FILE_IO_FAILED;
+    }
+    mmay_owned_bytes_dispose(&owned);
+    return status;
+}
+
+MarimayFileStatus mmay_directory_publish(
+    MarimayAllocator allocator,
+    const char *temporary_path,
+    size_t temporary_path_length,
+    const char *destination_path,
+    size_t destination_path_length
+) {
+    MarimayOwnedBytes temporary = {0};
+    MarimayOwnedBytes destination = {0};
+    struct stat information;
+    MarimayFileStatus status;
+    if (temporary_path == NULL || destination_path == NULL
+        || temporary_path_length == 0 || destination_path_length == 0
+        || memchr(temporary_path, 0, temporary_path_length) != NULL
+        || memchr(destination_path, 0, destination_path_length) != NULL) {
+        return MMAY_FILE_INVALID_ARGUMENT;
+    }
+    if (!mmay_utf8_validate(temporary_path, temporary_path_length, NULL)
+        || !mmay_utf8_validate(destination_path, destination_path_length, NULL)) {
+        return MMAY_FILE_INVALID_UTF8;
+    }
+    status = mmay_posix_directory_owned_path(
+        allocator, temporary_path, temporary_path_length, &temporary
+    );
+    if (status != MMAY_FILE_OK) return status;
+    status = mmay_posix_directory_owned_path(
+        allocator, destination_path, destination_path_length, &destination
+    );
+    if (status != MMAY_FILE_OK) goto cleanup;
+    if (lstat((const char *)destination.data, &information) == 0) {
+        status = MMAY_FILE_ALREADY_EXISTS;
+    } else if (errno != ENOENT && errno != ENOTDIR) {
+        status = MMAY_FILE_IO_FAILED;
+    } else if (rename(
+            (const char *)temporary.data, (const char *)destination.data
+        ) != 0) {
+        status = errno == EEXIST || errno == ENOTEMPTY
+            ? MMAY_FILE_ALREADY_EXISTS : MMAY_FILE_IO_FAILED;
+    }
+cleanup:
+    mmay_owned_bytes_dispose(&destination);
+    mmay_owned_bytes_dispose(&temporary);
+    return status;
+}
+
+MarimayFileStatus mmay_directory_remove_empty(
+    MarimayAllocator allocator,
+    const char *path,
+    size_t path_length
+) {
+    MarimayOwnedBytes owned = {0};
+    MarimayFileStatus status;
+    if (path == NULL || path_length == 0
+        || memchr(path, 0, path_length) != NULL) {
+        return MMAY_FILE_INVALID_ARGUMENT;
+    }
+    if (!mmay_utf8_validate(path, path_length, NULL)) {
+        return MMAY_FILE_INVALID_UTF8;
+    }
+    status = mmay_posix_directory_owned_path(
+        allocator, path, path_length, &owned
+    );
+    if (status == MMAY_FILE_OK && rmdir((const char *)owned.data) != 0) {
+        status = errno == ENOENT ? MMAY_FILE_OK : MMAY_FILE_IO_FAILED;
     }
     mmay_owned_bytes_dispose(&owned);
     return status;

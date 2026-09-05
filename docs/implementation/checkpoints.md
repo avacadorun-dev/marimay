@@ -1577,8 +1577,14 @@ flags for arm64 and x86_64; archive optimization remarks, symbol sizes,
 disassembly, and a scripted count of stack-addressed operations. On an eligible
 Linux runner, collect at least eleven balanced observations of cycles,
 instructions, branches, branch misses, cache references, and cache misses for
-stack, queue, heap-sort, and min-heap. Run the focused MIR/native-emitter tests,
-exact workload checksums, full VM/native differential, and the common tail.
+stack, queue, heap-sort, and min-heap. The report records both these logical
+counter names and the exact physical `perf` event map. Generalized perf events
+are preferred. If a virtual PMU exposes a generalized cache pair but returns
+unavailable or nonpositive samples, one explicit architecture-specific paired
+cache-access/cache-miss profile is permitted only after a positive preflight;
+before and after must use the identical profile and cross-profile comparisons
+are rejected. Run the focused MIR/native-emitter tests, exact workload
+checksums, full VM/native differential, and the common tail.
 
 ### Evidence and completion rule
 
@@ -1596,12 +1602,15 @@ symbols without increasing their arm64 count. Exact outputs, stderr, exits,
 panic spans, allocation/resource behavior, and VM/native results must match.
 
 The report publishes every raw sample/order event, metadata/hash, perf command
-and counter, generated-C/disassembly artifact hash, and an explanatory before/
-after table. Go/Rust and macOS ratios remain labeled exploratory and cannot
-pass or fail CP41. Hardware counters are required for the selected completion
-runner; an environment that cannot expose stable counters is supplemental
-only. State becomes `verified` only after the exact candidate passes pushed CI
-and the complete evidence is linked here and in the evidence index.
+and counter, the logical-to-physical event profile, generated-C/disassembly
+artifact hash, and an explanatory before/after table. A cache profile identifies
+its measured level and access class; it must not be presented as a different
+cache level or combined with another profile. Go/Rust and macOS ratios remain
+labeled exploratory and cannot pass or fail CP41. Hardware counters are
+required for the selected completion runner; an environment that cannot expose
+stable counters is supplemental only. State becomes `verified` only after the
+exact candidate passes pushed CI and the complete evidence is linked here and
+in the evidence index.
 
 ### Removal gates / remaining limitations
 

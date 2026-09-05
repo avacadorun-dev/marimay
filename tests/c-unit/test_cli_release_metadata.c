@@ -29,11 +29,12 @@ static int mmay_release_run(
 
 static void mmay_release_expect_help_inventory(MarimaySession *session) {
     static const char *const available[] = {
-        "build", "check", "fmt", "help", "run", "test", "version"
+        "build", "check", "doctor", "fmt", "help", "init", "run", "test",
+        "version"
     };
     static const char *const staged[] = {
         "add", "audit", "bench", "doc", "exec", "explain", "fix", "fuzz",
-        "generate", "init", "list", "outdated", "remove", "update", "vendor",
+        "generate", "list", "outdated", "remove", "update", "vendor",
         "vet", "why"
     };
     MarimayTestBuffer output;

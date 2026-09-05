@@ -377,6 +377,8 @@ tests/c-unit/
   ../public-alpha/cp38-json/
                         D082 explicit-codec/formatter/differential corpus
   ../fuzz/json_fuzz.c             real embedded-package/checker/bytecode/VM fuzz owner
+  test_cli_cp39.c                 D083 init/doctor/toolchain/allocation owner
+  test_cp39_distribution.cmake    installed native-run/lifecycle/archive owner
 ```
 
 The existing `mmay_test_mir` and `mmay_test_checker` aggregators retain their
@@ -401,9 +403,11 @@ bootstrap/src/bytecode/    model/builders, codec, verifier orchestration,
 bootstrap/src/native/      C-emission coordinators and focused instruction/
                            descriptor owners; native build orchestration;
                            profile-specific runtime artifact discovery,
-                           validation, and content identity
-bootstrap/src/cli/         dispatch/options/help, format actions, and target
-                           discovery/traversal
+                           validation, content identity, and pinned compiler
+                           preflight
+bootstrap/src/cli/         dispatch/options/help, format actions, target
+                           discovery/traversal, checked native build/run,
+                           installed doctor, and atomic project initialization
 bootstrap/src/lex/         public result lifecycle and scanner/tokenization
 bootstrap/src/manifest/    public result lifecycle, parser, and formatter
 runtime/common/            managed heap core and focused object families
@@ -531,7 +535,13 @@ safepoint predicate and root-location placement because those are activation
 construction decisions; runtime owners do not infer compiler liveness.
 `mmay/base/checked_i64_fast.h` is a header-only emission boundary mirroring the
 portable checked/proven implementation, not a second semantic arithmetic
-owner.
+owner. `bootstrap/src/native/c_emitter_relations.c` owns the backend-local,
+conservative CFG proof for impossible checked-array failures. Its strict-order,
+nonnegative, and current-value equality facts are intersected at joins;
+dependent expression facts are discarded on operand redefinition, and a
+branch-selected index is accepted only when every copy source is proved at its
+assignment point. This proof changes neither typed MIR nor source semantics and
+falls back to the exact checked path on ambiguity or resource failure.
 
 D066 assigns bounded counted-UTF-8 validation and managed `[]string`
 construction to `runtime/common/program_arguments.c` behind
@@ -750,6 +760,8 @@ checkpoint:
 | `tests/c-unit/runtime/test_managed_array_access.c` | 202 | 300 | D063 rooted collection, growth, allocation-free view, atomic failure, and stale/descriptor coverage |
 | `tests/c-unit/runtime/test_managed_record_view.c` | 0 | 95 | D063 exact record view, rooted collection, no-allocation, wrong-type, and stale-handle coverage |
 | `tests/c-unit/test_native_c_emitter_managed_views.c` | 0 | 118 | D063 nested record-array view, alias replacement, direct RAW64, rootless emission, and O0/O2 execution |
+| `bootstrap/src/native/c_emitter_relations.c` | 1,040 | 1,273 | D063 bit-packed, path-intersected current-value equality and branch-selected array-index proofs with conservative invalidation |
+| `tests/c-unit/test_native_c_emitter_relations.c` | 0 | 158 | D063 repeated-expression and branch-selection elimination plus retained checks after unsafe selection or immediate/delayed operand redefinition |
 | `runtime/common/program_arguments.c` | 0 | 113 | D066 counted UTF-8 validation and failure-atomic managed `[]string` construction |
 | `runtime/platform/posix/program_arguments.c` | 0 | 109 | D066 bounded POSIX argv import and owned UTF-8 views |
 | `runtime/platform/windows/program_arguments.c` | 0 | 146 | D066 bounded wide-CRT validation and strict UTF-16-to-UTF-8 import |

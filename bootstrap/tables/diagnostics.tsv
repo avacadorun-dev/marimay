@@ -26,6 +26,7 @@ K0002	MANIFEST_STRING	manifest	Manifest contains an invalid JSON-compatible stri
 K0003	WORKSPACE_PATH	manifest	Workspace use path is not a canonical relative path within the workspace root.
 K0004	CHECK_INPUT_IO	check	Checker could not discover or read the selected source target.
 K0005	MODULE_IDENTITY	manifest	Module manifest does not provide one usable module and language identity.
+K0006	PROJECT_INIT_IO	init	Project template could not be published atomically.
 L0001	INVALID_UTF8	lexer	Source contains malformed UTF-8.
 L0002	UNEXPECTED_CHARACTER	lexer	Source contains a character that cannot begin a token.
 L0003	RESERVED_WORD	lexer	Reserved word cannot be used as an identifier.

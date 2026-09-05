@@ -29,6 +29,7 @@ void mmay_test_cp35_context_pipeline(void);
 void mmay_test_cp36_collections(void);
 void mmay_test_cp37_cli_parser(void);
 void mmay_test_cp38_json(void);
+void mmay_test_cli_cp39(void);
 void mmay_test_bytecode_vm(void);
 void mmay_test_checker(void);
 void mmay_test_checker_arrays(void);
@@ -95,6 +96,9 @@ void mmay_test_mir_interfaces(void);
 void mmay_test_mir_bytecode(void);
 void mmay_test_native_c_emitter(void);
 void mmay_test_native_c_emitter_array_mutation(void);
+void mmay_test_native_c_emitter_managed_views(void);
+void mmay_test_native_c_emitter_call_policy(void);
+void mmay_test_native_c_emitter_relations(void);
 void mmay_test_native_generics_differential(void);
 void mmay_test_native_matrix(void);
 void mmay_test_nominal_engine_allocations(void);
@@ -170,7 +174,6 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
     case 2:
         mmay_test_bytecode();
         mmay_test_cp30_bytecode();
-        mmay_test_cp33_text_bytes();
         mmay_test_bytecode_vm();
         break;
     case 3:
@@ -178,11 +181,6 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_pre1_surface_differential();
         mmay_test_defer_cp7();
         mmay_test_cp30_mir();
-        mmay_test_cp32_streams();
-        mmay_test_cp34_fs();
-        mmay_test_cp34_fs_pipeline();
-        mmay_test_cp35_environment();
-        mmay_test_cp35_context_pipeline();
         mmay_test_mir_array_mutation();
         mmay_test_cp9_io_pipeline();
         mmay_test_cp11_test_pipeline();
@@ -197,7 +195,6 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_managed_array_storage();
         mmay_test_managed_record_view();
         mmay_test_managed_mutation();
-        mmay_test_managed_map_set();
         mmay_test_program_arguments();
         mmay_test_number_format();
         mmay_test_mir();
@@ -208,8 +205,6 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_mir_bytecode();
         mmay_test_nominal_engine_allocations();
         mmay_test_path_stream();
-        mmay_test_process();
-        mmay_test_runtime_io();
         break;
     case 4:
         mmay_test_native_c_emitter();
@@ -258,6 +253,49 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
     }
 }
 
+static void mmay_test_run_cp32(void) {
+    mmay_test_cp32_streams();
+    mmay_test_process();
+    mmay_test_runtime_io();
+}
+
+static void mmay_test_run_cp33(void) {
+    mmay_test_cp33_text_bytes();
+}
+
+static void mmay_test_run_cp34(void) {
+    mmay_test_cp34_fs();
+    mmay_test_cp34_fs_pipeline();
+}
+
+static void mmay_test_run_cp35(void) {
+    mmay_test_cp35_environment();
+    mmay_test_cp35_context_pipeline();
+}
+
+static void mmay_test_run_cp36(void) {
+    mmay_test_managed_map_set();
+    mmay_test_cp36_collections();
+}
+
+static void mmay_test_run_cp37(void) {
+    mmay_test_cp37_cli_parser();
+}
+
+static void mmay_test_run_cp38(void) {
+    mmay_test_cp38_json();
+}
+
+static void mmay_test_run_cp41(void) {
+    mmay_test_native_c_emitter_managed_views();
+    mmay_test_native_c_emitter_call_policy();
+    mmay_test_native_c_emitter_relations();
+}
+
+static void mmay_test_run_cp39(void) {
+    mmay_test_cli_cp39();
+}
+
 int main(int argument_count, char **arguments) {
     if (argument_count == 5
         && strcmp(arguments[2], "--cp31-allocation-shard") == 0) {
@@ -285,8 +323,7 @@ int main(int argument_count, char **arguments) {
     }
     if (argument_count == 3 && strcmp(arguments[2], "--cp33") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
-        mmay_test_cp33_text_bytes();
-        mmay_test_runtime_io();
+        mmay_test_run_cp33();
         if (mmay_test_failure_count() != 0) {
             fprintf(
                 stderr, "mmay_cp33_unit: %d failure(s)\n",
@@ -299,8 +336,7 @@ int main(int argument_count, char **arguments) {
     }
     if (argument_count == 3 && strcmp(arguments[2], "--cp34") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
-        mmay_test_cp34_fs();
-        mmay_test_cp34_fs_pipeline();
+        mmay_test_run_cp34();
         if (mmay_test_failure_count() != 0) {
             fprintf(
                 stderr, "mmay_cp34_unit: %d failure(s)\n",
@@ -313,8 +349,7 @@ int main(int argument_count, char **arguments) {
     }
     if (argument_count == 3 && strcmp(arguments[2], "--cp35") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
-        mmay_test_cp35_environment();
-        mmay_test_cp35_context_pipeline();
+        mmay_test_run_cp35();
         if (mmay_test_failure_count() != 0) {
             fprintf(
                 stderr, "mmay_cp35_unit: %d failure(s)\n",
@@ -327,8 +362,7 @@ int main(int argument_count, char **arguments) {
     }
     if (argument_count == 3 && strcmp(arguments[2], "--cp36") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
-        mmay_test_managed_map_set();
-        mmay_test_cp36_collections();
+        mmay_test_run_cp36();
         if (mmay_test_failure_count() != 0) {
             fprintf(
                 stderr, "mmay_cp36_unit: %d failure(s)\n",
@@ -341,7 +375,7 @@ int main(int argument_count, char **arguments) {
     }
     if (argument_count == 3 && strcmp(arguments[2], "--cp37") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
-        mmay_test_cp37_cli_parser();
+        mmay_test_run_cp37();
         if (mmay_test_failure_count() != 0) {
             fprintf(
                 stderr, "mmay_cp37_unit: %d failure(s)\n",
@@ -354,7 +388,7 @@ int main(int argument_count, char **arguments) {
     }
     if (argument_count == 3 && strcmp(arguments[2], "--cp38") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
-        mmay_test_cp38_json();
+        mmay_test_run_cp38();
         if (mmay_test_failure_count() != 0) {
             fprintf(
                 stderr, "mmay_cp38_unit: %d failure(s)\n",
@@ -365,11 +399,35 @@ int main(int argument_count, char **arguments) {
         printf("mmay_cp38_unit: ok\n");
         return 0;
     }
+    if (argument_count == 3 && strcmp(arguments[2], "--cp41") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_run_cp41();
+        if (mmay_test_failure_count() != 0) {
+            fprintf(
+                stderr, "mmay_cp41_unit: %d failure(s)\n",
+                mmay_test_failure_count()
+            );
+            return 1;
+        }
+        printf("mmay_cp41_unit: ok\n");
+        return 0;
+    }
+    if (argument_count == 3 && strcmp(arguments[2], "--cp39") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_run_cp39();
+        if (mmay_test_failure_count() != 0) {
+            fprintf(
+                stderr, "mmay_cp39_unit: %d failure(s)\n",
+                mmay_test_failure_count()
+            );
+            return 1;
+        }
+        printf("mmay_cp39_unit: ok\n");
+        return 0;
+    }
     if (argument_count == 3 && strcmp(arguments[2], "--cp32") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
-        mmay_test_cp32_streams();
-        mmay_test_process();
-        mmay_test_runtime_io();
+        mmay_test_run_cp32();
         if (mmay_test_failure_count() != 0) {
             fprintf(
                 stderr, "mmay_cp32_unit: %d failure(s)\n",
@@ -413,6 +471,15 @@ int main(int argument_count, char **arguments) {
             mmay_test_run_suite_shard(shard_index);
         }
     }
+    mmay_test_run_cp32();
+    mmay_test_run_cp33();
+    mmay_test_run_cp34();
+    mmay_test_run_cp35();
+    mmay_test_run_cp36();
+    mmay_test_run_cp37();
+    mmay_test_run_cp38();
+    mmay_test_run_cp41();
+    mmay_test_run_cp39();
     if (mmay_test_failure_count() != 0) {
         fprintf(stderr, "mmay_c_unit: %d failure(s)\n", mmay_test_failure_count());
         return 1;

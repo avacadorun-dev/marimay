@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "mmay/base/allocator.h"
 #include "mmay/base/owned_bytes.h"
@@ -49,6 +50,17 @@ MarimayProcessStatus mmay_process_run(
     const char *const arguments[],
     size_t argument_count,
     size_t max_output,
+    MarimayProcessResult *result
+);
+
+/* Runs argv directly with the supplied host FILE streams and waits. */
+MarimayProcessStatus mmay_process_run_stdio(
+    MarimayAllocator allocator,
+    const char *const arguments[],
+    size_t argument_count,
+    FILE *standard_input,
+    FILE *standard_output,
+    FILE *standard_error,
     MarimayProcessResult *result
 );
 

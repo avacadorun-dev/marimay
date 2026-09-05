@@ -1,0 +1,44 @@
+#!/bin/sh
+
+set -eu
+
+tool_directory=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+repository=$(CDPATH= cd -- "$tool_directory/.." && pwd)
+dockerfile="$repository/.gitea/images/c17-linux-x86_64.Dockerfile"
+workflow="$repository/.gitea/workflows/ci.yml"
+
+if command -v sha256sum >/dev/null 2>&1; then
+    dockerfile_sha=$(sha256sum "$dockerfile" | awk '{print $1}')
+else
+    dockerfile_sha=$(shasum -a 256 "$dockerfile" | awk '{print $1}')
+fi
+image="marimay-ci-c17:$dockerfile_sha"
+
+case "${1:-}" in
+    --print)
+        printf '%s\n' "$image"
+        exit 0
+        ;;
+    --check)
+        references=$(grep -Fxc "      image: $image" "$workflow" || true)
+        if [ "$references" -ne 5 ]; then
+            echo "expected five Gitea C17 job references to $image; found $references" >&2
+            exit 1
+        fi
+        printf 'Gitea C17 image reference is current: %s\n' "$image"
+        exit 0
+        ;;
+    "")
+        ;;
+    *)
+        echo "usage: build-gitea-ci-image [--print|--check]" >&2
+        exit 64
+        ;;
+esac
+
+BUILDKIT_PROGRESS=plain docker build \
+    --pull=false \
+    --file "$dockerfile" \
+    --tag "$image" \
+    "$repository/.gitea/images"
+docker image inspect --format '{{.Id}}' "$image"

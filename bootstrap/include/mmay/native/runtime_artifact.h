@@ -45,6 +45,11 @@ MarimayNativeRuntimeArtifactStatus mmay_native_runtime_artifact_select(
     const MarimayNativeRuntimePaths *override_paths,
     MarimayNativeRuntimeArtifact *artifact
 );
+/*
+ * Without override_paths, tool_executable_path identifies installed-relative
+ * lookup and must be non-NULL. A missing identity returns MISSING rather than
+ * silently selecting development build-tree metadata.
+ */
 
 /* A successful artifact owns all four paths until this call. Failures own none. */
 void mmay_native_runtime_artifact_dispose(

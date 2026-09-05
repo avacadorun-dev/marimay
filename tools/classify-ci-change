@@ -1,0 +1,30 @@
+#!/bin/sh
+
+set -eu
+
+if [ "$#" -ne 2 ]; then
+    echo "usage: classify-ci-change BASE_REVISION HEAD_REVISION" >&2
+    exit 64
+fi
+
+base_revision=$1
+head_revision=$2
+
+case "$base_revision" in
+    ""|0000000000000000000000000000000000000000)
+        printf 'true\n'
+        exit 0
+        ;;
+esac
+
+if ! git cat-file -e "$base_revision^{commit}" 2>/dev/null; then
+    printf 'true\n'
+    exit 0
+fi
+
+if git diff --quiet "$base_revision" "$head_revision" -- \
+    . ':(exclude,glob)docs/**' ':(exclude,glob)*.md'; then
+    printf 'false\n'
+else
+    printf 'true\n'
+fi

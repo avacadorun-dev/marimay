@@ -232,6 +232,9 @@ bool mmay_native_c_add_one_proven(
 bool mmay_native_c_negate_proven(
     const MarimayMirFunction *function,
     const MarimayMirInstruction *instruction);
+bool mmay_native_c_divisor_proven(
+    const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction);
 bool mmay_native_c_method_possible(
     const MarimayMirFunction *const *functions, size_t count,
     MarimayTypeId interface_type, uint32_t slot, size_t target);

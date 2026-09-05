@@ -1,0 +1,194 @@
+#!/usr/bin/env python3
+"""Create byte-reproducible CP39 host and source distribution archives."""
+
+from __future__ import annotations
+
+import argparse
+import gzip
+import hashlib
+import io
+import os
+from pathlib import Path, PurePosixPath
+import re
+import stat
+import subprocess
+import tarfile
+import time
+import zipfile
+
+
+EXCLUDED_SOURCE_DIRECTORIES = frozenset((".git", ".mmay"))
+ARCHIVE_COMPONENT = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*\Z")
+
+
+def parse_arguments() -> argparse.Namespace:
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--install-root", type=Path, required=True)
+    parser.add_argument("--source-root", type=Path, required=True)
+    parser.add_argument("--output-directory", type=Path, required=True)
+    parser.add_argument("--version", required=True)
+    parser.add_argument("--host", required=True)
+    parser.add_argument("--epoch", type=int, required=True)
+    parser.add_argument("--host-format", choices=("tar.gz", "zip"), required=True)
+    return parser.parse_args()
+
+
+def validate_archive_component(value: str, description: str) -> str:
+    if value in (".", "..") or ARCHIVE_COMPONENT.fullmatch(value) is None:
+        raise SystemExit(f"{description} is not a safe archive-name component")
+    return value
+
+
+def checked_regular_files(root: Path, paths: list[Path], description: str) -> list[Path]:
+    root = root.resolve()
+    checked: list[Path] = []
+    names: set[str] = set()
+    for path in paths:
+        relative = path.relative_to(root)
+        name = relative.as_posix()
+        try:
+            name.encode("utf-8", errors="strict")
+        except UnicodeEncodeError as error:
+            raise SystemExit(f"{description} path is not valid UTF-8: {name!r}") from error
+        if name in names:
+            raise SystemExit(f"duplicate {description} path: {name}")
+        names.add(name)
+        if path.is_symlink() or not path.is_file():
+            raise SystemExit(f"{description} entry is not a physical regular file: {name}")
+        if path.resolve().parent != root and root not in path.resolve().parents:
+            raise SystemExit(f"{description} entry escapes its root: {name}")
+        checked.append(path)
+    return sorted(
+        checked,
+        key=lambda path: path.relative_to(root).as_posix().encode("utf-8"),
+    )
+
+
+def distribution_files(root: Path) -> list[Path]:
+    entries = list(root.rglob("*"))
+    linked = [path for path in entries if path.is_symlink()]
+    if linked:
+        name = linked[0].relative_to(root).as_posix()
+        raise SystemExit(f"installed distribution contains a symbolic link: {name}")
+    return checked_regular_files(
+        root, [path for path in entries if path.is_file()], "distribution"
+    )
+
+
+def source_files(root: Path) -> list[Path]:
+    result = subprocess.run(
+        ["git", "ls-files", "-z"],
+        cwd=root,
+        check=True,
+        stdout=subprocess.PIPE,
+    )
+    names: list[str] = []
+    for raw_name in result.stdout.split(b"\0"):
+        if not raw_name:
+            continue
+        try:
+            name = raw_name.decode("utf-8", errors="strict")
+        except UnicodeDecodeError as error:
+            raise SystemExit("tracked source archive path is not valid UTF-8") from error
+        parts = PurePosixPath(name).parts
+        if any(part in EXCLUDED_SOURCE_DIRECTORIES for part in parts):
+            continue
+        names.append(name)
+    return checked_regular_files(
+        root,
+        [root / Path(*PurePosixPath(name).parts) for name in names],
+        "tracked source",
+    )
+
+
+def archive_mode(path: Path) -> int:
+    return 0o755 if path.stat().st_mode & stat.S_IXUSR else 0o644
+
+
+def tar_bytes(root: Path, files: list[Path], prefix: str, epoch: int) -> bytes:
+    compressed = io.BytesIO()
+    with gzip.GzipFile(
+        filename="", mode="wb", fileobj=compressed, compresslevel=9, mtime=epoch
+    ) as gzip_file:
+        with tarfile.open(fileobj=gzip_file, mode="w", format=tarfile.PAX_FORMAT) as archive:
+            for path in files:
+                relative = path.relative_to(root).as_posix()
+                name = f"{prefix}/{relative}" if prefix else relative
+                data = path.read_bytes()
+                information = tarfile.TarInfo(name)
+                information.size = len(data)
+                information.mtime = epoch
+                information.mode = archive_mode(path)
+                information.uid = 0
+                information.gid = 0
+                information.uname = ""
+                information.gname = ""
+                archive.addfile(information, io.BytesIO(data))
+    return compressed.getvalue()
+
+
+def zip_bytes(root: Path, files: list[Path], epoch: int) -> bytes:
+    output = io.BytesIO()
+    minimum_zip_epoch = 315532800
+    timestamp = time.gmtime(max(epoch, minimum_zip_epoch))[:6]
+    with zipfile.ZipFile(
+        output, mode="w", compression=zipfile.ZIP_DEFLATED, compresslevel=9
+    ) as archive:
+        for path in files:
+            relative = path.relative_to(root).as_posix()
+            information = zipfile.ZipInfo(relative, timestamp)
+            information.create_system = 3
+            information.external_attr = (archive_mode(path) & 0xFFFF) << 16
+            information.compress_type = zipfile.ZIP_DEFLATED
+            archive.writestr(information, path.read_bytes(), compresslevel=9)
+    return output.getvalue()
+
+
+def publish(output: Path, content: bytes) -> None:
+    output.parent.mkdir(parents=True, exist_ok=True)
+    temporary = output.with_name(output.name + ".tmp")
+    temporary.write_bytes(content)
+    os.replace(temporary, output)
+    digest = hashlib.sha256(content).hexdigest()
+    checksum = output.with_name(output.name + ".sha256")
+    checksum_temporary = checksum.with_name(checksum.name + ".tmp")
+    checksum_temporary.write_text(f"{digest}  {output.name}\n", encoding="utf-8")
+    os.replace(checksum_temporary, checksum)
+
+
+def main() -> int:
+    options = parse_arguments()
+    install_root = options.install_root.resolve()
+    source_root = options.source_root.resolve()
+    version = validate_archive_component(options.version, "version")
+    host = validate_archive_component(options.host, "host")
+    if (
+        options.epoch < 0
+        or options.epoch > 0xFFFFFFFF
+        or not install_root.is_dir()
+        or not source_root.is_dir()
+    ):
+        raise SystemExit("epoch and source/install roots are invalid")
+    host_name = f"marimay-{version}-{host}.{options.host_format}"
+    host_files = distribution_files(install_root)
+    if not host_files:
+        raise SystemExit("installed distribution is empty")
+    if options.host_format == "zip":
+        host_content = zip_bytes(install_root, host_files, options.epoch)
+    else:
+        host_content = tar_bytes(install_root, host_files, "", options.epoch)
+
+    source_name = f"marimay-{version}-source.tar.gz"
+    source_prefix = str(PurePosixPath(f"marimay-{version}-source"))
+    source_content = tar_bytes(
+        source_root, source_files(source_root), source_prefix, options.epoch
+    )
+    # Finish all input validation and archive generation before publishing any
+    # member of the output bundle.
+    publish(options.output_directory / host_name, host_content)
+    publish(options.output_directory / source_name, source_content)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

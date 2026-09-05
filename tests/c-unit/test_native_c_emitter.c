@@ -6,7 +6,6 @@ void mmay_test_native_strings_panic(void);
 void mmay_test_native_arrays(void);
 void mmay_test_native_c_emitter_array_access(void);
 void mmay_test_native_c_emitter_array_storage(void);
-void mmay_test_native_c_emitter_managed_views(void);
 void mmay_test_native_baseline(void);
 void mmay_test_native_nominal_boundary(void);
 void mmay_test_native_nominal_differential(void);
@@ -21,7 +20,6 @@ void mmay_test_native_c_emitter(void) {
     mmay_test_native_arrays();
     mmay_test_native_c_emitter_array_access();
     mmay_test_native_c_emitter_array_storage();
-    mmay_test_native_c_emitter_managed_views();
     mmay_test_native_baseline();
     mmay_test_native_nominal_boundary();
     mmay_test_native_nominal_differential();

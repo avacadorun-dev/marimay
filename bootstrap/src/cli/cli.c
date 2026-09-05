@@ -1,4 +1,6 @@
 #include "cli_internal.h"
+#include "cli_doctor.h"
+#include "cli_init.h"
 #include "cli_release.h"
 
 #include <stdio.h>
@@ -362,8 +364,10 @@ static int mmay_parse_options(
                     ? strcmp(value, "vm") == 0
                         || strcmp(value, "native") == 0
                         || strcmp(value, "both") == 0
-                    : strcmp(value, strcmp(options->command, "run") == 0
-                        ? "vm" : "native") == 0;
+                    : strcmp(options->command, "run") == 0
+                    ? strcmp(value, "vm") == 0
+                        || strcmp(value, "native") == 0
+                    : strcmp(value, "native") == 0;
                 if (!valid) {
                     return mmay_option_value_error(
                         error_writer, options->diagnostic_style,
@@ -372,7 +376,7 @@ static int mmay_parse_options(
                         strcmp(options->command, "test") == 0
                             ? "mmay test --engine expects vm, native, or both"
                             : strcmp(options->command, "run") == 0
-                            ? "checkpoint 9 mmay run supports --engine vm"
+                            ? "mmay run --engine expects vm or native"
                             : "checkpoint 10 mmay build supports --engine native"
                     );
                 }
@@ -459,8 +463,10 @@ static int mmay_parse_options(
                     ? strcmp(value, "vm") == 0
                         || strcmp(value, "native") == 0
                         || strcmp(value, "both") == 0
-                    : strcmp(value, strcmp(options->command, "run") == 0
-                        ? "vm" : "native") == 0;
+                    : strcmp(options->command, "run") == 0
+                    ? strcmp(value, "vm") == 0
+                        || strcmp(value, "native") == 0
+                    : strcmp(value, "native") == 0;
                 if (!valid) {
                     return mmay_option_value_error(
                         error_writer, options->diagnostic_style,
@@ -469,7 +475,7 @@ static int mmay_parse_options(
                         strcmp(options->command, "test") == 0
                             ? "mmay test --engine expects vm, native, or both"
                             : strcmp(options->command, "run") == 0
-                            ? "checkpoint 9 mmay run supports --engine vm"
+                            ? "mmay run --engine expects vm or native"
                             : "checkpoint 10 mmay build supports --engine native"
                     );
                 }
@@ -618,7 +624,8 @@ static int mmay_parse_options(
                 || strcmp(options->command, "check") == 0
                 || strcmp(options->command, "run") == 0
                 || strcmp(options->command, "build") == 0
-                || strcmp(options->command, "test") == 0)
+                || strcmp(options->command, "test") == 0
+                || strcmp(options->command, "init") == 0)
             && options->target == NULL) {
             options->target = argument;
             options->target_index = (size_t)index;
@@ -752,7 +759,8 @@ int mmay_cli_run(
         );
         if (capability_status != MMAY_EXIT_SUCCESS) return capability_status;
     }
-    if (options.version_json && strcmp(task->name, "version") != 0) {
+    if (options.version_json && strcmp(task->name, "version") != 0
+        && strcmp(task->name, "doctor") != 0) {
         return mmay_unknown_option(
             standard_error,
             options.diagnostic_style,
@@ -767,6 +775,14 @@ int mmay_cli_run(
         )
             ? MMAY_EXIT_SUCCESS
             : MMAY_EXIT_INTERNAL;
+    }
+    if (strcmp(task->name, "doctor") == 0) {
+        return mmay_cli_doctor(session, &options, standard_output);
+    }
+    if (strcmp(task->name, "init") == 0) {
+        return mmay_cli_init_project(
+            session, &options, standard_output, standard_error
+        );
     }
     if (strcmp(task->name, "fmt") == 0 && options.format_stdin) {
         if (options.format_check || options.format_diff) {

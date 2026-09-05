@@ -108,6 +108,8 @@ Evidence states used by implementation: `missing`, `contradicted`, `partial`, `v
 | TOOL-022 | `run`, `test`, and `build` accept one documented decimal `--max-heap-bytes`; default/selected native values are embedded and cache-identifying, tests receive fresh counters, and no hidden environment override exists | toolchain §§5–6; D055 | I3/I4/I8 |
 | TOOL-023 | pre-beta version/help/installed metadata distinguish version, release channel, bounded claim, available versus staged commands, standard-library scope, bytecode compatibility, and publication authorization | toolchain §10; D064 | CLI0/P1 |
 | TOOL-024 | the full host invocation is converted under the bounded U0007 tool contract; the first `--` after `mmay run` or `mmay test` then separates tool options from an independently bounded exact source-program argument sequence, and test functions may opt into the same `[]string` injection | toolchain §§2,5,6.2; D066 | CLI0/I8 |
+| TOOL-025 | one version-locked relocatable prefix supplies `mmay`, both native runtime profiles, headers, std sources, offline docs/source material, checksums, provenance, SPDX SBOM, deterministic host/source archives, and checksum-validated install/upgrade/uninstall without touching unrelated files or PATH | toolchain §§6.4,7.1,9.1; D083 | CLI0/P1 |
+| TOOL-026 | `mmay init` atomically publishes an offline canonical project, `mmay doctor` validates the pinned compiler and both runtimes, and native `mmay run` executes only the artifact produced from the same checked optimized MIR while preserving arguments and standard streams | toolchain §§6.2,6.4,7.1; D083 | I4/CLI0 |
 
 ## Standard library
 

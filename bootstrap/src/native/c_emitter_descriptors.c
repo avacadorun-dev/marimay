@@ -1100,25 +1100,18 @@ bool mmay_native_c_emit_managed_parameter_check(
             &layout.function->records, layout.index
         );
         size_t field_index = 0;
+        /* Non-null hints come only from already validated, nonescaping
+           generated views. NULL preserves the full checked boundary. */
         if (!mmay_native_c_write(
                 buffer,
-                "  if (mmay_g_ro_%zu != NULL) { mmay_g_rv_%zu.reference = mmay_g_v_%zu; mmay_g_rv_%zu.object = mmay_g_ro_%zu; mmay_g_m = mmay_g_ro_%zu->descriptor == &",
+                "  if (mmay_g_ro_%zu != NULL) { mmay_g_rv_%zu.reference = mmay_g_v_%zu; mmay_g_rv_%zu.object = mmay_g_ro_%zu; } else { mmay_g_m = mmay_managed_record_generated_bind(&mmay_g_x->heap, mmay_g_v_%zu, &",
                 parameter, parameter, parameter, parameter, parameter,
-                parameter
-            ) || !mmay_native_c_write_descriptor_name(
-                buffer, layout.kind, *type
-            )) {
-            return false;
-        }
-        if (!mmay_native_c_write(
-                buffer,
-                " ? MMAY_MANAGED_OK : MMAY_MANAGED_TYPE_MISMATCH; } else { mmay_g_m = mmay_managed_record_generated_bind(&mmay_g_x->heap, mmay_g_v_%zu, &",
                 parameter
             ) || !mmay_native_c_write_descriptor_name(
                 buffer, layout.kind, *type
             ) || !mmay_native_c_write(
                 buffer,
-                ", &mmay_g_rv_%zu); } if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; }\n",
+                ", &mmay_g_rv_%zu); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n",
                 parameter
             ) || record == NULL) {
             return false;
@@ -1138,14 +1131,10 @@ bool mmay_native_c_emit_managed_parameter_check(
                 ) && field_layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY
                 && !mmay_native_c_write(
                     buffer,
-                    "  if (mmay_g_ro_%zu_f_%zu != NULL) { mmay_g_rv_%zu_f_%zu.object = mmay_g_ro_%zu_f_%zu; mmay_g_m = mmay_g_ro_%zu_f_%zu->descriptor == %s ? MMAY_MANAGED_OK : MMAY_MANAGED_TYPE_MISMATCH; } else { mmay_g_m = mmay_managed_array_generated_bind(&mmay_g_x->heap, mmay_g_rv_%zu.object->fields[%zu].reference, %s, &mmay_g_rv_%zu_f_%zu); } if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; }\n",
+                    "  if (mmay_g_ro_%zu_f_%zu != NULL) { mmay_g_rv_%zu_f_%zu.object = mmay_g_ro_%zu_f_%zu; } else { mmay_g_m = mmay_managed_array_generated_bind(&mmay_g_x->heap, mmay_g_rv_%zu.object->fields[%zu].reference, %s, &mmay_g_rv_%zu_f_%zu); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n",
                     parameter, field_index,
                     parameter, field_index,
                     parameter, field_index,
-                    parameter, field_index,
-                    mmay_native_c_array_descriptor(
-                        field_layout.function, field->type
-                    ),
                     parameter, field_index,
                     mmay_native_c_array_descriptor(
                         field_layout.function, field->type

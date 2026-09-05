@@ -1,5 +1,6 @@
 #include "cli_compile_report.h"
 #include "cli_bytecode_report.h"
+#include "cli_native_run.h"
 #include "cli_program_arguments.h"
 #include "cli_run_report.h"
 
@@ -499,11 +500,18 @@ int mmay_cli_run_program(
         );
         goto cleanup;
     }
-    exit_code = mmay_cli_run_execute(
-        session, options, &compiler, &entry,
-        program_arguments.list, standard_input,
-        standard_output, standard_error
-    );
+    if (strcmp(options->run_engine, "native") == 0) {
+        exit_code = mmay_cli_native_run_checked(
+            session, options, &target, &compiler, &entry,
+            standard_input, standard_output, standard_error
+        );
+    } else {
+        exit_code = mmay_cli_run_execute(
+            session, options, &compiler, &entry,
+            program_arguments.list, standard_input,
+            standard_output, standard_error
+        );
+    }
 cleanup:
     mmay_cli_program_arguments_dispose(&program_arguments);
     mmay_compiler_result_dispose(&compiler);

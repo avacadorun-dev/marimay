@@ -59,8 +59,10 @@ cache-independence, and VM/native process gates are verified.
   remain `in-progress` and unsupported accepted constructs fail closed.
 - Bounded explicit typed JSON is verified; reflection, derive syntax, an
   unbounded DOM, and dynamic `any` remain outside the language contract.
-- Native `mmay run`, `mmay init`, `mmay doctor`, relocatable install lifecycle,
-  and publication-ready artifacts remain CP39–CP40 work.
+- Native `mmay run`, `mmay init`, `mmay doctor`, and distribution lifecycle
+  implementations are present in the private preview. Their complete CP39
+  acceptance and the CP40 publication audit remain open; command availability
+  must not be read as checkpoint verification.
 - Portable public `.myb`, untrusted `mmay exec`, dependency resolution,
   registry operations, production LSP/test tooling, C FFI, and cross
   compilation are not part of CLI0.
