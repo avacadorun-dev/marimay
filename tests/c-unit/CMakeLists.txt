@@ -41,6 +41,7 @@ add_executable(mmay_c_unit
   test_collection_native_failures.c
   test_cp37_cli_parser.c
   test_cp38_json.c
+  test_checker_json.c
   test_bytecode_program.c
   test_bytecode_program_nominal.c
   test_bytecode_verify_provenance.c
@@ -158,6 +159,7 @@ add_executable(mmay_c_unit
   test_mir_arrays_rhs.c
   test_mir_range.c
   test_mir_integer_range.c
+  test_mir_range_convergence.c
   test_mir_imported_arrays.c
   test_mir_imported_results.c
   test_mir_bytecode.c
@@ -426,6 +428,7 @@ mmay_add_focused_checkpoint_test(cp35 5)
 mmay_add_focused_checkpoint_test(cp36 16)
 mmay_add_focused_checkpoint_test(cp37 1)
 mmay_add_focused_checkpoint_test(cp38 1)
+mmay_add_focused_checkpoint_test(cp42 10)
 mmay_add_focused_checkpoint_test(cp41 10)
 mmay_add_focused_checkpoint_test(cp39 1)
 
@@ -617,7 +620,12 @@ add_test(
   COMMAND "$<TARGET_FILE:mmay>" test
     "${CMAKE_SOURCE_DIR}/tests/public-alpha/match-format" --engine both
 )
-foreach(regression IN ITEMS record-imports match-void generic-lifetime map-error-imports enum-pattern-names cp33-text-bytes match-format)
+add_test(
+  NAME mmay_run_startup
+  COMMAND "$<TARGET_FILE:mmay>" test
+    "${CMAKE_SOURCE_DIR}/tests/public-alpha/run-startup" --engine both
+)
+foreach(regression IN ITEMS record-imports match-void generic-lifetime map-error-imports enum-pattern-names cp33-text-bytes match-format run-startup)
   add_test(
     NAME "mmay_format_${regression}"
     COMMAND "$<TARGET_FILE:mmay>" fmt
@@ -629,6 +637,16 @@ add_test(
   COMMAND "$<TARGET_FILE:mmay>" test
     "${CMAKE_SOURCE_DIR}/tests/public-alpha/cli-notes" --engine both
 )
+
+add_test(
+  NAME mmay_typed_json
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/typed-json"
+    "-DMMAY_TEST_ARTIFACT=${CMAKE_CURRENT_BINARY_DIR}/typed-json${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_typed_json.cmake"
+)
+set_tests_properties(mmay_typed_json PROPERTIES LABELS "differential;typed-json" TIMEOUT 1800)
 
 add_test(
   NAME mmay_cp38_json

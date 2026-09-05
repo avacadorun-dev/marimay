@@ -525,6 +525,32 @@ MarimayIntegerRangeStatus mmay_integer_range_analyze(
                     }
                 }
             }
+            if (analysis->incoming_ready[block_index] && narrowing && widen) {
+                /* D062 finite-height narrowing: never count a finite bound
+                 * down one integer per trip through a backedge. Retaining a
+                 * bound is conservative only when it encloses the new one. */
+                for (register_index = 0;
+                    register_index < program->register_count;
+                    register_index += 1) {
+                    MarimayIntegerRange base;
+                    MarimayIntegerRange *next = &analysis->scratch[register_index];
+                    const MarimayIntegerRange *prior = &incoming_row[register_index];
+                    if (!mmay_integer_range_register(
+                            program, (uint32_t)register_index, &base
+                        )) {
+                        status = MMAY_INTEGER_RANGE_INVALID;
+                        goto cleanup;
+                    }
+                    if (prior->minimum != base.minimum
+                        && next->minimum > prior->minimum) {
+                        next->minimum = prior->minimum;
+                    }
+                    if (prior->maximum != base.maximum
+                        && next->maximum < prior->maximum) {
+                        next->maximum = prior->maximum;
+                    }
+                }
+            }
             if (!analysis->incoming_ready[block_index]
                 || memcmp(
                     incoming_row, analysis->scratch,

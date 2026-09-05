@@ -1,0 +1,72 @@
+@test
+fn earlyReturnAndMissingValue(): void {
+  expect.equal(find([1, 2, 3], 2), 2);
+  expect.equal(find([1, 2, 3], 4), -1);
+  expect.equal(find([], 1), -1);
+  expect.equal(find([9223372036854775807], 9223372036854775807), 9223372036854775807);
+}
+
+@test
+fn loopResultsRemainExact(): void {
+  expect.equal(total([]), 0);
+  expect.equal(total([1, 2, 3]), 6);
+  expect.equal(total([9223372036854775807, -9223372036854775807]), 0);
+  let values: []int = [];
+  let index = 0;
+  while index < 100 {
+    const _ = values.push(index);
+    index += 1;
+  }
+  expect.equal(total(values), 4950);
+  expect.equal(find(values, 99), 99);
+}
+
+fn recordVisit(counter: []int): void {
+  counter[0] += 1;
+}
+
+fn visitWithVoidCalls(values: []int): int {
+  const counter = [0];
+  for value in values {
+    // Call-table indices exceed the register count. They are not destinations.
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+    recordVisit(counter);
+  }
+  return counter[0];
+}
+
+@test
+fn voidCallsPreserveReconstructedScalarProofs(): void {
+  expect.equal(visitWithVoidCalls([]), 0);
+  expect.equal(visitWithVoidCalls([1, 2, 3]), 96);
+}

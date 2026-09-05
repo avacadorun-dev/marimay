@@ -845,9 +845,9 @@ HTTP parsing rejects request smuggling ambiguities and configurable-limit violat
 
 ## 11. JSON and serialization
 
-`std/json` is an ordinary source package implementing the D082 bounded cursor
-and explicit-codec model. It does not expose a DOM or dynamic `any` value and
-does not use compiler or runtime reflection.
+`std/json` implements the D082 bounded cursor and explicit-codec model in
+ordinary source, with D086 compiler-checked type-directed convenience calls.
+It does not expose a DOM, dynamic `any` value, or runtime reflection.
 
 ### 11.1 Public model and limits
 
@@ -1072,6 +1072,44 @@ roots, or unrelated input bytes.
 Any future derive or attribute syntax requires its own accepted decision and
 the complete semantic-change protocol; it cannot silently replace the D082
 explicit codec contract.
+
+### 11.5 Strict type-directed convenience (D086)
+
+The closed compiler-known package entry points have these signatures:
+
+```marimay
+public fn decode<T>(contents: bytes.Bytes): Result<T, Error>;
+public fn decodeWithLimits<T>(contents: bytes.Bytes, limits: Limits): Result<T, Error>;
+public fn encode<T>(value: T): Result<bytes.Bytes, Error>;
+public fn encodeWithLimits<T>(value: T, limits: Limits): Result<bytes.Bytes, Error>;
+```
+
+These are imported from the exact `std/json` package, including through named
+and namespace aliases. A same-named local binding or a function in another
+package is not an intrinsic. They are direct calls, not first-class function
+values. Decode requires one explicit type argument. Encode infers `T` from its
+first argument; an explicit `T` must agree exactly. Arguments are evaluated
+once from left to right. Constant evaluation does not execute JSON operations.
+
+Eligible types are `int`, `bool`, `string`, `[]T` for eligible `T`, and nominal
+records with exclusively public, eligible fields. Concrete generic field types
+are substituted; aliases do not change eligibility or identity. Recursive type
+graphs and other types are rejected at compile time with a recommendation to
+use an explicit codec. This initial surface adds no derive or attribute.
+
+Record fields use exact source names and declaration order. Every field must
+occur exactly once, unknown fields are errors, and all eligible types reject
+JSON `null`. Decoding creates fresh records/arrays, requires `finishDecoder`,
+and cannot return a partially decoded value. Encoding uses the cursor's compact
+form, writes empty arrays as `[]`, and publishes bytes only after
+`finishEncoder`. No field is implicitly defaulted, omitted, coerced, renamed,
+or accessed despite privacy. Business validation remains application code.
+
+The short forms use `defaultLimits()`; the explicit forms enforce the same
+validated D082 limits. Error kinds and byte spans are those of the cursor
+operations, with no translated host errors. Field/index error paths are not yet
+part of this slice. Compiler expansion produces ordinary typed MIR calls to
+the source package, not a backend-specific parser or opcode.
 
 ## 12. Logging, metrics, and tracing
 

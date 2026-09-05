@@ -6,6 +6,7 @@
 
 #include "checker_api.h"
 #include "checker_core_api.h"
+#include "checker_json_api.h"
 #include "package_imports_api.h"
 #include "mmay/base/string_literal.h"
 #include "mmay/generated/diagnostic_codes.h"
@@ -483,6 +484,10 @@ static bool mmay_graph_surface_item(
     size_t index = 0;
     bool found = false;
     *is_public = false;
+    if (mmay_checker_json_export(surface->path, surface->path_length, name, name_length)) {
+        *is_public = true;
+        return true;
+    }
     for (index = 0; index < surface->function_count; index += 1) {
         const MarimayCheckedFunction *item = mmay_checked_function(
             graph->result, surface->function_start + index

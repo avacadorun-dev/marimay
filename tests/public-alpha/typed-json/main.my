@@ -1,0 +1,25 @@
+import * as bytes from "std/bytes";
+import * as io from "std/io";
+import * as json from "std/json";
+
+import * as model from "tests.public-alpha.typed-json/model";
+
+fn transform(arguments: []string): Result<void, string> {
+  let input = "{\"notes\":[{\"tags\":[\"alpha\"],\"text\":\"Привет 🌿\",\"id\":1}],\"nextId\":2,\"version\":1}";
+  if arguments.length() == 1 {
+    input = arguments[0];
+  }
+  const database = json.decode<model.Database>(bytes.encodeUtf8(input)).mapError(json.message)?;
+  const output = json.encode(database).mapError(json.message)?;
+  return io.writeBytes(output).mapError(io.message);
+}
+
+fn main(arguments: []string): int {
+  return match transform(arguments) {
+    Ok(_) => 0,
+    Err(error) => {
+      const _ = io.eprintln(error);
+      1
+    },
+  };
+}

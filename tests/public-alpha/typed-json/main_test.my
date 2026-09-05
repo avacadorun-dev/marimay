@@ -1,0 +1,118 @@
+import * as bytes from "std/bytes";
+import * as json from "std/json";
+import { decode as read, encode as write } from "std/json";
+
+import * as model from "tests.public-alpha.typed-json/model";
+
+fn require(condition: bool, message: string): void {
+  if !condition {
+    panic(message);
+  }
+}
+
+fn encoded(value: model.Database): string {
+  const output = match write(value) {
+    Ok(result) => result,
+    Err(error) => panic(json.message(error)),
+  };
+  return match bytes.decodeUtf8(output) {
+    Ok(result) => result,
+    Err(_) => panic("invalid UTF-8 output"),
+  };
+}
+
+@test
+fn databaseRoundTrip(): void {
+  const source = "{\"nextId\":2,\"notes\":[{\"text\":\"Hi 🌿\",\"tags\":[],\"id\":1}],\"version\":1}";
+  const database = match read<model.Database>(bytes.encodeUtf8(source)) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  require(database.notes[0].text == "Hi 🌿", "typed nested record");
+  require(
+    encoded(database) == "{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"text\":\"Hi 🌿\",\"tags\":[]}]}",
+    "declaration order and empty array",
+  );
+}
+
+@test
+fn hostileInputIsRejected(): void {
+  const invalid = [
+    "{}",
+    "{\"version\":1,\"nextId\":1}",
+    "{\"version\":1,\"nextId\":1,\"notes\":null}",
+    "{\"version\":1,\"nextId\":1,\"notes\":[],\"x\":1}",
+    "{\"version\":1,\"version\":1,\"nextId\":1,\"notes\":[]}",
+    "{\"VERSION\":1,\"nextId\":1,\"notes\":[]}",
+    "{\"version\":1,\"nextId\":1,\"notes\":[]}{}",
+    "{\"version\":1,\"nextId\":1,\"notes\":[]}x",
+    "{\"version\":9223372036854775808,\"nextId\":1,\"notes\":[]}",
+    "{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"text\":\"\\ud800\",\"tags\":[]}]}",
+    "{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"text\":null,\"tags\":[]}]}",
+  ];
+  for input in invalid {
+    require(
+      match json.decode<model.Database>(bytes.encodeUtf8(input)) {
+        Ok(_) => false,
+        Err(_) => true,
+      },
+      "malformed JSON was accepted",
+    );
+  }
+}
+
+@test
+fn scalarAndGenericTypes(): void {
+  const box = match json.decode<model.Box<[]bool>>(bytes.encodeUtf8("{\"value\":[true,false]}")) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  require(box.value[0] && !box.value[1], "generic field substitution");
+  const output = match json.encode<model.Box<[]bool>>(box) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  require(
+    match bytes.decodeUtf8(output) {
+      Ok(value) => value == "{\"value\":[true,false]}",
+      Err(_) => false,
+    },
+    "generic encoding",
+  );
+  require(
+    match json.decode<int>(bytes.encodeUtf8("-9223372036854775808")) {
+      Ok(value) => value == -9223372036854775808,
+      Err(_) => false,
+    },
+    "integer minimum",
+  );
+}
+
+@test
+fn limitsRemainEffective(): void {
+  const limited = json.limits(4, 4, 2, 2, 1, 1);
+  require(
+    match json.decodeWithLimits<string>(bytes.encodeUtf8("\"abc\""), limited) {
+      Ok(_) => false,
+      Err(_) => true,
+    },
+    "input limit",
+  );
+  require(
+    match json.encodeWithLimits("abc", limited) {
+      Ok(_) => false,
+      Err(_) => true,
+    },
+    "string/output limit",
+  );
+  require(
+    match json.decodeWithLimits<[]int>(
+      bytes.encodeUtf8("[1,2]"),
+      json.limits(100, 100, 100, 10, 1, 1),
+    ) {
+      Ok(_) => false,
+      Err(_) => true,
+    },
+    "item limit",
+  );
+}

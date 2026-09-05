@@ -77,9 +77,10 @@ cache-independence, and VM/native process gates are verified.
 ## Now / Next / Later
 
 - **Now:**
-  [CP41 — x86_64 native code-generation pressure](checkpoints.md#cp41-x86_64-native-code-generation-pressure).
+  [CP42 — notes-driven CLI ergonomics](checkpoints.md#cp42-notes-driven-cli-ergonomics),
+  explicitly prioritized by the user on 2026-09-05.
 - **Next:**
-  [CP39 — native run, init, doctor, and installable artifacts](checkpoints.md#cp39-native-run-init-doctor-and-installable-artifacts).
+  [CP41 — x86_64 native code-generation pressure](checkpoints.md#cp41-x86_64-native-code-generation-pressure).
 - **Later:** CP39–CP40 finish installation and the CLI0 audit after CP41
   closes the measured x86_64 native-code pressure gap. I6 next proves one real
   direct-style concurrent I/O vertical slice. E0 tests the semantic hypotheses
@@ -95,6 +96,7 @@ native-code checkpoint; it does not reopen the earlier array-only sequence.
 ```text
 D0 + bounded N0/I0/A0/I1-I5 prerequisites
   -> CP29-CP38: bounded local CLI language/core surface
+  -> CP42: notes-driven JSON/collections/control-flow/API ergonomics
   -> CP41: I4 x86_64 generated-C live-state and spill/branch pressure
   -> CP39-CP40: installable artifact and CLI0 audit
   -> I6: typed JSON/config -> concurrent HTTP fan-out -> timeout/race/cancel
@@ -178,11 +180,13 @@ self-hosting.
 CP28 is the fixed algorithm/performance integration boundary. CP29 established
 the release contract and closure matrix for N0, A0, I0, I1, and the applicable
 I2–I5 slices. That matrix assigns missing evidence; it does not mark those gates
-verified. CP38 is verified, and CP41 is now the sole ready card.
+verified. CP38 is verified. The user's 2026-09-05 priority change inserts CP42
+before CP41; CP42 is the sole in-progress card. CP42 must not be called verified
+on the strength of its initial automatic-JSON slice alone.
 
 ## CLI0 CP41 boundary and post-CLI0 I6/E0
 
-With CP38 verified and before CP39, execute
+After CP38 and the user-prioritized CP42 ergonomics acceptance, before CP39 execute
 [CP41](checkpoints.md#cp41-x86_64-native-code-generation-pressure) against a
 clean D056 Linux x86_64 baseline. It closes the already observed generated-C
 live-state/spill gap without weakening typed MIR, runtime checks, or VM/native
@@ -193,7 +197,8 @@ release gate.
 
 After CP41, CP39, and CP40 are verified and CLI0 is closed, audit D010–D012,
 D029, D041, the execution prototype gates, and the current runtime owners
-before assigning CP42+. The first I6 plan must prove an atomic executable
+before assigning CP43+. CP42 now belongs to CLI ergonomics, not I6.
+The first I6 plan must prove an atomic executable
 scenario:
 
 ```text

@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 REGISTER = ROOT / "docs/implementation/roadmap.tsv"
 PRODUCT_ROADMAP = ROOT / "docs/implementation/roadmap.md"
 CHECKPOINT_LEDGER = ROOT / "docs/implementation/checkpoints.md"
-LAST_CHECKPOINT = 41
+LAST_CHECKPOINT = 42
 
 FIELDS = (
     "kind",
@@ -298,10 +298,18 @@ def expect_mutation(name: str, rows: list[dict[str, str]], needle: str) -> str |
 
 def run_self_tests(rows: list[dict[str, str]]) -> list[str]:
     failures: list[str] = []
+    # The live queue can legitimately be in-progress. Normalize only the
+    # mutation fixture; validate_rows still checks the actual queue unchanged.
+    rows = copy.deepcopy(rows)
+    for row in rows:
+        if row["kind"] == "checkpoint" and row["state"] == "in-progress":
+            row["state"] = "ready"
     ready_id = next(
         row["id"] for row in rows
         if row["kind"] == "checkpoint" and row["state"] == "ready"
-    )
+    ) if any(row["kind"] == "checkpoint" and row["state"] == "ready" for row in rows) else None
+    if ready_id is None:
+        return ["self-test requires an active checkpoint fixture"]
     verified_ids = [
         row["id"] for row in rows
         if row["kind"] == "checkpoint" and row["state"] == "verified"

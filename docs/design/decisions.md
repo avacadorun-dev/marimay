@@ -1532,7 +1532,14 @@ comparison edges refine intervals. Joins take the convex hull, and a loop bound
 that expands after two updates widens to its declared type range before branch
 refinement. After the widening fixed point, one monotone narrowing phase
 recomputes branch-constrained loop inputs without widening so finite guards can
-recover safe body ranges. Unsupported `u64` values, unknown writes, ambiguous
+recover safe body ranges. At a loop header, narrowing replaces an endpoint
+still at its declared type extremum with the recomputed endpoint; an already
+finite endpoint is retained when recomputation would tighten it further.
+Ordinary successor blocks propagate the resulting constraints. This finite-
+height narrowing operator avoids counting down a 64-bit interval one value per
+iteration. Recomputed growth must never be discarded, and the existing work
+budget still bounds the complete analysis. Unsupported `u64` values, unknown
+writes, ambiguous
 conversions, or an exhausted analysis budget conservatively retain checked
 operations.
 
@@ -2442,8 +2449,10 @@ byte spans, and explicit `Limits`. Application packages define ordinary
 nominal codec values and top-level `decode(codec, decoder)` and
 `encode(codec, encoder, value)` functions. The first parameter makes those
 functions dot-call eligible under D003. There is no compiler-known
-`decode<T>`, derive syntax, dynamic value tree, schema registry, or runtime
-reflection. A codec can read only fields visible to its package; private
+`decode<T>` in the original CP38 surface. D086 extends this boundary with
+closed, compiler-checked convenience calls; it does not add derive syntax,
+a dynamic value tree, a schema registry, or runtime reflection. A codec can
+read only fields visible to its package; private
 fields cannot be discovered or modified by `std/json`.
 
 The decoder accepts only valid UTF-8 and the JSON lexical grammar. Strings
@@ -2478,9 +2487,10 @@ into the decoder's owned input. Messages contain fixed resource names,
 limits, field/tag text supplied by the input or codec, and offsets; they do
 not expose host errors, paths, capabilities, or unrelated data.
 
-The C17 toolchain embeds the three ordinary `std/json` source documents but
-does not recognize JSON symbols, lower a JSON-specific MIR/bytecode opcode,
-or call a host JSON library. VM and native execution consume the same typed
+The C17 toolchain embeds the three ordinary `std/json` source documents.
+D086 recognizes only its closed convenience entry points and expands them
+to ordinary typed MIR calls to these documents. It does not lower a
+JSON-specific MIR/bytecode opcode or call a host JSON library. VM and native execution consume the same typed
 MIR and shared managed collection contracts. File and stream integration is
 composition with `std/fs`, `std/io`, and `std/bytes`; JSON itself gains no
 ambient file, standard-stream, network, or environment access.
@@ -2597,3 +2607,49 @@ checker implemented only `namespace.Variant` in patterns and returned an
 internal failure for a third component. This decision resolves that missing
 name-resolution contract without removing the existing shorthand or accepting
 a different nominal type merely because it has a same-named variant.
+
+## D086 — Strict type-directed JSON convenience
+
+Status: accepted.
+
+The notes application demonstrates that repeating a record's fields in hand-
+written readers and writers is not an acceptable default experience for a
+bounded CLI alpha. This decision supersedes D082's exclusion of compiler-known
+JSON calls, not its cursor, resource, error, privacy, or encoding contracts.
+
+`std/json` exposes compiler-checked `decode<T>(contents)` and `encode(value)`,
+plus `decodeWithLimits<T>(contents, limits)` and
+`encodeWithLimits(value, limits)`. The first pair uses `defaultLimits()`.
+The result types are `Result<T, json.Error>` and
+`Result<bytes.Bytes, json.Error>`. Decode requires one explicit type argument;
+encode infers its type from its first argument and also permits one matching
+explicit type argument. Import identity, named/namespace aliases, file-local
+visibility, and lexical shadowing apply normally; spelling alone never grants
+the intrinsic. The calls are not first-class function values in this slice.
+
+The initial closed type set is `int`, `bool`, `string`, arrays of eligible
+elements, and nominal records whose fields are all public and recursively
+eligible. Concrete generic records and aliases preserve nominal identity and
+substitute their field types. Record names become exact JSON keys in declaration
+order. Every field is required, unknown and duplicate keys are rejected, and
+`null` is not a value for any of these types. Empty arrays encode as `[]`.
+No defaults, coercions, omitted fields, case folding, or private-field discovery
+are implicit. Recursive type graphs, other scalar types, enums, `Option`, maps,
+sets, interfaces, and functions require explicit codecs in this initial slice;
+unsupported use is a source diagnostic, never a runtime fallback or panic.
+
+Successful decoding consumes the entire input, builds fresh record and array
+values, and publishes no partial value. Encoding preserves D082 declaration/
+write order and all byte, string, number, nesting, item, UTF-8, surrogate, and
+poisoned-output rules. Expected errors remain `json.Error`; allocation/heap
+exhaustion remains `I0002`. The generated calls inherit the existing diagnostic
+byte spans. Structured field/index error paths are a subsequent part of the
+same ergonomics work, not a claim of this first slice.
+
+The checker owns eligibility, field selection, and expansion into verified
+ordinary typed MIR with ordinary calls to the shipped JSON cursor functions.
+Neither backend discovers fields, parses JSON, or repairs source semantics.
+No host JSON library, runtime reflection, dynamic schema/DOM, hidden build
+script, or new JSON execution opcode is introduced. Generated control flow is
+subject to the existing checker/MIR resource budgets. The original explicit
+codec API remains available for private state and custom representations.

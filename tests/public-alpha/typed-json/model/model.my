@@ -1,0 +1,15 @@
+public type Note {
+  public id: int,
+  public text: string,
+  public tags: []string,
+}
+
+public type Database {
+  public version: int,
+  public nextId: int,
+  public notes: []Note,
+}
+
+public type Box<T> {
+  public value: T,
+}

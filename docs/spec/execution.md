@@ -165,6 +165,13 @@ or producer trust cannot substitute for reconstruction. Missing proof,
 allocation failure, or work-limit exhaustion rejects the bundle before VM
 execution.
 
+D062 loop-header narrowing tightens only endpoints still at the declared type
+extrema; already finite endpoints are retained if recomputation would tighten
+them further. A recomputed expansion is never suppressed. This makes narrowing
+converge without walking a signed 64-bit interval one integer at a time, while
+retaining conservative ranges and the independent work-limit boundary. The MIR
+optimizer and both proof verifiers use the same interval rules.
+
 ## 5. C17 AOT contract
 
 ### 5.1 Generated C safety

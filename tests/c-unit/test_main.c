@@ -29,6 +29,7 @@ void mmay_test_cp35_context_pipeline(void);
 void mmay_test_cp36_collections(void);
 void mmay_test_cp37_cli_parser(void);
 void mmay_test_cp38_json(void);
+void mmay_test_checker_json(void);
 void mmay_test_cli_cp39(void);
 void mmay_test_bytecode_vm(void);
 void mmay_test_checker(void);
@@ -94,6 +95,7 @@ void mmay_test_number_format(void);
 void mmay_test_mir(void);
 void mmay_test_mir_range(void);
 void mmay_test_mir_integer_range(void);
+void mmay_test_mir_range_convergence(void);
 void mmay_test_mir_interface_execution(void);
 void mmay_test_mir_interfaces(void);
 void mmay_test_mir_bytecode(void);
@@ -206,6 +208,7 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_mir();
         mmay_test_mir_range();
         mmay_test_mir_integer_range();
+        mmay_test_mir_range_convergence();
         mmay_test_mir_interface_execution();
         mmay_test_mir_interfaces();
         mmay_test_mir_bytecode();
@@ -292,6 +295,10 @@ static void mmay_test_run_cp38(void) {
     mmay_test_cp38_json();
 }
 
+static void mmay_test_run_cp42(void) {
+    mmay_test_checker_json();
+}
+
 static void mmay_test_run_cp41(void) {
     mmay_test_native_c_emitter_managed_views();
     mmay_test_native_c_emitter_call_policy();
@@ -303,6 +310,13 @@ static void mmay_test_run_cp39(void) {
 }
 
 int main(int argument_count, char **arguments) {
+    if (argument_count == 3 && strcmp(arguments[2], "--cp42") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_run_cp42();
+        if (mmay_test_failure_count() != 0) return 1;
+        printf("mmay_typed_json_unit: ok\n");
+        return 0;
+    }
     if (argument_count == 5
         && strcmp(arguments[2], "--cp31-allocation-shard") == 0) {
         size_t shard_index = 0;
@@ -485,6 +499,7 @@ int main(int argument_count, char **arguments) {
     mmay_test_run_cp37();
     mmay_test_run_cp38();
     mmay_test_run_cp41();
+    mmay_test_run_cp42();
     mmay_test_run_cp39();
     if (mmay_test_failure_count() != 0) {
         fprintf(stderr, "mmay_c_unit: %d failure(s)\n", mmay_test_failure_count());

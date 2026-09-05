@@ -144,17 +144,24 @@ static bool mmay_bytecode_integer_read_instruction(
         ? mmay_vector_at_const(
             &block->instructions, instruction_index
         ) : NULL;
-    uint64_t target = instruction != NULL
-        ? instruction->operands[0].unsigned_value : UINT64_MAX;
-    const MarimayBytecodeType *target_type = target < function->register_types.length
-        ? mmay_vector_at_const(&function->register_types, (size_t)target)
-        : NULL;
-    if (instruction == NULL || target_type == NULL || result == NULL
-        || target > UINT32_MAX) {
-        return false;
-    }
+    uint64_t target;
+    const MarimayBytecodeType *target_type;
+    if (instruction == NULL || result == NULL) return false;
     memset(result, 0, sizeof(*result));
     result->kind = mmay_bytecode_integer_kind(instruction->opcode);
+    result->target = MMAY_INTEGER_RANGE_NO_REGISTER;
+    /* A void call's first operand is a call-table index, not a destination.
+     * Stores and other non-writing opcodes likewise preserve scalar facts. */
+    if (!mmay_bytecode_opcode_writes_register(instruction->opcode)) {
+        return result->kind == MMAY_INTEGER_RANGE_OTHER;
+    }
+    target = instruction->operands[0].unsigned_value;
+    target_type = target < function->register_types.length
+        ? mmay_vector_at_const(&function->register_types, (size_t)target)
+        : NULL;
+    if (target_type == NULL || target > UINT32_MAX) {
+        return false;
+    }
     result->target = (uint32_t)target;
     result->first = (uint32_t)instruction->operands[1].unsigned_value;
     result->second = (uint32_t)instruction->operands[2].unsigned_value;

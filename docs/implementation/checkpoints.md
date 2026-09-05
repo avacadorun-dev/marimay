@@ -3,7 +3,7 @@
 Status: authoritative execution queue.
 Audit date: 2026-08-24.
 
-This ledger contains every checkpoint CP0–CP41 exactly once. Product gate
+This ledger contains every checkpoint CP0–CP42 exactly once. Product gate
 state and release sequencing live in the [product roadmap](roadmap.md); direct
 reports live in the [evidence index](evidence/README.md); compact IDs, states,
 dependencies, evidence scope, and next actions live in
@@ -362,11 +362,12 @@ is the explicit transition from the completed algorithm foundation to product
 alpha work. CP41 changes no CLI0 source surface; it is the separate I4
 performance prerequisite inserted between CP38 and CP39.
 
-## Active sequence CP29-CP41
+## Active sequence CP29-CP42
 
 The sequence is deliberately linear so exactly one card is executable. CP29
-through CP38 are `verified`; CP41 is `ready`, and CP39–CP40 remain `planned`
-behind their declared predecessors. Execution order is CP41, CP39, then CP40;
+through CP38 are `verified`; CP42 is `in-progress`, and CP41 plus CP39–CP40
+remain `planned` behind their declared predecessors. The user's 2026-09-05
+priority change makes execution order CP42, CP41, CP39, then CP40;
 numeric order does not override those explicit dependencies.
 
 ## CP29 - Public release contract and closure matrix
@@ -1472,7 +1473,7 @@ the focused I6 planning audit assigns CP42+.
 
 ## CP41 - x86_64 native code-generation pressure
 
-State: `ready`. Parent gate: I4. Predecessor: CP38. Evidence scope: `pushed-ci`.
+State: `planned`. Parent gate: I4. Predecessor: CP42. Evidence scope: `pushed-ci`.
 Trigger evidence:
 [CP41 x86_64 code-generation trigger](evidence/cp41-x86-codegen-trigger-2026-08-24.md).
 
@@ -1626,5 +1627,79 @@ Pass the exact before/after revisions and artifact hashes, raw D056 reports,
 perf and cross-target assembly bundle, retained correctness/sanitizer results,
 remaining target-specific limitations, and the CP39 install/native-run card.
 CP39 and CP40 must retain this evidence in the CLI0 artifact and claim audits;
-the first atomic I6 card remains CP42 or later.
+the first atomic I6 card remains CP43 or later.
+
+## CP42 - Notes-driven CLI ergonomics
+
+State: `in-progress`. Parent gate: CLI0. Predecessor: CP38. Evidence scope: `local`.
+
+Initial evidence: [typed JSON first slice](evidence/cp42-typed-json-first-slice-2026-09-05.md).
+Follow-up: [notes migration and startup convergence](evidence/cp42-notes-startup-2026-09-06.md).
+
+### Outcome
+
+The notes utility describes its data and business rules without manually
+repeating record fields in JSON readers/writers, copying/shifting arrays in
+application loops, or disguising inconsistent mutation behavior. Strict
+validation and VM/native equivalence are preserved.
+
+### Why now / dependencies
+
+On 2026-09-05 the user explicitly accepted and prioritized the Go-comparison
+ergonomics proposal. This extends the CLI0 acceptance bar and moves CP41 behind
+this card; it does not reopen networking, self-hosting, or other I6 work.
+The architecture gate must remain green, and existing formatter/match repairs
+remain separately owned correctness prerequisites rather than hidden features.
+
+### Mandatory reading before implementation
+
+Read the compiler architecture, D082/D086, standard-library JSON/collections,
+D006 result handling, D053 array mutation, language Option/matching and identity
+contracts, plus the focused checker, source-package and differential owners.
+Each later semantic change needs an accepted decision and normative text before
+implementation; this card is not itself a language specification.
+
+### Scope / exclusions
+
+Execute in order:
+
+1. Strict automatic typed JSON, explicit limits, useful field/index errors,
+   source diagnostics for unsupported types, and notes migration.
+2. Standard shallow-copy, position-search, and stable removal operations for
+   collections with explicit aliasing, bounds and iterator semantics.
+3. Mutation return contracts that remove needless discards without silently
+   ignoring expected failure, capacity limits, or useful return information.
+4. Convenient Option binding in conditions/loops, with grammar, formatter,
+   scope, exhaustive matching, and both-engine tests.
+5. A consistent notes mutation API, documentation and acceptance tests.
+
+The first JSON slice supports public-field acyclic records, concrete generic
+records, arrays, int/bool/string. Explicit codecs remain available. No unbounded
+DOM/reflection, private-field discovery, host parser, new task runtime, release
+tag, or publication is authorized by this card.
+
+### Owners
+
+JSON expression/types/decode/encode/MIR checker owners; existing collection
+and control-flow owners behind their narrow APIs; source JSON package; focused
+checker/allocation/formatter tests; `tests/public-alpha/typed-json`; the separate
+notes repository. Backends consume the same verified typed MIR.
+
+### Required tests and acceptance commands
+
+Run focused positive/negative, all-index allocation, sanitizer and resource
+limits tests, format idempotence, strict-C native debug/release and VM/native
+differential tests. The notes application must retain all business and hostile-
+input tests after migration. Register public and focused tests in CTest. Run
+the common documentation/generated/architecture/memory-policy gates and the
+complete supported Tier 1 matrices before verification.
+
+### Completion / removal gates
+
+The initial local JSON evidence does not close this card. Complete all five
+ordered items, link exact-revision evidence through the index and ROADMAP, and
+retain honest unsupported-type and installation limitations. Generic intrinsic
+signature/completion metadata must not be represented by fake external
+functions. Remove any temporary diagnostic probes before committing. Hand off
+the actual resulting artifact and measurements to CP41, then CP39 and CP40.
 <!-- checkpoint-register:end -->

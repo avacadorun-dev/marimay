@@ -108,14 +108,23 @@ definition/usage errors, deterministic help, allocation, fuzz, and
 VM/native evidence. [CP38](cp38-bounded-typed-json-2026-09-01.md) supplies
 explicit bounded codecs, privacy, hostile-input, allocation, sustained-fuzz,
 sanitizer, and VM/native evidence. None of these reports closes CLI0 or any
-parent product gate; CP41 is the sole ready checkpoint, and CP39–CP41 must
-each add completion evidence.
+parent product gate. The user-prioritized CP42 is now the sole in-progress
+checkpoint; CP39–CP42 must each add completion evidence.
+
+## CP42
+
+[Initial automatic typed-JSON slice](cp42-typed-json-first-slice-2026-09-05.md)
+records local checker allocation and four both-engine source tests. It does
+not close the complete notes-driven ergonomics card or any release gate.
+[The notes/startup follow-up](cp42-notes-startup-2026-09-06.md) records the
+Russian application migration, process smoke tests, sanitizer observations and
+the shared D062 convergence/bytecode-adapter repair. Its scope remains local.
 
 ## CP41
 
 [The x86_64 code-generation trigger](cp41-x86-codegen-trigger-2026-08-24.md)
 localizes selective stack/queue/heap pressure in generated native C. CP41 is
-ready after CP38 and before CP39–CP40 so the installed CLI0 artifact contains
+planned after CP42 and before CP39–CP40 so the installed CLI0 artifact contains
 the repair. Its trigger run is too noisy to become a new D056 baseline; a clean
 before/after pushed-run evidence pair is still required. Go/Rust ratios remain
 exploratory.

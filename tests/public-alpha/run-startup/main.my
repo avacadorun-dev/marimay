@@ -1,0 +1,23 @@
+fn total(values: []int): int {
+  let result = 0;
+  for value in values {
+    result += value;
+  }
+  return result;
+}
+
+fn find(values: []int, target: int): int {
+  for value in values {
+    if value == target {
+      return value;
+    }
+  }
+  return -1;
+}
+
+fn main(): int {
+  if total([1, 2, 3]) != 6 || find([1, 2, 3], 2) != 2 {
+    return 1;
+  }
+  return 0;
+}

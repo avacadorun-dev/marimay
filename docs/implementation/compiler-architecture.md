@@ -479,7 +479,7 @@ register type while decoding nominal layouts, including collection fields.
 These remain within their existing owners, and focused checker/CP36 codec
 regressions prove the repairs independently of the CLI parser.
 
-D082 likewise adds no compiler-known JSON semantics. `std/json/json.my` owns
+The original D082 cursor added no compiler-known JSON semantics. `std/json/json.my` owns
 the public model, limits, and stable errors; `std/json/decode.my` owns the
 strict UTF-8/token/container cursor and iterative unknown-value skipping; and
 `std/json/encode.my` owns the poisoned encoder state machine and deterministic
@@ -488,6 +488,19 @@ three ordinary source documents. Application-owned ordinary codec functions
 then pass through the unchanged package graph, checker, typed MIR, bytecode VM,
 and C17 emitter. JSON has no host parser, dynamic value tree, ambient file
 access, or backend-specific opcode.
+
+D086 adds a separate type-directed convenience owner. `checker_expr_json.c`
+owns exact package/import/shadowing selection and the four direct-call
+boundaries; `checker_json_types.c` owns the closed eligibility walk, privacy,
+generic field substitution, and adaptation to existing nominal layouts.
+`checker_json_decode.c` and `checker_json_encode.c` independently own typed
+record/array cursor expansion. Their narrow sibling contract is
+`checker_json_internal.h`; `checker_json_mir.c` owns the ordinary call,
+Result/Option, and control-flow construction used by those expansions.
+The package graph asks only the export predicate from `checker_json_api.h`.
+No JSON-specific backend/runtime operation is added. The C allocation/negative
+owner is `test_checker_json.c`; the real source-package and both-engine owner
+is `test_typed_json.cmake` with `tests/public-alpha/typed-json`.
 
 `test_cp38_json.c` exhausts every deterministic allocation failure in the
 three-document embedding boundary. `test_cp38_json.cmake` owns exact public
@@ -529,7 +542,13 @@ checked-to-proven transactional rewrites, and MIR proof validation live in
 lives separately in
 `bootstrap/src/bytecode/bytecode_verify_integer_range.c`. The bytecode and MIR
 owners translate their own models but share every arithmetic transfer/proof
-rule. VM/MIR/native execution only consumes already verified proven forms and
+rule. Loop-header narrowing retains already finite endpoints when a candidate
+would tighten them again; it must not count through a 64-bit interval to reach
+the work limit. Bytecode adaptation consults the opcode-effects owner before
+treating operand zero as a destination: void-call table indices and stores are
+not scalar-register writes. Focused convergence tests exercise real loop CFGs
+under a small deterministic work budget and sweep allocation failures.
+VM/MIR/native execution only consumes already verified proven forms and
 uses the portable unsigned-domain helpers in `checked_i64.c`; no backend grants
 or repairs a proof.
 

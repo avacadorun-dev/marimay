@@ -19,6 +19,7 @@
 #include "checker_expr_fs_api.h"
 #include "checker_expr_context_api.h"
 #include "checker_expr_collections_api.h"
+#include "checker_json_api.h"
 
 
 
@@ -1035,6 +1036,7 @@ bool mmay_checker_private_compile_ordinary_call(
     bool context_primitive_resolved = false;
     bool test_resolved = false;
     bool collection_constructor_resolved = false;
+    bool json_resolved = false;
     const MarimayAstNode *member_callee = mmay_checker_private_check_child_node(
         node,
         MMAY_SYNTAX_MEMBER_EXPRESSION,
@@ -1047,6 +1049,13 @@ bool mmay_checker_private_compile_ordinary_call(
             MMAY_TOKEN_IDENTIFIER,
             0
         );
+    if (!mmay_checker_compile_json(function, node, &json_resolved, result)) {
+        goto cleanup;
+    }
+    if (json_resolved) {
+        accepted = true;
+        goto cleanup;
+    }
     if (!mmay_checker_private_compile_numeric_call(
             function, node, expected, &numeric_resolved, result
         )) {

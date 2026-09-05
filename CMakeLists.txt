@@ -472,6 +472,11 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_declaration_publication_nominal.c
   bootstrap/src/check/checker_declaration_records.c
   bootstrap/src/check/checker_expr_calls.c
+  bootstrap/src/check/checker_expr_json.c
+  bootstrap/src/check/checker_json_types.c
+  bootstrap/src/check/checker_json_mir.c
+  bootstrap/src/check/checker_json_decode.c
+  bootstrap/src/check/checker_json_encode.c
   bootstrap/src/check/checker_receiver_calls.c
   bootstrap/src/check/checker_expr_prelude.c
   bootstrap/src/check/checker_expr_try.c
