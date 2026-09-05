@@ -1,0 +1,4 @@
+fn comments(a:bool,b:bool):bool{return match a{true=>a /* first
+keep */ && b,
+// second arm
+false=>a||b,};}

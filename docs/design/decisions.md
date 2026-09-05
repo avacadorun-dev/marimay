@@ -270,6 +270,9 @@ Status: accepted.
 
 Import name lists, record constructions, record/named-variant patterns, and named enum payload declarations are formatter groups rather than unconditionally multiline blocks. If the complete group fits within the D026 100-column metric and contains no hard-line comment, canonical output keeps it on one line with one space inside each brace. Otherwise it breaks after `{` and before `}`, indents one item per line, and emits a trailing comma for comma-separated lists. Named enum payload declaration fields retain D025 semicolons and do not gain an internal comma.
 
+Fitting uses canonical text and spacing under D026; original source byte
+length and whitespace do not impose a separate pattern-layout threshold.
+
 Declaration bodies, control-flow bodies, `scope`, `unsafe`, `match`, test/fuzz bodies, and ordinary statement blocks remain structurally multiline even when short. An empty grouped brace pair remains `{}`.
 
 Reason: treating record-like lists as statement blocks expands common DTO construction and match patterns into unnecessary vertical space, while always keeping them inline makes large data shapes unreadable. The existing deterministic document model already has an exact fit decision, so one width-sensitive rule preserves both scanability and cross-platform canonical bytes.

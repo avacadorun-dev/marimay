@@ -158,6 +158,7 @@ static bool mmay_document_group_fits(
     size_t index = start;
     size_t nesting = 1;
     size_t used = 0;
+    bool suffix = false;
     while (index < state->document->parts.length) {
         const MarimayDocumentPart *part = mmay_vector_at_const(
             &state->document->parts,
@@ -179,19 +180,23 @@ static bool mmay_document_group_fits(
                 return false;
             }
         } else if (part->kind == MMAY_DOCUMENT_GROUP_END) {
-            nesting -= 1;
-            if (nesting == 0) {
-                return used <= remaining_width;
-            }
+            if (nesting != 0) nesting -= 1;
+            if (nesting == 0) suffix = true;
         } else if (part->kind == MMAY_DOCUMENT_HARDLINE
             || part->kind == MMAY_DOCUMENT_LITERAL_LINE) {
-            return false;
+            return suffix;
+        } else if (suffix && (part->kind == MMAY_DOCUMENT_SOFTLINE
+                || part->kind == MMAY_DOCUMENT_SOFTBREAK)) {
+            /* The next group/parent can break here. Until then, its inline
+             * suffix shares our line and must fit with our flattened text. */
+            return true;
         } else if (part->kind == MMAY_DOCUMENT_SOFTLINE) {
             if (!mmay_size_add(used, 1, &used)) {
                 state->limit_reached = true;
                 return false;
             }
-        } else if (part->kind == MMAY_DOCUMENT_TEXT) {
+        } else if (part->kind == MMAY_DOCUMENT_TEXT
+            || (suffix && nesting == 0 && part->kind == MMAY_DOCUMENT_BREAK_TEXT)) {
             if (!mmay_document_text_width(part, remaining_width, &text_width)
                 || !mmay_size_add(used, text_width, &used)) {
                 state->limit_reached = true;
@@ -203,7 +208,7 @@ static bool mmay_document_group_fits(
         }
         index += 1;
     }
-    return false;
+    return suffix;
 }
 
 static bool mmay_document_write_spaces(MarimayWriter writer, size_t count) {
@@ -326,16 +331,18 @@ MarimayDocumentStatus mmay_document_render(
         } else if (part->kind == MMAY_DOCUMENT_SOFTBREAK) {
             continue;
         } else if (part->kind == MMAY_DOCUMENT_GROUP_BEGIN) {
+            size_t column = state.at_line_start
+                ? (state.suppress_indent ? 0 : state.indent) : state.column;
             if (state.group_modes.length >= options.max_nesting) {
                 status = MMAY_DOCUMENT_LIMIT_REACHED;
                 break;
             }
             flat = mmay_document_current_flat(&state)
-                || (state.column <= options.width
+                || (column <= options.width
                     && mmay_document_group_fits(
                         &state,
                         index + 1,
-                        options.width - state.column
+                        options.width - column
                     ));
             if (state.limit_reached) {
                 status = MMAY_DOCUMENT_LIMIT_REACHED;

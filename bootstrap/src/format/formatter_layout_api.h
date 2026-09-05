@@ -17,12 +17,7 @@ bool mmay_formatter_index_is_compact(
     bool postfix_context
 );
 
-bool mmay_formatter_brace_is_grouped(
-    const MarimayFormatToken *token,
-    const MarimayVector *tokens,
-    size_t open_index,
-    size_t source_length
-);
+bool mmay_formatter_brace_is_grouped(const MarimayFormatToken *token);
 
 bool mmay_formatter_postfix_predecessor(MarimayTokenKind kind);
 bool mmay_formatter_delimiter_matches(

@@ -76,55 +76,16 @@ bool mmay_formatter_index_is_compact(
     return false;
 }
 
-static bool mmay_formatter_brace_source_is_long(
-    const MarimayVector *tokens,
-    size_t open_index,
-    size_t source_length
-) {
-    const MarimayFormatToken *open = mmay_vector_at_const(tokens, open_index);
-    size_t index = open_index;
-    size_t depth = 0;
-    if (open == NULL || open->token.kind != MMAY_TOKEN_LEFT_BRACE
-        || open->token.start > source_length) {
-        return false;
-    }
-    while (index < tokens->length) {
-        const MarimayFormatToken *token = mmay_vector_at_const(tokens, index);
-        if (token == NULL || token->token.end > source_length) {
-            return false;
-        }
-        if (token->token.kind == MMAY_TOKEN_LEFT_BRACE) {
-            depth += 1;
-        } else if (token->token.kind == MMAY_TOKEN_RIGHT_BRACE) {
-            if (depth == 0) {
-                return false;
-            }
-            depth -= 1;
-            if (depth == 0) {
-                return token->token.end - open->token.start > 72;
-            }
-        }
-        index += 1;
-    }
-    return false;
-}
-
-bool mmay_formatter_brace_is_grouped(
-    const MarimayFormatToken *token,
-    const MarimayVector *tokens,
-    size_t open_index,
-    size_t source_length
-) {
-    bool grouped = token != NULL && (token->in_record_expression
+bool mmay_formatter_brace_is_grouped(const MarimayFormatToken *token) {
+    /* D031 delegates fitting to the document renderer's canonical Unicode
+     * width. Source byte spans include arbitrary whitespace and cannot decide
+     * whether a pattern is grouped without breaking idempotence. */
+    return token != NULL && (token->in_record_expression
         || token->parent_kind == MMAY_SYNTAX_IMPORT_CLAUSE
         || token->parent_kind == MMAY_SYNTAX_ENUM_VARIANT
         || token->parent_kind == MMAY_SYNTAX_NAMED_PAYLOAD
         || token->parent_kind == MMAY_SYNTAX_NAMED_PATTERN
         || token->parent_kind == MMAY_SYNTAX_PATTERN_FIELDS);
-    return grouped && !(token->parent_kind == MMAY_SYNTAX_NAMED_PATTERN
-        && mmay_formatter_brace_source_is_long(
-            tokens, open_index, source_length
-        ));
 }
 
 bool mmay_formatter_postfix_predecessor(MarimayTokenKind kind) {

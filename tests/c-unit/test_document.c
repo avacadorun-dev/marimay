@@ -20,11 +20,46 @@ static void mmay_document_expect_text(MarimayDocument *document, const char *tex
     ) == MMAY_DOCUMENT_OK);
 }
 
+static void mmay_test_document_suffix_width(void) {
+    MarimayDocument document;
+    MarimayDocumentRenderOptions options = mmay_document_default_render_options();
+    MarimayTestBuffer output;
+    MMAY_EXPECT(mmay_document_init(&document, mmay_system_allocator(), 64));
+    mmay_document_expect_text(&document, "root");
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_HARDLINE);
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_INDENT_BEGIN);
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_GROUP_BEGIN);
+    mmay_document_expect_text(&document, "(");
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_INDENT_BEGIN);
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_SOFTBREAK);
+    mmay_document_expect_text(&document, "界");
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_INDENT_END);
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_SOFTBREAK);
+    mmay_document_expect_text(&document, ")");
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_GROUP_END);
+    mmay_document_expect_text(&document, ";");
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_HARDLINE);
+    mmay_document_expect_part(&document, MMAY_DOCUMENT_INDENT_END);
+    options.width = 7;
+    mmay_test_buffer_init(&output);
+    MMAY_EXPECT(mmay_document_render(&document, mmay_test_buffer_writer(&output),
+        options) == MMAY_DOCUMENT_OK);
+    MMAY_EXPECT(strcmp(output.bytes, "root\n  (界);\n") == 0);
+    options.width = 6;
+    mmay_test_buffer_init(&output);
+    MMAY_EXPECT(mmay_document_render(&document, mmay_test_buffer_writer(&output),
+        options) == MMAY_DOCUMENT_OK);
+    MMAY_EXPECT(strcmp(output.bytes, "root\n  (\n    界\n  );\n") == 0);
+    mmay_document_dispose(&document);
+}
+
 void mmay_test_document(void) {
     MarimayDocument document;
     MarimayDocumentRenderOptions options = mmay_document_default_render_options();
     MarimayTestBuffer output;
     MarimayWriter writer;
+
+    mmay_test_document_suffix_width();
 
     MMAY_EXPECT(mmay_document_init(&document, mmay_system_allocator(), 64));
     mmay_document_expect_part(&document, MMAY_DOCUMENT_GROUP_BEGIN);

@@ -766,7 +766,9 @@ static void mmay_formatter_operator(
         if (token->boolean_indent) {
             mmay_formatter_part(formatter, MMAY_DOCUMENT_INDENT_BEGIN);
         }
-        mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
+        if (!formatter->at_line_start) {
+            mmay_formatter_softline(formatter, MMAY_DOCUMENT_SOFTLINE);
+        }
         mmay_formatter_emit_token_text(formatter, token);
         formatter->pending_space = true;
     } else if (mmay_formatter_operator_is_spaced(token)) {
@@ -911,9 +913,7 @@ static void mmay_formatter_build(MarimayFormatter *formatter) {
                 formatter,
                 token,
                 next,
-                mmay_formatter_brace_is_grouped(
-                    token, formatter->tokens, index, formatter->source_length
-                )
+                mmay_formatter_brace_is_grouped(token)
             );
         } else if (kind == MMAY_TOKEN_RIGHT_BRACE) {
             mmay_formatter_close_brace(formatter, token, next);
