@@ -1,0 +1,12 @@
+public type Failure {
+  public visits: []int,
+}
+
+public enum Wrapped {
+  Input(Failure),
+}
+
+public fn message(error: Failure): string {
+  error.visits[0] += 1;
+  return "mapped";
+}

@@ -96,14 +96,7 @@ public fn remove(database: Database, id: int): bool {
   return true;
 }
 
-fn requiredInt(decoder: json.Decoder, value: Option<int>, name: string): Result<int, json.Error> {
-  return match value {
-    Some(item) => Ok(item),
-    None => Err(json.missingField(decoder, name)),
-  };
-}
-
-fn requiredString(decoder: json.Decoder, value: Option<string>, name: string): Result<string, json.Error> {
+fn required<T>(decoder: json.Decoder, value: Option<T>, name: string): Result<T, json.Error> {
   return match value {
     Some(item) => Ok(item),
     None => Err(json.missingField(decoder, name)),
@@ -132,14 +125,12 @@ fn decodeNote(decoder: json.Decoder): Result<Note, json.Error> {
   let value: Option<string> = None;
   let tags: Option<[]string> = None;
   json.beginObject(decoder)?;
-  let field = json.nextField(decoder)?;
-  while match field {
-    Some(_) => true,
-    None => false,
-  } {
-    const name = match field {
+  while true {
+    const name = match json.nextField(decoder)? {
       Some(item) => item,
-      None => panic("std/json field presence changed"),
+      None => {
+        break;
+      },
     };
     if name == "id" {
       id = Some(json.readInt(decoder)?);
@@ -150,18 +141,12 @@ fn decodeNote(decoder: json.Decoder): Result<Note, json.Error> {
     } else {
       json.handleUnknown(decoder, name, json.UnknownFields.Reject)?;
     }
-    field = json.nextField(decoder)?;
   }
-  const decodedTags = match tags {
-    Some(item) => item,
-    None => {
-      return Err(json.missingField(decoder, "tags"));
-    },
-  };
+  const decodedTags = required(decoder, tags, "tags")?;
   return Ok(
     Note {
-      id: requiredInt(decoder, id, "id")?,
-      text: requiredString(decoder, value, "text")?,
+      id: required(decoder, id, "id")?,
+      text: required(decoder, value, "text")?,
       tags: decodedTags,
     },
   );
@@ -200,14 +185,12 @@ fn decodeDatabase(decoder: json.Decoder): Result<Database, json.Error> {
   let nextId: Option<int> = None;
   let notes: Option<[]Note> = None;
   json.beginObject(decoder)?;
-  let field = json.nextField(decoder)?;
-  while match field {
-    Some(_) => true,
-    None => false,
-  } {
-    const name = match field {
+  while true {
+    const name = match json.nextField(decoder)? {
       Some(value) => value,
-      None => panic("std/json field presence changed"),
+      None => {
+        break;
+      },
     };
     if name == "version" {
       version = Some(json.readInt(decoder)?);
@@ -218,18 +201,12 @@ fn decodeDatabase(decoder: json.Decoder): Result<Database, json.Error> {
     } else {
       json.handleUnknown(decoder, name, json.UnknownFields.Reject)?;
     }
-    field = json.nextField(decoder)?;
   }
-  const decodedNotes = match notes {
-    Some(value) => value,
-    None => {
-      return Err(json.missingField(decoder, "notes"));
-    },
-  };
+  const decodedNotes = required(decoder, notes, "notes")?;
   return Ok(
     Database {
-      version: requiredInt(decoder, version, "version")?,
-      nextId: requiredInt(decoder, nextId, "nextId")?,
+      version: required(decoder, version, "version")?,
+      nextId: required(decoder, nextId, "nextId")?,
       notes: decodedNotes,
     },
   );
@@ -254,12 +231,7 @@ fn decodeJson(contents: bytes.Bytes): Result<Database, json.Error> {
 }
 
 public fn decode(contents: bytes.Bytes): Result<Database, string> {
-  const database = match decodeJson(contents) {
-    Ok(value) => value,
-    Err(error) => {
-      return Err(json.message(error));
-    },
-  };
+  const database = decodeJson(contents).mapError(json.message)?;
   validate(database)?;
   return Ok(database);
 }

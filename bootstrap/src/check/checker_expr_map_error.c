@@ -202,6 +202,7 @@ bool mmay_checker_private_compile_map_error(
     const MarimaySyntaxToken *member_token = NULL;
     const MarimaySyntaxToken *mapper_token = NULL;
     MarimayCheckName mapper_name;
+    MarimayCheckName mapper_namespace;
     MarimayCheckName closure_parameter_name;
     MarimayCheckCallable mapper;
     MarimayCheckEnumDeclaration *mapper_enum = NULL;
@@ -241,6 +242,7 @@ bool mmay_checker_private_compile_map_error(
     size_t mapper_variant_index = 0;
     bool mapper_enum_resolved = false;
     bool mapper_closure = false;
+    bool mapper_qualified = false;
     memset(&required_input_error, 0, sizeof(required_input_error));
     memset(&required_input_success, 0, sizeof(required_input_success));
     if (function == NULL || node == NULL || resolved == NULL || result == NULL) {
@@ -295,6 +297,30 @@ bool mmay_checker_private_compile_map_error(
     mapper_token = mmay_checker_private_check_child_token(
         mapper_node, MMAY_TOKEN_IDENTIFIER, 0
     );
+    if (mapper_node != NULL
+        && mapper_node->kind == MMAY_SYNTAX_MEMBER_EXPRESSION) {
+        const MarimayAstNode *namespace_node = NULL;
+        const MarimaySyntaxToken *namespace_token = NULL;
+        if (mmay_checker_private_member_parts(
+                mapper_node, &namespace_node, &mapper_token
+            ) && namespace_node != NULL
+            && namespace_node->kind == MMAY_SYNTAX_NAME_EXPRESSION) {
+            namespace_token = mmay_checker_private_check_child_token(
+                namespace_node, MMAY_TOKEN_IDENTIFIER, 0
+            );
+        }
+        if (namespace_token != NULL && !namespace_token->synthetic
+            && mmay_check_import_namespace_exists(
+                function->checker,
+                function->checker->source + namespace_token->start,
+                namespace_token->end - namespace_token->start
+            )) {
+            mapper_namespace.snapshot = function->checker->ast->snapshot;
+            mapper_namespace.start = namespace_token->start;
+            mapper_namespace.end = namespace_token->end;
+            mapper_qualified = true;
+        }
+    }
     if (!mmay_compile_expression(
             function, receiver_node, MMAY_TYPE_INVALID, &receiver
         )) {
@@ -362,7 +388,8 @@ bool mmay_checker_private_compile_map_error(
             return false;
         }
     } else if (mapper_node != NULL
-        && mapper_node->kind == MMAY_SYNTAX_MEMBER_EXPRESSION) {
+        && mapper_node->kind == MMAY_SYNTAX_MEMBER_EXPRESSION
+        && !mapper_qualified) {
         const MarimayCheckEnumPayloadItemDeclaration *payload = NULL;
         const MarimayTypeDescriptor *mapper_descriptor = NULL;
         if (!mmay_checker_private_resolve_enum_member(
@@ -441,15 +468,26 @@ bool mmay_checker_private_compile_map_error(
     mapper_name.snapshot = function->checker->ast->snapshot;
     mapper_name.start = mapper_token->start;
     mapper_name.end = mapper_token->end;
-    resolution = mmay_check_resolve_call(
-        function->checker, mapper_name, false, MMAY_TYPE_INVALID, &mapper
-    );
+    resolution = mapper_qualified
+        ? mmay_check_resolve_qualified_call(
+            function->checker, mapper_namespace, mapper_name,
+            false, MMAY_TYPE_INVALID, &mapper
+        ) : mmay_check_resolve_call(
+            function->checker, mapper_name, false, MMAY_TYPE_INVALID, &mapper
+        );
     if (resolution != MMAY_CHECK_CALL_FOUND || mapper.parameter_count != 1) {
         (void)mmay_checker_add_diagnostic(
             function->checker,
             resolution == MMAY_CHECK_CALL_UNKNOWN_NAME
-                ? MMAY_DIAGNOSTIC_UNKNOWN_NAME : MMAY_DIAGNOSTIC_TYPE_MISMATCH,
-            "mapError mapper must be a unary visible function",
+                ? MMAY_DIAGNOSTIC_UNKNOWN_NAME
+                : resolution == MMAY_CHECK_CALL_UNKNOWN_IMPORT
+                ? MMAY_DIAGNOSTIC_UNKNOWN_IMPORT
+                : resolution == MMAY_CHECK_CALL_PRIVATE_IMPORT
+                ? MMAY_DIAGNOSTIC_PRIVATE_IMPORT
+                : MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            resolution == MMAY_CHECK_CALL_PRIVATE_IMPORT
+                ? "mapError mapper is package-private"
+                : "mapError mapper must be a unary visible function",
             mapper_name.start,
             mapper_name.end
         );

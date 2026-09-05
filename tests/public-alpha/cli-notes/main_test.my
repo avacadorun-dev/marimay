@@ -70,7 +70,7 @@ fn jsonRoundTripPreservesUnicodeAndTags(): void {
 }
 
 @test
-fn unknownFieldsAreRejected(): void {
+fn unknownAndMissingFieldsAreRejected(): void {
   const source = bytes.encodeUtf8("{\"version\":1,\"nextId\":1,\"notes\":[],\"extra\":true}");
   require(
     match notes.decode(source) {
@@ -79,6 +79,17 @@ fn unknownFieldsAreRejected(): void {
     },
     "unknown database field was accepted",
   );
+  const missingFields = [
+    "{\"nextId\":1,\"notes\":[]}",
+    "{\"version\":1,\"notes\":[]}",
+    "{\"version\":1,\"nextId\":1}",
+    "{\"version\":1,\"nextId\":2,\"notes\":[{\"text\":\"x\",\"tags\":[]}]}",
+    "{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"tags\":[]}]}",
+    "{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"text\":\"x\"}]}",
+  ];
+  for input in missingFields {
+    expect.err(notes.decode(bytes.encodeUtf8(input)));
+  }
 }
 
 @test
