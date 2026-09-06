@@ -137,8 +137,10 @@ resolves to the single checkout's Release binary above, and `mmay doctor` passes
 Do not advance to the manifest utility yet. Empty-native-cache tests remain
 above 10 s; the extra full measurement also observed a small-run median of
 0.305 s versus 0.3 s, and first-new-native execution remains above 0.1 s.
-The test runner still lowers/encodes/decodes the full program for each test and
-compiles separate native executables. Preparation reuse must preserve full
+At that revision the test runner still lowered/encoded/decoded the full program
+for each test and compiled separate native executables. The subsequent
+[test preparation repair](cp42-test-preparation-2026-09-06.md) reuses decoded
+code; cold native compilation remains open. Preparation reuse must preserve full
 verification, fresh execution state, output/panic comparison and failure cleanup.
 The remaining VM/native call-stack resource mismatch, broader ergonomics,
 OS-permission/symlink acceptance and platform evidence also stay open.

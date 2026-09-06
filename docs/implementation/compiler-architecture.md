@@ -423,6 +423,17 @@ Dispatch does not probe unrelated execution owners for scalar operations;
 relational transfer does not scan definitions of ineligible expressions.
 Neither reordering adds shared mutable caches or changes proof ownership.
 
+`cli_test_bytecode.c` owns invocation-scoped preparation of the complete test
+program through verified MIR lowering and the verified encode/decode boundary.
+`cli_test_program.c` prepares lazily at the first VM test, retains only decoded
+code, and disposes it at command teardown. The preparation owner selects and
+fully verifies each subsequent entry; the VM's execution verifier is unchanged.
+Per-test heaps, arguments, panic state, captures and capabilities remain fresh.
+The narrow `cli_test_bytecode.h` contract borrows MIR only during preparation;
+it contains no global or persistent cache. `test_cli_test_bytecode.c` owns
+entry-switch/byte-identity, hostile-body, all-index allocation-failure and
+panic-followed-by-fresh-arguments differential coverage.
+
 Checkpoint 0 applies the same rule to every existing hotspot, not only checker
 and MIR:
 

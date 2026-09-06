@@ -1,0 +1,53 @@
+import { println } from "std/io";
+
+fn cleanup(): void {
+  const _ = println("cleanup-one");
+}
+
+@test
+fn argumentsMutateThenPanic(arguments: []string): void {
+  expect.equal(arguments.length(), 2);
+  expect.equal(arguments[0], "Мир");
+  expect.equal(arguments[1], "two words");
+  arguments[0] = "changed";
+  expect.output(
+    "isolated\n",
+    (): void => {
+      const _ = println("isolated");
+    },
+  );
+  defer cleanup();
+  const _ = println("first-output");
+  panic("first-panic");
+}
+
+@test
+fn noArgumentsAfterPanic(): void {
+  expect.output("", (): void => {});
+  let values = [4];
+  const _ = values.push(5);
+  expect.equal(values.length(), 2);
+  expect.equal(values[0], 4);
+  expect.equal(values[1], 5);
+}
+
+@test
+fn argumentsAreFresh(arguments: []string): void {
+  expect.equal(arguments.length(), 2);
+  expect.equal(arguments[0], "Мир");
+  expect.equal(arguments[1], "two words");
+  arguments[1] = "also changed";
+}
+
+@test
+fn lastTestStillHasFreshArguments(arguments: []string): void {
+  expect.equal(arguments.length(), 2);
+  expect.equal(arguments[0], "Мир");
+  expect.equal(arguments[1], "two words");
+  expect.output(
+    "last\n",
+    (): void => {
+      const _ = println("last");
+    },
+  );
+}

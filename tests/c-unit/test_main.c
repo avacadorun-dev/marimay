@@ -57,6 +57,7 @@ void mmay_test_cli_check(void);
 void mmay_test_cli_heap(void);
 void mmay_test_cli_run(void);
 void mmay_test_cli_test(void);
+void mmay_test_cli_test_bytecode(void);
 void mmay_test_cli_cp14_imported_arrays(void);
 void mmay_test_cli_cp15_imported_results(void);
 void mmay_test_cli_cp16_receiver_names(void);
@@ -247,6 +248,7 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         break;
     case 12:
         mmay_test_cli_test();
+        mmay_test_cli_test_bytecode();
         break;
     case 13:
         mmay_test_cli_cp14_imported_arrays();

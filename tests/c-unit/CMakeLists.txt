@@ -110,6 +110,7 @@ add_executable(mmay_c_unit
   test_cli_heap.c
   test_cli_run.c
   test_cli_test.c
+  test_cli_test_bytecode.c
   test_cli_cp14_imported_arrays.c
   test_cli_cp15_imported_results.c
   test_cli_cp16_receiver_names.c
@@ -262,6 +263,7 @@ set(MMAY_C_UNIT_FIXTURE_DIRECTORIES
   "${CMAKE_CURRENT_SOURCE_DIR}/check-tree"
   "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-tree"
   "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-mismatch"
+  "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-prepared"
   "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-private"
   "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-alloc"
   "${CMAKE_CURRENT_SOURCE_DIR}/checkpoint11-invalid-expect"

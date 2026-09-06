@@ -113,6 +113,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Test preparation reuse](cp42-test-preparation-2026-09-06.md) removes repeated
+whole-program lowering and codec work while retaining verification and fresh
+per-test execution state. The unchanged seven-test workload is faster cold
+and warm, but cold native compilation still misses its budget; this is not
+permission to advance to the next utility.
+
 [Config performance repairs](cp42-config-performance-2026-09-06.md) identify and
 remove redundant VM dispatch and native proof searches, retaining exact
 generated C and local before/after measurements. The cold test-loop performance

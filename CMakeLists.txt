@@ -540,6 +540,7 @@ add_library(mmay_bootstrap STATIC
     bootstrap/src/cli/cli_program_arguments.c
     bootstrap/src/cli/cli_run_program.c
     bootstrap/src/cli/cli_test_program.c
+    bootstrap/src/cli/cli_test_bytecode.c
     bootstrap/src/cli/cli_run_report.c
     bootstrap/src/cli/cli_resource_report.c
   bootstrap/src/cli/cli_check_targets.c

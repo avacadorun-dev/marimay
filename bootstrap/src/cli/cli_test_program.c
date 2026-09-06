@@ -1,14 +1,13 @@
 #include "cli_compile_report.h"
-#include "cli_bytecode_report.h"
 #include "cli_internal.h"
 #include "cli_program_arguments.h"
 #include "cli_resource_report.h"
+#include "cli_test_bytecode.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "mmay/bytecode/mir_lower.h"
 #include "mmay/bytecode/program.h"
 #include "mmay/bytecode/vm.h"
 #include "mmay/bytecode/vm_arguments.h"
@@ -40,6 +39,7 @@ typedef struct MarimayCliTestContext {
     const MarimayMirFunction **functions;
     size_t function_count;
     MarimayProgramArgumentList program_arguments;
+    MarimayBytecodeProgram bytecode;
 } MarimayCliTestContext;
 
 typedef struct MarimayCliTestCapture {
@@ -180,14 +180,11 @@ static bool mmay_cli_test_panic_bytes(
 }
 
 static bool mmay_cli_test_vm(
-    const MarimayCliTestContext *context,
+    MarimayCliTestContext *context,
     const MarimayCliTestCase *test,
     MarimayCliTestObservation *observation,
     const char **failure_reason
 ) {
-    MarimayBytecodeProgram lowered;
-    MarimayBytecodeProgram decoded;
-    MarimayOwnedBytes encoded;
     MarimayBytecodeExecution execution;
     MarimayBytecodeExecutionOptions execution_options;
     MarimayCliFsCapabilities fs_capabilities;
@@ -199,8 +196,6 @@ static bool mmay_cli_test_vm(
     MarimayCliTestCapture error_capture;
     MarimayWriter error_writer;
     MarimayIoStdout sink;
-    MarimayMirBytecodeLowerStatus lower_status;
-    MarimayBytecodeCodecStatus codec_status;
     MarimayBytecodeRunStatus run_status;
     MarimayBytecodeValue argument;
     const MarimayBytecodeProgramFunction *entry = NULL;
@@ -210,9 +205,6 @@ static bool mmay_cli_test_vm(
     bool panic_ready = false;
     bool error_capture_ready = false;
     bool accepted = false;
-    memset(&lowered, 0, sizeof(lowered));
-    memset(&decoded, 0, sizeof(decoded));
-    memset(&encoded, 0, sizeof(encoded));
     memset(&execution, 0, sizeof(execution));
     memset(&fs_capabilities, 0, sizeof(fs_capabilities));
     memset(&env_capabilities, 0, sizeof(env_capabilities));
@@ -231,35 +223,14 @@ static bool mmay_cli_test_vm(
             sizeof(unsigned char)
         )) goto cleanup;
     error_capture_ready = true;
-    lower_status = mmay_mir_lower_bytecode_program(
-        context->functions, context->function_count,
-        test->function->mir.symbol, context->session->allocator,
-        mmay_mir_bytecode_program_lower_default_options(), &lowered
-    );
-    if (lower_status != MMAY_MIR_BYTECODE_LOWER_OK) {
-        *failure_reason = "test MIR could not lower to bytecode";
-        goto cleanup;
-    }
-    codec_status = mmay_bytecode_encode_program(
-        &lowered, context->session->allocator, &encoded
-    );
-    if (codec_status != MMAY_BYTECODE_CODEC_OK) {
-        *failure_reason = mmay_cli_bytecode_codec_message(codec_status);
-        goto cleanup;
-    }
-    codec_status = mmay_bytecode_decode_program(
-        encoded.data, encoded.length, context->session->allocator,
-        mmay_bytecode_program_default_options(), &decoded
-    );
-    if (codec_status != MMAY_BYTECODE_CODEC_OK) {
-        *failure_reason = mmay_cli_bytecode_codec_message(codec_status);
-        goto cleanup;
-    }
-    if (mmay_bytecode_program_verify(&decoded)
-            != MMAY_BYTECODE_PROGRAM_VERIFY_OK) {
-        *failure_reason = "test bytecode program verification failed";
-        goto cleanup;
-    }
+    if (!context->bytecode.initialized && !mmay_cli_test_bytecode_prepare(
+            context->functions, context->function_count,
+            test->function->mir.symbol, context->session->allocator,
+            &context->bytecode, failure_reason
+        )) goto cleanup;
+    if (!mmay_cli_test_bytecode_select(
+            &context->bytecode, test->function->mir.symbol, failure_reason
+        )) goto cleanup;
     execution_options = mmay_bytecode_execution_default_options();
     execution_options.managed_heap.max_live_bytes =
         context->options->max_heap_bytes;
@@ -298,7 +269,9 @@ static bool mmay_cli_test_vm(
     run_options.execution = &execution;
     run_options.stdout_sink = &sink;
     run_options.panic = &panic;
-    entry = mmay_bytecode_program_function(&decoded, decoded.entry_function);
+    entry = mmay_bytecode_program_function(
+        &context->bytecode, context->bytecode.entry_function
+    );
     if (test->function->mir.parameter_count == 1) {
         if (entry == NULL || mmay_bytecode_execution_program_arguments(
                 &execution, &entry->body, context->program_arguments,
@@ -308,8 +281,8 @@ static bool mmay_cli_test_vm(
         run_argument_count = 1;
     }
     run_status = mmay_bytecode_run_program(
-        &decoded, run_arguments, run_argument_count, context->session->allocator,
-        run_options, &result
+        &context->bytecode, run_arguments, run_argument_count,
+        context->session->allocator, run_options, &result
     );
     if (run_status == MMAY_BYTECODE_RUN_OK
         && result.type == MMAY_BYTECODE_TYPE_VOID) {
@@ -351,9 +324,6 @@ cleanup:
     if (execution_ready) mmay_bytecode_execution_dispose(&execution);
     if (error_capture_ready) mmay_vector_dispose(&error_capture.bytes);
     mmay_vector_dispose(&capture.bytes);
-    mmay_bytecode_program_dispose(&decoded);
-    mmay_owned_bytes_dispose(&encoded);
-    mmay_bytecode_program_dispose(&lowered);
     return accepted;
 }
 
@@ -821,6 +791,7 @@ int mmay_cli_test_program(
         &context, &tests, standard_output, standard_error
     );
 cleanup:
+    mmay_bytecode_program_dispose(&context.bytecode);
     mmay_cli_program_arguments_dispose(&program_arguments);
     mmay_deallocate(&session->allocator, context.functions, function_bytes);
     mmay_vector_dispose(&tests);
