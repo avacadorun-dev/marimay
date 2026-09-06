@@ -192,6 +192,20 @@ fn decodeEscape(decoder: Decoder, builder: bytes.Builder, escapeStart: int): Res
   );
 }
 
+fn stringBytes(input: bytes.Bytes, start: int, end: int): bytes.Bytes {
+  return match bytes.slice(input, start, end) {
+    Ok(value) => value,
+    Err(_) => panic("std/json string slice"),
+  };
+}
+
+fn stringText(input: bytes.Bytes): string {
+  return match bytes.decodeUtf8(input) {
+    Ok(value) => value,
+    Err(_) => panic("std/json input and escape UTF-8 validation diverged"),
+  };
+}
+
 fn parseString(decoder: Decoder): Result<string, Error> {
   skipWhitespace(decoder);
   if peek(decoder) != 34 {
@@ -199,19 +213,39 @@ fn parseString(decoder: Decoder): Result<string, Error> {
   }
   const stringStart = decoder.offset;
   decoder.offset += 1;
-  const builder = match bytes.newBuilder(decoder.limits.stringBytes) {
+  const input = decoder.input;
+  const length = bytes.length(input);
+  const limit = decoder.limits.stringBytes;
+  const contentStart = decoder.offset;
+  let cursor = contentStart;
+  while cursor < length {
+    const value = bytes.get(input, cursor) as int;
+    if value == 34 {
+      decoder.offset = cursor + 1;
+      return Ok(stringText(stringBytes(input, contentStart, cursor)));
+    }
+    if value < 32 || value == 92 || cursor - contentStart == limit {
+      break;
+    }
+    cursor += 1;
+  }
+  decoder.offset = cursor;
+  const builder = match bytes.newBuilder(limit) {
     Ok(value) => value,
     Err(_) => panic("std/json validated string limit"),
   };
-  while decoder.offset < decoderLength(decoder) {
+  if cursor > contentStart {
+    const _ = match bytes.appendBytes(builder, stringBytes(input, contentStart, cursor)) {
+      Ok(_) => true,
+      Err(_) => panic("std/json validated string prefix limit"),
+    };
+  }
+  while decoder.offset < length {
     const sourceOffset = decoder.offset;
-    const value = bytes.get(decoder.input, decoder.offset) as int;
+    const value = bytes.get(input, decoder.offset) as int;
     decoder.offset += 1;
     if value == 34 {
-      return match bytes.decodeUtf8(bytes.finish(builder)) {
-        Ok(text) => Ok(text),
-        Err(_) => panic("std/json input and escape UTF-8 validation diverged"),
-      };
+      return Ok(stringText(bytes.finish(builder)));
     }
     if value < 32 {
       return Err(

@@ -1,0 +1,238 @@
+import * as bytes from "std/bytes";
+import * as json from "std/json";
+
+type StringRunCase {
+  input: string,
+  output: string,
+  limit: int,
+}
+
+type StringRunFailure {
+  input: string,
+  limit: int,
+  kind: int,
+  start: int,
+  end: int,
+  cursor: int,
+}
+
+fn stringRunLimits(limit: int): json.Limits {
+  return json.limits(1048576, 1048576, limit, 128, 128, 65536);
+}
+
+fn stringRunSpan(span: json.Span, value: StringRunFailure): bool {
+  return span.start == value.start && span.end == value.end;
+}
+
+fn stringRunFailed(value: StringRunFailure): bool {
+  const input = decoder(value.input, stringRunLimits(value.limit));
+  const failed = match json.readString(input) {
+    Ok(_) => false,
+    Err(error) => json.path(error).length() == 0
+      && match error {
+        json.UnexpectedToken { path: _, expected: _, span } => value.kind == 0
+          && stringRunSpan(span, value),
+        json.UnexpectedEnd { path: _, expected: _, span } => value.kind == 1
+          && stringRunSpan(span, value),
+        json.InvalidEscape { path: _, span } => value.kind == 2 && stringRunSpan(span, value),
+        json.InvalidUnicodeEscape { path: _, span } => value.kind == 3
+          && stringRunSpan(span, value),
+        json.LimitExceeded { path: _, resource, limit, span } => value.kind == 4
+          && resource == "string bytes"
+          && limit == value.limit
+          && stringRunSpan(span, value),
+        _ => false,
+      },
+  };
+  return failed
+    && match json.missingField(input, "cursor") {
+      json.MissingField { path: _, name: _, span } => span.start == value.cursor
+        && span.end == value.cursor,
+      _ => false,
+    };
+}
+
+@test
+fn stringRunsPreservePlainAndEscapedUtf8(): void {
+  const cases = [
+    StringRunCase { input: "\"\"", output: "", limit: 0 },
+    StringRunCase { input: "\"abc\"", output: "abc", limit: 3 },
+    StringRunCase { input: "\"Мир🌿\"", output: "Мир🌿", limit: 10 },
+    StringRunCase { input: "\"prefix\\uD83C\\uDF3Fsuffix\"", output: "prefix🌿suffix", limit: 16 },
+    StringRunCase { input: "\"\\u0000\"", output: "\0", limit: 1 },
+    StringRunCase { input: "\"abc\\nМир\"", output: "abc\nМир", limit: 10 },
+    StringRunCase {
+      input: "\"abc\\\"\\/\\\\\\b\\f\\n\\r\\t\"",
+      output: "abc\"/\\\u{8}\u{c}\n\r\t",
+      limit: 11,
+    },
+  ];
+  for value in cases {
+    const input = decoder(value.input, stringRunLimits(value.limit));
+    expect.equal(
+      match json.readString(input) {
+        Ok(text) => text,
+        Err(error) => panic(json.message(error)),
+      },
+      value.output,
+    );
+    expect.equal(
+      match json.finishDecoder(input) {
+        Ok(_) => true,
+        Err(_) => false,
+      },
+      true,
+    );
+    expect.equal(
+      match json.decodeWithLimits<string>(
+        bytes.encodeUtf8(value.input),
+        stringRunLimits(value.limit),
+      ) {
+        Ok(text) => text,
+        Err(error) => panic(json.message(error)),
+      },
+      value.output,
+    );
+  }
+}
+
+@test
+fn stringRunErrorsKeepPrecedenceSpansAndCursor(): void {
+  const cases = [
+    StringRunFailure { input: "", limit: 0, kind: 1, start: 0, end: 0, cursor: 0 },
+    StringRunFailure { input: "\"abc\"", limit: 2, kind: 4, start: 3, end: 4, cursor: 4 },
+    StringRunFailure { input: "\"abcd\n\"", limit: 4, kind: 0, start: 5, end: 6, cursor: 6 },
+    StringRunFailure { input: "\"ab\\x\"", limit: 2, kind: 2, start: 3, end: 5, cursor: 5 },
+    StringRunFailure { input: "\"ab\\u12\"", limit: 2, kind: 3, start: 3, end: 8, cursor: 5 },
+    StringRunFailure { input: "\"ab\\uD800x\"", limit: 2, kind: 3, start: 3, end: 9, cursor: 9 },
+    StringRunFailure { input: "\"\\u0061b\"", limit: 0, kind: 4, start: 1, end: 2, cursor: 7 },
+    StringRunFailure {
+      input: "\"\\uD83C\\uDF3F\"",
+      limit: 3,
+      kind: 4,
+      start: 1,
+      end: 2,
+      cursor: 13,
+    },
+    StringRunFailure { input: "\"М\"", limit: 1, kind: 4, start: 2, end: 3, cursor: 3 },
+    StringRunFailure { input: "\"ab", limit: 8, kind: 1, start: 0, end: 3, cursor: 3 },
+    StringRunFailure { input: "\"ab\\", limit: 2, kind: 2, start: 3, end: 4, cursor: 4 },
+    StringRunFailure { input: "\"abc", limit: 2, kind: 4, start: 3, end: 4, cursor: 4 },
+  ];
+  for value in cases {
+    require(stringRunFailed(value), "string run failure precedence/span/cursor");
+  }
+}
+
+@test
+fn stringRunsRejectEveryRawControlAtTheBudgetBoundary(): void {
+  for code in 0..32 {
+    const control = match tryConvert<byte>(code) {
+      Some(value) => value,
+      None => panic("control byte"),
+    };
+    const text = match bytes.decodeUtf8(bytes.fromArray([34, 97, 98, 99, control, 34])) {
+      Ok(value) => value,
+      Err(_) => panic("control is UTF-8"),
+    };
+    expect.equal(
+      stringRunFailed(
+        StringRunFailure { input: text, limit: 3, kind: 0, start: 4, end: 5, cursor: 5 },
+      ),
+      true,
+    );
+  }
+}
+
+@test
+fn stringRunsPreserveLongLimitsAndOwnedInput(): void {
+  const builder = match bytes.newBuilder(262147) {
+    Ok(value) => value,
+    Err(_) => panic("test builder limit"),
+  };
+  const block = bytes.encodeUtf8(
+    "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  );
+  const _ = bytes.appendByte(builder, 34);
+  for index in 0..4096 {
+    const _ = bytes.appendBytes(builder, block);
+  }
+  const _ = bytes.appendByte(builder, 34);
+  const encoded = bytes.finish(builder);
+  const input = match json.newDecoder(encoded, json.defaultLimits()) {
+    Ok(value) => value,
+    Err(error) => panic(json.message(error)),
+  };
+  bytes.set(encoded, 1, 98);
+  const value = match json.readString(input) {
+    Ok(text) => bytes.encodeUtf8(text),
+    Err(error) => panic(json.message(error)),
+  };
+  expect.equal(bytes.length(value), 262144);
+  expect.equal(bytes.get(value, 0), 97);
+  expect.equal(bytes.get(value, 262143), 97);
+  expect.equal(
+    match json.finishDecoder(input) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    true,
+  );
+  bytes.set(encoded, 262145, 97);
+  const _ = bytes.push(encoded, 34);
+  const tooLong = match bytes.decodeUtf8(encoded) {
+    Ok(text) => text,
+    Err(_) => panic("test UTF-8"),
+  };
+  expect.equal(
+    stringRunFailed(
+      StringRunFailure {
+        input: tooLong,
+        limit: 262144,
+        kind: 4,
+        start: 262145,
+        end: 262146,
+        cursor: 262146,
+      },
+    ),
+    true,
+  );
+}
+
+@test
+fn stringRunsKeepDecodedKeyIdentityAndSkipRules(): void {
+  const input = decoder("{\"plain\":1,\"\\u0070lain\":2}", json.defaultLimits());
+  const _ = json.beginObject(input);
+  const _ = json.nextField(input);
+  const _ = json.readInt(input);
+  expect.equal(
+    match json.nextField(input) {
+      Err(error) => match error {
+        json.DuplicateField { path: _, name, span } => name == "plain"
+          && span.start == 11
+          && span.end == 23,
+        _ => false,
+      },
+      Ok(_) => false,
+    },
+    true,
+  );
+  const skipped = decoder(
+    "[\"plain\",{\"key\":\"prefix\\nsuffix\"},\"Мир🌿\"]",
+    json.defaultLimits(),
+  );
+  expect.equal(
+    match json.skipValue(skipped) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    true,
+  );
+  expect.equal(
+    match json.finishDecoder(skipped) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    true,
+  );
+}

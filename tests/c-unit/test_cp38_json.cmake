@@ -57,7 +57,7 @@ if(NOT cp38_expected_output MATCHES "\n$")
 endif()
 if(NOT cp38_format_output STREQUAL ""
     OR NOT cp38_check_output STREQUAL ""
-    OR NOT cp38_tests_output MATCHES "8 passed; 0 failed"
+    OR NOT cp38_tests_output MATCHES "13 passed; 0 failed"
     OR NOT cp38_vm_output STREQUAL cp38_expected_output
     OR NOT cp38_native_output STREQUAL cp38_expected_output)
   message(FATAL_ERROR

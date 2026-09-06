@@ -1641,6 +1641,7 @@ Follow-up: [local execution policy and config resource boundaries](evidence/cp42
 Follow-up: [config VM dispatch and native proof performance](evidence/cp42-config-performance-2026-09-06.md).
 Follow-up: [invocation-scoped test bytecode preparation](evidence/cp42-test-preparation-2026-09-06.md).
 Follow-up: [one native build per test invocation](evidence/cp42-native-test-build-2026-09-06.md).
+Follow-up: [bounded JSON string-run parsing](evidence/cp42-json-string-runs-2026-09-06.md).
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome
@@ -1688,6 +1689,23 @@ Execute in order:
 After the current JSON item, build and evaluate the external portfolio in its
 documented order while using its findings to drive items 2–5. All ten utilities
 and their combined acceptance evidence are required, not only the notes example.
+
+The user's 2026-09-06 expanded algorithm run adds a required collection
+hot-path optimization to this card. Finish verification of the current JSON
+repair, then diagnose and repair `frequency-map`, `unique-set`, and
+`rune-frequency` before advancing to the next portfolio utility. The existing
+sibling `algorithm-benchmarks` workloads retain their inputs, operation counts,
+checksums, reusable APIs, and 3 warmups plus 11 measured samples. The observed
+Marimay/Go medians were 81.59/14.88 ms, 58.32/17.53 ms, and 43.75/6.69 ms;
+these are a local investigation trigger, not reviewed Tier 1 budgets or proof
+of a particular cause. The raw report SHA-256 is
+`51617a8a1f93b33dc621682a1e19a18df341f712a4eaa93c88df90eb0be778f2`.
+Separate input preparation from collection execution; profile hashing/probing,
+managed-handle checks, and Option/Result construction before choosing repairs.
+Acceptance requires paired same-workload improvement, unchanged insertion
+order, collision resistance, mutation/iterator and failure semantics, plus
+focused allocation, sanitizer and VM/native regression coverage. Feed the
+resulting artifact into CP41; neither this entry nor a findings log closes it.
 
 The first JSON slice supports public-field acyclic records, concrete generic
 records, arrays, int/bool/string. Explicit codecs remain available. No unbounded

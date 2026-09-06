@@ -113,6 +113,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Bounded JSON string runs](cp42-json-string-runs-2026-09-06.md) remove per-byte
+builder/Result overhead in the ordinary source decoder. Paired version-last
+config median falls from 9.449 s to 5.243 s with unchanged inputs, diagnostics
+and limits. The first native launch and other acceptance obligations stay open.
+
 [Shared native test build](cp42-native-test-build-2026-09-06.md) replaces seven
 native compilations with one in the config test loop while keeping fresh
 processes and arguments. Paired cold time falls from 10.505 s to 1.910 s; all
