@@ -8,6 +8,7 @@ void mmay_test_vm_all_opcodes_and_limits(void) {
     MarimayBytecodeRunOptions options = mmay_bytecode_run_default_options();
     size_t shared_steps = 0;
 
+    MMAY_EXPECT(options.max_steps == 10000000);
     MMAY_EXPECT(mmay_test_vm_build_all_opcodes(&function, mmay_system_allocator()));
     arguments[0] = mmay_test_vm_bool(true);
     arguments[1] = mmay_test_vm_i64(40);
@@ -72,6 +73,41 @@ void mmay_test_vm_all_opcodes_and_limits(void) {
     MMAY_EXPECT(shared_steps == 0);
     MMAY_EXPECT(trap.has_span);
     MMAY_EXPECT(trap.span.start == 23 && trap.span.end == 24);
+
+    /* Unmetered frames still obey exact shared fuel and preserve traps. */
+    options.max_steps = SIZE_MAX;
+    shared_steps = 23;
+    MMAY_EXPECT(mmay_bytecode_run(&function, arguments, 3, mmay_system_allocator(),
+        options, &result) == MMAY_BYTECODE_RUN_OK);
+    MMAY_EXPECT(shared_steps == 0 && !trap.has_span);
+    shared_steps = 22;
+    MMAY_EXPECT(mmay_bytecode_run(&function, arguments, 3, mmay_system_allocator(),
+        options, &result) == MMAY_BYTECODE_RUN_STEP_LIMIT);
+    MMAY_EXPECT(shared_steps == 0 && trap.has_span);
+    MMAY_EXPECT(trap.span.start == 23 && trap.span.end == 24);
+    options.remaining_shared_steps = NULL;
+    {
+        size_t failure_index = 0;
+        bool reached_success = false;
+        for (failure_index = 0; failure_index < 100; failure_index += 1) {
+            MarimayFailAllocator state;
+            MarimayBytecodeRunStatus status;
+            mmay_fail_allocator_init(
+                &state, mmay_system_allocator(), failure_index
+            );
+            status = mmay_bytecode_run(&function, arguments, 3,
+                mmay_fail_allocator(&state), options, &result);
+            MMAY_EXPECT(status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED
+                || status == MMAY_BYTECODE_RUN_OK);
+            MMAY_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+            if (status == MMAY_BYTECODE_RUN_OK) {
+                MMAY_EXPECT(result.as.i64 == 42 && !trap.has_span);
+                reached_success = true;
+                break;
+            }
+        }
+        MMAY_EXPECT(reached_success);
+    }
     mmay_bytecode_function_dispose(&function);
 
     MMAY_EXPECT(mmay_test_vm_build_loop(&function, mmay_system_allocator()));
@@ -82,6 +118,17 @@ void mmay_test_vm_all_opcodes_and_limits(void) {
         options, &result) == MMAY_BYTECODE_RUN_STEP_LIMIT);
     MMAY_EXPECT(trap.has_span);
     MMAY_EXPECT(trap.span.start == 0 && trap.span.end == 1);
+    options.max_steps = SIZE_MAX;
+    shared_steps = 3;
+    options.remaining_shared_steps = &shared_steps;
+    MMAY_EXPECT(mmay_bytecode_run(&function, NULL, 0, mmay_system_allocator(),
+        options, &result) == MMAY_BYTECODE_RUN_STEP_LIMIT);
+    MMAY_EXPECT(shared_steps == 0 && trap.has_span);
+    options.remaining_shared_steps = NULL;
+    options.max_steps = 0;
+    MMAY_EXPECT(mmay_bytecode_run(&function, NULL, 0, mmay_system_allocator(),
+        options, &result) == MMAY_BYTECODE_RUN_INVALID_ARGUMENT);
+    MMAY_EXPECT(!trap.has_span);
     mmay_bytecode_function_dispose(&function);
 
     MMAY_EXPECT(mmay_test_vm_build_void(&function, mmay_system_allocator()));
@@ -473,7 +520,20 @@ void mmay_test_vm_direct_calls(void) {
         mmay_system_allocator(), options, &result) == MMAY_BYTECODE_RUN_STEP_LIMIT);
     MMAY_EXPECT(shared_steps == 0 && result.as.i64 == 1234 && trap.has_span);
     MMAY_EXPECT(trap.span.start == 31 && trap.span.end == 32);
+    options.max_steps = SIZE_MAX;
+    shared_steps = 6;
+    MMAY_EXPECT(mmay_bytecode_run_program(&program, NULL, 0,
+        mmay_system_allocator(), options, &result) == MMAY_BYTECODE_RUN_OK);
+    MMAY_EXPECT(shared_steps == 0 && result.as.i64 == 42 && !trap.has_span);
+    shared_steps = 5;
+    MMAY_EXPECT(mmay_bytecode_run_program(&program, NULL, 0,
+        mmay_system_allocator(), options, &result) == MMAY_BYTECODE_RUN_STEP_LIMIT);
+    MMAY_EXPECT(shared_steps == 0 && trap.has_span);
     options.remaining_shared_steps = NULL;
+    options.max_call_depth = 2;
+    MMAY_EXPECT(mmay_bytecode_run_program(&program, NULL, 0,
+        mmay_system_allocator(), options, &result) == MMAY_BYTECODE_RUN_STEP_LIMIT);
+    MMAY_EXPECT(trap.has_span);
 
     /* Per-frame limit is local: the leaf's second instruction is the boundary. */
     options.max_steps = 1;

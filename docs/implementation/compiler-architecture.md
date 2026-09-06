@@ -409,6 +409,14 @@ tests must not delete, rename, reorder, or weaken assertions.
 
 ### Remaining Stage 0 owners
 
+D087 leaves instruction-fuel accounting in `bytecode/vm_prepare.c` and host
+policy selection in `cli_run_program.c`/`cli_test_program.c`. The shared VM
+dispatchers, verifier, memory and capability owners remain unchanged.
+`test_bytecode_vm_arithmetic.c` owns finite/unmetered/shared fuel boundary and
+cleanup checks; `test_cli_local_execution.cmake` owns process parity for long
+finite work and maximum-sized JSON input. It uses explicit test timeouts, not
+a relaxed verifier or smaller workload.
+
 Checkpoint 0 applies the same rule to every existing hotspot, not only checker
 and MIR:
 

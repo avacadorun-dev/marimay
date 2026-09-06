@@ -1,0 +1,5 @@
+@test
+fn finiteWorkExceedsEmbedderFuel(): void {
+  // Each iteration must execute instructions; no source-level work cutoff.
+  expect.equal(count(10000001), 10000001);
+}

@@ -113,6 +113,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Local VM execution policy](cp42-local-execution-policy-2026-09-06.md) records
+the first external config utility's maximum-input failure, D087's separation
+of local commands from embedder fuel, and focused boundary/differential checks.
+The portfolio and the remaining resource-parity work stay open.
+
 [Intrinsic metadata and the external-portfolio start](cp42-json-intrinsics-2026-09-06.md)
 records local signature/completion, shadowing, cleanup and differential checks,
 the exact prior run 189 scope, and the first independent config application.

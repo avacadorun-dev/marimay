@@ -2686,3 +2686,40 @@ apply lexical shadowing through the checker. Queries borrow immutable facts
 and reject stale service generations/snapshots. Generic signatures explicitly
 state the closed eligible type set and direct-call-only limitation; no fake
 definition location or first-class callable type is exposed.
+
+## D087 — Local commands do not inherit the embedder's VM instruction fuel
+
+Status: accepted.
+
+Ordinary `mmay run` and `mmay test` impose no instruction-count or elapsed-time
+cutoff, in either execution engine. A long but finite computation must not
+fail merely because one compiled function executes ten million bytecode
+instructions. A nonterminating local program or test requires interruption
+by its caller; CI uses an explicit process timeout. This is not a claim that
+local commands are a CPU sandbox.
+
+This resolves a policy conflict discovered by the external configuration
+utility: a valid 1,048,459-byte JSON document, below D082's limits, succeeded
+in native execution but failed in the VM at exactly 10,000,000 instructions
+in one frame. D049/D051 used the embedding API's default fuel without an
+equivalent native restriction, contrary to execution §13.1. Neither changing
+the JSON limit nor raising a magic instruction count defines a stable source
+contract: instruction counts change with compilation and optimization.
+
+The bytecode embedding API retains its bounded default of 10,000,000 steps
+per frame. An explicit `max_steps == SIZE_MAX` selects unmetered per-frame
+execution without incrementing or wrapping a counter. Any non-null shared
+step budget is still consumed exactly, including through calls and cleanup;
+zero shared fuel still fails before the next instruction, while a zero
+per-frame maximum remains an invalid API argument. Finite per-frame budgets,
+call-depth checks, verifier budgets, memory accounting, capability checks and
+allocation-failure behavior are unchanged. Fuzzers and the MIR oracle retain
+their existing bounded policies. The two CLI VM hosts select only the
+unmetered per-frame policy; they do not disable verification or other limits.
+
+The existing VM call-depth ceiling and native host-stack constraints remain
+separate limits, not instruction fuel. This change does not establish their
+cross-engine resource parity; that obligation remains in the pre-alpha
+resource-boundary acceptance gate. A future user-selectable CPU sandbox must
+specify its units, interruption/cleanup and both-engine behavior in a separate
+decision, rather than silently changing ordinary local command semantics.

@@ -215,6 +215,11 @@ parser, resolver, type checker, exhaustiveness checker, and typed MIR verifier.
 selected value, and configured-budget versus host-allocation failures have
 distinct `I0002` diagnostics with exit `70`.
 
+Local `run` and `test` do not impose an instruction-count or elapsed-time
+cutoff. Interrupt a nonterminating program explicitly, and set process timeouts
+in CI. The embedding VM's finite fuel remains available for sandboxed hosts;
+verification, memory and capability checks still apply to local commands.
+
 ## Repository map
 
 - [`docs/research/evidence.md`](docs/research/evidence.md) — primary evidence and the pain-point matrix;

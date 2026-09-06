@@ -651,6 +651,16 @@ add_test(
 set_tests_properties(mmay_typed_json PROPERTIES LABELS "differential;typed-json" TIMEOUT 1800)
 
 add_test(
+  NAME mmay_cli_local_execution
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/local-execution"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cli_local_execution.cmake"
+)
+set_tests_properties(mmay_cli_local_execution PROPERTIES
+  LABELS "differential;resource;local-execution" TIMEOUT 1800)
+
+add_test(
   NAME mmay_cp38_json
   COMMAND "${CMAKE_COMMAND}"
     "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"

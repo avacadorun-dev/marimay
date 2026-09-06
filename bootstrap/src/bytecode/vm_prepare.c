@@ -7,12 +7,12 @@ bool mmay_bytecode_run_consume_step(
     size_t *steps,
     MarimayBytecodeRunOptions options
 ) {
-    if (*steps >= options.max_steps
+    if ((options.max_steps != SIZE_MAX && *steps >= options.max_steps)
         || (options.remaining_shared_steps != NULL
             && *options.remaining_shared_steps == 0)) {
         return false;
     }
-    *steps += 1;
+    if (options.max_steps != SIZE_MAX) *steps += 1;
     if (options.remaining_shared_steps != NULL) {
         *options.remaining_shared_steps -= 1;
     }

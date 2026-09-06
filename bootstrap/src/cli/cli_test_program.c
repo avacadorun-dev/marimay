@@ -293,6 +293,8 @@ static bool mmay_cli_test_vm(
     sink.write_stdout = mmay_cli_test_capture_transfer;
     sink.write_stderr = mmay_cli_test_capture_transfer;
     run_options = mmay_bytecode_run_default_options();
+    /* D087: the same local execution policy as run and native tests. */
+    run_options.max_steps = SIZE_MAX;
     run_options.execution = &execution;
     run_options.stdout_sink = &sink;
     run_options.panic = &panic;

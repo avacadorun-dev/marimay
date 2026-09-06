@@ -1637,6 +1637,7 @@ Initial evidence: [typed JSON first slice](evidence/cp42-typed-json-first-slice-
 Follow-up: [notes migration and startup convergence](evidence/cp42-notes-startup-2026-09-06.md).
 Follow-up: [structured JSON error paths](evidence/cp42-json-error-paths-2026-09-06.md).
 Follow-up: [intrinsic metadata and external-portfolio start](evidence/cp42-json-intrinsics-2026-09-06.md).
+Follow-up: [local execution policy and config resource boundaries](evidence/cp42-local-execution-policy-2026-09-06.md).
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome
@@ -1715,4 +1716,9 @@ retain honest unsupported-type and installation limitations. Generic intrinsic
 signature/completion metadata must not be represented by fake external
 functions. Remove any temporary diagnostic probes before committing. Hand off
 the actual resulting artifact and measurements to CP41, then CP39 and CP40.
+
+D087 removes the accidental embedder instruction fuel from ordinary local
+commands. Resource-boundary acceptance must still reconcile the VM call-depth
+ceiling and native host-stack limits, including classification and cleanup;
+instruction-policy repair alone does not evidence complete resource parity.
 <!-- checkpoint-register:end -->

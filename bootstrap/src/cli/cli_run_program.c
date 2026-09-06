@@ -376,6 +376,8 @@ static int mmay_cli_run_execute(
     stdout_sink.write_stdout = mmay_cli_stdout_write;
     stdout_sink.write_stderr = mmay_cli_stdout_write;
     run_options = mmay_bytecode_run_default_options();
+    /* D087: local commands are not instruction-fuel sandboxes. */
+    run_options.max_steps = SIZE_MAX;
     run_options.execution = &execution;
     run_options.stdout_sink = &stdout_sink;
     run_options.panic = &panic;

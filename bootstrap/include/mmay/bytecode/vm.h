@@ -88,7 +88,7 @@ typedef struct MarimayBytecodeTrap {
     bool has_span;
 } MarimayBytecodeTrap;
 typedef struct MarimayBytecodeRunOptions {
-    /* Per frame, matching the MIR oracle's max_steps_per_function. */
+    /* Per-frame fuel; SIZE_MAX is unmetered. Shared fuel still applies. */
     size_t max_steps;
     /* Root counts as depth one; exhaustion reports STEP_LIMIT. */
     size_t max_call_depth;

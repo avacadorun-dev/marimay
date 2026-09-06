@@ -628,7 +628,18 @@ hide the already selected source outcome.
 
 ### 9.4 Limits and allocation failure
 
-VM runs may set heap, task, instruction, and wall-time limits. D055's
+Embedded VM runs may set heap, task, instruction, and wall-time limits.
+Under D087 ordinary local `mmay run` and `mmay test` have no instruction-count
+or elapsed-time cutoff in either engine. Their caller must interrupt a
+nonterminating computation; CI timeouts are explicit host policy. This does
+not remove memory, call-stack, capability, verification or allocation limits.
+The bytecode embedding API retains its finite default fuel. `max_steps ==
+SIZE_MAX` explicitly leaves per-frame instructions unmetered without counter
+wraparound; a supplied shared instruction budget is still consumed exactly.
+Finite budgets retain their exact exhaustion boundary; zero shared fuel
+exhausts immediately and a zero per-frame maximum is an invalid API argument.
+
+D055's
 managed-heap byte budget counts published managed object payloads, reserved
 array cell storage, and managed slot-table storage. It does not count compiler
 or VM metadata, bytecode/native code, call stacks, capture buffers, or OS

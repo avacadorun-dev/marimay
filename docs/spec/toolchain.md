@@ -335,6 +335,11 @@ Failures are not reused across source changes. `--no-cache` bypasses reads and w
 
 ### 5.5 Engine equivalence
 
+Under D087 ordinary local `run` and `test` apply no instruction-count or
+elapsed-time cutoff in either engine. Nonterminating programs require caller
+interruption; automated hosts set explicit process timeouts. This does not
+turn off verification, memory limits, capabilities or execution isolation.
+
 `mmay test --engine both` uses the execution specification's record/replay harness. A mismatch exits `5` and reports result/output/panic/task/capability trace divergence. Passing the same assertion independently is not sufficient if deterministic observable traces disagree.
 
 Under D051 as extended by D066, the preview deterministic core discovers

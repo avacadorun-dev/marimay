@@ -1,0 +1,47 @@
+import * as bytes from "std/bytes";
+import * as io from "std/io";
+import * as json from "std/json";
+
+public type Config {
+  public value: int,
+}
+
+fn count(limit: int): int {
+  let value = 0;
+  while value < limit {
+    value += 1;
+  }
+  return value;
+}
+
+fn transform(arguments: []string): Result<void, string> {
+  if arguments.length() == 1 && arguments[0] == "loop" {
+    io.println($"{count(10000001)}").mapError(io.message)?;
+  } else {
+    const input = io.readBytes(1048576).mapError(io.message)?;
+    // Construct one byte past JSON's limit independently of stdin's limit.
+    if arguments.length() == 1 && arguments[0] == "json-over" {
+      const _ = match bytes.push(input, 32) {
+        Ok(_) => true,
+        Err(_) => {
+          return Err("cannot append boundary byte");
+        },
+      };
+    }
+    const config = json.decode<Config>(input).mapError(json.message)?;
+    const output = json.encode(config).mapError(json.message)?;
+    io.writeBytes(output).mapError(io.message)?;
+  }
+  return io.flushStdout().mapError(io.message);
+}
+
+fn main(arguments: []string): int {
+  return match transform(arguments) {
+    Ok(_) => 0,
+    Err(error) => {
+      const _ = io.eprintln(error);
+      const _ = io.flushStderr();
+      1
+    },
+  };
+}
