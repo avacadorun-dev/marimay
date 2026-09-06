@@ -109,6 +109,9 @@ void mmay_managed_record_dispose(MarimayManagedHeap *heap, MarimayManagedRecord 
 void mmay_managed_enum_dispose(MarimayManagedHeap *heap, MarimayManagedEnum *value);
 void mmay_managed_interface_dispose(MarimayManagedHeap *heap, MarimayManagedInterface *value);
 size_t mmay_managed_map_storage_bytes(const MarimayManagedMap *map);
+bool mmay_managed_map_descriptor_valid(
+    const MarimayManagedMapDescriptor *descriptor
+);
 void mmay_managed_map_dispose(MarimayManagedHeap *heap, MarimayManagedMap *map);
 MarimayManagedStatus mmay_managed_map_trace(
     MarimayManagedHeap *heap,

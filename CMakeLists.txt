@@ -739,6 +739,7 @@ install(DIRECTORY docs examples
     PATTERN "*.in"
     PATTERN "*.py"
     PATTERN "*.md"
+    PATTERN "*.json"
     PATTERN "*.tsv"
     PATTERN "*.my"
 )

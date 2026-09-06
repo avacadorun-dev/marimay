@@ -24,12 +24,9 @@ MarimayManagedStatus mmay_managed_set_new(
     if (result != NULL) {
         *result = mmay_managed_invalid_reference();
     }
-    if (!mmay_managed_heap_valid(heap) || result == NULL || descriptor == NULL
-        || !descriptor->is_set
-        || descriptor->key.cell_kind == MMAY_MANAGED_CELL_INVALID
-        || descriptor->value.cell_kind != MMAY_MANAGED_CELL_INVALID
-        || descriptor->value.reference_kind != MMAY_MANAGED_OBJECT_INVALID
-        || descriptor->value.reference_descriptor != NULL) {
+    if (!mmay_managed_heap_valid(heap) || result == NULL
+        || !mmay_managed_map_descriptor_valid(descriptor)
+        || !descriptor->is_set) {
         return MMAY_MANAGED_INVALID_ARGUMENT;
     }
     mmay_managed_resource_failure_clear(heap);

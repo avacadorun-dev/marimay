@@ -7,6 +7,9 @@
  * Exact Map<K,V> identity is the descriptor address. Keys use the closed
  * D079 equality/hash set; values may use any valid managed field layout.
  * Descriptors are immutable and outlive every map created from them.
+ * Map/Set construction validates field shapes before publishing the object;
+ * operations may rely on that invariant but still validate each object handle
+ * and every reference-valued key/value supplied by the caller.
  */
 typedef struct MarimayManagedMapDescriptor {
     MarimayManagedFieldDescriptor key;

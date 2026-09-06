@@ -1703,6 +1703,9 @@ of a particular cause. The raw report SHA-256 is
 Partial follow-up: [native collection results and verifier worklists](evidence/cp42-collection-results-2026-09-06.md).
 Its local 19.5–27.4% reductions do not close this item; residual collection
 costs and the discovered rune-Eq/parser-recovery defects remain obligations.
+The next [hash/descriptor boundary follow-up](evidence/cp42-collection-hash-descriptors-2026-09-06.md)
+adds smaller paired gains without changing SipHash, inputs, order or limits;
+it likewise does not close the obligation or the separate Linux CI failures.
 Separate input preparation from collection execution; profile hashing/probing,
 managed-handle checks, and Option/Result construction before choosing repairs.
 Acceptance requires paired same-workload improvement, unchanged insertion

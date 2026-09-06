@@ -511,6 +511,15 @@ hash/equality, insertion order, growth, and precise tracing; the small set
 owner delegates storage to that exact map contract and exposes no duplicate
 table implementation.
 
+Both Map and Set constructors validate the immutable field descriptor before
+publishing an object. Operations rely on that shape invariant, but still
+resolve each receiver's heap/slot/generation/kind and validate reference-valued
+keys and values. The map owner exposes only its descriptor predicate to the
+set owner; no mutable resolved storage crosses that boundary. Raw 64-bit keys
+use the base hash owner's fixed-word SipHash-2-4 entry point, exactly equivalent
+to hashing the native word bytes with the generic routine. Round count, seeds,
+reference-key hashing, probing, order and storage accounting are unchanged.
+
 Collection Option/Result emission uses the existing generated-enum ABI and
 entry-registered descriptor IDs for empty/raw-cell results. Reference payloads
 retain the rooted checked constructor. Descriptor registration remains in

@@ -68,6 +68,32 @@ static void mmay_test_hashes(void) {
         == 0xa129ca6149be45e5ULL);
 }
 
+static void mmay_test_siphash_word(void) {
+    static const uint64_t values[] = {
+        0, 1, UINT64_MAX, UINT64_C(0x8000000000000000),
+        UINT64_C(0x7fffffffffffffff), UINT64_C(0x0706050403020100),
+        UINT64_C(0xaaaaaaaaaaaaaaaa), UINT64_C(0x5555555555555555)
+    };
+    uint64_t random = UINT64_C(0x20260906c036c036);
+    size_t index = 0;
+    for (index = 0; index < 100000; index += 1) {
+        uint64_t word, key0, key1;
+        random = random * UINT64_C(6364136223846793005)
+            + UINT64_C(1442695040888963407);
+        word = index < sizeof(values) / sizeof(values[0]) ? values[index] : random;
+        random = random * UINT64_C(6364136223846793005)
+            + UINT64_C(1442695040888963407);
+        key0 = random;
+        random = random * UINT64_C(6364136223846793005)
+            + UINT64_C(1442695040888963407);
+        key1 = random;
+        MMAY_EXPECT(mmay_hash_sip24_word(word, key0, key1)
+            == mmay_hash_sip24(&word, sizeof(word), key0, key1));
+        MMAY_EXPECT(mmay_hash_sip24_word(word, 0, UINT64_MAX)
+            == mmay_hash_sip24(&word, sizeof(word), 0, UINT64_MAX));
+    }
+}
+
 static void mmay_test_map_behavior(void) {
     MarimayMap map;
     size_t index = 0;
@@ -193,6 +219,7 @@ static void mmay_test_map_failures(void) {
 
 void mmay_test_hash_map(void) {
     mmay_test_hashes();
+    mmay_test_siphash_word();
     mmay_test_map_behavior();
     mmay_test_map_failures();
 }

@@ -113,6 +113,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Collection hash and descriptor boundaries](cp42-collection-hash-descriptors-2026-09-06.md)
+remove repeated immutable-layout validation and specialize the exact fixed-word
+SipHash path. Two local paired runs show further Map/Set improvement, while
+rune-frequency measurements remain noisy. The optimization obligation stays open.
+
 [Native collection results and verifier worklists](cp42-collection-results-2026-09-06.md)
 reduce local Map/Set/rune workload medians by 19.5–27.4% and remove repeated
 whole-CFG fixed-point scans. This is partial progress; the full collection

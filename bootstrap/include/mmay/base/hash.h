@@ -33,4 +33,8 @@ uint64_t mmay_hash_sip24(
     uint64_t key1
 );
 
+/* Exact SipHash-2-4 of the native object representation of one uint64_t;
+ * equivalent to mmay_hash_sip24(&word, sizeof(word), key0, key1). */
+uint64_t mmay_hash_sip24_word(uint64_t word, uint64_t key0, uint64_t key1);
+
 #endif

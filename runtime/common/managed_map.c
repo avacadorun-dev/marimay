@@ -31,10 +31,15 @@ static bool mmay_managed_map_field_valid(
         && field->reference_kind != MMAY_MANAGED_OBJECT_ENUM) {
         return false;
     }
-    return field->reference_descriptor != NULL;
+    return (field->reference_kind == MMAY_MANAGED_OBJECT_ARRAY
+            || field->reference_kind == MMAY_MANAGED_OBJECT_RECORD
+            || field->reference_kind == MMAY_MANAGED_OBJECT_ENUM
+            || field->reference_kind == MMAY_MANAGED_OBJECT_INTERFACE
+            || field->reference_kind == MMAY_MANAGED_OBJECT_MAP)
+        && field->reference_descriptor != NULL;
 }
 
-static bool mmay_managed_map_descriptor_valid(
+bool mmay_managed_map_descriptor_valid(
     const MarimayManagedMapDescriptor *descriptor
 ) {
     if (descriptor == NULL
@@ -65,8 +70,10 @@ static MarimayManagedStatus mmay_managed_map_resolve(
     if (slot == NULL) {
         return MMAY_MANAGED_INVALID_REFERENCE;
     }
+    /* Both constructors validate the immutable descriptor before publication.
+     * Resolving each handle still checks its heap, slot, generation and kind. */
     if (slot->kind != MMAY_MANAGED_OBJECT_MAP || slot->as.map == NULL
-        || !mmay_managed_map_descriptor_valid(slot->as.map->descriptor)) {
+        || slot->as.map->descriptor == NULL) {
         return MMAY_MANAGED_TYPE_MISMATCH;
     }
     *result = slot->as.map;
@@ -106,7 +113,7 @@ static uint64_t mmay_managed_map_hash_raw64(
     uint64_t seed1
 ) {
     /* Keep keyed SipHash; specialize dispatch, not collision resistance. */
-    return mmay_hash_sip24(&value, sizeof(value), seed0, seed1);
+    return mmay_hash_sip24_word(value, seed0, seed1);
 }
 
 static MarimayManagedStatus mmay_managed_map_value_hash(
@@ -1026,7 +1033,8 @@ MarimayManagedStatus mmay_managed_map_put(
     if (status != MMAY_MANAGED_OK) {
         return status;
     }
-    if (!lookup_map->descriptor->is_set) {
+    if (!lookup_map->descriptor->is_set
+        && lookup_map->descriptor->value.cell_kind == MMAY_MANAGED_CELL_REFERENCE) {
         status = mmay_managed_validate_field(
             heap, &lookup_map->descriptor->value, value
         );

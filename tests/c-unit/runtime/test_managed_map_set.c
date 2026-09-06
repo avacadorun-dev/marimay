@@ -690,6 +690,130 @@ static void mmay_test_managed_map_length_limit(void) {
     mmay_managed_heap_dispose(&heap);
 }
 
+static void mmay_test_managed_collection_descriptor_boundary(void) {
+    static const MarimayManagedFieldDescriptor invalid_fields[] = {
+        {MMAY_MANAGED_CELL_RAW64, true, MMAY_MANAGED_OBJECT_INVALID, NULL},
+        {MMAY_MANAGED_CELL_RAW64, false, MMAY_MANAGED_OBJECT_STRING, NULL},
+        {MMAY_MANAGED_CELL_RAW64, false, MMAY_MANAGED_OBJECT_INVALID, &mmay_test_raw_map},
+        {MMAY_MANAGED_CELL_REFERENCE, false, MMAY_MANAGED_OBJECT_INVALID, NULL},
+        {MMAY_MANAGED_CELL_REFERENCE, false, MMAY_MANAGED_OBJECT_STRING, &mmay_test_raw_map},
+        {MMAY_MANAGED_CELL_REFERENCE, false, MMAY_MANAGED_OBJECT_RECORD, NULL},
+        {MMAY_MANAGED_CELL_REFERENCE, false, MMAY_MANAGED_OBJECT_ENUM, NULL},
+        {MMAY_MANAGED_CELL_INVALID, false, MMAY_MANAGED_OBJECT_INVALID, NULL},
+        {MMAY_MANAGED_CELL_REFERENCE, false, (MarimayManagedObjectKind)99, &mmay_test_raw_map}
+    };
+    static const MarimayManagedObjectKind non_key_kinds[] = {
+        MMAY_MANAGED_OBJECT_ARRAY, MMAY_MANAGED_OBJECT_INTERFACE,
+        MMAY_MANAGED_OBJECT_MAP
+    };
+    MarimayFailAllocator state;
+    MarimayManagedHeap heap;
+    size_t collection = 0;
+    size_t index = 0;
+    size_t before_allocations = 0;
+    size_t before_bytes = 0;
+    mmay_fail_allocator_init(&state, mmay_system_allocator(), SIZE_MAX);
+    MMAY_EXPECT(mmay_test_map_heap(&heap, mmay_fail_allocator(&state), false));
+    before_allocations = state.live_allocations;
+    before_bytes = state.live_bytes;
+    for (collection = 0; collection < 2; collection += 1) {
+        for (index = 0; index < sizeof(invalid_fields) / sizeof(invalid_fields[0]);
+            index += 1) {
+            MarimayManagedMapDescriptor descriptor = collection == 0
+                ? mmay_test_raw_map : mmay_test_raw_set;
+            MarimayManagedReference result = {0};
+            size_t attempts = state.attempts;
+            descriptor.key = invalid_fields[index];
+            MMAY_EXPECT((collection == 0
+                ? mmay_managed_map_new(&heap, &descriptor, &result)
+                : mmay_managed_set_new(&heap, &descriptor, &result))
+                == MMAY_MANAGED_INVALID_ARGUMENT);
+            MMAY_EXPECT(mmay_managed_reference_is_invalid(result));
+            MMAY_EXPECT(state.attempts == attempts);
+            if (collection == 0) {
+                descriptor.key = mmay_test_raw_map.key;
+                descriptor.value = invalid_fields[index];
+                MMAY_EXPECT(mmay_managed_map_new(&heap, &descriptor, &result)
+                    == MMAY_MANAGED_INVALID_ARGUMENT);
+                MMAY_EXPECT(mmay_managed_reference_is_invalid(result));
+                MMAY_EXPECT(state.attempts == attempts);
+            }
+            MMAY_EXPECT(state.live_allocations == before_allocations);
+            MMAY_EXPECT(state.live_bytes == before_bytes);
+        }
+        for (index = 0; index < sizeof(non_key_kinds) / sizeof(non_key_kinds[0]);
+            index += 1) {
+            MarimayManagedMapDescriptor descriptor = collection == 0
+                ? mmay_test_raw_map : mmay_test_raw_set;
+            MarimayManagedReference result = {0};
+            size_t attempts = state.attempts;
+            descriptor.key.cell_kind = MMAY_MANAGED_CELL_REFERENCE;
+            descriptor.key.reference_kind = non_key_kinds[index];
+            descriptor.key.reference_descriptor = &mmay_test_raw_map;
+            MMAY_EXPECT((collection == 0
+                ? mmay_managed_map_new(&heap, &descriptor, &result)
+                : mmay_managed_set_new(&heap, &descriptor, &result))
+                == MMAY_MANAGED_INVALID_ARGUMENT);
+            MMAY_EXPECT(mmay_managed_reference_is_invalid(result));
+            MMAY_EXPECT(state.attempts == attempts);
+            MMAY_EXPECT(state.live_allocations == before_allocations);
+            MMAY_EXPECT(state.live_bytes == before_bytes);
+        }
+    }
+    mmay_managed_heap_dispose(&heap);
+    MMAY_EXPECT(state.live_allocations == 0);
+    MMAY_EXPECT(state.live_bytes == 0);
+}
+
+static void mmay_test_managed_collection_handle_boundary(void) {
+    MarimayFailAllocator state;
+    MarimayManagedHeap heap, other;
+    MarimayManagedReference map, foreign, wrong_generation, text, strings, fresh;
+    MarimayManagedCell output;
+    bool changed = false, found = false;
+    size_t length = SIZE_MAX;
+    uint64_t generation = UINT64_MAX;
+    mmay_fail_allocator_init(&state, mmay_system_allocator(), SIZE_MAX);
+    MMAY_EXPECT(mmay_test_map_heap(&heap, mmay_fail_allocator(&state), false));
+    MMAY_EXPECT(mmay_test_map_heap(&other, mmay_fail_allocator(&state), false));
+    MMAY_EXPECT(mmay_managed_map_new(&heap, &mmay_test_raw_map, &map) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_map_new(&other, &mmay_test_raw_map, &foreign) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_map_new(&heap, &mmay_test_string_map, &strings) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_string_new(&heap, (const unsigned char *)"key", 3, &text)
+        == MMAY_MANAGED_OK);
+    wrong_generation = map;
+    wrong_generation.generation += 1U;
+    MMAY_EXPECT(mmay_managed_map_get(&heap, foreign, mmay_test_map_raw(0), &output, &found)
+        == MMAY_MANAGED_INVALID_REFERENCE);
+    MMAY_EXPECT(mmay_managed_map_get(&heap, wrong_generation, mmay_test_map_raw(0), &output, &found)
+        == MMAY_MANAGED_INVALID_REFERENCE);
+    MMAY_EXPECT(mmay_managed_map_get(&heap, text, mmay_test_map_raw(0), &output, &found)
+        == MMAY_MANAGED_TYPE_MISMATCH);
+    MMAY_EXPECT(mmay_managed_set_add(&heap, map, mmay_test_map_raw(0), &changed)
+        == MMAY_MANAGED_TYPE_MISMATCH);
+    MMAY_EXPECT(mmay_managed_map_put(&heap, strings, mmay_test_map_reference(map),
+        mmay_test_map_reference(text), &changed) == MMAY_MANAGED_TYPE_MISMATCH);
+    MMAY_EXPECT(mmay_managed_map_put(&heap, strings, mmay_test_map_reference(text),
+        mmay_test_map_reference(map), &changed) == MMAY_MANAGED_TYPE_MISMATCH);
+    MMAY_EXPECT(mmay_managed_map_put(&heap, strings, mmay_test_map_reference(text),
+        mmay_test_map_reference(mmay_managed_invalid_reference()), &changed)
+        == MMAY_MANAGED_INVALID_REFERENCE);
+    MMAY_EXPECT(mmay_managed_map_length(&heap, strings, &length)
+        == MMAY_MANAGED_OK && length == 0);
+    MMAY_EXPECT(mmay_managed_map_mutation_generation(&heap, strings, &generation)
+        == MMAY_MANAGED_OK && generation == 0);
+    MMAY_EXPECT(mmay_managed_heap_collect(&heap) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_map_new(&heap, &mmay_test_raw_map, &fresh) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_map_get(&heap, map, mmay_test_map_raw(0), &output, &found)
+        == MMAY_MANAGED_INVALID_REFERENCE);
+    MMAY_EXPECT(mmay_managed_map_put(&heap, fresh, mmay_test_map_raw(0),
+        mmay_test_map_raw(UINT64_MAX), &changed) == MMAY_MANAGED_OK && changed);
+    mmay_managed_heap_dispose(&other);
+    mmay_managed_heap_dispose(&heap);
+    MMAY_EXPECT(state.live_allocations == 0);
+    MMAY_EXPECT(state.live_bytes == 0);
+}
+
 void mmay_test_managed_map_set(void) {
     (void)mmay_test_map_raw_field;
     (void)mmay_test_map_string_field;
@@ -701,4 +825,6 @@ void mmay_test_managed_map_set(void) {
     mmay_test_managed_map_randomized_gc_graph();
     mmay_test_managed_map_allocation_sweep();
     mmay_test_managed_map_length_limit();
+    mmay_test_managed_collection_descriptor_boundary();
+    mmay_test_managed_collection_handle_boundary();
 }

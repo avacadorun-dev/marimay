@@ -275,4 +275,29 @@ uint64_t mmay_hash_sip24(
     return value0 ^ value1 ^ value2 ^ value3;
 }
 
+uint64_t mmay_hash_sip24_word(uint64_t word, uint64_t key0, uint64_t key1) {
+    uint64_t value0 = 0x736f6d6570736575ULL ^ key0;
+    uint64_t value1 = 0x646f72616e646f6dULL ^ key1;
+    uint64_t value2 = 0x6c7967656e657261ULL ^ key0;
+    uint64_t value3 = 0x7465646279746573ULL ^ key1;
+    const uint64_t final = UINT64_C(8) << 56;
+    /* Preserve the generic routine's byte order on every C17 host. Compilers
+     * fold this native-word load without a variable-length byte/tail loop. */
+    const uint64_t message = mmay_load_little64((const unsigned char *)&word);
+    value3 ^= message;
+    MMAY_SIP_ROUND();
+    MMAY_SIP_ROUND();
+    value0 ^= message;
+    value3 ^= final;
+    MMAY_SIP_ROUND();
+    MMAY_SIP_ROUND();
+    value0 ^= final;
+    value2 ^= 0xffU;
+    MMAY_SIP_ROUND();
+    MMAY_SIP_ROUND();
+    MMAY_SIP_ROUND();
+    MMAY_SIP_ROUND();
+    return value0 ^ value1 ^ value2 ^ value3;
+}
+
 #undef MMAY_SIP_ROUND
