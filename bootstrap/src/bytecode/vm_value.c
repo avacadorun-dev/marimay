@@ -387,58 +387,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
     size_t *bounds_length
 ) {
     size_t target = (size_t)instruction->operands[0].unsigned_value;
-    bool array_mutation_handled = false;
-    MarimayBytecodeRunStatus array_mutation_status =
-        mmay_bytecode_run_array_mutation_instruction(
-            instruction, registers, execution, function, allocator, panic,
-            symbol, &array_mutation_handled
-        );
-    if (array_mutation_handled) {
-        return array_mutation_status;
-    }
-    {
-        bool collection_handled = false;
-        MarimayBytecodeRunStatus collection_status =
-            mmay_bytecode_run_collection_instruction(
-                instruction, registers, execution, function, allocator,
-                panic, symbol, &collection_handled
-            );
-        if (collection_handled) return collection_status;
-    }
-    if (mmay_bytecode_opcode_is_numeric(instruction->opcode)) {
-        return mmay_bytecode_run_numeric_instruction(
-            instruction, registers, execution, function
-        );
-    }
-    if (instruction->opcode == MMAY_OPCODE_FORMAT_F32
-        || instruction->opcode == MMAY_OPCODE_FORMAT_F64
-        || instruction->opcode == MMAY_OPCODE_FORMAT_BOOL
-        || instruction->opcode == MMAY_OPCODE_FORMAT_INTEGER) {
-        return mmay_bytecode_run_format_instruction(
-            instruction, registers, execution
-        );
-    }
-    if (instruction->opcode == MMAY_OPCODE_STRING_CONCAT) {
-        return mmay_bytecode_run_string_concat_instruction(
-            instruction, registers, execution
-        );
-    }
-    if (mmay_bytecode_opcode_is_text(instruction->opcode)) {
-        return mmay_bytecode_run_text_instruction(
-            instruction, registers, execution, function, allocator,
-            stdout_sink
-        );
-    }
-    if (mmay_bytecode_opcode_is_fs(instruction->opcode)) {
-        return mmay_bytecode_run_fs_instruction(
-            instruction, registers, execution, function
-        );
-    }
-    if (mmay_bytecode_opcode_is_context(instruction->opcode)) {
-        return mmay_bytecode_run_context_instruction(
-            instruction, registers, execution, function
-        );
-    }
+    /* Dispatch once; scalar instructions must not probe unrelated owners. */
     switch (instruction->opcode) {
         case MMAY_OPCODE_CONST_I64:
             registers[target].as.i64 = instruction->operands[1].signed_value;
@@ -1149,13 +1098,21 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         case MMAY_OPCODE_PANIC_STRING:
         case MMAY_OPCODE_DEFER_REGISTER:
         case MMAY_OPCODE_DEFER_CALL:
+            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
         case MMAY_OPCODE_ARRAY_POP:
         case MMAY_OPCODE_ARRAY_TRUNCATE:
         case MMAY_OPCODE_ARRAY_CLEAR:
         case MMAY_OPCODE_ARRAY_RESERVE:
         case MMAY_OPCODE_ARRAY_GENERATION:
-        case MMAY_OPCODE_ARRAY_REQUIRE_GENERATION:
-            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+        case MMAY_OPCODE_ARRAY_REQUIRE_GENERATION: {
+            bool handled = false;
+            MarimayBytecodeRunStatus status =
+                mmay_bytecode_run_array_mutation_instruction(
+                    instruction, registers, execution, function, allocator,
+                    panic, symbol, &handled
+                );
+            return handled ? status : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+        }
         case MMAY_OPCODE_RECORD_NEW:
         case MMAY_OPCODE_RECORD_GET:
         case MMAY_OPCODE_RECORD_SET:
@@ -1217,6 +1174,71 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
             return mmay_bytecode_run_parse_instruction(
                 instruction, registers, execution, function
             );
+        case MMAY_OPCODE_TEXT_BYTE_LENGTH:
+        case MMAY_OPCODE_TEXT_RUNE_COUNT:
+        case MMAY_OPCODE_TEXT_GRAPHEME_COUNT:
+        case MMAY_OPCODE_TEXT_IS_RUNE_BOUNDARY:
+        case MMAY_OPCODE_TEXT_DROP_PREFIX:
+        case MMAY_OPCODE_TEXT_TAKE_PREFIX:
+        case MMAY_OPCODE_TEXT_CONTAINS:
+        case MMAY_OPCODE_TEXT_STARTS_WITH:
+        case MMAY_OPCODE_TEXT_ENDS_WITH:
+        case MMAY_OPCODE_TEXT_TRIM_ASCII:
+        case MMAY_OPCODE_TEXT_SPLIT_COUNT:
+        case MMAY_OPCODE_TEXT_SPLIT:
+        case MMAY_OPCODE_TEXT_JOIN:
+        case MMAY_OPCODE_TEXT_RUNES:
+        case MMAY_OPCODE_TEXT_GRAPHEMES:
+        case MMAY_OPCODE_TEXT_ENCODE_UTF8:
+        case MMAY_OPCODE_TEXT_INVALID_UTF8_OFFSET:
+        case MMAY_OPCODE_TEXT_DECODE_UTF8:
+            return mmay_bytecode_run_text_instruction(
+                instruction, registers, execution, function, allocator,
+                stdout_sink
+            );
+        case MMAY_OPCODE_PATH_NORMALIZE:
+        case MMAY_OPCODE_PATH_IS_ABSOLUTE:
+        case MMAY_OPCODE_FS_OPEN_READ:
+        case MMAY_OPCODE_FS_READ:
+        case MMAY_OPCODE_FS_CLOSE:
+        case MMAY_OPCODE_FS_CLOSE_BEST_EFFORT:
+        case MMAY_OPCODE_FS_READ_ALL:
+        case MMAY_OPCODE_FS_WRITE_ATOMIC:
+        case MMAY_OPCODE_FS_METADATA:
+        case MMAY_OPCODE_FS_READ_DIRECTORY:
+            return mmay_bytecode_run_fs_instruction(
+                instruction, registers, execution, function
+            );
+        case MMAY_OPCODE_ENV_GET:
+        case MMAY_OPCODE_PROCESS_CURRENT_DIRECTORY:
+        case MMAY_OPCODE_PROCESS_EXECUTABLE_PATH:
+            return mmay_bytecode_run_context_instruction(
+                instruction, registers, execution, function
+            );
+        case MMAY_OPCODE_COLLECTION_NEW:
+        case MMAY_OPCODE_COLLECTION_LENGTH:
+        case MMAY_OPCODE_COLLECTION_CONTAINS:
+        case MMAY_OPCODE_COLLECTION_GET:
+        case MMAY_OPCODE_COLLECTION_PUT:
+        case MMAY_OPCODE_COLLECTION_ADD:
+        case MMAY_OPCODE_COLLECTION_REMOVE:
+        case MMAY_OPCODE_COLLECTION_CLEAR:
+        case MMAY_OPCODE_COLLECTION_GENERATION:
+        case MMAY_OPCODE_COLLECTION_REQUIRE_GENERATION:
+        case MMAY_OPCODE_COLLECTION_ENTRY_KEY:
+        case MMAY_OPCODE_COLLECTION_ENTRY_VALUE:
+        case MMAY_OPCODE_COLLECTION_GET_OPTION:
+        case MMAY_OPCODE_COLLECTION_REMOVE_OPTION:
+        case MMAY_OPCODE_COLLECTION_PUT_RESULT:
+        case MMAY_OPCODE_COLLECTION_ADD_RESULT: {
+            bool handled = false;
+            MarimayBytecodeRunStatus status =
+                mmay_bytecode_run_collection_instruction(
+                    instruction, registers, execution, function, allocator,
+                    panic, symbol, &handled
+                );
+            return handled ? status : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+        }
         case MMAY_OPCODE_IO_PRINTLN:
         case MMAY_OPCODE_IO_WRITE:
         case MMAY_OPCODE_IO_FLUSH:

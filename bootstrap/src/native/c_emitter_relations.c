@@ -382,19 +382,25 @@ static bool mmay_native_c_relation_transfer(
         && mmay_native_c_relation_constant(
             function, instruction->second, 0, &value
         ) && value >= 0;
-    for (register_index = 0;
-        register_index < facts->register_count; register_index += 1) {
-        const MarimayMirInstruction *candidate =
-            mmay_native_c_relation_definition(
+    /* Only live arithmetic expressions can be equivalent. Definition lookup
+       scans the function, so reject ineligible candidates before that scan. */
+    if (mmay_native_c_relation_arithmetic_kind_equal(
+            instruction->kind, instruction->kind
+        )) {
+        for (register_index = 0;
+            register_index < facts->register_count; register_index += 1) {
+            const MarimayMirInstruction *candidate = NULL;
+            if (register_index == instruction->target
+                || (facts->nonnegative[register_index] & 2U) == 0) continue;
+            candidate = mmay_native_c_relation_definition(
                 function, (MarimayMirRegister)register_index
             );
-        if (register_index != instruction->target
-            && (facts->nonnegative[register_index] & 2U) != 0
-            && mmay_native_c_relation_arithmetic_equal(
-                function, facts, instruction, candidate
-            )) {
-            equivalent = (MarimayMirRegister)register_index;
-            break;
+            if (mmay_native_c_relation_arithmetic_equal(
+                    function, facts, instruction, candidate
+                )) {
+                equivalent = (MarimayMirRegister)register_index;
+                break;
+            }
         }
     }
     mmay_native_c_relation_invalidate_expressions(

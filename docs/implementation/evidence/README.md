@@ -113,6 +113,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Config performance repairs](cp42-config-performance-2026-09-06.md) identify and
+remove redundant VM dispatch and native proof searches, retaining exact
+generated C and local before/after measurements. The cold test-loop performance
+stop gate remains open; this is not completion of the application or CP42.
+
 [Local VM execution policy](cp42-local-execution-policy-2026-09-06.md) records
 the first external config utility's maximum-input failure, D087's separation
 of local commands from embedder fuel, and focused boundary/differential checks.

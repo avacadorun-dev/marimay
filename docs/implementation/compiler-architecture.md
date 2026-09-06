@@ -417,6 +417,12 @@ cleanup checks; `test_cli_local_execution.cmake` owns process parity for long
 finite work and maximum-sized JSON input. It uses explicit test timeouts, not
 a relaxed verifier or smaller workload.
 
+The CP42 config performance follow-up keeps opcode-family routing in
+`vm_value.c` and live-expression eligibility in `c_emitter_relations.c`.
+Dispatch does not probe unrelated execution owners for scalar operations;
+relational transfer does not scan definitions of ineligible expressions.
+Neither reordering adds shared mutable caches or changes proof ownership.
+
 Checkpoint 0 applies the same rule to every existing hotspot, not only checker
 and MIR:
 

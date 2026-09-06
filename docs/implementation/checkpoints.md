@@ -1638,6 +1638,7 @@ Follow-up: [notes migration and startup convergence](evidence/cp42-notes-startup
 Follow-up: [structured JSON error paths](evidence/cp42-json-error-paths-2026-09-06.md).
 Follow-up: [intrinsic metadata and external-portfolio start](evidence/cp42-json-intrinsics-2026-09-06.md).
 Follow-up: [local execution policy and config resource boundaries](evidence/cp42-local-execution-policy-2026-09-06.md).
+Follow-up: [config VM dispatch and native proof performance](evidence/cp42-config-performance-2026-09-06.md).
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome

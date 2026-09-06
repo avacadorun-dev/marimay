@@ -68,6 +68,12 @@ not a substitute for it.
    compiler/application revisions and host/build profiles. Establish practical
    latency and memory budgets before optimizing each workload; explain material
    regressions rather than weakening verification or shrinking the workload.
+   A performance failure stops progression to the next utility: reproduce it,
+   profile the responsible layer, fix the cause, rerun correctness tests and
+   measure the unchanged workload again. A findings entry alone does not close
+   it. Separate measured host startup costs from compiler/runtime work without
+   hiding either; do not disable host security or run user code during a build
+   to manufacture a warm-start result.
 6. Keep an ergonomics findings log with the smallest reproducer, expected user
    expression, actual workaround/boilerplate, severity, owner and resolution.
    Distinguish language/library defects, missing abstractions, toolchain/install
