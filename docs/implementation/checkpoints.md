@@ -1635,6 +1635,7 @@ State: `in-progress`. Parent gate: CLI0. Predecessor: CP38. Evidence scope: `loc
 
 Initial evidence: [typed JSON first slice](evidence/cp42-typed-json-first-slice-2026-09-05.md).
 Follow-up: [notes migration and startup convergence](evidence/cp42-notes-startup-2026-09-06.md).
+Follow-up: [structured JSON error paths](evidence/cp42-json-error-paths-2026-09-06.md).
 
 ### Outcome
 

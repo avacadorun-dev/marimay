@@ -13,3 +13,5 @@ public type Database {
 public type Box<T> {
   public value: T,
 }
+
+public type Empty {}

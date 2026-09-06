@@ -4,6 +4,12 @@
 #include "checker_json_api.h"
 #include "package_imports_api.h"
 
+/* Borrowed stack chain; each component is a string field or an int index. */
+typedef struct MarimayJsonPath {
+    const struct MarimayJsonPath *parent;
+    MarimayExpressionValue component;
+} MarimayJsonPath;
+
 /* One expansion borrows checker state; it owns no allocation or source tree. */
 typedef struct MarimayJsonExpansion {
     MarimayFunctionChecker *function;
@@ -14,6 +20,7 @@ typedef struct MarimayJsonExpansion {
     MarimayExpressionValue cursor;
     MarimayExpressionValue result;
     MarimayMirBlockId done;
+    const MarimayJsonPath *path;
 } MarimayJsonExpansion;
 
 typedef struct MarimayJsonRecord {
@@ -78,6 +85,10 @@ bool mmay_json_array(MarimayJsonExpansion *json, MarimayTypeId array_type,
     MarimayExpressionValue *result);
 bool mmay_json_read(MarimayJsonExpansion *json, MarimayTypeId type,
     MarimayExpressionValue *result);
+bool mmay_json_read_at(MarimayJsonExpansion *json, MarimayTypeId type,
+    MarimayExpressionValue component, MarimayExpressionValue *result);
 bool mmay_json_write(MarimayJsonExpansion *json, MarimayExpressionValue value);
+bool mmay_json_write_at(MarimayJsonExpansion *json, MarimayExpressionValue value,
+    MarimayExpressionValue component);
 
 #endif

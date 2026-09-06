@@ -187,6 +187,13 @@ bool mmay_json_finish(MarimayJsonExpansion *json, bool error,
     MarimayExpressionValue value
 ) {
     MarimayExpressionValue wrapped;
+    const MarimayJsonPath *path = json->path;
+    while (error && path != NULL) {
+        MarimayExpressionValue arguments[2] = {value, path->component};
+        if (!mmay_json_call(json, path->component.type == MMAY_TYPE_STRING
+                ? "atField" : "atIndex", arguments, 2, &value)) return false;
+        path = path->parent;
+    }
     return mmay_json_enum(json, json->result_type, error ? 1 : 0, &value, &wrapped)
         && mmay_json_copy(json, json->result, wrapped) && mmay_json_goto(json, json->done);
 }

@@ -9,6 +9,8 @@ static const char mmay_json_signature_fixture[] =
     "public type Encoder { public size: int, }\n"
     "public enum Error { Bad, }\n"
     "public enum UnknownFields { Reject, Skip, }\n"
+    "public fn atField(error: Error, name: string): Error { return error; }\n"
+    "public fn atIndex(error: Error, index: int): Error { return error; }\n"
     "public fn defaultLimits(): Limits { return Limits { size: 1 }; }\n"
     "public fn newDecoder(input: Bytes, limits: Limits): Result<Decoder, Error> { return Ok(Decoder { size: 0 }); }\n"
     "public fn newEncoder(limits: Limits): Result<Encoder, Error> { return Ok(Encoder { size: 0 }); }\n"

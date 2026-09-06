@@ -2646,8 +2646,20 @@ values, and publishes no partial value. Encoding preserves D082 declaration/
 write order and all byte, string, number, nesting, item, UTF-8, surrogate, and
 poisoned-output rules. Expected errors remain `json.Error`; allocation/heap
 exhaustion remains `I0002`. The generated calls inherit the existing diagnostic
-byte spans. Structured field/index error paths are a subsequent part of the
-same ergonomics work, not a claim of this first slice.
+byte spans. The CP42 path extension adds `PathSegment.Field { name }` and
+`PathSegment.Index { index }` and a `path: []PathSegment` payload to each named
+`Error` case. `InvalidLimits` remains a root-only unit case. Paths run from
+root to failure; missing, unknown and duplicate fields include the offending
+field, value failures include their enclosing fields and zero-based indices,
+and container grammar failures identify the container. Cursor errors are
+relative to the current operation; automatic codecs prepend the enclosing
+context. `atField`/`atIndex` provide the same explicit composition to custom
+codecs without changing the error case, byte span or original path array.
+This is an intentional pre-alpha payload migration: exhaustive named patterns
+must bind or explicitly ignore `path`; callers using `message` need no change.
+Error paths are constructed only on failure, not on every successful value.
+`path` returns a fresh shallow copy, and `pathText` renders a bounded escaped
+rooted display suitable for diagnostics. No runtime side table stores context.
 
 The checker owns eligibility, field selection, and expansion into verified
 ordinary typed MIR with ordinary calls to the shipped JSON cursor functions.

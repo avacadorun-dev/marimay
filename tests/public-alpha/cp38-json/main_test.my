@@ -96,7 +96,7 @@ fn DuplicateUnknownAndMissingFieldsStayTyped(): void {
   require(
     match model.decode(model.newCodec(json.UnknownFields.Reject), duplicate) {
       Err(error) => match error {
-        json.DuplicateField { name, span } => name == "version" && span.start == 13,
+        json.DuplicateField { path: _, name, span } => name == "version" && span.start == 13,
         _ => false,
       },
       Ok(_) => false,
@@ -108,7 +108,7 @@ fn DuplicateUnknownAndMissingFieldsStayTyped(): void {
   require(
     match model.decode(model.newCodec(json.UnknownFields.Reject), unknown) {
       Err(error) => match error {
-        json.UnknownField { name, span } => name == "extra" && span.start == 24,
+        json.UnknownField { path: _, name, span } => name == "extra" && span.start == 24,
         _ => false,
       },
       Ok(_) => false,
@@ -120,7 +120,7 @@ fn DuplicateUnknownAndMissingFieldsStayTyped(): void {
   require(
     match model.decode(model.newCodec(json.UnknownFields.Reject), missing) {
       Err(error) => match error {
-        json.MissingField { name, span } => name == "items" && span.start == 13,
+        json.MissingField { path: _, name, span } => name == "items" && span.start == 13,
         _ => false,
       },
       Ok(_) => false,
@@ -135,7 +135,7 @@ fn InvalidAndTruncatedInputsReportByteSpans(): void {
   require(
     match json.readString(badEscape) {
       Err(error) => match error {
-        json.InvalidEscape { span } => span.start == 1 && span.end == 3,
+        json.InvalidEscape { path: _, span } => span.start == 1 && span.end == 3,
         _ => false,
       },
       Ok(_) => false,
@@ -147,7 +147,7 @@ fn InvalidAndTruncatedInputsReportByteSpans(): void {
   require(
     match json.readString(badSurrogate) {
       Err(error) => match error {
-        json.InvalidUnicodeEscape { span } => span.start == 1,
+        json.InvalidUnicodeEscape { path: _, span } => span.start == 1,
         _ => false,
       },
       Ok(_) => false,
@@ -162,7 +162,7 @@ fn InvalidAndTruncatedInputsReportByteSpans(): void {
   require(
     match json.nextElement(truncated) {
       Err(error) => match error {
-        json.UnexpectedEnd { span, expected: _ } => span.start == 3 && span.end == 3,
+        json.UnexpectedEnd { path: _, span, expected: _ } => span.start == 3 && span.end == 3,
         _ => false,
       },
       Ok(_) => false,
@@ -177,7 +177,7 @@ fn NumbersAreValidatedAndRangeChecked(): void {
   require(
     match json.readNumber(invalid) {
       Err(error) => match error {
-        json.InvalidNumber { span } => span.start == 0,
+        json.InvalidNumber { path: _, span } => span.start == 0,
         _ => false,
       },
       Ok(_) => false,
@@ -198,7 +198,7 @@ fn NumbersAreValidatedAndRangeChecked(): void {
   require(
     match json.readInt(range) {
       Err(error) => match error {
-        json.NumberOutOfRange { span } => span.start == 0 && span.end == 19,
+        json.NumberOutOfRange { path: _, span } => span.start == 0 && span.end == 19,
         _ => false,
       },
       Ok(_) => false,
@@ -213,7 +213,7 @@ fn DecoderLimitsRejectAmplificationBoundaries(): void {
   require(
     match json.newDecoder(bytes.encodeUtf8("true"), smallInput) {
       Err(error) => match error {
-        json.LimitExceeded { resource, limit, span } => resource == "input bytes"
+        json.LimitExceeded { path: _, resource, limit, span } => resource == "input bytes"
           && limit == 2
           && span.end == 4,
         _ => false,
@@ -227,7 +227,8 @@ fn DecoderLimitsRejectAmplificationBoundaries(): void {
   require(
     match json.skipValue(nested) {
       Err(error) => match error {
-        json.LimitExceeded { resource, limit, span: _ } => resource == "nesting" && limit == 2,
+        json.LimitExceeded { path: _, resource, limit, span: _ } => resource == "nesting"
+          && limit == 2,
         _ => false,
       },
       Ok(_) => false,
@@ -239,7 +240,8 @@ fn DecoderLimitsRejectAmplificationBoundaries(): void {
   require(
     match json.skipValue(many) {
       Err(error) => match error {
-        json.LimitExceeded { resource, limit, span: _ } => resource == "array items" && limit == 2,
+        json.LimitExceeded { path: _, resource, limit, span: _ } => resource == "array items"
+          && limit == 2,
         _ => false,
       },
       Ok(_) => false,
@@ -251,7 +253,8 @@ fn DecoderLimitsRejectAmplificationBoundaries(): void {
   require(
     match json.readString(longString) {
       Err(error) => match error {
-        json.LimitExceeded { resource, limit, span: _ } => resource == "string bytes" && limit == 2,
+        json.LimitExceeded { path: _, resource, limit, span: _ } => resource == "string bytes"
+          && limit == 2,
         _ => false,
       },
       Ok(_) => false,
@@ -269,7 +272,8 @@ fn EncoderLimitsAndStateAreExplicit(): void {
   require(
     match json.writeString(limited, "abcd") {
       Err(error) => match error {
-        json.LimitExceeded { resource, limit, span: _ } => resource == "output bytes" && limit == 4,
+        json.LimitExceeded { path: _, resource, limit, span: _ } => resource == "output bytes"
+          && limit == 4,
         _ => false,
       },
       Ok(_) => false,
@@ -285,7 +289,10 @@ fn EncoderLimitsAndStateAreExplicit(): void {
   require(
     match json.writeInt(invalid, 1) {
       Err(error) => match error {
-        json.InvalidEncoderState { message } => message == "an object value requires writeKey",
+        json.InvalidEncoderState {
+          path: _,
+          message,
+        } => message == "an object value requires writeKey",
         _ => false,
       },
       Ok(_) => false,

@@ -22,7 +22,7 @@ static bool mmay_json_write_array(MarimayJsonExpansion *json,
     if (!mmay_json_array(json, value.type, MMAY_MIR_ARRAY_REQUIRE_INDEX, value.type,
             value, index, &checked)
         || !mmay_json_array(json, value.type, MMAY_MIR_ARRAY_GET, element, checked, index, &item)
-        || !mmay_json_write(json, item)
+        || !mmay_json_write_at(json, item, index)
         || !mmay_json_instruction(json, MMAY_MIR_CONSTANT_I64, MMAY_TYPE_I64,
             (MarimayExpressionValue){0}, (MarimayExpressionValue){0}, 1, &one)
         || !mmay_json_instruction(json, MMAY_MIR_ADD_CHECKED_I64, MMAY_TYPE_I64, index, one, 0, &next)
@@ -42,13 +42,19 @@ static bool mmay_json_write_record(MarimayJsonExpansion *json,
     for (index = 0; index < record->count; index += 1) {
         MarimayJsonField field;
         MarimayExpressionValue arguments[2] = {json->cursor, {0}}, member;
+        MarimayJsonPath path;
+        bool accepted;
         if (!mmay_json_field(json, record, index, &field)
-            || !mmay_json_string(json, field.name, field.name_length, &arguments[1])
-            || !mmay_json_try_call(json, "writeKey", arguments, 2, &unused)
-            || !mmay_checker_private_function_emit_record_access(json->function,
+            || !mmay_json_string(json, field.name, field.name_length, &arguments[1])) return false;
+        path = (MarimayJsonPath){json->path, arguments[1]};
+        json->path = &path;
+        accepted = mmay_json_try_call(json, "writeKey", arguments, 2, &unused)
+            && mmay_checker_private_function_emit_record_access(json->function,
                 MMAY_MIR_RECORD_GET, field.type, value.register_id,
                 MMAY_MIR_NO_REGISTER, layout, index, json->span.start, json->span.end, &member)
-            || !mmay_json_write(json, member)) return false;
+            && mmay_json_write(json, member);
+        json->path = path.parent;
+        if (!accepted) return false;
     }
     return mmay_json_try_call(json, "endObject", &json->cursor, 1, &unused);
 }
@@ -65,4 +71,15 @@ bool mmay_json_write(MarimayJsonExpansion *json, MarimayExpressionValue value) {
     }
     if (mmay_json_record(json, value.type, &record)) return mmay_json_write_record(json, &record, value);
     return mmay_json_error(json, "unsupported automatic JSON type; use an explicit codec");
+}
+
+bool mmay_json_write_at(MarimayJsonExpansion *json, MarimayExpressionValue value,
+    MarimayExpressionValue component
+) {
+    const MarimayJsonPath path = {json->path, component};
+    bool accepted;
+    json->path = &path;
+    accepted = mmay_json_write(json, value);
+    json->path = path.parent;
+    return accepted;
 }

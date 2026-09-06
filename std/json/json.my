@@ -19,20 +19,25 @@ public enum UnknownFields {
   Skip,
 }
 
+public enum PathSegment {
+  Field { name: string, },
+  Index { index: int, },
+}
+
 public enum Error {
   InvalidLimits,
-  InvalidUtf8 { span: Span, },
-  UnexpectedToken { expected: string, span: Span, },
-  UnexpectedEnd { expected: string, span: Span, },
-  InvalidEscape { span: Span, },
-  InvalidUnicodeEscape { span: Span, },
-  InvalidNumber { span: Span, },
-  NumberOutOfRange { span: Span, },
-  DuplicateField { name: string, span: Span, },
-  UnknownField { name: string, span: Span, },
-  MissingField { name: string, span: Span, },
-  LimitExceeded { resource: string, limit: int, span: Span, },
-  InvalidEncoderState { message: string, },
+  InvalidUtf8 { span: Span, path: []PathSegment, },
+  UnexpectedToken { expected: string, span: Span, path: []PathSegment, },
+  UnexpectedEnd { expected: string, span: Span, path: []PathSegment, },
+  InvalidEscape { span: Span, path: []PathSegment, },
+  InvalidUnicodeEscape { span: Span, path: []PathSegment, },
+  InvalidNumber { span: Span, path: []PathSegment, },
+  NumberOutOfRange { span: Span, path: []PathSegment, },
+  DuplicateField { name: string, span: Span, path: []PathSegment, },
+  UnknownField { name: string, span: Span, path: []PathSegment, },
+  MissingField { name: string, span: Span, path: []PathSegment, },
+  LimitExceeded { resource: string, limit: int, span: Span, path: []PathSegment, },
+  InvalidEncoderState { message: string, path: []PathSegment, },
 }
 
 public type DecoderFrame {
@@ -113,20 +118,147 @@ fn byteSpan(offset: int, length: int): Span {
   return Span { start: offset, end: offset + 1 };
 }
 
+fn errorPath(error: Error): []PathSegment {
+  return match error {
+    InvalidLimits => [],
+    InvalidUtf8 { span: _, path } => path,
+    UnexpectedToken { expected: _, span: _, path } => path,
+    UnexpectedEnd { expected: _, span: _, path } => path,
+    InvalidEscape { span: _, path } => path,
+    InvalidUnicodeEscape { span: _, path } => path,
+    InvalidNumber { span: _, path } => path,
+    NumberOutOfRange { span: _, path } => path,
+    DuplicateField { name: _, span: _, path } => path,
+    UnknownField { name: _, span: _, path } => path,
+    MissingField { name: _, span: _, path } => path,
+    LimitExceeded { resource: _, limit: _, span: _, path } => path,
+    InvalidEncoderState { message: _, path } => path,
+  };
+}
+
+public fn path(error: Error): []PathSegment {
+  let result: []PathSegment = [];
+  for segment in errorPath(error) {
+    const _ = result.push(segment);
+  }
+  return result;
+}
+
+fn prependPath(error: Error, segment: PathSegment): Error {
+  let result: []PathSegment = [segment];
+  for item in errorPath(error) {
+    const _ = result.push(item);
+  }
+  return match error {
+    InvalidLimits => Error.InvalidLimits,
+    InvalidUtf8 { span, path: _ } => Error.InvalidUtf8 { span, path: result },
+    UnexpectedToken { expected, span, path: _ } => Error.UnexpectedToken {
+      expected,
+      span,
+      path: result,
+    },
+    UnexpectedEnd { expected, span, path: _ } => Error.UnexpectedEnd {
+      expected,
+      span,
+      path: result,
+    },
+    InvalidEscape { span, path: _ } => Error.InvalidEscape { span, path: result },
+    InvalidUnicodeEscape { span, path: _ } => Error.InvalidUnicodeEscape { span, path: result },
+    InvalidNumber { span, path: _ } => Error.InvalidNumber { span, path: result },
+    NumberOutOfRange { span, path: _ } => Error.NumberOutOfRange { span, path: result },
+    DuplicateField { name, span, path: _ } => Error.DuplicateField { name, span, path: result },
+    UnknownField { name, span, path: _ } => Error.UnknownField { name, span, path: result },
+    MissingField { name, span, path: _ } => Error.MissingField { name, span, path: result },
+    LimitExceeded { resource, limit, span, path: _ } => Error.LimitExceeded {
+      resource,
+      limit,
+      span,
+      path: result,
+    },
+    InvalidEncoderState { message, path: _ } => Error.InvalidEncoderState { message, path: result },
+  };
+}
+
+public fn atField(error: Error, name: string): Error {
+  return prependPath(error, PathSegment.Field { name });
+}
+
+public fn atIndex(error: Error, index: int): Error {
+  return prependPath(error, PathSegment.Index { index });
+}
+
+fn pathSegmentText(segment: PathSegment): string {
+  return match segment {
+    Index { index } => $"[{index}]",
+    Field { name } => {
+      const encoder = match newEncoder(limits(0, 4096, 4096, 128, 1, 1)) {
+        Ok(value) => value,
+        Err(_) => panic("std/json path rendering limits"),
+      };
+      const _ = match writeString(encoder, name) {
+        Ok(_) => true,
+        Err(_) => {
+          return "[...]";
+        },
+      };
+      const output = match finishEncoder(encoder) {
+        Ok(value) => value,
+        Err(_) => {
+          return "[...]";
+        },
+      };
+      const quoted = match bytes.decodeUtf8(output) {
+        Ok(value) => value,
+        Err(_) => panic("std/json path rendering UTF-8"),
+      };
+      $"[{quoted}]"
+    },
+  };
+}
+
+public fn pathText(error: Error): string {
+  let result = "$";
+  for segment in errorPath(error) {
+    const part = pathSegmentText(segment);
+    if part == "[...]"
+      || bytes.length(bytes.encodeUtf8(result)) + bytes.length(bytes.encodeUtf8(part)) > 4091 {
+      return $"{result}[...]";
+    }
+    result = $"{result}{part}";
+  }
+  return result;
+}
+
 public fn message(error: Error): string {
+  const base = baseMessage(error);
+  if errorPath(error).length() == 0 {
+    return base;
+  }
+  return $"{base} at {pathText(error)}";
+}
+
+fn baseMessage(error: Error): string {
   return match error {
     InvalidLimits => "invalid JSON limits",
-    InvalidUtf8 { span } => $"JSON input is not valid UTF-8 at byte {span.start}",
-    UnexpectedToken { expected, span } => $"expected {expected} at byte {span.start}",
-    UnexpectedEnd { expected, span } => $"expected {expected} before byte {span.start}",
-    InvalidEscape { span } => $"invalid JSON escape at byte {span.start}",
-    InvalidUnicodeEscape { span } => $"invalid JSON Unicode escape at byte {span.start}",
-    InvalidNumber { span } => $"invalid JSON number at byte {span.start}",
-    NumberOutOfRange { span } => $"JSON integer is outside the signed 64-bit range at byte {span.start}",
-    DuplicateField { name, span } => $"duplicate JSON field {name} at byte {span.start}",
-    UnknownField { name, span } => $"unknown JSON field {name} at byte {span.start}",
-    MissingField { name, span } => $"missing JSON field {name} at byte {span.start}",
-    LimitExceeded { resource, limit, span } => $"JSON {resource} exceeds limit {limit} at byte {span.start}",
-    InvalidEncoderState { message } => $"invalid JSON encoder state: {message}",
+    InvalidUtf8 { path: _, span } => $"JSON input is not valid UTF-8 at byte {span.start}",
+    UnexpectedToken { path: _, expected, span } => $"expected {expected} at byte {span.start}",
+    UnexpectedEnd { path: _, expected, span } => $"expected {expected} before byte {span.start}",
+    InvalidEscape { path: _, span } => $"invalid JSON escape at byte {span.start}",
+    InvalidUnicodeEscape { path: _, span } => $"invalid JSON Unicode escape at byte {span.start}",
+    InvalidNumber { path: _, span } => $"invalid JSON number at byte {span.start}",
+    NumberOutOfRange {
+      path: _,
+      span,
+    } => $"JSON integer is outside the signed 64-bit range at byte {span.start}",
+    DuplicateField { path: _, name, span } => $"duplicate JSON field {name} at byte {span.start}",
+    UnknownField { path: _, name, span } => $"unknown JSON field {name} at byte {span.start}",
+    MissingField { path: _, name, span } => $"missing JSON field {name} at byte {span.start}",
+    LimitExceeded {
+      path: _,
+      resource,
+      limit,
+      span,
+    } => $"JSON {resource} exceeds limit {limit} at byte {span.start}",
+    InvalidEncoderState { path: _, message } => $"invalid JSON encoder state: {message}",
   };
 }

@@ -497,6 +497,11 @@ generic field substitution, and adaptation to existing nominal layouts.
 record/array cursor expansion. Their narrow sibling contract is
 `checker_json_internal.h`; `checker_json_mir.c` owns the ordinary call,
 Result/Option, and control-flow construction used by those expansions.
+The path extension borrows a stack-local field/index chain during expansion;
+the same MIR owner emits ordinary `atField`/`atIndex` calls only on error
+edges. Read/write owners restore the chain on every successful or failed
+expansion. The source model owns error payloads, independent path copies and
+bounded escaped display; no runtime/backend side table tracks context.
 The package graph asks only the export predicate from `checker_json_api.h`.
 No JSON-specific backend/runtime operation is added. The C allocation/negative
 owner is `test_checker_json.c`; the real source-package and both-engine owner

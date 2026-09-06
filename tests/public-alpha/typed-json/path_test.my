@@ -1,0 +1,259 @@
+import * as bytes from "std/bytes";
+import * as json from "std/json";
+
+import * as model from "tests.public-alpha.typed-json/model";
+
+@test
+fn everyErrorPayloadSurvivesContextComposition(): void {
+  const span = json.Span { start: 7, end: 11 };
+  const errors: []json.Error = [
+    json.Error.InvalidUtf8 { span, path: [] },
+    json.Error.UnexpectedToken { expected: "detail", span, path: [] },
+    json.Error.UnexpectedEnd { expected: "detail", span, path: [] },
+    json.Error.InvalidEscape { span, path: [] },
+    json.Error.InvalidUnicodeEscape { span, path: [] },
+    json.Error.InvalidNumber { span, path: [] },
+    json.Error.NumberOutOfRange { span, path: [] },
+    json.Error.DuplicateField { name: "detail", span, path: [] },
+    json.Error.UnknownField { name: "detail", span, path: [] },
+    json.Error.MissingField { name: "detail", span, path: [] },
+    json.Error.LimitExceeded { resource: "detail", limit: 12, span, path: [] },
+    json.Error.InvalidEncoderState { message: "detail", path: [] },
+  ];
+  for error in errors {
+    const decorated = json.atField(json.atIndex(error, 2), "root");
+    const original = json.message(error);
+    const display = "$[\"root\"][2]";
+    require(
+      json.message(decorated) == $"{original} at {display}",
+      "error payload and kind preserved",
+    );
+    require(json.path(error).length() == 0, "input error not mutated");
+  }
+  require(
+    json.pathText(json.atIndex(json.Error.InvalidLimits, 2)) == "$",
+    "invalid limits is root only",
+  );
+  const input = bytes.new();
+  const _ = bytes.push(input, 255);
+  require(
+    match json.decode<int>(input) {
+      Err(error) => match error {
+        json.InvalidUtf8 { span, path } => span.start == 0 && span.end == 1 && path.length() == 0,
+        _ => false,
+      },
+      Ok(_) => false,
+    },
+    "invalid UTF-8 rejected at root",
+  );
+}
+
+fn databaseError(input: string): json.Error {
+  return match json.decode<model.Database>(bytes.encodeUtf8(input)) {
+    Ok(_) => panic("expected JSON error"),
+    Err(error) => error,
+  };
+}
+
+@test
+fn nestedErrorsKeepKindSpanAndPath(): void {
+  const error = databaseError(
+    "{\"version\":1,\"nextId\":3,\"notes\":[{\"id\":1,\"text\":\"ok\",\"tags\":[]},{\"id\":2,\"text\":\"ok\",\"tags\":[\"ok\",null]}]}",
+  );
+  require(json.pathText(error) == "$[\"notes\"][1][\"tags\"][1]", "nested path");
+  require(
+    match error {
+      json.UnexpectedToken { expected, span, path: _ } => expected == "a JSON string"
+        && span.start == 97
+        && span.end == 98,
+      _ => false,
+    },
+    "error kind and byte span preserved",
+  );
+  const segments = json.path(error);
+  require(segments.length() == 4, "structured segment count");
+  require(
+    match segments[0] {
+      json.Field { name } => name == "notes",
+      _ => false,
+    },
+    "field segment",
+  );
+  require(
+    match segments[1] {
+      json.Index { index } => index == 1,
+      _ => false,
+    },
+    "zero-based index",
+  );
+  require(
+    json.message(error) == "expected a JSON string at byte 97 at $[\"notes\"][1][\"tags\"][1]",
+    "useful message",
+  );
+}
+
+@test
+fn missingUnknownAndDuplicatePaths(): void {
+  const inputs = [
+    "{\"version\":1,\"nextId\":2,\"notes\":[{\"text\":\"ok\",\"id\":1}]}",
+    "{\"version\":1,\"nextId\":2,\"notes\":[{\"extra\":0}]}",
+    "{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"id\":2}]}",
+  ];
+  const expected = [
+    "$[\"notes\"][0][\"tags\"]",
+    "$[\"notes\"][0][\"extra\"]",
+    "$[\"notes\"][0][\"id\"]",
+  ];
+  for index in 0..inputs.length() {
+    require(json.pathText(databaseError(inputs[index])) == expected[index], "field error path");
+  }
+  require(json.pathText(databaseError("{}")) == "$[\"version\"]", "root missing field");
+}
+
+@test
+fn containerAndRootFailuresStayLocated(): void {
+  require(
+    json.pathText(databaseError("{\"version\":1,\"nextId\":1,\"notes\":[,]}")) == "$[\"notes\"][0]",
+    "invalid element start",
+  );
+  require(
+    json.pathText(databaseError("{\"version\":1,\"nextId\":1,\"notes\":[],}")) == "$",
+    "container grammar at root",
+  );
+  require(
+    json.pathText(databaseError("{\"version\":1,\"nextId\":1,\"notes\":[]}false")) == "$",
+    "trailing input at root",
+  );
+  const result = json.decodeWithLimits<model.Box<[][]int>>(
+    bytes.encodeUtf8("{\"value\":[[1,2]]}"),
+    json.limits(100, 100, 20, 20, 4, 1),
+  );
+  require(
+    match result {
+      Err(error) => json.pathText(error) == "$[\"value\"][0]",
+      Ok(_) => false,
+    },
+    "decoder container item limit",
+  );
+  const invalid = json.decodeWithLimits<int>(bytes.encodeUtf8("0"), json.limits(-1, 1, 1, 1, 1, 1));
+  require(
+    match invalid {
+      Err(error) => json.pathText(error) == "$",
+      Ok(_) => false,
+    },
+    "invalid limits root",
+  );
+}
+
+@test
+fn encoderLimitsHaveFieldAndIndexPaths(): void {
+  const value: model.Box<[][]string> = model.Box { value: [["ok"], ["fine", "abcdef"]] };
+  require(
+    match json.encodeWithLimits(value, json.limits(100, 100, 5, 10, 4, 4)) {
+      Err(error) => match error {
+        json.LimitExceeded { resource, limit, span, path: _ } => resource == "string bytes"
+          && limit == 5
+          && span.start == 0
+          && span.end == 0
+          && json.pathText(error) == "$[\"value\"][1][1]",
+        _ => false,
+      },
+      Ok(_) => false,
+    },
+    "encoder value limit path",
+  );
+  require(
+    match json.encodeWithLimits(value, json.limits(100, 100, 4, 10, 4, 4)) {
+      Err(error) => json.pathText(error) == "$[\"value\"]",
+      Ok(_) => false,
+    },
+    "encoder key limit path",
+  );
+}
+
+@test
+fn arbitraryFieldNamesAreEscapedUnambiguously(): void {
+  const error = match json.decode<model.Empty>(bytes.encodeUtf8("{\"a\\\"][\\\"\\\\\\nλ\":0}")) {
+    Err(value) => value,
+    Ok(_) => panic("unknown field accepted"),
+  };
+  require(json.pathText(error) == "$[\"a\\\"][\\\"\\\\\\nλ\"]", "escaped display");
+  const segments = json.path(error);
+  require(
+    match segments[0] {
+      json.Field { name } => name == "a\"][\"\\\nλ",
+      _ => false,
+    },
+    "original field bytes",
+  );
+  const empty = match json.decode<model.Empty>(bytes.encodeUtf8("{\"\":0}")) {
+    Err(value) => value,
+    Ok(_) => panic("unknown empty field accepted"),
+  };
+  require(json.pathText(empty) == "$[\"\"]", "empty name is not root");
+}
+
+@test
+fn explicitContextDoesNotMutateExistingPaths(): void {
+  const original = databaseError("{}");
+  const nested = json.atField(json.atIndex(original, 3), "outer");
+  require(json.pathText(original) == "$[\"version\"]", "original path unchanged");
+  require(json.pathText(nested) == "$[\"outer\"][3][\"version\"]", "explicit composition order");
+  const copied = json.path(nested);
+  copied[0] = json.PathSegment.Index { index: 99 };
+  copied.clear();
+  require(
+    json.pathText(nested) == "$[\"outer\"][3][\"version\"]",
+    "path accessor returns independent array",
+  );
+  require(
+    match nested {
+      json.MissingField { name, span, path: _ } => name == "version"
+        && span.start == 2
+        && span.end == 2,
+      _ => false,
+    },
+    "composition retains payload",
+  );
+}
+
+@test
+fn pathRenderingIsBoundedWithoutTruncatingStructure(): void {
+  let name = "";
+  for index in 0..4096 {
+    name = $"{name}x";
+  }
+  const error = json.atField(databaseError("{}"), name);
+  require(json.pathText(error) == "$[...]", "oversized component display");
+  const full = json.path(error);
+  require(full.length() == 2, "structured path retained");
+  require(
+    match full[0] {
+      json.Field { name: value } => bytes.length(bytes.encodeUtf8(value)) == 4096,
+      _ => false,
+    },
+    "full field retained",
+  );
+  let deep = databaseError("{}");
+  for index in 0..256 {
+    deep = json.atField(deep, "long-but-valid-field");
+  }
+  const display = json.pathText(deep);
+  require(bytes.length(bytes.encodeUtf8(display)) <= 4096, "total display bound");
+  require(json.path(deep).length() == 257, "manual path not silently truncated");
+}
+
+@test
+fn successfulRepeatedDecodingDoesNotLeakPathContext(): void {
+  for index in 0..3 {
+    const output = json.decode<model.Box<[]bool>>(bytes.encodeUtf8("{\"value\":[true,false]}"));
+    require(
+      match output {
+        Ok(value) => value.value.length() == 2,
+        Err(_) => false,
+      },
+      "success after failures",
+    );
+    require(json.pathText(databaseError("{}")) == "$[\"version\"]", "fresh independent failure");
+  }
+}

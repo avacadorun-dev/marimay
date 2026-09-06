@@ -3,12 +3,13 @@ import * as convert from "std/convert";
 
 fn encoderError(encoder: Encoder, message: string): Error {
   encoder.failed = true;
-  return Error.InvalidEncoderState { message };
+  return Error.InvalidEncoderState { path: [], message };
 }
 
 fn outputLimitError(encoder: Encoder): Error {
   encoder.failed = true;
   return Error.LimitExceeded {
+    path: [],
     resource: "output bytes",
     limit: encoder.limits.outputBytes,
     span: emptySpan(0),
@@ -31,7 +32,7 @@ fn appendOutput(encoder: Encoder, value: string): Result<void, Error> {
 
 fn beforeValue(encoder: Encoder): Result<void, Error> {
   if encoder.failed {
-    return Err(Error.InvalidEncoderState { message: "the encoder already failed" });
+    return Err(Error.InvalidEncoderState { path: [], message: "the encoder already failed" });
   }
   if encoder.frames.length() == 0 {
     if encoder.rootWritten {
@@ -50,11 +51,14 @@ fn beforeValue(encoder: Encoder): Result<void, Error> {
   }
   if frame.count == encoder.limits.items {
     encoder.failed = true;
-    return Err(Error.LimitExceeded {
-      resource: "array items",
-      limit: encoder.limits.items,
-      span: emptySpan(0),
-    });
+    return Err(
+      Error.LimitExceeded {
+        path: [],
+        resource: "array items",
+        limit: encoder.limits.items,
+        span: emptySpan(0),
+      },
+    );
   }
   if frame.count != 0 {
     appendOutputByte(encoder, 44)?;
@@ -75,11 +79,14 @@ fn appendQuoted(encoder: Encoder, value: string): Result<void, Error> {
   const input = bytes.encodeUtf8(value);
   if bytes.length(input) > encoder.limits.stringBytes {
     encoder.failed = true;
-    return Err(Error.LimitExceeded {
-      resource: "string bytes",
-      limit: encoder.limits.stringBytes,
-      span: emptySpan(0),
-    });
+    return Err(
+      Error.LimitExceeded {
+        path: [],
+        resource: "string bytes",
+        limit: encoder.limits.stringBytes,
+        span: emptySpan(0),
+      },
+    );
   }
   appendOutputByte(encoder, 34)?;
   for index in 0..bytes.length(input) {
@@ -88,7 +95,7 @@ fn appendQuoted(encoder: Encoder, value: string): Result<void, Error> {
     if number == 34 {
       appendOutput(encoder, "\\\"")?;
     } else if number == 92 {
-      appendOutput(encoder, "\\\\")?;
+      appendOutput(encoder, r"\\")?;
     } else if number == 8 {
       appendOutput(encoder, "\\b")?;
     } else if number == 12 {
@@ -116,18 +123,12 @@ public fn newEncoder(limits: Limits): Result<Encoder, Error> {
     Ok(value) => value,
     Err(_) => panic("std/json validated output limit"),
   };
-  return Ok(Encoder {
-    builder,
-    limits,
-    frames: [],
-    rootWritten: false,
-    failed: false,
-  });
+  return Ok(Encoder { builder, limits, frames: [], rootWritten: false, failed: false });
 }
 
 public fn finishEncoder(encoder: Encoder): Result<bytes.Bytes, Error> {
   if encoder.failed {
-    return Err(Error.InvalidEncoderState { message: "the encoder failed" });
+    return Err(Error.InvalidEncoderState { path: [], message: "the encoder failed" });
   }
   if !encoder.rootWritten {
     return Err(encoderError(encoder, "no root value was written"));
@@ -156,7 +157,7 @@ public fn writeInt(encoder: Encoder, value: int): Result<void, Error> {
 public fn writeNumber(encoder: Encoder, value: string): Result<void, Error> {
   if !validNumberText(value, encoder.limits) {
     encoder.failed = true;
-    return Err(Error.InvalidNumber { span: emptySpan(0) });
+    return Err(Error.InvalidNumber { path: [], span: emptySpan(0) });
   }
   beforeValue(encoder)?;
   return appendOutput(encoder, value);
@@ -170,11 +171,14 @@ public fn writeString(encoder: Encoder, value: string): Result<void, Error> {
 fn pushEncodeFrame(encoder: Encoder, kind: int): Result<void, Error> {
   if encoder.frames.length() == encoder.limits.nesting {
     encoder.failed = true;
-    return Err(Error.LimitExceeded {
-      resource: "nesting",
-      limit: encoder.limits.nesting,
-      span: emptySpan(0),
-    });
+    return Err(
+      Error.LimitExceeded {
+        path: [],
+        resource: "nesting",
+        limit: encoder.limits.nesting,
+        span: emptySpan(0),
+      },
+    );
   }
   const _ = encoder.frames.push(EncoderFrame { kind, count: 0, expectingValue: false });
   return Ok();
@@ -187,11 +191,14 @@ fn popEncodeFrame(encoder: Encoder): void {
 public fn beginObject(encoder: Encoder): Result<void, Error> {
   if encoder.frames.length() == encoder.limits.nesting {
     encoder.failed = true;
-    return Err(Error.LimitExceeded {
-      resource: "nesting",
-      limit: encoder.limits.nesting,
-      span: emptySpan(0),
-    });
+    return Err(
+      Error.LimitExceeded {
+        path: [],
+        resource: "nesting",
+        limit: encoder.limits.nesting,
+        span: emptySpan(0),
+      },
+    );
   }
   beforeValue(encoder)?;
   appendOutputByte(encoder, 123)?;
@@ -200,10 +207,9 @@ public fn beginObject(encoder: Encoder): Result<void, Error> {
 
 public fn writeKey(encoder: Encoder, key: string): Result<void, Error> {
   if encoder.failed {
-    return Err(Error.InvalidEncoderState { message: "the encoder already failed" });
+    return Err(Error.InvalidEncoderState { path: [], message: "the encoder already failed" });
   }
-  if encoder.frames.length() == 0
-    || encoder.frames[encoder.frames.length() - 1].kind != 1 {
+  if encoder.frames.length() == 0 || encoder.frames[encoder.frames.length() - 1].kind != 1 {
     return Err(encoderError(encoder, "writeKey requires an open object"));
   }
   const frame = encoder.frames[encoder.frames.length() - 1];
@@ -212,11 +218,14 @@ public fn writeKey(encoder: Encoder, key: string): Result<void, Error> {
   }
   if frame.count == encoder.limits.items {
     encoder.failed = true;
-    return Err(Error.LimitExceeded {
-      resource: "object fields",
-      limit: encoder.limits.items,
-      span: emptySpan(0),
-    });
+    return Err(
+      Error.LimitExceeded {
+        path: [],
+        resource: "object fields",
+        limit: encoder.limits.items,
+        span: emptySpan(0),
+      },
+    );
   }
   if frame.count != 0 {
     appendOutputByte(encoder, 44)?;
@@ -229,8 +238,7 @@ public fn writeKey(encoder: Encoder, key: string): Result<void, Error> {
 }
 
 public fn endObject(encoder: Encoder): Result<void, Error> {
-  if encoder.frames.length() == 0
-    || encoder.frames[encoder.frames.length() - 1].kind != 1 {
+  if encoder.frames.length() == 0 || encoder.frames[encoder.frames.length() - 1].kind != 1 {
     return Err(encoderError(encoder, "endObject requires an open object"));
   }
   if encoder.frames[encoder.frames.length() - 1].expectingValue {
@@ -244,11 +252,14 @@ public fn endObject(encoder: Encoder): Result<void, Error> {
 public fn beginArray(encoder: Encoder): Result<void, Error> {
   if encoder.frames.length() == encoder.limits.nesting {
     encoder.failed = true;
-    return Err(Error.LimitExceeded {
-      resource: "nesting",
-      limit: encoder.limits.nesting,
-      span: emptySpan(0),
-    });
+    return Err(
+      Error.LimitExceeded {
+        path: [],
+        resource: "nesting",
+        limit: encoder.limits.nesting,
+        span: emptySpan(0),
+      },
+    );
   }
   beforeValue(encoder)?;
   appendOutputByte(encoder, 91)?;
@@ -256,8 +267,7 @@ public fn beginArray(encoder: Encoder): Result<void, Error> {
 }
 
 public fn endArray(encoder: Encoder): Result<void, Error> {
-  if encoder.frames.length() == 0
-    || encoder.frames[encoder.frames.length() - 1].kind != 0 {
+  if encoder.frames.length() == 0 || encoder.frames[encoder.frames.length() - 1].kind != 0 {
     return Err(encoderError(encoder, "endArray requires an open array"));
   }
   appendOutputByte(encoder, 93)?;

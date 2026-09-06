@@ -870,20 +870,25 @@ public type Limits {
 
 public enum UnknownFields { Reject, Skip }
 
+public enum PathSegment {
+  Field { name: string, },
+  Index { index: int, },
+}
+
 public enum Error {
   InvalidLimits,
-  InvalidUtf8 { span: Span, },
-  UnexpectedToken { expected: string, span: Span, },
-  UnexpectedEnd { expected: string, span: Span, },
-  InvalidEscape { span: Span, },
-  InvalidUnicodeEscape { span: Span, },
-  InvalidNumber { span: Span, },
-  NumberOutOfRange { span: Span, },
-  DuplicateField { name: string, span: Span, },
-  UnknownField { name: string, span: Span, },
-  MissingField { name: string, span: Span, },
-  LimitExceeded { resource: string, limit: int, span: Span, },
-  InvalidEncoderState { message: string, },
+  InvalidUtf8 { span: Span, path: []PathSegment, },
+  UnexpectedToken { expected: string, span: Span, path: []PathSegment, },
+  UnexpectedEnd { expected: string, span: Span, path: []PathSegment, },
+  InvalidEscape { span: Span, path: []PathSegment, },
+  InvalidUnicodeEscape { span: Span, path: []PathSegment, },
+  InvalidNumber { span: Span, path: []PathSegment, },
+  NumberOutOfRange { span: Span, path: []PathSegment, },
+  DuplicateField { name: string, span: Span, path: []PathSegment, },
+  UnknownField { name: string, span: Span, path: []PathSegment, },
+  MissingField { name: string, span: Span, path: []PathSegment, },
+  LimitExceeded { resource: string, limit: int, span: Span, path: []PathSegment, },
+  InvalidEncoderState { message: string, path: []PathSegment, },
 }
 
 public type DecoderFrame;
@@ -901,6 +906,10 @@ public fn limits(
   items: int,
 ): Limits;
 public fn message(error: Error): string;
+public fn path(error: Error): []PathSegment;
+public fn pathText(error: Error): string;
+public fn atField(error: Error, name: string): Error;
+public fn atIndex(error: Error, index: int): Error;
 ```
 
 `Decoder` and `Encoder` are public nominal handles whose stored state is
@@ -1106,10 +1115,38 @@ form, writes empty arrays as `[]`, and publishes bytes only after
 or accessed despite privacy. Business validation remains application code.
 
 The short forms use `defaultLimits()`; the explicit forms enforce the same
-validated D082 limits. Error kinds and byte spans are those of the cursor
-operations, with no translated host errors. Field/index error paths are not yet
-part of this slice. Compiler expansion produces ordinary typed MIR calls to
-the source package, not a backend-specific parser or opcode.
+validated D082 limits. Error cases and byte spans are those of the cursor
+operations, with no translated host errors. Every named `Error` case also has
+`path: []PathSegment`; `InvalidLimits` is root-only and remains a unit case.
+`path(error)` returns a fresh shallow array copy, ordered from root to failure.
+Array indices are zero-based. Missing, unknown and duplicate fields include
+their field segment; malformed decoder container separators and decoder item
+limits identify the container. Value errors, including encoding limits, identify the
+value being attempted. Encoder key failures identify the field being written.
+Input validation and trailing-input errors identify the root.
+
+Cursor paths are relative to the current operation: field-name errors carry
+their field, other errors carry an empty path. `unknownVariant` carries no field
+segment because its name denotes a tag, not an object key. Explicit codecs
+compose context using `atField(error, name)` and `atIndex(error, index)`; these
+prepend a segment without mutating the input error/path or changing its case,
+span or remaining payload. They leave root-only `InvalidLimits` unchanged.
+An explicit `atIndex` records the supplied integer verbatim and performs no
+array access; automatically generated indices are always nonnegative.
+Convenience codecs add all enclosing context automatically, constructing path
+arrays only on failure. Automatic paths are bounded by the existing type-depth
+and cursor limits; manually composed paths use ordinary managed-array limits.
+
+`pathText(error)` renders `$` followed by JSON-quoted bracketed field names and
+bracketed decimal indices, for example `$["notes"][2]["tags"][1]`. Quoting uses
+the normal JSON string escapes, so field delimiters, controls and UTF-8 are
+unambiguous. Display is at most 4,096 UTF-8 bytes: before a segment would make
+the prefix exceed 4,091 bytes, that segment and the remaining suffix become
+`[...]`. The structured path is not truncated. `message(error)` retains the
+original base message and appends ` at ` plus this display for nonempty paths.
+Named error patterns must now bind or explicitly ignore the new `path` field.
+Compiler expansion produces ordinary typed MIR calls to the source package,
+not a backend-specific parser or opcode.
 
 ## 12. Logging, metrics, and tracing
 

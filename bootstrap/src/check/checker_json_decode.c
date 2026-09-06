@@ -5,7 +5,7 @@
 static bool mmay_json_read_array(MarimayJsonExpansion *json, MarimayTypeId type,
     MarimayTypeId element, MarimayExpressionValue *result
 ) {
-    MarimayExpressionValue unused, has_next, item;
+    MarimayExpressionValue unused, has_next, item, index;
     MarimayMirBlockId head, body, done;
     if (!mmay_json_try_call(json, "beginArray", &json->cursor, 1, &unused)
         || !mmay_json_array(json, type, MMAY_MIR_ARRAY_NEW, type,
@@ -16,7 +16,9 @@ static bool mmay_json_read_array(MarimayJsonExpansion *json, MarimayTypeId type,
     if (!mmay_json_try_call(json, "nextElement", &json->cursor, 1, &has_next)
         || !mmay_json_branch(json, has_next, body, done)) return false;
     mmay_json_enter(json, body);
-    if (!mmay_json_read(json, element, &item)
+    if (!mmay_json_array(json, type, MMAY_MIR_ARRAY_LENGTH, MMAY_TYPE_I64,
+            *result, (MarimayExpressionValue){0}, &index)
+        || !mmay_json_read_at(json, element, index, &item)
         || !mmay_json_array(json, type, MMAY_MIR_ARRAY_PUSH, type, *result, item, &unused)
         || !mmay_json_goto(json, head)) return false;
     mmay_json_enter(json, done);
@@ -133,7 +135,7 @@ static bool mmay_json_read_record(MarimayJsonExpansion *json,
             || !mmay_json_block(json, &yes) || !mmay_json_block(json, &no)
             || !mmay_json_branch(json, same, yes, no)) goto cleanup;
         mmay_json_enter(json, yes);
-        if (!mmay_json_read(json, field.type, &value)
+        if (!mmay_json_read_at(json, field.type, key, &value)
             || !mmay_json_enum(json, slots[index].type, 0, &value, &some)
             || !mmay_json_copy(json, slots[index], some)
             || !mmay_json_goto(json, head)) goto cleanup;
@@ -168,4 +170,15 @@ bool mmay_json_read(MarimayJsonExpansion *json, MarimayTypeId type,
     }
     if (mmay_json_record(json, type, &record)) return mmay_json_read_record(json, &record, result);
     return mmay_json_error(json, "unsupported automatic JSON type; use an explicit codec");
+}
+
+bool mmay_json_read_at(MarimayJsonExpansion *json, MarimayTypeId type,
+    MarimayExpressionValue component, MarimayExpressionValue *result
+) {
+    const MarimayJsonPath path = {json->path, component};
+    bool accepted;
+    json->path = &path;
+    accepted = mmay_json_read(json, type, result);
+    json->path = path.parent;
+    return accepted;
 }

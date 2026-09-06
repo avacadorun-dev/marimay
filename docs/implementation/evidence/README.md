@@ -119,6 +119,11 @@ not close the complete notes-driven ergonomics card or any release gate.
 [The notes/startup follow-up](cp42-notes-startup-2026-09-06.md) records the
 Russian application migration, process smoke tests, sanitizer observations and
 the shared D062 convergence/bytecode-adapter repair. Its scope remains local.
+[Structured JSON error paths](cp42-json-error-paths-2026-09-06.md) records the
+field/index model, 13 both-engine source tests, a complete 67-test Debug run,
+focused sanitizer/allocation checks and a short Linux fuzz smoke. It also
+records the installed Release-command handoff; its scope remains local and
+does not close the remaining CP42 work or establish pushed-revision CI.
 
 ## CP41
 

@@ -127,7 +127,7 @@ cp38_replay_rejection(
 )
 cp38_replay_rejection(
   duplicate [=[{"version":1,"version":2,"items":[]}]=]
-  "^duplicate JSON field version at byte 13\n$"
+  "^duplicate JSON field version at byte 13 at [$][[]\"version\"[]]\n$"
 )
 cp38_replay_rejection(
   bad_escape
