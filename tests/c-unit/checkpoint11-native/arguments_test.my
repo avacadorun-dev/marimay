@@ -1,0 +1,36 @@
+fn correctArguments(arguments: []string): bool {
+  if arguments.length() == 6 {
+    return arguments[0] == ""
+      && arguments[1] == "Мир"
+      && arguments[2] == "two words"
+      && arguments[3] == "--"
+      && arguments[4] == "-dash"
+      && arguments[5] == r"C:\trail\";
+  }
+  if arguments.length() != 4096 {
+    return false;
+  }
+  for argument in arguments {
+    if argument != "" {
+      return false;
+    }
+  }
+  return true;
+}
+
+@test
+fn firstMutates(arguments: []string): void {
+  expect.equal(correctArguments(arguments), true);
+  arguments[0] = "changed";
+  arguments[arguments.length() - 1] = "also changed";
+}
+
+@test
+fn noArguments(): void {
+  expect.equal(1, 1);
+}
+
+@test
+fn lastHasFreshArguments(arguments: []string): void {
+  expect.equal(correctArguments(arguments), true);
+}

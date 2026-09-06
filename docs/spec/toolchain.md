@@ -356,6 +356,12 @@ Arguments after the first `--` are injected into every argument-taking test;
 zero-parameter tests remain unchanged. The executable name is excluded. The VM
 record and native replay use the same D066 validated values and limits.
 
+Compiled code may be shared across test symbols, including a native executable
+with multiple selectable entries. Internal entry selection must not become a
+user argument or consume the D066 argument-count/byte budget. Every selected
+entry still receives a fresh execution and independently constructed arguments;
+sharing compilation never permits sharing test results or mutable runtime state.
+
 For `both`, the VM run produces one observation record containing termination,
 exact D046 stdout bytes, and exact panic/stderr bytes. Native execution replays
 the same canonical typed-MIR test symbol under the same fixed default

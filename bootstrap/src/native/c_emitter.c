@@ -1,4 +1,5 @@
 #include "c_emitter_internal.h"
+#include "c_emitter_test_entry.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -235,6 +236,8 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
         || options.max_functions == 0
         || options.max_generated_bytes == 0 || options.max_heap_bytes == 0
         || !mmay_native_c_context_options_valid(&options)
+        || ((options.test_entries == NULL) != (options.test_entry_count == 0))
+        || (options.test_entry_count != 0 && !options.executable_entry)
         || allocator.allocate == NULL
         || allocator.resize == NULL || allocator.deallocate == NULL) {
         return MMAY_NATIVE_C_EMIT_INVALID_ARGUMENT;
@@ -326,7 +329,12 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
         status = MMAY_NATIVE_C_EMIT_INVALID_MIR;
         goto cleanup;
     }
-    if (options.executable_entry) {
+    if (options.test_entry_count != 0) {
+        status = mmay_native_c_validate_test_entries(
+            entry, ordered, program->function_count, &options
+        );
+        if (status != MMAY_NATIVE_C_EMIT_OK) goto cleanup;
+    } else if (options.executable_entry) {
         status = mmay_native_c_validate_executable_entry(
             entry, ordered, program->function_count, &options
         );
@@ -414,6 +422,8 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
         && !mmay_native_c_emit_public_helpers(&buffer)) goto emit_fail;
     if (options.executable_entry) {
         if (!mmay_native_c_emit_executable_host_open(&buffer)) goto emit_fail;
+        if (options.test_entry_count != 0
+            && !mmay_native_c_emit_test_selector(&buffer, options.test_entry_count)) goto emit_fail;
     } else if (!mmay_native_c_write(
             &buffer,
             "int main(void) { size_t mmay_g_start = 0, mmay_g_end = 0; int mmay_g_s; static mmay_g_frame mmay_g_frames[MMAY_G_MAX_FRAMES]; static mmay_g_suppressed_panic mmay_g_suppressed[MMAY_G_MAX_SUPPRESSED]; mmay_g_panic mmay_g_p = {0}; mmay_g_execution mmay_g_x = {0}; MarimayManagedHeapOptions mmay_g_heap_options; "
@@ -445,13 +455,19 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
             ? "if (mmay_g_register_immediate_enums(&mmay_g_x.heap) != MMAY_MANAGED_OK) { mmay_g_exit = mmay_g_public_message(\"error\", \"I0002\", (const unsigned char *)\"runtime host allocation failed\", sizeof(\"runtime host allocation failed\") - 1, 70); goto mmay_g_public_cleanup; } "
             : "if (mmay_g_register_immediate_enums(&mmay_g_x.heap) != MMAY_MANAGED_OK) { mmay_g_execution_dispose(&mmay_g_x); fputs(\"trap:5:0:0\\n\", stdout); return 1; } ")) goto emit_fail;
     if (options.executable_entry) {
-        if (options.executable_takes_arguments
-            && !mmay_native_c_emit_executable_argument_value(
-                &buffer, entry
-            )) goto emit_fail;
-        if (!mmay_native_c_emit_executable_entry(
-                &buffer, entry, ordered, program->function_count, &options
-            )) goto emit_fail;
+        if (options.test_entry_count != 0) {
+            if (!mmay_native_c_emit_test_dispatch(
+                    &buffer, ordered, program->function_count, &options
+                )) goto emit_fail;
+        } else {
+            if (options.executable_takes_arguments
+                && !mmay_native_c_emit_executable_argument_value(
+                    &buffer, entry
+                )) goto emit_fail;
+            if (!mmay_native_c_emit_executable_entry(
+                    &buffer, entry, ordered, program->function_count, &options
+                )) goto emit_fail;
+        }
         if (!mmay_native_c_emit_executable_host_close(&buffer)) goto emit_fail;
     }
     else if (entry->result_type >= MMAY_TYPE_I8

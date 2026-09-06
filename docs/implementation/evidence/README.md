@@ -113,16 +113,23 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Shared native test build](cp42-native-test-build-2026-09-06.md) replaces seven
+native compilations with one in the config test loop while keeping fresh
+processes and arguments. Paired cold time falls from 10.505 s to 1.910 s; all
+three samples meet the unchanged 10 s budget. Other performance/resource
+obligations still block progression to the next utility.
+
 [Test preparation reuse](cp42-test-preparation-2026-09-06.md) removes repeated
 whole-program lowering and codec work while retaining verification and fresh
-per-test execution state. The unchanged seven-test workload is faster cold
-and warm, but cold native compilation still misses its budget; this is not
-permission to advance to the next utility.
+per-test execution state. At that revision the unchanged seven-test workload
+was faster cold and warm but still missed its cold budget; the shared-native
+follow-up above resolves that remaining compilation cost.
 
 [Config performance repairs](cp42-config-performance-2026-09-06.md) identify and
 remove redundant VM dispatch and native proof searches, retaining exact
-generated C and local before/after measurements. The cold test-loop performance
-stop gate remains open; this is not completion of the application or CP42.
+generated C and local before/after measurements. That revision left the cold
+test-loop gate open; subsequent reports above continue the repair. None is
+completion of the application or CP42.
 
 [Local VM execution policy](cp42-local-execution-policy-2026-09-06.md) records
 the first external config utility's maximum-input failure, D087's separation

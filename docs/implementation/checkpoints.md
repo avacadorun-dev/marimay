@@ -1640,6 +1640,7 @@ Follow-up: [intrinsic metadata and external-portfolio start](evidence/cp42-json-
 Follow-up: [local execution policy and config resource boundaries](evidence/cp42-local-execution-policy-2026-09-06.md).
 Follow-up: [config VM dispatch and native proof performance](evidence/cp42-config-performance-2026-09-06.md).
 Follow-up: [invocation-scoped test bytecode preparation](evidence/cp42-test-preparation-2026-09-06.md).
+Follow-up: [one native build per test invocation](evidence/cp42-native-test-build-2026-09-06.md).
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome

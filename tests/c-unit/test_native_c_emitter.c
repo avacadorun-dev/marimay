@@ -12,6 +12,7 @@ void mmay_test_native_nominal_differential(void);
 void mmay_test_native_import_differential(void);
 void mmay_test_native_imported_arrays(void);
 void mmay_test_native_imported_results(void);
+void mmay_test_native_c_emitter_test_entry(void);
 
 void mmay_test_native_c_emitter(void) {
     mmay_test_native_scalar_f64();
@@ -26,4 +27,5 @@ void mmay_test_native_c_emitter(void) {
     mmay_test_native_import_differential();
     mmay_test_native_imported_arrays();
     mmay_test_native_imported_results();
+    mmay_test_native_c_emitter_test_entry();
 }

@@ -434,6 +434,18 @@ it contains no global or persistent cache. `test_cli_test_bytecode.c` owns
 entry-switch/byte-identity, hostile-body, all-index allocation-failure and
 panic-followed-by-fresh-arguments differential coverage.
 
+`cli_test_native.c` owns the canonical test-symbol table and borrowed child
+argument vector. The coordinator retains one native build result per command
+and starts a fresh process for each selected symbol. `c_emitter_test_entry.c`
+validates the internal, symbol-sorted void-entry table and emits its checked
+ordinal selector; it delegates argument construction and cleanup to the
+ordinary executable-entry owner. The selector is removed before D066 argument
+validation/import and cannot consume a user argument or managed heap budget.
+No per-test heap, capture, panic state, result or process is reused.
+`test_cli_test_native.c` owns table/argument allocation rollback;
+`test_native_c_emitter_test_entry.c` owns hostile tables, host selectors,
+argument boundaries and emitter/host allocation-failure teardown.
+
 Checkpoint 0 applies the same rule to every existing hotspot, not only checker
 and MIR:
 

@@ -541,6 +541,7 @@ add_library(mmay_bootstrap STATIC
     bootstrap/src/cli/cli_run_program.c
     bootstrap/src/cli/cli_test_program.c
     bootstrap/src/cli/cli_test_bytecode.c
+    bootstrap/src/cli/cli_test_native.c
     bootstrap/src/cli/cli_run_report.c
     bootstrap/src/cli/cli_resource_report.c
   bootstrap/src/cli/cli_check_targets.c
@@ -606,6 +607,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/native/c_emitter_descriptors.c
   bootstrap/src/native/c_emitter_defer.c
   bootstrap/src/native/c_emitter_entry.c
+  bootstrap/src/native/c_emitter_test_entry.c
   bootstrap/src/native/c_emitter_emit.c
     bootstrap/src/native/c_emitter_format.c
   bootstrap/src/native/c_emitter_io.c

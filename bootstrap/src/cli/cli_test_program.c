@@ -3,6 +3,7 @@
 #include "cli_program_arguments.h"
 #include "cli_resource_report.h"
 #include "cli_test_bytecode.h"
+#include "cli_test_native.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +41,8 @@ typedef struct MarimayCliTestContext {
     size_t function_count;
     MarimayProgramArgumentList program_arguments;
     MarimayBytecodeProgram bytecode;
+    MarimayVector native_symbols;
+    MarimayNativeBuildResult native_build;
 } MarimayCliTestContext;
 
 typedef struct MarimayCliTestCapture {
@@ -328,7 +331,7 @@ cleanup:
 }
 
 static bool mmay_cli_test_native(
-    const MarimayCliTestContext *context,
+    MarimayCliTestContext *context,
     const MarimayCliTestCase *test,
     MarimayCliTestObservation *observation,
     MarimayNativeBuildStatus *build_status,
@@ -336,17 +339,13 @@ static bool mmay_cli_test_native(
     MarimayOwnedBytes *tool_output
 ) {
     MarimayNativeBuildRequest request;
-    MarimayNativeBuildResult build;
     MarimayProcessCaptureResult capture;
-    const char **arguments = NULL;
-    size_t argument_bytes = 0;
-    size_t argument_count = context->options->program_argument_count + 1;
-    size_t index = 0;
+    MarimayVector arguments = {0};
+    char selector[MMAY_CLI_TEST_SELECTOR_BYTES];
     MarimayCliFsCapabilities fs_capabilities;
     MarimayCliEnvCapabilities env_capabilities;
     bool accepted = false;
     memset(&request, 0, sizeof(request));
-    memset(&build, 0, sizeof(build));
     memset(&capture, 0, sizeof(capture));
     memset(observation, 0, sizeof(*observation));
     memset(tool_output, 0, sizeof(*tool_output));
@@ -360,8 +359,6 @@ static bool mmay_cli_test_native(
         )) goto cleanup;
     request.functions = context->functions;
     request.function_count = context->function_count;
-    request.entry_symbol = test->function->mir.symbol;
-    request.takes_arguments = test->function->mir.parameter_count == 1;
     request.root_directory = (const char *)context->target->root_directory.data;
     request.root_directory_length = context->target->root_directory.length;
     request.tool_executable_path = context->options->tool_executable_path;
@@ -372,27 +369,33 @@ static bool mmay_cli_test_native(
     request.write_root_count = fs_capabilities.options.write_root_count;
     request.env_grants = env_capabilities.options.grants;
     request.env_grant_count = env_capabilities.options.grant_count;
-    *build_status = mmay_native_build(
-        context->session->allocator, &request, &build
-    );
-    if (*build_status != MMAY_NATIVE_BUILD_OK) {
-        *tool_output = build.tool_output;
-        memset(&build.tool_output, 0, sizeof(build.tool_output));
-        goto cleanup;
+    if (context->native_build.artifact_path.data == NULL) {
+        if (!mmay_cli_test_native_symbols(
+                &context->compiler->checked, context->session->allocator,
+                &context->native_symbols
+            ) || context->native_symbols.length == 0) goto cleanup;
+        request.test_entries = context->native_symbols.data;
+        request.test_entry_count = context->native_symbols.length;
+        request.entry_symbol = request.test_entries[0];
+        *build_status = mmay_native_build(
+            context->session->allocator, &request, &context->native_build
+        );
+        if (*build_status != MMAY_NATIVE_BUILD_OK) {
+            *tool_output = context->native_build.tool_output;
+            memset(&context->native_build.tool_output, 0, sizeof(*tool_output));
+            goto cleanup;
+        }
     }
-    if (!mmay_size_multiply(
-            argument_count + 1, sizeof(*arguments), &argument_bytes
+    if (!mmay_cli_test_native_selector(
+            &context->native_symbols, test->function->mir.symbol, selector
+        ) || !mmay_cli_test_native_arguments(
+            context->session->allocator,
+            (const char *)context->native_build.artifact_path.data, selector,
+            context->options->program_arguments, context->options->program_argument_count,
+            &arguments
         )) goto cleanup;
-    arguments = mmay_allocate(&context->session->allocator, argument_bytes);
-    if (arguments == NULL) goto cleanup;
-    arguments[0] = (const char *)build.artifact_path.data;
-    for (index = 0; index < context->options->program_argument_count;
-        index += 1) {
-        arguments[index + 1] = context->options->program_arguments[index];
-    }
-    arguments[argument_count] = NULL;
     *process_status = mmay_process_run_capture(
-        context->session->allocator, arguments, argument_count,
+        context->session->allocator, arguments.data, arguments.length - 1,
         MMAY_CLI_TEST_CAPTURE_LIMIT, MMAY_CLI_TEST_CAPTURE_LIMIT,
         &capture
     );
@@ -406,12 +409,9 @@ static bool mmay_cli_test_native(
     memset(&capture.standard_error, 0, sizeof(capture.standard_error));
     accepted = true;
 cleanup:
-    mmay_deallocate(
-        &context->session->allocator, arguments, argument_bytes
-    );
+    mmay_vector_dispose(&arguments);
     if (!accepted) mmay_cli_test_observation_dispose(observation);
     mmay_process_capture_result_dispose(&capture);
-    mmay_native_build_result_dispose(&build);
     return accepted;
 }
 
@@ -791,6 +791,8 @@ int mmay_cli_test_program(
         &context, &tests, standard_output, standard_error
     );
 cleanup:
+    mmay_native_build_result_dispose(&context.native_build);
+    mmay_vector_dispose(&context.native_symbols);
     mmay_bytecode_program_dispose(&context.bytecode);
     mmay_cli_program_arguments_dispose(&program_arguments);
     mmay_deallocate(&session->allocator, context.functions, function_bytes);

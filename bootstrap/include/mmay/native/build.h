@@ -35,6 +35,9 @@ typedef struct MarimayNativeBuildRequest {
     bool returns_result;
     bool release;
     bool emit_c;
+    /* Optional internal test entry table; same contract as native C emission. */
+    const MarimaySymbolId *test_entries;
+    size_t test_entry_count;
 } MarimayNativeBuildRequest;
 
 typedef struct MarimayNativeBuildResult {

@@ -30,6 +30,13 @@ typedef struct MarimayNativeCEmitOptions {
     size_t write_root_count;
     const MarimayEnvNameView *env_grants;
     size_t env_grant_count;
+    /* Internal test executable: strictly symbol-sorted, unique void entries.
+     * Entry 0 is program.entry_symbol. Each accepts zero or one []string
+     * argument. argv[1] selects the decimal entry index and is not user input.
+     * Requires executable_entry and false executable_{takes_arguments,
+     * returns_status,returns_result}. NULL/0 preserves ordinary emission. */
+    const MarimaySymbolId *test_entries;
+    size_t test_entry_count;
 } MarimayNativeCEmitOptions;
 
 typedef enum MarimayNativeCEmitStatus {
