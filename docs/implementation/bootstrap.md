@@ -30,6 +30,27 @@ cmake --build --preset release --parallel
 ctest --preset release
 ```
 
+### Stable development checkout
+
+Use the primary `marimay` checkout for the compiler that sibling applications
+consume. After integrating a feature, configure and rebuild there; for a
+sibling project such as `marimay-notes`, the development compiler path is
+`../marimay/build/debug/mmay`. Application instructions and smoke-test defaults
+should not depend on a temporary feature worktree's directory name.
+
+A development build records source and build paths. Moving only `mmay` from
+another worktree does not relocate its standard-library and native-runtime
+dependencies. Reconfigure and rebuild in the retained checkout before removing
+the temporary one. Preserve any unfinished changes in Git first, then remove
+clean temporary checkouts with `git worktree remove`; their branches and
+commits remain available. Use the installation workflow below when a relocatable
+toolchain, rather than a development build, is required.
+
+After upgrading the host C compiler, use `cmake --fresh --preset debug` and
+rebuild to refresh CMake's cached compiler identity. Verify the retained
+development build with `build/debug/mmay doctor --json`; it checks the native
+compiler version and both runtime archives as well as their paths.
+
 Each configuration builds both output-profile runtimes. Consequently,
 `build/debug/mmay build --release` and `build/release/mmay build` select the
 requested output profile rather than inheriting the compiler executable's
