@@ -113,6 +113,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Native collection results and verifier worklists](cp42-collection-results-2026-09-06.md)
+reduce local Map/Set/rune workload medians by 19.5–27.4% and remove repeated
+whole-CFG fixed-point scans. This is partial progress; the full collection
+optimization and language ergonomics obligations remain open.
+
 [Bounded JSON string runs](cp42-json-string-runs-2026-09-06.md) remove per-byte
 builder/Result overhead in the ordinary source decoder. Paired version-last
 config median falls from 9.449 s to 5.243 s with unchanged inputs, diagnostics

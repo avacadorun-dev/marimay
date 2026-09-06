@@ -5,6 +5,7 @@
 
 #include "mmay/base/utf8.h"
 #include "bytecode_internal.h"
+#include "bytecode_verify_assignments.h"
 #include "bytecode_verify_provenance.h"
 
 static bool mmay_bytecode_consume_verify_work(
@@ -720,83 +721,16 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_with_work_limit(
         status = MMAY_BYTECODE_VERIFY_ALLOCATION_FAILED;
         goto cleanup;
     }
-    if (cell_count != 0) {
-        memset(incoming, 1, cells_size);
-        memset(outgoing, 1, cells_size);
-        memset(incoming, 0, register_count);
-        memset(outgoing, 0, register_count);
-        memset(incoming, 1, function->parameter_count);
-        memcpy(outgoing, incoming, register_count);
-        mmay_bytecode_transfer_assignments(
-            mmay_vector_at_const(&function->blocks, 0),
-            outgoing,
-            register_count
-        );
-    }
     {
-        bool changed = false;
-        do {
-            changed = false;
-            for (block_index = 1; block_index < block_count; block_index += 1) {
-                size_t predecessor_index = 0;
-                unsigned char *incoming_row = incoming
-                    + block_index * register_count;
-                unsigned char *outgoing_row = outgoing
-                    + block_index * register_count;
-                const MarimayBytecodeBlock *block = mmay_vector_at_const(
-                    &function->blocks,
-                    block_index
-                );
-                if (register_count != 0) {
-                    memset(scratch, 1, register_count);
-                }
-                for (predecessor_index = predecessor_offsets[block_index];
-                    predecessor_index < predecessor_offsets[block_index + 1];
-                    predecessor_index += 1) {
-                    size_t register_index = 0;
-                    const unsigned char *predecessor_row = outgoing
-                        + (size_t)predecessors[predecessor_index] * register_count;
-                    for (register_index = 0; register_index < register_count;
-                        register_index += 1) {
-                        scratch[register_index] = (unsigned char)(
-                            scratch[register_index]
-                            & predecessor_row[register_index]
-                        );
-                    }
-                    if (!mmay_bytecode_consume_verify_work(
-                            &work,
-                            register_count,
-                            work_limit
-                        )) {
-                        status = MMAY_BYTECODE_VERIFY_LIMIT_REACHED;
-                        goto cleanup;
-                    }
-                }
-                if (register_count != 0
-                    && memcmp(incoming_row, scratch, register_count) != 0) {
-                    memcpy(incoming_row, scratch, register_count);
-                    changed = true;
-                }
-                mmay_bytecode_transfer_assignments(
-                    block,
-                    scratch,
-                    register_count
-                );
-                if (register_count != 0
-                    && memcmp(outgoing_row, scratch, register_count) != 0) {
-                    memcpy(outgoing_row, scratch, register_count);
-                    changed = true;
-                }
-                if (!mmay_bytecode_consume_verify_work(
-                        &work,
-                        register_count * 2,
-                        work_limit
-                    )) {
-                    status = MMAY_BYTECODE_VERIFY_LIMIT_REACHED;
-                    goto cleanup;
-                }
-            }
-        } while (changed);
+        size_t assignment_work = 0;
+        /* Predecessor construction no longer needs these block-sized cursors. */
+        status = mmay_bytecode_verify_assignments(
+            function, predecessor_offsets, predecessors,
+            incoming, outgoing, scratch, predecessor_cursors,
+            work_limit - work, &assignment_work
+        );
+        if (status != MMAY_BYTECODE_VERIFY_OK) goto cleanup;
+        work += assignment_work;
     }
     {
         size_t provenance_work = 0;

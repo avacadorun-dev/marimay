@@ -85,11 +85,6 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_collection_instruction(
     const MarimayBytecodeInstruction *instruction,
     unsigned char *assigned
 );
-void mmay_bytecode_transfer_assignments(
-    const MarimayBytecodeBlock *block,
-    unsigned char *assigned,
-    size_t register_count
-);
 MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
     const MarimayBytecodeFunction *function,
     const MarimayBytecodeInstruction *instruction,

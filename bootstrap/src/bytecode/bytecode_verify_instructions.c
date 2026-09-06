@@ -89,29 +89,6 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_defer_instruction(
     assigned[(size_t)marker] = 1;
     return MMAY_BYTECODE_VERIFY_OK;
 }
-void mmay_bytecode_transfer_assignments(
-    const MarimayBytecodeBlock *block,
-    unsigned char *assigned,
-    size_t register_count
-) {
-    size_t instruction_index = 0;
-    if (block == NULL || assigned == NULL) {
-        return;
-    }
-    for (instruction_index = 0;
-        instruction_index + 1 < block->instructions.length;
-        instruction_index += 1) {
-        const MarimayBytecodeInstruction *instruction = mmay_vector_at_const(
-            &block->instructions,
-            instruction_index
-        );
-        if (instruction != NULL
-            && mmay_bytecode_opcode_writes_register(instruction->opcode)
-            && instruction->operands[0].unsigned_value < register_count) {
-            assigned[(size_t)instruction->operands[0].unsigned_value] = 1;
-        }
-    }
-}
 static MarimayBytecodeVerifyStatus mmay_bytecode_require_assigned(
     const unsigned char *assigned,
     size_t register_count,

@@ -458,7 +458,8 @@ bootstrap/src/format/      formatter/render coordinator, token collection and
                            statement/document group lifecycle; continuation
                            indentation never leaks across expression owners
 bootstrap/src/bytecode/    model/builders, codec, verifier orchestration,
-                           instruction verifier, CFG provenance verifier, MIR
+                           instruction verifier, definite-assignment and CFG
+                           provenance verifiers, MIR
                            lowering, VM coordinator, VM preflight, and VM value
                            operations
 bootstrap/src/native/      C-emission coordinators and focused instruction/
@@ -509,6 +510,25 @@ is `mmay/runtime/map.h` plus `mmay/runtime/set.h`: `managed_map.c` owns coherent
 hash/equality, insertion order, growth, and precise tracing; the small set
 owner delegates storage to that exact map contract and exposes no duplicate
 table implementation.
+
+Collection Option/Result emission uses the existing generated-enum ABI and
+entry-registered descriptor IDs for empty/raw-cell results. Reference payloads
+retain the rooted checked constructor. Descriptor registration remains in
+`c_emitter_descriptors.c`; the collection emitter does not duplicate it or
+introduce a runtime map fast path with weaker validation.
+
+`bytecode_verify_assignments.c` owns definite-assignment transfer and bounded
+successor worklist scheduling. Its narrow borrowed-storage API receives the
+validated predecessor table and fact buffers; the coordinator reuses its
+finished predecessor cursors as queue storage. `bytecode_verify_provenance.c`
+separately owns the array/enum must-facts and its temporary pending queue.
+Both retain the fixed entry boundary, meet every predecessor, and enqueue
+successors only when outgoing facts change. Instruction-walk array fact
+invalidation uses the same predicate as block transfer, including non-writing
+void calls and stores. The focused provenance tests cover reversed block order,
+joins, loops, missing/conflicting proofs, barrier restoration and all
+deterministic allocation-failure indices. These are existing D058 verification
+contracts, not new source syntax or permission to trust producer proofs.
 
 D081 adds no compiler-known semantic owner. `std/cli/cli.my` owns the public
 model, factories, definition validation, and stable messages;

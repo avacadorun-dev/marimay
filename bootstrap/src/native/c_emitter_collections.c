@@ -138,8 +138,43 @@ bool mmay_native_c_emit_collection_runtime(MarimayNativeCBuffer *buffer) {
         "static int mmay_g_begin_collection_iterator_mutation(mmay_g_panic *p, bool is_set, const unsigned char *symbol, size_t start, size_t end) { static const unsigned char map_message[] = \"map iterator invalidated by mutation\", set_message[] = \"set iterator invalidated by mutation\"; const unsigned char *message = is_set ? set_message : map_message; size_t length = is_set ? sizeof(set_message) - 1U : sizeof(map_message) - 1U; if (p == NULL) return 4; memcpy(p->message_storage, message, length); p->code = \"G4005\"; p->message.data = p->message_storage; p->message.length = length; p->symbol = symbol; p->start = start; p->end = end; p->frame_count = 0; p->suppressed_count = 0; return mmay_g_append_frame(p, symbol, start, end) ? 4 : 5; }\n"
     ) && mmay_native_c_write(
         buffer,
-        "static int mmay_g_collection_option(mmay_g_execution *x, MarimayManagedReference map, MarimayManagedCell key, bool remove, bool reference_value, const MarimayManagedEnumDescriptor *option, MarimayManagedReference *out) { MarimayManagedCell value = {0}; MarimayManagedRootFrame roots = {0}; MarimayManagedReference *locations[1] = {&value.reference}; MarimayManagedStatus status, pop_status; bool found = false; value.reference = mmay_managed_invalid_reference(); status = remove ? mmay_managed_map_remove(&x->heap, map, key, &value, &found) : mmay_managed_map_get(&x->heap, map, key, &value, &found); if (status != MMAY_MANAGED_OK) return mmay_g_managed_status(status); if (found && reference_value) { status = mmay_managed_root_push(&x->heap, &roots, locations, 1); if (status != MMAY_MANAGED_OK) return mmay_g_managed_status(status); } status = mmay_managed_enum_new(&x->heap, option, found ? 0U : 1U, found ? &value : NULL, found ? 1U : 0U, out); if (roots.linked) { pop_status = mmay_managed_root_pop(&x->heap, &roots); if (status == MMAY_MANAGED_OK) status = pop_status; } return mmay_g_managed_status(status); }\n"
-        "static int mmay_g_collection_update_result(mmay_g_execution *x, MarimayManagedReference collection, MarimayManagedCell key, MarimayManagedCell value, bool is_set, const MarimayManagedEnumDescriptor *result, const MarimayManagedEnumDescriptor *error, MarimayManagedReference *out) { MarimayManagedCell payload = {0}, error_cell = {0}; MarimayManagedReference *locations[1] = {&error_cell.reference}; MarimayManagedRootFrame roots = {0}; MarimayManagedStatus status, pop_status; bool inserted = false; error_cell.reference = mmay_managed_invalid_reference(); status = is_set ? mmay_managed_set_add(&x->heap, collection, key, &inserted) : mmay_managed_map_put(&x->heap, collection, key, value, &inserted); if (status == MMAY_MANAGED_OK) { payload.f64_bits = inserted ? UINT64_C(1) : UINT64_C(0); return mmay_g_managed_status(mmay_managed_enum_new(&x->heap, result, 0, &payload, 1, out)); } if (status != MMAY_MANAGED_LENGTH_LIMIT) return mmay_g_managed_status(status); status = mmay_managed_root_push(&x->heap, &roots, locations, 1); payload.f64_bits = (uint64_t)INT64_MAX; if (status == MMAY_MANAGED_OK) status = mmay_managed_enum_new(&x->heap, error, 0, &payload, 1, &error_cell.reference); if (status == MMAY_MANAGED_OK) status = mmay_managed_enum_new(&x->heap, result, 1, &error_cell, 1, out); if (roots.linked) { pop_status = mmay_managed_root_pop(&x->heap, &roots); if (status == MMAY_MANAGED_OK) status = pop_status; } return mmay_g_managed_status(status); }\n"
+        "static int mmay_g_collection_option(mmay_g_execution *x, MarimayManagedReference map, MarimayManagedCell key, bool remove, bool reference_value, const MarimayManagedEnumDescriptor *option, uint32_t immediate_id, MarimayManagedReference *out) {\n"
+        "  MarimayManagedCell value = {0}; MarimayManagedRootFrame roots = {0};\n"
+        "  MarimayManagedReference *locations[1] = {&value.reference};\n"
+        "  MarimayManagedStatus status, pop_status; bool found = false;\n"
+        "  value.reference = mmay_managed_invalid_reference();\n"
+        "  status = remove ? mmay_managed_map_remove(&x->heap, map, key, &value, &found) : mmay_managed_map_get(&x->heap, map, key, &value, &found);\n"
+        "  if (status != MMAY_MANAGED_OK) return mmay_g_managed_status(status);\n"
+        "  if (!found || !reference_value) {\n"
+        "    mmay_managed_enum_immediate_new_generated(&x->heap, immediate_id, found ? 0U : 1U, found ? value.f64_bits : UINT64_C(0), out);\n"
+        "    return 0;\n"
+        "  }\n"
+        "  status = mmay_managed_root_push(&x->heap, &roots, locations, 1);\n"
+        "  if (status != MMAY_MANAGED_OK) return mmay_g_managed_status(status);\n"
+        "  status = mmay_managed_enum_new(&x->heap, option, 0, &value, 1, out);\n"
+        "  pop_status = mmay_managed_root_pop(&x->heap, &roots);\n"
+        "  return mmay_g_managed_status(status == MMAY_MANAGED_OK ? pop_status : status);\n"
+        "}\n"
+    ) && mmay_native_c_write(
+        buffer,
+        "static int mmay_g_collection_update_result(mmay_g_execution *x, MarimayManagedReference collection, MarimayManagedCell key, MarimayManagedCell value, bool is_set, const MarimayManagedEnumDescriptor *result, const MarimayManagedEnumDescriptor *error, uint32_t immediate_id, MarimayManagedReference *out) {\n"
+        "  MarimayManagedCell payload = {0}, error_cell = {0};\n"
+        "  MarimayManagedReference *locations[1] = {&error_cell.reference};\n"
+        "  MarimayManagedRootFrame roots = {0}; MarimayManagedStatus status, pop_status;\n"
+        "  bool inserted = false; error_cell.reference = mmay_managed_invalid_reference();\n"
+        "  status = is_set ? mmay_managed_set_add(&x->heap, collection, key, &inserted) : mmay_managed_map_put(&x->heap, collection, key, value, &inserted);\n"
+        "  if (status == MMAY_MANAGED_OK) {\n"
+        "    mmay_managed_enum_immediate_new_generated(&x->heap, immediate_id, 0, inserted ? UINT64_C(1) : UINT64_C(0), out);\n"
+        "    return 0;\n"
+        "  }\n"
+        "  if (status != MMAY_MANAGED_LENGTH_LIMIT) return mmay_g_managed_status(status);\n"
+        "  status = mmay_managed_root_push(&x->heap, &roots, locations, 1);\n"
+        "  payload.f64_bits = (uint64_t)INT64_MAX;\n"
+        "  if (status == MMAY_MANAGED_OK) status = mmay_managed_enum_new(&x->heap, error, 0, &payload, 1, &error_cell.reference);\n"
+        "  if (status == MMAY_MANAGED_OK) status = mmay_managed_enum_new(&x->heap, result, 1, &error_cell, 1, out);\n"
+        "  if (roots.linked) { pop_status = mmay_managed_root_pop(&x->heap, &roots); if (status == MMAY_MANAGED_OK) status = pop_status; }\n"
+        "  return mmay_g_managed_status(status);\n"
+        "}\n"
     );
 }
 
@@ -185,6 +220,8 @@ static bool mmay_native_c_collection_status(
 static bool mmay_native_c_collection_result_instruction(
     MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
+    size_t count,
     const MarimayMirInstruction *instruction,
     const MarimayMirCollection *collection
 ) {
@@ -196,7 +233,13 @@ static bool mmay_native_c_collection_result_instruction(
     const MarimayMirEnum *error = option ? NULL : mmay_vector_at_const(
         &function->enums, instruction->option_enum_id
     );
-    if (result == NULL || (!option && error == NULL)) return false;
+    uint32_t immediate_id = 0;
+    /* Verified Option<V> has an empty None variant; the collection Result
+     * has a raw bool Ok variant. Both descriptors are registered at entry. */
+    if (result == NULL || (!option && error == NULL)
+        || !mmay_native_c_immediate_enum_id(
+            functions, count, result->type, &immediate_id
+        )) return false;
     if (!mmay_native_c_write(
             buffer,
             "  { MarimayManagedCell mmay_g_cell = {0}, mmay_g_key = {0}, mmay_g_value = {0}; (void)mmay_g_value; "
@@ -232,14 +275,17 @@ static bool mmay_native_c_collection_result_instruction(
         ))) return false;
     return mmay_native_c_write(
         buffer,
-        ", &mmay_g_v_%u); if (mmay_g_s != 0) { *mmay_g_start = %zu; *mmay_g_end = %zu; goto mmay_g_cleanup; } }\n",
-        instruction->target, instruction->span.start, instruction->span.end
+        ", UINT32_C(%u), &mmay_g_v_%u); if (mmay_g_s != 0) { *mmay_g_start = %zu; *mmay_g_end = %zu; goto mmay_g_cleanup; } }\n",
+        (unsigned int)immediate_id, instruction->target,
+        instruction->span.start, instruction->span.end
     );
 }
 
 bool mmay_native_c_emit_collection_instruction(
     MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
+    size_t count,
     const MarimayMirInstruction *instruction
 ) {
     const MarimayMirCollection *collection =
@@ -249,7 +295,7 @@ bool mmay_native_c_emit_collection_instruction(
     if (instruction->kind >= MMAY_MIR_COLLECTION_GET_OPTION
         && instruction->kind <= MMAY_MIR_COLLECTION_ADD_RESULT) {
         return mmay_native_c_collection_result_instruction(
-            buffer, function, instruction, collection
+            buffer, function, functions, count, instruction, collection
         );
     }
     if (instruction->kind == MMAY_MIR_COLLECTION_NEW) {

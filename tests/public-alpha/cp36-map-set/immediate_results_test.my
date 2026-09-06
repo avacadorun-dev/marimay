@@ -1,0 +1,117 @@
+import { runes } from "std/text";
+
+fn resultPayload<T>(value: Option<T>): T {
+  return match value {
+    Some(item) => item,
+    None => panic("expected a collection payload"),
+  };
+}
+
+fn resultAbsent<T>(value: Option<T>): bool {
+  return match value {
+    Some(_) => false,
+    None => true,
+  };
+}
+
+@test
+fn scalarOptionsRetainAllIntegerBits(): void {
+  const values: Map<int, int> = mapOf<int, int>();
+  const low: int = -9223372036854775808;
+  const high: int = 9223372036854775807;
+  expect.equal(values.get(1), None);
+  expect.equal(values.put(1, low), Ok(true));
+  expect.equal(values.put(2, high), Ok(true));
+  const saved = values.get(1);
+  expect.equal(values.get(2), Some(high));
+  expect.equal(values.put(1, 4294967297), Ok(false));
+  expect.equal(saved, Some(low));
+  expect.equal(values.get(1), Some(4294967297));
+  expect.equal(values.remove(2), Some(high));
+  expect.equal(values.remove(2), None);
+  expect.equal(values.get(2), None);
+  expect.equal(values.put(2, low), Ok(true));
+  let keys: []int = [];
+  for entry in values {
+    const key = match entry {
+      (item, _) => item,
+    };
+    const _ = keys.push(key);
+  }
+  expect.equal(keys.length(), 2);
+  expect.equal(keys[0], 1);
+  expect.equal(keys[1], 2);
+  expect.equal(values.remove(1), Some(4294967297));
+  expect.equal(values.remove(2), Some(low));
+}
+
+@test
+fn scalarOptionDescriptorsRemainDistinct(): void {
+  const unsigned: Map<int, u64> = mapOf<int, u64>();
+  const narrow: Map<int, i8> = mapOf<int, i8>();
+  const booleans: Map<int, bool> = mapOf<int, bool>();
+  const floats: Map<int, f64> = mapOf<int, f64>();
+  const scalars: Map<int, rune> = mapOf<int, rune>();
+  const maximum: u64 = 18446744073709551615;
+  const minimum: i8 = -128;
+  const rocket: rune = match runes("🚀", 1) {
+    Ok(values) => values[0],
+    Err(_) => panic("rune fixture failed"),
+  };
+  const expectedRunes: Set<rune> = setOf<rune>();
+  expect.equal(expectedRunes.add(rocket), Ok(true));
+  expect.equal(unsigned.put(1, maximum), Ok(true));
+  expect.equal(narrow.put(1, minimum), Ok(true));
+  expect.equal(booleans.put(1, false), Ok(true));
+  expect.equal(floats.put(1, -4.5), Ok(true));
+  expect.equal(scalars.put(1, rocket), Ok(true));
+  for iteration in 0..3 {
+    const _ = iteration;
+    expect.equal(unsigned.get(1), Some(maximum));
+    expect.equal(narrow.get(1), Some(minimum));
+    expect.equal(booleans.get(1), Some(false));
+    expect.equal(floats.get(1), Some(-4.5));
+    expect.equal(expectedRunes.contains(resultPayload(scalars.get(1))), true);
+  }
+  expect.equal(unsigned.remove(1), Some(maximum));
+  expect.equal(narrow.remove(1), Some(minimum));
+  expect.equal(booleans.remove(1), Some(false));
+  expect.equal(floats.remove(1), Some(-4.5));
+  expect.equal(expectedRunes.contains(resultPayload(scalars.remove(1))), true);
+  expect.equal(unsigned.get(1), None);
+  expect.equal(narrow.get(1), None);
+  expect.equal(booleans.get(1), None);
+  expect.equal(floats.get(1), None);
+  expect.equal(resultAbsent(scalars.get(1)), true);
+}
+
+@test
+fn nestedOptionsAndReferencePayloadsKeepTheirShape(): void {
+  const nested: Map<int, Option<int>> = mapOf<int, Option<int>>();
+  const references: Map<int, []int> = mapOf<int, []int>();
+  const seen: Set<int> = setOf<int>();
+  const empty: Option<int> = None;
+  expect.equal(nested.put(1, empty), Ok(true));
+  expect.equal(nested.put(2, Some(-9223372036854775808)), Ok(true));
+  expect.equal(nested.get(1), Some(empty));
+  expect.equal(nested.get(3), None);
+  expect.equal(resultAbsent(references.get(1)), true);
+  expect.equal(references.put(1, [7, 8]), Ok(true));
+  const removed = references.remove(1);
+  expect.equal(references.put(1, [9, 10]), Ok(true));
+  const first = seen.add(1);
+  const duplicate = seen.add(1);
+  expect.equal(first, Ok(true));
+  expect.equal(duplicate, Ok(false));
+  const old = resultPayload(removed);
+  const current = resultPayload(references.get(1));
+  expect.equal(old.length(), 2);
+  expect.equal(old[0], 7);
+  expect.equal(old[1], 8);
+  expect.equal(current.length(), 2);
+  expect.equal(current[0], 9);
+  expect.equal(current[1], 10);
+  expect.equal(nested.remove(1), Some(empty));
+  expect.equal(nested.remove(2), Some(Some(-9223372036854775808)));
+  expect.equal(nested.remove(2), None);
+}

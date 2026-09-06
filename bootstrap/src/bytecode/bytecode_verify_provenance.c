@@ -52,6 +52,20 @@ static uint64_t mmay_bytecode_provenance_meet(
     return MMAY_BYTECODE_PROVENANCE_NONE;
 }
 
+static bool mmay_bytecode_provenance_invalidates_arrays(MarimayOpcode opcode) {
+    return opcode == MMAY_OPCODE_CALL_DIRECT
+        || opcode == MMAY_OPCODE_CALL_DIRECT_VOID
+        || opcode == MMAY_OPCODE_CALL_DIRECT_NEVER
+        || opcode == MMAY_OPCODE_CALL_INTERFACE
+        || opcode == MMAY_OPCODE_ARRAY_SET
+        || opcode == MMAY_OPCODE_ARRAY_SET_IN_BOUNDS
+        || opcode == MMAY_OPCODE_ARRAY_PUSH
+        || opcode == MMAY_OPCODE_ARRAY_POP
+        || opcode == MMAY_OPCODE_ARRAY_TRUNCATE
+        || opcode == MMAY_OPCODE_ARRAY_CLEAR
+        || opcode == MMAY_OPCODE_ARRAY_RESERVE;
+}
+
 static void mmay_bytecode_provenance_transfer_instruction(
     const MarimayBytecodeInstruction *instruction,
     uint64_t *facts,
@@ -64,17 +78,7 @@ static void mmay_bytecode_provenance_transfer_instruction(
         return;
     }
     if (kind == MMAY_BYTECODE_PROVENANCE_ARRAY_INDEX
-        && (instruction->opcode == MMAY_OPCODE_CALL_DIRECT
-            || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID
-            || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER
-            || instruction->opcode == MMAY_OPCODE_CALL_INTERFACE
-            || instruction->opcode == MMAY_OPCODE_ARRAY_SET
-            || instruction->opcode == MMAY_OPCODE_ARRAY_SET_IN_BOUNDS
-            || instruction->opcode == MMAY_OPCODE_ARRAY_PUSH
-            || instruction->opcode == MMAY_OPCODE_ARRAY_POP
-            || instruction->opcode == MMAY_OPCODE_ARRAY_TRUNCATE
-            || instruction->opcode == MMAY_OPCODE_ARRAY_CLEAR
-            || instruction->opcode == MMAY_OPCODE_ARRAY_RESERVE)) {
+        && mmay_bytecode_provenance_invalidates_arrays(instruction->opcode)) {
         for (register_index = 0; register_index < register_count;
             register_index += 1) {
             facts[register_index] = MMAY_BYTECODE_PROVENANCE_NONE;
@@ -133,6 +137,24 @@ static void mmay_bytecode_provenance_transfer_block(
     }
 }
 
+/* SIZE_MAX marks a block outside the queue; block_count terminates its linked
+ * list. Block zero retains the fixed entry boundary, including on backedges. */
+static void mmay_bytecode_provenance_enqueue(
+    size_t *pending,
+    size_t block_count,
+    size_t *head,
+    size_t *tail,
+    size_t target
+) {
+    if (target == 0 || target >= block_count || pending[target] != SIZE_MAX) {
+        return;
+    }
+    if (*head == block_count) *head = target;
+    else pending[*tail] = target;
+    pending[target] = block_count;
+    *tail = target;
+}
+
 static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_solve(
     const MarimayBytecodeFunction *function,
     const size_t *predecessor_offsets,
@@ -141,6 +163,7 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_solve(
     uint64_t *outgoing,
     uint64_t *scratch,
     size_t scratch_size,
+    size_t *pending,
     MarimayBytecodeProvenanceKind kind,
     size_t available_work,
     size_t *work_used
@@ -151,7 +174,8 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_solve(
     size_t register_index = 0;
     size_t entry_work = 0;
     size_t work = 0;
-    bool changed = false;
+    size_t head = block_count > 1 ? 1 : block_count;
+    size_t tail = block_count - 1;
     const MarimayBytecodeBlock *entry = mmay_vector_at_const(
         &function->blocks,
         0
@@ -187,74 +211,93 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_solve(
         register_count,
         kind
     );
-    do {
-        size_t block_index = 0;
-        changed = false;
-        for (block_index = 1; block_index < block_count; block_index += 1) {
-            size_t predecessor_index = 0;
-            uint64_t *incoming_row = incoming
-                + block_index * register_count;
-            uint64_t *outgoing_row = outgoing
-                + block_index * register_count;
-            const MarimayBytecodeBlock *block = mmay_vector_at_const(
-                &function->blocks,
-                block_index
-            );
-            size_t transfer_work = 0;
+    for (register_index = 0; register_index < block_count; register_index += 1) {
+        pending[register_index] = register_index + 1;
+    }
+    pending[0] = SIZE_MAX;
+    while (head != block_count) {
+        size_t block_index = head;
+        size_t predecessor_index = 0;
+        uint64_t *incoming_row = incoming
+            + block_index * register_count;
+        uint64_t *outgoing_row = outgoing
+            + block_index * register_count;
+        const MarimayBytecodeBlock *block = mmay_vector_at_const(
+            &function->blocks,
+            block_index
+        );
+        size_t transfer_work = 0;
+        head = pending[block_index];
+        pending[block_index] = SIZE_MAX;
+        for (register_index = 0; register_index < register_count;
+            register_index += 1) {
+            scratch[register_index] = MMAY_BYTECODE_PROVENANCE_TOP;
+        }
+        for (predecessor_index = predecessor_offsets[block_index];
+            predecessor_index < predecessor_offsets[block_index + 1];
+            predecessor_index += 1) {
+            const uint64_t *predecessor_row = outgoing
+                + (size_t)predecessors[predecessor_index]
+                    * register_count;
             for (register_index = 0; register_index < register_count;
                 register_index += 1) {
-                scratch[register_index] = MMAY_BYTECODE_PROVENANCE_TOP;
+                scratch[register_index] = mmay_bytecode_provenance_meet(
+                    scratch[register_index],
+                    predecessor_row[register_index]
+                );
             }
-            for (predecessor_index = predecessor_offsets[block_index];
-                predecessor_index < predecessor_offsets[block_index + 1];
-                predecessor_index += 1) {
-                const uint64_t *predecessor_row = outgoing
-                    + (size_t)predecessors[predecessor_index]
-                        * register_count;
-                for (register_index = 0; register_index < register_count;
-                    register_index += 1) {
-                    scratch[register_index] = mmay_bytecode_provenance_meet(
-                        scratch[register_index],
-                        predecessor_row[register_index]
-                    );
-                }
-                if (!mmay_bytecode_provenance_consume_work(
-                        &work,
-                        register_count,
-                        available_work
-                    )) {
-                    return MMAY_BYTECODE_VERIFY_LIMIT_REACHED;
-                }
-            }
-            if (register_count != 0
-                && memcmp(incoming_row, scratch, scratch_size) != 0) {
-                memcpy(incoming_row, scratch, scratch_size);
-                changed = true;
-            }
-            if (!mmay_size_multiply(
-                    block->instructions.length,
-                    register_count,
-                    &transfer_work
-                ) || !mmay_bytecode_provenance_consume_work(
+            if (!mmay_bytecode_provenance_consume_work(
                     &work,
-                    transfer_work,
+                    register_count,
                     available_work
                 )) {
                 return MMAY_BYTECODE_VERIFY_LIMIT_REACHED;
             }
-            mmay_bytecode_provenance_transfer_block(
-                block,
-                scratch,
+        }
+        if (register_count != 0
+            && memcmp(incoming_row, scratch, scratch_size) != 0) {
+            memcpy(incoming_row, scratch, scratch_size);
+        }
+        if (!mmay_size_multiply(
+                block->instructions.length,
                 register_count,
-                kind
-            );
-            if (register_count != 0
-                && memcmp(outgoing_row, scratch, scratch_size) != 0) {
-                memcpy(outgoing_row, scratch, scratch_size);
-                changed = true;
+                &transfer_work
+            ) || !mmay_size_add(transfer_work, 1, &transfer_work)
+            || !mmay_bytecode_provenance_consume_work(
+                &work,
+                transfer_work,
+                available_work
+            )) {
+            return MMAY_BYTECODE_VERIFY_LIMIT_REACHED;
+        }
+        mmay_bytecode_provenance_transfer_block(
+            block,
+            scratch,
+            register_count,
+            kind
+        );
+        if (register_count != 0
+            && memcmp(outgoing_row, scratch, scratch_size) != 0) {
+            const MarimayBytecodeInstruction *terminator =
+                mmay_bytecode_block_terminator(block);
+            memcpy(outgoing_row, scratch, scratch_size);
+            if (terminator->opcode == MMAY_OPCODE_JUMP) {
+                mmay_bytecode_provenance_enqueue(
+                    pending, block_count, &head, &tail,
+                    (size_t)terminator->operands[0].unsigned_value
+                );
+            } else if (terminator->opcode == MMAY_OPCODE_BRANCH_BOOL) {
+                mmay_bytecode_provenance_enqueue(
+                    pending, block_count, &head, &tail,
+                    (size_t)terminator->operands[1].unsigned_value
+                );
+                mmay_bytecode_provenance_enqueue(
+                    pending, block_count, &head, &tail,
+                    (size_t)terminator->operands[2].unsigned_value
+                );
             }
         }
-    } while (changed);
+    }
     *work_used = work;
     return MMAY_BYTECODE_VERIFY_OK;
 }
@@ -275,7 +318,12 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_add_lattice(
         ? &analysis->array_scratch
         : &analysis->enum_scratch;
     uint64_t *outgoing = NULL;
+    size_t *pending = NULL;
+    size_t pending_bytes = 0;
     MarimayBytecodeVerifyStatus status = MMAY_BYTECODE_VERIFY_OK;
+    if (!mmay_size_multiply(
+            analysis->block_count, sizeof(*pending), &pending_bytes
+        )) return MMAY_BYTECODE_VERIFY_LIMIT_REACHED;
     *incoming = mmay_allocate_array(
         &analysis->allocator,
         analysis->cell_count,
@@ -291,7 +339,9 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_add_lattice(
         analysis->register_count,
         sizeof(uint64_t)
     );
-    if (*incoming == NULL || outgoing == NULL || *scratch == NULL) {
+    pending = mmay_allocate(&analysis->allocator, pending_bytes);
+    if (*incoming == NULL || outgoing == NULL || *scratch == NULL
+        || pending == NULL) {
         status = MMAY_BYTECODE_VERIFY_ALLOCATION_FAILED;
     } else {
         status = mmay_bytecode_provenance_solve(
@@ -302,11 +352,13 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_add_lattice(
             outgoing,
             *scratch,
             analysis->scratch_size,
+            pending,
             kind,
             available_work,
             work_used
         );
     }
+    mmay_deallocate(&analysis->allocator, pending, pending_bytes);
     mmay_deallocate(
         &analysis->allocator,
         outgoing,
@@ -481,7 +533,11 @@ MarimayBytecodeVerifyStatus mmay_bytecode_provenance_advance_instruction(
     }
     *work_used = 0;
     if (analysis == NULL || instruction == NULL
-        || !mmay_bytecode_opcode_writes_register(instruction->opcode)) {
+        || (!mmay_bytecode_opcode_writes_register(instruction->opcode)
+            && (analysis->array_scratch == NULL
+                || !mmay_bytecode_provenance_invalidates_arrays(
+                    instruction->opcode
+                )))) {
         return MMAY_BYTECODE_VERIFY_OK;
     }
     if (!mmay_size_multiply(

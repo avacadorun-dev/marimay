@@ -115,6 +115,8 @@ bool mmay_native_c_emit_collection_runtime(MarimayNativeCBuffer *buffer);
 bool mmay_native_c_emit_collection_instruction(
     MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *function,
+    const MarimayMirFunction *const *functions,
+    size_t count,
     const MarimayMirInstruction *instruction
 );
 bool mmay_native_c_emit_managed_parameter_check(

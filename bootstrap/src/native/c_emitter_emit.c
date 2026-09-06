@@ -1098,7 +1098,7 @@ bool mmay_native_c_emit_function(
                 case MMAY_MIR_COLLECTION_PUT_RESULT:
                 case MMAY_MIR_COLLECTION_ADD_RESULT:
                     if (!mmay_native_c_emit_collection_instruction(
-                            buffer, function, i
+                            buffer, function, functions, count, i
                         )) return false;
                     break;
                 case MMAY_MIR_BITWISE_NOT_I64:

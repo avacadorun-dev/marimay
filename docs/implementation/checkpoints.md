@@ -1700,6 +1700,9 @@ Marimay/Go medians were 81.59/14.88 ms, 58.32/17.53 ms, and 43.75/6.69 ms;
 these are a local investigation trigger, not reviewed Tier 1 budgets or proof
 of a particular cause. The raw report SHA-256 is
 `51617a8a1f93b33dc621682a1e19a18df341f712a4eaa93c88df90eb0be778f2`.
+Partial follow-up: [native collection results and verifier worklists](evidence/cp42-collection-results-2026-09-06.md).
+Its local 19.5–27.4% reductions do not close this item; residual collection
+costs and the discovered rune-Eq/parser-recovery defects remain obligations.
 Separate input preparation from collection execution; profile hashing/probing,
 managed-handle checks, and Option/Result construction before choosing repairs.
 Acceptance requires paired same-workload improvement, unchanged insertion
