@@ -3,6 +3,7 @@ name: Gitea C17 bootstrap
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 jobs:
   classify:
@@ -24,9 +25,12 @@ jobs:
           HEAD_REVISION: ${{ gitea.sha }}
           PUSH_BASE: ${{ gitea.event.before }}
           PULL_BASE: ${{ gitea.event.pull_request.base.sha }}
+          EVENT_NAME: ${{ gitea.event_name }}
         run: |
           base_revision=$PUSH_BASE
           if [ -z "$base_revision" ]; then base_revision=$PULL_BASE; fi
+          # A manual run is a full validation, including documentation-only HEADs.
+          if [ "$EVENT_NAME" = workflow_dispatch ]; then base_revision=; fi
           code_changed=$(./tools/classify-ci-change "$base_revision" "$HEAD_REVISION")
           printf 'code_changed=%s\n' "$code_changed" | tee -a "$GITHUB_OUTPUT"
 
@@ -127,6 +131,7 @@ jobs:
       ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:symbolize=1:allow_addr2line=1
       ASAN_SYMBOLIZER_PATH: /usr/bin/llvm-symbolizer-18
       UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+      MMAY_TEST_TRACE_ALLOCATIONS: '1'
     steps:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
@@ -145,6 +150,13 @@ jobs:
           test_jobs=$(nproc)
           if [ "${test_jobs}" -gt 8 ]; then test_jobs=8; fi
           ctest --preset asan-ubsan --parallel "${test_jobs}" --output-on-failure
+      - name: Preserve sanitizer diagnostics
+        if: always()
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: sanitizer-linux-x86_64-attempt-${{ gitea.run_attempt }}
+          path: build/asan-ubsan/Testing/Temporary/*.log
+          if-no-files-found: warn
 
   fuzz-build:
     name: Linux x86_64 fuzz / build once
@@ -207,13 +219,24 @@ jobs:
       - name: Install sanitizer runtime
         run: ./tools/ci-apt-install libclang-rt-18-dev llvm-18
       - name: Restore fuzz executables
+        id: restore
+        # Gitea partial reruns may not expose the successful build job's artifact
+        # from the previous attempt. Never let this skip the actual campaign.
+        continue-on-error: true
         uses: actions/download-artifact@9bc31d5ccc31df68ecc42ccf4149144866c47d8a # v3
         with:
           name: fuzz-linux-x86_64-binaries
       - name: Extract fuzz executables
+        if: ${{ steps.restore.outcome == 'success' }}
         run: |
           mkdir -p build/fuzz/tests/fuzz
           tar -xzf fuzz-binaries.tar.gz -C build/fuzz/tests/fuzz
+      - name: Rebuild missing fuzz executable from this revision
+        if: ${{ steps.restore.outcome != 'success' }}
+        run: |
+          ./tools/ci-apt-install build-essential clang cmake libclang-rt-18-dev llvm-18 python3
+          cmake --preset fuzz
+          cmake --build build/fuzz --target mmay_fuzz_${{ matrix.target }} --parallel
       - name: Run sustained campaign
         run: >-
           ./build/fuzz/tests/fuzz/mmay_fuzz_${{ matrix.target }}

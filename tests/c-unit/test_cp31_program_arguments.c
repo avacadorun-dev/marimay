@@ -1,6 +1,7 @@
 #include "test_support.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "mmay/base/allocator.h"
@@ -515,6 +516,13 @@ static bool mmay_cp31_allocation_case(
     MarimayTestBuffer error;
     int status;
     bool argument_failure = false;
+    const char *trace = getenv("MMAY_TEST_TRACE_ALLOCATIONS");
+    if (trace != NULL && strcmp(trace, "1") == 0) {
+        /* Emit before entering the compiler: a sanitizer can abort before the
+           normal assertion reports which deterministic failure was injected. */
+        (void)fprintf(stderr, "CP31 allocation failure index: %zu\n", failure_index);
+        (void)fflush(stderr);
+    }
     mmay_fail_allocator_init(
         &state, mmay_system_allocator(), failure_index
     );

@@ -182,6 +182,19 @@ internal foundation and is not a public `.myb` compatibility promise.
 
 The workflow is configured but is not evidence until it runs from a versioned checkout. Current local results and the remaining platform gap are recorded in the linked I0 evidence entries in the roadmap.
 
+The self-hosted Linux matrix lives in `.gitea/workflows/ci.yml`. Push and pull
+request runs skip compiler/sanitizer/fuzz jobs when only Markdown or `docs/`
+paths changed; their green documentation result is not full compiler evidence.
+Use **Run workflow** on the selected revision for a full validation. Re-running
+an existing documentation-only push preserves its original path filter.
+
+Fuzz jobs normally share one build. If Gitea cannot restore that artifact on a
+partial rerun, each affected job rebuilds only its own target from the checked-out
+revision before the unchanged 600-second campaign. A failed rebuild or campaign
+still fails the job. Sanitizer runs retain CTest logs and enable
+`MMAY_TEST_TRACE_ALLOCATIONS=1` to identify the injected CP31 allocation index
+even when the sanitizer aborts before a test assertion can report it.
+
 ## Current executable surface
 
 ```sh
