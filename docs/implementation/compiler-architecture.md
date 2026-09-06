@@ -314,6 +314,19 @@ output; `service_queries.c` supplies current-generation validation. The
 formatter adjacency predicate lives in `formatter_types.c`; none of these
 owners changes MIR, bytecode, runtime layout, or ABI.
 
+`json_intrinsics.c` owns the immutable D086 package/name/signature registry;
+import validation and JSON call selection consume its generic policy and
+arity. `intrinsic_completions.c` publishes file-import spellings from the live
+checker import environment, owns their bounded result storage and cleanup,
+and answers allocation-free prefix queries. It does not invent functions,
+source definitions, type IDs or nominal receivers. The existing service query
+owner validates generations and snapshots before exposing those facts. Both
+ordinary and intrinsic candidates share the completion budget. Result rollback
+and teardown delegate intrinsic spelling cleanup to its owner. The focused
+`test_compiler_service_intrinsics.c` owner covers imports, descriptors, overlays,
+limits, cancellation and every allocation-failure index independently of the
+real JSON execution corpus.
+
 The present occurrence universe covers stable top-level type, constant, and
 resolved call references. Local bindings, record fields, enum variants,
 generic instantiations, effect metadata, and production indexing/LSP transport

@@ -10,6 +10,7 @@
 #include "checker_publication_api.h"
 #include "checker_prelude_api.h"
 #include "checker_imported_enums_api.h"
+#include "checker_intrinsics_api.h"
 #include "package_imports_api.h"
 
  int mmay_checker_private_check_compare_ast_paths(const void *left, const void *right) {
@@ -404,7 +405,8 @@ MarimayCheckStatus mmay_checker_check_package_unit(
             ast_index
         );
         if (ast == NULL || !mmay_checker_private_checker_set_ast(&checker, *ast)
-            || !mmay_check_publish_completions_for_ast(&checker)) {
+            || !mmay_check_publish_completions_for_ast(&checker)
+            || !mmay_check_publish_intrinsics_for_ast(&checker)) {
             if (!mmay_checker_has_failed(&checker)) {
                 mmay_checker_fail(&checker, MMAY_CHECK_INTERNAL_ERROR);
             }

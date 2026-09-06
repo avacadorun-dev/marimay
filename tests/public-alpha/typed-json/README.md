@@ -23,6 +23,13 @@ patterns must bind it or write `path: _`; manually constructed named errors
 must supply it (usually `path: []`). `InvalidLimits` remains a root-only unit
 case. Code using `json.message` does not need a signature change.
 
+Compiler-service consumers can query intrinsic file-import completions and
+generic signatures, including named aliases and namespace spellings. The
+metadata states the eligible type family, explicit/inferred type-argument
+policy and direct-call-only restriction. These are not first-class functions
+or fabricated source declarations. File-import candidates do not imply local
+cursor-scope availability or a production LSP implementation.
+
 From the repository root:
 
 ```sh

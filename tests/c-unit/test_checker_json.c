@@ -46,7 +46,10 @@ static const char mmay_json_check_source[] =
     "fn limited(input: json.Bytes): Result<json.Bytes, json.Error> {\n"
     " const data = json.decodeWithLimits<Data>(input, json.defaultLimits())?;\n"
     " return json.encodeWithLimits<Data>(data, json.defaultLimits());\n"
-    "}\n";
+    "}\n"
+    "type Local { value: int, }\n"
+    "fn decode(value: Local): int { return value.value; }\n"
+    "fn shadowedNamespace(json: Local): int { return json.decode(); }\n";
 
 static bool mmay_json_check_fixture(MarimayCheckerImportFixture *fixture, const char *source) {
     const MarimayTestImportSource sources[] = {
@@ -108,7 +111,11 @@ static void mmay_json_checker_negative(void) {
         "import * as json from \"std/json\"; fn f(): void { const _ = json.decode<int>(); }",
         "import * as json from \"std/json\"; fn f(): void { const _ = json.decode<int>(1); }",
         "import * as json from \"std/json\"; fn f(): void { const _ = json.encode<bool>(1); }",
-        "import * as json from \"std/json\"; fn f(): void { const _ = json.encodeWithLimits(1, true); }"
+        "import * as json from \"std/json\"; fn f(): void { const _ = json.encodeWithLimits(1, true); }",
+        "import * as json from \"std/json\"; fn f(): void { const _ = json.decode; }",
+        "import { decode as read } from \"std/json\"; fn f(): void { const _ = read; }",
+        "import * as json from \"std/json\"; fn f(json: json.Bytes): void { const _ = json.decode<int>(json); }",
+        "import * as json from \"std/json\"; import { decode as read } from \"std/json\"; fn f(read: json.Bytes): void { const _ = read<int>(read); }"
     };
     size_t index = 0;
     for (index = 0; index < sizeof(sources) / sizeof(sources[0]); index += 1) {

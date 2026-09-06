@@ -458,6 +458,21 @@ static void mmay_test_checker_resolution_receiver_once(void) {
 
 static void mmay_test_checker_resolution_negative_matrix(void) {
     mmay_checker_resolution_expect(
+        "fn bad(value: int): int { return value(); }\n",
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+        "called name is not a function",
+        "value",
+        1
+    );
+    mmay_checker_resolution_expect(
+        "fn target(): int { return 1; }\n"
+        "fn bad(): int { const target = 2; return target(); }\n",
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+        "called name is not a function",
+        "target",
+        2
+    );
+    mmay_checker_resolution_expect(
         "fn bad(): int { return missing(1); }\n",
         MMAY_DIAGNOSTIC_UNKNOWN_NAME,
         "unknown function name",

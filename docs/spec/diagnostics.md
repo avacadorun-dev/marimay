@@ -42,6 +42,10 @@ exact accepted source node that selected the incomplete path, and its message
 names that construct. It must never turn that condition into a successful,
 spanless, or diagnostic-free check.
 
+A call whose resolved local binding has a non-function type is an ordinary
+type error (`T0002`) at the callee name, not an incomplete-checker failure.
+Shadowing an imported function or namespace does not bypass local resolution.
+
 The allocated codes and summaries are published in the generated [diagnostic code registry](../generated/diagnostic-codes.md).
 
 `mmay explain T1234` prints the rule, minimal bad/good examples, common causes, and links to the installed version-matched reference. Explanations are available offline.

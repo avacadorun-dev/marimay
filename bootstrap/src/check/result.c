@@ -1,4 +1,5 @@
 #include "checker_internal.h"
+#include "checker_intrinsics_api.h"
 
 #include <stdint.h>
 #include <string.h>
@@ -61,6 +62,7 @@ bool mmay_check_result_init(
     bool symbols_initialized = false;
     bool occurrences_initialized = false;
     bool completions_initialized = false;
+    bool intrinsics_initialized = false;
     bool function_index_initialized = false;
     bool symbol_index_initialized = false;
     if (result == NULL || snapshot == NULL || package_name == NULL) {
@@ -123,13 +125,18 @@ bool mmay_check_result_init(
         sizeof(MarimayCheckedCompletion)
     );
     function_index_initialized = mmay_check_function_index_init(result);
+    intrinsics_initialized = mmay_vector_init(&result->intrinsic_completions,
+        allocator, sizeof(MarimayCheckedIntrinsicCompletion));
     symbol_index_initialized = mmay_check_symbol_index_init(result);
     if (!diagnostics_initialized || !functions_initialized
         || !constants_initialized || !type_aliases_initialized
         || !records_initialized || !enums_initialized
         || !interfaces_initialized || !symbols_initialized
-        || !occurrences_initialized || !completions_initialized
+        || !occurrences_initialized || !completions_initialized || !intrinsics_initialized
         || !function_index_initialized || !symbol_index_initialized) {
+        if (intrinsics_initialized) {
+            mmay_vector_dispose(&result->intrinsic_completions);
+        }
         if (completions_initialized) {
             mmay_vector_dispose(&result->completions);
         }
@@ -423,6 +430,7 @@ bool mmay_check_clear_semantics(MarimayCheckResult *result) {
     mmay_check_dispose_interface_values(result);
     mmay_check_dispose_symbol_values(result);
     mmay_check_dispose_completion_values(result);
+    mmay_check_dispose_intrinsic_values(result);
     result->occurrences.length = 0;
     mmay_map_dispose(&result->function_index);
     mmay_map_dispose(&result->symbol_index);
@@ -445,6 +453,7 @@ void mmay_check_result_dispose(MarimayCheckResult *result) {
     mmay_check_dispose_interface_values(result);
     mmay_check_dispose_symbol_values(result);
     mmay_check_dispose_completion_values(result);
+    mmay_check_dispose_intrinsic_values(result);
     mmay_check_dispose_diagnostics(result);
     mmay_map_dispose(&result->symbol_index);
     mmay_map_dispose(&result->function_index);
@@ -456,6 +465,7 @@ void mmay_check_result_dispose(MarimayCheckResult *result) {
     mmay_vector_dispose(&result->symbols);
     mmay_vector_dispose(&result->occurrences);
     mmay_vector_dispose(&result->completions);
+    mmay_vector_dispose(&result->intrinsic_completions);
     mmay_vector_dispose(&result->functions);
     mmay_vector_dispose(&result->diagnostics);
     mmay_type_table_dispose(&result->types);

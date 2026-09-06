@@ -2,6 +2,7 @@
 #define MMAY_CHECK_SERVICE_QUERIES_H
 
 #include "mmay/check/queries.h"
+#include "mmay/check/intrinsics.h"
 #include "mmay/check/service_types.h"
 #include "mmay/check/type_spelling.h"
 
@@ -58,5 +59,15 @@ MarimayCompilerStatus mmay_compiler_service_completion(
     size_t match_index,
     const MarimayCheckedCompletion **completion
 );
+
+/* File-import scope, not cursor-local completion. Facts and text are borrowed. */
+MarimayCompilerStatus mmay_compiler_service_intrinsic_completion_count(
+    const MarimayCompilerService *service, const MarimayCompilerResult *result,
+    const MarimaySourceSnapshot *snapshot, const void *prefix, size_t prefix_length,
+    size_t *count);
+MarimayCompilerStatus mmay_compiler_service_intrinsic_completion(
+    const MarimayCompilerService *service, const MarimayCompilerResult *result,
+    const MarimaySourceSnapshot *snapshot, const void *prefix, size_t prefix_length,
+    size_t match_index, const MarimayCheckedIntrinsicCompletion **completion);
 
 #endif

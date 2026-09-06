@@ -113,6 +113,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Intrinsic metadata and the external-portfolio start](cp42-json-intrinsics-2026-09-06.md)
+records local signature/completion, shadowing, cleanup and differential checks,
+the exact prior run 189 scope, and the first independent config application.
+The [ten-application acceptance portfolio](../cli-ergonomics-suite.md) is mandatory
+before CP42/CLI0 closure; neither this first application nor the metadata closes it.
+
 [Initial automatic typed-JSON slice](cp42-typed-json-first-slice-2026-09-05.md)
 records local checker allocation and four both-engine source tests. It does
 not close the complete notes-driven ergonomics card or any release gate.

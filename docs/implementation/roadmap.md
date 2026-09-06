@@ -78,7 +78,8 @@ cache-independence, and VM/native process gates are verified.
 
 - **Now:**
   [CP42 — notes-driven CLI ergonomics](checkpoints.md#cp42-notes-driven-cli-ergonomics),
-  explicitly prioritized by the user on 2026-09-05.
+  explicitly prioritized by the user on 2026-09-05 and expanded on 2026-09-06
+  to the [ten-application external acceptance portfolio](cli-ergonomics-suite.md).
 - **Next:**
   [CP41 — x86_64 native code-generation pressure](checkpoints.md#cp41-x86_64-native-code-generation-pressure).
 - **Later:** CP39–CP40 finish installation and the CLI0 audit after CP41
@@ -96,7 +97,7 @@ native-code checkpoint; it does not reopen the earlier array-only sequence.
 ```text
 D0 + bounded N0/I0/A0/I1-I5 prerequisites
   -> CP29-CP38: bounded local CLI language/core surface
-  -> CP42: notes-driven JSON/collections/control-flow/API ergonomics
+  -> CP42: JSON/collections/control-flow/API ergonomics + ten external CLI apps
   -> CP41: I4 x86_64 generated-C live-state and spill/branch pressure
   -> CP39-CP40: installable artifact and CLI0 audit
   -> I6: typed JSON/config -> concurrent HTTP fan-out -> timeout/race/cancel
@@ -132,7 +133,7 @@ authorization. These are never synonyms.
 | I3 | Typed bytecode VM | `in-progress` | `pushed-ci` | Portable public bundles and the full hostile-verifier/fuzz/limit gate remain open. | Every opcode and required bundle boundary passes verifier/execution/fuzz/limit tests and MIR/VM differential on Tier 1; [evidence](evidence/README.md#i3). |
 | I4 | C17 AOT and equivalence | `in-progress` | `pushed-ci` | Native run/install/doctor, the full compiler/platform differential matrix, and the measured x86_64 code-pressure gap remain open. | CP39 and CP41 plus complete O0/O2 Clang/GCC/MSVC sanitizer and engine-equivalence evidence meet the I4 gate; [CP41](checkpoints.md#cp41-x86_64-native-code-generation-pressure). |
 | I5 | Managed data and standard core | `in-progress` | `pushed-ci` | The CP30–CP38 bounded CLI data surface is verified, but remaining managed-heap/property/GC/workload and claimed-platform gates are open. | Those remaining gates close with VM/native and claimed-platform evidence; [CP38 evidence](evidence/cp38-bounded-typed-json-2026-09-01.md). |
-| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP41, CP39–CP40, and remaining CP29 matrix assignments remain open. | CP29–CP41 are verified, N0 and all claimed platform gates are closed, and the CP40 release audit supports only the bounded CLI claim. |
+| CLI0 | Bounded public CLI alpha | `planned` | `none` | CP42 including the ten external utilities, CP41, CP39–CP40, and remaining CP29 matrix assignments remain open. | CP29–CP42 are verified, N0 and all claimed platform gates are closed, and the CP40 release audit supports only the bounded CLI claim. |
 | I6 | Direct-style tasks, scheduler, and I/O | `planned` | `none` | CLI0 and CP41 precede the executable I6 prototype. | Suspension, scope/task lifetime, cancellation, race/select, non-blocking I/O, and deterministic VM/native traces pass the defined vertical scenario. |
 | E0 | Pre-self-host ergonomics pilot | `planned` | `none` | A working I6 vertical slice is unavailable. | At least five external developers on two Tier 1 host families complete the defined tasks and every semantic finding is resolved or accepted. |
 | I7 | Packages, cache, and supply chain | `planned` | `none` | N0 and external semantic feedback are not verified. | Deterministic offline lock/cache, hostile archive, provenance, and registry-prototype gates pass without dependency code execution. |
@@ -155,7 +156,7 @@ dashboard cells.
 | Stage | Allowed claim | Additional release gate |
 |---|---|---|
 | Private preview | Checker-backed local/private C17 bootstrap slices work at named revisions. | No public identity or compatibility claim. |
-| Bounded CLI alpha (`CLI0`) | Small local CLI programs using only the CP29–CP40 surface on explicitly verified hosts. | N0, CP41, claimed Tier 1 matrices, CP40 audit, and user authorization. No I6/network/registry/FFI/public-bytecode/self-hosting claim. |
+| Bounded CLI alpha (`CLI0`) | Small local CLI programs using the bounded CLI surface on explicitly verified hosts. | N0, CP42 external-application acceptance, CP41, claimed Tier 1 matrices, CP40 audit, and user authorization. No I6/network/registry/FFI/public-bytecode/self-hosting claim. |
 | Concurrency/service pilot (`I6` + `E0`) | Working direct-style concurrent I/O prototype evaluated by external developers. | I6 deterministic prototype plus verified E0 findings. |
 | Ecosystem alpha (`P0`) | Broader packages/platform/service-oriented alpha using public APIs. | N0, E0, I7–I9, public package/workload evidence. |
 | Beta (`P1`) | Compatibility and security hardening with a frozen surface except blockers. | Self-hosting, compatibility, fuzz, supply-chain and security gates. |
@@ -183,6 +184,10 @@ I2–I5 slices. That matrix assigns missing evidence; it does not mark those gat
 verified. CP38 is verified. The user's 2026-09-05 priority change inserts CP42
 before CP41; CP42 is the sole in-progress card. CP42 must not be called verified
 on the strength of its initial automatic-JSON slice alone.
+The user's 2026-09-06 extension requires the complete
+[external CLI portfolio](cli-ergonomics-suite.md) before CP42/CLI0 closure.
+Useful applications, combined coverage and resolved ergonomics findings are
+required alongside conformance; merely creating repositories is not acceptance.
 
 ## CLI0 CP41 boundary and post-CLI0 I6/E0
 

@@ -14,6 +14,8 @@ Current execution links: [CLI0](docs/implementation/roadmap.md#cli0-boundary),
 [CP41/I6/E0 sequencing](docs/implementation/roadmap.md#cli0-cp41-boundary-and-post-cli0-i6e0), and the
 active ergonomics card,
 [CP42](docs/implementation/checkpoints.md#cp42-notes-driven-cli-ergonomics).
+Its required pre-alpha acceptance includes the
+[ten-application external CLI portfolio](docs/implementation/cli-ergonomics-suite.md).
 
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

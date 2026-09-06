@@ -67,6 +67,7 @@ void mmay_test_compiler_service(void);
 void mmay_test_compiler_service_array_types(void);
 void mmay_test_compiler_service_incremental(void);
 void mmay_test_compiler_service_queries(void);
+void mmay_test_compiler_service_intrinsics(void);
 void mmay_test_cp9_io_pipeline(void);
 void mmay_test_cp11_test_pipeline(void);
 void mmay_test_diagnostic(void);
@@ -297,6 +298,7 @@ static void mmay_test_run_cp38(void) {
 
 static void mmay_test_run_cp42(void) {
     mmay_test_checker_json();
+    mmay_test_compiler_service_intrinsics();
 }
 
 static void mmay_test_run_cp41(void) {
@@ -310,6 +312,13 @@ static void mmay_test_run_cp39(void) {
 }
 
 int main(int argument_count, char **arguments) {
+    if (argument_count == 3 && strcmp(arguments[2], "--intrinsic-metadata") == 0) {
+        mmay_test_set_toolchain_executable(arguments[1]);
+        mmay_test_compiler_service_intrinsics();
+        if (mmay_test_failure_count() != 0) return 1;
+        printf("mmay_intrinsic_metadata: ok\n");
+        return 0;
+    }
     if (argument_count == 3 && strcmp(arguments[2], "--cp42") == 0) {
         mmay_test_set_toolchain_executable(arguments[1]);
         mmay_test_run_cp42();

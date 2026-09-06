@@ -121,6 +121,7 @@ add_executable(mmay_c_unit
   test_compiler_service_array_types.c
   test_compiler_service_incremental.c
   test_compiler_service_queries.c
+  test_compiler_service_intrinsics.c
   test_cp9_io_pipeline.c
   test_cp11_test_pipeline.c
   test_diagnostic.c

@@ -1,27 +1,13 @@
 #include "checker_json_internal.h"
+#include "checker_intrinsics_api.h"
 
 #include "checker_core_api.h"
 #include "checker_generic_types_api.h"
 #include "checker_imported_nominal_api.h"
 #include "checker_lookup_api.h"
 
-static bool mmay_json_equal(const unsigned char *bytes, size_t length, const char *text) {
-    return length == strlen(text) && memcmp(bytes, text, length) == 0;
-}
-
-bool mmay_checker_json_export(const unsigned char *package, size_t package_length,
-    const unsigned char *name, size_t name_length
-) {
-    return package != NULL && name != NULL
-        && mmay_json_equal(package, package_length, "std/json")
-        && (mmay_json_equal(name, name_length, "decode")
-            || mmay_json_equal(name, name_length, "encode")
-            || mmay_json_equal(name, name_length, "decodeWithLimits")
-            || mmay_json_equal(name, name_length, "encodeWithLimits"));
-}
-
 static bool mmay_json_select(MarimayJsonExpansion *json,
-    const MarimayAstNode *node, bool *decode, bool *limits
+    const MarimayAstNode *node, const MarimayIntrinsicSignature **intrinsic
 ) {
     MarimayChecker *checker = json->function->checker;
     const MarimayAstNode *callee = mmay_checker_private_check_child_node(
@@ -56,29 +42,29 @@ static bool mmay_json_select(MarimayJsonExpansion *json,
         if (namespaced && (member_token == NULL || member_token->synthetic)) return false;
         name = namespaced ? checker->source + member_token->start : binding->original;
         length = namespaced ? member_token->end - member_token->start : binding->original_length;
-        if (!mmay_checker_json_export(surface->path, surface->path_length, name, length)) return false;
+        *intrinsic = mmay_json_intrinsic_find(surface->path, surface->path_length, name, length);
+        if (*intrinsic == NULL) return false;
         json->surface = surface;
-        *decode = mmay_json_equal(name, length, "decode") || mmay_json_equal(name, length, "decodeWithLimits");
-        *limits = mmay_json_equal(name, length, "decodeWithLimits") || mmay_json_equal(name, length, "encodeWithLimits");
         return true;
     }
     return false;
 }
 
 static bool mmay_json_type_argument(MarimayJsonExpansion *json,
-    const MarimayAstNode *node, bool required, MarimayTypeId *type
+    const MarimayAstNode *node, const MarimayIntrinsicSignature *intrinsic, MarimayTypeId *type
 ) {
     const MarimayAstNode *arguments = mmay_checker_private_check_child_node(
         node, MMAY_SYNTAX_TYPE_ARGUMENTS, 0);
     MarimayVector types;
     bool accepted = false;
     *type = MMAY_TYPE_INVALID;
-    if (arguments == NULL) return !required || mmay_json_error(json,
+    if (arguments == NULL) return intrinsic->min_type_arguments == 0 || mmay_json_error(json,
         "json.decode requires one explicit type argument");
     if (!mmay_vector_init(&types, json->function->checker->result->allocator,
             sizeof(MarimayTypeId))) return mmay_json_failed(json);
     if (!mmay_checker_private_parse_type_arguments(json->function->checker, arguments, &types)) goto cleanup;
-    if (types.length != 1) {
+    if (types.length < intrinsic->min_type_arguments || types.length > intrinsic->max_type_arguments
+        || types.length == 0) {
         (void)mmay_json_error(json, "JSON convenience accepts exactly one type argument");
         goto cleanup;
     }
@@ -97,6 +83,7 @@ bool mmay_checker_compile_json(MarimayFunctionChecker *function,
     const MarimayAstNode *nodes[2] = {NULL, NULL};
     const MarimayCheckedFunction *new_decoder, *finish_encoder;
     const MarimayTypeDescriptor *descriptor;
+    const MarimayIntrinsicSignature *intrinsic = NULL;
     MarimayTypeId type, bytes_type;
     MarimayExpressionValue values[2], limits, decoded, unused, output;
     size_t count = 0, index = 0;
@@ -105,11 +92,14 @@ bool mmay_checker_compile_json(MarimayFunctionChecker *function,
     memset(values, 0, sizeof(values));
     json.function = function;
     json.span = (MarimayMirSpan){node->start, node->end};
-    *resolved = mmay_json_select(&json, node, &decode, &explicit_limits);
+    *resolved = mmay_json_select(&json, node, &intrinsic);
     if (!*resolved) return true;
+    decode = intrinsic->kind == MMAY_INTRINSIC_JSON_DECODE
+        || intrinsic->kind == MMAY_INTRINSIC_JSON_DECODE_WITH_LIMITS;
+    explicit_limits = intrinsic->argument_count == 2;
     if (function->constant_evaluation) return mmay_json_error(&json,
         "JSON operations are not available in constant expressions");
-    if (!mmay_json_type_argument(&json, node, decode, &type)) return false;
+    if (!mmay_json_type_argument(&json, node, intrinsic, &type)) return false;
     arguments = mmay_checker_private_check_child_node(node, MMAY_SYNTAX_ARGUMENTS, 0);
     for (index = 0; arguments != NULL && index < arguments->child_count; index += 1) {
         const MarimayAstElement *item = mmay_ast_child(arguments, index);
@@ -118,7 +108,7 @@ bool mmay_checker_compile_json(MarimayFunctionChecker *function,
             count += 1;
         }
     }
-    if (count != (explicit_limits ? 2U : 1U)) return mmay_json_error(&json,
+    if (count != intrinsic->argument_count) return mmay_json_error(&json,
         "JSON convenience argument count does not match its signature");
     new_decoder = mmay_json_function(&json, "newDecoder", MMAY_TYPE_INVALID);
     finish_encoder = mmay_json_function(&json, "finishEncoder", MMAY_TYPE_INVALID);

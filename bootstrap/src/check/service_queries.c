@@ -36,6 +36,36 @@ static MarimayCompilerStatus mmay_compiler_query_snapshot_current(
     return MMAY_COMPILER_STALE_RESULT;
 }
 
+MarimayCompilerStatus mmay_compiler_service_intrinsic_completion_count(
+    const MarimayCompilerService *service, const MarimayCompilerResult *result,
+    const MarimaySourceSnapshot *snapshot, const void *prefix, size_t prefix_length,
+    size_t *count
+) {
+    MarimayCompilerStatus status;
+    if (count == NULL) return MMAY_COMPILER_INVALID_ARGUMENT;
+    *count = 0;
+    if (snapshot == NULL || (prefix == NULL && prefix_length != 0)) return MMAY_COMPILER_INVALID_ARGUMENT;
+    status = mmay_compiler_query_snapshot_current(service, result, snapshot);
+    if (status != MMAY_COMPILER_OK) return status;
+    *count = mmay_checked_intrinsic_completion_count(&result->checked, snapshot, prefix, prefix_length);
+    return MMAY_COMPILER_OK;
+}
+
+MarimayCompilerStatus mmay_compiler_service_intrinsic_completion(
+    const MarimayCompilerService *service, const MarimayCompilerResult *result,
+    const MarimaySourceSnapshot *snapshot, const void *prefix, size_t prefix_length,
+    size_t match_index, const MarimayCheckedIntrinsicCompletion **completion
+) {
+    MarimayCompilerStatus status;
+    if (completion == NULL) return MMAY_COMPILER_INVALID_ARGUMENT;
+    *completion = NULL;
+    if (snapshot == NULL || (prefix == NULL && prefix_length != 0)) return MMAY_COMPILER_INVALID_ARGUMENT;
+    status = mmay_compiler_query_snapshot_current(service, result, snapshot);
+    if (status != MMAY_COMPILER_OK) return status;
+    *completion = mmay_checked_intrinsic_completion(&result->checked, snapshot, prefix, prefix_length, match_index);
+    return MMAY_COMPILER_OK;
+}
+
 MarimayCompilerStatus mmay_compiler_service_definition_from_reference(
     const MarimayCompilerService *service,
     const MarimayCompilerResult *result,

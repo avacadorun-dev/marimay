@@ -328,7 +328,14 @@ bool mmay_checker_private_compile_ordinary_call_with_receiver(
                     receiver_node, MMAY_TOKEN_IDENTIFIER, 0
                 );
             const unsigned char *source = function->checker->source;
+            MarimayCheckName candidate = {
+                function->checker->ast->snapshot,
+                namespace_token == NULL ? 0 : namespace_token->start,
+                namespace_token == NULL ? 0 : namespace_token->end
+            };
             if (namespace_token != NULL && !namespace_token->synthetic
+                && mmay_checker_private_function_find_local(function, candidate) == NULL
+                && mmay_checker_private_checker_find_top_level(function->checker, candidate) == NULL
                 && mmay_check_import_namespace_exists(
                     function->checker,
                     source + namespace_token->start,
@@ -351,10 +358,22 @@ bool mmay_checker_private_compile_ordinary_call_with_receiver(
     name.snapshot = function->checker->ast->snapshot;
     name.start = name_token->start;
     name.end = name_token->end;
-    if (!dot_call && !qualified_call
-        && mmay_checker_private_function_find_local(function, name) != NULL) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
-        goto cleanup;
+    if (!dot_call && !qualified_call) {
+        const MarimayCheckLocal *local = mmay_checker_private_function_find_local(function, name);
+        if (local != NULL) {
+            MarimayTypeKind kind = mmay_type_kind(
+                &function->checker->result->types, local->type
+            );
+            if (kind == MMAY_TYPE_KIND_INVALID || kind == MMAY_TYPE_KIND_FUNCTION) {
+                mmay_checker_fail(function->checker, kind == MMAY_TYPE_KIND_INVALID
+                    ? MMAY_CHECK_INVALID_ARGUMENT : MMAY_CHECK_INCOMPLETE_LANGUAGE);
+            } else {
+                (void)mmay_checker_add_diagnostic(function->checker,
+                    MMAY_DIAGNOSTIC_TYPE_MISMATCH, "called name is not a function",
+                    name.start, name.end);
+            }
+            goto cleanup;
+        }
     }
     for (index = 0; index < arguments_node->child_count; index += 1) {
         const MarimayAstElement *element = mmay_ast_child(arguments_node, index);

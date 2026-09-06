@@ -473,6 +473,8 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_declaration_records.c
   bootstrap/src/check/checker_expr_calls.c
   bootstrap/src/check/checker_expr_json.c
+  bootstrap/src/check/json_intrinsics.c
+  bootstrap/src/check/intrinsic_completions.c
   bootstrap/src/check/checker_json_types.c
   bootstrap/src/check/checker_json_mir.c
   bootstrap/src/check/checker_json_decode.c

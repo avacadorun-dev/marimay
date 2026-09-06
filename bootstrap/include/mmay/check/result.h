@@ -29,6 +29,7 @@ typedef struct MarimayCheckResult {
     MarimayVector symbols;
     MarimayVector occurrences;
     MarimayVector completions;
+    MarimayVector intrinsic_completions;
     MarimayMap function_index;
     MarimayMap symbol_index;
     bool initialized;

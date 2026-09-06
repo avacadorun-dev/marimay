@@ -1636,6 +1636,8 @@ State: `in-progress`. Parent gate: CLI0. Predecessor: CP38. Evidence scope: `loc
 Initial evidence: [typed JSON first slice](evidence/cp42-typed-json-first-slice-2026-09-05.md).
 Follow-up: [notes migration and startup convergence](evidence/cp42-notes-startup-2026-09-06.md).
 Follow-up: [structured JSON error paths](evidence/cp42-json-error-paths-2026-09-06.md).
+Follow-up: [intrinsic metadata and external-portfolio start](evidence/cp42-json-intrinsics-2026-09-06.md).
+Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome
 
@@ -1643,6 +1645,8 @@ The notes utility describes its data and business rules without manually
 repeating record fields in JSON readers/writers, copying/shifting arrays in
 application loops, or disguising inconsistent mutation behavior. Strict
 validation and VM/native equivalence are preserved.
+The same ergonomics must hold across the user's ten-application external
+portfolio, with combined collection/I/O/error coverage and recorded findings.
 
 ### Why now / dependencies
 
@@ -1651,6 +1655,9 @@ ergonomics proposal. This extends the CLI0 acceptance bar and moves CP41 behind
 this card; it does not reopen networking, self-hosting, or other I6 work.
 The architecture gate must remain green, and existing formatter/match repairs
 remain separately owned correctness prerequisites rather than hidden features.
+On 2026-09-06 the user expanded pre-alpha acceptance beyond notes to ten
+independent utility repositories outside the language checkout. The linked
+portfolio contract is mandatory for CP42 and CLI0; it is not optional sample work.
 
 ### Mandatory reading before implementation
 
@@ -1673,6 +1680,10 @@ Execute in order:
 4. Convenient Option binding in conditions/loops, with grammar, formatter,
    scope, exhaustive matching, and both-engine tests.
 5. A consistent notes mutation API, documentation and acceptance tests.
+
+After the current JSON item, build and evaluate the external portfolio in its
+documented order while using its findings to drive items 2–5. All ten utilities
+and their combined acceptance evidence are required, not only the notes example.
 
 The first JSON slice supports public-field acyclic records, concrete generic
 records, arrays, int/bool/string. Explicit codecs remain available. No unbounded
@@ -1698,7 +1709,8 @@ complete supported Tier 1 matrices before verification.
 ### Completion / removal gates
 
 The initial local JSON evidence does not close this card. Complete all five
-ordered items, link exact-revision evidence through the index and ROADMAP, and
+ordered language items and the ten-utility external portfolio, link exact-revision
+evidence through the index and ROADMAP, and
 retain honest unsupported-type and installation limitations. Generic intrinsic
 signature/completion metadata must not be represented by fake external
 functions. Remove any temporary diagnostic probes before committing. Hand off

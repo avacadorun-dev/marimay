@@ -10,6 +10,20 @@ fn require(condition: bool, message: string): void {
   }
 }
 
+type LocalDecoder {
+  value: int,
+}
+
+fn decode(value: LocalDecoder): int {
+  return value.value;
+}
+
+@test
+fn localReceiverShadowsJsonNamespace(): void {
+  const json = LocalDecoder { value: 42 };
+  expect.equal(json.decode(), 42);
+}
+
 fn encoded(value: model.Database): string {
   const output = match write(value) {
     Ok(result) => result,

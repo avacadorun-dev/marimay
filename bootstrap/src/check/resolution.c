@@ -1,4 +1,5 @@
 #include "checker_internal.h"
+#include "checker_intrinsics_api.h"
 #include "checker_package_context.h"
 #include "package_imports_api.h"
 
@@ -516,8 +517,8 @@ static bool mmay_check_append_completion(
 ) {
     MarimayCheckedCompletion completion;
     memset(&completion, 0, sizeof(completion));
-    if (checker->result->completions.length
-        >= checker->options.max_completions) {
+    if (!mmay_check_completion_budget_available(
+            checker->result, checker->options.max_completions)) {
         mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED);
         return false;
     }

@@ -398,6 +398,22 @@ mmay check --all-targets
 
 The reusable compiler service reaches a minimum editor gate with I2 rather than waiting for the complete I8 developer loop. It accepts versioned in-memory overlays and exposes parse/type diagnostics, go-to-definition, symbol search, completion, and canonical checked-symbol type spelling for hover/signature consumers. Managed arrays in that spelling are always `[]T`, including nested arrays and arrays inside generic arguments. Queries reject stale result generations rather than mixing type identities across overlays. Dot completion for a nominal value enumerates every visible eligible first-parameter function, labels its owning package and equivalent free-call spelling, and uses the exact same lookup result as type checking. I8 productionizes the full LSP transport, workspace indexing, cancellation, compatibility, and editor integration; it does not introduce a second completion engine.
 
+D086 JSON convenience calls additionally expose intrinsic file-import
+completion and generic signature metadata. Each fact identifies the canonical
+package/name, visible named or namespace spelling, generic-argument policy,
+value arity, eligible type family and direct-call-only status. Namespace imports
+expose all four calls; named imports expose only the selected calls under their
+local aliases; importing a type does not expose these free calls. Every visible
+spelling is retained in bytewise spelling order for its immutable source
+snapshot. Exact byte-prefix filtering is allocation-free. These facts share
+the ordinary completion budget and are cleared with all semantic facts on a
+failed check. Service wrappers reject stale generations and foreign snapshots.
+The query describes file import scope, not local-variable scope at an arbitrary
+cursor offset; actual call resolution continues to apply lexical shadowing.
+Intrinsic metadata has neither a fabricated source definition nor an ordinary
+function type and is not included in nominal receiver completion. It does not
+make the calls first-class values or imply production LSP support.
+
 ### 6.2 `mmay run`
 
 ```sh

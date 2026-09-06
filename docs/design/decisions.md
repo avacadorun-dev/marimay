@@ -2383,6 +2383,11 @@ owned `I0001` diagnostic naming the construct and pointing at its exact source
 node. Checker and compiler-service results retain that diagnostic while
 returning the incomplete status; CLI commands render it and exit `70`.
 
+This does not classify an ill-typed call as an incomplete feature: a local
+binding with a non-function type produces `T0002` at its callee name, including
+when it shadows an import. Namespace qualification likewise respects local
+shadowing before falling back to the imported package.
+
 Reason: the language tour, ordinary equality, and basic test helpers are one
 user-facing slice. Leaving any one of them as a spanless internal failure makes
 the others impossible to validate through the documented VM/native workflow.
@@ -2668,3 +2673,16 @@ No host JSON library, runtime reflection, dynamic schema/DOM, hidden build
 script, or new JSON execution opcode is introduced. Generated control flow is
 subject to the existing checker/MIR resource budgets. The original explicit
 codec API remains available for private state and custom representations.
+
+The compiler service publishes the four convenience signatures as intrinsic
+metadata, not fabricated external functions, source declarations, or nominal
+dot-call candidates. One descriptor registry supplies exact package/name
+identity, generic-argument policy and value arity to import validation, call
+selection and metadata publication. File-import completion retains every
+visible named/namespace spelling, excludes type-only and absent imports, and
+is bounded by the shared completion budget. It describes file import scope,
+not lexical availability at an arbitrary cursor offset. Actual calls still
+apply lexical shadowing through the checker. Queries borrow immutable facts
+and reject stale service generations/snapshots. Generic signatures explicitly
+state the closed eligible type set and direct-call-only limitation; no fake
+definition location or first-class callable type is exposed.
