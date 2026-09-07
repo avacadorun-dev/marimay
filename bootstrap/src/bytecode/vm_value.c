@@ -971,7 +971,10 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         case MMAY_OPCODE_I64_EQUAL: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;
             size_t second = (size_t)instruction->operands[2].unsigned_value;
-            if (registers[first].type != MMAY_BYTECODE_TYPE_I64) {
+            if (registers[first].type == MMAY_BYTECODE_TYPE_RUNE) {
+                registers[target].as.boolean = registers[first].as.integer_bits
+                    == registers[second].as.integer_bits;
+            } else if (registers[first].type != MMAY_BYTECODE_TYPE_I64) {
                 registers[target].as.boolean =
                     !mmay_bytecode_integer_less(
                         &registers[first], &registers[second], false

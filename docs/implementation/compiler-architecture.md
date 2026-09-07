@@ -256,6 +256,14 @@ bootstrap/src/check/
   entry.c               root main and structural Error-contract selection
 ```
 
+D080 rune equality stays in the scalar/equality checker owners: direct
+operators emit one typed equality instruction, while structural comparisons
+reuse that scalar operation for rune fields and payloads. The existing MIR
+and bytecode type verifiers admit exact rune pairs only for equality, not for
+the other integer operations. `test_checker_equality.c` owns the scalar matrix,
+wire round-trip, hostile type/opcode checks and checker allocation sweep;
+the CP36 source corpus owns imported-key and VM/native expectation coverage.
+
 `mmay_check_package` remains the single-package coordinator;
 `mmay_check_package_graph` owns only canonical graph ordering, import binding,
 and repeated package-phase orchestration. One graph check uses one result and

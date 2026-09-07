@@ -23,3 +23,13 @@ fn collectionExample(): int {
   const _ = selected.add("runtime");
   return total + selected.length();
 }
+
+// Rune comparison agrees with collection key equality; no conversion is needed.
+fn containsRune(values: []rune, selected: rune): bool {
+  for value in values {
+    if value == selected {
+      return true;
+    }
+  }
+  return false;
+}

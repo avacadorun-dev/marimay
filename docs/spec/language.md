@@ -273,6 +273,10 @@ Primitive `==` and `!=` require identical operand types. `string` equality
 compares the complete counted UTF-8 byte sequence, including embedded NUL,
 without normalization or locale behavior. Both operands are evaluated exactly
 once from left to right.
+`rune` equality compares Unicode scalar values, including U+0000 and
+supplementary-plane scalars. It has no implicit conversion to integer or
+string, and the same equality applies inside equatable enum payloads and
+derived record fields.
 
 ### 5.2 Standard generic types
 

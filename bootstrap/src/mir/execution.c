@@ -583,7 +583,10 @@ static MarimayMirInterpretStatus mmay_mir_execute_instruction(
                 : MMAY_MIR_INTERPRET_OVERFLOW;
         }
         case MMAY_MIR_EQUAL_I64:
-            if (first->type != MMAY_TYPE_I64) {
+            if (first->type == MMAY_TYPE_RUNE) {
+                target->as.boolean = first->as.integer_bits
+                    == second->as.integer_bits;
+            } else if (first->type != MMAY_TYPE_I64) {
                 target->as.boolean = !mmay_mir_integer_less(
                     first, second, false
                 ) && !mmay_mir_integer_less(second, first, false);

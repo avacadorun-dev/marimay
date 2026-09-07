@@ -10,7 +10,7 @@
 8	I64_REMAINDER_CHECKED	i64_remainder_checked	destination:register,left:register,right:register	may_panic	Compute signed 64-bit remainder after D042 zero and overflow checks.
 9	I64_NEGATE_CHECKED	i64_negate_checked	destination:register,source:register	may_panic	Negate a signed 64-bit operand with checked overflow.
 10	BOOL_NOT	bool_not	destination:register,source:register	none	Compute boolean negation.
-11	I64_EQUAL	i64_equal	destination:register,left:register,right:register	none	Compare signed 64-bit operands for equality.
+11	I64_EQUAL	i64_equal	destination:register,left:register,right:register	none	Compare identical integer types or two runes for equality, producing bool.
 12	BOOL_EQUAL	bool_equal	destination:register,left:register,right:register	none	Compare boolean operands for equality.
 13	I64_LESS	i64_less	destination:register,left:register,right:register	none	Compare signed 64-bit operands using less-than.
 14	I64_LESS_EQUAL	i64_less_equal	destination:register,left:register,right:register	none	Compare signed 64-bit operands using less-than-or-equal.

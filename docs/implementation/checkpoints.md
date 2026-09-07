@@ -1714,6 +1714,9 @@ The [checked Set insertion follow-up](evidence/cp42-set-insertion-2026-09-07.md)
 removes duplicate receiver validation without exposing resolved storage. Its
 paired Set gains and expanded duplicate/error-boundary tests are additional
 partial evidence, not closure of the remaining performance or CI obligations.
+The [rune equality repair](evidence/cp42-rune-equality-2026-09-07.md) addresses
+the recorded mismatch between primitive equality and collection-key equality.
+It does not close the remaining hot-path or parser-recovery obligations.
 Separate input preparation from collection execution; profile hashing/probing,
 managed-handle checks, and Option/Result construction before choosing repairs.
 Acceptance requires paired same-workload improvement, unchanged insertion

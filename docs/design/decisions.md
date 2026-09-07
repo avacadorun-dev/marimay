@@ -2345,6 +2345,12 @@ staged until compiler-generated recursive functions exist. Both operands are
 evaluated exactly once, left to right. Record identity remains exclusively
 `identity.same`.
 
+The primitive set includes `rune`: equality compares the complete Unicode
+scalar value, without integer coercion or normalization. The C17 bootstrap
+uses the existing typed integer-equality MIR/wire operation for two exact
+`rune` registers, with a `bool` destination. This does not enable rune
+arithmetic or ordered integer operations; their verifier rules stay separate.
+
 The closed derive inventory is `Debug`, `Eq`, and `Hash`. They may be listed
 independently except that `Hash` requires `Eq` in the same attribute. `Eq` and
 `Hash` remain invalid on a record with any mutable field. In this preview,

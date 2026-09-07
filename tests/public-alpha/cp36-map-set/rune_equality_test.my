@@ -1,0 +1,68 @@
+import { runes } from "std/text";
+
+import * as model from "tests.public-alpha.cp36-map-set/model";
+
+fn runeValues(): []rune {
+  return match runes("\0aλ東🚀퟿􏿿λ", 9) {
+    Ok(values) => values,
+    Err(_) => panic("rune equality setup"),
+  };
+}
+
+fn countedRune(values: []rune, calls: []int, index: int): rune {
+  calls[0] = calls[0] * 10 + index + 1;
+  return values[index];
+}
+
+@test
+fn runeEqualityComparesCompleteScalars(): void {
+  const values = runeValues();
+  let index = 0;
+  while index < 8 {
+    expect.equal(values[index], values[index]);
+    expect.true(values[index] == values[index]);
+    expect.false(values[index] != values[index]);
+    let other = 0;
+    while other < index {
+      expect.notEqual(values[index], values[other]);
+      expect.true(values[index] != values[other]);
+      expect.false(values[index] == values[other]);
+      other += 1;
+    }
+    index += 1;
+  }
+  expect.equal(values[2], values[8]);
+  const calls = [0];
+  expect.true(countedRune(values, calls, 2) == countedRune(values, calls, 8));
+  expect.equal(calls[0], 39);
+  calls[0] = 0;
+  expect.notEqual(countedRune(values, calls, 0), countedRune(values, calls, 7));
+  expect.equal(calls[0], 18);
+}
+
+@test
+fn runeEqualityComposesAndAgreesWithCollectionKeys(): void {
+  const values = runeValues();
+  const none: Option<rune> = None;
+  expect.equal(Some(values[2]), Some(values[8]));
+  expect.notEqual(Some(values[2]), Some(values[3]));
+  expect.notEqual(Some(values[2]), none);
+  const success: Result<rune, rune> = Ok(values[2]);
+  const failure: Result<rune, rune> = Err(values[2]);
+  expect.equal(success, Ok(values[8]));
+  expect.equal(failure, Err(values[8]));
+  expect.notEqual(success, failure);
+  const first = model.RuneKey { value: values[2] };
+  const same = model.RuneKey { value: values[8] };
+  const other = model.RuneKey { value: values[3] };
+  expect.equal(first, same);
+  expect.notEqual(first, other);
+  const keys: Set<model.RuneKey> = setOf<model.RuneKey>();
+  expect.equal(keys.add(first), Ok(true));
+  expect.equal(keys.add(same), Ok(false));
+  expect.equal(keys.add(other), Ok(true));
+  const map: Map<rune, rune> = mapOf<rune, rune>();
+  expect.equal(map.put(values[2], values[7]), Ok(true));
+  expect.equal(map.get(values[8]), Some(values[7]));
+  expect.equal(map.remove(values[8]), Some(values[7]));
+}

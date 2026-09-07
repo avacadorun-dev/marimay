@@ -1244,7 +1244,9 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
                 || instruction->opcode == MMAY_OPCODE_I64_LESS_EQUAL) {
                 status = first_type != NULL && second_type != NULL
                         && *target_type == MMAY_BYTECODE_TYPE_BOOL
-                        && mmay_bytecode_type_is_integer(*first_type)
+                        && (mmay_bytecode_type_is_integer(*first_type)
+                            || (instruction->opcode == MMAY_OPCODE_I64_EQUAL
+                                && *first_type == MMAY_BYTECODE_TYPE_RUNE))
                         && *first_type == *second_type
                     ? MMAY_BYTECODE_VERIFY_OK
                     : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;

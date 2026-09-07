@@ -149,6 +149,11 @@ probe counts are internal: storage growth or compaction may require reprobing.
 
 ### 4.3 Verification
 
+Under D080, opcode 11 `i64_equal` compares two registers of the same integer
+type or two exact `rune` registers and writes `bool`. Rune equality compares
+the scalar value without conversion. Other integer opcodes do not acquire
+rune operands from this rule. The opcode ID and operand encoding are unchanged.
+
 The loader verifies a bundle before any module code becomes executable. Verification checks at least section bounds and overflow, UTF-8, symbol identity, control-flow targets, register definite assignment and types, call signatures, enum consistency, root maps, task-scope nesting, unsafe opcode placement, capabilities, and resource limits.
 
 Verification failure is a loader diagnostic and must not crash or partially initialize the runtime. The bytecode verifier is fuzzed as an untrusted-input boundary. An encoded in-bounds array operation is accepted only when verification reconstructs a matching dominating `ARRAY_REQUIRE_INDEX` capability for the same carrier and index. MIR-only static range assumptions lower to that checked bytecode barrier rather than claiming a serialized range fact. Calls, interface calls, stores, and every array mutation/resize operation invalidate capabilities. A verifier allocation or work-limit failure rejects the bundle; it never treats a missing proof as trusted.

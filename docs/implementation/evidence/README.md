@@ -113,6 +113,10 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Rune equality](cp42-rune-equality-2026-09-07.md) repairs primitive and
+structural comparison of Unicode scalar values. Collection performance and
+the broader CP42 acceptance remain open.
+
 [Checked Set insertion](cp42-set-insertion-2026-09-07.md) removes repeated
 receiver validation through a shared inlined insertion core. Three local
 series show 10.7–15.8% Set improvement; the full collection item remains open.

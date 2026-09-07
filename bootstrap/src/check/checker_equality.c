@@ -89,7 +89,7 @@ static bool mmay_equality_type_supported(
     *supported = false;
     if (mmay_checker_private_type_is_integer(type)
         || type == MMAY_TYPE_BOOL || type == MMAY_TYPE_F64
-        || type == MMAY_TYPE_STRING) {
+        || type == MMAY_TYPE_STRING || type == MMAY_TYPE_RUNE) {
         *supported = true;
         return true;
     }
@@ -416,7 +416,7 @@ static bool mmay_equality_emit_branch(
     MarimayMirEnumId enum_id = MMAY_MIR_NO_ENUM;
     if (mmay_checker_private_type_is_integer(type)
         || type == MMAY_TYPE_BOOL || type == MMAY_TYPE_F64
-        || type == MMAY_TYPE_STRING) {
+        || type == MMAY_TYPE_STRING || type == MMAY_TYPE_RUNE) {
         return mmay_equality_emit_scalar_branch(
             function, type, left, right, when_equal, when_different,
             start, end

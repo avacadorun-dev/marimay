@@ -5,6 +5,11 @@ public type Key {
 }
 
 @derive(Eq, Hash)
+public type RuneKey {
+  public value: rune,
+}
+
+@derive(Eq, Hash)
 public enum Token {
   Index(int),
   Name(string),

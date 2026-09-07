@@ -204,7 +204,9 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
                 return MMAY_MIR_VERIFY_INVALID_REGISTER;
             }
             return target_type == MMAY_TYPE_BOOL
-                    && mmay_mir_type_is_integer(first_type)
+                    && (mmay_mir_type_is_integer(first_type)
+                        || (instruction->kind == MMAY_MIR_EQUAL_I64
+                            && first_type == MMAY_TYPE_RUNE))
                     && first_type == second_type
                 ? MMAY_MIR_VERIFY_OK
                 : MMAY_MIR_VERIFY_TYPE_MISMATCH;

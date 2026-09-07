@@ -45,7 +45,8 @@ preview surface and design fixtures for staged language areas.
   is rejected through the separate exact-G4005 acceptance corpus.
 - `collections.my` shows the D079 ordered `Map`/`Set` surface, immutable
   `@derive(Eq, Hash)` nominal keys, tuple-valued map iteration, duplicate set
-  insertion, and the shared free/dot-call operation spelling. The deeper
+  insertion, the shared free/dot-call operation spelling, and ordinary rune
+  equality in an array search. The deeper
   `../tests/public-alpha/cp36-map-set` corpus covers imported record and enum
   keys plus VM/native behavior.
 - `receiver_collection_names.my` demonstrates receiver-directed resolution

@@ -918,6 +918,7 @@
         && operand_type != MMAY_TYPE_F64
         && !(equality_operator && operand_type == MMAY_TYPE_BOOL)
         && !(equality_operator && operand_type == MMAY_TYPE_STRING)
+        && !(equality_operator && operand_type == MMAY_TYPE_RUNE)
         && !(equality_operator && operand_type >= MMAY_TYPE_FIRST_DYNAMIC)) {
         if ((numeric_operator || comparison_operator)
             && mmay_checker_private_type_is_numeric(operand_type)) {
@@ -999,8 +1000,9 @@
             kind = MMAY_MIR_EQUAL_BOOL;
         } else if (operand_type == MMAY_TYPE_STRING) {
             kind = MMAY_MIR_EQUAL_STRING;
-        } else if (operand_type >= MMAY_TYPE_I8
-            && operand_type <= MMAY_TYPE_U64) {
+        } else if ((operand_type >= MMAY_TYPE_I8
+            && operand_type <= MMAY_TYPE_U64)
+            || operand_type == MMAY_TYPE_RUNE) {
             kind = MMAY_MIR_EQUAL_I64;
         }
     }

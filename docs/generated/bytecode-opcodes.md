@@ -21,7 +21,7 @@ Stage 0 codec.
 | 8 | `i64_remainder_checked` | `destination:register`, `left:register`, `right:register` | `may_panic` | Compute signed 64-bit remainder after D042 zero and overflow checks. |
 | 9 | `i64_negate_checked` | `destination:register`, `source:register` | `may_panic` | Negate a signed 64-bit operand with checked overflow. |
 | 10 | `bool_not` | `destination:register`, `source:register` | — | Compute boolean negation. |
-| 11 | `i64_equal` | `destination:register`, `left:register`, `right:register` | — | Compare signed 64-bit operands for equality. |
+| 11 | `i64_equal` | `destination:register`, `left:register`, `right:register` | — | Compare identical integer types or two runes for equality, producing bool. |
 | 12 | `bool_equal` | `destination:register`, `left:register`, `right:register` | — | Compare boolean operands for equality. |
 | 13 | `i64_less` | `destination:register`, `left:register`, `right:register` | — | Compare signed 64-bit operands using less-than. |
 | 14 | `i64_less_equal` | `destination:register`, `left:register`, `right:register` | — | Compare signed 64-bit operands using less-than-or-equal. |
