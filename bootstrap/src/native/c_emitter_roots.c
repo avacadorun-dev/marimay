@@ -68,6 +68,9 @@ static bool mmay_native_c_instruction_uses_second(
         case MMAY_MIR_COLLECTION_REQUIRE_GENERATION:
         case MMAY_MIR_COLLECTION_ENTRY_KEY:
         case MMAY_MIR_COLLECTION_ENTRY_VALUE:
+        case MMAY_MIR_COLLECTION_NEXT:
+        case MMAY_MIR_COLLECTION_CURSOR_KEY:
+        case MMAY_MIR_COLLECTION_CURSOR_VALUE:
         case MMAY_MIR_COLLECTION_GET_OPTION:
         case MMAY_MIR_COLLECTION_REMOVE_OPTION:
         case MMAY_MIR_COLLECTION_PUT_RESULT:
@@ -513,7 +516,9 @@ static bool mmay_native_c_root_child_source(
         || instruction->kind == MMAY_MIR_ARRAY_GET_IN_BOUNDS
         || instruction->kind == MMAY_MIR_COLLECTION_GET
         || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_KEY
-        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE) {
+        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE
+        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_KEY
+        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_VALUE) {
         *source = instruction->first;
         *immutable = false;
         return true;

@@ -1,5 +1,6 @@
 #include "c_emitter_internal.h"
 #include "c_emitter_test_entry.h"
+#include "c_emitter_locations.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -238,6 +239,8 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
         || !mmay_native_c_context_options_valid(&options)
         || ((options.test_entries == NULL) != (options.test_entry_count == 0))
         || (options.test_entry_count != 0 && !options.executable_entry)
+        || ((options.panic_locations == NULL) != (options.panic_location_count == 0))
+        || (options.panic_location_count != 0 && !options.executable_entry)
         || allocator.allocate == NULL
         || allocator.resize == NULL || allocator.deallocate == NULL) {
         return MMAY_NATIVE_C_EMIT_INVALID_ARGUMENT;
@@ -327,6 +330,11 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
     if (entry == NULL
         || (!options.executable_entry && entry->parameter_count != 0)) {
         status = MMAY_NATIVE_C_EMIT_INVALID_MIR;
+        goto cleanup;
+    }
+    if (!mmay_native_c_locations_valid(options.panic_locations,
+            options.panic_location_count, ordered, program->function_count)) {
+        status = MMAY_NATIVE_C_EMIT_INVALID_ARGUMENT;
         goto cleanup;
     }
     if (options.test_entry_count != 0) {
@@ -419,7 +427,9 @@ MarimayNativeCEmitStatus mmay_native_c_emit_program(
         root_register_bytes = 0;
     }
     if (options.executable_entry
-        && !mmay_native_c_emit_public_helpers(&buffer)) goto emit_fail;
+        && (!mmay_native_c_emit_locations(&buffer, options.panic_locations,
+                options.panic_location_count)
+            || !mmay_native_c_emit_public_helpers(&buffer))) goto emit_fail;
     if (options.executable_entry) {
         if (!mmay_native_c_emit_executable_host_open(&buffer)) goto emit_fail;
         if (options.test_entry_count != 0

@@ -1,0 +1,19 @@
+@test
+fn crossFileGenericHelpers(): void {
+  nested(7, 7);
+  same("Путь 🌿", "Путь 🌿");
+}
+
+@test
+fn helperOutputUsesCurrentCapture(): void {
+  outputHelper();
+}
+
+@test
+fn helperCleanupUsesCurrentExecution(): void {
+  const log: []int = [];
+  cleanupHelper(log);
+  same(log.length(), 2);
+  same(log[0], 1);
+  same(log[1], 2);
+}

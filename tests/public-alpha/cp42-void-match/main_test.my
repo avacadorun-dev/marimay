@@ -1,0 +1,45 @@
+@test
+fn everyMatchFamilyCleansItsSelectedArm(): void {
+  const log: []int = [];
+  families(log);
+  expect.equal(code(log), 123456);
+}
+
+@test
+fn siblingAndOuterDefersKeepTheirOwnScopes(): void {
+  const log: []int = [];
+  scopes(log, true);
+  expect.equal(code(log), 32169);
+  log.clear();
+  scopes(log, false);
+  expect.equal(code(log), 5469);
+}
+
+@test
+fn returnAndPropagationCleanExactlyOnce(): void {
+  const log: []int = [];
+  expect.equal(propagation(log, true), Ok(7));
+  expect.equal(code(log), 19);
+  log.clear();
+  expect.equal(propagation(log, false), Err("failure"));
+  expect.equal(code(log), 29);
+  expect.equal(handled(Ok()), Ok());
+  expect.equal(handled(Err("rejected")), Err("rejected"));
+}
+
+@test
+fn loopTransfersLeaveTheArmBeforeTransferring(): void {
+  const log: []int = [];
+  jumps(log);
+  expect.equal(code(log), 123);
+}
+
+@test
+fn referenceTailSurvivesAllocatingCleanup(): void {
+  const log: []int = [];
+  const returned = reference(log);
+  expect.equal(returned.length(), 2);
+  expect.equal(returned[0], 7);
+  expect.equal(returned[1], 8);
+  expect.equal(code(log), 1);
+}

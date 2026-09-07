@@ -149,6 +149,18 @@
     if (local_type == MMAY_TYPE_INVALID) {
         return false;
     }
+    if (local_type == MMAY_TYPE_VOID) {
+        const MarimayAstNode *site = expression != NULL ? expression : type_node;
+        if (function->checker->result->diagnostics.length == diagnostics_before) {
+            (void)mmay_checker_add_diagnostic(
+                function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+                "void cannot be stored in a named binding",
+                site != NULL ? site->start : node->start,
+                site != NULL ? site->end : node->end
+            );
+        }
+        return false;
+    }
     if (!mmay_checker_private_function_add_local(
             function,
             name,

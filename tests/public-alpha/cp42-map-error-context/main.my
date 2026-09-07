@@ -1,0 +1,57 @@
+import * as m from "tests.public-alpha.cp42-map-error-context/mappers";
+import { message as describe } from "tests.public-alpha.cp42-map-error-context/mappers";
+
+enum Wrapped<T> {
+  Error(T),
+}
+
+fn named(visits: []int, bad: bool): Result<bool, string> {
+  const value = m.source(visits, bad).mapError(m.message)?;
+  return Ok(value == 7);
+}
+
+fn renamed(visits: []int, bad: bool): Result<bool, string> {
+  const value = m.source(visits, bad).mapError(describe)?;
+  return Ok(value == 7);
+}
+
+fn closure(visits: []int, bad: bool): Result<bool, string> {
+  const value = ((m.source(visits, bad).mapError((error) => m.message(error))))?;
+  return Ok(value == 7);
+}
+
+fn constructed(visits: []int, bad: bool): Result<bool, Wrapped<m.Input>> {
+  const value = m.source(visits, bad).mapError(Wrapped.Error)?;
+  return Ok(value == 7);
+}
+
+fn fromVoid(visits: []int, bad: bool): Result<int, string> {
+  m.voidSource(visits, bad).mapError((error) => m.message(error))?;
+  return Ok(9);
+}
+
+fn wrappedSource(visits: []int, bad: bool): Result<Result<int, m.Input>, string> {
+  return Ok(m.source(visits, bad));
+}
+
+fn nested(visits: []int, bad: bool): Result<bool, string> {
+  const value = (wrappedSource(visits, bad)?).mapError((error) => m.message(error))?;
+  return Ok(value == 7);
+}
+
+fn main(): int {
+  const visits = [0, 0];
+  if named(visits, false) != Ok(true) || renamed(visits, true) != Err("mapped") {
+    return 1;
+  }
+  if closure(visits, false) != Ok(true) || closure(visits, true) != Err("mapped") {
+    return 2;
+  }
+  if fromVoid(visits, false) != Ok(9) || fromVoid(visits, true) != Err("mapped") {
+    return 3;
+  }
+  if visits[0] != 3 || visits[1] != 6 {
+    return 4;
+  }
+  return 0;
+}

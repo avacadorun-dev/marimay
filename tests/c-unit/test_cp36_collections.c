@@ -74,7 +74,12 @@ static const char mmay_cp36_source[] =
     "  };\n"
     "  const _ = values.put(second, 6);\n"
     "  let mapCount = 0;\n"
-    "  for entry in values { const _ = entry; mapCount += 1; }\n"
+    "  for entry in values {\n"
+    "    let inner = 0;\n"
+    "    for nested in values { const _ = nested; inner += 1; }\n"
+    "    if inner != 2 { return -20; }\n"
+    "    const _ = entry; mapCount += 1;\n"
+    "  }\n"
     "  const selected = match values.get(Key { id: 1, label: \"a\" }) {\n"
     "    Some(value) => value, None => 0,\n"
     "  };\n"
@@ -84,7 +89,12 @@ static const char mmay_cp36_source[] =
     "  if !seen.remove(2) { return -1; }\n"
     "  const _ = seen.add(2);\n"
     "  let setSum = 0;\n"
-    "  for item in seen { setSum += item; }\n"
+    "  for item in seen {\n"
+    "    let innerSum = 0;\n"
+    "    for nested in seen { innerSum += nested; }\n"
+    "    if innerSum != 5 { return -21; }\n"
+    "    setSum += item;\n"
+    "  }\n"
     "  const cleared: Set<int> = setOf<int>();\n"
     "  const _ = cleared.add(99); cleared.clear();\n"
     "  const tokens: Set<Token> = setOf<Token>(); tokens.clear();\n"
@@ -168,11 +178,11 @@ static size_t mmay_cp36_functions(
 
 static bool mmay_cp36_collection_kind(MarimayMirInstructionKind kind) {
     return kind >= MMAY_MIR_COLLECTION_NEW
-        && kind <= MMAY_MIR_COLLECTION_ADD_RESULT;
+        && kind <= MMAY_MIR_COLLECTION_CURSOR_VALUE;
 }
 
 static void mmay_cp36_mir_contract(MarimayCp36Fixture *fixture) {
-    bool seen[MMAY_MIR_COLLECTION_ADD_RESULT + 1];
+    bool seen[MMAY_MIR_COLLECTION_CURSOR_VALUE + 1];
     size_t function_index = 0;
     size_t hostile = 0;
     memset(seen, 0, sizeof(seen));
@@ -207,7 +217,15 @@ static void mmay_cp36_mir_contract(MarimayCp36Fixture *fixture) {
                 MMAY_EXPECT(mmay_mir_verify(function)
                     == MMAY_MIR_VERIFY_INVALID_ARGUMENT);
                 instruction->collection = saved;
-                if (instruction->kind >= MMAY_MIR_COLLECTION_GET_OPTION) {
+                if (instruction->kind >= MMAY_MIR_COLLECTION_NEXT) {
+                    MarimayMirRegister original = instruction->second;
+                    instruction->second = MMAY_MIR_NO_REGISTER;
+                    MMAY_EXPECT(mmay_mir_verify(function)
+                        == MMAY_MIR_VERIFY_INVALID_REGISTER);
+                    instruction->second = original;
+                }
+                if (instruction->kind >= MMAY_MIR_COLLECTION_GET_OPTION
+                    && instruction->kind <= MMAY_MIR_COLLECTION_ADD_RESULT) {
                     MarimayMirEnumId saved_enum = instruction->enum_id;
                     MarimayMirEnum *layout = mmay_vector_at(
                         &function->enums, saved_enum
@@ -237,12 +255,14 @@ static void mmay_cp36_mir_contract(MarimayCp36Fixture *fixture) {
     }
     MMAY_EXPECT(hostile >= 30);
     for (function_index = MMAY_MIR_COLLECTION_NEW;
-        function_index <= MMAY_MIR_COLLECTION_ADD_RESULT;
+        function_index <= MMAY_MIR_COLLECTION_CURSOR_VALUE;
         function_index += 1) {
         /* Public calls now lower to result-bearing operations. */
         if (function_index == MMAY_MIR_COLLECTION_GET
             || function_index == MMAY_MIR_COLLECTION_PUT
-            || function_index == MMAY_MIR_COLLECTION_ADD) {
+            || function_index == MMAY_MIR_COLLECTION_ADD
+            || function_index == MMAY_MIR_COLLECTION_ENTRY_KEY
+            || function_index == MMAY_MIR_COLLECTION_ENTRY_VALUE) {
             MMAY_EXPECT(!seen[function_index]);
         } else {
             MMAY_EXPECT(seen[function_index]);
@@ -321,7 +341,7 @@ static bool mmay_cp36_opcode(MarimayOpcode opcode) {
     return (opcode >= MMAY_OPCODE_COLLECTION_NEW
             && opcode <= MMAY_OPCODE_COLLECTION_ENTRY_VALUE)
         || (opcode >= MMAY_OPCODE_COLLECTION_GET_OPTION
-            && opcode <= MMAY_OPCODE_COLLECTION_ADD_RESULT);
+            && opcode <= MMAY_OPCODE_COLLECTION_CURSOR_VALUE);
 }
 
 static size_t mmay_cp36_hostile_bytecode(MarimayBytecodeFunction *function) {
@@ -366,7 +386,15 @@ static size_t mmay_cp36_hostile_bytecode(MarimayBytecodeFunction *function) {
             MMAY_EXPECT(mmay_bytecode_verify(function)
                 == MMAY_BYTECODE_VERIFY_TYPE_MISMATCH);
             *layout = saved;
-            if (instruction->opcode >= MMAY_OPCODE_COLLECTION_GET_OPTION) {
+            if (instruction->opcode >= MMAY_OPCODE_COLLECTION_NEXT) {
+                uint64_t original = instruction->operands[2].unsigned_value;
+                instruction->operands[2].unsigned_value = UINT64_MAX;
+                MMAY_EXPECT(mmay_bytecode_verify(function)
+                    == MMAY_BYTECODE_VERIFY_INVALID_REGISTER);
+                instruction->operands[2].unsigned_value = original;
+            }
+            if (instruction->opcode >= MMAY_OPCODE_COLLECTION_GET_OPTION
+                && instruction->opcode <= MMAY_OPCODE_COLLECTION_ADD_RESULT) {
                 uint64_t target = instruction->operands[0].unsigned_value;
                 uint32_t result_id = mmay_bytecode_register_layout(
                     function, (uint32_t)target

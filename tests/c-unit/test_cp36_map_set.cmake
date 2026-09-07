@@ -47,7 +47,7 @@ if(NOT cp36_format_output STREQUAL ""
     OR NOT cp36_check_output STREQUAL ""
     OR NOT cp36_vm_output STREQUAL ""
     OR NOT cp36_native_output STREQUAL ""
-    OR NOT cp36_engines_output MATCHES "13 passed; 0 failed")
+    OR NOT cp36_engines_output MATCHES "17 passed; 0 failed")
   message(FATAL_ERROR
     "CP36 output mismatch: fmt=${cp36_format_output}; check=${cp36_check_output}; vm=${cp36_vm_output}; test=${cp36_engines_output}; native=${cp36_native_output}"
   )

@@ -1,0 +1,1475 @@
+{
+  "scope": "system-level collection performance diagnosis after user requested reassessment; no additional production optimization selected",
+  "revision": "82e3513a591bdd19c07604b842ded8b801a1a720",
+  "phases": {
+    "scope": "instrumented generated C, clocks only at benchmark/counting boundaries, no changes to benchmark inputs or algorithms",
+    "rounds": 11,
+    "warmups": {
+      "frequency-map": [
+        {
+          "prepare_ns": 3436000,
+          "count_ns": 55424000,
+          "checksum_ns": 2000,
+          "entry_ns": 59048000,
+          "process_ns": 829008250,
+          "outside_benchmark_ns": 186000
+        },
+        {
+          "prepare_ns": 2608000,
+          "count_ns": 34483000,
+          "checksum_ns": 1000,
+          "entry_ns": 37129000,
+          "process_ns": 40287333,
+          "outside_benchmark_ns": 37000
+        },
+        {
+          "prepare_ns": 2108000,
+          "count_ns": 34615000,
+          "checksum_ns": 1000,
+          "entry_ns": 36761000,
+          "process_ns": 39789917,
+          "outside_benchmark_ns": 37000
+        }
+      ],
+      "unique-set": [
+        {
+          "prepare_ns": 5564000,
+          "count_ns": 55628000,
+          "checksum_ns": 0,
+          "entry_ns": 61636000,
+          "process_ns": 423822875,
+          "outside_benchmark_ns": 444000
+        },
+        {
+          "prepare_ns": 2619000,
+          "count_ns": 31396000,
+          "checksum_ns": 1000,
+          "entry_ns": 34065000,
+          "process_ns": 37011500,
+          "outside_benchmark_ns": 49000
+        },
+        {
+          "prepare_ns": 2188000,
+          "count_ns": 31412000,
+          "checksum_ns": 1000,
+          "entry_ns": 33644000,
+          "process_ns": 36641375,
+          "outside_benchmark_ns": 43000
+        }
+      ],
+      "rune-frequency": [
+        {
+          "prepare_ns": 14699000,
+          "count_ns": 33825000,
+          "checksum_ns": 1000,
+          "entry_ns": 48731000,
+          "process_ns": 413876750,
+          "outside_benchmark_ns": 206000
+        },
+        {
+          "prepare_ns": 7474000,
+          "count_ns": 21485000,
+          "checksum_ns": 2000,
+          "entry_ns": 29012000,
+          "process_ns": 32853125,
+          "outside_benchmark_ns": 51000
+        },
+        {
+          "prepare_ns": 5686000,
+          "count_ns": 18099000,
+          "checksum_ns": 1000,
+          "entry_ns": 23819000,
+          "process_ns": 26794500,
+          "outside_benchmark_ns": 33000
+        }
+      ]
+    },
+    "samples": {
+      "frequency-map": [
+        {
+          "prepare_ns": 2114000,
+          "count_ns": 34807000,
+          "checksum_ns": 1000,
+          "entry_ns": 36955000,
+          "process_ns": 39611083,
+          "outside_benchmark_ns": 33000
+        },
+        {
+          "prepare_ns": 2284000,
+          "count_ns": 36294000,
+          "checksum_ns": 1000,
+          "entry_ns": 38610000,
+          "process_ns": 41199500,
+          "outside_benchmark_ns": 31000
+        },
+        {
+          "prepare_ns": 2308000,
+          "count_ns": 34370000,
+          "checksum_ns": 0,
+          "entry_ns": 36712000,
+          "process_ns": 39308417,
+          "outside_benchmark_ns": 34000
+        },
+        {
+          "prepare_ns": 2174000,
+          "count_ns": 34413000,
+          "checksum_ns": 2000,
+          "entry_ns": 36629000,
+          "process_ns": 39417958,
+          "outside_benchmark_ns": 40000
+        },
+        {
+          "prepare_ns": 2450000,
+          "count_ns": 34199000,
+          "checksum_ns": 1000,
+          "entry_ns": 36696000,
+          "process_ns": 39895750,
+          "outside_benchmark_ns": 46000
+        },
+        {
+          "prepare_ns": 2119000,
+          "count_ns": 34315000,
+          "checksum_ns": 1000,
+          "entry_ns": 36467000,
+          "process_ns": 39189875,
+          "outside_benchmark_ns": 32000
+        },
+        {
+          "prepare_ns": 2395000,
+          "count_ns": 34470000,
+          "checksum_ns": 1000,
+          "entry_ns": 36902000,
+          "process_ns": 39896750,
+          "outside_benchmark_ns": 36000
+        },
+        {
+          "prepare_ns": 2311000,
+          "count_ns": 34519000,
+          "checksum_ns": 1000,
+          "entry_ns": 36863000,
+          "process_ns": 39559917,
+          "outside_benchmark_ns": 32000
+        },
+        {
+          "prepare_ns": 2297000,
+          "count_ns": 34348000,
+          "checksum_ns": 2000,
+          "entry_ns": 36691000,
+          "process_ns": 39601042,
+          "outside_benchmark_ns": 44000
+        },
+        {
+          "prepare_ns": 2345000,
+          "count_ns": 34362000,
+          "checksum_ns": 1000,
+          "entry_ns": 36741000,
+          "process_ns": 39845708,
+          "outside_benchmark_ns": 33000
+        },
+        {
+          "prepare_ns": 2172000,
+          "count_ns": 34442000,
+          "checksum_ns": 1000,
+          "entry_ns": 36648000,
+          "process_ns": 39570666,
+          "outside_benchmark_ns": 33000
+        }
+      ],
+      "unique-set": [
+        {
+          "prepare_ns": 2316000,
+          "count_ns": 31095000,
+          "checksum_ns": 0,
+          "entry_ns": 33448000,
+          "process_ns": 36319834,
+          "outside_benchmark_ns": 37000
+        },
+        {
+          "prepare_ns": 2242000,
+          "count_ns": 31081000,
+          "checksum_ns": 0,
+          "entry_ns": 33363000,
+          "process_ns": 36071042,
+          "outside_benchmark_ns": 40000
+        },
+        {
+          "prepare_ns": 2334000,
+          "count_ns": 31214000,
+          "checksum_ns": 0,
+          "entry_ns": 33584000,
+          "process_ns": 36186833,
+          "outside_benchmark_ns": 36000
+        },
+        {
+          "prepare_ns": 2326000,
+          "count_ns": 31084000,
+          "checksum_ns": 1000,
+          "entry_ns": 33447000,
+          "process_ns": 36282000,
+          "outside_benchmark_ns": 36000
+        },
+        {
+          "prepare_ns": 2525000,
+          "count_ns": 31200000,
+          "checksum_ns": 1000,
+          "entry_ns": 33771000,
+          "process_ns": 36563333,
+          "outside_benchmark_ns": 45000
+        },
+        {
+          "prepare_ns": 2520000,
+          "count_ns": 30975000,
+          "checksum_ns": 0,
+          "entry_ns": 33528000,
+          "process_ns": 36192041,
+          "outside_benchmark_ns": 33000
+        },
+        {
+          "prepare_ns": 2335000,
+          "count_ns": 31352000,
+          "checksum_ns": 1000,
+          "entry_ns": 33735000,
+          "process_ns": 36624625,
+          "outside_benchmark_ns": 47000
+        },
+        {
+          "prepare_ns": 2301000,
+          "count_ns": 31134000,
+          "checksum_ns": 0,
+          "entry_ns": 33478000,
+          "process_ns": 36459000,
+          "outside_benchmark_ns": 43000
+        },
+        {
+          "prepare_ns": 2405000,
+          "count_ns": 30957000,
+          "checksum_ns": 0,
+          "entry_ns": 33404000,
+          "process_ns": 36066750,
+          "outside_benchmark_ns": 42000
+        },
+        {
+          "prepare_ns": 2397000,
+          "count_ns": 30985000,
+          "checksum_ns": 0,
+          "entry_ns": 33421000,
+          "process_ns": 36361750,
+          "outside_benchmark_ns": 39000
+        },
+        {
+          "prepare_ns": 2497000,
+          "count_ns": 30964000,
+          "checksum_ns": 1000,
+          "entry_ns": 33500000,
+          "process_ns": 36393958,
+          "outside_benchmark_ns": 38000
+        }
+      ],
+      "rune-frequency": [
+        {
+          "prepare_ns": 5660000,
+          "count_ns": 18595000,
+          "checksum_ns": 1000,
+          "entry_ns": 24288000,
+          "process_ns": 26838875,
+          "outside_benchmark_ns": 32000
+        },
+        {
+          "prepare_ns": 5655000,
+          "count_ns": 17574000,
+          "checksum_ns": 1000,
+          "entry_ns": 23264000,
+          "process_ns": 25824667,
+          "outside_benchmark_ns": 34000
+        },
+        {
+          "prepare_ns": 5729000,
+          "count_ns": 18409000,
+          "checksum_ns": 0,
+          "entry_ns": 24170000,
+          "process_ns": 27010250,
+          "outside_benchmark_ns": 32000
+        },
+        {
+          "prepare_ns": 5701000,
+          "count_ns": 17792000,
+          "checksum_ns": 2000,
+          "entry_ns": 23533000,
+          "process_ns": 26292792,
+          "outside_benchmark_ns": 38000
+        },
+        {
+          "prepare_ns": 5632000,
+          "count_ns": 17795000,
+          "checksum_ns": 0,
+          "entry_ns": 23459000,
+          "process_ns": 26235834,
+          "outside_benchmark_ns": 32000
+        },
+        {
+          "prepare_ns": 5886000,
+          "count_ns": 18130000,
+          "checksum_ns": 1000,
+          "entry_ns": 24054000,
+          "process_ns": 26908959,
+          "outside_benchmark_ns": 37000
+        },
+        {
+          "prepare_ns": 5634000,
+          "count_ns": 17985000,
+          "checksum_ns": 1000,
+          "entry_ns": 23653000,
+          "process_ns": 26318166,
+          "outside_benchmark_ns": 33000
+        },
+        {
+          "prepare_ns": 5624000,
+          "count_ns": 17803000,
+          "checksum_ns": 1000,
+          "entry_ns": 23462000,
+          "process_ns": 26070000,
+          "outside_benchmark_ns": 34000
+        },
+        {
+          "prepare_ns": 5822000,
+          "count_ns": 18001000,
+          "checksum_ns": 1000,
+          "entry_ns": 23859000,
+          "process_ns": 26240834,
+          "outside_benchmark_ns": 35000
+        },
+        {
+          "prepare_ns": 5701000,
+          "count_ns": 18002000,
+          "checksum_ns": 1000,
+          "entry_ns": 23740000,
+          "process_ns": 26450583,
+          "outside_benchmark_ns": 36000
+        },
+        {
+          "prepare_ns": 5613000,
+          "count_ns": 18307000,
+          "checksum_ns": 1000,
+          "entry_ns": 23952000,
+          "process_ns": 26669833,
+          "outside_benchmark_ns": 31000
+        }
+      ]
+    },
+    "medians_ms": {
+      "frequency-map": {
+        "prepare_ns": 2.297,
+        "count_ns": 34.413,
+        "checksum_ns": 0.001,
+        "entry_ns": 36.712,
+        "process_ns": 39.601042,
+        "outside_benchmark_ns": 0.033
+      },
+      "unique-set": {
+        "prepare_ns": 2.335,
+        "count_ns": 31.084,
+        "checksum_ns": 0.0,
+        "entry_ns": 33.478,
+        "process_ns": 36.319834,
+        "outside_benchmark_ns": 0.039
+      },
+      "rune-frequency": {
+        "prepare_ns": 5.66,
+        "count_ns": 18.001,
+        "checksum_ns": 0.001,
+        "entry_ns": 23.74,
+        "process_ns": 26.318166,
+        "outside_benchmark_ns": 0.034
+      }
+    },
+    "manifest": {
+      "frequency-map": {
+        "count_symbol": "mmay_g_f_db9ddc3295ea7b6009ad8671a70324cc",
+        "benchmark_symbol": "mmay_g_f_8f15481a9286608ab461cf1f25c3b890",
+        "counting_span": 155,
+        "emit_command": [
+          "/workspace/Projects/Marimay/marimay/build/release/mmay",
+          "build",
+          "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/frequency_map",
+          "--release",
+          "--max-heap-bytes",
+          "67108864",
+          "--emit",
+          "c",
+          "--output",
+          "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/frequency-map.c"
+        ],
+        "compile_command": [
+          "cc",
+          "-std=c17",
+          "-O2",
+          "-g",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic",
+          "-Wconversion",
+          "-Wshadow",
+          "-Werror",
+          "-fno-fast-math",
+          "-frounding-math",
+          "-ffp-contract=off",
+          "-fexcess-precision=standard",
+          "-I/workspace/Projects/Marimay/marimay/bootstrap/include",
+          "-I/workspace/Projects/Marimay/marimay/runtime/include",
+          "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/frequency-map-phases.c",
+          "/workspace/Projects/Marimay/marimay/build/release/native-runtime/release/libmmay_native_runtime_release.a",
+          "-lm",
+          "-o",
+          "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/frequency-map-phases"
+        ],
+        "binary_sha256": "5f49a824f8a04be7cdffc61524c7204737f8bf6aa347596f5ab3571e55035ae7"
+      },
+      "unique-set": {
+        "count_symbol": "mmay_g_f_c8d5c6796be1da72828aef7e26aa40d2",
+        "benchmark_symbol": "mmay_g_f_7c13243805b8fa5469b0b7ff0052fe45",
+        "counting_span": 420,
+        "emit_command": [
+          "/workspace/Projects/Marimay/marimay/build/release/mmay",
+          "build",
+          "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/unique_set",
+          "--release",
+          "--max-heap-bytes",
+          "67108864",
+          "--emit",
+          "c",
+          "--output",
+          "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/unique-set.c"
+        ],
+        "compile_command": [
+          "cc",
+          "-std=c17",
+          "-O2",
+          "-g",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic",
+          "-Wconversion",
+          "-Wshadow",
+          "-Werror",
+          "-fno-fast-math",
+          "-frounding-math",
+          "-ffp-contract=off",
+          "-fexcess-precision=standard",
+          "-I/workspace/Projects/Marimay/marimay/bootstrap/include",
+          "-I/workspace/Projects/Marimay/marimay/runtime/include",
+          "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/unique-set-phases.c",
+          "/workspace/Projects/Marimay/marimay/build/release/native-runtime/release/libmmay_native_runtime_release.a",
+          "-lm",
+          "-o",
+          "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/unique-set-phases"
+        ],
+        "binary_sha256": "98a1fb529f495801312285019459c6e23bd6a116e5eea1201fe269c737d6d734"
+      },
+      "rune-frequency": {
+        "count_symbol": "mmay_g_f_3216bf9fb5c4b83750833921dd5d683c",
+        "benchmark_symbol": "mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c",
+        "counting_span": 632,
+        "emit_command": [
+          "/workspace/Projects/Marimay/marimay/build/release/mmay",
+          "build",
+          "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/rune_frequency",
+          "--release",
+          "--max-heap-bytes",
+          "67108864",
+          "--emit",
+          "c",
+          "--output",
+          "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/rune-frequency.c"
+        ],
+        "compile_command": [
+          "cc",
+          "-std=c17",
+          "-O2",
+          "-g",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic",
+          "-Wconversion",
+          "-Wshadow",
+          "-Werror",
+          "-fno-fast-math",
+          "-frounding-math",
+          "-ffp-contract=off",
+          "-fexcess-precision=standard",
+          "-I/workspace/Projects/Marimay/marimay/bootstrap/include",
+          "-I/workspace/Projects/Marimay/marimay/runtime/include",
+          "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/rune-frequency-phases.c",
+          "/workspace/Projects/Marimay/marimay/build/release/native-runtime/release/libmmay_native_runtime_release.a",
+          "-lm",
+          "-o",
+          "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/rune-frequency-phases"
+        ],
+        "binary_sha256": "d715364219660b81babc4ac8d679f87487c2c089e9bcec18d07e2fe894b0df64"
+      }
+    }
+  },
+  "runtime": {
+    "frequency-map": {
+      "warmups": {
+        "runtime": [
+          {
+            "ns": 45824000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 31505000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 31568000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          }
+        ],
+        "hash": [
+          {
+            "ns": 10816000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 11061000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9799000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          }
+        ]
+      },
+      "samples": {
+        "runtime": [
+          {
+            "ns": 31237000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 33023000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 36217000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 30949000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 30205000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 30384000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 30570000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 29777000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 29868000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 30065000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          },
+          {
+            "ns": 30107000,
+            "checksum": 5073,
+            "hash_sum": 0,
+            "retained_bytes": 197000
+          }
+        ],
+        "hash": [
+          {
+            "ns": 9941000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 10493000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 10980000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9780000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9594000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9707000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 11031000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9864000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9808000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9834000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9737000,
+            "checksum": 0,
+            "hash_sum": 348804201985922483,
+            "retained_bytes": 0
+          }
+        ]
+      },
+      "median_ms": {
+        "runtime": 30.384,
+        "hash": 9.834
+      }
+    },
+    "unique-set": {
+      "warmups": {
+        "runtime": [
+          {
+            "ns": 30217000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 29981000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 30365000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          }
+        ],
+        "hash": [
+          {
+            "ns": 9750000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9453000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9735000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          }
+        ]
+      },
+      "samples": {
+        "runtime": [
+          {
+            "ns": 30335000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 30209000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 30197000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 30205000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 30122000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 30438000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 30541000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 30660000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 31781000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 30891000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          },
+          {
+            "ns": 31862000,
+            "checksum": 20001,
+            "hash_sum": 0,
+            "retained_bytes": 1048968
+          }
+        ],
+        "hash": [
+          {
+            "ns": 9735000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9743000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9692000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9701000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9704000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9747000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9760000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9609000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9842000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 10083000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 9751000,
+            "checksum": 0,
+            "hash_sum": 11487084205718469547,
+            "retained_bytes": 0
+          }
+        ]
+      },
+      "median_ms": {
+        "runtime": 30.438,
+        "hash": 9.743
+      }
+    },
+    "rune-frequency": {
+      "warmups": {
+        "runtime": [
+          {
+            "ns": 11147000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11184000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11178000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          }
+        ],
+        "hash": [
+          {
+            "ns": 4353000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4267000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4359000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          }
+        ]
+      },
+      "samples": {
+        "runtime": [
+          {
+            "ns": 11321000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11170000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11363000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11365000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11485000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11195000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11338000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11742000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 12226000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 12200000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          },
+          {
+            "ns": 11159000,
+            "checksum": 270012,
+            "hash_sum": 0,
+            "retained_bytes": 1032
+          }
+        ],
+        "hash": [
+          {
+            "ns": 4255000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4366000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4366000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4384000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4482000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4353000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4361000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4738000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4806000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4636000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          },
+          {
+            "ns": 4360000,
+            "checksum": 0,
+            "hash_sum": 13293044602768386544,
+            "retained_bytes": 0
+          }
+        ]
+      },
+      "median_ms": {
+        "runtime": 11.363,
+        "hash": 4.366
+      }
+    }
+  },
+  "probe_counts": {
+    "frequency-map": {
+      "calls": 1000014,
+      "steps": 1489593,
+      "entry_reads": 1485487,
+      "histogram": [
+        753855,
+        141225,
+        52685,
+        21640,
+        11598,
+        7161,
+        4705,
+        1535,
+        1258,
+        1742,
+        1008,
+        14,
+        750,
+        502,
+        254,
+        7,
+        9,
+        6,
+        9,
+        6,
+        4,
+        4,
+        5,
+        6,
+        3,
+        4,
+        3,
+        3,
+        2,
+        0,
+        1,
+        0,
+        2,
+        1,
+        3,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "mean_steps": 1.4895721459899562,
+      "checksum": 5073
+    },
+    "unique-set": {
+      "calls": 1000012,
+      "steps": 1775640,
+      "entry_reads": 1755627,
+      "histogram": [
+        690040,
+        155193,
+        63969,
+        32585,
+        18338,
+        11181,
+        7607,
+        4340,
+        4287,
+        3441,
+        2268,
+        1454,
+        814,
+        866,
+        703,
+        862,
+        377,
+        380,
+        232,
+        215,
+        126,
+        117,
+        196,
+        165,
+        19,
+        14,
+        13,
+        104,
+        10,
+        12,
+        12,
+        1,
+        5,
+        7,
+        7,
+        6,
+        2,
+        2,
+        8,
+        3,
+        2,
+        3,
+        3,
+        1,
+        1,
+        2,
+        3,
+        3,
+        1,
+        0,
+        0,
+        3,
+        0,
+        1,
+        1,
+        0,
+        1,
+        0,
+        2,
+        1,
+        2,
+        0,
+        0,
+        0,
+        1
+      ],
+      "mean_steps": 1.7756186925756892,
+      "checksum": 20001
+    },
+    "rune-frequency": {
+      "calls": 450007,
+      "steps": 690017,
+      "entry_reads": 690004,
+      "histogram": [
+        240002,
+        180002,
+        30002,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "mean_steps": 1.5333472590426371,
+      "checksum": 270012
+    }
+  },
+  "allocations": {
+    "frequency-map": {
+      "counting_allocation_attempts": 43,
+      "stdout": "frequency-map 5073\n"
+    },
+    "unique-set": {
+      "counting_allocation_attempts": 53,
+      "stdout": "unique-set 20001\n"
+    },
+    "rune-frequency": {
+      "counting_allocation_attempts": 9,
+      "stdout": "rune-frequency 270012\n"
+    }
+  },
+  "profile": {
+    "exit": 0,
+    "sampler_exit": 0,
+    "exact_checksums": 500,
+    "stderr_bytes": 0,
+    "duration_seconds": 8,
+    "interval_ms": 1
+  },
+  "profile_text": "Analysis of sampling rune-profile (pid 90178) every 1 millisecond\nProcess:         rune-profile [90178]\nPath:            /workspace/*/rune-profile\nLoad Address:    0x100a2c000\nIdentifier:      rune-profile\nVersion:         ???\nCode Type:       ARM64\nParent Process:  Python [90175]\nTarget Type:     live task\n\nDate/Time:       2026-09-07 16:01:23.691 +0700\nLaunch Time:     2026-09-07 16:01:23.653 +0700\nOS Version:      macOS 26.6.2 (25G83)\nReport Version:  7\nAnalysis Tool:   /usr/bin/sample\n\nPhysical footprint:         3360K\nPhysical footprint (peak):  3360K\nIdle exit:                  untracked\n----\n\nCall graph:\n    455 Thread_2868888: Main Thread\n    + 449 _dyld_start  (in dyld) + 0  [0x100dec9c0]\n    + 3 start  (in dyld) + 6904  [0x188e5848c]\n    + ! 3 dyld4::start(dyld4::KernelArgs*, void*, void*, unsigned long long)::$_1::operator()() const  (in dyld) + 320  [0x188e58b30]\n    + !   3 dyld4::prepare(dyld4::APIs&, mach_o::UnsafeHeader const*)  (in dyld) + 3996  [0x188e59ae8]\n    + !     3 dyld4::RuntimeState::notifyDebuggerLoad(std::span<dyld4::Loader const*, 18446744073709551615ul> const&)  (in dyld) + 528  [0x188e68c8c]\n    + !       3 dyld4::ExternallyViewableState::addImages(lsl::Allocator&, lsl::Allocator&, std::span<dyld4::ExternallyViewableState::ImageInfo, 18446744073709551615ul> const&)  (in dyld) + 1084  [0x188e73c80]\n    + !         3 dyld4::ExternallyViewableState::triggerNotifications(dyld_image_mode, unsigned int, dyld_image_info const*)  (in dyld) + 296  [0x188e73524]\n    + !           3 dyld4::RemoteNotificationResponder::blockOnSynchronousEvent(unsigned int)  (in dyld) + 48  [0x188eb9c90]\n    + !             3 dyld4::RemoteNotificationResponder::sendMessage(int, unsigned int, mach_msg_header_t*)  (in dyld) + 244  [0x188eb9904]\n    + !               3 mach_msg_overwrite  (in dyld) + 244  [0x188ed318c]\n    + !                 3 mach_msg2_internal  (in dyld) + 76  [0x188ed2fe4]\n    + !                   3 mach_msg2_trap  (in dyld) + 8  [0x188e3972c]\n    + 1 start  (in dyld) + 4700  [0x100e07bf0]\n    + ! 1 dyld4::ExternallyViewableState::createMinimalInfo(lsl::Allocator&, unsigned long long, char const*, unsigned long long, char const*, DyldSharedCache const*)  (in dyld) + 2116  [0x100e22c54]\n    + !   1 dyld4::ExternallyViewableState::triggerNotifications(dyld_image_mode, unsigned int, dyld_image_info const*)  (in dyld) + 296  [0x100e23524]\n    + !     1 dyld4::RemoteNotificationResponder::blockOnSynchronousEvent(unsigned int)  (in dyld) + 48  [0x100e69c90]\n    + !       1 dyld4::RemoteNotificationResponder::sendMessage(int, unsigned int, mach_msg_header_t*)  (in dyld) + 244  [0x100e69904]\n    + !         1 mach_msg_overwrite  (in dyld) + 244  [0x100e8318c]\n    + !           1 mach_msg2_internal  (in dyld) + 76  [0x100e82fe4]\n    + !             1 mach_msg2_trap  (in dyld) + 8  [0x100de972c]\n    + 1 start  (in dyld) + 6008  [0x100e0810c]\n    + ! 1 dyld4::ExternallyViewableState::createMinimalInfo(lsl::Allocator&, unsigned long long, char const*, unsigned long long, char const*, DyldSharedCache const*)  (in dyld) + 2116  [0x100e22c54]\n    + !   1 dyld4::ExternallyViewableState::triggerNotifications(dyld_image_mode, unsigned int, dyld_image_info const*)  (in dyld) + 296  [0x100e23524]\n    + !     1 dyld4::RemoteNotificationResponder::blockOnSynchronousEvent(unsigned int)  (in dyld) + 48  [0x100e69c90]\n    + !       1 dyld4::RemoteNotificationResponder::sendMessage(int, unsigned int, mach_msg_header_t*)  (in dyld) + 244  [0x100e69904]\n    + !         1 mach_msg_overwrite  (in dyld) + 244  [0x100e8318c]\n    + !           1 mach_msg2_internal  (in dyld) + 76  [0x100e82fe4]\n    + !             1 mach_msg2_trap  (in dyld) + 8  [0x100de972c]\n    + 1 start  (in dyld) + 4028  [0x188e57950]\n    +   1 dyld4::ExternallyViewableState::createMinimalInfo(lsl::Allocator&, unsigned long long, char const*, unsigned long long, char const*, DyldSharedCache const*)  (in dyld) + 2116  [0x188e72c54]\n    +     1 dyld4::ExternallyViewableState::triggerNotifications(dyld_image_mode, unsigned int, dyld_image_info const*)  (in dyld) + 296  [0x188e73524]\n    +       1 dyld4::RemoteNotificationResponder::blockOnSynchronousEvent(unsigned int)  (in dyld) + 48  [0x188eb9c90]\n    +         1 dyld4::RemoteNotificationResponder::sendMessage(int, unsigned int, mach_msg_header_t*)  (in dyld) + 244  [0x188eb9904]\n    +           1 mach_msg_overwrite  (in dyld) + 244  [0x188ed318c]\n    +             1 mach_msg2_internal  (in dyld) + 76  [0x188ed2fe4]\n    +               1 mach_msg2_trap  (in dyld) + 8  [0x188e3972c]\n    6299 Thread_2868888   DispatchQueue_1: com.apple.main-thread  (serial)\n      6299 start  (in dyld) + 6992  [0x188e584e4]\n        6299 main  (in rune-profile) + 44  [0x100a30860]  rune-profile.c:13775\n          6294 profile_original_main  (in rune-profile) + 1212  [0x100a2cccc]  rune-profile.c:13771\n          ! 6294 mmay_g_f_98dd422267650832b5ae12384e664dea  (in rune-profile) + 152  [0x100a2e534]  rune-profile.c:9727\n          !   4786 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2536  [0x100a2f8dc]  rune-profile.c:12943\n          !   : 3133 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 620  [0x100a2d154]  rune-profile.c:3036\n          !   : | 2612 mmay_managed_map_get  (in rune-profile) + 248  [0x100a3f990]\n          !   : | + 1760 mmay_managed_map_probe  (in rune-profile) + 88,180,...  [0x100a4214c,0x100a421a8,...]\n          !   : | + 664 mmay_managed_map_lookup_resolved  (in rune-profile) + 364  [0x100a409ec]\n          !   : | + ! 664 mmay_hash_sip24_word  (in rune-profile) + 404,396,...  [0x100a34864,0x100a3485c,...]\n          !   : | + 188 mmay_managed_map_lookup_resolved  (in rune-profile) + 64,20,...  [0x100a408c0,0x100a40894,...]\n          !   : | 483 mmay_managed_map_get  (in rune-profile) + 76,32,...  [0x100a3f8e4,0x100a3f8b8,...]\n          !   : | 38 mmay_managed_map_lookup_resolved  (in rune-profile) + 336,328  [0x100a409d0,0x100a409c8]\n          !   : 761 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 1148  [0x100a2d364]  rune-profile.c:3060\n          !   : | 372 mmay_managed_map_put  (in rune-profile) + 272  [0x100a3fb88]\n          !   : | + 250 mmay_managed_map_lookup_resolved  (in rune-profile) + 68,64,...  [0x100a408c4,0x100a408c0,...]\n          !   : | + 122 mmay_managed_map_put  (in rune-profile) + 320,604,...  [0x100a3fbb8,0x100a3fcd4,...]\n          !   : | 229 mmay_managed_map_put  (in rune-profile) + 388,88,...  [0x100a3fbfc,0x100a3fad0,...]\n          !   : | 123 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 1148  [0x100a2d364]  rune-profile.c:3060\n          !   : | + 123 mmay_managed_map_put  (in rune-profile) + 168,256,...  [0x100a3fb20,0x100a3fb78,...]\n          !   : | 37 mmay_managed_map_lookup_resolved  (in rune-profile) + 412,408  [0x100a40a1c,0x100a40a18]\n          !   : 311 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 568  [0x100a2d120]  rune-profile.c:3034\n          !   : | 311 mmay_managed_array_view_get  (in rune-profile) + 0,20,...  [0x100a3af18,0x100a3af2c,...]\n          !   : 106 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 664,684,...  [0x100a2d180,0x100a2d194,...]  rune-profile.c:3037\n          !   : 90 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 956,988,...  [0x100a2d2a4,0x100a2d2c4,...]  rune-profile.c:3055\n          !   : 77 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 1100,1172,...  [0x100a2d334,0x100a2d37c,...]  rune-profile.c:3060\n          !   : 74 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 856,828,...  [0x100a2d240,0x100a2d224,...]  rune-profile.c:3054\n          !   : 65 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 536,540,...  [0x100a2d100,0x100a2d104,...]  rune-profile.c:3034\n          !   : 50 mmay_managed_map_get  (in rune-profile) + 312,308,...  [0x100a3f9d0,0x100a3f9cc,...]\n          !   : 40 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 584  [0x100a2d130]  rune-profile.c:3036\n          !   : | 40 mmay_managed_invalid_reference  (in rune-profile) + 0  [0x100a39740]\n          !   : 31 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 1388,1384  [0x100a2d454,0x100a2d450]  rune-profile.c:3028\n          !   : 29 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 704  [0x100a2d1a8]  rune-profile.c:3038\n          !   : 9 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 1108  [0x100a2d33c]  rune-profile.c:3060\n          !   : | 9 mmay_managed_invalid_reference  (in rune-profile) + 0  [0x100a39740]\n          !   : 6 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 1060  [0x100a2d30c]  rune-profile.c:3047\n          !   : 4 mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile) + 620,624  [0x100a2d154,0x100a2d158]  rune-profile.c:3036\n          !   811 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2460  [0x100a2f890]  rune-profile.c:13079\n          !   : 312 mmay_managed_array_view_push  (in rune-profile) + 24,284,...  [0x100a3b204,0x100a3b308,...]\n          !   : 252 mmay_managed_array_view_push  (in rune-profile) + 196  [0x100a3b2b0]\n          !   : | 252 mmay_managed_array_validate_value  (in rune-profile) + 228,232,...  [0x100a3c7f4,0x100a3c7f8,...]\n          !   : 62 mmay_managed_array_view_push  (in rune-profile) + 232  [0x100a3b2d4]\n          !   : | 62 mmay_size_add  (in rune-profile) + 0,24,...  [0x100a310d8,0x100a310f0,...]\n          !   : 62 mmay_managed_array_view_push  (in rune-profile) + 348  [0x100a3b348]\n          !   : | 62 mmay_managed_array_storage_write_unchecked  (in rune-profile) + 28,84,...  [0x100a3b19c,0x100a3b1d4,...]\n          !   : 54 mmay_managed_array_view_push  (in rune-profile) + 276  [0x100a3b300]\n          !   : | 54 mmay_managed_array_check_mutation_commit  (in rune-profile) + 4,0  [0x100a3cdac,0x100a3cda8]\n          !   : 42 mmay_managed_array_view_push  (in rune-profile) + 360  [0x100a3b354]\n          !   : | 42 mmay_managed_array_commit_mutation  (in rune-profile) + 8,0  [0x100a3cdd0,0x100a3cdc8]\n          !   : 18 mmay_managed_array_view_push  (in rune-profile) + 208  [0x100a3b2bc]\n          !   : | 18 mmay_managed_language_max_array_length  (in rune-profile) + 0  [0x100a39738]\n          !   : 9 mmay_managed_array_view_push  (in rune-profile) + 316  [0x100a3b328]\n          !   :   7 mmay_managed_array_ensure_capacity  (in rune-profile) + 820  [0x100a3beb0]\n          !   :   + 7 __bzero  (in libsystem_platform.dylib) + 68  [0x18922d074]\n          !   :   2 mmay_managed_array_ensure_capacity  (in rune-profile) + 796  [0x100a3be98]\n          !   :     2 _realloc  (in libsystem_malloc.dylib) + 452  [0x18904ff14]\n          !   :       2 _malloc_zone_realloc  (in libsystem_malloc.dylib) + 148  [0x18904f6f8]\n          !   :         1 xzm_realloc  (in libsystem_malloc.dylib) + 880  [0x18903fef4]\n          !   :         ! 1 _platform_memmove  (in libsystem_platform.dylib) + 180  [0x18922d414]\n          !   :         1 xzm_realloc  (in libsystem_malloc.dylib) + 904  [0x18903ff0c]\n          !   :           1 _xzm_free  (in libsystem_malloc.dylib) + 1048  [0x189040530]\n          !   :             1 mach_absolute_time  (in libsystem_kernel.dylib) + 108  [0x1891e010c]\n          !   300 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2216  [0x100a2f79c]  rune-profile.c:13056\n          !   : 300 mmay_managed_array_view_get  (in rune-profile) + 56,136,...  [0x100a3af50,0x100a3afa0,...]\n          !   88 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2220,2108,...  [0x100a2f7a0,0x100a2f730,...]  rune-profile.c:13056\n          !   82 mmay_managed_array_view_push  (in rune-profile) + 132  [0x100a3b270]\n          !   65 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2484,2264  [0x100a2f8a8,0x100a2f7cc]  rune-profile.c:0\n          !   48 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2012  [0x100a2f6d0]  rune-profile.c:13050\n          !   36 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2468  [0x100a2f898]  rune-profile.c:13063\n          !   35 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2056  [0x100a2f6fc]  rune-profile.c:13053\n          !   33 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2412  [0x100a2f860]  rune-profile.c:13079\n          !   5 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 1908  [0x100a2f668]  rune-profile.c:12933\n          !   3 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 1944  [0x100a2f68c]  rune-profile.c:12934\n          !   1 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2048  [0x100a2f6f4]  rune-profile.c:13051\n          !   1 mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile) + 2256  [0x100a2f7c4]  rune-profile.c:13058\n          4 profile_original_main  (in rune-profile) + 744  [0x100a2caf8]  rune-profile.c:13771\n          ! 4 mmay_fs_init  (in rune-profile) + 28  [0x100a38350]\n          !   4 mmay_fs_init_status  (in rune-profile) + 1044  [0x100a37fbc]\n          !     4 mmay_directory_current_with_ops  (in rune-profile) + 128  [0x100a369dc]\n          !       4 mmay_posix_directory_current  (in rune-profile) + 116  [0x100a43128]\n          !         4 __private_getcwd  (in libsystem_c.dylib) + 184  [0x1890d8af0]\n          !           2 __getcwd  (in libsystem_c.dylib) + 76  [0x1890d8f24]\n          !           : 2 open$NOCANCEL  (in libsystem_kernel.dylib) + 64  [0x1891f4c64]\n          !           :   2 __open_nocancel  (in libsystem_kernel.dylib) + 8  [0x1891e0948]\n          !           2 __getcwd  (in libsystem_c.dylib) + 388  [0x1890d905c]\n          !             2 stat  (in libsystem_kernel.dylib) + 8  [0x1891eb88c]\n          1 profile_original_main  (in rune-profile) + 840  [0x100a2cb58]  rune-profile.c:13771\n            1 mmay_g_register_immediate_enums  (in rune-profile) + 40  [0x100a304d0]  rune-profile.c:461\n              1 mmay_managed_enum_register_immediate_descriptor  (in rune-profile) + 0  [0x100a3e938]\n\nTotal number in stack (recursive counted multiple, when >=5):\n\nSort by top of stack, same collapsed (when >= 5):\n        mmay_managed_map_probe  (in rune-profile)        1760\n        mmay_hash_sip24_word  (in rune-profile)        664\n        mmay_managed_array_view_get  (in rune-profile)        611\n        mmay_managed_map_get  (in rune-profile)        533\n        mmay_managed_map_lookup_resolved  (in rune-profile)        513\n        mmay_g_f_3216bf9fb5c4b83750833921dd5d683c  (in rune-profile)        482\n        mmay_managed_map_put  (in rune-profile)        474\n        _dyld_start  (in dyld)        449\n        mmay_managed_array_view_push  (in rune-profile)        394\n        mmay_g_f_eb981b5393aeeb4ef628c47045a4c42c  (in rune-profile)        315\n        mmay_managed_array_validate_value  (in rune-profile)        252\n        mmay_managed_array_storage_write_unchecked  (in rune-profile)        62\n        mmay_size_add  (in rune-profile)        62\n        mmay_managed_array_check_mutation_commit  (in rune-profile)        54\n        mmay_managed_invalid_reference  (in rune-profile)        49\n        mmay_managed_array_commit_mutation  (in rune-profile)        42\n        mmay_managed_language_max_array_length  (in rune-profile)        18\n        __bzero  (in libsystem_platform.dylib)        7\n        mach_msg2_trap  (in dyld)        6\n\nBinary images description not available\n\n",
+  "artifacts": {
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/frequency-map-phases.c": {
+      "sha256": "0e18a989b3cfb404319ee9e50657fae38946d5714c802d2a1038b0c9a3837293",
+      "bytes": 938035
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/unique-set-allocations.c": {
+      "sha256": "616d9536db5707e32edf210cfc1ae18af422090324b42706e68b830e918eb4aa",
+      "bytes": 938312
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/runtime-probe.c": {
+      "sha256": "fbfa70026d1b663ea485c7b23603c7c4ae8da32166f5aa476a7dc39b9348775c",
+      "bytes": 4157
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/unique-set-phases.c": {
+      "sha256": "c2c42f4bdd61e002a875e1e063225a96c2c33c5d50e677912d90d92a6c604af2",
+      "bytes": 938009
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/rune-profile.c": {
+      "sha256": "b2244f4db336dc60b5ac7941f581df85c5a1eeebf26dae3fd24afec7b834d9fe",
+      "bytes": 937221
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/unique-set.c": {
+      "sha256": "ed7b7766992ca8ae0b478d8098bcdf8dbc81490248ae941ba719258bd96c9d45",
+      "bytes": 936967
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/rune-frequency-allocations.c": {
+      "sha256": "c79b01bab08c644bf51e53c9abc2bb9432d86f3ed461450c0d37438d914df955",
+      "bytes": 938358
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/counted-probe.c": {
+      "sha256": "5bc3f98e7b2d75f78a19a6bec6a5d255efc88f8262e55cb693fa7244fe72f281",
+      "bytes": 2857
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/runtime-counted.c": {
+      "sha256": "a307d54a4affea79463a0ff6b5ff55e99769542ea5b26d1d0f8a38933eac28ab",
+      "bytes": 4363
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/frequency-map.c": {
+      "sha256": "33d61c71378419f083e9cc35d36d10191290a8b34ed4819d798319d3084e4ee5",
+      "bytes": 936993
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/rune-frequency-phases.c": {
+      "sha256": "c1bb2ecc39a4ad7bb47c34ddbef0b93483de952f6b57cfefe3314bf5749f267a",
+      "bytes": 938055
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/frequency-map-allocations.c": {
+      "sha256": "c52f2d7c29ee2f9bc4dd86bbf03c12902e2820c0646c82781ff586c6f6d1677f",
+      "bytes": 938338
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/rune-frequency.c": {
+      "sha256": "ff9a24075be532cf01c18d70d44ddef518a5384982c0db9faa0fdfb8a8bb16f6",
+      "bytes": 937013
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/phases.py": {
+      "sha256": "247778c6c5d02e505cd580c6dd5332537407a8e7fe4aae7b9e7f224ea66ef13d",
+      "bytes": 4591
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/allocation-results.json": {
+      "sha256": "4eeeae8fa2fa5d9f55122ea53188c2c59245867a0ff693ce7f613b465e12f238",
+      "bytes": 310
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/phase-results.json": {
+      "sha256": "6a99a281b2930604b2e46822e5c113961d3617589cbfa7fba3e4c70ee72a7bf2",
+      "bytes": 14320
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/profile-result.json": {
+      "sha256": "92c6b28fa8919613ca6bce969cdb7d7a0b76e403d1934bedaa3380592ecb7f9c",
+      "bytes": 129
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/runtime-results.json": {
+      "sha256": "66ddc433fb59dfef2384fd2337ce715dc0ac18093bcf6a406ed783bea8e6282b",
+      "bytes": 12499
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/phase-manifest.json": {
+      "sha256": "43cada8ed4be1bba58d7ff404f698b1ec2b3a7756dd22c516a79690042b25e7f",
+      "bytes": 4403
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/probe-counts.json": {
+      "sha256": "18f1f76c9467ef35750a307e21367d6b3f637d6de1a922d28fd7e2e86e54c30c",
+      "bytes": 2439
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/runtime-probe": {
+      "sha256": "a0a7d349a4e09cb896571cb4e0cec411a0ea2240e5dc5daa114ed684382467f7",
+      "bytes": 92064
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/runtime-counted": {
+      "sha256": "08d4960717b09d4c1533fccdd03ffcf6df0076ad8c25bd01d61e47c83c887dd4",
+      "bytes": 92208
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/rune-profile": {
+      "sha256": "be49b6ba45733d04e481fc5e23030b719797b479a9f5ca7683dffe1b92fe64a0",
+      "bytes": 196224
+    },
+    "/workspace/Projects/Marimay/marimay/build/cp42-collection-review/rune.sample.txt": {
+      "sha256": "f1b9e9a954365a59f3023d7ce1f910141417b32bc293b55fcd494548fd5b2ae1",
+      "bytes": 15500
+    },
+    "/workspace/Projects/Marimay/marimay/build/release/mmay": {
+      "sha256": "4f54909ba2f6c9e196147e1f86ff3b45319b8a6033e12bdae451ca244530fb49",
+      "bytes": 1323880
+    },
+    "/workspace/Projects/Marimay/marimay/build/release/native-runtime/release/libmmay_native_runtime_release.a": {
+      "sha256": "92deab127d24eac23e9a8e633d0231e6728635343d2ed0b7a7bb4cb35dbdb775",
+      "bytes": 219496
+    },
+    "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/counting/counting.my": {
+      "sha256": "56f55b1f7d4c5258fb98717d20e44f8e5afe8cd5e03a54e658cbb8d0fb2962c1",
+      "bytes": 770
+    },
+    "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/core/benchmarks.my": {
+      "sha256": "0dc9f987328f786ff9e143403e719be0e5ea2edcf2db97366086f2210fdec413",
+      "bytes": 6688
+    },
+    "/workspace/Projects/Marimay/algorithm-benchmarks/go/counting/counting.go": {
+      "sha256": "88d4a0346b5694f3cb9f041621f6c2313226da3fd2580df3b0c18d0f01440302",
+      "bytes": 736
+    },
+    "/workspace/Projects/Marimay/algorithm-benchmarks/go/cmd/benchmark/main.go": {
+      "sha256": "fc67e17464c835650cb14e412e791ce9b023055ee421e1a4b9a6b126e010fcf7",
+      "bytes": 5754
+    },
+    "/workspace/Projects/Marimay/algorithm-benchmarks/rust/src/counting.rs": {
+      "sha256": "4048dd9efc57a11e847147e2887e887dce8552c9142059edfb600805131b57ba",
+      "bytes": 544
+    },
+    "/workspace/Projects/Marimay/algorithm-benchmarks/rust/src/bin/benchmark.rs": {
+      "sha256": "c3a8b98326aa1f74f6c9b3a1d5dd7e3c602113e74a39045126a7bbd8a9c4b081",
+      "bytes": 6581
+    },
+    "/opt/homebrew/Cellar/go/1.26.4/libexec/src/internal/runtime/maps/map.go": {
+      "sha256": "cec1f588f261caf8fe4a9b310fae11abcc162d5c975be21d243f9ce727151432",
+      "bytes": 26302
+    },
+    "/workspace/.rustup/toolchains/stable-aarch64-apple-darwin/lib/rustlib/src/rust/library/std/src/collections/hash/map.rs": {
+      "sha256": "c3d9a40ea8cd57ad123ec577a2c0e64375f443b1fde7334f21c0eec9fd78ea05",
+      "bytes": 92628
+    }
+  },
+  "diagnostic_sources": {
+    "phases.py": "import hashlib, json, pathlib, re, statistics, subprocess, time\n\nroot = pathlib.Path(__file__).resolve().parent\nrepo = root.parent.parent\nbench = repo.parent / 'algorithm-benchmarks/marimay'\ncompiler = repo / 'build/release/mmay'\narchive = repo / 'build/release/native-runtime/release/libmmay_native_runtime_release.a'\ncounting = (bench / 'counting/counting.my').read_text()\nnames = {'frequency-map': ('intFrequencies', 5073),\n         'unique-set': ('uniqueIntCount', 20001),\n         'rune-frequency': ('runeFrequencies', 270012)}\nflags = ['cc', '-std=c17', '-O2', '-g', '-Wall', '-Wextra', '-Wpedantic',\n         '-Wconversion', '-Wshadow', '-Werror', '-fno-fast-math', '-frounding-math',\n         '-ffp-contract=off', '-fexcess-precision=standard',\n         '-I' + str(repo / 'bootstrap/include'), '-I' + str(repo / 'runtime/include')]\nprefix = '''#define _POSIX_C_SOURCE 200809L\n#include <time.h>\n#include <stdint.h>\nstatic uint64_t phase_bench_start, phase_count_start, phase_count_end, phases[3];\nstatic uint64_t phase_clock(void) {\n  struct timespec t; if (clock_gettime(CLOCK_MONOTONIC, &t) != 0) return 0;\n  return (uint64_t)t.tv_sec * UINT64_C(1000000000) + (uint64_t)t.tv_nsec;\n}\n#define main phase_original_main\n'''\nsuffix = '''\n#undef main\nint main(int argc, char **argv) {\n  uint64_t start = phase_clock(); int status = phase_original_main(argc, argv);\n  uint64_t total = phase_clock() - start;\n  fprintf(stderr, \"{\\\\\"prepare_ns\\\\\":%llu,\\\\\"count_ns\\\\\":%llu,\\\\\"checksum_ns\\\\\":%llu,\\\\\"entry_ns\\\\\":%llu}\\\\n\",\n    (unsigned long long)phases[0], (unsigned long long)phases[1],\n    (unsigned long long)phases[2], (unsigned long long)total);\n  return status;\n}\n'''\nmanifest = {}\nfor name, (function, checksum) in names.items():\n    path = root / (name + '.c')\n    command = [str(compiler), 'build', str(bench / 'benchmarks' / name.replace('-', '_')),\n               '--release', '--max-heap-bytes', '67108864', '--emit', 'c', '--output', str(path)]\n    subprocess.run(command, check=True, capture_output=True)\n    source = path.read_text()\n    matches = list(re.finditer(r'^static [^\\n]*\\b(mmay_g_f_[0-9a-f]+)\\([^\\n]*\\) \\{', source, re.M))\n    functions = []\n    for index, match in enumerate(matches):\n        end = matches[index + 1].start() if index + 1 < len(matches) else source.index('static int mmay_g_public_message', match.start())\n        functions.append((match, end, source[match.start():end]))\n    begin = counting.index('public fn ' + function)\n    operation = 'unique.add(value)' if name == 'unique-set' else 'counts.get(value)'\n    span = counting.index(operation, begin)\n    selected = [(m, end, body) for m, end, body in functions\n                if '*mmay_g_start = ' + str(span) + ';' in body\n                and ('mmay_g_collection_option(' in body or 'mmay_g_collection_update_result(' in body)]\n    assert len(selected) == 1, (name, span, len(selected))\n    count_symbol = selected[0][0].group(1)\n    parents = [(m, end, body) for m, end, body in functions\n               if '= ' + count_symbol + '(' in body]\n    assert len(parents) == 1, (name, count_symbol, len(parents))\n    edits = []\n    for (m, end, body), entry, leave in [\n        (selected[0], 'phase_count_start = phase_clock(); phases[0] = phase_count_start - phase_bench_start;',\n         'phase_count_end = phase_clock(); phases[1] = phase_count_end - phase_count_start;'),\n        (parents[0], 'phase_bench_start = phase_clock();',\n         'phases[2] = phase_clock() - phase_count_end;')]:\n        assert body.count('return mmay_g_s;') == 1\n        body = body.replace('return mmay_g_s;', leave + ' return mmay_g_s;')\n        offset = m.end() - m.start()\n        body = body[:offset] + '\\n' + entry + '\\n' + body[offset:]\n        edits.append((m.start(), end, body))\n    for start, end, body in sorted(edits, reverse=True):\n        source = source[:start] + body + source[end:]\n    instrumented = root / (name + '-phases.c')\n    instrumented.write_text(prefix + source + suffix)\n    binary = root / (name + '-phases')\n    compile_command = flags + [str(instrumented), str(archive), '-lm', '-o', str(binary)]\n    subprocess.run(compile_command, check=True, capture_output=True)\n    manifest[name] = {'count_symbol': count_symbol, 'benchmark_symbol': parents[0][0].group(1),\n                      'counting_span': span, 'emit_command': command, 'compile_command': compile_command,\n                      'binary_sha256': hashlib.sha256(binary.read_bytes()).hexdigest()}\n(root / 'phase-manifest.json').write_text(json.dumps(manifest, indent=2) + '\\n')\nprint('built three phase probes', flush=True)\n",
+    "runtime-probe.c": "#define _POSIX_C_SOURCE 200809L\n#include <stdint.h>\n#include <stdio.h>\n#include <string.h>\n#include <time.h>\n#include \"mmay/base/hash.h\"\n#include \"mmay/runtime/managed.h\"\n\nstatic uint64_t now(void) {\n    struct timespec t;\n    if (clock_gettime(CLOCK_MONOTONIC, &t) != 0) return 0;\n    return (uint64_t)t.tv_sec * UINT64_C(1000000000) + (uint64_t)t.tv_nsec;\n}\n\nint main(int argc, char **argv) {\n    static const int64_t pattern[] = {77,97,114,105,109,97,121,32,955,32,26481,20140,32,128640,128578};\n    bool is_set = argc > 1 && strcmp(argv[1], \"unique-set\") == 0;\n    bool rune = argc > 1 && strcmp(argv[1], \"rune-frequency\") == 0;\n    bool hash_only = argc > 2 && strcmp(argv[2], \"hash\") == 0;\n    size_t count = rune ? 450000U : 1000000U, length = 0, i;\n    MarimayFailAllocator tracked;\n    MarimayAllocator allocator;\n    MarimayManagedHeap heap;\n    MarimayManagedHeapOptions options = mmay_managed_heap_default_options();\n    MarimayManagedFieldDescriptor raw = {MMAY_MANAGED_CELL_RAW64, false, MMAY_MANAGED_OBJECT_INVALID, NULL};\n    MarimayManagedFieldDescriptor absent = {0};\n    MarimayManagedMapDescriptor descriptor = {raw, is_set ? absent : raw, is_set};\n    MarimayManagedReference collection = mmay_managed_invalid_reference();\n    MarimayManagedCell key = {0}, value = {0};\n    int64_t state = is_set ? 19 : 17, checksum = 0;\n    int64_t *input;\n    uint64_t begin, elapsed, hashes = 0;\n    size_t retained;\n    bool inserted = false, found = false;\n    if (argc < 2) return 1;\n    mmay_fail_allocator_init(&tracked, mmay_system_allocator(), SIZE_MAX);\n    allocator = mmay_fail_allocator(&tracked);\n    input = mmay_allocate(&allocator, count * sizeof(*input));\n    if (input == NULL) return 2;\n    for (i = 0; i < count; i++) {\n        state = (state * 25173 + 13849) % 65536;\n        input[i] = rune ? pattern[i % 15U] : is_set ? state % 20001 - 10000 : state % 4096;\n    }\n    if (!mmay_managed_heap_init(&heap, allocator, options)) return 3;\n    begin = now();\n    if (hash_only) {\n        for (i = 0; i < count; i++) hashes += mmay_hash_sip24_word((uint64_t)input[i],\n            options.collection_hash_seed0, options.collection_hash_seed1);\n    } else {\n        if ((is_set ? mmay_managed_set_new(&heap, &descriptor, &collection)\n            : mmay_managed_map_new(&heap, &descriptor, &collection)) != MMAY_MANAGED_OK) return 4;\n        for (i = 0; i < count; i++) {\n            key.f64_bits = (uint64_t)input[i];\n            if (is_set) {\n                if (mmay_managed_set_add(&heap, collection, key, &inserted) != MMAY_MANAGED_OK) return 5;\n            } else {\n                if (mmay_managed_map_get(&heap, collection, key, &value, &found) != MMAY_MANAGED_OK) return 6;\n                value.f64_bits = found ? value.f64_bits + 1U : 1U;\n                if (mmay_managed_map_put(&heap, collection, key, value, &inserted) != MMAY_MANAGED_OK) return 7;\n            }\n        }\n    }\n    elapsed = now() - begin;\n    retained = tracked.live_bytes - count * sizeof(*input);\n    if (!hash_only) {\n        if ((is_set ? mmay_managed_set_length(&heap, collection, &length)\n            : mmay_managed_map_length(&heap, collection, &length)) != MMAY_MANAGED_OK) return 8;\n        checksum = (int64_t)length;\n        if (!is_set) {\n            const int64_t selected[] = {0,1,17,4095};\n            const size_t runes[] = {0,1,7,8,13,14};\n            for (i = 0; i < (rune ? 6U : 4U); i++) {\n                key.f64_bits = (uint64_t)(rune ? pattern[runes[i]] : selected[i]);\n                if (mmay_managed_map_get(&heap, collection, key, &value, &found) != MMAY_MANAGED_OK || !found) return 9;\n                checksum += (int64_t)value.f64_bits;\n            }\n        }\n        if (checksum != (rune ? 270012 : is_set ? 20001 : 5073)) return 10;\n    }\n    mmay_managed_heap_dispose(&heap);\n    mmay_deallocate(&allocator, input, count * sizeof(*input));\n    if (tracked.live_allocations != 0 || tracked.live_bytes != 0) return 11;\n    printf(\"{\\\"ns\\\":%llu,\\\"checksum\\\":%lld,\\\"hash_sum\\\":%llu,\\\"retained_bytes\\\":%zu}\\n\",\n        (unsigned long long)elapsed, (long long)checksum, (unsigned long long)hashes, retained);\n    return 0;\n}\n",
+    "counted-probe.c": "#include <stdio.h>\n#include <stdint.h>\nstatic uint64_t diagnostic_calls, diagnostic_steps, diagnostic_entries;\nstatic uint64_t diagnostic_histogram[65];\nvoid diagnostic_probe_report(void) {\n  fprintf(stderr, \"{\\\"calls\\\":%llu,\\\"steps\\\":%llu,\\\"entry_reads\\\":%llu,\\\"histogram\\\":[\",\n    (unsigned long long)diagnostic_calls, (unsigned long long)diagnostic_steps,\n    (unsigned long long)diagnostic_entries);\n  for (size_t i = 0; i < 65; i++) fprintf(stderr, \"%s%llu\", i == 0 ? \"\" : \",\", (unsigned long long)diagnostic_histogram[i]);\n  fprintf(stderr, \"]}\\n\");\n}\n#include \"managed_map_probe_internal.h\"\n#include \"managed_map_storage_internal.h\"\n\nMarimayManagedStatus mmay_managed_map_probe(\n    const MarimayManagedMap *map,\n    uint64_t hash,\n    bool raw_key,\n    uint64_t key_bits,\n    size_t *bucket,\n    size_t *entry,\n    bool *found,\n    MarimayManagedMapProbe *progress\n) {\n    size_t index = progress != NULL ? progress->next_index : 0;\n    size_t first_tombstone = progress != NULL\n        ? progress->first_tombstone : MMAY_MAP_EMPTY;\n    diagnostic_calls++;\n    *bucket = MMAY_MAP_EMPTY;\n    *entry = MMAY_MAP_EMPTY;\n    if (map == NULL || map->bucket_capacity == 0 || map->buckets == NULL) {\n        return MMAY_MANAGED_INVALID_ARGUMENT;\n    }\n    *found = false;\n    for (; index < map->bucket_capacity; index += 1) {\n        const size_t position = ((size_t)hash + index)\n            & (map->bucket_capacity - 1U);\n        const size_t candidate = map->buckets[position];\n        diagnostic_steps++;\n        if (candidate == MMAY_MAP_EMPTY) {\n            *bucket = first_tombstone != MMAY_MAP_EMPTY\n                ? first_tombstone : position;\n            diagnostic_histogram[index < 64 ? index : 64]++; return MMAY_MANAGED_OK;\n        }\n        if (candidate == MMAY_MAP_TOMBSTONE) {\n            if (first_tombstone == MMAY_MAP_EMPTY) first_tombstone = position;\n            continue;\n        }\n        diagnostic_entries++;\n        if (candidate >= map->entry_count || map->entries == NULL\n            || !mmay_managed_map_entry_prefix(map, candidate)->active) {\n            return MMAY_MANAGED_INVALID_REFERENCE;\n        }\n        if (mmay_managed_map_entry_prefix(map, candidate)->hash == hash\n            && (!raw_key || mmay_managed_map_raw_key(map, candidate) == key_bits)) {\n            if (progress != NULL) {\n                progress->next_index = index + 1U;\n                progress->first_tombstone = first_tombstone;\n            }\n            *bucket = position;\n            *entry = candidate;\n            *found = true;\n            diagnostic_histogram[index < 64 ? index : 64]++; return MMAY_MANAGED_OK;\n        }\n    }\n    if (first_tombstone != MMAY_MAP_EMPTY) {\n        *bucket = first_tombstone;\n        diagnostic_histogram[index < 64 ? index : 64]++; return MMAY_MANAGED_OK;\n    }\n    return MMAY_MANAGED_LIMIT_REACHED;\n}\n"
+  },
+  "versions": {
+    "go": "1.26.4",
+    "rust": "1.96.0 ac68faa20c58cbccd01ee7208bf3b6e93a7d7f96",
+    "host": "macOS arm64 / Apple M2"
+  },
+  "limitations": [
+    "Phases use four monotonic-clock calls at function boundaries in diagnostic generated C; all inputs, counting code, source checksums and shipped runtime remain unchanged.",
+    "The direct C runtime probe excludes input creation and managed-array/Option/Result transport; its timings are a diagnostic comparison, not a drop-in implementation of Marimay source semantics.",
+    "Isolated hashing time is not an additive component of the mixed loop because instruction overlap, branches and memory access differ.",
+    "Probe counters and allocation counts come from separate diagnostic runs whose times are not used; probe totals include final checksum reads and growth probes.",
+    "The sampled profile repeats 500 unmodified generated entries with independent complete setup/teardown, checking every output. Sampling counts are not exact CPU percentages.",
+    "Only three existing user workloads have phase and runtime timing here. Alternate table designs, string/reference keys and broad operation distributions still require comparative prototypes.",
+    "No end-to-end improvement, new table design, Go/Rust parity, CP42 completion or pushed CI closure is claimed."
+  ]
+}

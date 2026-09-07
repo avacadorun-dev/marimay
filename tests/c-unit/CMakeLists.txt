@@ -38,6 +38,7 @@ add_executable(mmay_c_unit
   test_cp35_environment.c
   test_cp35_context_pipeline.c
   test_cp36_collections.c
+  test_collection_cursor.c
   test_collection_native_failures.c
   test_cp37_cli_parser.c
   test_cp38_json.c
@@ -75,6 +76,7 @@ add_executable(mmay_c_unit
   test_checker_generic_lifetime.c
   test_checker_generics_imports.c
   test_checker_map_error_imports.c
+  test_checker_map_error_context.c
   test_checker_enum_pattern_names.c
   test_checker_imports_support.c
   test_checker_imported_arrays.c
@@ -88,7 +90,9 @@ add_executable(mmay_c_unit
   test_checker_calls_constants.c
   test_checker_equality.c
   test_checker_expectations.c
+  test_native_test_helpers.c
   test_checker_expression_statements.c
+  test_checker_void_match.c
   test_checker_operators.c
   test_checker_numeric_policy.c
   test_checker_control.c
@@ -112,6 +116,7 @@ add_executable(mmay_c_unit
   test_cli_test.c
   test_cli_test_bytecode.c
   test_cli_test_native.c
+  test_cli_test_locations.c
   test_cli_cp14_imported_arrays.c
   test_cli_cp15_imported_results.c
   test_cli_cp16_receiver_names.c
@@ -155,7 +160,9 @@ add_executable(mmay_c_unit
   runtime/test_managed_mutation.c
   runtime/test_managed_map_set.c
   runtime/test_managed_map_probe.c
+  runtime/test_managed_collection_iteration.c
   runtime/test_managed_map_storage.c
+  runtime/test_managed_collection_churn.c
   runtime/test_managed_map_cache.c
   runtime/test_managed_set_insertion.c
   runtime/test_managed_reference_validation.c
@@ -680,6 +687,51 @@ add_test(
     "-DMMAY_TEST_EXPECTED=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp38-json/expected.json"
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp38_json.cmake"
 )
+
+add_test(
+  NAME mmay_cp42_void_match
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp42-void-match"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/cp42-void-match"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_void_match.cmake"
+)
+set_tests_properties(mmay_cp42_void_match PROPERTIES
+  LABELS "differential;cp42" TIMEOUT 1800)
+
+add_test(
+  NAME mmay_cp42_test_helpers
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp42-test-helpers"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/cp42-test-helpers"
+    "-DMMAY_TEST_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_test_helpers.cmake"
+)
+set_tests_properties(mmay_cp42_test_helpers PROPERTIES
+  LABELS "differential;cp42" TIMEOUT 1800)
+
+add_test(
+  NAME mmay_cp42_map_error_context
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp42-map-error-context"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/cp42-map-error-context"
+    "-DMMAY_TEST_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_map_error_context.cmake"
+)
+set_tests_properties(mmay_cp42_map_error_context PROPERTIES
+  LABELS "differential;cp42" TIMEOUT 1800)
+
+add_test(
+  NAME mmay_cp42_test_locations
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/cp42-test-locations"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_test_locations.cmake"
+)
+set_tests_properties(mmay_cp42_test_locations PROPERTIES
+  LABELS "differential;cp42" TIMEOUT 1800)
 
 # The install contracts update CMake's build-tree install manifest. They may
 # overlap all other isolated tests, but not each other.

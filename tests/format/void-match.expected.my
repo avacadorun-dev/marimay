@@ -1,0 +1,21 @@
+fn handled(value: Result<void, string>): Result<void, string> {
+  match value {
+    Ok(_) => {},
+    Err(error) => {
+      return Err(error);
+    },
+  };
+  return Ok();
+}
+
+fn cleanup(value: bool): void {
+  match value {
+    true => {
+      defer close();
+      work();
+    },
+    false => {
+      work()
+    },
+  };
+}

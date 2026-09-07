@@ -4,6 +4,7 @@
 #include "cli_resource_report.h"
 #include "cli_test_bytecode.h"
 #include "cli_test_native.h"
+#include "cli_test_locations.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +43,7 @@ typedef struct MarimayCliTestContext {
     MarimayProgramArgumentList program_arguments;
     MarimayBytecodeProgram bytecode;
     MarimayVector native_symbols;
+    MarimayVector panic_locations;
     MarimayNativeBuildResult native_build;
 } MarimayCliTestContext;
 
@@ -146,40 +148,16 @@ static bool mmay_cli_test_capture_write(
     );
 }
 
-static bool mmay_cli_test_append(
-    MarimayVector *bytes,
-    const void *data,
-    size_t length
-) {
-    return length == 0 || mmay_vector_append(bytes, data, length);
-}
-
-static bool mmay_cli_test_panic_bytes(
-    MarimayAllocator allocator,
-    const MarimayBytecodePanic *panic,
-    MarimayOwnedBytes *output
-) {
-    static const char prefix[] = "panic[";
-    static const char separator[] = "]: ";
-    static const char newline[] = "\n";
-    MarimayVector bytes;
-    bool ready = false;
-    memset(&bytes, 0, sizeof(bytes));
-    if (panic == NULL || panic->code == NULL
-        || !mmay_vector_init(&bytes, allocator, sizeof(unsigned char))) {
-        return false;
-    }
-    ready = mmay_cli_test_append(&bytes, prefix, sizeof(prefix) - 1)
-        && mmay_cli_test_append(&bytes, panic->code, strlen(panic->code))
-        && mmay_cli_test_append(&bytes, separator, sizeof(separator) - 1)
-        && mmay_cli_test_append(
-            &bytes, panic->message.data, panic->message.length
-        ) && mmay_cli_test_append(&bytes, newline, sizeof(newline) - 1)
-        && mmay_owned_bytes_copy(
-            output, allocator, bytes.data, bytes.length
-        );
-    mmay_vector_dispose(&bytes);
-    return ready;
+static bool mmay_cli_test_panic_write(const MarimayCliTestContext *context,
+    const MarimayBytecodePanic *panic, MarimayWriter writer) {
+    return panic != NULL && panic->code != NULL
+        && mmay_writer_write_cstr(writer, "panic[")
+        && mmay_writer_write_cstr(writer, panic->code)
+        && mmay_writer_write_cstr(writer, "]: ")
+        && mmay_writer_write(writer, (const char *)panic->message.data, panic->message.length)
+        && mmay_writer_write_cstr(writer, "\n")
+        && mmay_cli_test_location_write(&context->panic_locations,
+            panic->symbol, panic->span.start, panic->span.end, writer);
 }
 
 static bool mmay_cli_test_vm(
@@ -292,10 +270,13 @@ static bool mmay_cli_test_vm(
         observation->exit_code = 0;
     } else if (run_status == MMAY_BYTECODE_RUN_PANIC) {
         observation->exit_code = 1;
-        if (!mmay_cli_test_panic_bytes(
-                context->session->allocator, &panic,
-                &observation->standard_error
-            )) goto cleanup;
+        error_writer.context = &error_capture;
+        error_writer.write = mmay_cli_test_capture_write;
+        error_writer.flush = NULL;
+        if (!mmay_cli_test_panic_write(context, &panic, error_writer)
+            || !mmay_owned_bytes_copy(&observation->standard_error,
+                context->session->allocator, error_capture.bytes.data,
+                error_capture.bytes.length)) goto cleanup;
     } else {
         bool classified = false;
         error_writer.context = &error_capture;
@@ -376,6 +357,8 @@ static bool mmay_cli_test_native(
             ) || context->native_symbols.length == 0) goto cleanup;
         request.test_entries = context->native_symbols.data;
         request.test_entry_count = context->native_symbols.length;
+        request.panic_locations = context->panic_locations.data;
+        request.panic_location_count = context->panic_locations.length;
         request.entry_symbol = request.test_entries[0];
         *build_status = mmay_native_build(
             context->session->allocator, &request, &context->native_build
@@ -787,12 +770,15 @@ int mmay_cli_test_program(
     context.target = &target;
     context.compiler = &compiler;
     context.program_arguments = program_arguments.list;
+    if (tests.length != 0 && !mmay_cli_test_locations_prepare(&compiler.checked,
+            session->allocator, &context.panic_locations)) goto cleanup;
     exit_code = mmay_cli_test_execute(
         &context, &tests, standard_output, standard_error
     );
 cleanup:
     mmay_native_build_result_dispose(&context.native_build);
     mmay_vector_dispose(&context.native_symbols);
+    mmay_vector_dispose(&context.panic_locations);
     mmay_bytecode_program_dispose(&context.bytecode);
     mmay_cli_program_arguments_dispose(&program_arguments);
     mmay_deallocate(&session->allocator, context.functions, function_bytes);

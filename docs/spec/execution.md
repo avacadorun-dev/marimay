@@ -147,6 +147,35 @@ Only the language length limit becomes a growth error. Configured execution
 limits and allocation failures remain execution outcomes under D055. Hash and
 probe counts are internal: storage growth or compaction may require reprobing.
 
+#### 4.2.3 Ordered collection cursors
+
+D089 appends wire opcodes 158 `collection_next`, 159 `collection_cursor_key`,
+and 160 `collection_cursor_value`. Each has destination, collection and cursor
+register operands. The cursor and NEXT destination are exact `int` scalars;
+key/value destinations match the receiver's exact recursive layout. VALUE
+requires a Map. All inputs must be definitely assigned. IDs 151/152 continue
+to read active insertion-order ordinals, independently of these operations.
+
+Cursor zero starts a traversal. NEXT scans from the supplied nonnegative
+storage offset and returns one past the next active position, or zero at
+exhaustion. A position beyond storage is rejected. KEY/VALUE require a positive
+cursor naming an active slot and reject zero, removed or out-of-range slots.
+Negative cursors are rejected before host-size conversion. Invalid dynamic
+cursor values produce an invalid-reference VM execution outcome (the shared
+runtime reports bounds), not a source panic without a panic payload. A cursor grants no
+unchecked storage access and carries no pointer. Each runtime operation checks
+the complete receiver handle and Map/Set kind. These operations allocate no
+managed state and are not allocation safepoints; reference results participate
+in the ordinary engine rooting/liveness contract.
+
+Source loops own independent cursors and check the captured mutation generation
+before every NEXT, even the final exhaustion check. Break performs no further
+advance; continue reaches the next generation check. D079 insertion order,
+G4005 messages and exact source spans remain unchanged. A complete traversal
+without mutation scans each storage position at most once; key/value reads
+at a returned cursor take constant time. Internal cursors and storage offsets
+are not source-level indices, capacity promises or a public iterator API.
+
 ### 4.3 Verification
 
 Under D080, opcode 11 `i64_equal` compares two registers of the same integer

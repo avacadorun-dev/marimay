@@ -6,7 +6,7 @@ static bool mmay_collection_opcode(MarimayOpcode opcode) {
     return (opcode >= MMAY_OPCODE_COLLECTION_NEW
             && opcode <= MMAY_OPCODE_COLLECTION_ENTRY_VALUE)
         || (opcode >= MMAY_OPCODE_COLLECTION_GET_OPTION
-            && opcode <= MMAY_OPCODE_COLLECTION_ADD_RESULT);
+            && opcode <= MMAY_OPCODE_COLLECTION_CURSOR_VALUE);
 }
 
 static const MarimayBytecodeEnumVariant *mmay_collection_variant(
@@ -220,18 +220,34 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_collection_instruction(
         assigned[target] = 1;
         return MMAY_BYTECODE_VERIFY_OK;
     }
+    if (instruction->opcode == MMAY_OPCODE_COLLECTION_NEXT) {
+        if (!mmay_collection_register_matches(
+                function, argument, MMAY_BYTECODE_TYPE_I64,
+                MMAY_BYTECODE_NO_LAYOUT
+            ) || !mmay_collection_register_matches(
+                function, target, MMAY_BYTECODE_TYPE_I64,
+                MMAY_BYTECODE_NO_LAYOUT
+            )) return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+        assigned[target] = 1;
+        return MMAY_BYTECODE_VERIFY_OK;
+    }
     if (instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_KEY
-        || instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_VALUE) {
-        MarimayBytecodeType expected = instruction->opcode
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_VALUE
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_KEY
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_VALUE) {
+        MarimayBytecodeType expected = (instruction->opcode
                 == MMAY_OPCODE_COLLECTION_ENTRY_KEY
+                || instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_KEY)
             ? collection->key_type : collection->value_type;
-        uint32_t expected_layout = instruction->opcode
+        uint32_t expected_layout = (instruction->opcode
                 == MMAY_OPCODE_COLLECTION_ENTRY_KEY
+                || instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_KEY)
             ? collection->key_layout : collection->value_layout;
         if (!mmay_collection_register_matches(
                 function, argument, MMAY_BYTECODE_TYPE_I64,
                 MMAY_BYTECODE_NO_LAYOUT
-            ) || (instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_VALUE
+            ) || ((instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_VALUE
+                    || instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_VALUE)
                 && collection->is_set)
             || !mmay_collection_register_matches(
                 function, target, expected, expected_layout

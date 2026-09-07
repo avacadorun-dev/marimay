@@ -318,6 +318,7 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
   runtime/common/managed_map.c
+  runtime/common/managed_collection_iteration.c
   runtime/common/managed_map_storage.c
   runtime/common/managed_map_probe.c
   runtime/common/managed_set.c
@@ -545,6 +546,7 @@ add_library(mmay_bootstrap STATIC
     bootstrap/src/cli/cli_test_program.c
     bootstrap/src/cli/cli_test_bytecode.c
     bootstrap/src/cli/cli_test_native.c
+    bootstrap/src/cli/cli_test_locations.c
     bootstrap/src/cli/cli_run_report.c
     bootstrap/src/cli/cli_resource_report.c
   bootstrap/src/cli/cli_check_targets.c
@@ -611,6 +613,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/native/c_emitter_defer.c
   bootstrap/src/native/c_emitter_entry.c
   bootstrap/src/native/c_emitter_test_entry.c
+  bootstrap/src/native/c_emitter_locations.c
   bootstrap/src/native/c_emitter_emit.c
     bootstrap/src/native/c_emitter_format.c
   bootstrap/src/native/c_emitter_io.c
@@ -651,6 +654,7 @@ add_library(mmay_bootstrap STATIC
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
   runtime/common/managed_map.c
+  runtime/common/managed_collection_iteration.c
   runtime/common/managed_map_storage.c
   runtime/common/managed_map_probe.c
   runtime/common/managed_set.c

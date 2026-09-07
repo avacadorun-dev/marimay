@@ -398,6 +398,11 @@ seeding may be process-randomized for attack resistance without changing
 visible order. The supported key set is the exact primitive/string and closed
 derived-nominal set in D079. Capacity and hashes are never observable.
 
+D089 gives each Map/Set loop independent forward progress, including nested
+loops through aliases. Full traversal scans storage linearly, skipping removed
+entries, while retaining the generation check before every subsequent advance
+and exhaustion test. Cursor values and storage positions are internal.
+
 D088 selects compact shared storage from the validated immutable collection
 descriptor: raw scalar cells retain their complete 64-bit representation,
 reference cells retain their complete managed reference, and a Set has no
@@ -406,6 +411,28 @@ managed object, slot bookkeeping and reserved packed storage, including layout
 metadata; it does not promise the former oversized cell reservation. Checked
 growth and insertion-ordered compaction remain failure-atomic, and no raw
 storage address escapes an operation or survives a collection boundary.
+
+D090 gives the private bucket index compact hash metadata, scanned in groups
+before candidate entry access. Metadata filters candidates; complete hash and
+key equality still decide a match. Every candidate entry access retains its
+bounds, storage and active-state checks. Lookup need not inspect entries
+excluded by metadata. Metadata is maintained only by the runtime and is not a
+source or bytecode input. D055 counts the entire bucket allocation, including
+one metadata byte per reserved position and seven mirrored bytes for a
+nonempty reservation; an unallocated index has no metadata reservation.
+Growth, compaction, deletion and clear preserve the metadata invariant and
+the same failure-atomic contents, order and mutation generation.
+
+D091 amortizes rebuilding of insertion-ordered storage: when the entry
+reservation is exhausted, the runtime compacts at its existing capacity if
+at most half is live, and otherwise grows the entry reservation geometrically.
+Bucket load-factor planning remains independent. Repeated deletion/reinsertion
+at a fixed live size must not allocate replacement buffers on every operation.
+After the last entry is removed, the empty reservation is reusable without
+allocating replacement storage.
+D055 accounts for the resulting reservation, including geometric growth after
+a sparse deletion. A failed insertion preserves the state immediately before
+that insertion; an earlier successful removal remains committed.
 
 `put` and `add` return `Ok(true)` for insertion and `Ok(false)` for update or a
 duplicate respectively. New entries are bounded by `int::MAX` and use

@@ -10,6 +10,7 @@
 #include "mmay/native/runtime_artifact.h"
 #include "mmay/runtime/fs.h"
 #include "mmay/runtime/env.h"
+#include "mmay/native/locations.h"
 
 typedef struct MarimayNativeBuildRequest {
     const MarimayMirFunction *const *functions;
@@ -38,6 +39,9 @@ typedef struct MarimayNativeBuildRequest {
     /* Optional internal test entry table; same contract as native C emission. */
     const MarimaySymbolId *test_entries;
     size_t test_entry_count;
+    /* Optional canonical source metadata for executable panic reports. */
+    const MarimayNativePanicLocation *panic_locations;
+    size_t panic_location_count;
 } MarimayNativeBuildRequest;
 
 typedef struct MarimayNativeBuildResult {

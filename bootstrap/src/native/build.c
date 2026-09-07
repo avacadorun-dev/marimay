@@ -472,6 +472,8 @@ MarimayNativeBuildStatus mmay_native_build(
     emit_options.error_message_symbol = request->error_message_symbol;
     emit_options.test_entries = request->test_entries;
     emit_options.test_entry_count = request->test_entry_count;
+    emit_options.panic_locations = request->panic_locations;
+    emit_options.panic_location_count = request->panic_location_count;
     emit_options.read_roots = request->read_roots;
     emit_options.read_root_count = request->read_root_count;
     emit_options.write_roots = request->write_roots;

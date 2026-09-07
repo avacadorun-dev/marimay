@@ -359,23 +359,51 @@ bool mmay_native_c_emit_collection_instruction(
             instruction->target, instruction->first
         );
     }
+    if (instruction->kind == MMAY_MIR_COLLECTION_NEXT) {
+        if (!mmay_native_c_write(
+                buffer,
+                "  { size_t mmay_g_next = 0; if (mmay_g_v_%u < 0 || (uint64_t)mmay_g_v_%u > SIZE_MAX) { mmay_g_s = 7; goto mmay_g_cleanup; } mmay_g_m = mmay_managed_collection_next(&mmay_g_x->heap, mmay_g_v_%u, %s, (size_t)mmay_g_v_%u, &mmay_g_next); ",
+                instruction->second, instruction->second, instruction->first,
+                collection->is_set ? "true" : "false", instruction->second
+            ) || !mmay_native_c_collection_status(buffer)) return false;
+        return mmay_native_c_write(
+            buffer,
+            " if (mmay_g_next > INT64_MAX) { mmay_g_s = 6; goto mmay_g_cleanup; } mmay_g_v_%u = (int64_t)mmay_g_next; }\n",
+            instruction->target
+        );
+    }
     if (instruction->kind == MMAY_MIR_COLLECTION_ENTRY_KEY
-        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE) {
-        MarimayTypeId output_type = instruction->kind
-                == MMAY_MIR_COLLECTION_ENTRY_KEY
+        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE
+        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_KEY
+        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_VALUE) {
+        bool key = instruction->kind == MMAY_MIR_COLLECTION_ENTRY_KEY
+            || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_KEY;
+        bool cursor = instruction->kind == MMAY_MIR_COLLECTION_CURSOR_KEY
+            || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_VALUE;
+        MarimayTypeId output_type = key
             ? collection->key_type : collection->value_type;
         if (!mmay_native_c_write(
                 buffer,
-                "  { MarimayManagedCell mmay_g_cell = {0}, mmay_g_key = {0}, mmay_g_value = {0}; (void)mmay_g_value; if (mmay_g_v_%u < 0) { mmay_g_s = 7; goto mmay_g_cleanup; } mmay_g_m = %s(&mmay_g_x->heap, mmay_g_v_%u, (size_t)mmay_g_v_%u, &mmay_g_key%s); ",
-                instruction->second,
+                "  { MarimayManagedCell mmay_g_cell = {0}, mmay_g_key = {0}, mmay_g_value = {0}; (void)mmay_g_value; if (mmay_g_v_%u < 0 || (uint64_t)mmay_g_v_%u > SIZE_MAX) { mmay_g_s = 7; goto mmay_g_cleanup; } ",
+                instruction->second, instruction->second
+            )) return false;
+        if (cursor) {
+            if (!mmay_native_c_write(
+                    buffer,
+                    "mmay_g_m = mmay_managed_collection_cursor_entry(&mmay_g_x->heap, mmay_g_v_%u, %s, (size_t)mmay_g_v_%u, &mmay_g_key, &mmay_g_value); ",
+                    instruction->first, collection->is_set ? "true" : "false",
+                    instruction->second
+                )) return false;
+        } else if (!mmay_native_c_write(
+                buffer,
+                "mmay_g_m = %s(&mmay_g_x->heap, mmay_g_v_%u, (size_t)mmay_g_v_%u, &mmay_g_key%s); ",
                 collection->is_set ? "mmay_managed_set_entry" : "mmay_managed_map_entry",
                 instruction->first, instruction->second,
                 collection->is_set ? "" : ", &mmay_g_value"
-            ) || !mmay_native_c_collection_status(buffer)
+            )) return false;
+        if (!mmay_native_c_collection_status(buffer)
             || !mmay_native_c_write(
-                buffer, " mmay_g_cell = %s; ",
-                instruction->kind == MMAY_MIR_COLLECTION_ENTRY_KEY
-                    ? "mmay_g_key" : "mmay_g_value"
+                buffer, " mmay_g_cell = %s; ", key ? "mmay_g_key" : "mmay_g_value"
             ) || !mmay_native_c_write_from_managed_cell(
                 buffer, output_type, instruction->target
             )) return false;

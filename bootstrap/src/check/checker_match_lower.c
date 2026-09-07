@@ -1,5 +1,6 @@
 #include "checker_match_lower_api.h"
 #include "checker_cfg_api.h"
+#include "checker_defer_api.h"
 #include "checker_core_api.h"
 #include "checker_lookup_api.h"
 #include "checker_match_analysis_api.h"
@@ -7,32 +8,23 @@
 #include "checker_match_witness_api.h"
 #include "checker_statement_api.h"
 
-static bool mmay_checker_private_finish_match_value(
+static bool mmay_checker_private_finish_match_result(
     MarimayFunctionChecker *function,
-    const MarimayAstNode *expression,
+    const MarimayAstNode *site,
+    const MarimayExpressionValue *value,
     MarimayMirBlockId *join,
     MarimayTypeId *match_type,
     MarimayMirRegister *target,
+    size_t defer_count,
     bool terminate
 ) {
-    MarimayExpressionValue value;
-    memset(&value, 0, sizeof(value));
-    if (!mmay_compile_expression(function, expression, *match_type, &value)) {
-        return false;
-    }
-    if (mmay_expression_is_never(function, &value)) {
-        return true;
-    }
-    if (*match_type == MMAY_TYPE_INVALID) {
-        *match_type = value.type;
-    }
-    if (value.type != *match_type) {
+    if (mmay_expression_is_never(function, value)) return true;
+    if (*match_type == MMAY_TYPE_INVALID) *match_type = value->type;
+    if (value->type != *match_type) {
         (void)mmay_checker_add_diagnostic(
-            function->checker,
-            MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "match arm result type differs from the other arms",
-            expression->start,
-            expression->end
+            site->start, site->end
         );
         return false;
     }
@@ -44,23 +36,111 @@ static bool mmay_checker_private_finish_match_value(
         && !mmay_function_add_register(function, *match_type, target)) {
         return false;
     }
+    /* Capture the evaluated tail before cleanup, keeping references live
+     * through deferred calls. Each arm owns only its own registrations. */
     if ((*match_type != MMAY_TYPE_VOID && (*target == MMAY_MIR_NO_REGISTER
         || !mmay_checker_private_function_emit_copy(
-            function, *target, value.register_id,
-            expression->start, expression->end
-        ))) || !mmay_checker_private_function_set_goto(
-            function, function->block, *join,
-            expression->end, expression->end
+            function, *target, value->register_id, site->start, site->end
+        ))) || !mmay_checker_private_emit_defers_from(function, defer_count)
+        || !mmay_checker_private_function_set_goto(
+            function, function->block, *join, site->end, site->end
         )) {
         return false;
     }
-    if (terminate) {
-        function->terminated = true;
+    if (terminate) function->terminated = true;
+    return true;
+}
+
+static bool mmay_checker_private_finish_match_value(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *expression,
+    MarimayMirBlockId *join,
+    MarimayTypeId *match_type,
+    MarimayMirRegister *target,
+    size_t defer_count,
+    bool terminate
+) {
+    MarimayExpressionValue value;
+    memset(&value, 0, sizeof(value));
+    return mmay_compile_expression(function, expression, *match_type, &value)
+        && mmay_checker_private_finish_match_result(
+            function, expression, &value, join, match_type, target,
+            defer_count, terminate
+        );
+}
+
+static bool mmay_checker_private_compile_arm_body(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *body,
+    bool body_is_block,
+    MarimayMirBlockId *join,
+    MarimayTypeId *match_type,
+    MarimayMirRegister *target,
+    size_t defer_count
+) {
+    size_t index = 0;
+    bool saw_tail = false;
+    if (body == NULL || join == NULL || match_type == NULL || target == NULL) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
+        return false;
+    }
+    if (!body_is_block) {
+        return mmay_checker_private_finish_match_value(
+            function, body, join, match_type, target, defer_count, false
+        );
+    }
+    for (index = 0; index < body->child_count; index += 1) {
+        const MarimayAstElement *element = mmay_ast_child(body, index);
+        const MarimayAstNode *expression = NULL;
+        if (element == NULL) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
+            return false;
+        }
+        if (element->kind == MMAY_AST_ELEMENT_TOKEN) {
+            if (element->as.token.synthetic
+                || (element->as.token.kind != MMAY_TOKEN_LEFT_BRACE
+                    && element->as.token.kind != MMAY_TOKEN_RIGHT_BRACE)) {
+                mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
+                return false;
+            }
+            continue;
+        }
+        if (function->terminated) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE);
+            return false;
+        }
+        if (element->as.node->kind == MMAY_SYNTAX_MATCH_ARM_TAIL) {
+            expression = mmay_checker_private_check_child_node(
+                element->as.node, MMAY_SYNTAX_EXPRESSION, 0
+            );
+            if (expression == NULL || !mmay_checker_private_finish_match_value(
+                    function, expression, join, match_type, target, defer_count, true
+                )) {
+                return false;
+            }
+            saw_tail = true;
+        } else if (!mmay_checker_private_compile_statement(function, element->as.node)) {
+            return false;
+        }
+    }
+    if (!saw_tail && !function->terminated) {
+        const MarimayExpressionValue value = {MMAY_TYPE_VOID, MMAY_MIR_NO_REGISTER, true};
+        if (*match_type != MMAY_TYPE_INVALID && *match_type != MMAY_TYPE_VOID) {
+            (void)mmay_checker_add_diagnostic(
+                function->checker, MMAY_DIAGNOSTIC_MISSING_MATCH_VALUE,
+                "match arm block without a tail produces void where a value is required",
+                body->start, body->end
+            );
+            return false;
+        }
+        return mmay_checker_private_finish_match_result(
+            function, body, &value, join, match_type, target, defer_count, true
+        );
     }
     return true;
 }
 
- bool mmay_checker_private_compile_match_arm_body(
+bool mmay_checker_private_compile_match_arm_body(
     MarimayFunctionChecker *function,
     const MarimayAstNode *body,
     bool body_is_block,
@@ -68,72 +148,14 @@ static bool mmay_checker_private_finish_match_value(
     MarimayTypeId *match_type,
     MarimayMirRegister *target
 ) {
-    size_t index = 0;
-    bool saw_tail = false;
-    if (body == NULL || join == NULL || match_type == NULL
-        || target == NULL) {
-        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
-        return false;
-    }
-    if (body_is_block) {
-        for (index = 0; index < body->child_count; index += 1) {
-            const MarimayAstElement *element = mmay_ast_child(body, index);
-            const MarimayAstNode *expression = NULL;
-            if (element == NULL) {
-                mmay_checker_fail(
-                    function->checker, MMAY_CHECK_INVALID_ARGUMENT
-                );
-                return false;
-            }
-            if (element->kind == MMAY_AST_ELEMENT_TOKEN) {
-                if (element->as.token.synthetic
-                    || (element->as.token.kind != MMAY_TOKEN_LEFT_BRACE
-                        && element->as.token.kind != MMAY_TOKEN_RIGHT_BRACE)) {
-                    mmay_checker_fail(
-                        function->checker, MMAY_CHECK_INVALID_ARGUMENT
-                    );
-                    return false;
-                }
-                continue;
-            }
-            if (function->terminated) {
-                mmay_checker_fail(
-                    function->checker, MMAY_CHECK_INCOMPLETE_LANGUAGE
-                );
-                return false;
-            }
-            if (element->as.node->kind == MMAY_SYNTAX_MATCH_ARM_TAIL) {
-                expression = mmay_checker_private_check_child_node(
-                    element->as.node, MMAY_SYNTAX_EXPRESSION, 0
-                );
-                if (expression == NULL
-                    || !mmay_checker_private_finish_match_value(
-                        function, expression, join, match_type, target, true
-                    )) {
-                    return false;
-                }
-                saw_tail = true;
-            } else if (!mmay_checker_private_compile_statement(
-                    function, element->as.node
-                )) {
-                return false;
-            }
-        }
-        if (!saw_tail && !function->terminated) {
-            (void)mmay_checker_add_diagnostic(
-                function->checker,
-                MMAY_DIAGNOSTIC_MISSING_MATCH_VALUE,
-                "reachable block match arm does not end with a value",
-                body->start,
-                body->end
-            );
-            return false;
-        }
-        return true;
-    }
-    return mmay_checker_private_finish_match_value(
-        function, body, join, match_type, target, false
+    size_t defer_count = function->defers.length;
+    bool compiled = mmay_checker_private_compile_arm_body(
+        function, body, body_is_block, join, match_type, target, defer_count
     );
+    /* Return/propagation/loop-transfer already emitted cleanup on that path.
+     * Also restore the compile-time list after a failed or diverging arm. */
+    function->defers.length = defer_count;
+    return compiled;
 }
 
  bool mmay_checker_private_compile_match_guard(

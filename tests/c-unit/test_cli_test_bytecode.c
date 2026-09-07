@@ -1,6 +1,8 @@
 #include "test_support.h"
 
 #include <string.h>
+#include <stdio.h>
+#include "mmay/platform/directory.h"
 
 #include "cli_test_bytecode.h"
 #include "mmay/bytecode/vm.h"
@@ -219,18 +221,31 @@ static void mmay_test_preparation_invalid(
 }
 
 static void mmay_test_prepared_isolation(void) {
-    static const char expected[] =
+    static const char format[] =
         "test local/prepared-tests.argumentsMutateThenPanic ... FAILED\n"
         "  stdout:\nfirst-output\ncleanup-one\n"
         "  stderr:\npanic[G4000]: first-panic\n"
+        "  --> %s/checkpoint11-prepared/reuse_test.my:21:3-21:23\n"
         "test local/prepared-tests.noArgumentsAfterPanic ... ok\n"
         "test local/prepared-tests.argumentsAreFresh ... ok\n"
         "test local/prepared-tests.lastTestStillHasFreshArguments ... ok\n"
         "test result: FAILED. 3 passed; 1 failed\n";
     static const char *const engines[] = {"vm", "native", "both"};
+    char expected[16384];
+    MarimayOwnedBytes current = {0};
+    int length;
     MarimaySession session;
     size_t index;
     mmay_session_init(&session, mmay_system_allocator());
+    MMAY_EXPECT(mmay_directory_current(mmay_system_allocator(), 4096, &current) == MMAY_FILE_OK);
+    if (current.data == NULL) return;
+    for (index = 0; index < current.length; index += 1) {
+        if (current.data[index] == '\\') current.data[index] = '/';
+    }
+    length = snprintf(expected, sizeof(expected), format, (const char *)current.data);
+    mmay_owned_bytes_dispose(&current);
+    MMAY_EXPECT(length > 0 && (size_t)length < sizeof(expected));
+    if (length <= 0 || (size_t)length >= sizeof(expected)) return;
     for (index = 0; index < 3; index += 1) {
         const char *arguments[] = {
             mmay_test_toolchain_executable(), "test", "checkpoint11-prepared",
@@ -244,8 +259,8 @@ static void mmay_test_prepared_isolation(void) {
             &session, 8, arguments, (MarimayReadStream){0},
             mmay_test_buffer_writer(&output), mmay_test_buffer_writer(&error)
         ) == MMAY_EXIT_SOURCE_FAILURE);
-        MMAY_EXPECT(output.length == sizeof(expected) - 1
-            && memcmp(output.bytes, expected, sizeof(expected) - 1) == 0);
+        MMAY_EXPECT(output.length == (size_t)length
+            && memcmp(output.bytes, expected, (size_t)length) == 0);
         MMAY_EXPECT(error.length == 0);
     }
 }

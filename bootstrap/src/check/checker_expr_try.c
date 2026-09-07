@@ -3,6 +3,7 @@
 #include "checker_cfg_api.h"
 #include "checker_core_api.h"
 #include "checker_expr_nominal_api.h"
+#include "checker_expr_map_error_api.h"
 #include "checker_generic_types_api.h"
 #include "checker_lookup_api.h"
 #include "checker_statement_api.h"
@@ -48,10 +49,16 @@ bool mmay_checker_private_compile_try_expression(
     memset(&success_value, 0, sizeof(success_value));
     memset(&required_success, 0, sizeof(required_success));
     memset(&error_argument, 0, sizeof(error_argument));
-    if (!mmay_compile_expression(
-            function, operand_node, MMAY_TYPE_INVALID, &operand
-        )) {
-        return false;
+    {
+        const MarimayAstNode *previous_operand = function->try_operand;
+        MarimayTypeId previous_error = function->try_error_type;
+        bool compiled;
+        function->try_error_type = mmay_checker_private_map_error_operand_context(
+            function, operand_node, &function->try_operand);
+        compiled = mmay_compile_expression(function, operand_node, MMAY_TYPE_INVALID, &operand);
+        function->try_operand = previous_operand;
+        function->try_error_type = previous_error;
+        if (!compiled) return false;
     }
     if (mmay_expression_is_never(function, &operand)) {
         *result = operand;
@@ -67,7 +74,9 @@ bool mmay_checker_private_compile_try_expression(
         function->checker, operand.type
     );
     if (operand_descriptor == NULL || result_descriptor == NULL
-        || result_enum == NULL
+        || result_enum == NULL || !result_enum->is_builtin
+        || result_enum->owned_name.length != sizeof("Result") - 1
+        || memcmp(result_enum->owned_name.data, "Result", sizeof("Result") - 1) != 0
         || operand_descriptor->kind != MMAY_TYPE_KIND_NOMINAL
         || result_descriptor->kind != MMAY_TYPE_KIND_NOMINAL
         || operand_descriptor->argument_count != 2

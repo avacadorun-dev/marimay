@@ -168,3 +168,6 @@ Stage 0 codec.
 | 155 | `collection_remove_option` | `destination:register`, `collection:register`, `key:register` | `may_panic` | Remove one Map key into Option with exactly one collection lookup. |
 | 156 | `collection_put_result` | `destination:register`, `collection:register`, `key:register`, `value:register` | `may_panic` | Insert or update one Map entry and return its typed growth result after one lookup. |
 | 157 | `collection_add_result` | `destination:register`, `collection:register`, `key:register` | `may_panic` | Insert one Set element and return its typed growth result after one lookup. |
+| 158 | `collection_next` | `destination:register`, `collection:register`, `cursor:register` | — | Advance an independent checked storage cursor or return zero at exhaustion. |
+| 159 | `collection_cursor_key` | `destination:register`, `collection:register`, `cursor:register` | — | Read the key at a checked positive active storage cursor. |
+| 160 | `collection_cursor_value` | `destination:register`, `collection:register`, `cursor:register` | — | Read the Map value at a checked positive active storage cursor. |

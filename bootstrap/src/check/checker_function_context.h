@@ -40,6 +40,10 @@ typedef struct MarimayFunctionChecker {
     MarimayMirFunction mir;
     MarimayMirBlockId block;
     MarimayTypeId result_type;
+    /* Borrowed AST identity confines '?' error inference to one direct call.
+     * The try owner saves/restores both fields around operand checking. */
+    const MarimayAstNode *try_operand;
+    MarimayTypeId try_error_type;
     size_t diagnostic_start;
     size_t scope_depth;
     bool mir_initialized;

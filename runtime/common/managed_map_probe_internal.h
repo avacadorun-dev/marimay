@@ -14,14 +14,17 @@ typedef struct MarimayManagedMapProbe {
 } MarimayManagedMapProbe;
 
 /* The map owner has validated the receiver and key. This allocation-free
- * owner checks bucket/entry integrity and performs the common linear probe.
+ * owner filters private index metadata in groups, checks each inspected
+ * bucket/entry candidate and performs the common bounded linear probe.
  * Raw keys compare exact bits; reference keys yield hash candidates for the
  * map owner's nominal/string equality. NULL progress starts a one-shot scan.
  * All three output pointers are required, non-NULL caller-owned locations.
  * A non-NULL progress starts as {0, MMAY_MAP_EMPTY} and is modified only here;
- * the map must not mutate between calls. found is false at an empty slot or
- * exhausted tombstone scan. These internal preconditions are established by
- * the checked Map/Set APIs; progress never comes from source or bytecode. */
+ * the map must not mutate between calls. The initialized index has a
+ * power-of-two capacity of at least eight and a complete mirrored control tail.
+ * found is false at an empty slot or exhausted tombstone scan. These
+ * preconditions are established by the checked Map/Set APIs; progress never
+ * comes from source or bytecode. */
 MarimayManagedStatus mmay_managed_map_probe(
     const MarimayManagedMap *map,
     uint64_t hash,

@@ -6,6 +6,39 @@
 #include "../../../runtime/common/managed_internal.h"
 #include "../../../runtime/common/managed_map_storage_internal.h"
 
+/* Independent inspection of the D090 encoding, including the wraparound tail.
+ * Do not use the implementation's control-store or size helpers as the oracle. */
+static void mmay_test_storage_index(const MarimayManagedMap *map) {
+    const unsigned char *controls;
+    size_t index, occupied = 0;
+    if (map->bucket_capacity == 0) {
+        MMAY_EXPECT(map->buckets == NULL);
+        return;
+    }
+    MMAY_EXPECT(map->bucket_capacity >= 8U
+        && (map->bucket_capacity & (map->bucket_capacity - 1U)) == 0);
+    controls = (const unsigned char *)(const void *)(map->buckets + map->bucket_capacity);
+    for (index = 0; index < map->bucket_capacity; index += 1) {
+        const size_t entry = map->buckets[index];
+        if (entry == SIZE_MAX) {
+            MMAY_EXPECT(controls[index] == 0x80U);
+        } else if (entry == SIZE_MAX - 1U) {
+            MMAY_EXPECT(controls[index] == 0xfeU);
+        } else {
+            MMAY_EXPECT(entry < map->entry_count);
+            if (entry >= map->entry_count) continue;
+            MMAY_EXPECT(mmay_managed_map_entry_prefix(map, entry)->active);
+            MMAY_EXPECT(controls[index] == (unsigned char)(
+                mmay_managed_map_entry_prefix(map, entry)->hash >> 57U));
+            occupied += 1U;
+        }
+    }
+    MMAY_EXPECT(occupied == map->length);
+    for (index = 0; index < 7; index += 1) {
+        MMAY_EXPECT(controls[map->bucket_capacity + index] == controls[index]);
+    }
+}
+
 static MarimayManagedMapDescriptor mmay_test_storage_descriptor(size_t shape) {
     const MarimayManagedFieldDescriptor raw = {
         MMAY_MANAGED_CELL_RAW64, false, MMAY_MANAGED_OBJECT_INVALID, NULL
@@ -105,6 +138,8 @@ static bool mmay_test_storage_failure_run(size_t shape, size_t failure, size_t *
                     ? mmay_managed_set_remove(&heap, reference, key, &inserted)
                     : mmay_managed_map_remove(&heap, reference, key, &value, &inserted))
                     == MMAY_MANAGED_OK && inserted);
+                MMAY_EXPECT(mmay_managed_map_resolve(&heap, reference, &map) == MMAY_MANAGED_OK);
+                mmay_test_storage_index(map);
             }
             count = 16;
         }
@@ -125,6 +160,7 @@ static bool mmay_test_storage_failure_run(size_t shape, size_t failure, size_t *
             ? mmay_managed_set_add(&heap, reference, keys[index], &inserted)
             : mmay_managed_map_put(&heap, reference, keys[index], values[index], &inserted);
         MMAY_EXPECT(mmay_managed_map_resolve(&heap, reference, &map) == MMAY_MANAGED_OK);
+        mmay_test_storage_index(map);
         if (status != MMAY_MANAGED_OK) {
             size_t retained;
             MMAY_EXPECT(!inserted && map->length == count
@@ -153,7 +189,8 @@ static bool mmay_test_storage_failure_run(size_t shape, size_t failure, size_t *
             + (shape % 3 == 0 ? 0 : shape % 3 == 1
                 ? sizeof(uint64_t) : sizeof(MarimayManagedReference)));
         MMAY_EXPECT(mmay_managed_map_storage_bytes(map)
-            == map->entry_capacity * map->entry_stride + map->bucket_capacity * sizeof(size_t));
+            == map->entry_capacity * map->entry_stride
+                + map->bucket_capacity * (sizeof(size_t) + 1U) + 7U);
         if (index == 32) MMAY_EXPECT(map->entry_count == 17 && map->entry_capacity == 32);
     }
     for (index = 0; index < 32; index += 1) {
@@ -171,6 +208,11 @@ static bool mmay_test_storage_failure_run(size_t shape, size_t failure, size_t *
         + (shape < 3 ? 0U : 32U) + (shape % 3 == 2 ? 32U : 0U));
     MMAY_EXPECT((descriptor.is_set ? mmay_managed_set_clear(&heap, reference)
         : mmay_managed_map_clear(&heap, reference)) == MMAY_MANAGED_OK);
+    {
+        const MarimayManagedMap *map = NULL;
+        MMAY_EXPECT(mmay_managed_map_resolve(&heap, reference, &map) == MMAY_MANAGED_OK);
+        mmay_test_storage_index(map);
+    }
     key_root = mmay_managed_invalid_reference();
     value_root = mmay_managed_invalid_reference();
     status = mmay_managed_heap_collect(&heap);
@@ -216,7 +258,7 @@ static void mmay_test_storage_budget_boundary(size_t shape) {
             &value_root, &value) == MMAY_MANAGED_OK);
     }
     MMAY_EXPECT(mmay_managed_map_resolve(&heap, reference, &map) == MMAY_MANAGED_OK);
-    required = 4U * map->entry_stride + 8U * sizeof(size_t);
+    required = 4U * map->entry_stride + 8U * sizeof(size_t) + 15U;
     managed_before = mmay_managed_heap_live_bytes(&heap);
     allocated_before = allocation.live_bytes;
     heap.options.max_live_bytes = managed_before + required - 1U;
@@ -236,6 +278,7 @@ static void mmay_test_storage_budget_boundary(size_t shape) {
     MMAY_EXPECT(inserted && mmay_managed_heap_live_bytes(&heap) == heap.options.max_live_bytes);
     MMAY_EXPECT(allocation.live_bytes == allocated_before + required);
     MMAY_EXPECT(mmay_managed_map_storage_bytes(map) == required);
+    mmay_test_storage_index(map);
     for (index = map->entry_stride; index < 4U * map->entry_stride; index += 1) {
         MMAY_EXPECT(map->entries[index] == 0);
     }

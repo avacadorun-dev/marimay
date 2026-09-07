@@ -1,0 +1,123 @@
+@test
+fn nestedSparseMapCursorsRetainPairsAndReferences(): void {
+  const values: Map<int, []int> = mapOf<int, []int>();
+  for index in 0..20 {
+    expect.equal(values.put(index, [index, index + 100]), Ok(true));
+  }
+  for index in 0..20 {
+    if index % 4 != 0 {
+      const _ = values.remove(index);
+    }
+  }
+  expect.equal(values.put(3, [3, 103]), Ok(true));
+  const alias = values;
+  let total = 0;
+  for outer in values {
+    const key = match outer {
+      (key, _) => key,
+    };
+    const payload = match outer {
+      (_, value) => value,
+    };
+    let innerTotal = 0;
+    for inner in alias {
+      const value = match inner {
+        (_, value) => value,
+      };
+      innerTotal += value[0];
+    }
+    expect.equal(innerTotal, 43);
+    // The outer payload remains live through allocations in the inner loop.
+    expect.equal(payload[1], key + 100);
+    total += key;
+  }
+  expect.equal(total, 43);
+}
+
+@test
+fn setCursorsKeepOrderAcrossContinueBreakAndAliases(): void {
+  const values: Set<int> = setOf<int>();
+  for index in 0..20 {
+    const _ = values.add(index);
+  }
+  for index in 0..20 {
+    if index % 4 != 0 {
+      expect.equal(values.remove(index), true);
+    }
+  }
+  const _ = values.add(3);
+  const alias = values;
+  let encoded = 0;
+  for value in values {
+    // Duplicate insertion is non-invalidating for a Set.
+    expect.equal(alias.add(value), Ok(false));
+    if value == 8 {
+      continue;
+    }
+    encoded = encoded * 100 + value;
+    if value == 16 {
+      break;
+    }
+  }
+  expect.equal(encoded, 41216);
+  let sum = 0;
+  for outer in alias {
+    for inner in values {
+      if inner == 4 {
+        break;
+      }
+      expect.equal(inner, 0);
+    }
+    sum += outer;
+  }
+  expect.equal(sum, 43);
+}
+
+@test
+fn emptyAndFullyRemovedCollectionsDoNotYieldEntries(): void {
+  const map: Map<int, int> = mapOf<int, int>();
+  const set: Set<int> = setOf<int>();
+  for entry in map {
+    const _ = entry;
+    panic("empty map yielded");
+  }
+  for item in set {
+    const _ = item;
+    panic("empty set yielded");
+  }
+  for index in 0..20 {
+    const _ = map.put(index, index);
+    const _ = set.add(index);
+  }
+  for index in 0..20 {
+    const _ = map.remove(index);
+    const _ = set.remove(index);
+  }
+  for entry in map {
+    const _ = entry;
+    panic("removed map yielded");
+  }
+  for item in set {
+    const _ = item;
+    panic("removed set yielded");
+  }
+  const _ = map.put(7, 17);
+  const _ = set.add(7);
+  for entry in map {
+    expect.equal(
+      match entry {
+        (key, value) => key + value,
+      },
+      24,
+    );
+    map.clear();
+    break;
+  }
+  for item in set {
+    expect.equal(item, 7);
+    set.clear();
+    break;
+  }
+  expect.equal(map.length(), 0);
+  expect.equal(set.length(), 0);
+}

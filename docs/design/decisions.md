@@ -2766,3 +2766,263 @@ cells. The selected implementation must keep representation decoding out of
 expensive generic copy calls; memory savings do not excuse a measured hot-path
 regression. This decision does not close the broader collection performance
 or Tier 1 acceptance obligations.
+
+## D089 — Independent cursors for linear ordered collection traversal
+
+Status: accepted.
+
+D079 source loops advance an independent scalar cursor per traversal. Zero
+starts a traversal; a successful advance returns a positive one-based storage
+position, or zero at exhaustion. Advance scans forward from the previous
+position, skipping removed entries. Reading a cursor checks that it names an
+active entry; Map reads its key/value and Set reads its key. Cursors contain
+no address or managed reference, allocate nothing and add no collection state.
+They are internal execution values, not source-visible indices or APIs.
+
+The checker emits the generation barrier before every advance, including the
+exhaustion test, and retains the existing iterable/header spans. Every nested
+or interleaved loop has its own progress. Break exits immediately; continue
+returns to the generation barrier and advances exactly once. Mutation, alias,
+GC/rooting, insertion order, sparse removal/reinsertion and failure contracts
+remain D079/D088. A cursor is not a proof capability: all runtime accesses
+validate receiver identity/kind, range and active storage independently, even
+for hostile verified bytecode. Reusing a cursor with another receiver cannot
+bypass those checks; source lowering preserves its original receiver.
+
+MIR and bytecode add NEXT, CURSOR_KEY and CURSOR_VALUE operations. Wire IDs
+158–160 are appended; 151/152 retain their active-ordinal meaning. The oracle
+implements the protocol over its independent ordered storage; VM and generated
+C17 use the same checked, allocation-free runtime boundary. There is no raw
+storage exposure, shared mutable iterator, weakening of hashing or implicit
+change to the legacy operations. Source syntax and formatter rules do not change.
+
+Reason: ordinal lookup from the start for each item makes a full traversal
+quadratic. Per-loop forward progress visits each occupied or removed storage
+slot at most once between mutations. Storage representation and D055 byte
+accounting remain unchanged. Performance evidence must separate preparation
+from traversal and include several sizes, end-to-end workloads, sparse/nested
+correctness and the complete applicable verification tail.
+
+Coordination note: simultaneous draft D089 proposals used incompatible -1 and
+zero sentinels for IDs 158–160. The zero/positive cursor contract above is the
+accepted resolution; the signed -1 draft is withdrawn before publication.
+
+## D090 — Group metadata for the ordered collection index
+
+Status: accepted.
+
+The shared Map/Set index filters eight adjacent bucket positions using compact
+hash metadata before reading insertion-ordered entries. Each occupied position
+records seven high bits of the existing SipHash-2-4 result; distinct control
+bytes mark empty and deleted positions. Seven mirrored bytes permit a bounded
+group read across the wrap point. Portable C17 byte operations define the
+byte-to-probe mapping independently of host endianness and SIMD availability.
+An eight-position index uses scalar control-byte probing to avoid group-mask
+overhead for the smallest tables; larger indices use group filtering.
+
+The bounded linear placement order, first-deleted-position reuse, load factor,
+capacities, full hash comparison and nominal/string equality remain unchanged.
+Reference-key equality can reject a full-hash candidate and resume the same
+walk. Group matching can yield conservative false candidates; it cannot prove
+key equality. Every candidate entry access checks the index, storage and active
+state before reading its hash or key. Checked public operations still resolve
+the complete receiver and validate reference-valued inputs.
+
+This refines D088's storage-integrity wording: index metadata is private,
+storage-owner-maintained state, and lookup validates the positions it actually
+inspects. Lookup is not a full-table corruption audit, including positions
+excluded by metadata. Source and bytecode cannot supply a bucket, tag, pointer
+or private progress record. No metadata match bypasses a managed handle or
+candidate bounds check.
+
+Control bytes share the existing bucket allocation and add no map fields,
+managed roots or allocation calls. For a nonempty bucket reservation of N
+positions, D055 additionally counts N + 7 bytes; an unallocated index uses
+zero bytes. All size arithmetic is checked. Growth/compaction builds the new
+index before publication; insertion, deletion and clear maintain both metadata
+and its mirrored tail. Failure cleanup releases the complete allocation.
+Allocation failure preserves contents, order and mutation generation.
+
+D079 insertion order and hashing, D088 entry layout, D089 cursors, public APIs,
+source syntax, MIR and bytecode retain their contracts. No formatter fixture
+or new user-facing operation is needed. Correctness evidence includes an
+independent scalar probe model, reference candidate resumption, all six cell
+layouts, exact byte boundaries, every reachable allocation failure, GC and
+VM/native behavior. Performance evidence includes whole original workloads
+and small/large tables with hits, misses, updates and deletion/reinsertion.
+
+Reason: ordered entries and the lookup index have different access patterns.
+Compact metadata avoids loading most nonmatching entry payloads without
+reordering entries or weakening the hash. This decision changes the index
+representation; it does not close the wider CP42 performance or release gates.
+
+## D091 — Amortized rebuilding of insertion-ordered storage
+
+Status: accepted.
+
+When the ordered entry reservation is exhausted, Map/Set compacts at the same
+capacity only if at most half that reservation is live; otherwise it grows the
+entry reservation geometrically. Bucket load-factor planning is independent.
+Rebuilding preserves the order of all live entries and invalidates the lookup
+memo before subsequent operations. D090 metadata is rebuilt with the buckets.
+Removing the last live entry resets the append position and empty index in
+place, retaining the reservation for allocation-free reuse.
+
+This replaces D088's former rule of compacting an exhausted reservation after
+any deletion. That rule could copy every entry and rebuild every bucket on
+each delete/reinsert pair in a full table. The new policy reserves enough
+append positions or reclaims enough holes to distribute rebuilding over many
+mutations. At a fixed live cardinality, repeated replacement must not allocate
+replacement buffers on every operation. This is an amortized storage policy,
+not a worst-case constant-time or collision-complexity promise.
+
+D055 counts actual reserved entry and index bytes. A sparse deletion may now
+be followed by a larger reservation, moving an exact resource boundary; public
+capacity is not exposed. Checked arithmetic, complete temporary rooting,
+allocation-failure cleanup, failure-atomic insertion, generation and ordering
+remain unchanged. Failure of a put after a successful remove does not undo
+that earlier remove. No emergency in-place compaction or unaccounted fallback
+may conceal a resource failure. D079 source operations, D089 cursors, MIR,
+bytecode and formatter syntax retain their contracts.
+
+Tests independently bound allocations across repeated replacements, verify
+the rotating insertion order and all six raw/reference layouts, force GC,
+exercise every reachable allocation-failure index and check the new exact
+growth boundary. Public source regression tests execute in both engines.
+
+## D092 — Void block arms and lexical match cleanup
+
+Status: accepted.
+
+A reachable match-arm block with no tail expression has type `void`, including
+an empty block. All non-diverging arms still have one identical result type:
+implicit void, an explicit void call and a diverging arm can coexist; a
+value-producing arm cannot mix with void. A value context does not invent a
+default value for a tail-less block. `return`, postfix `?`, break, continue and
+panic keep their existing control-flow meaning.
+
+This explicitly replaces D067's requirement that every continuing block arm
+end in a tail expression. It allows ordinary side-effect/error-handling matches
+such as `Ok(_) => {}` with an error arm returning from the enclosing function,
+without a dummy boolean or a no-op helper. Arm punctuation, parsing,
+exhaustiveness, bindings, guards and nominal patterns are unchanged.
+
+D074 applies inside every block and to the complete match: omitting a tail
+cannot silently discard a Result-valued expression statement. Void has no
+stored payload; a named local of type void, inferred or annotated, is a source
+type error. An explicit discard binding may consume void without storage.
+Frontend checking must reject a named void binding rather than publishing MIR
+that fails only during bytecode/native lowering.
+
+Each selected block arm is an existing lexical cleanup scope under D041.
+Its tail is evaluated before that arm's LIFO deferred calls; the result stays
+live through cleanup, then control joins the surrounding expression. A
+continuing tail-less block runs the same cleanup before joining. Return,
+propagation and loop transfer perform their existing cleanup on their exit
+path, without replay at the match join. Deferred registrations from one arm
+must never leak into another arm or the enclosing block. This repairs an
+existing D067/D041 lowering defect rather than changing defer timing.
+
+One checker owner implements arm completion for all scrutinee families.
+Backends consume the resulting typed MIR and add no source-semantic workaround.
+Tests cover positive/negative typing, parser/formatter round trips, every
+reachable checker allocation-failure index, branch-local cleanup and root
+lifetime, and oracle/VM/native behavior. The external config app replaces its
+dummy-bool workaround using the accepted spelling.
+
+## D093 — Expectations in ordinary test-file helpers
+
+Status: accepted.
+
+The implemented `expect` surface is available in every ordinary function
+defined in a file ending `_test.my`, including a generic helper specialization.
+Eligibility follows the defining source file, not the caller's test annotation
+or the current command's mode. A production-file function does not gain
+expectations by being called from a test. Existing shadowing, argument typing,
+constant-evaluation restrictions and staged expectation members are unchanged.
+
+Helpers need no new annotation, context parameter or test-framework import.
+Only `@test`/`@fuzz` declarations are discovered as test/fuzz entry points;
+an unannotated helper is an ordinary call in its caller's execution and uses
+that execution's managed state, limits and captured output. Helpers do not
+create an isolate or weaken the fresh-state boundary between test entries.
+The test-source inclusion and package-visibility rules remain unchanged.
+
+Failure retains D080's `G4004`, bounded message and complete expectation-call
+span in the helper's defining source. It fails the current test rather than
+creating a separate result for the helper. MIR/oracle, VM and native use the
+existing assertion/output instructions and panic/source ownership.
+
+This replaces the implementation restriction to bodies directly annotated
+`@test` or `@fuzz`, which forced ordinary `_test.my` helpers to reimplement
+assertions with `if`/`panic`. The checker function-context owner derives the
+permission from the definition AST before checking the body; runners and
+backends add no caller-sensitive source rules. Focused tests cover helpers,
+generic/cross-file calls, discovery, production rejection, failure spans,
+allocation cleanup and public VM/native execution. The config application's
+error-path helper adopts the built-in expectation reporting.
+
+## D094 — Exact error context for Result mappers
+
+Status: accepted.
+
+For `Result<T,E>.mapError`, the known input error type E participates in the
+existing nominal-first-parameter selection of an overloaded named mapper.
+This applies to local, namespace-qualified and explicitly imported/renamed
+functions. Exactly one visible unary function must be selected; its parameter
+must be E. The result type does not introduce a new overload dimension.
+Ordinary local shadowing wins over top-level functions and import namespaces.
+Unsupported local function values do not fall back to an obscured named mapper.
+
+When a mapError call is the direct operand of postfix `?`, an enclosing
+`Result<U,F>` supplies F as its output-error context. Parentheses are transparent.
+The receiver determines T independently of U. This lets a contextual mapper
+closure omit its result annotation and lets an eligible generic enum mapper
+use its concrete error context. The context applies to that direct call, not
+to unrelated expressions or every nested mapper in the function. Existing
+explicit lambda/result annotations continue to work; a mapper without enough
+context remains a type error. There are no implicit error conversions.
+
+Both mapError and postfix `?` require the exact prelude Result nominal family.
+A user enum with two generic parameters and two variants is not Result, even
+if it has the same payload shape. This enforces the existing D006 contract at
+the source boundary rather than relying on a downstream enum-layout failure.
+
+Receiver evaluation remains once, before branch selection. A mapper runs only
+on Err; success payloads are preserved. The mapError owner supplies the narrow
+direct-call context query and reuses the existing callable resolver. The try
+owner passes that context through normal expression checking and retains its
+ordinary propagation/cleanup path. MIR, VM and native add no inference rules.
+Tests cover imported overloads/aliases, contextual closures/constructors,
+different success types, parentheses, shadowing, nominal rejection, allocation
+failure and observable execution; the config app adopts `mapError(cli.message)?`.
+
+## D095 — Defining source ranges in test panic reports
+
+Status: accepted.
+
+A test runtime panic includes its defining source path and complete half-open
+source range, rendered with D022 one-based Unicode-scalar line/column positions.
+An expectation inside a generic or cross-file helper points to that helper,
+not the test declaration. Source metadata comes from the same immutable
+checked snapshots as typed MIR; reports never reopen possibly changed files
+or infer language semantics in the backend. Existing code/message and test
+exit classification remain unchanged. Output written to stderr before panic
+is retained before the diagnostic in both engines.
+
+The CLI prepares a canonical, deduplicated symbol/span-to-location table from
+checked source facts and MIR spans. Native test compilation embeds that
+read-only table; VM reporting consumes the same table. No runtime allocation
+or source-file read is required for native lookup. Ordinary native builds and
+low-level emitters without source metadata retain their existing output.
+The table is optional metadata at the native boundary, not a new MIR opcode,
+source-language construct, or permission to change observable execution.
+
+The failure report uses `  --> path:line:column-endLine:endColumn` after the
+existing panic line. Exact location bytes participate in the existing `both`
+comparison. Low-level panic symbols, byte spans, call frames and suppressed
+panics remain available; this change adds the primary source range to the
+terse CLI report and does not claim full stack/suppressed-panic presentation.
+Checks cover same/cross-file generic helpers, Unicode/space paths, CRLF/BOM,
+range ends, earlier stderr, both engines, native O0/O2, and every reachable
+allocation-failure index in location preparation and metadata emission.

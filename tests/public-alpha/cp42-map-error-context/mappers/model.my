@@ -1,0 +1,37 @@
+public type Input {
+  public visits: []int,
+}
+
+public type Other {
+  public value: int,
+}
+
+public fn message(error: Input): string {
+  error.visits[0] += 1;
+  return "mapped";
+}
+
+public fn message(error: Other): string {
+  return $"other {error.value}";
+}
+
+public fn source(visits: []int, bad: bool): Result<int, Input> {
+  visits[1] += 1;
+  if bad {
+    return Err(Input { visits });
+  }
+  return Ok(7);
+}
+
+public fn voidSource(visits: []int, bad: bool): Result<void, Input> {
+  visits[1] += 1;
+  if bad {
+    return Err(Input { visits });
+  }
+  return Ok();
+}
+
+public enum Pretend<T, E> {
+  Good(T),
+  Bad(E),
+}

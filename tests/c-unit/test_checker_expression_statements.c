@@ -62,7 +62,7 @@ void mmay_test_checker_expression_statements(void) {
         "fn main(): void { match true { true => 1, false => action(), }; }\n", false);
     mmay_void_match_allocation_case(
         "fn action(): void {}\n"
-        "fn main(): void { match true { true => { action(); }, false => action(), }; }\n", false);
+        "fn main(): void { match true { true => { action(); }, false => action(), }; }\n", true);
     mmay_checker_expect_one_diagnostic_path(
         "discard.my",
         "fn value(): Result<int, string> { return Ok(1); }\n"
@@ -85,7 +85,7 @@ void mmay_test_checker_expression_statements(void) {
     mmay_checker_expect_one_diagnostic_path(
         "tail.my",
         "fn action(): void {}\n"
-        "fn main(): void { match true { true => { action(); }, false => action(), }; }\n",
-        MMAY_DIAGNOSTIC_MISSING_MATCH_VALUE, "{ action(); }"
+        "fn main(): void { match true { true => { action(); }, false => 1, }; }\n",
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH, "1"
     );
 }

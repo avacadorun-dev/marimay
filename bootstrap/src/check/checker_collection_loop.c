@@ -106,14 +106,13 @@ bool mmay_checker_private_compile_collection_for(
     MarimayTypeId item_type = MMAY_TYPE_INVALID;
     MarimayMirRegister generation = MMAY_MIR_NO_REGISTER;
     MarimayMirRegister checked = MMAY_MIR_NO_REGISTER;
-    MarimayMirRegister length = MMAY_MIR_NO_REGISTER;
+    MarimayMirRegister advanced = MMAY_MIR_NO_REGISTER;
     MarimayMirRegister key = MMAY_MIR_NO_REGISTER;
     MarimayMirRegister value = MMAY_MIR_NO_REGISTER;
     MarimayMirRegister item_value = MMAY_MIR_NO_REGISTER;
     MarimayExpressionValue index_value;
-    MarimayExpressionValue one;
+    MarimayExpressionValue zero;
     MarimayExpressionValue condition;
-    MarimayExpressionValue next;
     MarimayCheckName name;
     MarimayCheckLocal *item = NULL;
     MarimayInitializationSnapshot initial;
@@ -121,7 +120,6 @@ bool mmay_checker_private_compile_collection_for(
     MarimayMirBlockId entry = MMAY_MIR_NO_BLOCK;
     MarimayMirBlockId condition_block = MMAY_MIR_NO_BLOCK;
     MarimayMirBlockId body_block = MMAY_MIR_NO_BLOCK;
-    MarimayMirBlockId step_block = MMAY_MIR_NO_BLOCK;
     MarimayMirBlockId exit_block = MMAY_MIR_NO_BLOCK;
     MarimayMirBlockId body_end = MMAY_MIR_NO_BLOCK;
     size_t outer_local_count = function != NULL ? function->locals.length : 0;
@@ -133,9 +131,8 @@ bool mmay_checker_private_compile_collection_for(
     bool body_continues = false;
     bool accepted = false;
     memset(&index_value, 0, sizeof(index_value));
-    memset(&one, 0, sizeof(one));
+    memset(&zero, 0, sizeof(zero));
     memset(&condition, 0, sizeof(condition));
-    memset(&next, 0, sizeof(next));
     memset(&initial, 0, sizeof(initial));
     if (function == NULL || node == NULL || iterable == NULL
         || resolved == NULL) return false;
@@ -166,8 +163,8 @@ bool mmay_checker_private_compile_collection_for(
             header->start, header->start, &index_value
         ) || !mmay_function_emit_instruction(
             function, MMAY_MIR_CONSTANT_I64, MMAY_TYPE_I64,
-            MMAY_MIR_NO_REGISTER, MMAY_MIR_NO_REGISTER, 1, false,
-            header->start, header->start, &one
+            MMAY_MIR_NO_REGISTER, MMAY_MIR_NO_REGISTER, 0, false,
+            header->start, header->start, &zero
         )) goto cleanup;
     function->scope_depth = previous_depth + 1;
     scope_entered = true;
@@ -192,7 +189,6 @@ bool mmay_checker_private_compile_collection_for(
     if (!initial_initialized
         || !mmay_checker_private_function_add_block(function, &condition_block)
         || !mmay_checker_private_function_add_block(function, &body_block)
-        || !mmay_checker_private_function_add_block(function, &step_block)
         || !mmay_checker_private_function_add_block(function, &exit_block)
         || !mmay_checker_private_function_set_goto(
             function, entry, condition_block, node->start, node->start
@@ -204,19 +200,22 @@ bool mmay_checker_private_compile_collection_for(
             iterable->type, iterable->register_id, generation, collection,
             node->start, header->end, &checked
         ) || !mmay_collection_loop_emit(
-            function, MMAY_MIR_COLLECTION_LENGTH, MMAY_TYPE_I64,
-            checked, MMAY_MIR_NO_REGISTER, collection,
-            iterable_node->start, iterable_node->end, &length
+            function, MMAY_MIR_COLLECTION_NEXT, MMAY_TYPE_I64,
+            checked, index_value.register_id, collection,
+            node->start, header->end, &advanced
+        ) || !mmay_checker_private_function_emit_copy(
+            function, index_value.register_id, advanced,
+            header->start, header->end
         ) || !mmay_function_emit_instruction(
             function, MMAY_MIR_LESS_I64, MMAY_TYPE_BOOL,
-            index_value.register_id, length, 0, false,
+            zero.register_id, index_value.register_id, 0, false,
             iterable_node->start, iterable_node->end, &condition
         ) || !mmay_checker_private_function_set_branch(
             function, condition_block, condition.register_id,
             body_block, exit_block, iterable_node->start, iterable_node->end
         )) goto cleanup;
     loop.break_target = exit_block;
-    loop.continue_target = step_block;
+    loop.continue_target = condition_block;
     loop.scope_depth = function->scope_depth;
     if (function->loops.length >= function->mir.options.max_blocks) {
         mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED);
@@ -230,14 +229,14 @@ bool mmay_checker_private_compile_collection_for(
     function->block = body_block;
     function->terminated = false;
     if (!mmay_collection_loop_emit(
-            function, MMAY_MIR_COLLECTION_ENTRY_KEY, key_type,
+            function, MMAY_MIR_COLLECTION_CURSOR_KEY, key_type,
             checked, index_value.register_id, collection,
             node->start, header->end, &key
         )) goto cleanup;
     if (is_set) {
         item_value = key;
     } else if (!mmay_collection_loop_emit(
-            function, MMAY_MIR_COLLECTION_ENTRY_VALUE, value_type,
+            function, MMAY_MIR_COLLECTION_CURSOR_VALUE, value_type,
             checked, index_value.register_id, collection,
             node->start, header->end, &value
         ) || !mmay_collection_loop_tuple(
@@ -255,20 +254,9 @@ bool mmay_checker_private_compile_collection_for(
     function->loops.length -= 1;
     loop_pushed = false;
     if (body_continues && !mmay_checker_private_function_set_goto(
-            function, body_end, step_block, body->end, body->end
+            function, body_end, condition_block, body->end, body->end
         )) goto cleanup;
-    function->block = step_block;
-    function->terminated = false;
-    if (!mmay_function_emit_instruction(
-            function, MMAY_MIR_ADD_CHECKED_I64, MMAY_TYPE_I64,
-            index_value.register_id, one.register_id, 0, false,
-            header->start, header->end, &next
-        ) || !mmay_checker_private_function_emit_copy(
-            function, index_value.register_id, next.register_id,
-            header->start, header->end
-        ) || !mmay_checker_private_function_set_goto(
-            function, step_block, condition_block, header->end, header->end
-        ) || !mmay_checker_private_initialization_snapshot_restore(
+    if (!mmay_checker_private_initialization_snapshot_restore(
             function, &initial
         )) goto cleanup;
     function->locals.length = outer_local_count;

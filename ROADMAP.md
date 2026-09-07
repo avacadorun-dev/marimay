@@ -17,5 +17,9 @@ active ergonomics card,
 Its required pre-alpha acceptance includes the
 [ten-application external CLI portfolio](docs/implementation/cli-ergonomics-suite.md).
 
+For continuation context, see the dated
+[CLI-alpha agent handoff](docs/implementation/agent-handoff-cli-alpha-2026-09-07.md).
+It is a snapshot and reading guide, not a replacement for the authorities above.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

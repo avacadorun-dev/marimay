@@ -659,6 +659,16 @@ annotations. The same omission is not available merely because an ordinary
 parameter has a function type in 0.1. A contextual closure body is evaluated
 only on the `Err` path.
 
+Under D094, a named mapper's known input error type selects an existing
+nominal-first-parameter overload, including a qualified or renamed import.
+The selected function must be visible, unary and accept exactly that error
+type. Local shadowing is respected; result types do not select overloads.
+If the mapError call is the direct operand of postfix `?` (possibly inside
+parentheses), the enclosing `Result<U,F>` supplies F as its contextual output
+error type. Its own success type still comes from the receiver and need not
+be U. This context is confined to the direct mapper call. Without an exact
+context, an omitted closure result annotation remains an error.
+
 Closures capture lexical `const` bindings by value and `let` bindings through a managed mutable cell. Each iteration of a `for` loop creates a fresh iteration binding. The compiler warns when a closure captures a mutable local and escapes the declaring block.
 
 Suspension inference applies through closures exactly as through named functions; no `async` closure syntax exists.
@@ -828,16 +838,41 @@ const label = match status {
 };
 ```
 
-Every reachable path of a block arm must reach the tail expression, `return`,
-`panic`, or otherwise have type `never`. A `return` exits the enclosing
-function, not merely the arm. `yield` has no match role and is an ordinary
-identifier.
+Under D092, a continuing block arm with no tail expression has type `void`,
+including an empty block. A value-producing arm uses its explicit tail.
+`return` exits the enclosing function, not merely the arm; panic and other
+diverging paths retain type `never`. `yield` has no match role and is an
+ordinary identifier.
 
 Under D067, an arm expression (including a block's explicit tail) may be a
 `void` call. If all non-diverging arms have type `void`, the match has type
 `void` and execution continues after it. A void arm cannot be mixed with a
-value-producing arm. A reachable block without a tail expression remains an
-error; it does not implicitly produce `void`.
+value-producing arm. A tail-less block does not supply an implicit value in
+a value-requiring context. Named local bindings cannot store `void`, whether
+inferred or annotated; an explicit discard binding requires no stored value.
+
+D074 still requires handling any Result-valued statement inside an arm and
+any Result produced by the complete match. An omitted tail does not discard
+an expected error. For example, a successful `Result<void,E>` arm can be empty
+while an error arm propagates explicitly:
+
+```marimay
+fn handled(result: Result<void, string>): Result<void, string> {
+  match result {
+    Ok(_) => {},
+    Err(error) => {
+      return Err(error);
+    },
+  };
+  return Ok();
+}
+```
+
+A block arm is a lexical D041 cleanup scope. Its tail is evaluated first and
+remains live while its deferred calls execute in LIFO order before the match
+join. A continuing tail-less arm performs the same cleanup. Other exits keep
+their existing cleanup rules, and registrations from one arm never apply to
+another arm or the enclosing block.
 
 Arms are comma-separated and may have a trailing comma. At an arm's root a
 bare identifier must resolve as a unit constructor; it never introduces a new
@@ -881,6 +916,10 @@ error. The documentation corpus contains matching compile-pass and compile-fail
 obligations; the CP34 checker makes them executable type-check evidence.
 
 The operator does not catch panic, cancellation, or an engine fault. It is deliberately visible at the propagation site.
+
+Both postfix `?` and `mapError` require the exact prelude `Result` nominal
+family. A user-defined two-parameter enum cannot stand in for Result based
+on its representation or variant payloads.
 
 A standalone expression statement may not discard `Result<T,E>`. It must be
 propagated, matched, returned, consumed by another operation, or deliberately

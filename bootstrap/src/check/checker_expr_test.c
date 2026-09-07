@@ -313,7 +313,7 @@ bool mmay_checker_private_compile_test_call(
     if (!function->test_context) {
         (void)mmay_checker_add_diagnostic(
             function->checker, MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
-            "expect helpers are available only inside @test and @fuzz functions",
+            "expect helpers require a function defined in a _test.my file",
             node->start, node->end
         );
         return false;

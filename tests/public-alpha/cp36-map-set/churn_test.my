@@ -1,0 +1,46 @@
+@test
+fn repeatedReplacementRetainsOrderAndReferenceValues(): void {
+  const values: Map<int, []int> = mapOf<int, []int>();
+  const keys: Set<int> = setOf<int>();
+  for index in 0..64 {
+    expect.equal(values.put(index, [index]), Ok(true));
+    expect.equal(keys.add(index), Ok(true));
+  }
+  const alias = values;
+  for step in 0..1024 {
+    const key = step % 64;
+    const previous = match alias.remove(key) {
+      Some(payload) => payload,
+      None => panic("replacement lost a map entry"),
+    };
+    let expected = step;
+    if step >= 64 {
+      expected -= 64;
+    }
+    expect.equal(previous[0], expected);
+    expect.equal(keys.remove(key), true);
+    expect.equal(alias.put(key, [step]), Ok(true));
+    expect.equal(keys.add(key), Ok(true));
+  }
+  expect.equal(values.length(), 64);
+  expect.equal(keys.length(), 64);
+  let ordinal = 0;
+  for entry in values {
+    const key = match entry {
+      (key, _) => key,
+    };
+    const payload = match entry {
+      (_, payload) => payload,
+    };
+    expect.equal(key, ordinal);
+    expect.equal(payload[0], 960 + ordinal);
+    ordinal += 1;
+  }
+  expect.equal(ordinal, 64);
+  ordinal = 0;
+  for key in keys {
+    expect.equal(key, ordinal);
+    ordinal += 1;
+  }
+  expect.equal(ordinal, 64);
+}

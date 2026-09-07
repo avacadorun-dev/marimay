@@ -7,6 +7,7 @@
 #include "mmay/runtime/enum.h"
 #include "mmay/runtime/interface.h"
 #include "mmay/runtime/map.h"
+#include "mmay/runtime/collection_iteration.h"
 #include "mmay/runtime/program_arguments.h"
 #include "mmay/runtime/record.h"
 #include "mmay/runtime/set.h"

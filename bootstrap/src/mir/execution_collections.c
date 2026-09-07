@@ -511,6 +511,33 @@ MarimayMirInterpretStatus mmay_mir_execute_collection_instruction(
         *target = *first;
         return MMAY_MIR_INTERPRET_OK;
     }
+    if (instruction->kind == MMAY_MIR_COLLECTION_NEXT
+        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_KEY
+        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_VALUE) {
+        size_t cursor;
+        if (second->as.i64 < 0
+            || (uint64_t)second->as.i64 > collection->entry_count) {
+            return MMAY_MIR_INTERPRET_INVALID_MIR;
+        }
+        cursor = (size_t)second->as.i64;
+        if (instruction->kind == MMAY_MIR_COLLECTION_NEXT) {
+            for (; cursor < collection->entry_count; cursor += 1U) {
+                if (!collection->entries[cursor].active) continue;
+                if (cursor >= INT64_MAX) return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
+                target->as.i64 = (int64_t)(cursor + 1U);
+                return MMAY_MIR_INTERPRET_OK;
+            }
+            target->as.i64 = 0;
+        } else {
+            if (cursor == 0 || !collection->entries[cursor - 1U].active) {
+                return MMAY_MIR_INTERPRET_INVALID_MIR;
+            }
+            *target = instruction->kind == MMAY_MIR_COLLECTION_CURSOR_KEY
+                ? collection->entries[cursor - 1U].key
+                : collection->entries[cursor - 1U].value;
+        }
+        return MMAY_MIR_INTERPRET_OK;
+    }
     if (instruction->kind == MMAY_MIR_COLLECTION_ENTRY_KEY
         || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE) {
         size_t index = 0;

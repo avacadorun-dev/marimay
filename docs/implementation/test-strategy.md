@@ -394,6 +394,18 @@ Required properties include:
 - alpha-renaming locals does not change execution;
 - safe optimization preserves MIR oracle behavior;
 - map iteration preserves insertion order through resize/delete/reinsert rules;
+- D089 collection cursors cover independent nested/interleaved progress, sparse
+  storage, end checks, aliases, break/continue and always-terminating bodies;
+  all six raw/reference shapes preserve rooting and zero-allocation traversal
+  at an exact heap budget, including deterministic setup-failure teardown;
+- forged but well-typed signed cursor values cover negative, zero, removed,
+  out-of-range and exhausted positions in oracle/VM/native O0/O2; independent
+  bool inputs/destinations and Set value reads test the focused verifiers;
+  legacy wire IDs 151/152 retain ordinal results through codec round trips;
+  the bytecode fuzz corpus includes the valid and hostile D089 cursor programs;
+  all 42 native cases retain O0/O2 and separate-process execution while sharing
+  six compilations per optimization level, with both allocator live counters
+  zero after each child's teardown;
 - equality is reflexive/symmetric/transitive where defined and hash-consistent;
 - GC before/after any allocation does not change results;
 - task cancellation at any safepoint runs each registered cleanup exactly once;

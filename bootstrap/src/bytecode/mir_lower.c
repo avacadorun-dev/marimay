@@ -474,6 +474,21 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_instruction(
             output->operands[1].unsigned_value = input->first;
             output->operands[2].unsigned_value = input->second;
             break;
+        case MMAY_MIR_COLLECTION_NEXT:
+            output->opcode = MMAY_OPCODE_COLLECTION_NEXT;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_CURSOR_KEY:
+            output->opcode = MMAY_OPCODE_COLLECTION_CURSOR_KEY;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
+        case MMAY_MIR_COLLECTION_CURSOR_VALUE:
+            output->opcode = MMAY_OPCODE_COLLECTION_CURSOR_VALUE;
+            output->operands[1].unsigned_value = input->first;
+            output->operands[2].unsigned_value = input->second;
+            break;
         case MMAY_MIR_COLLECTION_GET_OPTION:
             output->opcode = MMAY_OPCODE_COLLECTION_GET_OPTION;
             output->operands[1].unsigned_value = input->first;

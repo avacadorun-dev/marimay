@@ -1,0 +1,192 @@
+enum Choice {
+  Empty,
+  Value(int),
+}
+
+type Item {
+  value: int,
+}
+
+fn append(log: []int, value: int): void {
+  const _ = log.push(value);
+}
+
+fn code(log: []int): int {
+  let result = 0;
+  for value in log {
+    result = result * 10 + value;
+  }
+  return result;
+}
+
+fn families(log: []int): void {
+  match true {
+    true => {
+      defer append(log, 1);
+    },
+    false => {},
+  };
+  match 2 {
+    2 => {
+      defer append(log, 2);
+    },
+    _ => {},
+  };
+  match "x" {
+    "x" => {
+      defer append(log, 3);
+    },
+    _ => {},
+  };
+  match Choice.Value(4) {
+    Value(value) => {
+      defer append(log, value);
+    },
+    Empty => {},
+  };
+  match (5, true) {
+    (value, _) => {
+      defer append(log, value);
+    },
+  };
+  match (Item { value: 6 }) {
+    Item { value } => {
+      defer append(log, value);
+    },
+  };
+}
+
+fn scopes(log: []int, selected: bool): void {
+  defer append(log, 9);
+  match selected {
+    true => {
+      defer append(log, 1);
+      defer append(log, 2);
+      append(log, 3);
+    },
+    false => {
+      defer append(log, 4);
+      append(log, 5)
+    },
+  };
+  append(log, 6);
+}
+
+fn fail(): Result<void, string> {
+  return Err("failure");
+}
+
+fn propagation(log: []int, selected: bool): Result<int, string> {
+  defer append(log, 9);
+  match selected {
+    true => {
+      defer append(log, 1);
+      return Ok(7);
+    },
+    false => {
+      defer append(log, 2);
+      fail()?;
+    },
+  };
+  return Ok(8);
+}
+
+fn jumps(log: []int): void {
+  for index in 0..3 {
+    match index {
+      0 => {
+        defer append(log, 1);
+        continue;
+      },
+      1 => {
+        defer append(log, 2);
+        break;
+      },
+      _ => {},
+    };
+    append(log, 9);
+  }
+  append(log, 3);
+}
+
+fn garbage(log: []int): void {
+  for index in 0..2000 {
+    const temporary = [
+      index,
+      index + 1,
+      index + 2,
+      index + 3,
+      index + 4,
+      index + 5,
+      index + 6,
+      index + 7,
+    ];
+    if temporary[0] != index {
+      panic("corrupted temporary");
+    }
+  }
+  append(log, 1);
+}
+
+fn reference(log: []int): []int {
+  return match true {
+    true => {
+      defer garbage(log);
+      [7, 8]
+    },
+    false => {
+      []
+    },
+  };
+}
+
+fn handled(value: Result<void, string>): Result<void, string> {
+  match value {
+    Ok(_) => {},
+    Err(error) => {
+      return Err(error);
+    },
+  };
+  return Ok();
+}
+
+fn main(): int {
+  const log: []int = [];
+  families(log);
+  if code(log) != 123456 {
+    return 1;
+  }
+  log.clear();
+  scopes(log, true);
+  if code(log) != 32169 {
+    return 2;
+  }
+  log.clear();
+  scopes(log, false);
+  if code(log) != 5469 {
+    return 3;
+  }
+  log.clear();
+  const first = propagation(log, true);
+  const _ = first;
+  if code(log) != 19 {
+    return 4;
+  }
+  log.clear();
+  const second = propagation(log, false);
+  const _ = second;
+  if code(log) != 29 {
+    return 5;
+  }
+  log.clear();
+  jumps(log);
+  if code(log) != 123 {
+    return 6;
+  }
+  log.clear();
+  const returned = reference(log);
+  if returned.length() != 2 || returned[0] != 7 || returned[1] != 8 || code(log) != 1 {
+    return 7;
+  }
+  return 0;
+}

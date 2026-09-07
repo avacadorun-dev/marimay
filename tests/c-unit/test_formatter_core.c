@@ -304,6 +304,10 @@ void mmay_test_formatter_fixture_file(void) {
             "format/defer.expected.my"
         },
         {
+            "format/void-match.input.my",
+            "format/void-match.expected.my"
+        },
+        {
             "format/test-output.input.my",
             "format/test-output.expected.my"
         },

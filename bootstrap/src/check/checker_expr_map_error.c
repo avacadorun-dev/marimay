@@ -166,21 +166,60 @@ static bool mmay_checker_private_map_error_result_enum(
     MarimayTypeId type,
     MarimayCheckEnumDeclaration **result
 ) {
-    MarimayCheckEnumDeclaration *declaration =
-        mmay_checker_private_checker_find_enum_by_type(
-            function->checker, type
-        );
+    size_t index;
     const MarimayTypeDescriptor *descriptor = mmay_type_descriptor(
         &function->checker->result->types, type
     );
-    if (declaration == NULL || descriptor == NULL
+    if (descriptor == NULL
         || descriptor->kind != MMAY_TYPE_KIND_NOMINAL
-        || descriptor->argument_count != 2
-        || declaration->type_parameters.length != 2) {
+        || descriptor->argument_count != 2) {
         return false;
     }
-    *result = declaration;
-    return true;
+    /* Only the stable prelude declaration can qualify. General enum lookup
+     * may allocate an imported view even when this context is ineligible. */
+    for (index = 0; index < function->checker->prelude_enums.length; index += 1) {
+        MarimayCheckEnumDeclaration *declaration = mmay_vector_at(
+            &function->checker->prelude_enums, index);
+        if (declaration != NULL && declaration->is_builtin
+            && declaration->declaration_valid && declaration->variants_resolved
+            && declaration->owned_name.length == sizeof("Result") - 1
+            && memcmp(declaration->owned_name.data, "Result", sizeof("Result") - 1) == 0
+            && declaration->type_parameters.length == 2
+            && mmay_symbol_id_equal(descriptor->symbol, declaration->symbol)) {
+            *result = declaration;
+            return true;
+        }
+    }
+    return false;
+}
+
+MarimayTypeId mmay_checker_private_map_error_operand_context(
+    MarimayFunctionChecker *function,
+    const MarimayAstNode *operand,
+    const MarimayAstNode **target
+) {
+    const MarimayAstNode *member = NULL, *receiver = NULL;
+    const MarimaySyntaxToken *name = NULL;
+    MarimayCheckEnumDeclaration *result_enum = NULL;
+    if (target == NULL) return MMAY_TYPE_INVALID;
+    *target = NULL;
+    while (operand != NULL && (operand->kind == MMAY_SYNTAX_EXPRESSION
+            || operand->kind == MMAY_SYNTAX_PAREN_GROUP)) {
+        const MarimayAstNode *inner = mmay_checker_private_expression_only_node(operand);
+        if (inner == operand) return MMAY_TYPE_INVALID;
+        operand = inner;
+    }
+    if (function == NULL || operand == NULL
+        || operand->kind != MMAY_SYNTAX_CALL_EXPRESSION) return MMAY_TYPE_INVALID;
+    member = mmay_checker_private_check_child_node(operand, MMAY_SYNTAX_MEMBER_EXPRESSION, 0);
+    if (!mmay_checker_private_member_parts(member, &receiver, &name) || name == NULL
+        || !mmay_checker_private_check_text_equal(function->checker, name->start, name->end, "mapError")
+        || !mmay_checker_private_map_error_result_enum(function, function->result_type, &result_enum)) {
+        return MMAY_TYPE_INVALID;
+    }
+    *target = operand;
+    return mmay_type_descriptor(&function->checker->result->types,
+        function->result_type)->arguments[1];
 }
 
 bool mmay_checker_private_compile_map_error(
@@ -228,6 +267,7 @@ bool mmay_checker_private_compile_map_error(
     MarimayTypeId closure_parameter_type = MMAY_TYPE_INVALID;
     MarimayTypeId closure_result_type = MMAY_TYPE_INVALID;
     MarimayTypeId expected_error_type = MMAY_TYPE_INVALID;
+    MarimayTypeId input_error_type = MMAY_TYPE_INVALID;
     MarimayTypeId output_type = MMAY_TYPE_INVALID;
     MarimayMirEnumId input_layout = MMAY_MIR_NO_ENUM;
     MarimayMirEnumId output_layout = MMAY_MIR_NO_ENUM;
@@ -318,6 +358,12 @@ bool mmay_checker_private_compile_map_error(
             mapper_namespace.snapshot = function->checker->ast->snapshot;
             mapper_namespace.start = namespace_token->start;
             mapper_namespace.end = namespace_token->end;
+            if (mmay_checker_private_function_find_local(function, mapper_namespace) != NULL) {
+                (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+                    "mapError mapper namespace is shadowed by a local binding",
+                    mapper_namespace.start, mapper_namespace.end);
+                return false;
+            }
             mapper_qualified = true;
         }
     }
@@ -344,6 +390,8 @@ bool mmay_checker_private_compile_map_error(
         return false;
     }
     {
+        input_error_type = mmay_type_descriptor(
+            &function->checker->result->types, receiver.type)->arguments[1];
         const MarimayTypeDescriptor *expected_descriptor =
             expected != MMAY_TYPE_INVALID
             ? mmay_type_descriptor(
@@ -359,6 +407,9 @@ bool mmay_checker_private_compile_map_error(
                 input_enum->symbol
             )) {
             expected_error_type = expected_descriptor->arguments[1];
+        }
+        if (expected_error_type == MMAY_TYPE_INVALID && node == function->try_operand) {
+            expected_error_type = function->try_error_type;
         }
     }
     if (mapper_node != NULL
@@ -468,6 +519,13 @@ bool mmay_checker_private_compile_map_error(
     mapper_name.snapshot = function->checker->ast->snapshot;
     mapper_name.start = mapper_token->start;
     mapper_name.end = mapper_token->end;
+    if (!mapper_qualified
+        && mmay_checker_private_function_find_local(function, mapper_name) != NULL) {
+        (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "mapError requires a named mapper, not a local binding",
+            mapper_name.start, mapper_name.end);
+        return false;
+    }
     resolution = mapper_qualified
         ? mmay_check_resolve_qualified_call(
             function->checker, mapper_namespace, mapper_name,
@@ -475,6 +533,13 @@ bool mmay_checker_private_compile_map_error(
         ) : mmay_check_resolve_call(
             function->checker, mapper_name, false, MMAY_TYPE_INVALID, &mapper
         );
+    if (resolution == MMAY_CHECK_CALL_RECEIVER_REQUIRED) {
+        resolution = mapper_qualified
+            ? mmay_check_resolve_qualified_call(function->checker,
+                mapper_namespace, mapper_name, true, input_error_type, &mapper)
+            : mmay_check_resolve_free_call(function->checker,
+                mapper_name, input_error_type, &mapper);
+    }
     if (resolution != MMAY_CHECK_CALL_FOUND || mapper.parameter_count != 1) {
         (void)mmay_checker_add_diagnostic(
             function->checker,

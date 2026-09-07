@@ -226,6 +226,10 @@ bootstrap/src/check/
   checker_derive.c      closed D079/D080 Debug/Eq/Hash validation
   checker_equality.c    D080 structural equality typing and explicit MIR CFG
   checker_expr_test.c   D046/D080 compiler-known expectation lowering
+  checker_expr_map_error.c
+                        D094 exact Result mapper context and named selection
+  checker_expr_try.c    D006 propagation; saves/restores the D094 error-only
+                        constraint tagged with the direct operand's AST identity
   checker_expr_collections.c
                         D079 exact operation typing and MIR lowering
   checker_collection_loop.c
@@ -233,6 +237,8 @@ bootstrap/src/check/
   checker_expr_string.c interpolation plus closed std/convert lowering
   checker_match_*.c     binding, analysis, patterns, witnesses, dispatch,
                         and lowering
+  checker_match_lower.c D092 shared arm completion, result capture before
+                        lexical defer cleanup, and compile-time scope reset
   checker_enum_pattern_names.c
                         exact D084 enum pattern qualifier/alias resolution
   checker_cfg.c         block/edge/value-state ownership
@@ -354,6 +360,10 @@ tests/c-unit/
   test_checker_{core,records,enums,enum_match,match_scalar,
                 match_control,calls_constants,operators,control,failures}.c
   test_checker_imports.c
+  test_checker_void_match.c       D092 arm typing, cleanup oracle and every
+                                  checker allocation-failure index
+  test_native_test_helpers.c      D093 source helper panic spans/call frames
+                                  through bytecode and C17 O0/O2 execution
   test_checker_imports_determinism.c
   test_checker_imports_support.{h,c}
   test_checker_support.{h,c}
@@ -442,6 +452,15 @@ it contains no global or persistent cache. `test_cli_test_bytecode.c` owns
 entry-switch/byte-identity, hostile-body, all-index allocation-failure and
 panic-followed-by-fresh-arguments differential coverage.
 
+`cli_test_locations.c` owns the D095 canonical symbol/span-to-source-coordinate
+bridge and VM range rendering. It borrows checked immutable snapshots, owns
+only the deduplicated metadata vector, and performs no runtime source reload.
+`c_emitter_locations.c` validates that table and emits an allocation-free
+native lookup; it consumes resolved coordinates without checking source types.
+`test_cli_test_locations.c` owns metadata preparation/emission failure sweeps,
+D022 BOM/CRLF/Unicode ranges, invalid tables and native O0/O2 presentation;
+`test_cp42_test_locations.cmake` owns cross-file generic CLI report parity.
+
 `cli_test_native.c` owns the canonical test-symbol table and borrowed child
 argument vector. The coordinator retains one native build result per command
 and starts a fresh process for each selected symbol. `c_emitter_test_entry.c`
@@ -529,6 +548,19 @@ hash/equality and insertion-ordered operations; the small set
 owner delegates storage to that exact map contract and exposes no duplicate
 table implementation.
 
+D089 assigns allocation-free forward traversal and checked active-cursor reads
+to `runtime/common/managed_collection_iteration.c`, through the narrow public
+`mmay/runtime/collection_iteration.h`. Each checker loop owns one scalar cursor;
+its condition block checks generation before advancing. Continue returns to
+that condition directly, so an always-terminating body leaves no artificial
+unreachable step predecessor. MIR and bytecode retain ordinal operations and
+add explicit cursor operations. `test_collection_cursor.c` owns hostile typed
+cursors, legacy wire semantics, codec and oracle/VM/native O0/O2 checks. Native
+cases share one build per collection/protocol, but each signed cursor runs in
+a fresh child process with exact output/status and complete allocator teardown.
+`runtime/test_managed_collection_iteration.c` owns independent interleaving,
+sparse layouts, references, allocation-free/budget and failure-index teardown.
+
 D088 assigns entry representation, checked size/accounting, allocation,
 temporary rooting, growth/compaction, publication, tracing and teardown to the
 separately compiled `managed_map_storage.c`. Its narrow private
@@ -568,6 +600,26 @@ reference candidates with its existing nominal/string rules and resumes the
 same walk; raw keys finish in the leaf probe. Required output locations and
 locally initialized progress are owner-private preconditions, not unchecked
 source inputs. Public Map/Set APIs still validate handles and output arguments.
+
+D090 adds group metadata to this same probe owner. Its narrow private
+`managed_map_index_internal.h` defines checked index sizing, control-byte
+maintenance and portable group matching shared with the operation/storage
+owners. The metadata tail shares the bucket allocation; the storage owner
+accounts for and rebuilds it before publication. Operations maintain tags and
+mirrored bytes on insertion, removal and clear. Probe skips nonmatching tags,
+checks every candidate before entry access and preserves linear position order
+and reference-candidate resumption. This is a candidate integrity boundary,
+not a full-table corruption scan. The independent scalar probe model covers
+several capacities, wraparound, tag false positives and invalid inspected
+storage; storage tests cover tag invariants through all six layouts and
+allocation-failure paths.
+
+D091 keeps rebuild scheduling in the storage owner: an exhausted ordered
+reservation compacts only when at least half its positions can be reclaimed;
+otherwise it grows geometrically. `runtime/test_managed_collection_churn.c`
+owns the allocation-complexity bound, independent rotating-order model,
+all-layout GC/failure sweeps and exact growth budget after sparse deletion.
+The public `churn_test.my` regression crosses VM/native execution.
 
 The map object may remember one successful raw-key `get`, including absence,
 as scalar indices/hash/seed words and its mutation generation. Every use first

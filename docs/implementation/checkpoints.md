@@ -1642,6 +1642,10 @@ Follow-up: [config VM dispatch and native proof performance](evidence/cp42-confi
 Follow-up: [invocation-scoped test bytecode preparation](evidence/cp42-test-preparation-2026-09-06.md).
 Follow-up: [one native build per test invocation](evidence/cp42-native-test-build-2026-09-06.md).
 Follow-up: [bounded JSON string-run parsing](evidence/cp42-json-string-runs-2026-09-06.md).
+Follow-up: [void match arms and lexical cleanup](evidence/cp42-void-match-2026-09-07.md).
+Follow-up: [ordinary test-file helpers](evidence/cp42-test-helpers-2026-09-07.md).
+Follow-up: [exact mapError context](evidence/cp42-map-error-context-2026-09-07.md).
+Follow-up: [test panic source ranges](evidence/cp42-test-locations-2026-09-07.md).
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome
@@ -1725,10 +1729,22 @@ The [compact collection storage follow-up](evidence/cp42-compact-collections-202
 reduces raw Map/Set reservation without weakening cell/reference semantics.
 It records rejected copy-boundary regressions, selected paired measurements
 and layout-specific memory/failure evidence; the full performance item stays open.
-Full iteration still retrieves ordinal entries by scanning from zero; replace
-those repeated scans with independent iterator progress, covering sparse and
-interleaved traversals without weakening mutation checks or silently changing
-the existing ordinal bytecode operations.
+The [independent cursor follow-up](evidence/cp42-collection-cursors-2026-09-07.md)
+replaces quadratic source-loop ordinal scans with forward traversal under D089.
+Sparse/interleaved iteration, legacy wire semantics, mutation checks and the
+applicable local correctness tail are covered. The three unchanged counting
+workloads show no stable speedup from this traversal fix. Further repairs must
+follow a system-level review of table representation, public operation paths,
+input construction and generated code, rather than an open-ended sequence of
+small hot-path edits. The [system-level collection review](evidence/cp42-collection-system-review-2026-09-07.md)
+records phase/runtime/probe/allocation evidence and the comparative prototype
+requirements. The [selected grouped index and amortized rebuilding](evidence/cp42-grouped-collections-2026-09-07.md)
+implement D090/D091 after that review. Three local paired series improve the
+original counting workloads; a broad matrix also exposes and fixes repeated
+full-storage rebuilding after sparse deletion. Actual reservation increases,
+small-table tradeoffs, exact budgets, failure/GC checks, VM/native and installed
+config-app acceptance are recorded. Battery-powered local timing and emulated
+Linux evidence do not close Tier 1 or product acceptance.
 Separate input preparation from collection execution; profile hashing/probing,
 managed-handle checks, and Option/Result construction before choosing repairs.
 Acceptance requires paired same-workload improvement, unchanged insertion

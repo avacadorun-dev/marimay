@@ -8,6 +8,7 @@
 #include "mmay/mir/mir.h"
 #include "mmay/runtime/fs.h"
 #include "mmay/runtime/env.h"
+#include "mmay/native/locations.h"
 
 typedef struct MarimayNativeCProgram {
     const MarimayMirFunction *const *functions;
@@ -37,6 +38,9 @@ typedef struct MarimayNativeCEmitOptions {
      * returns_status,returns_result}. NULL/0 preserves ordinary emission. */
     const MarimaySymbolId *test_entries;
     size_t test_entry_count;
+    /* Optional canonical source metadata for executable panic reports. */
+    const MarimayNativePanicLocation *panic_locations;
+    size_t panic_location_count;
 } MarimayNativeCEmitOptions;
 
 typedef enum MarimayNativeCEmitStatus {

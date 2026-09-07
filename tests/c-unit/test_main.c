@@ -27,9 +27,11 @@ void mmay_test_cp34_fs_pipeline(void);
 void mmay_test_cp35_environment(void);
 void mmay_test_cp35_context_pipeline(void);
 void mmay_test_cp36_collections(void);
+void mmay_test_collection_cursor(void);
 void mmay_test_cp37_cli_parser(void);
 void mmay_test_cp38_json(void);
 void mmay_test_checker_json(void);
+void mmay_test_native_test_helpers(void);
 void mmay_test_cli_cp39(void);
 void mmay_test_bytecode_vm(void);
 void mmay_test_checker(void);
@@ -59,6 +61,7 @@ void mmay_test_cli_run(void);
 void mmay_test_cli_test(void);
 void mmay_test_cli_test_bytecode(void);
 void mmay_test_cli_test_native(void);
+void mmay_test_cli_test_locations(void);
 void mmay_test_cli_cp14_imported_arrays(void);
 void mmay_test_cli_cp15_imported_results(void);
 void mmay_test_cli_cp16_receiver_names(void);
@@ -97,6 +100,8 @@ void mmay_test_managed_map_set(void);
 void mmay_test_managed_map_probe(void);
 void mmay_test_managed_map_cache(void);
 void mmay_test_managed_map_storage(void);
+void mmay_test_managed_collection_iteration(void);
+void mmay_test_managed_collection_churn(void);
 void mmay_test_managed_set_insertion(void);
 void mmay_test_program_arguments(void);
 void mmay_test_number_format(void);
@@ -257,6 +262,7 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_cli_test();
         mmay_test_cli_test_bytecode();
         mmay_test_cli_test_native();
+        mmay_test_cli_test_locations();
         break;
     case 13:
         mmay_test_cli_cp14_imported_arrays();
@@ -298,8 +304,11 @@ static void mmay_test_run_cp36(void) {
     mmay_test_managed_map_probe();
     mmay_test_managed_map_cache();
     mmay_test_managed_map_storage();
+    mmay_test_managed_collection_iteration();
+    mmay_test_managed_collection_churn();
     mmay_test_managed_set_insertion();
     mmay_test_cp36_collections();
+    mmay_test_collection_cursor();
 }
 
 static void mmay_test_run_cp37(void) {
@@ -313,6 +322,7 @@ static void mmay_test_run_cp38(void) {
 static void mmay_test_run_cp42(void) {
     mmay_test_checker_json();
     mmay_test_compiler_service_intrinsics();
+    mmay_test_native_test_helpers();
 }
 
 static void mmay_test_run_cp41(void) {

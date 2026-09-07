@@ -1,4 +1,5 @@
 #include "vm_internal.h"
+#include "mmay/runtime/collection_iteration.h"
 
 #include <limits.h>
 #include <string.h>
@@ -399,7 +400,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
     *handled = false;
     if (instruction == NULL || registers == NULL || execution == NULL
         || function == NULL || instruction->opcode < MMAY_OPCODE_COLLECTION_NEW
-        || instruction->opcode > MMAY_OPCODE_COLLECTION_ADD_RESULT
+        || instruction->opcode > MMAY_OPCODE_COLLECTION_CURSOR_VALUE
         || instruction->opcode == MMAY_OPCODE_TEST_ASSERT) {
         return MMAY_BYTECODE_RUN_OK;
     }
@@ -502,16 +503,51 @@ MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
             instruction->span, collection->is_set
         );
     }
+    if (instruction->opcode == MMAY_OPCODE_COLLECTION_NEXT) {
+        int64_t cursor = registers[
+            (size_t)instruction->operands[2].unsigned_value
+        ].as.i64;
+        size_t next = 0;
+        if (cursor < 0 || (uint64_t)cursor > SIZE_MAX) {
+            return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
+        }
+        managed_status = mmay_managed_collection_next(
+            &execution->managed_heap,
+            registers[collection_register].as.managed_reference,
+            collection->is_set, (size_t)cursor, &next
+        );
+        if (managed_status != MMAY_MANAGED_OK) {
+            if (instruction->opcode >= MMAY_OPCODE_COLLECTION_NEXT
+                && managed_status == MMAY_MANAGED_BOUNDS) {
+                return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
+            }
+            return mmay_bytecode_run_managed_status(managed_status);
+        }
+        if (next > INT64_MAX) return MMAY_BYTECODE_RUN_LIMIT_REACHED;
+        registers[target].as.i64 = (int64_t)next;
+        return MMAY_BYTECODE_RUN_OK;
+    }
     if (instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_KEY
-        || instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_VALUE) {
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_VALUE
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_KEY
+        || instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_VALUE) {
         int64_t ordinal = registers[
             (size_t)instruction->operands[2].unsigned_value
         ].as.i64;
-        if (ordinal < 0) return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+        if (ordinal < 0 || (uint64_t)ordinal > SIZE_MAX) {
+            return instruction->opcode >= MMAY_OPCODE_COLLECTION_NEXT
+                ? MMAY_BYTECODE_RUN_INVALID_REFERENCE
+                : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+        }
         memset(&key_cell, 0, sizeof(key_cell));
         memset(&value_cell, 0, sizeof(value_cell));
-        managed_status = collection->is_set
-            ? mmay_managed_set_entry(
+        managed_status = (instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_KEY
+                || instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_VALUE)
+            ? mmay_managed_collection_cursor_entry(
+                &execution->managed_heap,
+                registers[collection_register].as.managed_reference,
+                collection->is_set, (size_t)ordinal, &key_cell, &value_cell
+            ) : collection->is_set ? mmay_managed_set_entry(
                 &execution->managed_heap,
                 registers[collection_register].as.managed_reference,
                 (size_t)ordinal, &key_cell
@@ -521,11 +557,16 @@ MarimayBytecodeRunStatus mmay_bytecode_run_collection_instruction(
                 (size_t)ordinal, &key_cell, &value_cell
             );
         if (managed_status != MMAY_MANAGED_OK) {
+            if (instruction->opcode >= MMAY_OPCODE_COLLECTION_NEXT
+                && managed_status == MMAY_MANAGED_BOUNDS) {
+                return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
+            }
             return mmay_bytecode_run_managed_status(managed_status);
         }
         return mmay_bytecode_managed_cell_to_value(
             execution,
-            instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_KEY
+            (instruction->opcode == MMAY_OPCODE_COLLECTION_ENTRY_KEY
+                || instruction->opcode == MMAY_OPCODE_COLLECTION_CURSOR_KEY)
                 ? key_cell : value_cell,
             &registers[target]
         );

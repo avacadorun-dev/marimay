@@ -3,36 +3,24 @@
 /* Owns qualified mapError mapper resolution and failure-atomic publication. */
 static const char mapper_library[] =
     "public enum Input { Bad, }\n"
+    "public enum Other { Bad, }\n"
     "public enum Wrapped { Failure(Input), }\n"
+    "public enum Pretend<T,E> { Good(T), Bad(E), }\n"
     "public fn message(error: Input): string { return \"mapped\"; }\n"
+    "public fn message(error: Other): string { return \"other\"; }\n"
     "fn hidden(error: Input): string { return \"private\"; }\n"
     "public fn wrong(error: int): string { return \"wrong\"; }\n"
     "public fn pair(error: Input, extra: int): string { return \"pair\"; }\n"
     "public const answer: int = 42;\n";
 
 static void mmay_checker_map_error_import_case(
-    const char *mapper,
-    const char *output_type,
+    const char *application,
     const char *expected_diagnostic
 ) {
-    char application[2048];
     MarimayCheckerImportFixture fixture;
     MarimayTestImportSource sources[2];
     size_t attempts = 0;
     size_t iteration = 0;
-    int length = snprintf(
-        application, sizeof(application),
-        "import * as m from \"test/mappers\";\n"
-        "import { message as describe } from \"test/mappers\";\n"
-        "fn missing(error: m.Input): string { return \"not imported\"; }\n"
-        "fn mapped(value: Result<int, m.Input>): Result<int, %s> {\n"
-        "  return value.mapError(%s);\n"
-        "}\n", output_type, mapper
-    );
-    MMAY_EXPECT(length > 0 && (size_t)length < sizeof(application));
-    if (length <= 0 || (size_t)length >= sizeof(application)) {
-        return;
-    }
     sources[0] = (MarimayTestImportSource){
         "test/app", "app/main.my", application
     };
@@ -75,7 +63,7 @@ static void mmay_checker_map_error_import_case(
                 if (diagnostic != NULL) {
                     if (strcmp(diagnostic->code, expected_diagnostic) != 0) {
                         fprintf(stderr, "mapper %s: expected %s, got %s: %s\n",
-                            mapper, expected_diagnostic, diagnostic->code,
+                            application, expected_diagnostic, diagnostic->code,
                             diagnostic->message);
                     }
                     MMAY_EXPECT(strcmp(diagnostic->code, expected_diagnostic) == 0);
@@ -97,22 +85,39 @@ static void mmay_checker_map_error_import_case(
 }
 
 void mmay_test_checker_map_error_imports(void) {
-    mmay_checker_map_error_import_case("m.message", "string", NULL);
-    mmay_checker_map_error_import_case("describe", "string", NULL);
-    mmay_checker_map_error_import_case("m.Wrapped.Failure", "m.Wrapped", NULL);
+    static const struct {
+        const char *mapper, *output_type, *diagnostic, *setup;
+    } cases[] = {
+        {"m.message", "string", NULL, ""},
+        {"describe", "string", NULL, ""},
+        {"m.Wrapped.Failure", "m.Wrapped", NULL, ""},
+        {"m.hidden", "string", MMAY_DIAGNOSTIC_PRIVATE_IMPORT, ""},
+        {"m.missing", "string", MMAY_DIAGNOSTIC_UNKNOWN_IMPORT, ""},
+        {"m.wrong", "string", MMAY_DIAGNOSTIC_TYPE_MISMATCH, ""},
+        {"m.pair", "string", MMAY_DIAGNOSTIC_TYPE_MISMATCH, ""},
+        {"m.answer", "string", MMAY_DIAGNOSTIC_UNKNOWN_IMPORT, ""},
+        {"m.message", "string", MMAY_DIAGNOSTIC_TYPE_MISMATCH, "const m = 0;"},
+        {"describe", "string", MMAY_DIAGNOSTIC_TYPE_MISMATCH, "const describe = 0;"}
+    };
+    size_t index;
+    for (index = 0; index < sizeof(cases) / sizeof(cases[0]); index += 1) {
+        char application[2048];
+        int length = snprintf(application, sizeof(application),
+            "import * as m from \"test/mappers\";\n"
+            "import { message as describe } from \"test/mappers\";\n"
+            "fn missing(error: m.Input): string { return \"not imported\"; }\n"
+            "fn mapped(value: Result<int, m.Input>): Result<int, %s> {\n"
+            "  %s\n  return value.mapError(%s);\n}\n",
+            cases[index].output_type, cases[index].setup, cases[index].mapper);
+        MMAY_EXPECT(length > 0 && (size_t)length < sizeof(application));
+        if (length > 0 && (size_t)length < sizeof(application)) {
+            mmay_checker_map_error_import_case(application, cases[index].diagnostic);
+        }
+    }
     mmay_checker_map_error_import_case(
-        "m.hidden", "string", MMAY_DIAGNOSTIC_PRIVATE_IMPORT
-    );
-    mmay_checker_map_error_import_case(
-        "m.missing", "string", MMAY_DIAGNOSTIC_UNKNOWN_IMPORT
-    );
-    mmay_checker_map_error_import_case(
-        "m.wrong", "string", MMAY_DIAGNOSTIC_TYPE_MISMATCH
-    );
-    mmay_checker_map_error_import_case(
-        "m.pair", "string", MMAY_DIAGNOSTIC_TYPE_MISMATCH
-    );
-    mmay_checker_map_error_import_case(
-        "m.answer", "string", MMAY_DIAGNOSTIC_UNKNOWN_IMPORT
-    );
+        "import * as m from \"test/mappers\";\n"
+        "fn mapped(value: Result<int,m.Input>): m.Pretend<int,string> {\n"
+        " const count = value.mapError((error): string => m.message(error))?;\n"
+        " return m.Pretend.Good(count);\n}\n",
+        MMAY_DIAGNOSTIC_TYPE_MISMATCH);
 }

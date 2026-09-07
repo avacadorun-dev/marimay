@@ -157,3 +157,6 @@
 155	COLLECTION_REMOVE_OPTION	collection_remove_option	destination:register,collection:register,key:register	may_panic	Remove one Map key into Option with exactly one collection lookup.
 156	COLLECTION_PUT_RESULT	collection_put_result	destination:register,collection:register,key:register,value:register	may_panic	Insert or update one Map entry and return its typed growth result after one lookup.
 157	COLLECTION_ADD_RESULT	collection_add_result	destination:register,collection:register,key:register	may_panic	Insert one Set element and return its typed growth result after one lookup.
+158	COLLECTION_NEXT	collection_next	destination:register,collection:register,cursor:register	none	Advance an independent checked storage cursor or return zero at exhaustion.
+159	COLLECTION_CURSOR_KEY	collection_cursor_key	destination:register,collection:register,cursor:register	none	Read the key at a checked positive active storage cursor.
+160	COLLECTION_CURSOR_VALUE	collection_cursor_value	destination:register,collection:register,cursor:register	none	Read the Map value at a checked positive active storage cursor.

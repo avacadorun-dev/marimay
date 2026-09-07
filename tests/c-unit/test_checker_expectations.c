@@ -87,11 +87,83 @@ static void mmay_test_checker_expectations_execute(void) {
     mmay_checker_fixture_dispose(&fixture);
 }
 
+static void mmay_test_checker_expectation_helpers(void) {
+    static const char source[] =
+        "fn require(value: bool): void { expect.true(value); }\n"
+        "fn nested(value: bool): void { require(value); }\n"
+        "@test fn accepts(): void { nested(true); }\n"
+        "@test fn rejects(): void { nested(false); }\n";
+    const char *call = strstr(source, "expect.true(value)");
+    MarimayCheckerFixture fixture;
+    size_t failure;
+    bool complete = false;
+    MMAY_EXPECT(mmay_checker_fixture_init_path(&fixture, "helpers_test.my", source));
+    for (failure = 0; failure < 8192; failure += 1) {
+        MarimayFailAllocator tracked;
+        MarimayCheckResult checked = {0};
+        MarimayCheckStatus status;
+        mmay_fail_allocator_init(&tracked, mmay_system_allocator(), failure);
+        status = mmay_check_ast(&fixture.ast, "test/expectation-helpers",
+            mmay_fail_allocator(&tracked), mmay_check_default_options(), &checked);
+        if (status == MMAY_CHECK_OK) {
+            MMAY_EXPECT(checked.initialized && checked.diagnostics.length == 0);
+            complete = failure >= tracked.attempts;
+            if (complete && checked.diagnostics.length == 0) {
+                MarimayCheckInterpretOptions options = mmay_check_interpret_default_options();
+                MarimayMirPanic panic = {0};
+                MarimayMirValue result = {0};
+                size_t index;
+                MMAY_EXPECT(failure == tracked.attempts);
+                tracked.failure_index = SIZE_MAX;
+                MMAY_EXPECT(checked.functions.length == 4);
+                for (index = 0; index < checked.functions.length; index += 1) {
+                    const MarimayCheckedFunction *function = mmay_checked_function(&checked, index);
+                    MMAY_EXPECT(function != NULL && function->is_test == (index >= 2));
+                    if (function != NULL) {
+                        MMAY_EXPECT(!function->is_fuzz);
+                        MMAY_EXPECT(mmay_mir_verify(&function->mir) == MMAY_MIR_VERIFY_OK);
+                    }
+                }
+                MMAY_EXPECT(mmay_check_interpret_function(&checked, 2, NULL, 0,
+                    mmay_fail_allocator(&tracked), options, &result) == MMAY_MIR_INTERPRET_OK);
+                MMAY_EXPECT(result.type == MMAY_TYPE_VOID);
+                options.panic = &panic;
+                MMAY_EXPECT(mmay_check_interpret_function(&checked, 3, NULL, 0,
+                    mmay_fail_allocator(&tracked), options, &result) == MMAY_MIR_INTERPRET_PANIC);
+                MMAY_EXPECT(panic.code != NULL && strcmp(panic.code, "G4004") == 0);
+                MMAY_EXPECT(panic.message.length == strlen("expect.true failed: value is false")
+                    && panic.message.data != NULL && memcmp(panic.message.data,
+                    "expect.true failed: value is false",
+                    strlen("expect.true failed: value is false")) == 0);
+                MMAY_EXPECT(mmay_checked_function(&checked, 0) != NULL && mmay_symbol_id_equal(panic.symbol,
+                    mmay_checked_function(&checked, 0)->mir.symbol));
+                MMAY_EXPECT(call != NULL && panic.span.start == (size_t)(call - source));
+                MMAY_EXPECT(panic.span.end == panic.span.start + strlen("expect.true(value)"));
+                mmay_mir_panic_dispose(&panic);
+            }
+            mmay_check_result_dispose(&checked);
+        } else {
+            MMAY_EXPECT(status == MMAY_CHECK_ALLOCATION_FAILED && !checked.initialized);
+        }
+        MMAY_EXPECT(tracked.live_allocations == 0 && tracked.live_bytes == 0);
+        if (complete) break;
+    }
+    MMAY_EXPECT(complete);
+    mmay_checker_fixture_dispose(&fixture);
+}
+
 void mmay_test_checker_expectations(void) {
     mmay_test_checker_expectations_execute();
+    mmay_test_checker_expectation_helpers();
 
     mmay_checker_expect_one_diagnostic_path(
         "outside.my",
+        "fn bad(): void { expect.true(true); }\n",
+        MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
+        "expect.true(true)"
+    );
+    mmay_checker_expect_one_diagnostic_path(
+        "almost_test.my.bak",
         "fn bad(): void { expect.true(true); }\n",
         MMAY_DIAGNOSTIC_INVALID_ATTRIBUTE,
         "expect.true(true)"

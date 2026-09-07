@@ -894,7 +894,7 @@ cleanup:
     function.block = MMAY_MIR_NO_BLOCK;
     function.result_type = declaration->result_type;
     function.unsafe_context = declaration->is_unsafe;
-    function.test_context = declaration->is_test || declaration->is_fuzz;
+    function.test_context = mmay_checker_private_check_source_is_test_file(checker);
     function.type_parameters = &declaration->type_parameters;
     function.type_arguments = declaration->is_instance
         ? &declaration->generic_arguments : NULL;

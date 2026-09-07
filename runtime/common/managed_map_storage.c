@@ -1,6 +1,7 @@
 #include "managed_internal.h"
 #include "managed_map_storage_internal.h"
 #include "managed_map_probe_internal.h"
+#include "managed_map_index_internal.h"
 
 static bool mmay_managed_map_storage_sizes(
     size_t entry_stride,
@@ -12,9 +13,8 @@ static bool mmay_managed_map_storage_sizes(
 ) {
     return mmay_size_multiply(
             entry_capacity, entry_stride, entry_bytes
-        ) && mmay_size_multiply(
-            bucket_capacity, sizeof(size_t), bucket_bytes
-        ) && mmay_size_add(*entry_bytes, *bucket_bytes, total);
+        ) && mmay_map_index_bytes(bucket_capacity, bucket_bytes)
+        && mmay_size_add(*entry_bytes, *bucket_bytes, total);
 }
 
 size_t mmay_managed_map_storage_bytes(const MarimayManagedMap *map) {
@@ -113,7 +113,9 @@ static bool mmay_managed_map_plan_storage(
     size_t entries = map->entry_capacity == 0 ? 4U : map->entry_capacity;
     size_t buckets = map->bucket_capacity == 0 ? 8U : map->bucket_capacity;
     size_t required = 0;
-    bool compact = map->entry_count >= entries && map->length < map->entry_count;
+    /* Reclaim a substantial fraction, or reserve enough append positions to
+     * amortize this rebuild across subsequent mutations (D091). */
+    bool compact = map->entry_count >= entries && map->length <= entries / 2U;
     if (map->length == SIZE_MAX) {
         return false;
     }
@@ -140,9 +142,7 @@ static void mmay_managed_map_rebuild_buckets(
     size_t bucket_capacity
 ) {
     size_t index = 0;
-    for (index = 0; index < bucket_capacity; index += 1) {
-        buckets[index] = MMAY_MAP_EMPTY;
-    }
+    mmay_map_index_reset(buckets, bucket_capacity);
     for (index = 0; index < map->entry_count; index += 1) {
         size_t probe = 0;
         if (!mmay_managed_map_entry_prefix(map, index)->active) {
@@ -152,7 +152,8 @@ static void mmay_managed_map_rebuild_buckets(
             size_t position = ((size_t)mmay_managed_map_entry_prefix(map, index)->hash + probe)
                 & (bucket_capacity - 1U);
             if (buckets[position] == MMAY_MAP_EMPTY) {
-                buckets[position] = index;
+                mmay_map_index_bucket_store(buckets, bucket_capacity, position, index,
+                    mmay_managed_map_entry_prefix(map, index)->hash);
                 break;
             }
         }

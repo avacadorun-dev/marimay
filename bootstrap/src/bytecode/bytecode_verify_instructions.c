@@ -821,7 +821,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
     if ((instruction->opcode >= MMAY_OPCODE_COLLECTION_NEW
             && instruction->opcode <= MMAY_OPCODE_COLLECTION_ENTRY_VALUE)
         || (instruction->opcode >= MMAY_OPCODE_COLLECTION_GET_OPTION
-            && instruction->opcode <= MMAY_OPCODE_COLLECTION_ADD_RESULT)) {
+            && instruction->opcode <= MMAY_OPCODE_COLLECTION_CURSOR_VALUE)) {
         return mmay_bytecode_verify_collection_instruction(
             function, instruction, assigned
         );

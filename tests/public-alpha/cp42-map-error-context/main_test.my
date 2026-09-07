@@ -1,0 +1,46 @@
+@test
+fn importedOverloadAndRenamedMapper(): void {
+  const visits = [0, 0];
+  expect.equal(named(visits, false), Ok(true));
+  expect.equal(named(visits, true), Err("mapped"));
+  expect.equal(renamed(visits, false), Ok(true));
+  expect.equal(renamed(visits, true), Err("mapped"));
+  expect.equal(visits[0], 2);
+  expect.equal(visits[1], 4);
+}
+
+@test
+fn contextualClosureKeepsDifferentSuccessType(): void {
+  const visits = [0, 0];
+  expect.equal(closure(visits, false), Ok(true));
+  expect.equal(closure(visits, true), Err("mapped"));
+  expect.equal(visits[0], 1);
+  expect.equal(visits[1], 2);
+}
+
+@test
+fn genericConstructorGetsOnlyErrorContext(): void {
+  const visits = [0, 0];
+  expect.ok(constructed(visits, false));
+  expect.err(constructed(visits, true));
+  expect.equal(visits[0], 0);
+  expect.equal(visits[1], 2);
+}
+
+@test
+fn voidSuccessCanPropagateIntoIntResult(): void {
+  const visits = [0, 0];
+  expect.equal(fromVoid(visits, false), Ok(9));
+  expect.equal(fromVoid(visits, true), Err("mapped"));
+  expect.equal(visits[0], 1);
+  expect.equal(visits[1], 2);
+}
+
+@test
+fn nestedTryRestoresOuterMapperContext(): void {
+  const visits = [0, 0];
+  expect.equal(nested(visits, false), Ok(true));
+  expect.equal(nested(visits, true), Err("mapped"));
+  expect.equal(visits[0], 1);
+  expect.equal(visits[1], 2);
+}

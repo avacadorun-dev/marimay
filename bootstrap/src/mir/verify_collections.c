@@ -120,10 +120,17 @@ MarimayMirVerifyStatus mmay_mir_verify_collection_instruction(
         return second_type == MMAY_TYPE_U64 && target_type == collection->type
             ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
     }
+    if (instruction->kind == MMAY_MIR_COLLECTION_NEXT) {
+        return second_type == MMAY_TYPE_I64 && target_type == MMAY_TYPE_I64
+            ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
+    }
     if (instruction->kind == MMAY_MIR_COLLECTION_ENTRY_KEY
-        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE) {
-        MarimayTypeId entry_type = instruction->kind
+        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE
+        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_KEY
+        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_VALUE) {
+        MarimayTypeId entry_type = (instruction->kind
                 == MMAY_MIR_COLLECTION_ENTRY_KEY
+                || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_KEY)
             ? collection->key_type : collection->value_type;
         return second_type == MMAY_TYPE_I64
                 && entry_type != MMAY_TYPE_INVALID

@@ -1,0 +1,36 @@
+import * as io from "std/io";
+
+fn same<T>(actual: T, expected: T): void {
+  expect.equal(actual, expected);
+}
+
+fn nested(actual: int, expected: int): void {
+  same(actual, expected);
+}
+
+fn emit(): void {
+  const _ = io.println("Привет 🌿");
+}
+
+fn outputHelper(): void {
+  expect.output(
+    "Привет 🌿\n",
+    () => {
+      emit();
+    },
+  );
+}
+
+fn mark(log: []int, value: int): void {
+  const _ = log.push(value);
+}
+
+fn cleanupHelper(log: []int): void {
+  defer mark(log, 2);
+  expect.equal(log.length(), 0);
+  mark(log, 1);
+}
+
+fn undiscovered(): void {
+  expect.true(false);
+}

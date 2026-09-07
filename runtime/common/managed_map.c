@@ -1,6 +1,7 @@
 #include "managed_internal.h"
 #include "managed_map_storage_internal.h"
 #include "managed_map_probe_internal.h"
+#include "managed_map_index_internal.h"
 #include "managed_map_set_internal.h"
 
 #include <limits.h>
@@ -778,7 +779,9 @@ static inline MarimayManagedStatus mmay_managed_map_put_resolved(
     mmay_managed_map_store_key(map, entry, key);
     if (!map->descriptor->is_set) mmay_managed_map_store_value(map, entry, value);
     mmay_managed_map_entry_prefix(map, entry)->active = true;
-    map->buckets[bucket] = entry;
+    mmay_map_index_bucket_store(
+        map->buckets, map->bucket_capacity, bucket, entry, hash
+    );
     map->entry_count += 1U;
     map->length += 1U;
     map->mutation_generation += UINT64_C(1);
@@ -861,8 +864,16 @@ MarimayManagedStatus mmay_managed_map_remove(
         *value = mmay_managed_map_entry_value(map, entry);
     }
     memset(mmay_managed_map_entry_prefix(map, entry), 0, map->entry_stride);
-    map->buckets[bucket] = MMAY_MAP_TOMBSTONE;
+    mmay_map_index_bucket_mark(
+        map->buckets, map->bucket_capacity, bucket, MMAY_MAP_TOMBSTONE
+    );
     map->length -= 1U;
+    if (map->length == 0) {
+        /* All payloads have been erased by removal. Reuse the reservation
+         * from its beginning without rebuilding or retaining old tombstones. */
+        map->entry_count = 0;
+        mmay_map_index_reset(map->buckets, map->bucket_capacity);
+    }
     map->mutation_generation += UINT64_C(1);
     *removed = true;
     return MMAY_MANAGED_OK;
@@ -873,7 +884,6 @@ MarimayManagedStatus mmay_managed_map_clear(
     MarimayManagedReference reference
 ) {
     MarimayManagedMap *map = NULL;
-    size_t index = 0;
     MarimayManagedStatus status = mmay_managed_map_resolve_mutable(
         heap, reference, &map
     );
@@ -887,9 +897,7 @@ MarimayManagedStatus mmay_managed_map_clear(
         map->entries, 0,
         map->entry_capacity * map->entry_stride
     );
-    for (index = 0; index < map->bucket_capacity; index += 1) {
-        map->buckets[index] = MMAY_MAP_EMPTY;
-    }
+    mmay_map_index_reset(map->buckets, map->bucket_capacity);
     map->length = 0;
     map->entry_count = 0;
     map->mutation_generation += UINT64_C(1);

@@ -113,6 +113,43 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Test panic source ranges](cp42-test-locations-2026-09-07.md) records D095
+primary source metadata and preservation of stderr before a panic. Its report
+tracks local verification, negative/allocation cases and remaining checks.
+
+[Exact mapError context](cp42-map-error-context-2026-09-07.md) records D094
+nominal mapper selection, scoped propagation context, shadowing/Result checks,
+allocation and engine parity, and removal of the config mapper workaround.
+
+[Ordinary test-file helpers](cp42-test-helpers-2026-09-07.md) records D093
+expectation scope, discovery/isolation, full panic metadata, allocation
+coverage, local/emulated checks and migration of the config error helper.
+The terse human failure report remains a separate diagnostic finding.
+
+[Void match arms and lexical cleanup](cp42-void-match-2026-09-07.md)
+records D092 typing, branch-local defer/root lifetime, all-index checker
+failure coverage, VM/native/formatter acceptance and migration of the real
+config application. Local and emulated Linux checks retain their stated scope.
+
+[Grouped index and amortized rebuilding](cp42-grouped-collections-2026-09-07.md)
+records the selected D090/D091 implementation after the structural review:
+paired original workloads, broad key/operation cases, reservation tradeoffs,
+failure/GC/VM/native checks and installed application acceptance. This remains
+local evidence, with battery-powered timing and emulated Linux qualifications;
+CP42 and CLI0 stay open.
+
+[System-level collection review](cp42-collection-system-review-2026-09-07.md)
+separates input construction, generated counting code and checked runtime,
+records probe/allocation counts and compares actual benchmark implementations.
+It sets the next structural experiments without claiming a selected table
+replacement, counting speedup or checkpoint closure.
+
+[Independent collection cursors](cp42-collection-cursors-2026-09-07.md) remove
+quadratic full traversal while preserving legacy ordinal bytecode semantics.
+Scaling, sparse/nested loops, full local macOS suites and focused Linux
+sanitizer/fuzz evidence are recorded. Counting-workload performance and the
+broader collection implementation review remain open.
+
 [Compact collection storage](cp42-compact-collections-2026-09-07.md) reduces
 raw Map/Set reservation with exact layout/accounting and failure coverage.
 This is a memory improvement and partial hot-path evidence, not closure of

@@ -274,6 +274,27 @@ Expectations report source expressions and a bounded structural diff. Tests
 use ordinary functions and lexical `defer` for fixtures; there is no hidden
 lifecycle annotation system in 1.0.
 
+Under D093, implemented expectations are available in ordinary functions
+defined in `_test.my`, including generic helper specializations. No helper
+annotation or extra context parameter is required. Only `@test`/`@fuzz` marks
+an entry for discovery; a helper runs in its caller's existing execution,
+with the same limits and captured output. A failure is reported at the full
+expectation call in the helper's defining file and fails the current test.
+Calling a production-file function from a test does not permit `expect` in
+that production function. Test-source inclusion, visibility, shadowing,
+constant-evaluation restrictions and per-test isolation remain unchanged.
+
+```marimay
+fn samePath(actual: string, expected: string): void {
+  expect.equal(actual, expected);
+}
+
+@test
+fn acceptsRootPath(): void {
+  samePath("$", "$");
+}
+```
+
 ### 5.2 Commands
 
 ```sh
@@ -369,6 +390,15 @@ capability configuration and is compared to that record. Any difference is
 `B0007` and exit `5`; an ordinary matching panic or `G4004` expectation failure
 is a test failure and exit `1`. Success exits `0`, command misuse exits `2`,
 and an internal compiler/runtime test-pipeline failure exits `70`.
+
+Under D095, a test runtime panic preserves earlier captured stderr, then its
+code/message line and primary defining source range as
+`  --> path:line:column-endLine:endColumn`. Positions are one-based D022
+Unicode-scalar coordinates for the complete half-open panic span, including
+a helper's defining file after generic specialization. Both engines use the
+same checked immutable source metadata without reopening files; the complete
+rendered location participates in their exact comparison. This primary range
+does not imply a complete human stack or suppressed-panic report.
 
 Checkpoint 11 does not implement filters, watch mode, or a test-result cache.
 `--filter`, `--exact`, `--watch`, and `--no-cache` are rejected explicitly with
