@@ -80,6 +80,17 @@ mirror outage must fail setup promptly; it must not consume the checkpoint test
 budget or masquerade as a test timeout. Long-lived credentials are not retained
 by checkout, and artifact transport uses pinned action revisions.
 
+After a failed C17 or sanitizer CTest step, the
+[`tools/ci-diagnostics`](../../tools/ci-diagnostics/README.md) owner captures
+exact CTest logs and generated native C paths named by compiler diagnostics,
+with revision, compiler/runtime hashes and configured toolchain metadata. Its
+compact manifest is printed before artifact upload so a transport failure does
+not also hide the source hash and diagnostic context. Collection is read-only
+with respect to test inputs and caches; missing artifacts are recorded, not
+reconstructed. This post-test snapshot is evidence for investigation, not proof
+of the bytes seen by an earlier compiler process. Capture/upload outcomes do
+not replace the failed test outcome.
+
 A path-classification job compares the pushed or pull-request base revision
 with the exact head. Revisions changing only `docs/**` and top-level Markdown
 run the complete documentation, generated-artifact, architecture, memory, and

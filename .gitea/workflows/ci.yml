@@ -105,10 +105,23 @@ jobs:
       - name: Build
         run: cmake --build build --parallel
       - name: Test
+        id: test
         run: >-
           ctest --test-dir build
           -C ${{ matrix.configuration }}
           --parallel 4 --output-on-failure
+      - name: Capture failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        run: >-
+          python3 tools/ci-diagnostics/collect.py --root . --build-dir build
+          --output build/ci-failure
+      - name: Preserve failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: c17-${{ matrix.compiler }}-${{ matrix.configuration }}-failure-attempt-${{ gitea.run_attempt }}
+          path: build/ci-failure
+          if-no-files-found: error
       - name: Preserve CP39 Linux x86_64 artifacts
         if: ${{ matrix.compiler == 'gcc' && matrix.configuration == 'Release' }}
         uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
@@ -146,16 +159,24 @@ jobs:
       - name: Build
         run: cmake --build --preset asan-ubsan --parallel
       - name: Test
+        id: test
         run: |
           test_jobs=$(nproc)
           if [ "${test_jobs}" -gt 8 ]; then test_jobs=8; fi
           ctest --preset asan-ubsan --parallel "${test_jobs}" --output-on-failure
+      - name: Capture failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        run: >-
+          python3 tools/ci-diagnostics/collect.py --root . --build-dir build/asan-ubsan
+          --output build/asan-ubsan/ci-failure
       - name: Preserve sanitizer diagnostics
         if: always()
         uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
         with:
           name: sanitizer-linux-x86_64-attempt-${{ gitea.run_attempt }}
-          path: build/asan-ubsan/Testing/Temporary/*.log
+          path: |
+            build/asan-ubsan/Testing/Temporary/*.log
+            build/asan-ubsan/ci-failure
           if-no-files-found: warn
 
   fuzz-build:
@@ -278,7 +299,20 @@ jobs:
       - name: Build
         run: cmake --build --preset tsan --parallel
       - name: Test
+        id: test
         run: |
           test_jobs=$(nproc)
           if [ "${test_jobs}" -gt 8 ]; then test_jobs=8; fi
           ctest --preset tsan --parallel "${test_jobs}" --output-on-failure
+      - name: Capture failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        run: >-
+          python3 tools/ci-diagnostics/collect.py --root . --build-dir build/tsan
+          --output build/tsan/ci-failure
+      - name: Preserve failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: tsan-linux-x86_64-failure-attempt-${{ gitea.run_attempt }}
+          path: build/tsan/ci-failure
+          if-no-files-found: error

@@ -933,5 +933,50 @@
   "tsan": {
     "job_id": 1749,
     "conclusion": "skipped"
+  },
+  "failure_capture_followup": {
+    "base_revision": "a783054b74ffcb842fae94de7410163cd9d2d1a5",
+    "scope": "Local POSIX diagnostic packet tests; no new compiler correctness claim or CI completion claim",
+    "files": {
+      "tools/ci-diagnostics/collect.py": "9af05bab83728483272f7b05e4d65df28dcb8ee4f3357bfe1de7347157db8b16",
+      "tools/ci-diagnostics/test_collect.py": "1a4b269ba29e8ca664360d4d3aea900ae4ea23433523a080be88fad5f5e79332"
+    },
+    "commands": [
+      {
+        "command": "python3 tools/ci-diagnostics/test_collect.py",
+        "result": "6 tests passed"
+      },
+      {
+        "command": "ctest --test-dir build/release -R '^mmay_(ci_diagnostics|cli_acceptance_driver)$' --output-on-failure",
+        "result": "2/2 passed"
+      }
+    ],
+    "historical_log_parser_replay": {
+      "run": 205,
+      "job": 1730,
+      "native_sources": 1,
+      "reported_lines": [
+        1771,
+        17775
+      ],
+      "failing_source_recovered": false
+    },
+    "ci_209_last_observed": {
+      "head_sha": "a783054b74ffcb842fae94de7410163cd9d2d1a5",
+      "state": "in_progress",
+      "completed_success": [
+        "classify",
+        "documentation",
+        "Clang Debug",
+        "Clang Release",
+        "fuzz build"
+      ],
+      "later_reads": "HTTP 401, then connection refused; completion unavailable"
+    },
+    "limitations": [
+      "Post-test snapshot cannot establish bytes seen by earlier host compiler",
+      "Historical native and allocator failures remain unexplained",
+      "Artifact HTTP 500 is not fixed by repository-side evidence capture"
+    ]
   }
 }

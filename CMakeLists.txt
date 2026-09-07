@@ -822,6 +822,16 @@ if(BUILD_TESTING)
   add_subdirectory(tests/c-unit)
   find_package(Python3 COMPONENTS Interpreter QUIET)
   if(Python3_Interpreter_FOUND)
+    if(UNIX)
+      add_test(
+        NAME mmay_ci_diagnostics
+        COMMAND "${Python3_EXECUTABLE}"
+          "${CMAKE_CURRENT_SOURCE_DIR}/tools/ci-diagnostics/test_collect.py"
+      )
+      set_tests_properties(mmay_ci_diagnostics PROPERTIES
+        TIMEOUT 30 LABELS "ci;diagnostics"
+      )
+    endif()
     add_test(
       NAME mmay_cli_acceptance_driver
       COMMAND "${Python3_EXECUTABLE}"
