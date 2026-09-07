@@ -1710,6 +1710,10 @@ The [scalar lookup reuse follow-up](evidence/cp42-collection-lookup-reuse-2026-0
 removes repeated Map hash/probe work with paired counter improvements and
 enabled/disabled-memo regression coverage. Set and the full performance item
 remain open; the report records the fixed per-object memory tradeoff.
+The [checked Set insertion follow-up](evidence/cp42-set-insertion-2026-09-07.md)
+removes duplicate receiver validation without exposing resolved storage. Its
+paired Set gains and expanded duplicate/error-boundary tests are additional
+partial evidence, not closure of the remaining performance or CI obligations.
 Separate input preparation from collection execution; profile hashing/probing,
 managed-handle checks, and Option/Result construction before choosing repairs.
 Acceptance requires paired same-workload improvement, unchanged insertion

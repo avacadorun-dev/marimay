@@ -514,8 +514,16 @@ table implementation.
 Both Map and Set constructors validate the immutable field descriptor before
 publishing an object. Operations rely on that shape invariant, but still
 resolve each receiver's heap/slot/generation/kind and validate reference-valued
-keys and values. The map owner exposes only its descriptor predicate to the
-set owner; no mutable resolved storage crosses that boundary. Raw 64-bit keys
+keys and values. The map owner exposes its descriptor predicate and a fully
+checked Set insertion operation through `managed_map_set_internal.h`; no
+resolved object or mutable storage crosses that boundary. Set insertion
+validates its handle/kind once in that operation, preserving receiver-before-
+output error order, and shares the map owner's insertion core. Its local
+resolved lookup/core is not an unchecked caller-facing fast path. A guarded
+compiler inlining hint keeps sharing that core from adding a call boundary
+to Map.put; other C17 compilers retain the ordinary inline implementation.
+`runtime/test_managed_set_insertion.c` owns this operation's handle, output,
+key, duplicate/limit and lifetime boundaries. Raw 64-bit keys
 use the base hash owner's fixed-word SipHash-2-4 entry point, exactly equivalent
 to hashing the native word bytes with the generic routine. Round count, seeds,
 reference-key hashing, probing, order and storage accounting rules are unchanged.

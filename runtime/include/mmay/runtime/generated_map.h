@@ -4,10 +4,11 @@
 #include "mmay/runtime/map.h"
 
 typedef struct MarimayManagedMapEntry {
+    /* Keep the probe's active/hash/key fields together before the value. */
+    bool active;
     uint64_t hash;
     MarimayManagedCell key;
     MarimayManagedCell value;
-    bool active;
 } MarimayManagedMapEntry;
 
 /* Last successful scalar-key get, including absence. Indices, not pointers or

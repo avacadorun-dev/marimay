@@ -1,4 +1,5 @@
 #include "managed_internal.h"
+#include "managed_map_set_internal.h"
 
 #include <string.h>
 
@@ -73,11 +74,7 @@ MarimayManagedStatus mmay_managed_set_add(
     MarimayManagedCell value,
     bool *inserted
 ) {
-    MarimayManagedCell ignored;
-    MarimayManagedStatus status = mmay_managed_set_require(heap, set);
-    memset(&ignored, 0, sizeof(ignored));
-    return status == MMAY_MANAGED_OK
-        ? mmay_managed_map_put(heap, set, value, ignored, inserted) : status;
+    return mmay_managed_map_add_set(heap, set, value, inserted);
 }
 
 MarimayManagedStatus mmay_managed_set_remove(

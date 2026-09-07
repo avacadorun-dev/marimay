@@ -1,5 +1,6 @@
 #include "managed_internal.h"
 #include "managed_map_probe_internal.h"
+#include "managed_map_set_internal.h"
 
 #include <limits.h>
 #include <string.h>
@@ -849,31 +850,23 @@ MarimayManagedStatus mmay_managed_map_length(
     return length == NULL ? MMAY_MANAGED_INVALID_ARGUMENT : status;
 }
 
-static MarimayManagedStatus mmay_managed_map_lookup(
+static inline MarimayManagedStatus mmay_managed_map_lookup_resolved(
     const MarimayManagedHeap *heap,
-    MarimayManagedReference reference,
+    const MarimayManagedMap *map,
     MarimayManagedCell key,
-    const MarimayManagedMap **map_result,
     size_t *bucket,
     size_t *entry,
     bool *found,
     uint64_t *hash_result
 ) {
-    const MarimayManagedMap *map = NULL;
     uint64_t hash = 0;
-    MarimayManagedStatus status = mmay_managed_map_resolve(
-        heap, reference, &map
-    );
-    if (status != MMAY_MANAGED_OK) {
-        return status;
-    }
+    MarimayManagedStatus status;
     if (map->descriptor->key.cell_kind == MMAY_MANAGED_CELL_RAW64) {
         if (!map->descriptor->is_set && map->lookup.valid
             && map->lookup.key_bits == key.f64_bits
             && map->lookup.generation == map->mutation_generation
             && map->lookup.seed0 == heap->options.collection_hash_seed0
             && map->lookup.seed1 == heap->options.collection_hash_seed1) {
-            *map_result = map;
             *bucket = map->lookup.bucket;
             *entry = map->lookup.entry;
             *found = map->lookup.found;
@@ -904,7 +897,6 @@ static MarimayManagedStatus mmay_managed_map_lookup(
         *bucket = MMAY_MAP_EMPTY;
         *entry = MMAY_MAP_EMPTY;
         *found = false;
-        *map_result = map;
         return MMAY_MANAGED_OK;
     }
     status = map->descriptor->key.cell_kind == MMAY_MANAGED_CELL_RAW64
@@ -913,8 +905,26 @@ static MarimayManagedStatus mmay_managed_map_lookup(
         ) : mmay_managed_map_find_reference(
             heap, map, key, hash, bucket, entry, found
         );
+    return status;
+}
+
+static MarimayManagedStatus mmay_managed_map_lookup(
+    const MarimayManagedHeap *heap,
+    MarimayManagedReference reference,
+    MarimayManagedCell key,
+    const MarimayManagedMap **map_result,
+    size_t *bucket,
+    size_t *entry,
+    bool *found,
+    uint64_t *hash_result
+) {
+    const MarimayManagedMap *map = NULL;
+    MarimayManagedStatus status = mmay_managed_map_resolve(heap, reference, &map);
     if (status == MMAY_MANAGED_OK) {
-        *map_result = map;
+        status = mmay_managed_map_lookup_resolved(
+            heap, map, key, bucket, entry, found, hash_result
+        );
+        if (status == MMAY_MANAGED_OK) *map_result = map;
     }
     return status;
 }
@@ -997,15 +1007,18 @@ MarimayManagedStatus mmay_managed_map_get(
     return status;
 }
 
-MarimayManagedStatus mmay_managed_map_put(
+#if defined(__clang__) || defined(__GNUC__)
+__attribute__((always_inline))
+#endif
+static inline MarimayManagedStatus mmay_managed_map_put_resolved(
     MarimayManagedHeap *heap,
     MarimayManagedReference reference,
+    const MarimayManagedMap *lookup_map,
     MarimayManagedCell key,
     MarimayManagedCell value,
     bool *inserted
 ) {
     MarimayManagedMap *map = NULL;
-    const MarimayManagedMap *lookup_map = NULL;
     size_t bucket = MMAY_MAP_EMPTY;
     size_t entry = MMAY_MAP_EMPTY;
     bool found = false;
@@ -1013,14 +1026,10 @@ MarimayManagedStatus mmay_managed_map_put(
     size_t previous_buckets = 0;
     size_t previous_entries = 0;
     MarimayManagedStatus status;
-    if (inserted != NULL) {
-        *inserted = false;
-    }
-    if (inserted == NULL) {
-        return MMAY_MANAGED_INVALID_ARGUMENT;
-    }
-    status = mmay_managed_map_lookup(
-        heap, reference, key, &lookup_map, &bucket, &entry, &found, &hash
+    /* Both checked entry points validate the receiver/output first. The
+     * borrowed object stays within this owner; growth re-resolves its handle. */
+    status = mmay_managed_map_lookup_resolved(
+        heap, lookup_map, key, &bucket, &entry, &found, &hash
     );
     if (status != MMAY_MANAGED_OK) {
         return status;
@@ -1091,6 +1100,45 @@ MarimayManagedStatus mmay_managed_map_put(
     map->mutation_generation += UINT64_C(1);
     *inserted = true;
     return MMAY_MANAGED_OK;
+}
+
+MarimayManagedStatus mmay_managed_map_put(
+    MarimayManagedHeap *heap,
+    MarimayManagedReference reference,
+    MarimayManagedCell key,
+    MarimayManagedCell value,
+    bool *inserted
+) {
+    const MarimayManagedMap *map = NULL;
+    MarimayManagedStatus status;
+    if (inserted == NULL) return MMAY_MANAGED_INVALID_ARGUMENT;
+    *inserted = false;
+    status = mmay_managed_map_resolve(heap, reference, &map);
+    return status == MMAY_MANAGED_OK
+        ? mmay_managed_map_put_resolved(heap, reference, map, key, value, inserted)
+        : status;
+}
+
+MarimayManagedStatus mmay_managed_map_add_set(
+    MarimayManagedHeap *heap,
+    MarimayManagedReference reference,
+    MarimayManagedCell key,
+    bool *inserted
+) {
+    const MarimayManagedSlot *slot = mmay_managed_resolve_const(heap, reference);
+    MarimayManagedCell ignored = {0};
+    /* Preserve Set's receiver-before-output failure order without resolving
+     * the same handle again in Map.put. No resolved storage crosses owners. */
+    if (slot == NULL) return MMAY_MANAGED_INVALID_REFERENCE;
+    if (slot->kind != MMAY_MANAGED_OBJECT_MAP || slot->as.map == NULL
+        || slot->as.map->descriptor == NULL || !slot->as.map->descriptor->is_set) {
+        return MMAY_MANAGED_TYPE_MISMATCH;
+    }
+    if (inserted == NULL) return MMAY_MANAGED_INVALID_ARGUMENT;
+    *inserted = false;
+    return mmay_managed_map_put_resolved(
+        heap, reference, slot->as.map, key, ignored, inserted
+    );
 }
 
 MarimayManagedStatus mmay_managed_map_remove(

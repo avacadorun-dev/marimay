@@ -1,0 +1,18 @@
+@test
+fn duplicateSetInsertionRetainsActiveIteratorAndOrder(): void {
+  const values: Set<int> = setOf<int>();
+  const alias = values;
+  expect.equal(values.add(10), Ok(true));
+  expect.equal(values.add(-3), Ok(true));
+  expect.equal(values.add(7), Ok(true));
+  let order: []int = [];
+  for value in values {
+    expect.equal(alias.add(value), Ok(false));
+    const _ = order.push(value);
+  }
+  expect.equal(order.length(), 3);
+  expect.equal(order[0], 10);
+  expect.equal(order[1], -3);
+  expect.equal(order[2], 7);
+  expect.equal(values.length(), 3);
+}

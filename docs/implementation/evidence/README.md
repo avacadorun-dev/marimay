@@ -113,6 +113,10 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Checked Set insertion](cp42-set-insertion-2026-09-07.md) removes repeated
+receiver validation through a shared inlined insertion core. Three local
+series show 10.7–15.8% Set improvement; the full collection item remains open.
+
 [Scalar lookup reuse and bounded probing](cp42-collection-lookup-reuse-2026-09-07.md)
 avoid repeating the hash/probe in scalar Map counters. Three local paired runs
 show further frequency-map and rune-frequency gains; Set remains unresolved.
