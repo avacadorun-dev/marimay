@@ -103,7 +103,7 @@ jobs:
           -DCMAKE_C_COMPILER=${{ matrix.compiler }}
           -DMMAY_WARNINGS_AS_ERRORS=ON
       - name: Build
-        run: cmake --build build --parallel
+        run: cmake --build build --parallel 4
       - name: Test
         id: test
         run: >-
@@ -157,12 +157,12 @@ jobs:
       - name: Configure
         run: cmake --preset asan-ubsan
       - name: Build
-        run: cmake --build --preset asan-ubsan --parallel
+        run: cmake --build --preset asan-ubsan --parallel 4
       - name: Test
         id: test
         run: |
           test_jobs=$(nproc)
-          if [ "${test_jobs}" -gt 8 ]; then test_jobs=8; fi
+          if [ "${test_jobs}" -gt 2 ]; then test_jobs=2; fi
           ctest --preset asan-ubsan --parallel "${test_jobs}" --output-on-failure
       - name: Capture failed CTest evidence
         if: ${{ always() && steps.test.outcome == 'failure' }}
@@ -204,7 +204,7 @@ jobs:
           cmake --build build/fuzz
           --target mmay_fuzz_bytecode mmay_fuzz_frontend
           mmay_fuzz_formatter mmay_fuzz_json
-          --parallel
+          --parallel 4
       - name: Bundle fuzz executables
         run: >-
           tar -czf fuzz-binaries.tar.gz
@@ -257,7 +257,7 @@ jobs:
         run: |
           ./tools/ci-apt-install build-essential clang cmake libclang-rt-18-dev llvm-18 python3
           cmake --preset fuzz
-          cmake --build build/fuzz --target mmay_fuzz_${{ matrix.target }} --parallel
+          cmake --build build/fuzz --target mmay_fuzz_${{ matrix.target }} --parallel 4
       - name: Run sustained campaign
         run: >-
           ./build/fuzz/tests/fuzz/mmay_fuzz_${{ matrix.target }}
@@ -297,12 +297,12 @@ jobs:
       - name: Configure
         run: cmake --preset tsan
       - name: Build
-        run: cmake --build --preset tsan --parallel
+        run: cmake --build --preset tsan --parallel 4
       - name: Test
         id: test
         run: |
           test_jobs=$(nproc)
-          if [ "${test_jobs}" -gt 8 ]; then test_jobs=8; fi
+          if [ "${test_jobs}" -gt 2 ]; then test_jobs=2; fi
           ctest --preset tsan --parallel "${test_jobs}" --output-on-failure
       - name: Capture failed CTest evidence
         if: ${{ always() && steps.test.outcome == 'failure' }}

@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "date": "2026-09-08",
+  "vm_id": 106,
+  "status": "recovered_with_concurrency_mitigation",
+  "root": {
+    "device": "/dev/sda1",
+    "disk_bytes": 68719476736,
+    "partition_bytes": 67644686336,
+    "filesystem_bytes": 66394636288,
+    "available_bytes_final": 48322596864,
+    "used_percent_final": 24,
+    "fstype": "ext4",
+    "mounted_rw": true,
+    "uuid_preserved": true
+  },
+  "swap": {
+    "device": "/dev/sda5",
+    "bytes": 1071640576,
+    "active": true,
+    "used_bytes_final": 0,
+    "uuid_preserved": true
+  },
+  "services": {
+    "qemu_guest_agent": "active",
+    "gitea": "healthy",
+    "postgresql": "healthy",
+    "git_read": "passed",
+    "git_noop_push": "passed"
+  },
+  "runners": {
+    "active": [
+      "gitea-runner-1"
+    ],
+    "manually_stopped": [
+      "gitea-runner2-1",
+      "gitea-runner3-1",
+      "gitea-runner-perf-1"
+    ],
+    "current_restart_policy": "unless-stopped",
+    "docker_resource_limits_present": false
+  },
+  "ci": {
+    "run_210": {
+      "revision": "8e6fe1cba4378a136644bdc523fbd4265ded5328",
+      "final_conclusion": "failure",
+      "clang_debug_attempt_2": "success",
+      "fuzz_jobs_successful": 4,
+      "asan_attempt_2": {
+        "conclusion": "failure",
+        "tests_total": 75,
+        "tests_passed": 71,
+        "tests_failed": 4,
+        "test_seconds": 533.19,
+        "infrastructure_remained_responsive": true
+      }
+    },
+    "run_211": {
+      "revision": "a95300fc1d3df7370e6f1c2a005f75bc01b29662",
+      "conclusion": "success",
+      "classification": "success",
+      "documentation_and_architecture": "success",
+      "code_jobs": "skipped"
+    }
+  },
+  "vmstat_heavy_rerun": {
+    "samples": 1036,
+    "max_run_queue": 220,
+    "min_free_kib": 1009748,
+    "max_swap_allocated_kib": 0,
+    "max_io_wait_percent": 3,
+    "max_steal_percent": 2
+  },
+  "hardware_storage": {
+    "guest_kernel_mce_edac_io_error_events": 0,
+    "host_mce_events": 0,
+    "nvme_smart_overall": "PASSED",
+    "nvme_critical_warning": 0,
+    "nvme_media_data_integrity_errors": 0,
+    "nvme_error_log_entries": 0,
+    "local_lvm_used_percent": 21.96
+  },
+  "rcu_stall_cause": "unknown",
+  "recommended_mitigation": {
+    "active_ubuntu_runners": 1,
+    "cmake_build_parallel": 4,
+    "ordinary_ctest_parallel": 4,
+    "asan_tsan_ctest_parallel": 2,
+    "coverage_reduced": false
+  },
+  "snapshots_retained": [
+    "before-gitea-disk-64g",
+    "gitea-rcu-stall-20260908"
+  ],
+  "local_report_sha256": "e09cc2bca5bfbc87e6d6c3e69e798c8705fb158c67401a1d06a05231571ef905",
+  "scope": "Recovery observations and concurrency containment; no checkpoint, Tier 1, or fault-cause closure."
+}

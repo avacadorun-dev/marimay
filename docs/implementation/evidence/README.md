@@ -36,6 +36,9 @@ legal/search/control/PATH evidence and an accepted follow-up identity decision.
 ## I0
 
 - [Build and CLI foundation](i0-iteration-1-2026-08-10.md), [source ownership and positions](i0-iteration-2-2026-08-10.md), [portability/fault injection/CI](i0-iteration-3-2026-08-10.md), and [memory-safety gates](i0-memory-safety-gates-iteration-4-2026-08-13.md).
+- [Gitea recovery and bounded CI concurrency](gitea-recovery-2026-09-08.md)
+  records restored services and disk space, preserved failed-job evidence and
+  concurrency containment; historical compiler/stall causes remain unknown.
 
 ## A0
 

@@ -137,6 +137,15 @@ CSV и lexical lint требуют разных parser owners.
 ## CI, платформы и выпуск
 
 Origin: `https://github.com/avacadorun-dev/marimay.git`.
+По прямому поручению пользователя отдельный инфраструктурный агент
+[восстановил Gitea и расширил диск VM 106 до 64 GiB](evidence/gitea-recovery-2026-09-08.md).
+Один обычный runner активен; два других и perf остановлены. Workflow теперь
+ограничивает build четырьмя jobs, ASan/TSan CTest — двумя. Полнота проверок
+сохранена; свежий тяжёлый CI с этими пределами ещё требует результата.
+В run 210 Clang Debug retry прошёл, sanitizer retry — 71/75; причины
+Clang/ld/source-token аномалий и прежнего RCU stall неизвестны.
+Docs-only run 211 на `a95300f` зелёный; code jobs там skipped.
+
 После временной недоступности Gitea database push `22e98a2` прошёл.
 Свежий [аудит CI](evidence/cli0-baseline-audit-2026-09-07.md) уточняет:
 
