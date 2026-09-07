@@ -1,0 +1,937 @@
+{
+  "schema": "marimay.cli0-baseline-ci/1",
+  "observed_at_utc": "2026-09-07T15:55:55.235380+00:00",
+  "source_revision": "2d9cc83537d88b02a7079d4e366b297b9d7bf75f",
+  "run_id": 206,
+  "jobs": [
+    {
+      "id": 1739,
+      "name": "Linux x86_64 clang / Debug",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "http://ci.example:3000/Marimay/marimay/actions/runs/206/jobs/1739",
+      "started_at": "2026-09-07T13:32:40Z",
+      "completed_at": "2026-09-07T13:42:56Z",
+      "full_log_sha256": "224363343c20de005e52d132ed14546dfddbcf617d099b85ab098a033dc0d88a",
+      "full_log_bytes": 103812,
+      "log_excerpt": [
+        {
+          "line": 742,
+          "text": "2026-09-07T13:33:39.4014547Z  2/73 Test #39: mmay_cp39_distribution ...........   Passed   19.36 sec"
+        },
+        {
+          "line": 745,
+          "text": "2026-09-07T13:33:44.4651217Z  3/73 Test #68: mmay_cp38_json ...................   Passed   46.16 sec"
+        },
+        {
+          "line": 885,
+          "text": "2026-09-07T13:42:54.3066772Z 100% tests passed, 0 tests failed out of 73"
+        }
+      ]
+    },
+    {
+      "id": 1740,
+      "name": "Linux x86_64 clang / Release",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "http://ci.example:3000/Marimay/marimay/actions/runs/206/jobs/1740",
+      "started_at": "2026-09-07T13:32:47Z",
+      "completed_at": "2026-09-07T13:41:48Z",
+      "full_log_sha256": "f36d78ff697bff3f51a789837bd6f17d4ac975542ac360c04cf0ce84ebace4ae",
+      "full_log_bytes": 97372,
+      "log_excerpt": [
+        {
+          "line": 742,
+          "text": "2026-09-07T13:33:43.3233174Z  2/74 Test #39: mmay_cp39_distribution ...........   Passed   16.56 sec"
+        },
+        {
+          "line": 744,
+          "text": "2026-09-07T13:33:43.3986050Z  3/74 Test #69: mmay_cp38_json ...................   Passed   31.33 sec"
+        },
+        {
+          "line": 749,
+          "text": "2026-09-07T13:33:53.6856036Z  5/74 Test #40: mmay_cp39_packaging ..............   Passed   10.36 sec"
+        }
+      ]
+    },
+    {
+      "id": 1741,
+      "name": "Linux x86_64 gcc / Debug",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "http://ci.example:3000/Marimay/marimay/actions/runs/206/jobs/1741",
+      "started_at": "2026-09-07T13:42:32Z",
+      "completed_at": "2026-09-07T13:54:08Z",
+      "full_log_sha256": "1e8370f855536eeeab74c70085537ffb9ed39b4456891447cb857820b113279d",
+      "full_log_bytes": 89664,
+      "log_excerpt": [
+        {
+          "line": 742,
+          "text": "2026-09-07T13:44:20.4096356Z  2/73 Test #39: mmay_cp39_distribution ...........   Passed   41.29 sec"
+        },
+        {
+          "line": 747,
+          "text": "2026-09-07T13:44:53.8861907Z  4/73 Test #68: mmay_cp38_json ...................   Passed  118.30 sec"
+        }
+      ]
+    },
+    {
+      "id": 1742,
+      "name": "Linux x86_64 gcc / Release",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "http://ci.example:3000/Marimay/marimay/actions/runs/206/jobs/1742",
+      "started_at": "2026-09-07T13:42:56Z",
+      "completed_at": "2026-09-07T13:57:07Z",
+      "full_log_sha256": "c24585b6dda6fb27cf83b484b2c9e819e045ad031b583ed46326405517b2329c",
+      "full_log_bytes": 106423,
+      "log_excerpt": [
+        {
+          "line": 742,
+          "text": "2026-09-07T13:44:51.7859488Z  2/74 Test #39: mmay_cp39_distribution ...........   Passed   38.58 sec"
+        },
+        {
+          "line": 744,
+          "text": "2026-09-07T13:45:02.6859463Z  3/74 Test #40: mmay_cp39_packaging ..............   Passed   10.90 sec"
+        },
+        {
+          "line": 749,
+          "text": "2026-09-07T13:45:20.3701337Z  5/74 Test #69: mmay_cp38_json ...................   Passed  104.85 sec"
+        },
+        {
+          "line": 887,
+          "text": "2026-09-07T13:53:13.8366911Z 100% tests passed, 0 tests failed out of 74"
+        },
+        {
+          "line": 954,
+          "text": "2026-09-07T13:54:30.7796068Z ::error::Create Artifact Container failed: Artifact service responded with 500"
+        }
+      ]
+    },
+    {
+      "id": 1743,
+      "name": "Linux x86_64 ASan+UBSan+LSan",
+      "status": "completed",
+      "conclusion": "failure",
+      "html_url": "http://ci.example:3000/Marimay/marimay/actions/runs/206/jobs/1743",
+      "started_at": "2026-09-07T13:31:47Z",
+      "completed_at": "2026-09-07T13:54:45Z",
+      "full_log_sha256": "ac246ac5d38b49a48a82e92af0d1ca60490c31fbd80904655782c8a258cdcd58",
+      "full_log_bytes": 106224,
+      "log_excerpt": [
+        {
+          "line": 746,
+          "text": "2026-09-07T13:34:28.6555189Z  1/73 Test #68: mmay_cp38_json ...................   Passed  102.67 sec"
+        },
+        {
+          "line": 757,
+          "text": "2026-09-07T13:35:51.4469842Z  4/73 Test #39: mmay_cp39_distribution ...........   Passed   82.79 sec"
+        },
+        {
+          "line": 892,
+          "text": "2026-09-07T13:50:43.2250866Z 100% tests passed, 0 tests failed out of 73"
+        },
+        {
+          "line": 956,
+          "text": "2026-09-07T13:52:07.3640051Z ::error::Create Artifact Container failed: Artifact service responded with 500"
+        }
+      ]
+    },
+    {
+      "id": 1745,
+      "name": "Linux x86_64 fuzz / bytecode",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "http://ci.example:3000/Marimay/marimay/actions/runs/206/jobs/1745",
+      "started_at": "2026-09-07T13:54:46Z",
+      "completed_at": "2026-09-07T14:04:53Z",
+      "full_log_sha256": "5be8d9ee765cf3711397ad9a6c76eed92a87b837b5039559472a65905fe3938c",
+      "full_log_bytes": 1244259,
+      "log_excerpt": [
+        {
+          "line": 8120,
+          "text": "2026-09-07T14:04:52.3860399Z Done 23241929 runs in 601 second(s)"
+        },
+        {
+          "line": 8121,
+          "text": "2026-09-07T14:04:52.3860481Z stat::number_of_executed_units: 23241929"
+        },
+        {
+          "line": 8125,
+          "text": "2026-09-07T14:04:52.3860816Z stat::peak_rss_mb:              231"
+        }
+      ]
+    },
+    {
+      "id": 1746,
+      "name": "Linux x86_64 fuzz / formatter",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "http://ci.example:3000/Marimay/marimay/actions/runs/206/jobs/1746",
+      "started_at": "2026-09-07T13:54:51Z",
+      "completed_at": "2026-09-07T14:04:58Z",
+      "full_log_sha256": "0f7e0f3ca30956716377fc156a47ba2581f9dde98bb71694bec5dd85d2680c2b",
+      "full_log_bytes": 2772068,
+      "log_excerpt": [
+        {
+          "line": 17549,
+          "text": "2026-09-07T14:04:57.4468814Z Done 1104935 runs in 601 second(s)"
+        },
+        {
+          "line": 17550,
+          "text": "2026-09-07T14:04:57.4469129Z stat::number_of_executed_units: 1104935"
+        },
+        {
+          "line": 17554,
+          "text": "2026-09-07T14:04:57.4469960Z stat::peak_rss_mb:              180"
+        }
+      ]
+    },
+    {
+      "id": 1747,
+      "name": "Linux x86_64 fuzz / frontend",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "http://ci.example:3000/Marimay/marimay/actions/runs/206/jobs/1747",
+      "started_at": "2026-09-07T13:57:07Z",
+      "completed_at": "2026-09-07T14:07:15Z",
+      "full_log_sha256": "dd9e6de1fcf4333c815b847ae0575a614183d1e2444969016a9dd9a470e45629",
+      "full_log_bytes": 2684898,
+      "log_excerpt": [
+        {
+          "line": 16960,
+          "text": "2026-09-07T14:07:14.3096176Z Done 1084086 runs in 601 second(s)"
+        },
+        {
+          "line": 16961,
+          "text": "2026-09-07T14:07:14.3096261Z stat::number_of_executed_units: 1084086"
+        },
+        {
+          "line": 16965,
+          "text": "2026-09-07T14:07:14.3096689Z stat::peak_rss_mb:              170"
+        }
+      ]
+    },
+    {
+      "id": 1748,
+      "name": "Linux x86_64 fuzz / json",
+      "status": "completed",
+      "conclusion": "success",
+      "html_url": "http://ci.example:3000/Marimay/marimay/actions/runs/206/jobs/1748",
+      "started_at": "2026-09-07T14:04:53Z",
+      "completed_at": "2026-09-07T14:15:03Z",
+      "full_log_sha256": "462b692ff6c426cef7be9d71fe4fe996ca4ff3fe2f542e5e72dc78aa6787d5a8",
+      "full_log_bytes": 108457,
+      "log_excerpt": [
+        {
+          "line": 752,
+          "text": "2026-09-07T14:15:02.1941627Z Done 21591 runs in 601 second(s)"
+        },
+        {
+          "line": 753,
+          "text": "2026-09-07T14:15:02.1941715Z stat::number_of_executed_units: 21591"
+        },
+        {
+          "line": 757,
+          "text": "2026-09-07T14:15:02.1942070Z stat::peak_rss_mb:              182"
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Historical run 205 B0004 is not explained by a passing run 206.",
+    "Successful test summaries do not make failed artifact uploads successful.",
+    "Skipped TSan and missing Tier 1 hosts remain open."
+  ],
+  "closure_assignments": [
+    {
+      "id": "N0-LEGAL",
+      "gate": "N0",
+      "requirements": "TOOL-019;PROD-007",
+      "current_evidence_scope": "local",
+      "missing_criterion": "Qualified legal and confusing-similarity review is not linked for the initial distribution jurisdictions.",
+      "owner": "N0",
+      "acceptance_command": "Review docs/design/naming-audit.md and link the dated qualified report.",
+      "platform_scope": "external-jurisdictions",
+      "permitted_release_claim": "private-preview-only",
+      "audit_classification": "external-and-install-evidence",
+      "owner_state": "blocked",
+      "owner_evidence": [
+        "docs/design/naming-audit.md",
+        "docs/implementation/evidence/marimay-rebrand-2026-08-23.md"
+      ]
+    },
+    {
+      "id": "N0-CONTROL",
+      "gate": "N0",
+      "requirements": "TOOL-019;PROD-007",
+      "current_evidence_scope": "local",
+      "missing_criterion": "Domains accounts documentation and security contacts registry namespace and signing identity lack direct control evidence.",
+      "owner": "N0",
+      "acceptance_command": "Verify every external-control row in docs/design/naming-audit.md against dated primary evidence.",
+      "platform_scope": "external-services",
+      "permitted_release_claim": "private-preview-only",
+      "audit_classification": "external-and-install-evidence",
+      "owner_state": "blocked",
+      "owner_evidence": [
+        "docs/design/naming-audit.md",
+        "docs/implementation/evidence/marimay-rebrand-2026-08-23.md"
+      ]
+    },
+    {
+      "id": "N0-PATH",
+      "gate": "N0",
+      "requirements": "TOOL-019;PROD-007",
+      "current_evidence_scope": "local",
+      "missing_criterion": "The mmay command collision install upgrade uninstall and former-alias absence matrix is not complete.",
+      "owner": "N0",
+      "acceptance_command": "Run the CP39 clean-image lifecycle on every claimed host and attach independent PATH evidence.",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "private-preview-only",
+      "audit_classification": "external-and-install-evidence",
+      "owner_state": "blocked",
+      "owner_evidence": [
+        "docs/design/naming-audit.md",
+        "docs/implementation/evidence/marimay-rebrand-2026-08-23.md"
+      ]
+    },
+    {
+      "id": "A0-TIER1",
+      "gate": "A0",
+      "requirements": "IMPL-002",
+      "current_evidence_scope": "tier-1-partial",
+      "missing_criterion": "The bounded-owner architecture gate and focused ownership review are missing on part of Tier 1.",
+      "owner": "A0",
+      "acceptance_command": "./tools/check-architecture",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "private-preview-only",
+      "audit_classification": "integration-or-coverage-evidence",
+      "owner_state": "in-progress",
+      "owner_evidence": [
+        "docs/implementation/evidence/a0-bounded-architecture-checkpoint-0-2026-08-14.md"
+      ]
+    },
+    {
+      "id": "I0-BOOTSTRAP",
+      "gate": "I0",
+      "requirements": "TOOL-001;IMPL-001",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "The complete offline C17 debug release and compiler-family bootstrap matrix is not linked at one revision.",
+      "owner": "I0",
+      "acceptance_command": "cmake --preset debug && cmake --build --preset debug --parallel && ctest --preset debug --output-on-failure",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "private-preview-only",
+      "audit_classification": "integration-or-coverage-evidence",
+      "owner_state": "in-progress",
+      "owner_evidence": [
+        "docs/implementation/evidence/i0-iteration-1-2026-08-10.md",
+        "docs/implementation/evidence/i0-memory-safety-gates-iteration-4-2026-08-13.md"
+      ]
+    },
+    {
+      "id": "I0-MEMORY",
+      "gate": "I0",
+      "requirements": "IMPL-001;IMPL-004",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "The full sanitizer allocation-failure LeakSanitizer and scheduled memory-tool matrix is incomplete.",
+      "owner": "I0",
+      "acceptance_command": "./tools/check-c-memory-policy && ctest --preset asan-ubsan --output-on-failure",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "private-preview-only",
+      "audit_classification": "integration-or-coverage-evidence",
+      "owner_state": "in-progress",
+      "owner_evidence": [
+        "docs/implementation/evidence/i0-iteration-1-2026-08-10.md",
+        "docs/implementation/evidence/i0-memory-safety-gates-iteration-4-2026-08-13.md"
+      ]
+    },
+    {
+      "id": "I0-INSTALL",
+      "gate": "I0",
+      "requirements": "TOOL-001;TOOL-018",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Native run init doctor packaging and install lifecycle have implementation and focused tests. Exact final-artifact clean-host lifecycle and external PATH evidence remain incomplete.",
+      "owner": "CP39",
+      "acceptance_command": "ctest --test-dir build/release -R 'mmay_(cp39_unit|cp39_distribution|cp39_packaging|install_relocation)' --output-on-failure",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "planned",
+      "owner_evidence": [
+        "-"
+      ]
+    },
+    {
+      "id": "I1-FIXTURES",
+      "gate": "I1",
+      "requirements": "LANG-002;LANG-022;LANG-023;LANG-028;LANG-032;LANG-041;TOOL-002;TOOL-003;TOOL-020",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Every remaining grammar production needs positive negative recovery and formatter fixtures in the current registry.",
+      "owner": "I1",
+      "acceptance_command": "./tools/check-syntax-coverage && ctest --preset debug --output-on-failure",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "private-preview-only",
+      "audit_classification": "integration-or-coverage-evidence",
+      "owner_state": "in-progress",
+      "owner_evidence": [
+        "docs/implementation/evidence/i1-grammar-completion-iteration-8-2026-08-11.md",
+        "docs/implementation/evidence/cp18-array-spelling-2026-08-21.md"
+      ]
+    },
+    {
+      "id": "I1-FUZZ",
+      "gate": "I1",
+      "requirements": "LANG-002;LANG-022;LANG-023;TOOL-003",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "The accepted parser and formatter campaigns have not each reached 600 CPU-seconds on Tier 1 at one revision.",
+      "owner": "I1",
+      "acceptance_command": "cmake --preset fuzz && cmake --build --preset fuzz --parallel && build/fuzz/tests/fuzz/mmay_fuzz_frontend -max_total_time=600 && build/fuzz/tests/fuzz/mmay_fuzz_formatter -max_total_time=600",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "private-preview-only",
+      "audit_classification": "integration-or-coverage-evidence",
+      "owner_state": "in-progress",
+      "owner_evidence": [
+        "docs/implementation/evidence/i1-grammar-completion-iteration-8-2026-08-11.md",
+        "docs/implementation/evidence/cp18-array-spelling-2026-08-21.md"
+      ]
+    },
+    {
+      "id": "I2-BASELINE",
+      "gate": "I2",
+      "requirements": "LANG-001;LANG-003;LANG-004;LANG-005;LANG-006;LANG-007;LANG-008;LANG-009;LANG-010;LANG-016;LANG-017;LANG-018;LANG-021;LANG-025;LANG-026;LANG-027;LANG-029;LANG-030;LANG-031;LANG-034;LANG-035;LANG-036;LANG-037;LANG-039;LANG-040;LANG-041;TOOL-008;IMPL-002;IMPL-003",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "The complete accepted baseline still needs requirement-level conformance negative verifier evaluator completion and invalidation closure beyond the bounded CLI slice.",
+      "owner": "I2",
+      "acceptance_command": "ctest --preset debug --output-on-failure && ./tools/check-syntax-coverage",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "excluded-from-cli0",
+      "audit_classification": "excluded-from-cli0",
+      "owner_state": "in-progress",
+      "owner_evidence": [
+        "docs/implementation/evidence/v0-nominal-engines-checkpoint-1-2026-08-15.md",
+        "docs/implementation/evidence/cp8-authoritative-check-2026-08-18.md"
+      ]
+    },
+    {
+      "id": "I2-INTERPOLATION",
+      "gate": "I2",
+      "requirements": "LANG-002;LANG-023;LANG-038",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Dynamic strings interpolation and primitive formatting/parsing are implemented through CP30. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP30",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp30-formatting --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp30-dynamic-strings-2026-08-23.md"
+      ]
+    },
+    {
+      "id": "I2-ENTRY",
+      "gate": "I2",
+      "requirements": "LANG-018;LANG-033;LANG-042;TOOL-009;TOOL-024",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Program arguments and cleanup-safe controlled exit are implemented through CP31. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP31",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp31-args --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp31-program-arguments-2026-08-24.md"
+      ]
+    },
+    {
+      "id": "I2-COLLECTIONS",
+      "gate": "I2",
+      "requirements": "LANG-016;LANG-040",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Ordered Map Set and iterators are implemented through CP36 with CP42 representation and traversal follow-ups. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP36",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp36-map-set --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp36-map-set-iterators-2026-08-30.md"
+      ]
+    },
+    {
+      "id": "I2-JSON",
+      "gate": "I2",
+      "requirements": "LANG-005;LANG-006;LANG-007;STD-007",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Typed JSON codecs and the transformer are implemented through CP38 with CP42 automatic-codec follow-ups. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed. Run 205 native B0004 remains unexplained although CP38 passed in run 206.",
+      "owner": "CP38",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp38-json --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp38-bounded-typed-json-2026-09-01.md"
+      ]
+    },
+    {
+      "id": "I2-SERVICE",
+      "gate": "I2",
+      "requirements": "TOOL-010;TOOL-017;IMPL-006",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Complete baseline compiler-service transport cancellation workspace indexing and compatibility remain open after the bounded internal facts slice.",
+      "owner": "I8",
+      "acceptance_command": "ctest --preset debug --output-on-failure",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "excluded-from-cli0",
+      "audit_classification": "excluded-from-cli0",
+      "owner_state": "planned",
+      "owner_evidence": [
+        "-"
+      ]
+    },
+    {
+      "id": "I3-BUNDLES",
+      "gate": "I3",
+      "requirements": "EXEC-003;IMPL-005",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Portable public myb compatibility hostile-verifier fuzz and complete resource-limit coverage are not closed.",
+      "owner": "I3",
+      "acceptance_command": "cmake --preset fuzz && cmake --build --preset fuzz --parallel && build/fuzz/tests/fuzz/mmay_fuzz_bytecode -max_total_time=600",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "excluded-from-cli0",
+      "audit_classification": "excluded-from-cli0",
+      "owner_state": "in-progress",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp11-ruda-test-2026-08-18.md",
+        "docs/implementation/evidence/cp19-resource-limits-2026-08-21.md"
+      ]
+    },
+    {
+      "id": "I3-FORMATTING",
+      "gate": "I3",
+      "requirements": "EXEC-001;EXEC-003;EXEC-021",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Dynamic strings interpolation and primitive formatting/parsing are implemented through CP30. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP30",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp30-formatting --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp30-dynamic-strings-2026-08-23.md"
+      ]
+    },
+    {
+      "id": "I3-ARGS",
+      "gate": "I3",
+      "requirements": "EXEC-001;EXEC-003;EXEC-023",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Program arguments and cleanup-safe controlled exit are implemented through CP31. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP31",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp31-args --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp31-program-arguments-2026-08-24.md"
+      ]
+    },
+    {
+      "id": "I3-STREAMS",
+      "gate": "I3",
+      "requirements": "EXEC-003;EXEC-021",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Typed standard streams and flush are implemented through CP32. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP32",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp32-stdio --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp32-typed-standard-streams-2026-08-25.md"
+      ]
+    },
+    {
+      "id": "I3-TEXT",
+      "gate": "I3",
+      "requirements": "EXEC-003;EXEC-014",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "UTF-8 text Bytes and builders are implemented through CP33. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP33",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp33-text-bytes --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp33-text-bytes-2026-08-26.md"
+      ]
+    },
+    {
+      "id": "I3-COLLECTIONS",
+      "gate": "I3",
+      "requirements": "EXEC-003;EXEC-014",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Ordered Map Set and iterators are implemented through CP36 with CP42 representation and traversal follow-ups. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP36",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp36-map-set --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp36-map-set-iterators-2026-08-30.md"
+      ]
+    },
+    {
+      "id": "I3-JSON",
+      "gate": "I3",
+      "requirements": "EXEC-003;STD-007;IMPL-005",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Typed JSON codecs and the transformer are implemented through CP38 with CP42 automatic-codec follow-ups. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed. Run 205 native B0004 remains unexplained although CP38 passed in run 206.",
+      "owner": "CP38",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp38-json --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp38-bounded-typed-json-2026-09-01.md"
+      ]
+    },
+    {
+      "id": "I3-RESOURCES",
+      "gate": "I3",
+      "requirements": "EXEC-022",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "The full opcode and root resource matrix is not linked on every claimed host at one release candidate.",
+      "owner": "CP40",
+      "acceptance_command": "ctest --preset asan-ubsan --output-on-failure",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "integration-or-coverage-evidence",
+      "owner_state": "planned",
+      "owner_evidence": [
+        "-"
+      ]
+    },
+    {
+      "id": "I4-FORMATTING",
+      "gate": "I4",
+      "requirements": "EXEC-001;EXEC-004;EXEC-016;EXEC-021",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Dynamic strings interpolation and primitive formatting/parsing are implemented through CP30. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP30",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp30-formatting --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp30-dynamic-strings-2026-08-23.md"
+      ]
+    },
+    {
+      "id": "I4-ARGS",
+      "gate": "I4",
+      "requirements": "EXEC-001;EXEC-004;EXEC-016;EXEC-023",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Program arguments and cleanup-safe controlled exit are implemented through CP31. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP31",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp31-args --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp31-program-arguments-2026-08-24.md"
+      ]
+    },
+    {
+      "id": "I4-STREAMS",
+      "gate": "I4",
+      "requirements": "EXEC-001;EXEC-004;EXEC-016;EXEC-021",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Typed standard streams and flush are implemented through CP32. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP32",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp32-stdio --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp32-typed-standard-streams-2026-08-25.md"
+      ]
+    },
+    {
+      "id": "I4-TEXT",
+      "gate": "I4",
+      "requirements": "EXEC-001;EXEC-004;EXEC-014;EXEC-016",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "UTF-8 text Bytes and builders are implemented through CP33. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP33",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp33-text-bytes --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp33-text-bytes-2026-08-26.md"
+      ]
+    },
+    {
+      "id": "I4-FILES",
+      "gate": "I4",
+      "requirements": "EXEC-001;EXEC-004;EXEC-016",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Capability-confined paths and filesystem operations are implemented through CP34. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP34",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp34-files --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp34-paths-filesystem-2026-08-29.md"
+      ]
+    },
+    {
+      "id": "I4-ENV",
+      "gate": "I4",
+      "requirements": "EXEC-001;EXEC-004;EXEC-016",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Explicit environment and process context are implemented through CP35. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP35",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp35-environment --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp35-environment-process-context-2026-08-29.md"
+      ]
+    },
+    {
+      "id": "I4-COLLECTIONS",
+      "gate": "I4",
+      "requirements": "EXEC-001;EXEC-004;EXEC-014;EXEC-016",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Ordered Map Set and iterators are implemented through CP36 with CP42 representation and traversal follow-ups. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP36",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp36-map-set --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp36-map-set-iterators-2026-08-30.md"
+      ]
+    },
+    {
+      "id": "I4-JSON",
+      "gate": "I4",
+      "requirements": "EXEC-001;EXEC-004;EXEC-016;STD-007",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Typed JSON codecs and the transformer are implemented through CP38 with CP42 automatic-codec follow-ups. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed. Run 205 native B0004 remains unexplained although CP38 passed in run 206.",
+      "owner": "CP38",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp38-json --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp38-bounded-typed-json-2026-09-01.md"
+      ]
+    },
+    {
+      "id": "I4-INSTALL",
+      "gate": "I4",
+      "requirements": "EXEC-002;TOOL-009;TOOL-018;TOOL-021",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Native run init doctor packaging and install lifecycle have implementation and focused tests. Exact final-artifact clean-host lifecycle and external PATH evidence remain incomplete.",
+      "owner": "CP39",
+      "acceptance_command": "ctest --test-dir build/release -R 'mmay_(cp39_unit|cp39_distribution|cp39_packaging|install_relocation)' --output-on-failure",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "planned",
+      "owner_evidence": [
+        "-"
+      ]
+    },
+    {
+      "id": "I4-TIER1",
+      "gate": "I4",
+      "requirements": "LANG-013;LANG-014;LANG-015;EXEC-001;EXEC-002;EXEC-004;EXEC-016;EXEC-020;IMPL-004",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "The complete Clang GCC MSVC O0 O2 sanitizer and engine-equivalence release matrix is not linked at one revision.",
+      "owner": "CP40",
+      "acceptance_command": "ctest --preset asan-ubsan --output-on-failure",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "integration-or-coverage-evidence",
+      "owner_state": "planned",
+      "owner_evidence": [
+        "-"
+      ]
+    },
+    {
+      "id": "I5-FORMATTING",
+      "gate": "I5",
+      "requirements": "LANG-038;STD-001;STD-002;STD-011",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Dynamic strings interpolation and primitive formatting/parsing are implemented through CP30. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP30",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp30-formatting --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp30-dynamic-strings-2026-08-23.md"
+      ]
+    },
+    {
+      "id": "I5-STREAMS",
+      "gate": "I5",
+      "requirements": "EXEC-021;STD-011",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Typed standard streams and flush are implemented through CP32. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP32",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp32-stdio --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp32-typed-standard-streams-2026-08-25.md"
+      ]
+    },
+    {
+      "id": "I5-TEXT",
+      "gate": "I5",
+      "requirements": "STD-002",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "UTF-8 text Bytes and builders are implemented through CP33. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP33",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp33-text-bytes --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp33-text-bytes-2026-08-26.md"
+      ]
+    },
+    {
+      "id": "I5-FILES",
+      "gate": "I5",
+      "requirements": "STD-004",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Capability-confined paths and filesystem operations are implemented through CP34. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP34",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp34-files --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp34-paths-filesystem-2026-08-29.md"
+      ]
+    },
+    {
+      "id": "I5-ENV",
+      "gate": "I5",
+      "requirements": "STD-004",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Explicit environment and process context are implemented through CP35. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP35",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp35-environment --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp35-environment-process-context-2026-08-29.md"
+      ]
+    },
+    {
+      "id": "I5-COLLECTIONS",
+      "gate": "I5",
+      "requirements": "LANG-011;LANG-012;EXEC-014;STD-001;STD-003",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Ordered Map Set and iterators are implemented through CP36 with CP42 representation and traversal follow-ups. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP36",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp36-map-set --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp36-map-set-iterators-2026-08-30.md"
+      ]
+    },
+    {
+      "id": "I5-CLI",
+      "gate": "I5",
+      "requirements": "STD-001;TOOL-001",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "The first-party CLI parser is implemented through CP37. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed.",
+      "owner": "CP37",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp37-cli-parser --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp37-cli-parser-2026-08-30.md"
+      ]
+    },
+    {
+      "id": "I5-JSON",
+      "gate": "I5",
+      "requirements": "STD-007",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "Typed JSON codecs and the transformer are implemented through CP38 with CP42 automatic-codec follow-ups. Exact-candidate requirement coverage and complete claimed-host acceptance remain unclosed. Run 205 native B0004 remains unexplained although CP38 passed in run 206.",
+      "owner": "CP38",
+      "acceptance_command": "build/debug/mmay test tests/public-alpha/cp38-json --engine both",
+      "platform_scope": "claimed-tier-1",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "implemented-with-open-candidate-platform-evidence",
+      "owner_state": "verified",
+      "owner_evidence": [
+        "docs/implementation/evidence/cp38-bounded-typed-json-2026-09-01.md"
+      ]
+    },
+    {
+      "id": "I5-WORKLOADS",
+      "gate": "I5",
+      "requirements": "LANG-011;LANG-012;LANG-016;EXEC-014;STD-010",
+      "current_evidence_scope": "pushed-ci",
+      "missing_criterion": "D007 managed-reference and D013 shape-shared generic workload budgets are not closed with JSON DTO graph and collection-heavy release evidence.",
+      "owner": "CP40",
+      "acceptance_command": "ctest --preset release --output-on-failure; validate D007 and D013 workloads plus the D057 public-alpha registry",
+      "platform_scope": "tier-1-all",
+      "permitted_release_claim": "bounded-cli0-after-owner",
+      "audit_classification": "integration-or-coverage-evidence",
+      "owner_state": "planned",
+      "owner_evidence": [
+        "-"
+      ]
+    }
+  ],
+  "artifacts_api_snapshot": {
+    "205": [],
+    "206": []
+  },
+  "tsan": {
+    "job_id": 1749,
+    "conclusion": "skipped"
+  }
+}

@@ -1,7 +1,7 @@
 # External CLI ergonomics acceptance suite
 
 Status: required CP42 acceptance scope, added at the user's request on
-2026-09-06. This is a workload/acceptance contract, not a second execution queue
+2026-09-06; dependency waves accepted on 2026-09-07. This is a workload/acceptance contract, not a second execution queue
 or evidence that the applications work. The [checkpoint ledger](checkpoints.md#cp42-notes-driven-cli-ergonomics)
 retains sequencing and the [product roadmap](roadmap.md#cli0-boundary) retains
 release authority. All ten workloads must be evidenced before CP42/CLI0 can
@@ -27,7 +27,7 @@ independent user-facing applications are finished.
 
 ## Required applications and coverage
 
-| Order | Repository | Useful application contract | Main ergonomics pressure |
+| ID | Repository | Useful application contract | Main ergonomics pressure |
 |---|---|---|---|
 | 1 | `marimay-config` | Validate a versioned JSON configuration and migrate one documented schema to another; validate-only is read-only, migration publishes only complete valid output. | Nominal/generic records, typed JSON, Result/Option, field/index/span errors, defaults explicitly chosen by the application, limits and atomic replacement. |
 | 2 | `marimay-manifest` | Generate and verify a deterministic JSON file inventory from a directory tree: relative paths, metadata, sorted entries and useful mismatch diagnostics. | Directory walking, arrays, sorting, paths, missing files, permission errors and explicit symlink policy. Cryptographic integrity is not implied by a metadata manifest. |
@@ -68,10 +68,12 @@ not a substitute for it.
    compiler/application revisions and host/build profiles. Establish practical
    latency and memory budgets before optimizing each workload; explain material
    regressions rather than weakening verification or shrinking the workload.
-   A performance failure stops progression to the next utility: reproduce it,
-   profile the responsible layer, fix the cause, rerun correctness tests and
-   measure the unchanged workload again. A findings entry alone does not close
-   it. Separate measured host startup costs from compiler/runtime work without
+   A performance failure blocks acceptance of affected workloads and release:
+   reproduce it, profile the responsible layer, fix the cause, rerun correctness
+   tests and measure the unchanged workload again. Independent preparation may
+   proceed under the accepted route. A shared native correctness failure blocks
+   the affected native candidate across applications. A findings entry alone
+   does not close either defect. Separate measured host startup costs from compiler/runtime work without
    hiding either; do not disable host security or run user code during a build
    to manufacture a warm-start result.
 6. Keep an ergonomics findings log with the smallest reproducer, expected user
@@ -85,13 +87,27 @@ not a substitute for it.
 
 ## Execution and completion
 
-The [JSON metadata follow-up](evidence/cp42-json-intrinsics-2026-09-06.md) records
-local integration and the first config implementation, not complete acceptance.
-Validate the pushed metadata revision and finish configuration validation/migration,
-then the manifest tool. Implement the remaining repositories
-in table order, reusing the existing notes checkout at its turn. Findings drive
-the already ordered CP42 collection, mutation, Option and API changes. Do not
-defer all application feedback until those language changes are declared done.
+The [accepted route](checkpoints.md#accepted-cli0-execution-route) replaces the
+former numeric implementation order with dependency waves. Table IDs identify
+the ten required applications; they do not impose a sequence.
+
+| Wave | Applications | Shared work and distinct responsibilities |
+|---|---|---|
+| Data and persistence | config, existing notes | Start shared collection/mutation/Option contracts with these real consumers; typed JSON, limits and failure-atomic storage fixtures. Keep each domain model separate. |
+| Streaming and counters | logstats, grep, frequency | Chunked UTF-8/line boundaries, EOF, broken pipe, collections and stable output. Each utility keeps its own format and exit contract. |
+| Files and context | manifest, project-check, env-paths | Traversal, path/metadata/capability fixtures; project-check uses the established config and manifest experience. |
+| Stateful parsing | delimited, source-lint | Reuse input/builders/span/report mechanics; quoted CSV newlines and lexical checks remain separate parsers. |
+
+Use one versioned acceptance driver for common process/build/fixture/measurement
+mechanics with small per-application adapters. Every repository remains useful
+independently of adjacent checkouts and keeps its own README, tests and fixtures.
+Shared harness code must not implement the utilities' business logic or create
+a new registry/dependency requirement. Run every application's own acceptance;
+one shared unit test does not replace ten end-to-end results.
+
+The [JSON metadata follow-up](evidence/cp42-json-intrinsics-2026-09-06.md) is
+historical first-application evidence. Current implementation and gaps are
+tracked in the checkpoint/evidence ledger; a passing slice is not full acceptance.
 
 The portfolio index records exact repository paths and application/compiler
 revisions. Each report links commands, fixtures, measured limits, test results

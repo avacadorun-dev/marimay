@@ -1,7 +1,8 @@
 # CLI0 closure matrix
 
 Status: authoritative CP29 assignment of open N0, A0, and applicable I0–I5
-criteria. Audit date: 2026-08-23. Decision: [D064](../design/decisions.md#d064-pre-beta-releases-carry-an-explicit-bounded-claim).
+criteria. Initial assignment: 2026-08-23; implementation/evidence reconciliation:
+2026-09-07. Decision: [D064](../design/decisions.md#d064-pre-beta-releases-carry-an-explicit-bounded-claim).
 
 The row-level matrix is [`cli0-closure-matrix.tsv`](cli0-closure-matrix.tsv).
 It is machine checked by `./tools/check-release-contract`. Each row names the
@@ -13,6 +14,13 @@ This matrix assigns work; it does not close a product gate. Until the named
 owner and CP40 audit pass, the current permitted claim is still only the
 private checker-backed preview. `excluded-from-cli0` rows remain product-gate
 work and cannot be pulled into the bounded alpha by documentation wording.
+
+The [baseline audit](evidence/cli0-baseline-audit-2026-09-07.md) reconciles all
+42 assignments. The 26 CP30–CP38 rows and two CP39 install rows now distinguish
+existing implementation from incomplete exact-candidate/platform acceptance.
+No owner, requirement, platform scope, release claim or checkpoint state is
+removed or promoted by this reconciliation. Evidence-scope fields retain their
+previous bounded scope; they do not certify a fresh all-host result.
 
 ## Ownership summary
 

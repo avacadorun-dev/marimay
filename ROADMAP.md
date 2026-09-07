@@ -14,6 +14,10 @@ Current execution links: [CLI0](docs/implementation/roadmap.md#cli0-boundary),
 [CP41/I6/E0 sequencing](docs/implementation/roadmap.md#cli0-cp41-boundary-and-post-cli0-i6e0), and the
 active ergonomics card,
 [CP42](docs/implementation/checkpoints.md#cp42-notes-driven-cli-ergonomics).
+
+The user accepted the [five-cycle CLI0 execution route](docs/implementation/checkpoints.md#accepted-cli0-execution-route)
+on 2026-09-07. It groups shared API and application work while preserving
+checkpoint verification order and all release obligations.
 Its required pre-alpha acceptance includes the
 [ten-application external CLI portfolio](docs/implementation/cli-ergonomics-suite.md).
 

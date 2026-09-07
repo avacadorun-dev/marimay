@@ -189,6 +189,16 @@ The user's 2026-09-06 extension requires the complete
 Useful applications, combined coverage and resolved ergonomics findings are
 required alongside conformance; merely creating repositories is not acceptance.
 
+On 2026-09-07 the user accepted the
+[five-cycle execution route](checkpoints.md#accepted-cli0-execution-route):
+reliable baseline, shared CLI contracts, application families, measured
+performance, then candidate audit. Application waves replace numeric order;
+affected failures block their acceptance and release while independent host,
+install and N0 preparation can proceed. CP42 remains the sole active checkpoint
+and verification order remains CP42 → CP41 → CP39 → CP40. Existing numerical
+budgets, all ten applications, the D057 five-platform obligation and N0 are
+unchanged. Scope/threshold research does not itself amend these contracts.
+
 ## CLI0 CP41 boundary and post-CLI0 I6/E0
 
 After CP38 and the user-prioritized CP42 ergonomics acceptance, before CP39 execute

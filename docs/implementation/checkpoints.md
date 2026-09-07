@@ -364,11 +364,45 @@ performance prerequisite inserted between CP38 and CP39.
 
 ## Active sequence CP29-CP42
 
-The sequence is deliberately linear so exactly one card is executable. CP29
+The verification sequence is linear with exactly one active checkpoint. CP29
 through CP38 are `verified`; CP42 is `in-progress`, and CP41 plus CP39–CP40
 remain `planned` behind their declared predecessors. The user's 2026-09-05
 priority change makes execution order CP42, CP41, CP39, then CP40;
 numeric order does not override those explicit dependencies.
+
+### Accepted CLI0 execution route
+
+On 2026-09-07 the user accepted the
+[dependency-based route analysis](../research/cli0-route-analysis-2026-09-07.md).
+The five cycles below organize work within the existing checkpoint owners;
+they do not introduce another status register or new numbered checkpoints.
+
+| Cycle | Result / exit condition |
+|---|---|
+| 1. Reliable baseline | Reconcile all 42 closure assignments with code, evidence and missing hosts; classify/reproduce open native CI failures; establish reusable application acceptance mechanics from the config harness. A failed shared backend or missing proof remains explicit. |
+| 2. Shared CLI contracts | Design collection copy/search/removal, mutation results and Option bindings together using config and existing notes; implement each semantic change through its own decision/spec/owner/tests and migrate these consumers. |
+| 3. Application families | Complete all ten external applications in dependency waves, using the portfolio contract and shared acceptance mechanics. Fix functional blockers and map each application to actual tests; performance/platform acceptance remains explicit. |
+| 4. Measured performance | Complete CP42 performance and its full required application/Tier 1 acceptance on its revision, then execute CP41 with a fresh D056 baseline. Preserve separate runtime/startup/backend attribution and all existing budgets. |
+| 5. Candidate audit | Verify the resulting candidate and portfolio, complete CP39 clean installed lifecycle, then CP40 with exact revision/artifact/platform evidence and N0. Publication requires separate user authorization. |
+
+Start Linux PMU availability, required-host inventory, clean install-image
+preparation and N0 evidence inventory in cycle 1. CP39 infrastructure may be
+prepared before CP41; CP39 verification still requires the final artifact.
+One semantic family is active at a time. Independent evidence/environment
+preparation does not activate a second checkpoint.
+
+Application implementation follows the
+[family waves](cli-ergonomics-suite.md#execution-and-completion), replacing
+the former numeric application order. A performance failure blocks acceptance
+of affected workloads and release; investigate, repair and remeasure unchanged
+inputs. Independent preparation may continue. A shared native correctness
+failure blocks the affected native candidate across all applications; a passing
+local run or unrelated fix cannot close it.
+
+Use a fresh baseline to confirm the CP41 hypothesis before selecting an
+optimization. Its 15%/10%/20% criteria, D057 five-platform obligation and N0
+remain unchanged. Any proposed revision needs measured grounds and the normal
+decision/spec protocol. No already accepted requirement is waived by this route.
 
 ## CP29 - Public release contract and closure matrix
 
@@ -1285,8 +1319,10 @@ without per-project compiler/linker/SDK selection.
 
 CP29–CP38 provide the complete bounded application surface; CP10/CP13 provide
 native build/runtime artifacts; CP41 closes the measured x86_64 code-pressure
-gap. Installation and native run must be proven only after the shipped
-workloads, standard packages, and required native performance repair exist.
+gap. Final installation and native-run evidence must use the shipped workloads,
+standard packages and required native performance repair. Clean-host inventory,
+packaging and lifecycle infrastructure may be prepared under the accepted route
+before CP41; this does not verify CP39 early.
 
 ### Authority and decisions
 
@@ -1679,7 +1715,7 @@ implementation; this card is not itself a language specification.
 
 ### Scope / exclusions
 
-Execute in order:
+Complete the following semantic obligations through the accepted route:
 
 1. Strict automatic typed JSON, explicit limits, useful field/index errors,
    source diagnostics for unsupported types, and notes migration.
@@ -1691,14 +1727,18 @@ Execute in order:
    scope, exhaustive matching, and both-engine tests.
 5. A consistent notes mutation API, documentation and acceptance tests.
 
-After the current JSON item, build and evaluate the external portfolio in its
-documented order while using its findings to drive items 2–5. All ten utilities
-and their combined acceptance evidence are required, not only the notes example.
+Use config and existing notes to design items 2–5 as one shared-contract cycle,
+with separately reviewable decisions and implementations. Build and evaluate
+the remaining portfolio by dependency family, using its findings to validate
+the shared API. All ten utilities and their combined acceptance evidence remain
+required. The JSON, allocation, resource and platform tail remains mandatory.
 
 The user's 2026-09-06 expanded algorithm run adds a required collection
 hot-path optimization to this card. Finish verification of the current JSON
 repair, then diagnose and repair `frequency-map`, `unique-set`, and
-`rune-frequency` before advancing to the next portfolio utility. The existing
+`rune-frequency` before accepting the affected performance workloads. Under
+the accepted route, independent preparation may proceed while this remains
+open. The existing
 sibling `algorithm-benchmarks` workloads retain their inputs, operation counts,
 checksums, reusable APIs, and 3 warmups plus 11 measured samples. The observed
 Marimay/Go medians were 81.59/14.88 ms, 58.32/17.53 ms, and 43.75/6.69 ms;
@@ -1777,7 +1817,7 @@ complete supported Tier 1 matrices before verification.
 ### Completion / removal gates
 
 The initial local JSON evidence does not close this card. Complete all five
-ordered language items and the ten-utility external portfolio, link exact-revision
+language items and the ten-utility external portfolio, link exact-revision
 evidence through the index and ROADMAP, and
 retain honest unsupported-type and installation limitations. Generic intrinsic
 signature/completion metadata must not be represented by fake external

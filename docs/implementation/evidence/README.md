@@ -113,6 +113,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Accepted-route baseline audit](cli0-baseline-audit-2026-09-07.md) reconciles
+the 42 CLI0 assignments and separates run 206 passing test steps from failed
+artifact uploads. Historical native/allocation failures, skipped TSan and
+missing host/portfolio evidence remain open; this is cycle 1 progress, not
+CP42 verification.
+
 [Compound-loop-binding recovery](cp42-for-recovery-2026-09-07.md) records
 D068 lossless synchronization, exact command rejection, allocation/limit
 teardown and full local Release 74/74; predecessor Linux CI remains red.
