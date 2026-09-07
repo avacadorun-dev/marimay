@@ -1,0 +1,55 @@
+@test
+fn scalarLookupStaysCorrectAcrossAliasesAndGrowth(): void {
+  const values: Map<int, int> = mapOf<int, int>();
+  const alias = values;
+  for key in 0..128 {
+    expect.equal(values.get(key), None);
+    expect.equal(alias.put(key, key * 3), Ok(true));
+    expect.equal(values.get(key), Some(key * 3));
+    expect.equal(alias.put(key, key + 7), Ok(false));
+    expect.equal(values.get(key), Some(key + 7));
+  }
+  for key in 0..64 {
+    expect.equal(values.get(key), Some(key + 7));
+    expect.equal(alias.remove(key), Some(key + 7));
+    expect.equal(values.get(key), None);
+  }
+  for key in 128..256 {
+    expect.equal(values.get(key), None);
+    expect.equal(alias.put(key, key), Ok(true));
+  }
+  expect.equal(values.get(255), Some(255));
+  for entry in values {
+    const key = match entry {
+      (item, _) => item,
+    };
+    const stored = match entry {
+      (_, item) => item,
+    };
+    expect.equal(values.get(key), Some(stored));
+  }
+  alias.clear();
+  expect.equal(values.get(255), None);
+  expect.equal(alias.put(255, 999), Ok(true));
+  expect.equal(values.get(255), Some(999));
+}
+
+@test
+fn scalarLookupRetainsReferencePayloadSemantics(): void {
+  const values: Map<int, []int> = mapOf<int, []int>();
+  const alias = values;
+  expect.equal(values.put(1, [4, 5]), Ok(true));
+  const first = resultPayload(values.get(1));
+  first[0] = 40;
+  expect.equal(resultPayload(values.get(1))[0], 40);
+  expect.equal(alias.put(1, [8, 9]), Ok(false));
+  expect.equal(resultPayload(values.get(1))[0], 8);
+  expect.equal(first[0], 40);
+  const removed = resultPayload(alias.remove(1));
+  expect.equal(resultAbsent(values.get(1)), true);
+  for key in 2..130 {
+    expect.equal(values.put(key, [key]), Ok(true));
+  }
+  expect.equal(removed[0], 8);
+  expect.equal(removed[1], 9);
+}

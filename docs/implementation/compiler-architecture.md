@@ -518,7 +518,27 @@ keys and values. The map owner exposes only its descriptor predicate to the
 set owner; no mutable resolved storage crosses that boundary. Raw 64-bit keys
 use the base hash owner's fixed-word SipHash-2-4 entry point, exactly equivalent
 to hashing the native word bytes with the generic routine. Round count, seeds,
-reference-key hashing, probing, order and storage accounting are unchanged.
+reference-key hashing, probing, order and storage accounting rules are unchanged.
+
+`managed_map_probe.c` owns the bounded bucket walk, integrity checks and
+resumable hash-candidate enumeration behind `managed_map_probe_internal.h`.
+It neither allocates nor calls recursive equality. The map owner compares
+reference candidates with its existing nominal/string rules and resumes the
+same walk; raw keys finish in the leaf probe. Required output locations and
+locally initialized progress are owner-private preconditions, not unchecked
+source inputs. Public Map/Set APIs still validate handles and output arguments.
+
+The map object may remember one successful raw-key `get`, including absence,
+as scalar indices/hash/seed words and its mutation generation. Every use first
+resolves the receiver and checks exact key, generation and seeds; storage
+publication explicitly invalidates it. Reference keys and Set never populate
+this memo. It retains no managed reference or storage pointer and introduces
+no allocation; its object bytes are included by the existing `sizeof`-based
+accounting. Isolate execution remains serialized under execution §7.9/§8.1;
+this internal read memo does not increment source mutation generations.
+`runtime/test_managed_map_probe.c` owns synthetic collision/tombstone walks;
+`runtime/test_managed_map_cache.c` owns enabled/disabled memo differentials,
+alias/mutation, seed, limits, reference lifetime and stale/foreign handle cases.
 
 Collection Option/Result emission uses the existing generated-enum ABI and
 entry-registered descriptor IDs for empty/raw-cell results. Reference payloads

@@ -1706,6 +1706,10 @@ costs and the discovered rune-Eq/parser-recovery defects remain obligations.
 The next [hash/descriptor boundary follow-up](evidence/cp42-collection-hash-descriptors-2026-09-06.md)
 adds smaller paired gains without changing SipHash, inputs, order or limits;
 it likewise does not close the obligation or the separate Linux CI failures.
+The [scalar lookup reuse follow-up](evidence/cp42-collection-lookup-reuse-2026-09-07.md)
+removes repeated Map hash/probe work with paired counter improvements and
+enabled/disabled-memo regression coverage. Set and the full performance item
+remain open; the report records the fixed per-object memory tradeoff.
 Separate input preparation from collection execution; profile hashing/probing,
 managed-handle checks, and Option/Result construction before choosing repairs.
 Acceptance requires paired same-workload improvement, unchanged insertion

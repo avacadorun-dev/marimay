@@ -113,6 +113,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Scalar lookup reuse and bounded probing](cp42-collection-lookup-reuse-2026-09-07.md)
+avoid repeating the hash/probe in scalar Map counters. Three local paired runs
+show further frequency-map and rune-frequency gains; Set remains unresolved.
+Memoization adds fixed per-object bytes and does not close the performance item.
+
 [Collection hash and descriptor boundaries](cp42-collection-hash-descriptors-2026-09-06.md)
 remove repeated immutable-layout validation and specialize the exact fixed-word
 SipHash path. Two local paired runs show further Map/Set improvement, while

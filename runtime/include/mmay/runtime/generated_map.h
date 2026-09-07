@@ -10,6 +10,20 @@ typedef struct MarimayManagedMapEntry {
     bool active;
 } MarimayManagedMapEntry;
 
+/* Last successful scalar-key get, including absence. Indices, not pointers or
+ * references: invalidated by mutation generation or any storage rebuild. */
+typedef struct MarimayManagedMapLookup {
+    uint64_t key_bits;
+    uint64_t hash;
+    uint64_t generation;
+    uint64_t seed0;
+    uint64_t seed1;
+    size_t bucket;
+    size_t entry;
+    bool found;
+    bool valid;
+} MarimayManagedMapLookup;
+
 /* Exact non-moving map/set object layout reserved for compiler-generated C. */
 typedef struct MarimayManagedMap {
     const MarimayManagedMapDescriptor *descriptor;
@@ -20,6 +34,7 @@ typedef struct MarimayManagedMap {
     uint64_t mutation_generation;
     MarimayManagedMapEntry *entries;
     size_t *buckets;
+    MarimayManagedMapLookup lookup;
 } MarimayManagedMap;
 
 #endif

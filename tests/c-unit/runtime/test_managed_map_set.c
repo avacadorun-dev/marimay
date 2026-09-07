@@ -578,6 +578,14 @@ static bool mmay_test_managed_collection_failure_run(
             for (index = 0; index < 48; index += 1) {
                 size_t length = 0;
                 uint64_t generation = 0;
+                if (!is_set) {
+                    MarimayManagedCell absent;
+                    bool found = true;
+                    const size_t attempts_before = state.attempts;
+                    MMAY_EXPECT(mmay_managed_map_get(&heap, map,
+                        mmay_test_map_raw(index), &absent, &found) == MMAY_MANAGED_OK && !found);
+                    MMAY_EXPECT(state.attempts == attempts_before);
+                }
                 changed = false;
                 status = is_set
                     ? mmay_managed_set_add(
@@ -779,6 +787,18 @@ static void mmay_test_managed_collection_handle_boundary(void) {
     MMAY_EXPECT(mmay_managed_map_new(&heap, &mmay_test_raw_map, &map) == MMAY_MANAGED_OK);
     MMAY_EXPECT(mmay_managed_map_new(&other, &mmay_test_raw_map, &foreign) == MMAY_MANAGED_OK);
     MMAY_EXPECT(mmay_managed_map_new(&heap, &mmay_test_string_map, &strings) == MMAY_MANAGED_OK);
+    MMAY_EXPECT(mmay_managed_map_get(&heap, map, mmay_test_map_raw(0), NULL, &found)
+        == MMAY_MANAGED_INVALID_ARGUMENT);
+    MMAY_EXPECT(mmay_managed_map_get(&heap, map, mmay_test_map_raw(0), &output, NULL)
+        == MMAY_MANAGED_INVALID_ARGUMENT);
+    MMAY_EXPECT(mmay_managed_map_contains(&heap, map, mmay_test_map_raw(0), NULL)
+        == MMAY_MANAGED_INVALID_ARGUMENT);
+    MMAY_EXPECT(mmay_managed_map_put(&heap, map, mmay_test_map_raw(0),
+        mmay_test_map_raw(0), NULL) == MMAY_MANAGED_INVALID_ARGUMENT);
+    MMAY_EXPECT(mmay_managed_map_remove(&heap, map, mmay_test_map_raw(0), NULL, &found)
+        == MMAY_MANAGED_INVALID_ARGUMENT);
+    MMAY_EXPECT(mmay_managed_map_remove(&heap, map, mmay_test_map_raw(0), &output, NULL)
+        == MMAY_MANAGED_INVALID_ARGUMENT);
     MMAY_EXPECT(mmay_managed_string_new(&heap, (const unsigned char *)"key", 3, &text)
         == MMAY_MANAGED_OK);
     wrong_generation = map;
