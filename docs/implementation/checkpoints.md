@@ -1683,6 +1683,8 @@ Follow-up: [ordinary test-file helpers](evidence/cp42-test-helpers-2026-09-07.md
 Follow-up: [exact mapError context](evidence/cp42-map-error-context-2026-09-07.md).
 Follow-up: [test panic source ranges](evidence/cp42-test-locations-2026-09-07.md).
 Follow-up: [compound-loop-binding recovery](evidence/cp42-for-recovery-2026-09-07.md).
+Route baseline: [closure assignments and CI audit](evidence/cli0-baseline-audit-2026-09-07.md).
+Shared preparation: [external application acceptance driver](evidence/cli0-shared-acceptance-2026-09-07.md).
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome

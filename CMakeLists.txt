@@ -823,6 +823,14 @@ if(BUILD_TESTING)
   find_package(Python3 COMPONENTS Interpreter QUIET)
   if(Python3_Interpreter_FOUND)
     add_test(
+      NAME mmay_cli_acceptance_driver
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/cli-acceptance/test_driver.py"
+    )
+    set_tests_properties(mmay_cli_acceptance_driver PROPERTIES
+      TIMEOUT 30 LABELS "cli;acceptance-harness"
+    )
+    add_test(
       NAME mmay_roadmap
       COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
     )

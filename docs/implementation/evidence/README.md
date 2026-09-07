@@ -113,6 +113,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Shared external-CLI acceptance mechanics](cli0-shared-acceptance-2026-09-07.md)
+records the versioned process/build/parity driver, its failure-detection tests
+and migration of both config adapters with all 32 process and 23 filesystem
+cases retained across VM/native Debug/Release. This closes shared harness
+preparation within cycle 1, not the remaining CI/platform/application gates.
+
 [Accepted-route baseline audit](cli0-baseline-audit-2026-09-07.md) reconciles
 the 42 CLI0 assignments and separates run 206 passing test steps from failed
 artifact uploads. Historical native/allocation failures, skipped TSan and

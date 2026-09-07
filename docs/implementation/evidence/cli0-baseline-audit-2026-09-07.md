@@ -6,6 +6,10 @@
 его исполняемый контракт находится в [ledger](../checkpoints.md#accepted-cli0-execution-route).
 CP42 и первый цикл остаются открытыми. Это не новое прохождение всех тестов.
 
+Последующий [shared harness result](cli0-shared-acceptance-2026-09-07.md)
+закрывает общую process/build/parity подготовку на двух реальных config
+adapters; описанный ниже исходный список сохраняет границы аудита.
+
 ## Все 42 назначения
 
 [Машинный снимок](cli0-baseline-audit-2026-09-07.json) содержит каждую строку,

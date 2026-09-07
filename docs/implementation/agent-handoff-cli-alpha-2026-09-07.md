@@ -111,9 +111,11 @@ D087 исправил случайный instruction fuel, но VM call depth/na
 → delimited/source-lint**. Табличные ID в контракте — идентификаторы,
 не прежняя последовательность. Все десять остаются обязательными.
 
-Из существующих config `tools/acceptance.py`, `acceptance_files.py`, `measure.py`
-выделить общую версионируемую механику build/process/fixtures/metadata с малыми
-адаптерами. Каждый app остаётся самостоятельным repo с русским README,
+Из config `tools/acceptance.py` и `acceptance_files.py` уже выделен
+[общий драйвер v1](evidence/cli0-shared-acceptance-2026-09-07.md): оба adapters
+повторно прошли прежние сценарии. Для следующих приложений используй этот
+versioned build/process/parity/metadata слой; datasets и budgets остаются
+прикладными. Каждый app остаётся самостоятельным repo с русским README,
 `mmay.mod`, бизнес-логикой на Marimay и собственными сценариями приёмки.
 Общий harness не заменяет exact VM/native status/stdout/stderr/files и
 отрицательные/Unicode/large/denied/atomic/broken-pipe сценарии каждого app.
