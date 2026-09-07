@@ -219,6 +219,7 @@ add_executable(mmay_c_unit
   test_parser_core.c
   test_parser_declarations.c
   test_parser_expressions.c
+  test_parser_for_recovery.c
   test_parser_nested_generics.c
   test_parser_array_types.c
   test_parser_incremental.c
@@ -732,6 +733,16 @@ add_test(
 )
 set_tests_properties(mmay_cp42_test_locations PROPERTIES
   LABELS "differential;cp42" TIMEOUT 1800)
+
+add_test(
+  NAME mmay_cp42_for_recovery
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/cp42-for-recovery"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_for_recovery.cmake"
+)
+set_tests_properties(mmay_cp42_for_recovery PROPERTIES
+  LABELS "differential;cp42" TIMEOUT 300)
 
 # The install contracts update CMake's build-tree install manifest. They may
 # overlap all other isolated tests, but not each other.

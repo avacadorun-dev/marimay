@@ -1867,7 +1867,12 @@ Status: accepted.
 
 Marimay has one `for` header: `for name in expression`. The iteration binding
 is an immutable identifier and is freshly created for each iteration. `_` is
-not a loop binding. Arrays and standard iterators use the existing single-
+not a loop binding. Tuple and array patterns are rejected in this position;
+destructuring belongs in a `match` inside the loop body. Recovery of an
+invalid compound binding synchronizes at the header separator or body
+boundary instead of treating its tokens as the iterable and consuming later
+declarations. This clarifies error recovery without adding a binding form.
+Arrays and standard iterators use the existing single-
 evaluation, cleanup, and invalidation contracts.
 
 The language adds integer range forms `start..end` and `start..=end` in the

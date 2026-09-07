@@ -19,6 +19,7 @@ void mmay_test_parser_record_field_grammar(void);
 void mmay_test_parser_exact_delimited_grammar(void);
 void mmay_test_parser_statement_forms(void);
 void mmay_test_parser_statement_recovery(void);
+void mmay_test_parser_for_recovery(void);
 void mmay_test_parser_type_grammar(void);
 void mmay_test_parser_array_type_spelling(void);
 void mmay_test_parser_nested_generic_boundaries(void);

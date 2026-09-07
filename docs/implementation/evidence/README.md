@@ -113,6 +113,10 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Compound-loop-binding recovery](cp42-for-recovery-2026-09-07.md) records
+D068 lossless synchronization, exact command rejection, allocation/limit
+teardown and full local Release 74/74; predecessor Linux CI remains red.
+
 [Test panic source ranges](cp42-test-locations-2026-09-07.md) records D095
 primary source metadata and preservation of stderr before a panic. Its report
 tracks local verification, negative/allocation cases and remaining checks.

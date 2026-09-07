@@ -73,6 +73,12 @@ shortcut for sharing checker internals with a backend.
   binding vector descriptors); name publication transfers ownership from the
   actual indexed declaration, never from that snapshot.
 
+The declaration parser owns D068 compound-loop-binding recovery. It retains
+invalid header tokens in an error node and synchronizes before the actual
+iterable/body; the formatter only rejects the resulting diagnosed source.
+`test_parser_for_recovery.c` owns lossless recovery, following-declaration
+preservation, formatter rejection and all-index allocation/limit teardown.
+
 ### Checker to MIR
 
 - The checker lowers all implicit observable behavior before publication.

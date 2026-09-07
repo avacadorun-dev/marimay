@@ -740,6 +740,8 @@ for index in 0..count {
 
 The header is exactly an identifier, `in`, and an iterable expression. Its
 binding is immutable and fresh for each iteration; `_` is not accepted.
+Tuple and array patterns are not valid loop bindings under D068; use a
+`match` inside the loop body to destructure the bound element.
 `start..end` is an `int` range excluding `end`, while `start..=end` includes
 it. Bounds evaluate once from left to right before iteration. A range whose
 start is greater than its end is empty, and advancing the inclusive

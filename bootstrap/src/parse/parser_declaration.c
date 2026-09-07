@@ -126,6 +126,22 @@ static void mmay_parse_for_binding(MarimayParser *parser) {
         mmay_parser_bump(parser);
         return;
     }
+    if (mmay_parser_at(parser, MMAY_TOKEN_LEFT_PAREN)
+        || mmay_parser_at(parser, MMAY_TOKEN_LEFT_BRACKET)) {
+        MarimayMarker invalid = mmay_parser_start(parser);
+        mmay_parser_expect_identifier(
+            parser, "loop binding must be a single identifier"
+        );
+        /* D068 rejects compound bindings. Keep their tokens out of the
+           iterable expression so recovery preserves the actual loop body. */
+        while (!mmay_parser_is_stop(parser, MMAY_TOKEN_KW_IN,
+                MMAY_TOKEN_LEFT_BRACE, MMAY_TOKEN_RIGHT_BRACE)
+            && !parser->allocation_failed && !parser->limit_reached) {
+            mmay_parser_bump(parser);
+        }
+        (void)mmay_parser_complete(parser, invalid, MMAY_SYNTAX_ERROR);
+        return;
+    }
     mmay_parser_expect_identifier(parser, "expected loop binding name");
 }
 

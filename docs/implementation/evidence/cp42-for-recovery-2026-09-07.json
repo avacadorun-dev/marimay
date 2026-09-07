@@ -1,0 +1,156 @@
+{
+  "schema": "mmay.cp42-for-recovery/1",
+  "captured_utc": "2026-09-07T13:18:25.820366+00:00",
+  "base_revision": "7ff26f856372ff16825e62de365db5f691a005c2",
+  "dirty": true,
+  "compiler_sha256": "cd52f0f066342bf3faf6bba183fb395b09a4cc2a75a1ca228e5e9a2e89b0b6af",
+  "source_hashes": {
+    "bootstrap/src/parse/parser_declaration.c": "45f25947b9e6615746501ee2851dc0ae06bacad59eedc590d53e84472b3f8c0f",
+    "tests/c-unit/test_parser_for_recovery.c": "4df0dc4a965517f7c75e8181aa5d30b5f5ac71dd861371463b807ba6e6ad8e5c",
+    "tests/c-unit/test_cp42_for_recovery.cmake": "bee80fe31e240efc80c3166d4e2cf75e8873d46cc4ea518420c2b32df146ccf5",
+    "tests/c-unit/test_parser.c": "7ec4a2deac60989978dc39e2fb3dceb47415d26a08ff4966327f28343d143ffd",
+    "tests/c-unit/test_parser_cases.h": "608539e13e167a72cbc430e930e605ceb98763e710ef9e8c51505ec28655a85f",
+    "tests/c-unit/CMakeLists.txt": "3c032710ede4b4f51bd9c8ddff83986ae65b8ce2b98b0cd6e1f5feb2abce09c3"
+  },
+  "baseline": {
+    "status": 1,
+    "stdout": "",
+    "stderr": "error[F0003]: formatter parser exhausted a defensive limit\n"
+  },
+  "baseline_small": [
+    {
+      "args": [
+        "fmt",
+        "--check",
+        "build/cp42-parser-recovery/tuple-loop.my"
+      ],
+      "status": 1,
+      "stdout": "",
+      "stderr": "error[P0001]: expected loop binding name\n  --> build/cp42-parser-recovery/tuple-loop.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\nerror[P0001]: expected 'in' after loop binding\n  --> build/cp42-parser-recovery/tuple-loop.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\nerror[P0001]: expected '{' to start block\n  --> build/cp42-parser-recovery/tuple-loop.my:1:36\n1 | fn main(): void { for (key, value) in values {} }\n  |                                    ^\nerror[P0002]: expected expression\n  --> build/cp42-parser-recovery/tuple-loop.my:1:36\n1 | fn main(): void { for (key, value) in values {} }\n  |                                    ^\nerror[P0001]: expected ';' after expression\n  --> build/cp42-parser-recovery/tuple-loop.my:1:39\n1 | fn main(): void { for (key, value) in values {} }\n  |                                       ^\nerror[P0001]: expected ';' after expression\n  --> build/cp42-parser-recovery/tuple-loop.my:1:49\n1 | fn main(): void { for (key, value) in values {} }\n  |                                                 ^\nerror[P0002]: expected expression\n  --> build/cp42-parser-recovery/tuple-loop.my:2:1\n2 | fn after(): void {}\n  | ^\nerror[P0001]: expected ';' after expression\n  --> build/cp42-parser-recovery/tuple-loop.my:2:4\n2 | fn after(): void {}\n  |    ^\nerror[P0001]: expected ';' after expression\n  --> build/cp42-parser-recovery/tuple-loop.my:2:11\n2 | fn after(): void {}\n  |           ^\nerror[P0002]: expected expression\n  --> build/cp42-parser-recovery/tuple-loop.my:2:11\n2 | fn after(): void {}\n  |           ^\nerror[P0001]: expected ';' after expression\n  --> build/cp42-parser-recovery/tuple-loop.my:2:13\n2 | fn after(): void {}\n  |             ^\nerror[P0001]: expected ';' after expression\n  --> build/cp42-parser-recovery/tuple-loop.my:3:1\n3 | \n  | ^\nerror[P0001]: expected '}' to close block\n  --> build/cp42-parser-recovery/tuple-loop.my:3:1\n3 | \n  | ^\n"
+    },
+    {
+      "args": [
+        "check",
+        "build/cp42-parser-recovery/tuple-loop.my"
+      ],
+      "status": 1,
+      "stdout": "",
+      "stderr": "error[P0001]: expected loop binding name\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\nerror[P0001]: expected 'in' after loop binding\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\nerror[P0001]: expected '{' to start block\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:36\n1 | fn main(): void { for (key, value) in values {} }\n  |                                    ^\nerror[P0002]: expected expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:36\n1 | fn main(): void { for (key, value) in values {} }\n  |                                    ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:39\n1 | fn main(): void { for (key, value) in values {} }\n  |                                       ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:49\n1 | fn main(): void { for (key, value) in values {} }\n  |                                                 ^\nerror[P0002]: expected expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:1\n2 | fn after(): void {}\n  | ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:4\n2 | fn after(): void {}\n  |    ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:11\n2 | fn after(): void {}\n  |           ^\nerror[P0002]: expected expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:11\n2 | fn after(): void {}\n  |           ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:13\n2 | fn after(): void {}\n  |             ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:3:1\n3 | \n  | ^\nerror[P0001]: expected '}' to close block\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:3:1\n3 | \n  | ^\n"
+    },
+    {
+      "args": [
+        "run",
+        "build/cp42-parser-recovery/tuple-loop.my"
+      ],
+      "status": 1,
+      "stdout": "",
+      "stderr": "error[P0001]: expected loop binding name\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\nerror[P0001]: expected 'in' after loop binding\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\nerror[P0001]: expected '{' to start block\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:36\n1 | fn main(): void { for (key, value) in values {} }\n  |                                    ^\nerror[P0002]: expected expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:36\n1 | fn main(): void { for (key, value) in values {} }\n  |                                    ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:39\n1 | fn main(): void { for (key, value) in values {} }\n  |                                       ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:49\n1 | fn main(): void { for (key, value) in values {} }\n  |                                                 ^\nerror[P0002]: expected expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:1\n2 | fn after(): void {}\n  | ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:4\n2 | fn after(): void {}\n  |    ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:11\n2 | fn after(): void {}\n  |           ^\nerror[P0002]: expected expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:11\n2 | fn after(): void {}\n  |           ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:13\n2 | fn after(): void {}\n  |             ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:3:1\n3 | \n  | ^\nerror[P0001]: expected '}' to close block\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:3:1\n3 | \n  | ^\n"
+    },
+    {
+      "args": [
+        "build",
+        "build/cp42-parser-recovery/tuple-loop.my",
+        "--output",
+        "build/cp42-parser-recovery/invalid"
+      ],
+      "status": 1,
+      "stdout": "",
+      "stderr": "error[P0001]: expected loop binding name\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\nerror[P0001]: expected 'in' after loop binding\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\nerror[P0001]: expected '{' to start block\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:36\n1 | fn main(): void { for (key, value) in values {} }\n  |                                    ^\nerror[P0002]: expected expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:36\n1 | fn main(): void { for (key, value) in values {} }\n  |                                    ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:39\n1 | fn main(): void { for (key, value) in values {} }\n  |                                       ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:1:49\n1 | fn main(): void { for (key, value) in values {} }\n  |                                                 ^\nerror[P0002]: expected expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:1\n2 | fn after(): void {}\n  | ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:4\n2 | fn after(): void {}\n  |    ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:11\n2 | fn after(): void {}\n  |           ^\nerror[P0002]: expected expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:11\n2 | fn after(): void {}\n  |           ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:2:13\n2 | fn after(): void {}\n  |             ^\nerror[P0001]: expected ';' after expression\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:3:1\n3 | \n  | ^\nerror[P0001]: expected '}' to close block\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/tuple-loop.my:3:1\n3 | \n  | ^\n"
+    }
+  ],
+  "candidate": {
+    "fmt": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "error[P0001]: loop binding must be a single identifier\n  --> build/cp42-parser-recovery/cascade.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\n"
+    },
+    "check": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "error[P0001]: loop binding must be a single identifier\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/cascade.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\n"
+    },
+    "run": {
+      "status": 1,
+      "stdout": "",
+      "stderr": "error[P0001]: loop binding must be a single identifier\n  --> /workspace/Projects/Marimay/marimay/build/cp42-parser-recovery/cascade.my:1:23\n1 | fn main(): void { for (key, value) in values {} }\n  |                       ^\n"
+    }
+  },
+  "logs": {
+    "focused-release.log": {
+      "sha256": "023c74655209733e5388cc725b58f95e807fa07f9d822bc441cb250a61dcddf6",
+      "text": "Test project /workspace/Projects/Marimay/marimay/build/release\n    Start  3: mmay_c_unit_frontend\n    Start 74: mmay_cp42_for_recovery\n1/2 Test #74: mmay_cp42_for_recovery ...........   Passed    0.05 sec\n2/2 Test  #3: mmay_c_unit_frontend .............   Passed    0.07 sec\n\n100% tests passed out of 2\n\nLabel Time Summary:\nc-unit          =   0.07 sec*proc (1 test)\ncp42            =   0.05 sec*proc (1 test)\ndifferential    =   0.05 sec*proc (1 test)\nfrontend        =   0.07 sec*proc (1 test)\n\nTotal Test time (real) =   0.07 sec\n"
+    },
+    "focused-debug.log": {
+      "sha256": "7e030ebca9ca0e51a307f550ab849ec7fb96f7013d3b1e53ca17904df29f27c3",
+      "text": "Test project /workspace/Projects/Marimay/marimay/build/debug\n    Start  3: mmay_c_unit_frontend\n    Start 73: mmay_cp42_for_recovery\n1/2 Test  #3: mmay_c_unit_frontend .............   Passed    0.81 sec\n2/2 Test #73: mmay_cp42_for_recovery ...........   Passed    1.04 sec\n\n100% tests passed out of 2\n\nLabel Time Summary:\nc-unit          =   0.81 sec*proc (1 test)\ncp42            =   1.04 sec*proc (1 test)\ndifferential    =   1.04 sec*proc (1 test)\nfrontend        =   0.81 sec*proc (1 test)\n\nTotal Test time (real) =   1.04 sec\n"
+    },
+    "focused-asan.log": {
+      "sha256": "de60e1369ccb10b7e6c189bdc129a16aa411a5d374e14b9b85c39efc006cd6c4",
+      "text": "Test project /workspace/Projects/Marimay/marimay/build/asan-ubsan\n    Start  3: mmay_c_unit_frontend\n    Start 73: mmay_cp42_for_recovery\n1/2 Test  #3: mmay_c_unit_frontend .............   Passed    1.57 sec\n2/2 Test #73: mmay_cp42_for_recovery ...........   Passed    2.14 sec\n\n100% tests passed out of 2\n\nLabel Time Summary:\nc-unit          =   1.57 sec*proc (1 test)\ncp42            =   2.14 sec*proc (1 test)\ndifferential    =   2.14 sec*proc (1 test)\nfrontend        =   1.57 sec*proc (1 test)\n\nTotal Test time (real) =   2.15 sec\n"
+    },
+    "full-release.log": {
+      "sha256": "ae52ea373da23f4e0a110c2f6443344f6806c6ef8f4b2439e814105ff0fdd616",
+      "text": "Test project /workspace/Projects/Marimay/marimay/build/release\n      Start 69: mmay_cp38_json\n      Start 46: mmay_cp37_cli_parser\n 1/74 Test #46: mmay_cp37_cli_parser .............   Passed    3.36 sec\n      Start 39: mmay_cp39_distribution\n 2/74 Test #69: mmay_cp38_json ...................   Passed    8.10 sec\n      Start  8: mmay_c_unit_cp31\n      Start 18: mmay_c_unit_cp18-cp20\n 3/74 Test  #8: mmay_c_unit_cp31 .................   Passed    4.09 sec\n      Start 17: mmay_c_unit_cp16-cp17\n 4/74 Test #18: mmay_c_unit_cp18-cp20 ............   Passed    4.43 sec\n      Start  9: mmay_c_unit_final-preview\n 5/74 Test #17: mmay_c_unit_cp16-cp17 ............   Passed    3.51 sec\n      Start  7: mmay_c_unit_native\n 6/74 Test  #9: mmay_c_unit_final-preview ........   Passed    7.85 sec\n      Start 16: mmay_c_unit_cp14-cp15\n 7/74 Test #39: mmay_cp39_distribution ...........   Passed   17.33 sec\n      Start 40: mmay_cp39_packaging\n 8/74 Test #16: mmay_c_unit_cp14-cp15 ............   Passed    2.81 sec\n      Start 45: mmay_cp36_map_set\n 9/74 Test #40: mmay_cp39_packaging ..............   Passed    7.21 sec\n      Start 42: mmay_cp33_process_text_bytes\n      Start 43: mmay_cp34_process_files\n10/74 Test #45: mmay_cp36_map_set ................   Passed    6.56 sec\n      Start 44: mmay_cp35_process_context\n11/74 Test #42: mmay_cp33_process_text_bytes .....   Passed    2.21 sec\n      Start 15: mmay_c_unit_cli-test\n12/74 Test #43: mmay_cp34_process_files ..........   Passed    3.00 sec\n      Start 13: mmay_c_unit_cli-heap\n13/74 Test #44: mmay_cp35_process_context ........   Passed    2.25 sec\n      Start 37: mmay_install_relocation\n14/74 Test #13: mmay_c_unit_cli-heap .............   Passed    1.49 sec\n      Start 41: mmay_cp32_process_streams\n15/74 Test #41: mmay_cp32_process_streams ........   Passed    0.98 sec\n      Start 14: mmay_c_unit_cli-run\n16/74 Test #37: mmay_install_relocation ..........   Passed    3.04 sec\n      Start 11: mmay_c_unit_cli-build\n17/74 Test #15: mmay_c_unit_cli-test .............   Passed    5.29 sec\n      Start 38: mmay_cp29_release_contract\n18/74 Test #14: mmay_c_unit_cli-run ..............   Passed    5.35 sec\n      Start 19: mmay_cp31_allocation_0\n19/74 Test #38: mmay_cp29_release_contract .......   Passed    3.71 sec\n      Start  4: mmay_c_unit_checker\n20/74 Test #19: mmay_cp31_allocation_0 ...........   Passed    2.24 sec\n      Start 12: mmay_c_unit_cli-check\n21/74 Test  #4: mmay_c_unit_checker ..............   Passed    2.75 sec\n      Start  6: mmay_c_unit_runtime\n22/74 Test #12: mmay_c_unit_cli-check ............   Passed    9.49 sec\n      Start 20: mmay_cp31_allocation_1\n23/74 Test #20: mmay_cp31_allocation_1 ...........   Passed    2.27 sec\n      Start 21: mmay_cp31_allocation_2\n24/74 Test #11: mmay_c_unit_cli-build ............   Passed   18.04 sec\n      Start 22: mmay_cp31_allocation_3\n25/74 Test #21: mmay_cp31_allocation_2 ...........   Passed    2.34 sec\n      Start 23: mmay_cp31_allocation_4\n26/74 Test #22: mmay_cp31_allocation_3 ...........   Passed    2.34 sec\n      Start 24: mmay_cp31_allocation_5\n27/74 Test #23: mmay_cp31_allocation_4 ...........   Passed    2.30 sec\n      Start 25: mmay_cp31_allocation_6\n28/74 Test #24: mmay_cp31_allocation_5 ...........   Passed    2.30 sec\n      Start 26: mmay_cp31_allocation_7\n29/74 Test #25: mmay_cp31_allocation_6 ...........   Passed    2.30 sec\n      Start 47: mmay_cli_notes\n30/74 Test #26: mmay_cp31_allocation_7 ...........   Passed    2.29 sec\n      Start  5: mmay_c_unit_bytecode\n31/74 Test  #5: mmay_c_unit_bytecode .............   Passed    0.21 sec\n      Start 67: mmay_typed_json\n32/74 Test #67: mmay_typed_json ..................   Passed    7.76 sec\n      Start 68: mmay_cli_local_execution\n33/74 Test  #6: mmay_c_unit_runtime ..............   Passed   31.86 sec\n      Start 31: mmay_cp36_unit\n34/74 Test #68: mmay_cli_local_execution .........   Passed   11.69 sec\n      Start 27: mmay_cp32_unit\n35/74 Test #47: mmay_cli_notes ...................   Passed   23.41 sec\n      Start 28: mmay_cp33_unit\n36/74 Test #27: mmay_cp32_unit ...................   Passed    7.78 sec\n      Start 34: mmay_cp42_unit\n37/74 Test #31: mmay_cp36_unit ...................   Passed   24.50 sec\n      Start 35: mmay_cp41_unit\n38/74 Test #28: mmay_cp33_unit ...................   Passed   19.88 sec\n      Start 49: mmay_cli_config_migrate\n39/74 Test #35: mmay_cp41_unit ...................   Passed    6.57 sec\n      Start 48: mmay_cli_frequency\n40/74 Test #48: mmay_cli_frequency ...............   Passed    3.85 sec\n      Start 30: mmay_cp35_unit\n41/74 Test #49: mmay_cli_config_migrate ..........   Passed    6.70 sec\n      Start 72: mmay_cp42_map_error_context\n42/74 Test #30: mmay_cp35_unit ...................   Passed    2.45 sec\n      Start 71: mmay_cp42_test_helpers\n43/74 Test #72: mmay_cp42_map_error_context ......   Passed    2.60 sec\n      Start 70: mmay_cp42_void_match\n44/74 Test #71: mmay_cp42_test_helpers ...........   Passed    2.63 sec\n      Start 66: mmay_cli_notes_model\n45/74 Test #66: mmay_cli_notes_model .............   Passed    2.01 sec\n      Start 55: mmay_cp33_text_bytes\n46/74 Test #55: mmay_cp33_text_bytes .............   Passed    0.48 sec\n      Start  3: mmay_c_unit_frontend\n47/74 Test  #3: mmay_c_unit_frontend .............   Passed    0.08 sec\n      Start 56: mmay_match_format\n48/74 Test #70: mmay_cp42_void_match .............   Passed    4.19 sec\n      Start 52: mmay_generic_lifetime\n49/74 Test #56: mmay_match_format ................   Passed    0.36 sec\n      Start 57: mmay_run_startup\n50/74 Test #52: mmay_generic_lifetime ............   Passed    0.36 sec\n      Start 50: mmay_record_imports\n51/74 Test #57: mmay_run_startup .................   Passed    0.35 sec\n      Start 54: mmay_enum_pattern_names\n52/74 Test #50: mmay_record_imports ..............   Passed    0.33 sec\n      Start 51: mmay_match_void\n53/74 Test #54: mmay_enum_pattern_names ..........   Passed    0.34 sec\n      Start 53: mmay_map_error_imports\n54/74 Test #51: mmay_match_void ..................   Passed    0.34 sec\n      Start 10: mmay_c_unit_cli-core\n55/74 Test #10: mmay_c_unit_cli-core .............   Passed    0.02 sec\n      Start 29: mmay_cp34_unit\n56/74 Test #29: mmay_cp34_unit ...................   Passed    0.00 sec\n      Start 32: mmay_cp37_unit\n57/74 Test #32: mmay_cp37_unit ...................   Passed    0.05 sec\n      Start 33: mmay_cp38_unit\n58/74 Test #33: mmay_cp38_unit ...................   Passed    0.01 sec\n      Start 36: mmay_cp39_unit\n59/74 Test #36: mmay_cp39_unit ...................   Passed    0.10 sec\n      Start 73: mmay_cp42_test_locations\n60/74 Test #53: mmay_map_error_imports ...........   Passed    0.36 sec\n      Start  1: mmay_roadmap\n61/74 Test  #1: mmay_roadmap .....................   Passed    0.10 sec\n      Start 74: mmay_cp42_for_recovery\n62/74 Test #74: mmay_cp42_for_recovery ...........   Passed    0.05 sec\n      Start  2: mmay_release_contract\n63/74 Test  #2: mmay_release_contract ............   Passed    0.05 sec\n      Start 63: mmay_format_cp33-text-bytes\n64/74 Test #63: mmay_format_cp33-text-bytes ......   Passed    0.00 sec\n      Start 58: mmay_format_record-imports\n65/74 Test #58: mmay_format_record-imports .......   Passed    0.00 sec\n      Start 60: mmay_format_generic-lifetime\n66/74 Test #60: mmay_format_generic-lifetime .....   Passed    0.00 sec\n      Start 62: mmay_format_enum-pattern-names\n67/74 Test #62: mmay_format_enum-pattern-names ...   Passed    0.00 sec\n      Start 65: mmay_format_run-startup\n68/74 Test #65: mmay_format_run-startup ..........   Passed    0.00 sec\n      Start 59: mmay_format_match-void\n69/74 Test #59: mmay_format_match-void ...........   Passed    0.00 sec\n      Start 61: mmay_format_map-error-imports\n70/74 Test #61: mmay_format_map-error-imports ....   Passed    0.00 sec\n      Start 64: mmay_format_match-format\n71/74 Test #64: mmay_format_match-format .........   Passed    0.00 sec\n72/74 Test #73: mmay_cp42_test_locations .........   Passed    0.79 sec\n73/74 Test #34: mmay_cp42_unit ...................   Passed   38.85 sec\n74/74 Test  #7: mmay_c_unit_native ...............   Passed  216.92 sec\n\n100% tests passed out of 74\n\nLabel Time Summary:\nallocation         =  18.38 sec*proc (8 tests)\nbytecode           =   0.21 sec*proc (1 test)\nc-unit             = 414.40 sec*proc (26 tests)\nchecker            =   2.75 sec*proc (1 test)\ncli-build          =  18.04 sec*proc (1 test)\ncli-check          =   9.49 sec*proc (1 test)\ncli-core           =   0.02 sec*proc (1 test)\ncli-heap           =   1.49 sec*proc (1 test)\ncli-run            =   5.35 sec*proc (1 test)\ncli-test           =   5.29 sec*proc (1 test)\ncp14-cp15          =   2.81 sec*proc (1 test)\ncp16-cp17          =   3.51 sec*proc (1 test)\ncp18-cp20          =   4.43 sec*proc (1 test)\ncp31               =   4.09 sec*proc (1 test)\ncp32               =   7.78 sec*proc (1 test)\ncp33               =  19.88 sec*proc (1 test)\ncp34               =   0.00 sec*proc (1 test)\ncp35               =   2.45 sec*proc (1 test)\ncp36               =  24.50 sec*proc (1 test)\ncp37               =   0.05 sec*proc (1 test)\ncp38               =   0.01 sec*proc (1 test)\ncp39               =  49.20 sec*proc (3 tests)\ncp41               =   6.57 sec*proc (1 test)\ncp42               =  49.11 sec*proc (6 tests)\ndifferential       =  29.70 sec*proc (7 tests)\ndistribution       =  49.10 sec*proc (2 tests)\nfinal-preview      =   7.85 sec*proc (1 test)\nfocused            = 100.20 sec*proc (10 tests)\nfrontend           =   0.08 sec*proc (1 test)\nlocal-execution    =  11.69 sec*proc (1 test)\nnative             = 216.92 sec*proc (1 test)\npackaging          =  14.43 sec*proc (1 test)\nresource           =  11.69 sec*proc (1 test)\nruntime            =  31.86 sec*proc (1 test)\ntyped-json         =   7.76 sec*proc (1 test)\n\nTotal Test time (real) = 232.61 sec\n"
+    },
+    "packaging-report.log": {
+      "sha256": "d0034b1fef703084cd117e56e203f76550844ea044ec6f141bde52f132143400",
+      "text": "Test project /workspace/Projects/Marimay/marimay/build/release\n    Start 40: mmay_cp39_packaging\n1/1 Test #40: mmay_cp39_packaging ..............   Passed    6.81 sec\n\n100% tests passed out of 1\n\nLabel Time Summary:\ncp39            =  13.62 sec*proc (1 test)\ndistribution    =  13.62 sec*proc (1 test)\npackaging       =  13.62 sec*proc (1 test)\n\nTotal Test time (real) =   6.82 sec\n"
+    }
+  },
+  "ci_predecessor": {
+    "run": 205,
+    "revision": "7ff26f856372ff16825e62de365db5f691a005c2",
+    "sanitizer_job": 1730,
+    "test_failure": "mmay_cp38_json: B0004, undeclared generated string constant mmay_g_c_4d3b87da860e433267f36fcc78f5b8c8_1",
+    "artifact_failure": "Gitea artifact service returned HTTP 500",
+    "scope": "Unresolved predecessor failure; this parser repair does not claim to fix native code generation or close CI."
+  },
+  "book_ideas": [],
+  "gates": {
+    "check-architecture": {
+      "status": 0,
+      "sha256": "d9350711c33efa6ee9fdc6a821dd06ddde0af490e1928d5812621b47de44706c",
+      "text": "check-architecture: ok\n"
+    },
+    "check-roadmap": {
+      "status": 0,
+      "sha256": "5e14aacea127d5b49d4c0d05b0cb75174e613e810ac25ba743738e95c1424aaf",
+      "text": "roadmap ok: 21 gates, 43 checkpoints, one active checkpoint, mutation self-tests passed\n"
+    },
+    "check-c-memory-policy": {
+      "status": 0,
+      "sha256": "b2d064001e3464a5c31b01a228afda5e9726d586b725f57ba2d8dfc446dfb072",
+      "text": "check-c-memory-policy: ok\n"
+    },
+    "check-spec-terms": {
+      "status": 0,
+      "sha256": "2e6092b83d36076befa5b3ae0a92d8a5a2889735e265188d592b580df1665577",
+      "text": "check-spec-terms: ok\n"
+    },
+    "check-generated": {
+      "status": 0,
+      "sha256": "9f2645794a546a53b153ef2a74f8b3be37ddab312c16188655cf4958be6079ee",
+      "text": "bytecode generated artifacts: ok\ndiagnostic generated artifacts: ok\nUnicode generated artifacts: ok\nGitea C17 image reference is current: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242\nsyntax generated artifacts: ok\n"
+    },
+    "check-syntax-coverage": {
+      "status": 0,
+      "sha256": "eaea698513bf8d584fd1511934021c892e3366f18fd686c456a37b3576bcf542",
+      "text": "check-syntax-coverage: ok (syntax kinds: 77 covered, 0 open; grammar productions: 122 covered, 0 open)\n"
+    },
+    "check-example-syntax": {
+      "status": 0,
+      "sha256": "e8eb02c47023f8f9207bcbfd40e6a122d44e3f39bba595baae296c52d785819f",
+      "text": "check-example-syntax: ok\n"
+    },
+    "check-release-contract": {
+      "status": 0,
+      "sha256": "a8b0a632b7ad49a95619296b7929f539fd02f5a3ded497294458c8cddcbec65e",
+      "text": "release contract ok: 42 closure rows, 24 commands, mutation self-tests passed\n"
+    },
+    "check-doc-links": {
+      "status": 0,
+      "sha256": "32f90d8099b25005753fbe468151771f677bb259f03b75625894d830a981dcf7",
+      "text": "check-doc-links: ok\n"
+    }
+  }
+}
