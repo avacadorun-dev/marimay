@@ -86,6 +86,14 @@ D094 mapError context; D095 test panic ranges; recovery compound for bindings.
 binding и согласованная модель notes. Сначала реальные выражения config/notes,
 затем decision/spec/owners/formatter/MIR/VM/native и миграция потребителей.
 Expected errors и capacity limits нельзя скрывать ради удаления discard.
+На 2026-09-08 [единый проект контрактов](../research/cli0-collection-contracts-2026-09-08.md)
+фиксирует предлагаемые границы copy/findIndex/removeAt, Option binding и
+функциональной модели notes; новые сигнатуры/синтаксис ещё не приняты и не
+реализованы. [Notes baseline](evidence/cli0-notes-contract-baseline-2026-09-08.md)
+содержит 14 source tests, 27 cases × три engines и 15 closed-pipe проверок.
+Миграция на существующие Result/void-match контракты и исправление stdout
+выполнены в текущем app checkout и сохранены в source snapshot evidence;
+in-place remove и отсутствие search command пока остаются открытыми.
 Оценить доступность structured JSON errors/локализации и пользу второго
 прохода version discovery. Наличие finding не требует автоматически DOM,
 reflection или нового общего framework.

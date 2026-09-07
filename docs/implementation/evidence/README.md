@@ -113,6 +113,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Notes collection baseline and mutation-result consumption](cli0-notes-contract-baseline-2026-09-08.md)
+records 14 source tests, 27 process cases across three engines and 15 closed-pipe
+checks, including a reproduced and fixed false-success output failure. The
+linked shared-contract packet proposes the remaining collection/Option family;
+it does not mark those APIs, the notes migration or CP42 complete.
+
 [Shared external-CLI acceptance mechanics](cli0-shared-acceptance-2026-09-07.md)
 records the versioned process/build/parity driver, its failure-detection tests
 and migration of both config adapters with all 32 process and 23 filesystem

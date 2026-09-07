@@ -1,0 +1,1043 @@
+{
+  "schema": "marimay.cli0-notes-contract-baseline/1",
+  "observed_at_utc": "2026-09-07T17:41:14.144029+00:00",
+  "language_base_revision": "8e6fe1cba4378a136644bdc523fbd4265ded5328",
+  "application_path": "/workspace/Projects/Marimay/marimay-notes",
+  "application_base_revision": "08a65767afcc457e5f35bf3000100d9552548c25",
+  "application_has_uncommitted_changes": true,
+  "scope": "local correctness and existing Result/void-match consumer migration; proposed collection/Option API is not implemented",
+  "before_sources": {
+    "mmay.mod": {
+      "sha256": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+      "text": "module \"local/marimay-notes\"\n\nlanguage \"0.1\"\n"
+    },
+    "README.md": {
+      "sha256": "a3e65d291243edece21617e58bb86ad8b8b394c5708ffacce843b0e7058e9ad3",
+      "text": "# marimay-notes\n\nЛокальная база заметок на Marimay: текст, теги и постоянные номера заметок.\nДанные хранятся в строгом JSON, файл при сохранении заменяется атомарно.\nСправка и сообщения приложения — на русском языке.\n\n## Как запустить\n\nЭта версия использует новый типизированный JSON API: `json.decode<Database>`\nи `json.encode(database)`. Он уже включён в `main` компилятора начиная\nс `e2f86e7`. Используется основной соседний каталог `../marimay`;\nотдельная рабочая папка компилятора не нужна.\n\nИз каталога этого проекта:\n\n```sh\n# Собрать компилятор один раз и повторять после обновления его исходников:\ncmake -S ../marimay -B ../marimay/build/debug -DCMAKE_BUILD_TYPE=Debug\ncmake --build ../marimay/build/debug --parallel 4\n\nMMAY=../marimay/build/debug/mmay\n\n\"$MMAY\" run . -- --help\n\"$MMAY\" run . --allow-read . --allow-write . -- add \"Купить чай\" --tag дом --tag покупки\n\"$MMAY\" run . --allow-read . -- list\n\"$MMAY\" run . --allow-read . -- show 1\n\"$MMAY\" run . --allow-read . --allow-write . -- remove 1\n```\n\nПосле установки компилятора с новым JSON API можно использовать `MMAY=mmay`.\nПараметры до `--` относятся к компилятору, после `--` — к заметкам.\n\n## Команды\n\n| Команда | Действие |\n|---|---|\n| `add \"ТЕКСТ\"` | Добавить заметку |\n| `list` | Показать все заметки |\n| `show ID` | Показать заметку по номеру |\n| `remove ID` | Удалить заметку |\n| `--help`, `-h` | Показать справку |\n\nИмена команд и параметров сохранены для совместимости. Текст, теги и имена\nфайлов могут быть русскими. Текст с пробелами заключайте в кавычки.\n\nПараметр `--tag ТЕГ` (`-t ТЕГ`) при добавлении можно повторять.\nПараметр `--db ПУТЬ` (`-d ПУТЬ`) выбирает файл вместо `notes.json`:\n\n```sh\n\"$MMAY\" run . --allow-read . --allow-write . -- --db работа.json add \"Проверить изменения\" --tag работа\n\"$MMAY\" run . --allow-read . -- --db работа.json list\n```\n\nРодительский каталог базы должен существовать. Сам файл создаётся при первом\nуспешном добавлении. Номера возрастают и не переиспользуются после удаления.\n\n## Формат данных\n\nИмена JSON-полей не переведены: существующие базы совместимы без преобразования.\n\n```json\n{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"text\":\"Купить чай\",\"tags\":[\"дом\"]}]}\n```\n\nДекодер требует все поля, отвергает неизвестные и повторные поля, `null`,\nповреждённый UTF-8, некорректные escape-последовательности и данные после JSON.\nПроверки версии базы, уникальности ID и счётчика выполняются отдельно.\n\nРучных кодеков для Note и Database больше нет: структуру JSON определяют типы.\nРусские тексты ошибок вынесены в пакет `messages`.\n\n## Проверка и сборка\n\n```sh\n\"$MMAY\" fmt . --check\n\"$MMAY\" check .\n\"$MMAY\" test . --engine both\nsh tools/smoke-ru \"$MMAY\"\nmkdir -p build\n\"$MMAY\" build . --release --allow-read . --allow-write . --output build/marimay-notes\n```\n\n`tools/smoke-ru` собирает приложение и проверяет полный цикл добавления,\nпросмотра и удаления на VM и native: русский текст, теги, имя файла, ошибки\nи одинаковый JSON. Проверочные базы создаются отдельно в `build/smoke-ru.*`;\nваш `notes.json` тест не изменяет.\n\nГотовый native-файл получает команды напрямую:\n\n```sh\nbuild/marimay-notes --help\nbuild/marimay-notes add \"Прочитать документацию\" --tag учёба\nbuild/marimay-notes list\n```\n\nРазрешённые корни задаются при сборке. В примере корень `.` относительный:\nзапускайте бинарник из каталога проекта, как показано выше. Для фиксированного\nкаталога базы укажите его абсолютный путь в `--allow-read` и `--allow-write`\nпри сборке. При отказе доступа приложение выводит русское пояснение.\n\n## Ограничения\n\n- Максимальный размер базы — 1 МиБ; есть отдельные ограничения на строки и вложенность.\n- Блокировки файла пока нет: не запускайте два процесса записи в одну базу одновременно.\n- Нет дат создания и изменения: приложение не требует ещё не реализованных API времени.\n- Перевод относится к приложению; сообщения самого компилятора остаются на его языке.\n\nПока `notes.add` возвращает новую базу и внешний массив, разделяя существующие\nобъекты заметок и массивы тегов. `notes.remove` изменяет переданный массив.\n`const` не означает глубокую неизменяемость. Приведение этих операций к единому\nконтракту — отдельный последующий шаг плана эргономики; переход на новый JSON\nне меняет эту семантику скрытно.\n"
+    },
+    "main.my": {
+      "sha256": "8a0789e9e868b616c396bf9179db55f36d55d5a0efba5ec6e3f0ddcde3caf5eb",
+      "text": "import * as cli from \"std/cli\";\nimport * as convert from \"std/convert\";\nimport * as fs from \"std/fs\";\nimport * as io from \"std/io\";\nimport * as path from \"std/path\";\nimport * as text from \"std/text\";\n\nimport * as messages from \"local/marimay-notes/messages\";\nimport * as notes from \"local/marimay-notes/notes\";\n\nfn fail(message: string): int {\n  const _ = io.eprintln($\"marimay-notes: {message}\");\n  return 1;\n}\n\nfn commandParser(): cli.Parser {\n  return match cli.newParser(\n    \"marimay-notes\",\n    \"Локальная база заметок в JSON.\",\n    [\n      cli.flagOption(\"help\", Some(\"h\"), false, false, \"Показать справку.\"),\n      cli.requiredValueOption(\n        \"db\",\n        Some(\"d\"),\n        \"ПУТЬ\",\n        false,\n        false,\n        \"Путь к базе; по умолчанию notes.json.\",\n      ),\n      cli.requiredValueOption(\n        \"tag\",\n        Some(\"t\"),\n        \"ТЕГ\",\n        false,\n        true,\n        \"Добавить тег к заметке; параметр можно повторять.\",\n      ),\n    ],\n    [\n      cli.positional(\n        \"command\",\n        false,\n        false,\n        \"add — добавить; list — список; show — показать; remove — удалить\",\n      ),\n      cli.positional(\"argument\", false, true, \"аргумент команды\"),\n    ],\n    cli.defaultLimits(),\n  ) {\n    Ok(parser) => parser,\n    Err(error) => panic(\"Внутренняя ошибка описания команд\"),\n  };\n}\n\nfn firstOption(parsed: cli.Parsed, name: string): Option<string> {\n  const values = cli.occurrences(parsed, name);\n  if values.length() == 0 {\n    return None;\n  }\n  return values[0];\n}\n\nfn optionValueOr(parsed: cli.Parsed, name: string, fallback: string): string {\n  return match firstOption(parsed, name) {\n    Some(value) => value,\n    None => fallback,\n  };\n}\n\nfn tags(parsed: cli.Parsed): []string {\n  let result: []string = [];\n  for occurrence in cli.occurrences(parsed, \"tag\") {\n    const _ = match occurrence {\n      Some(value) => {\n        const _ = result.push(value);\n        true\n      },\n      None => false,\n    };\n  }\n  return result;\n}\n\nfn databasePath(parsed: cli.Parsed): Result<path.Path, path.Error> {\n  return path.fromString(optionValueOr(parsed, \"db\", \"notes.json\"));\n}\n\nfn loadDatabase(filePath: path.Path): Option<notes.Database> {\n  return match fs.readBytes(filePath, 1048576) {\n    Ok(contents) => match notes.decode(contents) {\n      Ok(database) => Some(database),\n      Err(error) => {\n        const _ = fail($\"Некорректная база заметок: {error}\");\n        None\n      },\n    },\n    Err(error) => match error {\n      fs.NotFound => Some(notes.empty()),\n      _ => {\n        const _ = fail(messages.fileError(error));\n        None\n      },\n    },\n  };\n}\n\nfn saveDatabase(filePath: path.Path, database: notes.Database): bool {\n  const encoded = match notes.encode(database) {\n    Ok(value) => value,\n    Err(error) => {\n      const _ = fail($\"Не удалось преобразовать базу в JSON: {messages.jsonError(error)}\");\n      return false;\n    },\n  };\n  return match fs.writeBytes(filePath, encoded) {\n    Ok(_) => true,\n    Err(error) => {\n      const _ = fail(messages.fileError(error));\n      false\n    },\n  };\n}\n\nfn printHelp(): int {\n  const lines = [\n    \"marimay-notes — локальная база заметок\",\n    \"\",\n    \"Использование: marimay-notes [параметры] КОМАНДА [аргумент]\",\n    \"\",\n    \"Команды:\",\n    \"  add ТЕКСТ       Добавить заметку; текст с пробелами заключайте в кавычки\",\n    \"  list            Показать все заметки\",\n    \"  show ID         Показать заметку по её номеру\",\n    \"  remove ID       Удалить заметку по её номеру\",\n    \"\",\n    \"Параметры:\",\n    \"  -h, --help      Показать эту справку\",\n    \"  -d, --db ПУТЬ   Файл базы (по умолчанию: notes.json)\",\n    \"  -t, --tag ТЕГ   Тег новой заметки; можно указать несколько раз\",\n    \"\",\n    \"Примеры:\",\n    \"  marimay-notes add \\\"Купить чай\\\" --tag дом --tag покупки\",\n    \"  marimay-notes list\",\n    \"  marimay-notes show 1\",\n    \"  marimay-notes --db работа.json add \\\"Проверить изменения\\\" --tag работа\",\n    \"\",\n    \"База создаётся при первом добавлении. Родительский каталог должен существовать.\",\n    \"Текст и теги поддерживают русский язык и Unicode. Размер базы — до 1 МиБ.\",\n    \"Не запускайте два процесса записи в одну базу одновременно.\",\n    \"При запуске через mmay передавайте команды приложения после --.\",\n  ];\n  for line in lines {\n    const _ = match io.println(line) {\n      Ok(_) => true,\n      Err(error) => {\n        return fail(messages.ioError(error));\n      },\n    };\n  }\n  return 0;\n}\n\nfn formatNote(note: notes.Note): string {\n  if note.tags.length() == 0 {\n    return $\"#{note.id} {note.text}\";\n  }\n  const joined = match text.join(note.tags, \", \", 1048576) {\n    Ok(value) => value,\n    Err(_) => \"<список тегов слишком длинный>\",\n  };\n  return $\"#{note.id} {note.text} [{joined}]\";\n}\n\nfn printNote(note: notes.Note): Result<void, io.Error> {\n  return io.println(formatNote(note));\n}\n\nfn parseId(value: string): Option<int> {\n  return match convert.parseInt(value) {\n    Ok(id) => {\n      if id > 0 {\n        return Some(id);\n      }\n      None\n    },\n    Err(_) => None,\n  };\n}\n\nfn addNote(\n  parsed: cli.Parsed,\n  filePath: path.Path,\n  database: notes.Database,\n  arguments: []string,\n): int {\n  if arguments.length() != 1 {\n    return fail(\"Использование: marimay-notes add ТЕКСТ [--tag ТЕГ]...\");\n  }\n  const added = match notes.add(database, arguments[0], tags(parsed)) {\n    Ok(value) => value,\n    Err(error) => {\n      return fail(error);\n    },\n  };\n  if !saveDatabase(filePath, added.database) {\n    return 1;\n  }\n  return match io.println($\"Добавлена заметка №{added.note.id}.\") {\n    Ok(_) => 0,\n    Err(error) => fail(messages.ioError(error)),\n  };\n}\n\nfn listNotes(database: notes.Database, arguments: []string): int {\n  if arguments.length() != 0 {\n    return fail(\"Использование: marimay-notes list\");\n  }\n  if database.notes.length() == 0 {\n    return match io.println(\"Заметок пока нет.\") {\n      Ok(_) => 0,\n      Err(error) => fail(messages.ioError(error)),\n    };\n  }\n  for note in database.notes {\n    const _ = match printNote(note) {\n      Ok(_) => true,\n      Err(error) => {\n        return fail(messages.ioError(error));\n      },\n    };\n  }\n  return 0;\n}\n\nfn showNote(database: notes.Database, arguments: []string): int {\n  if arguments.length() != 1 {\n    return fail(\"Использование: marimay-notes show ID\");\n  }\n  const id = match parseId(arguments[0]) {\n    Some(value) => value,\n    None => {\n      return fail(\"ID должен быть положительным целым числом\");\n    },\n  };\n  return match database.find(id) {\n    Some(note) => match printNote(note) {\n      Ok(_) => 0,\n      Err(error) => fail(messages.ioError(error)),\n    },\n    None => fail($\"Заметка №{id} не найдена\"),\n  };\n}\n\nfn removeNote(database: notes.Database, filePath: path.Path, arguments: []string): int {\n  if arguments.length() != 1 {\n    return fail(\"Использование: marimay-notes remove ID\");\n  }\n  const id = match parseId(arguments[0]) {\n    Some(value) => value,\n    None => {\n      return fail(\"ID должен быть положительным целым числом\");\n    },\n  };\n  if !database.remove(id) {\n    return fail($\"Заметка №{id} не найдена\");\n  }\n  if !saveDatabase(filePath, database) {\n    return 1;\n  }\n  return match io.println($\"Удалена заметка №{id}.\") {\n    Ok(_) => 0,\n    Err(error) => fail(messages.ioError(error)),\n  };\n}\n\nfn run(parsed: cli.Parsed): int {\n  const commands = cli.positionalValues(parsed, \"command\");\n  if cli.count(parsed, \"help\") != 0 || commands.length() == 0 {\n    return printHelp();\n  }\n  const filePath = match databasePath(parsed) {\n    Ok(value) => value,\n    Err(_) => {\n      return fail(\"Некорректный путь к базе заметок\");\n    },\n  };\n  const database = match loadDatabase(filePath) {\n    Some(value) => value,\n    None => {\n      return 1;\n    },\n  };\n  const command = commands[0];\n  const arguments = cli.positionalValues(parsed, \"argument\");\n  if command == \"add\" {\n    return addNote(parsed, filePath, database, arguments);\n  }\n  if command == \"list\" {\n    return listNotes(database, arguments);\n  }\n  if command == \"show\" {\n    return showNote(database, arguments);\n  }\n  if command == \"remove\" {\n    return removeNote(database, filePath, arguments);\n  }\n  return fail($\"Неизвестная команда «{command}». Справка: --help\");\n}\n\nfn main(arguments: []string): int {\n  const parser = commandParser();\n  return match cli.parse(parser, arguments) {\n    Ok(parsed) => run(parsed),\n    Err(error) => {\n      const _ = fail(messages.usageError(error));\n      cli.usageExitStatus()\n    },\n  };\n}\n"
+    },
+    "main_test.my": {
+      "sha256": "798dbf794640413a96258a5b1e6740f05154f032d5c7109808a59beb4c0d2aa9",
+      "text": "import * as bytes from \"std/bytes\";\nimport * as json from \"std/json\";\n\nimport * as notes from \"local/marimay-notes/notes\";\n\nfn require(condition: bool, message: string): void {\n  if !condition {\n    panic(message);\n  }\n}\n\nfn decodeText(value: string): notes.Database {\n  return match notes.decode(bytes.encodeUtf8(value)) {\n    Ok(database) => database,\n    Err(error) => panic(error),\n  };\n}\n\nfn encodeText(database: notes.Database): string {\n  const encoded = match notes.encode(database) {\n    Ok(value) => value,\n    Err(error) => panic(json.message(error)),\n  };\n  return match bytes.decodeUtf8(encoded) {\n    Ok(value) => value,\n    Err(_) => panic(\"JSON encoder returned invalid UTF-8\"),\n  };\n}\n\n@test\nfn emptyDatabaseHasStableJson(): void {\n  require(\n    encodeText(notes.empty()) == \"{\\\"version\\\":1,\\\"nextId\\\":1,\\\"notes\\\":[]}\",\n    \"empty database JSON changed\",\n  );\n}\n\n@test\nfn addFindAndRemoveNotes(): void {\n  const first = match notes.add(notes.empty(), \"Buy tea\", [\"home\", \"today\"]) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  const second = match notes.add(first.database, \"Read Marimay docs\", [\"work\"]) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  require(first.note.id == 1 && second.note.id == 2, \"IDs must be monotonic\");\n  require(\n    match second.database.find(1) {\n      Some(note) => note.text == \"Buy tea\" && note.tags.length() == 2,\n      None => false,\n    },\n    \"added note was not found\",\n  );\n  require(second.database.remove(1), \"existing note was not removed\");\n  require(!second.database.remove(1), \"removed note remained in the database\");\n  require(second.database.notes.length() == 1, \"remove changed the wrong number of notes\");\n}\n\n@test\nfn jsonRoundTripPreservesUnicodeAndTags(): void {\n  const source = \"{\\\"version\\\":1,\\\"nextId\\\":8,\\\"notes\\\":[{\\\"id\\\":7,\\\"text\\\":\\\"Идея 🌿\\\",\\\"tags\\\":[\\\"русский\\\",\\\"json\\\"]}]}\";\n  const database = decodeText(source);\n  require(database.nextId == 8, \"next ID was not decoded\");\n  require(database.notes.length() == 1, \"note was not decoded\");\n  require(database.notes[0].text == \"Идея 🌿\", \"Unicode text changed\");\n  require(encodeText(database) == source, \"JSON round trip is not deterministic\");\n}\n\n@test\nfn unknownAndMissingFieldsAreRejected(): void {\n  const source = bytes.encodeUtf8(\"{\\\"version\\\":1,\\\"nextId\\\":1,\\\"notes\\\":[],\\\"extra\\\":true}\");\n  require(\n    match notes.decode(source) {\n      Err(error) => error != \"\",\n      Ok(_) => false,\n    },\n    \"unknown database field was accepted\",\n  );\n  const missingFields = [\n    \"{\\\"nextId\\\":1,\\\"notes\\\":[]}\",\n    \"{\\\"version\\\":1,\\\"notes\\\":[]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":1}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":2,\\\"notes\\\":[{\\\"text\\\":\\\"x\\\",\\\"tags\\\":[]}]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":2,\\\"notes\\\":[{\\\"id\\\":1,\\\"tags\\\":[]}]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":2,\\\"notes\\\":[{\\\"id\\\":1,\\\"text\\\":\\\"x\\\"}]}\",\n  ];\n  for input in missingFields {\n    expect.err(notes.decode(bytes.encodeUtf8(input)));\n  }\n}\n\n@test\nfn rejectsInvalidIdsAndVersion(): void {\n  const invalid = [\n    \"{\\\"version\\\":2,\\\"nextId\\\":1,\\\"notes\\\":[]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":0,\\\"notes\\\":[]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":1,\\\"notes\\\":[{\\\"id\\\":1,\\\"text\\\":\\\"x\\\",\\\"tags\\\":[]}]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":2,\\\"notes\\\":[{\\\"id\\\":1,\\\"text\\\":\\\"x\\\",\\\"tags\\\":[]},{\\\"id\\\":1,\\\"text\\\":\\\"y\\\",\\\"tags\\\":[]}]}\",\n  ];\n  for input in invalid {\n    require(\n      match notes.decode(bytes.encodeUtf8(input)) {\n        Err(_) => true,\n        Ok(_) => false,\n      },\n      \"invalid database accepted\",\n    );\n  }\n}\n\n@test\nfn addPreservesInputAndRejectsExhaustion(): void {\n  const original = notes.empty();\n  const added = match notes.add(original, \"one\", []) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  require(original.notes.length() == 0 && original.nextId == 1, \"add mutated its input\");\n  require(added.database.nextId == 2, \"counter not advanced\");\n  const exhausted = notes.Database { version: 1, nextId: 9223372036854775807, notes: [] };\n  require(\n    match notes.add(exhausted, \"x\", []) {\n      Err(error) => error == \"Свободные ID заметок закончились\",\n      Ok(_) => false,\n    },\n    \"ID exhaustion did not return an expected error\",\n  );\n  require(\n    match notes.add(original, \" \\t\", []) {\n      Err(_) => true,\n      Ok(_) => false,\n    },\n    \"blank note accepted\",\n  );\n}\n\n@test\nfn standaloneMatchHandlesExpectedErrors(): void {\n  const visited = [0];\n  const result: Result<int, string> = Err(\"expected\");\n  match result {\n    Ok(_) => markVisited(visited, 1),\n    Err(_) => markVisited(visited, 2),\n  };\n  expect.equal(visited[0], 2);\n}\n\nfn markVisited(visited: []int, value: int): void {\n  visited[0] = value;\n}\n"
+    },
+    "messages_test.my": {
+      "sha256": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+      "text": "import * as bytes from \"std/bytes\";\nimport * as cli from \"std/cli\";\nimport * as fs from \"std/fs\";\nimport * as io from \"std/io\";\n\nimport * as messages from \"local/marimay-notes/messages\";\nimport * as notes from \"local/marimay-notes/notes\";\n\n@test\nfn databaseErrorsAreRussian(): void {\n  const emptyText = notes.add(notes.empty(), \" \\t\", []);\n  expect.equal(\n    match emptyText {\n      Err(message) => message,\n      Ok(_) => \"\",\n    },\n    \"Текст заметки не должен быть пустым\",\n  );\n  expect.equal(\n    match notes.decode(bytes.encodeUtf8(\"{}\")) {\n      Err(message) => message,\n      Ok(_) => \"\",\n    },\n    \"Отсутствует обязательное поле «version»: байт 2; путь: $[\\\"version\\\"]\",\n  );\n  expect.equal(\n    match notes.decode(bytes.encodeUtf8(\"{\\\"version\\\":1,\\\"nextId\\\":1,\\\"notes\\\":null}\")) {\n      Err(message) => message,\n      Ok(_) => \"\",\n    },\n    \"Ожидается массив JSON: байт 32; путь: $[\\\"notes\\\"]\",\n  );\n}\n\n@test\nfn commandAndSystemErrorsAreRussian(): void {\n  expect.equal(\n    messages.usageError(cli.UsageError.MissingOptionValue { name: \"db\", index: 0 }),\n    \"После --db нужно указать значение\",\n  );\n  expect.equal(\n    messages.usageError(cli.UsageError.UnknownOption { argument: \"--нет\", index: 0 }),\n    \"Неизвестный параметр «--нет». Справка: --help\",\n  );\n  expect.equal(messages.fileError(fs.Error.NotFound), \"Файл или каталог не найден\");\n  expect.equal(messages.ioError(io.Error.WriteFailed), \"Не удалось вывести сообщение\");\n}\n\n@test\nfn russianNotesRoundTripWithoutChangingFormat(): void {\n  const added = match notes.add(notes.empty(), \"Купить чай ☕\", [\"дом\", \"покупки\"]) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  const data = match notes.encode(added.database) {\n    Ok(value) => value,\n    Err(error) => panic(messages.jsonError(error)),\n  };\n  const restored = match notes.decode(data) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  expect.equal(restored.notes[0].text, \"Купить чай ☕\");\n  expect.equal(restored.notes[0].tags[1], \"покупки\");\n  expect.equal(restored.nextId, 2);\n}\n"
+    },
+    "notes/api.my": {
+      "sha256": "c8f833a5ba120dc62fd10eb8e1e453475c1694aa78ed8c027e7f1bcdc4b70bd0",
+      "text": "import * as bytes from \"std/bytes\";\nimport * as json from \"std/json\";\nimport * as text from \"std/text\";\n\nimport * as messages from \"local/marimay-notes/messages\";\n\npublic type Note {\n  public id: int,\n  public text: string,\n  public tags: []string,\n}\n\npublic type Database {\n  public version: int,\n  public nextId: int,\n  public notes: []Note,\n}\n\npublic type AddResult {\n  public database: Database,\n  public note: Note,\n}\n\npublic fn empty(): Database {\n  return Database { version: 1, nextId: 1, notes: [] };\n}\n\npublic fn validate(database: Database): Result<void, string> {\n  if database.version != 1 {\n    return Err(\"Неподдерживаемая версия базы заметок\");\n  }\n  if database.nextId < 1 {\n    return Err(\"Значение nextId должно быть положительным\");\n  }\n  const ids: Set<int> = setOf<int>();\n  for note in database.notes {\n    if note.id < 1 || note.id >= database.nextId {\n      return Err(\"ID заметки должен быть положительным и меньше nextId\");\n    }\n    if ids.contains(note.id) {\n      return Err(\"В базе повторяется ID заметки\");\n    }\n    const _ = ids.add(note.id);\n  }\n  return Ok();\n}\n\npublic fn add(database: Database, value: string, tags: []string): Result<AddResult, string> {\n  validate(database)?;\n  if database.nextId == 9223372036854775807 {\n    return Err(\"Свободные ID заметок закончились\");\n  }\n  if text.trimAscii(value) == \"\" {\n    return Err(\"Текст заметки не должен быть пустым\");\n  }\n  let copied: []Note = [];\n  for existing in database.notes {\n    const _ = copied.push(existing);\n  }\n  const note = Note { id: database.nextId, text: value, tags };\n  const _ = copied.push(note);\n  return Ok(\n    AddResult {\n      database: Database { version: database.version, nextId: database.nextId + 1, notes: copied },\n      note,\n    },\n  );\n}\n\npublic fn find(database: Database, id: int): Option<Note> {\n  for note in database.notes {\n    if note.id == id {\n      return Some(note);\n    }\n  }\n  return None;\n}\n\npublic fn remove(database: Database, id: int): bool {\n  let found = -1;\n  let index = 0;\n  while index < database.notes.length() {\n    if database.notes[index].id == id {\n      found = index;\n      break;\n    }\n    index += 1;\n  }\n  if found < 0 {\n    return false;\n  }\n  index = found;\n  while index < database.notes.length() - 1 {\n    database.notes[index] = database.notes[index + 1];\n    index += 1;\n  }\n  const _ = database.notes.truncate(database.notes.length() - 1);\n  return true;\n}\n\npublic fn decode(contents: bytes.Bytes): Result<Database, string> {\n  const database = json.decode<Database>(contents).mapError(messages.jsonError)?;\n  validate(database)?;\n  return Ok(database);\n}\n\npublic fn encode(database: Database): Result<bytes.Bytes, json.Error> {\n  return json.encode(database);\n}\n"
+    },
+    "notes/collection_baseline_test.my": {
+      "sha256": "74e9e03d3eb662288a29cc862f39f14b3566a66eb165144c3082b1baf117a3d9",
+      "text": "fn added(database: Database, value: string): AddResult {\n  return match add(database, value, []) {\n    Ok(result) => result,\n    Err(error) => panic(error),\n  };\n}\n\n@test\nfn copyKeepsNoteIdentityAndTagAliases(): void {\n  const note = Note { id: 1, text: \"исходная\", tags: [\"до\"] };\n  const database = Database { version: 1, nextId: 2, notes: [note] };\n  const result = added(database, \"новая\");\n  expect.equal(database.notes.length(), 1);\n  expect.equal(database.nextId, 2);\n  expect.equal(result.database.notes.length(), 2);\n  expect.true(identity.same(note, result.database.notes[0]));\n  result.database.notes[0].tags[0] = \"после\";\n  expect.equal(note.tags[0], \"после\");\n  result.database.notes[0] = result.note;\n  expect.true(identity.same(database.notes[0], note));\n  expect.equal(database.notes[0].text, \"исходная\");\n}\n\n@test\nfn removalPreservesOrderAndChangesArrayAliases(): void {\n  const first = Note { id: 1, text: \"одна\", tags: [] };\n  const middle = Note { id: 2, text: \"две\", tags: [] };\n  const last = Note { id: 3, text: \"три\", tags: [] };\n  const database = Database { version: 1, nextId: 4, notes: [first, middle, last] };\n  const alias = database.notes;\n  expect.true(remove(database, 2));\n  expect.equal(alias.length(), 2);\n  expect.true(identity.same(alias[0], first));\n  expect.true(identity.same(alias[1], last));\n  expect.equal(database.nextId, 4);\n  expect.false(remove(database, 2));\n  expect.equal(alias.length(), 2);\n  expect.true(remove(database, 1));\n  expect.true(identity.same(alias[0], last));\n  expect.true(remove(database, 3));\n  expect.equal(alias.length(), 0);\n  expect.false(remove(database, 3));\n}\n\n@test\nfn searchReturnsTheStoredRecord(): void {\n  const first = Note { id: 2, text: \"🌿\", tags: [\"язык\"] };\n  const last = Note { id: 8, text: \"🌿\", tags: [] };\n  const database = Database { version: 1, nextId: 9, notes: [first, last] };\n  const found = match find(database, 8) {\n    Some(value) => value,\n    None => panic(\"stored note was not found\"),\n  };\n  expect.true(identity.same(found, last));\n  expect.true(\n    match find(database, 7) {\n      Some(_) => false,\n      None => true,\n    },\n  );\n  expect.equal(database.notes.length(), 2);\n}\n\n@test\nfn rejectedAddPreservesNonemptyInput(): void {\n  const note = Note { id: 1, text: \"сохранить\", tags: [\"важно\"] };\n  const database = Database { version: 1, nextId: 2, notes: [note] };\n  expect.err(add(database, \" \\t\", [\"другой\"]));\n  expect.equal(database.notes.length(), 1);\n  expect.equal(database.nextId, 2);\n  expect.true(identity.same(database.notes[0], note));\n  expect.equal(note.tags[0], \"важно\");\n}\n"
+    },
+    "messages/json.my": {
+      "sha256": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+      "text": "import * as json from \"std/json\";\n\nfn expectedValue(value: string): string {\n  return match value {\n    \"a JSON string\" => \"строка JSON\",\n    \"an escaped control character\" => \"экранированный управляющий символ\",\n    \"a closing quote\" => \"закрывающая кавычка\",\n    \"the end of a JSON literal\" => \"конец значения JSON\",\n    \"the end of the current JSON container\" => \"конец текущего объекта или массива\",\n    \"the end of input\" => \"конец файла\",\n    \"true or false\" => \"true или false\",\n    \"null\" => \"null\",\n    \"an object\" => \"объект JSON\",\n    \"an open object\" => \"открытый объект JSON\",\n    \"a comma or closing brace\" => \"запятая или закрывающая фигурная скобка\",\n    \"an object field after the comma\" => \"поле объекта после запятой\",\n    \"a colon after the object field\" => \"двоеточие после имени поля\",\n    \"an array\" => \"массив JSON\",\n    \"an open array\" => \"открытый массив JSON\",\n    \"a comma or closing bracket\" => \"запятая или закрывающая квадратная скобка\",\n    \"an array element after the comma\" => \"элемент массива после запятой\",\n    _ => \"корректное значение JSON\",\n  };\n}\n\nfn resourceName(value: string): string {\n  return match value {\n    \"input bytes\" => \"размер входного файла в байтах\",\n    \"output bytes\" => \"размер выходного файла в байтах\",\n    \"string bytes\" => \"длина строки в байтах\",\n    \"number bytes\" => \"длина записи числа\",\n    \"nesting\" => \"глубина вложенности\",\n    \"object fields\" => \"число полей объекта\",\n    \"array items\" => \"число элементов массива\",\n    _ => \"размер данных\",\n  };\n}\n\nfn baseJsonError(error: json.Error): string {\n  return match error {\n    InvalidLimits => \"Некорректные ограничения JSON\",\n    InvalidUtf8 { path: _, span } => $\"Некорректная кодировка UTF-8: байт {span.start}\",\n    UnexpectedToken {\n      path: _,\n      expected,\n      span,\n    } => $\"Ожидается {expectedValue(expected)}: байт {span.start}\",\n    UnexpectedEnd {\n      path: _,\n      expected,\n      span,\n    } => $\"Файл закончился раньше времени; ожидается {expectedValue(expected)}: байт {span.start}\",\n    InvalidEscape { path: _, span } => $\"Некорректная escape-последовательность: байт {span.start}\",\n    InvalidUnicodeEscape {\n      path: _,\n      span,\n    } => $\"Некорректная escape-последовательность Unicode: байт {span.start}\",\n    InvalidNumber { path: _, span } => $\"Некорректное число JSON: байт {span.start}\",\n    NumberOutOfRange {\n      path: _,\n      span,\n    } => $\"Число не помещается в 64-битное целое со знаком: байт {span.start}\",\n    DuplicateField { path: _, name, span } => $\"Поле «{name}» повторяется: байт {span.start}\",\n    UnknownField { path: _, name, span } => $\"Неизвестное поле «{name}»: байт {span.start}\",\n    MissingField {\n      path: _,\n      name,\n      span,\n    } => $\"Отсутствует обязательное поле «{name}»: байт {span.start}\",\n    LimitExceeded {\n      path: _,\n      resource,\n      limit,\n      span,\n    } => $\"Превышено ограничение «{resourceName(resource)}»: {limit}; байт {span.start}\",\n    InvalidEncoderState { path: _, message } => \"Внутренняя ошибка при формировании JSON\",\n  };\n}\n\npublic fn jsonError(error: json.Error): string {\n  const message = baseJsonError(error);\n  if json.path(error).length() == 0 {\n    return message;\n  }\n  return $\"{message}; путь: {json.pathText(error)}\";\n}\n"
+    },
+    "messages/system.my": {
+      "sha256": "6c991e427ba9e1c0f43d0a03a80c5057051fc0b75112dd6b44802984c882aaf6",
+      "text": "import * as cli from \"std/cli\";\nimport * as fs from \"std/fs\";\nimport * as io from \"std/io\";\n\npublic fn fileError(error: fs.Error): string {\n  return match error {\n    CapabilityDenied {\n      capability,\n      path,\n    } => $\"Нет разрешения {capability} для пути «{path}». Укажите разрешённый каталог при запуске или сборке\",\n    InvalidLimit { limit } => $\"Некорректное ограничение размера файла: {limit}\",\n    LimitExceeded { limit } => $\"Файл превышает допустимый размер: {limit} байт\",\n    NotFound => \"Файл или каталог не найден\",\n    NotFile => \"Указанный путь не является обычным файлом\",\n    NotDirectory => \"Указанный путь не является каталогом\",\n    Symlink => \"Символические ссылки не поддерживаются для этого пути\",\n    Closed => \"Файл уже закрыт\",\n    OpenFailed => \"Не удалось открыть файл\",\n    ReadFailed => \"Не удалось прочитать файл\",\n    WriteFailed => \"Не удалось записать файл\",\n    SyncFailed => \"Не удалось сохранить данные файла на диск\",\n    CloseFailed => \"Не удалось закрыть файл\",\n    ReplaceFailed => \"Не удалось атомарно заменить файл базы\",\n    InvalidUtf8 { offset } => $\"Некорректная кодировка UTF-8: байт {offset}\",\n    TooManyEntries { limit } => $\"В каталоге больше {limit} записей\",\n    DirectoryFailed => \"Не удалось прочитать каталог\",\n  };\n}\n\npublic fn ioError(error: io.Error): string {\n  return match error {\n    CapabilityDenied { capability } => $\"Нет разрешения на операцию «{capability}»\",\n    ReadFailed => \"Не удалось прочитать стандартный ввод\",\n    WriteFailed => \"Не удалось вывести сообщение\",\n    FlushFailed => \"Не удалось завершить вывод\",\n    InvalidUtf8 => \"Ввод содержит некорректный UTF-8\",\n    LineTooLong { limit } => $\"Строка превышает допустимую длину: {limit} байт\",\n    InputTooLong { limit } => $\"Ввод превышает допустимый размер: {limit} байт\",\n  };\n}\n\npublic fn usageError(error: cli.UsageError): string {\n  return match error {\n    TooManyArguments { limit } => $\"Слишком много аргументов: допускается не больше {limit}\",\n    UnknownOption { argument, index } => $\"Неизвестный параметр «{argument}». Справка: --help\",\n    UnexpectedOptionValue { name, index } => $\"Параметр --{name} не принимает значение\",\n    MissingOptionValue { name, index } => $\"После --{name} нужно указать значение\",\n    RepeatedOption { name, index } => $\"Параметр --{name} нельзя указывать несколько раз\",\n    UnexpectedPositional { value, index } => $\"Лишний аргумент «{value}»\",\n    MissingRequiredOption { name } => $\"Не указан обязательный параметр --{name}\",\n    MissingRequiredPositional { name } => $\"Не указан обязательный аргумент «{name}»\",\n  };\n}\n"
+    },
+    "tools/acceptance.py": {
+      "sha256": "cc03282ceea0a3abf81a01301aca4543332aa7010d2e1dd51872c3042ea35aca",
+      "text": "#!/usr/bin/env python3\n\"\"\"Exact process/filesystem baseline for the current notes model, using v1.\"\"\"\n\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport tempfile\nimport time\n\nfrom mmay_acceptance import Application\n\n\nROOT = Path(__file__).resolve().parents[1]\nHARNESS = Application(ROOT)\n\n\ndef database(next_id=1, notes=()):\n    return json.dumps({\"version\": 1, \"nextId\": next_id, \"notes\": list(notes)},\n                      ensure_ascii=False, separators=(\",\", \":\")).encode()\n\n\ndef note(identifier, value, tags=()):\n    return {\"id\": identifier, \"text\": value, \"tags\": list(tags)}\n\n\ndef main():\n    started = time.monotonic()\n    records = []\n    with tempfile.TemporaryDirectory(prefix=\"marimay-notes-acceptance-\") as temporary:\n        work = Path(temporary).resolve()\n        allowed, outside = work / \"разрешено с пробелами\", work / \"outside\"\n        allowed.mkdir()\n        outside.mkdir()\n        file = allowed / \"мои заметки.json\"\n        outsider = outside / \"fixture.json\"\n        outsider.write_bytes(database())\n        grants = [\"--allow-read\", str(allowed), \"--allow-write\", str(allowed)]\n        engines = HARNESS.engines(work, \"notes\", grants)\n        metadata = HARNESS.metadata(engines)\n\n        def compare(name, arguments, status, stdout=\"\", stderr=\"\", *,\n                    before=None, after=None, target=file, prepare_extra=None):\n            def prepare():\n                if before is None:\n                    file.unlink(missing_ok=True)\n                else:\n                    file.write_bytes(before)\n                if prepare_extra:\n                    prepare_extra()\n\n            def verify(engine, result):\n                assert result.stdout == stdout.encode(), (name, engine, result.stdout)\n                assert result.stderr == stderr.encode(), (name, engine, result.stderr)\n                assert (file.read_bytes() if file.exists() else None) == after, (name, engine)\n                assert outsider.read_bytes() == database(), (name, \"outside changed\")\n                assert sorted(p.name for p in allowed.iterdir()) == (\n                    [file.name] if after is not None else []), (name, \"temporary file leaked\")\n\n            observed = HARNESS.compare(engines, [\"--db\", str(target), *arguments], status,\n                                       label=name, prepare=prepare, verify=verify)\n            records.append({\"name\": name, \"arguments\": arguments, \"status\": status,\n                            \"stdout\": observed[1].decode(), \"stderr\": observed[2].decode(),\n                            \"before_sha256\": hashlib.sha256(before).hexdigest() if before is not None else None,\n                            \"after_sha256\": hashlib.sha256(after).hexdigest() if after is not None else None})\n\n        def error(message):\n            return \"marimay-notes: \" + message + \"\\n\"\n\n        first = note(1, \"Купить чай ☕\", [\"дом\", \"покупки\"])\n        second = note(2, \"Прочитать документацию\", [\"учёба\"])\n        third = note(3, \"Записать результат\")\n        one, two = database(2, [first]), database(3, [first, second])\n        removed, three = database(3, [second]), database(4, [second, third])\n        compare(\"absent-list\", [\"list\"], 0, \"Заметок пока нет.\\n\")\n        compare(\"add-unicode\", [\"add\", first[\"text\"], \"--tag\", \"дом\", \"--tag\", \"покупки\"],\n                0, \"Добавлена заметка №1.\\n\", after=one)\n        compare(\"show-existing\", [\"show\", \"1\"], 0, \"#1 Купить чай ☕ [дом, покупки]\\n\",\n                before=one, after=one)\n        compare(\"add-second\", [\"add\", second[\"text\"], \"--tag\", \"учёба\"],\n                0, \"Добавлена заметка №2.\\n\", before=one, after=two)\n        compare(\"list-in-order\", [\"list\"], 0,\n                \"#1 Купить чай ☕ [дом, покупки]\\n#2 Прочитать документацию [учёба]\\n\",\n                before=two, after=two)\n        compare(\"remove-first\", [\"remove\", \"1\"], 0, \"Удалена заметка №1.\\n\",\n                before=two, after=removed)\n        for command in (\"show\", \"remove\"):\n            compare(command + \"-missing\", [command, \"1\"], 1,\n                    stderr=error(\"Заметка №1 не найдена\"), before=removed, after=removed)\n        compare(\"ids-not-reused\", [\"add\", third[\"text\"]], 0, \"Добавлена заметка №3.\\n\",\n                before=removed, after=three)\n        compare(\"list-after-removal\", [\"list\"], 0,\n                \"#2 Прочитать документацию [учёба]\\n#3 Записать результат\\n\",\n                before=three, after=three)\n        for name, arguments, status, message in [\n            (\"blank-note\", [\"add\", \" \\t\"], 1, \"Текст заметки не должен быть пустым\"),\n            (\"add-missing-text\", [\"add\"], 1, \"Использование: marimay-notes add ТЕКСТ [--tag ТЕГ]...\"),\n            (\"list-extra\", [\"list\", \"x\"], 1, \"Использование: marimay-notes list\"),\n            (\"unknown-option\", [\"--нет\"], 2, \"Неизвестный параметр «--нет». Справка: --help\"),\n            (\"missing-tag-value\", [\"add\", \"x\", \"--tag\"], 2, \"После --tag нужно указать значение\"),\n            (\"unknown-command\", [\"неизвестно\"], 1, \"Неизвестная команда «неизвестно». Справка: --help\"),\n        ]:\n            compare(name, arguments, status, stderr=error(message), before=three, after=three)\n        for identifier in (\"0\", \"-1\", \"9223372036854775808\", \"ноль\"):\n            compare(\"invalid-id-\" + identifier, [\"show\", \"--\", identifier], 1,\n                    stderr=error(\"ID должен быть положительным целым числом\"),\n                    before=three, after=three)\n        maximum = database(9223372036854775807, [first])\n        compare(\"id-exhaustion\", [\"add\", \"x\"], 1,\n                stderr=error(\"Свободные ID заметок закончились\"), before=maximum, after=maximum)\n        malformed = [\n            (\"version\", b'{\"version\":2,\"nextId\":1,\"notes\":[]}', \"Неподдерживаемая версия базы заметок\"),\n            (\"duplicate-id\", database(2, [first, first]), \"В базе повторяется ID заметки\"),\n            (\"missing-field\", b'{\"version\":1,\"nextId\":1}', \"Отсутствует обязательное поле «notes»: байт 24; путь: $[\\\"notes\\\"]\"),\n            (\"invalid-utf8\", b'\\xff', \"Некорректная кодировка UTF-8: байт 0\"),\n        ]\n        for name, source, message in malformed:\n            compare(\"reject-\" + name, [\"add\", \"must not overwrite\"], 1,\n                    stderr=error(\"Некорректная база заметок: \" + message),\n                    before=source, after=source)\n        too_large = b\" \" * 1048577\n        compare(\"file-limit\", [\"list\"], 1,\n                stderr=error(\"Файл превышает допустимый размер: 1048576 байт\"),\n                before=too_large, after=too_large)\n        compare(\"denied-read\", [\"list\"], 1, target=outsider,\n                stderr=error(f\"Нет разрешения fs.read для пути «{outsider}». Укажите разрешённый каталог при запуске или сборке\"))\n\n    report = {\"schema\": 1, \"scope\": \"notes process/files baseline; not full CP42 acceptance\",\n              \"harness\": metadata, \"cases\": records, \"elapsed_seconds\": time.monotonic() - started,\n              \"source_sha256\": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()\n                                for p in [ROOT / \"mmay.mod\", *sorted(ROOT.glob(\"*.my\")),\n                                          *sorted((ROOT / \"notes\").glob(\"*.my\")),\n                                          *sorted((ROOT / \"messages\").glob(\"*.my\"))]}}\n    (ROOT / \"build\").mkdir(exist_ok=True)\n    path = ROOT / \"build\" / f\"process-acceptance-{time.time_ns()}.json\"\n    path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + \"\\n\")\n    print(f\"{len(records)} cases × VM/native Debug/Release passed: {path}\")\n\n\nif __name__ == \"__main__\":\n    main()\n"
+    },
+    "tools/mmay_acceptance.py": {
+      "sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+      "text": "\"\"\"Versioned process-only acceptance mechanics for independent Marimay CLIs.\n\nVendor this file unchanged beside an application's acceptance adapters.\nBusiness rules, fixtures, output assertions and filesystem checks stay there.\n\"\"\"\n\nimport hashlib\nimport os\nfrom pathlib import Path\nimport platform\nimport shutil\nimport subprocess\n\n\nVERSION = \"1\"\n\n\nclass Application:\n    def __init__(self, root, compiler=None, *, timeout=120):\n        if not __debug__:\n            raise RuntimeError(\"acceptance requires enabled Python assertions\")\n        self.root = Path(root).resolve()\n        selected = compiler if compiler is not None else os.environ.get(\"MMAY\", \"mmay\")\n        resolved = shutil.which(str(selected))\n        if resolved is None:\n            raise FileNotFoundError(f\"Marimay compiler not found: {selected}\")\n        self.compiler = str(Path(resolved).resolve())\n        self.timeout = timeout\n\n    def run(self, arguments, *, input=None):\n        return subprocess.run(arguments, cwd=self.root, input=input,\n                              capture_output=True, timeout=self.timeout)\n\n    def successful(self, arguments):\n        result = self.run(arguments)\n        if result.returncode != 0 or result.stderr:\n            raise AssertionError((arguments, result.returncode,\n                                  result.stdout, result.stderr))\n        return result.stdout\n\n    def engines(self, directory, name, grants=()):\n        if not name or Path(name).name != name or name in (\".\", \"..\"):\n            raise ValueError(\"artifact name must be one filename component\")\n        work = Path(directory).resolve()\n        suffix = \".exe\" if os.name == \"nt\" else \"\"\n        result = {\"vm\": [self.compiler, \"run\", \".\", *grants, \"--\"]}\n        for profile in (\"debug\", \"release\"):\n            binary = work / (name + \"-\" + profile + suffix)\n            flags = [\"--release\"] if profile == \"release\" else []\n            self.successful([self.compiler, \"build\", \".\", *grants, *flags,\n                             \"--output\", str(binary)])\n            result[profile] = [str(binary)]\n        return result\n\n    def compare(self, engines, arguments, status, *, data=None, label=None,\n                prepare=None, verify=None):\n        \"\"\"Compare exact bytes/exits and run app-owned checks for every engine.\n\n        prepare() restores a mutable fixture before EACH execution. verify gets\n        (engine_name, CompletedProcess) and checks expected output/file effects;\n        engine equivalence alone cannot establish application correctness.\n        \"\"\"\n        if not engines:\n            raise ValueError(\"acceptance needs at least one engine\")\n        reference = None\n        for engine, prefix in engines.items():\n            if prepare is not None:\n                prepare()\n            result = self.run([*prefix, *arguments], input=data)\n            actual = (result.returncode, result.stdout, result.stderr)\n            if result.returncode != status:\n                raise AssertionError((label, engine, \"expected exit\", status, actual))\n            if reference is not None and actual != reference:\n                raise AssertionError((label, engine, \"engine divergence\", reference, actual))\n            if verify is not None:\n                verify(engine, result)\n            reference = actual\n        return reference\n\n    def metadata(self, engines):\n        \"\"\"No ambient environment or application data is collected.\"\"\"\n        return {\n            \"harness_version\": VERSION,\n            \"harness_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n            \"platform\": platform.platform(),\n            \"compiler\": self.compiler,\n            \"compiler_sha256\": hashlib.sha256(Path(self.compiler).read_bytes()).hexdigest(),\n            \"engines\": {\n                name: {\"command\": list(prefix), \"executable_sha256\":\n                       hashlib.sha256(Path(prefix[0]).read_bytes()).hexdigest()}\n                for name, prefix in engines.items()\n            },\n        }\n"
+    }
+  },
+  "after_sources": {
+    "mmay.mod": {
+      "sha256": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+      "text": "module \"local/marimay-notes\"\n\nlanguage \"0.1\"\n"
+    },
+    "README.md": {
+      "sha256": "d60585e3f2e497f9d5da1cfeb2f4c695c2cab2a9688593981cb73ec89618f684",
+      "text": "# marimay-notes\n\nЛокальная база заметок на Marimay: текст, теги и постоянные номера заметок.\nДанные хранятся в строгом JSON, файл при сохранении заменяется атомарно.\nСправка и сообщения приложения — на русском языке.\n\n## Как запустить\n\nЭта версия использует новый типизированный JSON API: `json.decode<Database>`\nи `json.encode(database)`. Он уже включён в `main` компилятора начиная\nс `e2f86e7`. Используется основной соседний каталог `../marimay`;\nотдельная рабочая папка компилятора не нужна.\n\nИз каталога этого проекта:\n\n```sh\n# Собрать компилятор один раз и повторять после обновления его исходников:\ncmake -S ../marimay -B ../marimay/build/debug -DCMAKE_BUILD_TYPE=Debug\ncmake --build ../marimay/build/debug --parallel 4\n\nMMAY=../marimay/build/debug/mmay\n\n\"$MMAY\" run . -- --help\n\"$MMAY\" run . --allow-read . --allow-write . -- add \"Купить чай\" --tag дом --tag покупки\n\"$MMAY\" run . --allow-read . -- list\n\"$MMAY\" run . --allow-read . -- show 1\n\"$MMAY\" run . --allow-read . --allow-write . -- remove 1\n```\n\nПосле установки компилятора с новым JSON API можно использовать `MMAY=mmay`.\nПараметры до `--` относятся к компилятору, после `--` — к заметкам.\n\n## Команды\n\n| Команда | Действие |\n|---|---|\n| `add \"ТЕКСТ\"` | Добавить заметку |\n| `list` | Показать все заметки |\n| `show ID` | Показать заметку по номеру |\n| `remove ID` | Удалить заметку |\n| `--help`, `-h` | Показать справку |\n\nИмена команд и параметров сохранены для совместимости. Текст, теги и имена\nфайлов могут быть русскими. Текст с пробелами заключайте в кавычки.\n\nПараметр `--tag ТЕГ` (`-t ТЕГ`) при добавлении можно повторять.\nПараметр `--db ПУТЬ` (`-d ПУТЬ`) выбирает файл вместо `notes.json`:\n\n```sh\n\"$MMAY\" run . --allow-read . --allow-write . -- --db работа.json add \"Проверить изменения\" --tag работа\n\"$MMAY\" run . --allow-read . -- --db работа.json list\n```\n\nРодительский каталог базы должен существовать. Сам файл создаётся при первом\nуспешном добавлении. Номера возрастают и не переиспользуются после удаления.\n\n## Формат данных\n\nИмена JSON-полей не переведены: существующие базы совместимы без преобразования.\n\n```json\n{\"version\":1,\"nextId\":2,\"notes\":[{\"id\":1,\"text\":\"Купить чай\",\"tags\":[\"дом\"]}]}\n```\n\nДекодер требует все поля, отвергает неизвестные и повторные поля, `null`,\nповреждённый UTF-8, некорректные escape-последовательности и данные после JSON.\nПроверки версии базы, уникальности ID и счётчика выполняются отдельно.\n\nРучных кодеков для Note и Database больше нет: структуру JSON определяют типы.\nРусские тексты ошибок вынесены в пакет `messages`.\n\n## Проверка и сборка\n\n```sh\n\"$MMAY\" fmt . --check\n\"$MMAY\" check .\n\"$MMAY\" test . --engine both\nsh tools/smoke-ru \"$MMAY\"\nMMAY=\"$MMAY\" python3 tools/acceptance.py\nmkdir -p build\n\"$MMAY\" build . --release --allow-read . --allow-write . --output build/marimay-notes\n```\n\n`tools/smoke-ru` собирает приложение и проверяет полный цикл добавления,\nпросмотра и удаления на VM и native: русский текст, теги, имя файла, ошибки\nи одинаковый JSON. Проверочные базы создаются отдельно в `build/smoke-ru.*`;\nваш `notes.json` тест не изменяет.\n\n`tools/acceptance.py` использует локальную копию общего драйвера версии 1 и\nобычный `MMAY` (по умолчанию `mmay` из PATH). Он собирает native Debug/Release\nи сравнивает с VM 27 сценариев по точным stdout/stderr, коду выхода и байтам\nJSON. Ещё пять сценариев на каждом движке проверяют закрытый канал stdout.\nВременные базы находятся вне каталога проекта и удаляются после проверки;\nотчёт с хешами исходников и исполняемых файлов сохраняется в `build/`.\nЭто локальная проверка корректности, не полная платформенная или скоростная\nприёмка приложения.\n\nГотовый native-файл получает команды напрямую:\n\n```sh\nbuild/marimay-notes --help\nbuild/marimay-notes add \"Прочитать документацию\" --tag учёба\nbuild/marimay-notes list\n```\n\nРазрешённые корни задаются при сборке. В примере корень `.` относительный:\nзапускайте бинарник из каталога проекта, как показано выше. Для фиксированного\nкаталога базы укажите его абсолютный путь в `--allow-read` и `--allow-write`\nпри сборке. При отказе доступа приложение выводит русское пояснение.\n\n## Ограничения\n\n- Максимальный размер базы — 1 МиБ; есть отдельные ограничения на строки и вложенность.\n- Блокировки файла пока нет: не запускайте два процесса записи в одну базу одновременно.\n- Нет дат создания и изменения: приложение не требует ещё не реализованных API времени.\n- Перевод относится к приложению; сообщения самого компилятора остаются на его языке.\n- Сбой вывода возвращает ненулевой код. Если `add`/`remove` уже сохранил базу,\n  сбой печати подтверждения не отменяет запись; проверяйте базу перед повтором команды.\n\nПока `notes.add` возвращает новую базу и внешний массив, разделяя существующие\nобъекты заметок и массивы тегов. `notes.remove` изменяет переданный массив.\n`const` не означает глубокую неизменяемость. Приведение этих операций к единому\nконтракту — отдельный последующий шаг плана эргономики; переход на новый JSON\nне меняет эту семантику скрытно.\n"
+    },
+    "main.my": {
+      "sha256": "cb9222a8ed7ecd1885eebd1aaec6e1c2544befd5f8ece54574e60ff8f0325089",
+      "text": "import * as cli from \"std/cli\";\nimport * as convert from \"std/convert\";\nimport * as fs from \"std/fs\";\nimport * as io from \"std/io\";\nimport * as path from \"std/path\";\nimport * as text from \"std/text\";\n\nimport * as messages from \"local/marimay-notes/messages\";\nimport * as notes from \"local/marimay-notes/notes\";\n\nfn fail(message: string): int {\n  const _ = io.eprintln($\"marimay-notes: {message}\");\n  return 1;\n}\n\nfn commandParser(): cli.Parser {\n  return match cli.newParser(\n    \"marimay-notes\",\n    \"Локальная база заметок в JSON.\",\n    [\n      cli.flagOption(\"help\", Some(\"h\"), false, false, \"Показать справку.\"),\n      cli.requiredValueOption(\n        \"db\",\n        Some(\"d\"),\n        \"ПУТЬ\",\n        false,\n        false,\n        \"Путь к базе; по умолчанию notes.json.\",\n      ),\n      cli.requiredValueOption(\n        \"tag\",\n        Some(\"t\"),\n        \"ТЕГ\",\n        false,\n        true,\n        \"Добавить тег к заметке; параметр можно повторять.\",\n      ),\n    ],\n    [\n      cli.positional(\n        \"command\",\n        false,\n        false,\n        \"add — добавить; list — список; show — показать; remove — удалить\",\n      ),\n      cli.positional(\"argument\", false, true, \"аргумент команды\"),\n    ],\n    cli.defaultLimits(),\n  ) {\n    Ok(parser) => parser,\n    Err(error) => panic(\"Внутренняя ошибка описания команд\"),\n  };\n}\n\nfn firstOption(parsed: cli.Parsed, name: string): Option<string> {\n  const values = cli.occurrences(parsed, name);\n  if values.length() == 0 {\n    return None;\n  }\n  return values[0];\n}\n\nfn optionValueOr(parsed: cli.Parsed, name: string, fallback: string): string {\n  return match firstOption(parsed, name) {\n    Some(value) => value,\n    None => fallback,\n  };\n}\n\nfn tags(parsed: cli.Parsed): Result<[]string, string> {\n  let result: []string = [];\n  for occurrence in cli.occurrences(parsed, \"tag\") {\n    match occurrence {\n      Some(value) => {\n        result.push(value).mapError(messages.arrayGrowthError)?;\n      },\n      None => {},\n    };\n  }\n  return Ok(result);\n}\n\nfn databasePath(parsed: cli.Parsed): Result<path.Path, path.Error> {\n  return path.fromString(optionValueOr(parsed, \"db\", \"notes.json\"));\n}\n\nfn loadDatabase(filePath: path.Path): Option<notes.Database> {\n  return match fs.readBytes(filePath, 1048576) {\n    Ok(contents) => match notes.decode(contents) {\n      Ok(database) => Some(database),\n      Err(error) => {\n        const _ = fail($\"Некорректная база заметок: {error}\");\n        None\n      },\n    },\n    Err(error) => match error {\n      fs.NotFound => Some(notes.empty()),\n      _ => {\n        const _ = fail(messages.fileError(error));\n        None\n      },\n    },\n  };\n}\n\nfn saveDatabase(filePath: path.Path, database: notes.Database): bool {\n  const encoded = match notes.encode(database) {\n    Ok(value) => value,\n    Err(error) => {\n      const _ = fail($\"Не удалось преобразовать базу в JSON: {messages.jsonError(error)}\");\n      return false;\n    },\n  };\n  return match fs.writeBytes(filePath, encoded) {\n    Ok(_) => true,\n    Err(error) => {\n      const _ = fail(messages.fileError(error));\n      false\n    },\n  };\n}\n\nfn printHelp(): int {\n  const lines = [\n    \"marimay-notes — локальная база заметок\",\n    \"\",\n    \"Использование: marimay-notes [параметры] КОМАНДА [аргумент]\",\n    \"\",\n    \"Команды:\",\n    \"  add ТЕКСТ       Добавить заметку; текст с пробелами заключайте в кавычки\",\n    \"  list            Показать все заметки\",\n    \"  show ID         Показать заметку по её номеру\",\n    \"  remove ID       Удалить заметку по её номеру\",\n    \"\",\n    \"Параметры:\",\n    \"  -h, --help      Показать эту справку\",\n    \"  -d, --db ПУТЬ   Файл базы (по умолчанию: notes.json)\",\n    \"  -t, --tag ТЕГ   Тег новой заметки; можно указать несколько раз\",\n    \"\",\n    \"Примеры:\",\n    \"  marimay-notes add \\\"Купить чай\\\" --tag дом --tag покупки\",\n    \"  marimay-notes list\",\n    \"  marimay-notes show 1\",\n    \"  marimay-notes --db работа.json add \\\"Проверить изменения\\\" --tag работа\",\n    \"\",\n    \"База создаётся при первом добавлении. Родительский каталог должен существовать.\",\n    \"Текст и теги поддерживают русский язык и Unicode. Размер базы — до 1 МиБ.\",\n    \"Не запускайте два процесса записи в одну базу одновременно.\",\n    \"При запуске через mmay передавайте команды приложения после --.\",\n  ];\n  for line in lines {\n    match io.println(line) {\n      Ok(_) => {},\n      Err(error) => {\n        return fail(messages.ioError(error));\n      },\n    };\n  }\n  return 0;\n}\n\nfn formatNote(note: notes.Note): string {\n  if note.tags.length() == 0 {\n    return $\"#{note.id} {note.text}\";\n  }\n  const joined = match text.join(note.tags, \", \", 1048576) {\n    Ok(value) => value,\n    Err(_) => \"<список тегов слишком длинный>\",\n  };\n  return $\"#{note.id} {note.text} [{joined}]\";\n}\n\nfn printNote(note: notes.Note): Result<void, io.Error> {\n  return io.println(formatNote(note));\n}\n\nfn parseId(value: string): Option<int> {\n  return match convert.parseInt(value) {\n    Ok(id) => {\n      if id > 0 {\n        return Some(id);\n      }\n      None\n    },\n    Err(_) => None,\n  };\n}\n\nfn addNote(\n  parsed: cli.Parsed,\n  filePath: path.Path,\n  database: notes.Database,\n  arguments: []string,\n): int {\n  if arguments.length() != 1 {\n    return fail(\"Использование: marimay-notes add ТЕКСТ [--tag ТЕГ]...\");\n  }\n  const selectedTags = match tags(parsed) {\n    Ok(value) => value,\n    Err(error) => {\n      return fail(error);\n    },\n  };\n  const added = match notes.add(database, arguments[0], selectedTags) {\n    Ok(value) => value,\n    Err(error) => {\n      return fail(error);\n    },\n  };\n  if !saveDatabase(filePath, added.database) {\n    return 1;\n  }\n  return match io.println($\"Добавлена заметка №{added.note.id}.\") {\n    Ok(_) => 0,\n    Err(error) => fail(messages.ioError(error)),\n  };\n}\n\nfn listNotes(database: notes.Database, arguments: []string): int {\n  if arguments.length() != 0 {\n    return fail(\"Использование: marimay-notes list\");\n  }\n  if database.notes.length() == 0 {\n    return match io.println(\"Заметок пока нет.\") {\n      Ok(_) => 0,\n      Err(error) => fail(messages.ioError(error)),\n    };\n  }\n  for note in database.notes {\n    match printNote(note) {\n      Ok(_) => {},\n      Err(error) => {\n        return fail(messages.ioError(error));\n      },\n    };\n  }\n  return 0;\n}\n\nfn showNote(database: notes.Database, arguments: []string): int {\n  if arguments.length() != 1 {\n    return fail(\"Использование: marimay-notes show ID\");\n  }\n  const id = match parseId(arguments[0]) {\n    Some(value) => value,\n    None => {\n      return fail(\"ID должен быть положительным целым числом\");\n    },\n  };\n  return match database.find(id) {\n    Some(note) => match printNote(note) {\n      Ok(_) => 0,\n      Err(error) => fail(messages.ioError(error)),\n    },\n    None => fail($\"Заметка №{id} не найдена\"),\n  };\n}\n\nfn removeNote(database: notes.Database, filePath: path.Path, arguments: []string): int {\n  if arguments.length() != 1 {\n    return fail(\"Использование: marimay-notes remove ID\");\n  }\n  const id = match parseId(arguments[0]) {\n    Some(value) => value,\n    None => {\n      return fail(\"ID должен быть положительным целым числом\");\n    },\n  };\n  if !database.remove(id) {\n    return fail($\"Заметка №{id} не найдена\");\n  }\n  if !saveDatabase(filePath, database) {\n    return 1;\n  }\n  return match io.println($\"Удалена заметка №{id}.\") {\n    Ok(_) => 0,\n    Err(error) => fail(messages.ioError(error)),\n  };\n}\n\nfn run(parsed: cli.Parsed): int {\n  const commands = cli.positionalValues(parsed, \"command\");\n  if cli.count(parsed, \"help\") != 0 || commands.length() == 0 {\n    return printHelp();\n  }\n  const filePath = match databasePath(parsed) {\n    Ok(value) => value,\n    Err(_) => {\n      return fail(\"Некорректный путь к базе заметок\");\n    },\n  };\n  const database = match loadDatabase(filePath) {\n    Some(value) => value,\n    None => {\n      return 1;\n    },\n  };\n  const command = commands[0];\n  const arguments = cli.positionalValues(parsed, \"argument\");\n  if command == \"add\" {\n    return addNote(parsed, filePath, database, arguments);\n  }\n  if command == \"list\" {\n    return listNotes(database, arguments);\n  }\n  if command == \"show\" {\n    return showNote(database, arguments);\n  }\n  if command == \"remove\" {\n    return removeNote(database, filePath, arguments);\n  }\n  return fail($\"Неизвестная команда «{command}». Справка: --help\");\n}\n\nfn main(arguments: []string): int {\n  const parser = commandParser();\n  const status = match cli.parse(parser, arguments) {\n    Ok(parsed) => run(parsed),\n    Err(error) => {\n      const _ = fail(messages.usageError(error));\n      cli.usageExitStatus()\n    },\n  };\n  if status != 0 {\n    return status;\n  }\n  return match io.flushStdout() {\n    Ok(_) => 0,\n    Err(error) => fail(messages.ioError(error)),\n  };\n}\n"
+    },
+    "main_test.my": {
+      "sha256": "798dbf794640413a96258a5b1e6740f05154f032d5c7109808a59beb4c0d2aa9",
+      "text": "import * as bytes from \"std/bytes\";\nimport * as json from \"std/json\";\n\nimport * as notes from \"local/marimay-notes/notes\";\n\nfn require(condition: bool, message: string): void {\n  if !condition {\n    panic(message);\n  }\n}\n\nfn decodeText(value: string): notes.Database {\n  return match notes.decode(bytes.encodeUtf8(value)) {\n    Ok(database) => database,\n    Err(error) => panic(error),\n  };\n}\n\nfn encodeText(database: notes.Database): string {\n  const encoded = match notes.encode(database) {\n    Ok(value) => value,\n    Err(error) => panic(json.message(error)),\n  };\n  return match bytes.decodeUtf8(encoded) {\n    Ok(value) => value,\n    Err(_) => panic(\"JSON encoder returned invalid UTF-8\"),\n  };\n}\n\n@test\nfn emptyDatabaseHasStableJson(): void {\n  require(\n    encodeText(notes.empty()) == \"{\\\"version\\\":1,\\\"nextId\\\":1,\\\"notes\\\":[]}\",\n    \"empty database JSON changed\",\n  );\n}\n\n@test\nfn addFindAndRemoveNotes(): void {\n  const first = match notes.add(notes.empty(), \"Buy tea\", [\"home\", \"today\"]) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  const second = match notes.add(first.database, \"Read Marimay docs\", [\"work\"]) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  require(first.note.id == 1 && second.note.id == 2, \"IDs must be monotonic\");\n  require(\n    match second.database.find(1) {\n      Some(note) => note.text == \"Buy tea\" && note.tags.length() == 2,\n      None => false,\n    },\n    \"added note was not found\",\n  );\n  require(second.database.remove(1), \"existing note was not removed\");\n  require(!second.database.remove(1), \"removed note remained in the database\");\n  require(second.database.notes.length() == 1, \"remove changed the wrong number of notes\");\n}\n\n@test\nfn jsonRoundTripPreservesUnicodeAndTags(): void {\n  const source = \"{\\\"version\\\":1,\\\"nextId\\\":8,\\\"notes\\\":[{\\\"id\\\":7,\\\"text\\\":\\\"Идея 🌿\\\",\\\"tags\\\":[\\\"русский\\\",\\\"json\\\"]}]}\";\n  const database = decodeText(source);\n  require(database.nextId == 8, \"next ID was not decoded\");\n  require(database.notes.length() == 1, \"note was not decoded\");\n  require(database.notes[0].text == \"Идея 🌿\", \"Unicode text changed\");\n  require(encodeText(database) == source, \"JSON round trip is not deterministic\");\n}\n\n@test\nfn unknownAndMissingFieldsAreRejected(): void {\n  const source = bytes.encodeUtf8(\"{\\\"version\\\":1,\\\"nextId\\\":1,\\\"notes\\\":[],\\\"extra\\\":true}\");\n  require(\n    match notes.decode(source) {\n      Err(error) => error != \"\",\n      Ok(_) => false,\n    },\n    \"unknown database field was accepted\",\n  );\n  const missingFields = [\n    \"{\\\"nextId\\\":1,\\\"notes\\\":[]}\",\n    \"{\\\"version\\\":1,\\\"notes\\\":[]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":1}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":2,\\\"notes\\\":[{\\\"text\\\":\\\"x\\\",\\\"tags\\\":[]}]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":2,\\\"notes\\\":[{\\\"id\\\":1,\\\"tags\\\":[]}]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":2,\\\"notes\\\":[{\\\"id\\\":1,\\\"text\\\":\\\"x\\\"}]}\",\n  ];\n  for input in missingFields {\n    expect.err(notes.decode(bytes.encodeUtf8(input)));\n  }\n}\n\n@test\nfn rejectsInvalidIdsAndVersion(): void {\n  const invalid = [\n    \"{\\\"version\\\":2,\\\"nextId\\\":1,\\\"notes\\\":[]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":0,\\\"notes\\\":[]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":1,\\\"notes\\\":[{\\\"id\\\":1,\\\"text\\\":\\\"x\\\",\\\"tags\\\":[]}]}\",\n    \"{\\\"version\\\":1,\\\"nextId\\\":2,\\\"notes\\\":[{\\\"id\\\":1,\\\"text\\\":\\\"x\\\",\\\"tags\\\":[]},{\\\"id\\\":1,\\\"text\\\":\\\"y\\\",\\\"tags\\\":[]}]}\",\n  ];\n  for input in invalid {\n    require(\n      match notes.decode(bytes.encodeUtf8(input)) {\n        Err(_) => true,\n        Ok(_) => false,\n      },\n      \"invalid database accepted\",\n    );\n  }\n}\n\n@test\nfn addPreservesInputAndRejectsExhaustion(): void {\n  const original = notes.empty();\n  const added = match notes.add(original, \"one\", []) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  require(original.notes.length() == 0 && original.nextId == 1, \"add mutated its input\");\n  require(added.database.nextId == 2, \"counter not advanced\");\n  const exhausted = notes.Database { version: 1, nextId: 9223372036854775807, notes: [] };\n  require(\n    match notes.add(exhausted, \"x\", []) {\n      Err(error) => error == \"Свободные ID заметок закончились\",\n      Ok(_) => false,\n    },\n    \"ID exhaustion did not return an expected error\",\n  );\n  require(\n    match notes.add(original, \" \\t\", []) {\n      Err(_) => true,\n      Ok(_) => false,\n    },\n    \"blank note accepted\",\n  );\n}\n\n@test\nfn standaloneMatchHandlesExpectedErrors(): void {\n  const visited = [0];\n  const result: Result<int, string> = Err(\"expected\");\n  match result {\n    Ok(_) => markVisited(visited, 1),\n    Err(_) => markVisited(visited, 2),\n  };\n  expect.equal(visited[0], 2);\n}\n\nfn markVisited(visited: []int, value: int): void {\n  visited[0] = value;\n}\n"
+    },
+    "messages_test.my": {
+      "sha256": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+      "text": "import * as bytes from \"std/bytes\";\nimport * as cli from \"std/cli\";\nimport * as fs from \"std/fs\";\nimport * as io from \"std/io\";\n\nimport * as messages from \"local/marimay-notes/messages\";\nimport * as notes from \"local/marimay-notes/notes\";\n\n@test\nfn databaseErrorsAreRussian(): void {\n  const emptyText = notes.add(notes.empty(), \" \\t\", []);\n  expect.equal(\n    match emptyText {\n      Err(message) => message,\n      Ok(_) => \"\",\n    },\n    \"Текст заметки не должен быть пустым\",\n  );\n  expect.equal(\n    match notes.decode(bytes.encodeUtf8(\"{}\")) {\n      Err(message) => message,\n      Ok(_) => \"\",\n    },\n    \"Отсутствует обязательное поле «version»: байт 2; путь: $[\\\"version\\\"]\",\n  );\n  expect.equal(\n    match notes.decode(bytes.encodeUtf8(\"{\\\"version\\\":1,\\\"nextId\\\":1,\\\"notes\\\":null}\")) {\n      Err(message) => message,\n      Ok(_) => \"\",\n    },\n    \"Ожидается массив JSON: байт 32; путь: $[\\\"notes\\\"]\",\n  );\n}\n\n@test\nfn commandAndSystemErrorsAreRussian(): void {\n  expect.equal(\n    messages.usageError(cli.UsageError.MissingOptionValue { name: \"db\", index: 0 }),\n    \"После --db нужно указать значение\",\n  );\n  expect.equal(\n    messages.usageError(cli.UsageError.UnknownOption { argument: \"--нет\", index: 0 }),\n    \"Неизвестный параметр «--нет». Справка: --help\",\n  );\n  expect.equal(messages.fileError(fs.Error.NotFound), \"Файл или каталог не найден\");\n  expect.equal(messages.ioError(io.Error.WriteFailed), \"Не удалось вывести сообщение\");\n}\n\n@test\nfn russianNotesRoundTripWithoutChangingFormat(): void {\n  const added = match notes.add(notes.empty(), \"Купить чай ☕\", [\"дом\", \"покупки\"]) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  const data = match notes.encode(added.database) {\n    Ok(value) => value,\n    Err(error) => panic(messages.jsonError(error)),\n  };\n  const restored = match notes.decode(data) {\n    Ok(value) => value,\n    Err(error) => panic(error),\n  };\n  expect.equal(restored.notes[0].text, \"Купить чай ☕\");\n  expect.equal(restored.notes[0].tags[1], \"покупки\");\n  expect.equal(restored.nextId, 2);\n}\n"
+    },
+    "notes/api.my": {
+      "sha256": "0618e69e9917f2ff0b63667f6e1f5207aeb6037541d8ad604b5a7cb16523a53f",
+      "text": "import * as bytes from \"std/bytes\";\nimport * as json from \"std/json\";\nimport * as text from \"std/text\";\n\nimport * as messages from \"local/marimay-notes/messages\";\n\npublic type Note {\n  public id: int,\n  public text: string,\n  public tags: []string,\n}\n\npublic type Database {\n  public version: int,\n  public nextId: int,\n  public notes: []Note,\n}\n\npublic type AddResult {\n  public database: Database,\n  public note: Note,\n}\n\npublic fn empty(): Database {\n  return Database { version: 1, nextId: 1, notes: [] };\n}\n\nfn collectionGrowthError(error: CollectionGrowthError): string {\n  return match error {\n    LengthLimit { limit } => $\"Слишком много различных ID заметок: предел {limit}\",\n  };\n}\n\npublic fn validate(database: Database): Result<void, string> {\n  if database.version != 1 {\n    return Err(\"Неподдерживаемая версия базы заметок\");\n  }\n  if database.nextId < 1 {\n    return Err(\"Значение nextId должно быть положительным\");\n  }\n  const ids: Set<int> = setOf<int>();\n  for note in database.notes {\n    if note.id < 1 || note.id >= database.nextId {\n      return Err(\"ID заметки должен быть положительным и меньше nextId\");\n    }\n    const inserted = ids.add(note.id).mapError(collectionGrowthError)?;\n    if !inserted {\n      return Err(\"В базе повторяется ID заметки\");\n    }\n  }\n  return Ok();\n}\n\npublic fn add(database: Database, value: string, tags: []string): Result<AddResult, string> {\n  validate(database)?;\n  if database.nextId == 9223372036854775807 {\n    return Err(\"Свободные ID заметок закончились\");\n  }\n  if text.trimAscii(value) == \"\" {\n    return Err(\"Текст заметки не должен быть пустым\");\n  }\n  let copied: []Note = [];\n  for existing in database.notes {\n    copied.push(existing).mapError(messages.arrayGrowthError)?;\n  }\n  const note = Note { id: database.nextId, text: value, tags };\n  copied.push(note).mapError(messages.arrayGrowthError)?;\n  return Ok(\n    AddResult {\n      database: Database { version: database.version, nextId: database.nextId + 1, notes: copied },\n      note,\n    },\n  );\n}\n\npublic fn find(database: Database, id: int): Option<Note> {\n  for note in database.notes {\n    if note.id == id {\n      return Some(note);\n    }\n  }\n  return None;\n}\n\npublic fn remove(database: Database, id: int): bool {\n  let found = -1;\n  let index = 0;\n  while index < database.notes.length() {\n    if database.notes[index].id == id {\n      found = index;\n      break;\n    }\n    index += 1;\n  }\n  if found < 0 {\n    return false;\n  }\n  index = found;\n  while index < database.notes.length() - 1 {\n    database.notes[index] = database.notes[index + 1];\n    index += 1;\n  }\n  match database.notes.truncate(database.notes.length() - 1) {\n    Ok(_) => {},\n    Err(_) => panic(\"Внутренняя ошибка индекса при удалении заметки\"),\n  };\n  return true;\n}\n\npublic fn decode(contents: bytes.Bytes): Result<Database, string> {\n  const database = json.decode<Database>(contents).mapError(messages.jsonError)?;\n  validate(database)?;\n  return Ok(database);\n}\n\npublic fn encode(database: Database): Result<bytes.Bytes, json.Error> {\n  return json.encode(database);\n}\n"
+    },
+    "notes/collection_baseline_test.my": {
+      "sha256": "74e9e03d3eb662288a29cc862f39f14b3566a66eb165144c3082b1baf117a3d9",
+      "text": "fn added(database: Database, value: string): AddResult {\n  return match add(database, value, []) {\n    Ok(result) => result,\n    Err(error) => panic(error),\n  };\n}\n\n@test\nfn copyKeepsNoteIdentityAndTagAliases(): void {\n  const note = Note { id: 1, text: \"исходная\", tags: [\"до\"] };\n  const database = Database { version: 1, nextId: 2, notes: [note] };\n  const result = added(database, \"новая\");\n  expect.equal(database.notes.length(), 1);\n  expect.equal(database.nextId, 2);\n  expect.equal(result.database.notes.length(), 2);\n  expect.true(identity.same(note, result.database.notes[0]));\n  result.database.notes[0].tags[0] = \"после\";\n  expect.equal(note.tags[0], \"после\");\n  result.database.notes[0] = result.note;\n  expect.true(identity.same(database.notes[0], note));\n  expect.equal(database.notes[0].text, \"исходная\");\n}\n\n@test\nfn removalPreservesOrderAndChangesArrayAliases(): void {\n  const first = Note { id: 1, text: \"одна\", tags: [] };\n  const middle = Note { id: 2, text: \"две\", tags: [] };\n  const last = Note { id: 3, text: \"три\", tags: [] };\n  const database = Database { version: 1, nextId: 4, notes: [first, middle, last] };\n  const alias = database.notes;\n  expect.true(remove(database, 2));\n  expect.equal(alias.length(), 2);\n  expect.true(identity.same(alias[0], first));\n  expect.true(identity.same(alias[1], last));\n  expect.equal(database.nextId, 4);\n  expect.false(remove(database, 2));\n  expect.equal(alias.length(), 2);\n  expect.true(remove(database, 1));\n  expect.true(identity.same(alias[0], last));\n  expect.true(remove(database, 3));\n  expect.equal(alias.length(), 0);\n  expect.false(remove(database, 3));\n}\n\n@test\nfn searchReturnsTheStoredRecord(): void {\n  const first = Note { id: 2, text: \"🌿\", tags: [\"язык\"] };\n  const last = Note { id: 8, text: \"🌿\", tags: [] };\n  const database = Database { version: 1, nextId: 9, notes: [first, last] };\n  const found = match find(database, 8) {\n    Some(value) => value,\n    None => panic(\"stored note was not found\"),\n  };\n  expect.true(identity.same(found, last));\n  expect.true(\n    match find(database, 7) {\n      Some(_) => false,\n      None => true,\n    },\n  );\n  expect.equal(database.notes.length(), 2);\n}\n\n@test\nfn rejectedAddPreservesNonemptyInput(): void {\n  const note = Note { id: 1, text: \"сохранить\", tags: [\"важно\"] };\n  const database = Database { version: 1, nextId: 2, notes: [note] };\n  expect.err(add(database, \" \\t\", [\"другой\"]));\n  expect.equal(database.notes.length(), 1);\n  expect.equal(database.nextId, 2);\n  expect.true(identity.same(database.notes[0], note));\n  expect.equal(note.tags[0], \"важно\");\n}\n"
+    },
+    "messages/json.my": {
+      "sha256": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+      "text": "import * as json from \"std/json\";\n\nfn expectedValue(value: string): string {\n  return match value {\n    \"a JSON string\" => \"строка JSON\",\n    \"an escaped control character\" => \"экранированный управляющий символ\",\n    \"a closing quote\" => \"закрывающая кавычка\",\n    \"the end of a JSON literal\" => \"конец значения JSON\",\n    \"the end of the current JSON container\" => \"конец текущего объекта или массива\",\n    \"the end of input\" => \"конец файла\",\n    \"true or false\" => \"true или false\",\n    \"null\" => \"null\",\n    \"an object\" => \"объект JSON\",\n    \"an open object\" => \"открытый объект JSON\",\n    \"a comma or closing brace\" => \"запятая или закрывающая фигурная скобка\",\n    \"an object field after the comma\" => \"поле объекта после запятой\",\n    \"a colon after the object field\" => \"двоеточие после имени поля\",\n    \"an array\" => \"массив JSON\",\n    \"an open array\" => \"открытый массив JSON\",\n    \"a comma or closing bracket\" => \"запятая или закрывающая квадратная скобка\",\n    \"an array element after the comma\" => \"элемент массива после запятой\",\n    _ => \"корректное значение JSON\",\n  };\n}\n\nfn resourceName(value: string): string {\n  return match value {\n    \"input bytes\" => \"размер входного файла в байтах\",\n    \"output bytes\" => \"размер выходного файла в байтах\",\n    \"string bytes\" => \"длина строки в байтах\",\n    \"number bytes\" => \"длина записи числа\",\n    \"nesting\" => \"глубина вложенности\",\n    \"object fields\" => \"число полей объекта\",\n    \"array items\" => \"число элементов массива\",\n    _ => \"размер данных\",\n  };\n}\n\nfn baseJsonError(error: json.Error): string {\n  return match error {\n    InvalidLimits => \"Некорректные ограничения JSON\",\n    InvalidUtf8 { path: _, span } => $\"Некорректная кодировка UTF-8: байт {span.start}\",\n    UnexpectedToken {\n      path: _,\n      expected,\n      span,\n    } => $\"Ожидается {expectedValue(expected)}: байт {span.start}\",\n    UnexpectedEnd {\n      path: _,\n      expected,\n      span,\n    } => $\"Файл закончился раньше времени; ожидается {expectedValue(expected)}: байт {span.start}\",\n    InvalidEscape { path: _, span } => $\"Некорректная escape-последовательность: байт {span.start}\",\n    InvalidUnicodeEscape {\n      path: _,\n      span,\n    } => $\"Некорректная escape-последовательность Unicode: байт {span.start}\",\n    InvalidNumber { path: _, span } => $\"Некорректное число JSON: байт {span.start}\",\n    NumberOutOfRange {\n      path: _,\n      span,\n    } => $\"Число не помещается в 64-битное целое со знаком: байт {span.start}\",\n    DuplicateField { path: _, name, span } => $\"Поле «{name}» повторяется: байт {span.start}\",\n    UnknownField { path: _, name, span } => $\"Неизвестное поле «{name}»: байт {span.start}\",\n    MissingField {\n      path: _,\n      name,\n      span,\n    } => $\"Отсутствует обязательное поле «{name}»: байт {span.start}\",\n    LimitExceeded {\n      path: _,\n      resource,\n      limit,\n      span,\n    } => $\"Превышено ограничение «{resourceName(resource)}»: {limit}; байт {span.start}\",\n    InvalidEncoderState { path: _, message } => \"Внутренняя ошибка при формировании JSON\",\n  };\n}\n\npublic fn jsonError(error: json.Error): string {\n  const message = baseJsonError(error);\n  if json.path(error).length() == 0 {\n    return message;\n  }\n  return $\"{message}; путь: {json.pathText(error)}\";\n}\n"
+    },
+    "messages/system.my": {
+      "sha256": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84",
+      "text": "import * as cli from \"std/cli\";\nimport * as fs from \"std/fs\";\nimport * as io from \"std/io\";\n\npublic fn arrayGrowthError(error: ArrayGrowthError): string {\n  return match error {\n    LengthLimit { limit } => $\"Слишком много элементов: предел {limit}\",\n    NegativeAdditional {\n      additional,\n    } => $\"Отрицательное число дополнительных элементов: {additional}\",\n  };\n}\n\npublic fn fileError(error: fs.Error): string {\n  return match error {\n    CapabilityDenied {\n      capability,\n      path,\n    } => $\"Нет разрешения {capability} для пути «{path}». Укажите разрешённый каталог при запуске или сборке\",\n    InvalidLimit { limit } => $\"Некорректное ограничение размера файла: {limit}\",\n    LimitExceeded { limit } => $\"Файл превышает допустимый размер: {limit} байт\",\n    NotFound => \"Файл или каталог не найден\",\n    NotFile => \"Указанный путь не является обычным файлом\",\n    NotDirectory => \"Указанный путь не является каталогом\",\n    Symlink => \"Символические ссылки не поддерживаются для этого пути\",\n    Closed => \"Файл уже закрыт\",\n    OpenFailed => \"Не удалось открыть файл\",\n    ReadFailed => \"Не удалось прочитать файл\",\n    WriteFailed => \"Не удалось записать файл\",\n    SyncFailed => \"Не удалось сохранить данные файла на диск\",\n    CloseFailed => \"Не удалось закрыть файл\",\n    ReplaceFailed => \"Не удалось атомарно заменить файл базы\",\n    InvalidUtf8 { offset } => $\"Некорректная кодировка UTF-8: байт {offset}\",\n    TooManyEntries { limit } => $\"В каталоге больше {limit} записей\",\n    DirectoryFailed => \"Не удалось прочитать каталог\",\n  };\n}\n\npublic fn ioError(error: io.Error): string {\n  return match error {\n    CapabilityDenied { capability } => $\"Нет разрешения на операцию «{capability}»\",\n    ReadFailed => \"Не удалось прочитать стандартный ввод\",\n    WriteFailed => \"Не удалось вывести сообщение\",\n    FlushFailed => \"Не удалось завершить вывод\",\n    InvalidUtf8 => \"Ввод содержит некорректный UTF-8\",\n    LineTooLong { limit } => $\"Строка превышает допустимую длину: {limit} байт\",\n    InputTooLong { limit } => $\"Ввод превышает допустимый размер: {limit} байт\",\n  };\n}\n\npublic fn usageError(error: cli.UsageError): string {\n  return match error {\n    TooManyArguments { limit } => $\"Слишком много аргументов: допускается не больше {limit}\",\n    UnknownOption { argument, index } => $\"Неизвестный параметр «{argument}». Справка: --help\",\n    UnexpectedOptionValue { name, index } => $\"Параметр --{name} не принимает значение\",\n    MissingOptionValue { name, index } => $\"После --{name} нужно указать значение\",\n    RepeatedOption { name, index } => $\"Параметр --{name} нельзя указывать несколько раз\",\n    UnexpectedPositional { value, index } => $\"Лишний аргумент «{value}»\",\n    MissingRequiredOption { name } => $\"Не указан обязательный параметр --{name}\",\n    MissingRequiredPositional { name } => $\"Не указан обязательный аргумент «{name}»\",\n  };\n}\n"
+    },
+    "tools/acceptance.py": {
+      "sha256": "d4d6a0926786c3badfbbcd953a000e7c461d553fb9dc9ea6738187e6e9630d94",
+      "text": "#!/usr/bin/env python3\n\"\"\"Exact process/filesystem baseline for the current notes model, using v1.\"\"\"\n\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport subprocess\nimport tempfile\nimport time\n\nfrom mmay_acceptance import Application\n\n\nROOT = Path(__file__).resolve().parents[1]\nHARNESS = Application(ROOT)\n\n\ndef database(next_id=1, notes=()):\n    return json.dumps({\"version\": 1, \"nextId\": next_id, \"notes\": list(notes)},\n                      ensure_ascii=False, separators=(\",\", \":\")).encode()\n\n\ndef note(identifier, value, tags=()):\n    return {\"id\": identifier, \"text\": value, \"tags\": list(tags)}\n\n\ndef main():\n    started = time.monotonic()\n    records = []\n    with tempfile.TemporaryDirectory(prefix=\"marimay-notes-acceptance-\") as temporary:\n        work = Path(temporary).resolve()\n        allowed, outside = work / \"разрешено с пробелами\", work / \"outside\"\n        allowed.mkdir()\n        outside.mkdir()\n        file = allowed / \"мои заметки.json\"\n        outsider = outside / \"fixture.json\"\n        outsider.write_bytes(database())\n        grants = [\"--allow-read\", str(allowed), \"--allow-write\", str(allowed)]\n        engines = HARNESS.engines(work, \"notes\", grants)\n        metadata = HARNESS.metadata(engines)\n\n        def compare(name, arguments, status, stdout=\"\", stderr=\"\", *,\n                    before=None, after=None, target=file):\n            def prepare():\n                if before is None:\n                    file.unlink(missing_ok=True)\n                else:\n                    file.write_bytes(before)\n\n            def verify(engine, result):\n                assert result.stdout == stdout.encode(), (name, engine, result.stdout)\n                assert result.stderr == stderr.encode(), (name, engine, result.stderr)\n                assert (file.read_bytes() if file.exists() else None) == after, (name, engine)\n                assert outsider.read_bytes() == database(), (name, \"outside changed\")\n                assert sorted(p.name for p in allowed.iterdir()) == (\n                    [file.name] if after is not None else []), (name, \"temporary file leaked\")\n\n            observed = HARNESS.compare(engines, [\"--db\", str(target), *arguments], status,\n                                       label=name, prepare=prepare, verify=verify)\n            records.append({\"name\": name, \"arguments\": arguments, \"status\": status,\n                            \"stdout\": observed[1].decode(), \"stderr\": observed[2].decode(),\n                            \"before_sha256\": hashlib.sha256(before).hexdigest() if before is not None else None,\n                            \"after_sha256\": hashlib.sha256(after).hexdigest() if after is not None else None})\n\n        def error(message):\n            return \"marimay-notes: \" + message + \"\\n\"\n\n        first = note(1, \"Купить чай ☕\", [\"дом\", \"покупки\"])\n        second = note(2, \"Прочитать документацию\", [\"учёба\"])\n        third = note(3, \"Записать результат\")\n        one, two = database(2, [first]), database(3, [first, second])\n        removed, three = database(3, [second]), database(4, [second, third])\n        compare(\"absent-list\", [\"list\"], 0, \"Заметок пока нет.\\n\")\n        compare(\"add-unicode\", [\"add\", first[\"text\"], \"--tag\", \"дом\", \"--tag\", \"покупки\"],\n                0, \"Добавлена заметка №1.\\n\", after=one)\n        compare(\"show-existing\", [\"show\", \"1\"], 0, \"#1 Купить чай ☕ [дом, покупки]\\n\",\n                before=one, after=one)\n        compare(\"add-second\", [\"add\", second[\"text\"], \"--tag\", \"учёба\"],\n                0, \"Добавлена заметка №2.\\n\", before=one, after=two)\n        compare(\"list-in-order\", [\"list\"], 0,\n                \"#1 Купить чай ☕ [дом, покупки]\\n#2 Прочитать документацию [учёба]\\n\",\n                before=two, after=two)\n        compare(\"remove-first\", [\"remove\", \"1\"], 0, \"Удалена заметка №1.\\n\",\n                before=two, after=removed)\n        for command in (\"show\", \"remove\"):\n            compare(command + \"-missing\", [command, \"1\"], 1,\n                    stderr=error(\"Заметка №1 не найдена\"), before=removed, after=removed)\n        compare(\"ids-not-reused\", [\"add\", third[\"text\"]], 0, \"Добавлена заметка №3.\\n\",\n                before=removed, after=three)\n        compare(\"list-after-removal\", [\"list\"], 0,\n                \"#2 Прочитать документацию [учёба]\\n#3 Записать результат\\n\",\n                before=three, after=three)\n        for name, arguments, status, message in [\n            (\"blank-note\", [\"add\", \" \\t\"], 1, \"Текст заметки не должен быть пустым\"),\n            (\"add-missing-text\", [\"add\"], 1, \"Использование: marimay-notes add ТЕКСТ [--tag ТЕГ]...\"),\n            (\"list-extra\", [\"list\", \"x\"], 1, \"Использование: marimay-notes list\"),\n            (\"unknown-option\", [\"--нет\"], 2, \"Неизвестный параметр «--нет». Справка: --help\"),\n            (\"missing-tag-value\", [\"add\", \"x\", \"--tag\"], 2, \"После --tag нужно указать значение\"),\n            (\"unknown-command\", [\"неизвестно\"], 1, \"Неизвестная команда «неизвестно». Справка: --help\"),\n        ]:\n            compare(name, arguments, status, stderr=error(message), before=three, after=three)\n        for identifier in (\"0\", \"-1\", \"9223372036854775808\", \"ноль\"):\n            compare(\"invalid-id-\" + identifier, [\"show\", \"--\", identifier], 1,\n                    stderr=error(\"ID должен быть положительным целым числом\"),\n                    before=three, after=three)\n        maximum = database(9223372036854775807, [first])\n        compare(\"id-exhaustion\", [\"add\", \"x\"], 1,\n                stderr=error(\"Свободные ID заметок закончились\"), before=maximum, after=maximum)\n        malformed = [\n            (\"version\", b'{\"version\":2,\"nextId\":1,\"notes\":[]}', \"Неподдерживаемая версия базы заметок\"),\n            (\"duplicate-id\", database(2, [first, first]), \"В базе повторяется ID заметки\"),\n            (\"missing-field\", b'{\"version\":1,\"nextId\":1}', \"Отсутствует обязательное поле «notes»: байт 24; путь: $[\\\"notes\\\"]\"),\n            (\"invalid-utf8\", b'\\xff', \"Некорректная кодировка UTF-8: байт 0\"),\n        ]\n        for name, source, message in malformed:\n            compare(\"reject-\" + name, [\"add\", \"must not overwrite\"], 1,\n                    stderr=error(\"Некорректная база заметок: \" + message),\n                    before=source, after=source)\n        too_large = b\" \" * 1048577\n        compare(\"file-limit\", [\"list\"], 1,\n                stderr=error(\"Файл превышает допустимый размер: 1048576 байт\"),\n                before=too_large, after=too_large)\n        compare(\"denied-read\", [\"list\"], 1, target=outsider,\n                stderr=error(f\"Нет разрешения fs.read для пути «{outsider}». Укажите разрешённый каталог при запуске или сборке\"))\n\n        pipe_records = []\n        for name, arguments, before, after in [\n            (\"help-broken-pipe\", [\"--help\"], two, two),\n            (\"list-broken-pipe\", [\"list\"], two, two),\n            (\"show-broken-pipe\", [\"show\", \"1\"], two, two),\n            (\"add-broken-pipe\", [\"add\", \"Записать результат\"], removed, three),\n            (\"remove-broken-pipe\", [\"remove\", \"1\"], two, removed),\n        ]:\n            for engine, prefix in engines.items():\n                file.write_bytes(before)\n                reader, writer = os.pipe()\n                os.close(reader)\n                try:\n                    child = subprocess.Popen([*prefix, \"--db\", str(file), *arguments],\n                                             cwd=ROOT, stdout=writer, stderr=subprocess.PIPE)\n                finally:\n                    os.close(writer)\n                try:\n                    _, diagnostic = child.communicate(timeout=HARNESS.timeout)\n                except subprocess.TimeoutExpired:\n                    child.kill()\n                    child.communicate()\n                    raise\n                assert child.returncode == 1, (name, engine, child.returncode, diagnostic)\n                assert diagnostic in (\n                    error(\"Не удалось завершить вывод\").encode(),\n                    error(\"Не удалось вывести сообщение\").encode(),\n                ), (name, engine, diagnostic)\n                assert file.read_bytes() == after, (name, engine, \"database changed\")\n                assert outsider.read_bytes() == database(), (name, engine, \"outside changed\")\n                assert sorted(p.name for p in allowed.iterdir()) == [file.name]\n                pipe_records.append({\"name\": name, \"engine\": engine, \"status\": child.returncode,\n                                     \"stderr\": diagnostic.decode(),\n                                     \"before_sha256\": hashlib.sha256(before).hexdigest(),\n                                     \"after_sha256\": hashlib.sha256(after).hexdigest()})\n\n    report = {\"schema\": 1, \"scope\": \"notes process/files baseline; not full CP42 acceptance\",\n              \"harness\": metadata, \"cases\": records, \"broken_pipe\": pipe_records,\n              \"elapsed_seconds\": time.monotonic() - started,\n              \"source_sha256\": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()\n                                for p in [ROOT / \"mmay.mod\", *sorted(ROOT.glob(\"*.my\")),\n                                          *sorted((ROOT / \"notes\").glob(\"*.my\")),\n                                          *sorted((ROOT / \"messages\").glob(\"*.my\"))]}}\n    (ROOT / \"build\").mkdir(exist_ok=True)\n    path = ROOT / \"build\" / f\"process-acceptance-{time.time_ns()}.json\"\n    path.write_text(json.dumps(report, ensure_ascii=False, indent=2) + \"\\n\")\n    print(f\"{len(records)} cases × VM/native Debug/Release + {len(pipe_records)} closed-pipe checks passed: {path}\")\n\n\nif __name__ == \"__main__\":\n    main()\n"
+    },
+    "tools/mmay_acceptance.py": {
+      "sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+      "text": "\"\"\"Versioned process-only acceptance mechanics for independent Marimay CLIs.\n\nVendor this file unchanged beside an application's acceptance adapters.\nBusiness rules, fixtures, output assertions and filesystem checks stay there.\n\"\"\"\n\nimport hashlib\nimport os\nfrom pathlib import Path\nimport platform\nimport shutil\nimport subprocess\n\n\nVERSION = \"1\"\n\n\nclass Application:\n    def __init__(self, root, compiler=None, *, timeout=120):\n        if not __debug__:\n            raise RuntimeError(\"acceptance requires enabled Python assertions\")\n        self.root = Path(root).resolve()\n        selected = compiler if compiler is not None else os.environ.get(\"MMAY\", \"mmay\")\n        resolved = shutil.which(str(selected))\n        if resolved is None:\n            raise FileNotFoundError(f\"Marimay compiler not found: {selected}\")\n        self.compiler = str(Path(resolved).resolve())\n        self.timeout = timeout\n\n    def run(self, arguments, *, input=None):\n        return subprocess.run(arguments, cwd=self.root, input=input,\n                              capture_output=True, timeout=self.timeout)\n\n    def successful(self, arguments):\n        result = self.run(arguments)\n        if result.returncode != 0 or result.stderr:\n            raise AssertionError((arguments, result.returncode,\n                                  result.stdout, result.stderr))\n        return result.stdout\n\n    def engines(self, directory, name, grants=()):\n        if not name or Path(name).name != name or name in (\".\", \"..\"):\n            raise ValueError(\"artifact name must be one filename component\")\n        work = Path(directory).resolve()\n        suffix = \".exe\" if os.name == \"nt\" else \"\"\n        result = {\"vm\": [self.compiler, \"run\", \".\", *grants, \"--\"]}\n        for profile in (\"debug\", \"release\"):\n            binary = work / (name + \"-\" + profile + suffix)\n            flags = [\"--release\"] if profile == \"release\" else []\n            self.successful([self.compiler, \"build\", \".\", *grants, *flags,\n                             \"--output\", str(binary)])\n            result[profile] = [str(binary)]\n        return result\n\n    def compare(self, engines, arguments, status, *, data=None, label=None,\n                prepare=None, verify=None):\n        \"\"\"Compare exact bytes/exits and run app-owned checks for every engine.\n\n        prepare() restores a mutable fixture before EACH execution. verify gets\n        (engine_name, CompletedProcess) and checks expected output/file effects;\n        engine equivalence alone cannot establish application correctness.\n        \"\"\"\n        if not engines:\n            raise ValueError(\"acceptance needs at least one engine\")\n        reference = None\n        for engine, prefix in engines.items():\n            if prepare is not None:\n                prepare()\n            result = self.run([*prefix, *arguments], input=data)\n            actual = (result.returncode, result.stdout, result.stderr)\n            if result.returncode != status:\n                raise AssertionError((label, engine, \"expected exit\", status, actual))\n            if reference is not None and actual != reference:\n                raise AssertionError((label, engine, \"engine divergence\", reference, actual))\n            if verify is not None:\n                verify(engine, result)\n            reference = actual\n        return reference\n\n    def metadata(self, engines):\n        \"\"\"No ambient environment or application data is collected.\"\"\"\n        return {\n            \"harness_version\": VERSION,\n            \"harness_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n            \"platform\": platform.platform(),\n            \"compiler\": self.compiler,\n            \"compiler_sha256\": hashlib.sha256(Path(self.compiler).read_bytes()).hexdigest(),\n            \"engines\": {\n                name: {\"command\": list(prefix), \"executable_sha256\":\n                       hashlib.sha256(Path(prefix[0]).read_bytes()).hexdigest()}\n                for name, prefix in engines.items()\n            },\n        }\n"
+    }
+  },
+  "verification": [
+    {
+      "command": [
+        "/workspace/Projects/Marimay/marimay/build/release/mmay",
+        "fmt",
+        ".",
+        "--check"
+      ],
+      "cwd": "/workspace/Projects/Marimay/marimay-notes",
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/workspace/Projects/Marimay/marimay/build/release/mmay",
+        "check",
+        "."
+      ],
+      "cwd": "/workspace/Projects/Marimay/marimay-notes",
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/workspace/Projects/Marimay/marimay/build/release/mmay",
+        "test",
+        ".",
+        "--engine",
+        "both"
+      ],
+      "cwd": "/workspace/Projects/Marimay/marimay-notes",
+      "status": 0,
+      "stdout": "test local/marimay-notes.emptyDatabaseHasStableJson ... ok\ntest local/marimay-notes.addFindAndRemoveNotes ... ok\ntest local/marimay-notes.jsonRoundTripPreservesUnicodeAndTags ... ok\ntest local/marimay-notes.unknownAndMissingFieldsAreRejected ... ok\ntest local/marimay-notes.rejectsInvalidIdsAndVersion ... ok\ntest local/marimay-notes.addPreservesInputAndRejectsExhaustion ... ok\ntest local/marimay-notes.standaloneMatchHandlesExpectedErrors ... ok\ntest local/marimay-notes.databaseErrorsAreRussian ... ok\ntest local/marimay-notes.commandAndSystemErrorsAreRussian ... ok\ntest local/marimay-notes.russianNotesRoundTripWithoutChangingFormat ... ok\ntest local/marimay-notes/notes.copyKeepsNoteIdentityAndTagAliases ... ok\ntest local/marimay-notes/notes.removalPreservesOrderAndChangesArrayAliases ... ok\ntest local/marimay-notes/notes.searchReturnsTheStoredRecord ... ok\ntest local/marimay-notes/notes.rejectedAddPreservesNonemptyInput ... ok\ntest result: ok. 14 passed; 0 failed\n",
+      "stderr": ""
+    }
+  ],
+  "baseline_process": {
+    "path": "/workspace/Projects/Marimay/marimay-notes/build/process-acceptance-1788800184814894000.json",
+    "sha256": "042f365ca28853f1b2134a5b5d30711398b0cfc9bf72ca1ea4a6951fd549c8dc",
+    "report": {
+      "schema": 1,
+      "scope": "notes process/files baseline; not full CP42 acceptance",
+      "harness": {
+        "harness_version": "1",
+        "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+        "platform": "macOS-26.6.2-arm64-arm-64bit",
+        "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+        "compiler_sha256": "cd52f0f066342bf3faf6bba183fb395b09a4cc2a75a1ca228e5e9a2e89b0b6af",
+        "engines": {
+          "vm": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--allow-read",
+              "/workspace/tmp/marimay-notes-acceptance-y_2r33v8/разрешено с пробелами",
+              "--allow-write",
+              "/workspace/tmp/marimay-notes-acceptance-y_2r33v8/разрешено с пробелами",
+              "--"
+            ],
+            "executable_sha256": "cd52f0f066342bf3faf6bba183fb395b09a4cc2a75a1ca228e5e9a2e89b0b6af"
+          },
+          "debug": {
+            "command": [
+              "/workspace/tmp/marimay-notes-acceptance-y_2r33v8/notes-debug"
+            ],
+            "executable_sha256": "4eac054e033441371f2442121ddf24b5a268180c8529f8bb44120d5b8e3075d8"
+          },
+          "release": {
+            "command": [
+              "/workspace/tmp/marimay-notes-acceptance-y_2r33v8/notes-release"
+            ],
+            "executable_sha256": "a220a3c5fe9683a9df09263987cbbe8e7d3d8d4d3722130f895aac3c9d9932b2"
+          }
+        }
+      },
+      "cases": [
+        {
+          "name": "absent-list",
+          "arguments": [
+            "list"
+          ],
+          "status": 0,
+          "stdout": "Заметок пока нет.\n",
+          "stderr": "",
+          "before_sha256": null,
+          "after_sha256": null
+        },
+        {
+          "name": "add-unicode",
+          "arguments": [
+            "add",
+            "Купить чай ☕",
+            "--tag",
+            "дом",
+            "--tag",
+            "покупки"
+          ],
+          "status": 0,
+          "stdout": "Добавлена заметка №1.\n",
+          "stderr": "",
+          "before_sha256": null,
+          "after_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b"
+        },
+        {
+          "name": "show-existing",
+          "arguments": [
+            "show",
+            "1"
+          ],
+          "status": 0,
+          "stdout": "#1 Купить чай ☕ [дом, покупки]\n",
+          "stderr": "",
+          "before_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b",
+          "after_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b"
+        },
+        {
+          "name": "add-second",
+          "arguments": [
+            "add",
+            "Прочитать документацию",
+            "--tag",
+            "учёба"
+          ],
+          "status": 0,
+          "stdout": "Добавлена заметка №2.\n",
+          "stderr": "",
+          "before_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "list-in-order",
+          "arguments": [
+            "list"
+          ],
+          "status": 0,
+          "stdout": "#1 Купить чай ☕ [дом, покупки]\n#2 Прочитать документацию [учёба]\n",
+          "stderr": "",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "remove-first",
+          "arguments": [
+            "remove",
+            "1"
+          ],
+          "status": 0,
+          "stdout": "Удалена заметка №1.\n",
+          "stderr": "",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "show-missing",
+          "arguments": [
+            "show",
+            "1"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Заметка №1 не найдена\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "remove-missing",
+          "arguments": [
+            "remove",
+            "1"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Заметка №1 не найдена\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "ids-not-reused",
+          "arguments": [
+            "add",
+            "Записать результат"
+          ],
+          "status": 0,
+          "stdout": "Добавлена заметка №3.\n",
+          "stderr": "",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "list-after-removal",
+          "arguments": [
+            "list"
+          ],
+          "status": 0,
+          "stdout": "#2 Прочитать документацию [учёба]\n#3 Записать результат\n",
+          "stderr": "",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "blank-note",
+          "arguments": [
+            "add",
+            " \t"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Текст заметки не должен быть пустым\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "add-missing-text",
+          "arguments": [
+            "add"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Использование: marimay-notes add ТЕКСТ [--tag ТЕГ]...\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "list-extra",
+          "arguments": [
+            "list",
+            "x"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Использование: marimay-notes list\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "unknown-option",
+          "arguments": [
+            "--нет"
+          ],
+          "status": 2,
+          "stdout": "",
+          "stderr": "marimay-notes: Неизвестный параметр «--нет». Справка: --help\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "missing-tag-value",
+          "arguments": [
+            "add",
+            "x",
+            "--tag"
+          ],
+          "status": 2,
+          "stdout": "",
+          "stderr": "marimay-notes: После --tag нужно указать значение\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "unknown-command",
+          "arguments": [
+            "неизвестно"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Неизвестная команда «неизвестно». Справка: --help\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id-0",
+          "arguments": [
+            "show",
+            "--",
+            "0"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id--1",
+          "arguments": [
+            "show",
+            "--",
+            "-1"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id-9223372036854775808",
+          "arguments": [
+            "show",
+            "--",
+            "9223372036854775808"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id-ноль",
+          "arguments": [
+            "show",
+            "--",
+            "ноль"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "id-exhaustion",
+          "arguments": [
+            "add",
+            "x"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Свободные ID заметок закончились\n",
+          "before_sha256": "2da04832335f1d03cc5d9a9fdece6988c68a8cb88d79559b4f02e6ba3944998e",
+          "after_sha256": "2da04832335f1d03cc5d9a9fdece6988c68a8cb88d79559b4f02e6ba3944998e"
+        },
+        {
+          "name": "reject-version",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: Неподдерживаемая версия базы заметок\n",
+          "before_sha256": "3424602e081d8cfea24fbbd3759953b29a9135cd16ea9672bee4a7a8de47b032",
+          "after_sha256": "3424602e081d8cfea24fbbd3759953b29a9135cd16ea9672bee4a7a8de47b032"
+        },
+        {
+          "name": "reject-duplicate-id",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: В базе повторяется ID заметки\n",
+          "before_sha256": "b89a1dce41fe244675af8f3637e1a9550e8755ab26b327709f8afabad473b4b3",
+          "after_sha256": "b89a1dce41fe244675af8f3637e1a9550e8755ab26b327709f8afabad473b4b3"
+        },
+        {
+          "name": "reject-missing-field",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: Отсутствует обязательное поле «notes»: байт 24; путь: $[\"notes\"]\n",
+          "before_sha256": "125b06c46110160dde30f93779980b31acb80ec8e1d9d34a6a1f8adbee7f7d23",
+          "after_sha256": "125b06c46110160dde30f93779980b31acb80ec8e1d9d34a6a1f8adbee7f7d23"
+        },
+        {
+          "name": "reject-invalid-utf8",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: Некорректная кодировка UTF-8: байт 0\n",
+          "before_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+          "after_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89"
+        },
+        {
+          "name": "file-limit",
+          "arguments": [
+            "list"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Файл превышает допустимый размер: 1048576 байт\n",
+          "before_sha256": "9d78de4e5b12fc166bed811cd230621ea1e1e353553fe31b92a73bfbf45d68ee",
+          "after_sha256": "9d78de4e5b12fc166bed811cd230621ea1e1e353553fe31b92a73bfbf45d68ee"
+        },
+        {
+          "name": "denied-read",
+          "arguments": [
+            "list"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Нет разрешения fs.read для пути «/workspace/tmp/marimay-notes-acceptance-y_2r33v8/outside/fixture.json». Укажите разрешённый каталог при запуске или сборке\n",
+          "before_sha256": null,
+          "after_sha256": null
+        }
+      ],
+      "elapsed_seconds": 16.236027375000003,
+      "source_sha256": {
+        "mmay.mod": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+        "main.my": "8a0789e9e868b616c396bf9179db55f36d55d5a0efba5ec6e3f0ddcde3caf5eb",
+        "main_test.my": "798dbf794640413a96258a5b1e6740f05154f032d5c7109808a59beb4c0d2aa9",
+        "messages_test.my": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+        "notes/api.my": "c8f833a5ba120dc62fd10eb8e1e453475c1694aa78ed8c027e7f1bcdc4b70bd0",
+        "notes/collection_baseline_test.my": "74e9e03d3eb662288a29cc862f39f14b3566a66eb165144c3082b1baf117a3d9",
+        "messages/json.my": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+        "messages/system.my": "6c991e427ba9e1c0f43d0a03a80c5057051fc0b75112dd6b44802984c882aaf6"
+      }
+    }
+  },
+  "broken_pipe_before": [
+    {
+      "engine": "vm",
+      "status": 0,
+      "stderr": ""
+    },
+    {
+      "engine": "debug",
+      "status": 0,
+      "stderr": ""
+    },
+    {
+      "engine": "release",
+      "status": 0,
+      "stderr": ""
+    }
+  ],
+  "final_process": {
+    "path": "/workspace/Projects/Marimay/marimay-notes/build/process-acceptance-1788802746973260000.json",
+    "sha256": "3a09131fcf57731efee2e264a4eb67892d9b43f7f84e2382078335508b8ac856",
+    "report": {
+      "schema": 1,
+      "scope": "notes process/files baseline; not full CP42 acceptance",
+      "harness": {
+        "harness_version": "1",
+        "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+        "platform": "macOS-26.6.2-arm64-arm-64bit",
+        "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+        "compiler_sha256": "cd52f0f066342bf3faf6bba183fb395b09a4cc2a75a1ca228e5e9a2e89b0b6af",
+        "engines": {
+          "vm": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--allow-read",
+              "/workspace/tmp/marimay-notes-acceptance-bk4boypn/разрешено с пробелами",
+              "--allow-write",
+              "/workspace/tmp/marimay-notes-acceptance-bk4boypn/разрешено с пробелами",
+              "--"
+            ],
+            "executable_sha256": "cd52f0f066342bf3faf6bba183fb395b09a4cc2a75a1ca228e5e9a2e89b0b6af"
+          },
+          "debug": {
+            "command": [
+              "/workspace/tmp/marimay-notes-acceptance-bk4boypn/notes-debug"
+            ],
+            "executable_sha256": "9e6fcf0bf6e59045008f56b49c9fcf97ce09b972ae8acc42eec536c7d1249471"
+          },
+          "release": {
+            "command": [
+              "/workspace/tmp/marimay-notes-acceptance-bk4boypn/notes-release"
+            ],
+            "executable_sha256": "45278d66d97cc604c6b995458c0dddf73a33e926bdb4f0668c02b2e1646be5fa"
+          }
+        }
+      },
+      "cases": [
+        {
+          "name": "absent-list",
+          "arguments": [
+            "list"
+          ],
+          "status": 0,
+          "stdout": "Заметок пока нет.\n",
+          "stderr": "",
+          "before_sha256": null,
+          "after_sha256": null
+        },
+        {
+          "name": "add-unicode",
+          "arguments": [
+            "add",
+            "Купить чай ☕",
+            "--tag",
+            "дом",
+            "--tag",
+            "покупки"
+          ],
+          "status": 0,
+          "stdout": "Добавлена заметка №1.\n",
+          "stderr": "",
+          "before_sha256": null,
+          "after_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b"
+        },
+        {
+          "name": "show-existing",
+          "arguments": [
+            "show",
+            "1"
+          ],
+          "status": 0,
+          "stdout": "#1 Купить чай ☕ [дом, покупки]\n",
+          "stderr": "",
+          "before_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b",
+          "after_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b"
+        },
+        {
+          "name": "add-second",
+          "arguments": [
+            "add",
+            "Прочитать документацию",
+            "--tag",
+            "учёба"
+          ],
+          "status": 0,
+          "stdout": "Добавлена заметка №2.\n",
+          "stderr": "",
+          "before_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "list-in-order",
+          "arguments": [
+            "list"
+          ],
+          "status": 0,
+          "stdout": "#1 Купить чай ☕ [дом, покупки]\n#2 Прочитать документацию [учёба]\n",
+          "stderr": "",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "remove-first",
+          "arguments": [
+            "remove",
+            "1"
+          ],
+          "status": 0,
+          "stdout": "Удалена заметка №1.\n",
+          "stderr": "",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "show-missing",
+          "arguments": [
+            "show",
+            "1"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Заметка №1 не найдена\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "remove-missing",
+          "arguments": [
+            "remove",
+            "1"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Заметка №1 не найдена\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "ids-not-reused",
+          "arguments": [
+            "add",
+            "Записать результат"
+          ],
+          "status": 0,
+          "stdout": "Добавлена заметка №3.\n",
+          "stderr": "",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "list-after-removal",
+          "arguments": [
+            "list"
+          ],
+          "status": 0,
+          "stdout": "#2 Прочитать документацию [учёба]\n#3 Записать результат\n",
+          "stderr": "",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "blank-note",
+          "arguments": [
+            "add",
+            " \t"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Текст заметки не должен быть пустым\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "add-missing-text",
+          "arguments": [
+            "add"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Использование: marimay-notes add ТЕКСТ [--tag ТЕГ]...\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "list-extra",
+          "arguments": [
+            "list",
+            "x"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Использование: marimay-notes list\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "unknown-option",
+          "arguments": [
+            "--нет"
+          ],
+          "status": 2,
+          "stdout": "",
+          "stderr": "marimay-notes: Неизвестный параметр «--нет». Справка: --help\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "missing-tag-value",
+          "arguments": [
+            "add",
+            "x",
+            "--tag"
+          ],
+          "status": 2,
+          "stdout": "",
+          "stderr": "marimay-notes: После --tag нужно указать значение\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "unknown-command",
+          "arguments": [
+            "неизвестно"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Неизвестная команда «неизвестно». Справка: --help\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id-0",
+          "arguments": [
+            "show",
+            "--",
+            "0"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id--1",
+          "arguments": [
+            "show",
+            "--",
+            "-1"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id-9223372036854775808",
+          "arguments": [
+            "show",
+            "--",
+            "9223372036854775808"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id-ноль",
+          "arguments": [
+            "show",
+            "--",
+            "ноль"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "id-exhaustion",
+          "arguments": [
+            "add",
+            "x"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Свободные ID заметок закончились\n",
+          "before_sha256": "2da04832335f1d03cc5d9a9fdece6988c68a8cb88d79559b4f02e6ba3944998e",
+          "after_sha256": "2da04832335f1d03cc5d9a9fdece6988c68a8cb88d79559b4f02e6ba3944998e"
+        },
+        {
+          "name": "reject-version",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: Неподдерживаемая версия базы заметок\n",
+          "before_sha256": "3424602e081d8cfea24fbbd3759953b29a9135cd16ea9672bee4a7a8de47b032",
+          "after_sha256": "3424602e081d8cfea24fbbd3759953b29a9135cd16ea9672bee4a7a8de47b032"
+        },
+        {
+          "name": "reject-duplicate-id",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: В базе повторяется ID заметки\n",
+          "before_sha256": "b89a1dce41fe244675af8f3637e1a9550e8755ab26b327709f8afabad473b4b3",
+          "after_sha256": "b89a1dce41fe244675af8f3637e1a9550e8755ab26b327709f8afabad473b4b3"
+        },
+        {
+          "name": "reject-missing-field",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: Отсутствует обязательное поле «notes»: байт 24; путь: $[\"notes\"]\n",
+          "before_sha256": "125b06c46110160dde30f93779980b31acb80ec8e1d9d34a6a1f8adbee7f7d23",
+          "after_sha256": "125b06c46110160dde30f93779980b31acb80ec8e1d9d34a6a1f8adbee7f7d23"
+        },
+        {
+          "name": "reject-invalid-utf8",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: Некорректная кодировка UTF-8: байт 0\n",
+          "before_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+          "after_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89"
+        },
+        {
+          "name": "file-limit",
+          "arguments": [
+            "list"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Файл превышает допустимый размер: 1048576 байт\n",
+          "before_sha256": "9d78de4e5b12fc166bed811cd230621ea1e1e353553fe31b92a73bfbf45d68ee",
+          "after_sha256": "9d78de4e5b12fc166bed811cd230621ea1e1e353553fe31b92a73bfbf45d68ee"
+        },
+        {
+          "name": "denied-read",
+          "arguments": [
+            "list"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Нет разрешения fs.read для пути «/workspace/tmp/marimay-notes-acceptance-bk4boypn/outside/fixture.json». Укажите разрешённый каталог при запуске или сборке\n",
+          "before_sha256": null,
+          "after_sha256": null
+        }
+      ],
+      "broken_pipe": [
+        {
+          "name": "help-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "help-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "help-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "list-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "list-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "list-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "show-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "show-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "show-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "add-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "add-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "add-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "remove-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "remove-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "remove-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        }
+      ],
+      "elapsed_seconds": 17.777804167,
+      "source_sha256": {
+        "mmay.mod": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+        "main.my": "cb9222a8ed7ecd1885eebd1aaec6e1c2544befd5f8ece54574e60ff8f0325089",
+        "main_test.my": "798dbf794640413a96258a5b1e6740f05154f032d5c7109808a59beb4c0d2aa9",
+        "messages_test.my": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+        "notes/api.my": "0618e69e9917f2ff0b63667f6e1f5207aeb6037541d8ad604b5a7cb16523a53f",
+        "notes/collection_baseline_test.my": "74e9e03d3eb662288a29cc862f39f14b3566a66eb165144c3082b1baf117a3d9",
+        "messages/json.my": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+        "messages/system.my": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84"
+      }
+    }
+  },
+  "book_ideas_used": []
+}
