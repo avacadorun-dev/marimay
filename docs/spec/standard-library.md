@@ -35,6 +35,11 @@ It does not inject filesystem, network, environment, logging, JSON, reflection, 
 
 ### 2.1 `Option<T>`
 
+The scoped `if const`/`if let` and `while const`/`while let` forms in
+[language section 8](language.md#8-control-flow) bind a `Some` payload only in
+the successful body. They use the exact prelude Option family and do not
+convert Result failures to absence (D096).
+
 Required dot-call functions:
 
 ```marimay

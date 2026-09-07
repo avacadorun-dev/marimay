@@ -121,3 +121,4 @@ tuple_pattern	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-pro
 pattern_list	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_pattern_grammar	c:mmay_test_parser_pattern_grammar	c:mmay_test_parser_pattern_grammar	covered
 pattern_fields	tests/syntax/parser/all-productions.my	tests/format/braced-groups.expected.my	c:mmay_test_parser_pattern_grammar	c:mmay_test_parser_pattern_grammar	c:mmay_test_parser_pattern_grammar	covered
 pattern_field	tests/syntax/parser/all-productions.my	tests/format/braced-groups.expected.my	c:mmay_test_parser_pattern_grammar	c:mmay_test_parser_pattern_grammar	c:mmay_test_parser_pattern_grammar	covered
+option_condition	tests/format/option-condition.expected.my	tests/format/option-condition.expected.my	c:mmay_test_parser_option_condition	c:mmay_test_parser_option_condition	c:mmay_test_parser_option_condition	covered

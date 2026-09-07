@@ -75,6 +75,9 @@ compiler/runtime/std через `mmay version --json` и `mmay doctor --json`.
 D089 линейные независимые cursors; D090/D091 групповой Map/Set index и
 амортизированная перестройка; D092 void match; D093 test helpers;
 D094 mapError context; D095 test panic ranges; recovery compound for bindings.
+D096 scoped Option bindings in if/while теперь реализованы и проверены локально:
+[evidence](evidence/cp42-option-binding-2026-09-08.md), Release 76/76,
+focused ASan/UBSan, 9 source cases и миграция config/notes без изменения outputs.
 Не начинай эти исправления заново по старым findings.
 
 Перестройка коллекций дала локальные парные выигрыши примерно 15%/25%/16%
@@ -82,14 +85,16 @@ D094 mapError context; D095 test panic ranges; recovery compound for bindings.
 малых регрессий. Остаточную стоимость нужно заново профилировать по слоям;
 старые профили и межъязыковые отношения не являются свежим baseline.
 
-Открыты общие copy/search/stable removal, mutation return contracts, Option
-binding и согласованная модель notes. Сначала реальные выражения config/notes,
+Открыты общие copy/search/stable removal, завершение mutation return contracts
+и согласованная модель notes. Сначала реальные выражения config/notes,
 затем decision/spec/owners/formatter/MIR/VM/native и миграция потребителей.
 Expected errors и capacity limits нельзя скрывать ради удаления discard.
 На 2026-09-08 [единый проект контрактов](../research/cli0-collection-contracts-2026-09-08.md)
-фиксирует предлагаемые границы copy/findIndex/removeAt, Option binding и
-функциональной модели notes; новые сигнатуры/синтаксис ещё не приняты и не
-реализованы. [Notes baseline](evidence/cli0-notes-contract-baseline-2026-09-08.md)
+фиксирует предлагаемые границы copy/findIndex/removeAt и функциональной модели
+notes; операции массивов ещё не приняты и не реализованы. Option binding
+принят как D096. Общую поддержку callback нельзя выводить из mapError:
+сохранение произвольной closure в массиве пока даёт I0001; это зависимость
+проектируемого findIndex. [Notes baseline](evidence/cli0-notes-contract-baseline-2026-09-08.md)
 содержит 14 source tests, 27 cases × три engines и 15 closed-pipe проверок.
 Миграция на существующие Result/void-match контракты и исправление stdout
 выполнены в текущем app checkout и сохранены в source snapshot evidence;

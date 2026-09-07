@@ -76,7 +76,8 @@ static const char *const mmay_syntax_names[] = {
     "TYPE_ARGUMENTS",
     "UNSAFE_STATEMENT",
     "BLOCK_STATEMENT",
-    "FOR_HEADER"
+    "FOR_HEADER",
+    "OPTION_CONDITION"
 };
 
 _Static_assert(

@@ -1,0 +1,142 @@
+@test
+fn branchesAndShadowing(): void {
+  const value = 41;
+  let output: int;
+  if const value = Some(value + 1) {
+    output = value;
+  } else {
+    output = 0;
+  }
+  expect.equal(output, 42);
+  expect.equal(value, 41);
+  const missing: Option<int> = None;
+  if const item = missing {
+    panic("None entered Some body");
+  } else if let value = Some(value) {
+    value += 1;
+    expect.equal(value, 42);
+  } else {
+    panic("Some took the else branch");
+  }
+  expect.equal(value, 41);
+}
+
+@test
+fn nestedOptionPreservesInnerNone(): void {
+  const nested: Option<Option<int>> = Some(None);
+  let visited = 0;
+  if const inner = nested {
+    visited += 1;
+    if const value = inner {
+      panic("inner None became Some");
+    } else {
+      visited += 2;
+    }
+  }
+  expect.equal(visited, 3);
+}
+
+@test
+fn referencePayloadRetainsIdentity(): void {
+  const original = Box { value: 1 };
+  if const alias = Some(original) {
+    expect.true(identity.same(alias, original));
+  }
+  const values = [1];
+  if const alias = Some(values) {
+    alias[0] = 8;
+  }
+  expect.equal(values[0], 8);
+}
+
+@test
+fn loopReevaluatesAfterContinueAndStopsAtNone(): void {
+  const values = [1, 2, 3];
+  const calls = [0];
+  let total = 0;
+  while let value = next(values, calls) {
+    if value == 3 {
+      continue;
+    }
+    value += 1;
+    total += value;
+  }
+  expect.equal(total, 5);
+  expect.equal(calls[0], 4);
+  expect.equal(values.length(), 0);
+  while const value = next(values, calls) {
+    panic("empty pop entered body");
+  }
+  expect.equal(calls[0], 5);
+}
+
+@test
+fn cleanupRunsForContinueBreakReturnAndPropagation(): void {
+  const trace: []int = [];
+  const values = [1, 2, 3];
+  while const value = values.pop() {
+    defer remember(trace, value);
+    if value == 3 {
+      continue;
+    }
+    break;
+  }
+  expect.equal(trace.length(), 2);
+  expect.equal(trace[0], 3);
+  expect.equal(trace[1], 2);
+  expect.equal(values.length(), 1);
+  expect.equal(returned(trace), 7);
+  expect.equal(trace[2], 7);
+  expect.err(propagated(trace, Err("expected")));
+  expect.equal(trace[3], 9);
+  expect.equal(trace.length(), 4);
+}
+
+@test
+fn retainedValuesBelongToTheirIteration(): void {
+  const values = [1, 2, 3];
+  const retained: []Box = [];
+  while const value = values.pop() {
+    const _ = retained.push(Box { value });
+  }
+  expect.equal(retained[0].value, 3);
+  expect.equal(retained[1].value, 2);
+  expect.equal(retained[2].value, 1);
+}
+
+@test
+fn matchStillHandlesBothVariants(): void {
+  const values = [4];
+  const result = match values.pop() {
+    Some(value) => value,
+    None => 0,
+  };
+  expect.equal(result, 4);
+}
+
+@test
+fn mapperUsesTheCurrentBinding(): void {
+  const error: Result<int, string> = Err("failed");
+  if let value = Some(1) {
+    value += 1;
+    const mapped: Result<int, string> = error.mapError((message) => $"{value}: {message}");
+    expect.equal(
+      match mapped {
+        Ok(_) => "unexpected",
+        Err(message) => message,
+      },
+      "2: failed",
+    );
+  }
+}
+
+@test
+fn genericBindingPreservesFalsyAndReferencePayloads(): void {
+  const object = Box { value: 8 };
+  const missing: Option<string> = None;
+  expect.equal(choose(Some(0), 1), 0);
+  expect.false(choose(Some(false), true));
+  expect.equal(choose(Some(""), "fallback"), "");
+  expect.equal(choose(missing, "fallback"), "fallback");
+  expect.true(identity.same(choose(Some(object), Box { value: 0 }), object));
+}

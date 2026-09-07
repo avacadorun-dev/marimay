@@ -156,6 +156,7 @@ REQUIRED_DECISIONS = {
     "D093",
     "D094",
     "D095",
+    "D096",
 }
 
 VALID_DECISION_STATES = {"accepted", "provisional", "deferred", "rejected"}
@@ -195,10 +196,12 @@ def _line_number(text: str, offset: int) -> int:
 
 
 def _markdown_files() -> List[Path]:
+    # Check source documentation, not installed copies in ignored output roots.
     return sorted(
         path
         for path in ROOT.rglob("*.md")
-        if not any(part.startswith(".") for part in path.relative_to(ROOT).parts)
+        if path.relative_to(ROOT).parts[0] not in {"build", "out", "dist"}
+        and not any(part.startswith(".") for part in path.relative_to(ROOT).parts)
     )
 
 

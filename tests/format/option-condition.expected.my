@@ -1,0 +1,14 @@
+fn values(items: []int): void {
+  if const value = items.pop() {
+    use(value);
+  } else if let value = Some(1) {
+    value += 1;
+    use(value);
+  }
+  while const value = items.pop() {
+    if value == 1 {
+      continue;
+    }
+    break;
+  }
+}

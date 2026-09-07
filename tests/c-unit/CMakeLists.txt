@@ -99,6 +99,7 @@ add_executable(mmay_c_unit
   test_checker_failures.c
   test_checker_arrays.c
   test_checker_array_mutation.c
+  test_checker_option_condition.c
   test_checker_array_types.c
   test_mir_array_mutation.c
   test_checker_facts.c
@@ -220,6 +221,7 @@ add_executable(mmay_c_unit
   test_parser_declarations.c
   test_parser_expressions.c
   test_parser_for_recovery.c
+  test_parser_option_condition.c
   test_parser_nested_generics.c
   test_parser_array_types.c
   test_parser_incremental.c
@@ -772,6 +774,16 @@ set_tests_properties(mmay_cp33_process_text_bytes PROPERTIES COST 380)
 set_tests_properties(mmay_cp34_process_files PROPERTIES COST 380)
 set_tests_properties(mmay_cp35_process_context PROPERTIES COST 380)
 set_tests_properties(mmay_cp36_map_set PROPERTIES COST 400)
+add_test(
+  NAME mmay_cp42_option_binding
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp42-option-binding"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/cp42-option-binding"
+    "-DMMAY_TEST_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_option_binding.cmake"
+)
+set_tests_properties(mmay_cp42_option_binding PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200)
 # CP37 creates uniquely named artifacts, but launches several compiler and
 # native-program subprocesses. Reserve capacity without serializing every
 # unrelated CTest owner behind it.

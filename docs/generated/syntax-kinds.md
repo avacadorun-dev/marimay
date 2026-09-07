@@ -83,3 +83,4 @@ These immutable green-node kinds retain source structure. Physical tokens and tr
 | `UNSAFE_STATEMENT` | statement |
 | `BLOCK_STATEMENT` | statement |
 | `FOR_HEADER` | statement |
+| `OPTION_CONDITION` | statement |

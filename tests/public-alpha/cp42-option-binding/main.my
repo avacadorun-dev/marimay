@@ -1,0 +1,63 @@
+import * as io from "std/io";
+
+type Box {
+  public value: int,
+}
+
+fn choose<T>(value: Option<T>, fallback: T): T {
+  if const present = value {
+    return present;
+  }
+  return fallback;
+}
+
+fn next(values: []int, calls: []int): Option<int> {
+  calls[0] += 1;
+  return values.pop();
+}
+
+fn remember(values: []int, value: int): void {
+  const _ = values.push(value);
+}
+
+fn returned(trace: []int): int {
+  while const value = Some(7) {
+    defer remember(trace, value);
+    return value;
+  }
+  return 0;
+}
+
+fn propagated(trace: []int, failure: Result<int, string>): Result<int, string> {
+  if const value = Some(9) {
+    defer remember(trace, value);
+    return Ok(failure?);
+  }
+  return Ok(0);
+}
+
+fn reportCleanup(value: int): void {
+  const _ = io.eprintln($"option cleanup {value}");
+  const _ = io.flushStderr();
+}
+
+fn main(arguments: []string): int {
+  if arguments.length() != 0 {
+    if const value = Some(7) {
+      defer reportCleanup(value);
+      panic("option panic");
+    }
+  }
+  const values = [1, 2, 3];
+  const calls = [0];
+  let total = 0;
+  while const value = next(values, calls) {
+    total += value;
+  }
+  if const value = Some(total) {
+    if value == 6 && calls[0] == 4 {
+      return 0;
+    }
+  }
+  return 1;
+}

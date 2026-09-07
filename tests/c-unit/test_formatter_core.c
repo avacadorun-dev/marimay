@@ -231,6 +231,7 @@ void mmay_test_formatter_fixture_file(void) {
         const char *input_path;
         const char *expected_path;
     } fixtures[] = {
+        {"format/option-condition.input.my", "format/option-condition.expected.my"},
         {
             "syntax/parser/all-productions.my",
             "syntax/parser/all-productions.my"

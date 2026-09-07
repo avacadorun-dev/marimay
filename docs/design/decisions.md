@@ -3031,3 +3031,38 @@ terse CLI report and does not claim full stack/suppressed-panic presentation.
 Checks cover same/cross-file generic helpers, Unicode/space paths, CRLF/BOM,
 range ends, earlier stderr, both engines, native O0/O2, and every reachable
 allocation-failure index in location preparation and metadata emission.
+
+## D096 — Scoped Option bindings in conditions
+
+Status: accepted.
+
+An `if` or `while` header may contain `const name = expression` or
+`let name = expression` in place of its ordinary bool expression. The
+initializer must have the exact prelude `Option<T>` type. On `Some`, the
+body receives its exact T value; on `None`, execution selects `else` or exits
+the loop. This is explicit binding syntax, not truthiness or conversion of
+Result or user-defined enums. A named binding cannot store void.
+
+The name is visible only inside the successful body, in that body's lexical
+scope. It is absent from its own initializer, `else`, and following statements.
+It may shadow an outer name; a declaration with the same name in the immediate
+body is a duplicate. `const` is immutable and `let` permits reassignment, with
+ordinary reference identity and aliasing. A fresh binding is made on each loop
+entry. The initializer runs once per if test and once per while test, including
+the test after `continue`. `break`, `return`, panic and defer retain their
+existing control and cleanup rules. Definite initialization includes the
+None/zero-iteration path; no nonempty or eventual-termination fact is inferred.
+
+The first surface accepts one identifier and an inferred payload type. A type
+annotation, discard, compound pattern or binding chain is not part of this
+grammar. D072 remains authoritative: `const` and `let` are hard keywords,
+including in conditions; they cannot name ordinary calls. General enum destructuring and exhaustive handling
+remain with `match`; the existing exhaustiveness rules are unchanged.
+
+Reason: real CLI code consumes optional lookups, destinations and popped
+elements. A binding exposes their payload in the branch that can use it,
+without a sentinel, repeated lookup or Result error suppression. The checker
+lowers the exact Option test and guarded payload access into existing typed
+MIR enum and CFG operations; neither backend adds source-language semantics.
+The initial CP42 research packet's contextual-name assumption conflicted with
+D072 and language section 2.3; that assumption is corrected, not implemented.

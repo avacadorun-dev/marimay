@@ -7,6 +7,7 @@
 #include "checker_lookup_api.h"
 #include "checker_match_lower_api.h"
 #include "checker_match_pattern_api.h"
+#include "checker_option_condition_api.h"
 #include "checker_range_loop_api.h"
 #include "checker_statement_api.h"
 
@@ -194,11 +195,7 @@ bool mmay_checker_private_compile_if(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node
 ) {
-    const MarimayAstNode *condition = mmay_checker_private_check_child_node(
-        node,
-        MMAY_SYNTAX_EXPRESSION,
-        0
-    );
+    const MarimayAstNode *condition = mmay_checker_private_condition_node(node);
     const MarimayAstNode *when_true_node = mmay_checker_private_check_child_node(
         node,
         MMAY_SYNTAX_BLOCK,
@@ -218,6 +215,7 @@ bool mmay_checker_private_compile_if(
     MarimayInitializationSnapshot true_state;
     MarimayInitializationSnapshot false_state;
     MarimayExpressionValue condition_value;
+    MarimayOptionCondition option_binding;
     MarimayMirBlockId branch_block = MMAY_MIR_NO_BLOCK;
     MarimayMirBlockId true_block = MMAY_MIR_NO_BLOCK;
     MarimayMirBlockId false_block = MMAY_MIR_NO_BLOCK;
@@ -259,7 +257,8 @@ bool mmay_checker_private_compile_if(
         );
     if (!initial_initialized || !true_state_initialized
         || !false_state_initialized
-        || !mmay_checker_private_compile_condition(function, condition, &condition_value)) {
+        || !mmay_checker_private_compile_option_condition(
+            function, condition, &condition_value, &option_binding)) {
         goto cleanup;
     }
     if (mmay_expression_is_never(function, &condition_value)) {
@@ -283,7 +282,7 @@ bool mmay_checker_private_compile_if(
 
     function->block = true_block;
     function->terminated = false;
-    if (!mmay_checker_private_compile_scoped_block(function, when_true_node)) {
+    if (!mmay_checker_private_compile_condition_body(function, when_true_node, &option_binding)) {
         goto cleanup;
     }
     true_continues = !function->terminated;
@@ -365,11 +364,7 @@ bool mmay_checker_private_compile_while(
     MarimayFunctionChecker *function,
     const MarimayAstNode *node
 ) {
-    const MarimayAstNode *condition = mmay_checker_private_check_child_node(
-        node,
-        MMAY_SYNTAX_EXPRESSION,
-        0
-    );
+    const MarimayAstNode *condition = mmay_checker_private_condition_node(node);
     const MarimayAstNode *body = mmay_checker_private_check_child_node(
         node,
         MMAY_SYNTAX_BLOCK,
@@ -377,6 +372,7 @@ bool mmay_checker_private_compile_while(
     );
     MarimayInitializationSnapshot initial;
     MarimayExpressionValue condition_value;
+    MarimayOptionCondition option_binding;
     MarimayMirBlockId entry = function->block;
     MarimayMirBlockId condition_block = MMAY_MIR_NO_BLOCK;
     MarimayMirBlockId condition_end = MMAY_MIR_NO_BLOCK;
@@ -412,7 +408,8 @@ bool mmay_checker_private_compile_while(
     }
     function->block = condition_block;
     function->terminated = false;
-    if (!mmay_checker_private_compile_condition(function, condition, &condition_value)) {
+    if (!mmay_checker_private_compile_option_condition(
+            function, condition, &condition_value, &option_binding)) {
         goto cleanup;
     }
     if (mmay_expression_is_never(function, &condition_value)) {
@@ -447,7 +444,7 @@ bool mmay_checker_private_compile_while(
     loop_pushed = true;
     function->block = body_block;
     function->terminated = false;
-    if (!mmay_checker_private_compile_scoped_block(function, body)) {
+    if (!mmay_checker_private_compile_condition_body(function, body, &option_binding)) {
         goto cleanup;
     }
     body_continues = !function->terminated;

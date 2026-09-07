@@ -122,5 +122,8 @@ unsafe fn allForms<T>(value: int, boxed: Box<T>): Result<int, Error> {
   use(spawned);
   use(tried);
   use(matched);
+  if const present = Some(1) {
+    use(present);
+  }
   return Ok(assigned);
 }

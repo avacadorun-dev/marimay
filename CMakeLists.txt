@@ -459,6 +459,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_array_types.c
   bootstrap/src/check/checker.c
   bootstrap/src/check/checker_cfg.c
+  bootstrap/src/check/checker_option_condition.c
   bootstrap/src/check/checker_defer.c
   bootstrap/src/check/checker_core.c
   bootstrap/src/check/checker_compound_types.c

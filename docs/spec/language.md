@@ -267,7 +267,8 @@ use explicit library APIs. `f32` literal conversion, NaN canonicalization, and
 backend conformance are not yet specified by D044 and must not be inferred from
 the `f64` rules.
 
-Conditions require `bool`; there is no truthiness.
+Expression conditions require `bool`; there is no truthiness. Section 8 also
+defines explicit Option binding headers.
 
 Primitive `==` and `!=` require identical operand types. `string` equality
 compares the complete counted UTF-8 byte sequence, including embedded NUL,
@@ -712,7 +713,7 @@ write and does not evaluate the right-hand side.
 
 ## 8. Control flow
 
-Conditions omit mandatory parentheses and require `bool`:
+Expression conditions omit mandatory parentheses and require `bool`:
 
 ```marimay
 if ready {
@@ -726,7 +727,38 @@ while queue.notEmpty() {
 }
 ```
 
-All iteration uses one header:
+Under D096, `if` and `while` also accept a scoped Option binding:
+
+```marimay
+if const value = values.pop() {
+  consume(value);
+} else {
+  empty();
+}
+
+while let value = pending.pop() {
+  value += 1;
+  consume(value);
+}
+```
+
+The header is `const` or `let`, one identifier, `=`, and an expression of the
+exact prelude `Option<T>` type. `Some` enters the body with the exact payload;
+`None` selects `else` or exits `while`. Result, bool and lookalike enums cannot
+be used as Option initializers. Named bindings cannot store void. Type
+annotations, `_`, compound patterns and binding chains are not accepted.
+
+The binding belongs to the body scope: it is invisible in the initializer,
+`else` and following statements. It may shadow an outer name, but cannot be
+redeclared in the immediate body. `const`/`let` use ordinary immutable/mutable
+binding rules; reference payloads are not copied. `if` evaluates its initializer
+once. `while` reevaluates before every test, including after `continue`, and
+creates a fresh binding for every successful entry. Existing break/return,
+defer cleanup and definite-initialization rules apply, including the None and
+zero-iteration paths. Match exhaustiveness is unchanged. D072's hard-keyword
+policy is unchanged: `const` and `let` cannot name ordinary functions.
+
+All `for` iteration uses one header:
 
 ```marimay
 for item in items {

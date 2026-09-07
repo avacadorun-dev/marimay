@@ -113,6 +113,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Scoped Option conditions](cp42-option-binding-2026-09-08.md) records D096,
+exact enum/CFG lowering, parser recovery, scope/cleanup/allocation coverage,
+full local Release 76/76, focused ASan/UBSan and config/notes consumer migration.
+It closes the local implementation slice, not the remaining shared collection
+contracts or platform/application acceptance.
+
 [Notes collection baseline and mutation-result consumption](cli0-notes-contract-baseline-2026-09-08.md)
 records 14 source tests, 27 process cases across three engines and 15 closed-pipe
 checks, including a reproduced and fixed false-success output failure. The

@@ -248,6 +248,8 @@ bootstrap/src/check/
   checker_enum_pattern_names.c
                         exact D084 enum pattern qualifier/alias resolution
   checker_cfg.c         block/edge/value-state ownership
+  checker_option_condition.c
+                       D096 exact Option header test and successful-body binding/cleanup
   checker_statement.c   lexical statement/control-flow lowering
   checker_publication.c checked-package publication
   checker_interpret.c   checked-result MIR oracle adapter
@@ -324,6 +326,16 @@ ordinary call lowering or to `array.c`. Namespace-qualified calls remain with
 the import resolver. `array.c` therefore owns only the selected D045 operation;
 it does not shadow ordinary functions by spelling, and neither VM nor native
 lowering repairs source-level candidate selection.
+
+`checker_option_condition.c` owns D096 exact-prelude Option checking, enum
+test/guarded payload lowering, and the successful body's binding/cleanup scope.
+The existing CFG owner retains branch/loop edges, definite initialization and
+loop exits; it passes one checked header packet to that owner. Parser recovery
+keeps malformed binding annotations/chains inside the header. These operations
+use existing typed MIR enum instructions, so VM/native add no Option inference
+or source-scope policy. Focused parser/checker tests own rejection and allocation
+teardown; `test_cp42_option_binding.cmake` owns public-command differential
+coverage, including panic cleanup and native Debug/Release execution.
 
 `checker_array_types.c` owns recognition of the D054 `[]T` AST prefix and
 interns the unchanged D045 array descriptor. Public-signature visibility

@@ -158,6 +158,40 @@ static void mmay_parse_for_header(MarimayParser *parser) {
     (void)mmay_parser_complete(parser, marker, MMAY_SYNTAX_FOR_HEADER);
 }
 
+static void mmay_parse_condition(MarimayParser *parser) {
+    MarimayTokenKind current = mmay_parser_current(parser);
+    bool binding = (current == MMAY_TOKEN_KW_CONST || current == MMAY_TOKEN_KW_LET)
+        && mmay_parser_contextual_statement_starts(parser, current);
+    MarimayMarker marker;
+    if (binding) {
+        marker = mmay_parser_start(parser);
+        mmay_parser_bump(parser);
+        mmay_parser_expect_identifier(parser, "expected Option binding name");
+        mmay_parser_expect(parser, MMAY_TOKEN_EQUAL, "expected '=' after Option binding name");
+    }
+    mmay_parse_expression_until(parser, MMAY_TOKEN_LEFT_BRACE,
+        MMAY_TOKEN_EOF, MMAY_TOKEN_EOF);
+    if (binding) {
+        if (!mmay_parser_is_stop(parser, MMAY_TOKEN_LEFT_BRACE,
+                MMAY_TOKEN_RIGHT_BRACE, MMAY_TOKEN_EOF)
+            && !parser->allocation_failed && !parser->limit_reached) {
+            MarimayMarker invalid = mmay_parser_start(parser);
+            size_t offset = mmay_parser_current_offset(parser);
+            (void)mmay_parser_add_diagnostic(parser, MMAY_DIAGNOSTIC_UNEXPECTED_TOKEN,
+                "expected block after Option binding", offset, offset);
+            /* Unsupported annotations/chains must not become statements in a
+               synthetic body and consume following function declarations. */
+            while (!mmay_parser_is_stop(parser, MMAY_TOKEN_LEFT_BRACE,
+                    MMAY_TOKEN_RIGHT_BRACE, MMAY_TOKEN_EOF)
+                && !parser->allocation_failed && !parser->limit_reached) {
+                mmay_parser_bump(parser);
+            }
+            (void)mmay_parser_complete(parser, invalid, MMAY_SYNTAX_ERROR);
+        }
+        (void)mmay_parser_complete(parser, marker, MMAY_SYNTAX_OPTION_CONDITION);
+    }
+}
+
 void mmay_parse_statement(MarimayParser *parser) {
     MarimayTokenKind current = mmay_parser_current(parser);
     MarimayMarker marker = mmay_parser_start(parser);
@@ -201,12 +235,7 @@ void mmay_parse_statement(MarimayParser *parser) {
         if (current == MMAY_TOKEN_KW_FOR) {
             mmay_parse_for_header(parser);
         } else {
-            mmay_parse_expression_until(
-                parser,
-                MMAY_TOKEN_LEFT_BRACE,
-                MMAY_TOKEN_EOF,
-                MMAY_TOKEN_EOF
-            );
+            mmay_parse_condition(parser);
         }
         mmay_parse_block(parser);
         if (current == MMAY_TOKEN_KW_IF

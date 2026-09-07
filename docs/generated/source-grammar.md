@@ -63,8 +63,9 @@ binding_name                 = IDENTIFIER | "_" ;
 expression_statement         = expression ";" ;
 return_statement             = "return" [ expression ] ";" ;
 defer_statement              = "defer" expression ";" ;
-if_statement                 = "if" expression block [ "else" ( if_statement | block ) ] ;
-while_statement              = "while" expression block ;
+if_statement                 = "if" ( expression | option_condition ) block [ "else" ( if_statement | block ) ] ;
+while_statement              = "while" ( expression | option_condition ) block ;
+option_condition             = ( "const" | "let" ) IDENTIFIER "=" expression ;
 for_statement                = "for" for_header block ;
 for_header                   = IDENTIFIER "in" expression ;
 scope_statement              = "scope" block ;
@@ -189,8 +190,9 @@ pattern_field                = IDENTIFIER [ ":" pattern ] ;
 | `expression_statement` | statement | baseline | `expression ";"` |
 | `return_statement` | statement | baseline | `"return" [ expression ] ";"` |
 | `defer_statement` | statement | baseline | `"defer" expression ";"` |
-| `if_statement` | statement | baseline | `"if" expression block [ "else" ( if_statement \| block ) ]` |
-| `while_statement` | statement | baseline | `"while" expression block` |
+| `if_statement` | statement | baseline | `"if" ( expression \| option_condition ) block [ "else" ( if_statement \| block ) ]` |
+| `while_statement` | statement | baseline | `"while" ( expression \| option_condition ) block` |
+| `option_condition` | statement | baseline | `( "const" \| "let" ) IDENTIFIER "=" expression` |
 | `for_statement` | statement | baseline | `"for" for_header block` |
 | `for_header` | statement | baseline | `IDENTIFIER "in" expression` |
 | `scope_statement` | statement | baseline | `"scope" block` |

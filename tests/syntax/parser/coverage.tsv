@@ -76,3 +76,4 @@ TYPE_ARGUMENTS	tests/syntax/parser/all-productions.my	tests/format/types.expecte
 UNSAFE_STATEMENT	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_statement_recovery	c:mmay_test_parser_statement_recovery	covered
 BLOCK_STATEMENT	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_statement_recovery	c:mmay_test_parser_statement_recovery	covered
 FOR_HEADER	tests/syntax/parser/all-productions.my	tests/syntax/parser/all-productions.my	c:mmay_test_parser_statement_recovery	c:mmay_test_parser_statement_recovery	covered
+OPTION_CONDITION	tests/format/option-condition.expected.my	tests/format/option-condition.expected.my	c:mmay_test_parser_option_condition	c:mmay_test_parser_option_condition	covered
