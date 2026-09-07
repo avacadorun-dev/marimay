@@ -2,8 +2,8 @@
 #define MMAY_MANAGED_INTERNAL_H
 
 #include "mmay/runtime/managed.h"
+#include "managed_reference_internal.h"
 
-bool mmay_managed_heap_valid(const MarimayManagedHeap *heap);
 void mmay_managed_view_cache_clear(MarimayManagedHeap *heap);
 bool mmay_managed_immediate_enum_decode(
     const MarimayManagedHeap *heap,
@@ -80,10 +80,7 @@ MarimayManagedStatus mmay_managed_array_ensure_capacity(
     const MarimayManagedCell *temporary_value,
     MarimayManagedArray **result
 );
-MarimayManagedSlot *mmay_managed_resolve(MarimayManagedHeap *heap, MarimayManagedReference reference);
-const MarimayManagedSlot *mmay_managed_resolve_const(const MarimayManagedHeap *heap, MarimayManagedReference reference);
 MarimayManagedStatus mmay_managed_reference_status(const MarimayManagedHeap *heap, MarimayManagedReference reference, const MarimayManagedArrayDescriptor *expected);
-bool mmay_managed_slot_occupied(const MarimayManagedSlot *slot);
 size_t mmay_managed_slot_object_bytes(const MarimayManagedSlot *slot);
 void mmay_managed_slot_dispose_object(MarimayManagedHeap *heap, MarimayManagedSlot *slot);
 MarimayManagedStatus mmay_managed_mark_reference(

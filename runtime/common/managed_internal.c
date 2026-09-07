@@ -80,29 +80,6 @@ void mmay_managed_interface_dispose(
     mmay_deallocate(&heap->allocator, value, sizeof(*value));
 }
 
-bool mmay_managed_slot_occupied(const MarimayManagedSlot *slot) {
-    if (slot == NULL) {
-        return false;
-    }
-    switch (slot->kind) {
-        case MMAY_MANAGED_OBJECT_ARRAY:
-            return slot->as.array != NULL;
-        case MMAY_MANAGED_OBJECT_STRING:
-            return slot->as.string != NULL;
-        case MMAY_MANAGED_OBJECT_RECORD:
-            return slot->as.record != NULL;
-        case MMAY_MANAGED_OBJECT_ENUM:
-            return slot->as.enumeration != NULL;
-        case MMAY_MANAGED_OBJECT_INTERFACE:
-            return slot->as.iface != NULL;
-        case MMAY_MANAGED_OBJECT_MAP:
-            return slot->as.map != NULL;
-        case MMAY_MANAGED_OBJECT_INVALID:
-            break;
-    }
-    return false;
-}
-
 size_t mmay_managed_slot_object_bytes(const MarimayManagedSlot *slot) {
     if (slot == NULL) {
         return 0;

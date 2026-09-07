@@ -84,6 +84,7 @@ void mmay_test_hash_map(void);
 void mmay_test_lexer(void);
 void mmay_test_manifest(void);
 void mmay_test_managed(void);
+void mmay_test_managed_reference_validation(void);
 void mmay_test_managed_resource(void);
 void mmay_test_managed_string(void);
 void mmay_test_managed_array_access(void);
@@ -201,6 +202,7 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_directory();
         mmay_test_file();
         mmay_test_managed();
+        mmay_test_managed_reference_validation();
         mmay_test_managed_resource();
         mmay_test_managed_string();
         mmay_test_managed_array_access();

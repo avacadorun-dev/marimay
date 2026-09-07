@@ -493,6 +493,16 @@ barrier spans. The runtime owner resolves and validates one exact access; it
 does not expose mutable heap state or retain a cell pointer. VM range dispatch
 uses the same exact API after obtaining its verified program descriptor.
 
+The heap owner keeps its small allocation-free heap/slot/reference predicates
+in `runtime/common/managed_reference_internal.h`, visible only to separately
+compiled runtime owners. These C17 inline helpers retain all initialization,
+provenance, slot-bound, occupied-kind/payload and generation checks; they do
+not depend on archive/program LTO, export an unchecked access API, or retain
+storage across heap growth or collection. This is a private validation
+placement, not a new semantic owner or an architectural extraction claim.
+`runtime/test_managed_reference_validation.c` covers each predicate boundary;
+the existing runtime owners retain allocation, collection and lifetime tests.
+
 D060 assigns array representation, descriptor/stride validation, dense raw
 packing, zero-initialized growth, and exact storage-byte accounting to
 `runtime/common/managed_array_storage.c`. Its narrow owner-private

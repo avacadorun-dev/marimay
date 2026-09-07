@@ -47,11 +47,6 @@ MarimayManagedHeapOptions mmay_managed_heap_default_options(void) {
     return options;
 }
 
-bool mmay_managed_heap_valid(const MarimayManagedHeap *heap) {
-    return heap != NULL && heap->initialized && heap->provenance != 0
-        && heap->provenance != UINT64_MAX;
-}
-
 void mmay_managed_view_cache_clear(MarimayManagedHeap *heap) {
     if (heap == NULL) {
         return;
@@ -131,42 +126,6 @@ void mmay_managed_heap_dispose(MarimayManagedHeap *heap) {
         descriptor_bytes
     );
     memset(heap, 0, sizeof(*heap));
-}
-
-MarimayManagedSlot *mmay_managed_resolve(
-    MarimayManagedHeap *heap,
-    MarimayManagedReference reference
-) {
-    MarimayManagedSlot *slot = NULL;
-    if (!mmay_managed_heap_valid(heap)
-        || reference.heap_provenance != heap->provenance
-        || reference.slot == UINT32_MAX
-        || (size_t)reference.slot >= heap->slot_count) {
-        return NULL;
-    }
-    slot = &heap->slots[reference.slot];
-    return mmay_managed_slot_occupied(slot)
-            && slot->generation == reference.generation
-        ? slot
-        : NULL;
-}
-
-const MarimayManagedSlot *mmay_managed_resolve_const(
-    const MarimayManagedHeap *heap,
-    MarimayManagedReference reference
-) {
-    const MarimayManagedSlot *slot = NULL;
-    if (!mmay_managed_heap_valid(heap)
-        || reference.heap_provenance != heap->provenance
-        || reference.slot == UINT32_MAX
-        || (size_t)reference.slot >= heap->slot_count) {
-        return NULL;
-    }
-    slot = &heap->slots[reference.slot];
-    return mmay_managed_slot_occupied(slot)
-            && slot->generation == reference.generation
-        ? slot
-        : NULL;
 }
 
 MarimayManagedStatus mmay_managed_reference_status(

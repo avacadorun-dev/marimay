@@ -1717,6 +1717,10 @@ partial evidence, not closure of the remaining performance or CI obligations.
 The [rune equality repair](evidence/cp42-rune-equality-2026-09-07.md) addresses
 the recorded mismatch between primitive equality and collection-key equality.
 It does not close the remaining hot-path or parser-recovery obligations.
+The [private inline validation follow-up](evidence/cp42-inline-validation-2026-09-07.md)
+removes small internal call boundaries while retaining all handle checks and
+the separately shipped C17 runtime. Three paired series provide additional
+partial evidence; LTO was a diagnostic experiment, not a selected dependency.
 Separate input preparation from collection execution; profile hashing/probing,
 managed-handle checks, and Option/Result construction before choosing repairs.
 Acceptance requires paired same-workload improvement, unchanged insertion

@@ -1,0 +1,688 @@
+{
+  "schema_version": 1,
+  "date": "2026-09-07",
+  "baseline_commit": "344388b1ca14d41d2bcf8b2bfa2dcd356194d843",
+  "candidate": "runtime-private C17 inline heap/slot/reference validation with unchanged complete checks; no LTO",
+  "environment": "macOS 26.6.2 arm64 / Apple M2 / AppleClang 21; exploratory desktop whole-process timings, not D056 or Tier 1 acceptance",
+  "checksums": {
+    "frequency-map": 5073,
+    "unique-set": 20001,
+    "rune-frequency": 270012
+  },
+  "methodology": {
+    "warmups": 3,
+    "samples": 11,
+    "order": "alternating baseline/candidate per round",
+    "timeout_seconds": 30,
+    "heap_limit_bytes": 67108864,
+    "observations": "fresh sequential process; exact stdout, exit zero and empty stderr required",
+    "outliers": "all retained, including the selected run 3 frequency-map candidate 105.819584 ms and 63.273375 ms samples",
+    "concurrency": "no builds or tests alongside timings; ordinary desktop applications open",
+    "workloads": "unchanged external algorithm-benchmarks sources, inputs, operation counts, APIs and checksum verification; accepted builds use unchanged mmay build --release flags"
+  },
+  "accepted_runs": [
+    {
+      "warmups": 3,
+      "samples": 11,
+      "scope": "local paired whole-process latency",
+      "workloads": {
+        "frequency-map": {
+          "baseline": {
+            "samples_ms": [
+              46.851,
+              41.078458,
+              41.8015,
+              40.802125,
+              41.422666,
+              41.777833,
+              41.753541,
+              41.056292,
+              55.587542,
+              54.937333,
+              60.25575
+            ],
+            "median_ms": 41.777833,
+            "mad_ms": 0.721541000000002,
+            "min_ms": 40.802125,
+            "max_ms": 60.25575
+          },
+          "candidate": {
+            "samples_ms": [
+              47.497625,
+              38.207875,
+              38.069041,
+              38.367417,
+              38.249334,
+              38.664875,
+              38.400666,
+              39.12625,
+              41.86175,
+              39.482,
+              39.133375
+            ],
+            "median_ms": 38.664875,
+            "mad_ms": 0.46137499999999676,
+            "min_ms": 38.069041,
+            "max_ms": 47.497625
+          }
+        },
+        "unique-set": {
+          "baseline": {
+            "samples_ms": [
+              36.387917,
+              40.60125,
+              38.474208,
+              37.527125,
+              36.579,
+              36.915458,
+              38.021417,
+              36.34575,
+              35.979417,
+              36.518875,
+              36.392167
+            ],
+            "median_ms": 36.579,
+            "mad_ms": 0.33645800000000037,
+            "min_ms": 35.979417,
+            "max_ms": 40.60125
+          },
+          "candidate": {
+            "samples_ms": [
+              35.65025,
+              39.102708,
+              37.629667,
+              35.666958,
+              35.591125,
+              36.195958,
+              37.241,
+              35.993209,
+              35.86725,
+              35.567041,
+              35.6735
+            ],
+            "median_ms": 35.86725,
+            "mad_ms": 0.2761250000000004,
+            "min_ms": 35.567041,
+            "max_ms": 39.102708
+          }
+        },
+        "rune-frequency": {
+          "baseline": {
+            "samples_ms": [
+              27.627125,
+              27.199583,
+              26.612166,
+              27.059708,
+              26.979667,
+              26.345125,
+              26.087042,
+              26.212625,
+              26.436667,
+              26.465084,
+              27.673292
+            ],
+            "median_ms": 26.612166,
+            "mad_ms": 0.39954099999999926,
+            "min_ms": 26.087042,
+            "max_ms": 27.673292
+          },
+          "candidate": {
+            "samples_ms": [
+              25.448708,
+              25.917334,
+              25.621375,
+              25.8285,
+              25.784375,
+              26.034583,
+              25.473792,
+              25.594666,
+              25.584083,
+              25.084083,
+              25.512584
+            ],
+            "median_ms": 25.594666,
+            "mad_ms": 0.14595800000000025,
+            "min_ms": 25.084083,
+            "max_ms": 26.034583
+          }
+        }
+      }
+    },
+    {
+      "warmups": 3,
+      "samples": 11,
+      "scope": "local paired whole-process latency",
+      "workloads": {
+        "frequency-map": {
+          "baseline": {
+            "samples_ms": [
+              41.852791,
+              41.155291,
+              40.698,
+              40.68275,
+              41.183625,
+              40.394667,
+              40.679167,
+              40.294375,
+              40.663875,
+              41.838583,
+              43.572583
+            ],
+            "median_ms": 40.698,
+            "mad_ms": 0.4036249999999981,
+            "min_ms": 40.294375,
+            "max_ms": 43.572583
+          },
+          "candidate": {
+            "samples_ms": [
+              48.555417,
+              38.227458,
+              37.994084,
+              38.423541,
+              38.924667,
+              38.610834,
+              38.420584,
+              38.207375,
+              38.694333,
+              38.395792,
+              38.57925
+            ],
+            "median_ms": 38.423541,
+            "mad_ms": 0.19608300000000156,
+            "min_ms": 37.994084,
+            "max_ms": 48.555417
+          }
+        },
+        "unique-set": {
+          "baseline": {
+            "samples_ms": [
+              36.318459,
+              36.654958,
+              36.245791,
+              37.4495,
+              36.454667,
+              36.722167,
+              36.2825,
+              36.389667,
+              37.610542,
+              36.641792,
+              37.378375
+            ],
+            "median_ms": 36.641792,
+            "mad_ms": 0.3233330000000052,
+            "min_ms": 36.245791,
+            "max_ms": 37.610542
+          },
+          "candidate": {
+            "samples_ms": [
+              35.631875,
+              35.87525,
+              35.524875,
+              36.315084,
+              35.300708,
+              35.725666,
+              35.79425,
+              36.312083,
+              36.143083,
+              35.7245,
+              36.4005
+            ],
+            "median_ms": 35.79425,
+            "mad_ms": 0.2693749999999966,
+            "min_ms": 35.300708,
+            "max_ms": 36.4005
+          }
+        },
+        "rune-frequency": {
+          "baseline": {
+            "samples_ms": [
+              28.072458,
+              28.5225,
+              26.980375,
+              26.156,
+              26.73575,
+              27.393375,
+              27.052583,
+              26.194458,
+              26.016084,
+              26.867416,
+              26.139292
+            ],
+            "median_ms": 26.867416,
+            "mad_ms": 0.6729579999999977,
+            "min_ms": 26.016084,
+            "max_ms": 28.5225
+          },
+          "candidate": {
+            "samples_ms": [
+              25.5995,
+              26.25025,
+              26.142917,
+              25.554667,
+              25.344333,
+              25.863291,
+              25.927875,
+              25.809708,
+              25.262375,
+              25.829583,
+              24.839667
+            ],
+            "median_ms": 25.809708,
+            "mad_ms": 0.25504100000000207,
+            "min_ms": 24.839667,
+            "max_ms": 26.25025
+          }
+        }
+      }
+    },
+    {
+      "warmups": 3,
+      "samples": 11,
+      "scope": "local paired whole-process latency",
+      "workloads": {
+        "frequency-map": {
+          "baseline": {
+            "samples_ms": [
+              41.193958,
+              40.702083,
+              40.309042,
+              40.571042,
+              41.957959,
+              40.265666,
+              43.54725,
+              42.90575,
+              40.431625,
+              48.673167,
+              45.787458
+            ],
+            "median_ms": 41.193958,
+            "mad_ms": 0.884916000000004,
+            "min_ms": 40.265666,
+            "max_ms": 48.673167
+          },
+          "candidate": {
+            "samples_ms": [
+              37.550125,
+              38.391959,
+              38.154416,
+              38.266708,
+              38.55325,
+              38.002,
+              40.831542,
+              38.884708,
+              38.598417,
+              105.819584,
+              63.273375
+            ],
+            "median_ms": 38.55325,
+            "mad_ms": 0.3988340000000008,
+            "min_ms": 37.550125,
+            "max_ms": 105.819584
+          }
+        },
+        "unique-set": {
+          "baseline": {
+            "samples_ms": [
+              38.692875,
+              36.947625,
+              36.471791,
+              36.210208,
+              38.757625,
+              37.678625,
+              36.085875,
+              36.236292,
+              43.40775,
+              37.632958,
+              37.591959
+            ],
+            "median_ms": 37.591959,
+            "mad_ms": 1.1201679999999996,
+            "min_ms": 36.085875,
+            "max_ms": 43.40775
+          },
+          "candidate": {
+            "samples_ms": [
+              38.570625,
+              35.571584,
+              35.629708,
+              36.347042,
+              47.543375,
+              37.175916,
+              35.515834,
+              36.749667,
+              50.739875,
+              37.467375,
+              36.713
+            ],
+            "median_ms": 36.749667,
+            "mad_ms": 1.1199590000000015,
+            "min_ms": 35.515834,
+            "max_ms": 50.739875
+          }
+        },
+        "rune-frequency": {
+          "baseline": {
+            "samples_ms": [
+              27.321875,
+              27.909208,
+              26.369625,
+              26.975833,
+              26.917375,
+              32.785833,
+              27.163875,
+              27.946042,
+              26.413,
+              25.925583,
+              26.72175
+            ],
+            "median_ms": 26.975833,
+            "mad_ms": 0.5628330000000012,
+            "min_ms": 25.925583,
+            "max_ms": 32.785833
+          },
+          "candidate": {
+            "samples_ms": [
+              26.43075,
+              26.006958,
+              25.610917,
+              28.575125,
+              26.052708,
+              30.047042,
+              26.5995,
+              26.761959,
+              27.157417,
+              25.422666,
+              25.751708
+            ],
+            "median_ms": 26.43075,
+            "mad_ms": 0.679041999999999,
+            "min_ms": 25.422666,
+            "max_ms": 30.047042
+          }
+        }
+      }
+    }
+  ],
+  "exploratory_runs": [
+    {
+      "candidate": "raw-only bounded-probe specialization",
+      "decision": "reverted; single paired run did not show a meaningful benefit",
+      "run": {
+        "warmups": 3,
+        "samples": 11,
+        "scope": "local paired whole-process latency",
+        "workloads": {
+          "frequency-map": {
+            "baseline": {
+              "samples_ms": [
+                39.748084,
+                40.219,
+                40.383958,
+                40.518625,
+                40.329792,
+                40.425083,
+                40.421666,
+                40.354625,
+                40.677542,
+                40.415083,
+                42.621834
+              ],
+              "median_ms": 40.415083,
+              "mad_ms": 0.08529100000000511,
+              "min_ms": 39.748084,
+              "max_ms": 42.621834
+            },
+            "candidate": {
+              "samples_ms": [
+                39.60825,
+                40.339583,
+                40.159292,
+                40.371209,
+                39.93975,
+                40.276458,
+                39.992708,
+                40.180209,
+                40.706208,
+                40.357125,
+                40.3865
+              ],
+              "median_ms": 40.276458,
+              "mad_ms": 0.11004199999999997,
+              "min_ms": 39.60825,
+              "max_ms": 40.706208
+            }
+          },
+          "unique-set": {
+            "baseline": {
+              "samples_ms": [
+                35.625375,
+                36.036125,
+                36.086291,
+                36.321083,
+                36.334333,
+                36.178542,
+                36.129333,
+                36.345833,
+                36.375416,
+                35.923042,
+                46.043916
+              ],
+              "median_ms": 36.178542,
+              "mad_ms": 0.15579100000000068,
+              "min_ms": 35.625375,
+              "max_ms": 46.043916
+            },
+            "candidate": {
+              "samples_ms": [
+                35.314125,
+                35.756583,
+                35.674667,
+                35.953375,
+                35.732792,
+                36.001958,
+                35.740209,
+                35.681291,
+                35.639291,
+                35.983333,
+                37.155333
+              ],
+              "median_ms": 35.740209,
+              "mad_ms": 0.10091800000000006,
+              "min_ms": 35.314125,
+              "max_ms": 37.155333
+            }
+          },
+          "rune-frequency": {
+            "baseline": {
+              "samples_ms": [
+                26.834416,
+                26.220084,
+                26.351917,
+                26.208125,
+                25.951,
+                26.496584,
+                26.2255,
+                27.730875,
+                27.249583,
+                27.014875,
+                26.920958
+              ],
+              "median_ms": 26.496584,
+              "mad_ms": 0.33783200000000235,
+              "min_ms": 25.951,
+              "max_ms": 27.730875
+            },
+            "candidate": {
+              "samples_ms": [
+                26.071708,
+                26.91875,
+                26.019958,
+                26.489375,
+                26.672292,
+                25.99375,
+                26.043667,
+                26.840416,
+                26.767125,
+                27.217791,
+                26.565625
+              ],
+              "median_ms": 26.565625,
+              "mad_ms": 0.3531249999999986,
+              "min_ms": 25.99375,
+              "max_ms": 27.217791
+            }
+          }
+        }
+      }
+    },
+    {
+      "candidate": "diagnostic ThinLTO runtime and unchanged generated C",
+      "decision": "not selected; compiler-coupled archive/program LTO is not the D059 distribution boundary; not a portable speedup claim",
+      "run": {
+        "warmups": 3,
+        "samples": 11,
+        "scope": "local paired whole-process latency",
+        "workloads": {
+          "frequency-map": {
+            "baseline": {
+              "samples_ms": [
+                41.539041,
+                40.616417,
+                42.111708,
+                43.631625,
+                41.021917,
+                41.336542,
+                41.111541,
+                40.754708,
+                41.086208,
+                40.901584,
+                41.545709
+              ],
+              "median_ms": 41.111541,
+              "mad_ms": 0.35683300000000173,
+              "min_ms": 40.616417,
+              "max_ms": 43.631625
+            },
+            "candidate": {
+              "samples_ms": [
+                38.855875,
+                36.308709,
+                36.536166,
+                37.479958,
+                36.988042,
+                36.653833,
+                36.686875,
+                36.846958,
+                37.165833,
+                37.257583,
+                37.250375
+              ],
+              "median_ms": 36.988042,
+              "mad_ms": 0.3011669999999995,
+              "min_ms": 36.308709,
+              "max_ms": 38.855875
+            }
+          },
+          "unique-set": {
+            "baseline": {
+              "samples_ms": [
+                36.702833,
+                36.662083,
+                37.329375,
+                37.890166,
+                36.416333,
+                37.067208,
+                37.866333,
+                42.248167,
+                37.970875,
+                36.989292,
+                36.424208
+              ],
+              "median_ms": 37.067208,
+              "mad_ms": 0.6430000000000007,
+              "min_ms": 36.416333,
+              "max_ms": 42.248167
+            },
+            "candidate": {
+              "samples_ms": [
+                35.884167,
+                35.041167,
+                35.070209,
+                35.801375,
+                35.524417,
+                35.641834,
+                35.354375,
+                39.305083,
+                38.746666,
+                35.293083,
+                35.251041
+              ],
+              "median_ms": 35.524417,
+              "mad_ms": 0.2769580000000005,
+              "min_ms": 35.041167,
+              "max_ms": 39.305083
+            }
+          },
+          "rune-frequency": {
+            "baseline": {
+              "samples_ms": [
+                26.157208,
+                26.424917,
+                26.24,
+                27.227625,
+                31.44425,
+                30.631084,
+                30.890792,
+                30.303709,
+                28.790208,
+                29.47125,
+                29.044458
+              ],
+              "median_ms": 29.044458,
+              "mad_ms": 1.816832999999999,
+              "min_ms": 26.157208,
+              "max_ms": 31.44425
+            },
+            "candidate": {
+              "samples_ms": [
+                18.458291,
+                18.999125,
+                18.794959,
+                28.211917,
+                28.271208,
+                23.04725,
+                21.697583,
+                21.164417,
+                21.475875,
+                21.607125,
+                20.877709
+              ],
+              "median_ms": 21.475875,
+              "mad_ms": 1.5713749999999997,
+              "min_ms": 18.458291,
+              "max_ms": 28.271208
+            }
+          }
+        }
+      }
+    }
+  ],
+  "artifact_sha256": {
+    "baseline_compiler": "d9ccc1fcda2f406465516c7aae264c4214a5210ab0d62bcb7761044fdee425d9",
+    "baseline_runtime": "4b255da84cf6d29b502998bce4bce2dc7812a24a52421cd16f2a697f03a4a0c5",
+    "baseline": {
+      "frequency-map": "08d372363bfc52d07ab628d1ea1fe86346c887bdbf7058b9c644402d39baef0b",
+      "unique-set": "0144b789b9ba37406eba359dbf5b7b20445f1c32a2e906f8032ba5b340066452",
+      "rune-frequency": "3e43e91cee35f83b34130200b6fee85babf4e74f00ca5801eae85954a6276968"
+    },
+    "candidate": {
+      "frequency-map": "0333040d0cbee636a6c4bbd1cec1ef109d0871bc492b9c7f4bef34fd8422a8b4",
+      "unique-set": "d9eacc143591062e9695cc8ae254f32b1a4ea74e15a3b39513db0d9d1b5fda39",
+      "rune-frequency": "52056b363d996dc962345839c09be0fe067a8aa6d99de1c16508c7e96286e851"
+    },
+    "comparison_driver": "51275c52d840738c97c43b878a4f47ecbbf86edfc26b456127f486d247aa44de",
+    "profile_driver": "893d77eacf63cad7543529ac1beccf2ee02f10c2acf878d9ce4efdfe4dca642f",
+    "frequency_profile": "83ec1bcc7b3251abf9136fab59553d17acda3add624e8e84a8a37c2a950bfb05",
+    "rune_profile": "fa2447920cc8b8a01b9b2c4bf1bd152ef38767f17f4b0ebe26b09cfdbc3dcecd"
+  }
+}

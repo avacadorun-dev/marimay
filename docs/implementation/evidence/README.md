@@ -113,6 +113,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Private inline reference validation](cp42-inline-validation-2026-09-07.md)
+removes internal call overhead without removing checks or requiring LTO.
+Three local series show a further 5.6–7.5% frequency-map improvement;
+smaller Set/rune gains do not close the collection performance obligation.
+
 [Rune equality](cp42-rune-equality-2026-09-07.md) repairs primitive and
 structural comparison of Unicode scalar values. Collection performance and
 the broader CP42 acceptance remain open.
