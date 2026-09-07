@@ -1,4 +1,5 @@
 #include "managed_internal.h"
+#include "managed_map_storage_internal.h"
 #include "managed_map_set_internal.h"
 
 #include <string.h>
@@ -37,6 +38,7 @@ MarimayManagedStatus mmay_managed_set_new(
     }
     memset(set, 0, sizeof(*set));
     set->descriptor = descriptor;
+    mmay_managed_map_storage_layout(set, descriptor);
     status = mmay_managed_publish_object(
         heap, MMAY_MANAGED_OBJECT_MAP, set, sizeof(*set),
         NULL, 0, NULL, 0, result
@@ -142,11 +144,11 @@ MarimayManagedStatus mmay_managed_set_entry(
         return MMAY_MANAGED_BOUNDS;
     }
     for (index = 0; index < map->entry_count; index += 1) {
-        if (!map->entries[index].active) {
+        if (!mmay_managed_map_entry_prefix(map, index)->active) {
             continue;
         }
         if (active == ordinal) {
-            *value = map->entries[index].key;
+            *value = mmay_managed_map_entry_key(map, index);
             return MMAY_MANAGED_OK;
         }
         active += 1U;

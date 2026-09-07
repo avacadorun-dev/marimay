@@ -2729,3 +2729,40 @@ cross-engine resource parity; that obligation remains in the pre-alpha
 resource-boundary acceptance gate. A future user-selectable CPU sandbox must
 specify its units, interruption/cleanup and both-engine behavior in a separate
 decision, rather than silently changing ordinary local command semantics.
+
+## D088 — Ordered collections use descriptor-selected compact storage
+
+Status: accepted.
+
+The shared D079 Map/Set runtime stores each insertion-ordered entry as an
+aligned active/hash prefix followed by its key and, for a Map, its value.
+The constructor validates the immutable descriptor before choosing this
+layout. A raw scalar cell stores its full 64-bit representation; a reference
+cell stores the complete managed reference. A Set stores no unused value.
+Stride and cell widths are immutable constructor-derived metadata, not
+caller-supplied layout IDs. C17 object-representation copies preserve bits
+without unaligned or incompatible typed loads. Only reference cells trace.
+
+The separately compiled storage owner controls checked size planning, exact
+accounting, temporary roots, growth, compaction, publication and cleanup.
+Growth retains existing entry/bucket capacities and load-factor policy;
+compaction preserves insertion order. Replacement buffers publish only after
+successful allocation and rebuilding, and every failure preserves logical
+contents and mutation generation. The lookup memo is invalidated whenever
+storage is rebuilt. Operations and probing keep their complete handle, key,
+hash, collision and storage-integrity checks. SipHash-2-4 and both seeds,
+public signatures, source key eligibility, MIR and bytecode are unchanged.
+
+D055 budgets count the actual managed object, slot bookkeeping and reserved
+compact storage, including constructor-derived layout metadata. A smaller
+entry can therefore move a resource boundary; the language does not promise
+the former oversized cell allocation. There is no internal-layout binary
+compatibility claim. Exact-boundary, mixed-cell tracing, failure-index and
+VM/native tests accompany the representation change. No source syntax or
+formatter rule changes.
+
+Reason: a raw pair and a Set element need not reserve two full reference-sized
+cells. The selected implementation must keep representation decoding out of
+expensive generic copy calls; memory savings do not excuse a measured hot-path
+regression. This decision does not close the broader collection performance
+or Tier 1 acceptance obligations.

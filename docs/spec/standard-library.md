@@ -398,6 +398,15 @@ seeding may be process-randomized for attack resistance without changing
 visible order. The supported key set is the exact primitive/string and closed
 derived-nominal set in D079. Capacity and hashes are never observable.
 
+D088 selects compact shared storage from the validated immutable collection
+descriptor: raw scalar cells retain their complete 64-bit representation,
+reference cells retain their complete managed reference, and a Set has no
+value cell. Only reference cells are traced. D055 accounts for the actual
+managed object, slot bookkeeping and reserved packed storage, including layout
+metadata; it does not promise the former oversized cell reservation. Checked
+growth and insertion-ordered compaction remain failure-atomic, and no raw
+storage address escapes an operation or survives a collection boundary.
+
 `put` and `add` return `Ok(true)` for insertion and `Ok(false)` for update or a
 duplicate respectively. New entries are bounded by `int::MAX` and use
 `CollectionGrowthError.LengthLimit`; D055 budget and host-allocation failures

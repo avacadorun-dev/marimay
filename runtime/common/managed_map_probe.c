@@ -1,4 +1,5 @@
 #include "managed_map_probe_internal.h"
+#include "managed_map_storage_internal.h"
 
 MarimayManagedStatus mmay_managed_map_probe(
     const MarimayManagedMap *map,
@@ -33,11 +34,11 @@ MarimayManagedStatus mmay_managed_map_probe(
             continue;
         }
         if (candidate >= map->entry_count || map->entries == NULL
-            || !map->entries[candidate].active) {
+            || !mmay_managed_map_entry_prefix(map, candidate)->active) {
             return MMAY_MANAGED_INVALID_REFERENCE;
         }
-        if (map->entries[candidate].hash == hash
-            && (!raw_key || map->entries[candidate].key.f64_bits == key_bits)) {
+        if (mmay_managed_map_entry_prefix(map, candidate)->hash == hash
+            && (!raw_key || mmay_managed_map_raw_key(map, candidate) == key_bits)) {
             if (progress != NULL) {
                 progress->next_index = index + 1U;
                 progress->first_tombstone = first_tombstone;

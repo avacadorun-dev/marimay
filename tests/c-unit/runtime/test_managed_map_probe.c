@@ -1,16 +1,25 @@
 #include "../test_support.h"
 
 #include "../../../runtime/common/managed_map_probe_internal.h"
+#include "../../../runtime/common/managed_map_storage_internal.h"
+
+/* Independently declared raw key/value storage, not a production pack helper. */
+typedef struct MarimayTestProbeEntry {
+    MarimayManagedMapEntry prefix;
+    uint64_t key;
+    uint64_t value;
+} MarimayTestProbeEntry;
 
 static void mmay_test_probe_walks(void) {
-    MarimayManagedMapEntry entries[8] = {0};
+    MarimayTestProbeEntry entries[8] = {0};
     size_t buckets[8];
     MarimayManagedMap map = {0};
     uint64_t random = UINT64_C(0x20260907);
     size_t layout, start, query, position;
     map.bucket_capacity = 8;
     map.entry_count = 8;
-    map.entries = entries;
+    map.entries = (unsigned char *)(void *)entries;
+    map.entry_stride = sizeof(entries[0]);
     map.buckets = buckets;
     /* Every bucket is either empty, a tombstone, a matching-hash entry or a
      * different-hash entry. Vary the start to cover wraparound independently
@@ -23,9 +32,9 @@ static void mmay_test_probe_walks(void) {
                 const unsigned int kind = (unsigned int)((random >> (position * 2U)) & 3U);
                 buckets[position] = kind == 0 ? MMAY_MAP_EMPTY
                     : kind == 1 ? MMAY_MAP_TOMBSTONE : position;
-                entries[position].hash = kind == 2 ? hash : hash ^ UINT64_C(8);
-                entries[position].key.f64_bits = (uint64_t)position;
-                entries[position].active = true;
+                entries[position].prefix.hash = kind == 2 ? hash : hash ^ UINT64_C(8);
+                entries[position].key = (uint64_t)position;
+                entries[position].prefix.active = true;
             }
             for (query = 0; query <= 8; query += 1) {
                 size_t ordinal, expected_bucket = MMAY_MAP_EMPTY;
@@ -40,7 +49,7 @@ static void mmay_test_probe_walks(void) {
                     } else if (buckets[position] == MMAY_MAP_EMPTY) {
                         if (expected_bucket == MMAY_MAP_EMPTY) expected_bucket = position;
                         break;
-                    } else if (entries[position].hash == hash && position == query) {
+                    } else if (entries[position].prefix.hash == hash && position == query) {
                         expected_bucket = position;
                         expected_entry = position;
                         break;
@@ -66,7 +75,7 @@ static void mmay_test_probe_walks(void) {
                         if (tombstone == MMAY_MAP_EMPTY) tombstone = position;
                         terminated = true;
                         break;
-                    } else if (entries[position].hash == hash) {
+                    } else if (entries[position].prefix.hash == hash) {
                         MMAY_EXPECT(mmay_managed_map_probe(
                             &map, hash, false, 0, &bucket, &entry, &found, &progress
                         ) == MMAY_MANAGED_OK);
@@ -85,23 +94,24 @@ static void mmay_test_probe_walks(void) {
 }
 
 static void mmay_test_probe_invalid_storage(void) {
-    MarimayManagedMapEntry item = {0};
+    MarimayTestProbeEntry item = {0};
     size_t storage = 0, bucket = 0, entry = 0;
     bool found = false;
     MarimayManagedMap map = {0};
     map.bucket_capacity = 1;
     map.entry_count = 1;
-    map.entries = &item;
+    map.entry_stride = sizeof(item);
+    map.entries = (unsigned char *)(void *)&item;
     map.buckets = &storage;
-    item.active = true;
-    item.hash = UINT64_MAX;
-    item.key.f64_bits = UINT64_MAX;
+    item.prefix.active = true;
+    item.prefix.hash = UINT64_MAX;
+    item.key = UINT64_MAX;
     MMAY_EXPECT(mmay_managed_map_probe(&map, UINT64_MAX, true, UINT64_MAX,
         &bucket, &entry, &found, NULL) == MMAY_MANAGED_OK && found);
-    item.active = false;
+    item.prefix.active = false;
     MMAY_EXPECT(mmay_managed_map_probe(&map, UINT64_MAX, true, UINT64_MAX,
         &bucket, &entry, &found, NULL) == MMAY_MANAGED_INVALID_REFERENCE);
-    item.active = true;
+    item.prefix.active = true;
     storage = 1;
     MMAY_EXPECT(mmay_managed_map_probe(&map, UINT64_MAX, true, UINT64_MAX,
         &bucket, &entry, &found, NULL) == MMAY_MANAGED_INVALID_REFERENCE);
@@ -109,7 +119,7 @@ static void mmay_test_probe_invalid_storage(void) {
     map.entries = NULL;
     MMAY_EXPECT(mmay_managed_map_probe(&map, UINT64_MAX, true, UINT64_MAX,
         &bucket, &entry, &found, NULL) == MMAY_MANAGED_INVALID_REFERENCE);
-    map.entries = &item;
+    map.entries = (unsigned char *)(void *)&item;
     map.bucket_capacity = 0;
     MMAY_EXPECT(mmay_managed_map_probe(&map, UINT64_MAX, true, UINT64_MAX,
         &bucket, &entry, &found, NULL) == MMAY_MANAGED_INVALID_ARGUMENT);

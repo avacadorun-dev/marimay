@@ -3,14 +3,6 @@
 
 #include "mmay/runtime/map.h"
 
-typedef struct MarimayManagedMapEntry {
-    /* Keep the probe's active/hash/key fields together before the value. */
-    bool active;
-    uint64_t hash;
-    MarimayManagedCell key;
-    MarimayManagedCell value;
-} MarimayManagedMapEntry;
-
 /* Last successful scalar-key get, including absence. Indices, not pointers or
  * references: invalidated by mutation generation or any storage rebuild. */
 typedef struct MarimayManagedMapLookup {
@@ -33,7 +25,11 @@ typedef struct MarimayManagedMap {
     size_t entry_capacity;
     size_t bucket_capacity;
     uint64_t mutation_generation;
-    MarimayManagedMapEntry *entries;
+    /* Descriptor-selected layout; immutable after checked publication. */
+    uint8_t entry_stride;
+    uint8_t key_bytes;
+    uint8_t value_bytes;
+    unsigned char *entries;
     size_t *buckets;
     MarimayManagedMapLookup lookup;
 } MarimayManagedMap;

@@ -318,6 +318,7 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
   runtime/common/managed_map.c
+  runtime/common/managed_map_storage.c
   runtime/common/managed_map_probe.c
   runtime/common/managed_set.c
   runtime/common/program_arguments.c
@@ -650,6 +651,7 @@ add_library(mmay_bootstrap STATIC
   runtime/common/managed_enum.c
   runtime/common/managed_interface.c
   runtime/common/managed_map.c
+  runtime/common/managed_map_storage.c
   runtime/common/managed_map_probe.c
   runtime/common/managed_set.c
   runtime/common/program_arguments.c

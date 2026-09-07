@@ -1,0 +1,102 @@
+fn storageExpectedKey(ordinal: int): int {
+  if ordinal < 16 {
+    return ordinal * 2 + 1;
+  }
+  return ordinal + 16;
+}
+
+fn storageArray(value: Option<[]int>): []int {
+  return match value {
+    Some(items) => items,
+    None => panic("missing compact collection payload"),
+  };
+}
+
+@test
+fn compactCollectionLayoutsPreserveGrowthRemovalAndOrder(): void {
+  const raw: Map<int, int> = mapOf<int, int>();
+  const rawReference: Map<int, []int> = mapOf<int, []int>();
+  const referenceRaw: Map<string, int> = mapOf<string, int>();
+  const reference: Map<string, []int> = mapOf<string, []int>();
+  const rawSet: Set<int> = setOf<int>();
+  const referenceSet: Set<string> = setOf<string>();
+  for key in 0..48 {
+    if key == 32 {
+      for removed in 0..16 {
+        const old = removed * 2;
+        const name = $"ключ-{old}";
+        expect.equal(raw.remove(old), Some(old * 3));
+        expect.equal(storageArray(rawReference.remove(old))[0], old);
+        expect.equal(referenceRaw.remove(name), Some(old * 3));
+        expect.equal(storageArray(reference.remove(name))[0], old);
+        expect.equal(rawSet.remove(old), true);
+        expect.equal(referenceSet.remove(name), true);
+      }
+    }
+    const name = $"ключ-{key}";
+    expect.equal(raw.put(key, key * 3), Ok(true));
+    expect.equal(rawReference.put(key, [key, -key]), Ok(true));
+    expect.equal(referenceRaw.put(name, key * 3), Ok(true));
+    expect.equal(reference.put(name, [key, -key]), Ok(true));
+    expect.equal(rawSet.add(key), Ok(true));
+    expect.equal(referenceSet.add(name), Ok(true));
+  }
+  for ordinal in 0..32 {
+    const key = storageExpectedKey(ordinal);
+    const name = $"ключ-{key}";
+    expect.equal(raw.get(key), Some(key * 3));
+    expect.equal(storageArray(rawReference.get(key))[1], -key);
+    expect.equal(referenceRaw.get(name), Some(key * 3));
+    expect.equal(storageArray(reference.get(name))[1], -key);
+    expect.equal(rawSet.contains(key), true);
+    expect.equal(referenceSet.contains(name), true);
+  }
+  let ordinal = 0;
+  for item in raw {
+    const key = storageExpectedKey(ordinal);
+    match item {
+      (actual, value) => {
+        expect.equal(actual, key);
+        expect.equal(value, key * 3)
+      },
+    };
+    ordinal += 1;
+  }
+  expect.equal(ordinal, 32);
+  ordinal = 0;
+  for item in reference {
+    const key = storageExpectedKey(ordinal);
+    match item {
+      (name, values) => {
+        expect.equal(name, $"ключ-{key}");
+        expect.equal(values[0], key);
+        expect.equal(values[1], -key)
+      },
+    };
+    ordinal += 1;
+  }
+  expect.equal(ordinal, 32);
+  ordinal = 0;
+  for key in rawSet {
+    expect.equal(key, storageExpectedKey(ordinal));
+    ordinal += 1;
+  }
+  expect.equal(ordinal, 32);
+  ordinal = 0;
+  for name in referenceSet {
+    const key = storageExpectedKey(ordinal);
+    expect.equal(name, $"ключ-{key}");
+    ordinal += 1;
+  }
+  expect.equal(ordinal, 32);
+  raw.clear();
+  rawReference.clear();
+  referenceRaw.clear();
+  reference.clear();
+  rawSet.clear();
+  referenceSet.clear();
+  expect.equal(
+    raw.length() + rawReference.length() + referenceRaw.length() + reference.length() + rawSet.length() + referenceSet.length(),
+    0,
+  );
+}

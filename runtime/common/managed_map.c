@@ -1,4 +1,5 @@
 #include "managed_internal.h"
+#include "managed_map_storage_internal.h"
 #include "managed_map_probe_internal.h"
 #include "managed_map_set_internal.h"
 
@@ -52,47 +53,6 @@ bool mmay_managed_map_descriptor_valid(
             && descriptor->value.reference_descriptor == NULL;
     }
     return mmay_managed_map_field_valid(&descriptor->value, false);
-}
-
-static MarimayManagedStatus mmay_managed_map_resolve(
-    const MarimayManagedHeap *heap,
-    MarimayManagedReference reference,
-    const MarimayManagedMap **result
-) {
-    const MarimayManagedSlot *slot = NULL;
-    if (result != NULL) {
-        *result = NULL;
-    }
-    if (!mmay_managed_heap_valid(heap) || result == NULL) {
-        return MMAY_MANAGED_INVALID_ARGUMENT;
-    }
-    slot = mmay_managed_resolve_const(heap, reference);
-    if (slot == NULL) {
-        return MMAY_MANAGED_INVALID_REFERENCE;
-    }
-    /* Both constructors validate the immutable descriptor before publication.
-     * Resolving each handle still checks its heap, slot, generation and kind. */
-    if (slot->kind != MMAY_MANAGED_OBJECT_MAP || slot->as.map == NULL
-        || slot->as.map->descriptor == NULL) {
-        return MMAY_MANAGED_TYPE_MISMATCH;
-    }
-    *result = slot->as.map;
-    return MMAY_MANAGED_OK;
-}
-
-static MarimayManagedStatus mmay_managed_map_resolve_mutable(
-    MarimayManagedHeap *heap,
-    MarimayManagedReference reference,
-    MarimayManagedMap **result
-) {
-    const MarimayManagedMap *resolved = NULL;
-    MarimayManagedStatus status = mmay_managed_map_resolve(
-        heap, reference, &resolved
-    );
-    if (result != NULL) {
-        *result = status == MMAY_MANAGED_OK ? (MarimayManagedMap *)resolved : NULL;
-    }
-    return result == NULL ? MMAY_MANAGED_INVALID_ARGUMENT : status;
 }
 
 static uint64_t mmay_managed_map_hash_words(
@@ -515,7 +475,7 @@ static MarimayManagedStatus mmay_managed_map_find_reference(
          * candidates enter recursive equality; all keys share one probe. */
         *found = false;
         status = mmay_managed_map_value_equal(
-            heap, &map->descriptor->key, map->entries[*entry].key,
+            heap, &map->descriptor->key, mmay_managed_map_entry_key(map, *entry),
             key, 0, &equal
         );
         if (status != MMAY_MANAGED_OK) return status;
@@ -524,283 +484,6 @@ static MarimayManagedStatus mmay_managed_map_find_reference(
             return MMAY_MANAGED_OK;
         }
     }
-}
-
-static bool mmay_managed_map_storage_sizes(
-    size_t entry_capacity,
-    size_t bucket_capacity,
-    size_t *entry_bytes,
-    size_t *bucket_bytes,
-    size_t *total
-) {
-    return mmay_size_multiply(
-            entry_capacity, sizeof(MarimayManagedMapEntry), entry_bytes
-        ) && mmay_size_multiply(
-            bucket_capacity, sizeof(size_t), bucket_bytes
-        ) && mmay_size_add(*entry_bytes, *bucket_bytes, total);
-}
-
-size_t mmay_managed_map_storage_bytes(const MarimayManagedMap *map) {
-    size_t entry_bytes = 0;
-    size_t bucket_bytes = 0;
-    size_t total = 0;
-    return map != NULL && mmay_managed_map_storage_sizes(
-            map->entry_capacity, map->bucket_capacity,
-            &entry_bytes, &bucket_bytes, &total
-        )
-        ? total : 0;
-}
-
-void mmay_managed_map_dispose(
-    MarimayManagedHeap *heap,
-    MarimayManagedMap *map
-) {
-    size_t entry_bytes = 0;
-    size_t bucket_bytes = 0;
-    size_t total = 0;
-    if (heap == NULL || map == NULL) {
-        return;
-    }
-    (void)mmay_managed_map_storage_sizes(
-        map->entry_capacity, map->bucket_capacity,
-        &entry_bytes, &bucket_bytes, &total
-    );
-    (void)total;
-    mmay_deallocate(&heap->allocator, map->entries, entry_bytes);
-    mmay_deallocate(&heap->allocator, map->buckets, bucket_bytes);
-    mmay_deallocate(&heap->allocator, map, sizeof(*map));
-}
-
-MarimayManagedStatus mmay_managed_map_trace(
-    MarimayManagedHeap *heap,
-    const MarimayManagedMap *map,
-    uint32_t *gray_head
-) {
-    size_t index = 0;
-    if (!mmay_managed_heap_valid(heap) || map == NULL || gray_head == NULL
-        || !mmay_managed_map_descriptor_valid(map->descriptor)) {
-        return MMAY_MANAGED_INVALID_ARGUMENT;
-    }
-    for (index = 0; index < map->entry_count; index += 1) {
-        MarimayManagedStatus status;
-        if (!map->entries[index].active) {
-            continue;
-        }
-        if (map->descriptor->key.cell_kind == MMAY_MANAGED_CELL_REFERENCE) {
-            status = mmay_managed_mark_reference(
-                heap, map->entries[index].key.reference, gray_head
-            );
-            if (status != MMAY_MANAGED_OK) {
-                return status;
-            }
-        }
-        if (!map->descriptor->is_set
-            && map->descriptor->value.cell_kind
-                == MMAY_MANAGED_CELL_REFERENCE) {
-            status = mmay_managed_mark_reference(
-                heap, map->entries[index].value.reference, gray_head
-            );
-            if (status != MMAY_MANAGED_OK) {
-                return status;
-            }
-        }
-    }
-    return MMAY_MANAGED_OK;
-}
-
-static size_t mmay_managed_map_temporary_roots(
-    const MarimayManagedMap *map,
-    MarimayManagedReference map_reference,
-    const MarimayManagedCell *key,
-    const MarimayManagedCell *value,
-    MarimayManagedReference roots[3]
-) {
-    size_t count = 1;
-    roots[0] = map_reference;
-    if (key != NULL && map->descriptor->key.cell_kind
-        == MMAY_MANAGED_CELL_REFERENCE) {
-        roots[count++] = key->reference;
-    }
-    if (value != NULL && !map->descriptor->is_set
-        && map->descriptor->value.cell_kind == MMAY_MANAGED_CELL_REFERENCE) {
-        roots[count++] = value->reference;
-    }
-    return count;
-}
-
-static bool mmay_managed_map_plan_storage(
-    const MarimayManagedMap *map,
-    size_t *entry_capacity,
-    size_t *bucket_capacity
-) {
-    size_t entries = map->entry_capacity == 0 ? 4U : map->entry_capacity;
-    size_t buckets = map->bucket_capacity == 0 ? 8U : map->bucket_capacity;
-    size_t required = 0;
-    bool compact = map->entry_count >= entries && map->length < map->entry_count;
-    if (map->length == SIZE_MAX) {
-        return false;
-    }
-    required = map->length + 1U;
-    if (!compact && map->entry_count >= entries) {
-        if (!mmay_size_multiply(entries, 2U, &entries)) {
-            return false;
-        }
-    }
-    while (map->length + 1U > (buckets / 4U) * 3U) {
-        if (!mmay_size_multiply(buckets, 2U, &buckets)) {
-            return false;
-        }
-    }
-    *entry_capacity = entries;
-    *bucket_capacity = buckets;
-    return entries >= required && buckets >= 8U
-        && (buckets & (buckets - 1U)) == 0;
-}
-
-static void mmay_managed_map_rebuild_buckets(
-    MarimayManagedMapEntry *entries,
-    size_t entry_count,
-    size_t *buckets,
-    size_t bucket_capacity
-) {
-    size_t index = 0;
-    for (index = 0; index < bucket_capacity; index += 1) {
-        buckets[index] = MMAY_MAP_EMPTY;
-    }
-    for (index = 0; index < entry_count; index += 1) {
-        size_t probe = 0;
-        if (!entries[index].active) {
-            continue;
-        }
-        for (probe = 0; probe < bucket_capacity; probe += 1) {
-            size_t position = ((size_t)entries[index].hash + probe)
-                & (bucket_capacity - 1U);
-            if (buckets[position] == MMAY_MAP_EMPTY) {
-                buckets[position] = index;
-                break;
-            }
-        }
-    }
-}
-
-static MarimayManagedStatus mmay_managed_map_ensure_storage(
-    MarimayManagedHeap *heap,
-    MarimayManagedReference reference,
-    const MarimayManagedCell *key,
-    const MarimayManagedCell *value,
-    MarimayManagedMap **result
-) {
-    MarimayManagedMap *map = NULL;
-    MarimayManagedMapEntry *entries = NULL;
-    size_t *buckets = NULL;
-    size_t entry_capacity = 0;
-    size_t bucket_capacity = 0;
-    size_t old_entry_bytes = 0;
-    size_t old_bucket_bytes = 0;
-    size_t old_total = 0;
-    size_t entry_bytes = 0;
-    size_t bucket_bytes = 0;
-    size_t total = 0;
-    size_t added = 0;
-    size_t next_live = 0;
-    size_t index = 0;
-    size_t written = 0;
-    MarimayManagedReference roots[3];
-    size_t root_count = 0;
-    MarimayManagedStatus status = mmay_managed_map_resolve_mutable(
-        heap, reference, &map
-    );
-    bool collected = false;
-    if (result != NULL) {
-        *result = NULL;
-    }
-    if (status != MMAY_MANAGED_OK || result == NULL) {
-        return result == NULL ? MMAY_MANAGED_INVALID_ARGUMENT : status;
-    }
-retry:
-    if (!mmay_managed_map_plan_storage(
-            map, &entry_capacity, &bucket_capacity
-        ) || !mmay_managed_map_storage_sizes(
-            map->entry_capacity, map->bucket_capacity,
-            &old_entry_bytes, &old_bucket_bytes, &old_total
-        ) || !mmay_managed_map_storage_sizes(
-            entry_capacity, bucket_capacity,
-            &entry_bytes, &bucket_bytes, &total
-        ) || total < old_total) {
-        return MMAY_MANAGED_LIMIT_REACHED;
-    }
-    if (map->entry_count < map->entry_capacity
-        && map->length + 1U <= (map->bucket_capacity / 4U) * 3U) {
-        *result = map;
-        return MMAY_MANAGED_OK;
-    }
-    root_count = mmay_managed_map_temporary_roots(
-        map, reference, key, value, roots
-    );
-    if (heap->options.collect_before_allocation && !collected) {
-        status = mmay_managed_collect_internal(
-            heap, roots, root_count, NULL, 0
-        );
-        if (status != MMAY_MANAGED_OK) {
-            return status;
-        }
-        collected = true;
-        status = mmay_managed_map_resolve_mutable(heap, reference, &map);
-        if (status != MMAY_MANAGED_OK) {
-            return status;
-        }
-        goto retry;
-    }
-    added = total - old_total;
-    if (!mmay_managed_add_within_limit(
-            heap->live_byte_count, added,
-            heap->options.max_live_bytes, &next_live
-        )) {
-        if (!collected) {
-            status = mmay_managed_collect_internal(
-                heap, roots, root_count, NULL, 0
-            );
-            if (status != MMAY_MANAGED_OK) {
-                return status;
-            }
-            collected = true;
-            status = mmay_managed_map_resolve_mutable(heap, reference, &map);
-            if (status != MMAY_MANAGED_OK) {
-                return status;
-            }
-            goto retry;
-        }
-        return mmay_managed_resource_budget_failure(heap, added);
-    }
-    entries = mmay_allocate(&heap->allocator, entry_bytes);
-    if (entries == NULL) {
-        return mmay_managed_resource_host_failure(heap, entry_bytes);
-    }
-    memset(entries, 0, entry_bytes);
-    buckets = mmay_allocate(&heap->allocator, bucket_bytes);
-    if (buckets == NULL) {
-        mmay_deallocate(&heap->allocator, entries, entry_bytes);
-        return mmay_managed_resource_host_failure(heap, bucket_bytes);
-    }
-    for (index = 0; index < map->entry_count; index += 1) {
-        if (map->entries[index].active) {
-            entries[written++] = map->entries[index];
-        }
-    }
-    mmay_managed_map_rebuild_buckets(
-        entries, written, buckets, bucket_capacity
-    );
-    mmay_deallocate(&heap->allocator, map->entries, old_entry_bytes);
-    mmay_deallocate(&heap->allocator, map->buckets, old_bucket_bytes);
-    map->entries = entries;
-    map->buckets = buckets;
-    map->entry_capacity = entry_capacity;
-    map->bucket_capacity = bucket_capacity;
-    map->entry_count = written;
-    map->lookup.valid = false;
-    heap->live_byte_count = next_live;
-    *result = map;
-    return MMAY_MANAGED_OK;
 }
 
 MarimayManagedStatus mmay_managed_map_new(
@@ -825,6 +508,7 @@ MarimayManagedStatus mmay_managed_map_new(
     }
     memset(map, 0, sizeof(*map));
     map->descriptor = descriptor;
+    mmay_managed_map_storage_layout(map, descriptor);
     status = mmay_managed_publish_object(
         heap, MMAY_MANAGED_OBJECT_MAP, map, sizeof(*map),
         NULL, 0, NULL, 0, result
@@ -986,7 +670,7 @@ MarimayManagedStatus mmay_managed_map_get(
         if (map->descriptor->is_set) {
             return MMAY_MANAGED_TYPE_MISMATCH;
         }
-        *value = map->entries[entry].value;
+        *value = mmay_managed_map_entry_value(map, entry);
     }
     if (status == MMAY_MANAGED_OK && !map->descriptor->is_set
         && map->descriptor->key.cell_kind == MMAY_MANAGED_CELL_RAW64) {
@@ -1051,7 +735,7 @@ static inline MarimayManagedStatus mmay_managed_map_put_resolved(
         if (map->mutation_generation == UINT64_MAX) {
             return MMAY_MANAGED_LIMIT_REACHED;
         }
-        map->entries[entry].value = value;
+        mmay_managed_map_store_value(map, entry, value);
         map->mutation_generation += UINT64_C(1);
         return MMAY_MANAGED_OK;
     }
@@ -1090,10 +774,10 @@ static inline MarimayManagedStatus mmay_managed_map_put_resolved(
             ? status : MMAY_MANAGED_INVALID_REFERENCE;
     }
     entry = map->entry_count;
-    map->entries[entry].hash = hash;
-    map->entries[entry].key = key;
-    map->entries[entry].value = value;
-    map->entries[entry].active = true;
+    mmay_managed_map_entry_prefix(map, entry)->hash = hash;
+    mmay_managed_map_store_key(map, entry, key);
+    if (!map->descriptor->is_set) mmay_managed_map_store_value(map, entry, value);
+    mmay_managed_map_entry_prefix(map, entry)->active = true;
     map->buckets[bucket] = entry;
     map->entry_count += 1U;
     map->length += 1U;
@@ -1174,11 +858,9 @@ MarimayManagedStatus mmay_managed_map_remove(
     }
     map = (MarimayManagedMap *)lookup_map;
     if (!map->descriptor->is_set) {
-        *value = map->entries[entry].value;
+        *value = mmay_managed_map_entry_value(map, entry);
     }
-    memset(&map->entries[entry].key, 0, sizeof(map->entries[entry].key));
-    memset(&map->entries[entry].value, 0, sizeof(map->entries[entry].value));
-    map->entries[entry].active = false;
+    memset(mmay_managed_map_entry_prefix(map, entry), 0, map->entry_stride);
     map->buckets[bucket] = MMAY_MAP_TOMBSTONE;
     map->length -= 1U;
     map->mutation_generation += UINT64_C(1);
@@ -1203,7 +885,7 @@ MarimayManagedStatus mmay_managed_map_clear(
     }
     memset(
         map->entries, 0,
-        map->entry_capacity * sizeof(*map->entries)
+        map->entry_capacity * map->entry_stride
     );
     for (index = 0; index < map->bucket_capacity; index += 1) {
         map->buckets[index] = MMAY_MAP_EMPTY;
@@ -1274,12 +956,12 @@ MarimayManagedStatus mmay_managed_map_entry(
         return MMAY_MANAGED_BOUNDS;
     }
     for (index = 0; index < map->entry_count; index += 1) {
-        if (!map->entries[index].active) {
+        if (!mmay_managed_map_entry_prefix(map, index)->active) {
             continue;
         }
         if (active == ordinal) {
-            *key = map->entries[index].key;
-            *value = map->entries[index].value;
+            *key = mmay_managed_map_entry_key(map, index);
+            *value = mmay_managed_map_entry_value(map, index);
             return MMAY_MANAGED_OK;
         }
         active += 1U;

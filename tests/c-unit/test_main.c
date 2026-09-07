@@ -96,6 +96,7 @@ void mmay_test_managed_mutation(void);
 void mmay_test_managed_map_set(void);
 void mmay_test_managed_map_probe(void);
 void mmay_test_managed_map_cache(void);
+void mmay_test_managed_map_storage(void);
 void mmay_test_managed_set_insertion(void);
 void mmay_test_program_arguments(void);
 void mmay_test_number_format(void);
@@ -296,6 +297,7 @@ static void mmay_test_run_cp36(void) {
     mmay_test_managed_map_set();
     mmay_test_managed_map_probe();
     mmay_test_managed_map_cache();
+    mmay_test_managed_map_storage();
     mmay_test_managed_set_insertion();
     mmay_test_cp36_collections();
 }

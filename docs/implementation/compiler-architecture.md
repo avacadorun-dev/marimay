@@ -525,9 +525,24 @@ checker owners above. `mir_collections.c` owns only layout metadata, while
 validation, and managed execution. `c_emitter_collections.c` consumes verified
 typed MIR without reconstructing source key eligibility. The runtime boundary
 is `mmay/runtime/map.h` plus `mmay/runtime/set.h`: `managed_map.c` owns coherent
-hash/equality, insertion order, growth, and precise tracing; the small set
+hash/equality and insertion-ordered operations; the small set
 owner delegates storage to that exact map contract and exposes no duplicate
 table implementation.
+
+D088 assigns entry representation, checked size/accounting, allocation,
+temporary rooting, growth/compaction, publication, tracing and teardown to the
+separately compiled `managed_map_storage.c`. Its narrow private
+`managed_map_storage_internal.h` contains descriptor-derived layout selection,
+checked handle resolution and allocation-free fixed-size cell transfers used
+by the operation/probe owners. Every entry has an aligned active/hash prefix;
+raw cells use eight bytes, references use their complete native representation,
+and Set has no value cell. Cached stride/key/value widths are immutable after
+checked construction. Payload copies use C17 object representation, not
+unaligned/type-punned dereferences. Guarded inline hints prevent small stores
+from becoming extra calls; non-Clang/GCC builds use ordinary C17 inline.
+`runtime/test_managed_map_storage.c` owns all six layout combinations, exact
+budget and zeroed reservation boundaries, growth/compaction order, reference
+tracing, and deterministic failure sweeps through complete zero-counter teardown.
 
 Both Map and Set constructors validate the immutable field descriptor before
 publishing an object. Operations rely on that shape invariant, but still

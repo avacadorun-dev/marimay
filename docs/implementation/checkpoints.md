@@ -1721,6 +1721,14 @@ The [private inline validation follow-up](evidence/cp42-inline-validation-2026-0
 removes small internal call boundaries while retaining all handle checks and
 the separately shipped C17 runtime. Three paired series provide additional
 partial evidence; LTO was a diagnostic experiment, not a selected dependency.
+The [compact collection storage follow-up](evidence/cp42-compact-collections-2026-09-07.md)
+reduces raw Map/Set reservation without weakening cell/reference semantics.
+It records rejected copy-boundary regressions, selected paired measurements
+and layout-specific memory/failure evidence; the full performance item stays open.
+Full iteration still retrieves ordinal entries by scanning from zero; replace
+those repeated scans with independent iterator progress, covering sparse and
+interleaved traversals without weakening mutation checks or silently changing
+the existing ordinal bytecode operations.
 Separate input preparation from collection execution; profile hashing/probing,
 managed-handle checks, and Option/Result construction before choosing repairs.
 Acceptance requires paired same-workload improvement, unchanged insertion

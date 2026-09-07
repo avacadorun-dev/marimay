@@ -155,6 +155,7 @@ add_executable(mmay_c_unit
   runtime/test_managed_mutation.c
   runtime/test_managed_map_set.c
   runtime/test_managed_map_probe.c
+  runtime/test_managed_map_storage.c
   runtime/test_managed_map_cache.c
   runtime/test_managed_set_insertion.c
   runtime/test_managed_reference_validation.c

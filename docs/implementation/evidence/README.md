@@ -113,6 +113,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Compact collection storage](cp42-compact-collections-2026-09-07.md) reduces
+raw Map/Set reservation with exact layout/accounting and failure coverage.
+This is a memory improvement and partial hot-path evidence, not closure of
+the remaining collection performance or public-alpha gates.
+
 [Private inline reference validation](cp42-inline-validation-2026-09-07.md)
 removes internal call overhead without removing checks or requiring LTO.
 Three local series show a further 5.6–7.5% frequency-map improvement;
