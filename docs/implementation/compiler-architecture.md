@@ -297,6 +297,12 @@ coverage. The public CP42 fixture owns source behavior and formatter round trips
 The conservative cell plan and outstanding escape-warning removal gate are
 recorded in D098 and the CP42 evidence packet.
 
+D100's `checker_mapper.c` owns callback/constructor preparation and exact input
+selection; the Result owner owns the variant CFG. Contextual mapper closures
+reuse `checker_closure.c` with a narrowly scoped D094 context. Named input context
+uses the same resolver and ordinary-function restrictions as stored values.
+The checker no longer evaluates mapper bodies inside their callers.
+
 D099's array-search owner evaluates one predicate value, snapshots the array after
 argument evaluation, and lowers one loop with generation checks around each
 normal callback return. `checker_function_call.c` owns the shared precompiled
@@ -833,6 +839,18 @@ behind `mmay/runtime/record.h`. Views contain no copied storage address and do
 not own memory. The emitter coordinator owns the conservative transitive
 safepoint predicate and root-location placement because those are activation
 construction decisions; runtime owners do not infer compiler liveness.
+`c_emitter_roots.c` owns backward safepoint liveness and activation-wide root
+coalescing. Its bounded linear CFG elimination and saturating definition counts
+prove a replacement register is assigned at most once during an activation.
+Definitions in cycles, downstream of cycles, or at multi-definition joins remain
+independent roots. Exact reference copies and immutable enum-payload ownership
+can retain another stable register; mutable record/array/collection projections
+cannot, because callees or aliases may replace their children. The focused
+`test_native_c_emitter_roots.c` fixture covers both join arms, rebinding, loop
+iterations, and child replacement through callees under forced GC and exhaustive
+allocation failure. The D100 engine fixture separately pins a managed Result
+containing a returned closure across an allocating Ok-side mapper expression.
+
 `mmay/base/checked_i64_fast.h` is a header-only emission boundary mirroring the
 portable checked/proven implementation, not a second semantic arithmetic
 owner. `bootstrap/src/native/c_emitter_relations.c` owns the backend-local,

@@ -119,6 +119,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Ordinary Result mappers and native root lifetime](cp42-mapper-values-2026-09-08.md)
+records D100 callback scope/order, common callable reuse in Notes/config and the
+forced-GC repair for branch, loop and mutable-child root lifetime. Uninhabited
+Result payload transport and the escaping-capture warning remain open.
+
 [Predicate array search and Notes integration](cp42-array-search-2026-09-08.md)
 records D099, callback/generation order, allocation/GC and public engine checks,
 plus shared ID lookup/removal and literal-text CLI search in Notes. This supplies

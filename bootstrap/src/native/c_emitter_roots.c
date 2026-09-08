@@ -461,7 +461,10 @@ static bool mmay_native_c_register_is_managed(
                 )));
 }
 
-static bool mmay_native_c_root_alias_source(
+/* Exact reference identity and immutable enum payload ownership retain the
+ * target. Mutable container loads do not: aliases or callees can replace a
+ * child without changing the container's reference. */
+static bool mmay_native_c_root_retaining_source(
     const MarimayMirFunction *function,
     const MarimayMirInstruction *instruction,
     MarimayMirRegister *source
@@ -473,6 +476,7 @@ static bool mmay_native_c_root_alias_source(
         && *target < MMAY_TYPE_FIRST_DYNAMIC)) return false;
     switch (instruction->kind) {
         case MMAY_MIR_COPY:
+        case MMAY_MIR_ENUM_GET_PAYLOAD:
         case MMAY_MIR_ENUM_REQUIRE_VARIANT:
         case MMAY_MIR_ARRAY_REQUIRE_INDEX:
         case MMAY_MIR_ARRAY_ASSUME_INDEX:
@@ -498,61 +502,67 @@ static bool mmay_native_c_root_alias_source(
     }
 }
 
-static bool mmay_native_c_root_child_source(
-    const MarimayMirFunction *function,
-    const MarimayMirInstruction *instruction,
-    MarimayMirRegister *source,
-    bool *immutable
+/* Only registers assigned at most once during an activation can stand in for
+ * another root for the entire activation. Kahn elimination proves blocks are
+ * outside cycles; blocks downstream of a cycle conservatively remain excluded.
+ * A single MIR definition in a loop is still a repeatedly assigned C local. */
+static bool mmay_native_c_stable_root_definitions(
+    const MarimayMirFunction *function, MarimayAllocator allocator,
+    unsigned char *definitions, size_t register_count
 ) {
-    const MarimayTypeId *target = mmay_vector_at_const(
-        &function->register_types, instruction->target
-    );
-    if (target == NULL || (*target != MMAY_TYPE_STRING
-        && *target < MMAY_TYPE_FIRST_DYNAMIC)) return false;
-    if (instruction->kind == MMAY_MIR_ENUM_GET_PAYLOAD) {
-        *source = instruction->first;
-        *immutable = true;
-        return true;
+    size_t bytes = 0, head = 0, tail = 0;
+    size_t block_count = function->blocks.length;
+    size_t *degrees = NULL, *queue = NULL;
+    if (!mmay_size_multiply(block_count, 2 * sizeof(size_t), &bytes)) return false;
+    if (bytes == 0) return false;
+    degrees = mmay_allocate(&allocator, bytes);
+    if (degrees == NULL) return false;
+    memset(degrees, 0, bytes);
+    queue = degrees + block_count;
+    for (size_t index = 0; index < block_count; index += 1) {
+        const MarimayMirBlock *block = mmay_vector_at_const(&function->blocks, index);
+        if (block == NULL) goto fail;
+        if (block->terminator.kind == MMAY_MIR_GOTO
+            || block->terminator.kind == MMAY_MIR_BRANCH) {
+            if (block->terminator.target < block_count) degrees[block->terminator.target] += 1;
+        }
+        if (block->terminator.kind == MMAY_MIR_BRANCH
+            && block->terminator.otherwise < block_count) degrees[block->terminator.otherwise] += 1;
     }
-    if (instruction->kind == MMAY_MIR_RECORD_GET
-        || instruction->kind == MMAY_MIR_ARRAY_GET
-        || instruction->kind == MMAY_MIR_ARRAY_GET_IN_BOUNDS
-        || instruction->kind == MMAY_MIR_COLLECTION_GET
-        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_KEY
-        || instruction->kind == MMAY_MIR_COLLECTION_ENTRY_VALUE
-        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_KEY
-        || instruction->kind == MMAY_MIR_COLLECTION_CURSOR_VALUE) {
-        *source = instruction->first;
-        *immutable = false;
-        return true;
+    for (size_t index = 0; index < block_count; index += 1) {
+        if (degrees[index] == 0) queue[tail++] = index;
     }
+    while (head < tail) {
+        const MarimayMirBlock *block = mmay_vector_at_const(&function->blocks, queue[head++]);
+        MarimayMirBlockId targets[2] = {MMAY_MIR_NO_BLOCK, MMAY_MIR_NO_BLOCK};
+        if (block->terminator.kind == MMAY_MIR_GOTO
+            || block->terminator.kind == MMAY_MIR_BRANCH) targets[0] = block->terminator.target;
+        if (block->terminator.kind == MMAY_MIR_BRANCH) targets[1] = block->terminator.otherwise;
+        for (size_t edge = 0; edge < 2; edge += 1) {
+            size_t target = targets[edge];
+            if (target < block_count && --degrees[target] == 0) queue[tail++] = target;
+        }
+    }
+    memset(definitions, 0, register_count);
+    for (size_t index = 0; index < function->parameter_count && index < register_count; index += 1)
+        definitions[index] = 1;
+    for (size_t index = 0; index < block_count; index += 1) {
+        const MarimayMirBlock *block = mmay_vector_at_const(&function->blocks, index);
+        for (size_t n = 0; n < block->instructions.length; n += 1) {
+            const MarimayMirInstruction *instruction = mmay_vector_at_const(&block->instructions, n);
+            if (instruction == NULL) goto fail;
+            size_t target = instruction->target;
+            if (target < register_count) {
+                if (degrees[index] != 0) definitions[target] = 2;
+                else if (definitions[target] < 2) definitions[target] += 1;
+            }
+        }
+    }
+    mmay_deallocate(&allocator, degrees, bytes);
+    return true;
+fail:
+    mmay_deallocate(&allocator, degrees, bytes);
     return false;
-}
-
-static bool mmay_native_c_instruction_mutates_owner(
-    const MarimayMirInstruction *instruction
-) {
-    switch (instruction->kind) {
-        case MMAY_MIR_RECORD_SET:
-        case MMAY_MIR_ARRAY_SET:
-        case MMAY_MIR_ARRAY_SET_IN_BOUNDS:
-        case MMAY_MIR_ARRAY_PUSH:
-        case MMAY_MIR_ARRAY_POP:
-        case MMAY_MIR_ARRAY_REMOVE_AT:
-        case MMAY_MIR_ARRAY_TRUNCATE:
-        case MMAY_MIR_ARRAY_CLEAR:
-        case MMAY_MIR_ARRAY_RESERVE:
-        case MMAY_MIR_COLLECTION_PUT:
-        case MMAY_MIR_COLLECTION_ADD:
-        case MMAY_MIR_COLLECTION_REMOVE:
-        case MMAY_MIR_COLLECTION_CLEAR:
-        case MMAY_MIR_COLLECTION_PUT_RESULT:
-        case MMAY_MIR_COLLECTION_ADD_RESULT:
-        case MMAY_MIR_COLLECTION_REMOVE_OPTION:
-            return true;
-        default:
-            return false;
-    }
 }
 
 static MarimayMirRegister mmay_native_c_root_origin(
@@ -582,7 +592,7 @@ static bool mmay_native_c_coalesce_root_aliases(
     const MarimayMirFunction *function,
     MarimayAllocator allocator,
     unsigned char *roots,
-    unsigned char *mutated,
+    unsigned char *definitions,
     unsigned char *coalesced,
     size_t register_count
 ) {
@@ -594,6 +604,9 @@ static bool mmay_native_c_coalesce_root_aliases(
         )) return false;
     origins = mmay_allocate(&allocator, origin_bytes);
     if (origins == NULL) return false;
+    if (!mmay_native_c_stable_root_definitions(
+            function, allocator, definitions, register_count
+        )) goto fail;
     for (index = 0; index < register_count; index += 1) {
         origins[index] = (MarimayMirRegister)index;
     }
@@ -612,66 +625,14 @@ static bool mmay_native_c_coalesce_root_aliases(
             MarimayMirRegister source = MMAY_MIR_NO_REGISTER;
             if (instruction == NULL) goto fail;
             if (instruction->target < register_count
-                && mmay_native_c_root_alias_source(
+                && mmay_native_c_root_retaining_source(
                     function, instruction, &source
-                ) && source < register_count) {
+                ) && source < register_count
+                && definitions[instruction->target] == 1
+                && definitions[source] == 1) {
                 mmay_native_c_merge_root_origin(
                     origins, instruction->target, source
                 );
-            }
-        }
-    }
-    memset(mutated, 0, register_count);
-    for (index = 0; index < function->blocks.length; index += 1) {
-        const MarimayMirBlock *block = mmay_vector_at_const(
-            &function->blocks, index
-        );
-        size_t instruction_index = 0;
-        if (block == NULL) goto fail;
-        for (instruction_index = 0;
-            instruction_index < block->instructions.length;
-            instruction_index += 1) {
-            const MarimayMirInstruction *instruction = mmay_vector_at_const(
-                &block->instructions, instruction_index
-            );
-            if (instruction == NULL) goto fail;
-            if (mmay_native_c_instruction_mutates_owner(instruction)
-                && instruction->first < register_count) {
-                mutated[mmay_native_c_root_origin(
-                    origins, instruction->first
-                )] = 1;
-            }
-        }
-    }
-    for (index = 0; index < function->blocks.length; index += 1) {
-        const MarimayMirBlock *block = mmay_vector_at_const(
-            &function->blocks, index
-        );
-        size_t instruction_index = 0;
-        for (instruction_index = 0;
-            instruction_index < block->instructions.length;
-            instruction_index += 1) {
-            const MarimayMirInstruction *instruction = mmay_vector_at_const(
-                &block->instructions, instruction_index
-            );
-            MarimayMirRegister source = MMAY_MIR_NO_REGISTER;
-            bool immutable = false;
-            if (mmay_native_c_root_child_source(
-                    function, instruction, &source, &immutable
-                ) && instruction->target < register_count
-                && source < register_count) {
-                MarimayMirRegister source_root = mmay_native_c_root_origin(
-                    origins, source
-                );
-                MarimayMirRegister target_root = mmay_native_c_root_origin(
-                    origins, instruction->target
-                );
-                if (immutable
-                    || (!mutated[source_root] && !mutated[target_root])) {
-                    mmay_native_c_merge_root_origin(
-                        origins, instruction->target, source
-                    );
-                }
             }
         }
     }

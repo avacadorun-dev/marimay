@@ -535,10 +535,9 @@ cleanup:
             function->checker, receiver->type
         );
         if (imported_record == NULL) {
-            mmay_checker_fail(
-                function->checker,
-                MMAY_CHECK_INCOMPLETE_LANGUAGE
-            );
+            (void)mmay_checker_add_diagnostic(function->checker,
+                MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+                "field access requires a record value", receiver_node->start, receiver_node->end);
             return false;
         }
     }

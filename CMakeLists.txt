@@ -496,6 +496,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_expr_prelude.c
   bootstrap/src/check/checker_expr_try.c
   bootstrap/src/check/checker_expr_map_error.c
+  bootstrap/src/check/checker_mapper.c
   bootstrap/src/check/checker_expr_numeric.c
   bootstrap/src/check/checker_expr_interfaces.c
   bootstrap/src/check/checker_expr_io.c

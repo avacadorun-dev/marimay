@@ -5,8 +5,9 @@
 #include "checker_lookup_api.h"
 #include "checker_statement_api.h"
 
-bool mmay_function_value_closure(MarimayFunctionChecker *function, const MarimayAstNode *node,
-    MarimayTypeId expected, MarimayExpressionValue *result) {
+static bool compile_closure(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    MarimayTypeId expected, MarimayTypeId contextual_parameter, MarimayTypeId contextual_result,
+    MarimayExpressionValue *result) {
     MarimayFunctionChecker body = {0};
     MarimayClosureContext context = {0};
     MarimayVector parameters = {0}, names = {0};
@@ -19,11 +20,14 @@ bool mmay_function_value_closure(MarimayFunctionChecker *function, const Marimay
     const MarimayAstNode *expression = mmay_checker_private_check_child_node(node, MMAY_SYNTAX_EXPRESSION, 0);
     bool ok = false;
     context.parent = function; context.node = node;
-    if (result_node == NULL) {
+    bool contextual = contextual_parameter != MMAY_TYPE_INVALID;
+    if (result_node == NULL && (!contextual || contextual_result == MMAY_TYPE_INVALID)) {
         (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
-            "ordinary closure requires an explicit result type", node->start, node->end); return false;
+            contextual ? "mapError closure with an omitted result type requires an expected Result type"
+                : "ordinary closure requires an explicit result type", node->start, node->end); return false;
     }
-    if (!mmay_checker_private_check_exact_type(function->checker, result_node, &result_type)) return false;
+    result_type = contextual_result;
+    if (result_node != NULL && !mmay_checker_private_check_exact_type(function->checker, result_node, &result_type)) return false;
     if (!mmay_vector_init(&parameters, function->checker->result->allocator, sizeof(MarimayTypeId))
         || !mmay_vector_init(&names, function->checker->result->allocator, sizeof(MarimayCheckName))
         || !mmay_vector_init(&context.captures, function->checker->result->allocator, sizeof(MarimayClosureCapture))
@@ -37,14 +41,15 @@ bool mmay_function_value_closure(MarimayFunctionChecker *function, const Marimay
         const MarimayAstNode *annotation = mmay_checker_private_check_child_node(parameter, MMAY_SYNTAX_TYPE, 0);
         const MarimaySyntaxToken *token = mmay_checker_private_check_child_token(parameter, MMAY_TOKEN_IDENTIFIER, 0);
         MarimayTypeId parameter_type;
-        if (annotation == NULL || token == NULL) {
+        if ((annotation == NULL && !contextual) || token == NULL) {
             (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "ordinary closure requires explicit parameter types", parameter->start, parameter->end); goto cleanup;
         }
-        if (!mmay_checker_private_check_exact_type(function->checker, annotation, &parameter_type)) goto cleanup;
+        parameter_type = contextual_parameter;
+        if (annotation != NULL && !mmay_checker_private_check_exact_type(function->checker, annotation, &parameter_type)) goto cleanup;
         if (parameter_type == MMAY_TYPE_VOID || parameter_type == MMAY_TYPE_NEVER) {
             (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
-                "closure parameter requires an inhabited value type", annotation->start, annotation->end); goto cleanup;
+                "closure parameter requires an inhabited value type", parameter->start, parameter->end); goto cleanup;
         }
         if (names.length >= function->checker->options.max_locals_per_function
             || parameters.length >= function->checker->options.mir_options.max_registers) {
@@ -59,6 +64,13 @@ bool mmay_function_value_closure(MarimayFunctionChecker *function, const Marimay
             }
         }
         if (!mmay_vector_push(&parameters, &parameter_type) || !mmay_vector_push(&names, &name)) goto allocation;
+    }
+    if (contextual && (names.length != 1
+            || *(const MarimayTypeId *)mmay_vector_at_const(&parameters, 1) != contextual_parameter)) {
+        (void)mmay_checker_add_diagnostic(function->checker,
+            names.length != 1 ? MMAY_DIAGNOSTIC_CALL_ARITY : MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "mapError closure requires one parameter with the exact error type", node->start, node->end);
+        goto cleanup;
     }
     if (!mmay_type_intern_function(&function->checker->result->types,
             (const MarimayTypeId *)parameters.data + 1, names.length, result_type, &type)
@@ -114,4 +126,18 @@ cleanup:
     mmay_vector_dispose(&names);
     mmay_vector_dispose(&context.captures);
     return ok;
+}
+
+bool mmay_function_value_closure(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    MarimayTypeId expected, MarimayExpressionValue *result) {
+    return compile_closure(function, node, expected, MMAY_TYPE_INVALID, MMAY_TYPE_INVALID, result);
+}
+
+bool mmay_function_value_mapper_closure(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    MarimayTypeId parameter, MarimayTypeId output, MarimayExpressionValue *result) {
+    /* D094 annotation omission belongs only to the direct expression closure.
+     * Annotated block closures use the ordinary D098 contract. */
+    if (mmay_checker_private_check_child_node(node, MMAY_SYNTAX_BLOCK, 0) != NULL)
+        return mmay_function_value_closure(function, node, MMAY_TYPE_INVALID, result);
+    return compile_closure(function, node, MMAY_TYPE_INVALID, parameter, output, result);
 }

@@ -65,8 +65,8 @@ cleanup:
     return ok;
 }
 
-bool mmay_function_value_named(MarimayFunctionChecker *function, const MarimayAstNode *node,
-    MarimayTypeId expected, bool *resolved, MarimayExpressionValue *result) {
+static bool named_value(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    MarimayTypeId expected, MarimayTypeId first_parameter, bool *resolved, MarimayExpressionValue *result) {
     const MarimaySyntaxToken *name_token = NULL, *namespace_token = NULL;
     const MarimayAstNode *receiver = NULL;
     MarimayCheckName name, namespace_name = {0};
@@ -91,19 +91,24 @@ bool mmay_function_value_named(MarimayFunctionChecker *function, const MarimayAs
     }
     if (name_token == NULL) return true;
     name = (MarimayCheckName){function->checker->ast->snapshot, name_token->start, name_token->end};
+    if (!qualified && mmay_checker_private_function_find_local(function, name) != NULL) return true;
+    if (context != NULL && context->kind == MMAY_TYPE_KIND_FUNCTION && context->parameter_count != 0)
+        first_parameter = context->arguments[0];
     resolution = qualified ? mmay_check_resolve_qualified_call(function->checker, namespace_name,
         name, false, MMAY_TYPE_INVALID, &callable)
         : mmay_check_resolve_call(function->checker, name, false, MMAY_TYPE_INVALID, &callable);
-    if (resolution == MMAY_CHECK_CALL_RECEIVER_REQUIRED && context != NULL
-        && context->kind == MMAY_TYPE_KIND_FUNCTION && context->parameter_count != 0) {
+    if (resolution == MMAY_CHECK_CALL_RECEIVER_REQUIRED && first_parameter != MMAY_TYPE_INVALID) {
         resolution = qualified ? mmay_check_resolve_qualified_call(function->checker, namespace_name,
-            name, true, context->arguments[0], &callable)
-            : mmay_check_resolve_free_call(function->checker, name, context->arguments[0], &callable);
+            name, true, first_parameter, &callable)
+            : mmay_check_resolve_free_call(function->checker, name, first_parameter, &callable);
     }
     if (resolution == MMAY_CHECK_CALL_UNKNOWN_NAME || resolution == MMAY_CHECK_CALL_NOT_FUNCTION) return true;
     *resolved = true;
     if (resolution != MMAY_CHECK_CALL_FOUND || callable.is_external) {
-        (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+        (void)mmay_checker_add_diagnostic(function->checker,
+            resolution == MMAY_CHECK_CALL_PRIVATE_IMPORT ? MMAY_DIAGNOSTIC_PRIVATE_IMPORT
+                : resolution == MMAY_CHECK_CALL_UNKNOWN_IMPORT ? MMAY_DIAGNOSTIC_UNKNOWN_IMPORT
+                : MMAY_DIAGNOSTIC_TYPE_MISMATCH,
             "function value requires an unambiguous visible ordinary function",
             node->start, node->end); return false;
     }
@@ -131,4 +136,14 @@ bool mmay_function_value_named(MarimayFunctionChecker *function, const MarimayAs
     }
     return mmay_check_record_occurrence(function->checker, name, callable.symbol)
         && named_adapter(function, node, callable, type, result);
+}
+
+bool mmay_function_value_named(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    MarimayTypeId expected, bool *resolved, MarimayExpressionValue *result) {
+    return named_value(function, node, expected, MMAY_TYPE_INVALID, resolved, result);
+}
+
+bool mmay_function_value_named_input(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    MarimayTypeId first_parameter, bool *resolved, MarimayExpressionValue *result) {
+    return named_value(function, node, MMAY_TYPE_INVALID, first_parameter, resolved, result);
 }

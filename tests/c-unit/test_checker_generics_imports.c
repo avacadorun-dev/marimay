@@ -43,7 +43,7 @@ void mmay_test_checker_generics_imports(void) {
     if (status == MMAY_CHECK_OK && checked.initialized) {
         MMAY_EXPECT(checked.diagnostics.length == 0);
         MMAY_EXPECT(checked.enums.length == 2);
-        MMAY_EXPECT(checked.functions.length == 4);
+        MMAY_EXPECT(checked.functions.length == 5); /* Includes the ordinary mapper adapter. */
         external = mmay_checker_import_function(
             &checked, "readText", NULL
         );

@@ -3222,3 +3222,51 @@ roots and D055 resource/allocation outcomes use the common engine mechanisms.
 Reason: Notes ID lookup and removal need one shared, identity-preserving search
 operation. This slice integrates the callable foundation without changing array
 mutation semantics, adding identity equality, or hiding expected failures.
+
+## D100 — Result error mapping consumes ordinary function values
+
+Status: accepted.
+
+`Result.mapError` uses the D098 callable representation and invocation boundary.
+The receiver is evaluated once, followed by the mapper expression once, before
+choosing the Result variant. A factory or other mapper expression therefore runs
+on both Ok and Err; the resulting unary callback runs only on Err, exactly once.
+The callable's parameter must be exactly E; its declared result determines F.
+Stored, returned, indexed, field and conditional function values are accepted.
+A `void` result constructs Err without a payload; a `never` callback has no normal
+Err continuation. Normal successful values and referenced error payloads retain
+their identity. Callback returns, postfix `?`, defers and panics have their own
+function scope, as for every other D098 invocation.
+
+D094's exact input-based named overload selection and direct-postfix-`?` output
+context remain. Only a direct expression-bodied mapper closure may omit parameter
+and result annotations; parenthesized forms are transparent. Annotated block
+closures are ordinary D098 values. A fully annotated or stored callback needs no
+contextual output type. Taking generic/unsafe/extern function values remains
+outside D098; mapError must not bypass that restriction. Existing unary enum
+constructor mappers remain a compiler-known constructor form with their existing
+exact generic context; this does not make constructors first-class functions.
+
+The checker mapper owner prepares one callable or constructor packet; the Result
+owner handles variant control flow. Closure creation, capture initialization and
+managed allocation apply on Ok as well as Err. The former inline contextual body
+is removed, so control flow and captured bindings cannot leak into the caller.
+No wire operation, backend-specific mapper or runtime allocation API is added.
+
+Reason: config/Notes error adapters should compose with the same callbacks as
+array search and ordinary code, instead of maintaining an AST-only exception.
+
+Implementation boundary: the current common enum transport cannot represent an
+uninhabited payload. A mapper whose declared result is `never` therefore reports
+I0001 before publishing MIR, including on a statically Ok receiver. Supporting
+`Result<T, never>` requires one common enum-layout/lowering/verification change
+with both-engine and allocation coverage; remove this guard only with that
+coverage. This is an implementation gap, not a source-language restriction.
+A mapper expression that itself diverges and a callback with an inhabited result
+whose body panics retain their ordinary evaluation and cleanup behavior.
+
+The differential fixture also requires correction of native root coalescing:
+MIR registers are not SSA values. An activation-wide replacement root requires
+single assignment outside repeated CFG regions. Mutable container children must
+retain their own roots because mutation may occur through an alias or callee.
+This follows D063's existing lifetime contract without adding source semantics.

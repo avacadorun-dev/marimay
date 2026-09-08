@@ -113,9 +113,8 @@ evidence. Значения можно хранить,
 Открытый callback gate: nonfatal warning об escaping mutable capture из §6.3
 ещё не реализован; нужны severity, escape analysis и warning fixtures до полной
 приёмки. Общий inference без аннотаций, generic/unsafe/extern references,
-suspension и FFI callbacks этим срезом не заявлены. `Result.mapError` пока
-сохраняет ограниченные формы mapper из D094; его перевод на общие сохранённые
-callbacks остаётся частью интеграции потребителей.
+suspension и FFI callbacks этим срезом не заявлены. D100 ниже переводит
+`Result.mapError` на те же сохранённые callbacks.
 
 D099 реализует `findIndex` с generation checks до и после callback:
 [evidence](evidence/cp42-array-search-2026-09-08.md). Поиск ID и удаление Notes
@@ -128,10 +127,23 @@ architecture, memory-policy и roadmap проходят.
 Отдельный paired sample на 6 098 синтетических записях: Native Release
 show-last 143.48 → 143.62 ms, remove-last 236.16 → 235.40 ms; это локальная
 проверка стоимости интеграции, не performance acceptance и не профиль bottleneck.
-Далее — общая интеграция сохранённых callbacks в Result.mapError и требуемый
-warning об escaping mutable capture, затем оставшиеся прикладные приёмки.
+D100 переводит `Result.mapError` на общий callable boundary:
+[evidence](evidence/cp42-mapper-values-2026-09-08.md). Notes хранит mapper перед
+циклом ID, config повторно использует адаптер write/flush. Все 81 Release tests
+имеют passing results после повтора native shard. ASan/UBSan: 79/80 в полном
+прогоне, единственный старый count assertion исправлен и sanitized fixture
+прошёл отдельно; это не полный повтор 80/80. На прежних 6 098 synthetic notes
+native Release show/remove-last остались около 144/236 ms, RSS практически
+прежний. Forced GC обнаружил
+ошибку native coalescing: разные определения MIR-регистра объединялись как
+один постоянный объект. Root owner теперь доказывает однократное определение
+вне циклов; mutable children сохраняют собственные корни при вызовах/alias writes.
+Не возвращай прежний union всех COPY. Общий enum transport ещё не поддерживает
+`Result<T, never>`: mapper с таким результатом даёт I0001 до публикации MIR;
+removal gate записан в D100. Далее остаются предупреждение об escaping mutable
+capture, прикладные budgets и общая потоковая основа logstats/grep/frequency.
 [Единый проект контрактов](../research/cli0-collection-contracts-2026-09-08.md)
-теперь связывает принятые D096–D099. Не скрывай expected errors или capacity
+теперь связывает принятые D096–D100. Не скрывай expected errors или capacity
 limits ради удаления discard.
 Оценить доступность structured JSON errors/локализации и пользу второго
 прохода version discovery. Наличие finding не требует автоматически DOM,
@@ -178,8 +190,10 @@ Origin: `https://github.com/avacadorun-dev/marimay.git`.
 сохранена. Run 212 прошёл четыре C matrices и четыре 600-секундные fuzz
 campaigns; sanitizer упал только на упаковке пустого `__pycache__` каталога.
 [Исправление](evidence/ci-cache-install-2026-09-08.md) запушено как `ed702ec`;
-в run 216 Linux ASan/UBSan/LSan уже прошёл 76/76. Финальный статус остальных
-jobs отслеживает infra-подагент. Это CI предыдущей ревизии, не D097.
+в run 216 Linux ASan/UBSan/LSan уже прошёл 76/76. После ограниченной диагностики infra-подагент завершил работу; непрерывного
+мониторинга нет. Run 218 на `8e826a6` завершился успешно: GCC/Clang,
+ASan/UBSan/LSan, TSan и четыре 600-секундные fuzz campaigns. Это CI предыдущей
+ревизии, не D100. Очередь CI не блокирует независимую работу над языком.
 В run 210 Clang Debug retry прошёл, sanitizer retry — 71/75; причины
 Clang/ld/source-token аномалий и прежнего RCU stall неизвестны.
 Docs-only run 211 на `a95300f` зелёный; code jobs там skipped.

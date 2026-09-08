@@ -77,6 +77,7 @@ add_executable(mmay_c_unit
   test_checker_generics_imports.c
   test_checker_map_error_imports.c
   test_checker_map_error_context.c
+  test_checker_mapper_values.c
   test_checker_enum_pattern_names.c
   test_checker_imports_support.c
   test_checker_imported_arrays.c
@@ -198,6 +199,7 @@ add_executable(mmay_c_unit
   test_native_c_emitter_arrays.c
   test_native_c_emitter_array_access.c
   test_native_c_emitter_array_storage.c
+  test_native_c_emitter_roots.c
   test_native_c_emitter_managed_views.c
   test_native_c_emitter_call_policy.c
   test_native_c_emitter_relations.c
@@ -206,6 +208,7 @@ add_executable(mmay_c_unit
   test_function_value_engines.c
   test_callable_engine_support.c
   test_array_search_engines.c
+  test_mapper_value_engines.c
   test_native_c_emitter_baseline.c
   test_native_c_emitter_matrix.c
   test_native_c_emitter_nominal.c
@@ -812,6 +815,17 @@ add_test(
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_function_values.cmake"
 )
 set_tests_properties(mmay_cp42_function_values PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200)
+
+add_test(
+  NAME mmay_cp42_mapper_values
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp42-mapper-values"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/cp42-mapper-values"
+    "-DMMAY_TEST_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_mapper_values.cmake"
+)
+set_tests_properties(mmay_cp42_mapper_values PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200)
 
 # CP37 creates uniquely named artifacts, but launches several compiler and
 # native-program subprocesses. Reserve capacity without serializing every

@@ -1690,6 +1690,10 @@ Shared-contract implementation: [scoped Option conditions and consumer migration
 Array copy/removal and functional Notes migration: [D097 local evidence](evidence/cp42-array-edit-2026-09-08.md).
 Function-value/capture foundation: [D098 local evidence](evidence/cp42-function-values-2026-09-08.md).
 Predicate search and Notes integration: [D099 local evidence](evidence/cp42-array-search-2026-09-08.md).
+Ordinary Result mappers and root lifetime: [D100 local evidence](evidence/cp42-mapper-values-2026-09-08.md).
+Common-layout removal gate: implement uninhabited enum payload transport before
+accepting mapper result `never`; the current I0001 is an explicit implementation
+gap, not a normative source restriction.
 Callback removal gate: deliver the nonfatal escaping-mutable-capture warning with
 severity, escape classification and positive/negative fixtures before full §6.3
 conformance or CP42 callback acceptance; legal escaping closures remain legal.

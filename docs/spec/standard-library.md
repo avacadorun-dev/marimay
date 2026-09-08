@@ -76,6 +76,13 @@ resolves only through that file-local namespace; it does not fall back to a
 local function or an enum constructor. The mapper must accept exactly the input
 error type in one parameter and is invoked exactly once on `Err`, never on `Ok`.
 
+D100 also accepts stored, returned, indexed and field function values. Receiver
+and mapper expressions are evaluated once, left to right, before variant
+selection, including on Ok. The callback uses ordinary D098 capture and control
+flow semantics. Its exact declared result determines the output error type;
+`void` has no error payload and `never` has no normal Err continuation. D094's
+contextual expression closures and positional enum constructor forms remain.
+
 `expectOk(message)` may panic and is not idiomatic expected-error handling. There is no implicit `From`-style conversion graph. A concrete error may be explicitly boxed into an `Error` interface at a construction or return boundary when it structurally conforms.
 
 ### 2.3 Error formatting

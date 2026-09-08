@@ -1,0 +1,184 @@
+import * as text from "std/text";
+
+type Holder {
+  mapper: (int) => int,
+}
+
+fn increment(value: int): int {
+  return value + 1;
+}
+
+fn adapt<T, E, F>(value: Result<T, E>, mapper: (E) => F): Result<T, F> {
+  return value.mapError(mapper);
+}
+
+fn counterMapper(events: []int): (int) => int {
+  events[0] = events[0] * 10 + 2;
+  return (error: int): int => {
+    events[0] = events[0] * 10 + 3;
+    return error + 1;
+  };
+}
+
+fn source(events: []int, bad: bool): Result<int, int> {
+  events[0] = events[0] * 10 + 1;
+  if bad {
+    return Err(4);
+  }
+  return Ok(8);
+}
+
+@test
+fn storedAndGenericCallbacks(): void {
+  const mapper = increment;
+  const bad: Result<int, int> = Err(4);
+  const good: Result<int, int> = Ok(8);
+  expect.equal(bad.mapError(mapper), Err(5));
+  expect.equal(good.mapError(mapper), Ok(8));
+  expect.equal(adapt(bad, mapper), Err(5));
+  const stringError: Result<bool, string> = Err("error");
+  match adapt(stringError, (error: string): []string => [error]) {
+    Ok(_) => panic("expected error"),
+    Err(items) => expect.equal(items[0], "error"),
+  };
+}
+
+@test
+fn receiverAndFactoryRunOnceOnBothPaths(): void {
+  const events = [0];
+  expect.equal(source(events, true).mapError(counterMapper(events)), Err(5));
+  expect.equal(events[0], 123);
+  events[0] = 0;
+  expect.equal(source(events, false).mapError(counterMapper(events)), Ok(8));
+  expect.equal(events[0], 12);
+}
+
+@test
+fn indexedFieldAndConditionalValues(): void {
+  const mappers = [increment, (error: int): int => error + 2];
+  const holder = Holder { mapper: mappers[0] };
+  const bad: Result<int, int> = Err(3);
+  expect.equal(bad.mapError(mappers[1]), Err(5));
+  expect.equal(bad.mapError(holder.mapper), Err(4));
+  expect.equal(
+    bad.mapError(
+      match true {
+        true => mappers[0],
+        false => mappers[1],
+      },
+    ),
+    Err(4),
+  );
+  const findIndex = mappers[1];
+  expect.equal(bad.mapError(findIndex), Err(5));
+}
+
+@test
+fn mutableCaptureAndCallbackDefer(): void {
+  let count = 0;
+  const events = [0];
+  const mapper = (error: int): int => {
+    count += 1;
+    defer recordCleanup(events);
+    return error + count;
+  };
+  const bad: Result<int, int> = Err(3);
+  const good: Result<int, int> = Ok(4);
+  expect.equal(bad.mapError(mapper), Err(4));
+  expect.equal(events[0], 1);
+  expect.equal(good.mapError(mapper), Ok(4));
+  expect.equal(count, 1);
+}
+
+fn recordCleanup(events: []int): void {
+  events[0] += 1;
+}
+
+@test
+fn contextualCaptureIsNotCallerLocal(): void {
+  const error = "outer";
+  let visits = 0;
+  const source: Result<int, int> = Err(3);
+  const mapped: Result<int, string> = source.mapError((error) => describe(error));
+  expect.equal(mapped, Err("mapped"));
+  expect.equal(error, "outer");
+  const second: Result<int, int> = source.mapError((error) => error + visits);
+  expect.equal(second, Err(3));
+}
+
+fn describe(error: int): string {
+  return "mapped";
+}
+
+@test
+fn blockClosureHasOwnTryAndReturn(): void {
+  const source: Result<int, int> = Err(3);
+  const mapped = source.mapError(
+    (error: int): Result<int, string> => {
+      const result: Result<int, string> = Err("nested");
+      const value = result?;
+      return Ok(error + value);
+    },
+  );
+  expect.equal(mapped, Err(Err("nested")));
+}
+
+@test
+fn voidSuccessAndVoidError(): void {
+  const bad: Result<void, int> = Err(3);
+  const good: Result<void, int> = Ok();
+  const events = [0];
+  const mapper = (error: int): void => {
+    events[0] += error;
+  };
+  const mapped: Result<void, void> = bad.mapError(mapper);
+  expect.equal(mapped, Err());
+  expect.equal(events[0], 3);
+  expect.equal(good.mapError(mapper), Ok());
+  expect.equal(events[0], 3);
+}
+
+@test
+fn referencePayloadIdentityAndEscapingResult(): void {
+  const items = [1];
+  const bad: Result<int, []int> = Err(items);
+  const events = [0];
+  const mapper = (error: []int): () => int => {
+    error[0] += 1;
+    return (): int => {
+      events[0] += 1;
+      return error[0];
+    };
+  };
+  const mapped = bad.mapError(mapper);
+  items[0] = 8;
+  match mapped {
+    Ok(_) => panic("expected error"),
+    Err(read) => expect.equal(read(), 8),
+  };
+  expect.equal(events[0], 1);
+}
+
+@test
+fn contextThroughParenthesesAndPostfixTry(): void {
+  expect.equal(wrapError(), Err("mapped"));
+}
+
+fn wrapError(): Result<bool, string> {
+  const source: Result<int, int> = Err(3);
+  const value = source.mapError((((error) => describe(error))))?;
+  return Ok(value == 3);
+}
+
+@test
+fn fieldShadowsNamespaceAndSurvivesCapture(): void {
+  const text = Holder { mapper: increment };
+  const call = (): int => {
+    const input: Result<int, int> = Err(2);
+    return match input.mapError(text.mapper) {
+      Ok(n) => n,
+      Err(n) => n,
+    };
+  };
+  expect.equal(call(), 3);
+}

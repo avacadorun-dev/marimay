@@ -1,0 +1,1445 @@
+{
+  "schema": "marimay.cp42.mapper-values.v1",
+  "recorded_at_utc": "2026-09-08T09:29:07.600131+00:00",
+  "base_git_revision": "271604a2655d34d9e1c73e4c48a66eb0465419bd",
+  "verification_status": "Local implementation evidence; full Tier 1 and CP42 remain open; sanitizer full-run count assertion and focused correction recorded explicitly",
+  "platform": {
+    "system": "Darwin",
+    "release": "25.6.0",
+    "machine": "arm64",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)"
+  },
+  "source_manifest_sha256": {
+    "CMakeLists.txt": "ca2fd9163679143c663e66804551a54d321ab5a4b67e639bb32e9a87087a96dd",
+    "bootstrap/src/check/checker_closure.c": "258022d4e9518dc0b6cf873bbd64c2e7df261613df3adbff8ec20d9ebcd21e94",
+    "bootstrap/src/check/checker_expr_map_error.c": "97abe5a665ed0c80f4b1c2256b999931a6046e3c234da7f5e6f7239af832e0cc",
+    "bootstrap/src/check/checker_expr_records.c": "bb8f32f7d6403e66e1d258bf18b962a055c86e4feb0c50e45dd233939cca0529",
+    "bootstrap/src/check/checker_function_named.c": "95a60a11ffb4bd0a90cfee7aca3c3b3cb1a3c7e40ca6664f7e0b68244abe1d5a",
+    "bootstrap/src/check/checker_function_values_api.h": "e0b4af6d51834829b81c0f7f51304001284e9839688966f38845067a86e3f86d",
+    "bootstrap/src/check/checker_mapper.c": "9016f9462b840db6c2480894420fa3214d3a7173939477d77b946fb52e167d74",
+    "bootstrap/src/check/checker_mapper_api.h": "e4b161bf35c1ad943e0a44c52cf7fbf192154f4f7ec3e522e5c77fead57ab5aa",
+    "bootstrap/src/native/c_emitter_roots.c": "7c56665036055b41da032e019196f562df33aca88631d61523927b5307ec0628",
+    "docs/design/decisions.md": "6d30b7e5060e3a5040b4751c755b91548ad6e49db4dbe0a26e6fe33b11577525",
+    "docs/implementation/agent-handoff-cli-alpha-2026-09-07.md": "a5b6656511a1919adfd44916b9f62b97a0cf5a4104fab2eee2553cd15328418d",
+    "docs/implementation/checkpoints.md": "fea0a402334e19ea0d6c57430e3c3add240856255817e7eb9cd456a82361cfcb",
+    "docs/implementation/compiler-architecture.md": "5858a67f8fa3ae5864a9013f73d213144bc5798553019bbbc4ad33ec99de71eb",
+    "docs/implementation/evidence/README.md": "4c6404ba5a40d4e4ee484f4fc1935dcdad51fe3a385ce0a2ca34fc98e91a9d78",
+    "docs/research/cli0-collection-contracts-2026-09-08.md": "455c6469eda42ee5c0f4f3453e4ae8f2f4e6b2238b6d9a94a7d7a3c63fa7b3fc",
+    "docs/spec/language.md": "e189e3c2a90eb654bd3775e6f155a237c548607ee13543361a402a2c0f9de311",
+    "docs/spec/standard-library.md": "321ae537a09019420d7f901a2fe9c2c3fc40f094cd689463dd0d0932460d81b0",
+    "tests/c-unit/CMakeLists.txt": "f33786dbc5bf8e31bc715ec1511afc3c9afe9ffc789124223a5114341fc682bd",
+    "tests/c-unit/test_checker.c": "0d3d96aa9f0d834ce0105b4107d878b236f0892c90d76ccb75153b016c243860",
+    "tests/c-unit/test_checker_generics.c": "c432b8c1cc13a1026c776c80bae7b1a856d87f23ddae9809b4245c5d78bade6c",
+    "tests/c-unit/test_checker_generics_imports.c": "fa13253709c4c2e419fda8f0eb94c56bebff9d781730184b4d8f83327a4acb10",
+    "tests/c-unit/test_checker_mapper_values.c": "c173e303b7be75fb3d0030d0bc8dcf1f325fc6550cd92cbc0963b4bdc3072d88",
+    "tests/c-unit/test_cp42_mapper_values.cmake": "a54b990de9773499ab8cf1ce48c48e072fea09ae7001c2ee4201c200b8c6c128",
+    "tests/c-unit/test_mapper_value_engines.c": "e97034880058c15f90faffce5ef96d8b6a809f4fbf04b4136b092737b94d9852",
+    "tests/c-unit/test_native_c_emitter.c": "ebc0fdb75d586dc854e194788d1ea96fed9005a3ca5d45d37af1df0d04a17a92",
+    "tests/c-unit/test_native_c_emitter_generics.c": "ef5d682e9737fb876bc63cce2e77af9ab7bcfb93d0d88b4c12cdddb3b066300b",
+    "tests/c-unit/test_native_c_emitter_roots.c": "8ed1695937d708fb83e9f5dc065be91a9472a7c929153f94800607abedd2d6f6",
+    "tests/fuzz/corpus/formatter/cp42-mapper-values.my": "2832a90bda257d5a2a657249017461c8d0aa159219a224ce7a526168328af7b1",
+    "tests/fuzz/corpus/frontend/cp42-mapper-values.my": "2832a90bda257d5a2a657249017461c8d0aa159219a224ce7a526168328af7b1",
+    "tests/public-alpha/cp42-mapper-values/main.my": "91f91aaa58c5a193359c91b623a1065c2e2028a28c445905faf7cd7c55db0dd4",
+    "tests/public-alpha/cp42-mapper-values/main_test.my": "2832a90bda257d5a2a657249017461c8d0aa159219a224ce7a526168328af7b1",
+    "tests/public-alpha/cp42-mapper-values/mmay.mod": "74cb9d11786d80bdd38d18a58b88741c0f7963fc3ef8f390255f792c34015622",
+    "tools/_d0_checks.py": "3dd8611e6c0b658941d86b0ffed8578418193ae5c696957f32ba24b73aa37d00"
+  },
+  "binaries_sha256": {
+    "build/release/mmay": "9a3328cb11ac973cf2103f763157f783ae28e1cfc79665b1b3551240d60870e5",
+    "build/asan-ubsan/mmay": "d18ac81f6a14ccf375e6b8b7414d0c48febf8cc62e08db17f97e18d5af048bf5",
+    "build/d100-asan-generic/test": "6bd16dfd91f5ebb8d5b9392f08a336aaf533fb340ba3b2607ecee70b65c4e3d5"
+  },
+  "checks": [
+    {
+      "command": "ctest --preset release --output-on-failure -j2",
+      "status": "80 passed; native shard failed only obsolete adapter-count expectation",
+      "log": "build/d100-release-full.log",
+      "sha256": "58ef12522aad848627ec669d75b67f10e2fef9f284d78e262c0be581fae7a066"
+    },
+    {
+      "command": "ctest --preset release --rerun-failed --output-on-failure -j2",
+      "status": "passed",
+      "log": "build/d100-release-retry.log",
+      "sha256": "cd689a6686feb2174ede45bbd63c93d531e01a345195c09519f8f526139455ee",
+      "tests": 1
+    },
+    {
+      "command": "ctest --preset asan-ubsan --output-on-failure -j2",
+      "status": "79 passed; native shard failed only obsolete adapter-count expectation",
+      "log": "build/d100-asan-full.log",
+      "sha256": "faa35a94855eb20690d0c94ba5b5206bc87f485fbf3c2b2905c6262de27b70db"
+    },
+    {
+      "command": "build/d100-asan-generic/test (in build/asan-ubsan/tests/c-unit/suite-4)",
+      "status": "passed",
+      "log": "build/d100-asan-generic.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scope": "Rebuilt and reran the only changed generic differential fixture with ASan/UBSan; complete sanitized native shard not repeated"
+    },
+    {
+      "command": "python3 build/d100-isolate.py",
+      "status": "passed",
+      "log": "build/d100-final-differential.log",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "scope": "Mapper, general root lifetime and corrected native generic fixtures"
+    },
+    {
+      "command": "./tools/check-architecture",
+      "status": "passed",
+      "log": "build/d100-architecture.log",
+      "sha256": "d9350711c33efa6ee9fdc6a821dd06ddde0af490e1928d5812621b47de44706c"
+    },
+    {
+      "command": "./tools/check-c-memory-policy",
+      "status": "passed",
+      "log": "build/d100-memory-policy.log",
+      "sha256": "b2d064001e3464a5c31b01a228afda5e9726d586b725f57ba2d8dfc446dfb072"
+    },
+    {
+      "command": "./tools/check-roadmap",
+      "status": "passed",
+      "log": "build/d100-roadmap.log",
+      "sha256": "5e14aacea127d5b49d4c0d05b0cb75174e613e810ac25ba743738e95c1424aaf"
+    },
+    {
+      "command": "./tools/check-doc-links",
+      "status": "passed",
+      "log": "build/d100-doc-links.log",
+      "sha256": "32f90d8099b25005753fbe468151771f677bb259f03b75625894d830a981dcf7"
+    },
+    {
+      "command": "./tools/check-generated",
+      "status": "passed",
+      "log": "build/d100-generated.log",
+      "sha256": "9f2645794a546a53b153ef2a74f8b3be37ddab312c16188655cf4958be6079ee"
+    },
+    {
+      "command": "./tools/check-spec-terms",
+      "status": "passed",
+      "log": "build/d100-spec-terms.log",
+      "sha256": "2e6092b83d36076befa5b3ae0a92d8a5a2889735e265188d592b580df1665577"
+    },
+    {
+      "command": "./tools/check-example-syntax",
+      "status": "passed",
+      "log": "build/d100-example-syntax.log",
+      "sha256": "e8eb02c47023f8f9207bcbfd40e6a122d44e3f39bba595baae296c52d785819f"
+    },
+    {
+      "command": "./tools/check-syntax-coverage",
+      "status": "passed",
+      "log": "build/d100-syntax-coverage.log",
+      "sha256": "683ed1f5ac8eae944876e1b47dc17862face67c75730176ad6689b9a339ad9e0"
+    },
+    {
+      "command": "./tools/check-release-contract",
+      "status": "passed",
+      "log": "build/d100-release-contract.log",
+      "sha256": "a8b0a632b7ad49a95619296b7929f539fd02f5a3ded497294458c8cddcbec65e"
+    },
+    {
+      "command": "build/fuzz/mmay_fuzz_frontend -runs=1 tests/fuzz/corpus/frontend/cp42-mapper-values.my",
+      "status": "passed",
+      "log": "build/d100-fuzz-frontend.log",
+      "sha256": "98eccedac618195aded95c3e9c5492b5bc606bc99137beb37d3b565b309e7a60",
+      "scope": "Seed replay, not a fuzz campaign"
+    },
+    {
+      "command": "build/fuzz/mmay_fuzz_formatter -runs=1 tests/fuzz/corpus/formatter/cp42-mapper-values.my",
+      "status": "passed",
+      "log": "build/d100-fuzz-formatter.log",
+      "sha256": "ad1aa5a0b28873d0239e806b1ab35ffd0e043bceb285e58ae344e9739d2a3df6",
+      "scope": "Seed replay, not a fuzz campaign"
+    },
+    {
+      "command": "ctest --preset release -R '^mmay_cp39_packaging$' --output-on-failure",
+      "status": "passed",
+      "log": "build/d100-packaging-final.log",
+      "sha256": "a02cef28027b1e757e812f6d090ef07f94293c6699e4388fde8614a4e9fd244c"
+    }
+  ],
+  "apps": {
+    "notes": {
+      "root": "/workspace/Projects/Marimay/marimay-notes",
+      "source_sha256": {
+        "mmay.mod": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+        "README.md": "a05f107af88406f844794bd5d4c324e7f7dc397e207639f5e9b8d9ad57dde8d1",
+        "main.my": "1523c2a1acda9c5098312f3a82f3f116a9f304b42ae59fc465f00948a88d7878",
+        "main_test.my": "7dc20623e52f5a5ec636bd68425a048d8eb9a001045730344291fb66a1e42c9d",
+        "messages_test.my": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+        "notes/api.my": "c58ac4bafb0f393ae3663d8309b1b7dcd5526cf5da559bfbb12bd3cb77377db4",
+        "notes/collection_baseline_test.my": "66566901e2da3f4b19052c96dbb1543f20246caae6bbc248eb0302c3ddccdc0f",
+        "messages/json.my": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+        "messages/system.my": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84"
+      },
+      "source_tests": 16,
+      "source_test_log": "build/d100-notes-tests.log",
+      "test_log_sha256": "083a8245275ea9fee5bb0911bf625ed567b1af8163fe494213f472bcc1b2f718",
+      "acceptance": [
+        {
+          "path": "/workspace/Projects/Marimay/marimay-notes/build/process-acceptance-1788858806798161000.json",
+          "sha256": "75f1a29b071c7bb9692dd65afecd75a1bb84129907ee94e7942f4fafaa166461",
+          "report": {
+            "schema": 1,
+            "scope": "notes process/files baseline; not full CP42 acceptance",
+            "harness": {
+              "harness_version": "1",
+              "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+              "platform": "macOS-26.6.2-arm64-arm-64bit",
+              "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "compiler_sha256": "9a3328cb11ac973cf2103f763157f783ae28e1cfc79665b1b3551240d60870e5",
+              "engines": {
+                "vm": {
+                  "command": [
+                    "/workspace/Projects/Marimay/marimay/build/release/mmay",
+                    "run",
+                    ".",
+                    "--allow-read",
+                    "/workspace/tmp/marimay-notes-acceptance-_ht79jnp/разрешено с пробелами",
+                    "--allow-write",
+                    "/workspace/tmp/marimay-notes-acceptance-_ht79jnp/разрешено с пробелами",
+                    "--"
+                  ],
+                  "executable_sha256": "9a3328cb11ac973cf2103f763157f783ae28e1cfc79665b1b3551240d60870e5"
+                },
+                "debug": {
+                  "command": [
+                    "/workspace/tmp/marimay-notes-acceptance-_ht79jnp/notes-debug"
+                  ],
+                  "executable_sha256": "fae00714b6a1492e65fb6676ae7a471eb8d7e85d5b017f9f89f5cfc22ab35321"
+                },
+                "release": {
+                  "command": [
+                    "/workspace/tmp/marimay-notes-acceptance-_ht79jnp/notes-release"
+                  ],
+                  "executable_sha256": "32ccf901b8f656c0feb30f70c986b2be4c103806bf212243982b44e5e0b7ce53"
+                }
+              }
+            },
+            "cases": [
+              {
+                "name": "absent-list",
+                "arguments": [
+                  "list"
+                ],
+                "status": 0,
+                "stdout": "Заметок пока нет.\n",
+                "stderr": "",
+                "before_sha256": null,
+                "after_sha256": null
+              },
+              {
+                "name": "search-unicode-in-order",
+                "arguments": [
+                  "search",
+                  "чай ☕"
+                ],
+                "status": 0,
+                "stdout": "#1 Купить чай ☕ [дом, покупки]\n#3 чай ☕. [a] [дом]\n",
+                "stderr": "",
+                "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+                "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+              },
+              {
+                "name": "search-literal",
+                "arguments": [
+                  "search",
+                  "[a]"
+                ],
+                "status": 0,
+                "stdout": "#3 чай ☕. [a] [дом]\n",
+                "stderr": "",
+                "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+                "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+              },
+              {
+                "name": "search-case-sensitive",
+                "arguments": [
+                  "search",
+                  "ЧАЙ"
+                ],
+                "status": 0,
+                "stdout": "Совпадений не найдено.\n",
+                "stderr": "",
+                "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+                "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+              },
+              {
+                "name": "search-tags-excluded",
+                "arguments": [
+                  "search",
+                  "дом"
+                ],
+                "status": 0,
+                "stdout": "Совпадений не найдено.\n",
+                "stderr": "",
+                "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+                "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+              },
+              {
+                "name": "search-whitespace-literal",
+                "arguments": [
+                  "search",
+                  "чай  "
+                ],
+                "status": 0,
+                "stdout": "Совпадений не найдено.\n",
+                "stderr": "",
+                "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+                "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+              },
+              {
+                "name": "search-absent-database",
+                "arguments": [
+                  "search",
+                  "чай"
+                ],
+                "status": 0,
+                "stdout": "Совпадений не найдено.\n",
+                "stderr": "",
+                "before_sha256": null,
+                "after_sha256": null
+              },
+              {
+                "name": "search-empty-query",
+                "arguments": [
+                  "search",
+                  ""
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Текст поиска не должен быть пустым\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "search-missing-query",
+                "arguments": [
+                  "search"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Использование: marimay-notes search ТЕКСТ\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "search-extra-argument",
+                "arguments": [
+                  "search",
+                  "чай",
+                  "extra"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Использование: marimay-notes search ТЕКСТ\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "add-unicode",
+                "arguments": [
+                  "add",
+                  "Купить чай ☕",
+                  "--tag",
+                  "дом",
+                  "--tag",
+                  "покупки"
+                ],
+                "status": 0,
+                "stdout": "Добавлена заметка №1.\n",
+                "stderr": "",
+                "before_sha256": null,
+                "after_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b"
+              },
+              {
+                "name": "show-existing",
+                "arguments": [
+                  "show",
+                  "1"
+                ],
+                "status": 0,
+                "stdout": "#1 Купить чай ☕ [дом, покупки]\n",
+                "stderr": "",
+                "before_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b",
+                "after_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b"
+              },
+              {
+                "name": "add-second",
+                "arguments": [
+                  "add",
+                  "Прочитать документацию",
+                  "--tag",
+                  "учёба"
+                ],
+                "status": 0,
+                "stdout": "Добавлена заметка №2.\n",
+                "stderr": "",
+                "before_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "list-in-order",
+                "arguments": [
+                  "list"
+                ],
+                "status": 0,
+                "stdout": "#1 Купить чай ☕ [дом, покупки]\n#2 Прочитать документацию [учёба]\n",
+                "stderr": "",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "remove-first",
+                "arguments": [
+                  "remove",
+                  "1"
+                ],
+                "status": 0,
+                "stdout": "Удалена заметка №1.\n",
+                "stderr": "",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+              },
+              {
+                "name": "show-missing",
+                "arguments": [
+                  "show",
+                  "1"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Заметка №1 не найдена\n",
+                "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+                "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+              },
+              {
+                "name": "remove-missing",
+                "arguments": [
+                  "remove",
+                  "1"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Заметка №1 не найдена\n",
+                "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+                "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+              },
+              {
+                "name": "ids-not-reused",
+                "arguments": [
+                  "add",
+                  "Записать результат"
+                ],
+                "status": 0,
+                "stdout": "Добавлена заметка №3.\n",
+                "stderr": "",
+                "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "list-after-removal",
+                "arguments": [
+                  "list"
+                ],
+                "status": 0,
+                "stdout": "#2 Прочитать документацию [учёба]\n#3 Записать результат\n",
+                "stderr": "",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "blank-note",
+                "arguments": [
+                  "add",
+                  " \t"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Текст заметки не должен быть пустым\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "add-missing-text",
+                "arguments": [
+                  "add"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Использование: marimay-notes add ТЕКСТ [--tag ТЕГ]...\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "list-extra",
+                "arguments": [
+                  "list",
+                  "x"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Использование: marimay-notes list\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "unknown-option",
+                "arguments": [
+                  "--нет"
+                ],
+                "status": 2,
+                "stdout": "",
+                "stderr": "marimay-notes: Неизвестный параметр «--нет». Справка: --help\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "missing-tag-value",
+                "arguments": [
+                  "add",
+                  "x",
+                  "--tag"
+                ],
+                "status": 2,
+                "stdout": "",
+                "stderr": "marimay-notes: После --tag нужно указать значение\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "unknown-command",
+                "arguments": [
+                  "неизвестно"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Неизвестная команда «неизвестно». Справка: --help\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "invalid-id-0",
+                "arguments": [
+                  "show",
+                  "--",
+                  "0"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "invalid-id--1",
+                "arguments": [
+                  "show",
+                  "--",
+                  "-1"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "invalid-id-9223372036854775808",
+                "arguments": [
+                  "show",
+                  "--",
+                  "9223372036854775808"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "invalid-id-ноль",
+                "arguments": [
+                  "show",
+                  "--",
+                  "ноль"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+                "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "id-exhaustion",
+                "arguments": [
+                  "add",
+                  "x"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Свободные ID заметок закончились\n",
+                "before_sha256": "2da04832335f1d03cc5d9a9fdece6988c68a8cb88d79559b4f02e6ba3944998e",
+                "after_sha256": "2da04832335f1d03cc5d9a9fdece6988c68a8cb88d79559b4f02e6ba3944998e"
+              },
+              {
+                "name": "reject-version",
+                "arguments": [
+                  "add",
+                  "must not overwrite"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Некорректная база заметок: Неподдерживаемая версия базы заметок\n",
+                "before_sha256": "3424602e081d8cfea24fbbd3759953b29a9135cd16ea9672bee4a7a8de47b032",
+                "after_sha256": "3424602e081d8cfea24fbbd3759953b29a9135cd16ea9672bee4a7a8de47b032"
+              },
+              {
+                "name": "reject-duplicate-id",
+                "arguments": [
+                  "add",
+                  "must not overwrite"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Некорректная база заметок: В базе повторяется ID заметки\n",
+                "before_sha256": "b89a1dce41fe244675af8f3637e1a9550e8755ab26b327709f8afabad473b4b3",
+                "after_sha256": "b89a1dce41fe244675af8f3637e1a9550e8755ab26b327709f8afabad473b4b3"
+              },
+              {
+                "name": "reject-missing-field",
+                "arguments": [
+                  "add",
+                  "must not overwrite"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Некорректная база заметок: Отсутствует обязательное поле «notes»: байт 24; путь: $[\"notes\"]\n",
+                "before_sha256": "125b06c46110160dde30f93779980b31acb80ec8e1d9d34a6a1f8adbee7f7d23",
+                "after_sha256": "125b06c46110160dde30f93779980b31acb80ec8e1d9d34a6a1f8adbee7f7d23"
+              },
+              {
+                "name": "reject-invalid-utf8",
+                "arguments": [
+                  "add",
+                  "must not overwrite"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Некорректная база заметок: Некорректная кодировка UTF-8: байт 0\n",
+                "before_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+                "after_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89"
+              },
+              {
+                "name": "file-limit",
+                "arguments": [
+                  "list"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Файл превышает допустимый размер: 1048576 байт\n",
+                "before_sha256": "9d78de4e5b12fc166bed811cd230621ea1e1e353553fe31b92a73bfbf45d68ee",
+                "after_sha256": "9d78de4e5b12fc166bed811cd230621ea1e1e353553fe31b92a73bfbf45d68ee"
+              },
+              {
+                "name": "denied-read",
+                "arguments": [
+                  "list"
+                ],
+                "status": 1,
+                "stdout": "",
+                "stderr": "marimay-notes: Нет разрешения fs.read для пути «/workspace/tmp/marimay-notes-acceptance-_ht79jnp/outside/fixture.json». Укажите разрешённый каталог при запуске или сборке\n",
+                "before_sha256": null,
+                "after_sha256": null
+              }
+            ],
+            "broken_pipe": [
+              {
+                "name": "help-broken-pipe",
+                "engine": "vm",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "help-broken-pipe",
+                "engine": "debug",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "help-broken-pipe",
+                "engine": "release",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "list-broken-pipe",
+                "engine": "vm",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "list-broken-pipe",
+                "engine": "debug",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "list-broken-pipe",
+                "engine": "release",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "show-broken-pipe",
+                "engine": "vm",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "show-broken-pipe",
+                "engine": "debug",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "show-broken-pipe",
+                "engine": "release",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "search-broken-pipe",
+                "engine": "vm",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "search-broken-pipe",
+                "engine": "debug",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "search-broken-pipe",
+                "engine": "release",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "search-no-match-broken-pipe",
+                "engine": "vm",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "search-no-match-broken-pipe",
+                "engine": "debug",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "search-no-match-broken-pipe",
+                "engine": "release",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+              },
+              {
+                "name": "add-broken-pipe",
+                "engine": "vm",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "add-broken-pipe",
+                "engine": "debug",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "add-broken-pipe",
+                "engine": "release",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+                "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+              },
+              {
+                "name": "remove-broken-pipe",
+                "engine": "vm",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+              },
+              {
+                "name": "remove-broken-pipe",
+                "engine": "debug",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+              },
+              {
+                "name": "remove-broken-pipe",
+                "engine": "release",
+                "status": 1,
+                "stderr": "marimay-notes: Не удалось завершить вывод\n",
+                "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+                "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+              }
+            ],
+            "elapsed_seconds": 22.490416834,
+            "source_sha256": {
+              "mmay.mod": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+              "main.my": "1523c2a1acda9c5098312f3a82f3f116a9f304b42ae59fc465f00948a88d7878",
+              "main_test.my": "7dc20623e52f5a5ec636bd68425a048d8eb9a001045730344291fb66a1e42c9d",
+              "messages_test.my": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+              "notes/api.my": "c58ac4bafb0f393ae3663d8309b1b7dcd5526cf5da559bfbb12bd3cb77377db4",
+              "notes/collection_baseline_test.my": "66566901e2da3f4b19052c96dbb1543f20246caae6bbc248eb0302c3ddccdc0f",
+              "messages/json.my": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+              "messages/system.my": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84"
+            }
+          }
+        }
+      ]
+    },
+    "config": {
+      "root": "/workspace/Projects/Marimay/Marimay-Examples/marimay-config",
+      "source_sha256": {
+        "mmay.mod": "7b0d44ec24e7289fc66770fe2a273eb7f987dbc3773ba4ecc4c0f2475b2b0da6",
+        "README.md": "ce7471b9c4143a1cf92864ef70218e8c054b26be630a4104ebcc8b20fb958426",
+        "main.my": "9544acfece02284cbdaf709ba4ee00c8ca3910529bda982e13153c1e93b02b45",
+        "main_test.my": "2ee0e0b359e14e7a00092f7a35d6b3b56b1516adc76bb012ee4dc97b4f1592dc",
+        "config/model.my": "c1dd4289a572788676096adab1d26f2478a87680d39937953b1121b96bb10a3c",
+        "command/options.my": "186b73bd0697b89ba2a1433a3c1607d7781bbef879564f0ad659fde562fc8470"
+      },
+      "source_tests": 7,
+      "source_test_log": "build/d100-config-tests.log",
+      "test_log_sha256": "0d23e490f04640425ffd76b71db13f0e8517c74d0303b3fa1d30ffa764df8e16",
+      "acceptance": [
+        {
+          "path": "/workspace/Projects/Marimay/Marimay-Examples/marimay-config/build/process-acceptance-harness-v1-1788858866106852000.json",
+          "sha256": "1e8476032794633d82678385b8111efe037df8b399636797ba9ca053d1aaea5f",
+          "report": {
+            "schema": "marimay-config.process-acceptance/1",
+            "harness": {
+              "harness_version": "1",
+              "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+              "platform": "macOS-26.6.2-arm64-arm-64bit",
+              "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "compiler_sha256": "9a3328cb11ac973cf2103f763157f783ae28e1cfc79665b1b3551240d60870e5",
+              "engines": {
+                "vm": {
+                  "command": [
+                    "/workspace/Projects/Marimay/marimay/build/release/mmay",
+                    "run",
+                    ".",
+                    "--allow-read",
+                    "/workspace/Projects/Marimay/Marimay-Examples/marimay-config",
+                    "--allow-write",
+                    "/workspace/Projects/Marimay/Marimay-Examples/marimay-config/build/acceptance-y871tiox",
+                    "--"
+                  ],
+                  "executable_sha256": "9a3328cb11ac973cf2103f763157f783ae28e1cfc79665b1b3551240d60870e5"
+                },
+                "debug": {
+                  "command": [
+                    "/workspace/Projects/Marimay/Marimay-Examples/marimay-config/build/acceptance-y871tiox/config-debug"
+                  ],
+                  "executable_sha256": "f633611701940c61f496fb7facfc44e2bde5a3fd33e12218c7168a92f449060d"
+                },
+                "release": {
+                  "command": [
+                    "/workspace/Projects/Marimay/Marimay-Examples/marimay-config/build/acceptance-y871tiox/config-release"
+                  ],
+                  "executable_sha256": "18db51d19dc0a2d54958bec77cbe2b695f50cabffba5307b4c3d05b23c5e3a7f"
+                }
+              }
+            },
+            "exact_parity_cases": 32,
+            "additional_checks": [
+              "atomic",
+              "denied",
+              "broken-pipe"
+            ],
+            "elapsed_seconds": 59.244164416
+          }
+        },
+        {
+          "path": "/workspace/Projects/Marimay/Marimay-Examples/marimay-config/build/files-acceptance-harness-v1-1788858886985391000.json",
+          "sha256": "7ee1131400f96d640097cffb7987ae3394833db68a632e3f8713eb0a64dc4eea",
+          "report": {
+            "schema": "marimay-config.files-acceptance/1",
+            "platform": "macOS-26.6.2-arm64-arm-64bit",
+            "harness": {
+              "harness_version": "1",
+              "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+              "platform": "macOS-26.6.2-arm64-arm-64bit",
+              "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "compiler_sha256": "9a3328cb11ac973cf2103f763157f783ae28e1cfc79665b1b3551240d60870e5",
+              "engines": {
+                "vm": {
+                  "command": [
+                    "/workspace/Projects/Marimay/marimay/build/release/mmay",
+                    "run",
+                    ".",
+                    "--allow-read",
+                    "/workspace/tmp/marimay-config-files-r1peofpf/разрешено с пробелами",
+                    "--allow-write",
+                    "/workspace/tmp/marimay-config-files-r1peofpf/разрешено с пробелами",
+                    "--"
+                  ],
+                  "executable_sha256": "9a3328cb11ac973cf2103f763157f783ae28e1cfc79665b1b3551240d60870e5"
+                },
+                "debug": {
+                  "command": [
+                    "/workspace/tmp/marimay-config-files-r1peofpf/config-debug"
+                  ],
+                  "executable_sha256": "d13f08558901a73c069304ca1f7b0b7136cf8a643db7ef45258ffaf30ea42f95"
+                },
+                "release": {
+                  "command": [
+                    "/workspace/tmp/marimay-config-files-r1peofpf/config-release"
+                  ],
+                  "executable_sha256": "f706f310b59e27d0e691b2f4d08b0233f6e2537951dedb41183ec7d726115b47"
+                }
+              }
+            },
+            "uid": 501,
+            "compiler_sha256": "9a3328cb11ac973cf2103f763157f783ae28e1cfc79665b1b3551240d60870e5",
+            "elapsed_seconds": 20.80473075,
+            "engines": [
+              "vm",
+              "debug",
+              "release"
+            ],
+            "cases": [
+              {
+                "name": "unicode-space-path",
+                "exit": 0,
+                "stdout": "{\"ok\":true,\"message\":\"Конфиг корректен.\",\"location\":\"$\"}",
+                "stderr": ""
+              },
+              {
+                "name": "relative-file-read",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "relative-file-write",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "relative-file-in-place",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "outside-file-read",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "outside-file-write",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "outside-file-in-place",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "dangling-file-read",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "dangling-file-write",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "dangling-file-in-place",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "inside-parent-read",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "inside-parent-write",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "outside-parent-read",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "outside-parent-write",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"symbolic links are not followed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "directory-read",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"filesystem path is not a file\",\"location\":\"$\"}"
+              },
+              {
+                "name": "directory-write",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"filesystem path is not a file\",\"location\":\"$\"}"
+              },
+              {
+                "name": "fifo-read",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"file open failed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "fifo-write",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"file write failed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "os-read-denied",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"file open failed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "os-search-denied",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"directory enumeration failed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "os-write-denied-existing.json",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"file write failed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "os-write-denied-new.json",
+                "exit": 1,
+                "stdout": "",
+                "stderr": "{\"ok\":false,\"message\":\"file write failed\",\"location\":\"$\"}"
+              },
+              {
+                "name": "atomic-replace-success",
+                "exit": 0,
+                "stdout": "{\"ok\":true,\"message\":\"Конфиг записан в формате версии 2.\",\"location\":\"$\"}",
+                "stderr": ""
+              }
+            ],
+            "scope": "static symlink cases and real POSIX permissions; no concurrent namespace-race claim"
+          }
+        }
+      ]
+    }
+  },
+  "consumer_delta": "--- before/notes/notes/api.my\n+++ after/notes/notes/api.my\n@@ -39,11 +39,12 @@\n     return Err(\"Значение nextId должно быть положительным\");\n   }\n   const ids: Set<int> = setOf<int>();\n+  const growthError = collectionGrowthError;\n   for note in database.notes {\n     if note.id < 1 || note.id >= database.nextId {\n       return Err(\"ID заметки должен быть положительным и меньше nextId\");\n     }\n-    const inserted = ids.add(note.id).mapError(collectionGrowthError)?;\n+    const inserted = ids.add(note.id).mapError(growthError)?;\n     if !inserted {\n       return Err(\"В базе повторяется ID заметки\");\n     }\n--- before/notes/README.md\n+++ after/notes/README.md\n@@ -6,8 +6,8 @@\n \n ## Как запустить\n \n-Эта версия требует типизированный JSON API, scoped Option bindings (D096)\n-операции массивов `copy`/`removeAt` (D097), замыкания (D098) и `findIndex` (D099). После обновления `main` пересоберите\n+Эта версия требует типизированный JSON API, scoped Option bindings (D096),\n+операции массивов `copy`/`removeAt` (D097), замыкания (D098) `findIndex` (D099) и сохранённые функции в `mapError` (D100). После обновления `main` пересоберите\n компилятор и используйте его со стандартной библиотекой из той же сборки.\n Используется основной соседний каталог `../marimay`.\n \n--- before/config/main.my\n+++ after/config/main.my\n@@ -116,8 +116,9 @@\n     };\n     return fs.writeBytes(destination, contents).mapError(fs.message);\n   }\n-  io.writeBytes(contents).mapError(io.message)?;\n-  return io.flushStdout().mapError(io.message);\n+  const outputError: (io.Error) => string = io.message;\n+  io.writeBytes(contents).mapError(outputError)?;\n+  return io.flushStdout().mapError(outputError);\n }\n \n fn main(arguments: []string): int {\n--- before/config/README.md\n+++ after/config/README.md\n@@ -12,7 +12,8 @@\n ## Запуск\n \n Нужен актуальный `mmay` с типизированным JSON, путями ошибок и исправлением\n-локального лимита инструкций D087 для крупных конфигов. В этой рабочей\n+локального лимита инструкций D087 для крупных конфигов, scoped Option bindings\n+D096 и сохранёнными функциями в `mapError` D100. В этой рабочей\n среде это `/opt/homebrew/bin/mmay`, связанный с единственным репозиторием языка\n `../../marimay/build/release/mmay`; копировать компилятор в приложение не нужно.\n \n",
+  "consumer_cost": {
+    "scope": "Small rotating paired native Release sample, not CP42 performance acceptance; d099 retained prior artifact, unhoisted/hoisted built with same D100 compiler",
+    "compiler_sha256": "9a3328cb11ac973cf2103f763157f783ae28e1cfc79665b1b3551240d60870e5",
+    "binary_sha256": {
+      "d099": "85c1f79d576ad0785edca4d3f697c028c6c2a4696c37e24a445fadcbcd8739e9",
+      "unhoisted": "32e7114103939a733c317473ffa499b23f4752e92fb34ff88963ca11b0a196de",
+      "hoisted": "2623abd2e6ca239ddf5baf89817b677d0f5b463163e73f69e06ab1d1b3e56cbd"
+    },
+    "dataset": {
+      "notes": 6098,
+      "bytes": 1047786,
+      "sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+    },
+    "records": [
+      {
+        "case": "show-last",
+        "phase": "d099",
+        "warmup": true,
+        "seconds": 0.1539674170000005,
+        "rss_bytes": 64126976
+      },
+      {
+        "case": "show-last",
+        "phase": "unhoisted",
+        "warmup": true,
+        "seconds": 0.761579166999999,
+        "rss_bytes": 66568192
+      },
+      {
+        "case": "show-last",
+        "phase": "hoisted",
+        "warmup": true,
+        "seconds": 0.5557446250000027,
+        "rss_bytes": 66322432
+      },
+      {
+        "case": "show-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.14451575000000005,
+        "rss_bytes": 64143360
+      },
+      {
+        "case": "show-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.1443530829999986,
+        "rss_bytes": 64176128
+      },
+      {
+        "case": "show-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.1448373750000016,
+        "rss_bytes": 64503808
+      },
+      {
+        "case": "show-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.14368283299999973,
+        "rss_bytes": 64176128
+      },
+      {
+        "case": "show-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.14472737499999866,
+        "rss_bytes": 64176128
+      },
+      {
+        "case": "show-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.14476099999999903,
+        "rss_bytes": 64536576
+      },
+      {
+        "case": "show-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.1440153749999986,
+        "rss_bytes": 64176128
+      },
+      {
+        "case": "show-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.1447362919999975,
+        "rss_bytes": 64471040
+      },
+      {
+        "case": "show-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.14461325000000258,
+        "rss_bytes": 64176128
+      },
+      {
+        "case": "show-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.14495241600000242,
+        "rss_bytes": 64487424
+      },
+      {
+        "case": "show-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.14407883400000188,
+        "rss_bytes": 64143360
+      },
+      {
+        "case": "show-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.1443372079999996,
+        "rss_bytes": 64192512
+      },
+      {
+        "case": "show-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.14456645899999998,
+        "rss_bytes": 64454656
+      },
+      {
+        "case": "show-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.14381345800000034,
+        "rss_bytes": 64126976
+      },
+      {
+        "case": "show-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.14344929100000314,
+        "rss_bytes": 64159744
+      },
+      {
+        "case": "show-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.14531075000000016,
+        "rss_bytes": 64176128
+      },
+      {
+        "case": "show-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.14637441700000053,
+        "rss_bytes": 64454656
+      },
+      {
+        "case": "show-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.1446764579999993,
+        "rss_bytes": 64192512
+      },
+      {
+        "case": "remove-last",
+        "phase": "d099",
+        "warmup": true,
+        "seconds": 0.23722504200000216,
+        "rss_bytes": 74416128
+      },
+      {
+        "case": "remove-last",
+        "phase": "unhoisted",
+        "warmup": true,
+        "seconds": 0.2381795000000011,
+        "rss_bytes": 75022336
+      },
+      {
+        "case": "remove-last",
+        "phase": "hoisted",
+        "warmup": true,
+        "seconds": 0.2378617080000005,
+        "rss_bytes": 74416128
+      },
+      {
+        "case": "remove-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.23811516700000013,
+        "rss_bytes": 74383360
+      },
+      {
+        "case": "remove-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.23700450000000117,
+        "rss_bytes": 74366976
+      },
+      {
+        "case": "remove-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.2389113750000007,
+        "rss_bytes": 75005952
+      },
+      {
+        "case": "remove-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.23709154199999816,
+        "rss_bytes": 74399744
+      },
+      {
+        "case": "remove-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.235964457999998,
+        "rss_bytes": 74383360
+      },
+      {
+        "case": "remove-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.2392004589999992,
+        "rss_bytes": 74989568
+      },
+      {
+        "case": "remove-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.23651362500000062,
+        "rss_bytes": 74334208
+      },
+      {
+        "case": "remove-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.23841783299999975,
+        "rss_bytes": 75022336
+      },
+      {
+        "case": "remove-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.2370870000000025,
+        "rss_bytes": 74432512
+      },
+      {
+        "case": "remove-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.23864345799999853,
+        "rss_bytes": 74989568
+      },
+      {
+        "case": "remove-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.23571266699999782,
+        "rss_bytes": 74350592
+      },
+      {
+        "case": "remove-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.23512995799999814,
+        "rss_bytes": 74383360
+      },
+      {
+        "case": "remove-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.23746250000000302,
+        "rss_bytes": 75038720
+      },
+      {
+        "case": "remove-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.23550141699999827,
+        "rss_bytes": 74383360
+      },
+      {
+        "case": "remove-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.23544608299999936,
+        "rss_bytes": 74350592
+      },
+      {
+        "case": "remove-last",
+        "phase": "d099",
+        "warmup": false,
+        "seconds": 0.2364652499999984,
+        "rss_bytes": 74416128
+      },
+      {
+        "case": "remove-last",
+        "phase": "unhoisted",
+        "warmup": false,
+        "seconds": 0.23714754200000243,
+        "rss_bytes": 74989568
+      },
+      {
+        "case": "remove-last",
+        "phase": "hoisted",
+        "warmup": false,
+        "seconds": 0.23589512499999898,
+        "rss_bytes": 74383360
+      }
+    ],
+    "summary": {
+      "show-last": {
+        "d099": {
+          "median_seconds": 0.14456450000000132,
+          "median_rss_bytes": 64176128.0
+        },
+        "unhoisted": {
+          "median_seconds": 0.14479918750000031,
+          "median_rss_bytes": 64479232.0
+        },
+        "hoisted": {
+          "median_seconds": 0.14404710450000024,
+          "median_rss_bytes": 64176128.0
+        }
+      },
+      "remove-last": {
+        "d099": {
+          "median_seconds": 0.2362148539999982,
+          "median_rss_bytes": 74383360.0
+        },
+        "unhoisted": {
+          "median_seconds": 0.23853064549999914,
+          "median_rss_bytes": 74997760.0
+        },
+        "hoisted": {
+          "median_seconds": 0.2362043749999998,
+          "median_rss_bytes": 74358784.0
+        }
+      }
+    },
+    "driver": "from pathlib import Path\nimport hashlib,json,re,subprocess,time,statistics\nROOT=Path(__file__).resolve().parent.parent\nWORK=ROOT/'build/d100-cost';WORK.mkdir(exist_ok=True)\nOLD=ROOT/'build/d099-cost';COMPILER=ROOT/'build/release/mmay'\nsource={'unhoisted':ROOT/'build/d100-notes-before','hoisted':Path('/workspace/Projects/Marimay/marimay-notes')}\nbinaries={'d099':OLD/'after-release'}\nfor phase,folder in source.items():\n binary=WORK/phase\n subprocess.run([str(COMPILER),'build',str(folder),'--release','--allow-read',str(OLD),'--allow-write',str(OLD),'--output',str(binary)],capture_output=True,check=True)\n binaries[phase]=binary\nnotes=[{'id':i,'text':'Синтетическая заметка 🌿 для проверки порядка и сохранности','tags':['проверка','язык']} for i in range(1,6099)]\ndef encode(items):return json.dumps({'version':1,'nextId':6099,'notes':items},ensure_ascii=False,separators=(',',':')).encode()\ndata=encode(notes);assert len(data)==1047786\nassert hashlib.sha256(data).hexdigest()=='2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad'\nfile=OLD/'working.json';records=[]\nfor case,args,expected,after in [('show-last',['show','6098'],f\"#6098 {notes[-1]['text']} [проверка, язык]\\n\".encode(),data),('remove-last',['remove','6098'],'Удалена заметка №6098.\\n'.encode(),encode(notes[:-1]))]:\n for repetition in range(7):\n  phases=list(binaries);phases=phases[repetition%3:]+phases[:repetition%3]\n  if repetition%2:phases.reverse()\n  for phase in phases:\n   file.write_bytes(data);start=time.monotonic()\n   run=subprocess.run(['/usr/bin/time','-l',str(binaries[phase]),'--db',str(file),*args],capture_output=True,timeout=120)\n   elapsed=time.monotonic()-start\n   assert run.returncode==0 and run.stdout==expected,(case,phase,run.returncode,run.stdout,run.stderr)\n   assert file.read_bytes()==after\n   rss=re.search(rb'^\\s*(\\d+)\\s+maximum resident set size\\s*$',run.stderr,re.M);assert rss\n   records.append({'case':case,'phase':phase,'warmup':repetition==0,'seconds':elapsed,'rss_bytes':int(rss[1])})\nsummary={case:{phase:{'median_seconds':statistics.median(r['seconds'] for r in records if r['case']==case and r['phase']==phase and not r['warmup']),'median_rss_bytes':statistics.median(r['rss_bytes'] for r in records if r['case']==case and r['phase']==phase and not r['warmup'])} for phase in binaries} for case in ('show-last','remove-last')}\nreport={'scope':'Small rotating paired native Release sample, not CP42 performance acceptance; d099 retained prior artifact, unhoisted/hoisted built with same D100 compiler','compiler_sha256':hashlib.sha256(COMPILER.read_bytes()).hexdigest(),'binary_sha256':{k:hashlib.sha256(v.read_bytes()).hexdigest() for k,v in binaries.items()},'dataset':{'notes':6098,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()},'records':records,'summary':summary,'driver':Path(__file__).read_text()}\n(WORK/'result.json').write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\\n');print(json.dumps(summary,indent=2))\n"
+  },
+  "limitations": [
+    "Result<T, never> common enum transport: I0001 until common-layout removal gate",
+    "Escaping mutable capture warning remains open",
+    "No full Tier 1, Linux sanitizer, or new fuzz-campaign evidence from this host"
+  ],
+  "book_ideas_used": []
+}

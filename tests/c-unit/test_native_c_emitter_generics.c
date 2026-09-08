@@ -110,7 +110,8 @@ void mmay_test_native_generics_differential(void) {
     }
     MMAY_EXPECT(checked.diagnostics.length == 0);
     MMAY_EXPECT(checked.enums.length == 2);
-    MMAY_EXPECT(checked.functions.length == 8);
+    /* Each of the two mapping functions owns its named callable adapter. */
+    MMAY_EXPECT(checked.functions.length == 10);
     for (index = 0; index < checked.functions.length; index += 1) {
         const MarimayCheckedFunction *function = mmay_checked_function(
             &checked, index

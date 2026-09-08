@@ -721,6 +721,23 @@ error type. Its own success type still comes from the receiver and need not
 be U. This context is confined to the direct mapper call. Without an exact
 context, an omitted closure result annotation remains an error.
 
+Under D100, `mapError` evaluates its receiver and mapper expression once, in
+that order, before selecting Ok or Err. A mapper factory runs on either path;
+the resulting callback runs exactly once on Err and never on Ok. It accepts
+ordinary D098 function values from bindings, returns, fields and other value
+expressions, with exact parameter E and result F. A callback returning `void`
+constructs Err without a payload; a callback returning `never` has no normal Err
+continuation. Capture creation/initialization occurs at argument evaluation;
+the body has its own return, `?` and defer scope. Parentheses preserve the D094
+direct expression-closure context. Block closures require ordinary annotations.
+Existing positional enum constructor mappers retain their contextual rules and
+do not become general function values through this operation.
+
+Implementation status: the current bootstrap reports I0001 for a mapper with a
+`never` result because the common enum transport does not yet support
+`Result<T, never>`. D100 records the common-layout removal gate; the normative
+contract above remains unchanged.
+
 Closures capture lexical `const` bindings by value and `let` bindings through a managed mutable cell. Each iteration of a `for` loop creates a fresh iteration binding. The compiler warns when a closure captures a mutable local and escapes the declaring block.
 
 A captured local must be definitely initialized when the closure is created.

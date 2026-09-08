@@ -7,6 +7,11 @@ MarimayTypeId mmay_function_value_abi_result(MarimayTypeId type);
 bool mmay_function_value_layout(MarimayFunctionChecker *function, MarimayTypeId type);
 bool mmay_function_value_named(MarimayFunctionChecker *function, const MarimayAstNode *node,
     MarimayTypeId expected, bool *resolved, MarimayExpressionValue *result);
+/* Select a named overload from its known first parameter without result inference. */
+bool mmay_function_value_named_input(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    MarimayTypeId first_parameter, bool *resolved, MarimayExpressionValue *result);
+bool mmay_function_value_mapper_closure(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    MarimayTypeId parameter, MarimayTypeId output, MarimayExpressionValue *result);
 bool mmay_function_value_closure(MarimayFunctionChecker *function, const MarimayAstNode *node,
     MarimayTypeId expected, MarimayExpressionValue *result);
 bool mmay_function_value_call(MarimayFunctionChecker *function, const MarimayAstNode *node,

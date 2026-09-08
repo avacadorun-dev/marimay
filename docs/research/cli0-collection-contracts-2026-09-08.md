@@ -108,7 +108,7 @@ while const item = pending.pop() {
 ```
 
 Синтаксис реализован отдельным D096 owner; `findIndex` в первом примере
-по-прежнему является предлагаемым API, а `pop` уже существует.
+реализован D099, а `pop` уже существует.
 Обычное условие по-прежнему требует bool. RHS binding должен быть точно
 `Option<T>`: `Result`, bool и похожий пользовательский enum не конвертируются.
 В `if` RHS вычисляется один раз; в `while` заново перед каждой попыткой входа
@@ -184,3 +184,11 @@ All-ten-apps, CP41, Tier 1, install и N0 остаются независимы�
 Новых идей из книги Владимирова при подготовке этого пакета не использовано;
 источники — действующие контракты репозитория, focused owners и реальные
 программы. Прежние заимствования с номерами страниц остаются в журнале книги.
+
+
+D100 завершает перенос `Result.mapError` на общий callable boundary; Notes
+сохраняет collection-growth mapper перед циклом ID, config повторно использует
+один output mapper. [Локальное evidence](../implementation/evidence/cp42-mapper-values-2026-09-08.md)
+содержит прикладные проверки и исправление lifetime native roots. Общий enum
+transport для `Result<T, never>` и nonfatal warning escaping mutable capture
+остаются открытыми, с явными removal gates.

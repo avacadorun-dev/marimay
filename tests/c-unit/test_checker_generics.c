@@ -156,7 +156,7 @@ void mmay_test_checker_generics(void) {
     MMAY_EXPECT(status == MMAY_CHECK_OK);
     if (checked.initialized) {
         MMAY_EXPECT(checked.diagnostics.length == 0);
-        MMAY_EXPECT(checked.functions.length == 17);
+        MMAY_EXPECT(checked.functions.length == 18); /* Includes the ordinary mapper adapter. */
         mmay_check_result_dispose(&checked);
     }
     mmay_checker_fixture_dispose(&fixture);
