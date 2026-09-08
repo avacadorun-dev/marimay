@@ -164,6 +164,38 @@ C17-программы также показывали pre-main задержку
 D087 исправил случайный instruction fuel, но VM call depth/native host stack,
 классификация и cleanup по ресурсным границам ещё требуют приёмки.
 
+## D101: текущая завершённая локальная волна
+
+[Файловые строки и три потоковых CLI](evidence/cp42-file-lines-2026-09-08.md)
+реализованы: общий runtime stdin/files, per-line limits, UTF-8/CRLF/EOF и
+shared cursor алиасов. Новый opcode 163. Не начинай `fs.readLine` заново.
+Native-кэш полей записи теперь сверяет managed reference при смене значения
+MIR-регистра в цикле; child-array hints обновляются для нестабильных родителей.
+Не возвращай проверку только `object != NULL`: JSON в frequency повторял первую
+запись. MIR void closeBestEffort также исправлен до enum lookup.
+
+Release 82/82, macOS ASan/UBSan 81/81, затем повтор CP34 после усиления
+assertions о сработавших hostile layout mutations. Три fixed fuzz seeds replay,
+не новая campaign. logstats/grep/frequency — отдельные repos, source tests
+2/2/3 (grep/logstats/frequency), process scenarios 21/26/26, всего 9 closed pipes.
+Контракты и точные app commits/snapshots сохранены в D101 evidence; remotes нет.
+Notes/config не перекоммичены. Портфель теперь имеет пять реализаций из десяти,
+но это не пять полностью принятых приложений.
+
+На фиксированном 2 МиБ входе native grep/frequency/logstats — около 30/31/72 мс,
+VM — 163/270/421 мс; на 20 МиБ peak RSS ниже 40/60 МиБ соответственно.
+Первый native запуск остаётся 375–385 мс при бюджете 100 мс. Новый C17 control
+подтвердил 370–512 мс до main; конкретная OS-причина не доказана. Бюджет не
+ослаблен, startup acceptance открыт. Далее — diagnostic void-pattern отказ,
+escaping-capture warning, файловая волна manifest/project-check/env-paths,
+затем delimited/source-lint; full CP42/CP41/CP39/CP40/N0 обязательства прежние.
+
+Последняя bounded infra-диагностика: Mac ci.example видит gateway
+ci.example, но оба ci.example/134 недоступны. Это не доказанный отказ Gitea
+или runner. Вопрос VPN/другого адреса pending. D100 `c394636` остался локальным;
+перед утверждением о push сверяй origin. Подагент завершил диагностику,
+не запускай новый бесконечный мониторинг и не жди CI для независимой работы.
+
 ## Портфель и общая приёмка
 
 Волны: **config/notes → logstats/grep/frequency → manifest/project-check/env-paths

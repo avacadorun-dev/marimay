@@ -200,6 +200,7 @@ add_executable(mmay_c_unit
   test_native_c_emitter_array_access.c
   test_native_c_emitter_array_storage.c
   test_native_c_emitter_roots.c
+  test_native_c_emitter_view_lifetimes.c
   test_native_c_emitter_managed_views.c
   test_native_c_emitter_call_policy.c
   test_native_c_emitter_relations.c
@@ -237,6 +238,8 @@ add_executable(mmay_c_unit
   test_parser_array_types.c
   test_parser_incremental.c
   test_process.c
+  test_runtime_lines.c
+  test_file_line_engines.c
   test_runtime_io.c
   test_source_manager.c
   test_types.c
@@ -860,3 +863,10 @@ add_test(
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_array_search.cmake"
 )
 set_tests_properties(mmay_cp42_array_search PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200)
+
+add_test(NAME mmay_cp42_file_lines
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_file_lines.py"
+    "$<TARGET_FILE:mmay>" "${CMAKE_SOURCE_DIR}/tests/public-alpha/cp42-file-lines"
+    "${CMAKE_CURRENT_BINARY_DIR}/cp42-file-lines")
+set_tests_properties(mmay_cp42_file_lines PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200
+  LABELS "differential;cp42")

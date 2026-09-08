@@ -127,6 +127,8 @@ void mmay_test_path_stream(void);
 void mmay_test_parser(void);
 void mmay_test_process(void);
 void mmay_test_runtime_io(void);
+void mmay_test_runtime_lines(void);
+void mmay_test_file_line_engines(void);
 void mmay_test_source_manager(void);
 void mmay_test_types(void);
 void mmay_test_unicode(void);
@@ -285,6 +287,7 @@ static void mmay_test_run_cp32(void) {
     mmay_test_cp32_streams();
     mmay_test_process();
     mmay_test_runtime_io();
+    mmay_test_runtime_lines();
 }
 
 static void mmay_test_run_cp33(void) {
@@ -294,6 +297,7 @@ static void mmay_test_run_cp33(void) {
 static void mmay_test_run_cp34(void) {
     mmay_test_cp34_fs();
     mmay_test_cp34_fs_pipeline();
+    mmay_test_file_line_engines();
 }
 
 static void mmay_test_run_cp35(void) {

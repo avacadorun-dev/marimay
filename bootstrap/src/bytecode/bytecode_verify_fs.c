@@ -199,8 +199,8 @@ static bool mmay_bytecode_fs_directory_payload(
 }
 
 bool mmay_bytecode_opcode_is_fs(MarimayOpcode opcode) {
-    return opcode >= MMAY_OPCODE_PATH_NORMALIZE
-        && opcode <= MMAY_OPCODE_FS_READ_DIRECTORY;
+    return (opcode >= MMAY_OPCODE_PATH_NORMALIZE
+        && opcode <= MMAY_OPCODE_FS_READ_DIRECTORY) || opcode == MMAY_OPCODE_FS_READ_LINE;
 }
 
 MarimayBytecodeVerifyStatus mmay_bytecode_verify_fs_instruction(
@@ -221,7 +221,8 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_fs_instruction(
     uint32_t result_id = target_type != NULL
         ? mmay_bytecode_register_layout(function, (uint32_t)target)
         : MMAY_BYTECODE_NO_LAYOUT;
-    bool binary = instruction->opcode == MMAY_OPCODE_FS_READ
+    bool binary = instruction->opcode == MMAY_OPCODE_FS_READ_LINE
+        || instruction->opcode == MMAY_OPCODE_FS_READ
         || instruction->opcode == MMAY_OPCODE_FS_READ_ALL
         || instruction->opcode == MMAY_OPCODE_FS_WRITE_ATOMIC
         || instruction->opcode == MMAY_OPCODE_FS_READ_DIRECTORY;
@@ -261,6 +262,18 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_fs_instruction(
                     function, result_id, MMAY_BYTECODE_TYPE_I64, false, NULL
                 )) return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
             break;
+        case MMAY_OPCODE_FS_READ_LINE: {
+            if (*first_type != MMAY_BYTECODE_TYPE_I64 || *second_type != MMAY_BYTECODE_TYPE_I64
+                || !mmay_bytecode_fs_result(function, result_id, MMAY_BYTECODE_TYPE_INVALID, false, &ok_payload)
+                || ok_payload == NULL || ok_payload->type != MMAY_BYTECODE_TYPE_ENUM)
+                return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            const MarimayBytecodeEnumLayout *option = mmay_bytecode_enum_layout(function, ok_payload->layout);
+            const MarimayBytecodeType string_type = MMAY_BYTECODE_TYPE_STRING;
+            if (option == NULL || option->variant_count != 2
+                || !mmay_bytecode_fs_payloads(function, option, 0, &string_type, 1)
+                || !mmay_bytecode_fs_payloads(function, option, 1, NULL, 0)) return MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            break;
+        }
         case MMAY_OPCODE_FS_READ:
         case MMAY_OPCODE_FS_READ_ALL:
             if (*first_type != (instruction->opcode == MMAY_OPCODE_FS_READ

@@ -469,6 +469,43 @@ static MarimayBytecodeRunStatus mmay_bytecode_vm_fs_directory_result(
     return mmay_bytecode_run_managed_status(managed);
 }
 
+static MarimayBytecodeRunStatus mmay_bytecode_vm_fs_line(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    const MarimayManagedEnumDescriptor *result, const MarimayManagedEnumDescriptor *error,
+    const MarimayBytecodeEnumPayload *ok, int64_t handle, int64_t limit, MarimayBytecodeValue *target
+) {
+    MarimayOwnedBytes line = {0};
+    bool eof = false;
+    size_t invalid = 0;
+    MarimayFsStatus fs_status = mmay_fs_read_line(&execution->fs, handle, limit, &line, &eof, &invalid);
+    if (fs_status != MMAY_FS_OK) return mmay_bytecode_vm_fs_error(execution, result, error,
+        fs_status, false, NULL, 0, fs_status == MMAY_FS_INVALID_UTF8 ? (int64_t)invalid : limit, target);
+    const void *raw = NULL;
+    MarimayBytecodeRunStatus status = ok != NULL ? mmay_bytecode_run_nominal_descriptor(
+        execution, function, MMAY_BYTECODE_TYPE_ENUM, ok->layout, &raw) : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    if (status == MMAY_BYTECODE_RUN_OK) {
+        const MarimayManagedEnumDescriptor *option_descriptor = raw;
+        MarimayManagedReference text = mmay_managed_invalid_reference(), option = mmay_managed_invalid_reference();
+        MarimayManagedReference *locations[2] = {&text, &option};
+        MarimayManagedRootFrame roots = {0};
+        MarimayManagedCell payload = {0};
+        MarimayManagedStatus managed = mmay_managed_root_push(&execution->managed_heap, &roots, locations, 2);
+        if (managed == MMAY_MANAGED_OK && !eof) managed = mmay_managed_string_new(
+            &execution->managed_heap, line.data, line.length, &text);
+        payload.reference = text;
+        if (managed == MMAY_MANAGED_OK) managed = mmay_managed_enum_new(&execution->managed_heap,
+            option_descriptor, eof ? 1 : 0, eof ? NULL : &payload, eof ? 0 : 1, &option);
+        payload.reference = option;
+        if (managed == MMAY_MANAGED_OK) managed = mmay_managed_enum_new(&execution->managed_heap,
+            result, 0, &payload, 1, &target->as.managed_reference);
+        MarimayManagedStatus pop = mmay_managed_root_pop(&execution->managed_heap, &roots);
+        if (managed == MMAY_MANAGED_OK) managed = pop;
+        status = mmay_bytecode_run_managed_status(managed);
+    }
+    mmay_owned_bytes_dispose(&line);
+    return status;
+}
+
 MarimayBytecodeRunStatus mmay_bytecode_run_fs_instruction(
     const MarimayBytecodeInstruction *instruction,
     MarimayBytecodeValue *registers,
@@ -571,7 +608,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_fs_instruction(
                 ) : mmay_bytecode_run_managed_status(managed);
         }
     }
-    if (instruction->opcode == MMAY_OPCODE_FS_READ
+    if (instruction->opcode == MMAY_OPCODE_FS_READ_LINE
+        || instruction->opcode == MMAY_OPCODE_FS_READ
         || instruction->opcode == MMAY_OPCODE_FS_READ_ALL
         || instruction->opcode == MMAY_OPCODE_FS_READ_DIRECTORY) {
         detail = registers[second_index].as.i64;
@@ -595,6 +633,9 @@ MarimayBytecodeRunStatus mmay_bytecode_run_fs_instruction(
             }
             break;
         }
+        case MMAY_OPCODE_FS_READ_LINE:
+            return mmay_bytecode_vm_fs_line(execution, function, result, error, ok_payload,
+                registers[first_index].as.i64, registers[second_index].as.i64, &registers[target_index]);
         case MMAY_OPCODE_FS_READ:
         case MMAY_OPCODE_FS_READ_ALL: {
             MarimayOwnedBytes bytes = {0};

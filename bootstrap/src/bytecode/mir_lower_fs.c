@@ -6,6 +6,7 @@ static MarimayOpcode mmay_mir_fs_opcode(MarimayMirFsOperation operation) {
         case MMAY_MIR_PATH_IS_ABSOLUTE: return MMAY_OPCODE_PATH_IS_ABSOLUTE;
         case MMAY_MIR_FS_OPEN_READ: return MMAY_OPCODE_FS_OPEN_READ;
         case MMAY_MIR_FS_READ: return MMAY_OPCODE_FS_READ;
+        case MMAY_MIR_FS_READ_LINE: return MMAY_OPCODE_FS_READ_LINE;
         case MMAY_MIR_FS_CLOSE: return MMAY_OPCODE_FS_CLOSE;
         case MMAY_MIR_FS_CLOSE_BEST_EFFORT:
             return MMAY_OPCODE_FS_CLOSE_BEST_EFFORT;

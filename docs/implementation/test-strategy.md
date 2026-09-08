@@ -692,3 +692,11 @@ mmay audit
 Compiler release CI additionally runs C unit tests, all native compiler/optimization combinations, sanitizers, fuzz campaign thresholds, compatibility, bootstrap, reproducibility, installer, package-security, load/fault, and performance gates.
 
 Skipped, quarantined, flaky, or platform-excluded tests are release failures unless a time-bounded decision names owner, reason, affected claim, and removal gate. Automatic reruns may collect evidence but cannot turn a flaky failure into a pass.
+
+D101 file lines use `mmay_cp32_unit` for the shared byte parser and runtime
+handle error/allocation boundaries, `mmay_cp34_unit` for hostile MIR/bytecode
+and all-engine allocation/GC lifetimes, and `mmay_cp42_file_lines` for exact
+VM/native Debug/Release process results. The latter exercises a stream larger
+than 2 MiB under a 16 MiB managed-heap bound; this is a memory-progress check,
+not a whole-process RSS or application throughput budget. Independent
+logstats/grep/frequency adapters retain their own input/output contracts.

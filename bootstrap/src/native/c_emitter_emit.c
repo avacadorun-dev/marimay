@@ -413,8 +413,8 @@ static bool mmay_native_c_emit_call_record_hints(
                     functions, count, field->type, &field_layout
                 ) && field_layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY
                 ) {
-                if (field->is_mutable) {
-                    if (!mmay_native_c_write(
+                /* Unstable parent definitions can change even immutable children. */
+                if (!mmay_native_c_write(
                             buffer,
                             "  mmay_g_m = mmay_managed_array_generated_bind(&mmay_g_x->heap, mmay_g_rv_%u.object->fields[%zu].reference, %s, &mmay_g_rv_%u_f_%zu); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; }\n",
                             argument->register_id, field_index,
@@ -423,16 +423,7 @@ static bool mmay_native_c_emit_call_record_hints(
                             ),
                             argument->register_id, field_index
                         )) return false;
-                } else if (!mmay_native_c_write(
-                        buffer,
-                        "  if (mmay_g_rv_%u_f_%zu.object == NULL) { mmay_g_m = mmay_managed_array_generated_bind(&mmay_g_x->heap, mmay_g_rv_%u.object->fields[%zu].reference, %s, &mmay_g_rv_%u_f_%zu); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n",
-                        argument->register_id, field_index,
-                        argument->register_id, field_index,
-                        mmay_native_c_array_descriptor(
-                            field_layout.function, field->type
-                        ),
-                        argument->register_id, field_index
-                    )) return false;
+
             }
         }
     }

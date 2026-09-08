@@ -119,6 +119,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Shared file lines and three streaming CLI consumers](cp42-file-lines-2026-09-08.md)
+records D101, file/stdin cursor and allocation contracts, native record-view
+lifetime repair, logstats/grep/frequency source/process acceptance, and 2/20 MiB
+measurements. Full local Release passes 82/82 and ASan/UBSan 81/81. First native
+startup, full portfolio/platform evidence and diagnostics gates remain open.
+
 [Ordinary Result mappers and native root lifetime](cp42-mapper-values-2026-09-08.md)
 records D100 callback scope/order, common callable reuse in Notes/config and the
 forced-GC repair for branch, loop and mutable-child root lifetime. Uninhabited

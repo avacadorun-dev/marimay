@@ -173,3 +173,4 @@ Stage 0 codec.
 | 160 | `collection_cursor_value` | `destination:register`, `collection:register`, `cursor:register` | — | Read the Map value at a checked positive active storage cursor. |
 | 161 | `array_copy` | `destination:register`, `array:register` | `may_panic` | Create a distinct exact-length shallow managed-array copy. |
 | 162 | `array_remove_at` | `destination:register`, `array:register`, `index:register` | `may_panic` | Remove a checked array index stably and return the receiver after one atomic mutation. |
+| 163 | `fs_read_line` | `destination:register`, `handle:register`, `limit:register` | `may_panic` | Read one bounded UTF-8 file line into Result<Option<string>,fs.Error> at the shared handle cursor. |

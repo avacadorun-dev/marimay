@@ -82,8 +82,8 @@ static bool mmay_native_c_emit_record_view_get(
     );
     if (source_layout == NULL || !mmay_native_c_write(
             buffer,
-            "  { if (mmay_g_rv_%u.object == NULL) { mmay_g_m = mmay_managed_record_generated_bind(&mmay_g_x->heap, mmay_g_v_%u, &",
-            instruction->first, instruction->first
+            "  { if (mmay_g_rv_%u.object == NULL || !mmay_managed_generated_reference_equal(mmay_g_rv_%u.reference, mmay_g_v_%u)) { mmay_g_m = mmay_managed_record_generated_bind(&mmay_g_x->heap, mmay_g_v_%u, &",
+            instruction->first, instruction->first, instruction->first, instruction->first
         ) || !mmay_native_c_write_descriptor_name(
             buffer, MMAY_NATIVE_C_MANAGED_RECORD,
             mmay_native_c_register_type(function, instruction->first)

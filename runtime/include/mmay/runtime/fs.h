@@ -110,6 +110,10 @@ MarimayFsStatus mmay_fs_read(
     MarimayFsContext *context, int64_t handle, int64_t limit,
     MarimayOwnedBytes *output
 );
+MarimayFsStatus mmay_fs_read_line(
+    MarimayFsContext *context, int64_t handle, int64_t limit,
+    MarimayOwnedBytes *line, bool *eof, size_t *invalid_offset
+);
 MarimayFsStatus mmay_fs_close(MarimayFsContext *context, int64_t handle);
 void mmay_fs_close_best_effort(MarimayFsContext *context, int64_t handle);
 MarimayFsStatus mmay_fs_read_all(

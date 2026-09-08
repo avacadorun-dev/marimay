@@ -38,7 +38,8 @@ typedef enum MarimayMirFsOperation {
     MMAY_MIR_FS_READ_ALL,
     MMAY_MIR_FS_WRITE_ATOMIC,
     MMAY_MIR_FS_METADATA,
-    MMAY_MIR_FS_READ_DIRECTORY
+    MMAY_MIR_FS_READ_DIRECTORY,
+    MMAY_MIR_FS_READ_LINE
 } MarimayMirFsOperation;
 
 typedef enum MarimayMirContextOperation {

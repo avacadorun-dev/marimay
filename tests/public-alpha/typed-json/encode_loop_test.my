@@ -1,0 +1,34 @@
+import * as bytes from "std/bytes";
+import * as json from "std/json";
+
+type LoopRow {
+  public value: string,
+  public count: int,
+}
+
+@test
+fn encodingFreshLoopRecordsUsesCurrentFields(): void {
+  const counts = mapOf<string, int>();
+  expect.equal(counts.put("а", 1), Ok(true));
+  expect.equal(counts.put("б", 2), Ok(true));
+  expect.equal(counts.put("🌿", 3), Ok(true));
+  const lines: []string = [];
+  for pair in counts {
+    match pair {
+      (value, count) => {
+        const encoded = match json.encode(LoopRow { value, count }) {
+          Ok(output) => output,
+          Err(_) => panic("encode"),
+        };
+        const line = match bytes.decodeUtf8(encoded) {
+          Ok(output) => output,
+          Err(_) => panic("utf8"),
+        };
+        expect.ok(lines.push(line));
+      },
+    };
+  }
+  expect.equal(lines[0], "{\"value\":\"а\",\"count\":1}");
+  expect.equal(lines[1], "{\"value\":\"б\",\"count\":2}");
+  expect.equal(lines[2], "{\"value\":\"🌿\",\"count\":3}");
+}

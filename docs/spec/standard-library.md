@@ -732,6 +732,7 @@ public type Entry { name: string, kind: EntryKind, }
 public fn message(error: Error): string;
 public fn open(path: path.Path): Result<File, Error>;
 public fn read(file: File, limit: int): Result<bytes.Bytes, Error>;
+public fn readLine(file: File, limit: int): Result<Option<string>, Error>;
 public fn close(file: File): Result<void, Error>;
 public fn closeBestEffort(file: File): void;
 public fn readBytes(path: path.Path, limit: int): Result<bytes.Bytes, Error>;
@@ -745,6 +746,17 @@ public fn readDirectory(path: path.Path, limit: int): Result<[]Entry, Error>;
 `open` is read-only in this bounded slice. `read` and both whole-file helpers
 accept `0..1048576`; an over-limit or failed read publishes no bytes or text.
 `readText` additionally validates UTF-8 and reports the first malformed byte.
+Under D101, `readLine` reads from the shared File cursor with the same LF/CRLF,
+lone-CR, embedded-NUL and EOF rules as `io.readLine`. Its `0..1048576` limit
+counts payload bytes of one line, not total file bytes. Invalid limits yield
+`InvalidLimit`, overlong lines `LimitExceeded`, and invalid UTF-8 `InvalidUtf8`
+with a line-relative byte offset. Read failures publish no partial string;
+consumed input is not rolled back. File aliases and mixed `read`/`readLine`
+operations share the cursor, including unread prefetched bytes. The public
+wrapper reports Closed before evaluating an intrinsic read on a closed File;
+raw runtime limit validation precedes handle lookup. Memory is bounded by line
+length/limit and a fixed read-ahead buffer, independent of total file size.
+
 The whole-file helpers consume partial host reads internally. Atomic writes
 consume short writes, sync, close, and replace through a same-directory
 exclusive temporary; the destination is not changed before replace succeeds.

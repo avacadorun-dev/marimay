@@ -1210,6 +1210,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         case MMAY_OPCODE_FS_READ_ALL:
         case MMAY_OPCODE_FS_WRITE_ATOMIC:
         case MMAY_OPCODE_FS_METADATA:
+        case MMAY_OPCODE_FS_READ_LINE:
         case MMAY_OPCODE_FS_READ_DIRECTORY:
             return mmay_bytecode_run_fs_instruction(
                 instruction, registers, execution, function

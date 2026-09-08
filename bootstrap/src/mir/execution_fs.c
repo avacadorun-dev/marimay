@@ -399,6 +399,34 @@ static MarimayMirInterpretStatus mmay_mir_fs_directory_value(
     return status;
 }
 
+static MarimayMirInterpretStatus mmay_mir_fs_line(
+    const MarimayMirFunction *function, MarimayMirInterpretOptions options,
+    const MarimayMirEnum *result, int64_t handle, int64_t limit, MarimayMirValue *target
+) {
+    MarimayOwnedBytes line = {0};
+    bool eof = false;
+    size_t invalid = 0;
+    MarimayFsStatus fs_status = mmay_fs_read_line(&options.execution->fs,
+        handle, limit, &line, &eof, &invalid);
+    if (fs_status != MMAY_FS_OK) return mmay_mir_fs_status_error(function, options,
+        result, fs_status, false, NULL, 0, fs_status == MMAY_FS_INVALID_UTF8 ? (int64_t)invalid : limit, target);
+    const MarimayMirEnumPayload *payload = mmay_mir_fs_result_payload(function, result, 0);
+    const MarimayMirEnum *option = payload != NULL ? mmay_mir_fs_enum(function, payload->type) : NULL;
+    MarimayMirValue text = {0}, value = {0};
+    MarimayMirInterpretStatus status = MMAY_MIR_INTERPRET_INVALID_MIR;
+    if (option != NULL) {
+        text.type = MMAY_TYPE_STRING; value.type = option->type;
+        status = eof ? MMAY_MIR_INTERPRET_OK : mmay_mir_execution_new_string(
+            options.execution, line.data, line.length, &text.as.reference);
+        if (status == MMAY_MIR_INTERPRET_OK) status = mmay_mir_execution_new_enum(
+            options.execution, function, option, eof ? 1 : 0, eof ? NULL : &text,
+            eof ? 0 : 1, &value.as.reference);
+        if (status == MMAY_MIR_INTERPRET_OK) status = mmay_mir_fs_success(function, options, result, &value, target);
+    }
+    mmay_owned_bytes_dispose(&line);
+    return status;
+}
+
 MarimayMirInterpretStatus mmay_mir_execute_fs_instruction(
     const MarimayMirFunction *function,
     const MarimayMirInstruction *instruction,
@@ -446,6 +474,11 @@ MarimayMirInterpretStatus mmay_mir_execute_fs_instruction(
         }
         target->as.boolean = normalized.absolute;
         mmay_path_dispose(&normalized);
+        return MMAY_MIR_INTERPRET_OK;
+    }
+    if (instruction->fs_operation == MMAY_MIR_FS_CLOSE_BEST_EFFORT) {
+        if (options.execution->fs_initialized)
+            mmay_fs_close_best_effort(&options.execution->fs, first->as.i64);
         return MMAY_MIR_INTERPRET_OK;
     }
     result = mmay_mir_fs_enum(
@@ -517,6 +550,8 @@ MarimayMirInterpretStatus mmay_mir_execute_fs_instruction(
             }
             break;
         }
+        case MMAY_MIR_FS_READ_LINE:
+            return mmay_mir_fs_line(function, options, result, first->as.i64, second->as.i64, target);
         case MMAY_MIR_FS_READ:
         case MMAY_MIR_FS_READ_ALL: {
             MarimayOwnedBytes bytes = {0};
@@ -542,9 +577,6 @@ MarimayMirInterpretStatus mmay_mir_execute_fs_instruction(
                 return mmay_mir_fs_success(function, options, result, NULL, target);
             }
             break;
-        case MMAY_MIR_FS_CLOSE_BEST_EFFORT:
-            mmay_fs_close_best_effort(&options.execution->fs, first->as.i64);
-            return MMAY_MIR_INTERPRET_OK;
         case MMAY_MIR_FS_WRITE_ATOMIC: {
             MarimayOwnedBytes bytes = {0};
             MarimayMirInterpretStatus status = mmay_mir_fs_array_bytes(
@@ -586,6 +618,7 @@ MarimayMirInterpretStatus mmay_mir_execute_fs_instruction(
             }
             break;
         }
+        case MMAY_MIR_FS_CLOSE_BEST_EFFORT:
         case MMAY_MIR_PATH_NORMALIZE:
         case MMAY_MIR_PATH_IS_ABSOLUTE:
             return MMAY_MIR_INTERPRET_INVALID_MIR;

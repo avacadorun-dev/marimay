@@ -764,6 +764,17 @@ observable and attempts temporary removal. Directory results are fully owned
 and unsigned-UTF-8 sorted before publication. The Stage 0 adapters may block;
 I6 owns parking without changing this request/result/capability trace.
 
+D101 adds `std/fs.readLine(file, limit)` over the same authorized handle.
+It returns `Result<Option<string>, fs.Error>` with D075's LF/CRLF, lone-CR,
+NUL, final-line, and empty-line rules. The inclusive `0..1048576` byte bound
+applies after terminator removal to each line, independently of total file
+size. `InvalidUtf8.offset` is relative to that line. Invalid limits, excessive
+lines, and malformed text retain D077's existing `InvalidLimit`, `LimitExceeded`,
+and `InvalidUtf8` variants. No failing line is published; consumed input is
+not rewound. All aliases and mixtures of `read`/`readLine` share one cursor,
+including bytes prefetched by the runtime. Closing releases the handle's
+buffer. The public closed-File guard precedes the raw request as for `read`.
+
 ### 10.3 Environment and process context
 
 D078 environment reads use one closed request carrying only the requested

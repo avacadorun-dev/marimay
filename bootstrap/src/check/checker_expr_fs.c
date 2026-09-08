@@ -24,6 +24,7 @@ static const MarimayFsPrimitive *mmay_checker_fs_primitive(
         {"std/path", "mmayPathIsAbsolute", MMAY_MIR_PATH_IS_ABSOLUTE, 1, true},
         {"std/fs", "mmayFsOpen", MMAY_MIR_FS_OPEN_READ, 1, false},
         {"std/fs", "mmayFsRead", MMAY_MIR_FS_READ, 2, false},
+        {"std/fs", "mmayFsReadLine", MMAY_MIR_FS_READ_LINE, 2, false},
         {"std/fs", "mmayFsClose", MMAY_MIR_FS_CLOSE, 1, false},
         {"std/fs", "mmayFsCloseBestEffort", MMAY_MIR_FS_CLOSE_BEST_EFFORT, 1, false},
         {"std/fs", "mmayFsReadAll", MMAY_MIR_FS_READ_ALL, 2, false},

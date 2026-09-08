@@ -300,11 +300,13 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   bootstrap/src/base/utf8.c
   bootstrap/src/base/vector.c
   runtime/common/io_stdout.c
+  runtime/common/line_reader.c
   runtime/common/io.c
   runtime/common/directory.c
   runtime/common/env.c
   runtime/common/process_context.c
   runtime/common/file.c
+  runtime/common/fs_handles.c
   runtime/common/fs.c
   runtime/common/managed.c
   runtime/common/managed_array_access.c
@@ -649,8 +651,10 @@ add_library(mmay_bootstrap STATIC
   runtime/common/directory.c
   runtime/common/env.c
   runtime/common/file.c
+  runtime/common/fs_handles.c
   runtime/common/fs.c
   runtime/common/io_stdout.c
+  runtime/common/line_reader.c
   runtime/common/io.c
   runtime/common/test_output.c
   runtime/common/managed.c

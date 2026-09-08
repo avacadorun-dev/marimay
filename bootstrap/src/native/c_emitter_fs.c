@@ -152,6 +152,23 @@ bool mmay_native_c_emit_fs_runtime(MarimayNativeCBuffer *buffer) {
     ) && mmay_native_c_write(buffer,
         "static int mmay_g_fs_bytes(mmay_g_execution *x, const MarimayManagedEnumDescriptor *result, const MarimayManagedArrayDescriptor *array_descriptor, const MarimayOwnedBytes *bytes, MarimayManagedReference *out) { MarimayManagedCell *cells = NULL, payload = {0}; MarimayManagedReference array = mmay_managed_invalid_reference(); MarimayManagedReference *locations[1] = {&array}; MarimayManagedRootFrame roots = {0}; MarimayManagedStatus status, pop_status; size_t allocation = 0, index; if (!mmay_size_multiply(bytes->length, sizeof(*cells), &allocation)) return 6; cells = allocation == 0 ? NULL : mmay_allocate(&x->allocator, allocation); if (allocation != 0 && cells == NULL) return 5; for (index = 0; index < bytes->length; index += 1) { memset(&cells[index], 0, sizeof(cells[index])); cells[index].f64_bits = bytes->data[index]; } status = mmay_managed_root_push(&x->heap, &roots, locations, 1); if (status == MMAY_MANAGED_OK) status = mmay_managed_array_new(&x->heap, array_descriptor, cells, bytes->length, &array); if (status == MMAY_MANAGED_OK) { payload.reference = array; status = mmay_managed_enum_new(&x->heap, result, 0, &payload, 1, out); } pop_status = mmay_managed_root_pop(&x->heap, &roots); if (status == MMAY_MANAGED_OK) status = pop_status; mmay_deallocate(&x->allocator, cells, allocation); return mmay_g_managed_status(status); }\n"
         "static int mmay_g_fs_open(mmay_g_execution *x, mmay_g_string path, const MarimayManagedEnumDescriptor *result, const MarimayManagedEnumDescriptor *error_descriptor, MarimayManagedReference *out) { int64_t handle = 0; MarimayManagedCell payload = {0}; MarimayFsStatus status = mmay_fs_open_read(&x->fs, (const char *)path.data, path.length, &handle); if (status != MMAY_FS_OK) return mmay_g_fs_error(x, result, error_descriptor, status, false, path, 0, out); payload.f64_bits = (uint64_t)handle; return mmay_g_fs_success(x, result, &payload, out); }\n"
+    ) && mmay_native_c_write(buffer,
+        "static int mmay_g_fs_read_line(mmay_g_execution *x, int64_t handle, int64_t limit, const MarimayManagedEnumDescriptor *result, const MarimayManagedEnumDescriptor *error, const MarimayManagedEnumDescriptor *option_descriptor, MarimayManagedReference *out) {\n"
+        "  MarimayOwnedBytes line = {0}; bool eof = false; size_t invalid = 0; mmay_g_string empty = {0};\n"
+        "  MarimayFsStatus fs_status = mmay_fs_read_line(&x->fs, handle, limit, &line, &eof, &invalid);\n"
+        "  if (fs_status != MMAY_FS_OK) { return mmay_g_fs_error(x, result, error, fs_status, false, empty, fs_status == MMAY_FS_INVALID_UTF8 ? (int64_t)invalid : limit, out); }\n"
+        "  MarimayManagedReference text = mmay_managed_invalid_reference(), option = mmay_managed_invalid_reference();\n"
+        "  MarimayManagedReference *locations[2] = {&text, &option}; MarimayManagedRootFrame roots = {0}; MarimayManagedCell payload = {0};\n"
+        "  MarimayManagedStatus status = mmay_managed_root_push(&x->heap, &roots, locations, 2);\n"
+        "  if (status == MMAY_MANAGED_OK && !eof) { status = mmay_managed_string_new(&x->heap, line.data, line.length, &text); }\n"
+        "  payload.reference = text;\n"
+        "  if (status == MMAY_MANAGED_OK) { status = mmay_managed_enum_new(&x->heap, option_descriptor, eof ? 1 : 0, eof ? NULL : &payload, eof ? 0 : 1, &option); }\n"
+        "  payload.reference = option;\n"
+        "  if (status == MMAY_MANAGED_OK) { status = mmay_managed_enum_new(&x->heap, result, 0, &payload, 1, out); }\n"
+        "  MarimayManagedStatus pop = mmay_managed_root_pop(&x->heap, &roots); if (status == MMAY_MANAGED_OK) { status = pop; }\n"
+        "  mmay_owned_bytes_dispose(&line); return mmay_g_managed_status(status);\n"
+        "}\n"
+    ) && mmay_native_c_write(buffer,
         "static int mmay_g_fs_read(mmay_g_execution *x, int64_t handle, int64_t limit, const MarimayManagedEnumDescriptor *result, const MarimayManagedEnumDescriptor *error_descriptor, const MarimayManagedArrayDescriptor *array_descriptor, MarimayManagedReference *out) { MarimayOwnedBytes bytes = {0}; mmay_g_string empty = {0}; MarimayFsStatus fs_status = mmay_fs_read(&x->fs, handle, limit, &bytes); int status; if (fs_status != MMAY_FS_OK) return mmay_g_fs_error(x, result, error_descriptor, fs_status, false, empty, limit, out); status = mmay_g_fs_bytes(x, result, array_descriptor, &bytes, out); mmay_owned_bytes_dispose(&bytes); return status; }\n"
         "static int mmay_g_fs_close(mmay_g_execution *x, int64_t handle, const MarimayManagedEnumDescriptor *result, const MarimayManagedEnumDescriptor *error_descriptor, MarimayManagedReference *out) { mmay_g_string empty = {0}; MarimayFsStatus status = mmay_fs_close(&x->fs, handle); return status == MMAY_FS_OK ? mmay_g_fs_success(x, result, NULL, out) : mmay_g_fs_error(x, result, error_descriptor, status, false, empty, 0, out); }\n"
     ) && mmay_native_c_write(buffer,
@@ -257,6 +274,15 @@ bool mmay_native_c_emit_fs_instruction(
                 instruction->first
             ) && mmay_native_c_fs_write_result_error(buffer, result, error)
             && mmay_native_c_fs_finish(buffer, instruction);
+    }
+    if (instruction->fs_operation == MMAY_MIR_FS_READ_LINE) {
+        if (ok == NULL || !mmay_native_c_write(buffer,
+                "  mmay_g_s = mmay_g_fs_read_line(mmay_g_x, mmay_g_v_%u, mmay_g_v_%u, ",
+                instruction->first, instruction->second)
+            || !mmay_native_c_fs_write_result_error(buffer, result, error)
+            || !mmay_native_c_write(buffer, ", &")
+            || !mmay_native_c_write_descriptor_name(buffer, MMAY_NATIVE_C_MANAGED_ENUM, ok->type)) return false;
+        return mmay_native_c_fs_finish(buffer, instruction);
     }
     if (instruction->fs_operation == MMAY_MIR_FS_READ
         || instruction->fs_operation == MMAY_MIR_FS_READ_ALL) {

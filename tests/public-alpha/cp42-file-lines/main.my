@@ -1,0 +1,84 @@
+import * as bytes from "std/bytes";
+import * as convert from "std/convert";
+import * as fs from "std/fs";
+import * as io from "std/io";
+import * as path from "std/path";
+import * as text from "std/text";
+
+fn require(value: bool): void {
+  if !value {
+    panic("file-line contract");
+  }
+}
+
+fn close(file: Option<fs.File>): void {
+  if const value = file {
+    fs.closeBestEffort(value);
+  }
+}
+
+fn read(file: Option<fs.File>, limit: int): Result<Option<string>, string> {
+  if const value = file {
+    return fs.readLine(value, limit).mapError(fs.message);
+  }
+  return io.readLine(limit).mapError(io.message);
+}
+
+fn execute(arguments: []string): Result<void, string> {
+  const limit = convert.parseInt(arguments[2]).mapError((error) => "limit")?;
+  let file: Option<fs.File> = None;
+  if arguments[1] != "-" {
+    const name = path.fromString(arguments[1]).mapError((error) => "path")?;
+    file = Some(fs.open(name).mapError(fs.message)?);
+  }
+  defer close(file);
+  if arguments[0] == "cursor" {
+    const opened = match file {
+      Some(value) => value,
+      None => panic("file required"),
+    };
+    const alias = opened;
+    require(fs.readLine(opened, 1).mapError(fs.message)? == Some("a"));
+    const rest = bytes.decodeUtf8(fs.read(alias, 4).mapError(fs.message)?).mapError(
+      (error) => "utf8",
+    )?;
+    require(rest == "b\nc\r");
+    require(fs.readLine(opened, 0).mapError(fs.message)? == None);
+    fs.close(alias).mapError(fs.message)?;
+    require(
+      match fs.readLine(opened, -1) {
+        Err(fs.Error.Closed) => true,
+        _ => false,
+      },
+    );
+    fs.close(opened).mapError(fs.message)?;
+    return io.println("cursor ok").mapError(io.message);
+  }
+  let lines = 0;
+  let size = 0;
+  while const line = read(file, limit)? {
+    lines += 1;
+    size += text.byteLength(line);
+    if arguments[0] == "echo" {
+      io.println(line).mapError(io.message)?;
+    }
+  }
+  if arguments[0] == "count" {
+    io.println($"{lines}:{size}").mapError(io.message)?;
+  }
+  return io.flushStdout().mapError(io.message);
+}
+
+fn main(arguments: []string): int {
+  if arguments.length() != 3 {
+    return 2;
+  }
+  return match execute(arguments) {
+    Ok(_) => 0,
+    Err(error) => {
+      const _ = io.eprintln(error);
+      const _ = io.flushStderr();
+      return 1;
+    },
+  };
+}

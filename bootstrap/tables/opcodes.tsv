@@ -162,3 +162,4 @@
 160	COLLECTION_CURSOR_VALUE	collection_cursor_value	destination:register,collection:register,cursor:register	none	Read the Map value at a checked positive active storage cursor.
 161	ARRAY_COPY	array_copy	destination:register,array:register	may_panic	Create a distinct exact-length shallow managed-array copy.
 162	ARRAY_REMOVE_AT	array_remove_at	destination:register,array:register,index:register	may_panic	Remove a checked array index stably and return the receiver after one atomic mutation.
+163	FS_READ_LINE	fs_read_line	destination:register,handle:register,limit:register	may_panic	Read one bounded UTF-8 file line into Result<Option<string>,fs.Error> at the shared handle cursor.

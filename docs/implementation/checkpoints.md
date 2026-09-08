@@ -1691,6 +1691,10 @@ Array copy/removal and functional Notes migration: [D097 local evidence](evidenc
 Function-value/capture foundation: [D098 local evidence](evidence/cp42-function-values-2026-09-08.md).
 Predicate search and Notes integration: [D099 local evidence](evidence/cp42-array-search-2026-09-08.md).
 Ordinary Result mappers and root lifetime: [D100 local evidence](evidence/cp42-mapper-values-2026-09-08.md).
+Streaming/file-line wave and native record views: [D101 local evidence](evidence/cp42-file-lines-2026-09-08.md).
+Diagnostic removal gate: named void enum payload bindings must report T0002
+instead of the observed silent internal status 70; the ordinary named-void
+restriction remains unchanged.
 Common-layout removal gate: implement uninhabited enum payload transport before
 accepting mapper result `never`; the current I0001 is an explicit implementation
 gap, not a normative source restriction.

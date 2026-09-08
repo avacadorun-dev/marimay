@@ -1209,3 +1209,32 @@ recorded in
 The repository-wide bounded-context enforcement and full production/test
 decomposition are recorded in
 [A0 checkpoint 0](evidence/a0-bounded-architecture-checkpoint-0-2026-08-14.md).
+
+## D101 bounded file-line ownership
+
+`runtime/common/line_reader.c` owns the shared UTF-8 line boundary for stdin and
+files: terminators, per-line growth, invalid-byte offsets, and cleanup. Its
+narrow public header accepts a counted byte input and publishes owned bytes.
+`runtime/common/fs_handles.c` owns open handle slots, lazy 4 KiB read-ahead,
+shared cursor/EOF state, mixed whole-file reads, close and teardown. Its private
+API receives an already authorized absolute path; `fs.c` retains path and
+capability checks, atomic writes, metadata and directory operations. The I/O
+coordinators delegate to these independently compiled owners.
+
+Existing filesystem owners verify/lower/execute the append-only `FS_READ_LINE`
+operation; backends construct the same nested Result/Option value. MIR handles
+void `closeBestEffort` before enum-result lookup, matching VM/native cleanup.
+`test_runtime_lines.c` owns byte/chunk/host-error and handle-reuse allocation
+sweeps. `test_file_line_engines.c` and its deterministic host header own
+lowering/codec/emission allocation sweeps and MIR/VM/native lifetime tests,
+including forced GC. `test_cp34_fs_pipeline.c` owns hostile register and nested
+Option layout checks. `test_cp42_file_lines.py` owns public process parity,
+capability denial, mixed aliases, large streams and closed pipes.
+
+The D101 consumers also pin cached native views: `c_emitter_managed.c` compares
+record reference identity before reusing a field pointer, and `c_emitter_emit.c`
+refreshes child-array hints for unstable parent definitions. An immutable field
+is not constant across different records held in the same MIR register.
+`test_native_c_emitter_view_lifetimes.c` owns record construction/rebinding,
+array selection, direct calls and forced-GC/allocation parity;
+`typed-json/encode_loop_test.my` pins the actual repeated JSON encoding trigger.

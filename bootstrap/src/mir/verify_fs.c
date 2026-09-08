@@ -169,6 +169,22 @@ MarimayMirVerifyStatus mmay_mir_verify_fs_instruction(
             if (instruction->kind != MMAY_MIR_FS_UNARY
                 || first != MMAY_TYPE_STRING) return MMAY_MIR_VERIFY_TYPE_MISMATCH;
             break;
+        case MMAY_MIR_FS_READ_LINE: {
+            if (instruction->kind != MMAY_MIR_FS_BINARY || first != MMAY_TYPE_I64 || second != MMAY_TYPE_I64)
+                return MMAY_MIR_VERIFY_TYPE_MISMATCH;
+            result = mmay_mir_fs_result(function, target, MMAY_TYPE_INVALID, &error_type);
+            const MarimayMirEnumVariant *ok = result != NULL ? mmay_mir_enum_variant(function, result, 0) : NULL;
+            const MarimayMirEnumPayload *payload = ok != NULL ? mmay_mir_enum_payload(function, ok, 0) : NULL;
+            const MarimayTypeId string_type = MMAY_TYPE_STRING;
+            for (size_t i = 0; payload != NULL && i < function->enums.length; i += 1) {
+                const MarimayMirEnum *option = mmay_mir_enum(function, (MarimayMirEnumId)i);
+                if (option != NULL && option->type == payload->type && option->variant_count == 2
+                    && mmay_mir_fs_variant_payloads(function, option, 0, &string_type, 1)
+                    && mmay_mir_fs_variant_payloads(function, option, 1, NULL, 0)
+                    && mmay_mir_fs_error_layout(function, error_type)) return MMAY_MIR_VERIFY_OK;
+            }
+            return MMAY_MIR_VERIFY_TYPE_MISMATCH;
+        }
         case MMAY_MIR_FS_READ:
         case MMAY_MIR_FS_READ_ALL:
             if (instruction->kind != MMAY_MIR_FS_BINARY

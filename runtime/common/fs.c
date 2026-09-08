@@ -1,15 +1,11 @@
 #include "mmay/runtime/fs.h"
+#include "fs_handles_api.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "mmay/base/utf8.h"
-
-typedef struct MarimayFsOpenFile {
-    MarimayFileHandle platform_handle;
-    bool open;
-} MarimayFsOpenFile;
 
 static MarimayFileStatus mmay_fs_platform_metadata(
     void *context,
@@ -332,7 +328,7 @@ MarimayFsStatus mmay_fs_init_status(
     context->max_open_files = options->max_open_files;
     if (!mmay_vector_init(&context->read_roots, allocator, sizeof(MarimayOwnedBytes))
         || !mmay_vector_init(&context->write_roots, allocator, sizeof(MarimayOwnedBytes))
-        || !mmay_vector_init(&context->files, allocator, sizeof(MarimayFsOpenFile))) {
+        || !mmay_fs_handles_init(context)) {
         mmay_fs_dispose(context);
         return MMAY_FS_ALLOCATION_FAILED;
     }
@@ -387,18 +383,8 @@ bool mmay_fs_init(
 }
 
 void mmay_fs_dispose(MarimayFsContext *context) {
-    size_t index = 0;
     if (context == NULL) return;
-    for (index = 0; index < context->files.length; index += 1) {
-        MarimayFsOpenFile *file = mmay_vector_at(&context->files, index);
-        if (file != NULL && file->open && context->read_ops.close != NULL) {
-            (void)context->read_ops.close(
-                context->read_ops.context, file->platform_handle
-            );
-            file->open = false;
-        }
-    }
-    mmay_vector_dispose(&context->files);
+    mmay_fs_handles_dispose(context);
     mmay_fs_owned_vector_dispose(&context->write_roots);
     mmay_fs_owned_vector_dispose(&context->read_roots);
     mmay_owned_bytes_dispose(&context->working_directory);
@@ -406,156 +392,19 @@ void mmay_fs_dispose(MarimayFsContext *context) {
 }
 
 MarimayFsStatus mmay_fs_open_read(
-    MarimayFsContext *context,
-    const char *path,
-    size_t path_length,
-    int64_t *handle
+    MarimayFsContext *context, const char *path, size_t path_length, int64_t *handle
 ) {
     MarimayOwnedBytes absolute = {0};
     MarimayDirectoryEntryKind kind;
-    MarimayFileHandle platform_handle = 0;
-    MarimayFsOpenFile file;
-    MarimayFsStatus status;
-    MarimayFileStatus file_status;
-    size_t open_count = 0;
-    size_t reusable = SIZE_MAX;
-    size_t index = 0;
     if (handle == NULL) return MMAY_FS_INVALID_ARGUMENT;
-    status = mmay_fs_authorize(context, false, path, path_length, &absolute);
+    MarimayFsStatus status = mmay_fs_authorize(context, false, path, path_length, &absolute);
     if (status != MMAY_FS_OK) return status;
     status = mmay_fs_check_components(context, &absolute, false, &kind);
-    if (status == MMAY_FS_OK && kind != MMAY_DIRECTORY_ENTRY_REGULAR) {
-        status = kind == MMAY_DIRECTORY_ENTRY_DIRECTORY
-            ? MMAY_FS_NOT_FILE : MMAY_FS_OPEN_FAILED;
-    }
-    if (status == MMAY_FS_OK) {
-        for (index = 0; index < context->files.length; index += 1U) {
-            const MarimayFsOpenFile *existing = mmay_vector_at_const(
-                &context->files, index
-            );
-            if (existing != NULL && existing->open) open_count += 1U;
-            else if (reusable == SIZE_MAX) reusable = index;
-        }
-        if (open_count >= context->max_open_files) {
-            status = MMAY_FS_LIMIT_EXCEEDED;
-        }
-    }
-    if (status == MMAY_FS_OK) {
-        file_status = context->read_ops.open(
-            context->read_ops.context, context->allocator,
-            (const char *)absolute.data, absolute.length, &platform_handle
-        );
-        status = file_status == MMAY_FILE_OK ? MMAY_FS_OK
-            : (file_status == MMAY_FILE_ALLOCATION_FAILED
-                ? MMAY_FS_ALLOCATION_FAILED : MMAY_FS_OPEN_FAILED);
-    }
-    if (status == MMAY_FS_OK) {
-        file.platform_handle = platform_handle;
-        file.open = true;
-        if (reusable != SIZE_MAX) {
-            MarimayFsOpenFile *slot = mmay_vector_at(
-                &context->files, reusable
-            );
-            if (slot == NULL) {
-                (void)context->read_ops.close(
-                    context->read_ops.context, platform_handle
-                );
-                status = MMAY_FS_INTERNAL_FAILED;
-            } else {
-                *slot = file;
-                *handle = (int64_t)reusable + 1;
-            }
-        } else if (!mmay_vector_push(&context->files, &file)) {
-            (void)context->read_ops.close(
-                context->read_ops.context, platform_handle
-            );
-            status = MMAY_FS_ALLOCATION_FAILED;
-        } else {
-            *handle = (int64_t)context->files.length;
-        }
-    }
+    if (status == MMAY_FS_OK && kind != MMAY_DIRECTORY_ENTRY_REGULAR)
+        status = kind == MMAY_DIRECTORY_ENTRY_DIRECTORY ? MMAY_FS_NOT_FILE : MMAY_FS_OPEN_FAILED;
+    if (status == MMAY_FS_OK) status = mmay_fs_handles_open(context, &absolute, handle);
     mmay_owned_bytes_dispose(&absolute);
     return status;
-}
-
-static MarimayFsOpenFile *mmay_fs_open_file(
-    MarimayFsContext *context,
-    int64_t handle
-) {
-    MarimayFsOpenFile *file = context != NULL && context->initialized
-            && handle > 0 && (uint64_t)handle <= context->files.length
-        ? mmay_vector_at(&context->files, (size_t)handle - 1U) : NULL;
-    return file != NULL && file->open ? file : NULL;
-}
-
-MarimayFsStatus mmay_fs_read(
-    MarimayFsContext *context,
-    int64_t handle,
-    int64_t limit,
-    MarimayOwnedBytes *output
-) {
-    MarimayFsOpenFile *file = NULL;
-    MarimayVector bytes;
-    unsigned char chunk[4096];
-    MarimayFsStatus status = MMAY_FS_OK;
-    if (output == NULL || context == NULL || !context->initialized) {
-        return MMAY_FS_INVALID_ARGUMENT;
-    }
-    memset(output, 0, sizeof(*output));
-    if (limit < 0 || (uint64_t)limit > MMAY_FS_MAX_FILE_BYTES) {
-        return MMAY_FS_INVALID_LIMIT;
-    }
-    file = mmay_fs_open_file(context, handle);
-    if (file == NULL) return MMAY_FS_CLOSED;
-    if (!mmay_vector_init(&bytes, context->allocator, sizeof(unsigned char))) {
-        return MMAY_FS_ALLOCATION_FAILED;
-    }
-    for (;;) {
-        size_t read_count = 0;
-        bool end = false;
-        MarimayFileStatus file_status = context->read_ops.read(
-            context->read_ops.context, file->platform_handle,
-            chunk, sizeof(chunk), &read_count, &end
-        );
-        if (file_status != MMAY_FILE_OK || read_count > sizeof(chunk)
-            || (read_count == 0 && !end)) {
-            status = MMAY_FS_READ_FAILED;
-            break;
-        }
-        if (read_count > (size_t)limit - bytes.length) {
-            status = MMAY_FS_LIMIT_EXCEEDED;
-            break;
-        }
-        if (!mmay_vector_append(&bytes, chunk, read_count)) {
-            status = MMAY_FS_ALLOCATION_FAILED;
-            break;
-        }
-        if (end) break;
-    }
-    if (status == MMAY_FS_OK && !mmay_owned_bytes_copy(
-            output, context->allocator, bytes.data, bytes.length
-        )) status = MMAY_FS_ALLOCATION_FAILED;
-    mmay_vector_dispose(&bytes);
-    if (status != MMAY_FS_OK) mmay_owned_bytes_dispose(output);
-    return status;
-}
-
-MarimayFsStatus mmay_fs_close(MarimayFsContext *context, int64_t handle) {
-    MarimayFsOpenFile *file;
-    MarimayFileStatus status;
-    if (context == NULL || !context->initialized || handle <= 0
-        || (uint64_t)handle > context->files.length) return MMAY_FS_CLOSED;
-    file = mmay_vector_at(&context->files, (size_t)handle - 1U);
-    if (file == NULL || !file->open) return MMAY_FS_OK;
-    file->open = false;
-    status = context->read_ops.close(
-        context->read_ops.context, file->platform_handle
-    );
-    return status == MMAY_FILE_OK ? MMAY_FS_OK : MMAY_FS_CLOSE_FAILED;
-}
-
-void mmay_fs_close_best_effort(MarimayFsContext *context, int64_t handle) {
-    (void)mmay_fs_close(context, handle);
 }
 
 MarimayFsStatus mmay_fs_read_all(

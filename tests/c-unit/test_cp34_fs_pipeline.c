@@ -35,6 +35,7 @@ static const char mmay_cp34_fs_source[] =
     "public type Entry { public name: string, public kind: EntryKind, }\n"
     "extern \"c\" fn mmayFsOpen(text: string): Result<int, Error>;\n"
     "extern \"c\" fn mmayFsRead(handle: int, limit: int): Result<[]byte, Error>;\n"
+    "extern \"c\" fn mmayFsReadLine(handle: int, limit: int): Result<Option<string>, Error>;\n"
     "extern \"c\" fn mmayFsClose(handle: int): Result<void, Error>;\n"
     "extern \"c\" fn mmayFsCloseBestEffort(handle: int): void;\n"
     "extern \"c\" fn mmayFsReadAll(text: string, limit: int): Result<[]byte, Error>;\n"
@@ -43,6 +44,7 @@ static const char mmay_cp34_fs_source[] =
     "extern \"c\" fn mmayFsReadDirectory(text: string, limit: int): Result<[]Entry, Error>;\n"
     "public fn exercise(text: string, values: []byte, handle: int, limit: int): void {\n"
     "  const _ = mmayFsOpen(text); const _ = mmayFsRead(handle, limit);\n"
+    "  const _ = mmayFsReadLine(handle, limit);\n"
     "  const _ = mmayFsClose(handle); mmayFsCloseBestEffort(handle);\n"
     "  const _ = mmayFsReadAll(text, limit);\n"
     "  const _ = mmayFsWriteAtomic(text, values);\n"
@@ -90,7 +92,8 @@ static bool mmay_cp34_mir_instruction_is_fs(
 
 static size_t mmay_cp34_verify_hostile_mir(MarimayMirFunction *function) {
     size_t block_index = 0;
-    size_t count = 0;
+    size_t count = 0, line_layouts = 0;
+    bool has_line = false;
     MMAY_EXPECT(mmay_mir_verify(function) == MMAY_MIR_VERIFY_OK);
     for (block_index = 0; block_index < function->blocks.length;
         block_index += 1U) {
@@ -107,6 +110,7 @@ static size_t mmay_cp34_verify_hostile_mir(MarimayMirFunction *function) {
             MarimayMirRegister saved_target;
             MarimayMirFsOperation saved_operation;
             if (!mmay_cp34_mir_instruction_is_fs(instruction)) continue;
+            has_line = has_line || instruction->fs_operation == MMAY_MIR_FS_READ_LINE;
             saved_target = instruction->target;
             instruction->target = MMAY_MIR_NO_REGISTER;
             MMAY_EXPECT(mmay_mir_verify(function)
@@ -120,7 +124,23 @@ static size_t mmay_cp34_verify_hostile_mir(MarimayMirFunction *function) {
             count += 1U;
         }
     }
+    /* D101 must reject a structurally valid Option<int> where the primitive
+     * promises Option<string>. General enum well-formedness cannot catch this. */
+    if (count != 0) for (size_t i = 0; i < function->enums.length; i += 1) {
+        const MarimayMirEnum *layout = mmay_vector_at_const(&function->enums, i);
+        const MarimayMirEnumVariant *some = mmay_vector_at_const(&function->enum_variants, layout->variant_start);
+        const MarimayMirEnumVariant *none = mmay_vector_at_const(&function->enum_variants, layout->variant_start + 1);
+        if (layout->variant_count != 2 || some == NULL || none == NULL
+            || some->payload_count != 1 || none->payload_count != 0) continue;
+        MarimayMirEnumPayload *payload = mmay_vector_at(&function->enum_payloads, some->payload_start);
+        if (payload == NULL || payload->type != MMAY_TYPE_STRING) continue;
+        line_layouts += 1;
+        payload->type = MMAY_TYPE_I64;
+        MMAY_EXPECT(mmay_mir_verify(function) == MMAY_MIR_VERIFY_TYPE_MISMATCH);
+        payload->type = MMAY_TYPE_STRING;
+    }
     MMAY_EXPECT(mmay_mir_verify(function) == MMAY_MIR_VERIFY_OK);
+    MMAY_EXPECT(line_layouts == (has_line ? 1U : 0U));
     return count;
 }
 
@@ -130,7 +150,8 @@ static size_t mmay_cp34_verify_hostile_bytecode(
     MarimayOwnedBytes encoded = {0};
     MarimayBytecodeFunction decoded;
     size_t block_index = 0;
-    size_t count = 0;
+    size_t count = 0, line_layouts = 0;
+    bool has_line = false;
     memset(&decoded, 0, sizeof(decoded));
     MMAY_EXPECT(mmay_bytecode_verify(function) == MMAY_BYTECODE_VERIFY_OK);
     for (block_index = 0; block_index < function->blocks.length;
@@ -147,10 +168,12 @@ static size_t mmay_cp34_verify_hostile_bytecode(
             );
             uint64_t saved_target;
             if (instruction == NULL
-                || instruction->opcode < MMAY_OPCODE_PATH_NORMALIZE
-                || instruction->opcode > MMAY_OPCODE_FS_READ_DIRECTORY) {
+                || ((instruction->opcode < MMAY_OPCODE_PATH_NORMALIZE
+                    || instruction->opcode > MMAY_OPCODE_FS_READ_DIRECTORY)
+                    && instruction->opcode != MMAY_OPCODE_FS_READ_LINE)) {
                 continue;
             }
+            has_line = has_line || instruction->opcode == MMAY_OPCODE_FS_READ_LINE;
             saved_target = instruction->operands[0].unsigned_value;
             instruction->operands[0].unsigned_value =
                 function->register_types.length;
@@ -159,6 +182,20 @@ static size_t mmay_cp34_verify_hostile_bytecode(
             instruction->operands[0].unsigned_value = saved_target;
             count += 1U;
         }
+    }
+    if (count != 0) for (size_t i = 0; i < function->enum_layouts.length; i += 1) {
+        const MarimayBytecodeEnumLayout *layout = mmay_vector_at_const(&function->enum_layouts, i);
+        const MarimayBytecodeEnumVariant *some = mmay_vector_at_const(&function->enum_variants, layout->variant_start);
+        const MarimayBytecodeEnumVariant *none = mmay_vector_at_const(&function->enum_variants, layout->variant_start + 1);
+        if (layout->variant_count != 2 || some == NULL || none == NULL
+            || some->payload_count != 1 || none->payload_count != 0) continue;
+        MarimayBytecodeEnumPayload *payload = mmay_vector_at(&function->enum_payloads,
+            layout->payload_start + some->payload_start);
+        if (payload == NULL || payload->type != MMAY_BYTECODE_TYPE_STRING) continue;
+        line_layouts += 1;
+        payload->type = MMAY_BYTECODE_TYPE_I64;
+        MMAY_EXPECT(mmay_bytecode_verify(function) == MMAY_BYTECODE_VERIFY_TYPE_MISMATCH);
+        payload->type = MMAY_BYTECODE_TYPE_STRING;
     }
     MMAY_EXPECT(mmay_bytecode_verify(function) == MMAY_BYTECODE_VERIFY_OK);
     MMAY_EXPECT(mmay_bytecode_encode_function(
@@ -171,6 +208,7 @@ static size_t mmay_cp34_verify_hostile_bytecode(
     MMAY_EXPECT(mmay_bytecode_verify(&decoded) == MMAY_BYTECODE_VERIFY_OK);
     mmay_bytecode_function_dispose(&decoded);
     mmay_owned_bytes_dispose(&encoded);
+    MMAY_EXPECT(line_layouts == (has_line ? 1U : 0U));
     return count;
 }
 
@@ -243,8 +281,8 @@ void mmay_test_cp34_fs_pipeline(void) {
         bytecode_count += mmay_cp34_verify_hostile_bytecode(&lowered);
         mmay_bytecode_function_dispose(&lowered);
     }
-    MMAY_EXPECT(mir_count == 10);
-    MMAY_EXPECT(bytecode_count == 10);
+    MMAY_EXPECT(mir_count == 11);
+    MMAY_EXPECT(bytecode_count == 11);
     mmay_cp34_pipeline_dispose(&fixture);
     mmay_cp34_close_best_effort_fuzz_regression();
 }

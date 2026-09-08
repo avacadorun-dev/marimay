@@ -3270,3 +3270,43 @@ MIR registers are not SSA values. An activation-wide replacement root requires
 single assignment outside repeated CFG regions. Mutable container children must
 retain their own roots because mutation may occur through an alias or callee.
 This follows D063's existing lifetime contract without adding source semantics.
+
+## D101 — Bounded file-line reading shares the stdin line contract
+
+Status: accepted.
+
+`std/fs.readLine(file: File, limit: int): Result<Option<string>, Error>` reads
+one UTF-8 line from the current shared handle position. LF and CRLF are removed;
+a lone CR and embedded NUL remain data. EOF before any data yields Ok(None);
+EOF after data yields Ok(Some(data)). An empty terminated line is Some("").
+The payload-byte limit is 0..1048576, independent of total file size. Invalid
+limits yield InvalidLimit, overlong lines LimitExceeded, and malformed UTF-8
+InvalidUtf8 with the first malformed byte offset relative to this line.
+Read/limit/UTF-8 errors publish no partial string; consumed input is not rolled
+back, so applications must not resume as if an errored line were complete.
+
+File aliases share one cursor and one bounded read-ahead buffer. Mixing `read`
+and `readLine` consumes that same position without dropping prefetched bytes.
+Open authorization, symlink policy and close/best-effort teardown remain D077.
+The File wrapper checks its closed state before invoking a read intrinsic, as
+for existing read. Runtime invalid-limit checks precede raw handle lookup.
+
+A common runtime line parser owns terminator normalization, UTF-8 validation,
+line growth and the no-partial-output boundary for stdin and files. It grows
+storage with the actual line under the existing limit rather than allocating
+that entire limit for each short line. File handle ownership and buffered reads
+have a separate owner behind a narrow API; path/capability code does not expose
+its private per-handle state. Allocation/resource failures retain D055 classes.
+MIR and hostile bytecode validate the exact nested Result/Option/string layout;
+both engines consume the same runtime contract.
+
+Reason: logstats, grep and frequency need one bounded line surface on both stdin
+and files, including total inputs larger than a whole-file helper's limit.
+This adds neither asynchronous I/O nor an unbounded whole-file convenience API.
+
+The streaming consumers also expose a D063 implementation defect: a native
+record view must follow the current managed reference when a MIR register is
+redefined in a loop. Immutable child fields are immutable per object, not per
+register. Unstable parent definitions refresh child-array call hints. These
+repairs preserve existing source semantics; JSON expansion remains ordinary
+MIR and receives no backend-specific workaround.
