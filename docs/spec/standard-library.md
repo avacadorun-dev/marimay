@@ -355,6 +355,16 @@ expanding lengths with `ArrayTruncateError`; `clear` is infallible; and
 reservation never exposes capacity. Removed reference elements cease to be
 traced through the array.
 
+D097 adds `copy(values): []T` and `removeAt(values, index): Option<T>`, with
+free/dot selection and exact signatures in the language specification.
+Copy allocates a new outer array with exact-length storage and generation zero;
+reference elements remain shared. It leaves the source and its iterators intact.
+Stable removal returns the exact removed value, preserves suffix order and
+reserved storage, releases the vacated slot and increments generation once.
+An absent index returns None without invalidation. Result preparation precedes
+commit, so every failure leaves the array unchanged. Source rooting and normal
+D055 managed accounting apply throughout copy construction.
+
 D061 fixes the shared internal planning policy without adding an API:
 known-count construction reserves exactly the initialized element count,
 whereas unknown-size push growth starts at four and doubles. `reserve` applies

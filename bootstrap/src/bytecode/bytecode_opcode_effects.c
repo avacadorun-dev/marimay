@@ -48,6 +48,8 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
         case MMAY_OPCODE_ARRAY_REQUIRE_INDEX:
         case MMAY_OPCODE_ARRAY_GET:
         case MMAY_OPCODE_ARRAY_GET_IN_BOUNDS:
+        case MMAY_OPCODE_ARRAY_COPY:
+        case MMAY_OPCODE_ARRAY_REMOVE_AT:
         case MMAY_OPCODE_ARRAY_POP:
         case MMAY_OPCODE_ARRAY_GENERATION:
         case MMAY_OPCODE_ARRAY_REQUIRE_GENERATION:

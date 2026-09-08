@@ -456,6 +456,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_value.c
   bootstrap/src/check/array.c
   bootstrap/src/check/checker_array_mutation.c
+  bootstrap/src/check/checker_array_edit.c
   bootstrap/src/check/checker_array_types.c
   bootstrap/src/check/checker.c
   bootstrap/src/check/checker_cfg.c
@@ -610,6 +611,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/native/c_emitter_relations.c
   bootstrap/src/native/c_emitter_value_ranges.c
   bootstrap/src/native/c_emitter_array_mutation.c
+  bootstrap/src/native/c_emitter_array_edit.c
   bootstrap/src/native/c_emitter_descriptors.c
   bootstrap/src/native/c_emitter_defer.c
   bootstrap/src/native/c_emitter_entry.c

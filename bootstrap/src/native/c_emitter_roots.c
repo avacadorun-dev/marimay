@@ -57,6 +57,7 @@ static bool mmay_native_c_instruction_uses_second(
         case MMAY_MIR_ARRAY_REQUIRE_INDEX:
         case MMAY_MIR_ARRAY_ASSUME_INDEX:
         case MMAY_MIR_ARRAY_PUSH:
+        case MMAY_MIR_ARRAY_REMOVE_AT:
         case MMAY_MIR_ARRAY_TRUNCATE:
         case MMAY_MIR_ARRAY_RESERVE:
         case MMAY_MIR_ARRAY_REQUIRE_GENERATION:
@@ -214,6 +215,7 @@ static bool mmay_native_c_instruction_is_safepoint(
     }
     switch (instruction->kind) {
         case MMAY_MIR_RECORD_NEW:
+        case MMAY_MIR_ARRAY_COPY:
         case MMAY_MIR_ARRAY_NEW:
         case MMAY_MIR_COLLECTION_NEW:
         case MMAY_MIR_COLLECTION_CONTAINS:
@@ -475,6 +477,7 @@ static bool mmay_native_c_root_alias_source(
         case MMAY_MIR_ARRAY_REQUIRE_INDEX:
         case MMAY_MIR_ARRAY_ASSUME_INDEX:
         case MMAY_MIR_ARRAY_PUSH:
+        case MMAY_MIR_ARRAY_REMOVE_AT:
         case MMAY_MIR_ARRAY_TRUNCATE:
         case MMAY_MIR_ARRAY_CLEAR:
         case MMAY_MIR_ARRAY_RESERVE:
@@ -535,6 +538,7 @@ static bool mmay_native_c_instruction_mutates_owner(
         case MMAY_MIR_ARRAY_SET_IN_BOUNDS:
         case MMAY_MIR_ARRAY_PUSH:
         case MMAY_MIR_ARRAY_POP:
+        case MMAY_MIR_ARRAY_REMOVE_AT:
         case MMAY_MIR_ARRAY_TRUNCATE:
         case MMAY_MIR_ARRAY_CLEAR:
         case MMAY_MIR_ARRAY_RESERVE:

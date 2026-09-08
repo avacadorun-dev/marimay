@@ -85,20 +85,28 @@ focused ASan/UBSan, 9 source cases и миграция config/notes без из�
 малых регрессий. Остаточную стоимость нужно заново профилировать по слоям;
 старые профили и межъязыковые отношения не являются свежим baseline.
 
-Открыты общие copy/search/stable removal, завершение mutation return contracts
-и согласованная модель notes. Сначала реальные выражения config/notes,
-затем decision/spec/owners/formatter/MIR/VM/native и миграция потребителей.
-Expected errors и capacity limits нельзя скрывать ради удаления discard.
-На 2026-09-08 [единый проект контрактов](../research/cli0-collection-contracts-2026-09-08.md)
-фиксирует предлагаемые границы copy/findIndex/removeAt и функциональной модели
-notes; операции массивов ещё не приняты и не реализованы. Option binding
-принят как D096. Общую поддержку callback нельзя выводить из mapError:
-сохранение произвольной closure в массиве пока даёт I0001; это зависимость
-проектируемого findIndex. [Notes baseline](evidence/cli0-notes-contract-baseline-2026-09-08.md)
-содержит 14 source tests, 27 cases × три engines и 15 closed-pipe проверок.
-Миграция на существующие Result/void-match контракты и исправление stdout
-выполнены в текущем app checkout и сохранены в source snapshot evidence;
-in-place remove и отсутствие search command пока остаются открытыми.
+D097 `copy`/`removeAt` реализованы отдельными checker/native owners поверх
+общего managed-array runtime. [Evidence](evidence/cp42-array-edit-2026-09-08.md)
+фиксирует allocation/GC/proof/VM/native проверки и функциональную миграцию
+Notes: все 78 Release-проверок имеют успешный результат; полный macOS
+ASan/UBSan прошёл 77/77. Это не Tier 1-complete evidence. Теперь add/remove возвращают новую базу с независимым внешним массивом;
+записи и теги остаются общими. CLI сохраняет возвращённую базу. 16 source tests,
+27 process cases × три engines и 15 closed-pipe проверок сохраняют исходные
+JSON bytes и сообщения. Не возвращай in-place remove по старому baseline.
+
+На синтетической базе 6 098 записей / 1 047 786 байт native Release удаление
+первой/средней записи в малой парной выборке занимает 243/251 мс вместо
+420/329 мс; peak RSS при удалении вырос примерно на 0,76 МиБ. VM остаётся
+около 5,7 с, добавление и удаление последней записи почти не изменились.
+Это evidence стоимости миграции; named budgets, профили и полная приёмка
+Notes остаются открытыми. Старые 14-test baseline snapshots неизменны.
+
+Следующий общий контракт — predicate search и callback/lifetime: сохранение
+произвольной closure в массиве пока даёт I0001, а mapError не доказывает
+готовность общего function-value ABI. `findIndex` и команда поиска Notes ещё
+не реализованы. [Единый проект контрактов](../research/cli0-collection-contracts-2026-09-08.md)
+отделяет принятые D096/D097 от этих зависимостей. Не скрывай expected errors
+или capacity limits ради удаления discard.
 Оценить доступность structured JSON errors/локализации и пользу второго
 прохода version discovery. Наличие finding не требует автоматически DOM,
 reflection или нового общего framework.
@@ -141,7 +149,11 @@ Origin: `https://github.com/avacadorun-dev/marimay.git`.
 [восстановил Gitea и расширил диск VM 106 до 64 GiB](evidence/gitea-recovery-2026-09-08.md).
 Один обычный runner активен; два других и perf остановлены. Workflow теперь
 ограничивает build четырьмя jobs, ASan/TSan CTest — двумя. Полнота проверок
-сохранена; свежий тяжёлый CI с этими пределами ещё требует результата.
+сохранена. Run 212 прошёл четыре C matrices и четыре 600-секундные fuzz
+campaigns; sanitizer упал только на упаковке пустого `__pycache__` каталога.
+[Исправление](evidence/ci-cache-install-2026-09-08.md) запушено как `ed702ec`;
+в run 216 Linux ASan/UBSan/LSan уже прошёл 76/76. Финальный статус остальных
+jobs отслеживает infra-подагент. Это CI предыдущей ревизии, не D097.
 В run 210 Clang Debug retry прошёл, sanitizer retry — 71/75; причины
 Clang/ld/source-token аномалий и прежнего RCU stall неизвестны.
 Docs-only run 211 на `a95300f` зелёный; code jobs там skipped.

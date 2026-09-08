@@ -107,6 +107,7 @@ static bool mmay_native_c_value_pushes_are_indices(
                 && instruction->kind != MMAY_MIR_ARRAY_SET
                 && instruction->kind != MMAY_MIR_ARRAY_SET_IN_BOUNDS
                 && instruction->kind != MMAY_MIR_ARRAY_POP
+                && instruction->kind != MMAY_MIR_ARRAY_REMOVE_AT
                 && instruction->kind != MMAY_MIR_ARRAY_TRUNCATE
                 && instruction->kind != MMAY_MIR_ARRAY_CLEAR) continue;
             same_source = mmay_native_c_array_register_origin(

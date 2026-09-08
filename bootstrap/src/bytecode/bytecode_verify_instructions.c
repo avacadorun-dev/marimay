@@ -652,13 +652,17 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
         );
     }
     if (instruction->opcode == MMAY_OPCODE_ARRAY_PUSH
+        || instruction->opcode == MMAY_OPCODE_ARRAY_COPY
+        || instruction->opcode == MMAY_OPCODE_ARRAY_REMOVE_AT
         || instruction->opcode == MMAY_OPCODE_ARRAY_POP
         || instruction->opcode == MMAY_OPCODE_ARRAY_TRUNCATE
         || instruction->opcode == MMAY_OPCODE_ARRAY_CLEAR
         || instruction->opcode == MMAY_OPCODE_ARRAY_RESERVE
         || instruction->opcode == MMAY_OPCODE_ARRAY_GENERATION
         || instruction->opcode == MMAY_OPCODE_ARRAY_REQUIRE_GENERATION) {
-        bool writes_target = instruction->opcode == MMAY_OPCODE_ARRAY_POP
+        bool writes_target = instruction->opcode == MMAY_OPCODE_ARRAY_COPY
+            || instruction->opcode == MMAY_OPCODE_ARRAY_REMOVE_AT
+            || instruction->opcode == MMAY_OPCODE_ARRAY_POP
             || instruction->opcode == MMAY_OPCODE_ARRAY_GENERATION
             || instruction->opcode == MMAY_OPCODE_ARRAY_REQUIRE_GENERATION;
         uint64_t array = instruction->operands[writes_target ? 1 : 0]
@@ -674,6 +678,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
         );
         if (status == MMAY_BYTECODE_VERIFY_OK
             && instruction->opcode != MMAY_OPCODE_ARRAY_CLEAR
+            && instruction->opcode != MMAY_OPCODE_ARRAY_COPY
             && instruction->opcode != MMAY_OPCODE_ARRAY_POP
             && instruction->opcode != MMAY_OPCODE_ARRAY_GENERATION) {
             status = mmay_bytecode_require_assigned(
@@ -705,6 +710,20 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
                     ) == element_layout
                 ? MMAY_BYTECODE_VERIFY_OK
                 : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+        }
+        if (instruction->opcode == MMAY_OPCODE_ARRAY_COPY
+            || instruction->opcode == MMAY_OPCODE_ARRAY_REMOVE_AT) {
+            status = target_type != NULL && *target_type == *array_type
+                    && mmay_bytecode_register_layout(function,
+                        (uint32_t)instruction->operands[0].unsigned_value)
+                        == mmay_bytecode_register_layout(function, (uint32_t)array)
+                    && (instruction->opcode == MMAY_OPCODE_ARRAY_COPY
+                        || (value_type != NULL && *value_type == MMAY_BYTECODE_TYPE_I64))
+                ? MMAY_BYTECODE_VERIFY_OK : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
+            if (status == MMAY_BYTECODE_VERIFY_OK) {
+                assigned[(size_t)instruction->operands[0].unsigned_value] = 1;
+            }
+            return status;
         }
         if (instruction->opcode == MMAY_OPCODE_ARRAY_POP) {
             status = target_type != NULL && *target_type == element_type
@@ -1290,6 +1309,8 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_value_instruction(
         case MMAY_OPCODE_ARRAY_SET:
         case MMAY_OPCODE_ARRAY_SET_IN_BOUNDS:
         case MMAY_OPCODE_ARRAY_PUSH:
+        case MMAY_OPCODE_ARRAY_COPY:
+        case MMAY_OPCODE_ARRAY_REMOVE_AT:
         case MMAY_OPCODE_ARRAY_POP:
         case MMAY_OPCODE_ARRAY_TRUNCATE:
         case MMAY_OPCODE_ARRAY_CLEAR:

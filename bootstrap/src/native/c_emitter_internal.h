@@ -151,6 +151,9 @@ bool mmay_native_c_emit_managed_instruction(
     const MarimayMirFunction *const *functions, size_t count,
     const MarimayMirInstruction *instruction);
 bool mmay_native_c_emit_array_mutation_runtime(MarimayNativeCBuffer *buffer);
+bool mmay_native_c_emit_array_edit_instruction(
+    MarimayNativeCBuffer *buffer, const MarimayMirFunction *function,
+    const MarimayMirInstruction *instruction);
 bool mmay_native_c_emit_array_mutation_instruction(
     MarimayNativeCBuffer *buffer,
     const MarimayMirFunction *function,

@@ -53,6 +53,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_array_mutation_instruction(
         return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
     switch (instruction->opcode) {
+        case MMAY_OPCODE_ARRAY_COPY:
+        case MMAY_OPCODE_ARRAY_REMOVE_AT:
         case MMAY_OPCODE_ARRAY_POP:
         case MMAY_OPCODE_ARRAY_TRUNCATE:
         case MMAY_OPCODE_ARRAY_CLEAR:
@@ -64,7 +66,9 @@ MarimayBytecodeRunStatus mmay_bytecode_run_array_mutation_instruction(
             return MMAY_BYTECODE_RUN_OK;
     }
     *handled = true;
-    writes_target = instruction->opcode == MMAY_OPCODE_ARRAY_POP
+    writes_target = instruction->opcode == MMAY_OPCODE_ARRAY_COPY
+        || instruction->opcode == MMAY_OPCODE_ARRAY_REMOVE_AT
+        || instruction->opcode == MMAY_OPCODE_ARRAY_POP
         || instruction->opcode == MMAY_OPCODE_ARRAY_GENERATION
         || instruction->opcode == MMAY_OPCODE_ARRAY_REQUIRE_GENERATION;
     array_register = (size_t)instruction->operands[writes_target ? 1 : 0]
@@ -77,6 +81,32 @@ MarimayBytecodeRunStatus mmay_bytecode_run_array_mutation_instruction(
         return status;
     }
     switch (instruction->opcode) {
+        case MMAY_OPCODE_ARRAY_COPY: {
+            MarimayManagedReference copied = mmay_managed_invalid_reference();
+            managed_status = mmay_managed_array_copy(&execution->managed_heap,
+                registers[array_register].as.managed_reference, &copied);
+            if (managed_status != MMAY_MANAGED_OK) {
+                return mmay_bytecode_run_managed_status(managed_status);
+            }
+            registers[(size_t)instruction->operands[0].unsigned_value]
+                .as.managed_reference = copied;
+            return MMAY_BYTECODE_RUN_OK;
+        }
+        case MMAY_OPCODE_ARRAY_REMOVE_AT: {
+            size_t length = 0;
+            int64_t index = registers[(size_t)instruction->operands[2].unsigned_value].as.i64;
+            managed_status = mmay_managed_array_remove_at(&execution->managed_heap,
+                registers[array_register].as.managed_reference, index, &length);
+            if (managed_status == MMAY_MANAGED_BOUNDS) {
+                return mmay_bytecode_run_begin_bounds_panic(panic, allocator,
+                    index, length, symbol, instruction->span);
+            }
+            if (managed_status != MMAY_MANAGED_OK) {
+                return mmay_bytecode_run_managed_status(managed_status);
+            }
+            registers[(size_t)instruction->operands[0].unsigned_value] = registers[array_register];
+            return MMAY_BYTECODE_RUN_OK;
+        }
         case MMAY_OPCODE_ARRAY_POP: {
             MarimayManagedCell cell;
             bool popped = false;

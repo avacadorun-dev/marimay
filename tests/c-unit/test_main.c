@@ -94,6 +94,7 @@ void mmay_test_managed_array_access(void);
 void mmay_test_managed_array_capacity(void);
 void mmay_test_managed_array_nested(void);
 void mmay_test_managed_array_storage(void);
+void mmay_test_managed_array_edit(void);
 void mmay_test_managed_record_view(void);
 void mmay_test_managed_mutation(void);
 void mmay_test_managed_map_set(void);
@@ -215,6 +216,7 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_managed_array_capacity();
         mmay_test_managed_array_nested();
         mmay_test_managed_array_storage();
+        mmay_test_managed_array_edit();
         mmay_test_managed_record_view();
         mmay_test_managed_mutation();
         mmay_test_program_arguments();

@@ -3,6 +3,7 @@
 
 /* Backwards-compatible umbrella for the public managed-runtime owner APIs. */
 #include "mmay/runtime/array.h"
+#include "mmay/runtime/array_edit.h"
 #include "mmay/runtime/array_access.h"
 #include "mmay/runtime/enum.h"
 #include "mmay/runtime/interface.h"

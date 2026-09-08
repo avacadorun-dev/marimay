@@ -1,0 +1,46 @@
+import * as io from "std/io";
+
+type Box {
+  public mutable value: int,
+}
+
+fn duplicate<T>(values: []T): []T {
+  return copy(values);
+}
+
+fn removed<T>(values: []T, index: int): Option<T> {
+  return removeAt(values, index);
+}
+
+fn receiver(values: []int, trace: []int): []int {
+  const _ = trace.push(1);
+  return values;
+}
+
+fn index(trace: []int): int {
+  const _ = trace.push(2);
+  return 1;
+}
+
+fn cleanup(): void {
+  const _ = io.eprintln("array edit cleanup");
+  const _ = io.flushStderr();
+}
+
+fn main(arguments: []string): int {
+  const values = [10, 20, 30];
+  if arguments.length() != 0 {
+    defer cleanup();
+    for value in values {
+      const _ = values.removeAt(1);
+    }
+    return 9;
+  }
+  const copied = values.copy();
+  if const value = copied.removeAt(1) {
+    if value == 20 && copied[1] == 30 && values.length() == 3 {
+      return 0;
+    }
+  }
+  return 8;
+}

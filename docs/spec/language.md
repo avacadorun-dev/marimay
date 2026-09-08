@@ -466,6 +466,8 @@ parameter makes them dot-call eligible:
 public fn length<T>(values: []T): int;
 public fn push<T>(values: []T, value: T): Result<void, ArrayGrowthError>;
 public fn pop<T>(values: []T): Option<T>;
+public fn copy<T>(values: []T): []T;
+public fn removeAt<T>(values: []T, index: int): Option<T>;
 public fn truncate<T>(
   values: []T,
   newLength: int,
@@ -503,6 +505,20 @@ additional elements. A negative count returns `NegativeAdditional`, and a
 requested total above `int::MAX` returns `LengthLimit`; heap limits and process
 allocation failure retain their execution-level classification. Capacity and
 whether a reservation allocated are not observable.
+
+Under D097, `copy` creates a distinct outer array with the same length, order
+and exact values, including for an empty source. Reference elements remain
+shared; outer mutations are independent. Its generation starts at zero and
+source iterators are unchanged. `removeAt` returns `None` for any index outside
+`[0, length)` without mutation, otherwise returns the exact removed value in
+`Some` and shifts the suffix left in order. All aliases observe the removal;
+capacity is retained and the vacated slot no longer retains a reference.
+A successful removal increments generation once; absence does not. Generation
+exhaustion and every allocation/resource/validation failure preserve the
+receiver. The result is prepared before commit. D055 classifies resource and
+allocation failures; ordinary indexing still panics on out-of-bounds access.
+Both operations use receiver-inferred types and reject explicit type arguments.
+Receiver and index evaluate once, left to right, under ordinary D043 selection.
 
 Function types use arrow notation:
 

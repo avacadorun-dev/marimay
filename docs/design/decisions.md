@@ -3066,3 +3066,49 @@ lowers the exact Option test and guarded payload access into existing typed
 MIR enum and CFG operations; neither backend adds source-language semantics.
 The initial CP42 research packet's contextual-name assumption conflicted with
 D072 and language section 2.3; that assumption is corrected, not implemented.
+
+## D097 — Shallow array copy and failure-atomic stable removal
+
+Status: accepted.
+
+The compiler-known prelude adds ordinary receiver-selected functions:
+
+```marimay
+public fn copy<T>(values: []T): []T;
+public fn removeAt<T>(values: []T, index: int): Option<T>;
+```
+
+Free and dot calls use the same exact receiver selection as D043/D053. Types
+are inferred from the receiver; explicit type arguments on these calls are
+rejected, as for the existing array operations. Receiver and index are evaluated
+once, left to right. Ordinary same-named functions retain their resolution.
+
+`copy` creates a distinct outer array, including for an empty source, preserving
+length, order and exact element values. Managed elements retain their identity;
+this is not a deep or immutable snapshot. Mutation of either outer array does
+not mutate the other. The source and its iterator generation are unchanged;
+the new array starts at generation zero, with D061 exact-length storage.
+Allocation and configured resource failures retain D055 execution outcomes.
+Construction roots the source through collection and publishes only a complete
+copy, with no temporary element-sized staging array.
+
+`removeAt` returns None without mutation for an index outside `[0, length)`.
+A valid index returns the exact removed element in Some, shifts the following
+elements left preserving their order, and mutates every alias of the receiver.
+It does not shrink capacity. The vacated slot ceases to retain references.
+The mutation increments generation once; None leaves it unchanged. Generation
+exhaustion does not wrap and leaves the array unchanged. All possible result
+allocation, validation and resource failures precede the mutation commit.
+Normal indexed access keeps its G4002 bounds-panic contract.
+
+Typed MIR has a fresh-array copy and an allocation-free checked stable-removal
+primitive. The checker owns Option construction and evaluates its Some payload
+before the removal primitive; backends do not reconstruct the source contract.
+The primitive rejects an out-of-bounds index with G4002 even for hostile code.
+Removal invalidates array bounds/iteration facts through aliases; copy does not
+mutate its source. VM and native share the managed-storage operations.
+
+Reason: notes requires one coherent model for producing a new outer collection
+and editing it, without handwritten growth/copy/shift loops or partial failure.
+Predicate search remains a separate callback contract; this decision introduces
+neither general function values nor a search API.

@@ -24,7 +24,8 @@ static bool mmay_mir_range_invalidates(
     return kind == MMAY_MIR_CALL || kind == MMAY_MIR_CALL_INTERFACE
         || kind == MMAY_MIR_ARRAY_SET || kind == MMAY_MIR_ARRAY_SET_IN_BOUNDS
         || kind == MMAY_MIR_ARRAY_PUSH || kind == MMAY_MIR_ARRAY_POP
-        || kind == MMAY_MIR_ARRAY_TRUNCATE || kind == MMAY_MIR_ARRAY_CLEAR
+        || kind == MMAY_MIR_ARRAY_REMOVE_AT || kind == MMAY_MIR_ARRAY_TRUNCATE
+        || kind == MMAY_MIR_ARRAY_CLEAR
         || kind == MMAY_MIR_ARRAY_RESERVE;
 }
 

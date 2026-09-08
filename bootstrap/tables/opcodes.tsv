@@ -160,3 +160,5 @@
 158	COLLECTION_NEXT	collection_next	destination:register,collection:register,cursor:register	none	Advance an independent checked storage cursor or return zero at exhaustion.
 159	COLLECTION_CURSOR_KEY	collection_cursor_key	destination:register,collection:register,cursor:register	none	Read the key at a checked positive active storage cursor.
 160	COLLECTION_CURSOR_VALUE	collection_cursor_value	destination:register,collection:register,cursor:register	none	Read the Map value at a checked positive active storage cursor.
+161	ARRAY_COPY	array_copy	destination:register,array:register	may_panic	Create a distinct exact-length shallow managed-array copy.
+162	ARRAY_REMOVE_AT	array_remove_at	destination:register,array:register,index:register	may_panic	Remove a checked array index stably and return the receiver after one atomic mutation.

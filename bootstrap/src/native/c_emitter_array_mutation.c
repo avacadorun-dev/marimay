@@ -137,6 +137,7 @@ static bool mmay_native_c_array_alias_instruction(
         || kind == MMAY_MIR_ARRAY_ASSUME_INDEX
         || kind == MMAY_MIR_ARRAY_REQUIRE_GENERATION
         || kind == MMAY_MIR_ARRAY_PUSH
+        || kind == MMAY_MIR_ARRAY_REMOVE_AT
         || kind == MMAY_MIR_ARRAY_TRUNCATE
         || kind == MMAY_MIR_ARRAY_CLEAR
         || kind == MMAY_MIR_ARRAY_RESERVE;
@@ -456,6 +457,7 @@ static bool mmay_native_c_array_mutation_instruction(
         || kind == MMAY_MIR_ARRAY_SET_IN_BOUNDS
         || kind == MMAY_MIR_ARRAY_PUSH
         || kind == MMAY_MIR_ARRAY_POP
+        || kind == MMAY_MIR_ARRAY_REMOVE_AT
         || kind == MMAY_MIR_ARRAY_TRUNCATE
         || kind == MMAY_MIR_ARRAY_CLEAR
         || kind == MMAY_MIR_ARRAY_RESERVE;
@@ -530,6 +532,9 @@ bool mmay_native_c_emit_array_mutation_instruction(
     const MarimayMirInstruction *instruction
 ) {
     switch (instruction->kind) {
+        case MMAY_MIR_ARRAY_COPY:
+        case MMAY_MIR_ARRAY_REMOVE_AT:
+            return mmay_native_c_emit_array_edit_instruction(buffer, function, instruction);
         case MMAY_MIR_ARRAY_POP:
             return mmay_native_c_emit_array_pop(buffer, function, instruction);
         case MMAY_MIR_ARRAY_TRUNCATE:

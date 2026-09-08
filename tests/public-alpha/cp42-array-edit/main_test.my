@@ -1,0 +1,137 @@
+@test
+fn outerCopiesAreIndependentIncludingEmpty(): void {
+  const values = [1, 2, 3];
+  const copied = values.copy();
+  copied[0] = 9;
+  values[1] = 8;
+  expect.equal(copied[1], 2);
+  expect.equal(values[0], 1);
+  const empty: []int = [];
+  const second = copy(empty);
+  const _ = second.push(7);
+  expect.equal(empty.length(), 0);
+  expect.equal(second.length(), 1);
+}
+
+@test
+fn copiedReferencesRemainShared(): void {
+  const box = Box { value: 1 };
+  const values = [box];
+  const copied = duplicate(values);
+  expect.true(identity.same(copied[0], box));
+  copied[0].value = 8;
+  expect.equal(values[0].value, 8);
+  copied[0] = Box { value: 9 };
+  expect.equal(values[0].value, 8);
+  const nested = [[1], [2]];
+  const outer = copy(nested);
+  outer[0][0] = 7;
+  expect.equal(nested[0][0], 7);
+  outer[1] = [9];
+  expect.equal(nested[1][0], 2);
+}
+
+@test
+fn removalIsStableAndAliasesObserveIt(): void {
+  const values = [10, 20, 30, 40];
+  const alias = values;
+  expect.equal(removed(values, 1), Some(20));
+  expect.equal(alias.length(), 3);
+  expect.equal(alias[0], 10);
+  expect.equal(alias[1], 30);
+  expect.equal(alias[2], 40);
+  expect.equal(alias.removeAt(2), Some(40));
+  expect.equal(removeAt(alias, 0), Some(10));
+  expect.equal(alias.removeAt(0), Some(30));
+  expect.equal(values.length(), 0);
+  expect.equal(values.removeAt(0), None);
+}
+
+@test
+fn absentIndicesPreserveContentsAndIterators(): void {
+  const values = [1, 2, 3];
+  expect.equal(values.removeAt(-9223372036854775807 - 1), None);
+  expect.equal(values.removeAt(9223372036854775807), None);
+  let sum = 0;
+  for value in values {
+    expect.equal(values.removeAt(-1), None);
+    expect.equal(values.removeAt(3), None);
+    sum += value;
+  }
+  expect.equal(sum, 6);
+  expect.equal(values.length(), 3);
+}
+
+@test
+fn removalPreservesExactReferencePayload(): void {
+  const first = Box { value: 1 };
+  const second = Box { value: 2 };
+  const values = [first, second];
+  if const removed = values.removeAt(0) {
+    expect.true(identity.same(removed, first));
+    values.clear();
+    removed.value = 8;
+    expect.equal(first.value, 8);
+  } else {
+    panic("existing element was absent");
+  }
+  expect.equal(values.length(), 0);
+}
+
+@test
+fn copiedArrayKeepsSourceIteratorValid(): void {
+  const values = [1, 2, 3];
+  let sum = 0;
+  for value in values {
+    const copied = values.copy();
+    copied.clear();
+    const _ = values.reserve(5);
+    sum += value;
+  }
+  expect.equal(sum, 6);
+}
+
+@test
+fn receiverAndIndexEvaluateOnceInOrder(): void {
+  const values = [10, 20];
+  const trace: []int = [];
+  expect.equal(receiver(values, trace).removeAt(index(trace)), Some(20));
+  expect.equal(trace.length(), 2);
+  expect.equal(trace[0], 1);
+  expect.equal(trace[1], 2);
+  expect.equal(values.length(), 1);
+  const copied = receiver(values, trace).copy();
+  expect.equal(trace.length(), 3);
+  expect.equal(copied[0], 10);
+}
+
+@test
+fn rawAndTextLayoutsRetainValues(): void {
+  const small: []u8 = [0, 255, 9];
+  const medium: []u16 = [0, 65535, 8];
+  const wide: []u32 = [0, 4294967295, 7];
+  const full: []u64 = [0, 18446744073709551615, 6];
+  const flags = [false, true, false];
+  const fractions = [1.5, -0.0, 3.25];
+  const words = ["", "я🙂", "end"];
+  expect.equal(duplicate(small).removeAt(1), Some(small[1]));
+  expect.equal(duplicate(medium).removeAt(1), Some(medium[1]));
+  expect.equal(duplicate(wide).removeAt(1), Some(wide[1]));
+  expect.equal(duplicate(full).removeAt(1), Some(full[1]));
+  expect.equal(copy(flags).removeAt(0), Some(false));
+  expect.equal(copy(fractions).removeAt(2), Some(3.25));
+  expect.equal(copy(words).removeAt(1), Some("я🙂"));
+}
+
+@test
+fn nestedOptionsAndArraysRemainExact(): void {
+  const options: []Option<int> = [None, Some(0)];
+  expect.equal(copy(options).removeAt(0), Some(None));
+  const nested = [[1, 2], [3]];
+  if const item = nested.removeAt(0) {
+    expect.equal(item[1], 2);
+    expect.equal(nested[0][0], 3);
+  } else {
+    panic("nested element was absent");
+  }
+}

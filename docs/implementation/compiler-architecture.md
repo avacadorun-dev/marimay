@@ -261,6 +261,7 @@ bootstrap/src/check/
   checker_receiver_calls.c
                         receiver-directed package/prelude collection dispatch
   checker_array_types.c D054 prefix-type recognition and existing array interning
+  checker_array_edit.c  D097 copy/removeAt selection packet, Option-before-commit CFG
   package_graph.c       bounded deterministic local-package graph coordinator
   package_imports_api.h narrow graph/checker import contract
   service.c             snapshots, package-graph checks, frontend lifetimes
@@ -553,6 +554,24 @@ sequencing; none duplicates descriptor selection or raw/reference semantics.
 types to the same closed runtime layout tags without changing MIR or bytecode
 wire identity. Focused storage tests inspect private layout/accounting while
 native descriptor tests prove the emitted mapping.
+
+D097 assigns shallow-copy construction to `managed_array_storage.c`, sharing
+its exact-capacity allocation, source-root collection and publication path
+with array literals. `managed_array_mutation.c` owns the allocation-free stable
+removal commit, vacated-slot clearing and single generation increment. The
+public owner API is `runtime/include/mmay/runtime/array_edit.h`.
+`checker_array_edit.c` owns exact receiver/argument checks and the Option CFG:
+construct Some with the removed payload before the raw mutation instruction.
+MIR and bytecode validators, interpreters and native emission consume these
+typed instructions; they do not synthesize source-level Option semantics.
+`c_emitter_array_edit.c` emits only the checked runtime calls; the root owner
+classifies copy as a safepoint and proof owners invalidate removal aliases.
+`runtime/test_managed_array_edit.c` owns storage, accounting, resource limits,
+GC and deterministic allocation failures. `test_checker_array_edit.c` owns
+source rejection, lowering order and checker failure sweeps;
+`test_array_edit_engines.c` owns forged MIR/wire, engine parity and generated-C
+failure atomicity with reference payloads. The CP42 array-edit source fixture
+owns public API, formatting, iterator panic and VM/native process behavior.
 
 D079 assigns source collection recognition and lowering to the four focused
 checker owners above. `mir_collections.c` owns only layout metadata, while

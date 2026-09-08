@@ -1054,6 +1054,7 @@ static bool mmay_native_c_array_size_unmodified(
             }
             if (instruction->kind != MMAY_MIR_ARRAY_PUSH
                 && instruction->kind != MMAY_MIR_ARRAY_POP
+                && instruction->kind != MMAY_MIR_ARRAY_REMOVE_AT
                 && instruction->kind != MMAY_MIR_ARRAY_TRUNCATE
                 && instruction->kind != MMAY_MIR_ARRAY_CLEAR) continue;
             if (!mmay_native_c_array_register_origin(

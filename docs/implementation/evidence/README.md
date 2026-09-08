@@ -119,6 +119,14 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Shallow array copy and stable removal](cp42-array-edit-2026-09-08.md) records
+D097, typed MIR/wire/runtime ownership, allocation and GC boundaries, public
+VM/native behavior and the functional Notes migration; all 78 local Release
+tests have passing results and full macOS ASan/UBSan passed 77/77. The near-limit paired
+sample records time and memory rather than declaring full performance
+acceptance. Predicate search, callback lifetime and platform/application gates
+remain open.
+
 [Scoped Option conditions](cp42-option-binding-2026-09-08.md) records D096,
 exact enum/CFG lowering, parser recovery, scope/cleanup/allocation coverage,
 full local Release 76/76, focused ASan/UBSan and config/notes consumer migration.

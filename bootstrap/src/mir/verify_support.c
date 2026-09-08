@@ -415,7 +415,9 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
             }
             return MMAY_MIR_VERIFY_OK;
         }
+        case MMAY_MIR_ARRAY_COPY:
         case MMAY_MIR_ARRAY_POP:
+        case MMAY_MIR_ARRAY_REMOVE_AT:
         case MMAY_MIR_ARRAY_TRUNCATE:
         case MMAY_MIR_ARRAY_CLEAR:
         case MMAY_MIR_ARRAY_RESERVE:
@@ -428,7 +430,8 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
                 return MMAY_MIR_VERIFY_INVALID_ARGUMENT;
             }
             if (first_type == MMAY_TYPE_INVALID
-                || ((instruction->kind == MMAY_MIR_ARRAY_TRUNCATE
+                || ((instruction->kind == MMAY_MIR_ARRAY_REMOVE_AT
+                        || instruction->kind == MMAY_MIR_ARRAY_TRUNCATE
                         || instruction->kind == MMAY_MIR_ARRAY_RESERVE
                         || instruction->kind
                             == MMAY_MIR_ARRAY_REQUIRE_GENERATION)
@@ -451,7 +454,8 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
                         && target_type == array->type
                     ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
             }
-            if ((instruction->kind == MMAY_MIR_ARRAY_TRUNCATE
+            if ((instruction->kind == MMAY_MIR_ARRAY_REMOVE_AT
+                    || instruction->kind == MMAY_MIR_ARRAY_TRUNCATE
                     || instruction->kind == MMAY_MIR_ARRAY_RESERVE)
                 && second_type != MMAY_TYPE_I64) {
                 return MMAY_MIR_VERIFY_TYPE_MISMATCH;
@@ -840,6 +844,7 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
         case MMAY_MIR_ARRAY_REQUIRE_INDEX:
         case MMAY_MIR_ARRAY_ASSUME_INDEX:
         case MMAY_MIR_ARRAY_PUSH:
+        case MMAY_MIR_ARRAY_REMOVE_AT:
         case MMAY_MIR_ARRAY_TRUNCATE:
         case MMAY_MIR_ARRAY_RESERVE:
         case MMAY_MIR_ARRAY_REQUIRE_GENERATION:
@@ -875,6 +880,7 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
         case MMAY_MIR_RECORD_GET:
         case MMAY_MIR_ARRAY_NEW:
         case MMAY_MIR_ARRAY_LENGTH:
+        case MMAY_MIR_ARRAY_COPY:
         case MMAY_MIR_ARRAY_POP:
         case MMAY_MIR_ARRAY_CLEAR:
         case MMAY_MIR_ARRAY_GENERATION:
@@ -963,6 +969,7 @@ void mmay_mir_transfer_checked_index_instruction(
         return;
     }
     if (instruction->kind == MMAY_MIR_ARRAY_POP
+        || instruction->kind == MMAY_MIR_ARRAY_REMOVE_AT
         || instruction->kind == MMAY_MIR_ARRAY_TRUNCATE
         || instruction->kind == MMAY_MIR_ARRAY_CLEAR) {
         for (register_index = 0; register_index < register_count;

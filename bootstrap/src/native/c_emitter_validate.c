@@ -499,6 +499,8 @@ MarimayNativeCEmitStatus mmay_native_c_validate_function(
                 case MMAY_MIR_ARRAY_SET: case MMAY_MIR_ARRAY_GET_IN_BOUNDS:
                 case MMAY_MIR_ARRAY_SET_IN_BOUNDS:
                 case MMAY_MIR_ARRAY_PUSH:
+                case MMAY_MIR_ARRAY_COPY:
+                case MMAY_MIR_ARRAY_REMOVE_AT:
                 case MMAY_MIR_ARRAY_POP:
                 case MMAY_MIR_ARRAY_TRUNCATE:
                 case MMAY_MIR_ARRAY_CLEAR:

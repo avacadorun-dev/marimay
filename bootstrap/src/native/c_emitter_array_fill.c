@@ -407,6 +407,7 @@ static bool mmay_native_c_fill_only_size_mutation(
             if (instruction == NULL) return false;
             if (instruction->kind != MMAY_MIR_ARRAY_PUSH
                 && instruction->kind != MMAY_MIR_ARRAY_POP
+                && instruction->kind != MMAY_MIR_ARRAY_REMOVE_AT
                 && instruction->kind != MMAY_MIR_ARRAY_TRUNCATE
                 && instruction->kind != MMAY_MIR_ARRAY_CLEAR
                 && instruction->kind != MMAY_MIR_ARRAY_RESERVE) continue;

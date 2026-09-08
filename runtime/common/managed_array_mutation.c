@@ -1,4 +1,5 @@
 #include "managed_internal.h"
+#include "mmay/runtime/array_edit.h"
 #include "managed_array_storage_internal.h"
 
 #include <limits.h>
@@ -321,5 +322,41 @@ MarimayManagedStatus mmay_managed_array_fill_raw64_pushes(
     }
     resolved->length = final_length;
     resolved->mutation_generation += (uint64_t)count;
+    return MMAY_MANAGED_OK;
+}
+
+MarimayManagedStatus mmay_managed_array_remove_at(
+    MarimayManagedHeap *heap, MarimayManagedReference array,
+    int64_t index, size_t *current_length
+) {
+    MarimayManagedArray *resolved = NULL;
+    MarimayManagedStatus status;
+    size_t position = 0, stride = 0, bytes = 0;
+    if (current_length != NULL) *current_length = 0;
+    if (current_length == NULL) return MMAY_MANAGED_INVALID_ARGUMENT;
+    status = mmay_managed_array_resolve_mutable(heap, array, &resolved);
+    if (status != MMAY_MANAGED_OK) return status;
+    if (resolved->length > resolved->capacity
+        || !mmay_managed_array_storage_bytes_for_capacity(
+            resolved->descriptor, resolved->capacity, &bytes)
+        || (bytes != 0 && resolved->storage == NULL)) {
+        return MMAY_MANAGED_INVALID_REFERENCE;
+    }
+    *current_length = resolved->length;
+    if (index < 0 || (uint64_t)index >= (uint64_t)resolved->length) {
+        return MMAY_MANAGED_BOUNDS;
+    }
+    status = mmay_managed_array_check_mutation_commit(resolved);
+    if (status != MMAY_MANAGED_OK) return status;
+    position = (size_t)index;
+    stride = resolved->descriptor->storage_stride;
+    /* Capacity multiplication above bounds every offset; no fallible work
+       follows the first write. Clear the vacated cell even for raw layouts. */
+    memmove(resolved->storage + position * stride,
+        resolved->storage + (position + 1) * stride,
+        (resolved->length - position - 1) * stride);
+    memset(resolved->storage + (resolved->length - 1) * stride, 0, stride);
+    resolved->length -= 1;
+    mmay_managed_array_commit_mutation(resolved);
     return MMAY_MANAGED_OK;
 }

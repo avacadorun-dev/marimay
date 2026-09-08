@@ -61,6 +61,7 @@ static bool mmay_bytecode_provenance_invalidates_arrays(MarimayOpcode opcode) {
         || opcode == MMAY_OPCODE_ARRAY_SET_IN_BOUNDS
         || opcode == MMAY_OPCODE_ARRAY_PUSH
         || opcode == MMAY_OPCODE_ARRAY_POP
+        || opcode == MMAY_OPCODE_ARRAY_REMOVE_AT
         || opcode == MMAY_OPCODE_ARRAY_TRUNCATE
         || opcode == MMAY_OPCODE_ARRAY_CLEAR
         || opcode == MMAY_OPCODE_ARRAY_RESERVE;

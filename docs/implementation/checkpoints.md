@@ -1687,6 +1687,7 @@ Route baseline: [closure assignments and CI audit](evidence/cli0-baseline-audit-
 Shared preparation: [external application acceptance driver](evidence/cli0-shared-acceptance-2026-09-07.md).
 Shared-contract baseline: [notes aliases, explicit mutation results and output failures](evidence/cli0-notes-contract-baseline-2026-09-08.md).
 Shared-contract implementation: [scoped Option conditions and consumer migration](evidence/cp42-option-binding-2026-09-08.md).
+Array copy/removal and functional Notes migration: [D097 local evidence](evidence/cp42-array-edit-2026-09-08.md).
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome

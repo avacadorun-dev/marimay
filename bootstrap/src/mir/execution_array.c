@@ -292,6 +292,10 @@ MarimayMirInterpretStatus mmay_mir_execute_array_instruction(
         )) {
         return MMAY_MIR_INTERPRET_INVALID_MIR;
     }
+    if (instruction->kind == MMAY_MIR_ARRAY_COPY) {
+        return mmay_mir_execution_new_array(options.execution, layout,
+            array->elements, array->length, &target->as.reference);
+    }
     if (instruction->kind == MMAY_MIR_ARRAY_LENGTH) {
         target->as.i64 = (int64_t)array->length;
         return MMAY_MIR_INTERPRET_OK;
@@ -349,6 +353,19 @@ MarimayMirInterpretStatus mmay_mir_execute_array_instruction(
         );
     }
     index = (size_t)second->as.i64;
+    if (instruction->kind == MMAY_MIR_ARRAY_REMOVE_AT) {
+        if (array->mutation_generation == UINT64_MAX) {
+            return MMAY_MIR_INTERPRET_OBJECT_LIMIT;
+        }
+        memmove(array->elements + index, array->elements + index + 1,
+            (array->length - index - 1) * sizeof(*array->elements));
+        memset(array->elements + array->length - 1, 0, sizeof(*array->elements));
+        array->length -= 1;
+        array->mutation_generation += 1;
+        options.execution->total_array_elements -= 1;
+        *target = *first;
+        return MMAY_MIR_INTERPRET_OK;
+    }
     if (instruction->kind == MMAY_MIR_ARRAY_REQUIRE_INDEX
         || instruction->kind == MMAY_MIR_ARRAY_ASSUME_INDEX) {
         *target = *first;

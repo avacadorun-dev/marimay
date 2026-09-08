@@ -1,4 +1,5 @@
 #include "managed_internal.h"
+#include "mmay/runtime/array_edit.h"
 #include "managed_array_storage_internal.h"
 
 #include <string.h>
@@ -276,19 +277,24 @@ static MarimayManagedStatus mmay_managed_array_collect_for_cells(
     MarimayManagedHeap *heap,
     const MarimayManagedArrayDescriptor *descriptor,
     const MarimayManagedCell *cells,
-    size_t length
+    size_t length,
+    const MarimayManagedReference *source
 ) {
+    if (source != NULL) {
+        return mmay_managed_collect_internal(heap, source, 1, NULL, 0);
+    }
     if (descriptor->cell_kind != MMAY_MANAGED_CELL_REFERENCE || length == 0) {
         return mmay_managed_collect_internal(heap, NULL, 0, NULL, 0);
     }
     return mmay_managed_collect_internal(heap, NULL, 0, cells, length);
 }
 
-MarimayManagedStatus mmay_managed_array_new(
+static MarimayManagedStatus mmay_managed_array_construct(
     MarimayManagedHeap *heap,
     const MarimayManagedArrayDescriptor *descriptor,
     const MarimayManagedCell *initial_cells,
     size_t initial_length,
+    const MarimayManagedReference *source,
     MarimayManagedReference *result
 ) {
     MarimayManagedStatus status;
@@ -316,7 +322,7 @@ MarimayManagedStatus mmay_managed_array_new(
     if (initial_length > heap->options.max_array_length) {
         return MMAY_MANAGED_LIMIT_REACHED;
     }
-    status = mmay_managed_array_validate_cells(
+    status = source != NULL ? MMAY_MANAGED_OK : mmay_managed_array_validate_cells(
         heap, descriptor, initial_cells, initial_length
     );
     if (status != MMAY_MANAGED_OK) {
@@ -326,7 +332,7 @@ retry:
     if ((heap->options.collect_before_allocation && !collected)
         || heap->live_object_count >= heap->options.max_objects) {
         status = mmay_managed_array_collect_for_cells(
-            heap, descriptor, initial_cells, initial_length
+            heap, descriptor, initial_cells, initial_length, source
         );
         if (status != MMAY_MANAGED_OK) {
             return status;
@@ -343,7 +349,7 @@ retry:
         ) || !mmay_size_add(object_bytes, slot_added_bytes, &added_bytes)) {
         if (!collected) {
             status = mmay_managed_array_collect_for_cells(
-                heap, descriptor, initial_cells, initial_length
+                heap, descriptor, initial_cells, initial_length, source
             );
             if (status != MMAY_MANAGED_OK) {
                 return status;
@@ -359,7 +365,7 @@ retry:
         )) {
         if (!collected) {
             status = mmay_managed_array_collect_for_cells(
-                heap, descriptor, initial_cells, initial_length
+                heap, descriptor, initial_cells, initial_length, source
             );
             if (status != MMAY_MANAGED_OK) {
                 return status;
@@ -382,11 +388,21 @@ retry:
             mmay_deallocate(&heap->allocator, array, sizeof(*array));
             return mmay_managed_resource_host_failure(heap, storage_bytes);
         }
-        memset(array->storage, 0, storage_bytes);
-        for (index = 0; index < initial_length; index += 1) {
-            mmay_managed_array_storage_write_unchecked(
-                array, index, initial_cells[index]
-            );
+        if (source != NULL) {
+            MarimayManagedArray *original = NULL;
+            status = mmay_managed_array_resolve_mutable(heap, *source, &original);
+            if (status != MMAY_MANAGED_OK) {
+                mmay_managed_array_dispose(heap, array);
+                return status;
+            }
+            memcpy(array->storage, original->storage, storage_bytes);
+        } else {
+            memset(array->storage, 0, storage_bytes);
+            for (index = 0; index < initial_length; index += 1) {
+                mmay_managed_array_storage_write_unchecked(
+                    array, index, initial_cells[index]
+                );
+            }
         }
     }
     if (slot_capacity != heap->slot_capacity) {
@@ -429,4 +445,47 @@ retry:
     result->slot = slot_index;
     result->generation = heap->slots[slot_index].generation;
     return MMAY_MANAGED_OK;
+}
+
+MarimayManagedStatus mmay_managed_array_new(
+    MarimayManagedHeap *heap,
+    const MarimayManagedArrayDescriptor *descriptor,
+    const MarimayManagedCell *initial_cells, size_t initial_length,
+    MarimayManagedReference *result
+) {
+    return mmay_managed_array_construct(
+        heap, descriptor, initial_cells, initial_length, NULL, result
+    );
+}
+
+MarimayManagedStatus mmay_managed_array_copy(
+    MarimayManagedHeap *heap, MarimayManagedReference source,
+    MarimayManagedReference *result
+) {
+    MarimayManagedArray *original = NULL;
+    MarimayManagedStatus status;
+    size_t bytes = 0, index = 0;
+    if (result != NULL) *result = mmay_managed_invalid_reference();
+    if (!mmay_managed_heap_valid(heap) || result == NULL) {
+        return MMAY_MANAGED_INVALID_ARGUMENT;
+    }
+    mmay_managed_resource_failure_clear(heap);
+    status = mmay_managed_array_resolve_mutable(heap, source, &original);
+    if (status != MMAY_MANAGED_OK) return status;
+    if (original->length > original->capacity
+        || !mmay_managed_array_storage_bytes_for_capacity(
+            original->descriptor, original->capacity, &bytes)
+        || (bytes != 0 && original->storage == NULL)) {
+        return MMAY_MANAGED_INVALID_REFERENCE;
+    }
+    if (original->descriptor->cell_kind == MMAY_MANAGED_CELL_REFERENCE) {
+        for (index = 0; index < original->length; index += 1) {
+            MarimayManagedCell value;
+            mmay_managed_array_storage_read_unchecked(original, index, &value);
+            status = mmay_managed_array_validate_value(heap, original, value);
+            if (status != MMAY_MANAGED_OK) return status;
+        }
+    }
+    return mmay_managed_array_construct(heap, original->descriptor, NULL,
+        original->length, &source, result);
 }

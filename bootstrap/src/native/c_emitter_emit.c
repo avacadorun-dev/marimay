@@ -1059,6 +1059,8 @@ bool mmay_native_c_emit_function(
                         )) return false;
                     break;
                 }
+                case MMAY_MIR_ARRAY_COPY:
+                case MMAY_MIR_ARRAY_REMOVE_AT:
                 case MMAY_MIR_ARRAY_POP:
                 case MMAY_MIR_ARRAY_TRUNCATE:
                 case MMAY_MIR_ARRAY_CLEAR:

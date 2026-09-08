@@ -1102,7 +1102,9 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         case MMAY_OPCODE_DEFER_REGISTER:
         case MMAY_OPCODE_DEFER_CALL:
             return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
-        case MMAY_OPCODE_ARRAY_POP:
+        case MMAY_OPCODE_ARRAY_COPY:
+                case MMAY_OPCODE_ARRAY_REMOVE_AT:
+                case MMAY_OPCODE_ARRAY_POP:
         case MMAY_OPCODE_ARRAY_TRUNCATE:
         case MMAY_OPCODE_ARRAY_CLEAR:
         case MMAY_OPCODE_ARRAY_RESERVE:
