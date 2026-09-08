@@ -62,7 +62,8 @@ static void mmay_edit_native_atomicity(void) {
         "      fprintf(stderr, \"failure=%%zu status=%%d value=%%lld length=%%zu generation=%%llu\\n\",\n"
         "        failure, status, (long long)value, length, (unsigned long long)generation); return 5; }\n"
         "  }\n"
-        "  if (!completed) return 6; puts(\"array edit atomicity: ok\"); return 0;\n"
+        "  if (!completed) { return 6; }\n"
+        "  puts(\"array edit atomicity: ok\"); return 0;\n"
         "}\n";
     const MarimayTestImportSource input = {"test/edit-atomicity", "app/main.my", source};
     MarimayCheckerImportFixture fixture = {0};
