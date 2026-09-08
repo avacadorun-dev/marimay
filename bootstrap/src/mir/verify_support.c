@@ -36,7 +36,7 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
         function,
         instruction->third
     );
-    if (target_type == MMAY_TYPE_INVALID) {
+    if (target_type == MMAY_TYPE_INVALID || target_type == MMAY_TYPE_NEVER) {
         return MMAY_MIR_VERIFY_INVALID_REGISTER;
     }
     switch (instruction->kind) {

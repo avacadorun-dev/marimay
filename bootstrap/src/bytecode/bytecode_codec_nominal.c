@@ -419,6 +419,7 @@ static MarimayBytecodeCodecStatus mmay_bytecode_nominal_decode_symbol(
 
 static MarimayBytecodeCodecStatus mmay_bytecode_nominal_decode_type_layout(
     MarimayBytecodeCursor *cursor,
+    bool allow_never,
     MarimayBytecodeType *type,
     uint32_t *layout
 ) {
@@ -430,7 +431,8 @@ static MarimayBytecodeCodecStatus mmay_bytecode_nominal_decode_type_layout(
     if (status != MMAY_BYTECODE_CODEC_OK) {
         return status;
     }
-    if (!mmay_bytecode_type_is_register((MarimayBytecodeType)value)) {
+    if (!mmay_bytecode_type_is_register((MarimayBytecodeType)value)
+        && !(allow_never && value == MMAY_BYTECODE_TYPE_NEVER)) {
         return MMAY_BYTECODE_CODEC_INVALID_ENCODING;
     }
     *type = (MarimayBytecodeType)value;
@@ -483,7 +485,7 @@ static MarimayBytecodeCodecStatus mmay_bytecode_nominal_decode_record_layouts(
         for (field_index = 0; field_index < field_count; field_index += 1) {
             uint64_t mutable_wire = 0;
             status = mmay_bytecode_nominal_decode_type_layout(
-                cursor,
+                cursor, false,
                 &fields[field_index].type,
                 &fields[field_index].layout
             );
@@ -608,7 +610,7 @@ static MarimayBytecodeCodecStatus mmay_bytecode_nominal_decode_enum_layouts(
         for (item = 0; status == MMAY_BYTECODE_CODEC_OK && item < payload_count;
             item += 1) {
             status = mmay_bytecode_nominal_decode_type_layout(
-                cursor,
+                cursor, true,
                 &payloads[item].type,
                 &payloads[item].layout
             );
@@ -694,7 +696,7 @@ static MarimayBytecodeCodecStatus mmay_bytecode_nominal_decode_argument(
         register_id
     );
     if (status == MMAY_BYTECODE_CODEC_OK) {
-        status = mmay_bytecode_nominal_decode_type_layout(cursor, type, layout);
+        status = mmay_bytecode_nominal_decode_type_layout(cursor, false, type, layout);
     }
     if (status != MMAY_BYTECODE_CODEC_OK) {
         return status;
@@ -951,7 +953,7 @@ static MarimayBytecodeCodecStatus mmay_bytecode_nominal_decode_interface_constru
         }
         if (status == MMAY_BYTECODE_CODEC_OK) {
             status = mmay_bytecode_nominal_decode_type_layout(
-                cursor,
+                cursor, false,
                 &payload_type,
                 &payload_layout
             );

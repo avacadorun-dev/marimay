@@ -66,6 +66,7 @@ static void mapper_limits(void) {
 
 void mmay_test_checker_mapper_values(void) {
     mapper_limits();
+    mapper_check("fn main():void{const r:Result<int,int> = Ok(3);const f=(x:int):never=>panic(\"stop\");const _=r.mapError(f);}", true);
     mapper_check("fn map<T,E,F>(r:Result<T,E>,f:(E)=>F):Result<T,F>{return r.mapError(f);}"
         "fn main():void{let n=0;const r:Result<int,int> = Err(3);"
         "const f=(x:int):int=>{n+=1;return x+n;};const _=map(r,f);"
@@ -83,7 +84,6 @@ void mmay_test_checker_mapper_values(void) {
         "fn main():void{const r:Result<int,int> = Ok(3);const _=r.mapError((x)=>{return x;});}",
         "fn main():void{const r:Result<int,int> = Ok(3);const f=(x:int):int=>x;const y:Result<int,bool> = r.mapError(f);}",
         "fn main():void{let n:int;const r:Result<int,int> = Ok(3);const y:Result<int,int> = r.mapError((x)=>x+n);}",
-        "fn main():void{const r:Result<int,int> = Ok(3);const f=(x:int):never=>panic(\"stop\");const _=r.mapError(f);}",
         "unsafe fn mapper(x:int):int{return x;}fn main():void{const r:Result<int,int> = Ok(3);const _=r.mapError(mapper);}",
         "extern \"c\" fn mapper(x:int):int;fn main():void{const r:Result<int,int> = Ok(3);const _=r.mapError(mapper);}",
         "fn mapper<T>(x:T):T{return x;}fn main():void{const r:Result<int,int> = Ok(3);const _=r.mapError(mapper);}"

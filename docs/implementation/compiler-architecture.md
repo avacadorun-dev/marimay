@@ -256,6 +256,7 @@ bootstrap/src/check/
                         and lowering
   checker_match_lower.c D092 shared arm completion, result capture before
                         lexical defer cleanup, and compile-time scope reset
+  checker_enum_bottom.c  D102 concrete direct-bottom variant facts and impossible CFG edges
   checker_enum_pattern_names.c
                         exact D084 enum pattern qualifier/alias resolution
   checker_cfg.c         block/edge/value-state ownership

@@ -1697,9 +1697,10 @@ Named void enum payload patterns now report T0002 at the binding; positional,
 nested, named and remainder forms have allocation/diagnostic coverage. The
 ordinary named-void restriction is unchanged. Eight apps are implemented;
 source-lint/delimited and complete portfolio acceptance remain open.
-Common-layout removal gate: implement uninhabited enum payload transport before
-accepting mapper result `never`; the current I0001 is an explicit implementation
-gap, not a normative source restriction.
+D102 direct-bottom enum transport is implemented locally: [evidence](evidence/cp42-enum-bottom-2026-09-09.md).
+The mapper I0001 guard is removed with enum metadata, match/propagation,
+MIR/wire rejection and both-engine allocation coverage. This does not close
+cross-platform verification or introduce general recursive inhabitation proofs.
 Callback removal gate: deliver the nonfatal escaping-mutable-capture warning with
 severity, escape classification and positive/negative fixtures before full §6.3
 conformance or CP42 callback acceptance; legal escaping closures remain legal.

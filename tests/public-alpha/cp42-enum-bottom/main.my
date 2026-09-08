@@ -1,0 +1,72 @@
+import * as io from "std/io";
+
+enum Choice<T> {
+  Empty,
+  Full(T),
+}
+
+enum Named<T> {
+  Good(int),
+  Bad { value: T, },
+}
+
+fn cleanup(): void {
+  const _ = io.eprintln("caller cleanup");
+}
+
+fn callbackCleanup(): void {
+  const _ = io.eprintln("callback cleanup");
+}
+
+fn halt(error: int): never {
+  defer callbackCleanup();
+  panic("mapper panic");
+}
+
+fn factory(): (int) => never {
+  const _ = io.eprintln("factory");
+  return halt;
+}
+
+fn mapped(source: Result<int, int>): Result<int, never> {
+  return source.mapError(factory());
+}
+
+fn propagated(): Result<int, never> {
+  const source: Result<int, int> = Ok(7);
+  const count = source.mapError(halt)?;
+  return Ok(count + 1);
+}
+
+fn failOnly(source: Result<never, int>): Result<never, string> {
+  return source.mapError((error: int): string => "bad");
+}
+
+fn diverges(source: Result<never, int>): never {
+  const _ = source.mapError(halt);
+}
+
+fn empty(source: Result<never, never>): never {
+  match source {};
+}
+
+fn main(arguments: []string): void {
+  if arguments.length() == 0 {
+    return;
+  }
+  defer cleanup();
+  if arguments[0] == "factory-panic" {
+    const source: Result<int, int> = Ok(7);
+    const _ = source.mapError(panic("factory panic"));
+  }
+  const source: Result<int, int> = match arguments[0] {
+    "ok" => Ok(7),
+    _ => Err(2),
+  };
+  const value = mapped(source);
+  match value {
+    Ok(count) => {
+      const _ = io.println($"{count}");
+    },
+  };
+}

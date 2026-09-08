@@ -406,7 +406,7 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_enum_layouts(
                 enumeration->payload_start + payload_index
             );
             if (payload == NULL || !mmay_mir_bytecode_type(
-                    input, payload->type, false, false,
+                    input, payload->type, false, true,
                     &payloads[payload_index].type
                 )) {
                 mmay_deallocate(&allocator, variants, variant_bytes);

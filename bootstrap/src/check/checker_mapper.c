@@ -73,12 +73,6 @@ bool mmay_error_mapper_prepare(MarimayFunctionChecker *function, const MarimayAs
             "mapError mapper requires one parameter with the exact error type", node->start, node->end); return false;
     }
     mapper->result_type = signature->arguments[1];
-    if (mapper->result_type == MMAY_TYPE_NEVER) {
-        /* The common enum transport does not yet admit uninhabited payloads.
-         * Diagnose before publishing a Result<T, never> that backends cannot lower. */
-        mmay_checker_fail_incomplete(function->checker, node, "Result with an uninhabited error payload");
-        return false;
-    }
     return true;
 }
 

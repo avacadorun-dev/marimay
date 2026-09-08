@@ -288,9 +288,10 @@ static bool mmay_native_c_layout_fields_supported(
                 &layout.function->enum_payloads,
                 enumeration->payload_start + index
             );
-            if (payload == NULL || !mmay_native_c_program_type_supported(
+            if (payload == NULL || (payload->type != MMAY_TYPE_NEVER
+                && !mmay_native_c_program_type_supported(
                     functions, count, payload->type, false
-                )) return false;
+                ))) return false;
         }
     }
     return true;

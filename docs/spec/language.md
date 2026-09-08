@@ -736,10 +736,12 @@ direct expression-closure context. Block closures require ordinary annotations.
 Existing positional enum constructor mappers retain their contextual rules and
 do not become general function values through this operation.
 
-Implementation status: the current bootstrap reports I0001 for a mapper with a
-`never` result because the common enum transport does not yet support
-`Result<T, never>`. D100 records the common-layout removal gate; the normative
-contract above remains unchanged.
+Under D102, `Result<T, never>` and other enum instantiations retain `never`
+in their payload type metadata. A variant with a direct `never` payload has no
+value and cannot be constructed. It does not become a unit or `void` variant.
+A `mapError` callback returning `never` can therefore produce a normal Ok path;
+an Err path calls that callback and has no normal continuation. Postfix `?`
+retains its exact error-type requirement, including when E is `never`.
 
 Closures capture lexical `const` bindings by value and `let` bindings through a managed mutable cell. Each iteration of a `for` loop creates a fresh iteration binding. The compiler warns when a closure captures a mutable local and escapes the declaring block.
 
@@ -997,6 +999,19 @@ an unguarded `_` or `_ as name` remainder pattern must cover them. Missing cases
 are an error listing uncovered witnesses. Redundant and unreachable arms are
 errors by default. A wildcard covers remaining cases but is discouraged by
 `mmay vet` when all variants are locally visible.
+
+Under D102, a concrete enum variant with a direct `never` payload is excluded
+from the match coverage requirement. An explicit pattern for that variant is
+unreachable and reports T0014, including a wildcard payload or named binding.
+If every variant is excluded, an empty match has type `never`. This rule applies
+after generic substitution and to positional and named payloads. It is a
+structural type fact, independent of the particular scrutinee expression.
+
+```marimay
+fn value(result: Result<int, never>): int {
+  return match result { Ok(count) => count, };
+}
+```
 
 All non-`never` arms must have an identical result type in 1.0; the compiler does not infer ad-hoc unions.
 

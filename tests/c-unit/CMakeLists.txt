@@ -78,6 +78,7 @@ add_executable(mmay_c_unit
   test_checker_map_error_imports.c
   test_checker_map_error_context.c
   test_checker_mapper_values.c
+  test_checker_enum_bottom.c
   test_checker_enum_pattern_names.c
   test_checker_imports_support.c
   test_checker_imported_arrays.c
@@ -869,4 +870,11 @@ add_test(NAME mmay_cp42_file_lines
     "$<TARGET_FILE:mmay>" "${CMAKE_SOURCE_DIR}/tests/public-alpha/cp42-file-lines"
     "${CMAKE_CURRENT_BINARY_DIR}/cp42-file-lines")
 set_tests_properties(mmay_cp42_file_lines PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200
+  LABELS "differential;cp42")
+
+add_test(NAME mmay_cp42_enum_bottom
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_enum_bottom.py"
+    "$<TARGET_FILE:mmay>" "${CMAKE_SOURCE_DIR}/tests/public-alpha/cp42-enum-bottom"
+    "${CMAKE_CURRENT_BINARY_DIR}/cp42-enum-bottom")
+set_tests_properties(mmay_cp42_enum_bottom PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200
   LABELS "differential;cp42")

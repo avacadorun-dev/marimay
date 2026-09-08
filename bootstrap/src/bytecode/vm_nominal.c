@@ -179,6 +179,8 @@ static MarimayManagedCellKind mmay_bytecode_nominal_cell_kind(
             || type == MMAY_BYTECODE_TYPE_BOOL || type == MMAY_BYTECODE_TYPE_F64
             || type == MMAY_BYTECODE_TYPE_RUNE
             || type == MMAY_BYTECODE_TYPE_VOID
+            /* Enum layout metadata only; NEVER is forbidden in registers. */
+            || type == MMAY_BYTECODE_TYPE_NEVER
         ? MMAY_MANAGED_CELL_RAW64
         : MMAY_MANAGED_CELL_REFERENCE;
 }

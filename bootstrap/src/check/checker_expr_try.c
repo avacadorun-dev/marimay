@@ -1,3 +1,4 @@
+#include "checker_enum_bottom_api.h"
 #include "checker_expr_try_api.h"
 
 #include "checker_cfg_api.h"
@@ -129,47 +130,51 @@ bool mmay_checker_private_compile_try_expression(
     }
     function->block = error_block;
     function->terminated = false;
-    if (!mmay_checker_private_function_emit_enum_access(
-            function,
-            MMAY_MIR_ENUM_REQUIRE_VARIANT,
-            operand.type,
-            operand.register_id,
-            enum_id,
-            1,
-            0,
-            start,
-            end,
-            &required_error
-        ) || !mmay_checker_private_function_emit_enum_access(
-            function,
-            MMAY_MIR_ENUM_GET_PAYLOAD,
-            operand_descriptor->arguments[1],
-            required_error.register_id,
-            enum_id,
-            1,
-            0,
-            start,
-            end,
-            &error_value
-        )) {
-        return false;
-    }
-    concrete_result.type = function->result_type;
-    error_argument.register_id = error_value.register_id;
-    error_argument.type = error_value.type;
-    if (!mmay_checker_private_function_emit_enum_construction(
-            function,
-            &concrete_result,
-            1,
-            &error_argument,
-            1,
-            start,
-            end,
-            &propagated
-        ) || !mmay_checker_private_function_set_return(
-            function, propagated.register_id, start, end
-        )) {
-        return false;
+    if (operand_descriptor->arguments[1] == MMAY_TYPE_NEVER) {
+        if (!mmay_enum_bottom_edge(function, start, end, &error_value)) return false;
+    } else {
+        if (!mmay_checker_private_function_emit_enum_access(
+                function,
+                MMAY_MIR_ENUM_REQUIRE_VARIANT,
+                operand.type,
+                operand.register_id,
+                enum_id,
+                1,
+                0,
+                start,
+                end,
+                &required_error
+            ) || !mmay_checker_private_function_emit_enum_access(
+                function,
+                MMAY_MIR_ENUM_GET_PAYLOAD,
+                operand_descriptor->arguments[1],
+                required_error.register_id,
+                enum_id,
+                1,
+                0,
+                start,
+                end,
+                &error_value
+            )) {
+            return false;
+        }
+        concrete_result.type = function->result_type;
+        error_argument.register_id = error_value.register_id;
+        error_argument.type = error_value.type;
+        if (!mmay_checker_private_function_emit_enum_construction(
+                function,
+                &concrete_result,
+                1,
+                &error_argument,
+                1,
+                start,
+                end,
+                &propagated
+            ) || !mmay_checker_private_function_set_return(
+                function, propagated.register_id, start, end
+            )) {
+            return false;
+        }
     }
     function->block = success_block;
     function->terminated = false;
@@ -186,6 +191,9 @@ bool mmay_checker_private_compile_try_expression(
             &required_success
         )) {
         return false;
+    }
+    if (operand_descriptor->arguments[0] == MMAY_TYPE_NEVER) {
+        return mmay_enum_bottom_edge(function, start, end, result);
     }
     if (operand_descriptor->arguments[0] == MMAY_TYPE_VOID) {
         result->type = MMAY_TYPE_VOID;

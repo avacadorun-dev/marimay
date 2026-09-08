@@ -456,7 +456,8 @@ static void mmay_test_mir_never_calls(MarimaySymbolId symbol) {
         block,
         mmay_test_mir_call_never(call, 0, 0)
     ));
-    MMAY_EXPECT(mmay_mir_verify(&function) == MMAY_MIR_VERIFY_INVALID_ARGUMENT);
+    /* The invalid never value register is rejected before call validation. */
+    MMAY_EXPECT(mmay_mir_verify(&function) == MMAY_MIR_VERIFY_INVALID_REGISTER);
     mmay_mir_function_dispose(&function);
 }
 

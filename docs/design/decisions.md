@@ -3256,14 +3256,10 @@ No wire operation, backend-specific mapper or runtime allocation API is added.
 Reason: config/Notes error adapters should compose with the same callbacks as
 array search and ordinary code, instead of maintaining an AST-only exception.
 
-Implementation boundary: the current common enum transport cannot represent an
-uninhabited payload. A mapper whose declared result is `never` therefore reports
-I0001 before publishing MIR, including on a statically Ok receiver. Supporting
-`Result<T, never>` requires one common enum-layout/lowering/verification change
-with both-engine and allocation coverage; remove this guard only with that
-coverage. This is an implementation gap, not a source-language restriction.
-A mapper expression that itself diverges and a callback with an inhabited result
-whose body panics retain their ordinary evaluation and cleanup behavior.
+The initial implementation reported I0001 for a callback returning `never`.
+D102 removes that guard with common enum metadata, impossible-edge checking,
+wire/VM/native and deterministic allocation-failure coverage. This was an
+implementation gap, not a source-language restriction.
 
 The differential fixture also requires correction of native root coalescing:
 MIR registers are not SSA values. An activation-wide replacement root requires
@@ -3310,3 +3306,43 @@ redefined in a loop. Immutable child fields are immutable per object, not per
 register. Unstable parent definitions refresh child-array call hints. These
 repairs preserve existing source semantics; JSON expansion remains ordinary
 MIR and receives no backend-specific workaround.
+
+## D102 — Enum transport preserves bottom payloads
+
+Status: accepted.
+
+A direct `never` payload makes its concrete enum variant uninhabited. Generic
+substitution precedes this check. Other variants remain usable, including
+`Result<T, never>.Ok`, `Result<never, E>.Err` and `Option<never>.None`. The
+bottom payload is not erased to a unit or void payload. Constructor argument
+evaluation keeps its ordinary left-to-right divergence and cleanup behavior;
+no expression can supply a normally completing value of type never.
+
+Exhaustiveness excludes variants with a direct never payload; explicit patterns
+for them report the existing unreachable-pattern T0014. An empty match over an
+enum whose every variant has such a payload has type never. This establishes
+the direct-bottom rule; it does not add general recursive inhabitation proofs,
+value-dependent reachability, variance, implicit conversions or new syntax.
+Postfix `?` still requires the exact same E. For E=never its error edge cannot
+continue, while a never success payload makes its success edge diverge.
+
+MIR retains variant ordinals and exact payload types. The existing bytecode
+NEVER type tag is admitted only as enum-layout metadata in this transport;
+registers, constructor arguments and record fields do not gain never values.
+MIR also retains source parameter declarations of type never, which cannot be
+supplied a normally completing source argument. Its verifier rejects bottom
+payload constructions even if hostile MIR names such a parameter. Existing
+function-result bottom handling remains unchanged. The private wire format
+needs no new opcode, layout field or version; public .myb remains staged.
+
+The checker owns impossible variant classification and no-continuation edges.
+Backend layout descriptors retain a non-reference placeholder for an impossible
+payload; verified code can never construct or read its value. Normal variants
+use the existing allocation, roots, nominal identity and runtime transport.
+No backend reconstructs source capture, type-checking or exhaustiveness rules.
+
+Reason: D100 mapError must accept never-returning callbacks on the same enum
+transport as ordinary user code. A mapper-specific approximation would leave
+storage, matching, generic calls and propagation broken. Focused checker,
+malformed MIR/bytecode, wire round-trip, both-engine, forced-GC and every
+reachable deterministic allocation-failure index cover this common boundary.

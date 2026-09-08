@@ -41,6 +41,7 @@ typedef struct MarimayFunctionChecker {
     const MarimayAstNode *body_node;
     struct MarimayClosureContext *closure;
     size_t capture_scan_work;
+    size_t enum_bottom_work;
     bool capture_scan_done, capture_scan_needed;
     MarimayVector locals;
     MarimayVector loops;

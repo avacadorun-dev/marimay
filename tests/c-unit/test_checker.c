@@ -1,5 +1,6 @@
 #include "test_checker_cases.h"
 
+void mmay_test_checker_enum_bottom(void);
 void mmay_test_checker_expression_statements(void);
 void mmay_test_checker_void_match(void);
 void mmay_test_checker_map_error_context(void);
@@ -10,6 +11,7 @@ void mmay_test_checker_array_search(void);
 void mmay_test_checker_function_values(void);
 
 void mmay_test_checker(void) {
+    mmay_test_checker_enum_bottom();
     mmay_test_checker_expression_statements();
     mmay_test_checker_void_match();
     mmay_test_checker_map_error_context();

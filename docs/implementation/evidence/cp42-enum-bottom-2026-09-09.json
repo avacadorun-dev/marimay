@@ -1,0 +1,699 @@
+{
+  "date": "2026-09-09",
+  "scope": "local",
+  "parent": "af08f37003b75dcb2f8a7af6d06408e5441ecf6b",
+  "host": {
+    "system": "Darwin",
+    "machine": "arm64",
+    "release": "25.6.0"
+  },
+  "source_hashes": {
+    "CMakeLists.txt": "4d3c10fcd57822104da54472e2350f3b3ad4fd9f3a78a4405bd0d9599077877e",
+    "bootstrap/src/bytecode/bytecode_codec_nominal.c": "7fbcf5570d3ccdc3874df768301d419e951ae910a8ac3aa7f6b92bedb84b1276",
+    "bootstrap/src/bytecode/bytecode_verify_nominal.c": "dd9061ed07745751c08dd1331b08fc3b9f9389dacf930467c8f9ef0595cae0a3",
+    "bootstrap/src/bytecode/mir_lower_nominal.c": "8572f564139aad9dc0efeb588b1d531166abe2298dd8ac275341457f0b7303cf",
+    "bootstrap/src/bytecode/vm_nominal.c": "e1cbc2eed864240b7a15d968139799e0d7d7fcae833b10018f01e4aff5cf7b82",
+    "bootstrap/src/check/checker_enum_bottom.c": "8eb4cb18db265d5bb8ee2c440bf19948dd1537a3cd1eec6869d47fc588e0ca94",
+    "bootstrap/src/check/checker_enum_bottom_api.h": "627a7780247ef52e68b9b7f7761fb330c007cf753e9cb10a112098170b563fe1",
+    "bootstrap/src/check/checker_expr_map_error.c": "1645d8f13d4bee77dd4e082fc370791df459a5efbb0be88c6d674930a5bc8e3c",
+    "bootstrap/src/check/checker_expr_try.c": "f0fd99079928848df25460df4564376f7dd141875cbb802c2ff96a830d24f242",
+    "bootstrap/src/check/checker_function_context.h": "6b66ca4353144a9c951f0d2161b73b2e857787d507745d747cd31db1e2d35a28",
+    "bootstrap/src/check/checker_mapper.c": "5530debb983f9556da40f94d8962c36e68e610d86085a939c4260c2e82ccc6be",
+    "bootstrap/src/check/checker_match_dispatch.c": "e32278107725b08e1ba7e89796fafebbb0cdd4f91b34f59df9f65fd07fb050ef",
+    "bootstrap/src/check/checker_match_pattern.c": "b7516baf60f78389f250a7151fc5e45ddd77d26cdea7d7db13f38b4554cc5cfc",
+    "bootstrap/src/mir/mir.c": "1b907683563faa5515290c6d314b60b55bfde36a9ff4a4e81f55387b6db46247",
+    "bootstrap/src/mir/verify.c": "e32c82493b65bca4899c13261fe6494e834cd060741a95885d7b81c588769218",
+    "bootstrap/src/mir/verify_managed.c": "58c70e5665095e92729c48944bc32768ceef2662e0cdb5ec6c7da9a4b6cc831a",
+    "bootstrap/src/mir/verify_support.c": "091f80b7d40fd59851fb0e3f9ecff290d612d4f9aa63b847ea2cdd187ab9b1bf",
+    "bootstrap/src/native/c_emitter_descriptors.c": "5cda53a6e761789427b5029963e0118afe9d12e26dd17b388c5237df438cb6df",
+    "docs/design/decisions.md": "9e969653f75698ff8e4f19753d257ff4a2282b800edb624fee8492c5bc9c60e4",
+    "docs/implementation/agent-handoff-cli-alpha-2026-09-07.md": "4fc9c589b334b521b16def2e0300ef29a7347f3d0abf9a3aaf861e56201b51df",
+    "docs/implementation/checkpoints.md": "f4603cf8fb3b20a4a8e273c129661146f05f375756de5c23e547d38ea963e934",
+    "docs/implementation/compiler-architecture.md": "a8dc2723ce2c3ab178bb30e17aed7e0a13103ebadb49ab09b2e69d476113ed7b",
+    "docs/implementation/evidence/README.md": "91eb164f5ea3e7864245c689819e47643a113a3732483e692aa472100e756d37",
+    "docs/implementation/roadmap.tsv": "124d1f31d765ecdff147e82af0d038482415d54a34096b8c4bd150ca5bfadb0a",
+    "docs/spec/language.md": "ab0016ac94113651b2f911b0d42efd27ba7d72f44224b56a5a1d2c6f81a44b9d",
+    "tests/c-unit/CMakeLists.txt": "f4be69669dd5110ef624915ce93eb12cd6eca32cc391c990a3ec663d731ece37",
+    "tests/c-unit/test_checker.c": "ff44fcbf04086d4de429529469dead9ce07f38de44ccff2a6c1b0783d741da09",
+    "tests/c-unit/test_checker_enum_bottom.c": "2c4d6797408362e8860e989e282826e1d714e790110eeb2c53725a4ca1a2009d",
+    "tests/c-unit/test_checker_mapper_values.c": "24fabd9e92331eaf30ac52d4ebe5752290599d4aec63bfb8f6e5f4a73e8ec3e8",
+    "tests/c-unit/test_cp42_enum_bottom.py": "c7216dac85adf001e4d554887330a3c59c4a089ee3a2979fb6197f111b448009",
+    "tests/c-unit/test_mir_calls.c": "c3f0623f58ee189a1afe2943c86caf79731d10ee0d553a1cc56cddb715b92d4a",
+    "tests/c-unit/test_native_c_emitter.c": "5917cad48cbaf7643901ba6fb9a2a9812857f69333c0af25ba7546e1bad3e947",
+    "tests/fuzz/corpus/formatter/cp42-enum-bottom.my": "8891cf79e719b3463b7ea812fb157789f2051679b8f82aedd5a6f3094182ec6a",
+    "tests/fuzz/corpus/frontend/cp42-enum-bottom.my": "8891cf79e719b3463b7ea812fb157789f2051679b8f82aedd5a6f3094182ec6a",
+    "tests/public-alpha/cp42-enum-bottom/main.my": "4f826198cefb4b0ec296c8496e1b155c13ae54e14541743e2e30e0ee767ca6ef",
+    "tests/public-alpha/cp42-enum-bottom/main_test.my": "ff0a0a1be7846b9a6347a2b9b428b8141850eb7486f17301a86dfb8ead724266",
+    "tests/public-alpha/cp42-enum-bottom/mmay.mod": "1ad8cff48e4c3f34a5e1a9471c915766d9b5c423b9fa294976383e57fde621ca",
+    "tools/_d0_checks.py": "5cc22b88fade97f3040ea7c973c71a5f8ed8d133c0836eab5d371bfa01dec759"
+  },
+  "compiler_sha256": "b871bbf768089c0c211ed5789d645cad7cabdfc68f2796826f07cec391fb9e89",
+  "logs": {
+    "never-release-full.log": "Test project /workspace/Projects/Marimay/marimay/build/release\n      Start 71: mmay_cp38_json\n      Start 48: mmay_cp37_cli_parser\n 1/83 Test #48: mmay_cp37_cli_parser .............   Passed    4.55 sec\n      Start 41: mmay_cp39_distribution\n 2/83 Test #71: mmay_cp38_json ...................   Passed   10.47 sec\n      Start 10: mmay_c_unit_cp31\n      Start 20: mmay_c_unit_cp18-cp20\n 3/83 Test #10: mmay_c_unit_cp31 .................   Passed    5.70 sec\n      Start 19: mmay_c_unit_cp16-cp17\n 4/83 Test #20: mmay_c_unit_cp18-cp20 ............   Passed    6.07 sec\n      Start 11: mmay_c_unit_final-preview\n 5/83 Test #19: mmay_c_unit_cp16-cp17 ............   Passed    3.83 sec\n      Start  9: mmay_c_unit_native\n 6/83 Test #41: mmay_cp39_distribution ...........   Passed   19.98 sec\n      Start 42: mmay_cp39_packaging\n 7/83 Test #11: mmay_c_unit_final-preview ........   Passed    8.48 sec\n      Start 18: mmay_c_unit_cp14-cp15\n 8/83 Test #18: mmay_c_unit_cp14-cp15 ............   Passed    2.95 sec\n      Start 47: mmay_cp36_map_set\n 9/83 Test #42: mmay_cp39_packaging ..............***Failed    6.85 sec\n-- Found Python3: /usr/bin/python3 (found version \"3.9.6\") found components: Interpreter\nCMake Error at /workspace/Projects/Marimay/marimay/tests/c-unit/test_cp39_packaging.cmake:118 (message):\n  offline source archive does not configure\n\n  -- The C compiler identification is AppleClang 21.0.0.21000101\n\n  -- Detecting C compiler ABI info\n\n  -- Detecting C compiler ABI info - done\n\n  -- Check for working C compiler: /usr/bin/cc - skipped\n\n  -- Detecting C compile features\n\n  -- Detecting C compile features - done\n\n  -- Configuring done (0.6s)\n\n\n\n  CMake Error at CMakeLists.txt:384 (add_library):\n\n    Cannot find source file:\n\n\n\n      bootstrap/src/check/checker_enum_bottom.c\n\n\n\n\n\n  CMake Error at CMakeLists.txt:384 (add_library):\n\n    No SOURCES given to target: mmay_bootstrap\n\n\n\n\n\n  CMake Generate step failed.  Build files cannot be regenerated correctly.\n\n\n\n\n      Start 44: mmay_cp33_process_text_bytes\n      Start 45: mmay_cp34_process_files\n10/83 Test #44: mmay_cp33_process_text_bytes .....   Passed    1.87 sec\n      Start 46: mmay_cp35_process_context\n11/83 Test #45: mmay_cp34_process_files ..........   Passed    2.25 sec\n      Start 17: mmay_c_unit_cli-test\n12/83 Test #47: mmay_cp36_map_set ................   Passed    6.01 sec\n      Start 15: mmay_c_unit_cli-heap\n13/83 Test #46: mmay_cp35_process_context ........   Passed    1.85 sec\n      Start 39: mmay_install_relocation\n14/83 Test #15: mmay_c_unit_cli-heap .............   Passed    1.55 sec\n      Start 43: mmay_cp32_process_streams\n15/83 Test #43: mmay_cp32_process_streams ........   Passed    0.76 sec\n      Start 16: mmay_c_unit_cli-run\n16/83 Test #39: mmay_install_relocation ..........   Passed    3.67 sec\n      Start 13: mmay_c_unit_cli-build\n17/83 Test #17: mmay_c_unit_cli-test .............   Passed    5.20 sec\n      Start 40: mmay_cp29_release_contract\n18/83 Test #16: mmay_c_unit_cli-run ..............   Passed    6.19 sec\n      Start 21: mmay_cp31_allocation_0\n19/83 Test #40: mmay_cp29_release_contract .......   Passed    4.49 sec\n      Start  6: mmay_c_unit_checker\n20/83 Test #21: mmay_cp31_allocation_0 ...........   Passed    2.31 sec\n      Start 14: mmay_c_unit_cli-check\n21/83 Test  #6: mmay_c_unit_checker ..............   Passed    3.27 sec\n      Start  8: mmay_c_unit_runtime\n22/83 Test #14: mmay_c_unit_cli-check ............   Passed    9.88 sec\n      Start 22: mmay_cp31_allocation_1\n23/83 Test #13: mmay_c_unit_cli-build ............   Passed   17.61 sec\n      Start 23: mmay_cp31_allocation_2\n24/83 Test #22: mmay_cp31_allocation_1 ...........   Passed    2.34 sec\n      Start 24: mmay_cp31_allocation_3\n25/83 Test #23: mmay_cp31_allocation_2 ...........   Passed    2.34 sec\n      Start 25: mmay_cp31_allocation_4\n26/83 Test #24: mmay_cp31_allocation_3 ...........   Passed    2.32 sec\n      Start 26: mmay_cp31_allocation_5\n27/83 Test #25: mmay_cp31_allocation_4 ...........   Passed    2.34 sec\n      Start 27: mmay_cp31_allocation_6\n28/83 Test #26: mmay_cp31_allocation_5 ...........   Passed    2.34 sec\n      Start 28: mmay_cp31_allocation_7\n29/83 Test #27: mmay_cp31_allocation_6 ...........   Passed    2.41 sec\n      Start 49: mmay_cli_notes\n30/83 Test #28: mmay_cp31_allocation_7 ...........   Passed    2.40 sec\n      Start  7: mmay_c_unit_bytecode\n31/83 Test  #7: mmay_c_unit_bytecode .............   Passed    0.29 sec\n      Start 69: mmay_typed_json\n32/83 Test #69: mmay_typed_json ..................   Passed    8.09 sec\n      Start 70: mmay_cli_local_execution\n33/83 Test  #8: mmay_c_unit_runtime ..............***Failed   33.88 sec\n/workspace/Projects/Marimay/marimay/tests/c-unit/test_mir_calls.c:430: expectation failed: mmay_mir_add_register(&function, MMAY_TYPE_NEVER, &unused)\n/workspace/Projects/Marimay/marimay/tests/c-unit/test_mir_calls.c:459: expectation failed: mmay_mir_verify(&function) == MMAY_MIR_VERIFY_INVALID_ARGUMENT\nmmay_c_unit_3: 2 failure(s)\n\n      Start 33: mmay_cp36_unit\n34/83 Test #70: mmay_cli_local_execution .........   Passed   12.21 sec\n      Start 29: mmay_cp32_unit\n35/83 Test #49: mmay_cli_notes ...................   Passed   24.51 sec\n      Start 30: mmay_cp33_unit\n36/83 Test #29: mmay_cp32_unit ...................   Passed    8.32 sec\n      Start 36: mmay_cp42_unit\n37/83 Test #33: mmay_cp36_unit ...................   Passed   23.55 sec\n      Start 37: mmay_cp41_unit\n38/83 Test #30: mmay_cp33_unit ...................   Passed   17.28 sec\n      Start 51: mmay_cli_config_migrate\n39/83 Test #37: mmay_cp41_unit ...................   Passed    4.13 sec\n      Start 50: mmay_cli_frequency\n40/83 Test #51: mmay_cli_config_migrate ..........   Passed    6.45 sec\n      Start 32: mmay_cp35_unit\n41/83 Test #50: mmay_cli_frequency ...............   Passed    3.72 sec\n      Start 73: mmay_cp42_test_helpers\n42/83 Test #32: mmay_cp35_unit ...................   Passed    1.52 sec\n      Start 72: mmay_cp42_void_match\n43/83 Test #73: mmay_cp42_test_helpers ...........   Passed    1.94 sec\n      Start 74: mmay_cp42_map_error_context\n44/83 Test #72: mmay_cp42_void_match .............   Passed    1.96 sec\n      Start 68: mmay_cli_notes_model\n45/83 Test #74: mmay_cp42_map_error_context ......   Passed    1.86 sec\n      Start 57: mmay_cp33_text_bytes\n46/83 Test #68: mmay_cli_notes_model .............   Passed    0.55 sec\n      Start  5: mmay_c_unit_frontend\n47/83 Test  #5: mmay_c_unit_frontend .............   Passed    0.09 sec\n      Start 58: mmay_match_format\n48/83 Test #57: mmay_cp33_text_bytes .............   Passed    0.51 sec\n      Start 54: mmay_generic_lifetime\n49/83 Test #58: mmay_match_format ................   Passed    0.38 sec\n      Start 59: mmay_run_startup\n50/83 Test #54: mmay_generic_lifetime ............   Passed    0.39 sec\n      Start 52: mmay_record_imports\n51/83 Test #59: mmay_run_startup .................   Passed    0.38 sec\n      Start 56: mmay_enum_pattern_names\n52/83 Test #52: mmay_record_imports ..............   Passed    0.36 sec\n      Start 53: mmay_match_void\n53/83 Test #56: mmay_enum_pattern_names ..........   Passed    0.35 sec\n      Start 75: mmay_cp42_test_locations\n54/83 Test #53: mmay_match_void ..................   Passed    0.35 sec\n      Start 55: mmay_map_error_imports\n55/83 Test #55: mmay_map_error_imports ...........   Passed    0.36 sec\n      Start 12: mmay_c_unit_cli-core\n56/83 Test #12: mmay_c_unit_cli-core .............   Passed    0.02 sec\n      Start 31: mmay_cp34_unit\n57/83 Test #75: mmay_cp42_test_locations .........   Passed    0.86 sec\n      Start 34: mmay_cp37_unit\n58/83 Test #34: mmay_cp37_unit ...................   Passed    0.05 sec\n      Start 35: mmay_cp38_unit\n59/83 Test #35: mmay_cp38_unit ...................   Passed    0.01 sec\n      Start 38: mmay_cp39_unit\n60/83 Test #38: mmay_cp39_unit ...................   Passed    0.10 sec\n      Start  1: mmay_ci_diagnostics\n61/83 Test  #1: mmay_ci_diagnostics ..............   Passed    0.52 sec\n      Start  2: mmay_cli_acceptance_driver\n62/83 Test  #2: mmay_cli_acceptance_driver .......   Passed    0.51 sec\n      Start  3: mmay_roadmap\n63/83 Test  #3: mmay_roadmap .....................   Passed    0.09 sec\n      Start 76: mmay_cp42_for_recovery\n64/83 Test #76: mmay_cp42_for_recovery ...........   Passed    0.05 sec\n      Start  4: mmay_release_contract\n65/83 Test  #4: mmay_release_contract ............   Passed    0.05 sec\n      Start 65: mmay_format_cp33-text-bytes\n66/83 Test #65: mmay_format_cp33-text-bytes ......   Passed    0.00 sec\n      Start 60: mmay_format_record-imports\n67/83 Test #60: mmay_format_record-imports .......   Passed    0.00 sec\n      Start 62: mmay_format_generic-lifetime\n68/83 Test #62: mmay_format_generic-lifetime .....   Passed    0.00 sec\n      Start 64: mmay_format_enum-pattern-names\n69/83 Test #64: mmay_format_enum-pattern-names ...   Passed    0.00 sec\n      Start 67: mmay_format_run-startup\n70/83 Test #67: mmay_format_run-startup ..........   Passed    0.00 sec\n      Start 61: mmay_format_match-void\n71/83 Test #61: mmay_format_match-void ...........   Passed    0.00 sec\n      Start 66: mmay_format_match-format\n72/83 Test #66: mmay_format_match-format .........   Passed    0.00 sec\n      Start 63: mmay_format_map-error-imports\n73/83 Test #63: mmay_format_map-error-imports ....   Passed    0.00 sec\n74/83 Test #31: mmay_cp34_unit ...................   Passed    4.48 sec\n      Start 77: mmay_cp42_option_binding\n75/83 Test #77: mmay_cp42_option_binding .........   Passed    2.63 sec\n      Start 78: mmay_cp42_array_edit\n76/83 Test #78: mmay_cp42_array_edit .............   Passed    4.04 sec\n      Start 79: mmay_cp42_function_values\n77/83 Test #36: mmay_cp42_unit ...................   Passed   41.35 sec\n78/83 Test #79: mmay_cp42_function_values ........   Passed    6.58 sec\n      Start 80: mmay_cp42_mapper_values\n79/83 Test #80: mmay_cp42_mapper_values ..........   Passed    5.76 sec\n      Start 81: mmay_cp42_array_search\n80/83 Test #81: mmay_cp42_array_search ...........   Passed    3.84 sec\n      Start 82: mmay_cp42_file_lines\n81/83 Test #82: mmay_cp42_file_lines .............   Passed    5.15 sec\n      Start 83: mmay_cp42_enum_bottom\n82/83 Test #83: mmay_cp42_enum_bottom ............   Passed    1.89 sec\n83/83 Test  #9: mmay_c_unit_native ...............   Passed  248.88 sec\n\n98% tests passed, 2 tests failed out of 83\n\nLabel Time Summary:\nacceptance-harness    =   0.51 sec*proc (1 test)\nallocation            =  18.81 sec*proc (8 tests)\nbytecode              =   0.29 sec*proc (1 test)\nc-unit                = 454.67 sec*proc (26 tests)\nchecker               =   3.27 sec*proc (1 test)\nci                    =   0.52 sec*proc (1 test)\ncli                   =   0.51 sec*proc (1 test)\ncli-build             =  17.61 sec*proc (1 test)\ncli-check             =   9.88 sec*proc (1 test)\ncli-core              =   0.02 sec*proc (1 test)\ncli-heap              =   1.55 sec*proc (1 test)\ncli-run               =   6.19 sec*proc (1 test)\ncli-test              =   5.20 sec*proc (1 test)\ncp14-cp15             =   2.95 sec*proc (1 test)\ncp16-cp17             =   3.83 sec*proc (1 test)\ncp18-cp20             =   6.07 sec*proc (1 test)\ncp31                  =   5.70 sec*proc (1 test)\ncp32                  =   8.32 sec*proc (1 test)\ncp33                  =  17.28 sec*proc (1 test)\ncp34                  =   4.48 sec*proc (1 test)\ncp35                  =   1.52 sec*proc (1 test)\ncp36                  =  23.55 sec*proc (1 test)\ncp37                  =   0.05 sec*proc (1 test)\ncp38                  =   0.01 sec*proc (1 test)\ncp39                  =  53.77 sec*proc (3 tests)\ncp41                  =   4.13 sec*proc (1 test)\ncp42                  =  62.11 sec*proc (8 tests)\ndiagnostics           =   0.52 sec*proc (1 test)\ndifferential          =  41.06 sec*proc (9 tests)\ndistribution          =  53.66 sec*proc (2 tests)\nfinal-preview         =   8.48 sec*proc (1 test)\nfocused               = 100.79 sec*proc (10 tests)\nfrontend              =   0.09 sec*proc (1 test)\nlocal-execution       =  12.21 sec*proc (1 test)\nnative                = 248.88 sec*proc (1 test)\npackaging             =  13.70 sec*proc (1 test)\nresource              =  12.21 sec*proc (1 test)\nruntime               =  33.88 sec*proc (1 test)\ntyped-json            =   8.09 sec*proc (1 test)\n\nTotal Test time (real) = 268.88 sec\n\nThe following tests FAILED:\n\t  8 - mmay_c_unit_runtime (Failed)                      c-unit runtime\n\t 42 - mmay_cp39_packaging (Failed)                      cp39 distribution packaging\nErrors while running CTest\n",
+    "never-recheck.log": "Test project /workspace/Projects/Marimay/marimay/build/release\n    Start 42: mmay_cp39_packaging\n1/3 Test #42: mmay_cp39_packaging ..............   Passed    8.02 sec\n    Start  6: mmay_c_unit_checker\n2/3 Test  #6: mmay_c_unit_checker ..............   Passed    3.63 sec\n    Start  8: mmay_c_unit_runtime\n3/3 Test  #8: mmay_c_unit_runtime ..............   Passed   31.12 sec\n\n100% tests passed out of 3\n\nLabel Time Summary:\nc-unit          =  34.75 sec*proc (2 tests)\nchecker         =   3.63 sec*proc (1 test)\ncp39            =  16.03 sec*proc (1 test)\ndistribution    =  16.03 sec*proc (1 test)\npackaging       =  16.03 sec*proc (1 test)\nruntime         =  31.12 sec*proc (1 test)\n\nTotal Test time (real) =  42.77 sec\n",
+    "never-native.log": "Test project /workspace/Projects/Marimay/marimay/build/release\n    Start 9: mmay_c_unit_native\n1/1 Test #9: mmay_c_unit_native ...............   Passed  234.79 sec\n\n100% tests passed out of 1\n\nLabel Time Summary:\nc-unit    = 234.79 sec*proc (1 test)\nnative    = 234.79 sec*proc (1 test)\n\nTotal Test time (real) = 234.79 sec\n",
+    "never-process.log": "Test project /workspace/Projects/Marimay/marimay/build/release\n    Start 83: mmay_cp42_enum_bottom\n1/1 Test #83: mmay_cp42_enum_bottom ............   Passed    3.68 sec\n\n100% tests passed out of 1\n\nLabel Time Summary:\ncp42            =   7.36 sec*proc (1 test)\ndifferential    =   7.36 sec*proc (1 test)\n\nTotal Test time (real) =   3.68 sec\n",
+    "never-final-focused.log": "Test project /workspace/Projects/Marimay/marimay/build/release\n    Start 83: mmay_cp42_enum_bottom\n1/2 Test #83: mmay_cp42_enum_bottom ............   Passed    3.08 sec\n    Start  6: mmay_c_unit_checker\n2/2 Test  #6: mmay_c_unit_checker ..............   Passed    3.86 sec\n\n100% tests passed out of 2\n\nLabel Time Summary:\nc-unit          =   3.86 sec*proc (1 test)\nchecker         =   3.86 sec*proc (1 test)\ncp42            =   6.15 sec*proc (1 test)\ndifferential    =   6.15 sec*proc (1 test)\n\nTotal Test time (real) =   6.94 sec\n",
+    "never-final-engines.log": "focused enum-bottom MIR/VM/wire/native allocation and forced-GC checks: passed\n",
+    "never-asan-final.log": "Test project /workspace/Projects/Marimay/marimay/build/asan-ubsan\n    Start 82: mmay_cp42_enum_bottom\n1/2 Test #82: mmay_cp42_enum_bottom ............   Passed    7.89 sec\n    Start  6: mmay_c_unit_checker\n2/2 Test  #6: mmay_c_unit_checker ..............   Passed   13.00 sec\n\n100% tests passed out of 2\n\nLabel Time Summary:\nc-unit          =  13.00 sec*proc (1 test)\nchecker         =  13.00 sec*proc (1 test)\ncp42            =  15.78 sec*proc (1 test)\ndifferential    =  15.78 sec*proc (1 test)\n\nTotal Test time (real) =  20.90 sec\n",
+    "never-build.log": "[  0%] Built target mmay_cp32_process_fixture\n[ 13%] Built target mmay_native_runtime_release\n[ 15%] Built target mmay_native_runtime_debug\n[ 15%] Built target mmay_cp32_broken_pipe_launcher\n[ 62%] Built target mmay_bootstrap\n[ 62%] Built target mmay\n[ 62%] Building C object tests/c-unit/CMakeFiles/mmay_c_unit.dir/test_checker_enum_bottom.c.o\n[ 62%] Linking C executable mmay_c_unit\n[100%] Built target mmay_c_unit\n",
+    "never-asan-build.log": "[  0%] Built target mmay_cp32_process_fixture\n[ 14%] Built target mmay_native_runtime_release\n[ 15%] Built target mmay_native_runtime_debug\n[ 15%] Built target mmay_cp32_broken_pipe_launcher\n[ 62%] Built target mmay_bootstrap\n[ 62%] Built target mmay\n[ 62%] Building C object tests/c-unit/CMakeFiles/mmay_c_unit.dir/test_checker_enum_bottom.c.o\n[ 62%] Linking C executable mmay_c_unit\n[100%] Built target mmay_c_unit\n"
+  },
+  "process": [
+    {
+      "name": "format",
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "check",
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "test-both",
+      "status": 0,
+      "stdout": "test tests.public-alpha.cp42-enum-bottom.optionsAndNominal ... ok\ntest tests.public-alpha.cp42-enum-bottom.resultStorage ... ok\ntest tests.public-alpha.cp42-enum-bottom.impossibleSuccess ... ok\ntest tests.public-alpha.cp42-enum-bottom.nestedAndVoid ... ok\ntest tests.public-alpha.cp42-enum-bottom.genericAndClosure ... ok\ntest result: ok. 5 passed; 0 failed\n",
+      "stderr": ""
+    },
+    {
+      "name": "vm/empty",
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "vm/ok",
+      "status": 0,
+      "stdout": "7\n",
+      "stderr": "factory\ncaller cleanup\n"
+    },
+    {
+      "name": "vm/err",
+      "status": 1,
+      "stdout": "",
+      "stderr": "factory\ncallback cleanup\ncaller cleanup\npanic[G4000]: mapper panic\n"
+    },
+    {
+      "name": "vm/factory-panic",
+      "status": 1,
+      "stdout": "",
+      "stderr": "caller cleanup\npanic[G4000]: factory panic\n"
+    },
+    {
+      "name": "debug/empty",
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "debug/ok",
+      "status": 0,
+      "stdout": "7\n",
+      "stderr": "factory\ncaller cleanup\n"
+    },
+    {
+      "name": "debug/err",
+      "status": 1,
+      "stdout": "",
+      "stderr": "factory\ncallback cleanup\ncaller cleanup\npanic[G4000]: mapper panic\n"
+    },
+    {
+      "name": "debug/factory-panic",
+      "status": 1,
+      "stdout": "",
+      "stderr": "caller cleanup\npanic[G4000]: factory panic\n"
+    },
+    {
+      "name": "release/empty",
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "release/ok",
+      "status": 0,
+      "stdout": "7\n",
+      "stderr": "factory\ncaller cleanup\n"
+    },
+    {
+      "name": "release/err",
+      "status": 1,
+      "stdout": "",
+      "stderr": "factory\ncallback cleanup\ncaller cleanup\npanic[G4000]: mapper panic\n"
+    },
+    {
+      "name": "release/factory-panic",
+      "status": 1,
+      "stdout": "",
+      "stderr": "caller cleanup\npanic[G4000]: factory panic\n"
+    },
+    {
+      "name": "value/check",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0002",
+          "severity": "error",
+          "message": "integer literal requires an integer type",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/value.my",
+            "snapshot": "sha256:6636605eb5d5b6b37890ca66691dd30d77c9cf4f32bf4f5d3c11f37e3c749666",
+            "startByte": 47,
+            "endByte": 48,
+            "start": {
+              "line": 1,
+              "column": 48
+            },
+            "end": {
+              "line": 1,
+              "column": 49
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "value/run",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0002",
+          "severity": "error",
+          "message": "integer literal requires an integer type",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/value.my",
+            "snapshot": "sha256:6636605eb5d5b6b37890ca66691dd30d77c9cf4f32bf4f5d3c11f37e3c749666",
+            "startByte": 47,
+            "endByte": 48,
+            "start": {
+              "line": 1,
+              "column": 48
+            },
+            "end": {
+              "line": 1,
+              "column": 49
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "value/build",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0002",
+          "severity": "error",
+          "message": "integer literal requires an integer type",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/value.my",
+            "snapshot": "sha256:6636605eb5d5b6b37890ca66691dd30d77c9cf4f32bf4f5d3c11f37e3c749666",
+            "startByte": 47,
+            "endByte": 48,
+            "start": {
+              "line": 1,
+              "column": 48
+            },
+            "end": {
+              "line": 1,
+              "column": 49
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "unit/check",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0009",
+          "severity": "error",
+          "message": "payload prelude constructor requires exactly one argument",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/unit.my",
+            "snapshot": "sha256:dcee5df9ec93476399363cbdfedc242881034f7ab6eb212ba384009f8cb2ff7b",
+            "startByte": 43,
+            "endByte": 48,
+            "start": {
+              "line": 1,
+              "column": 44
+            },
+            "end": {
+              "line": 1,
+              "column": 49
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "unit/run",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0009",
+          "severity": "error",
+          "message": "payload prelude constructor requires exactly one argument",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/unit.my",
+            "snapshot": "sha256:dcee5df9ec93476399363cbdfedc242881034f7ab6eb212ba384009f8cb2ff7b",
+            "startByte": 43,
+            "endByte": 48,
+            "start": {
+              "line": 1,
+              "column": 44
+            },
+            "end": {
+              "line": 1,
+              "column": 49
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "unit/build",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0009",
+          "severity": "error",
+          "message": "payload prelude constructor requires exactly one argument",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/unit.my",
+            "snapshot": "sha256:dcee5df9ec93476399363cbdfedc242881034f7ab6eb212ba384009f8cb2ff7b",
+            "startByte": 43,
+            "endByte": 48,
+            "start": {
+              "line": 1,
+              "column": 44
+            },
+            "end": {
+              "line": 1,
+              "column": 49
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "unreachable/check",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0014",
+          "severity": "error",
+          "message": "match variant is unreachable because its payload is never",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/unreachable.my",
+            "snapshot": "sha256:179c8aa0e475a86b21e8b820c9ece41edbe220956aa900ba3cfa787c880417d6",
+            "startByte": 54,
+            "endByte": 60,
+            "start": {
+              "line": 1,
+              "column": 55
+            },
+            "end": {
+              "line": 1,
+              "column": 61
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "unreachable/run",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0014",
+          "severity": "error",
+          "message": "match variant is unreachable because its payload is never",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/unreachable.my",
+            "snapshot": "sha256:179c8aa0e475a86b21e8b820c9ece41edbe220956aa900ba3cfa787c880417d6",
+            "startByte": 54,
+            "endByte": 60,
+            "start": {
+              "line": 1,
+              "column": 55
+            },
+            "end": {
+              "line": 1,
+              "column": 61
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "unreachable/build",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0014",
+          "severity": "error",
+          "message": "match variant is unreachable because its payload is never",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/unreachable.my",
+            "snapshot": "sha256:179c8aa0e475a86b21e8b820c9ece41edbe220956aa900ba3cfa787c880417d6",
+            "startByte": 54,
+            "endByte": 60,
+            "start": {
+              "line": 1,
+              "column": 55
+            },
+            "end": {
+              "line": 1,
+              "column": 61
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "missing/check",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0013",
+          "severity": "error",
+          "message": "enum match is missing witness: Ok(_)",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/missing.my",
+            "snapshot": "sha256:71b1323a1bedcd0a34ed95881b507f39cfe07be73018505c56b6fcbd5f0ce7da",
+            "startByte": 37,
+            "endByte": 46,
+            "start": {
+              "line": 1,
+              "column": 38
+            },
+            "end": {
+              "line": 1,
+              "column": 47
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "missing/run",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0013",
+          "severity": "error",
+          "message": "enum match is missing witness: Ok(_)",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/missing.my",
+            "snapshot": "sha256:71b1323a1bedcd0a34ed95881b507f39cfe07be73018505c56b6fcbd5f0ce7da",
+            "startByte": 37,
+            "endByte": 46,
+            "start": {
+              "line": 1,
+              "column": 38
+            },
+            "end": {
+              "line": 1,
+              "column": 47
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "missing/build",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0013",
+          "severity": "error",
+          "message": "enum match is missing witness: Ok(_)",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/missing.my",
+            "snapshot": "sha256:71b1323a1bedcd0a34ed95881b507f39cfe07be73018505c56b6fcbd5f0ce7da",
+            "startByte": 37,
+            "endByte": 46,
+            "start": {
+              "line": 1,
+              "column": 38
+            },
+            "end": {
+              "line": 1,
+              "column": 47
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "error-type/check",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0002",
+          "severity": "error",
+          "message": "postfix '?' requires Result<T,E> and an enclosing Result<U,E> with the same E",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/error-type.my",
+            "snapshot": "sha256:77fc954daf395b1ddd26b7c0b53eeca436d366d7854ee3a4e90d8cce63f7a6db",
+            "startByte": 53,
+            "endByte": 55,
+            "start": {
+              "line": 1,
+              "column": 54
+            },
+            "end": {
+              "line": 1,
+              "column": 56
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "error-type/run",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0002",
+          "severity": "error",
+          "message": "postfix '?' requires Result<T,E> and an enclosing Result<U,E> with the same E",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/error-type.my",
+            "snapshot": "sha256:77fc954daf395b1ddd26b7c0b53eeca436d366d7854ee3a4e90d8cce63f7a6db",
+            "startByte": 53,
+            "endByte": 55,
+            "start": {
+              "line": 1,
+              "column": 54
+            },
+            "end": {
+              "line": 1,
+              "column": 56
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    },
+    {
+      "name": "error-type/build",
+      "status": 1,
+      "diagnostics": [
+        {
+          "schema": "marimay.diagnostic/1",
+          "code": "T0002",
+          "severity": "error",
+          "message": "postfix '?' requires Result<T,E> and an enclosing Result<U,E> with the same E",
+          "primary": {
+            "file": "/workspace/Projects/Marimay/marimay/build/release/tests/c-unit/cp42-enum-bottom/error-type.my",
+            "snapshot": "sha256:77fc954daf395b1ddd26b7c0b53eeca436d366d7854ee3a4e90d8cce63f7a6db",
+            "startByte": 53,
+            "endByte": 55,
+            "start": {
+              "line": 1,
+              "column": 54
+            },
+            "end": {
+              "line": 1,
+              "column": 56
+            }
+          },
+          "labels": [],
+          "notes": [],
+          "fixes": []
+        }
+      ]
+    }
+  ],
+  "book_ideas": [],
+  "ci": {
+    "candidate": "not yet pushed",
+    "verified": false
+  },
+  "test_commands": [
+    {
+      "command": "ctest --test-dir build/release -C Release --parallel 4 --output-on-failure",
+      "status": 8,
+      "log": "never-release-full.log"
+    },
+    {
+      "command": "ctest --test-dir build/release -C Release -R '^mmay_(c_unit_checker|c_unit_runtime|cp39_packaging)$' --output-on-failure",
+      "status": 0,
+      "log": "never-recheck.log"
+    },
+    {
+      "command": "ctest --test-dir build/release -C Release -R '^mmay_(c_unit_checker|cp42_enum_bottom)$' --output-on-failure",
+      "status": 0,
+      "log": "never-final-focused.log"
+    },
+    {
+      "command": "python3 build/never-wave/engine-check.py",
+      "status": 0,
+      "log": "never-final-engines.log"
+    },
+    {
+      "command": "ctest --test-dir build/asan-ubsan -C Debug -R '^mmay_(c_unit_checker|cp42_enum_bottom)$' --output-on-failure",
+      "status": 0,
+      "log": "never-asan-final.log"
+    }
+  ],
+  "focused_engine_reproducer": {
+    "engine-main.c": "#include \"test_support.h\"\nvoid mmay_test_enum_bottom_engines(void);\nint main(int argc, char **argv) {\n    if (argc != 2) return 2;\n    mmay_test_set_toolchain_executable(argv[1]);\n    mmay_test_enum_bottom_engines();\n    return mmay_test_failure_count() == 0 ? 0 : 1;\n}\n",
+    "engine-check.py": "import pathlib, shlex, subprocess\nroot=pathlib.Path.cwd()\nwork=root/'build/release/tests/c-unit'\nargs=shlex.split((work/'CMakeFiles/mmay_c_unit.dir/link.txt').read_text())\nargs=[arg for arg in args if not arg.endswith('/test_main.c.o')]\nargs[args.index('-o')+1]=str(root/'build/never-wave/engine-check')\nargs += ['-I'+str(root/'tests/c-unit'), '-I'+str(root/'bootstrap/include'),\n         '-I'+str(root/'runtime/include'), str(root/'build/never-wave/engine-main.c')]\nsubprocess.run(args,cwd=work,check=True)\nsubprocess.run([root/'build/never-wave/engine-check', root/'build/release/mmay'],check=True)\nprint('focused enum-bottom MIR/VM/wire/native allocation and forced-GC checks: passed')\n"
+  },
+  "gates": {
+    "check-generated": {
+      "command": [
+        "./tools/check-generated"
+      ],
+      "status": 0,
+      "stdout": "bytecode generated artifacts: ok\ndiagnostic generated artifacts: ok\nUnicode generated artifacts: ok\nGitea C17 image reference is current: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242\nsyntax generated artifacts: ok\n",
+      "stderr": ""
+    },
+    "check-roadmap": {
+      "command": [
+        "./tools/check-roadmap"
+      ],
+      "status": 0,
+      "stdout": "roadmap ok: 21 gates, 43 checkpoints, one active checkpoint, mutation self-tests passed\n",
+      "stderr": ""
+    },
+    "check-doc-links": {
+      "command": [
+        "./tools/check-doc-links"
+      ],
+      "status": 0,
+      "stdout": "check-doc-links: ok\n",
+      "stderr": ""
+    },
+    "check-spec-terms": {
+      "command": [
+        "./tools/check-spec-terms"
+      ],
+      "status": 0,
+      "stdout": "check-spec-terms: ok\n",
+      "stderr": ""
+    },
+    "check-example-syntax": {
+      "command": [
+        "./tools/check-example-syntax"
+      ],
+      "status": 0,
+      "stdout": "check-example-syntax: ok\n",
+      "stderr": ""
+    },
+    "check-syntax-coverage": {
+      "command": [
+        "./tools/check-syntax-coverage"
+      ],
+      "status": 0,
+      "stdout": "check-syntax-coverage: ok (syntax kinds: 78 covered, 0 open; grammar productions: 123 covered, 0 open)\n",
+      "stderr": ""
+    },
+    "check-release-contract": {
+      "command": [
+        "./tools/check-release-contract"
+      ],
+      "status": 0,
+      "stdout": "release contract ok: 42 closure rows, 24 commands, mutation self-tests passed\n",
+      "stderr": ""
+    },
+    "check-architecture": {
+      "command": [
+        "./tools/check-architecture"
+      ],
+      "status": 0,
+      "stdout": "check-architecture: ok\n",
+      "stderr": ""
+    },
+    "check-c-memory-policy": {
+      "command": [
+        "./tools/check-c-memory-policy"
+      ],
+      "status": 0,
+      "stdout": "check-c-memory-policy: ok\n",
+      "stderr": ""
+    }
+  }
+}

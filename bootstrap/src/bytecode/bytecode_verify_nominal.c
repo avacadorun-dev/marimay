@@ -204,7 +204,8 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_enum_metadata(
                 layout->payload_start + payload_index
             );
             if (payload == NULL
-                || !mmay_bytecode_type_is_register(payload->type)
+                || (!mmay_bytecode_type_is_register(payload->type)
+                    && payload->type != MMAY_BYTECODE_TYPE_NEVER)
                 || !mmay_bytecode_type_layout_is_valid(
                     function,
                     payload->type,

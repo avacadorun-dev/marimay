@@ -1,3 +1,4 @@
+#include "checker_enum_bottom_api.h"
 #include "checker_expr_map_error_api.h"
 #include "checker_core_api.h"
 #include "checker_expression_api.h"
@@ -87,8 +88,9 @@ bool mmay_checker_private_compile_map_error(
     MarimayTypeId output_arguments[2], output_type = MMAY_TYPE_INVALID;
     MarimayTypeId expected_error_type = MMAY_TYPE_INVALID, input_error_type;
     MarimayMirEnumId input_layout, output_layout;
-    MarimayMirRegister target;
-    MarimayMirBlockId error_block, success_block, join_block;
+    MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
+    MarimayMirBlockId error_block, success_block, join_block = MMAY_MIR_NO_BLOCK;
+    bool continues;
     size_t start = node->start, end = node->end, count = 0;
     *resolved = false;
     if (!mmay_checker_private_member_parts(member, &receiver_node, &name) || name == NULL
@@ -166,6 +168,8 @@ bool mmay_checker_private_compile_map_error(
         mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
+    continues = output_arguments[0] != MMAY_TYPE_NEVER
+        || (input_error_type != MMAY_TYPE_NEVER && mapper.result_type != MMAY_TYPE_NEVER);
     concrete_input = *input_enum;
     concrete_input.type = receiver.type;
     concrete_output = *output_enum;
@@ -179,28 +183,32 @@ bool mmay_checker_private_compile_map_error(
             receiver.register_id, input_layout, 1, 0, start, end, &is_error
         ) || !mmay_checker_private_function_add_block(function, &error_block)
         || !mmay_checker_private_function_add_block(function, &success_block)
-        || !mmay_checker_private_function_add_block(function, &join_block)
+        || (continues && !mmay_checker_private_function_add_block(function, &join_block))
         || !mmay_checker_private_function_set_branch(
             function, function->block, is_error.register_id,
             error_block, success_block, start, end
-        ) || !mmay_function_add_register(function, output_type, &target)) {
+        ) || (continues && !mmay_function_add_register(function, output_type, &target))) {
         return false;
     }
     function->block = error_block;
     function->terminated = false;
-    if (!mmay_checker_private_function_emit_enum_access(
-            function, MMAY_MIR_ENUM_REQUIRE_VARIANT,
-            receiver.type, receiver.register_id, input_layout, 1, 0,
-            start, end, &required_input_error
-        ) || !mmay_checker_private_function_emit_enum_access(
-            function, MMAY_MIR_ENUM_GET_PAYLOAD,
-            mmay_type_descriptor(&function->checker->result->types, receiver.type)
-                ->arguments[1], required_input_error.register_id, input_layout, 1, 0,
-            start, end, &input_error
-        )) {
-        return false;
+    if (input_error_type == MMAY_TYPE_NEVER) {
+        if (!mmay_enum_bottom_edge(function, start, end, &mapped_error)) return false;
+    } else {
+        if (!mmay_checker_private_function_emit_enum_access(
+                function, MMAY_MIR_ENUM_REQUIRE_VARIANT,
+                receiver.type, receiver.register_id, input_layout, 1, 0,
+                start, end, &required_input_error
+            ) || !mmay_checker_private_function_emit_enum_access(
+                function, MMAY_MIR_ENUM_GET_PAYLOAD,
+                mmay_type_descriptor(&function->checker->result->types, receiver.type)
+                    ->arguments[1], required_input_error.register_id, input_layout, 1, 0,
+                start, end, &input_error
+            )) {
+            return false;
+        }
+        if (!mmay_error_mapper_invoke(function, mapper_node, &mapper, input_error, &mapped_error)) return false;
     }
-    if (!mmay_error_mapper_invoke(function, mapper_node, &mapper, input_error, &mapped_error)) return false;
     if (!mmay_expression_is_never(function, &mapped_error)) {
         output_argument.register_id = mapped_error.register_id;
         output_argument.type = mapped_error.type;
@@ -213,7 +221,9 @@ bool mmay_checker_private_compile_map_error(
     }
     function->block = success_block;
     function->terminated = false;
-    if (output_arguments[0] == MMAY_TYPE_VOID) {
+    if (output_arguments[0] == MMAY_TYPE_NEVER) {
+        if (!mmay_enum_bottom_edge(function, start, end, &output_success)) return false;
+    } else if (output_arguments[0] == MMAY_TYPE_VOID) {
         if (!mmay_checker_private_function_emit_enum_construction(
                 function, &concrete_output, 0, NULL, 0,
                 start, end, &output_success
@@ -238,13 +248,14 @@ bool mmay_checker_private_compile_map_error(
         )) {
         return false;
     }
-    if (!mmay_checker_private_function_emit_copy(
+    if (!function->terminated && (!mmay_checker_private_function_emit_copy(
             function, target, output_success.register_id, start, end
         ) || !mmay_checker_private_function_set_goto(
             function, function->block, join_block, start, end
-        )) {
+        ))) {
         return false;
     }
+    if (!continues) { mmay_checker_private_expression_set_never(function, result); return true; }
     function->block = join_block;
     function->terminated = false;
     result->type = output_type;

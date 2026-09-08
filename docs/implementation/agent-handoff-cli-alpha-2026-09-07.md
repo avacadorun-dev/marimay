@@ -327,3 +327,19 @@ git diff --check
 механике приёмки. Затем один сквозной цикл общих API на config/notes.
 Обновляй существующие register/evidence/owners вместо создания конкурирующих
 очередей и большого нового handoff после каждого частичного исправления.
+
+
+## Продолжение 2026-09-09: D102 enum bottom
+
+[Evidence](evidence/cp42-enum-bottom-2026-09-09.md) фиксирует поддержку
+`Result<T, never>`, `Result<never, E>`, `Option<never>` и прямого never payload
+пользовательских enum. Не восстанавливай I0001 guard из D100. Невозможные
+варианты сохраняют ordinal/type metadata, исключаются из coverage; явный
+pattern получает T0014. `?` сохраняет точное совпадение E. Нет новых opcodes,
+wire fields, значений never или recursive inhabitation proofs.
+
+Следующий блок — nonfatal escaping-mutable-capture warning из D098/§6.3.
+Нельзя превратить warning в ошибку или считать такую программу неисполняемой.
+Далее delimited/source-lint и полная последовательность CP42 → CP41 → CP39 →
+CP40/N0. Книга в D102 не использовалась. Каталог `output/` существовал до этого
+цикла и не относится к правкам компилятора; не добавляй его в коммит.

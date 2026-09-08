@@ -1,0 +1,91 @@
+@test
+fn optionsAndNominal(): void {
+  const none: Option<never> = None;
+  match none {
+    None => {},
+  };
+  const choice: Choice<never> = Choice.Empty;
+  match choice {
+    Choice.Empty => {},
+  };
+  const named: Named<never> = Named.Good(3);
+  expect.equal(
+    match named {
+      Named.Good(value) => value,
+    },
+    3,
+  );
+}
+
+@test
+fn resultStorage(): void {
+  const rows: []Result<int, never> = [propagated()];
+  const alias = rows;
+  expect.equal(
+    match alias[0] {
+      Ok(value) => value,
+    },
+    8,
+  );
+}
+
+@test
+fn impossibleSuccess(): void {
+  const result = failOnly(Err(4));
+  expect.equal(
+    match result {
+      Err(message) => message,
+    },
+    "bad",
+  );
+}
+
+@test
+fn nestedAndVoid(): void {
+  const remapped = remapNever(Ok(11));
+  expect.equal(
+    match remapped {
+      Ok(value) => value,
+      Err(_) => 0,
+    },
+    11,
+  );
+  const source: Result<void, int> = Ok();
+  const mapped = source.mapError(halt);
+  match mapped {
+    Ok(_) => {},
+  };
+
+  const result: Result<Option<never>, never> = Ok(None);
+  match result {
+    Ok(None) => {},
+  };
+  const unit: Result<void, never> = Ok();
+  match unit {
+    Ok(_) => {},
+  };
+}
+
+@test
+fn genericAndClosure(): void {
+  const get = (): Result<int, never> => propagated();
+  const items: []Result<int, never> = [get()];
+  expect.equal(
+    match identity(items[0]) {
+      Ok(value) => value,
+    },
+    8,
+  );
+}
+
+fn identity<T>(value: T): T {
+  return value;
+}
+
+enum Wrapped<T> {
+  Value(T),
+}
+
+fn remapNever(value: Result<int, never>): Result<int, Wrapped<never>> {
+  return value.mapError(Wrapped.Value);
+}

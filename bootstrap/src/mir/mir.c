@@ -837,7 +837,8 @@ bool mmay_mir_add_enum_construction(
             variant_layout->payload_start + index
         );
         if (arguments[index].type == MMAY_TYPE_INVALID || actual_type == NULL
-            || payload == NULL || *actual_type != arguments[index].type
+            || payload == NULL || payload->type == MMAY_TYPE_NEVER
+            || *actual_type != arguments[index].type
             || payload->type != arguments[index].type) {
             return false;
         }

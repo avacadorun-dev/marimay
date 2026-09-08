@@ -1,0 +1,20 @@
+enum Choice<T> { Empty, Full(T), }
+enum Named<T> { Good(int), Bad{value: T}, }
+fn halt(x: int): never { panic("stop"); }
+fn transformed(x: Result<int, int>): Result<int, never> { return x.mapError(halt); }
+fn propagated(): Result<int, never> { const x = transformed(Ok(7))?; return Ok(x + 1); }
+fn failOnly(x: Result<never, int>): Result<never, string> { return x.mapError((v: int): string => "bad"); }
+fn diverges(x: Result<never, int>): never { const _ = x.mapError(halt); }
+fn empty(x: Result<never, never>): never { match x {}; }
+fn main(): int {
+ const n: Option<never> = None;
+ match n { None => {}, };
+ const c: Choice<never> = Choice.Empty;
+ match c { Choice.Empty => {}, };
+ const a: Named<never> = Named.Good(1);
+ const j = match a { Named.Good(v) => v, };
+ const es: Result<never, string> = failOnly(Err(2));
+ match es { Err(_) => {}, };
+ const xs: []Result<int, never> = [propagated()];
+ return match xs[0] { Ok(v) => v + j, };
+}

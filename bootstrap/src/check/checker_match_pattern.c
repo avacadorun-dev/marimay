@@ -1,4 +1,5 @@
 #include "checker_closure_api.h"
+#include "checker_enum_bottom_api.h"
 #include "checker_match_pattern_api.h"
 #include "checker_core_api.h"
 #include "checker_enum_pattern_names_api.h"
@@ -942,6 +943,13 @@ bool mmay_checker_private_analyze_enum_match_alternative(
         return false;
     }
     if (!alternative->is_catch_all) {
+        bool bottom;
+        if (!mmay_enum_variant_bottom(function, enum_declaration, enum_type, variant, &bottom)) return false;
+        if (bottom) {
+            (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_REDUNDANT_PATTERN,
+                "match variant is unreachable because its payload is never", pattern->start, pattern->end);
+            return false;
+        }
         alternative->variant = variant;
         alternative->variant_index = variant_index;
         if (!mmay_checker_private_enum_match_payloads_are_refutable(

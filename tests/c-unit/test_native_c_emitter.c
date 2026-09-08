@@ -1,5 +1,6 @@
 #include "test_native_c_emitter_support.h"
 
+void mmay_test_enum_bottom_engines(void);
 void mmay_test_native_scalar_f64(void);
 void mmay_test_native_source_matrix(void);
 void mmay_test_native_strings_panic(void);
@@ -21,6 +22,7 @@ void mmay_test_native_imported_results(void);
 void mmay_test_native_c_emitter_test_entry(void);
 
 void mmay_test_native_c_emitter(void) {
+    mmay_test_enum_bottom_engines();
     mmay_test_native_scalar_f64();
     mmay_test_native_source_matrix();
     mmay_test_native_strings_panic();

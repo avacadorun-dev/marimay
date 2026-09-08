@@ -119,6 +119,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Direct-bottom enum transport](cp42-enum-bottom-2026-09-09.md)
+([raw evidence](cp42-enum-bottom-2026-09-09.json)) records D102's common
+Result/Option/user-enum metadata, impossible match/propagation paths, negative
+and both-engine checks. This removes the mapper never guard locally; the
+escaping-capture warning and full CP42/Tier 1 acceptance remain open.
+
 [Array-search CMake policy correction](cp42-array-search-cmake-policy-2026-09-08.md)
 reproduces run 220's panic-expectation failure on CMake 3.25 and verifies the
 standalone script with explicit policies on both CMake 3.25.2 and 4.4.2. No

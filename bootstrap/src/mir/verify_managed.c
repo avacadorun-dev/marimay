@@ -382,7 +382,7 @@ MarimayMirVerifyStatus mmay_mir_verify_managed_layouts(
                 variant,
                 argument_index
             );
-            if (argument == NULL || payload == NULL
+            if (argument == NULL || payload == NULL || payload->type == MMAY_TYPE_NEVER
                 || argument->register_id >= function->register_types.length
                 || argument->type != payload->type
                 || mmay_mir_register_type(

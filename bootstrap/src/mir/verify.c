@@ -68,6 +68,12 @@ MarimayMirVerifyStatus mmay_mir_verify(const MarimayMirFunction *function) {
         || function->options.max_verify_work == 0) {
         return MMAY_MIR_VERIFY_INVALID_ARGUMENT;
     }
+    for (size_t index = function->parameter_count; index < function->register_types.length; index += 1) {
+        if (!mmay_mir_consume_verify_work(&work, 1, function->options.max_verify_work))
+            return MMAY_MIR_VERIFY_LIMIT_REACHED;
+        if (mmay_mir_register_type(function, (MarimayMirRegister)index) == MMAY_TYPE_NEVER)
+            return MMAY_MIR_VERIFY_INVALID_REGISTER;
+    }
     if (function->records.length != 0 || function->enums.length != 0
         || function->arrays.length != 0 || function->collections.length != 0
         || function->interfaces.length != 0

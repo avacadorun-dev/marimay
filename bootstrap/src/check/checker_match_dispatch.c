@@ -1,3 +1,4 @@
+#include "checker_enum_bottom_api.h"
 #include "checker_match_dispatch_api.h"
 #include "checker_core_api.h"
 #include "checker_expr_nominal_api.h"
@@ -786,7 +787,11 @@ cleanup:
             );
             goto cleanup;
         }
-        memset(seen_variants, 0, enum_declaration->variants.length);
+        if (!mmay_enum_bottom_coverage(function, enum_declaration, scrutinee.type, seen_variants, &covered)) goto cleanup;
+        if (covered) {
+            accepted = mmay_enum_bottom_edge(function, node->start, node->end, result);
+            goto cleanup;
+        }
         (void)mmay_checker_private_add_enum_match_witness_diagnostic(
             function,
             node,
@@ -826,7 +831,7 @@ cleanup:
         goto cleanup;
     }
     if (seen_variants != NULL) {
-        memset(seen_variants, 0, enum_declaration->variants.length);
+        if (!mmay_enum_bottom_coverage(function, enum_declaration, scrutinee.type, seen_variants, &covered)) goto cleanup;
     }
     for (arm_index = 0; arm_index < arm_count; arm_index += 1) {
         const MarimayAstNode *arm_node = mmay_checker_private_check_child_node(
