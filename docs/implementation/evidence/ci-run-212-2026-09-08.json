@@ -1,0 +1,65 @@
+{
+  "schema": 1,
+  "run_id": 212,
+  "revision": "d0d69eb0dd97c3385335b3b9809ca0956078a310",
+  "conclusion": "failure",
+  "configuration": {
+    "active_ubuntu_runners": 1,
+    "build_parallel": 4,
+    "ordinary_ctest_parallel": 4,
+    "sanitizer_ctest_parallel": 2,
+    "coverage_reduced": false
+  },
+  "jobs": {
+    "classification": "success",
+    "documentation_architecture": "success",
+    "clang_debug": "success",
+    "clang_release": "success",
+    "gcc_debug": "success",
+    "gcc_release": "success",
+    "asan_ubsan_lsan": {
+      "conclusion": "failure",
+      "tests_total": 76,
+      "tests_passed": 75,
+      "tests_failed": 1,
+      "ctest_seconds": 961.59,
+      "failed_test": "mmay_cp39_distribution",
+      "failure": "unlisted tools/ci-diagnostics/__pycache__ directory in distribution"
+    },
+    "fuzz_build": "success",
+    "fuzz_bytecode": "success",
+    "fuzz_formatter": "success",
+    "fuzz_frontend": "success",
+    "fuzz_json": "success",
+    "tsan": "skipped_by_workflow"
+  },
+  "vmstat_run_window": {
+    "samples": 4932,
+    "max_run_queue": 9,
+    "min_free_kib": 3125292,
+    "max_swap_allocated_kib": 0,
+    "max_io_wait_percent": 3,
+    "max_steal_percent": 2
+  },
+  "final_health": {
+    "vm_running": true,
+    "gitea": "healthy",
+    "postgresql": "healthy",
+    "qemu_guest_agent": "responsive",
+    "failed_systemd_units": 0,
+    "root_used_percent": 24,
+    "root_available_bytes": 48239661056,
+    "swap_used_bytes": 0,
+    "mem_available_bytes": 7391834112,
+    "new_rcu_oom_watchdog_io_errors": 0
+  },
+  "evidence": {
+    "sanitized_job_log": "run-212-job-1834-asan-sanitized.log",
+    "raw_job_log_sha256": "0b8071f5192e7a971d5a028fc35e24c1b7d114e02bace11786f1d5051002431f",
+    "artifact_directory": "run-212-asan-artifact",
+    "last_test_log_sha256": "b7a3ad751355c86bb1c8d5e2650dd4572834f07969a981b6eaad8e828cc0bc8c",
+    "last_tests_failed_log_sha256": "2cbfad100e0caaccd772d09ae4be616426bd456b639cb725bbe9329f3bf746aa"
+  },
+  "rcu_stall_cause": "unknown",
+  "operational_status": "stable_with_one_runner_and_bounded_parallelism"
+}

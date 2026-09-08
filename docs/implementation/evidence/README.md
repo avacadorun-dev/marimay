@@ -39,6 +39,9 @@ legal/search/control/PATH evidence and an accepted follow-up identity decision.
 - [Gitea recovery and bounded CI concurrency](gitea-recovery-2026-09-08.md)
   records restored services and disk space, preserved failed-job evidence and
   concurrency containment; historical compiler/stall causes remain unknown.
+- [Run 212 and Python-cache installation boundary](ci-cache-install-2026-09-08.md)
+  records successful C17/fuzz jobs and the 75/76 sanitizer result, plus the
+  focused fix for source-tool caches entering a staged distribution.
 
 ## A0
 

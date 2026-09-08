@@ -766,6 +766,7 @@ install(DIRECTORY cmake tools
     PATTERN "*.md"
     PATTERN "*.tsv"
     PATTERN "*.my"
+    PATTERN "__pycache__" EXCLUDE
 )
 install(DIRECTORY bootstrap runtime
   DESTINATION
@@ -831,6 +832,7 @@ if(BUILD_TESTING)
       )
       set_tests_properties(mmay_ci_diagnostics PROPERTIES
         TIMEOUT 30 LABELS "ci;diagnostics"
+        ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
       )
     endif()
     add_test(
@@ -840,6 +842,7 @@ if(BUILD_TESTING)
     )
     set_tests_properties(mmay_cli_acceptance_driver PROPERTIES
       TIMEOUT 30 LABELS "cli;acceptance-harness"
+      ENVIRONMENT "PYTHONDONTWRITEBYTECODE=1"
     )
     add_test(
       NAME mmay_roadmap
