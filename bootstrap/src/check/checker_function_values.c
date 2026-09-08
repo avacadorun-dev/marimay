@@ -1,5 +1,6 @@
 #include "checker_function_values_internal.h"
 #include "checker_core_api.h"
+#include "checker_escape_api.h"
 #include "checker_imported_nominal_api.h"
 #include "checker_expr_interfaces_api.h"
 #include "checker_lookup_api.h"
@@ -71,6 +72,7 @@ bool mmay_function_value_publish(MarimayFunctionChecker *function, MarimayTypeId
             ? MMAY_CHECK_LIMIT_REACHED : MMAY_CHECK_INTERNAL_ERROR);
         return false;
     }
+    if (!mmay_escape_check(function)) return false;
     if (index >= function->checker->options.max_functions) {
         mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED); return false;
     }
@@ -131,7 +133,7 @@ bool mmay_function_value_init(MarimayFunctionChecker *body, MarimayFunctionCheck
     body->test_context = parent->test_context;
     body->type_parameters = parent->type_parameters;
     body->type_arguments = parent->type_arguments;
-    body->diagnostic_start = parent->checker->result->diagnostics.length;
+    body->diagnostic_start = parent->checker->result->error_count;
     if (count > parent->checker->options.max_locals_per_function
         || count > parent->checker->options.mir_options.max_registers) {
         mmay_checker_fail(parent->checker, MMAY_CHECK_LIMIT_REACHED); return false;
@@ -149,6 +151,7 @@ bool mmay_function_value_init(MarimayFunctionChecker *body, MarimayFunctionCheck
 }
 
 void mmay_function_value_dispose(MarimayFunctionChecker *body) {
+    mmay_escape_dispose(body);
     if (body->mir_initialized) mmay_mir_function_dispose(&body->mir);
     mmay_vector_dispose(&body->locals);
     mmay_vector_dispose(&body->loops);

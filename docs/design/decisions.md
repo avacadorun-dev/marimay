@@ -3346,3 +3346,44 @@ transport as ordinary user code. A mapper-specific approximation would leave
 storage, matching, generic calls and propagation broken. Focused checker,
 malformed MIR/bytecode, wire round-trip, both-engine, forced-GC and every
 reachable deterministic allocation-failure index cover this common boundary.
+
+## D103 — Nonfatal mutable-capture escape diagnostics
+
+Status: accepted.
+
+D098's capture warning is T0020 with severity `warning`. It is emitted once
+per closure source span when an inferred retaining scope is shallower than
+the declaring block of any captured `let`. Generic instantiations share that
+source diagnostic. Warnings do not prevent publication of checked functions,
+checking later files/packages, execution, test discovery or native artifacts.
+Errors retain their existing exit and publication rules. Diagnostic limits
+count both severities; allocation/cancellation/resource failures are not hidden.
+
+The initial analysis is conservative and flow-insensitive within each typed
+function body. Copies unify identities; assignments and CFG joins accumulate
+possible aliases. Record fields and enum variant payload positions remain
+separate. Array elements share a slot; map keys and values have separate slots.
+Contained values inherit the shallowest possible retaining scope of their
+container. Returning a closure/container, storing it into an outer binding or
+storage owned outside the function, or passing it as an ordinary argument may
+retain it. Returning an unrelated field alone does not retain sibling fields.
+Removal, overwrite and branch conditions do not retract accumulated facts.
+
+Ordinary calls have no interprocedural no-retention summaries in this analysis:
+arguments can be retained, and results can alias storage retained by the callee.
+Calling a function value does not itself retain that callable, including direct
+findIndex/mapError callbacks. Values captured inside its environment may be
+exposed by the called body; this is conservative for nested captured callables.
+A warning therefore describes a possible escape, not proof of a runtime escape.
+No warning for a const-only capture is implied by reference mutability: const
+reference capture keeps identity under the existing D098 contract.
+
+A checker owner records resolved lexical facts while locals exist, analyzes
+verified typed MIR before publication, and discards its graph on all exits.
+Scope propagation is monotone over a finite graph with a max_verify_work
+budget, iterative alias merging and cycle-safe worklists. The analysis neither
+changes source acceptance nor chooses boxing, GC roots or runtime lifetimes.
+Backends do not reconstruct capture semantics. More precise no-retention
+summaries and strong updates are future refinements, not reasons to block legal
+programs or waive the warning tests. This closes the D098 diagnostic removal
+gate locally; CP42 and Tier 1 acceptance still require their own evidence.

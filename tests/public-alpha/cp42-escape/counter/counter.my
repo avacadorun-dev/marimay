@@ -1,0 +1,11 @@
+public fn make(): () => int {
+  let n = 1;
+  return (): int => {
+    n += 1;
+    return n;
+  };
+}
+
+public fn later(): int {
+  return 2;
+}

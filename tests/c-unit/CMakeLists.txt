@@ -79,6 +79,7 @@ add_executable(mmay_c_unit
   test_checker_map_error_context.c
   test_checker_mapper_values.c
   test_checker_enum_bottom.c
+  test_checker_escape.c
   test_checker_enum_pattern_names.c
   test_checker_imports_support.c
   test_checker_imported_arrays.c
@@ -878,3 +879,10 @@ add_test(NAME mmay_cp42_enum_bottom
     "${CMAKE_CURRENT_BINARY_DIR}/cp42-enum-bottom")
 set_tests_properties(mmay_cp42_enum_bottom PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200
   LABELS "differential;cp42")
+
+add_test(NAME mmay_cp42_escape
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_escape.py"
+    "$<TARGET_FILE:mmay>" "${PROJECT_SOURCE_DIR}/tests/public-alpha/cp42-escape"
+    "${CMAKE_CURRENT_BINARY_DIR}/cp42-escape")
+set_tests_properties(mmay_cp42_escape PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200
+  LABELS "cp42;differential")

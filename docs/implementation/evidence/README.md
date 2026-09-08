@@ -119,11 +119,17 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Nonfatal mutable-capture diagnostics](cp42-escape-warning-2026-09-09.md)
+([raw evidence](cp42-escape-warning-2026-09-09.json)) records D103's bounded
+checker analysis, continuing diagnostic transport, allocation/budget and
+both-engine checks. This closes the local warning removal gap from D098;
+source-lint/delimited, full portfolio acceptance and Tier 1 remain open.
+
 [Direct-bottom enum transport](cp42-enum-bottom-2026-09-09.md)
 ([raw evidence](cp42-enum-bottom-2026-09-09.json)) records D102's common
 Result/Option/user-enum metadata, impossible match/propagation paths, negative
-and both-engine checks. This removes the mapper never guard locally; the
-escaping-capture warning and full CP42/Tier 1 acceptance remain open.
+and both-engine checks. This removes the mapper never guard locally; D103 above subsequently supplies
+the warning. Full CP42/Tier 1 acceptance remains open.
 
 [Array-search CMake policy correction](cp42-array-search-cmake-policy-2026-09-08.md)
 reproduces run 220's panic-expectation failure on CMake 3.25 and verifies the

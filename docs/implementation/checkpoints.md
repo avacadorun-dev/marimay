@@ -1701,9 +1701,12 @@ D102 direct-bottom enum transport is implemented locally: [evidence](evidence/cp
 The mapper I0001 guard is removed with enum metadata, match/propagation,
 MIR/wire rejection and both-engine allocation coverage. This does not close
 cross-platform verification or introduce general recursive inhabitation proofs.
-Callback removal gate: deliver the nonfatal escaping-mutable-capture warning with
-severity, escape classification and positive/negative fixtures before full §6.3
-conformance or CP42 callback acceptance; legal escaping closures remain legal.
+D103 implements the nonfatal T0020 mutable-capture warning locally:
+[evidence](evidence/cp42-escape-warning-2026-09-09.md). Severity, bounded
+alias/containment analysis, precise warning/no-warning fixtures, allocation
+failures and continuing check/run/build/test close this diagnostic removal gap.
+The conservative precision boundary remains explicit; full CP42/Tier 1
+acceptance is still open.
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome

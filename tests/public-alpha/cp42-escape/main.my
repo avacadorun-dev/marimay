@@ -1,0 +1,18 @@
+import * as io from "std/io";
+
+import * as counter from "example/cp42-escape/counter";
+
+fn cleanup(): void {
+  const _ = io.eprintln("cleanup");
+}
+
+fn main(args: []string): int {
+  defer cleanup();
+  const f = counter.make();
+  const value = f() + f();
+  if args.length() > 0 {
+    panic("escape fixture");
+  }
+  const _ = io.println($"{value}");
+  return 0;
+}

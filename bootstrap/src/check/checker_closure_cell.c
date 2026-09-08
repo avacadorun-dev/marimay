@@ -39,11 +39,11 @@ static bool option_for_cell(MarimayFunctionChecker *function, MarimayTypeId type
 }
 
 bool mmay_closure_prepare_local(MarimayFunctionChecker *function, MarimayCheckLocal *local) {
-    if (!local->mutable_binding) return true;
     if (!function->capture_scan_done) {
         function->capture_scan_needed = mentioned_in_closure(function, function->body_node, (MarimayCheckName){0}, false);
         function->capture_scan_done = true;
     }
+    if (!local->mutable_binding) return !mmay_checker_has_failed(function->checker);
     if (!function->capture_scan_needed
         || !mentioned_in_closure(function, function->body_node, local->name, false))
         return !mmay_checker_has_failed(function->checker);

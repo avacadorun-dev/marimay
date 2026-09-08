@@ -5,6 +5,7 @@
 #include <stddef.h>
 
 #include "mmay/base/owned_bytes.h"
+#include "mmay/diagnostic.h"
 #include "mmay/mir/function.h"
 #include "mmay/mir/interpret.h"
 #include "mmay/source/source_manager.h"
@@ -12,6 +13,7 @@
 
 typedef struct MarimayCheckDiagnostic {
     const char *code;
+    MarimaySeverity severity;
     const char *message;
     MarimayOwnedBytes owned_message;
     const MarimaySourceSnapshot *snapshot;

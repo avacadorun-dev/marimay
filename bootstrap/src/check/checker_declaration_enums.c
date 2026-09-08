@@ -315,7 +315,7 @@
     size_t index = 0;
     for (index = 0; index < checker->enums.length
         && !mmay_checker_has_failed(checker)
-        && checker->result->diagnostics.length == 0; index += 1) {
+        && checker->result->error_count == 0; index += 1) {
         MarimayCheckEnumDeclaration *declaration = mmay_vector_at(
             &checker->enums,
             index
@@ -325,12 +325,12 @@
                 declaration
             )) {
             if (!mmay_checker_has_failed(checker)
-                && checker->result->diagnostics.length == 0) {
+                && checker->result->error_count == 0) {
                 mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             }
             return false;
         }
     }
     return !mmay_checker_has_failed(checker)
-        && checker->result->diagnostics.length == 0;
+        && checker->result->error_count == 0;
 }

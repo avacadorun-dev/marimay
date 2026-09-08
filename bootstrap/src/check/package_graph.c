@@ -123,6 +123,7 @@ static bool mmay_graph_add_diagnostic(
         graph->failure = MMAY_CHECK_ALLOCATION_FAILED;
         return false;
     }
+    graph->result->error_count += 1;
     return true;
 }
 
@@ -161,6 +162,7 @@ static bool mmay_graph_add_owned_diagnostic(
         graph->failure = MMAY_CHECK_ALLOCATION_FAILED;
         return false;
     }
+    graph->result->error_count += 1;
     return true;
 }
 
@@ -952,7 +954,7 @@ static MarimayCheckStatus mmay_check_graph(
     } else if (!mmay_graph_visit(&graph, root_index, 1)) {
         goto fail;
     }
-    if (result->diagnostics.length != 0) {
+    if (result->error_count != 0) {
         return mmay_graph_finish_diagnostics(&graph);
     }
     for (package_index = 0; package_index < graph.order.length;
@@ -977,7 +979,7 @@ static MarimayCheckStatus mmay_check_graph(
             mmay_vector_dispose(&bindings);
             goto fail;
         }
-        if (result->diagnostics.length != 0) {
+        if (result->error_count != 0) {
             mmay_vector_dispose(&bindings);
             return mmay_graph_finish_diagnostics(&graph);
         }
@@ -1016,7 +1018,7 @@ static MarimayCheckStatus mmay_check_graph(
             goto fail;
         }
         mmay_graph_capture_surface_count(result, &package->surface);
-        if (result->diagnostics.length != 0) {
+        if (result->error_count != 0) {
             return mmay_graph_finish_diagnostics(&graph);
         }
     }
@@ -1026,7 +1028,7 @@ fail:
     mmay_graph_dispose(&graph);
     if (graph.failure != MMAY_CHECK_OK) {
         if (graph.failure == MMAY_CHECK_INCOMPLETE_LANGUAGE
-            && result->initialized && result->diagnostics.length != 0) {
+            && result->initialized && result->error_count != 0) {
             return graph.failure;
         }
         mmay_check_result_dispose(result);

@@ -43,7 +43,7 @@
     MarimayTypeId local_type = MMAY_TYPE_INVALID;
     MarimayExpressionValue value;
     MarimayCheckLocal *local = NULL;
-    size_t diagnostics_before = function->checker->result->diagnostics.length;
+    size_t diagnostics_before = function->checker->result->error_count;
     bool has_value = false;
     memset(&value, 0, sizeof(value));
     if (discard != NULL) {
@@ -152,7 +152,7 @@
     }
     if (local_type == MMAY_TYPE_VOID) {
         const MarimayAstNode *site = expression != NULL ? expression : type_node;
-        if (function->checker->result->diagnostics.length == diagnostics_before) {
+        if (function->checker->result->error_count == diagnostics_before) {
             (void)mmay_checker_add_diagnostic(
                 function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
                 "void cannot be stored in a named binding",
@@ -181,7 +181,7 @@
             expression->end
         );
     }
-    return function->checker->result->diagnostics.length > diagnostics_before
+    return function->checker->result->error_count > diagnostics_before
         || expression == NULL;
 }
 

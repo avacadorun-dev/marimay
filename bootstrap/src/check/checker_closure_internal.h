@@ -5,6 +5,7 @@
 
 typedef struct MarimayClosureCapture {
     MarimayCheckLocal local;
+    size_t declaring_depth;
     MarimayMirRecordArgument argument;
 } MarimayClosureCapture;
 

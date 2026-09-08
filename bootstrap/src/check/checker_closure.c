@@ -1,5 +1,6 @@
 #include "checker_closure_internal.h"
 #include "checker_core_api.h"
+#include "checker_escape_api.h"
 #include "checker_cfg_api.h"
 #include "checker_expression_api.h"
 #include "checker_lookup_api.h"
@@ -112,10 +113,18 @@ static bool compile_closure(MarimayFunctionChecker *function, const MarimayAstNo
                     result_type == MMAY_TYPE_VOID ? MMAY_MIR_NO_REGISTER : value.register_id, node->start, node->end)) goto cleanup;
         }
     }
-    if (function->checker->result->diagnostics.length != body.diagnostic_start) goto cleanup;
+    if (function->checker->result->error_count != body.diagnostic_start) goto cleanup;
     if (!mmay_closure_finish_captures(&body, &environment)
         || !mmay_function_value_publish(&body, signature)
         || !mmay_function_value_wrap(function, node, type, environment, symbol, result)) goto cleanup;
+    size_t captured_depth = 0;
+    for (size_t i = 0; i < context.captures.length; i += 1) {
+        const MarimayClosureCapture *capture = mmay_vector_at_const(&context.captures, i);
+        if (capture->local.mutable_binding && capture->declaring_depth > captured_depth)
+            captured_depth = capture->declaring_depth;
+    }
+    if (!mmay_escape_origin(function, result->register_id, captured_depth,
+            (MarimayMirSpan){node->start, node->end})) goto cleanup;
     ok = true;
     goto cleanup;
 allocation:

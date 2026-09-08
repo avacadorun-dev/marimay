@@ -329,24 +329,24 @@ MarimayCheckStatus mmay_checker_check_package_unit(
         }
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_evaluate_all_type_aliases(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_resolve_all_record_fields(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_resolve_all_enum_variants(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_resolve_all_interface_methods(&checker);
     }
     for (ast_index = 0; ast_index < sorted_asts.length
         && !mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0; ast_index += 1) {
+        && result->error_count == 0; ast_index += 1) {
         const MarimayAstTree *const *ast = mmay_vector_at_const(
             &sorted_asts,
             ast_index
@@ -399,7 +399,7 @@ MarimayCheckStatus mmay_checker_check_package_unit(
     }
     for (ast_index = 0; ast_index < sorted_asts.length
         && !mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0; ast_index += 1) {
+        && result->error_count == 0; ast_index += 1) {
         const MarimayAstTree *const *ast = mmay_vector_at_const(
             &sorted_asts,
             ast_index
@@ -414,7 +414,7 @@ MarimayCheckStatus mmay_checker_check_package_unit(
         }
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         size_t symbol_total = 0;
         if (!mmay_checker_private_check_symbol_fact_total(&checker, &symbol_total)
             || symbol_total > checker.options.max_symbols) {
@@ -422,15 +422,15 @@ MarimayCheckStatus mmay_checker_check_package_unit(
         }
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_evaluate_all_constants(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_publish_constants(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         for (index = 0; index < checker.declarations.length
             && !mmay_checker_has_failed(&checker); index += 1) {
             MarimayCheckFunctionDeclaration *declaration = mmay_vector_at(
@@ -448,31 +448,31 @@ MarimayCheckStatus mmay_checker_check_package_unit(
         }
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_publish_type_aliases(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_publish_records(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_publish_enums(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_publish_interfaces(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_checker_private_publish_symbol_facts(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length == 0) {
+        && result->error_count == 0) {
         (void)mmay_check_finalize_semantic_facts(&checker);
     }
     if (!mmay_checker_has_failed(&checker)
-        && result->diagnostics.length != 0) {
+        && result->error_count != 0) {
         if (!mmay_check_clear_semantics(result)) {
             mmay_checker_fail(&checker, MMAY_CHECK_ALLOCATION_FAILED);
         }
@@ -483,7 +483,7 @@ MarimayCheckStatus mmay_checker_check_package_unit(
         MarimayCheckStatus status = checker.failure;
         if (status == MMAY_CHECK_INCOMPLETE_LANGUAGE
             && result->initialized
-            && result->diagnostics.length != 0
+            && result->error_count != 0
             && mmay_check_clear_semantics(result)) {
             return status;
         }

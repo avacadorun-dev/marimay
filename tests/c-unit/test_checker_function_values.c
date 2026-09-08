@@ -26,8 +26,8 @@ static void check_failures(const char *source, bool valid) {
         if (status == MMAY_CHECK_OK || (!valid && status == MMAY_CHECK_INCOMPLETE_LANGUAGE)) {
             completed = true;
             if (!valid && checked.diagnostics.length == 0) fprintf(stderr, "accepted invalid callable: %s\n",source);
-            MMAY_EXPECT(valid ? checked.diagnostics.length == 0 : checked.diagnostics.length > 0);
-            if (valid && checked.diagnostics.length != 0) {
+            MMAY_EXPECT(valid ? checked.error_count == 0 : checked.error_count > 0);
+            if (valid && checked.error_count != 0) {
                 const MarimayCheckDiagnostic *diagnostic = mmay_check_diagnostic(&checked, 0);
                 fprintf(stderr, "callable diagnostic: %s\n", diagnostic->message);
             }

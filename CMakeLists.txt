@@ -526,6 +526,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_match_lower.c
   bootstrap/src/check/checker_match_pattern.c
   bootstrap/src/check/checker_enum_bottom.c
+  bootstrap/src/check/checker_escape.c
   bootstrap/src/check/checker_enum_pattern_names.c
   bootstrap/src/check/checker_match_witness.c
   bootstrap/src/check/checker_publication.c

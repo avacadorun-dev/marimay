@@ -494,7 +494,7 @@
             }
             return false;
         } else if (mmay_checker_has_failed(function->checker)
-            || function->checker->result->diagnostics.length
+            || function->checker->result->error_count
                 != function->diagnostic_start) {
             return false;
         }

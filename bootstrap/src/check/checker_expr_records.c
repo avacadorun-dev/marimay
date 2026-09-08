@@ -514,7 +514,7 @@ cleanup:
             receiver
         )) {
         if (!mmay_checker_has_failed(function->checker)
-            && function->checker->result->diagnostics.length
+            && function->checker->result->error_count
                 == function->diagnostic_start) {
             mmay_checker_fail(
                 function->checker,

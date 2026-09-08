@@ -35,6 +35,10 @@ MarimayCheckLocal *mmay_closure_find_local(MarimayFunctionChecker *function, Mar
     MarimayMirInstruction load = {0};
     MarimayTypeId field_type = outer.cell_type != MMAY_TYPE_INVALID ? outer.cell_type : outer.type;
     capture.local = outer;
+    if (outer.scope_depth == SIZE_MAX) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED); return NULL;
+    }
+    capture.declaring_depth = outer.scope_depth + 1;
     capture.local.scope_depth = 0;
     capture.argument = (MarimayMirRecordArgument){outer.cell_type != MMAY_TYPE_INVALID
         ? outer.cell_register : outer.register_id, field_type};

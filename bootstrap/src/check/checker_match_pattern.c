@@ -1,4 +1,5 @@
 #include "checker_closure_api.h"
+#include "checker_escape_api.h"
 #include "checker_enum_bottom_api.h"
 #include "checker_match_pattern_api.h"
 #include "checker_core_api.h"
@@ -75,7 +76,8 @@ bool mmay_checker_private_record_match_validate_named(
     local.scope_depth = function->scope_depth;
     local.mutable_binding = mutable_binding;
     local.initialized = initialized;
-    if (!mmay_closure_prepare_local(function, &local)) return false;
+    if (!mmay_closure_prepare_local(function, &local)
+        || !mmay_escape_local(function, &local)) return false;
     if (!mmay_vector_push(&function->locals, &local)) {
         mmay_checker_fail(function->checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;

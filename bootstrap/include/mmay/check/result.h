@@ -20,6 +20,8 @@ typedef struct MarimayCheckResult {
     const MarimaySourceSnapshot *snapshot;
     MarimayTypeTable types;
     MarimayVector diagnostics;
+    /* Diagnostics include warnings; only errors block semantic publication. */
+    size_t error_count;
     MarimayVector functions;
     MarimayVector constants;
     MarimayVector type_aliases;

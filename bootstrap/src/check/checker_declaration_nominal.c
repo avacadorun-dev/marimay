@@ -213,7 +213,7 @@ cleanup:
     size_t index = 0;
     for (index = 0; index < checker->type_aliases.length
         && !mmay_checker_has_failed(checker)
-        && checker->result->diagnostics.length == 0; index += 1) {
+        && checker->result->error_count == 0; index += 1) {
         MarimayCheckTypeAliasDeclaration *declaration = mmay_vector_at(
             &checker->type_aliases,
             index
@@ -228,7 +228,7 @@ cleanup:
                 declaration->name.end
             )) {
             if (!mmay_checker_has_failed(checker)
-                && checker->result->diagnostics.length == 0) {
+                && checker->result->error_count == 0) {
                 mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             }
             return false;
@@ -244,7 +244,7 @@ cleanup:
         }
     }
     return !mmay_checker_has_failed(checker)
-        && checker->result->diagnostics.length == 0;
+        && checker->result->error_count == 0;
 }
 
  bool mmay_checker_private_publish_type_aliases(MarimayChecker *checker) {

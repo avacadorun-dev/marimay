@@ -13,6 +13,7 @@ static bool mmay_cli_compile_render_semantics(
 static bool mmay_cli_compile_render(
     MarimayWriter writer,
     MarimayDiagnosticStyle style,
+    MarimaySeverity severity,
     const char *code,
     const char *message,
     const MarimaySourceSnapshot *source,
@@ -22,7 +23,7 @@ static bool mmay_cli_compile_render(
     MarimayDiagnostic diagnostic;
     memset(&diagnostic, 0, sizeof(diagnostic));
     diagnostic.code = code;
-    diagnostic.severity = MMAY_SEVERITY_ERROR;
+    diagnostic.severity = severity;
     diagnostic.message = message;
     diagnostic.source = source;
     diagnostic.source_start = start;
@@ -43,14 +44,14 @@ int mmay_cli_compile_target_error(
             const MarimayManifestDiagnostic *diagnostic =
                 mmay_manifest_diagnostic(&target->manifest, index);
             if (diagnostic == NULL || !mmay_cli_compile_render(
-                    standard_error, options->diagnostic_style,
+                    standard_error, options->diagnostic_style, MMAY_SEVERITY_ERROR,
                     diagnostic->code, diagnostic->message,
                     target->problem_source, diagnostic->start,
                     diagnostic->end
                 )) return MMAY_EXIT_INTERNAL;
         }
         if (target->problem_code != NULL && !mmay_cli_compile_render(
-                standard_error, options->diagnostic_style,
+                standard_error, options->diagnostic_style, MMAY_SEVERITY_ERROR,
                 target->problem_code, target->problem_message,
                 target->problem_source, target->problem_start,
                 target->problem_end
@@ -80,7 +81,7 @@ int mmay_cli_compile_status_error(
     if (status == MMAY_COMPILER_INCOMPLETE_LANGUAGE) {
         if (result != NULL && result->initialized
             && result->checked.initialized
-            && result->checked.diagnostics.length != 0) {
+            && result->checked.error_count != 0) {
             (void)mmay_cli_compile_render_semantics(
                 result, options->diagnostic_style, standard_error
             );
@@ -125,7 +126,7 @@ static bool mmay_cli_compile_render_frontend(
                 &unit->lexed, diagnostic_index
             );
             if (diagnostic == NULL || !mmay_cli_compile_render(
-                    standard_error, style, diagnostic->code,
+                    standard_error, style, MMAY_SEVERITY_ERROR, diagnostic->code,
                     diagnostic->message, unit->snapshot,
                     diagnostic->start, diagnostic->end
                 )) return false;
@@ -137,7 +138,7 @@ static bool mmay_cli_compile_render_frontend(
                 &unit->parsed, diagnostic_index
             );
             if (diagnostic == NULL || !mmay_cli_compile_render(
-                    standard_error, style, diagnostic->code,
+                    standard_error, style, MMAY_SEVERITY_ERROR, diagnostic->code,
                     diagnostic->message, unit->snapshot,
                     diagnostic->start, diagnostic->end
                 )) return false;
@@ -158,7 +159,7 @@ static bool mmay_cli_compile_render_semantics(
             &result->checked, index
         );
         if (diagnostic == NULL || !mmay_cli_compile_render(
-                standard_error, style, diagnostic->code,
+                standard_error, style, diagnostic->severity, diagnostic->code,
                 diagnostic->message, diagnostic->snapshot,
                 diagnostic->start, diagnostic->end
             )) return false;

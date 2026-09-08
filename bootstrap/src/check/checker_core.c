@@ -629,8 +629,9 @@ MarimayCheckEnumDeclaration *mmay_checker_private_checker_find_enum(
         ) == 0;
 }
 
-bool mmay_checker_add_diagnostic(
+static bool mmay_checker_add_severity(
     MarimayChecker *checker,
+    MarimaySeverity severity,
     const char *code,
     const char *message,
     size_t start,
@@ -651,6 +652,7 @@ bool mmay_checker_add_diagnostic(
     }
     memset(&diagnostic, 0, sizeof(diagnostic));
     diagnostic.code = code;
+    diagnostic.severity = severity;
     diagnostic.message = message;
     diagnostic.snapshot = checker->ast->snapshot;
     diagnostic.start = start;
@@ -659,7 +661,24 @@ bool mmay_checker_add_diagnostic(
         mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
+    if (severity == MMAY_SEVERITY_ERROR) checker->result->error_count += 1;
     return true;
+}
+
+bool mmay_checker_add_diagnostic(MarimayChecker *checker, const char *code,
+    const char *message, size_t start, size_t end) {
+    return mmay_checker_add_severity(checker, MMAY_SEVERITY_ERROR, code, message, start, end);
+}
+
+bool mmay_checker_add_warning(MarimayChecker *checker, const char *code,
+    const char *message, size_t start, size_t end) {
+    /* Generic instantiations share the source warning, not duplicate messages. */
+    for (size_t i = 0; i < checker->result->diagnostics.length; i += 1) {
+        const MarimayCheckDiagnostic *old = mmay_check_diagnostic(checker->result, i);
+        if (old->severity == MMAY_SEVERITY_WARNING && old->snapshot == checker->ast->snapshot
+            && old->start == start && old->end == end && strcmp(old->code, code) == 0) return true;
+    }
+    return mmay_checker_add_severity(checker, MMAY_SEVERITY_WARNING, code, message, start, end);
 }
 
  bool mmay_checker_private_checker_add_owned_diagnostic(
@@ -704,5 +723,6 @@ bool mmay_checker_add_diagnostic(
         mmay_checker_fail(checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
     }
+    checker->result->error_count += 1;
     return true;
 }

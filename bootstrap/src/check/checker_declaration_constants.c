@@ -1,3 +1,4 @@
+#include "checker_escape_api.h"
 #include "checker_declaration_constants_api.h"
 #include "checker_core_api.h"
 #include "checker_declaration_functions_api.h"
@@ -103,7 +104,7 @@
     function.checker = checker;
     function.block = MMAY_MIR_NO_BLOCK;
     function.result_type = declaration->type;
-    function.diagnostic_start = checker->result->diagnostics.length;
+    function.diagnostic_start = checker->result->error_count;
     function.constant_evaluation = true;
     locals_initialized = mmay_vector_init(
         &function.locals,
@@ -217,6 +218,7 @@ cleanup:
     if (!accepted) {
         declaration->state = MMAY_CHECK_CONSTANT_INVALID;
     }
+    mmay_escape_dispose(&function);
     if (function.mir_initialized) {
         mmay_mir_function_dispose(&function.mir);
     }
@@ -235,7 +237,7 @@ cleanup:
     size_t index = 0;
     for (index = 0; index < checker->constants.length
         && !mmay_checker_has_failed(checker)
-        && checker->result->diagnostics.length == 0; index += 1) {
+        && checker->result->error_count == 0; index += 1) {
         MarimayCheckConstantDeclaration *declaration = mmay_vector_at(
             &checker->constants,
             index
@@ -250,14 +252,14 @@ cleanup:
                 declaration->name.end
             )) {
             if (!mmay_checker_has_failed(checker)
-                && checker->result->diagnostics.length == 0) {
+                && checker->result->error_count == 0) {
                 mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             }
             return false;
         }
     }
     return !mmay_checker_has_failed(checker)
-        && checker->result->diagnostics.length == 0;
+        && checker->result->error_count == 0;
 }
 
  bool mmay_checker_private_publish_constants(MarimayChecker *checker) {

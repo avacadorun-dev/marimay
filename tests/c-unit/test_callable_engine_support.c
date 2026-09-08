@@ -168,7 +168,7 @@ void mmay_test_callable_engines(const char *source, int64_t expected,
     MMAY_EXPECT(mmay_checker_import_fixture_init(&fixture, &input, 1));
     MMAY_EXPECT(mmay_checker_import_fixture_check(&fixture, "test/callable-engines",
         mmay_system_allocator(), mmay_check_graph_default_options(), &checked) == MMAY_CHECK_OK);
-    MMAY_EXPECT(checked.diagnostics.length == 0);
+    MMAY_EXPECT(checked.error_count == 0);
     const MarimayCheckedFunction *entry = mmay_checker_import_function(&checked, "main", &entry_index);
     MMAY_EXPECT(entry != NULL && checked.functions.length <= 64);
     if (entry == NULL || checked.functions.length > 64) goto cleanup;

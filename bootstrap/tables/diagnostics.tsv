@@ -76,6 +76,7 @@ T0016	MISSING_MATCH_VALUE	type checker	A reachable block match arm does not end 
 T0017	INVALID_ENTRY_POINT	run	Executable root does not declare an accepted main entry point.
 T0018	ARRAY_TYPE_SPELLING	type checker	Prelude managed-array source uses the removed Array<T> spelling instead of canonical []T.
 T0019	IGNORED_RESULT	type checker	A Result value is ignored by an expression statement instead of being handled or explicitly discarded.
+T0020	ESCAPING_MUTABLE_CAPTURE	type checker	A closure may outlive the block declaring a captured mutable local.
 U0001	UNKNOWN_COMMAND	command line	Unknown top-level command or help target.
 U0002	UNKNOWN_OPTION	command line	Unknown command-line option.
 U0003	UNAVAILABLE_COMMAND	command line	Specified command is not present in this bootstrap stage.

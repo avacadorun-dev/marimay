@@ -743,7 +743,21 @@ A `mapError` callback returning `never` can therefore produce a normal Ok path;
 an Err path calls that callback and has no normal continuation. Postfix `?`
 retains its exact error-type requirement, including when E is `never`.
 
-Closures capture lexical `const` bindings by value and `let` bindings through a managed mutable cell. Each iteration of a `for` loop creates a fresh iteration binding. The compiler warns when a closure captures a mutable local and escapes the declaring block.
+Closures capture lexical `const` bindings by value and `let` bindings through a managed mutable cell. Each iteration of a `for` loop creates a fresh iteration binding. The compiler warns when a closure captures a mutable local and may escape its declaring block (D103).
+
+T0020 is nonfatal and appears once per closure source span, including generic
+instantiations. Check, run, build and test continue when diagnostics contain
+only warnings. The initial analysis accumulates possible aliases across
+assignments and branches; it distinguishes record fields and enum payload
+positions but merges array elements. Returning a value, storing it in an outer
+binding/container, or passing it to an ordinary call can make a contained
+closure escape. An ordinary callee can retain arguments and return aliases to
+storage it retains. A direct function-value invocation does not retain the
+callable itself; values in its captured environment can be exposed by its body.
+This also applies to the direct callback in findIndex/mapError. Overwrites,
+removal and unreachable branches do not establish no-escape proofs. These
+conservative boundaries can warn on programs that do not escape at runtime;
+they do not alter the managed-cell lifetime or make those programs illegal.
 
 A captured local must be definitely initialized when the closure is created.
 Copying a captured reference preserves the identity of the referenced object;

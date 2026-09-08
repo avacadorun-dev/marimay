@@ -1,3 +1,4 @@
+#include "checker_escape_api.h"
 #include "checker_declaration_functions_api.h"
 #include "package_imports_api.h"
 #include "checker_cfg_api.h"
@@ -46,7 +47,7 @@ static bool mmay_checker_test_arguments_type(
     );
     MarimayCheckFunctionDeclaration declaration;
     MarimayCheckTopLevelEntry top_level_entry;
-    size_t diagnostics_before = checker->result->diagnostics.length;
+    size_t diagnostics_before = checker->result->error_count;
     size_t index = 0;
     bool attribute_valid = true;
     bool duplicate_name = false;
@@ -279,7 +280,7 @@ static bool mmay_checker_test_arguments_type(
         if (mmay_checker_has_failed(checker)) goto cleanup;
         declaration.signature_valid = false;
     }
-    if (checker->result->diagnostics.length != diagnostics_before) {
+    if (checker->result->error_count != diagnostics_before) {
         declaration.signature_valid = false;
     }
     if (declaration.signature_valid) {
@@ -572,7 +573,7 @@ cleanup:
     );
     MarimayCheckConstantDeclaration declaration;
     MarimayCheckTopLevelEntry top_level_entry;
-    size_t diagnostics_before = checker->result->diagnostics.length;
+    size_t diagnostics_before = checker->result->error_count;
     size_t index = 0;
     bool duplicate_name = false;
     bool top_level_index_inserted = false;
@@ -677,7 +678,7 @@ cleanup:
         );
         goto cleanup;
     }
-    if (checker->result->diagnostics.length != diagnostics_before) {
+    if (checker->result->error_count != diagnostics_before) {
         declaration.declaration_valid = false;
         declaration.state = MMAY_CHECK_CONSTANT_INVALID;
     }
@@ -906,7 +907,7 @@ cleanup:
         ? &declaration->generic_arguments : NULL;
     checker->active_type_parameters = function.type_parameters;
     checker->active_type_arguments = function.type_arguments;
-    function.diagnostic_start = checker->result->diagnostics.length;
+    function.diagnostic_start = checker->result->error_count;
     locals_initialized = mmay_vector_init(
         &function.locals,
         checker->result->allocator,
@@ -994,7 +995,7 @@ cleanup:
     if (mmay_checker_has_failed(checker)) {
         goto cleanup;
     }
-    if (checker->result->diagnostics.length != function.diagnostic_start) {
+    if (checker->result->error_count != function.diagnostic_start) {
         accepted = true;
         goto cleanup;
     }
@@ -1039,6 +1040,7 @@ cleanup:
         mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
         goto cleanup;
     }
+    if (!mmay_escape_check(&function)) goto cleanup;
     function_index = checker->result->functions.length;
     if (function_index >= checker->options.max_functions) {
         mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED); goto cleanup;
@@ -1099,6 +1101,7 @@ cleanup:
         checker->active_type_parameters = NULL;
         checker->active_type_arguments = NULL;
     }
+    mmay_escape_dispose(&function);
     if (function.mir_initialized) {
         mmay_mir_function_dispose(&function.mir);
     }

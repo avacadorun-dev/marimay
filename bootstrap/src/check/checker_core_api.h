@@ -19,6 +19,8 @@
 );
 
 void mmay_checker_fail(MarimayChecker *checker, MarimayCheckStatus status);
+bool mmay_checker_add_warning(MarimayChecker *checker, const char *code,
+    const char *message, size_t start, size_t end);
 void mmay_checker_fail_incomplete(
     MarimayChecker *checker,
     const MarimayAstNode *node,

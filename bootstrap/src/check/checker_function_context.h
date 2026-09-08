@@ -40,6 +40,7 @@ typedef struct MarimayFunctionChecker {
     MarimaySymbolId source_symbol;
     const MarimayAstNode *body_node;
     struct MarimayClosureContext *closure;
+    struct MarimayEscapeFacts *escape;
     size_t capture_scan_work;
     size_t enum_bottom_work;
     bool capture_scan_done, capture_scan_needed;

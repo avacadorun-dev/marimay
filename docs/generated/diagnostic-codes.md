@@ -83,6 +83,7 @@ The committed registry is the source of stable diagnostic identities. Later gate
 | `T0017` | run | Executable root does not declare an accepted main entry point. |
 | `T0018` | type checker | Prelude managed-array source uses the removed Array<T> spelling instead of canonical []T. |
 | `T0019` | type checker | A Result value is ignored by an expression statement instead of being handled or explicitly discarded. |
+| `T0020` | type checker | A closure may outlive the block declaring a captured mutable local. |
 | `U0001` | command line | Unknown top-level command or help target. |
 | `U0002` | command line | Unknown command-line option. |
 | `U0003` | command line | Specified command is not present in this bootstrap stage. |

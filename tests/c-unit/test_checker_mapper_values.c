@@ -22,7 +22,7 @@ static void mapper_check(const char *source, bool valid) {
         }
         MMAY_EXPECT(complete || status == MMAY_CHECK_ALLOCATION_FAILED);
         if (complete) {
-            MMAY_EXPECT(valid ? checked.diagnostics.length == 0 : checked.diagnostics.length > 0);
+            MMAY_EXPECT(valid ? checked.error_count == 0 : checked.error_count > 0);
             state.failure_index = SIZE_MAX;
             for (size_t i = 0; valid && i < checked.functions.length; i += 1)
                 MMAY_EXPECT(mmay_mir_verify(&mmay_checked_function(&checked, i)->mir) == MMAY_MIR_VERIFY_OK);

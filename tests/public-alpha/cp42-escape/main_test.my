@@ -1,0 +1,29 @@
+import * as counter from "example/cp42-escape/counter";
+
+fn testFactory(): () => int {
+  let n = 7;
+  return (): int => n;
+}
+
+@test
+fn returnedCell(): void {
+  const f = counter.make();
+  expect.equal(f(), 2);
+  expect.equal(f(), 3);
+  expect.equal(counter.later(), 2);
+}
+
+@test
+fn localAlias(): void {
+  let n = 1;
+  const f = (): int => n;
+  const g = f;
+  n = 4;
+  expect.equal(g(), 4);
+}
+
+@test
+fn testTargetWarning(): void {
+  const f = testFactory();
+  expect.equal(f(), 7);
+}

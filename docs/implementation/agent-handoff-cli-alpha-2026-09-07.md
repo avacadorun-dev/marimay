@@ -110,9 +110,9 @@ evidence. Значения можно хранить,
 а итерации получают отдельные bindings. Старое I0001 при сохранении closure
 больше не описывает текущее состояние. Не переделывай этот ABI под findIndex.
 
-Открытый callback gate: nonfatal warning об escaping mutable capture из §6.3
-ещё не реализован; нужны severity, escape analysis и warning fixtures до полной
-приёмки. Общий inference без аннотаций, generic/unsafe/extern references,
+D098 оставлял callback gate: nonfatal warning об escaping mutable capture
+из §6.3. D103 ниже реализует его локально с severity, bounded escape analysis
+и warning fixtures; полная CP42/Tier 1 приёмка остаётся открытой. Общий inference без аннотаций, generic/unsafe/extern references,
 suspension и FFI callbacks этим срезом не заявлены. D100 ниже переводит
 `Result.mapError` на те же сохранённые callbacks.
 
@@ -338,8 +338,29 @@ git diff --check
 pattern получает T0014. `?` сохраняет точное совпадение E. Нет новых opcodes,
 wire fields, значений never или recursive inhabitation proofs.
 
-Следующий блок — nonfatal escaping-mutable-capture warning из D098/§6.3.
-Нельзя превратить warning в ошибку или считать такую программу неисполняемой.
+Nonfatal escaping-mutable-capture warning из D098/§6.3 реализован D103 ниже.
+Warning не становится ошибкой и не делает такую программу неисполняемой.
 Далее delimited/source-lint и полная последовательность CP42 → CP41 → CP39 →
 CP40/N0. Книга в D102 не использовалась. Каталог `output/` существовал до этого
 цикла и не относится к правкам компилятора; не добавляй его в коммит.
+
+
+## Продолжение 2026-09-09: D103 nonfatal capture warning
+
+[Evidence](evidence/cp42-escape-warning-2026-09-09.md) фиксирует T0020 с severity
+warning. Error count отделён от общего числа сообщений: предупреждение не
+прерывает публикацию MIR, следующие файлы/пакеты, build/run/test. Точный контракт
+консервативного анализа записан в D103 и §6.3; alias/containment owner остаётся
+в checker и не меняет boxing, GC roots или наблюдаемое поведение VM/native.
+
+Тесты включают точные spans, shadowing, generic-dedup, локальное использование,
+возврат/внешнее хранение, контейнеры и циклы, все достижимые отказы памяти,
+лимиты и 31 process observation. Старые callback fixtures теперь явно проверяют
+warning prefix отдельно от runtime stderr. Полное закрытие CP42 из этого
+не следует. Следующая работа: delimited/source-lint → приёмка всего портфеля
+CP42 → CP41 → CP39 → CP40/N0; восемь приложений уже реализованы.
+
+Книга: применены принципы неподвижной точки и монотонного data-flow, печатные
+62–63 и 65–68 (PDF 63–64 и 66–69). Точное соответствие и ограничения записаны
+в исследовательском журнале. Это диагностика, не измеренное ускорение.
+Каталог `output/` не относится к изменениям языка и оставлен нетронутым.

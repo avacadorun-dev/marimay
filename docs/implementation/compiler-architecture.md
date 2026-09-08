@@ -256,6 +256,7 @@ bootstrap/src/check/
                         and lowering
   checker_match_lower.c D092 shared arm completion, result capture before
                         lexical defer cleanup, and compile-time scope reset
+  checker_escape.c       D103 lexical capture facts, alias/containment graph and warning worklist
   checker_enum_bottom.c  D102 concrete direct-bottom variant facts and impossible CFG edges
   checker_enum_pattern_names.c
                         exact D084 enum pattern qualifier/alias resolution
@@ -295,8 +296,12 @@ construction; an unused callable type may have no constructions at all.
 `test_checker_function_values.c` owns typing, allocation failures and budgets;
 `test_function_value_engines.c` owns MIR/wire/VM/native lifetime and failure
 coverage. The public CP42 fixture owns source behavior and formatter round trips.
-The conservative cell plan and outstanding escape-warning removal gate are
-recorded in D098 and the CP42 evidence packet.
+The conservative cell plan remains D098. D103 owns a separate, bounded
+flow-insensitive escape analysis with field-sensitive containment, warnings
+and focused allocation/budget tests in `test_checker_escape.c`. It consumes
+verified MIR and resolved lexical facts before publication, then disposes all
+analysis state. Error counts control publication independently of diagnostic
+counts. VM/native storage and capture lifetimes are unchanged.
 
 D100's `checker_mapper.c` owns callback/constructor preparation and exact input
 selection; the Result owner owns the variant CFG. Contextual mapper closures

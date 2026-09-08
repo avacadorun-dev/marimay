@@ -386,6 +386,7 @@ void mmay_check_dispose_diagnostics(MarimayCheckResult *result) {
         }
     }
     result->diagnostics.length = 0;
+    result->error_count = 0;
 }
 
 bool mmay_check_function_index_init(MarimayCheckResult *result) {

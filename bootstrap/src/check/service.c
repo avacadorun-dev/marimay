@@ -922,7 +922,7 @@ cleanup:
     if (failure != MMAY_COMPILER_OK) {
         if (failure == MMAY_COMPILER_INCOMPLETE_LANGUAGE
             && built->initialized && built->checked.initialized
-            && built->checked.diagnostics.length != 0) {
+            && built->checked.error_count != 0) {
             mmay_compiler_result_dispose(result);
             *result = *built;
             memset(built, 0, sizeof(*built));
@@ -1076,7 +1076,7 @@ bool mmay_compiler_result_has_errors(const MarimayCompilerResult *result) {
     return result != NULL && result->initialized
         && (result->has_frontend_errors
             || (result->checked.initialized
-                && result->checked.diagnostics.length != 0));
+                && result->checked.error_count != 0));
 }
 
 void mmay_compiler_result_dispose(MarimayCompilerResult *result) {

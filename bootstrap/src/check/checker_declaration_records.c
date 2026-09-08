@@ -570,7 +570,7 @@ cleanup:
     size_t index = 0;
     for (index = 0; index < checker->records.length
         && !mmay_checker_has_failed(checker)
-        && checker->result->diagnostics.length == 0; index += 1) {
+        && checker->result->error_count == 0; index += 1) {
         MarimayCheckRecordDeclaration *declaration = mmay_vector_at(
             &checker->records,
             index
@@ -580,12 +580,12 @@ cleanup:
                 declaration
             )) {
             if (!mmay_checker_has_failed(checker)
-                && checker->result->diagnostics.length == 0) {
+                && checker->result->error_count == 0) {
                 mmay_checker_fail(checker, MMAY_CHECK_INTERNAL_ERROR);
             }
             return false;
         }
     }
     return !mmay_checker_has_failed(checker)
-        && checker->result->diagnostics.length == 0;
+        && checker->result->error_count == 0;
 }

@@ -213,7 +213,7 @@ static bool mmay_json_fuzz_compile(void) {
     );
     if (compiler_status != MMAY_COMPILER_OK
         || compiler.has_frontend_errors
-        || compiler.checked.diagnostics.length != 0) {
+        || compiler.checked.error_count != 0) {
         goto cleanup;
     }
     entry = mmay_json_fuzz_entry(&compiler.checked);
