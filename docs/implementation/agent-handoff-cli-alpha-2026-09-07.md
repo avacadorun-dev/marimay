@@ -190,11 +190,34 @@ VM — 163/270/421 мс; на 20 МиБ peak RSS ниже 40/60 МиБ соот�
 escaping-capture warning, файловая волна manifest/project-check/env-paths,
 затем delimited/source-lint; full CP42/CP41/CP39/CP40/N0 обязательства прежние.
 
-Последняя bounded infra-диагностика: Mac ci.example видит gateway
-ci.example, но оба ci.example/134 недоступны. Это не доказанный отказ Gitea
-или runner. Вопрос VPN/другого адреса pending. D100 `c394636` остался локальным;
-перед утверждением о push сверяй origin. Подагент завершил диагностику,
-не запускай новый бесконечный мониторинг и не жди CI для независимой работы.
+## Файловая волна: текущий локальный результат
+
+[Manifest/project-check/env-paths и D092 diagnostics](evidence/cp42-files-context-2026-09-08.md)
+реализованы в трёх отдельных repos без remotes. Восьмь реализаций из десяти —
+не восемь принятых приложений. `tree` общий по исходникам и версии, обход
+итеративный, сортировка глобальных путей слиянием; project-check использует
+неизменённый config owner v1/v2. Проверяет все применимые замечания, а при
+неполном обходе не выдумывает отсутствие файла. Env читает только выбранные
+имена, различает absent/empty/denied и не раскрывает отказанные значения.
+
+Именованный void payload теперь получает T0002 в checker; семь форм и все
+allocation-failure indices покрыты. Не начинай этот defect заново. Release
+81/81 плюс configuration-restricted packaging 1/1; focused checker ASan/UBSan
+1/1. Source tests 5/4/3 both; 88 process scenarios и 9 closed pipes. На 10000
+файлах native manifest/project-check около 295/238 мс, VM 3,91/2,00 с. Первый
+native 567/391/385 мс при бюджете 100 мс остаётся блокером. Точные ревизии,
+источники и сырые результаты — в evidence, не в старых timing snapshots.
+
+Далее: escaping-mutable-capture warning и uninhabited enum transport;
+delimited/source-lint; полная CP42 → CP41 → CP39 → CP40/N0 приёмка. Запрошена
+информация об остальных Tier 1 hosts и физическом Linux PMU хосте. Платформы
+и бюджеты не сокращены. Книга в файловой волне не использовалась.
+
+Сеть восстановлена: D100/D101 запушены, origin/main подтверждён на `94d1e85`.
+Read-only infra-agent нашёл run 221 этого SHA в очереди за run 220, без
+начавшихся jobs на момент наблюдения. Это не green CI. Не повторяй старый
+вывод о недоступности LAN; сверяй новую ревизию и её CI отдельно. Подагент
+завершил bounded проверку; бесконечный мониторинг не нужен.
 
 ## Портфель и общая приёмка
 

@@ -1692,9 +1692,11 @@ Function-value/capture foundation: [D098 local evidence](evidence/cp42-function-
 Predicate search and Notes integration: [D099 local evidence](evidence/cp42-array-search-2026-09-08.md).
 Ordinary Result mappers and root lifetime: [D100 local evidence](evidence/cp42-mapper-values-2026-09-08.md).
 Streaming/file-line wave and native record views: [D101 local evidence](evidence/cp42-file-lines-2026-09-08.md).
-Diagnostic removal gate: named void enum payload bindings must report T0002
-instead of the observed silent internal status 70; the ordinary named-void
-restriction remains unchanged.
+File/context wave and D092 diagnostic repair: [local evidence](evidence/cp42-files-context-2026-09-08.md).
+Named void enum payload patterns now report T0002 at the binding; positional,
+nested, named and remainder forms have allocation/diagnostic coverage. The
+ordinary named-void restriction is unchanged. Eight apps are implemented;
+source-lint/delimited and complete portfolio acceptance remain open.
 Common-layout removal gate: implement uninhabited enum payload transport before
 accepting mapper result `never`; the current I0001 is an explicit implementation
 gap, not a normative source restriction.

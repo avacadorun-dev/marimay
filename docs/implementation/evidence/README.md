@@ -119,6 +119,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[File/context applications and void-pattern diagnostics](cp42-files-context-2026-09-08.md)
+records manifest/project-check/env-paths, their shared bounded tree/config owners,
+88 exact process scenarios, 1000/10000-file measurements and the D092 named-void
+pattern correction. Eight apps are implemented; full acceptance and first native
+startup remain open. Both callback diagnostic/never-transport gates remain open.
+
 [Shared file lines and three streaming CLI consumers](cp42-file-lines-2026-09-08.md)
 records D101, file/stdin cursor and allocation contracts, native record-view
 lifetime repair, logstats/grep/frequency source/process acceptance, and 2/20 MiB

@@ -1,6 +1,49 @@
 #include "test_checker_support.h"
 
+/* D092 applies to every pattern spelling before locals or MIR are built. */
+static void mmay_void_pattern_diagnostics(void) {
+    static const char *sources[] = {
+        "fn f(r:Result<void,int>):int{return match r{Ok(item)=>0,Err(_)=>1,};}",
+        "fn f(r:Result<int,void>):int{return match r{Ok(_)=>0,Err(item)=>1,};}",
+        "fn f(r:Option<void>):int{return match r{Some(item)=>0,None=>1,};}",
+        "fn f(r:Result<void,int>):int{return match r{Ok(_ as item)=>0,Err(_)=>1,};}",
+        "fn f(r:Option<Result<void,int>>):int{return match r{Some(Ok(item))=>0,Some(Err(_))=>1,None=>2,};}",
+        "enum Box<T>{Value{item:T,},}fn f(r:Box<void>):int{return match r{Value{item}=>0,};}",
+        "enum Box<T>{Value{v:T,},}fn f(r:Box<void>):int{return match r{Value{v:item}=>0,};}",
+    };
+    for (size_t sample = 0; sample < sizeof(sources) / sizeof(sources[0]); sample += 1) {
+        const char *source = sources[sample];
+        mmay_checker_expect_one_diagnostic(source, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "item", sample == 5 ? 1 : 0);
+        MarimayCheckerFixture fixture = {0};
+        bool initialized = mmay_checker_fixture_init(&fixture, source);
+        MMAY_EXPECT(initialized);
+        if (!initialized) continue;
+        bool complete = false;
+        for (size_t failure = 0; failure < 4096 && !complete; failure += 1) {
+            MarimayFailAllocator state;
+            MarimayCheckResult checked = {0};
+            mmay_fail_allocator_init(&state, mmay_system_allocator(), failure);
+            MarimayCheckStatus status = mmay_check_ast(&fixture.ast, "test/void-pattern",
+                mmay_fail_allocator(&state), mmay_check_default_options(), &checked);
+            complete = status == MMAY_CHECK_OK;
+            MMAY_EXPECT(complete || status == MMAY_CHECK_ALLOCATION_FAILED);
+            if (complete) {
+                const MarimayCheckDiagnostic *diagnostic = mmay_check_diagnostic(&checked, 0);
+                MMAY_EXPECT(checked.diagnostics.length == 1);
+                MMAY_EXPECT(diagnostic != NULL && strcmp(diagnostic->code, "T0002") == 0);
+            }
+            mmay_check_result_dispose(&checked);
+            MMAY_EXPECT(state.live_allocations == 0);
+            MMAY_EXPECT(state.live_bytes == 0);
+        }
+        MMAY_EXPECT(complete);
+        mmay_checker_fixture_dispose(&fixture);
+    }
+}
+
 void mmay_test_checker_nested_patterns(void) {
+    mmay_void_pattern_diagnostics();
     static const char source[] =
         "type Leaf { value: int, }\n"
         "type Wrap { leaf: Leaf, }\n"

@@ -182,6 +182,13 @@ bool mmay_checker_private_record_match_validate_named(
         mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT);
         return false;
     }
+    if (type == MMAY_TYPE_VOID) {
+        (void)mmay_checker_add_diagnostic(
+            function->checker, MMAY_DIAGNOSTIC_TYPE_MISMATCH,
+            "void cannot be stored in a named binding", name.start, name.end
+        );
+        return false;
+    }
     for (index = 0; index < bindings->length; index += 1) {
         const MarimayCheckEnumMatchBinding *existing = mmay_vector_at_const(
             bindings,

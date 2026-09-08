@@ -302,6 +302,9 @@ interface Error {
 Any nominal type whose dot-call set contains an exact visible `message(): string` signature can be used as `Error`. The interface does not prescribe logging, status codes, causes, or stack capture; packages model those through richer interfaces or enum payloads.
 
 When a positional enum variant's instantiated payload type is `void`, its constructor takes no argument. Thus a function returning `Result<void,E>` completes with `Ok()`.
+Under D092, a pattern may discard that payload with `_`, but cannot give it a
+name. This applies recursively, including named-field shorthand and `_ as name`;
+the named binding receives the ordinary type-error diagnostic before MIR lowering.
 
 Unit constructors are values under D069. Expected-type inference therefore
 permits `return None;` in a function returning `Option<T>`. Positional enum
