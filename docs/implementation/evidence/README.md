@@ -119,6 +119,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Array-search CMake policy correction](cp42-array-search-cmake-policy-2026-09-08.md)
+reproduces run 220's panic-expectation failure on CMake 3.25 and verifies the
+standalone script with explicit policies on both CMake 3.25.2 and 4.4.2. No
+runtime behavior or required test was changed; exact-revision CI remains open.
+
 [File/context applications and void-pattern diagnostics](cp42-files-context-2026-09-08.md)
 records manifest/project-check/env-paths, their shared bounded tree/config owners,
 88 exact process scenarios, 1000/10000-file measurements and the D092 named-void

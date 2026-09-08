@@ -1,0 +1,81 @@
+{
+  "wheel_sha256": "962224cfb988ce9c9f3223de9cea68cd3a9d7c0f251866aee5db4620bed2ef73",
+  "records": [
+    {
+      "name": "3.25-before",
+      "command": [
+        "/workspace/Projects/Marimay/marimay/build/file-wave/cmake-3.25.2/cmake/data/bin/cmake",
+        "-DMMAY_TEST_TOOL=/workspace/Projects/Marimay/marimay/build/release/mmay",
+        "-DMMAY_TEST_SOURCE=/workspace/Projects/Marimay/marimay/tests/public-alpha/cp42-array-search",
+        "-DMMAY_TEST_WORK=/workspace/Projects/Marimay/marimay/build/file-wave/cmake-case-3.25-before",
+        "-P",
+        "/workspace/Projects/Marimay/marimay/build/file-wave/array-search-before.cmake"
+      ],
+      "status": 1,
+      "stdout": "",
+      "stderr": "CMake Warning (dev) at build/file-wave/array-search-before.cmake:40 (if):\n  Policy CMP0054 is not set: Only interpret if() arguments as variables or\n  keywords when unquoted.  Run \"cmake --help-policy CMP0054\" for policy\n  details.  Use the cmake_policy command to set the policy and suppress this\n  warning.\n\n  Quoted variables like \"panic\" will no longer be dereferenced when the\n  policy is set to NEW.  Since the policy is not set the OLD behavior will be\n  used.\nThis warning is for project developers.  Use -Wno-dev to suppress it.\n\nCMake Error at build/file-wave/array-search-before.cmake:12 (message):\n  Array search:\n  /workspace/Projects/Marimay/marimay/build/release/mmay;run;/workspace/Projects/Marimay/marimay/build/file-wave/cmake-case-3.25-before/source;--;panic:\n  status=1; stdout=; stderr=search cleanup\n\n  panic[G4000]: predicate panic\n\nCall Stack (most recent call first):\n  build/file-wave/array-search-before.cmake:43 (search_expect)\n\n\n"
+    },
+    {
+      "name": "3.25-after",
+      "command": [
+        "/workspace/Projects/Marimay/marimay/build/file-wave/cmake-3.25.2/cmake/data/bin/cmake",
+        "-DMMAY_TEST_TOOL=/workspace/Projects/Marimay/marimay/build/release/mmay",
+        "-DMMAY_TEST_SOURCE=/workspace/Projects/Marimay/marimay/tests/public-alpha/cp42-array-search",
+        "-DMMAY_TEST_WORK=/workspace/Projects/Marimay/marimay/build/file-wave/cmake-case-3.25-after",
+        "-P",
+        "/workspace/Projects/Marimay/marimay/tests/c-unit/test_cp42_array_search.cmake"
+      ],
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "name": "4.4-after",
+      "command": [
+        "cmake",
+        "-DMMAY_TEST_TOOL=/workspace/Projects/Marimay/marimay/build/release/mmay",
+        "-DMMAY_TEST_SOURCE=/workspace/Projects/Marimay/marimay/tests/public-alpha/cp42-array-search",
+        "-DMMAY_TEST_WORK=/workspace/Projects/Marimay/marimay/build/file-wave/cmake-case-4.4-after",
+        "-P",
+        "/workspace/Projects/Marimay/marimay/tests/c-unit/test_cp42_array_search.cmake"
+      ],
+      "status": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "schema": "marimay.cp42.array-search-cmake/1",
+  "parent_commit": "2fa66937ad01328ddeef40e1ce1da4e172d80788",
+  "source": "tests/c-unit/test_cp42_array_search.cmake",
+  "source_sha256": "911e699df7eae3cee0e70ea1d7c272038ed9344e08f4fbeebe46d66fe56bafeb",
+  "ci_observation": {
+    "active_run": 220,
+    "active_revision": "271604a2655d34d9e1c73e4c48a66eb0465419bd",
+    "failed_jobs": [
+      {
+        "id": 1912,
+        "name": "ASan/UBSan/LSan"
+      },
+      {
+        "id": 1908,
+        "name": "Clang Debug"
+      },
+      {
+        "id": 1909,
+        "name": "Clang Release"
+      }
+    ],
+    "shared_failure": "mmay_cp42_array_search test script line 40, CMP0054 OLD comparison of quoted panic variable; actual program G4000 correct",
+    "queued_runs": [
+      {
+        "run": 221,
+        "revision": "94d1e8514098280727e4521c373432c225af45c8"
+      },
+      {
+        "run": 222,
+        "revision": "2fa66937ad01328ddeef40e1ce1da4e172d80788"
+      }
+    ],
+    "source": "bounded read-only infra_recovery inspection; no CI state mutation"
+  }
+}

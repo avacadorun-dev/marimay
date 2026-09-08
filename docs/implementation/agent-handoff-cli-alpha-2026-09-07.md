@@ -219,6 +219,15 @@ Read-only infra-agent нашёл run 221 этого SHA в очереди за r
 вывод о недоступности LAN; сверяй новую ревизию и её CI отдельно. Подагент
 завершил bounded проверку; бесконечный мониторинг не нужен.
 
+Файловая волна запушена как `2fa6693` (run 222 queued). Следующая bounded
+проверка установила причину ASan/Clang failures run 220: script
+`test_cp42_array_search.cmake` не задавал CMP0054, и CMake 3.25 воспринимал
+строку `"panic"` как переменную. [Исправление и before/after evidence](evidence/cp42-array-search-cmake-policy-2026-09-08.md)
+задают существующий minimum 3.25. Полный focused script проходит на 3.25.2 и
+4.4.2; старый script воспроизводимо падает на 3.25.2. Не меняй G4000/G4005
+или runtime ради этого отказа. Run 221/222 на момент проверки ещё не начали
+jobs; свежего green CI это не доказывает.
+
 ## Портфель и общая приёмка
 
 Волны: **config/notes → logstats/grep/frequency → manifest/project-check/env-paths

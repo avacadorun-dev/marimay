@@ -1,3 +1,5 @@
+cmake_minimum_required(VERSION 3.25)
+
 if(NOT DEFINED MMAY_TEST_TOOL OR NOT DEFINED MMAY_TEST_SOURCE OR NOT DEFINED MMAY_TEST_WORK)
   message(FATAL_ERROR "Array-search test variables are missing")
 endif()
