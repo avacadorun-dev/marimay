@@ -11,6 +11,9 @@ bool mmay_function_value_closure(MarimayFunctionChecker *function, const Marimay
     MarimayTypeId expected, MarimayExpressionValue *result);
 bool mmay_function_value_call(MarimayFunctionChecker *function, const MarimayAstNode *node,
     bool *resolved, MarimayExpressionValue *result);
+/* Precompiled invocation: entry zero is the callee, followed by exact arguments. */
+bool mmay_function_value_emit_call(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    const MarimayMirCallArgument *arguments, size_t count, MarimayExpressionValue *result);
 bool mmay_function_value_invoke(MarimayFunctionChecker *function, const MarimayAstNode *node,
     MarimayExpressionValue callee, const MarimayAstNode *arguments, MarimayExpressionValue *result);
 bool mmay_function_value_symbol(MarimayFunctionChecker *function, size_t location,

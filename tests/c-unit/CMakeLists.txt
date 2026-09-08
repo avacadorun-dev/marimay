@@ -100,6 +100,7 @@ add_executable(mmay_c_unit
   test_checker_arrays.c
   test_checker_array_mutation.c
   test_checker_array_edit.c
+  test_checker_array_search.c
   test_checker_function_values.c
   test_checker_option_condition.c
   test_checker_array_types.c
@@ -203,6 +204,8 @@ add_executable(mmay_c_unit
   test_native_c_emitter_array_mutation.c
   test_array_edit_engines.c
   test_function_value_engines.c
+  test_callable_engine_support.c
+  test_array_search_engines.c
   test_native_c_emitter_baseline.c
   test_native_c_emitter_matrix.c
   test_native_c_emitter_nominal.c
@@ -832,3 +835,14 @@ if(MMAY_ENABLE_ADDRESS_SANITIZER)
   # the sanitizer tail behind allocation shards.
   set_tests_properties(mmay_c_unit_native PROPERTIES COST 1000)
 endif()
+
+add_test(
+  NAME mmay_cp42_array_search
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/cp42-array-search"
+    "-DMMAY_TEST_WORK=${CMAKE_BINARY_DIR}/cp42-array-search"
+    "-DMMAY_TEST_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cp42_array_search.cmake"
+)
+set_tests_properties(mmay_cp42_array_search PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200)

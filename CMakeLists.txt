@@ -463,6 +463,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/check/checker_closure_capture.c
   bootstrap/src/check/checker_closure_cell.c
   bootstrap/src/check/checker_array_edit.c
+  bootstrap/src/check/checker_array_search.c
   bootstrap/src/check/checker_array_types.c
   bootstrap/src/check/checker.c
   bootstrap/src/check/checker_cfg.c

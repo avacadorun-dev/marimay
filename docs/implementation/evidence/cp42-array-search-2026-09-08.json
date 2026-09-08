@@ -1,0 +1,1389 @@
+{
+  "schema": "marimay.cp42.array-search.v1",
+  "recorded_at_utc": "2026-09-08T07:56:26.271177+00:00",
+  "base_git_revision": "6960da668582aa13a4efa989bad497fe2073c283",
+  "verification_status": "local checks passed; CP42 and full Tier 1 acceptance open",
+  "platform": {
+    "system": "Darwin",
+    "release": "25.6.0",
+    "machine": "arm64",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)"
+  },
+  "build_commands": [
+    "cmake --build build/release -j4",
+    "cmake --build build/asan-ubsan -j4",
+    "cmake --build build/fuzz -j2 --target mmay_fuzz_frontend mmay_fuzz_formatter"
+  ],
+  "source_manifest_sha256": {
+    "CMakeLists.txt": "ebc821fe634442cf1b75bd667db3379df0591d5401a22f065f5ff7bcedb7e9c7",
+    "bootstrap/src/check/checker_array_search.c": "fc9ad060c621f0ddc7562ffcfd34a84723d4fe00d5f58ebb68f96ad7f6938b72",
+    "bootstrap/src/check/checker_array_search_api.h": "0cf6693c02e704fa7055c955f8a7eddc0f01b13a0483a2a7661718f65155449f",
+    "bootstrap/src/check/checker_function_call.c": "9d48fbf73ef5ec6c1e10a40ae45e90c6a6801ceda15cf5c335e793cadcdfc49a",
+    "bootstrap/src/check/checker_function_values_api.h": "b600f93ed1bfbd8707ff6a7af4e2a8f41c903dd5167d2053387100a9b8617efc",
+    "bootstrap/src/check/checker_receiver_calls.c": "163efe99dcb0b0c3abf8e0f238968115e358aac402575e5ed37c3e9e5d964198",
+    "docs/design/decisions.md": "56377e94c1fb4387abf56bae43a3ec5d6dd794f946feac4248a8ad252d4b826e",
+    "docs/implementation/agent-handoff-cli-alpha-2026-09-07.md": "9a45c9365540070d1c3555f439202e62e2c47ed90953fd881a2e2539a4831621",
+    "docs/implementation/checkpoints.md": "a9ba885675cc33573d9f789435afc384cea032a608054a2ce2185bc6179b124a",
+    "docs/implementation/compiler-architecture.md": "c010329926351442121544246f4c92e99223d613eda75c49321a4c352e41ef08",
+    "docs/research/cli0-collection-contracts-2026-09-08.md": "46222ff0e3b530ee3d787cc0f09762d04e7eef25d8241589a57ca84bd3f5b40b",
+    "docs/spec/language.md": "25c95a4268072095317d626a4b538add11311181742981361f641910f742e4e7",
+    "docs/spec/standard-library.md": "84ddd7d0a14ea0d66f2f80ec318cd8d696831d99e682a922dd0fa1709e087fc8",
+    "tests/c-unit/CMakeLists.txt": "df8f67b12820ed7568e626ae2f1b3fbb8fc74e125045c21b297df5888df65a4c",
+    "tests/c-unit/test_array_search_engines.c": "5dfae89bce3c510917c9b4d113374ba188083245b6717d7163f5d436613eaed7",
+    "tests/c-unit/test_callable_engine_support.c": "659e00dce8f00644f768f528729370f142747e206b55aee38cc1c99f6c204847",
+    "tests/c-unit/test_callable_engine_support.h": "65f876991112bf9208373e2665113047aba0d510ec9ca8d9171a7d3a9158ad99",
+    "tests/c-unit/test_checker.c": "e513abb9c982d15ed4f78c9faf2986ed08ebfd4cae0c517e6c8a80adbb0dd654",
+    "tests/c-unit/test_checker_array_search.c": "c9d759047c52d34dac669251c5c484321ae130a16bc56e1e970f636af9741bd1",
+    "tests/c-unit/test_cp42_array_search.cmake": "7b8d0fc1c31bd20dc5ad87b0de94ef5d53e64e8cf875e1d4da754baef1e9124e",
+    "tests/c-unit/test_function_value_engines.c": "092f640759880a065d40fc14957ef516540d9c701a1b71ff37600acf27e948dd",
+    "tests/c-unit/test_native_c_emitter.c": "abccae2ef520a329b9dee895592bb7263f979aa4b8619f57756c74fa85131dee",
+    "tests/fuzz/corpus/formatter/cp42-array-search.my": "7333d62c50aec717c090033678527939ecc861c213f5dd4c7e29b61a843dcf00",
+    "tests/fuzz/corpus/frontend/cp42-array-search.my": "7333d62c50aec717c090033678527939ecc861c213f5dd4c7e29b61a843dcf00",
+    "tests/public-alpha/cp42-array-search/main.my": "d0a56d27bfcc3de8611fe558df2e8a306b1e23a457f09dafa11e2261eb7385ad",
+    "tests/public-alpha/cp42-array-search/main_test.my": "519f2ee663eea3790722d8f1a946db3c45e575f5398b40c3d0503e8863fe7667",
+    "tests/public-alpha/cp42-array-search/mmay.mod": "2dcd63434c4c16de43ec36f5f28de5f0abc5329d916cb1fa76e93d0fe77b204f",
+    "tools/_d0_checks.py": "02c0b95eefe1c9b3933256f6d3c06f140466d2650d63fd03862f123f16e5adca"
+  },
+  "binaries_sha256": {
+    "build/release/mmay": "b2202a04621bcfd855fca442789bca1e3ea84ac9afab975a33fe032594d7b9c1",
+    "build/asan-ubsan/mmay": "3d0d893914d128e664061e47058c11cd41963d120f754e15ca6412ff6a144817"
+  },
+  "checks": [
+    {
+      "command": "ctest --preset release --output-on-failure -j2",
+      "status": "passed",
+      "tests": 80,
+      "wall_seconds": 325.13,
+      "log": "build/d099-release-full.log",
+      "sha256": "4781df0fb05ec122174b2626502e137cfe80b36faf0842368370e6fcfb2a487e"
+    },
+    {
+      "command": "ctest --preset asan-ubsan --output-on-failure -j2",
+      "status": "passed",
+      "tests": 79,
+      "wall_seconds": 689.35,
+      "log": "build/d099-asan-final.log",
+      "sha256": "fd0175b541fe5941146aadbb191c90aec59a5cfb355bcc2c58302f1d0089f5bf"
+    },
+    {
+      "command": "./tools/check-architecture",
+      "status": "passed",
+      "log": "build/d099-architecture.log",
+      "sha256": "d9350711c33efa6ee9fdc6a821dd06ddde0af490e1928d5812621b47de44706c"
+    },
+    {
+      "command": "./tools/check-c-memory-policy",
+      "status": "passed",
+      "log": "build/d099-memory-policy.log",
+      "sha256": "b2d064001e3464a5c31b01a228afda5e9726d586b725f57ba2d8dfc446dfb072"
+    },
+    {
+      "command": "./tools/check-roadmap",
+      "status": "passed",
+      "log": "build/d099-roadmap.log",
+      "sha256": "5e14aacea127d5b49d4c0d05b0cb75174e613e810ac25ba743738e95c1424aaf"
+    },
+    {
+      "command": "build/release/mmay test /workspace/Projects/Marimay/marimay-notes --engine both",
+      "status": "passed",
+      "source_tests": 16,
+      "log": "build/d099-notes-tests-final.log",
+      "sha256": "083a8245275ea9fee5bb0911bf625ed567b1af8163fe494213f472bcc1b2f718"
+    },
+    {
+      "command": "build/release/mmay test /workspace/Projects/Marimay/Marimay-Examples/marimay-config --engine both",
+      "status": "passed",
+      "source_tests": 7,
+      "log": "build/d099-config-tests.log",
+      "sha256": "0d23e490f04640425ffd76b71db13f0e8517c74d0303b3fa1d30ffa764df8e16"
+    },
+    {
+      "command": "build/fuzz/tests/fuzz/mmay_fuzz_frontend -runs=1 tests/fuzz/corpus/frontend/cp42-array-search.my",
+      "status": "passed",
+      "scope": "fixed-input seed replay, not a fuzz campaign",
+      "log": "build/d099-fuzz-frontend.log",
+      "sha256": "94c584429e4564d6f3ed0768b30945e8fee1160f78fd60f7760edbe722c46b20"
+    },
+    {
+      "command": "build/fuzz/tests/fuzz/mmay_fuzz_formatter -runs=1 tests/fuzz/corpus/formatter/cp42-array-search.my",
+      "status": "passed",
+      "scope": "fixed-input seed replay, not a fuzz campaign",
+      "log": "build/d099-fuzz-formatter.log",
+      "sha256": "81c2eab1acbe44729dba7e1b4ee905d6e2bb25a30dbfdee6e948e7d3f931bc98"
+    },
+    {
+      "command": "MMAY=/workspace/Projects/Marimay/marimay/build/release/mmay python3 /workspace/Projects/Marimay/marimay-notes/tools/acceptance.py",
+      "status": "passed",
+      "process_cases_per_engine": 36,
+      "engines": [
+        "vm",
+        "native-debug",
+        "native-release"
+      ],
+      "closed_pipe_checks": 21,
+      "log": "build/d099-notes-process-final.log",
+      "sha256": "8a3d2c2ef3adbc9217aa30e304727de49fa5f8b5687e273e54e6a67c28d80360"
+    }
+  ],
+  "notes": {
+    "scope": "Explicit source allowlist only; existing external dirty work retained; no private database read/copied",
+    "source_before_sha256": {
+      "mmay.mod": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+      "README.md": "84e9863931a8bf91a783178ff705fea29cf3ad2e7f268b5ad94eb290a6356169",
+      "main.my": "92855ae378c000e8fc10f45f8571ae061b16a2d4c88a5d4c9b69d5af02ae5903",
+      "main_test.my": "7dc20623e52f5a5ec636bd68425a048d8eb9a001045730344291fb66a1e42c9d",
+      "messages_test.my": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+      "notes/api.my": "1d92365db94ddec2c953bfcb090fc5bc0760f59ba88f3712230ead17cc10d60d",
+      "notes/collection_baseline_test.my": "66566901e2da3f4b19052c96dbb1543f20246caae6bbc248eb0302c3ddccdc0f",
+      "messages/json.my": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+      "messages/system.my": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84",
+      "tools/acceptance.py": "d4d6a0926786c3badfbbcd953a000e7c461d553fb9dc9ea6738187e6e9630d94"
+    },
+    "source_after_sha256": {
+      "mmay.mod": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+      "README.md": "7fc7f5bf86b4125808acb1d8c5d92be0676fd010521457a377965a755b8fec99",
+      "main.my": "1523c2a1acda9c5098312f3a82f3f116a9f304b42ae59fc465f00948a88d7878",
+      "main_test.my": "7dc20623e52f5a5ec636bd68425a048d8eb9a001045730344291fb66a1e42c9d",
+      "messages_test.my": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+      "notes/api.my": "d4bf49b1b2dfb22893eb500ef1fec952ca16f6ce1345da368859dafcf3c06964",
+      "notes/collection_baseline_test.my": "66566901e2da3f4b19052c96dbb1543f20246caae6bbc248eb0302c3ddccdc0f",
+      "messages/json.my": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+      "messages/system.my": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84",
+      "tools/acceptance.py": "41511a0bc39defe1b9af5cb610ff76a4355bc3686a5eb48f1a8c491082dd1d05"
+    },
+    "task_delta_patch": {
+      "path": "docs/implementation/evidence/cp42-array-search-notes-2026-09-08.patch",
+      "sha256": "540b59d3d72521d4f3f65e666315a40edb976936df89b8119ef8dd1449c9f088",
+      "format": "zero-context unified; git apply --unidiff-zero -p2",
+      "application_check": "passed against exact build/d099-notes-before source snapshot"
+    },
+    "process_report": {
+      "schema": 1,
+      "scope": "notes process/files baseline; not full CP42 acceptance",
+      "harness": {
+        "harness_version": "1",
+        "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+        "platform": "macOS-26.6.2-arm64-arm-64bit",
+        "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+        "compiler_sha256": "b2202a04621bcfd855fca442789bca1e3ea84ac9afab975a33fe032594d7b9c1",
+        "engines": {
+          "vm": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--allow-read",
+              "/workspace/tmp/marimay-notes-acceptance-uaqkzafr/разрешено с пробелами",
+              "--allow-write",
+              "/workspace/tmp/marimay-notes-acceptance-uaqkzafr/разрешено с пробелами",
+              "--"
+            ],
+            "executable_sha256": "b2202a04621bcfd855fca442789bca1e3ea84ac9afab975a33fe032594d7b9c1"
+          },
+          "debug": {
+            "command": [
+              "/workspace/tmp/marimay-notes-acceptance-uaqkzafr/notes-debug"
+            ],
+            "executable_sha256": "86173159a0e163f7d2bfff39f98c9e05fd44016111db7c5a47334cf428c46ccc"
+          },
+          "release": {
+            "command": [
+              "/workspace/tmp/marimay-notes-acceptance-uaqkzafr/notes-release"
+            ],
+            "executable_sha256": "877607b5b153887a4be7425822ee7137f349c44257f30568ba6fb8b4f6c13368"
+          }
+        }
+      },
+      "cases": [
+        {
+          "name": "absent-list",
+          "arguments": [
+            "list"
+          ],
+          "status": 0,
+          "stdout": "Заметок пока нет.\n",
+          "stderr": "",
+          "before_sha256": null,
+          "after_sha256": null
+        },
+        {
+          "name": "search-unicode-in-order",
+          "arguments": [
+            "search",
+            "чай ☕"
+          ],
+          "status": 0,
+          "stdout": "#1 Купить чай ☕ [дом, покупки]\n#3 чай ☕. [a] [дом]\n",
+          "stderr": "",
+          "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+          "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+        },
+        {
+          "name": "search-literal",
+          "arguments": [
+            "search",
+            "[a]"
+          ],
+          "status": 0,
+          "stdout": "#3 чай ☕. [a] [дом]\n",
+          "stderr": "",
+          "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+          "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+        },
+        {
+          "name": "search-case-sensitive",
+          "arguments": [
+            "search",
+            "ЧАЙ"
+          ],
+          "status": 0,
+          "stdout": "Совпадений не найдено.\n",
+          "stderr": "",
+          "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+          "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+        },
+        {
+          "name": "search-tags-excluded",
+          "arguments": [
+            "search",
+            "дом"
+          ],
+          "status": 0,
+          "stdout": "Совпадений не найдено.\n",
+          "stderr": "",
+          "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+          "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+        },
+        {
+          "name": "search-whitespace-literal",
+          "arguments": [
+            "search",
+            "чай  "
+          ],
+          "status": 0,
+          "stdout": "Совпадений не найдено.\n",
+          "stderr": "",
+          "before_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9",
+          "after_sha256": "e0f548501a65a33af81b6bc6c1aeeaf063f69f825742d7b1b4f929e5bbb17dd9"
+        },
+        {
+          "name": "search-absent-database",
+          "arguments": [
+            "search",
+            "чай"
+          ],
+          "status": 0,
+          "stdout": "Совпадений не найдено.\n",
+          "stderr": "",
+          "before_sha256": null,
+          "after_sha256": null
+        },
+        {
+          "name": "search-empty-query",
+          "arguments": [
+            "search",
+            ""
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Текст поиска не должен быть пустым\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "search-missing-query",
+          "arguments": [
+            "search"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Использование: marimay-notes search ТЕКСТ\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "search-extra-argument",
+          "arguments": [
+            "search",
+            "чай",
+            "extra"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Использование: marimay-notes search ТЕКСТ\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "add-unicode",
+          "arguments": [
+            "add",
+            "Купить чай ☕",
+            "--tag",
+            "дом",
+            "--tag",
+            "покупки"
+          ],
+          "status": 0,
+          "stdout": "Добавлена заметка №1.\n",
+          "stderr": "",
+          "before_sha256": null,
+          "after_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b"
+        },
+        {
+          "name": "show-existing",
+          "arguments": [
+            "show",
+            "1"
+          ],
+          "status": 0,
+          "stdout": "#1 Купить чай ☕ [дом, покупки]\n",
+          "stderr": "",
+          "before_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b",
+          "after_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b"
+        },
+        {
+          "name": "add-second",
+          "arguments": [
+            "add",
+            "Прочитать документацию",
+            "--tag",
+            "учёба"
+          ],
+          "status": 0,
+          "stdout": "Добавлена заметка №2.\n",
+          "stderr": "",
+          "before_sha256": "9f2698540eb268ca2e9d14bafc06a5914c618adcf0ead3ac8f0b29a1baf8097b",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "list-in-order",
+          "arguments": [
+            "list"
+          ],
+          "status": 0,
+          "stdout": "#1 Купить чай ☕ [дом, покупки]\n#2 Прочитать документацию [учёба]\n",
+          "stderr": "",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "remove-first",
+          "arguments": [
+            "remove",
+            "1"
+          ],
+          "status": 0,
+          "stdout": "Удалена заметка №1.\n",
+          "stderr": "",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "show-missing",
+          "arguments": [
+            "show",
+            "1"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Заметка №1 не найдена\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "remove-missing",
+          "arguments": [
+            "remove",
+            "1"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Заметка №1 не найдена\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "ids-not-reused",
+          "arguments": [
+            "add",
+            "Записать результат"
+          ],
+          "status": 0,
+          "stdout": "Добавлена заметка №3.\n",
+          "stderr": "",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "list-after-removal",
+          "arguments": [
+            "list"
+          ],
+          "status": 0,
+          "stdout": "#2 Прочитать документацию [учёба]\n#3 Записать результат\n",
+          "stderr": "",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "blank-note",
+          "arguments": [
+            "add",
+            " \t"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Текст заметки не должен быть пустым\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "add-missing-text",
+          "arguments": [
+            "add"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Использование: marimay-notes add ТЕКСТ [--tag ТЕГ]...\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "list-extra",
+          "arguments": [
+            "list",
+            "x"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Использование: marimay-notes list\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "unknown-option",
+          "arguments": [
+            "--нет"
+          ],
+          "status": 2,
+          "stdout": "",
+          "stderr": "marimay-notes: Неизвестный параметр «--нет». Справка: --help\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "missing-tag-value",
+          "arguments": [
+            "add",
+            "x",
+            "--tag"
+          ],
+          "status": 2,
+          "stdout": "",
+          "stderr": "marimay-notes: После --tag нужно указать значение\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "unknown-command",
+          "arguments": [
+            "неизвестно"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Неизвестная команда «неизвестно». Справка: --help\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id-0",
+          "arguments": [
+            "show",
+            "--",
+            "0"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id--1",
+          "arguments": [
+            "show",
+            "--",
+            "-1"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id-9223372036854775808",
+          "arguments": [
+            "show",
+            "--",
+            "9223372036854775808"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "invalid-id-ноль",
+          "arguments": [
+            "show",
+            "--",
+            "ноль"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: ID должен быть положительным целым числом\n",
+          "before_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "id-exhaustion",
+          "arguments": [
+            "add",
+            "x"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Свободные ID заметок закончились\n",
+          "before_sha256": "2da04832335f1d03cc5d9a9fdece6988c68a8cb88d79559b4f02e6ba3944998e",
+          "after_sha256": "2da04832335f1d03cc5d9a9fdece6988c68a8cb88d79559b4f02e6ba3944998e"
+        },
+        {
+          "name": "reject-version",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: Неподдерживаемая версия базы заметок\n",
+          "before_sha256": "3424602e081d8cfea24fbbd3759953b29a9135cd16ea9672bee4a7a8de47b032",
+          "after_sha256": "3424602e081d8cfea24fbbd3759953b29a9135cd16ea9672bee4a7a8de47b032"
+        },
+        {
+          "name": "reject-duplicate-id",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: В базе повторяется ID заметки\n",
+          "before_sha256": "b89a1dce41fe244675af8f3637e1a9550e8755ab26b327709f8afabad473b4b3",
+          "after_sha256": "b89a1dce41fe244675af8f3637e1a9550e8755ab26b327709f8afabad473b4b3"
+        },
+        {
+          "name": "reject-missing-field",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: Отсутствует обязательное поле «notes»: байт 24; путь: $[\"notes\"]\n",
+          "before_sha256": "125b06c46110160dde30f93779980b31acb80ec8e1d9d34a6a1f8adbee7f7d23",
+          "after_sha256": "125b06c46110160dde30f93779980b31acb80ec8e1d9d34a6a1f8adbee7f7d23"
+        },
+        {
+          "name": "reject-invalid-utf8",
+          "arguments": [
+            "add",
+            "must not overwrite"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Некорректная база заметок: Некорректная кодировка UTF-8: байт 0\n",
+          "before_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+          "after_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89"
+        },
+        {
+          "name": "file-limit",
+          "arguments": [
+            "list"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Файл превышает допустимый размер: 1048576 байт\n",
+          "before_sha256": "9d78de4e5b12fc166bed811cd230621ea1e1e353553fe31b92a73bfbf45d68ee",
+          "after_sha256": "9d78de4e5b12fc166bed811cd230621ea1e1e353553fe31b92a73bfbf45d68ee"
+        },
+        {
+          "name": "denied-read",
+          "arguments": [
+            "list"
+          ],
+          "status": 1,
+          "stdout": "",
+          "stderr": "marimay-notes: Нет разрешения fs.read для пути «/workspace/tmp/marimay-notes-acceptance-uaqkzafr/outside/fixture.json». Укажите разрешённый каталог при запуске или сборке\n",
+          "before_sha256": null,
+          "after_sha256": null
+        }
+      ],
+      "broken_pipe": [
+        {
+          "name": "help-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "help-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "help-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "list-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "list-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "list-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "show-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "show-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "show-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "search-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "search-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "search-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "search-no-match-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "search-no-match-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "search-no-match-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f"
+        },
+        {
+          "name": "add-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "add-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "add-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1",
+          "after_sha256": "5ecffb09bffd2db0e2ece347a633598e4acbfa83a51789f045e97b355a148d70"
+        },
+        {
+          "name": "remove-broken-pipe",
+          "engine": "vm",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "remove-broken-pipe",
+          "engine": "debug",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        },
+        {
+          "name": "remove-broken-pipe",
+          "engine": "release",
+          "status": 1,
+          "stderr": "marimay-notes: Не удалось завершить вывод\n",
+          "before_sha256": "5970e3b4f22359b4b35367bb725acc1571acae0260a4bbec5bf8a17a091e0d6f",
+          "after_sha256": "8fb2cbd013db246688d9f4f8bb7aa1fe5fff5d32d5cb4ea507991e2fca1816e1"
+        }
+      ],
+      "elapsed_seconds": 21.2411365,
+      "source_sha256": {
+        "mmay.mod": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+        "main.my": "1523c2a1acda9c5098312f3a82f3f116a9f304b42ae59fc465f00948a88d7878",
+        "main_test.my": "7dc20623e52f5a5ec636bd68425a048d8eb9a001045730344291fb66a1e42c9d",
+        "messages_test.my": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+        "notes/api.my": "d4bf49b1b2dfb22893eb500ef1fec952ca16f6ce1345da368859dafcf3c06964",
+        "notes/collection_baseline_test.my": "66566901e2da3f4b19052c96dbb1543f20246caae6bbc248eb0302c3ddccdc0f",
+        "messages/json.my": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+        "messages/system.my": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84"
+      }
+    },
+    "process_report_original": "/workspace/Projects/Marimay/marimay-notes/build/process-acceptance-1788853743391167000.json",
+    "process_report_sha256": "74e3ae0f26d84b505b70079475050ff278e5964cc3af6858454e9b43fe9c808d"
+  },
+  "paired_cost": {
+    "schema": "marimay.cp42.search-consumer-cost.v1",
+    "compiler_sha256": "b2202a04621bcfd855fca442789bca1e3ea84ac9afab975a33fe032594d7b9c1",
+    "scope": "Small alternating paired warm-process sample, not cold-start or CP42 performance acceptance",
+    "source_sha256": {
+      "before": {
+        "mmay.mod": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+        "main.my": "92855ae378c000e8fc10f45f8571ae061b16a2d4c88a5d4c9b69d5af02ae5903",
+        "main_test.my": "7dc20623e52f5a5ec636bd68425a048d8eb9a001045730344291fb66a1e42c9d",
+        "messages_test.my": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+        "notes/api.my": "1d92365db94ddec2c953bfcb090fc5bc0760f59ba88f3712230ead17cc10d60d",
+        "notes/collection_baseline_test.my": "66566901e2da3f4b19052c96dbb1543f20246caae6bbc248eb0302c3ddccdc0f",
+        "messages/json.my": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+        "messages/system.my": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84"
+      },
+      "after": {
+        "mmay.mod": "eff2bf78ab89d4d8b225613cce335522ea457c8d979c76ea86313d41ed58bfef",
+        "main.my": "1523c2a1acda9c5098312f3a82f3f116a9f304b42ae59fc465f00948a88d7878",
+        "main_test.my": "7dc20623e52f5a5ec636bd68425a048d8eb9a001045730344291fb66a1e42c9d",
+        "messages_test.my": "44f2016b5f47bffc12b944262667df9a7f97648e37c3710da8415e0cb3a8e2e1",
+        "notes/api.my": "d4bf49b1b2dfb22893eb500ef1fec952ca16f6ce1345da368859dafcf3c06964",
+        "notes/collection_baseline_test.my": "66566901e2da3f4b19052c96dbb1543f20246caae6bbc248eb0302c3ddccdc0f",
+        "messages/json.my": "9962fd16fa4c68db8158d635bbd92790520b483c8a6aa4817c8cc278bc049027",
+        "messages/system.my": "e1bf8cc0e0cff2dd9dd79081a4d1764c30ac7f9696ec6b0e1605b6b2780e1f84"
+      }
+    },
+    "dataset": {
+      "notes": 6098,
+      "bytes": 1047786,
+      "sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+    },
+    "records": [
+      {
+        "case": "show-last",
+        "engine": "vm",
+        "phase": "before",
+        "warmup": true,
+        "wall_seconds": 2.7412096669999997,
+        "peak_rss_bytes": 96944128,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "vm",
+        "phase": "after",
+        "warmup": true,
+        "wall_seconds": 2.728598957999999,
+        "peak_rss_bytes": 97550336,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "vm",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 2.742036625000001,
+        "peak_rss_bytes": 97566720,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "vm",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 2.7272127919999996,
+        "peak_rss_bytes": 97271808,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "vm",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 2.7379109170000007,
+        "peak_rss_bytes": 97075200,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "vm",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 2.728632624999996,
+        "peak_rss_bytes": 97583104,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "vm",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 2.739931625000004,
+        "peak_rss_bytes": 97239040,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "vm",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 2.7303016250000027,
+        "peak_rss_bytes": 96927744,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "debug",
+        "phase": "before",
+        "warmup": true,
+        "wall_seconds": 1.3941206669999957,
+        "peak_rss_bytes": 66551808,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "debug",
+        "phase": "after",
+        "warmup": true,
+        "wall_seconds": 1.1993789160000006,
+        "peak_rss_bytes": 66650112,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "debug",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 0.7804309580000037,
+        "peak_rss_bytes": 64471040,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "debug",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 0.7817905830000029,
+        "peak_rss_bytes": 64438272,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "debug",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 0.786146500000001,
+        "peak_rss_bytes": 64438272,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "debug",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 0.7751900409999948,
+        "peak_rss_bytes": 64520192,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "debug",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 0.7838698329999971,
+        "peak_rss_bytes": 64503808,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "debug",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 0.7826755419999998,
+        "peak_rss_bytes": 64421888,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "release",
+        "phase": "before",
+        "warmup": true,
+        "wall_seconds": 0.5499489580000017,
+        "peak_rss_bytes": 66256896,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "release",
+        "phase": "after",
+        "warmup": true,
+        "wall_seconds": 0.5476057499999953,
+        "peak_rss_bytes": 66240512,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "release",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 0.14399883299999772,
+        "peak_rss_bytes": 64094208,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "release",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 0.1436395419999954,
+        "peak_rss_bytes": 64110592,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "release",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 0.14328762499999925,
+        "peak_rss_bytes": 64143360,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "release",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 0.14357554200000067,
+        "peak_rss_bytes": 64143360,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "release",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 0.14361999999999853,
+        "peak_rss_bytes": 64143360,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "show-last",
+        "engine": "release",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 0.14348091599999435,
+        "peak_rss_bytes": 64143360,
+        "after_sha256": "2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad"
+      },
+      {
+        "case": "remove-last",
+        "engine": "vm",
+        "phase": "before",
+        "warmup": true,
+        "wall_seconds": 5.549003958,
+        "peak_rss_bytes": 118816768,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "vm",
+        "phase": "after",
+        "warmup": true,
+        "wall_seconds": 5.544630249999997,
+        "peak_rss_bytes": 118603776,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "vm",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 5.552782125,
+        "peak_rss_bytes": 118652928,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "vm",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 5.542111333000008,
+        "peak_rss_bytes": 118718464,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "vm",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 5.5513236670000055,
+        "peak_rss_bytes": 118407168,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "vm",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 5.560148334000004,
+        "peak_rss_bytes": 118538240,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "vm",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 5.553034249999996,
+        "peak_rss_bytes": 118652928,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "vm",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 5.553839416999992,
+        "peak_rss_bytes": 118833152,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "debug",
+        "phase": "before",
+        "warmup": true,
+        "wall_seconds": 1.396377292000011,
+        "peak_rss_bytes": 74711040,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "debug",
+        "phase": "after",
+        "warmup": true,
+        "wall_seconds": 1.394154291999996,
+        "peak_rss_bytes": 74678272,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "debug",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 1.3952584580000007,
+        "peak_rss_bytes": 74661888,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "debug",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 1.3960882500000054,
+        "peak_rss_bytes": 74661888,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "debug",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 1.3992491670000078,
+        "peak_rss_bytes": 74711040,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "debug",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 1.4015452090000053,
+        "peak_rss_bytes": 74678272,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "debug",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 1.4221655830000088,
+        "peak_rss_bytes": 74694656,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "debug",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 1.3951725420000116,
+        "peak_rss_bytes": 74711040,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "release",
+        "phase": "before",
+        "warmup": true,
+        "wall_seconds": 0.23880487499999958,
+        "peak_rss_bytes": 74399744,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "release",
+        "phase": "after",
+        "warmup": true,
+        "wall_seconds": 0.23537591699999894,
+        "peak_rss_bytes": 74383360,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "release",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 0.23587187500000084,
+        "peak_rss_bytes": 74383360,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "release",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 0.2361576660000111,
+        "peak_rss_bytes": 74416128,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "release",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 0.24021958299999824,
+        "peak_rss_bytes": 74399744,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "release",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 0.23470345799999848,
+        "peak_rss_bytes": 74383360,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "release",
+        "phase": "after",
+        "warmup": false,
+        "wall_seconds": 0.2353993330000037,
+        "peak_rss_bytes": 74383360,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      },
+      {
+        "case": "remove-last",
+        "engine": "release",
+        "phase": "before",
+        "warmup": false,
+        "wall_seconds": 0.2351985410000026,
+        "peak_rss_bytes": 74383360,
+        "after_sha256": "ac77f26016d45ebf0b9abc53b0892daeaaca3a6baecf00ae34800a7ddac727cc"
+      }
+    ],
+    "summary": {
+      "show-last": {
+        "vm": {
+          "before": {
+            "median_seconds": 2.7303016250000027,
+            "median_peak_rss_bytes": 97075200
+          },
+          "after": {
+            "median_seconds": 2.739931625000004,
+            "median_peak_rss_bytes": 97566720
+          }
+        },
+        "debug": {
+          "before": {
+            "median_seconds": 0.7826755419999998,
+            "median_peak_rss_bytes": 64438272
+          },
+          "after": {
+            "median_seconds": 0.7804309580000037,
+            "median_peak_rss_bytes": 64503808
+          }
+        },
+        "release": {
+          "before": {
+            "median_seconds": 0.14348091599999435,
+            "median_peak_rss_bytes": 64143360
+          },
+          "after": {
+            "median_seconds": 0.14361999999999853,
+            "median_peak_rss_bytes": 64143360
+          }
+        }
+      },
+      "remove-last": {
+        "vm": {
+          "before": {
+            "median_seconds": 5.5513236670000055,
+            "median_peak_rss_bytes": 118718464
+          },
+          "after": {
+            "median_seconds": 5.553034249999996,
+            "median_peak_rss_bytes": 118652928
+          }
+        },
+        "debug": {
+          "before": {
+            "median_seconds": 1.3960882500000054,
+            "median_peak_rss_bytes": 74711040
+          },
+          "after": {
+            "median_seconds": 1.4015452090000053,
+            "median_peak_rss_bytes": 74678272
+          }
+        },
+        "release": {
+          "before": {
+            "median_seconds": 0.2361576660000111,
+            "median_peak_rss_bytes": 74399744
+          },
+          "after": {
+            "median_seconds": 0.2353993330000037,
+            "median_peak_rss_bytes": 74383360
+          }
+        }
+      }
+    },
+    "driver": "\"\"\"Paired consumer cost on synthetic data; run after correctness work is idle.\"\"\"\nfrom pathlib import Path\nimport hashlib,json,re,shutil,subprocess,time,statistics\nBASE=Path(__file__).resolve().parent\nWORK=BASE/'d099-cost'; WORK.mkdir(exist_ok=True)\nCOMPILER=BASE/'release/mmay'\nroots={'before':BASE/'d099-notes-before','after':Path('/workspace/Projects/Marimay/marimay-notes')}\nmanifests={}\nfor phase,source in roots.items():\n target=WORK/phase; target.mkdir(exist_ok=True)\n files=[source/'mmay.mod',*source.glob('*.my'),*(source/'notes').glob('*.my'),*(source/'messages').glob('*.my')]\n manifests[phase]={}\n for file in files:\n  name=file.relative_to(source);destination=target/name;destination.parent.mkdir(parents=True,exist_ok=True)\n  shutil.copy2(file,destination);manifests[phase][str(name)]=hashlib.sha256(file.read_bytes()).hexdigest()\nnotes=[{'id':i,'text':'Синтетическая заметка 🌿 для проверки порядка и сохранности','tags':['проверка','язык']} for i in range(1,6099)]\ndef encode(notes): return json.dumps({'version':1,'nextId':6099,'notes':notes},ensure_ascii=False,separators=(',',':')).encode()\ndata=encode(notes)\nassert len(data)==1047786 and hashlib.sha256(data).hexdigest()=='2c48707982e285d3253064a0c886224e5685b16aa07fcf4e8e353b84f6d2a3ad'\nfile=WORK/'working.json';engines={}\nfor phase in roots:\n folder=WORK/phase\n engines[phase]={'vm':[str(COMPILER),'run',str(folder),'--allow-read',str(WORK),'--allow-write',str(WORK),'--']}\n for profile in ('debug','release'):\n  binary=WORK/f'{phase}-{profile}'\n  command=[str(COMPILER),'build',str(folder),'--allow-read',str(WORK),'--allow-write',str(WORK),'--output',str(binary)]\n  if profile=='release': command.append('--release')\n  subprocess.run(command,check=True,capture_output=True,timeout=180)\n  engines[phase][profile]=[str(binary)]\nrecords=[]\ncases=[('show-last',['show','6098'],f\"#6098 {notes[-1]['text']} [проверка, язык]\\n\".encode(),data),\n       ('remove-last',['remove','6098'],'Удалена заметка №6098.\\n'.encode(),encode(notes[:-1]))]\nfor name,args,stdout,after in cases:\n for engine in ('vm','debug','release'):\n  for repetition in range(4):\n   phases=('before','after') if repetition%2==0 else ('after','before')\n   for phase in phases:\n    file.write_bytes(data)\n    start=time.monotonic()\n    result=subprocess.run(['/usr/bin/time','-l',*engines[phase][engine],'--db',str(file),*args],capture_output=True,timeout=120)\n    elapsed=time.monotonic()-start\n    assert result.returncode==0 and result.stdout==stdout,(name,phase,engine,result.returncode,result.stdout,result.stderr)\n    assert file.read_bytes()==after,(name,phase,engine,'file mismatch')\n    match=re.search(rb'^\\s*(\\d+)\\s+maximum resident set size\\s*$',result.stderr,re.M)\n    assert match,result.stderr\n    records.append({'case':name,'engine':engine,'phase':phase,'warmup':repetition==0,'wall_seconds':elapsed,\n                    'peak_rss_bytes':int(match[1]),'after_sha256':hashlib.sha256(after).hexdigest()})\n    print(name,engine,phase,repetition,round(elapsed,4),flush=True)\nsummary={}\nfor case,*_ in cases:\n summary[case]={}\n for engine in ('vm','debug','release'):\n  summary[case][engine]={phase:{'median_seconds':statistics.median(r['wall_seconds'] for r in records if r['case']==case and r['engine']==engine and r['phase']==phase and not r['warmup']),\n                               'median_peak_rss_bytes':statistics.median(r['peak_rss_bytes'] for r in records if r['case']==case and r['engine']==engine and r['phase']==phase and not r['warmup'])} for phase in roots}\nreport={'schema':'marimay.cp42.search-consumer-cost.v1','compiler_sha256':hashlib.sha256(COMPILER.read_bytes()).hexdigest(),\n        'scope':'Small alternating paired warm-process sample, not cold-start or CP42 performance acceptance',\n        'source_sha256':manifests,'dataset':{'notes':6098,'bytes':len(data),'sha256':hashlib.sha256(data).hexdigest()},\n        'records':records,'summary':summary,'driver':Path(__file__).read_text()}\n(WORK/'result.json').write_text(json.dumps(report,indent=2,ensure_ascii=False)+'\\n')\nprint(json.dumps(summary,indent=2))\n"
+  },
+  "corrected_attempts": [
+    {
+      "reason": "New checker resource test originally used invalid max_calls=0; changed to a valid exhausted budget of one. Both final complete suites pass."
+    },
+    {
+      "reason": "An overlapping isolated D098 callback process test raced its own disposable directory; isolated rerun and both complete suites pass."
+    },
+    {
+      "reason": "Namespace shadow probe found a local array misclassified as an import namespace. Lexical local lookup now precedes namespace classification; public coverage includes captures."
+    },
+    {
+      "reason": "An obsolete-tree sanitizer run was deliberately interrupted after the namespace fix; only the final complete run is evidence."
+    }
+  ],
+  "allocation_coverage": [
+    "checker success and diagnostics",
+    "MIR oracle",
+    "program lowering",
+    "wire encode/decode",
+    "VM forced collection",
+    "native emission",
+    "generated native forced collection",
+    "synthetic source locations"
+  ],
+  "teardown_assertions": [
+    "live_allocations == 0",
+    "live_bytes == 0"
+  ],
+  "limits": [
+    "macOS evidence only; no D099 Linux LSan or full Tier 1 completion yet",
+    "escaping mutable capture warning requires severity and escape classification",
+    "Result.mapError retains D094 mapper forms; stored-value integration remains open",
+    "rune literals are not newly implemented; rune layout coverage uses std/text.runes",
+    "application resource budgets, full portfolio, CP41, CP39, CP40 and N0 remain open",
+    "paired cost is a small alternating warm-process sample, not cold-start or cross-platform performance acceptance"
+  ],
+  "book_ideas": []
+}

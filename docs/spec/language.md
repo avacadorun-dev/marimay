@@ -467,6 +467,7 @@ public fn length<T>(values: []T): int;
 public fn push<T>(values: []T, value: T): Result<void, ArrayGrowthError>;
 public fn pop<T>(values: []T): Option<T>;
 public fn copy<T>(values: []T): []T;
+public fn findIndex<T>(values: []T, predicate: (T) => bool): Option<int>;
 public fn removeAt<T>(values: []T, index: int): Option<T>;
 public fn truncate<T>(
   values: []T,
@@ -487,6 +488,25 @@ public enum ArrayTruncateError {
   InvalidLength { requested: int, length: int },
 }
 ```
+
+Under D099, `findIndex(values, predicate)` and `values.findIndex(predicate)`
+return the first matching zero-based index in `Some`, or `None`. The receiver
+and predicate expression are each evaluated once, in that order. The predicate
+has the exact function type `(T) => bool`; ordinary named values and explicitly
+annotated closures follow D098. Search invokes it once per visited element,
+from left to right, stopping after the first `true`. Empty input evaluates the
+arguments but makes no callback invocation. Reference elements retain identity.
+
+Length and mutation generation are captured after argument evaluation. Generation
+is checked before each visit and after every normal predicate return, including
+a match and the final element. An invalidating mutation through an alias gives
+`G4005` before the result is published. Existing rules for reserve and mutations
+that leave generation unchanged still apply; child-object mutations leave the
+outer generation unchanged. A callback panic propagates unchanged, including its
+cleanup. Search itself does not mutate the array or invalidate iterators. A later
+allocation/resource failure does not roll back completed callback effects.
+This post-callback check is deliberately stronger than an immediate `break` or
+`return` from the D053 source loop.
 
 The variadic behavior of `arrayOf` is compiler-known and does not introduce
 user-declarable variadic functions. `length(values)` and `values.length()` are

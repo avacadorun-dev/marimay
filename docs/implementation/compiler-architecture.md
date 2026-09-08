@@ -273,6 +273,7 @@ bootstrap/src/check/
                         receiver-directed package/prelude collection dispatch
   checker_array_types.c D054 prefix-type recognition and existing array interning
   checker_array_edit.c  D097 copy/removeAt selection packet, Option-before-commit CFG
+  checker_array_search.c D099 predicate typing, generation-checked traversal and Option result
   package_graph.c       bounded deterministic local-package graph coordinator
   package_imports_api.h narrow graph/checker import contract
   service.c             snapshots, package-graph checks, frontend lifetimes
@@ -295,6 +296,16 @@ construction; an unused callable type may have no constructions at all.
 coverage. The public CP42 fixture owns source behavior and formatter round trips.
 The conservative cell plan and outstanding escape-warning removal gate are
 recorded in D098 and the CP42 evidence packet.
+
+D099's array-search owner evaluates one predicate value, snapshots the array after
+argument evaluation, and lowers one loop with generation checks around each
+normal callback return. `checker_function_call.c` owns the shared precompiled
+call boundary used by both ordinary calls and compiler-known consumers. No
+callback AST or source-language policy moves to a backend. The common
+`test_callable_engine_support.c` runs D098 and D099 fixtures through allocation,
+wire, VM, generated native and forced-GC checks; family fixtures remain separate.
+`test_checker_array_search.c` owns search rejection/resource tests and the public
+array-search process fixture owns mutation/panic order and VM/native equivalence.
 
 D080 rune equality stays in the scalar/equality checker owners: direct
 operators emit one typed equality instruction, while structural comparisons

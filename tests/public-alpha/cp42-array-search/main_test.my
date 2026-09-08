@@ -1,0 +1,195 @@
+import * as text from "std/text";
+
+type Item {
+  mutable value: int,
+}
+
+type Other {
+  value: int,
+}
+
+fn select(item: Item): bool {
+  return item.value == 2;
+}
+
+fn select(item: Other): bool {
+  return item.value == 7;
+}
+
+fn even(value: int): bool {
+  return value % 2 == 0;
+}
+
+fn search<T>(values: []T, predicate: (T) => bool): Option<int> {
+  return values.findIndex(predicate);
+}
+
+fn findIndex(item: Other, target: int): bool {
+  return item.value == target;
+}
+
+@test
+fn firstLastAbsentAndDuplicates(): void {
+  const a = [1, 2, 2, 3];
+  expect.equal(a.findIndex(even), Some(1));
+  expect.equal(findIndex(a, (x: int): bool => x == 3), Some(3));
+  expect.equal(a.findIndex((x: int): bool => x == 1), Some(0));
+  expect.equal(a.findIndex((x: int): bool => x == 4), None);
+  expect.equal(a.length(), 4);
+  expect.equal(a[2], 2);
+}
+
+@test
+fn emptyEvaluatesPredicateButNeverInvokesIt(): void {
+  let constructed = 0;
+  let calls = 0;
+  const make = (): (int) => bool => {
+    constructed += 1;
+    return (x: int): bool => {
+      calls += 1;
+      return true;
+    };
+  };
+  const values: []int = [];
+  expect.equal(values.findIndex(make()), None);
+  expect.equal(constructed, 1);
+  expect.equal(calls, 0);
+}
+
+@test
+fn orderAndEarlyStop(): void {
+  let visited = 0;
+  const predicate = (x: int): bool => {
+    visited = visited * 10 + x;
+    return x == 3;
+  };
+  expect.equal(search([1, 2, 3, 4], predicate), Some(2));
+  expect.equal(visited, 123);
+}
+
+@test
+fn argumentOrderAndSnapshotAfterFactory(): void {
+  const a = [1];
+  let order = 0;
+  const receiver = (): []int => {
+    order = order * 10 + 1;
+    return a;
+  };
+  const make = (): (int) => bool => {
+    order = order * 10 + 2;
+    const _ = a.push(2);
+    return (x: int): bool => {
+      order = order * 10 + x;
+      return x == 2;
+    };
+  };
+  expect.equal(findIndex(receiver(), make()), Some(1));
+  expect.equal(order, 1212);
+}
+
+@test
+fn calleeAndReceiverStayFrozen(): void {
+  let a = [1, 2];
+  const original = a;
+  let predicate: (int) => bool = even;
+  const replacement = (x: int): bool => false;
+  const make = (): (int) => bool => {
+    a = [9];
+    return (x: int): bool => {
+      predicate = replacement;
+      return x == 2;
+    };
+  };
+  expect.equal(a.findIndex(make()), Some(1));
+  expect.equal(a[0], 9);
+  let f: (int) => bool = even;
+  f = (x: int): bool => {
+    f = replacement;
+    return x == 2;
+  };
+  expect.equal(original.findIndex(f), Some(1));
+}
+
+@test
+fn referenceChildrenAndReserveAreAllowed(): void {
+  const item = Item { value: 1 };
+  const a = [item, Item { value: 2 }];
+  const index = a.findIndex(
+    (x: Item): bool => {
+      x.value += 1;
+      const _ = a.reserve(10);
+      const _ = a.removeAt(-1);
+      const _ = a.truncate(a.length());
+      return x.value == 3;
+    },
+  );
+  expect.equal(index, Some(1));
+  expect.equal(item.value, 2);
+  expect.equal(a[1].value, 3);
+}
+
+@test
+fn nestedSearchAndExistingIteratorRemainValid(): void {
+  const a = [1, 2, 3];
+  let total = 0;
+  for value in a {
+    const found = a.findIndex(
+      (x: int): bool => {
+        return match a.findIndex((y: int): bool => y == x) {
+          Some(i) => x == value,
+          None => false,
+        };
+      },
+    );
+    if const i = found {
+      total += i;
+    }
+  }
+  expect.equal(total, 3);
+}
+
+@test
+fn exactNominalOverloadAndOwnedNameCollision(): void {
+  expect.equal([Item { value: 1 }, Item { value: 2 }].findIndex(select), Some(1));
+  expect.equal([Other { value: 7 }].findIndex(select), Some(0));
+  const other = Other { value: 7 };
+  expect.equal(other.findIndex(7), true);
+  expect.equal(findIndex(other, 7), true);
+}
+
+@test
+fn everyElementLayout(): void {
+  const high: u64 = 18446744073709551615;
+  const unsigned: []u64 = [high];
+  expect.equal(unsigned.findIndex((x: u64): bool => x == high), Some(0));
+  const characters = match text.runes("ёж", 2) {
+    Ok(value) => value,
+    Err(_) => panic("runes"),
+  };
+  const target = characters[1];
+  expect.equal(characters.findIndex((x: rune): bool => x == target), Some(1));
+  const functions = [(): int => 1, (): int => 2];
+  expect.equal(functions.findIndex((f: () => int): bool => f() == 2), Some(1));
+
+  expect.equal([true, false].findIndex((x: bool): bool => !x), Some(1));
+  expect.equal([1.5, 2.5].findIndex((x: float): bool => x == 2.5), Some(1));
+  expect.equal(["чай", "ёж"].findIndex((x: string): bool => x == "ёж"), Some(1));
+  expect.equal([[1], [2]].findIndex((x: []int): bool => x[0] == 2), Some(1));
+  expect.equal(
+    [(1, true), (2, false)].findIndex(
+      (x: (int, bool)): bool => match x {
+        (value, _) => value == 2,
+      },
+    ),
+    Some(1),
+  );
+}
+
+@test
+fn localArrayShadowsImportNamespace(): void {
+  const text = [1, 2];
+  expect.equal(text.findIndex(even), Some(1));
+  const captured = (): Option<int> => text.findIndex(even);
+  expect.equal(captured(), Some(1));
+  expect.equal(text.copy().length(), 2);
+}

@@ -115,11 +115,24 @@ evidence. Значения можно хранить,
 приёмки. Общий inference без аннотаций, generic/unsafe/extern references,
 suspension и FFI callbacks этим срезом не заявлены. `Result.mapError` пока
 сохраняет ограниченные формы mapper из D094; его перевод на общие сохранённые
-callbacks остаётся частью интеграции потребителей. Следующая семья —
-`findIndex` с проверками generation вокруг callback, затем команда поиска Notes.
-Они ещё не реализованы. [Единый проект контрактов](../research/cli0-collection-contracts-2026-09-08.md)
-отделяет принятые D096–D098 от предлагаемой семантики поиска. Не скрывай
-expected errors или capacity limits ради удаления discard.
+callbacks остаётся частью интеграции потребителей.
+
+D099 реализует `findIndex` с generation checks до и после callback:
+[evidence](evidence/cp42-array-search-2026-09-08.md). Поиск ID и удаление Notes
+используют общий API. Команда `search ТЕКСТ` выводит все текстовые совпадения
+в порядке базы, с учётом регистра, без regex/нормализации и без записи файла.
+Полные локальные прогоны: Release 80/80, macOS ASan/UBSan 79/79;
+architecture, memory-policy и roadmap проходят.
+16 source tests, 36 process cases × VM/native Debug/Release и 21 closed-pipe
+проверка проходят. Не начинай эту реализацию заново по старому списку задач.
+Отдельный paired sample на 6 098 синтетических записях: Native Release
+show-last 143.48 → 143.62 ms, remove-last 236.16 → 235.40 ms; это локальная
+проверка стоимости интеграции, не performance acceptance и не профиль bottleneck.
+Далее — общая интеграция сохранённых callbacks в Result.mapError и требуемый
+warning об escaping mutable capture, затем оставшиеся прикладные приёмки.
+[Единый проект контрактов](../research/cli0-collection-contracts-2026-09-08.md)
+теперь связывает принятые D096–D099. Не скрывай expected errors или capacity
+limits ради удаления discard.
 Оценить доступность structured JSON errors/локализации и пользу второго
 прохода version discovery. Наличие finding не требует автоматически DOM,
 reflection или нового общего framework.

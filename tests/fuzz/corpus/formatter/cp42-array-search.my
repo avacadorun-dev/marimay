@@ -1,0 +1,7 @@
+fn main(): int {
+  const values = [1, 2];
+  if const index = values.findIndex((value: int): bool => value == 2) {
+    return index;
+  }
+  return -1;
+}

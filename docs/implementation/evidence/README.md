@@ -119,6 +119,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Predicate array search and Notes integration](cp42-array-search-2026-09-08.md)
+records D099, callback/generation order, allocation/GC and public engine checks,
+plus shared ID lookup/removal and literal-text CLI search in Notes. This supplies
+an application consumer of D098. Full local Release passes 80/80 and macOS
+ASan/UBSan 79/79; warning delivery and full CP42 acceptance remain open.
+
 [Exact function values and closure lifetime](cp42-function-values-2026-09-08.md)
 records D098, shared managed captures, typed interface dispatch, source locations,
 allocation/GC and public VM/native checks; final local Release passed 79/79 and

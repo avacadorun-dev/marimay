@@ -37,8 +37,10 @@ if !inserted {
 ## Предлагаемая единая поверхность
 
 Для массива предлагаются три операции с free/dot selection по точному
-receiver, как у D043/D053. `copy` и `removeAt` приняты в D097 и реализованы;
-следующая сигнатура `findIndex` пока **не реализована**:
+receiver, как у D043/D053. `copy`/`removeAt` приняты в D097, callable values —
+в D098, `findIndex` с проверками generation вокруг callback — в D099.
+Все три операции теперь реализованы; результаты проверки находятся в
+[пакете D099](../implementation/evidence/cp42-array-search-2026-09-08.md):
 
 ```marimay
 public fn copy<T>(values: []T): []T;
@@ -60,16 +62,16 @@ public fn removeAt<T>(values: []T, index: int): Option<T>;
 итератор. Все проверки и возможная подготовка результата предшествуют commit.
 При allocation/resource/generation failure массив остаётся прежним.
 
-Для `findIndex` предлагается проверять generation перед каждым callback и
+D099 принимает для `findIndex` проверку generation перед каждым callback и
 после его нормального возврата, включая возврат `true`. Иначе callback может
 удалить текущий элемент и вернуть уже устаревший индекс. Мутация самого
 массива через alias должна давать G4005; изменение поля записи или вложенного
 массива не меняет generation внешнего массива. `reserve` разрешён по D053.
 Если callback сам паникует, возвращается его исходная panic. Это намеренно
 более строгая проверка на выходе, чем `for` с немедленным `break`/`return`;
-различие надо принять и зафиксировать до реализации, а не получить случайно.
+различие явно принято и зафиксировано D099.
 
-Предлагаемый predicate принимает обычную функцию или closure с аннотированными
+Predicate принимает обычную функцию или closure с аннотированными
 типами. Исходная проверка 2026-09-08 обнаружила I0001 при сохранении closure;
 теперь D098 реализует общий callable contract через typed MIR interfaces и
 managed environments/cells. [Локальная проверка](../implementation/evidence/cp42-function-values-2026-09-08.md)

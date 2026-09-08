@@ -365,6 +365,15 @@ An absent index returns None without invalidation. Result preparation precedes
 commit, so every failure leaves the array unchanged. Source rooting and normal
 D055 managed accounting apply throughout copy construction.
 
+D099 adds `findIndex(values, predicate): Option<int>` with exact `(T) => bool`
+function values from D098. It returns the first matching index, visits elements
+in order and invokes no predicate on empty input. Argument expressions evaluate
+once before the search snapshot. Generation checks before visits and after
+normal callback returns reject invalidation with G4005, including when the
+callback returns true. A callback panic propagates unchanged. Search preserves
+reference identity and does not itself mutate the array or invalidate iterators;
+full ordering and mutation rules are in the language specification.
+
 D061 fixes the shared internal planning policy without adding an API:
 known-count construction reserves exactly the initialized element count,
 whereas unknown-size push growth starts at four and doubles. `reserve` applies

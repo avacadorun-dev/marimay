@@ -6,13 +6,56 @@
 #include "checker_lookup_api.h"
 #include "checker_expr_records_api.h"
 
+/* arguments[0] is the already evaluated callee; remaining entries are frozen
+ * source arguments. This boundary is shared with compiler-known consumers. */
+bool mmay_function_value_emit_call(MarimayFunctionChecker *function, const MarimayAstNode *node,
+    const MarimayMirCallArgument *arguments, size_t count, MarimayExpressionValue *result) {
+    const MarimayTypeDescriptor *descriptor = arguments == NULL || count == 0 ? NULL
+        : mmay_type_descriptor(&function->checker->result->types, arguments[0].type);
+    MarimayMirInstruction call = {0};
+    if (descriptor == NULL || descriptor->kind != MMAY_TYPE_KIND_FUNCTION
+        || descriptor->parameter_count != count - 1) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT); return false;
+    }
+    for (size_t i = 1; i < count; i += 1) {
+        if (arguments[i].type != descriptor->arguments[i - 1]) {
+            mmay_checker_fail(function->checker, MMAY_CHECK_INVALID_ARGUMENT); return false;
+        }
+    }
+    MarimayTypeId result_type = descriptor->arguments[count - 1];
+    size_t added;
+    if (function->mir.calls.length >= function->mir.options.max_calls
+        || !mmay_size_add(function->mir.call_arguments.length, count, &added)
+        || added > function->mir.options.max_call_arguments) {
+        mmay_checker_fail(function->checker, MMAY_CHECK_LIMIT_REACHED); return false;
+    }
+    if (!mmay_mir_add_call(&function->mir, (MarimaySymbolId){{0}}, mmay_function_value_abi_result(result_type),
+            arguments, count, &call.call)
+        || !mmay_mir_set_call_interface_slot(&function->mir, call.call, 0)) goto allocation;
+    call.kind = MMAY_MIR_CALL_INTERFACE;
+    call.span = (MarimayMirSpan){node->start, node->end};
+    if (!mmay_function_add_register(function, mmay_function_value_abi_result(result_type), &call.target)
+        || !mmay_function_append_instruction(function, &call)) return false;
+    if (result_type == MMAY_TYPE_NEVER) {
+        static const unsigned char message[] = "unreachable return from never function value";
+        MarimayExpressionValue guard;
+        if (!mmay_checker_private_emit_string_constant(function, message, sizeof(message) - 1,
+                node->start, node->end, &guard)
+            || !mmay_checker_private_function_set_panic(function, guard.register_id,
+                node->start, node->end)) return false;
+        mmay_checker_private_expression_set_never(function, result);
+    } else *result = (MarimayExpressionValue){result_type, call.target, true};
+    return true;
+allocation:
+    mmay_checker_fail(function->checker, MMAY_CHECK_ALLOCATION_FAILED);
+    return false;
+}
+
 bool mmay_function_value_invoke(MarimayFunctionChecker *function, const MarimayAstNode *node,
     MarimayExpressionValue callee, const MarimayAstNode *arguments, MarimayExpressionValue *result) {
     const MarimayTypeDescriptor *descriptor = mmay_type_descriptor(&function->checker->result->types, callee.type);
     MarimayVector types = {0}, values = {0};
     MarimayMirCallArgument self = {callee.register_id, callee.type};
-    MarimayMirInstruction call = {0};
-    MarimayTypeId result_type;
     size_t count = 0, index = 0;
     bool ok = false;
     if (mmay_expression_is_never(function, &callee)) { *result = callee; return true; }
@@ -26,7 +69,6 @@ bool mmay_function_value_invoke(MarimayFunctionChecker *function, const MarimayA
         (void)mmay_checker_add_diagnostic(function->checker, MMAY_DIAGNOSTIC_CALL_ARITY,
             "argument count does not match the function value", node->start, node->end); return false;
     }
-    result_type = descriptor->arguments[count];
     size_t added_arguments;
     if (function->mir.calls.length >= function->mir.options.max_calls
         || !mmay_size_add(count, 1, &added_arguments)
@@ -54,23 +96,7 @@ bool mmay_function_value_invoke(MarimayFunctionChecker *function, const MarimayA
         MarimayMirCallArgument argument = {value.register_id, value.type};
         if (!mmay_vector_push(&values, &argument)) goto allocation;
     }
-    if (!mmay_mir_add_call(&function->mir, (MarimaySymbolId){{0}}, mmay_function_value_abi_result(result_type),
-            values.data, values.length, &call.call)
-        || !mmay_mir_set_call_interface_slot(&function->mir, call.call, 0)) goto allocation;
-    call.kind = MMAY_MIR_CALL_INTERFACE;
-    call.span = (MarimayMirSpan){node->start, node->end};
-    if (!mmay_function_add_register(function, mmay_function_value_abi_result(result_type), &call.target)
-        || !mmay_function_append_instruction(function, &call)) goto cleanup;
-    if (result_type == MMAY_TYPE_NEVER) {
-        static const unsigned char message[] = "unreachable return from never function value";
-        MarimayExpressionValue guard;
-        if (!mmay_checker_private_emit_string_constant(function, message, sizeof(message) - 1,
-                node->start, node->end, &guard)
-            || !mmay_checker_private_function_set_panic(function, guard.register_id,
-                node->start, node->end)) goto cleanup;
-        mmay_checker_private_expression_set_never(function, result);
-    } else *result = (MarimayExpressionValue){result_type, call.target, true};
-    ok = true;
+    ok = mmay_function_value_emit_call(function, node, values.data, values.length, result);
     goto cleanup;
 allocation:
     mmay_checker_fail(function->checker, MMAY_CHECK_ALLOCATION_FAILED);

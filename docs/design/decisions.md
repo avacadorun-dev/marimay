@@ -3183,3 +3183,42 @@ Reason: CP42 predicate search needs reusable callable values with stable capture
 lifetime. This establishes the common callable representation instead of a
 predicate-specific native helper or repeated AST expansion at each invocation.
 It does not add search, suspension or a public callback FFI ABI.
+
+## D099 — Predicate array search with checked callback boundaries
+
+Status: accepted.
+
+The compiler-known prelude exposes `findIndex<T>(values: []T, predicate: (T) => bool): Option<int>`
+with the existing exact receiver-directed free/dot selection. It evaluates the
+receiver once, then the predicate expression once; the search starts after both
+argument expressions complete. The predicate is a D098 function value with the
+exact invariant signature `(T) => bool`, including annotated closures and eligible
+named overloads. No special contextual annotation omission or explicit generic
+argument list is added for this operation.
+
+The result is the first matching zero-based index in Some, or None when no item
+matches. Callback invocations follow array order, once per visited element, and
+stop at the first true result. An empty array still evaluates both argument
+expressions but never invokes the predicate. Reference elements retain identity.
+The operation itself leaves the array, its generation and existing iterators unchanged.
+
+The search captures length and mutation generation after evaluating its arguments.
+It checks that generation before visiting an element and immediately after every
+normal callback return, including true and the last element. A mutation of the
+same array through an alias raises G4005 before an index or absence is published.
+This deliberately strengthens the post-callback boundary compared with a source
+for loop that immediately breaks or returns under D053. Failed/no-op mutations
+and reserve retain their existing generation contracts; mutation of a referenced
+child does not change the outer array's generation. A callback panic propagates
+unchanged, with its own cleanup, rather than being replaced by the generation
+check. Completed callback effects are not rolled back by later failure.
+
+A focused checker owner lowers this contract to ordinary typed MIR control flow,
+existing array generation checks and D098 interface calls. It neither expands the
+callback AST at each visit nor introduces backend-specific predicates or wire
+operations. Array bounds proofs remain subject to call invalidation. Managed
+roots and D055 resource/allocation outcomes use the common engine mechanisms.
+
+Reason: Notes ID lookup and removal need one shared, identity-preserving search
+operation. This slice integrates the callable foundation without changing array
+mutation semantics, adding identity equality, or hiding expected failures.

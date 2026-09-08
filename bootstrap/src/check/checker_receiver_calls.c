@@ -3,6 +3,7 @@
 #include "checker_core_api.h"
 #include "checker_array_mutation_api.h"
 #include "checker_array_edit_api.h"
+#include "checker_array_search_api.h"
 #include "checker_expr_calls_api.h"
 #include "checker_expr_collections_api.h"
 #include "checker_lookup_api.h"
@@ -37,6 +38,7 @@ static bool mmay_receiver_is_collection_name(
     }
     if (mmay_checker_private_check_text_equal(checker, token->start, token->end, "push")
         || mmay_checker_private_check_text_equal(checker, token->start, token->end, "pop")
+        || mmay_checker_private_check_text_equal(checker, token->start, token->end, "findIndex")
         || mmay_checker_private_check_text_equal(checker, token->start, token->end, "copy")
         || mmay_checker_private_check_text_equal(checker, token->start, token->end, "removeAt")
         || mmay_checker_private_check_text_equal(checker, token->start, token->end, "truncate")
@@ -76,6 +78,8 @@ static bool mmay_receiver_is_import_namespace(
         receiver, MMAY_TOKEN_IDENTIFIER, 0
     );
     return token != NULL && !token->synthetic
+        && mmay_checker_private_function_find_local(function,
+            (MarimayCheckName){function->checker->ast->snapshot, token->start, token->end}) == NULL
         && mmay_check_import_namespace_exists(
             function->checker,
             function->checker->source + token->start,
@@ -230,6 +234,9 @@ bool mmay_checker_private_compile_receiver_collection_call(
             result
         );
     }
+    if (!mmay_checker_private_compile_array_search_call(
+            function, node, &receiver, &array_resolved, result)) return false;
+    if (array_resolved) return true;
     if (!mmay_checker_private_compile_array_edit_call(
             function, node, &receiver, &array_resolved, result)) return false;
     if (array_resolved) return true;

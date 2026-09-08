@@ -1,0 +1,49 @@
+import * as io from "std/io";
+
+fn cleanup(): void {
+  const _ = io.eprintln("search cleanup");
+}
+
+fn drop(values: []int): void {
+  const _ = values.pop();
+}
+
+fn main(args: []string): int {
+  if args.length() == 0 {
+    return 0;
+  }
+  const values = [1, 2];
+  const mode = args[0];
+  defer cleanup();
+  const predicate = (item: int): bool => {
+    if mode == "deferred" {
+      defer drop(values);
+      return true;
+    }
+    if mode == "last-false" && item == 1 {
+      return false;
+    }
+    if mode == "push" {
+      const _ = values.push(3);
+    } else if mode == "set" {
+      values[0] = 1;
+    } else if mode == "clear" {
+      values.clear();
+    } else if mode == "nested" {
+      const _ = values.findIndex(
+        (other: int): bool => {
+          const _ = values.pop();
+          return true;
+        },
+      );
+    } else {
+      const _ = values.removeAt(0);
+    }
+    if mode == "panic" {
+      panic("predicate panic");
+    }
+    return mode != "false" && mode != "last-false";
+  };
+  const _ = values.findIndex(predicate);
+  return 0;
+}
