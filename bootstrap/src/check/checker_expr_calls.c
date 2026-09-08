@@ -1,3 +1,4 @@
+#include "checker_function_values_api.h"
 #include "checker_expr_calls_api.h"
 #include "checker_receiver_calls_api.h"
 #include "checker_core_api.h"
@@ -1068,6 +1069,8 @@ bool mmay_checker_private_compile_ordinary_call(
             MMAY_TOKEN_IDENTIFIER,
             0
         );
+    if (!mmay_function_value_call(function, node, &json_resolved, result)) return false;
+    if (json_resolved) return true;
     if (!mmay_checker_compile_json(function, node, &json_resolved, result)) {
         goto cleanup;
     }

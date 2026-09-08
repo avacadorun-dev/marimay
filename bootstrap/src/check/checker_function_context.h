@@ -10,6 +10,9 @@ typedef struct MarimayCheckLocal {
     size_t scope_depth;
     bool mutable_binding;
     bool initialized;
+    MarimayTypeId cell_type, cell_payload_type;
+    MarimayMirRegister cell_register;
+    bool cell_constructed;
 } MarimayCheckLocal;
 
 typedef struct MarimayLoopContext {
@@ -34,6 +37,11 @@ typedef struct MarimayInitializationSnapshot {
 
 typedef struct MarimayFunctionChecker {
     MarimayChecker *checker;
+    MarimaySymbolId source_symbol;
+    const MarimayAstNode *body_node;
+    struct MarimayClosureContext *closure;
+    size_t capture_scan_work;
+    bool capture_scan_done, capture_scan_needed;
     MarimayVector locals;
     MarimayVector loops;
     MarimayVector defers;

@@ -1,3 +1,4 @@
+#include "checker_function_values_api.h"
 #include "checker_expr_interfaces_api.h"
 #include "checker_core_api.h"
 #include "checker_imported_nominal_api.h"
@@ -20,7 +21,7 @@ static bool mmay_checker_private_function_ensure_interface_type(
         type
     );
     if (declaration == NULL) {
-        return true;
+        return mmay_function_value_layout(function, type);
     }
     if (!declaration->methods_resolved) {
         mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);

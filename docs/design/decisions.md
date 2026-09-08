@@ -3112,3 +3112,74 @@ Reason: notes requires one coherent model for producing a new outer collection
 and editing it, without handwritten growth/copy/shift loops or partial failure.
 Predicate search remains a separate callback contract; this decision introduces
 neither general function values nor a search API.
+
+## D098 — Exact function values through closure conversion
+
+Status: accepted.
+
+Function types `(A, B) => R` are exact, invariant value types. Ordinary visible
+functions and explicitly annotated closures can produce these values; values
+can be passed, returned, rebound and stored in managed containers. Invocation
+evaluates the callee once, before arguments evaluated once from left to right.
+The argument count, parameter types and result type are checked statically.
+There is no function-to-interface source conversion, nullable callable or
+user-defined implicit conversion. An expected exact function type can select
+an existing nominal-first-parameter overload; result type alone cannot create
+new overloads. Uninstantiated generic function references remain unsupported
+until their separate specialization contract is implemented. External and unsafe
+function references are excluded from this bounded value ABI, including imports.
+A member call retains D003 dot-call resolution; invoking a function-valued record
+field uses `(record.field)(arguments)`. This adds no field/method priority rule.
+
+Closures retain the section 6.3 capture contract: const bindings by value
+(retaining reference identity), let bindings through a shared managed cell,
+and fresh iteration bindings. Capturing a local requires definite initialization
+at closure creation. Each body has its own parameters, locals, return target,
+loops and defer scope. There is no contextual annotation omission beyond D094.
+Escaping a mutable capture remains legal, with the specified warning; warning
+delivery is a distinct checker obligation, not a runtime failure or restriction.
+
+Closure conversion represents a function value internally as a one-method
+typed MIR interface whose payload is a private managed environment record.
+Synthetic bodies receive that environment before source parameters. Captured
+mutable bindings use private record cells; uninitialized declarations can use
+an Option payload until their checked first assignment. This representation
+reuses managed ownership, graph collection, typed calls and both backends.
+It does not expose an interface type or synthetic record at the source level.
+Synthetic type/body identity derives from the enclosing symbol and source
+location, including generic instantiation identity. No runtime closure contains
+a pointer into a C stack frame or a checker data structure.
+
+Void callbacks retain a typed void interface call and discard its result through
+the existing frame return path. Never-returning callbacks use an internal bool
+result slot with no returning body edge and an unreachable-return guard at the
+call site; their source type remains never. No new MIR opcode or bytecode wire
+format is introduced. A closed-world interface call with no construction of its
+receiver type is valid (for example, in an unused higher-order function). Every
+actual construction and method signature is still checked, VM tables must be
+owned by the program, and native dispatch retains its checked default failure.
+Synthetic body source-origin metadata preserves precise test failure locations.
+
+The initial storage plan conservatively boxes mutable names mentioned in nested
+closures. Actual capture resolution remains lexical; name shadowing can cause
+extra storage but cannot capture the wrong binding. Planning has a per-function
+work bound using the configured MIR verification-work ceiling. This conservative
+plan stays isolated in the cell owner; a future escape/capture analysis may
+remove unnecessary cells without changing source behavior.
+
+The specified nonfatal warning for an escaping mutable capture is not delivered
+by this implementation. CP42 must add diagnostic severity, escape classification,
+and positive/negative warning tests before claiming section 6.3 conformance or
+closing the callback acceptance gate. Legal escaping closures must stay legal;
+turning the warning into a compilation error is not an acceptable shortcut.
+
+Exact capture layout and source semantics belong to focused checker owners.
+MIR layout completion, verifier checks and the existing engine call boundary
+remain authoritative; native/VM code does not infer source captures. Resource
+and allocation failures retain D055 outcomes, with roots and teardown checked
+at every reachable deterministic allocation failure.
+
+Reason: CP42 predicate search needs reusable callable values with stable capture
+lifetime. This establishes the common callable representation instead of a
+predicate-specific native helper or repeated AST expansion at each invocation.
+It does not add search, suspension or a public callback FFI ABI.

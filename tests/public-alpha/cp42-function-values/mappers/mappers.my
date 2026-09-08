@@ -1,0 +1,19 @@
+public type First {
+  public value: int,
+}
+
+public type Second {
+  public value: int,
+}
+
+public fn value(first: First): int {
+  return first.value + 1;
+}
+
+public fn value(second: Second): int {
+  return second.value + 2;
+}
+
+public fn increment(value: int): int {
+  return value + 1;
+}

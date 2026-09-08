@@ -1,3 +1,5 @@
+#include "checker_closure_api.h"
+#include "checker_function_values_api.h"
 #include "checker_expr_scalar_api.h"
 #include "checker_equality_api.h"
 #include "checker_core_api.h"
@@ -219,8 +221,11 @@
     name.snapshot = function->checker->ast->snapshot;
     name.start = token->start;
     name.end = token->end;
-    local = mmay_checker_private_function_find_local(function, name);
+    local = mmay_closure_find_local(function, name);
     if (local == NULL) {
+        bool callable = false;
+        if (!mmay_function_value_named(function, node, expected, &callable, result)) return false;
+        if (callable) return true;
         constant = mmay_checker_private_checker_find_constant(function->checker, name);
         if (constant != NULL) {
             if (!mmay_checker_private_evaluate_constant(
@@ -361,10 +366,7 @@
         );
         return false;
     }
-    result->type = local->type;
-    result->register_id = local->register_id;
-    result->valid = true;
-    return true;
+    return mmay_closure_read_local(function, local, token->start, token->end, result);
 }
 
  const MarimayAstNode *mmay_checker_private_expression_only_node(

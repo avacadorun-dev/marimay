@@ -460,7 +460,6 @@ mmay_bytecode_program_verify_interface_call(
         ? mmay_bytecode_interface_layout(&caller->body, receiver->layout)
         : NULL;
     size_t function_index = 0;
-    bool found = false;
     if (receiver == NULL || required == NULL
         || call->interface_slot >= required->method_count) {
         return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
@@ -516,7 +515,6 @@ mmay_bytecode_program_verify_interface_call(
                 )) {
                 continue;
             }
-            found = true;
             if (method == NULL) {
                 return MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
             }
@@ -582,7 +580,8 @@ mmay_bytecode_program_verify_interface_call(
             }
         }
     }
-    return found
-        ? MMAY_BYTECODE_PROGRAM_VERIFY_OK
-        : MMAY_BYTECODE_PROGRAM_VERIFY_SIGNATURE_MISMATCH;
+    /* No constructed value means this closed-world dispatch has no inhabitant.
+     * Every existing construction must match; the VM admits only registered
+     * construction tables, so an empty set cannot supply an unchecked target. */
+    return MMAY_BYTECODE_PROGRAM_VERIFY_OK;
 }

@@ -13,14 +13,14 @@ static int mmay_cli_location_compare(const void *left, const void *right) {
 }
 
 static bool mmay_cli_location_add(MarimayVector *locations,
-    const MarimayCheckedSymbol *fact, MarimayMirSpan span) {
+    const MarimayCheckedSymbol *fact, MarimaySymbolId symbol, MarimayMirSpan span) {
     MarimayNativePanicLocation location = {0};
     MarimaySourcePosition start, end;
     if (span.start == span.end) return true;
     if (fact == NULL || span.start > span.end
         || !mmay_source_position(fact->snapshot, span.start, &start)
         || !mmay_source_position(fact->snapshot, span.end, &end)) return false;
-    location.symbol = fact->symbol;
+    location.symbol = symbol;
     location.start = span.start;
     location.end = span.end;
     location.path = mmay_source_path(fact->snapshot);
@@ -47,15 +47,16 @@ bool mmay_cli_test_locations_prepare(const MarimayCheckResult *checked,
         if (function == NULL) goto failure;
         if (function->is_external) continue;
         fact = mmay_checked_symbol_by_id(checked, function->mir.symbol);
+        if (fact == NULL) fact = mmay_checked_symbol_by_id(checked, function->source_symbol);
         if (fact == NULL) goto failure;
         for (block_index = 0; block_index < function->mir.blocks.length; block_index += 1) {
             const MarimayMirBlock *block = mmay_vector_at_const(&function->mir.blocks, block_index);
             if (block == NULL) goto failure;
             for (index = 0; index < block->instructions.length; index += 1) {
                 const MarimayMirInstruction *instruction = mmay_vector_at_const(&block->instructions, index);
-                if (instruction == NULL || !mmay_cli_location_add(output, fact, instruction->span)) goto failure;
+                if (instruction == NULL || !mmay_cli_location_add(output, fact, function->mir.symbol, instruction->span)) goto failure;
             }
-            if (!mmay_cli_location_add(output, fact, block->terminator.span)) goto failure;
+            if (!mmay_cli_location_add(output, fact, function->mir.symbol, block->terminator.span)) goto failure;
         }
     }
     if (output->length > 1) qsort(output->data, output->length,

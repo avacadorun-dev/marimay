@@ -1,3 +1,4 @@
+#include "checker_function_values_api.h"
 #include "checker_expression_api.h"
 #include "checker_core_api.h"
 #include "checker_expr_calls_api.h"
@@ -45,6 +46,8 @@ bool mmay_checker_private_compile_expression_raw(
             result
         );
     }
+    if (node->kind == MMAY_SYNTAX_CLOSURE_EXPRESSION)
+        return mmay_function_value_closure(function, node, expected, result);
     if (node->kind == MMAY_SYNTAX_LITERAL_EXPRESSION) {
         return mmay_checker_private_compile_literal(function, node, expected, result);
     }
@@ -96,6 +99,8 @@ bool mmay_checker_private_compile_expression_raw(
         );
     }
     if (node->kind == MMAY_SYNTAX_MEMBER_EXPRESSION) {
+        if (!mmay_function_value_named(function, node, expected, &enum_resolved, result)) return false;
+        if (enum_resolved) return true;
         if (!mmay_checker_private_compile_enum_unit(
                 function,
                 node,

@@ -584,7 +584,8 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_verify_interface_call(
     if (call == NULL || receiver == NULL || layout == NULL
         || call->interface_slot == UINT32_MAX
         || call->interface_slot >= layout->method_count
-        || !mmay_bytecode_type_is_register(call->result_type)) {
+        || (call->result_type != MMAY_BYTECODE_TYPE_VOID
+            && !mmay_bytecode_type_is_register(call->result_type))) {
         return MMAY_BYTECODE_VERIFY_INVALID_ARGUMENT;
     }
     if (!mmay_bytecode_register_matches(

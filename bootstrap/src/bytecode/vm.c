@@ -684,16 +684,16 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
             || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID
             || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER
             || instruction->opcode == MMAY_OPCODE_CALL_INTERFACE) {
-            bool returns_void = instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID;
             bool returns_never = instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER;
             bool interface_call = instruction->opcode
                 == MMAY_OPCODE_CALL_INTERFACE;
             uint64_t call_wire = instruction->operands[
-                returns_void || returns_never ? 0 : 1
+                instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID || returns_never ? 0 : 1
             ].unsigned_value;
             const MarimayBytecodeCall *call = call_wire < body->calls.length
                 ? mmay_bytecode_call(body, (MarimayBytecodeCallId)call_wire)
                 : NULL;
+            bool returns_void = call != NULL && call->result_type == MMAY_BYTECODE_TYPE_VOID;
             MarimaySymbolId callee_symbol;
             MarimayManagedReference interface_payload =
                 mmay_managed_invalid_reference();

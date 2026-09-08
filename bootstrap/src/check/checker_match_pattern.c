@@ -1,3 +1,4 @@
+#include "checker_closure_api.h"
 #include "checker_match_pattern_api.h"
 #include "checker_core_api.h"
 #include "checker_enum_pattern_names_api.h"
@@ -57,7 +58,7 @@ bool mmay_checker_private_record_match_validate_named(
     bool initialized,
     MarimayCheckLocal **result
 ) {
-    MarimayCheckLocal local;
+    MarimayCheckLocal local = {0};
     MarimayMirRegister register_id = MMAY_MIR_NO_REGISTER;
     if (function->locals.length
         >= function->checker->options.max_locals_per_function) {
@@ -73,6 +74,7 @@ bool mmay_checker_private_record_match_validate_named(
     local.scope_depth = function->scope_depth;
     local.mutable_binding = mutable_binding;
     local.initialized = initialized;
+    if (!mmay_closure_prepare_local(function, &local)) return false;
     if (!mmay_vector_push(&function->locals, &local)) {
         mmay_checker_fail(function->checker, MMAY_CHECK_ALLOCATION_FAILED);
         return false;
@@ -90,6 +92,11 @@ bool mmay_checker_private_record_match_validate_named(
     size_t start,
     size_t end
 ) {
+    for (size_t i = 0; i < function->locals.length; i += 1) {
+        MarimayCheckLocal *local = mmay_vector_at(&function->locals, i);
+        if (local->register_id == target && local->cell_type != MMAY_TYPE_INVALID)
+            return mmay_closure_write_local(function, local, source, start, end);
+    }
     MarimayMirInstruction instruction;
     memset(&instruction, 0, sizeof(instruction));
     instruction.kind = MMAY_MIR_COPY;

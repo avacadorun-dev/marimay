@@ -1,3 +1,5 @@
+#include "checker_closure_api.h"
+#include "checker_function_values_api.h"
 #include "checker_lookup_api.h"
 #include "checker_array_types_api.h"
 #include "checker_collection_types_api.h"
@@ -342,7 +344,7 @@ generic_cleanup:
         }
         index -= 1;
     }
-    return NULL;
+    return mmay_closure_find_captured_local(function, name);
 }
 
  const MarimayCheckLocal *mmay_checker_private_function_find_local_in_current_scope(
@@ -502,7 +504,8 @@ bool mmay_function_add_register(
         return false;
     }
     if (!mmay_function_ensure_array_layout(function, type)
-        || !mmay_function_ensure_tuple_layout(function, type)) {
+        || !mmay_function_ensure_tuple_layout(function, type)
+        || !mmay_function_value_layout(function, type)) {
         return false;
     }
     if (!mmay_mir_add_register(&function->mir, type, result)) {

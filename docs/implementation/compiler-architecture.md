@@ -215,6 +215,17 @@ bootstrap/src/check/
                         and publication phases
   checker_expression.c  expression dispatcher only
   checker_expr_*.c      scalar, call, nominal, and record expression owners
+  checker_function_values.c
+                        D098 synthetic body lifecycle, private layouts and publication
+  checker_function_named.c
+                        exact named references and empty-environment adapters
+  checker_function_call.c
+                        function-value selection, argument order and typed dispatch
+  checker_closure.c      annotated closure body checking and control-flow lifetime
+  checker_closure_capture.c
+                        lexical/transitive capture resolution and entry prologue
+  checker_closure_cell.c
+                        bounded conservative storage planning and shared let cells
   checker_compound_types.c
                         tuple/function type recognition and interning
   checker_expr_tuples.c tuple value lowering and recursive MIR layout ownership
@@ -270,6 +281,20 @@ bootstrap/src/check/
   array.c               D045 type/literal/access/assignment lowering
   entry.c               root main and structural Error-contract selection
 ```
+
+D098 closure conversion stays entirely in these checker owners. Synthetic
+bodies and private managed environments reuse typed MIR interfaces, records,
+collector roots and engine calls; backends do not reconstruct lexical captures.
+Each body has a separate capture prologue so a binding first referenced inside
+a branch dominates every use. Captures live separately from lexical locals and
+survive scope truncation. Source-origin symbols map synthetic test failures back
+to their enclosing source snapshot. Interface verification checks every actual
+construction; an unused callable type may have no constructions at all.
+`test_checker_function_values.c` owns typing, allocation failures and budgets;
+`test_function_value_engines.c` owns MIR/wire/VM/native lifetime and failure
+coverage. The public CP42 fixture owns source behavior and formatter round trips.
+The conservative cell plan and outstanding escape-warning removal gate are
+recorded in D098 and the CP42 evidence packet.
 
 D080 rune equality stays in the scalar/equality checker owners: direct
 operators emit one typed equality instruction, while structural comparisons

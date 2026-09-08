@@ -5,6 +5,7 @@ void mmay_test_checker_void_match(void);
 void mmay_test_checker_map_error_context(void);
 void mmay_test_checker_option_condition(void);
 void mmay_test_checker_array_edit(void);
+void mmay_test_checker_function_values(void);
 
 void mmay_test_checker(void) {
     mmay_test_checker_expression_statements();
@@ -12,6 +13,7 @@ void mmay_test_checker(void) {
     mmay_test_checker_map_error_context();
     mmay_test_checker_option_condition();
     mmay_test_checker_array_edit();
+    mmay_test_checker_function_values();
     mmay_test_checker_vertical_slice();
     mmay_test_checker_diagnostics();
     mmay_test_checker_signature_phase();

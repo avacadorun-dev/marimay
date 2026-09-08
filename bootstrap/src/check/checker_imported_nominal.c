@@ -1,3 +1,4 @@
+#include "checker_function_values_api.h"
 #include "checker_imported_nominal_api.h"
 
 #include "checker_core_api.h"
@@ -267,6 +268,8 @@ static bool mmay_checker_private_ensure_layout_closure(
     }
     bool accepted = true;
     if (type < MMAY_TYPE_FIRST_DYNAMIC) return true;
+    if (descriptor != NULL && descriptor->kind == MMAY_TYPE_KIND_FUNCTION)
+        return mmay_function_value_layout(function, type);
     if (descriptor == NULL) {
         mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
         return false;
@@ -440,6 +443,10 @@ bool mmay_checker_private_function_ensure_nominal_layouts(
             }
             goto cleanup;
         }
+    }
+    for (index = 0; index < function->mir.record_fields.length; index += 1) {
+        const MarimayMirRecordField *field = mmay_vector_at_const(&function->mir.record_fields, index);
+        if (!mmay_checker_private_ensure_layout_closure(function, field->type, &visiting)) goto cleanup;
     }
     accepted = true;
 cleanup:

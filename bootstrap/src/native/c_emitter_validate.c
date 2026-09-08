@@ -357,7 +357,6 @@ bool mmay_native_c_interface_call_supported(
     MarimayNativeCManagedLayout interface_layout;
     const MarimayMirInterface *interface = NULL;
     size_t function_index = 0;
-    bool found_construction = false;
     if (call == NULL || receiver == NULL || call->argument_count == 0
         || call->interface_slot == UINT32_MAX
         || call->result_type != required_result
@@ -398,7 +397,6 @@ bool mmay_native_c_interface_call_supported(
             if (constructed == NULL || constructed->type != receiver->type) {
                 continue;
             }
-            found_construction = true;
             if (callee == NULL || callee->result_type != call->result_type
                 || callee->parameter_count != call->argument_count) {
                 return false;
@@ -422,7 +420,8 @@ bool mmay_native_c_interface_call_supported(
             }
         }
     }
-    return found_construction;
+    /* An empty closed-world dispatch emits only the checked default failure. */
+    return true;
 }
 
 MarimayNativeCEmitStatus mmay_native_c_validate_function(

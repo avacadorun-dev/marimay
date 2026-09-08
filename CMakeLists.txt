@@ -456,6 +456,12 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_value.c
   bootstrap/src/check/array.c
   bootstrap/src/check/checker_array_mutation.c
+  bootstrap/src/check/checker_function_values.c
+  bootstrap/src/check/checker_function_named.c
+  bootstrap/src/check/checker_function_call.c
+  bootstrap/src/check/checker_closure.c
+  bootstrap/src/check/checker_closure_capture.c
+  bootstrap/src/check/checker_closure_cell.c
   bootstrap/src/check/checker_array_edit.c
   bootstrap/src/check/checker_array_types.c
   bootstrap/src/check/checker.c

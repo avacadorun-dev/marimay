@@ -658,6 +658,21 @@ A dot-call-eligible function can mutate only fields declared `mutable` and visib
 
 ### 6.3 Closures
 
+Under D098, `(A, B) => R` is an exact, invariant function value type. A visible
+ordinary function or an explicitly annotated closure can form such a value.
+Values can be copied, stored, passed and returned without borrowing a caller's
+stack frame. Calling a value evaluates the callee once before evaluating its
+arguments once from left to right, and requires its exact parameter types and
+arity. A known result of `never` has no normal continuation. Function values do
+not implicitly convert to interfaces. An expected exact function type may
+select an existing nominal-first-parameter overload; it does not permit new
+result-based overloads. Taking an uninstantiated generic function's value is
+not yet supported by the bounded 0.1 implementation. External and unsafe
+function references are also outside this function-value slice. A member call
+continues to use the dot-call rules; a function-valued field is invoked as
+`(record.field)(arguments)`. Closure parameters require value types: `void` and
+`never` cannot be parameter bindings.
+
 ```marimay
 const doubled = values.map((value: int): int => value * 2);
 
@@ -687,6 +702,12 @@ be U. This context is confined to the direct mapper call. Without an exact
 context, an omitted closure result annotation remains an error.
 
 Closures capture lexical `const` bindings by value and `let` bindings through a managed mutable cell. Each iteration of a `for` loop creates a fresh iteration binding. The compiler warns when a closure captures a mutable local and escapes the declaring block.
+
+A captured local must be definitely initialized when the closure is created.
+Copying a captured reference preserves the identity of the referenced object;
+it does not deep-copy it. Multiple closures capturing one `let` binding share
+that binding's cell, including after the declaring call returns. A closure body
+has its own return target, loop-control scope and defer lifetime.
 
 Suspension inference applies through closures exactly as through named functions; no `async` closure syntax exists.
 

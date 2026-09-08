@@ -101,12 +101,25 @@ JSON bytes и сообщения. Не возвращай in-place remove по �
 Это evidence стоимости миграции; named budgets, профили и полная приёмка
 Notes остаются открытыми. Старые 14-test baseline snapshots неизменны.
 
-Следующий общий контракт — predicate search и callback/lifetime: сохранение
-произвольной closure в массиве пока даёт I0001, а mapError не доказывает
-готовность общего function-value ABI. `findIndex` и команда поиска Notes ещё
-не реализованы. [Единый проект контрактов](../research/cli0-collection-contracts-2026-09-08.md)
-отделяет принятые D096/D097 от этих зависимостей. Не скрывай expected errors
-или capacity limits ради удаления discard.
+D098 реализует общие значения функций и аннотированные замыкания через
+существующие typed MIR interfaces и managed environments/cells:
+[evidence](evidence/cp42-function-values-2026-09-08.md): Release 79/79,
+macOS ASan/UBSan 78/78, все локальные gates зелёные. Это не Tier 1-complete
+evidence. Значения можно хранить,
+передавать и возвращать; несколько замыканий разделяют один изменяемый захват,
+а итерации получают отдельные bindings. Старое I0001 при сохранении closure
+больше не описывает текущее состояние. Не переделывай этот ABI под findIndex.
+
+Открытый callback gate: nonfatal warning об escaping mutable capture из §6.3
+ещё не реализован; нужны severity, escape analysis и warning fixtures до полной
+приёмки. Общий inference без аннотаций, generic/unsafe/extern references,
+suspension и FFI callbacks этим срезом не заявлены. `Result.mapError` пока
+сохраняет ограниченные формы mapper из D094; его перевод на общие сохранённые
+callbacks остаётся частью интеграции потребителей. Следующая семья —
+`findIndex` с проверками generation вокруг callback, затем команда поиска Notes.
+Они ещё не реализованы. [Единый проект контрактов](../research/cli0-collection-contracts-2026-09-08.md)
+отделяет принятые D096–D098 от предлагаемой семантики поиска. Не скрывай
+expected errors или capacity limits ради удаления discard.
 Оценить доступность structured JSON errors/локализации и пользу второго
 прохода version discovery. Наличие finding не требует автоматически DOM,
 reflection или нового общего framework.

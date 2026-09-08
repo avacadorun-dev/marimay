@@ -124,8 +124,14 @@ static void mmay_test_native_interface_without_construction(void) {
         mmay_system_allocator(),
         mmay_native_c_emit_default_options(),
         &output
-    ) == MMAY_NATIVE_C_EMIT_UNSUPPORTED_CALL);
-    MMAY_EXPECT(output.data == NULL && output.length == 0);
+    ) == MMAY_NATIVE_C_EMIT_OK);
+    /* D098: an unconstructed interface can occur in an unused well-typed
+     * helper. Its dispatch has no inhabiting table and retains the checked
+     * default failure, while the independent entry executes normally. */
+    MMAY_EXPECT(output.data != NULL && output.length != 0);
+#if !defined(_WIN32)
+    mmay_test_native_compile_and_run(&output, "ok:i64:0\n", 0);
+#endif
     mmay_owned_bytes_dispose(&output);
     mmay_mir_function_dispose(&entry);
     mmay_mir_function_dispose(&dispatch);

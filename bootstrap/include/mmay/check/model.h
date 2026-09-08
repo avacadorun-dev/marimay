@@ -22,12 +22,15 @@ typedef struct MarimayCheckDiagnostic {
 typedef struct MarimayCheckedFunction {
     MarimayOwnedBytes name;
     MarimayTypeId signature_type;
+    /* Synthetic bodies retain the enclosing source definition for locations. */
+    MarimaySymbolId source_symbol;
     MarimaySymbolId receiver_symbol;
     MarimayTypeId receiver_type;
     MarimayMirFunction mir;
     bool dot_eligible;
     bool is_public;
     bool is_external;
+    bool is_unsafe;
     bool is_test;
     bool is_fuzz;
 } MarimayCheckedFunction;

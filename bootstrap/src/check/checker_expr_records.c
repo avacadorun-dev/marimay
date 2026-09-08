@@ -1,3 +1,4 @@
+#include "checker_closure_api.h"
 #include "checker_expr_records_api.h"
 #include "checker_core_api.h"
 #include "checker_imported_nominal_api.h"
@@ -342,7 +343,7 @@
                 goto cleanup;
             }
         } else {
-            const MarimayCheckLocal *local = mmay_checker_private_function_find_local(
+            const MarimayCheckLocal *local = mmay_closure_find_local(
                 function,
                 field_name
             );
@@ -366,9 +367,7 @@
                 );
                 goto cleanup;
             }
-            value.type = local->type;
-            value.register_id = local->register_id;
-            value.valid = true;
+            if (!mmay_closure_read_local(function, local, field_name.start, field_name.end, &value)) goto cleanup;
         }
         if (value.type != expected_field_type) {
             (void)mmay_checker_add_diagnostic(

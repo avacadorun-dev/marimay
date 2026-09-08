@@ -1,3 +1,4 @@
+#include "checker_closure_api.h"
 #include "checker_statement_api.h"
 #include "checker_core_api.h"
 #include "checker_defer_api.h"
@@ -509,7 +510,7 @@ bool mmay_compound_assignment_kind(
     name.snapshot = function->checker->ast->snapshot;
     name.start = name_token->start;
     name.end = name_token->end;
-    local = mmay_checker_private_function_find_local_mutable(function, name);
+    local = mmay_closure_find_local(function, name);
     if (local == NULL) {
         (void)mmay_checker_add_diagnostic(
             function->checker,
@@ -556,13 +557,16 @@ bool mmay_compound_assignment_kind(
     }
     memset(&value, 0, sizeof(value));
     memset(&combined, 0, sizeof(combined));
-    if (!mmay_compile_expression(function, right, local->type, &value)) {
+    MarimayCheckLocal saved_local = *local;
+    MarimayExpressionValue previous_value = {0};
+    if (compound && !mmay_closure_read_local(function, &saved_local, left->start, left->end, &previous_value)) return false;
+    if (!mmay_compile_expression(function, right, saved_local.type, &value)) {
         return false;
     }
     if (mmay_expression_is_never(function, &value)) {
         return true;
     }
-    if (value.type != local->type) {
+    if (value.type != saved_local.type) {
         (void)mmay_checker_add_diagnostic(
             function->checker,
             MMAY_DIAGNOSTIC_TYPE_MISMATCH,
@@ -575,8 +579,8 @@ bool mmay_compound_assignment_kind(
     if (compound && !mmay_function_emit_instruction(
             function,
             compound_kind,
-            local->type,
-            local->register_id,
+            saved_local.type,
+            previous_value.register_id,
             value.register_id,
             0,
             false,
@@ -586,15 +590,17 @@ bool mmay_compound_assignment_kind(
         )) {
         return false;
     }
-    if (!mmay_checker_private_function_emit_copy(
+    if (!mmay_closure_write_local(
             function,
-            local->register_id,
+            &saved_local,
             compound ? combined.register_id : value.register_id,
             right->start,
             right->end
         )) {
         return false;
     }
+    local = mmay_closure_find_local(function, name);
+    if (local == NULL) return false;
     local->initialized = true;
     return true;
 }

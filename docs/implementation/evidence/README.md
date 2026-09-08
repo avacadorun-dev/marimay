@@ -119,13 +119,19 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Exact function values and closure lifetime](cp42-function-values-2026-09-08.md)
+records D098, shared managed captures, typed interface dispatch, source locations,
+allocation/GC and public VM/native checks; final local Release passed 79/79 and
+macOS ASan/UBSan passed 78/78. The nonfatal escaping-mutable warning,
+predicate search and full platform/application acceptance remain open.
+
 [Shallow array copy and stable removal](cp42-array-edit-2026-09-08.md) records
 D097, typed MIR/wire/runtime ownership, allocation and GC boundaries, public
 VM/native behavior and the functional Notes migration; all 78 local Release
 tests have passing results and full macOS ASan/UBSan passed 77/77. The near-limit paired
 sample records time and memory rather than declaring full performance
-acceptance. Predicate search, callback lifetime and platform/application gates
-remain open.
+acceptance. D098 supplies the callback lifetime foundation below the still-open
+predicate search and platform/application gates.
 
 [Scoped Option conditions](cp42-option-binding-2026-09-08.md) records D096,
 exact enum/CFG lowering, parser recovery, scope/cleanup/allocation coverage,

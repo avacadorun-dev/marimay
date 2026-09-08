@@ -1688,6 +1688,10 @@ Shared preparation: [external application acceptance driver](evidence/cli0-share
 Shared-contract baseline: [notes aliases, explicit mutation results and output failures](evidence/cli0-notes-contract-baseline-2026-09-08.md).
 Shared-contract implementation: [scoped Option conditions and consumer migration](evidence/cp42-option-binding-2026-09-08.md).
 Array copy/removal and functional Notes migration: [D097 local evidence](evidence/cp42-array-edit-2026-09-08.md).
+Function-value/capture foundation: [D098 local evidence](evidence/cp42-function-values-2026-09-08.md).
+Callback removal gate: deliver the nonfatal escaping-mutable-capture warning with
+severity, escape classification and positive/negative fixtures before full §6.3
+conformance or CP42 callback acceptance; legal escaping closures remain legal.
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome

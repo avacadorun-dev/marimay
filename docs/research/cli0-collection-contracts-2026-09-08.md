@@ -69,14 +69,15 @@ public fn removeAt<T>(values: []T, index: int): Option<T>;
 более строгая проверка на выходе, чем `for` с немедленным `break`/`return`;
 различие надо принять и зафиксировать до реализации, а не получить случайно.
 
-Предлагаемый predicate должен принимать обычную функцию или closure с
-аннотированными типами. Проверка реализации 2026-09-08 обнаружила существенную
-зависимость: сохранение произвольной closure в массиве сейчас отвергается
-I0001; работающий `mapError` не доказывает общей поддержки function values.
-Поэтому findIndex нельзя считать простым вызовом уже готового callback API:
-перед его реализацией нужны отдельный проверенный callback contract и owner,
-включая захват ID из внешней области и escape/lifetime ограничения. Нельзя
-подменять это C-only predicate или объявлять общий closure ABI реализованным.
+Предлагаемый predicate принимает обычную функцию или closure с аннотированными
+типами. Исходная проверка 2026-09-08 обнаружила I0001 при сохранении closure;
+теперь D098 реализует общий callable contract через typed MIR interfaces и
+managed environments/cells. [Локальная проверка](../implementation/evidence/cp42-function-values-2026-09-08.md)
+охватывает захват ID, совместную мутацию, escape lifetime и VM/native поведение.
+Это снимает зависимость поиска от отсутствующего представления callback.
+Nonfatal warning об escaping mutable capture остаётся отдельным removal gate
+CP42; полная callback acceptance и claimed-platform evidence ещё открыты.
+findIndex использует этот общий owner, без C-only predicate или AST expansion.
 Контекстный вывод типов для обычных callback не входит в эту часть:
 D094 специально ограничивает существующее послабление `Result.mapError`.
 Поиск через predicate покрывает ID записей без добавления равенства по identity

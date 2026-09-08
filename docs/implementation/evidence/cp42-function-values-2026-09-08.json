@@ -1,0 +1,204 @@
+{
+  "schema": "marimay.cp42.function-values.v1",
+  "recorded_at_utc": "2026-09-08T07:06:27.442509+00:00",
+  "base_git_revision": "8e826a6578a0af2261a25d351d66faed005d7d56",
+  "verification_status": "local checks passed; CP42 and full Tier 1 acceptance open",
+  "platform": {
+    "system": "Darwin",
+    "release": "25.6.0",
+    "machine": "arm64",
+    "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)"
+  },
+  "build_commands": [
+    "cmake --build build/release -j4",
+    "cmake --preset asan-ubsan",
+    "cmake --build build/asan-ubsan -j4",
+    "cmake --build build/fuzz -j2 --target mmay_fuzz_frontend mmay_fuzz_formatter"
+  ],
+  "source_manifest_sha256": {
+    "CMakeLists.txt": "b3f459e9bb7545cc7f43a4c82cacbff80115f449e0da538c7aa6c05993d940a2",
+    "bootstrap/include/mmay/check/model.h": "a3e4985318d7a987ae0f39a31e3c49b4a09d23f598949a19b99505ebf0023eca",
+    "bootstrap/src/bytecode/bytecode_verify_instructions.c": "58ab40cea0758bc1e45d0261838f9596d5c8a6afd5f4d85cfae2c1d24f0af2cc",
+    "bootstrap/src/bytecode/program_verify_nominal.c": "eb5d824f50b8541cdaee019ecfe0491af40fc1d5808e0b425af8e7079298fd12",
+    "bootstrap/src/bytecode/vm.c": "78591730bac7a50ef5dde8544ce15aea13fbec74e67ac822bf30340f7f34426b",
+    "bootstrap/src/check/checker_closure.c": "6efbde0e63a0581fd60aa48eecca98daeae7ba817992894245ccd157dd876f8e",
+    "bootstrap/src/check/checker_closure_api.h": "4a2073f9ed39cfa2c7094ae762553f03f200cf4fec8c1987c657ad4fd5f76e46",
+    "bootstrap/src/check/checker_closure_capture.c": "71171c305807953dd313a352f73077c67a76c14ee5cb53930f252d6eeadd5af1",
+    "bootstrap/src/check/checker_closure_cell.c": "90a3eaac79eef76edf629ba2ebb2cda1349c3853234089a00fe721028d5528c5",
+    "bootstrap/src/check/checker_closure_internal.h": "e5967e44665d80eec2a749ae930d915ad631c718a6ccf44594e90472f798b71a",
+    "bootstrap/src/check/checker_declaration_functions.c": "6d3cfb24dc4bba4639168ffb1aa9f119bb1ce8e6d8d590eadcf363709fd1b0b9",
+    "bootstrap/src/check/checker_expr_calls.c": "263f32bd438b5297ade5ba1de46d3ec01826d674d92b2a3a36a5bee164a0f596",
+    "bootstrap/src/check/checker_expr_interfaces.c": "6f097de0d09e435211d10271be2d4afc74cb1efd4115e9f2361a1514b0a39b87",
+    "bootstrap/src/check/checker_expr_nominal.c": "3272471339bac8633de62c7388c6107a91d5b4e2da5c3caa8393a9385e3c7898",
+    "bootstrap/src/check/checker_expr_records.c": "552a4c0e80fba86494726a07a90957425ec28f629e63d8df394bfba087b7df73",
+    "bootstrap/src/check/checker_expr_scalar.c": "364e19cda1739558a27d6032571ea2f7d3ce4cdc965d6da04e950fee91566a42",
+    "bootstrap/src/check/checker_expression.c": "931a1bbe4433f2c51d9cd14ab08794e2481b96956a4350c4fe7a1486cec3cb42",
+    "bootstrap/src/check/checker_function_call.c": "1cf684443d0ca846c08e592dbb08c5de6f4489186b8195dab98cea3aa02ac92e",
+    "bootstrap/src/check/checker_function_context.h": "581b7742c8d92e38b78079c4d50d118140425ea995baef336c577c2553899c5b",
+    "bootstrap/src/check/checker_function_named.c": "bb664e6620e43b6a3408c139b0e8522d829d5f65c8a3a3ca9a496e044e912b7d",
+    "bootstrap/src/check/checker_function_values.c": "6fd9536d8f2265664fdc69b9c41343b37c848590e56afd8a931119e61c00bb36",
+    "bootstrap/src/check/checker_function_values_api.h": "43added59b0650a158fdd8f449e58dbce73e75fd5c9f0a88f8bd9ab9e1a81d35",
+    "bootstrap/src/check/checker_function_values_internal.h": "080ed58ab3070ed366c635f16f535efe044df47de7f4bf9229eef22c562a7103",
+    "bootstrap/src/check/checker_imported_nominal.c": "8bae6a0a15d62d4aa09a9665a2a3a1a531124ea0d7b66442c058b005e84bda2f",
+    "bootstrap/src/check/checker_lookup.c": "cc8f2f67ca939b06695b84a318a5fe423c9bf5fcd6a53f78564f9b38df4d91f1",
+    "bootstrap/src/check/checker_match_pattern.c": "717d224080adbf5c63147f997d1c697fa93ad83ca01a5d6567bf7df6b63aeaff",
+    "bootstrap/src/check/checker_statement.c": "369ef9512431617973a6f91d06a99da6fe145352c8d08daf73ce40ed6e3fd4bb",
+    "bootstrap/src/cli/cli_test_locations.c": "7e06d2fa10b57a144e0ce6cd8b4134c0c7fd8c04c5d9ba536ded8027042c0350",
+    "bootstrap/src/cli/cli_test_program.c": "8b7aa5fb169ca606e2e39854d00a8a4cc8d9edafccd8bd1ae264217964dbe344",
+    "bootstrap/src/native/c_emitter_validate.c": "ffa5212d758d08f5325d4dc08ea837e9eba40ceda2b2ddffab5e8eade4c81d50",
+    "docs/design/decisions.md": "7615b422dd5535387ed825d42e98fc959b58e2cfb49613f72e16489aaf481fc5",
+    "docs/implementation/agent-handoff-cli-alpha-2026-09-07.md": "b14c7e593b369bf4d1644be754876345565d4cbd95d4d9430b68ab02ed373d04",
+    "docs/implementation/checkpoints.md": "581dea85a89ae20e9fa609418964aba62c462cbbd8f46da5cbcc4b55adc7b93c",
+    "docs/implementation/compiler-architecture.md": "03157dbec9152676a84400b79a9155b48064b0cc55016a9f0cfd0c6b3dce6e40",
+    "docs/research/cli0-collection-contracts-2026-09-08.md": "c861f103c9350366975b6d0a1c15b80eec25d71df4610e8f1e0fa812c893a407",
+    "docs/spec/language.md": "33cad7c96790c80d45eac337ec7effec068bd90abb150ee8e021358c0e08b821",
+    "tests/c-unit/CMakeLists.txt": "f06e3b1d5acb6089f7b903d3f6834607d2d13629ec9e2c731b0dc9a8f76ccf85",
+    "tests/c-unit/test_checker.c": "465fa28ccc07f065e54355c095bd2f435ac1ac5e72aa574e230f255e4e85a17e",
+    "tests/c-unit/test_checker_function_values.c": "97c33699081ba9083bf79ede94e9ba3f24fda547e5304fc43bd2b6cec6fb0036",
+    "tests/c-unit/test_cp42_function_values.cmake": "935b34b889fb6569865033e3c5a5378f6f1323d17267c744474e3858402516cd",
+    "tests/c-unit/test_function_value_engines.c": "96c023fac4f7f8b999d43fad59fa10c18458d3021df11476052ae4653a418a51",
+    "tests/c-unit/test_native_c_emitter.c": "f1f1463e6f293870837ae867efe1bbac280dcb691555b8254445e2d3203d4ade",
+    "tests/c-unit/test_native_c_emitter_nominal.c": "40cbbf1f0725e3390f2fcfd6ec59640471c07e038888e982683dc0f57e5ed214",
+    "tests/fuzz/corpus/formatter/cp42-function-values.my": "012d782564a2ca1ace9a38dda100cc99f16e7433bfe4a3469f119b75d4ad8d37",
+    "tests/fuzz/corpus/frontend/cp42-function-values.my": "012d782564a2ca1ace9a38dda100cc99f16e7433bfe4a3469f119b75d4ad8d37",
+    "tests/public-alpha/cp42-function-values/main.my": "5f923bb0ce827ddb87b63dfef573851c13901ed22a54dddbb2b2bd66a97d0ffd",
+    "tests/public-alpha/cp42-function-values/main_test.my": "7f88ced863ddd0af8e6c97705b260eec912378e252126bcba5040739ac170910",
+    "tests/public-alpha/cp42-function-values/mappers/mappers.my": "d51c59dd759e6054d7d882e4a10c4d5126b157cf763326d86c6d2f4aba6b684b",
+    "tests/public-alpha/cp42-function-values/mmay.mod": "e25759c50f6959ad999991967b0dca1fd167f512506b87a80fa7a61a1e956c3b",
+    "tools/_d0_checks.py": "74f8faebaee3bbcfa751c189654cfef708236b8ba4372869741b35205017a743"
+  },
+  "binaries_sha256": {
+    "build/release/mmay": "6bb4394be0797849e66aaaff00fa203f3393423d7c5873adcef929b1a8aeedfa",
+    "build/asan-ubsan/mmay": "0c09dffb3c577b0f18f463ed0325768320b7cfc9dbebe9bdbe6f3de24c9abfeb"
+  },
+  "toolchain_doctor": {
+    "schema": "marimay.doctor/1",
+    "ok": true,
+    "toolchain": {
+      "compiler": "0.1.0-alpha.1",
+      "runtime": "0.1.0-alpha.1"
+    },
+    "host": {
+      "system": "Darwin",
+      "processor": "arm64"
+    },
+    "layout": "installed",
+    "compiler": {
+      "path": "/usr/bin/cc",
+      "id": "AppleClang",
+      "version": "21.0.0.21000101",
+      "available": true
+    },
+    "runtimes": {
+      "debug": {
+        "status": "ok",
+        "path": "/workspace/Projects/Marimay/marimay/build/release/native-runtime/debug/libmmay_native_runtime_debug.a"
+      },
+      "release": {
+        "status": "ok",
+        "path": "/workspace/Projects/Marimay/marimay/build/release/native-runtime/release/libmmay_native_runtime_release.a"
+      }
+    }
+  },
+  "checks": [
+    {
+      "command": "ctest --preset release --output-on-failure -j2",
+      "status": "passed",
+      "tests": 79,
+      "wall_seconds": 328.09,
+      "log": "build/d098-release-verified.log",
+      "sha256": "d0457aca4c15a432673f7a6f5476bc4e6e90ba28027e3859a93b67d5cecd9aa0"
+    },
+    {
+      "command": "ctest --preset asan-ubsan --output-on-failure -j2",
+      "status": "passed",
+      "tests": 78,
+      "wall_seconds": 706.3,
+      "log": "build/d098-asan-verified.log",
+      "sha256": "9cdbcd73a48e132dcbd7748cb2cdd54494c3cbfdd9f7451089948011547c737a"
+    },
+    {
+      "command": "./tools/check-architecture",
+      "status": "passed",
+      "log": "build/d098-architecture.log",
+      "sha256": "d9350711c33efa6ee9fdc6a821dd06ddde0af490e1928d5812621b47de44706c"
+    },
+    {
+      "command": "./tools/check-c-memory-policy",
+      "status": "passed",
+      "log": "build/d098-memory-policy.log",
+      "sha256": "b2d064001e3464a5c31b01a228afda5e9726d586b725f57ba2d8dfc446dfb072"
+    },
+    {
+      "command": "./tools/check-roadmap",
+      "status": "passed",
+      "log": "build/d098-roadmap.log",
+      "sha256": "5e14aacea127d5b49d4c0d05b0cb75174e613e810ac25ba743738e95c1424aaf"
+    },
+    {
+      "command": "build/release/mmay test /workspace/Projects/Marimay/marimay-notes --engine both",
+      "status": "passed",
+      "source_tests": 16,
+      "log": "build/d098-notes-regression.log",
+      "sha256": "083a8245275ea9fee5bb0911bf625ed567b1af8163fe494213f472bcc1b2f718"
+    },
+    {
+      "command": "build/release/mmay test /workspace/Projects/Marimay/Marimay-Examples/marimay-config --engine both",
+      "status": "passed",
+      "source_tests": 7,
+      "log": "build/d098-config-regression.log",
+      "sha256": "0d23e490f04640425ffd76b71db13f0e8517c74d0303b3fa1d30ffa764df8e16"
+    },
+    {
+      "command": "build/fuzz/tests/fuzz/mmay_fuzz_frontend -runs=1 tests/fuzz/corpus/frontend/cp42-function-values.my",
+      "status": "passed",
+      "scope": "fixed-input seed replay, not a fuzz campaign",
+      "log": "build/d098-fuzz-frontend-seed.log",
+      "sha256": "e3b77e0bf94a23e8ac9c4952b9341ce32034ce0a506e35c32c7221e11e3b39bd"
+    },
+    {
+      "command": "build/fuzz/tests/fuzz/mmay_fuzz_formatter -runs=1 tests/fuzz/corpus/formatter/cp42-function-values.my",
+      "status": "passed",
+      "scope": "fixed-input seed replay, not a fuzz campaign",
+      "log": "build/d098-fuzz-formatter-seed.log",
+      "sha256": "7dc73d25c0e6e9ffa942c55ca72d54a56b23d94b5ced140ddee38a720ecb7ef6"
+    }
+  ],
+  "corrected_attempts": [
+    {
+      "log": "build/d098-release-final.log",
+      "sha256": "45e4d84da030cc74cb0ca7d6891a4219c7502348624bd21bec738b584ee579c5",
+      "reason": "Only checker failed: new import fixture used invalid namespace-import syntax. Corrected to import * as lib; final complete suites include the passing test."
+    },
+    {
+      "log": "build/d098-fuzz-build.log",
+      "sha256": "2dacf91cc78e0fcc09ef610d77c3df8bb54292843cb2b35bc02da41f986c4d3c",
+      "reason": "Ignored local resource links still targeted removed Clang 17 headers/runtime. Refreshed existing links to installed Clang 21 resources; both targets rebuilt and seeds replayed."
+    }
+  ],
+  "allocation_coverage": [
+    "checker success and diagnostics",
+    "imported unsafe rejection",
+    "MIR oracle",
+    "program lowering",
+    "wire encode/decode",
+    "VM forced collection",
+    "native emission",
+    "generated native forced collection",
+    "synthetic source locations"
+  ],
+  "teardown_assertions": [
+    "live_allocations == 0",
+    "live_bytes == 0"
+  ],
+  "limits": [
+    "macOS evidence only; no D098 Linux LSan or full Tier 1 completion yet",
+    "escaping mutable capture warning requires severity and escape classification",
+    "conservative bounded name-based cell planning may overallocate under shadowing",
+    "Result.mapError retains D094 mapper forms; stored-value integration remains open",
+    "findIndex and Notes CLI search command not implemented; ID lookup still uses a manual loop",
+    "generic/unsafe/extern function references, general contextual inference, suspension and callback FFI excluded",
+    "no fresh performance claim; CP42 and parent alpha gates remain open"
+  ],
+  "book_ideas": []
+}

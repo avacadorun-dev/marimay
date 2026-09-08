@@ -715,6 +715,7 @@ int mmay_cli_test_program(
         options, &compiler, standard_error
     );
     if (exit_code != MMAY_EXIT_SUCCESS) goto cleanup;
+    exit_code = MMAY_EXIT_INTERNAL;
     if (!mmay_cli_optimize_checked_mir(&compiler)) goto cleanup;
     if (!mmay_vector_init(
             &tests, session->allocator, sizeof(MarimayCliTestCase)

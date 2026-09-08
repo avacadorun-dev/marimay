@@ -5,6 +5,7 @@ void mmay_test_native_source_matrix(void);
 void mmay_test_native_strings_panic(void);
 void mmay_test_native_arrays(void);
 void mmay_test_array_edit_engines(void);
+void mmay_test_function_value_engines(void);
 void mmay_test_native_c_emitter_array_access(void);
 void mmay_test_native_c_emitter_array_storage(void);
 void mmay_test_native_baseline(void);
@@ -20,6 +21,7 @@ void mmay_test_native_c_emitter(void) {
     mmay_test_native_source_matrix();
     mmay_test_native_strings_panic();
     mmay_test_native_arrays();
+    mmay_test_function_value_engines();
     mmay_test_array_edit_engines();
     mmay_test_native_c_emitter_array_access();
     mmay_test_native_c_emitter_array_storage();

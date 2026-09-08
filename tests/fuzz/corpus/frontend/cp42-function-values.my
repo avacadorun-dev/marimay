@@ -1,0 +1,9 @@
+fn factory(): ()=>int {
+  let value = 0;
+  return (): int => { value += 1; return value; };
+}
+fn main(): int {
+  const next = factory();
+  const f = (): int => next();
+  return f() + next();
+}

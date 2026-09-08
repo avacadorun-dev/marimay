@@ -741,7 +741,7 @@ cleanup:
             &declaration->parameter_types,
             index
         );
-        MarimayCheckLocal local;
+        MarimayCheckLocal local = {0};
         if (name == NULL || type == NULL || *type == MMAY_TYPE_INVALID
             || index > UINT32_MAX) {
             mmay_checker_fail(function->checker, MMAY_CHECK_INTERNAL_ERROR);
@@ -792,6 +792,9 @@ static bool mmay_checker_private_publish_external_function(
         return false;
     }
     function_index = checker->result->functions.length;
+    if (function_index >= checker->options.max_functions) {
+        mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED); goto cleanup;
+    }
     if (mmay_map_get_const(
             &checker->result->function_index,
             mir.symbol.bytes,
@@ -826,6 +829,7 @@ static bool mmay_checker_private_publish_external_function(
     checked.receiver_type = declaration->receiver_type;
     checked.dot_eligible = declaration->dot_eligible;
     checked.is_public = declaration->is_public;
+    checked.is_unsafe = declaration->is_unsafe;
     checked.is_external = true;
     checked.is_test = declaration->is_test;
     checked.is_fuzz = declaration->is_fuzz;
@@ -891,6 +895,8 @@ cleanup:
         return false;
     }
     function.checker = checker;
+    function.source_symbol = declaration->symbol;
+    function.body_node = declaration->block;
     function.block = MMAY_MIR_NO_BLOCK;
     function.result_type = declaration->result_type;
     function.unsafe_context = declaration->is_unsafe;
@@ -1034,6 +1040,9 @@ cleanup:
         goto cleanup;
     }
     function_index = checker->result->functions.length;
+    if (function_index >= checker->options.max_functions) {
+        mmay_checker_fail(checker, MMAY_CHECK_LIMIT_REACHED); goto cleanup;
+    }
     if (mmay_map_get_const(
             &checker->result->function_index,
             function.mir.symbol.bytes,
@@ -1064,6 +1073,7 @@ cleanup:
     checked.receiver_type = declaration->receiver_type;
     checked.dot_eligible = declaration->dot_eligible;
     checked.is_public = declaration->is_public;
+    checked.is_unsafe = declaration->is_unsafe;
     checked.is_test = declaration->is_test;
     checked.is_fuzz = declaration->is_fuzz;
     checked.mir = function.mir;
