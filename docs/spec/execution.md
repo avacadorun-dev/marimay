@@ -675,6 +675,20 @@ fuel and publishes effects in the same order. Insufficient fuel or failure
 returns at the first uncommitted original instruction. Unsupported image shapes
 use ordinary dispatch; central-allocation failure remains observable.
 
+Under D109, a fully matched call-free and nonallocating execution-image trace
+may batch complete iterations while retaining scalar register state, a stable
+non-growing raw-array storage view and its mutation generation in host locals.
+The matcher must prove the complete opcode/operand/CFG relations and that every
+retained invariant is disjoint from all trace definitions and the induction
+register, and retained definitions are pairwise distinct. Each iteration
+requires enough applicable frame/shared fuel for all of its original
+instructions before its first effect. Heap stores occur in
+their original order; deferred register and generation publication must be
+indistinguishable at every original instruction boundary. Before a condition,
+fuel, bounds, generation or other side exit, the VM publishes exactly the last
+complete iteration and resumes the first uncommitted instruction through the
+ordinary checked path. A partial iteration has no effect and consumes no fuel.
+
 A nested call-free function may borrow its caller's linked managed roots only
 when every reachable instruction is nonallocating and cannot collect, invoke a
 host, suspend, call or grow managed storage. The caller retains every argument

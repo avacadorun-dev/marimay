@@ -3,6 +3,7 @@
 void mmay_test_vm_managed_strings(void);
 void mmay_test_vm_hot_regions(void);
 void mmay_test_vm_execution_image(void);
+void mmay_test_vm_execution_image_shift(void);
 void mmay_test_vm_scalar_array_regions(void);
 void mmay_test_vm_frame_storage(void);
 
@@ -10,6 +11,7 @@ void mmay_test_bytecode_vm(void) {
     mmay_test_vm_all_opcodes_and_limits();
     mmay_test_vm_hot_regions();
     mmay_test_vm_execution_image();
+    mmay_test_vm_execution_image_shift();
     mmay_test_vm_scalar_array_regions();
     mmay_test_vm_frame_storage();
     mmay_test_vm_checked_arithmetic();

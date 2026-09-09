@@ -3578,3 +3578,46 @@ managed alias/rebinding and forced-collection cases, every reachable allocation
 failure with zero live allocations/bytes, sanitizers, unchanged workload
 checksums and paired before/after measurements. Interpreter specialization alone
 is not performance parity.
+
+## D109 — Batch complete verified nonallocating trace iterations
+
+Status: accepted.
+
+An execution-image family runner may retain scalar registers, a stable raw
+array-storage view and its mutation generation in C locals across multiple
+complete iterations of one verified nonallocating trace. Eligibility requires
+the complete opcode, operand, definition/use and CFG relations for the trace;
+every loop input retained as an invariant must be distinct from every register
+written by the trace and from the induction register, and retained definitions
+must be pairwise distinct. Matchers cannot inspect source paths, package or
+function names, symbols, constants that identify a
+workload, or benchmark metadata.
+
+One batched iteration must first prove that its complete original instruction
+sequence can succeed and that exact D087 frame/shared fuel is available. It
+then publishes heap writes in the original order, accounts for every original
+instruction and updates the retained scalar state. Register values and the
+mutation generation may be materialized after the final completed iteration.
+Before insufficient fuel, loop exit, comparison exit, bounds failure,
+generation saturation or any other side exit, the runner publishes exactly the
+last completed iteration and leaves the current iteration at its first
+uncommitted original instruction for the ordinary checked path. A failed or
+partial speculative iteration cannot mutate heap/register state or consume
+fuel.
+
+The retained storage address is permitted only when every instruction in the
+batch is proven nonallocating, non-growing, noncollecting and call/host free.
+Raw element access uses portable byte copies rather than an alignment
+assumption. Unsupported storage, alias relations or trace shapes use D108's
+ordinary composed runner. Required coverage compares cold and batched results
+at every finite frame/shared-fuel boundary and at condition, bounds and
+generation side exits, including final heap contents, mutation generation,
+result, trap/panic span and allocator teardown.
+
+Reason: D108 reduced `insertion` from about 6.06 seconds to 0.97 seconds but a
+CPU sample still placed almost all steady-state time in per-instruction
+materialization inside the proved array-shift loop. Retaining state across
+complete iterations removes that representation cost without adding a source
+rewrite, workload kernel or executable-code dependency. The measured D109
+candidate reduces the paired same-base median from 980.44 to 234.36
+milliseconds; VM/Bun parity and other trace families remain open.

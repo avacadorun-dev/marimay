@@ -55,8 +55,16 @@ access, call preparation and native text/collection costs remain open.
 records the measured D107 rejection, D108 direct call/root preparation and
 generic composed loops. Paired insertion improves 6.28× and DSU 1.42× with
 unchanged checksums; the stable compact runner also removes measured control
-regressions. The interpreter ceiling still leaves both far from Bun. Hot-loop
-compilation and all parity/Tier 1 gates remain open.
+regressions. The interpreter ceiling still leaves both far from Bun. Further
+trace families and all parity/Tier 1 gates remain open.
+
+[Verified VM trace batching](docs/implementation/evidence/cp42-vm-trace-batching-2026-09-09.md)
+records D109 and a passing 32-workload VM replay. Complete nonallocating
+array-shift iterations retain scalar/storage state and preserve exact finite
+fuel and side exits. Paired insertion improves another 4.18×, from 980.44 to
+234.36 ms, and is about 26.2× faster than the original 6.14-second result. It
+is still 2.67× the existing Bun median. Additional call/control trace families,
+source startup, the native parity wave and all parity/Tier 1 gates remain open.
 
 [VM source preparation](docs/implementation/evidence/cp42-vm-preparation-2026-09-09.md)
 indexes D062 predecessor edges while preserving every charged work boundary

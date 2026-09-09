@@ -509,3 +509,25 @@ the next block is the bounded hot-loop compilation tier already allowed by D019,
 with portable fallback and exact side exits. Do not expand one universal switch,
 install this intermediate binary or mark CP42/CP41/CLI0 complete. No new book
 idea was used in D107/D108.
+
+## Продолжение 2026-09-09: D109 verified trace batching
+
+[Evidence](evidence/cp42-vm-trace-batching-2026-09-09.md) adds a portable batch
+executor for complete iterations of the exact verified nonallocating
+array-shift trace. It retains scalar and stable raw-storage state in locals,
+charges all 17 original instructions per iteration and publishes the last
+complete state before every generic fuel/failure/condition side exit. The
+focused cold/image test sweeps both frame and shared fuel from 0 through 62 and
+compares status, result, remaining fuel, heap contents, generation and
+trap/panic metadata; false condition, bounds failure and generation saturation
+are separate cases.
+
+Eleven alternating full-size runs against an immutable `9fb7523` control
+measure 980.44 ms without D109 and 234.36 ms with D109, 4.18× faster with
+checksum `insertion 999956059`. Relative to the user's original 6 142.94 ms matrix this
+is about 26.2× faster; it remains 2.67× the existing 87.63 ms Bun median. A
+final 3+11 VM-only replay passed all 32 checksums and measured 230.19 ms for
+`insertion`. Its summed medians improved 28 305.37 → 27 977.31 ms relative to
+the D108 journal; all other cells stayed within -5.9%..+3.5%. Continue with
+function/call/control trace families and measured source-startup cost; then the
+native text/collection wave. No new book idea was used in D109.

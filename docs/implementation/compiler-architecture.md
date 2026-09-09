@@ -577,6 +577,14 @@ roots. `test_bytecode_vm_image.c` owns operation layout, direct binding,
 eligibility, generic loop recognition, exact finite/shared-fuel comparison and
 single-arena allocation cleanup.
 
+D109 batching stays inside the array-shift family owner
+`bytecode/vm_image_shift.c`. It retains a raw storage view and scalar state only
+for complete iterations of the exact verified nonallocating trace and publishes
+state before the generic D108 side exit. `test_bytecode_vm_image_shift.c` is the
+focused owner for cold/image equivalence over every finite frame/shared-fuel
+boundary, false-condition and bounds exits, generation saturation, final array
+contents and allocator teardown.
+
 D105 keeps inactive activation buffers in that same frame owner, at most one
 function layout per call depth until program teardown. Only checked root-frame
 registration can reactivate them. Return unlinks roots before reuse; managed

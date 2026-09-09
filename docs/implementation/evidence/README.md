@@ -145,8 +145,15 @@ release-gate obligations open.
 the measured D107 rejection, D108 fixed operations, prepared branches/callees,
 root-borrow eligibility, generic composed-loop fuel checks and paired
 insertion/DSU/control diagnostics. It measures an interpreter ceiling and leaves
-hot-loop compilation, the complete 32-workload replay, parity and every
-product/platform gate open.
+additional trace families, parity and every product/platform gate open.
+
+[Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
+the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
+side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate
+measurements. `insertion` improves 4.18× over its same-base control and about
+26.2× over the original user result while preserving its checksum. VM/Bun
+parity, other trace families, source-startup work and all product/platform
+gates remain open.
 
 [Full catalogue measurement and native child access](cp42-catalog-performance-2026-09-09.md)
 ([raw matrices and profiles](cp42-catalog-performance-2026-09-09.json)) records
