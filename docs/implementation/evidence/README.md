@@ -119,6 +119,16 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Scalar array VM regions](cp42-vm-scalar-arrays-2026-09-09.md)
+([raw evidence](cp42-vm-scalar-arrays-2026-09-09.json)) records all scalar storage
+widths, a 2.76× paired Dijkstra gain, the complete 32-workload VM diagnostic,
+86/86 Release tests, focused sanitizers and the installed system binary.
+
+[Per-run catalogue toolchain snapshots](cp42-catalog-snapshot-2026-09-09.md)
+record isolation from compiler updates, 95 harness tests, and real smoke
+acceptance while a disposable original installation is replaced. The external
+harness patch preserves the user's pre-existing uncommitted catalogue work.
+
 [Scalar/control MIR preparation](cp42-scalar-flow-2026-09-09.md)
 ([raw evidence](cp42-scalar-flow-2026-09-09.json)) records D106, full native and
 diagnostic VM matrices, a caught native fill regression, and passing applicable

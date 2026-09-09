@@ -55,6 +55,7 @@ add_executable(mmay_c_unit
   test_bytecode_vm_scalar.c
   test_bytecode_vm_strings.c
   test_bytecode_vm_hot.c
+  test_bytecode_vm_scalar_arrays.c
   test_bytecode_vm_frame.c
   test_bytecode_vm_arithmetic.c
   test_bytecode_vm_arrays.c

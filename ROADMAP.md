@@ -45,5 +45,11 @@ records D106, all 32 unchanged workloads on the system build, the native bulk-fi
 composition regression and its repair, and allocation/rollback checks. Native
 text/collection costs and the large VM gap remain open; parity is not achieved.
 
+[Scalar array VM regions](docs/implementation/evidence/cp42-vm-scalar-arrays-2026-09-09.md)
+cover every scalar width and reduce paired Dijkstra from 6.63 to 2.41 seconds.
+All 32 VM workloads and 86 Release tests pass locally. System `mmay` uses an
+independent installed copy; catalogue runs pin their tools. Record/reference
+access, call preparation and native text/collection costs remain open.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

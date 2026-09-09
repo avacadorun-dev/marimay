@@ -466,3 +466,28 @@ was rebuilt during it. Compiler updates and concurrent benchmark builds must
 be isolated: pin a copied toolchain/runtime and per-run executables before
 measurement. Until that lands, never replace the system binary during an
 active user or agent benchmark. Compiler work must proceed in a separate build.
+
+The [catalogue snapshot fix](evidence/cp42-catalog-snapshot-2026-09-09.md) now
+lands in the external working tree: each catalogue run copies its toolchain,
+headers/runtime and shared executables into its own directory. A real smoke
+run completed after replacement of its disposable original installation.
+The exact patch is archived with evidence; unrelated external working-tree
+changes are not folded into the compiler repository. The old standalone
+`benchmarks/run.py` still needs its original artifacts left unchanged.
+
+## Продолжение 2026-09-09: scalar array VM regions
+
+[Evidence](evidence/cp42-vm-scalar-arrays-2026-09-09.md) adds all scalar storage
+widths to D104: bool accesses no longer discard validated surrounding arrays.
+Paired Dijkstra is 6.63 → 2.41 s; 32-workload VM summed medians are 35.58 s.
+Release CTest is clean 86/86, focused Release/ASan/UBSan owners pass, and the
+installed binary passes doctor plus the full catalogue smoke matrix.
+`/opt/homebrew/bin/mmay` points to the immutable installed prefix under
+`~/.local/share/marimay/toolchains/15e6a5077e6b18bf`; its SHA is in evidence.
+The external catalogue now selects MMAY, then PATH, then the old sibling build
+fallback. Do not overwrite this installed prefix or active per-run snapshots.
+
+The current DSU profile in raw evidence shows record projection ending regions,
+array descriptor/view rebinding and direct-call lookup. Extend the shared
+record/reference access and prepared-call/layout path next, with exact identity,
+rooting, fuel and error-order coverage. Performance parity is still not achieved.

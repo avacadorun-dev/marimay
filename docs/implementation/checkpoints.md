@@ -1856,6 +1856,13 @@ results for all 86 Release cases, focused ASan/UBSan, all-index allocation
 coverage and work-limit rollback are recorded. This remains intermediate
 performance evidence and does not close any platform or product gate.
 
+[Scalar-width VM region evidence](evidence/cp42-vm-scalar-arrays-2026-09-09.md)
+extends D060/D063/D104 to all scalar layouts. All 32 standard VM workloads and
+86 Release tests pass locally; paired Dijkstra changes from 6.63 to 2.41 s.
+The system binary is installed separately from build outputs and catalogue
+runs copy their tools before measuring. This remains intermediate evidence;
+the remaining VM/native gaps and all Tier 1 obligations are unchanged.
+
 The first JSON slice supports public-field acyclic records, concrete generic
 records, arrays, int/bool/string. Explicit codecs remain available. No unbounded
 DOM/reflection, private-field discovery, host parser, new task runtime, release

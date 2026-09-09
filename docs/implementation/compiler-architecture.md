@@ -555,6 +555,14 @@ ordinary-dispatch reference. `test_bytecode_vm_hot.c` compares that reference
 against program execution at every scalar/array fuel boundary, arithmetic
 extremes, bounds errors and generation saturation, and exercises call/GC,
 growth/rebinding and unsupported layouts with all-index engine sweeps.
+`mmay/runtime/array_scalar_view.h` extends the D063 scalar view primitives to
+RAW8/RAW16/RAW32 alongside RAW64. It owns portable typed copies, representable
+store checks and generation commit order; `vm_hot.c` only translates verified
+VM scalar representations. Reference cells still return to ordinary dispatch.
+`test_bytecode_vm_scalar_arrays.c` owns all scalar-width cold/region fuel and
+failure comparisons and directly checks region coverage without allocation.
+The runtime array-access test owner checks bounds, rejected truncation,
+generation saturation, rooted growth and collection for each storage width.
 
 D105 keeps inactive activation buffers in that same frame owner, at most one
 function layout per call depth until program teardown. Only checked root-frame

@@ -4,6 +4,7 @@
 
 #include "mmay/base/allocator.h"
 #include "mmay/runtime/managed.h"
+#include "mmay/runtime/array_scalar_view.h"
 
 static const MarimayManagedArrayDescriptor mmay_test_access_strings = {
     MMAY_MANAGED_CELL_REFERENCE,
@@ -292,7 +293,104 @@ static void mmay_test_access_bound_view_growth_and_collection(void) {
     MMAY_EXPECT(state.live_bytes == 0);
 }
 
+
+static void mmay_test_access_scalar_views(void) {
+    static const MarimayManagedArrayDescriptor descriptors[] = {
+        {MMAY_MANAGED_CELL_RAW64, MMAY_MANAGED_ARRAY_STORAGE_RAW8, 1,
+            MMAY_MANAGED_OBJECT_INVALID, NULL},
+        {MMAY_MANAGED_CELL_RAW64, MMAY_MANAGED_ARRAY_STORAGE_RAW16, 2,
+            MMAY_MANAGED_OBJECT_INVALID, NULL},
+        {MMAY_MANAGED_CELL_RAW64, MMAY_MANAGED_ARRAY_STORAGE_RAW32, 4,
+            MMAY_MANAGED_OBJECT_INVALID, NULL},
+        {MMAY_MANAGED_CELL_RAW64, MMAY_MANAGED_ARRAY_STORAGE_RAW64, 8,
+            MMAY_MANAGED_OBJECT_INVALID, NULL}
+    };
+    static const uint64_t limits[] = {UINT8_MAX, UINT16_MAX, UINT32_MAX, UINT64_MAX};
+    for (size_t test = 0; test < 4; test += 1) {
+        MarimayFailAllocator state;
+        MarimayManagedHeap heap;
+        MarimayManagedReference array = mmay_managed_invalid_reference();
+        MarimayManagedReference *locations[] = {&array};
+        MarimayManagedRootFrame roots = {0};
+        MarimayManagedArrayView view;
+        MarimayManagedCell initial[] = {mmay_test_access_raw(limits[test]),
+            mmay_test_access_raw(0)};
+        mmay_fail_allocator_init(&state, mmay_system_allocator(), SIZE_MAX);
+        MMAY_EXPECT(mmay_test_access_heap_init(&heap, mmay_fail_allocator(&state), true));
+        MMAY_EXPECT(mmay_managed_array_new(&heap, &descriptors[test], initial, 2,
+            &array) == MMAY_MANAGED_OK);
+        MMAY_EXPECT(mmay_managed_root_push(&heap, &roots, locations, 1) == MMAY_MANAGED_OK);
+        MMAY_EXPECT(mmay_managed_array_view_bind(&heap, array, &descriptors[test],
+            &view) == MMAY_MANAGED_OK);
+        size_t attempts = state.attempts;
+        state.failure_index = attempts;
+        for (int64_t index = -1; index <= 2; index += 1) {
+            uint64_t bits = 123;
+            size_t length = 0, expected_length = 0;
+            MarimayManagedCell expected;
+            MarimayManagedStatus status = mmay_managed_array_get(&heap, array,
+                index, &expected, &expected_length);
+            MMAY_EXPECT(mmay_managed_array_scalar_view_get_fast(&view, index,
+                MMAY_MANAGED_ARRAY_ACCESS_CHECKED, &bits, &length) == status);
+            MMAY_EXPECT(length == expected_length && bits == expected.f64_bits);
+            uint64_t generation = *view.mutation_generation;
+            status = mmay_managed_array_scalar_view_set_fast(&view, index,
+                MMAY_MANAGED_ARRAY_ACCESS_CHECKED, limits[test], &length);
+            MMAY_EXPECT(status == (index < 0 || index >= 2
+                ? MMAY_MANAGED_BOUNDS : MMAY_MANAGED_OK));
+            MMAY_EXPECT(*view.mutation_generation == generation + (status == MMAY_MANAGED_OK));
+        }
+        size_t length = 0;
+        uint64_t bits = 0;
+        MMAY_EXPECT(mmay_managed_array_scalar_view_set_fast(&view, 1,
+            MMAY_MANAGED_ARRAY_ACCESS_IN_BOUNDS, 37, &length) == MMAY_MANAGED_OK);
+        MMAY_EXPECT(mmay_managed_array_scalar_view_get_fast(&view, 1,
+            MMAY_MANAGED_ARRAY_ACCESS_IN_BOUNDS, &bits, &length) == MMAY_MANAGED_OK
+            && bits == 37);
+        uint64_t generation = *view.mutation_generation;
+        if (test < 3) {
+            MMAY_EXPECT(mmay_managed_array_scalar_view_set_fast(&view, 1,
+                MMAY_MANAGED_ARRAY_ACCESS_CHECKED, limits[test] + 1, &length)
+                == MMAY_MANAGED_TYPE_MISMATCH);
+            MMAY_EXPECT(*view.mutation_generation == generation);
+        }
+        *view.mutation_generation = UINT64_MAX;
+        MMAY_EXPECT(mmay_managed_array_scalar_view_set_fast(&view, 1,
+            MMAY_MANAGED_ARRAY_ACCESS_CHECKED, 12, &length) == MMAY_MANAGED_LIMIT_REACHED);
+        MMAY_EXPECT(*view.mutation_generation == UINT64_MAX);
+        MMAY_EXPECT(mmay_managed_array_scalar_view_get_fast(&view, 1,
+            MMAY_MANAGED_ARRAY_ACCESS_CHECKED, &bits, &length) == MMAY_MANAGED_OK
+            && bits == 37);
+        MarimayManagedArrayView rejected = view;
+        MarimayManagedArrayDescriptor wrong = descriptors[test];
+        wrong.storage_stride += 1;
+        rejected.descriptor = &wrong;
+        MMAY_EXPECT(mmay_managed_array_scalar_view_get_fast(&rejected, 0,
+            MMAY_MANAGED_ARRAY_ACCESS_CHECKED, &bits, &length) == MMAY_MANAGED_INVALID_ARGUMENT);
+        MMAY_EXPECT(mmay_managed_array_scalar_view_set_fast(&rejected, 0,
+            MMAY_MANAGED_ARRAY_ACCESS_CHECKED, 0, &length) == MMAY_MANAGED_INVALID_ARGUMENT);
+        rejected.descriptor = &mmay_test_access_strings;
+        MMAY_EXPECT(mmay_managed_array_scalar_view_get_fast(&rejected, 0,
+            MMAY_MANAGED_ARRAY_ACCESS_CHECKED, &bits, &length) == MMAY_MANAGED_INVALID_ARGUMENT);
+        MMAY_EXPECT(mmay_managed_array_scalar_view_set_fast(NULL, 0,
+            MMAY_MANAGED_ARRAY_ACCESS_CHECKED, 0, &length) == MMAY_MANAGED_INVALID_ARGUMENT);
+        MMAY_EXPECT(state.attempts == attempts);
+        state.failure_index = SIZE_MAX;
+        *view.mutation_generation = generation;
+        MMAY_EXPECT(mmay_managed_array_view_push(&heap, &view, mmay_test_access_raw(41))
+            == MMAY_MANAGED_OK);
+        MMAY_EXPECT(mmay_managed_heap_collect(&heap) == MMAY_MANAGED_OK);
+        MMAY_EXPECT(mmay_managed_array_scalar_view_get_fast(&view, 2,
+            MMAY_MANAGED_ARRAY_ACCESS_CHECKED, &bits, &length) == MMAY_MANAGED_OK
+            && bits == 41 && length == 3);
+        MMAY_EXPECT(mmay_managed_root_pop(&heap, &roots) == MMAY_MANAGED_OK);
+        mmay_managed_heap_dispose(&heap);
+        MMAY_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
+    }
+}
+
 void mmay_test_managed_array_access(void) {
+    mmay_test_access_scalar_views();
     mmay_test_access_raw_alias_and_bounds();
     mmay_test_access_reference_and_stale();
     mmay_test_access_performs_no_allocation();

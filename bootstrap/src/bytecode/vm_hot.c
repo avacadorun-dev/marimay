@@ -3,7 +3,7 @@
 #include <limits.h>
 
 #include "mmay/base/checked_i64_fast.h"
-#include "mmay/runtime/array_view.h"
+#include "mmay/runtime/array_scalar_view.h"
 
 /* All storage is borrowed from a verified, rooted frame. No call made by this
  * owner may allocate, collect or invoke host code. A cold instruction expires
@@ -113,14 +113,22 @@ static bool mmay_bytecode_hot_array_instruction(
     if (store) {
         bits = registers[second].type == MMAY_BYTECODE_TYPE_I64
             ? (uint64_t)registers[second].as.i64
+            : registers[second].type == MMAY_BYTECODE_TYPE_BOOL
+            ? (registers[second].as.boolean ? 1 : 0)
             : registers[second].as.integer_bits;
-        return mmay_managed_array_view_set_raw64_fast(view, index, mode,
-            bits, &length) == MMAY_MANAGED_OK;
+        return (view->descriptor->storage_kind == MMAY_MANAGED_ARRAY_STORAGE_RAW64
+            ? mmay_managed_array_view_set_raw64_fast(view, index, mode, bits, &length)
+            : mmay_managed_array_scalar_view_set_fast(view, index, mode, bits, &length))
+            == MMAY_MANAGED_OK;
     }
-    if (mmay_managed_array_view_get_raw64_fast(view, index, mode,
-        &bits, &length) != MMAY_MANAGED_OK) return false;
+    if ((view->descriptor->storage_kind == MMAY_MANAGED_ARRAY_STORAGE_RAW64
+            ? mmay_managed_array_view_get_raw64_fast(view, index, mode, &bits, &length)
+            : mmay_managed_array_scalar_view_get_fast(view, index, mode, &bits, &length))
+        != MMAY_MANAGED_OK) return false;
     if (registers[target].type == MMAY_BYTECODE_TYPE_I64) {
         registers[target].as.i64 = mmay_i64_from_twos_complement_fast(bits);
+    } else if (registers[target].type == MMAY_BYTECODE_TYPE_BOOL) {
+        registers[target].as.boolean = bits != 0;
     } else {
         registers[target].as.integer_bits = bits;
     }

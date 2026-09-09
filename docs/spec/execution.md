@@ -660,6 +660,11 @@ instruction without register/array mutation or fuel consumption. Successful
 instructions consume exactly the original D087 per-frame/shared fuel. The
 ordinary dispatcher retains error construction, spans, cleanup and resource
 classification; D053 generations and D058 bounds proofs are unchanged.
+Scalar views may access every D060 storage width with host-order typed copies.
+Narrow stores must validate the complete scalar bits before narrowing and
+before modifying storage or the mutation generation. Boolean conversion is
+canonical; floating-point access preserves the stored bits, including negative
+zero and NaN payloads. These accesses introduce no allocation or safepoint.
 
 Under D105, one program invocation may reuse inactive VM activation storage
 per call depth. Returning unlinks the callee's root frame after publishing its
