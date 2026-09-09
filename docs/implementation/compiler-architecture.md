@@ -724,6 +724,24 @@ retain the rooted checked constructor. Descriptor registration remains in
 `c_emitter_descriptors.c`; the collection emitter does not duplicate it or
 introduce a runtime map fast path with weaker validation.
 
+D076 substring validation stays in `std/text` (embedded package source):
+ordered range, start boundary, then end boundary. Its private three-argument
+primitive produces `MMAY_MIR_TEXT_TERNARY/TEXT_SUBSTRING`; text owners validate
+all three source registers, execute a single selected-range copy in MIR/VM,
+and emit the same checked copy for native. Bytecode opcode 164 uses the existing
+four-register operand format. No whole suffix is materialized, no borrowed
+string escapes, and existing allocation/copy owners retain cleanup authority.
+`test_cp33_text_bytes.c` covers the new operation in all allocation sweeps and
+hostile third-register checks; `cp33-text-bytes/substring_test.my` covers public
+boundary precedence and repeated short slices of a 512 KiB input.
+
+`bytecode_verify_order.c` owns allocation-free iterative DFS and reverse
+postorder for the validated CFG, rejecting unreachable blocks. Its borrowed
+visited/stack/order buffers reuse the coordinator's reachability storage and
+finished predecessor cursors. Work is one unit per block and edge; the verifier
+budget is unchanged. Both forward must-analyses seed their worklists in this
+order so producer numbering does not force repeated propagation along a DAG.
+
 `bytecode_verify_assignments.c` owns definite-assignment transfer and bounded
 successor worklist scheduling. Its narrow borrowed-storage API receives the
 validated predecessor table and fact buffers; the coordinator reuses its

@@ -22,15 +22,27 @@ MarimayMirVerifyStatus mmay_mir_verify_text_instruction(
     MarimayTypeId first = mmay_mir_register_type(
         function, instruction->first
     );
-    MarimayTypeId second = instruction->kind == MMAY_MIR_TEXT_BINARY
+    MarimayTypeId second = (instruction->kind == MMAY_MIR_TEXT_BINARY
+        || instruction->kind == MMAY_MIR_TEXT_TERNARY)
         ? mmay_mir_register_type(function, instruction->second)
         : MMAY_TYPE_INVALID;
     if (target == MMAY_TYPE_INVALID || first == MMAY_TYPE_INVALID
-        || (instruction->kind == MMAY_MIR_TEXT_BINARY
+        || ((instruction->kind == MMAY_MIR_TEXT_BINARY
+                || instruction->kind == MMAY_MIR_TEXT_TERNARY)
             && second == MMAY_TYPE_INVALID)) {
         return MMAY_MIR_VERIFY_INVALID_REGISTER;
     }
+    if (instruction->kind == MMAY_MIR_TEXT_TERNARY
+        && mmay_mir_register_type(function, instruction->third) == MMAY_TYPE_INVALID) {
+        return MMAY_MIR_VERIFY_INVALID_REGISTER;
+    }
     switch (instruction->text_operation) {
+        case MMAY_MIR_TEXT_SUBSTRING:
+            return instruction->kind == MMAY_MIR_TEXT_TERNARY
+                    && target == MMAY_TYPE_STRING && first == MMAY_TYPE_STRING
+                    && second == MMAY_TYPE_I64
+                    && mmay_mir_register_type(function, instruction->third) == MMAY_TYPE_I64
+                ? MMAY_MIR_VERIFY_OK : MMAY_MIR_VERIFY_TYPE_MISMATCH;
         case MMAY_MIR_TEXT_BYTE_LENGTH:
         case MMAY_MIR_TEXT_RUNE_COUNT:
         case MMAY_MIR_TEXT_GRAPHEME_COUNT:

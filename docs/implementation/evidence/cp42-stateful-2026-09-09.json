@@ -1,0 +1,1957 @@
+{
+  "schema": "cp42-stateful/1",
+  "parent": "0567634fb2dcfc93e01c858be24a08cc83d9d97a",
+  "host": "macOS 26.6.2 arm64",
+  "compiler_sha256": "7da536ea73bfdec7809ee6369bc4839133fb99aff4adfc167635d47287c8b0be",
+  "apps": {
+    "marimay-delimited": {
+      "path": "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited",
+      "commit": "64718999694009e9610bdeed5a71913d29a4c1ea",
+      "acceptance": {
+        "schema": "marimay-delimited.acceptance/1",
+        "harness": {
+          "harness_version": "1",
+          "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+          "platform": "macOS-26.6.2-arm64-arm-64bit",
+          "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+          "compiler_sha256": "7da536ea73bfdec7809ee6369bc4839133fb99aff4adfc167635d47287c8b0be",
+          "engines": {
+            "vm": {
+              "command": [
+                "/workspace/Projects/Marimay/marimay/build/release/mmay",
+                "run",
+                ".",
+                "--allow-read",
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance",
+                "--allow-write",
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance",
+                "--max-heap-bytes",
+                "67108864",
+                "--"
+              ],
+              "executable_sha256": "7da536ea73bfdec7809ee6369bc4839133fb99aff4adfc167635d47287c8b0be"
+            },
+            "debug": {
+              "command": [
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/app-debug"
+              ],
+              "executable_sha256": "389a210d888d84b99e48f057a80e6f0c1c6d596748a20346d45dedcf248a40b1"
+            },
+            "release": {
+              "command": [
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/app-release"
+              ],
+              "executable_sha256": "e38fd947aefe139cabdc42d7e4219b3ed150aa0e94641f5f061426b9b138ddf8"
+            }
+          }
+        },
+        "sources": {
+          "main.my": "85434068ba5e2b198d2f6a8281ea7e7ea0426757a81e78b893a6d3f205b49311",
+          "parser.my": "02995e0b734f5c8cd54e981a34c0df7cab7ca6eacba4f5dc2466b24ecb58731e",
+          "parser_test.my": "aa392522db4ede85be305949ab17d4c9d6373f6dccc46ecddd9b8747a14aa6f3",
+          "support.my": "1dbab2714a96ee9692e0ad239b855549bc16cfb8f34ac0841e2b90a5de1546e4",
+          "writer.my": "dcd488e05ed7c880b1f085cecb80fa40045f9671fbaf7c8a393491ff6f77e49e"
+        },
+        "cases": [
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 0,
+            "stdout_sha256": "71b625bfea53a39308b140a4c57405fb8d5c14857d52dfcc8d7b4fc83d19bd05",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "status": 0,
+            "stdout_sha256": "1b79cd0d9ce8651ce69a2817b2144e81f64f9f9897d83f234ce9a24cf1c6b1a5",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "d03502c43d74a30b936740a9517dc4ea2b2ad7168caa0a774cefe793ce0b33e7",
+            "status": 0,
+            "stdout_sha256": "ef46cd4b81c85a6a49a5d1964ba20286f6c63143cc85687d0d3d4fd0ad18a944",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "f4ffa7c1b72bd7ab6d3314ff47b9d658367ab70e64dc059f8aa9d42138cd95e9",
+            "status": 0,
+            "stdout_sha256": "13134db4eefc545b7b989e707f5ef318ab710d2c7a23a6fc8b361b26d7543c6e",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "d8a101accd0cf91fee870ce0aeef228bc277b402f6ebd1f36120df1ddb6eec89",
+            "status": 0,
+            "stdout_sha256": "873833b7672511b8b30baf5be62752c2d22bf8c8562f3af55d7e67fd32ecdcb2",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "59b271ae1bbcb1d31d41929817f4b16fb439eb4f31520b5ad1d5ce98920a7138",
+            "status": 0,
+            "stdout_sha256": "dc9fddcdfec333c9459fc67003f28c534ef4098f99c1ddc2af84b2f8229c8181",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "1951c7860e968e742658b3af34e60741eb4aaf2a8d2ecc3993727016b12e81e8",
+            "status": 0,
+            "stdout_sha256": "767d767235b0adf5d88a16b6a21a57674f9aaa8994d545e718f08ac6167f8594",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "tsv-to-json",
+              "-"
+            ],
+            "data_sha256": "df26909135cf85e0df66100d5ae5603b29a22d3148db26b7bfde21a4ed7f2485",
+            "status": 0,
+            "stdout_sha256": "f91a5c6d9784b66022cd9ef8005e9e3afae2c795a8b6d2de759dfcbdbcf5c71d",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "83969c28d48e0ab15ad69fe238938dbeef9f34aa0b18244442a7bfe889dfe2ce",
+            "status": 0,
+            "stdout_sha256": "32c736fa5683e7acf7abadefb99dee6f49703b517c095f6d9cfcb9492ee9976d",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "json-to-csv",
+              "-"
+            ],
+            "data_sha256": "32c736fa5683e7acf7abadefb99dee6f49703b517c095f6d9cfcb9492ee9976d",
+            "status": 0,
+            "stdout_sha256": "83969c28d48e0ab15ad69fe238938dbeef9f34aa0b18244442a7bfe889dfe2ce",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "tsv-to-json",
+              "-"
+            ],
+            "data_sha256": "ee7ef509477d6b9a5fa26fbb082240dfaf26e8bf2e33f9558d62729ed2565368",
+            "status": 0,
+            "stdout_sha256": "32c736fa5683e7acf7abadefb99dee6f49703b517c095f6d9cfcb9492ee9976d",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "json-to-tsv",
+              "-"
+            ],
+            "data_sha256": "32c736fa5683e7acf7abadefb99dee6f49703b517c095f6d9cfcb9492ee9976d",
+            "status": 0,
+            "stdout_sha256": "ee7ef509477d6b9a5fa26fbb082240dfaf26e8bf2e33f9558d62729ed2565368",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "4ccb297e23e645d15888cc9202987f8b6bcaabea8649dcb0909ff429ecd845b5",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 1: Кавычка внутри некавыченного поля\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "6af5efd0e03586cd039daf42283779ad3d30ca95664e771ae9e5169260e5883d",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 3: После кавычки ожидается разделитель или конец строки\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "fba6e97680006ae6b73c2c8bd7ba7fb6766a652f2a6203788e58b80cd344a9f5",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 2: Незакрытая кавычка\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "af9081672dd5ef3247a30c2db5b0dafcc9bcf981a26aefb3c55d210d43fcc14e",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 1: Одиночный CR вне кавычек\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "9352b95467bf40616cf74b44b11373df5bbeefd5b1b69f1d458451d6a1d7a0e9",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 5: Неодинаковое число столбцов\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "8dd06b5ab6b594257e41b7d8dd440a4062eddc67fdab5c13b4dc300176896f6e",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 1: Недопустимый UTF-8\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-field",
+              "2"
+            ],
+            "data_sha256": "9b21f5cf014c9efb35110dcccf3a74eab7fb903d1ca2f4054b3dad9ffabb7727",
+            "status": 0,
+            "stdout_sha256": "d8d169ad44614f076d03cc9f9f714fb9f4683648926bcc01e37fa680e66d3e51",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-field",
+              "2"
+            ],
+            "data_sha256": "d0f53946e754bf8cd21b1259a6b487d84a9f0efe1fadf3399f0f05717f3a81c4",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 4: Превышен лимит байт поля\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-rows",
+              "1"
+            ],
+            "data_sha256": "7e18f737311b2dc3b2f269dd78396b0351f14fb66efa879f768cb23181883c78",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 3: Превышен лимит строк\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-columns",
+              "1"
+            ],
+            "data_sha256": "1eb7c54d52831bbfe8942af0b1c56b7409523a59ed6ca99c1174fef7eb32c1b5",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 3: Превышен лимит столбцов\n"
+          },
+          {
+            "arguments": [
+              "json-to-csv",
+              "-"
+            ],
+            "data_sha256": "a7ca83aed68882df06366dd980474fe5c8016a51e46cd1dbe2b18a7ac9aa4317",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: Ожидается version: 1\n"
+          },
+          {
+            "arguments": [
+              "json-to-csv",
+              "-"
+            ],
+            "data_sha256": "ef6b760ff0c4752900d23baf868177751a4deaad7c21a536c8659159a743bea9",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: Строка должна содержать хотя бы одно поле\n"
+          },
+          {
+            "arguments": [
+              "json-to-csv",
+              "-"
+            ],
+            "data_sha256": "3168e65c87a5207245d6228b97808c0487dec6f0ef8743472fac6c2eff8944b9",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: Неодинаковое число столбцов\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "865d47ba6062a3eabc40bff3b1e422af0737b2102d87e15c7cd5455e05acd666",
+            "status": 0,
+            "stdout_sha256": "1b8290ef43c27c45544a97f8ac006f7d73f2ad3416366268cab9cba92ea9acca",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-"
+            ],
+            "data_sha256": "e0c60746be7bb398cdf955afaff8890b9d5d6f0c2eb3784b0449efc1ddc67b31",
+            "status": 0,
+            "stdout_sha256": "473b5565ddeb5930159e4fa3e93ea164a0355bb98adbcf8677cc771a427fa8a5",
+            "stderr": ""
+          },
+          {
+            "arguments": [],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: Нужны РЕЖИМ и ФАЙЛ; см. --help\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-input",
+              "1"
+            ],
+            "data_sha256": "fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: -: standard input exceeds 1-byte limit\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-input",
+              "4"
+            ],
+            "data_sha256": "5be08c9684a1d25efcee09318204824278b08bbfb4aef973ffefd0b9d7478313",
+            "status": 0,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--wat"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: unknown option --wat at argument 2\n"
+          },
+          {
+            "arguments": [
+              "json-to-csv",
+              "-"
+            ],
+            "data_sha256": "021fb596db81e6d02bf3d2586ee3981fe519f275c0ac9ca76bbcf2ebb4097d96",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: expected a JSON string before byte 1\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/вход ü.txt"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 0,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/вход ü.txt",
+              "--max-input",
+              "1"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: /workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/вход ü.txt: file exceeds 1-byte limit\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/выход.txt"
+            ],
+            "data_sha256": "5be08c9684a1d25efcee09318204824278b08bbfb4aef973ffefd0b9d7478313",
+            "status": 0,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/выход.txt"
+            ],
+            "data_sha256": "a4c345ee13b420f55da7173986395e56f8ace5b5c46873e971a2fa7eb4ec1d26",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: байт 13: Незакрытая кавычка\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-output",
+              "0",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/выход.txt"
+            ],
+            "data_sha256": "5be08c9684a1d25efcee09318204824278b08bbfb4aef973ffefd0b9d7478313",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: Превышен лимит вывода 0 байт\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/missing"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: /workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/missing: filesystem path was not found\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-input=-1"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: --max-input: допустимо 0..1048576\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-input=1048577"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: --max-input: допустимо 0..1048576\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--max-input=no"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: --max-input: ожидается целое число\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/вход ü.txt"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: /workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/вход ü.txt: fs.read capability denied for /workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/вход ü.txt\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/выход.txt"
+            ],
+            "data_sha256": "5be08c9684a1d25efcee09318204824278b08bbfb4aef973ffefd0b9d7478313",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: fs.write capability denied for /workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/выход.txt\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/link"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: /workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/link: symbolic links are not followed\n"
+          },
+          {
+            "arguments": [
+              "csv-to-json",
+              "-",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/acceptance/link"
+            ],
+            "data_sha256": "5be08c9684a1d25efcee09318204824278b08bbfb4aef973ffefd0b9d7478313",
+            "status": 1,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-delimited: symbolic links are not followed\n"
+          }
+        ],
+        "closed_pipes": [
+          {
+            "engine": "vm",
+            "status": 1,
+            "stderr": "marimay-delimited: standard stream flush failed\n"
+          },
+          {
+            "engine": "debug",
+            "status": 1,
+            "stderr": "marimay-delimited: standard stream flush failed\n"
+          },
+          {
+            "engine": "release",
+            "status": 1,
+            "stderr": "marimay-delimited: standard stream flush failed\n"
+          }
+        ],
+        "large_bytes": 524288,
+        "managed_heap_limit": 67108864,
+        "elapsed_seconds": 67.738544542
+      },
+      "measurements": {
+        "schema": "marimay-delimited.measurements/1",
+        "harness": {
+          "harness_version": "1",
+          "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+          "platform": "macOS-26.6.2-arm64-arm-64bit",
+          "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+          "compiler_sha256": "7da536ea73bfdec7809ee6369bc4839133fb99aff4adfc167635d47287c8b0be",
+          "engines": {
+            "native": {
+              "command": [
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/measure-1788926109258605000/app-release"
+              ],
+              "executable_sha256": "d9d973ceb65232bcf8a2d23f90f29e51f70408caf62440c864519f0963719a50"
+            },
+            "vm": {
+              "command": [
+                "/workspace/Projects/Marimay/marimay/build/release/mmay",
+                "run",
+                ".",
+                "--max-heap-bytes",
+                "67108864",
+                "--"
+              ],
+              "executable_sha256": "7da536ea73bfdec7809ee6369bc4839133fb99aff4adfc167635d47287c8b0be"
+            }
+          }
+        },
+        "conditions": "Sequential ordinary desktop. First native execution immediately after this build; no application warmup, no OS-cache eviction or fresh-host claim.",
+        "sources": {
+          "main.my": "85434068ba5e2b198d2f6a8281ea7e7ea0426757a81e78b893a6d3f205b49311",
+          "parser.my": "02995e0b734f5c8cd54e981a34c0df7cab7ca6eacba4f5dc2466b24ecb58731e",
+          "parser_test.my": "aa392522db4ede85be305949ab17d4c9d6373f6dccc46ecddd9b8747a14aa6f3",
+          "support.my": "1dbab2714a96ee9692e0ad239b855549bc16cfb8f34ac0841e2b90a5de1546e4",
+          "writer.my": "dcd488e05ed7c880b1f085cecb80fa40045f9671fbaf7c8a393491ff6f77e49e"
+        },
+        "budgets_sha256": "01f309856feca91b3a864007123a125d36f8df99384f1a4ff8016cd0cc68b739",
+        "build_seconds": 5.342360833,
+        "datasets": [
+          {
+            "name": "small",
+            "input_bytes": 4,
+            "input_sha256": "5be08c9684a1d25efcee09318204824278b08bbfb4aef973ffefd0b9d7478313",
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47"
+          },
+          {
+            "name": "stateful-256k-v1",
+            "input_bytes": 262144,
+            "input_sha256": "bff72090a7622ecf072d20ca332e40deb1f9d0a61f2a0ac04e2f1129a5d81746",
+            "stdout_sha256": "a322432881082903f4f188f7edc4718f5350420195388c9ce5b04204ae22e178"
+          },
+          {
+            "name": "stateful-512k-v1",
+            "input_bytes": 524288,
+            "input_sha256": "e0c60746be7bb398cdf955afaff8890b9d5d6f0c2eb3784b0449efc1ddc67b31",
+            "stdout_sha256": "473b5565ddeb5930159e4fa3e93ea164a0355bb98adbcf8677cc771a427fa8a5"
+          }
+        ],
+        "records": [
+          {
+            "dataset": "small",
+            "engine": "native",
+            "repetition": 0,
+            "seconds": 0.3919662920000002,
+            "seconds_budget": 0.1,
+            "within_time_budget": false,
+            "rss_bytes": 2080768,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/measure-1788926109258605000/app-release",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.38 real         0.00 user         0.00 sys\n             2080768  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 288  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                   3  involuntary context switches\n            16523239  instructions retired\n            10153608  cycles elapsed\n             1032480  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "native",
+            "repetition": 1,
+            "seconds": 0.011491666999999595,
+            "seconds_budget": 0.1,
+            "within_time_budget": true,
+            "rss_bytes": 2080768,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/measure-1788926109258605000/app-release",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.00 real         0.00 user         0.00 sys\n             2080768  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 290  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                   3  involuntary context switches\n            14518812  instructions retired\n             5624761  cycles elapsed\n             1032480  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "native",
+            "repetition": 2,
+            "seconds": 0.008337000000000039,
+            "seconds_budget": 0.1,
+            "within_time_budget": true,
+            "rss_bytes": 2048000,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/measure-1788926109258605000/app-release",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.00 real         0.00 user         0.00 sys\n             2048000  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 286  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                   3  involuntary context switches\n            14484896  instructions retired\n             5133328  cycles elapsed\n              999712  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "native",
+            "repetition": 3,
+            "seconds": 0.0070035000000006065,
+            "seconds_budget": 0.1,
+            "within_time_budget": true,
+            "rss_bytes": 2048000,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/measure-1788926109258605000/app-release",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.00 real         0.00 user         0.00 sys\n             2048000  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 286  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                   3  involuntary context switches\n            14452190  instructions retired\n             5085610  cycles elapsed\n              999712  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "vm",
+            "repetition": 0,
+            "seconds": 0.26644795899999973,
+            "seconds_budget": 0.5,
+            "within_time_budget": true,
+            "rss_bytes": 28524544,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.26 real         0.25 user         0.00 sys\n            28524544  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                1901  page reclaims\n                   2  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  56  involuntary context switches\n          3795926009  instructions retired\n           847327921  cycles elapsed\n            27197752  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "vm",
+            "repetition": 1,
+            "seconds": 0.25588733399999963,
+            "seconds_budget": 0.5,
+            "within_time_budget": true,
+            "rss_bytes": 28459008,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.25 real         0.24 user         0.00 sys\n            28459008  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                1898  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  41  involuntary context switches\n          3797717757  instructions retired\n           851028617  cycles elapsed\n            27148624  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "vm",
+            "repetition": 2,
+            "seconds": 0.25580025000000006,
+            "seconds_budget": 0.5,
+            "within_time_budget": true,
+            "rss_bytes": 28278784,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.25 real         0.24 user         0.00 sys\n            28278784  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                1887  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  40  involuntary context switches\n          3795993262  instructions retired\n           850702617  cycles elapsed\n            26968400  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "vm",
+            "repetition": 3,
+            "seconds": 0.25486341700000015,
+            "seconds_budget": 0.5,
+            "within_time_budget": true,
+            "rss_bytes": 28672000,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "3845fa7eafc952c786b81b141ac9cf6bf3258db25a3e6147630012f36bb03c47",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.25 real         0.24 user         0.00 sys\n            28672000  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                1911  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  52  involuntary context switches\n          3796025280  instructions retired\n           846972175  cycles elapsed\n            27345208  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-256k-v1",
+            "engine": "native",
+            "repetition": 0,
+            "seconds": 0.11035745900000027,
+            "seconds_budget": 2,
+            "within_time_budget": true,
+            "rss_bytes": 68878336,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "a322432881082903f4f188f7edc4718f5350420195388c9ce5b04204ae22e178",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/measure-1788926109258605000/app-release",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.10 real         0.09 user         0.00 sys\n            68878336  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                4365  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   7  voluntary context switches\n                  24  involuntary context switches\n          1880845801  instructions retired\n           357156716  cycles elapsed\n            67862888  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-256k-v1",
+            "engine": "native",
+            "repetition": 1,
+            "seconds": 0.11294470900000064,
+            "seconds_budget": 2,
+            "within_time_budget": true,
+            "rss_bytes": 68829184,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "a322432881082903f4f188f7edc4718f5350420195388c9ce5b04204ae22e178",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/measure-1788926109258605000/app-release",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.11 real         0.10 user         0.00 sys\n            68829184  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                4362  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   7  voluntary context switches\n                  35  involuntary context switches\n          1885765227  instructions retired\n           363848351  cycles elapsed\n            67813736  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-256k-v1",
+            "engine": "vm",
+            "repetition": 0,
+            "seconds": 2.730439541,
+            "seconds_budget": 20,
+            "within_time_budget": true,
+            "rss_bytes": 95027200,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "a322432881082903f4f188f7edc4718f5350420195388c9ce5b04204ae22e178",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        2.72 real         2.68 user         0.03 sys\n            95027200  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                5961  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   7  voluntary context switches\n                 650  involuntary context switches\n         34602352800  instructions retired\n          9183046569  cycles elapsed\n            93733248  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-256k-v1",
+            "engine": "vm",
+            "repetition": 1,
+            "seconds": 2.7511674169999996,
+            "seconds_budget": 20,
+            "within_time_budget": true,
+            "rss_bytes": 95436800,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "a322432881082903f4f188f7edc4718f5350420195388c9ce5b04204ae22e178",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        2.74 real         2.68 user         0.03 sys\n            95436800  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                5986  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   7  voluntary context switches\n                 544  involuntary context switches\n         34616267502  instructions retired\n          9204465882  cycles elapsed\n            94142848  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-512k-v1",
+            "engine": "native",
+            "repetition": 0,
+            "seconds": 0.24912479099999985,
+            "seconds_budget": 2,
+            "within_time_budget": true,
+            "rss_bytes": 83263488,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "473b5565ddeb5930159e4fa3e93ea164a0355bb98adbcf8677cc771a427fa8a5",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/measure-1788926109258605000/app-release",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.24 real         0.20 user         0.01 sys\n            83263488  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                5244  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                  16  voluntary context switches\n                 116  involuntary context switches\n          3776214268  instructions retired\n           722784089  cycles elapsed\n            82280832  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-512k-v1",
+            "engine": "native",
+            "repetition": 1,
+            "seconds": 0.2169321249999996,
+            "seconds_budget": 2,
+            "within_time_budget": true,
+            "rss_bytes": 83214336,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "473b5565ddeb5930159e4fa3e93ea164a0355bb98adbcf8677cc771a427fa8a5",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-delimited/build/measure-1788926109258605000/app-release",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        0.21 real         0.20 user         0.00 sys\n            83214336  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                5241  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                  16  voluntary context switches\n                  71  involuntary context switches\n          3771525367  instructions retired\n           714490233  cycles elapsed\n            82231680  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-512k-v1",
+            "engine": "vm",
+            "repetition": 0,
+            "seconds": 7.9088540840000014,
+            "seconds_budget": 20,
+            "within_time_budget": true,
+            "rss_bytes": 110395392,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "473b5565ddeb5930159e4fa3e93ea164a0355bb98adbcf8677cc771a427fa8a5",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        7.90 real         7.64 user         0.08 sys\n           110395392  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                6900  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                  17  voluntary context switches\n                4741  involuntary context switches\n         81602826045  instructions retired\n         25611745406  cycles elapsed\n           109150640  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-512k-v1",
+            "engine": "vm",
+            "repetition": 1,
+            "seconds": 7.886648625000003,
+            "seconds_budget": 20,
+            "within_time_budget": true,
+            "rss_bytes": 107692032,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "473b5565ddeb5930159e4fa3e93ea164a0355bb98adbcf8677cc771a427fa8a5",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "csv-to-json",
+              "-"
+            ],
+            "timing_stderr": "        7.88 real         7.63 user         0.11 sys\n           107692032  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                6927  page reclaims\n                   4  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                  17  voluntary context switches\n                5444  involuntary context switches\n         81620366754  instructions retired\n         25703041905  cycles elapsed\n           106447280  peak memory footprint\n"
+          }
+        ],
+        "test_both": {
+          "seconds": 0.523966957999999,
+          "seconds_budget": 2,
+          "within_budget": true,
+          "stdout": "test example/marimay-delimited.boundariesAndEmptyFields ... ok\ntest example/marimay-delimited.quotedUnicodeAndNewlines ... ok\ntest example/marimay-delimited.malformedQuoteAndShapeOffsets ... ok\ntest example/marimay-delimited.decodedByteLimits ... ok\ntest example/marimay-delimited.serializationAndRoundTrip ... ok\ntest result: ok. 5 passed; 0 failed\n"
+        }
+      },
+      "files": {
+        "writer.my": "dcd488e05ed7c880b1f085cecb80fa40045f9671fbaf7c8a393491ff6f77e49e",
+        "BUDGETS.md": "01f309856feca91b3a864007123a125d36f8df99384f1a4ff8016cd0cc68b739",
+        "PROVENANCE.json": "bae283eefe429fca006f6f6858cc5ec1704aeb1fc64282738850e4f887c13041",
+        "parser.my": "02995e0b734f5c8cd54e981a34c0df7cab7ca6eacba4f5dc2466b24ecb58731e",
+        "main.my": "85434068ba5e2b198d2f6a8281ea7e7ea0426757a81e78b893a6d3f205b49311",
+        "README.md": "712a4924a27c4e753e80c5b259fe465bf62c9b21d7b0a0d6f9ff2abdf1c57920",
+        "ERGONOMICS.md": "338ddfb8ecece206b114158b4ff62cae58953d85559adcde6bca72f65723079a",
+        "VERIFICATION.md": "610c443c1d8c42cc8b480cfecb538723d37c598d11539589da84d2ccfb03b9c9",
+        "support.my": "1dbab2714a96ee9692e0ad239b855549bc16cfb8f34ac0841e2b90a5de1546e4",
+        ".gitignore": "1112765fcf0604869af64e0e51123e9a5da78bc077d6c66deaca394a7c4f4578",
+        "parser_test.my": "aa392522db4ede85be305949ab17d4c9d6373f6dccc46ecddd9b8747a14aa6f3",
+        "mmay.mod": "72405cc961a8360e795d2c224650306493dc03e5f03ec5ea09b23d80641257b8",
+        "tools/measure.py": "77a1f779541cb532da7c17ac637a1f17df27c15c56df78f4fcaff3cac3efcb81",
+        "tools/acceptance.py": "3a0bc9a25ac1bfa385960b68d0057fe1f2c60e467748d95f391ad4bb148358b0",
+        "tools/mmay_acceptance.py": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+        "evidence/acceptance.json": "eb8c1eadc4020d904879afb0bdf8ad68b1080763217119be9f3fcd8ccab080d7",
+        "evidence/measurements.json": "83478440528078bd72c4159c82b6b552b45814468b6e65d43bf86e312803d26e",
+        "fixtures/sample.csv": "4f2cf31cb39daa601ae4e5f83a45f9db04b3d7b556e6460f0ab2d1fd32765eaf",
+        "fixtures/sample.tsv": "087c68135614693bd0121c7d6eb49ab00aecb6bc09c03e88f74d125f25d1fa41"
+      }
+    },
+    "marimay-source-lint": {
+      "path": "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint",
+      "commit": "d94119eb479406855899da7e6e211669548898d7",
+      "acceptance": {
+        "schema": "marimay-source-lint.acceptance/1",
+        "harness": {
+          "harness_version": "1",
+          "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+          "platform": "macOS-26.6.2-arm64-arm-64bit",
+          "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+          "compiler_sha256": "7da536ea73bfdec7809ee6369bc4839133fb99aff4adfc167635d47287c8b0be",
+          "engines": {
+            "vm": {
+              "command": [
+                "/workspace/Projects/Marimay/marimay/build/release/mmay",
+                "run",
+                ".",
+                "--allow-read",
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance",
+                "--allow-write",
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance",
+                "--max-heap-bytes",
+                "67108864",
+                "--"
+              ],
+              "executable_sha256": "7da536ea73bfdec7809ee6369bc4839133fb99aff4adfc167635d47287c8b0be"
+            },
+            "debug": {
+              "command": [
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/app-debug"
+              ],
+              "executable_sha256": "e55c2ae3dccb0231b0fd92ae80a180526b8484310465dcf0fd03f7a1a1ab2a5f"
+            },
+            "release": {
+              "command": [
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/app-release"
+              ],
+              "executable_sha256": "e271e6d6fe748d0fbc8ab983d9d42b6b54101f93182be4aedbade8df18989f88"
+            }
+          }
+        },
+        "sources": {
+          "main.my": "22ad562412287a599d99504d425ec0028537e28aabbd1056532479a5add3fd77",
+          "scanner.my": "5ee46d5f1f9b93649ecbd08f7d5bd4919ec40b0ed1c58964647d319456897832",
+          "scanner_test.my": "c591235ea47782bf5d464f9f37ba2bd65fd176f692a21a8556431ea2f719f58c",
+          "support.my": "1dbab2714a96ee9692e0ad239b855549bc16cfb8f34ac0841e2b90a5de1546e4"
+        },
+        "cases": [
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "c6e6c9f42d0be1d07cd25cfe6a00290e498aacb7205b65b9a5d66696f4931c22",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "95a270259532d593028e96bbfc29ae38b51a92448c0d263fff45c968ba5059b5",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "fb82d11d8807c2e989b48c1e3025188e70bbeabcc7a9868c438740f695f80349",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "2545b8379d174b2265140373f2d9dde95a134075f6984ffdc7a93997c14cf41c",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "6a40ef7c377b0f9b7eb49da2d504efd3cc22c96bb1242040a5a42ee15c8df72f",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "8843980b2ebb963ac1f4526736a9e57250be753c3c851fe7cba893ed7b2ca178",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "52ab750692e1c729c5b85561789f73a528646ccd20e12478ad610d9fcde2d64f",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "ef565927465530d605399158f25c7dba0a5d54f42083c5a2a31fb44f7e77ba52",
+            "status": 1,
+            "stdout_sha256": "7adad99c5b69008be046505008bd9a5c6504cb6b99c56adc99f6c575e10bb4d4",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "-"
+            ],
+            "data_sha256": "ef565927465530d605399158f25c7dba0a5d54f42083c5a2a31fb44f7e77ba52",
+            "status": 1,
+            "stdout_sha256": "256a7474db98bf2b4bbf6bd015a6303f909966936a6b2c2824d0ccd10489cb72",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "8cba3282fe37fa6054ce64531ce17410a1404e2bc4afbf113824097037b1e498",
+            "status": 1,
+            "stdout_sha256": "c3da10c8391c78877b01790e6f9c50cef0911369ba7e08e25542a8a8da77ba73",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "9a8a9c19558489ed6d6634ac4e6588384648a187ab179c506be04b48f56380fa",
+            "status": 1,
+            "stdout_sha256": "be06f0c32ae74ed2849d05b5e4e2a7322c9a1cfa76aff7441a03ef137e35aa7f",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "5210169da49e2704f7b293b72a562517fc663f0bbb9aa8074655e1edae45216e",
+            "status": 1,
+            "stdout_sha256": "2ab3de05b3d656a252d7c83575efd9079e9df75d10dd653fa2e871023bbaa456",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "691863272645ee4586e80313f2609ff4042433f89113636f31d6de5f03ac6639",
+            "status": 1,
+            "stdout_sha256": "5ff1f3b80472bfa7f4e007d6f8b1843f18f58f243d997b591107b6a1970bb744",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--max-findings",
+              "0"
+            ],
+            "data_sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--max-findings",
+              "1"
+            ],
+            "data_sha256": "b08cd849245462c575b44700d3b0ea5a4e3594639601c770d8447c769994dd17",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: -: Превышен лимит замечаний\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "900d6d91ba2c4e80c608b212d751cd20f15169395c1a0da92645785f7a9f45dd",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: -: Превышен лимит вложенности 256\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "8dd06b5ab6b594257e41b7d8dd440a4062eddc67fdab5c13b4dc300176896f6e",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: -: Недопустимый UTF-8 в байте 1\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-"
+            ],
+            "data_sha256": "55781e4b7263bedc1ea8f8356ab4fde5a72a9a8f49bd239a7d727cca9ef7b1a0",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: Нужен хотя бы один ФАЙЛ; см. --help\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/вход ü.txt",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/вход ü.txt"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 1,
+            "stdout_sha256": "16bbb5ad0a451da6133fbe48643a7083f3cb5f6f6195af45878868b02d622b27",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/вход ü.txt",
+              "-",
+              "--max-findings",
+              "1"
+            ],
+            "data_sha256": "9b36b3820ac533b0e3e7da31b2346bbdbbc0becf437116553b0eaae24428a796",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: -: Превышен лимит замечаний\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--max-input",
+              "1"
+            ],
+            "data_sha256": "fb8e20fc2e4c3f248c60c39bd652f3c1347298bb977b8b4d5903b85055620603",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: -: standard input exceeds 1-byte limit\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--max-input",
+              "2"
+            ],
+            "data_sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+            "status": 0,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--wat"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: unknown option --wat at argument 2\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/вход ü.txt"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 0,
+            "stdout_sha256": "be86d2a97058e69faddfcad89ec27d36eca18bfa6ba3484802e31e1e0ca7d96f",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/вход ü.txt",
+              "--max-input",
+              "1"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: /workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/вход ü.txt: file exceeds 1-byte limit\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/выход.txt"
+            ],
+            "data_sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+            "status": 0,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": ""
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/выход.txt"
+            ],
+            "data_sha256": "a8100ae6aa1940d0b663bb31cd466142ebbdbd5187131b92d93818987832eb89",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: -: Недопустимый UTF-8 в байте 0\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--max-output",
+              "0",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/выход.txt"
+            ],
+            "data_sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: Превышен лимит вывода 0 байт\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/missing"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: /workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/missing: filesystem path was not found\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--max-input=-1"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: --max-input: допустимо 0..1048576\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--max-input=1048577"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: --max-input: допустимо 0..1048576\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--max-input=no"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: --max-input: ожидается целое число\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/вход ü.txt"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: /workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/вход ü.txt: fs.read capability denied for /workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/вход ü.txt\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/выход.txt"
+            ],
+            "data_sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: fs.write capability denied for /workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/выход.txt\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/link"
+            ],
+            "data_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: /workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/link: symbolic links are not followed\n"
+          },
+          {
+            "arguments": [
+              "--json",
+              "-",
+              "--output",
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/acceptance/link"
+            ],
+            "data_sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+            "status": 2,
+            "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "stderr": "marimay-source-lint: symbolic links are not followed\n"
+          }
+        ],
+        "closed_pipes": [
+          {
+            "engine": "vm",
+            "status": 2,
+            "stderr": "marimay-source-lint: standard stream flush failed\n"
+          },
+          {
+            "engine": "debug",
+            "status": 2,
+            "stderr": "marimay-source-lint: standard stream flush failed\n"
+          },
+          {
+            "engine": "release",
+            "status": 2,
+            "stderr": "marimay-source-lint: standard stream flush failed\n"
+          }
+        ],
+        "large_bytes": 524288,
+        "managed_heap_limit": 67108864,
+        "elapsed_seconds": 99.034156375
+      },
+      "measurements": {
+        "schema": "marimay-source-lint.measurements/1",
+        "harness": {
+          "harness_version": "1",
+          "harness_sha256": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+          "platform": "macOS-26.6.2-arm64-arm-64bit",
+          "compiler": "/workspace/Projects/Marimay/marimay/build/release/mmay",
+          "compiler_sha256": "7da536ea73bfdec7809ee6369bc4839133fb99aff4adfc167635d47287c8b0be",
+          "engines": {
+            "native": {
+              "command": [
+                "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/measure-1788926210755289000/app-release"
+              ],
+              "executable_sha256": "061ce09773948ce7f00c3e277938ee7d3d1707cda1caca50b9534579a5970d11"
+            },
+            "vm": {
+              "command": [
+                "/workspace/Projects/Marimay/marimay/build/release/mmay",
+                "run",
+                ".",
+                "--max-heap-bytes",
+                "67108864",
+                "--"
+              ],
+              "executable_sha256": "7da536ea73bfdec7809ee6369bc4839133fb99aff4adfc167635d47287c8b0be"
+            }
+          }
+        },
+        "conditions": "Sequential ordinary desktop. First native execution immediately after this build; no application warmup, no OS-cache eviction or fresh-host claim.",
+        "sources": {
+          "main.my": "22ad562412287a599d99504d425ec0028537e28aabbd1056532479a5add3fd77",
+          "scanner.my": "5ee46d5f1f9b93649ecbd08f7d5bd4919ec40b0ed1c58964647d319456897832",
+          "scanner_test.my": "c591235ea47782bf5d464f9f37ba2bd65fd176f692a21a8556431ea2f719f58c",
+          "support.my": "1dbab2714a96ee9692e0ad239b855549bc16cfb8f34ac0841e2b90a5de1546e4"
+        },
+        "budgets_sha256": "01f309856feca91b3a864007123a125d36f8df99384f1a4ff8016cd0cc68b739",
+        "build_seconds": 15.41457725,
+        "datasets": [
+          {
+            "name": "small",
+            "input_bytes": 2,
+            "input_sha256": "73cb3858a687a8494ca3323053016282f3dad39d42cf62ca4e79dda2aac7d9ac",
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64"
+          },
+          {
+            "name": "stateful-256k-v1",
+            "input_bytes": 262144,
+            "input_sha256": "780f15902335e93f6343210f447827367b859c298904fab23a52ca3e7af7c71a",
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64"
+          },
+          {
+            "name": "stateful-512k-v1",
+            "input_bytes": 524288,
+            "input_sha256": "55781e4b7263bedc1ea8f8356ab4fde5a72a9a8f49bd239a7d727cca9ef7b1a0",
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64"
+          }
+        ],
+        "records": [
+          {
+            "dataset": "small",
+            "engine": "native",
+            "repetition": 0,
+            "seconds": 0.3868409580000005,
+            "seconds_budget": 0.1,
+            "within_time_budget": false,
+            "rss_bytes": 1933312,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/measure-1788926210755289000/app-release",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.38 real         0.00 user         0.00 sys\n             1933312  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 277  page reclaims\n                   3  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   1  voluntary context switches\n                  18  involuntary context switches\n            16657716  instructions retired\n            10681216  cycles elapsed\n              983328  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "native",
+            "repetition": 1,
+            "seconds": 0.01096216600000055,
+            "seconds_budget": 0.1,
+            "within_time_budget": true,
+            "rss_bytes": 1966080,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/measure-1788926210755289000/app-release",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.00 real         0.00 user         0.00 sys\n             1966080  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 283  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                   4  involuntary context switches\n            14452582  instructions retired\n             5515424  cycles elapsed\n             1016096  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "native",
+            "repetition": 2,
+            "seconds": 0.008229417000000794,
+            "seconds_budget": 0.1,
+            "within_time_budget": true,
+            "rss_bytes": 1966080,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/measure-1788926210755289000/app-release",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.00 real         0.00 user         0.00 sys\n             1966080  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 281  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                   4  involuntary context switches\n            14437506  instructions retired\n             4932474  cycles elapsed\n             1016096  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "native",
+            "repetition": 3,
+            "seconds": 0.006597292000000365,
+            "seconds_budget": 0.1,
+            "within_time_budget": true,
+            "rss_bytes": 1966080,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/measure-1788926210755289000/app-release",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.00 real         0.00 user         0.00 sys\n             1966080  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                 281  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                   5  involuntary context switches\n            14431883  instructions retired\n             4949373  cycles elapsed\n             1016096  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "vm",
+            "repetition": 0,
+            "seconds": 0.5114468750000007,
+            "seconds_budget": 0.5,
+            "within_time_budget": false,
+            "rss_bytes": 51412992,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.50 real         0.49 user         0.00 sys\n            51412992  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                3298  page reclaims\n                   2  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   4  voluntary context switches\n                  28  involuntary context switches\n          7536975021  instructions retired\n          1672122365  cycles elapsed\n            50135424  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "vm",
+            "repetition": 1,
+            "seconds": 0.5001430420000013,
+            "seconds_budget": 0.5,
+            "within_time_budget": false,
+            "rss_bytes": 51494912,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.49 real         0.48 user         0.00 sys\n            51494912  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                3304  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  25  involuntary context switches\n          7537865252  instructions retired\n          1676384703  cycles elapsed\n            50217344  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "vm",
+            "repetition": 2,
+            "seconds": 0.5003766670000012,
+            "seconds_budget": 0.5,
+            "within_time_budget": false,
+            "rss_bytes": 51511296,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.49 real         0.48 user         0.00 sys\n            51511296  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                3305  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  35  involuntary context switches\n          7535881557  instructions retired\n          1675800422  cycles elapsed\n            50233728  peak memory footprint\n"
+          },
+          {
+            "dataset": "small",
+            "engine": "vm",
+            "repetition": 3,
+            "seconds": 0.5316934999999994,
+            "seconds_budget": 0.5,
+            "within_time_budget": false,
+            "rss_bytes": 51462144,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.52 real         0.49 user         0.01 sys\n            51462144  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                3302  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 167  involuntary context switches\n          7538573072  instructions retired\n          1692978790  cycles elapsed\n            50200984  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-256k-v1",
+            "engine": "native",
+            "repetition": 0,
+            "seconds": 0.16470475000000206,
+            "seconds_budget": 2,
+            "within_time_budget": true,
+            "rss_bytes": 69763072,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/measure-1788926210755289000/app-release",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.16 real         0.15 user         0.00 sys\n            69763072  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                4419  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  13  involuntary context switches\n          2989415222  instructions retired\n           541300809  cycles elapsed\n            68845928  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-256k-v1",
+            "engine": "native",
+            "repetition": 1,
+            "seconds": 0.1644677080000001,
+            "seconds_budget": 2,
+            "within_time_budget": true,
+            "rss_bytes": 69812224,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/measure-1788926210755289000/app-release",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.16 real         0.15 user         0.00 sys\n            69812224  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                4422  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  18  involuntary context switches\n          2988948096  instructions retired\n           541562750  cycles elapsed\n            68878696  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-256k-v1",
+            "engine": "vm",
+            "repetition": 0,
+            "seconds": 2.3485637500000003,
+            "seconds_budget": 20,
+            "within_time_budget": true,
+            "rss_bytes": 120504320,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        2.34 real         2.30 user         0.03 sys\n           120504320  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                7523  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 127  involuntary context switches\n         36883862547  instructions retired\n          7917068876  cycles elapsed\n           119259568  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-256k-v1",
+            "engine": "vm",
+            "repetition": 1,
+            "seconds": 2.347850916999999,
+            "seconds_budget": 20,
+            "within_time_budget": true,
+            "rss_bytes": 119996416,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        2.34 real         2.30 user         0.03 sys\n           119996416  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                7491  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 157  involuntary context switches\n         36886554047  instructions retired\n          7916201995  cycles elapsed\n           118751664  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-512k-v1",
+            "engine": "native",
+            "repetition": 0,
+            "seconds": 0.3232574160000006,
+            "seconds_budget": 2,
+            "within_time_budget": true,
+            "rss_bytes": 79953920,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/measure-1788926210755289000/app-release",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.32 real         0.30 user         0.01 sys\n            79953920  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                5047  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  82  involuntary context switches\n          5959277870  instructions retired\n          1067402352  cycles elapsed\n            79135104  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-512k-v1",
+            "engine": "native",
+            "repetition": 1,
+            "seconds": 0.32322699999999926,
+            "seconds_budget": 2,
+            "within_time_budget": true,
+            "rss_bytes": 79970304,
+            "rss_budget": 134217728,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/Marimay-Examples/marimay-source-lint/build/measure-1788926210755289000/app-release",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        0.32 real         0.30 user         0.01 sys\n            79970304  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                5048  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                  68  involuntary context switches\n          5959197004  instructions retired\n          1066374430  cycles elapsed\n            79151488  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-512k-v1",
+            "engine": "vm",
+            "repetition": 0,
+            "seconds": 4.225091334000002,
+            "seconds_budget": 20,
+            "within_time_budget": true,
+            "rss_bytes": 131121152,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        4.22 real         4.16 user         0.05 sys\n           131121152  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                8171  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 577  involuntary context switches\n         66197677761  instructions retired\n         14191027303  cycles elapsed\n           129876400  peak memory footprint\n"
+          },
+          {
+            "dataset": "stateful-512k-v1",
+            "engine": "vm",
+            "repetition": 1,
+            "seconds": 4.209214916999997,
+            "seconds_budget": 20,
+            "within_time_budget": true,
+            "rss_bytes": 131448832,
+            "rss_budget": 268435456,
+            "within_rss_budget": true,
+            "stdout_sha256": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+            "command": [
+              "/workspace/Projects/Marimay/marimay/build/release/mmay",
+              "run",
+              ".",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "--json",
+              "-"
+            ],
+            "timing_stderr": "        4.20 real         4.15 user         0.04 sys\n           131448832  maximum resident set size\n                   0  average shared memory size\n                   0  average unshared data size\n                   0  average unshared stack size\n                8191  page reclaims\n                   1  page faults\n                   0  swaps\n                   0  block input operations\n                   0  block output operations\n                   0  messages sent\n                   0  messages received\n                   0  signals received\n                   0  voluntary context switches\n                 274  involuntary context switches\n         66190364884  instructions retired\n         14183553932  cycles elapsed\n           130220488  peak memory footprint\n"
+          }
+        ],
+        "test_both": {
+          "seconds": 5.506454083000001,
+          "seconds_budget": 2,
+          "within_budget": false,
+          "stdout": "test example/marimay-source-lint.lexicalContextsAvoidFalsePositives ... ok\ntest example/marimay-source-lint.unicodeSpansAndStableOrder ... ok\ntest example/marimay-source-lint.nestedCommentsAndUnfinishedStates ... ok\ntest example/marimay-source-lint.resourceLimitsAreErrors ... ok\ntest result: ok. 4 passed; 0 failed\n"
+        }
+      },
+      "files": {
+        "BUDGETS.md": "01f309856feca91b3a864007123a125d36f8df99384f1a4ff8016cd0cc68b739",
+        "PROVENANCE.json": "bae283eefe429fca006f6f6858cc5ec1704aeb1fc64282738850e4f887c13041",
+        "main.my": "22ad562412287a599d99504d425ec0028537e28aabbd1056532479a5add3fd77",
+        "scanner_test.my": "c591235ea47782bf5d464f9f37ba2bd65fd176f692a21a8556431ea2f719f58c",
+        "README.md": "c040d9b3be6b1b10aa7bf454185985620f469b554917fa9bc6f2b9d84bc16a8f",
+        "ERGONOMICS.md": "4364dfd8c3fcb6e0fde199eaeba28706c694805c1cc64d7f6e54f75a5ed6d465",
+        "VERIFICATION.md": "47f88b9ffb36a6352617f708190f2dbbe29cec603dc3c540e76aa9a281803baa",
+        "support.my": "1dbab2714a96ee9692e0ad239b855549bc16cfb8f34ac0841e2b90a5de1546e4",
+        ".gitignore": "1112765fcf0604869af64e0e51123e9a5da78bc077d6c66deaca394a7c4f4578",
+        "scanner.my": "5ee46d5f1f9b93649ecbd08f7d5bd4919ec40b0ed1c58964647d319456897832",
+        "mmay.mod": "7ec29934052979da482f4cbe3f8e9ce40e0a54c28584d774233ababd7dd6f921",
+        "tools/measure.py": "77a1f779541cb532da7c17ac637a1f17df27c15c56df78f4fcaff3cac3efcb81",
+        "tools/acceptance.py": "2f17b986da9ab4ca9a33ec51a6655a764e6659b8f03d455b63f16dd9f3f7e342",
+        "tools/mmay_acceptance.py": "e7db6d3bcb596fd8d36a8af14068e83ed928a1c48f67211dfcd2c998a5e546ce",
+        "evidence/acceptance.json": "b2eddda5f28b99c940303cb930ca402faa4bc9f2bd1c7cc39be88e3c57baf8b0",
+        "evidence/measurements.json": "e57fbb362a4c1719c50cf7b19ae79b806918b1284b7f9e3ecf3248ecdbec5451",
+        "fixtures/sample.my.txt": "ef565927465530d605399158f25c7dba0a5d54f42083c5a2a31fb44f7e77ba52",
+        "fixtures/clean.my.txt": "2e58ea49b78e495f6044673cb9ff8f5e40ad0e03e848c65a2bbaffa69f8ac714"
+      }
+    }
+  },
+  "checks": {
+    "release-full.log": {
+      "command": "ctest --test-dir build/release --output-on-failure --parallel 4",
+      "exit": 0,
+      "output": "Test project /workspace/Projects/Marimay/marimay/build/release\n      Start 70: mmay_cp38_json\n      Start 47: mmay_cp37_cli_parser\n 1/85 Test #47: mmay_cp37_cli_parser .............   Passed    8.12 sec\n      Start 41: mmay_cp39_distribution\n 2/85 Test #70: mmay_cp38_json ...................   Passed   12.85 sec\n      Start 10: mmay_c_unit_cp31\n      Start 20: mmay_c_unit_cp18-cp20\n 3/85 Test #10: mmay_c_unit_cp31 .................   Passed    4.10 sec\n      Start 19: mmay_c_unit_cp16-cp17\n 4/85 Test #20: mmay_c_unit_cp18-cp20 ............   Passed    9.69 sec\n      Start 11: mmay_c_unit_final-preview\n 5/85 Test #19: mmay_c_unit_cp16-cp17 ............   Passed    6.97 sec\n      Start  9: mmay_c_unit_native\n 6/85 Test #41: mmay_cp39_distribution ...........   Passed   21.64 sec\n      Start 18: mmay_c_unit_cp14-cp15\n      Start 46: mmay_cp36_map_set\n 7/85 Test #11: mmay_c_unit_final-preview ........   Passed    8.82 sec\n      Start 43: mmay_cp33_process_text_bytes\n 8/85 Test #43: mmay_cp33_process_text_bytes .....   Passed    1.75 sec\n      Start 44: mmay_cp34_process_files\n 9/85 Test #44: mmay_cp34_process_files ..........   Passed    2.28 sec\n      Start 45: mmay_cp35_process_context\n10/85 Test #18: mmay_c_unit_cp14-cp15 ............   Passed    7.06 sec\n      Start 17: mmay_c_unit_cli-test\n11/85 Test #45: mmay_cp35_process_context ........   Passed    1.90 sec\n      Start 15: mmay_c_unit_cli-heap\n12/85 Test #46: mmay_cp36_map_set ................   Passed    8.22 sec\n      Start 39: mmay_install_relocation\n13/85 Test #39: mmay_install_relocation ..........   Passed    3.87 sec\n      Start 42: mmay_cp32_process_streams\n14/85 Test #42: mmay_cp32_process_streams ........   Passed    1.08 sec\n      Start 16: mmay_c_unit_cli-run\n15/85 Test #15: mmay_c_unit_cli-heap .............   Passed    5.97 sec\n      Start 13: mmay_c_unit_cli-build\n16/85 Test #16: mmay_c_unit_cli-run ..............   Passed    6.86 sec\n      Start 40: mmay_cp29_release_contract\n17/85 Test #17: mmay_c_unit_cli-test .............   Passed   14.06 sec\n      Start 21: mmay_cp31_allocation_0\n18/85 Test #21: mmay_cp31_allocation_0 ...........   Passed    2.67 sec\n      Start  6: mmay_c_unit_checker\n19/85 Test #40: mmay_cp29_release_contract .......   Passed    4.94 sec\n      Start 14: mmay_c_unit_cli-check\n20/85 Test  #6: mmay_c_unit_checker ..............   Passed    4.56 sec\n      Start  8: mmay_c_unit_runtime\n21/85 Test #13: mmay_c_unit_cli-build ............   Passed   19.22 sec\n      Start 22: mmay_cp31_allocation_1\n22/85 Test #22: mmay_cp31_allocation_1 ...........   Passed    2.83 sec\n      Start 23: mmay_cp31_allocation_2\n23/85 Test #14: mmay_c_unit_cli-check ............   Passed   10.63 sec\n      Start 24: mmay_cp31_allocation_3\n24/85 Test #24: mmay_cp31_allocation_3 ...........   Passed    2.86 sec\n      Start 25: mmay_cp31_allocation_4\n25/85 Test #23: mmay_cp31_allocation_2 ...........   Passed    2.91 sec\n      Start 26: mmay_cp31_allocation_5\n26/85 Test #25: mmay_cp31_allocation_4 ...........   Passed    3.17 sec\n      Start 27: mmay_cp31_allocation_6\n27/85 Test #26: mmay_cp31_allocation_5 ...........   Passed    3.22 sec\n      Start 28: mmay_cp31_allocation_7\n28/85 Test #27: mmay_cp31_allocation_6 ...........   Passed    3.19 sec\n      Start 48: mmay_cli_notes\n29/85 Test #28: mmay_cp31_allocation_7 ...........   Passed    3.22 sec\n      Start  7: mmay_c_unit_bytecode\n30/85 Test  #7: mmay_c_unit_bytecode .............   Passed    0.39 sec\n      Start 68: mmay_typed_json\n31/85 Test #68: mmay_typed_json ..................   Passed   13.48 sec\n      Start 69: mmay_cli_local_execution\n32/85 Test  #8: mmay_c_unit_runtime ..............   Passed   43.68 sec\n      Start 33: mmay_cp36_unit\n33/85 Test #69: mmay_cli_local_execution .........   Passed   19.78 sec\n      Start 29: mmay_cp32_unit\n34/85 Test #48: mmay_cli_notes ...................   Passed   35.72 sec\n      Start 30: mmay_cp33_unit\n35/85 Test #29: mmay_cp32_unit ...................   Passed   12.19 sec\n      Start 36: mmay_cp42_unit\n36/85 Test #33: mmay_cp36_unit ...................   Passed   35.15 sec\n      Start 37: mmay_cp41_unit\n37/85 Test #30: mmay_cp33_unit ...................   Passed   27.45 sec\n      Start 50: mmay_cli_config_migrate\n38/85 Test #37: mmay_cp41_unit ...................   Passed   11.40 sec\n      Start 49: mmay_cli_frequency\n39/85 Test #50: mmay_cli_config_migrate ..........   Passed   13.25 sec\n      Start 32: mmay_cp35_unit\n40/85 Test #32: mmay_cp35_unit ...................   Passed    3.53 sec\n      Start 72: mmay_cp42_test_helpers\n41/85 Test #49: mmay_cli_frequency ...............   Passed   10.49 sec\n      Start 71: mmay_cp42_void_match\n42/85 Test #72: mmay_cp42_test_helpers ...........   Passed    7.36 sec\n      Start 73: mmay_cp42_map_error_context\n43/85 Test #71: mmay_cp42_void_match .............   Passed    7.67 sec\n      Start 67: mmay_cli_notes_model\n44/85 Test #73: mmay_cp42_map_error_context ......   Passed    5.91 sec\n      Start  5: mmay_c_unit_frontend\n45/85 Test  #5: mmay_c_unit_frontend .............   Passed    0.11 sec\n      Start 57: mmay_match_format\n46/85 Test #67: mmay_cli_notes_model .............   Passed    2.48 sec\n      Start 53: mmay_generic_lifetime\n47/85 Test #57: mmay_match_format ................   Passed    2.04 sec\n      Start 58: mmay_run_startup\n48/85 Test #53: mmay_generic_lifetime ............   Passed    1.95 sec\n      Start 51: mmay_record_imports\n49/85 Test #58: mmay_run_startup .................   Passed    1.86 sec\n      Start 55: mmay_enum_pattern_names\n50/85 Test #51: mmay_record_imports ..............   Passed    1.84 sec\n      Start 52: mmay_match_void\n51/85 Test #55: mmay_enum_pattern_names ..........   Passed    1.88 sec\n      Start 74: mmay_cp42_test_locations\n52/85 Test #52: mmay_match_void ..................   Passed    1.85 sec\n      Start 54: mmay_map_error_imports\n53/85 Test #74: mmay_cp42_test_locations .........   Passed    2.53 sec\n      Start 12: mmay_c_unit_cli-core\n54/85 Test #12: mmay_c_unit_cli-core .............   Passed    0.04 sec\n      Start 31: mmay_cp34_unit\n55/85 Test #54: mmay_map_error_imports ...........   Passed    1.89 sec\n      Start 34: mmay_cp37_unit\n56/85 Test #34: mmay_cp37_unit ...................   Passed    0.07 sec\n      Start 35: mmay_cp38_unit\n57/85 Test #35: mmay_cp38_unit ...................   Passed    0.02 sec\n      Start 38: mmay_cp39_unit\n58/85 Test #38: mmay_cp39_unit ...................   Passed    0.18 sec\n      Start  1: mmay_ci_diagnostics\n59/85 Test  #1: mmay_ci_diagnostics ..............   Passed    0.80 sec\n      Start  2: mmay_cli_acceptance_driver\n60/85 Test  #2: mmay_cli_acceptance_driver .......   Passed    0.72 sec\n      Start  3: mmay_roadmap\n61/85 Test  #3: mmay_roadmap .....................   Passed    0.14 sec\n      Start 75: mmay_cp42_for_recovery\n62/85 Test #75: mmay_cp42_for_recovery ...........   Passed    0.08 sec\n      Start 56: mmay_cp33_text_bytes\n63/85 Test #56: mmay_cp33_text_bytes .............   Passed    0.88 sec\n      Start  4: mmay_release_contract\n64/85 Test  #4: mmay_release_contract ............   Passed    0.08 sec\n      Start 64: mmay_format_cp33-text-bytes\n65/85 Test #64: mmay_format_cp33-text-bytes ......   Passed    0.01 sec\n      Start 59: mmay_format_record-imports\n66/85 Test #59: mmay_format_record-imports .......   Passed    0.00 sec\n      Start 61: mmay_format_generic-lifetime\n67/85 Test #61: mmay_format_generic-lifetime .....   Passed    0.00 sec\n      Start 63: mmay_format_enum-pattern-names\n68/85 Test #63: mmay_format_enum-pattern-names ...   Passed    0.00 sec\n      Start 66: mmay_format_run-startup\n69/85 Test #66: mmay_format_run-startup ..........   Passed    0.00 sec\n      Start 60: mmay_format_match-void\n70/85 Test #60: mmay_format_match-void ...........   Passed    0.00 sec\n      Start 65: mmay_format_match-format\n71/85 Test #65: mmay_format_match-format .........   Passed    0.00 sec\n      Start 62: mmay_format_map-error-imports\n72/85 Test #62: mmay_format_map-error-imports ....   Passed    0.00 sec\n      Start 84: mmay_cli-delimited\n73/85 Test #36: mmay_cp42_unit ...................   Passed   59.96 sec\n      Start 85: mmay_cli-source-lint\n74/85 Test #31: mmay_cp34_unit ...................   Passed    6.66 sec\n75/85 Test #84: mmay_cli-delimited ...............   Passed   26.32 sec\n      Start 76: mmay_cp42_option_binding\n76/85 Test #76: mmay_cp42_option_binding .........   Passed    5.31 sec\n      Start 77: mmay_cp42_array_edit\n77/85 Test #77: mmay_cp42_array_edit .............   Passed    5.92 sec\n      Start 78: mmay_cp42_function_values\n78/85 Test #78: mmay_cp42_function_values ........   Passed   11.81 sec\n      Start 79: mmay_cp42_mapper_values\n79/85 Test #79: mmay_cp42_mapper_values ..........   Passed   10.87 sec\n      Start 80: mmay_cp42_array_search\n80/85 Test #85: mmay_cli-source-lint .............   Passed   60.16 sec\n81/85 Test #80: mmay_cp42_array_search ...........   Passed    6.35 sec\n      Start 81: mmay_cp42_file_lines\n82/85 Test #81: mmay_cp42_file_lines .............   Passed   15.15 sec\n      Start 82: mmay_cp42_enum_bottom\n83/85 Test #82: mmay_cp42_enum_bottom ............   Passed    6.76 sec\n      Start 83: mmay_cp42_escape\n84/85 Test #83: mmay_cp42_escape .................   Passed   10.43 sec\n85/85 Test  #9: mmay_c_unit_native ...............   Passed  351.59 sec\n\n100% tests passed out of 85\n\nLabel Time Summary:\nacceptance-harness    =   0.72 sec*proc (1 test)\nallocation            =  24.06 sec*proc (8 tests)\nbytecode              =   0.39 sec*proc (1 test)\nc-unit                = 650.37 sec*proc (26 tests)\nchecker               =   4.56 sec*proc (1 test)\nci                    =   0.80 sec*proc (1 test)\ncli                   =   0.72 sec*proc (1 test)\ncli-build             =  19.22 sec*proc (1 test)\ncli-check             =  10.63 sec*proc (1 test)\ncli-core              =   0.04 sec*proc (1 test)\ncli-heap              =   5.97 sec*proc (1 test)\ncli-run               =   6.86 sec*proc (1 test)\ncli-test              =  14.06 sec*proc (1 test)\ncp14-cp15             =   7.06 sec*proc (1 test)\ncp16-cp17             =   6.97 sec*proc (1 test)\ncp18-cp20             =   9.69 sec*proc (1 test)\ncp31                  =   4.10 sec*proc (1 test)\ncp32                  =  12.19 sec*proc (1 test)\ncp33                  =  27.45 sec*proc (1 test)\ncp34                  =   6.66 sec*proc (1 test)\ncp35                  =   3.53 sec*proc (1 test)\ncp36                  =  35.15 sec*proc (1 test)\ncp37                  =   0.07 sec*proc (1 test)\ncp38                  =   0.02 sec*proc (1 test)\ncp39                  =  43.46 sec*proc (2 tests)\ncp41                  =  11.40 sec*proc (1 test)\ncp42                  = 234.65 sec*proc (11 tests)\ndiagnostics           =   0.80 sec*proc (1 test)\ndifferential          = 207.95 sec*proc (12 tests)\ndistribution          =  43.28 sec*proc (1 test)\nfinal-preview         =   8.82 sec*proc (1 test)\nfocused               = 156.61 sec*proc (10 tests)\nfrontend              =   0.11 sec*proc (1 test)\nlocal-execution       =  19.78 sec*proc (1 test)\nnative                = 351.59 sec*proc (1 test)\nresource              =  19.78 sec*proc (1 test)\nruntime               =  43.68 sec*proc (1 test)\nstateful              =  86.47 sec*proc (2 tests)\ntyped-json            =  13.48 sec*proc (1 test)\n\nTotal Test time (real) = 375.52 sec\n"
+    },
+    "asan-focused.log": {
+      "command": "ctest --test-dir build/asan-ubsan -R '^(mmay_c_unit_bytecode|mmay_cp33_unit|mmay_cp33_text_bytes|mmay_cli-delimited|mmay_cli-source-lint)$' --output-on-failure --parallel 2",
+      "exit": 0,
+      "output": "Test project /workspace/Projects/Marimay/marimay/build/asan-ubsan\n    Start  7: mmay_c_unit_bytecode\n    Start 30: mmay_cp33_unit\n1/5 Test  #7: mmay_c_unit_bytecode .............   Passed    2.54 sec\n    Start 56: mmay_cp33_text_bytes\n2/5 Test #56: mmay_cp33_text_bytes .............   Passed    8.90 sec\n    Start 84: mmay_cli-delimited\n3/5 Test #30: mmay_cp33_unit ...................   Passed   34.94 sec\n    Start 85: mmay_cli-source-lint\n4/5 Test #84: mmay_cli-delimited ...............   Passed   63.94 sec\n5/5 Test #85: mmay_cli-source-lint .............   Passed  186.43 sec\n\n100% tests passed out of 5\n\nLabel Time Summary:\nbytecode        =   2.54 sec*proc (1 test)\nc-unit          =  37.48 sec*proc (2 tests)\ncp33            =  34.94 sec*proc (1 test)\ncp42            = 250.37 sec*proc (2 tests)\ndifferential    = 250.37 sec*proc (2 tests)\nfocused         =  34.94 sec*proc (1 test)\nstateful        = 250.37 sec*proc (2 tests)\n\nTotal Test time (real) = 221.38 sec\n"
+    },
+    "architecture.log": {
+      "command": "./tools/check-architecture",
+      "exit": 0,
+      "output": "check-architecture: ok\n"
+    },
+    "c-memory.log": {
+      "command": "./tools/check-c-memory-policy",
+      "exit": 0,
+      "output": "check-c-memory-policy: ok\n"
+    },
+    "generated.log": {
+      "command": "./tools/check-generated",
+      "exit": 0,
+      "output": "bytecode generated artifacts: ok\ndiagnostic generated artifacts: ok\nUnicode generated artifacts: ok\nGitea C17 image reference is current: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242\nsyntax generated artifacts: ok\n"
+    },
+    "system-mmay-check.log": {
+      "command": "mmay test tests/public-alpha/cp33-text-bytes --engine both",
+      "exit": 0,
+      "output": "test tests.public-alpha.cp33-text-bytes.textQueriesAndOwnedResults ... ok\ntest tests.public-alpha.cp33-text-bytes.emptyTextResultsCanBeUsedAgain ... ok\ntest tests.public-alpha.cp33-text-bytes.textCollectionsAndLimits ... ok\ntest tests.public-alpha.cp33-text-bytes.textBuilderIsBoundedAndOwned ... ok\ntest tests.public-alpha.cp33-text-bytes.bytesMutationCopySliceAndIterator ... ok\ntest tests.public-alpha.cp33-text-bytes.utf8AndBytesBuilder ... ok\ntest tests.public-alpha.cp33-text-bytes.binaryStdoutAndEofRead ... ok\ntest tests.public-alpha.cp33-text-bytes.substringCopiesOnlySelectedBytes ... ok\ntest tests.public-alpha.cp33-text-bytes.substringBoundaryErrorsPrecedeAllocation ... ok\ntest result: ok. 9 passed; 0 failed\n"
+    }
+  },
+  "compiler_and_test_sources": {
+    "CMakeLists.txt": "754287c971786e42170bd81cafd7f5cf6a2d94b42cb1fdd808eacb48782cb9d1",
+    "bootstrap/include/mmay/generated/opcodes.h": "48ca7e39440e1e334cf227a8cbfc03994fd43dfa94b0ae89bae1bfac3186d2c1",
+    "bootstrap/include/mmay/mir/instruction_kinds.h": "47b2c56e70662a9665348a8def216c1283e32bf25c7e314219d8b39f0c38307c",
+    "bootstrap/include/mmay/mir/operations.h": "011d7977ac681cc6d3c69e35fc07754655a97faf78a3a21a6a2fc82ac264a03a",
+    "bootstrap/src/bytecode/bytecode_verify.c": "6511c3f6f5b67082f5709b18268787fbe1c5ac3df87eae7c7f982f517d36e3bf",
+    "bootstrap/src/bytecode/bytecode_verify_assignments.c": "ea1b7f06d798a3437fd6bceb7c86d83aaf5c539eb0004f357ad07d0e284b2d2b",
+    "bootstrap/src/bytecode/bytecode_verify_assignments.h": "9b6311ec8814aa369a12d3e78d3941e9c8179a30611342f6711225d7f03d7428",
+    "bootstrap/src/bytecode/bytecode_verify_provenance.c": "4c142239709c7bf3ce3a985e527874b54b2fdeedaa4d9fe6c38fe1f57385e1be",
+    "bootstrap/src/bytecode/bytecode_verify_provenance.h": "9385ac9bdb1cd4bc82ef4a764ec9651932b54fc91170d80f9a8896270d9ed58d",
+    "bootstrap/src/bytecode/bytecode_verify_text.c": "137cab4055d1df6cb109d0831f2d4cf87396e4145e7e57e2345fdc40af918326",
+    "bootstrap/src/bytecode/mir_lower.c": "e723f84a26972db07b085c3f662c36abdb049735027ac563058e37d4c052348b",
+    "bootstrap/src/bytecode/mir_lower_text.c": "01f07c45daf2adff8fcdee49dc285779d9ed8cc2e655d7b244486e7110dc079c",
+    "bootstrap/src/bytecode/vm_text.c": "d1ec5c3ada0f9fa40ae6d204b2d49a156acceb82969cad4bf2f6b127d505421d",
+    "bootstrap/src/bytecode/vm_value.c": "13893459328dd0748fc5dc72569edcd4db84871e281697c41cb21dfbb6c6954b",
+    "bootstrap/src/check/checker_expr_text.c": "1d38cc5e42d600b66923f12e2d28b56d971a4873e489319dd4636670d65e50c4",
+    "bootstrap/src/cli/cli_standard_packages.c": "623f9ec236c8a1092eebd1f6214e448221a0f25e934cfdafb29bcead752e9faf",
+    "bootstrap/src/generated/opcode_data.inc": "d508f527c9a41a6e0da00b6a10b46144ed2c16e4266d58d7bfbd397f122e3926",
+    "bootstrap/src/mir/execution.c": "339064753229e4ffa17873474cf7cd1f08299adc67b9456fcd25659818d39d58",
+    "bootstrap/src/mir/execution_text.c": "434e37021d9ac23a072d18d220d6b71968f1207c149eb4cbcc81cf9d9925206b",
+    "bootstrap/src/mir/text_internal.h": "f0f27f6ccd11ca5b028fe33c9034d7d01c6b26de324fa5dcfd7ebcd517b4ce0a",
+    "bootstrap/src/mir/verify_support.c": "93a58e0cf132116fe961d699ee322d8d1fa7b9ffe05f33805894252a0b48fe6e",
+    "bootstrap/src/mir/verify_text.c": "8ad310f392a3828098072a96aa52ba116cc48180160bec744519eb13cf333777",
+    "bootstrap/src/native/c_emitter_emit.c": "9d369f62902c276f23eb1b34765272610164e0cdaeda1c1881f3cd7e48835ff2",
+    "bootstrap/src/native/c_emitter_roots.c": "8ad0a85ec66c3e809093e7bb37efef952cbdccfbd63e6ed3a3ed4a5b2d768e68",
+    "bootstrap/src/native/c_emitter_text.c": "a6b34f9f67929f71ef149333787aad244ffe184a02e3e1704b08112e52f83495",
+    "bootstrap/src/native/c_emitter_validate.c": "b18c49660f7f4c7e0194313aa31530760209553592b01c1d738ffc1b2925782e",
+    "bootstrap/tables/opcodes.tsv": "df9521aef8e1d5432c53e4b90912426df48da697483c7560218e578d08d4146d",
+    "tests/c-unit/CMakeLists.txt": "057807f9d6b0997e4b132ba9f24b106bc09e432cd66ecdac7e527facac650b9f",
+    "tests/c-unit/test_bytecode_model.c": "49b79cebeaa3ba701cf09b99d0d36a3b44ec5bbeaaa54999f2118a841fa5288f",
+    "tests/c-unit/test_bytecode_verify_provenance.c": "34fd4571176f75404c9c651927d41508e3de5539717bdca470f7938532002e74",
+    "tests/c-unit/test_cp33_text_bytes.c": "5349597231eab6a1e3aef59ee27d2808015087621c330e7b4817bed03532e340",
+    "bootstrap/src/bytecode/bytecode_verify_order.c": "689e60c52e46fddde65b3d438b7f9316b45dcd45fa8c28bfc98e5a90cb2dae2a",
+    "bootstrap/src/bytecode/bytecode_verify_order.h": "dd3cda718b37949e8c7f8e58a5713ea41a0551723c3380e8e36027fab5246d5a",
+    "tests/c-unit/test_cli_stateful.cmake": "5e250030600285718e66a2f03fb8454a11b76ebd1952ac606dd94ce495a8916d",
+    "tests/public-alpha/cli-delimited/README.md": "69337a496748424c42d5d0d96b7405375a3f72e2d01d06d85e23633efefcfbf3",
+    "tests/public-alpha/cli-delimited/expected.json": "89bedb4337e708d174ebe6720006f4163866bec1b942ea8db9b83ea48838c25f",
+    "tests/public-alpha/cli-delimited/input.txt": "9d197a32b65a01fd757d86f11dcb952bbfb571b7c927855f66faa171febb4953",
+    "tests/public-alpha/cli-delimited/main.my": "85434068ba5e2b198d2f6a8281ea7e7ea0426757a81e78b893a6d3f205b49311",
+    "tests/public-alpha/cli-delimited/mmay.mod": "72405cc961a8360e795d2c224650306493dc03e5f03ec5ea09b23d80641257b8",
+    "tests/public-alpha/cli-delimited/parser.my": "02995e0b734f5c8cd54e981a34c0df7cab7ca6eacba4f5dc2466b24ecb58731e",
+    "tests/public-alpha/cli-delimited/parser_test.my": "aa392522db4ede85be305949ab17d4c9d6373f6dccc46ecddd9b8747a14aa6f3",
+    "tests/public-alpha/cli-delimited/support.my": "1dbab2714a96ee9692e0ad239b855549bc16cfb8f34ac0841e2b90a5de1546e4",
+    "tests/public-alpha/cli-delimited/writer.my": "dcd488e05ed7c880b1f085cecb80fa40045f9671fbaf7c8a393491ff6f77e49e",
+    "tests/public-alpha/cli-source-lint/README.md": "ab152265d4f707cd39582d2819d40e039c1669af0bbef218a79701b550b92aca",
+    "tests/public-alpha/cli-source-lint/expected.json": "826c9f8dce42c7dec62aa0ff62ddd32adf55c150320ddc46141d6c4a56a67b64",
+    "tests/public-alpha/cli-source-lint/input.txt": "2545b8379d174b2265140373f2d9dde95a134075f6984ffdc7a93997c14cf41c",
+    "tests/public-alpha/cli-source-lint/main.my": "22ad562412287a599d99504d425ec0028537e28aabbd1056532479a5add3fd77",
+    "tests/public-alpha/cli-source-lint/mmay.mod": "7ec29934052979da482f4cbe3f8e9ce40e0a54c28584d774233ababd7dd6f921",
+    "tests/public-alpha/cli-source-lint/scanner.my": "5ee46d5f1f9b93649ecbd08f7d5bd4919ec40b0ed1c58964647d319456897832",
+    "tests/public-alpha/cli-source-lint/scanner_test.my": "c591235ea47782bf5d464f9f37ba2bd65fd176f692a21a8556431ea2f719f58c",
+    "tests/public-alpha/cli-source-lint/support.my": "1dbab2714a96ee9692e0ad239b855549bc16cfb8f34ac0841e2b90a5de1546e4",
+    "tests/public-alpha/cp33-text-bytes/substring_test.my": "dce7477fe74cd579e86f8ec1a6ded4cd8ec16fe649e5f7dcda46b7a470623fba"
+  },
+  "unresolved": [
+    "First new native launch above 100ms on both apps; no verified OS attribution or workaround.",
+    "Source-lint small VM launch above 500ms and warm test-both 5.506s above 2s.",
+    "Byte literal match still fails I0001; scanner uses boolean comparisons.",
+    "User report-concat 10000 reproduces execution-lifetime dynamic string retention; next active fix.",
+    "Full portfolio and Tier 1/LSan/CP41/CP39/CP40/N0 acceptance remains open."
+  ]
+}

@@ -1,0 +1,78 @@
+import * as bytes from "std/bytes";
+
+fn findings(source: string): []Finding {
+  return match scan(bytes.encodeUtf8(source), 100) {
+    Ok(value) => value,
+    Err(error) => {
+      expect.equal(error, "");
+      []
+    },
+  };
+}
+
+@test
+fn lexicalContextsAvoidFalsePositives(): void {
+  expect.equal(findings("").length(), 0);
+  expect.equal(findings("fn main(): void {}\n").length(), 0);
+  expect.equal(findings("const x = \"TODO // /*  \";\n").length(), 0);
+  expect.equal(findings("const x = r\"/* TODO \\ \";\n").length(), 0);
+  expect.equal(findings("const x = b\"TODO\\\"  \";\n").length(), 0);
+  expect.equal(findings("const x = '\\'';\n").length(), 0);
+  expect.equal(findings("const x = $\"{{TODO}} {f(\"TODO\", {a: 1})}  \";\n").length(), 0);
+  expect.equal(findings("/* nested /* TODOx */ xTODO FIXMEx яTODO */\n").length(), 0);
+  expect.equal(findings("const x = \"a\n\t   \nb\";\n").length(), 0);
+  expect.equal(findings("// done\r\n").length(), 0);
+}
+
+@test
+fn unicodeSpansAndStableOrder(): void {
+  const rows = findings("\t// я TODO  \r\n");
+  expect.equal(rows.length(), 3);
+  expect.equal(rows[0].code, "L002");
+  expect.equal(rows[0].startByte, 0);
+  expect.equal(rows[0].column, 1);
+  expect.equal(rows[1].code, "L003");
+  expect.equal(rows[1].startByte, 7);
+  expect.equal(rows[1].endByte, 11);
+  expect.equal(rows[1].column, 7);
+  expect.equal(rows[2].code, "L001");
+  expect.equal(rows[2].startByte, 11);
+  expect.equal(rows[2].column, 11);
+  const eof = findings("🌍");
+  expect.equal(eof[0].code, "L005");
+  expect.equal(eof[0].startByte, 4);
+  expect.equal(eof[0].endByte, 4);
+  expect.equal(eof[0].column, 2);
+}
+
+@test
+fn nestedCommentsAndUnfinishedStates(): void {
+  const nested = findings("/* TODO /* FIXME */ */\n");
+  expect.equal(nested.length(), 2);
+  const unfinished = findings("/* TODO");
+  expect.equal(unfinished.length(), 3);
+  expect.equal(unfinished[0].code, "L004");
+  expect.equal(unfinished[0].startByte, 0);
+  expect.equal(unfinished[1].code, "L003");
+  expect.equal(unfinished[2].code, "L005");
+  expect.equal(findings("\"x\n")[0].code, "L004");
+  expect.equal(findings("x\ry\n")[0].code, "L006");
+}
+
+@test
+fn resourceLimitsAreErrors(): void {
+  expect.equal(
+    match scan(bytes.encodeUtf8("x\n"), 0) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    true,
+  );
+  expect.equal(
+    match scan(bytes.encodeUtf8("x"), 0) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    false,
+  );
+}

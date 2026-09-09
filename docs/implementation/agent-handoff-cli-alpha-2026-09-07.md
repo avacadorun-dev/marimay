@@ -364,3 +364,25 @@ CP42 → CP41 → CP39 → CP40/N0; восемь приложений уже р�
 62–63 и 65–68 (PDF 63–64 и 66–69). Точное соответствие и ограничения записаны
 в исследовательском журнале. Это диагностика, не измеренное ускорение.
 Каталог `output/` не относится к изменениям языка и оставлен нетронутым.
+
+
+## 2026-09-09 — stateful wave and user string-retention reproducer
+
+Delimited/source-lint implemented in independent main repos `6471899`/`d94119e`;
+[local evidence](evidence/cp42-stateful-2026-09-09.md) retains app/source hashes,
+45/38 process cases plus help/pipes, 85/85 Release and 5/5 focused ASan/UBSan.
+RPO ordering and direct substring ranges fix the observed scanner verifier and
+CSV string-pool barriers. Installed mmay symlinks the rebuilt release candidate.
+Vladimirov printed 145–147 / PDF 146–148: RPO traversal, journal updated.
+
+All ten apps exist; acceptance is still open. First native launch ~390 ms vs
+100 ms, source-lint run ~500–532 ms vs 500 ms, test both 5.506 s vs 2 s, and
+byte literal match I0001 require shared follow-up. No budget/gate was waived.
+
+Latest user steering: `algorithm-benchmarks` report-concat 10000 1 fails I0002
+(exit 70), while report-builder prints checksum 762303259. Reproduced with the
+system release. VM interns all unique dynamic strings until execution teardown;
+max_total_string_bytes is separate from --max-heap-bytes. Next active work must
+fix dynamic string lifetime/rooting and add this exact regression, without
+raising the limit or disguising concat as the builder benchmark. Preserve
+ongoing portfolio/CP42 → CP41 → CP39 → CP40/N0 obligations; commit/push main.

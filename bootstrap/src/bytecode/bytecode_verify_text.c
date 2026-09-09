@@ -27,8 +27,9 @@ static bool mmay_bytecode_text_array(
 }
 
 bool mmay_bytecode_opcode_is_text(MarimayOpcode opcode) {
-    return opcode >= MMAY_OPCODE_TEXT_BYTE_LENGTH
-        && opcode <= MMAY_OPCODE_TEXT_DECODE_UTF8;
+    return (opcode >= MMAY_OPCODE_TEXT_BYTE_LENGTH
+        && opcode <= MMAY_OPCODE_TEXT_DECODE_UTF8)
+        || opcode == MMAY_OPCODE_TEXT_SUBSTRING;
 }
 
 MarimayBytecodeVerifyStatus mmay_bytecode_verify_text_instruction(
@@ -46,7 +47,8 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_text_instruction(
         function, first
     );
     const MarimayBytecodeType *second_type = NULL;
-    bool binary = instruction->opcode == MMAY_OPCODE_TEXT_IS_RUNE_BOUNDARY
+    bool binary = instruction->opcode == MMAY_OPCODE_TEXT_SUBSTRING
+        || instruction->opcode == MMAY_OPCODE_TEXT_IS_RUNE_BOUNDARY
         || (instruction->opcode >= MMAY_OPCODE_TEXT_DROP_PREFIX
             && instruction->opcode <= MMAY_OPCODE_TEXT_ENDS_WITH)
         || instruction->opcode == MMAY_OPCODE_TEXT_SPLIT_COUNT
@@ -64,6 +66,17 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_text_instruction(
         if (assigned[second] == 0) {
             return MMAY_BYTECODE_VERIFY_UNINITIALIZED_REGISTER;
         }
+    }
+    if (instruction->opcode == MMAY_OPCODE_TEXT_SUBSTRING) {
+        uint64_t third = instruction->operands[3].unsigned_value;
+        const MarimayBytecodeType *third_type = mmay_bytecode_text_register(function, third);
+        if (third_type == NULL) return MMAY_BYTECODE_VERIFY_INVALID_REGISTER;
+        if (assigned[third] == 0) return MMAY_BYTECODE_VERIFY_UNINITIALIZED_REGISTER;
+        return *target_type == MMAY_BYTECODE_TYPE_STRING
+                && *first_type == MMAY_BYTECODE_TYPE_STRING
+                && *second_type == MMAY_BYTECODE_TYPE_I64
+                && *third_type == MMAY_BYTECODE_TYPE_I64
+            ? MMAY_BYTECODE_VERIFY_OK : MMAY_BYTECODE_VERIFY_TYPE_MISMATCH;
     }
     switch (instruction->opcode) {
         case MMAY_OPCODE_TEXT_BYTE_LENGTH:

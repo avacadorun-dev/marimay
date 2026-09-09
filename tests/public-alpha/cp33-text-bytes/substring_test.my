@@ -1,0 +1,66 @@
+import * as text from "std/text";
+
+@test
+fn substringCopiesOnlySelectedBytes(): void {
+  const builder = match text.newBuilder(524288) {
+    Ok(b) => b,
+    Err(_) => panic("builder"),
+  };
+  const chunk = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx";
+  for i in 0..4096 {
+    match text.append(builder, chunk) {
+      Ok(_) => {},
+      Err(_) => panic("append"),
+    };
+  }
+  const source = text.finish(builder);
+  for start in 0..512 {
+    const part = match text.substring(source, start * 1024, start * 1024 + 16) {
+      Ok(value) => value,
+      Err(_) => panic("slice"),
+    };
+    expect.equal(part, "xxxxxxxxxxxxxxxx");
+  }
+  expect.equal(text.byteLength(source), 524288);
+}
+
+@test
+fn substringBoundaryErrorsPrecedeAllocation(): void {
+  for pair in [[-1, 2], [3, 2], [0, 8]] {
+    expect.equal(
+      match text.substring("я🌍", pair[0], pair[1]) {
+        Err(text.BoundaryError.OutOfBounds { start, end, length }) => start == pair[0]
+          && end == pair[1]
+          && length == 6,
+        _ => false,
+      },
+      true,
+    );
+  }
+  for pair in [[1, 6], [2, 3]] {
+    expect.equal(
+      match text.substring("я🌍", pair[0], pair[1]) {
+        Err(text.BoundaryError.NotRuneBoundary { offset }) => offset == match pair[0] == 1 {
+          true => 1,
+          false => 3,
+        },
+        _ => false,
+      },
+      true,
+    );
+  }
+  expect.equal(
+    match text.substring("A\0я🌍Z", 2, 8) {
+      Ok(value) => value,
+      Err(_) => "ERROR",
+    },
+    "я🌍",
+  );
+  expect.equal(
+    match text.substring("abc", 1, 1) {
+      Ok(value) => value,
+      Err(_) => "ERROR",
+    },
+    "",
+  );
+}

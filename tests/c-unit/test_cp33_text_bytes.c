@@ -253,6 +253,31 @@ static bool mmay_cp33_append_text(
     return mmay_mir_append_instruction(&fixture->function, block, &instruction);
 }
 
+static bool mmay_cp33_append_substring(
+    MarimayCp33TextFixture *fixture, MarimayMirBlockId block
+) {
+    MarimayMirInstruction instruction = {0};
+    MarimayMirRegister start, end, target;
+    if (!mmay_mir_add_register(&fixture->function, MMAY_TYPE_I64, &start)
+        || !mmay_mir_add_register(&fixture->function, MMAY_TYPE_I64, &end)
+        || !mmay_mir_add_register(&fixture->function, MMAY_TYPE_STRING, &target)) return false;
+    instruction.kind = MMAY_MIR_CONSTANT_I64;
+    instruction.target = start;
+    instruction.integer = fixture->empty ? 0 : 1;
+    if (!mmay_mir_append_instruction(&fixture->function, block, &instruction)) return false;
+    instruction.target = end;
+    instruction.integer = fixture->empty ? 0 : 6;
+    if (!mmay_mir_append_instruction(&fixture->function, block, &instruction)) return false;
+    instruction.kind = MMAY_MIR_TEXT_TERNARY;
+    instruction.text_operation = MMAY_MIR_TEXT_SUBSTRING;
+    instruction.target = target;
+    instruction.first = 0;
+    instruction.second = start;
+    instruction.third = end;
+    instruction.array = MMAY_MIR_NO_ARRAY;
+    return mmay_mir_append_instruction(&fixture->function, block, &instruction);
+}
+
 static bool mmay_cp33_text_fixture_init(MarimayCp33TextFixture *fixture, bool empty) {
     static const unsigned char text[] = {
         '\t', 'A', 0xc3U, 0xa9U, 0xccU, 0x81U, '\r', '\n', 'Z', ' '
@@ -347,6 +372,7 @@ static bool mmay_cp33_text_fixture_init(MarimayCp33TextFixture *fixture, bool em
         || !mmay_cp33_append_text(fixture, block, MMAY_MIR_TEXT_UNARY,
             MMAY_MIR_TEXT_DECODE_UTF8, r[21], r[19], MMAY_MIR_NO_REGISTER,
             fixture->bytes_array)
+        || !mmay_cp33_append_substring(fixture, block)
         || !mmay_mir_set_terminator(
             &fixture->function, block, mmay_test_mir_return(r[21])
         )) goto failure;
@@ -404,7 +430,7 @@ static void mmay_cp33_expect_mir_result(
 static void mmay_cp33_hostile_mir(MarimayCp33TextFixture *fixture) {
     MarimayMirBlock *block = mmay_vector_at(&fixture->function.blocks, 0);
     size_t index = 0;
-    MMAY_EXPECT(block != NULL && block->instructions.length == 22);
+    MMAY_EXPECT(block != NULL && block->instructions.length == 25);
     for (index = 4; block != NULL && index < block->instructions.length;
         index += 1U) {
         MarimayMirInstruction *instruction = mmay_vector_at(
@@ -418,6 +444,14 @@ static void mmay_cp33_hostile_mir(MarimayCp33TextFixture *fixture) {
         MMAY_EXPECT(mmay_mir_verify(&fixture->function)
             == MMAY_MIR_VERIFY_INVALID_REGISTER);
         instruction->target = saved;
+        if (instruction->kind == MMAY_MIR_TEXT_TERNARY) {
+            MarimayMirRegister end = instruction->third;
+            instruction->third = MMAY_MIR_NO_REGISTER;
+            MMAY_EXPECT(mmay_mir_verify(&fixture->function) == MMAY_MIR_VERIFY_INVALID_REGISTER);
+            instruction->third = 0;
+            MMAY_EXPECT(mmay_mir_verify(&fixture->function) == MMAY_MIR_VERIFY_TYPE_MISMATCH);
+            instruction->third = end;
+        }
     }
     if (block != NULL) {
         MarimayMirInstruction *first = mmay_vector_at(&block->instructions, 4);
@@ -500,8 +534,9 @@ static void mmay_cp33_hostile_bytecode(MarimayBytecodeFunction *function) {
             &block->instructions, index
         );
         if (instruction == NULL
-            || instruction->opcode < MMAY_OPCODE_TEXT_BYTE_LENGTH
-            || instruction->opcode > MMAY_OPCODE_TEXT_DECODE_UTF8) continue;
+            || (instruction->opcode != MMAY_OPCODE_TEXT_SUBSTRING
+                && (instruction->opcode < MMAY_OPCODE_TEXT_BYTE_LENGTH
+                    || instruction->opcode > MMAY_OPCODE_TEXT_DECODE_UTF8))) continue;
         {
             uint64_t saved = instruction->operands[0].unsigned_value;
             instruction->operands[0].unsigned_value =
@@ -510,10 +545,22 @@ static void mmay_cp33_hostile_bytecode(MarimayBytecodeFunction *function) {
                 == MMAY_BYTECODE_VERIFY_INVALID_REGISTER);
             instruction->operands[0].unsigned_value = saved;
         }
+        if (instruction->opcode == MMAY_OPCODE_TEXT_SUBSTRING) {
+            uint64_t end = instruction->operands[3].unsigned_value;
+            uint32_t unassigned = UINT32_MAX;
+            MMAY_EXPECT(mmay_bytecode_add_register(function, MMAY_BYTECODE_TYPE_I64, &unassigned));
+            instruction->operands[3].unsigned_value = unassigned;
+            MMAY_EXPECT(mmay_bytecode_verify(function) == MMAY_BYTECODE_VERIFY_UNINITIALIZED_REGISTER);
+            instruction->operands[3].unsigned_value = UINT64_MAX;
+            MMAY_EXPECT(mmay_bytecode_verify(function) == MMAY_BYTECODE_VERIFY_INVALID_REGISTER);
+            instruction->operands[3].unsigned_value = 0;
+            MMAY_EXPECT(mmay_bytecode_verify(function) == MMAY_BYTECODE_VERIFY_TYPE_MISMATCH);
+            instruction->operands[3].unsigned_value = end;
+        }
         if (instruction->opcode == MMAY_OPCODE_TEXT_SPLIT) split = instruction;
         text_count += 1U;
     }
-    MMAY_EXPECT(text_count == 18);
+    MMAY_EXPECT(text_count == 19);
     MMAY_EXPECT(split != NULL);
     if (split != NULL) {
         split->opcode = MMAY_OPCODE_TEXT_JOIN;

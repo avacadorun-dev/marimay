@@ -413,6 +413,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/bytecode_codec_nominal.c
   bootstrap/src/bytecode/bytecode_codec_nominal_values.c
   bootstrap/src/bytecode/bytecode_verify.c
+  bootstrap/src/bytecode/bytecode_verify_order.c
   bootstrap/src/bytecode/bytecode_verify_assignments.c
   bootstrap/src/bytecode/bytecode_verify_defer.c
   bootstrap/src/bytecode/bytecode_verify_instructions.c

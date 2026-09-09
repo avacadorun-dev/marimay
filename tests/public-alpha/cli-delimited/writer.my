@@ -1,0 +1,75 @@
+import * as bytes from "std/bytes";
+import * as text from "std/text";
+
+fn validate(table: Table, limits: Limits): Result<void, string> {
+  if table.version != 1 {
+    return Err("Ожидается version: 1");
+  }
+  if table.rows.length() > limits.rows {
+    return Err("Превышен лимит строк");
+  }
+  let width = -1;
+  for row in table.rows {
+    if row.length() == 0 {
+      return Err("Строка должна содержать хотя бы одно поле");
+    }
+    if row.length() > limits.columns {
+      return Err("Превышен лимит столбцов");
+    }
+    if width == -1 {
+      width = row.length();
+    }
+    if row.length() != width {
+      return Err("Неодинаковое число столбцов");
+    }
+    for value in row {
+      if text.byteLength(value) > limits.field {
+        return Err("Превышен лимит байт поля");
+      }
+    }
+  }
+  return Ok();
+}
+
+fn append(builder: text.Builder, value: string): Result<void, string> {
+  return text.append(builder, value).mapError((error) => "Превышен лимит вывода");
+}
+
+fn quote(builder: text.Builder, value: string): Result<void, string> {
+  append(builder, "\"")?;
+  const data = bytes.toArray(bytes.encodeUtf8(value));
+  let start = 0;
+  let i = 0;
+  while i < data.length() {
+    if data[i] == 34 {
+      append(builder, text.substring(value, start, i + 1).mapError((error) => "Граница UTF-8")?)?;
+      append(builder, "\"")?;
+      start = i + 1;
+    }
+    i += 1;
+  }
+  append(builder, text.substring(value, start, i).mapError((error) => "Граница UTF-8")?)?;
+  return append(builder, "\"");
+}
+
+fn serialize(
+  table: Table,
+  delimiter: string,
+  limits: Limits,
+  outputLimit: int,
+): Result<string, string> {
+  validate(table, limits)?;
+  const builder = text.newBuilder(outputLimit).mapError((error) => "Недопустимый лимит вывода")?;
+  for row in table.rows {
+    let first = true;
+    for value in row {
+      if !first {
+        append(builder, delimiter)?;
+      }
+      quote(builder, value)?;
+      first = false;
+    }
+    append(builder, "\n")?;
+  }
+  return Ok(text.finish(builder));
+}

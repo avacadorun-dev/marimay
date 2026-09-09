@@ -1,0 +1,122 @@
+import * as bytes from "std/bytes";
+import * as cli from "std/cli";
+import * as json from "std/json";
+import * as text from "std/text";
+
+type FileReport {
+  public path: string,
+  public findings: []Finding,
+}
+
+type Report {
+  public version: int,
+  public count: int,
+  public files: []FileReport,
+}
+
+type Request {
+  parsed: cli.Parsed,
+  names: []string,
+  input: int,
+  output: int,
+  findings: int,
+  json: bool,
+}
+
+fn request(parsed: cli.Parsed): Result<Request, string> {
+  const names = cli.positionalValues(parsed, "input");
+  if names.length() == 0 {
+    return Err("Нужен хотя бы один ФАЙЛ; см. --help");
+  }
+  return Ok(
+    Request {
+      parsed,
+      names,
+      input: bounded(parsed, "max-input", 1048576, 1048576)?,
+      output: bounded(parsed, "max-output", 1048576, 1048576)?,
+      findings: bounded(parsed, "max-findings", 1000, 1000)?,
+      json: cli.count(parsed, "json") != 0,
+    },
+  );
+}
+
+fn plain(report: Report, limit: int): Result<bytes.Bytes, string> {
+  const builder = text.newBuilder(limit).mapError((error) => "Недопустимый лимит вывода")?;
+  for file in report.files {
+    for finding in file.findings {
+      text.append(
+        builder,
+        $"{file.path}:{finding.line}:{finding.column}: {finding.code}: {finding.message}\n",
+      ).mapError((error) => "Превышен лимит вывода")?;
+    }
+  }
+  return Ok(bytes.encodeUtf8(text.finish(builder)));
+}
+
+fn run(request: Request): Result<bool, string> {
+  const files: []FileReport = [];
+  const seen = setOf<string>();
+  let count = 0;
+  for name in request.names {
+    if seen.contains(name) {
+      continue;
+    }
+    const _ = seen.add(name).mapError((error) => "Лимит входов")?;
+    const input = readInput(name, request.input).mapError((error) => $"{name}: {error}")?;
+    const findings = scan(input, request.findings - count).mapError((error) => $"{name}: {error}")?;
+    count += findings.length();
+    files.push(FileReport { path: name, findings }).mapError((error) => "Лимит входов")?;
+  }
+  const report = Report { version: 1, count, files };
+  const output = match request.json {
+    true => {
+      const encoded = json.encode(report).mapError(json.message)?;
+      bytes.push(encoded, 10).mapError((error) => "Лимит JSON")?;
+      encoded
+    },
+    false => plain(report, request.output)?,
+  };
+  writeOutput(request.parsed, output, request.output)?;
+  return Ok(count != 0);
+}
+
+fn main(args: []string): int {
+  const parsed = match arguments(
+    args,
+    "marimay-source-lint",
+    "Текстовые проверки Marimay с контекстом строк и комментариев; не AST/type checker.",
+    [
+      cli.flagOption("json", None, false, false, "Стабильный JSON-отчёт"),
+      cli.requiredValueOption(
+        "max-findings",
+        None,
+        "ЧИСЛО",
+        false,
+        false,
+        "0..1000; по умолчанию 1000",
+      ),
+    ],
+    [cli.positional("input", false, true, "файлы либо - для stdin")],
+  ) {
+    Ok(Some(value)) => value,
+    Ok(None) => {
+      return 0;
+    },
+    Err(error) => {
+      return fail("marimay-source-lint", error, 2);
+    },
+  };
+  const options = match request(parsed) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail("marimay-source-lint", error, 2);
+    },
+  };
+  return match run(options) {
+    Ok(found) => match found {
+      true => 1,
+      false => 0,
+    },
+    Err(error) => fail("marimay-source-lint", error, 2),
+  };
+}

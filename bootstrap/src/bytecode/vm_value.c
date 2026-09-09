@@ -1183,6 +1183,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         case MMAY_OPCODE_TEXT_RUNE_COUNT:
         case MMAY_OPCODE_TEXT_GRAPHEME_COUNT:
         case MMAY_OPCODE_TEXT_IS_RUNE_BOUNDARY:
+        case MMAY_OPCODE_TEXT_SUBSTRING:
         case MMAY_OPCODE_TEXT_DROP_PREFIX:
         case MMAY_OPCODE_TEXT_TAKE_PREFIX:
         case MMAY_OPCODE_TEXT_CONTAINS:

@@ -55,6 +55,7 @@ MarimayMirVerifyStatus mmay_mir_validate_instruction_types(
             return mmay_mir_verify_parse_instruction(function, instruction);
         case MMAY_MIR_TEXT_UNARY:
         case MMAY_MIR_TEXT_BINARY:
+        case MMAY_MIR_TEXT_TERNARY:
             return mmay_mir_verify_text_instruction(function, instruction);
         case MMAY_MIR_IO_PRINTLN:
         case MMAY_MIR_IO_WRITE:
@@ -914,6 +915,7 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
         case MMAY_MIR_STRING_CONCAT:
         case MMAY_MIR_PARSE_INTEGER:
         case MMAY_MIR_TEXT_BINARY:
+        case MMAY_MIR_TEXT_TERNARY:
         case MMAY_MIR_FS_BINARY:
             return true;
         case MMAY_MIR_TEXT_UNARY:
@@ -927,7 +929,8 @@ bool mmay_mir_instruction_uses_second(MarimayMirInstructionKind kind) {
     return false;
 }
 bool mmay_mir_instruction_uses_third(MarimayMirInstructionKind kind) {
-    return kind == MMAY_MIR_ARRAY_SET
+    return kind == MMAY_MIR_TEXT_TERNARY
+        || kind == MMAY_MIR_ARRAY_SET
         || kind == MMAY_MIR_ARRAY_SET_IN_BOUNDS
         || kind == MMAY_MIR_COLLECTION_PUT
         || kind == MMAY_MIR_COLLECTION_PUT_RESULT;

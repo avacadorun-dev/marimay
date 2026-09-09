@@ -6,6 +6,7 @@
 #include "mmay/base/utf8.h"
 #include "bytecode_internal.h"
 #include "bytecode_verify_assignments.h"
+#include "bytecode_verify_order.h"
 #include "bytecode_verify_provenance.h"
 
 static bool mmay_bytecode_consume_verify_work(
@@ -637,56 +638,14 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_with_work_limit(
             predecessor_cursors[otherwise] += 1;
         }
     }
-    memset(reachable, 0, reachable_size);
     {
-        size_t queue_read = 0;
-        size_t queue_write = 1;
-        queue[0] = 0;
-        reachable[0] = 1;
-        while (queue_read < queue_write) {
-            uint32_t current = queue[queue_read];
-            const MarimayBytecodeBlock *block = mmay_vector_at_const(
-                &function->blocks,
-                current
-            );
-            const MarimayBytecodeInstruction *terminator =
-                mmay_bytecode_block_terminator(block);
-            uint64_t targets[2];
-            size_t target_count = 0;
-            size_t target_index = 0;
-            queue_read += 1;
-            if (terminator->opcode == MMAY_OPCODE_JUMP) {
-                targets[0] = terminator->operands[0].unsigned_value;
-                target_count = 1;
-            } else if (terminator->opcode == MMAY_OPCODE_BRANCH_BOOL) {
-                targets[0] = terminator->operands[1].unsigned_value;
-                targets[1] = terminator->operands[2].unsigned_value;
-                target_count = 2;
-            }
-            for (target_index = 0; target_index < target_count;
-                target_index += 1) {
-                size_t target = (size_t)targets[target_index];
-                if (reachable[target] == 0) {
-                    reachable[target] = 1;
-                    queue[queue_write] = (uint32_t)target;
-                    queue_write += 1;
-                }
-            }
-            if (!mmay_bytecode_consume_verify_work(
-                    &work,
-                    target_count + 1,
-                    work_limit
-                )) {
-                status = MMAY_BYTECODE_VERIFY_LIMIT_REACHED;
-                goto cleanup;
-            }
-        }
-    }
-    for (block_index = 0; block_index < block_count; block_index += 1) {
-        if (reachable[block_index] == 0) {
-            status = MMAY_BYTECODE_VERIFY_INVALID_CONTROL_FLOW;
-            goto cleanup;
-        }
+        size_t order_work = 0;
+        status = mmay_bytecode_verify_order(
+            function, reachable, predecessor_cursors, queue,
+            work_limit - work, &order_work
+        );
+        if (status != MMAY_BYTECODE_VERIFY_OK) goto cleanup;
+        work += order_work;
     }
     if (!mmay_size_multiply(block_count, register_count, &cell_count)
         || cell_count > work_limit
@@ -725,7 +684,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_with_work_limit(
         size_t assignment_work = 0;
         /* Predecessor construction no longer needs these block-sized cursors. */
         status = mmay_bytecode_verify_assignments(
-            function, predecessor_offsets, predecessors,
+            function, predecessor_offsets, predecessors, queue,
             incoming, outgoing, scratch, predecessor_cursors,
             work_limit - work, &assignment_work
         );
@@ -738,6 +697,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_with_work_limit(
             function,
             predecessor_offsets,
             predecessors,
+            queue,
             has_checked_index_operations,
             has_required_variant_operations,
             work_limit - work,

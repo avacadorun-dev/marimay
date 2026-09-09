@@ -30,6 +30,7 @@ static const MarimayTextPrimitive *mmay_text_checker_primitive(
         {"mmayRuneCount", MMAY_MIR_TEXT_RUNE_COUNT, 1},
         {"mmayGraphemeCount", MMAY_MIR_TEXT_GRAPHEME_COUNT, 1},
         {"mmayIsRuneBoundary", MMAY_MIR_TEXT_IS_RUNE_BOUNDARY, 2},
+        {"mmaySubstring", MMAY_MIR_TEXT_SUBSTRING, 3},
         {"mmayDropPrefix", MMAY_MIR_TEXT_DROP_PREFIX, 2},
         {"mmayTakePrefix", MMAY_MIR_TEXT_TAKE_PREFIX, 2},
         {"mmayContains", MMAY_MIR_TEXT_CONTAINS, 2},
@@ -161,11 +162,11 @@ bool mmay_checker_private_compile_text_primitive_call(
     const MarimaySyntaxToken *name = mmay_checker_private_check_child_token(
         callee, MMAY_TOKEN_IDENTIFIER, 0
     );
-    const MarimayAstNode *nodes[2] = {NULL, NULL};
+    const MarimayAstNode *nodes[3] = {NULL, NULL, NULL};
     const MarimayTextPrimitive *primitive = NULL;
     MarimayCheckName check_name;
     MarimayCheckCallable callable;
-    MarimayExpressionValue values[2];
+    MarimayExpressionValue values[3];
     MarimayMirArrayId array = MMAY_MIR_NO_ARRAY;
     MarimayMirRegister target = MMAY_MIR_NO_REGISTER;
     MarimayMirInstruction instruction;
@@ -187,7 +188,7 @@ bool mmay_checker_private_compile_text_primitive_call(
             ));
     if (primitive == NULL && !generation) return true;
     *resolved = true;
-    count = mmay_text_checker_arguments(arguments, nodes, 2);
+    count = mmay_text_checker_arguments(arguments, nodes, 3);
     check_name = (MarimayCheckName){
         function->checker->ast->snapshot, name->start, name->end
     };
@@ -248,14 +249,15 @@ bool mmay_checker_private_compile_text_primitive_call(
             function, callable.result_type, &target
         )) return false;
     memset(&instruction, 0, sizeof(instruction));
-    instruction.kind = count == 2U
-        ? MMAY_MIR_TEXT_BINARY : MMAY_MIR_TEXT_UNARY;
+    instruction.kind = count == 3U ? MMAY_MIR_TEXT_TERNARY
+        : count == 2U ? MMAY_MIR_TEXT_BINARY : MMAY_MIR_TEXT_UNARY;
     instruction.text_operation = primitive->operation;
     instruction.target = target;
     instruction.first = values[0].register_id;
-    instruction.second = count == 2U
+    instruction.second = count >= 2U
         ? values[1].register_id : MMAY_MIR_NO_REGISTER;
-    instruction.third = MMAY_MIR_NO_REGISTER;
+    instruction.third = count == 3U
+        ? values[2].register_id : MMAY_MIR_NO_REGISTER;
     instruction.array = array;
     instruction.span = (MarimayMirSpan){node->start, node->end};
     if (!mmay_function_append_instruction(function, &instruction)) return false;

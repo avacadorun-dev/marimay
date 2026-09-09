@@ -119,6 +119,11 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Stateful CLI wave and shared text/CFG fixes](cp42-stateful-2026-09-09.md)
+([raw evidence](cp42-stateful-2026-09-09.json)) records the final two independent
+apps, 85/85 local tests, focused sanitizer coverage, fixed substring/RPO causes
+and unchanged failing startup/test-loop budgets. Full acceptance remains open.
+
 [Nonfatal mutable-capture diagnostics](cp42-escape-warning-2026-09-09.md)
 ([raw evidence](cp42-escape-warning-2026-09-09.json)) records D103's bounded
 checker analysis, continuing diagnostic transport, allocation/budget and

@@ -267,6 +267,7 @@ MarimayMirInterpretStatus mmay_mir_execute_text_instruction(
     const MarimayMirInstruction *instruction,
     const MarimayMirValue *first,
     const MarimayMirValue *second,
+    const MarimayMirValue *third,
     MarimayMirValue *target,
     const MarimayAllocator *allocator,
     MarimayMirInterpretOptions options
@@ -327,6 +328,15 @@ MarimayMirInterpretStatus mmay_mir_execute_text_instruction(
                 left, left_length, second->as.i64
             );
             return MMAY_MIR_INTERPRET_OK;
+        case MMAY_MIR_TEXT_SUBSTRING:
+            if (third->as.i64 < second->as.i64
+                || !mmay_text_is_rune_boundary(left, left_length, second->as.i64)
+                || !mmay_text_is_rune_boundary(left, left_length, third->as.i64)) {
+                return MMAY_MIR_INTERPRET_INVALID_MIR;
+            }
+            return mmay_mir_text_string(options,
+                mmay_text_range_start(left, (size_t)second->as.i64),
+                (size_t)(third->as.i64 - second->as.i64), target);
         case MMAY_MIR_TEXT_DROP_PREFIX:
         case MMAY_MIR_TEXT_TAKE_PREFIX: {
             int64_t offset = second->as.i64;

@@ -2,6 +2,7 @@
 
 static MarimayOpcode mmay_mir_text_opcode(MarimayMirTextOperation operation) {
     switch (operation) {
+        case MMAY_MIR_TEXT_SUBSTRING: return MMAY_OPCODE_TEXT_SUBSTRING;
         case MMAY_MIR_TEXT_BYTE_LENGTH: return MMAY_OPCODE_TEXT_BYTE_LENGTH;
         case MMAY_MIR_TEXT_RUNE_COUNT: return MMAY_OPCODE_TEXT_RUNE_COUNT;
         case MMAY_MIR_TEXT_GRAPHEME_COUNT:
@@ -39,14 +40,18 @@ MarimayMirBytecodeLowerStatus mmay_mir_bytecode_lower_text_instruction(
     }
     *handled = true;
     if (input->kind == MMAY_MIR_TEXT_UNARY
-        || input->kind == MMAY_MIR_TEXT_BINARY) {
+        || input->kind == MMAY_MIR_TEXT_BINARY
+        || input->kind == MMAY_MIR_TEXT_TERNARY) {
         output->opcode = mmay_mir_text_opcode(input->text_operation);
         if (output->opcode == MMAY_OPCODE_INVALID) {
             return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
         }
         output->operands[1].unsigned_value = input->first;
-        if (input->kind == MMAY_MIR_TEXT_BINARY) {
+        if (input->kind != MMAY_MIR_TEXT_UNARY) {
             output->operands[2].unsigned_value = input->second;
+        }
+        if (input->kind == MMAY_MIR_TEXT_TERNARY) {
+            output->operands[3].unsigned_value = input->third;
         }
         return MMAY_MIR_BYTECODE_LOWER_OK;
     }

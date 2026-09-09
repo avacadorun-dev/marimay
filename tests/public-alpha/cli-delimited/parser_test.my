@@ -1,0 +1,133 @@
+import * as bytes from "std/bytes";
+
+fn limits(): Limits {
+  return Limits { field: 65536, columns: 256, rows: 16384 };
+}
+
+fn table(source: string, delimiter: byte): Table {
+  return match parse(bytes.encodeUtf8(source), delimiter, limits()) {
+    Ok(value) => value,
+    Err(error) => {
+      expect.equal(error.message, "");
+      Table { version: 1, rows: [] }
+    },
+  };
+}
+
+fn rejects(source: string, offset: int): void {
+  match parse(bytes.encodeUtf8(source), 44, limits()) {
+    Ok(_) => {
+      expect.equal(true, false);
+    },
+    Err(error) => {
+      expect.equal(error.offset, offset);
+    },
+  };
+}
+
+@test
+fn boundariesAndEmptyFields(): void {
+  expect.equal(table("", 44).rows.length(), 0);
+  expect.equal(table("\n", 44).rows[0][0], "");
+  const rows = table("a,b,\r\nc,d,\n", 44).rows;
+  expect.equal(rows.length(), 2);
+  expect.equal(rows[0].length(), 3);
+  expect.equal(rows[1][2], "");
+  expect.equal(table(",", 44).rows[0].length(), 2);
+}
+
+@test
+fn quotedUnicodeAndNewlines(): void {
+  const rows = table("\"Привет, 🌍\",\"x\r\ny\"\r\n\"\"\"\",z", 44).rows;
+  expect.equal(rows.length(), 2);
+  expect.equal(rows[0][0], "Привет, 🌍");
+  expect.equal(rows[0][1], "x\r\ny");
+  expect.equal(rows[1][0], "\"");
+  expect.equal(table("a\t\"b\tc\"", 9).rows[0][1], "b\tc");
+}
+
+@test
+fn malformedQuoteAndShapeOffsets(): void {
+  rejects("a\"", 1);
+  rejects("\"a\"b", 3);
+  rejects("\"a", 2);
+  rejects("a\rb", 1);
+  rejects("a,b\nc", 5);
+}
+
+@test
+fn decodedByteLimits(): void {
+  const small = Limits { field: 2, columns: 1, rows: 1 };
+  expect.equal(
+    match parse(bytes.encodeUtf8("я"), 44, small) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    true,
+  );
+  expect.equal(
+    match parse(bytes.encodeUtf8("яя"), 44, small) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    false,
+  );
+  expect.equal(
+    match parse(bytes.encodeUtf8("\"\"\"\"\"\""), 44, small) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    true,
+  );
+  expect.equal(
+    match parse(bytes.encodeUtf8("a,b"), 44, small) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    false,
+  );
+  expect.equal(
+    match parse(bytes.encodeUtf8("a\nb"), 44, small) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    false,
+  );
+}
+
+@test
+fn serializationAndRoundTrip(): void {
+  const original = Table { version: 1, rows: [["", "a,b", "\"", "я\n🌍"]] };
+  const encoded = match serialize(original, ",", limits(), 256) {
+    Ok(s) => s,
+    Err(_) => "ERROR",
+  };
+  expect.equal(encoded, "\"\",\"a,b\",\"\"\"\",\"я\n🌍\"\n");
+  const decoded = table(encoded, 44);
+  let i = 0;
+  while i < original.rows[0].length() {
+    expect.equal(decoded.rows[0][i], original.rows[0][i]);
+    i += 1;
+  }
+  expect.equal(
+    match serialize(original, ",", limits(), 0) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    false,
+  );
+  expect.equal(
+    match validate(Table { version: 2, rows: [] }, limits()) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    false,
+  );
+  expect.equal(
+    match validate(Table { version: 1, rows: [[]] }, limits()) {
+      Ok(_) => true,
+      Err(_) => false,
+    },
+    false,
+  );
+}

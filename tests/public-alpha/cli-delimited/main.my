@@ -1,0 +1,122 @@
+import * as bytes from "std/bytes";
+import * as cli from "std/cli";
+import * as json from "std/json";
+
+type Request {
+  parsed: cli.Parsed,
+  mode: string,
+  name: string,
+  limits: Limits,
+  input: int,
+  output: int,
+}
+
+fn request(parsed: cli.Parsed): Result<Request, string> {
+  const modes = cli.positionalValues(parsed, "mode");
+  const names = cli.positionalValues(parsed, "input");
+  if modes.length() != 1 || names.length() != 1 {
+    return Err("Нужны РЕЖИМ и ФАЙЛ; см. --help");
+  }
+  const mode = modes[0];
+  if mode != "csv-to-json"
+    && mode != "tsv-to-json"
+    && mode != "json-to-csv"
+    && mode != "json-to-tsv" {
+    return Err("Неизвестный режим");
+  }
+  return Ok(
+    Request {
+      parsed,
+      mode,
+      name: names[0],
+      limits: Limits {
+        field: bounded(parsed, "max-field", 65536, 262144)?,
+        columns: bounded(parsed, "max-columns", 256, 4096)?,
+        rows: bounded(parsed, "max-rows", 16384, 65536)?,
+      },
+      input: bounded(parsed, "max-input", 1048576, 1048576)?,
+      output: bounded(parsed, "max-output", 1048576, 1048576)?,
+    },
+  );
+}
+
+fn run(request: Request): Result<void, string> {
+  const input = readInput(request.name, request.input).mapError(
+    (error) => $"{request.name}: {error}",
+  )?;
+  if request.mode == "csv-to-json" || request.mode == "tsv-to-json" {
+    const delimiter: byte = match request.mode == "csv-to-json" {
+      true => 44,
+      false => 9,
+    };
+    const table = parse(input, delimiter, request.limits).mapError(
+      (error) => $"байт {error.offset}: {error.message}",
+    )?;
+    const encoded = json.encode(table).mapError(json.message)?;
+    bytes.push(encoded, 10).mapError((error) => "Лимит JSON")?;
+    return writeOutput(request.parsed, encoded, request.output);
+  }
+  const table = json.decode<Table>(input).mapError(json.message)?;
+  const delimiter = match request.mode == "json-to-csv" {
+    true => ",",
+    false => "\t",
+  };
+  const encoded = serialize(table, delimiter, request.limits, request.output)?;
+  return writeOutput(request.parsed, bytes.encodeUtf8(encoded), request.output);
+}
+
+fn main(args: []string): int {
+  const parsed = match arguments(
+    args,
+    "marimay-delimited",
+    "CSV/TSV ↔ JSON {version:1,rows:[[...]]}; ФАЙЛ - означает stdin.",
+    [
+      cli.requiredValueOption(
+        "max-field",
+        None,
+        "БАЙТЫ",
+        false,
+        false,
+        "Лимит поля 0..262144; по умолчанию 65536",
+      ),
+      cli.requiredValueOption(
+        "max-columns",
+        None,
+        "ЧИСЛО",
+        false,
+        false,
+        "Столбцы 0..4096; по умолчанию 256",
+      ),
+      cli.requiredValueOption(
+        "max-rows",
+        None,
+        "ЧИСЛО",
+        false,
+        false,
+        "Строки 0..65536; по умолчанию 16384",
+      ),
+    ],
+    [
+      cli.positional("mode", false, false, "csv-to-json, tsv-to-json, json-to-csv, json-to-tsv"),
+      cli.positional("input", false, false, "файл либо -"),
+    ],
+  ) {
+    Ok(Some(value)) => value,
+    Ok(None) => {
+      return 0;
+    },
+    Err(error) => {
+      return fail("marimay-delimited", error, 2);
+    },
+  };
+  const options = match request(parsed) {
+    Ok(value) => value,
+    Err(error) => {
+      return fail("marimay-delimited", error, 2);
+    },
+  };
+  return match run(options) {
+    Ok(_) => 0,
+    Err(error) => fail("marimay-delimited", error, 1),
+  };
+}

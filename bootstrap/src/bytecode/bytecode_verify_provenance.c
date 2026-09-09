@@ -160,6 +160,7 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_solve(
     const MarimayBytecodeFunction *function,
     const size_t *predecessor_offsets,
     const uint32_t *predecessors,
+    const uint32_t *order,
     uint64_t *incoming,
     uint64_t *outgoing,
     uint64_t *scratch,
@@ -175,8 +176,8 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_solve(
     size_t register_index = 0;
     size_t entry_work = 0;
     size_t work = 0;
-    size_t head = block_count > 1 ? 1 : block_count;
-    size_t tail = block_count - 1;
+    size_t head = block_count > 1 ? order[1] : block_count;
+    size_t tail = order[block_count - 1];
     const MarimayBytecodeBlock *entry = mmay_vector_at_const(
         &function->blocks,
         0
@@ -213,7 +214,8 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_solve(
         kind
     );
     for (register_index = 0; register_index < block_count; register_index += 1) {
-        pending[register_index] = register_index + 1;
+        pending[order[register_index]] = register_index + 1 < block_count
+            ? order[register_index + 1] : block_count;
     }
     pending[0] = SIZE_MAX;
     while (head != block_count) {
@@ -308,6 +310,7 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_add_lattice(
     const MarimayBytecodeFunction *function,
     const size_t *predecessor_offsets,
     const uint32_t *predecessors,
+    const uint32_t *order,
     MarimayBytecodeProvenanceKind kind,
     size_t available_work,
     size_t *work_used
@@ -349,6 +352,7 @@ static MarimayBytecodeVerifyStatus mmay_bytecode_provenance_add_lattice(
             function,
             predecessor_offsets,
             predecessors,
+            order,
             *incoming,
             outgoing,
             *scratch,
@@ -372,6 +376,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_provenance_analyze(
     const MarimayBytecodeFunction *function,
     const size_t *predecessor_offsets,
     const uint32_t *predecessors,
+    const uint32_t *order,
     bool check_array_indices,
     bool check_enum_variants,
     size_t available_work,
@@ -428,6 +433,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_provenance_analyze(
             function,
             predecessor_offsets,
             predecessors,
+            order,
             MMAY_BYTECODE_PROVENANCE_ARRAY_INDEX,
             available_work,
             &lattice_work
@@ -443,6 +449,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_provenance_analyze(
             function,
             predecessor_offsets,
             predecessors,
+            order,
             MMAY_BYTECODE_PROVENANCE_ENUM_VARIANT,
             available_work - *work_used,
             &lattice_work

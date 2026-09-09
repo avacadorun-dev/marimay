@@ -1,0 +1,166 @@
+import * as bytes from "std/bytes";
+import * as text from "std/text";
+
+type Limits {
+  field: int,
+  columns: int,
+  rows: int,
+}
+
+type Problem {
+  offset: int,
+  message: string,
+}
+
+type Table {
+  public version: int,
+  public rows: [][]string,
+}
+
+enum Mode {
+  Start,
+  Bare,
+  Quoted,
+  Closed,
+}
+
+type Reader {
+  source: string,
+  limits: Limits,
+  rows: [][]string,
+  mutable row: []string,
+  parts: []string,
+  mutable fieldBytes: int,
+  mutable start: int,
+  mutable mode: Mode,
+  mutable width: int,
+}
+
+fn problem(offset: int, message: string): Problem {
+  return Problem { offset, message };
+}
+
+fn part(reader: Reader, end: int): Result<void, Problem> {
+  const size = end - reader.start;
+  if reader.fieldBytes + size > reader.limits.field {
+    return Err(problem(end, "Превышен лимит байт поля"));
+  }
+  const value = text.substring(reader.source, reader.start, end).mapError(
+    (error) => problem(end, "Граница UTF-8"),
+  )?;
+  reader.parts.push(value).mapError((error) => problem(end, "Лимит частей поля"))?;
+  reader.fieldBytes += size;
+  return Ok();
+}
+
+fn field(reader: Reader, end: int): Result<void, Problem> {
+  if reader.mode != Mode.Closed {
+    part(reader, end)?;
+  }
+  if reader.row.length() >= reader.limits.columns {
+    return Err(problem(end, "Превышен лимит столбцов"));
+  }
+  const value = text.join(reader.parts, "", reader.limits.field).mapError(
+    (error) => problem(end, "Превышен лимит байт поля"),
+  )?;
+  reader.row.push(value).mapError((error) => problem(end, "Лимит строки"))?;
+  reader.parts.clear();
+  reader.fieldBytes = 0;
+  reader.mode = Mode.Start;
+  return Ok();
+}
+
+fn row(reader: Reader, end: int): Result<void, Problem> {
+  field(reader, end)?;
+  if reader.width == -1 {
+    reader.width = reader.row.length();
+  }
+  if reader.row.length() != reader.width {
+    return Err(problem(end, "Неодинаковое число столбцов"));
+  }
+  if reader.rows.length() >= reader.limits.rows {
+    return Err(problem(end, "Превышен лимит строк"));
+  }
+  reader.rows.push(reader.row).mapError((error) => problem(end, "Лимит таблицы"))?;
+  reader.row = [];
+  return Ok();
+}
+
+fn parse(input: bytes.Bytes, delimiter: byte, limits: Limits): Result<Table, Problem> {
+  const source = bytes.decodeUtf8(input).mapError(
+    (error) => match error {
+      bytes.Utf8Error.Invalid { offset } => problem(offset, "Недопустимый UTF-8"),
+    },
+  )?;
+  const data = bytes.toArray(input);
+  const reader = Reader {
+    source,
+    limits,
+    rows: [],
+    row: [],
+    parts: [],
+    fieldBytes: 0,
+    start: 0,
+    mode: Mode.Start,
+    width: -1,
+  };
+  let i = 0;
+  let pending = false;
+  while i < data.length() {
+    const ch = data[i];
+    pending = true;
+    if reader.mode == Mode.Quoted {
+      if ch == 34 {
+        if i + 1 < data.length() && data[i + 1] == 34 {
+          part(reader, i + 1)?;
+          i += 2;
+          reader.start = i;
+          continue;
+        }
+        part(reader, i)?;
+        reader.mode = Mode.Closed;
+      }
+      i += 1;
+      continue;
+    }
+    if ch == delimiter {
+      field(reader, i)?;
+      i += 1;
+      reader.start = i;
+      continue;
+    }
+    if ch == 10 || ch == 13 {
+      if ch == 13 && (i + 1 == data.length() || data[i + 1] != 10) {
+        return Err(problem(i, "Одиночный CR вне кавычек"));
+      }
+      row(reader, i)?;
+      i += match ch == 13 {
+        true => 2,
+        false => 1,
+      };
+      reader.start = i;
+      pending = false;
+      continue;
+    }
+    if reader.mode == Mode.Closed {
+      return Err(problem(i, "После кавычки ожидается разделитель или конец строки"));
+    }
+    if ch == 34 {
+      if reader.mode != Mode.Start {
+        return Err(problem(i, "Кавычка внутри некавыченного поля"));
+      }
+      reader.mode = Mode.Quoted;
+      reader.start = i + 1;
+    } else {
+      reader.mode = Mode.Bare;
+    }
+    i += 1;
+  }
+  if reader.mode == Mode.Quoted {
+    return Err(problem(i, "Незакрытая кавычка"));
+  }
+  if pending {
+    row(reader, i)?;
+  }
+  return Ok(Table { version: 1, rows: reader.rows });
+}

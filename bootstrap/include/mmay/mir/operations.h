@@ -19,7 +19,8 @@ typedef enum MarimayMirTextOperation {
     MMAY_MIR_TEXT_GRAPHEMES,
     MMAY_MIR_TEXT_ENCODE_UTF8,
     MMAY_MIR_TEXT_INVALID_UTF8_OFFSET,
-    MMAY_MIR_TEXT_DECODE_UTF8
+    MMAY_MIR_TEXT_DECODE_UTF8,
+    MMAY_MIR_TEXT_SUBSTRING
 } MarimayMirTextOperation;
 
 typedef enum MarimayMirIoOperation {

@@ -1,0 +1,339 @@
+import * as bytes from "std/bytes";
+
+enum Mode {
+  Code,
+  String,
+  Rune,
+  Raw,
+  Interpolation,
+  LineComment,
+  BlockComment,
+}
+
+type Frame {
+  mode: Mode,
+  open: int,
+  line: int,
+  column: int,
+  mutable depth: int,
+}
+
+type Finding {
+  public code: string,
+  public message: string,
+  public startByte: int,
+  public endByte: int,
+  public line: int,
+  public column: int,
+}
+
+type Scanner {
+  data: []byte,
+  frames: []Frame,
+  findings: []Finding,
+  limit: int,
+  mutable at: int,
+  mutable line: int,
+  mutable column: int,
+  mutable prefix: bool,
+}
+
+fn note(
+  scanner: Scanner,
+  code: string,
+  message: string,
+  start: int,
+  end: int,
+  line: int,
+  column: int,
+): Result<void, string> {
+  if scanner.findings.length() >= scanner.limit {
+    return Err("Превышен лимит замечаний");
+  }
+  scanner.findings.push(
+    Finding { code, message, startByte: start, endByte: end, line, column },
+  ).mapError((error) => "Лимит замечаний")?;
+  return Ok();
+}
+
+fn here(scanner: Scanner, code: string, message: string, width: int): Result<void, string> {
+  return note(scanner, code, message, scanner.at, scanner.at + width, scanner.line, scanner.column);
+}
+
+fn advance(scanner: Scanner, count: int): void {
+  let remaining = count;
+  while remaining > 0 {
+    const ch = scanner.data[scanner.at];
+    scanner.at += 1;
+    if ch == 10 {
+      scanner.line += 1;
+      scanner.column = 1;
+      scanner.prefix = true;
+    } else {
+      if ch < 128 || ch >= 192 {
+        scanner.column += 1;
+      }
+      if ch != 32 && ch != 9 && ch != 13 {
+        scanner.prefix = false;
+      }
+    }
+    remaining -= 1;
+  }
+}
+
+fn enter(scanner: Scanner, mode: Mode, depth: int): Result<void, string> {
+  if scanner.frames.length() >= 256 {
+    return Err("Превышен лимит вложенности 256");
+  }
+  scanner.frames.push(
+    Frame { mode, open: scanner.at, line: scanner.line, column: scanner.column, depth },
+  ).mapError((error) => "Лимит состояний")?;
+  return Ok();
+}
+
+fn word(ch: byte): bool {
+  return (ch >= 65 && ch <= 90)
+    || (ch >= 97 && ch <= 122)
+    || (ch >= 48 && ch <= 57)
+    || ch == 95
+    || ch >= 128;
+}
+
+fn marker(scanner: Scanner): int {
+  const d = scanner.data;
+  const i = scanner.at;
+  if i > 0 && word(d[i - 1]) {
+    return 0;
+  }
+  let size = 0;
+  if i + 4 <= d.length() && d[i] == 84 && d[i + 1] == 79 && d[i + 2] == 68 && d[i + 3] == 79 {
+    size = 4;
+  }
+  if i + 5 <= d.length()
+    && d[i] == 70
+    && d[i + 1] == 73
+    && d[i + 2] == 88
+    && d[i + 3] == 77
+    && d[i + 4] == 69 {
+    size = 5;
+  }
+  if size != 0 && i + size < d.length() && word(d[i + size]) {
+    return 0;
+  }
+  return size;
+}
+
+fn whitespace(scanner: Scanner): Result<void, string> {
+  const begin = scanner.at;
+  let end = begin;
+  while end < scanner.data.length() && (scanner.data[end] == 32 || scanner.data[end] == 9) {
+    end += 1;
+  }
+  const trailing = end == scanner.data.length()
+    || scanner.data[end] == 10
+    || (scanner.data[end] == 13 && end + 1 < scanner.data.length() && scanner.data[end + 1] == 10);
+  if trailing {
+    here(scanner, "L001", "Пробелы в конце строки", end - begin)?;
+  }
+  while scanner.at < end {
+    if scanner.prefix && scanner.data[scanner.at] == 9 {
+      here(scanner, "L002", "Табуляция в отступе", 1)?;
+    }
+    advance(scanner, 1);
+  }
+  return Ok();
+}
+
+fn before(a: Finding, b: Finding): bool {
+  if a.startByte != b.startByte {
+    return a.startByte < b.startByte;
+  }
+  // Rules are appended in code order at the same offset; stable insertion keeps it.
+  return false;
+}
+
+fn ordered(values: []Finding): void {
+  let i = 1;
+  while i < values.length() {
+    const value = values[i];
+    let j = i;
+    while j > 0 && before(value, values[j - 1]) {
+      values[j] = values[j - 1];
+      j -= 1;
+    }
+    values[j] = value;
+    i += 1;
+  }
+}
+
+fn scan(input: bytes.Bytes, limit: int): Result<[]Finding, string> {
+  const _ = bytes.decodeUtf8(input).mapError(
+    (error) => match error {
+      bytes.Utf8Error.Invalid { offset } => $"Недопустимый UTF-8 в байте {offset}",
+    },
+  )?;
+  const scanner = Scanner {
+    data: bytes.toArray(input),
+    frames: [],
+    findings: [],
+    limit,
+    at: 0,
+    line: 1,
+    column: 1,
+    prefix: true,
+  };
+  enter(scanner, Mode.Code, 0)?;
+  while scanner.at < scanner.data.length() {
+    const i = scanner.at;
+    const ch = scanner.data[i];
+    const frame = scanner.frames[scanner.frames.length() - 1];
+    const literal = frame.mode == Mode.String
+      || frame.mode == Mode.Rune
+      || frame.mode == Mode.Raw
+      || frame.mode == Mode.Interpolation;
+    const next: byte = match i + 1 < scanner.data.length() {
+      true => scanner.data[i + 1],
+      false => 0,
+    };
+    if !literal && (ch == 32 || ch == 9) {
+      whitespace(scanner)?;
+      continue;
+    }
+    if !literal && ch == 13 && next != 10 {
+      here(scanner, "L006", "Одиночный CR; используйте LF или CRLF", 1)?;
+    }
+    if frame.mode == Mode.LineComment || frame.mode == Mode.BlockComment {
+      const size = marker(scanner);
+      if size != 0 {
+        here(scanner, "L003", "TODO/FIXME в комментарии", size)?;
+        advance(scanner, size);
+        continue;
+      }
+      if frame.mode == Mode.LineComment {
+        if ch == 10 {
+          const _ = scanner.frames.pop();
+        }
+      } else {
+        if ch == 47 && next == 42 {
+          if frame.depth >= 256 {
+            return Err("Превышен лимит вложенности 256");
+          }
+          frame.depth += 1;
+          advance(scanner, 2);
+          continue;
+        }
+        if ch == 42 && next == 47 {
+          frame.depth -= 1;
+          if frame.depth == 0 {
+            const _ = scanner.frames.pop();
+          }
+          advance(scanner, 2);
+          continue;
+        }
+      }
+      advance(scanner, 1);
+      continue;
+    }
+    if literal {
+      if frame.mode != Mode.Raw && ch == 92 {
+        advance(
+          scanner,
+          match i + 1 < scanner.data.length() {
+            true => 2,
+            false => 1,
+          },
+        );
+        continue;
+      }
+      if (frame.mode == Mode.Rune && ch == 39) || (frame.mode != Mode.Rune && ch == 34) {
+        const _ = scanner.frames.pop();
+        advance(scanner, 1);
+        continue;
+      }
+      if frame.mode == Mode.Interpolation {
+        if (ch == 123 && next == 123) || (ch == 125 && next == 125) {
+          advance(scanner, 2);
+          continue;
+        }
+        if ch == 123 {
+          enter(scanner, Mode.Code, 1)?;
+          advance(scanner, 1);
+          continue;
+        }
+        if ch == 125 {
+          here(scanner, "L004", "Одиночная } в интерполированной строке", 1)?;
+        }
+      }
+      advance(scanner, 1);
+      continue;
+    }
+    if ch == 47 && next == 47 {
+      enter(scanner, Mode.LineComment, 0)?;
+      advance(scanner, 2);
+      continue;
+    }
+    if ch == 47 && next == 42 {
+      enter(scanner, Mode.BlockComment, 1)?;
+      advance(scanner, 2);
+      continue;
+    }
+    if next == 34 && (ch == 36 || ch == 114 || ch == 98) && (i == 0 || !word(scanner.data[i - 1])) {
+      const mode = match ch == 36 {
+        true => Mode.Interpolation,
+        false => match ch == 114 {
+          true => Mode.Raw,
+          false => Mode.String,
+        },
+      };
+      enter(scanner, mode, 0)?;
+      advance(scanner, 2);
+      continue;
+    }
+    if ch == 34 || ch == 39 {
+      enter(
+        scanner,
+        match ch == 34 {
+          true => Mode.String,
+          false => Mode.Rune,
+        },
+        0,
+      )?;
+      advance(scanner, 1);
+      continue;
+    }
+    if frame.depth != 0 {
+      if ch == 123 {
+        if frame.depth >= 256 {
+          return Err("Превышен лимит вложенности 256");
+        }
+        frame.depth += 1;
+      }
+      if ch == 125 {
+        frame.depth -= 1;
+        if frame.depth == 0 {
+          const _ = scanner.frames.pop();
+        }
+      }
+    }
+    advance(scanner, 1);
+  }
+  if scanner.frames.length() > 1 {
+    const unfinished = scanner.frames[1];
+    if unfinished.mode != Mode.LineComment {
+      note(
+        scanner,
+        "L004",
+        "Незавершённая строка, комментарий или интерполяция",
+        unfinished.open,
+        unfinished.open + 1,
+        unfinished.line,
+        unfinished.column,
+      )?;
+    }
+  }
+  if scanner.data.length() != 0 && scanner.data[scanner.data.length() - 1] != 10 {
+    here(scanner, "L005", "Нет LF в конце файла", 0)?;
+  }
+  ordered(scanner.findings);
+  return Ok(scanner.findings);
+}

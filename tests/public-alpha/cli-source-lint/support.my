@@ -1,0 +1,106 @@
+import * as bytes from "std/bytes";
+import * as cli from "std/cli";
+import * as convert from "std/convert";
+import * as fs from "std/fs";
+import * as io from "std/io";
+import * as path from "std/path";
+
+fn option(parsed: cli.Parsed, name: string, fallback: string): string {
+  const values = cli.occurrences(parsed, name);
+  if values.length() == 0 {
+    return fallback;
+  }
+  return match values[0] {
+    Some(value) => value,
+    None => fallback,
+  };
+}
+
+fn bounded(parsed: cli.Parsed, name: string, fallback: int, ceiling: int): Result<int, string> {
+  const spelling = option(parsed, name, $"{fallback}");
+  const n = convert.parseInt(spelling).mapError((error) => $"--{name}: ожидается целое число")?;
+  if n < 0 || n > ceiling {
+    return Err($"--{name}: допустимо 0..{ceiling}");
+  }
+  return Ok(n);
+}
+
+fn arguments(
+  args: []string,
+  program: string,
+  description: string,
+  extra: []cli.OptionSpec,
+  positions: []cli.PositionalSpec,
+): Result<Option<cli.Parsed>, string> {
+  const options = [
+    cli.flagOption("help", Some("h"), false, false, "Справка"),
+    cli.requiredValueOption(
+      "max-input",
+      None,
+      "БАЙТЫ",
+      false,
+      false,
+      "0..1048576; по умолчанию 1048576",
+    ),
+    cli.requiredValueOption(
+      "max-output",
+      None,
+      "БАЙТЫ",
+      false,
+      false,
+      "0..1048576; по умолчанию 1048576",
+    ),
+    cli.requiredValueOption(
+      "output",
+      Some("o"),
+      "ФАЙЛ",
+      false,
+      false,
+      "Атомарная запись; по умолчанию stdout",
+    ),
+  ];
+  for item in extra {
+    options.push(item).mapError((error) => "Лимит CLI")?;
+  }
+  const parser = cli.newParser(
+    program,
+    description,
+    options,
+    positions,
+    cli.defaultLimits(),
+  ).mapError(cli.message)?;
+  const parsed = cli.parse(parser, args).mapError(cli.message)?;
+  if cli.count(parsed, "help") != 0 {
+    io.println(cli.help(parser, 80).mapError(cli.message)?).mapError(io.message)?;
+    io.flushStdout().mapError(io.message)?;
+    return Ok(None);
+  }
+  return Ok(Some(parsed));
+}
+
+fn readInput(name: string, limit: int): Result<bytes.Bytes, string> {
+  if name == "-" {
+    return io.readBytes(limit).mapError(io.message);
+  }
+  const p = path.fromString(name).mapError((error) => "Недопустимый путь")?;
+  return fs.readBytes(p, limit).mapError(fs.message);
+}
+
+fn writeOutput(parsed: cli.Parsed, output: bytes.Bytes, limit: int): Result<void, string> {
+  if bytes.length(output) > limit {
+    return Err($"Превышен лимит вывода {limit} байт");
+  }
+  const destination = option(parsed, "output", "-");
+  if destination == "-" {
+    io.writeBytes(output).mapError(io.message)?;
+    return io.flushStdout().mapError(io.message);
+  }
+  const p = path.fromString(destination).mapError((error) => "Недопустимый путь вывода")?;
+  return fs.writeBytes(p, output).mapError(fs.message);
+}
+
+fn fail(program: string, message: string, status: int): int {
+  const _ = io.eprintln($"{program}: {message}");
+  const _ = io.flushStderr();
+  return status;
+}

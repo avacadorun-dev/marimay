@@ -13,13 +13,14 @@ typedef struct MarimayBytecodeProvenanceAnalysis
 /*
  * Owns the hostile-CFG must-analysis for checked array-index carriers and
  * checked enum-variant carriers. The verifier coordinator supplies a validated
- * predecessor table; this owner retains only block-entry facts and one mutable
+ * predecessor table and reverse postorder; this owner retains only block-entry facts and one mutable
  * instruction-walk cursor per enabled lattice.
  */
 MarimayBytecodeVerifyStatus mmay_bytecode_provenance_analyze(
     const MarimayBytecodeFunction *function,
     const size_t *predecessor_offsets,
     const uint32_t *predecessors,
+    const uint32_t *order,
     bool check_array_indices,
     bool check_enum_variants,
     size_t available_work,

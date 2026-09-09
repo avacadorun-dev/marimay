@@ -49,6 +49,7 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_assignments(
     const MarimayBytecodeFunction *function,
     const size_t *predecessor_offsets,
     const uint32_t *predecessors,
+    const uint32_t *order,
     unsigned char *incoming,
     unsigned char *outgoing,
     unsigned char *scratch,
@@ -61,8 +62,8 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_assignments(
     size_t cells = 0;
     size_t work = 0;
     size_t index = 0;
-    size_t head = blocks > 1 ? 1 : blocks;
-    size_t tail = blocks - 1;
+    size_t head = blocks > 1 ? order[1] : blocks;
+    size_t tail = order[blocks - 1];
     const MarimayBytecodeBlock *entry = mmay_vector_at_const(
         &function->blocks, 0
     );
@@ -76,7 +77,9 @@ MarimayBytecodeVerifyStatus mmay_bytecode_verify_assignments(
     memset(incoming, 1, function->parameter_count);
     memcpy(outgoing, incoming, registers);
     mmay_bytecode_assignment_transfer(entry, outgoing, registers);
-    for (index = 0; index < blocks; index += 1) pending[index] = index + 1;
+    for (index = 0; index < blocks; index += 1) {
+        pending[order[index]] = index + 1 < blocks ? order[index + 1] : blocks;
+    }
     pending[0] = SIZE_MAX;
     while (head != blocks) {
         size_t block_index = head;

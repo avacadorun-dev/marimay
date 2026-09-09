@@ -417,6 +417,17 @@ MarimayBytecodeRunStatus mmay_bytecode_run_text_instruction(
         );
         return MMAY_BYTECODE_RUN_OK;
     }
+    if (instruction->opcode == MMAY_OPCODE_TEXT_SUBSTRING) {
+        int64_t start = registers[second].as.i64;
+        int64_t end = registers[(size_t)instruction->operands[3].unsigned_value].as.i64;
+        if (end < start || !mmay_text_is_rune_boundary(left, left_length, start)
+            || !mmay_text_is_rune_boundary(left, left_length, end)) {
+            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+        }
+        return mmay_vm_text_intern(execution,
+            mmay_text_range_start(left, (size_t)start), (size_t)(end - start),
+            &registers[target]);
+    }
     if (instruction->opcode == MMAY_OPCODE_TEXT_DROP_PREFIX
         || instruction->opcode == MMAY_OPCODE_TEXT_TAKE_PREFIX) {
         int64_t wire = registers[second].as.i64;

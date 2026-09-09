@@ -886,3 +886,16 @@ add_test(NAME mmay_cp42_escape
     "${CMAKE_CURRENT_BINARY_DIR}/cp42-escape")
 set_tests_properties(mmay_cp42_escape PROPERTIES PROCESSORS 2 COST 300 TIMEOUT 1200
   LABELS "cp42;differential")
+
+foreach(app IN ITEMS cli-delimited cli-source-lint)
+  add_test(
+    NAME "mmay_${app}"
+    COMMAND "${CMAKE_COMMAND}"
+      "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+      "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/${app}"
+      "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/${app}"
+      "-DMMAY_TEST_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+      -P "${CMAKE_CURRENT_SOURCE_DIR}/test_cli_stateful.cmake"
+  )
+  set_tests_properties("mmay_${app}" PROPERTIES LABELS "differential;cp42;stateful" TIMEOUT 1800)
+endforeach()

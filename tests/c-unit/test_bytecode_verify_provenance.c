@@ -418,6 +418,9 @@ static bool mmay_test_bytecode_build_reverse_provenance(
     bool conflict,
     bool missing_assignment
 ) {
+    /* 257 reverse-numbered blocks exceed the 10k work budget with FIFO
+     * numeric seeding; CFG order must not multiply propagation by chain length. */
+    enum { BLOCKS = 257 };
     uint32_t checked = UINT32_MAX;
     uint32_t alternate = UINT32_MAX;
     uint32_t projected = UINT32_MAX;
@@ -427,20 +430,20 @@ static bool mmay_test_bytecode_build_reverse_provenance(
     if (!mmay_test_bytecode_provenance_init_function(
             function, allocator, &checked, &alternate, &projected
         )) return false;
-    for (index = 0; index < 65; index += 1) {
+    for (index = 0; index < BLOCKS; index += 1) {
         if (!mmay_bytecode_add_block(function, &block)) goto fail;
     }
     if ((!missing_assignment && !mmay_test_bytecode_append(
             function, 0, MMAY_OPCODE_ENUM_REQUIRE_VARIANT, checked, 0, 0, &span
         )) || !mmay_test_bytecode_append(
-            function, 0, MMAY_OPCODE_JUMP, 64, 0, 0, &span
+            function, 0, MMAY_OPCODE_JUMP, BLOCKS - 1, 0, 0, &span
         ) || !mmay_test_bytecode_append(
             function, 1, MMAY_OPCODE_ENUM_GET_PAYLOAD,
             projected, checked, 0, &span
         ) || !mmay_test_bytecode_append(
             function, 1, MMAY_OPCODE_RETURN, projected, 0, 0, &span
         )) goto fail;
-    for (index = 2; index < 65; index += 1) {
+    for (index = 2; index < BLOCKS; index += 1) {
         if (conflict && index == 32 && !mmay_test_bytecode_append(
                 function, index, MMAY_OPCODE_ENUM_REQUIRE_VARIANT,
                 checked, 0, 1, &span

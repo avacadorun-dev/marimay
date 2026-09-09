@@ -64,6 +64,16 @@ bool mmay_native_c_emit_text_instruction(
                 instruction->target, instruction->first,
                 instruction->first, instruction->second
             );
+        case MMAY_MIR_TEXT_SUBSTRING:
+            if (!mmay_native_c_write(buffer,
+                    "  if (mmay_g_v_%u < mmay_g_v_%u || !mmay_text_is_rune_boundary(mmay_g_v_%u.data, mmay_g_v_%u.length, mmay_g_v_%u) || !mmay_text_is_rune_boundary(mmay_g_v_%u.data, mmay_g_v_%u.length, mmay_g_v_%u)) { mmay_g_s = 7; goto mmay_g_cleanup; } mmay_g_s = mmay_g_text_string(mmay_g_x, mmay_text_range_start(mmay_g_v_%u.data, (size_t)mmay_g_v_%u), (size_t)(mmay_g_v_%u - mmay_g_v_%u), &mmay_g_v_%u);",
+                    instruction->third, instruction->second,
+                    instruction->first, instruction->first, instruction->second,
+                    instruction->first, instruction->first, instruction->third,
+                    instruction->first, instruction->second,
+                    instruction->third, instruction->second, instruction->target
+                )) return false;
+            return mmay_native_c_emit_text_status(buffer, instruction);
         case MMAY_MIR_TEXT_DROP_PREFIX:
         case MMAY_MIR_TEXT_TAKE_PREFIX:
             if (instruction->text_operation == MMAY_MIR_TEXT_DROP_PREFIX) {

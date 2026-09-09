@@ -540,6 +540,7 @@ MarimayNativeCEmitStatus mmay_native_c_validate_function(
                 case MMAY_MIR_PARSE_INTEGER:
                 case MMAY_MIR_TEXT_UNARY:
                 case MMAY_MIR_TEXT_BINARY:
+                case MMAY_MIR_TEXT_TERNARY:
                 case MMAY_MIR_PATH:
                 case MMAY_MIR_FS_UNARY:
                 case MMAY_MIR_FS_BINARY:

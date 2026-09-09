@@ -1695,8 +1695,8 @@ Streaming/file-line wave and native record views: [D101 local evidence](evidence
 File/context wave and D092 diagnostic repair: [local evidence](evidence/cp42-files-context-2026-09-08.md).
 Named void enum payload patterns now report T0002 at the binding; positional,
 nested, named and remainder forms have allocation/diagnostic coverage. The
-ordinary named-void restriction is unchanged. Eight apps are implemented;
-source-lint/delimited and complete portfolio acceptance remain open.
+ordinary named-void restriction is unchanged. The historical file/context
+evidence covered eight implemented apps.
 D102 direct-bottom enum transport is implemented locally: [evidence](evidence/cp42-enum-bottom-2026-09-09.md).
 The mapper I0001 guard is removed with enum metadata, match/propagation,
 MIR/wire rejection and both-engine allocation coverage. This does not close
@@ -1707,6 +1707,12 @@ alias/containment analysis, precise warning/no-warning fixtures, allocation
 failures and continuing check/run/build/test close this diagnostic removal gap.
 The conservative precision boundary remains explicit; full CP42/Tier 1
 acceptance is still open.
+The stateful wave implements the remaining delimited/source-lint apps locally:
+[evidence](evidence/cp42-stateful-2026-09-09.md). All ten now have implementations.
+Shared RPO and selected-range copying fixes preserve D058/D076. The first-native,
+source-lint VM startup/test-loop budgets and byte-match limitation remain open.
+User report-concat validation also exposes general VM string retention, now the
+active defect. No portfolio, Tier 1 or release gate is promoted by this slice.
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome

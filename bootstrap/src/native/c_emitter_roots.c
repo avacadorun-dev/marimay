@@ -78,6 +78,7 @@ static bool mmay_native_c_instruction_uses_second(
         case MMAY_MIR_COLLECTION_ADD_RESULT:
         case MMAY_MIR_INTEGER_POLICY:
         case MMAY_MIR_TEXT_BINARY:
+        case MMAY_MIR_TEXT_TERNARY:
         case MMAY_MIR_FS_BINARY:
             return true;
         default:
@@ -179,7 +180,8 @@ static void mmay_native_c_add_instruction_uses(
     if (mmay_native_c_instruction_uses_second(instruction->kind)) {
         mmay_native_c_add_register(live, register_count, instruction->second);
     }
-    if (instruction->kind == MMAY_MIR_ARRAY_SET
+    if (instruction->kind == MMAY_MIR_TEXT_TERNARY
+        || instruction->kind == MMAY_MIR_ARRAY_SET
         || instruction->kind == MMAY_MIR_ARRAY_SET_IN_BOUNDS
         || instruction->kind == MMAY_MIR_COLLECTION_PUT
         || instruction->kind == MMAY_MIR_COLLECTION_PUT_RESULT) {
@@ -245,6 +247,7 @@ static bool mmay_native_c_instruction_is_safepoint(
         case MMAY_MIR_IO_WRITE_BYTES:
         case MMAY_MIR_TEXT_UNARY:
         case MMAY_MIR_TEXT_BINARY:
+        case MMAY_MIR_TEXT_TERNARY:
         case MMAY_MIR_PATH:
         case MMAY_MIR_FS_UNARY:
         case MMAY_MIR_FS_BINARY:

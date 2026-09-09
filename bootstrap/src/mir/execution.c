@@ -316,8 +316,9 @@ static MarimayMirInterpretStatus mmay_mir_execute_instruction(
             );
         case MMAY_MIR_TEXT_UNARY:
         case MMAY_MIR_TEXT_BINARY:
+        case MMAY_MIR_TEXT_TERNARY:
             return mmay_mir_execute_text_instruction(
-                function, instruction, first, second, target, allocator,
+                function, instruction, first, second, third, target, allocator,
                 options
             );
         case MMAY_MIR_IO_PRINTLN:
