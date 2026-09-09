@@ -1227,7 +1227,13 @@ The budget counts live bytes owned by the managed heap: published managed
 object payloads, reserved array cell storage, and heap slot-table storage.
 Compiler/VM metadata, bytecode, native code, call stacks, test-capture buffers,
 and OS resources are not charged to this particular budget and retain their
-own bounded owners. An allocation whose checked `live + requested` equals the
+own bounded owners. Runtime string values, including immutable interpolation
+and concatenation results, are managed object payloads. Unreachable intermediate
+strings are collectible; an execution-lifetime interning table must not impose
+a second cumulative string-byte budget on them. Serialized string constants
+retain their separate artifact bounds. This clarifies the existing managed
+string contract; it changes neither string contents nor value semantics.
+An allocation whose checked `live + requested` equals the
 limit is permitted. If it would exceed the limit, the runtime first performs
 the collection attempt required by D045/D053; the post-collection `live` value
 and the net additional accounted `requested` value determine the outcome.

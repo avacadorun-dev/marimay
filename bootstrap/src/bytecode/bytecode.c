@@ -53,7 +53,8 @@ bool mmay_bytecode_type_is_array(MarimayBytecodeType type) {
 }
 
 bool mmay_bytecode_type_is_managed(MarimayBytecodeType type) {
-    return mmay_bytecode_type_is_array(type)
+    return type == MMAY_BYTECODE_TYPE_STRING
+        || mmay_bytecode_type_is_array(type)
         || type == MMAY_BYTECODE_TYPE_RECORD
         || type == MMAY_BYTECODE_TYPE_ENUM
         || type == MMAY_BYTECODE_TYPE_INTERFACE

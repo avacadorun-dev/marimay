@@ -621,16 +621,12 @@ MarimayBytecodeRunStatus mmay_bytecode_value_to_managed_cell(
     } else if (value->type == MMAY_BYTECODE_TYPE_STRING) {
         const unsigned char *bytes = NULL;
         size_t length = 0;
-        MarimayManagedStatus status;
         if (!mmay_bytecode_execution_string_bytes(
                 execution, *value, &bytes, &length
             )) {
             return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
         }
-        status = mmay_managed_string_new(
-            &execution->managed_heap, bytes, length, &cell->reference
-        );
-        return mmay_bytecode_run_managed_status(status);
+        cell->reference = value->as.managed_reference;
     } else {
         cell->reference = value->as.managed_reference;
     }
@@ -659,9 +655,7 @@ MarimayBytecodeRunStatus mmay_bytecode_managed_cell_to_value(
             ) != MMAY_MANAGED_OK) {
             return MMAY_BYTECODE_RUN_INVALID_REFERENCE;
         }
-        return mmay_bytecode_execution_intern(
-            execution, bytes, length, &value->as.reference
-        );
+        value->as.managed_reference = cell.reference;
     } else {
         value->as.managed_reference = cell.reference;
     }

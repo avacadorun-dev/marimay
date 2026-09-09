@@ -25,5 +25,9 @@ For continuation context, see the dated
 [CLI-alpha agent handoff](docs/implementation/agent-handoff-cli-alpha-2026-09-07.md).
 It is a snapshot and reading guide, not a replacement for the authorities above.
 
+Latest local runtime evidence: [managed VM string lifetimes and the catalogue
+regression matrix](docs/implementation/evidence/cp42-vm-string-lifetime-2026-09-09.md).
+This fixes the report-concat defect; release-gate states remain unchanged.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

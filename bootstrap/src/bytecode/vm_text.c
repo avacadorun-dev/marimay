@@ -18,14 +18,14 @@ static MarimayBytecodeRunStatus mmay_vm_text_string(
     ) ? MMAY_BYTECODE_RUN_OK : MMAY_BYTECODE_RUN_INVALID_REFERENCE;
 }
 
-static MarimayBytecodeRunStatus mmay_vm_text_intern(
+static MarimayBytecodeRunStatus mmay_vm_text_new_string(
     MarimayBytecodeExecution *execution,
     const unsigned char *bytes,
     size_t length,
     MarimayBytecodeValue *target
 ) {
-    return mmay_bytecode_execution_intern(
-        execution, bytes, length, &target->as.reference
+    return mmay_bytecode_execution_new_string(
+        execution, bytes, length, &target->as.managed_reference
     );
 }
 
@@ -310,7 +310,7 @@ static MarimayBytecodeRunStatus mmay_vm_text_join(
         offset += length;
     }
     {
-        MarimayBytecodeRunStatus status = mmay_vm_text_intern(
+        MarimayBytecodeRunStatus status = mmay_vm_text_new_string(
             execution, buffer, total, target
         );
         mmay_deallocate(&allocator, buffer, total);
@@ -362,7 +362,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_text_instruction(
         } else if (!mmay_utf8_validate((const char *)bytes, length, &invalid)) {
             status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
         } else {
-            status = mmay_vm_text_intern(
+            status = mmay_vm_text_new_string(
                 execution, bytes, length, &registers[target]
             );
         }
@@ -391,7 +391,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_text_instruction(
         size_t start = 0;
         size_t end = 0;
         mmay_text_trim_ascii_range(left, left_length, &start, &end);
-        return mmay_vm_text_intern(
+        return mmay_vm_text_new_string(
             execution, mmay_text_range_start(left, start), end - start, &registers[target]
         );
     }
@@ -424,7 +424,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_text_instruction(
             || !mmay_text_is_rune_boundary(left, left_length, end)) {
             return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
         }
-        return mmay_vm_text_intern(execution,
+        return mmay_vm_text_new_string(execution,
             mmay_text_range_start(left, (size_t)start), (size_t)(end - start),
             &registers[target]);
     }
@@ -435,11 +435,11 @@ MarimayBytecodeRunStatus mmay_bytecode_run_text_instruction(
             return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
         }
         return instruction->opcode == MMAY_OPCODE_TEXT_DROP_PREFIX
-            ? mmay_vm_text_intern(
+            ? mmay_vm_text_new_string(
                 execution, mmay_text_range_start(left, (size_t)wire),
                 left_length - (size_t)wire,
                 &registers[target]
-            ) : mmay_vm_text_intern(
+            ) : mmay_vm_text_new_string(
                 execution, left, (size_t)wire, &registers[target]
             );
     }

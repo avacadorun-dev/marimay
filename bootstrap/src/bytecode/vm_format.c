@@ -69,11 +69,11 @@ MarimayBytecodeRunStatus mmay_bytecode_run_format_instruction(
             return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
         }
     }
-    return mmay_bytecode_execution_intern(
+    return mmay_bytecode_execution_new_string(
         execution,
         (const unsigned char *)text,
         length,
-        &registers[target].as.reference
+        &registers[target].as.managed_reference
     );
 }
 
@@ -107,8 +107,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_string_concat_instruction(
             memcpy(joined + left_length, right_bytes, right_length);
         }
     }
-    status = mmay_bytecode_execution_intern(
-        execution, joined, length, &registers[target].as.reference
+    status = mmay_bytecode_execution_new_string(
+        execution, joined, length, &registers[target].as.managed_reference
     );
     if (joined != NULL) mmay_deallocate(&execution->allocator, joined, length);
     return status;

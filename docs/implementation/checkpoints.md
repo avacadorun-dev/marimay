@@ -1711,8 +1711,10 @@ The stateful wave implements the remaining delimited/source-lint apps locally:
 [evidence](evidence/cp42-stateful-2026-09-09.md). All ten now have implementations.
 Shared RPO and selected-range copying fixes preserve D058/D076. The first-native,
 source-lint VM startup/test-loop budgets and byte-match limitation remain open.
-User report-concat validation also exposes general VM string retention, now the
-active defect. No portfolio, Tier 1 or release gate is promoted by this slice.
+User report-concat validation exposed general VM string retention. The
+[D055 managed-string follow-up](evidence/cp42-vm-string-lifetime-2026-09-09.md)
+removes that local defect and adds exact-report, GC and budget regressions.
+No portfolio, Tier 1 or release gate is promoted by these slices.
 Required acceptance portfolio: [ten independent external CLI applications](cli-ergonomics-suite.md).
 
 ### Outcome

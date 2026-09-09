@@ -132,7 +132,7 @@ static void mmay_test_cp30_bytecode_resource_limit(
     MarimayBytecodeValue result;
     memset(&execution, 0, sizeof(execution));
     memset(&result, 0, sizeof(result));
-    execution_options.max_total_string_bytes = 3;
+    execution_options.managed_heap.max_live_bytes = 3;
     MMAY_EXPECT(mmay_bytecode_execution_init(
         &execution, mmay_system_allocator(), execution_options
     ));

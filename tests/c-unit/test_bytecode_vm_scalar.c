@@ -156,7 +156,7 @@ void mmay_test_vm_strings_and_panic(void) {
             == MMAY_BYTECODE_RUN_INVALID_REFERENCE);
         MMAY_EXPECT(result.type == MMAY_BYTECODE_TYPE_I64 && result.as.i64 == 1234);
         MMAY_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
-        argument.as.reference = MMAY_BYTECODE_INVALID_REFERENCE;
+        argument.as.managed_reference = mmay_managed_invalid_reference();
         result = mmay_test_vm_i64(5678);
         MMAY_EXPECT(mmay_bytecode_run(&function, &argument, 1,
             mmay_fail_allocator(&state), options, &result)

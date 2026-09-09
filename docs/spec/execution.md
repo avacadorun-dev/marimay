@@ -550,6 +550,16 @@ Collection stops tasks in one isolate, not the whole process. Roots include VM r
 
 Root descriptors are precise. Cycles are collectible. Collection order and timing are not observable in safe source.
 
+Runtime string values in both engines participate in this managed graph and
+the D055 live-heap byte budget, including strings produced by interpolation,
+concatenation, formatting, and text operations. Replacing a string value does
+not retain every previous value until execution teardown: values no longer
+reachable from roots are collectible before a heap-budget rejection. Copies
+and container cells preserve immutable string values through managed
+references. A cumulative count of discarded runtime string bytes must not
+replace the configured live-heap budget. Encoded bytecode string constants
+remain bounded artifact metadata, separate from runtime string objects.
+
 Managed array objects are non-moving and participate in the same precise root
 graph. An array of managed references traces each initialized element; scalar
 array storage is not conservatively scanned. Array growth is failure-atomic,

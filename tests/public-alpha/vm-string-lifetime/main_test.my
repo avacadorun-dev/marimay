@@ -1,0 +1,96 @@
+import * as text from "std/text";
+
+@test
+fn immutableReportMatchesBuilder(): void {
+  const concatenated = report(false);
+  const built = report(true);
+  expect.equal(text.byteLength(concatenated), 272015);
+  expect.equal(concatenated, built);
+  expect.equal(checksum(concatenated), 762303259);
+}
+
+type Entry {
+  label: string,
+}
+
+enum Label {
+  Present(string),
+}
+
+fn entry(index: int): Entry {
+  return Entry { label: $"я\0{index}" };
+}
+
+fn labels(): []string {
+  return [entry(1).label, entry(2).label];
+}
+
+fn variant(): Label {
+  return Label.Present(entry(3).label);
+}
+
+fn churn(): void {
+  for round in 0..4 {
+    let value = "";
+    for index in 0..2000 {
+      value = $"{value}{index}|";
+    }
+    expect.equal(text.byteLength(value), 8890);
+  }
+}
+
+fn remember(log: []string, value: string): void {
+  churn();
+  match log.push(value) {
+    Ok(_) => {},
+    Err(_) => panic("push"),
+  };
+}
+
+fn withCleanup(log: []string): string {
+  let value = entry(4).label;
+  defer remember(log, value);
+  value = entry(5).label;
+  churn();
+  return value;
+}
+
+@test
+fn stringsSurviveCallsContainersAndCleanup(): void {
+  const values = labels();
+  const item = entry(6);
+  const tagged = variant();
+  const indexed = mapOf<string, string>();
+  match indexed.put(entry(7).label, entry(8).label) {
+    Ok(_) => {},
+    Err(_) => panic("put"),
+  };
+  const log: []string = [];
+  const returned = withCleanup(log);
+  churn();
+  expect.equal(values[0], "я\01");
+  expect.equal(values[1], "я\02");
+  expect.equal(item.label, "я\06");
+  expect.equal(
+    match tagged {
+      Label.Present(value) => value,
+    },
+    "я\03",
+  );
+  expect.equal(
+    match indexed.get("я\07") {
+      Some(value) => value,
+      None => "",
+    },
+    "я\08",
+  );
+  expect.equal(log[0], "я\04");
+  expect.equal(returned, "я\05");
+  expect.equal(
+    match text.substring(returned, 2, 4) {
+      Ok(value) => value,
+      Err(_) => "",
+    },
+    "\05",
+  );
+}

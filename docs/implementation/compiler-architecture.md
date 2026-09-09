@@ -494,6 +494,25 @@ tests must not delete, rename, reorder, or weaken assertions.
 
 ### Remaining Stage 0 owners
 
+Under D055, `bytecode/vm_string.c` owns VM string creation and validated byte
+access through the shared managed-string runtime. VM string registers use
+`MarimayManagedReference`; `vm_prepare.c` includes them in exact typed roots,
+and `vm_nominal.c` transfers validated string references to/from container
+cells without copying or allocating. `vm_format.c` and `vm_text.c` retain
+their formatting/transform responsibilities. Creation publishes into a target
+register only after success, preserving an aliased input root across GC.
+There is no execution-owned dynamic string pool or cumulative runtime string
+budget. Each active register retains its last reference until overwritten or
+its frame exits; this change does not add instruction-level liveness analysis.
+The preview C embedding API uses `value.as.managed_reference` for strings and
+the existing public root-frame contract for retained results. Its former
+`MarimayBytecodeReference` and execution string-pool options are removed;
+portable bytecode constants and wire formats are unchanged. The bounded MIR
+test oracle remains a separate implementation, not the public VM runner.
+`test_bytecode_vm_strings.c` owns GC/rebinding, heap limits, host reference
+provenance and all-index allocation failures. `test_vm_string_lifetime.cmake`
+owns the source/VM/native report-concat regression and classified budget errors.
+
 D087 leaves instruction-fuel accounting in `bytecode/vm_prepare.c` and host
 policy selection in `cli_run_program.c`/`cli_test_program.c`. The shared VM
 dispatchers, verifier, memory and capability owners remain unchanged.

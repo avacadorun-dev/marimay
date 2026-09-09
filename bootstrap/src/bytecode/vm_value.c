@@ -9,8 +9,6 @@
 
 MarimayBytecodeExecutionOptions mmay_bytecode_execution_default_options(void) {
     MarimayBytecodeExecutionOptions options;
-    options.max_strings = 1000000;
-    options.max_total_string_bytes = 64U * 1024U * 1024U;
     options.managed_heap = mmay_managed_heap_default_options();
     options.env = NULL;
     options.fs = NULL;
@@ -24,18 +22,12 @@ bool mmay_bytecode_execution_init(
     MarimayBytecodeExecutionOptions options
 ) {
     if (execution == NULL || allocator.allocate == NULL || allocator.resize == NULL
-        || allocator.deallocate == NULL || options.max_strings == 0
-        || options.max_strings > UINT32_MAX || options.max_total_string_bytes == 0) {
+        || allocator.deallocate == NULL) {
         return false;
     }
     memset(execution, 0, sizeof(*execution));
     execution->allocator = allocator;
-    if (!mmay_vector_init(
-            &execution->strings, allocator, sizeof(MarimayOwnedBytes)
-        ) || !mmay_map_init(
-            &execution->string_index, allocator, sizeof(MarimayBytecodeReference),
-            UINT64_C(0x7275646162746573), UINT64_C(0x7472696e67696478)
-        ) || !mmay_managed_heap_init(
+    if (!mmay_managed_heap_init(
             &execution->managed_heap, allocator, options.managed_heap
         ) || !mmay_bytecode_nominal_cache_init(execution, allocator)
         || !mmay_vector_init(&execution->owned_interface_tables, allocator, sizeof(void *))
@@ -47,8 +39,6 @@ bool mmay_bytecode_execution_init(
         if (execution->fs.initialized) mmay_fs_dispose(&execution->fs);
         if (execution->env.initialized) mmay_env_dispose(&execution->env);
         mmay_managed_heap_dispose(&execution->managed_heap);
-        mmay_map_dispose(&execution->string_index);
-        mmay_vector_dispose(&execution->strings);
         mmay_bytecode_nominal_cache_dispose(execution);
         mmay_vector_dispose(&execution->owned_interface_tables);
         mmay_vector_dispose(&execution->array_descriptors);
@@ -66,20 +56,11 @@ bool mmay_bytecode_execution_init(
 }
 
 void mmay_bytecode_execution_dispose(MarimayBytecodeExecution *execution) {
-    size_t index = 0;
     if (execution == NULL) {
         return;
     }
     if (execution->fs_initialized) mmay_fs_dispose(&execution->fs);
     if (execution->env_initialized) mmay_env_dispose(&execution->env);
-    for (index = 0; index < execution->strings.length; index += 1) {
-        MarimayOwnedBytes *string = mmay_vector_at(&execution->strings, index);
-        if (string != NULL) {
-            mmay_owned_bytes_dispose(string);
-        }
-    }
-    mmay_map_dispose(&execution->string_index);
-    mmay_vector_dispose(&execution->strings);
     mmay_managed_heap_dispose(&execution->managed_heap);
     mmay_bytecode_nominal_cache_dispose(execution);
     mmay_bytecode_run_interface_tables_dispose(execution);
@@ -87,25 +68,6 @@ void mmay_bytecode_execution_dispose(MarimayBytecodeExecution *execution) {
     mmay_bytecode_collection_cache_dispose(execution);
     mmay_test_output_dispose(&execution->test_output);
     memset(execution, 0, sizeof(*execution));
-}
-
-bool mmay_bytecode_execution_string_bytes(
-    const MarimayBytecodeExecution *execution,
-    MarimayBytecodeValue value,
-    const unsigned char **bytes,
-    size_t *length
-) {
-    const MarimayOwnedBytes *string = execution != NULL && execution->initialized
-            && value.type == MMAY_BYTECODE_TYPE_STRING
-            && value.as.reference != MMAY_BYTECODE_INVALID_REFERENCE
-        ? mmay_vector_at_const(&execution->strings, value.as.reference)
-        : NULL;
-    if (string == NULL || string->data == NULL || bytes == NULL || length == NULL) {
-        return false;
-    }
-    *bytes = string->data;
-    *length = string->length;
-    return true;
 }
 
 bool mmay_bytecode_panic_init(MarimayBytecodePanic *panic, MarimayAllocator allocator) {
@@ -163,50 +125,6 @@ const MarimayBytecodeSuppressedPanic *mmay_bytecode_panic_suppressed(
     return panic != NULL && panic->initialized
         ? mmay_vector_at_const(&panic->suppressed, index)
         : NULL;
-}
-
-MarimayBytecodeRunStatus mmay_bytecode_execution_intern(
-    MarimayBytecodeExecution *execution,
-    const unsigned char *bytes,
-    size_t length,
-    MarimayBytecodeReference *result
-) {
-    const MarimayBytecodeReference *found = NULL;
-    MarimayOwnedBytes owned;
-    MarimayBytecodeReference reference;
-    size_t next_bytes = 0;
-    if (execution == NULL || !execution->initialized || result == NULL
-        || (bytes == NULL && length != 0)) {
-        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
-    }
-    found = mmay_map_get_const(&execution->string_index, bytes, length);
-    if (found != NULL) {
-        *result = *found;
-        return MMAY_BYTECODE_RUN_OK;
-    }
-    if (execution->strings.length >= execution->options.max_strings
-        || execution->strings.length >= UINT32_MAX
-        || !mmay_size_add(execution->total_string_bytes, length, &next_bytes)
-        || next_bytes > execution->options.max_total_string_bytes) {
-        return MMAY_BYTECODE_RUN_LIMIT_REACHED;
-    }
-    memset(&owned, 0, sizeof(owned));
-    if (!mmay_owned_bytes_copy(&owned, execution->allocator, bytes, length)) {
-        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-    }
-    reference = (MarimayBytecodeReference)execution->strings.length;
-    if (!mmay_vector_push(&execution->strings, &owned)
-        || !mmay_map_put(&execution->string_index, bytes, length, &reference)) {
-        if (execution->strings.length != 0
-            && reference == execution->strings.length - 1) {
-            execution->strings.length -= 1;
-        }
-        mmay_owned_bytes_dispose(&owned);
-        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-    }
-    execution->total_string_bytes = next_bytes;
-    *result = reference;
-    return MMAY_BYTECODE_RUN_OK;
 }
 
 MarimayBytecodeRunOptions mmay_bytecode_run_default_options(void) {
@@ -409,11 +327,11 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
                     function,
                     (MarimayBytecodeStringId)instruction->operands[1].unsigned_value
                 );
-            MarimayBytecodeReference reference = MMAY_BYTECODE_INVALID_REFERENCE;
+            MarimayManagedReference reference = mmay_managed_invalid_reference();
             if (constant == NULL || execution == NULL || !execution->initialized) {
                 return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
             }
-            MarimayBytecodeRunStatus status = mmay_bytecode_execution_intern(
+            MarimayBytecodeRunStatus status = mmay_bytecode_execution_new_string(
                     execution,
                     constant->value.data,
                     constant->value.length,
@@ -422,7 +340,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
             if (status != MMAY_BYTECODE_RUN_OK) {
                 return status;
             }
-            registers[target].as.reference = reference;
+            registers[target].as.managed_reference = reference;
             return MMAY_BYTECODE_RUN_OK;
         }
         case MMAY_OPCODE_COPY:

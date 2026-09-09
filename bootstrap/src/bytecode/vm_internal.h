@@ -50,9 +50,9 @@ bool mmay_bytecode_managed_field_descriptor(
 );
 MarimayBytecodeRunStatus mmay_bytecode_run_managed_status(
     MarimayManagedStatus status);
-MarimayBytecodeRunStatus mmay_bytecode_execution_intern(
+MarimayBytecodeRunStatus mmay_bytecode_execution_new_string(
     MarimayBytecodeExecution *execution, const unsigned char *bytes,
-    size_t length, MarimayBytecodeReference *result);
+    size_t length, MarimayManagedReference *result);
 bool mmay_bytecode_nominal_cache_init(
     MarimayBytecodeExecution *execution, MarimayAllocator allocator);
 void mmay_bytecode_nominal_cache_dispose(

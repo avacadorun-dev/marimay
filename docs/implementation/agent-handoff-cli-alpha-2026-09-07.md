@@ -379,10 +379,13 @@ All ten apps exist; acceptance is still open. First native launch ~390 ms vs
 100 ms, source-lint run ~500–532 ms vs 500 ms, test both 5.506 s vs 2 s, and
 byte literal match I0001 require shared follow-up. No budget/gate was waived.
 
-Latest user steering: `algorithm-benchmarks` report-concat 10000 1 fails I0002
-(exit 70), while report-builder prints checksum 762303259. Reproduced with the
-system release. VM interns all unique dynamic strings until execution teardown;
-max_total_string_bytes is separate from --max-heap-bytes. Next active work must
-fix dynamic string lifetime/rooting and add this exact regression, without
-raising the limit or disguising concat as the builder benchmark. Preserve
-ongoing portfolio/CP42 → CP41 → CP39 → CP40/N0 obligations; commit/push main.
+User report-concat 10000 1 reproduced I0002 (exit 70) at both 64 and 256 MiB
+on release `6cb35fa`, while builder returned checksum 762303259. The cause was
+execution-lifetime dynamic string interning with a separate cumulative limit.
+The [managed-string follow-up](evidence/cp42-vm-string-lifetime-2026-09-09.md)
+replaces that owner with shared managed references and precise VM register
+roots under D055. Exact unchanged report-concat now returns checksum 762303259;
+the new catalogue smoke matrix covers 21 workloads on VM/native/Go/Rust.
+The runtime change supplies local defect evidence, not competitive-performance
+or full-alpha acceptance. Continue the shared portfolio startup/preparation
+work and CP42 → CP41 → CP39 → CP40/N0 obligations; commit/push main.

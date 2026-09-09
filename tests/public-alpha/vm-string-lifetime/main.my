@@ -1,0 +1,64 @@
+import * as bytes from "std/bytes";
+import { Error as IoError, println } from "std/io";
+import * as text from "std/text";
+
+// Fixed report-concat regression from algorithm-benchmarks, 2026-09-09.
+// Keep all 10,000 rows and observe every output byte.
+fn titles(): []string {
+  return [
+    "Война и мир",
+    "Мастер и Маргарита",
+    "Ёжик в тумане",
+    "Книга моря",
+    "Белый парус",
+    "Путь домой",
+    "Сад камней",
+    "Зимняя ночь",
+    "The Go Book",
+    "Rust in Action",
+    "Marimay λ",
+    "東京 🚀",
+    "Книга памяти",
+    "Дальний берег",
+    "Тихий Дон",
+    "Алые паруса",
+  ];
+}
+
+fn report(builderMode: bool): string {
+  const names = titles();
+  const builder = match text.newBuilder(1048576) {
+    Ok(value) => value,
+    Err(_) => panic("builder"),
+  };
+  let result = "";
+  for index in 0..10000 {
+    const line = $"{index}|{names[index % names.length()]}|{index % 3}\n";
+    if builderMode {
+      match text.append(builder, line) {
+        Ok(_) => {},
+        Err(_) => panic("append"),
+      };
+    } else {
+      result = $"{result}{line}";
+    }
+  }
+  if builderMode {
+    result = text.finish(builder);
+  }
+  return result;
+}
+
+fn checksum(value: string): int {
+  const encoded = bytes.encodeUtf8(value);
+  let checksum = 0;
+  for index in 0..bytes.length(encoded) {
+    checksum = (checksum + (index % 251 + 1) * (bytes.get(encoded, index) as int)) % 1000000007;
+  }
+  return checksum;
+}
+
+fn main(): Result<void, IoError> {
+  println($"report-concat {checksum(report(false))}")?;
+  return Ok();
+}

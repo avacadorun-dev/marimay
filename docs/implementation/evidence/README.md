@@ -119,6 +119,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Managed VM string lifetimes](cp42-vm-string-lifetime-2026-09-09.md)
+([raw evidence](cp42-vm-string-lifetime-2026-09-09.json)) records the exact
+10,000-row concatenation regression, shared D055 live-heap accounting,
+GC/host-reference/allocation coverage, and the new 21-workload correctness
+matrix. It does not establish native/Go/Rust performance parity or close CP42.
+
 [Stateful CLI wave and shared text/CFG fixes](cp42-stateful-2026-09-09.md)
 ([raw evidence](cp42-stateful-2026-09-09.json)) records the final two independent
 apps, 85/85 local tests, focused sanitizer coverage, fixed substring/RPO causes

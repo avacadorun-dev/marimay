@@ -580,6 +580,7 @@ static void mmay_cp33_vm_allocation_failures(
         MarimayFailAllocator state;
         MarimayAllocator allocator;
         MarimayBytecodeExecution execution;
+        MarimayBytecodeExecutionOptions setup = mmay_bytecode_execution_default_options();
         MarimayBytecodeRunOptions options = mmay_bytecode_run_default_options();
         MarimayBytecodeValue result;
         MarimayBytecodeRunStatus status;
@@ -590,9 +591,10 @@ static void mmay_cp33_vm_allocation_failures(
             failure_index == 0 ? SIZE_MAX : failure_index - 1
         );
         allocator = mmay_fail_allocator(&state);
+        setup.managed_heap.collect_before_allocation = true;
         if (!mmay_bytecode_execution_init(
                 &execution, allocator,
-                mmay_bytecode_execution_default_options()
+                setup
             )) {
             MMAY_EXPECT(state.live_allocations == 0);
             MMAY_EXPECT(state.live_bytes == 0);

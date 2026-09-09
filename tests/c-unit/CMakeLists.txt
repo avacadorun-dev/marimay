@@ -53,6 +53,7 @@ add_executable(mmay_c_unit
   test_bytecode_vm.c
   test_bytecode_vm_support.c
   test_bytecode_vm_scalar.c
+  test_bytecode_vm_strings.c
   test_bytecode_vm_arithmetic.c
   test_bytecode_vm_arrays.c
   test_bytecode_vm_array_storage.c
@@ -899,3 +900,14 @@ foreach(app IN ITEMS cli-delimited cli-source-lint)
   )
   set_tests_properties("mmay_${app}" PROPERTIES LABELS "differential;cp42;stateful" TIMEOUT 1800)
 endforeach()
+
+add_test(
+  NAME mmay_vm_string_lifetime
+  COMMAND "${CMAKE_COMMAND}"
+    "-DMMAY_TEST_TOOL=$<TARGET_FILE:mmay>"
+    "-DMMAY_TEST_SOURCE=${CMAKE_SOURCE_DIR}/tests/public-alpha/vm-string-lifetime"
+    "-DMMAY_TEST_WORK=${CMAKE_CURRENT_BINARY_DIR}/vm-string-lifetime"
+    "-DMMAY_TEST_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}"
+    -P "${CMAKE_CURRENT_SOURCE_DIR}/test_vm_string_lifetime.cmake"
+)
+set_tests_properties(mmay_vm_string_lifetime PROPERTIES LABELS "differential;managed-memory" TIMEOUT 600)

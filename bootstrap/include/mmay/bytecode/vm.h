@@ -4,7 +4,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "mmay/base/allocator.h"
-#include "mmay/base/map.h"
 #include "mmay/base/owned_bytes.h"
 #include "mmay/base/vector.h"
 #include "mmay/bytecode/bytecode.h"
@@ -15,32 +14,24 @@
 #include "mmay/runtime/fs.h"
 #include "mmay/runtime/process_context.h"
 #include "mmay/runtime/test_output.h"
-typedef uint32_t MarimayBytecodeReference;
-#define MMAY_BYTECODE_INVALID_REFERENCE UINT32_MAX
 typedef struct MarimayBytecodeValue {
     MarimayBytecodeType type;
     union {
         int64_t i64; uint64_t integer_bits;
         uint64_t f64_bits;
         bool boolean;
-        MarimayBytecodeReference reference;
         MarimayManagedReference managed_reference;
     } as;
 } MarimayBytecodeValue;
 typedef struct MarimayBytecodeExecutionOptions {
-    size_t max_strings; size_t max_total_string_bytes;
     MarimayManagedHeapOptions managed_heap;
     const MarimayEnvOptions *env; const MarimayFsOptions *fs;
     const MarimayProcessContextOptions *process_context;
 } MarimayBytecodeExecutionOptions;
 typedef struct MarimayBytecodeExecution {
     MarimayAllocator allocator;
-    /* Owns MarimayOwnedBytes values indexed by MarimayBytecodeReference. */
-    MarimayVector strings;
-    /* Exact UTF-8 bytes to MarimayBytecodeReference. */
-    MarimayMap string_index;
     MarimayBytecodeExecutionOptions options;
-    size_t total_string_bytes; MarimayManagedHeap managed_heap;
+    MarimayManagedHeap managed_heap;
     MarimayVector interned_record_descriptors;
     MarimayVector interned_record_fields;
     MarimayVector interned_enum_descriptors;
@@ -57,8 +48,9 @@ typedef struct MarimayBytecodeExecution {
     bool collection_descriptor_allocation_failed; bool initialized;
 } MarimayBytecodeExecution;
 /*
- * Managed values are bound to this execution's heap. Active VM frames root
- * every exact managed register. A returned value remains usable until an
+ * Managed values, including strings, are bound to this execution's heap.
+ * Active VM frames root every exact managed register. A returned value remains
+ * usable until an
  * explicit/subsequent collection reclaims it or the execution is disposed;
  * passing it as the next run's argument roots it before dispatch.  A host that
  * retains values across unrelated collections registers the value's

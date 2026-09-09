@@ -457,6 +457,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_prepare.c
   bootstrap/src/bytecode/vm_arguments.c
   bootstrap/src/bytecode/vm_value.c
+  bootstrap/src/bytecode/vm_string.c
   bootstrap/src/check/array.c
   bootstrap/src/check/checker_array_mutation.c
   bootstrap/src/check/checker_function_values.c
