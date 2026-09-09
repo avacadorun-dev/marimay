@@ -73,5 +73,10 @@ all 32 workloads across five participants pass the full 3+11 matrix. Release
 86/86 and focused ASan/UBSan 12/12 pass locally. Native and VM performance
 parity, execution-loop costs and Tier 1 acceptance remain open.
 
+The [VM execution cost map](docs/research/vm-execution-cost-map-2026-09-09.md)
+records 4.442 billion original instructions across the unchanged 32 workloads.
+It directs the next performance wave toward general linked hot regions and
+internal calls; diagnostic coverage is not a new speedup or parity acceptance.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.
