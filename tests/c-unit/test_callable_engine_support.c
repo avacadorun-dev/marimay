@@ -3,6 +3,7 @@
 #include "test_native_c_emitter_support.h"
 #include "mmay/bytecode/codec.h"
 #include "cli_test_locations.h"
+#include "mmay/mir/scalar_flow.h"
 
 
 static void run_failures(const MarimayCheckResult *checked, size_t entry_index,
@@ -17,11 +18,12 @@ static void run_failures(const MarimayCheckResult *checked, size_t entry_index,
                 MarimayMirValue result = {0};
                 MarimayMirInterpretStatus status = mmay_check_interpret_function(checked, entry_index,
                     NULL, 0, allocator, mmay_check_interpret_default_options(), &result);
-                completed = status == MMAY_MIR_INTERPRET_OK;
-                if (!completed && status != MMAY_MIR_INTERPRET_ALLOCATION_FAILED)
+                bool succeeded = status == MMAY_MIR_INTERPRET_OK;
+                completed = succeeded && state.attempts <= failure;
+                if (!succeeded && status != MMAY_MIR_INTERPRET_ALLOCATION_FAILED)
                     fprintf(stderr, "callable MIR index %zu status %d\n",failure,(int)status);
-                MMAY_EXPECT(completed || status == MMAY_MIR_INTERPRET_ALLOCATION_FAILED);
-                if (completed) MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == expected);
+                MMAY_EXPECT(succeeded || status == MMAY_MIR_INTERPRET_ALLOCATION_FAILED);
+                if (succeeded) MMAY_EXPECT(result.type == MMAY_TYPE_I64 && result.as.i64 == expected);
             } else {
                 MarimayBytecodeExecution execution = {0};
                 MarimayBytecodeExecutionOptions options = mmay_bytecode_execution_default_options();
@@ -32,11 +34,12 @@ static void run_failures(const MarimayCheckResult *checked, size_t entry_index,
                     run.execution = &execution;
                     MarimayBytecodeRunStatus status = mmay_bytecode_run_program(program, NULL, 0,
                         allocator, run, &result);
-                    completed = status == MMAY_BYTECODE_RUN_OK;
-                    if (!completed && status != MMAY_BYTECODE_RUN_ALLOCATION_FAILED)
+                    bool succeeded = status == MMAY_BYTECODE_RUN_OK;
+                    completed = succeeded && state.attempts <= failure;
+                    if (!succeeded && status != MMAY_BYTECODE_RUN_ALLOCATION_FAILED)
                         fprintf(stderr, "callable VM index %zu status %d\n",failure,(int)status);
-                    MMAY_EXPECT(completed || status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED);
-                    if (completed) MMAY_EXPECT(result.type == MMAY_BYTECODE_TYPE_I64 && result.as.i64 == expected);
+                    MMAY_EXPECT(succeeded || status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED);
+                    if (succeeded) MMAY_EXPECT(result.type == MMAY_BYTECODE_TYPE_I64 && result.as.i64 == expected);
                 }
                 mmay_bytecode_execution_dispose(&execution);
             }
@@ -46,7 +49,7 @@ static void run_failures(const MarimayCheckResult *checked, size_t entry_index,
     }
 }
 
-static void source_location_failures(const MarimayCheckResult *checked) {
+static void source_location_failures(const MarimayCheckResult *checked, bool require_synthetic) {
     bool completed = false;
     for (size_t failure = 0; failure < 1024 && !completed; failure += 1) {
         MarimayFailAllocator state;
@@ -64,7 +67,7 @@ static void source_location_failures(const MarimayCheckResult *checked) {
                         && memcmp(location->path, "app/main.my", location->path_length) == 0);
                 }
             }
-            MMAY_EXPECT(synthetic > 0);
+            if (require_synthetic) MMAY_EXPECT(synthetic > 0);
         }
         mmay_vector_dispose(&locations);
         MMAY_EXPECT(state.live_allocations == 0 && state.live_bytes == 0);
@@ -124,11 +127,11 @@ static void native_failures(const MarimayOwnedBytes *generated, MarimaySymbolId 
         "      status = mmay_g_managed_status(mmay_g_register_immediate_enums(&x.heap));\n"
         "      if (status == 0) { status = mmay_g_f_%s(&x, &panic, &value, &start, &end); }\n"
         "    }\n"
-        "    completed = status == 0;\n"
-        "    bool ok = completed ? value == %lld : status == mmay_g_managed_status(MMAY_MANAGED_ALLOCATION_FAILED);\n"
+        "    completed = status == 0 && state.attempts <= failure;\n"
+        "    bool ok = status == 0 ? value == %lld : status == mmay_g_managed_status(MMAY_MANAGED_ALLOCATION_FAILED);\n"
         "    mmay_g_execution_dispose(&x);\n"
         "    if (!ok || state.live_allocations != 0 || state.live_bytes != 0) {\n"
-        "      fprintf(stderr, \"callable failure=%%zu status=%%d value=%%lld\\n\", failure, status, (long long)value);\n"
+        "      fprintf(stderr, \"callable failure=%%zu status=%%d value=%%lld live=%%zu bytes=%%zu\\n\", failure, status, (long long)value, state.live_allocations, state.live_bytes);\n"
         "      return 5;\n"
         "    }\n"
         "  }\n"
@@ -156,8 +159,8 @@ static void native_failures(const MarimayOwnedBytes *generated, MarimaySymbolId 
 #endif
 }
 
-void mmay_test_callable_engines(const char *source, int64_t expected,
-    size_t minimum_calls, size_t minimum_captures) {
+static void callable_engines(const char *source, int64_t expected,
+    size_t minimum_calls, size_t minimum_captures, bool prepare) {
     const MarimayTestImportSource input = {"test/callable-engines", "app/main.my", source};
     MarimayCheckerImportFixture fixture = {0};
     MarimayCheckResult checked = {0};
@@ -176,6 +179,8 @@ void mmay_test_callable_engines(const char *source, int64_t expected,
     for (size_t i = 0; i < checked.functions.length; i += 1) {
         MarimayCheckedFunction *function = mmay_vector_at(&checked.functions, i);
         functions[i] = &function->mir;
+        if (prepare) MMAY_EXPECT(mmay_mir_simplify_scalar_flow(&function->mir)
+            == MMAY_MIR_SCALAR_FLOW_OK);
         MMAY_EXPECT(mmay_mir_verify(&function->mir) == MMAY_MIR_VERIFY_OK);
         for (size_t n = 0; n < function->mir.calls.length; n += 1) {
             MarimayMirCall *call = mmay_vector_at(&function->mir.calls, n);
@@ -199,7 +204,7 @@ void mmay_test_callable_engines(const char *source, int64_t expected,
     MMAY_EXPECT(mmay_bytecode_encode_program(&program, mmay_system_allocator(), &encoded) == MMAY_BYTECODE_CODEC_OK);
     MMAY_EXPECT(mmay_bytecode_decode_program(encoded.data, encoded.length, mmay_system_allocator(),
         mmay_bytecode_program_default_options(), &decoded) == MMAY_BYTECODE_CODEC_OK);
-    source_location_failures(&checked);
+    source_location_failures(&checked, minimum_captures != 0);
     wire_failures(functions, checked.functions.length, entry->mir.symbol, &program, &encoded);
     for (size_t i = 0; i < decoded.functions.length; i += 1) {
         MarimayBytecodeProgramFunction *function = mmay_vector_at(&decoded.functions, i);
@@ -242,4 +247,14 @@ cleanup:
     mmay_bytecode_program_dispose(&program);
     mmay_check_result_dispose(&checked);
     mmay_checker_import_fixture_dispose(&fixture);
+}
+
+void mmay_test_callable_engines(const char *source, int64_t expected,
+    size_t minimum_calls, size_t minimum_captures) {
+    callable_engines(source, expected, minimum_calls, minimum_captures, false);
+}
+
+void mmay_test_callable_engines_prepared(const char *source, int64_t expected,
+    size_t minimum_calls, size_t minimum_captures) {
+    callable_engines(source, expected, minimum_calls, minimum_captures, true);
 }

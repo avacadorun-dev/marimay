@@ -533,6 +533,11 @@ bool mmay_native_c_emit_function(
             "  (void)mmay_g_m;\n"
             "  (void)mmay_g_p;\n  (void)mmay_g_x;\n"
         )) return false;
+    if (function->array_constructions.length != 0 && !mmay_native_c_write(
+            buffer,
+            "  MarimayManagedCell *mmay_g_array_cells = NULL;\n"
+            "  size_t mmay_g_array_cell_bytes = 0;\n"
+        )) return false;
     if (mmay_native_c_batch_scalar_mutation(function)
         && !mmay_native_c_write(
             buffer, "  bool mmay_g_array_mutated = false;\n"
@@ -930,9 +935,9 @@ bool mmay_native_c_emit_function(
                     if (construction == NULL || array == NULL
                         || !mmay_native_c_write(
                             buffer,
-                            "  { MarimayManagedCell *mmay_g_cells = NULL; size_t mmay_g_cell_bytes = 0;\n"
-                            "    if (!mmay_size_multiply(%zu, sizeof(*mmay_g_cells), &mmay_g_cell_bytes)) { mmay_g_s = 6; goto mmay_g_cleanup; }\n"
-                            "    if (mmay_g_cell_bytes != 0) { mmay_g_cells = mmay_allocate(&mmay_g_x->allocator, mmay_g_cell_bytes); if (mmay_g_cells == NULL) { mmay_g_s = 5; goto mmay_g_cleanup; } }\n",
+                            "  {\n"
+                            "    if (!mmay_size_multiply(%zu, sizeof(*mmay_g_array_cells), &mmay_g_array_cell_bytes)) { mmay_g_s = 6; goto mmay_g_cleanup; }\n"
+                            "    if (mmay_g_array_cell_bytes != 0) { mmay_g_array_cells = mmay_allocate(&mmay_g_x->allocator, mmay_g_array_cell_bytes); if (mmay_g_array_cells == NULL) { mmay_g_s = 5; goto mmay_g_cleanup; } }\n",
                             construction->argument_count
                         )) return false;
                     for (argument_index = 0;
@@ -952,14 +957,14 @@ bool mmay_native_c_emit_function(
                                 argument->register_id
                             ) || !mmay_native_c_write(
                                 buffer,
-                                "; mmay_g_cells[%zu] = mmay_g_cell; }\n",
+                                "; mmay_g_array_cells[%zu] = mmay_g_cell; }\n",
                                 argument_index
                             )) return false;
                     }
                     if (!mmay_native_c_write(
                             buffer,
-                            "    mmay_g_m = mmay_managed_array_new(&mmay_g_x->heap, %s, mmay_g_cells, %zu, &mmay_g_v_%u);\n"
-                            "    mmay_deallocate(&mmay_g_x->allocator, mmay_g_cells, mmay_g_cell_bytes);\n"
+                            "    mmay_g_m = mmay_managed_array_new(&mmay_g_x->heap, %s, mmay_g_array_cells, %zu, &mmay_g_v_%u);\n"
+                            "    mmay_deallocate(&mmay_g_x->allocator, mmay_g_array_cells, mmay_g_array_cell_bytes); mmay_g_array_cells = NULL; mmay_g_array_cell_bytes = 0;\n"
                             "    if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; }\n"
                             "    mmay_g_av_%u = (MarimayManagedArrayGeneratedView){0};",
                             mmay_native_c_array_descriptor(function, array->type),
@@ -1395,6 +1400,10 @@ bool mmay_native_c_emit_function(
     if (!mmay_native_c_write(buffer, "mmay_g_cleanup:\n")) {
         return false;
     }
+    if (function->array_constructions.length != 0 && !mmay_native_c_write(
+            buffer,
+            "  mmay_deallocate(&mmay_g_x->allocator, mmay_g_array_cells, mmay_g_array_cell_bytes);\n"
+        )) return false;
     if (!mmay_native_c_emit_defer_cleanup(
             buffer, function, functions, count
         )) {

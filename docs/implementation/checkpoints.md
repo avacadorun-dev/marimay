@@ -1846,6 +1846,16 @@ preparation as the next shared boundary. This improvement is not VM/native
 parity, does not replace the full CP42/CP41 acceptance and leaves all platform,
 startup and native text/collection obligations in force.
 
+[D106 scalar/control evidence](evidence/cp42-scalar-flow-2026-09-09.md)
+adds transactional preparation of the shared typed MIR. All 32 unchanged
+workloads pass on the final system binary; native uses 11 samples and VM uses
+three diagnostic samples. An initial native BFS regression exposed a fill
+proof tied to COPY-from-zero; accepting an equivalent direct zero restores
+bulk filling while retaining the other proof obligations. Passing applicable
+results for all 86 Release cases, focused ASan/UBSan, all-index allocation
+coverage and work-limit rollback are recorded. This remains intermediate
+performance evidence and does not close any platform or product gate.
+
 The first JSON slice supports public-field acyclic records, concrete generic
 records, arrays, int/bool/string. Explicit codecs remain available. No unbounded
 DOM/reflection, private-field discovery, host parser, new task runtime, release

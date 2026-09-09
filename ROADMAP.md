@@ -40,5 +40,10 @@ All 32 full-size VM diagnostics and 86 Release tests pass locally. Instruction
 counts expose the next shared code-preparation boundary; performance parity,
 startup budgets and Tier 1 acceptance remain open.
 
+[Scalar/control preparation](docs/implementation/evidence/cp42-scalar-flow-2026-09-09.md)
+records D106, all 32 unchanged workloads on the system build, the native bulk-fill
+composition regression and its repair, and allocation/rollback checks. Native
+text/collection costs and the large VM gap remain open; parity is not achieved.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

@@ -447,3 +447,22 @@ Keep source-preparation timing separate. Any fusion/compilation tier requires
 an explicit contract and evidence; no speedup prediction closes the goal.
 Native owned text/Option/Result, Map/Set, startup and full Tier 1 obligations
 remain open. Do not stop at this intermediate VM improvement or mark CP42 done.
+
+## Продолжение 2026-09-09: D106 scalar/control and composition
+
+[Scalar/control evidence](evidence/cp42-scalar-flow-2026-09-09.md) records the
+shared transactional MIR preparation, 32 unchanged standard workloads on the
+system binary, and passing applicable results for all 86 Release cases across
+the full run and focused reruns. VM insertion is now 5.95 s, Dijkstra 6.76 s;
+native BFS is 65.72 ms after repairing a COPY-specific bulk-fill proof that the
+initial candidate disabled. The native failure-path array argument leak was
+also fixed. The reading journal records printed 71–74 / PDF 72–75.
+
+The parity goal stays active. VM typed array/record access and prepared direct
+calls remain next; native text/Option/Result and Map/Set still have material
+costs. Do not weaken the workloads, skip checks or call these numbers parity.
+The user reported another interrupted local benchmark because the system binary
+was rebuilt during it. Compiler updates and concurrent benchmark builds must
+be isolated: pin a copied toolchain/runtime and per-run executables before
+measurement. Until that lands, never replace the system binary during an
+active user or agent benchmark. Compiler work must proceed in a separate build.

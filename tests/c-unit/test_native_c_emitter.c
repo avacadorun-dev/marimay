@@ -9,6 +9,8 @@ void mmay_test_array_edit_engines(void);
 void mmay_test_array_search_engines(void);
 void mmay_test_mapper_value_engines(void);
 void mmay_test_native_c_emitter_roots(void);
+void mmay_test_native_c_emitter_array_cells(void);
+void mmay_test_native_c_emitter_fill(void);
 void mmay_test_native_c_emitter_view_lifetimes(void);
 void mmay_test_function_value_engines(void);
 void mmay_test_native_c_emitter_array_access(void);
@@ -32,6 +34,8 @@ void mmay_test_native_c_emitter(void) {
     mmay_test_array_search_engines();
     mmay_test_mapper_value_engines();
     mmay_test_native_c_emitter_roots();
+    mmay_test_native_c_emitter_array_cells();
+    mmay_test_native_c_emitter_fill();
     mmay_test_native_c_emitter_view_lifetimes();
     mmay_test_native_c_emitter_array_access();
     mmay_test_native_c_emitter_array_storage();

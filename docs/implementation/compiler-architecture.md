@@ -148,6 +148,25 @@ checkpoint evidence enforce cohesive ownership.
 
 ### MIR owner
 
+D106 scalar/control preparation is owned by `mir/scalar_flow.c` (transactional
+block storage and pipeline), `scalar_flow_values.c` (literal/local scalar
+facts), `scalar_flow_liveness.c` (backward liveness and dead nontrapping scalar
+definitions), and `scalar_flow_control.c` (CFG edge/reachability cleanup), behind
+the narrow public `mir/scalar_flow.h` and owner-private `scalar_flow_internal.h`.
+Analyses are invocation-local and invalidated between transformations. Layout
+and call/construction metadata are borrowed without mutation. The CLI pipeline
+sequences this pass before the existing range pass for both backends.
+Focused `test_mir_scalar_flow.c` owns semantics, rollback and allocation coverage;
+it must retain trapping dead results, deferred-cleanup arguments, proof-carrier
+identity, divergent loops and exact nominal metadata.
+Native consumers must accept equivalent prepared forms. The existing
+`c_emitter_array_fill.c` fill proof accepts either a copied zero or a direct
+zero constant at the unique dominating counter initialization. Its region,
+step, empty-origin and mutation proofs remain mandatory. Focused
+`test_native_c_emitter_fill.c` checks both forms, nonzero rejection, allocation
+failures and prepared VM/native behavior; reducing instruction count must not
+silently disable bulk filling or its dependent length proofs.
+
 Checkpoint 0 established these independently compiled owners:
 
 ```text
@@ -917,6 +936,11 @@ cache left stale by an earlier read-only callee. The managed-view and root
 fixtures cover record/nested-array growth, alias replacement, retained old
 children, forced GC and every deterministic allocation failure. This preserves
 D063 identity/layout proofs without making a growing object queue quadratic.
+Generated array argument-cell storage belongs to the activation, with a null
+initial value and cleanup on every exit, including failed string promotion.
+Successful construction releases and clears the scratch slot before reuse;
+cleanup releases it before deferred calls. The focused array-cell fixture sweeps
+all native allocation failures at O0/O2 and checks both allocator counters.
 The emitter coordinator owns the conservative transitive
 safepoint predicate and root-location placement because those are activation
 construction decisions; runtime owners do not infer compiler liveness.

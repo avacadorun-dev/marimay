@@ -108,6 +108,7 @@ void mmay_test_program_arguments(void);
 void mmay_test_number_format(void);
 void mmay_test_mir(void);
 void mmay_test_mir_range(void);
+void mmay_test_mir_scalar_flow(void);
 void mmay_test_mir_integer_range(void);
 void mmay_test_mir_range_convergence(void);
 void mmay_test_mir_interface_execution(void);
@@ -225,6 +226,7 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_number_format();
         mmay_test_mir();
         mmay_test_mir_range();
+        mmay_test_mir_scalar_flow();
         mmay_test_mir_integer_range();
         mmay_test_mir_range_convergence();
         mmay_test_mir_interface_execution();

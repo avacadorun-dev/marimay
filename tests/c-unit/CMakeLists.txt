@@ -185,6 +185,7 @@ add_executable(mmay_c_unit
   test_mir_arrays.c
   test_mir_arrays_rhs.c
   test_mir_range.c
+  test_mir_scalar_flow.c
   test_mir_integer_range.c
   test_mir_range_convergence.c
   test_mir_imported_arrays.c
@@ -204,6 +205,8 @@ add_executable(mmay_c_unit
   test_native_c_emitter_arrays.c
   test_native_c_emitter_array_access.c
   test_native_c_emitter_array_storage.c
+  test_native_c_emitter_fill.c
+  test_native_c_emitter_array_cells.c
   test_native_c_emitter_roots.c
   test_native_c_emitter_view_lifetimes.c
   test_native_c_emitter_managed_views.c

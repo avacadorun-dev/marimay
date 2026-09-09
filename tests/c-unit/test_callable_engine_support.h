@@ -6,4 +6,6 @@
 /* Shared D098/D099 execution, wire, GC and allocation-failure harness. */
 void mmay_test_callable_engines(const char *source, int64_t expected,
     size_t minimum_calls, size_t minimum_captures);
+void mmay_test_callable_engines_prepared(const char *source, int64_t expected,
+    size_t minimum_calls, size_t minimum_captures);
 #endif

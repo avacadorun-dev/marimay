@@ -206,6 +206,18 @@ converge without walking a signed 64-bit interval one integer at a time, while
 retaining conservative ranges and the independent work-limit boundary. The MIR
 optimizer and both proof verifiers use the same interval rules.
 
+Before backend lowering, D106 permits bounded, transactional scalar/control
+simplification of verified typed MIR. It preserves observable effects, checks,
+panic spans and managed lifetimes; an unused result does not justify removing
+a potentially trapping or allocating operation. Pure scalar literals may move
+to entry only when their unique definition and unchanged value are established.
+Local copy facts expire on redefinition, and exact array/index proof operands
+are not independently substituted. CFG simplification preserves reachable
+effects and divergence. All MIR proofs are reverified before publication.
+Resource failure leaves the original checked MIR intact; invalid transformed
+MIR is a compiler failure. D087 fuel applies to supplied verified bytecode,
+not to a stable instruction count for source code across compiler revisions.
+
 ## 5. C17 AOT contract
 
 ### 5.1 Generated C safety

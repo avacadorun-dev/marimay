@@ -119,6 +119,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Scalar/control MIR preparation](cp42-scalar-flow-2026-09-09.md)
+([raw evidence](cp42-scalar-flow-2026-09-09.json)) records D106, full native and
+diagnostic VM matrices, a caught native fill regression, and passing applicable
+results for all 86 Release cases across the full run and focused reruns. Parity
+and release gates remain open.
+
 [VM execution regions and frame reuse](cp42-vm-regions-2026-09-09.md)
 ([raw matrices, instruction probes and checks](cp42-vm-regions-2026-09-09.json))
 records D104/D105, 32 unchanged full-size diagnostics, exact instruction counts,

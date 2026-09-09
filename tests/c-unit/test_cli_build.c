@@ -293,7 +293,7 @@ static void mmay_cli_build_test_allocations(void) {
         status = mmay_cli_build_in_process(
             &session, 7, arguments, &output, &error
         );
-        if (status == MMAY_EXIT_SUCCESS) reached_success = true;
+        if (status == MMAY_EXIT_SUCCESS) reached_success = state.attempts <= failure_index;
         else MMAY_EXPECT(status == MMAY_EXIT_INTERNAL);
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);

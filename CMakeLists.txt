@@ -604,6 +604,10 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/mir/mir_interfaces.c
   bootstrap/src/mir/integer_range.c
   bootstrap/src/mir/range.c
+  bootstrap/src/mir/scalar_flow.c
+  bootstrap/src/mir/scalar_flow_values.c
+  bootstrap/src/mir/scalar_flow_liveness.c
+  bootstrap/src/mir/scalar_flow_control.c
   bootstrap/src/mir/verify.c
   bootstrap/src/mir/verify_context.c
   bootstrap/src/mir/verify_range.c

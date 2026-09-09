@@ -482,10 +482,13 @@ bool mmay_native_c_array_fill_plan(
                     && definition->target == condition->first
                     && !(block_index == step
                         && definition->kind == MMAY_MIR_COPY)) {
-                    if (definition->kind != MMAY_MIR_COPY
-                        || !mmay_native_c_fill_constant(
+                    bool constant_zero = definition->kind == MMAY_MIR_CONSTANT_I64
+                        && definition->integer == 0;
+                    bool copied_zero = definition->kind == MMAY_MIR_COPY
+                        && mmay_native_c_fill_constant(
                             function, definition->first, 0, &zero
-                        ) || zero != 0) {
+                        ) && zero == 0;
+                    if (!constant_zero && !copied_zero) {
                         definition_count = 2;
                         break;
                     }

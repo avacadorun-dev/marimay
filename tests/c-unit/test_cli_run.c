@@ -234,6 +234,7 @@ static void mmay_cli_run_test_allocations(void) {
     size_t failure_index = 0;
     bool reached_success = false;
     bool saw_managed_host_failure = false;
+    bool saw_checked_fallback = false;
     for (failure_index = 0; failure_index < 4096; failure_index += 1) {
         MarimayFailAllocator state;
         MarimaySession session;
@@ -248,7 +249,9 @@ static void mmay_cli_run_test_allocations(void) {
             &session, 3, arguments, &output, &error
         );
         if (status == MMAY_EXIT_SUCCESS) {
-            reached_success = true;
+            /* Optional preparation may recover from the injected failure. */
+            reached_success = state.attempts <= failure_index;
+            saw_checked_fallback |= !reached_success;
             MMAY_EXPECT(output.length == 0 && error.length == 0);
         } else {
             MMAY_EXPECT(status == MMAY_EXIT_INTERNAL);
@@ -265,6 +268,7 @@ static void mmay_cli_run_test_allocations(void) {
     }
     MMAY_EXPECT(reached_success);
     MMAY_EXPECT(saw_managed_host_failure);
+    MMAY_EXPECT(saw_checked_fallback);
 }
 
 static void mmay_cli_run_test_process(void) {

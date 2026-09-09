@@ -3470,3 +3470,51 @@ Reason: after D104 removes repeated array work, the measured DSU profile spends
 about 40% of sampled stacks constructing/registering and destroying activation
 storage. Reusing a verified inactive layout avoids repeated metadata walks and
 host allocations without retaining its old managed values.
+
+## D106 — Transactional scalar and control-flow simplification of typed MIR
+
+Status: accepted.
+
+A function-scoped preparation pass may simplify verified typed MIR before
+the shared VM/native lowering boundary. Its initial scope is nonallocating
+scalar literals, local scalar copies and known scalar results, dead nontrapping
+scalar definitions, and redundant CFG edges/blocks. It is not a new source
+evaluation rule or a general SSA, alias, inlining or speculative-load pass.
+
+Analysis stays separate from transformation. The pass uses bounded backward
+liveness over the actual CFG and includes registers read by call/construction
+metadata and implicit deferred cleanup. Scalar constants with exactly one
+definition, excluding parameters, may be initialized at function entry; their
+identity, type and bits are unchanged. Local copy/value facts are invalidated
+on redefinition. Managed copies/allocations, host effects, checks and any
+potentially trapping operation remain, even when their result is dead. A
+checked scalar operation folds only when the existing exact arithmetic owner
+proves its concrete operands succeed. No floating-point arithmetic is folded.
+
+Rewrites preserve source spans for retained effects and checks. Proof-carrying
+array/index/generation operands are not independently substituted from local
+copy facts. The pass does not hoist memory reads, checks, allocation or calls,
+change evaluation order of effects, or assume that two nominal values alias.
+Empty-jump threading and unreachable-block removal preserve reachable paths
+and divergent cycles. Subsequent verification reconstructs all required MIR
+proofs; the existing range preparation follows the scalar/control pass.
+
+Only block/instruction storage is privately cloned; immutable type, layout,
+construction and call metadata remain borrowed during preparation. New code
+is published only after successful transformation and verification. Allocation
+or work-budget failure disposes all temporary state and leaves the input MIR
+unchanged under the existing checked-MIR resource fallback. Invalid input or
+an invalid transformed result is a compiler failure, not an optimization hint.
+Every allocation index must be swept with both allocator counters zero.
+
+D087 fuel counts the instructions of the verified executable bytecode supplied
+to the VM. Source compilation does not promise stable instruction counts across
+optimization revisions. This pass changes prepared source code; it does not
+rewrite a caller-supplied bytecode program to evade its exact fuel contract.
+
+Reason: D104/D105 measurements retain billions of scalar/control instructions
+in fixed workloads. Simplifying their common typed representation addresses
+generated instruction demand before adding further interpreter specialization.
+The method uses non-SSA liveness suited to today's mutable-register MIR,
+following Vladimirov printed 71–74 / PDF 72–75; no SSA-only proof is presumed.
+Speedup, startup cost and parity remain measured obligations, not predictions.
