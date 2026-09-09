@@ -51,5 +51,12 @@ All 32 VM workloads and 86 Release tests pass locally. System `mmay` uses an
 independent installed copy; catalogue runs pin their tools. Record/reference
 access, call preparation and native text/collection costs remain open.
 
+[Verified VM execution images](docs/implementation/evidence/cp42-vm-execution-image-2026-09-09.md)
+records the measured D107 rejection, D108 direct call/root preparation and
+generic composed loops. Paired insertion improves 6.28× and DSU 1.42× with
+unchanged checksums; the stable compact runner also removes measured control
+regressions. The interpreter ceiling still leaves both far from Bun. Hot-loop
+compilation, the full 32-workload replay and all parity/Tier 1 gates remain open.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

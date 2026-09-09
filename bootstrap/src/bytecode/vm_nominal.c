@@ -1,4 +1,5 @@
 #include "vm_internal.h"
+#include "vm_hot.h"
 
 #include <string.h>
 
@@ -292,6 +293,18 @@ mmay_bytecode_find_record_descriptor(
         }
     }
     return NULL;
+}
+
+const MarimayManagedRecordDescriptor *mmay_bytecode_record_descriptor_cached(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    uint32_t layout_id
+) {
+    if (execution == NULL || !execution->initialized || function == NULL) return NULL;
+    const MarimayBytecodeRecordLayout *layout = mmay_bytecode_record_layout(function, layout_id);
+    if (layout == NULL) return NULL;
+    MarimayBytecodeRecordDescriptorCacheEntry *entry =
+        mmay_bytecode_find_record_descriptor(execution, layout->symbol);
+    return entry != NULL && entry->complete ? entry->descriptor : NULL;
 }
 
 static MarimayBytecodeEnumDescriptorCacheEntry *

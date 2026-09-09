@@ -1,6 +1,7 @@
 #include "vm_internal.h"
 #include "vm_hot.h"
 #include "vm_frame.h"
+#include "vm_image.h"
 #include <limits.h>
 #include <string.h>
 #include "mmay/base/f64.h"
@@ -258,6 +259,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
     MarimayBytecodeRunFrame *frames = NULL;
     size_t frame_count = 0;
     size_t frame_capacity = 0;
+    MarimayBytecodeExecutionImage image = {0};
+    bool image_ready = false;
     MarimayBytecodeRunStatus status;
     const MarimayBytecodeProgramFunction *entry = NULL;
     if (options.trap != NULL) {
@@ -305,6 +308,14 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
     if (status != MMAY_BYTECODE_RUN_OK) {
         return status;
     }
+    {
+        MarimayBytecodeImageStatus image_status =
+            mmay_bytecode_execution_image_init(&image, program, allocator);
+        if (image_status == MMAY_BYTECODE_IMAGE_ALLOCATION_FAILED) {
+            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+        }
+        image_ready = image_status == MMAY_BYTECODE_IMAGE_OK;
+    }
     if (!mmay_bytecode_run_frames_reserve(
             &frames,
             &frame_capacity,
@@ -312,7 +323,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
             options.max_call_depth,
             allocator
         )) {
-        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+        status = MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+        goto cleanup;
     }
     status = mmay_bytecode_run_frame_init(
         &frames[0], entry, arguments, argument_count, allocator, 0, false,
@@ -337,8 +349,27 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
     for (;;) {
         MarimayBytecodeRunFrame *frame = &frames[frame_count - 1];
         const MarimayBytecodeFunction *body = &frame->function->body;
-        mmay_bytecode_run_hot(body, frame->registers, options.execution,
-            &frame->block, &frame->instruction, &frame->steps, options);
+        if (image_ready) {
+            const MarimayBytecodeProgramFunction *functions =
+                program->functions.data;
+            size_t function_id = (size_t)(frame->function - functions);
+            if (function_id >= image.function_count) {
+                status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+                goto cleanup;
+            }
+            if (image.functions[function_id].has_specialized_loop) {
+                mmay_bytecode_run_image_hot(&image.functions[function_id], body,
+                    frame->registers, options.execution, &frame->block,
+                    &frame->instruction, &frame->steps, options);
+            } else {
+                mmay_bytecode_run_hot(body, frame->registers,
+                    options.execution, &frame->block, &frame->instruction,
+                    &frame->steps, options);
+            }
+        } else {
+            mmay_bytecode_run_hot(body, frame->registers, options.execution,
+                &frame->block, &frame->instruction, &frame->steps, options);
+        }
         const MarimayBytecodeBlock *block = mmay_vector_at_const(
             &body->blocks,
             frame->block
@@ -522,12 +553,24 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
             } else if (call != NULL) {
                 callee_symbol = call->callee;
             }
-            callee = call != NULL
-                ? mmay_bytecode_program_function_by_symbol(
-                    program,
-                    callee_symbol
-                )
-                : NULL;
+            if (!interface_call && call != NULL && image_ready) {
+                const MarimayBytecodeProgramFunction *functions =
+                    program->functions.data;
+                size_t function_id = (size_t)(frame->function - functions);
+                const MarimayBytecodeImageOperation *operation =
+                    function_id < image.function_count
+                        ? mmay_bytecode_image_operation_at(
+                            &image.functions[function_id], frame->block,
+                            frame->instruction) : NULL;
+                callee = operation != NULL
+                    && operation->third < image.function_count
+                    ? mmay_bytecode_program_function(
+                        program, operation->third) : NULL;
+            } else {
+                callee = call != NULL
+                    ? mmay_bytecode_program_function_by_symbol(
+                        program, callee_symbol) : NULL;
+            }
             if (call == NULL || callee == NULL || frame_count >= options.max_call_depth
             ) {
                 status = frame_count >= options.max_call_depth
@@ -608,9 +651,22 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
                             .registers[argument->register_id];
                 }
             }
-            status = mmay_bytecode_run_frame_roots_init(
-                &frames[frame_count], options.execution, allocator
-            );
+            {
+                size_t callee_id = (size_t)(callee
+                    - (const MarimayBytecodeProgramFunction *)
+                        program->functions.data);
+                bool borrow_roots = image_ready
+                    && callee_id < image.function_count
+                    && image.functions[callee_id].borrows_caller_roots;
+                if (borrow_roots) {
+                    mmay_bytecode_run_frame_borrow_caller_roots(
+                        &frames[frame_count]);
+                    status = MMAY_BYTECODE_RUN_OK;
+                } else {
+                    status = mmay_bytecode_run_frame_roots_init(
+                        &frames[frame_count], options.execution, allocator);
+                }
+            }
             if (status != MMAY_BYTECODE_RUN_OK) {
                 mmay_bytecode_run_frame_dispose(
                     &frames[frame_count], &allocator, options.execution
@@ -695,5 +751,6 @@ cleanup:
     }
     mmay_bytecode_run_frames_dispose(frames, frame_capacity,
         &allocator, options.execution);
+    mmay_bytecode_execution_image_dispose(&image);
     return status;
 }

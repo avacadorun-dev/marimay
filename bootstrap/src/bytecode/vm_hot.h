@@ -15,4 +15,8 @@ const MarimayManagedArrayDescriptor *mmay_bytecode_array_descriptor_cached(
     MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
     MarimayBytecodeType type, uint32_t layout);
 
+const MarimayManagedRecordDescriptor *mmay_bytecode_record_descriptor_cached(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    uint32_t layout);
+
 #endif

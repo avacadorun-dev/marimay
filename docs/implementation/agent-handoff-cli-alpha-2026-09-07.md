@@ -491,3 +491,21 @@ The current DSU profile in raw evidence shows record projection ending regions,
 array descriptor/view rebinding and direct-call lookup. Extend the shared
 record/reference access and prepared-call/layout path next, with exact identity,
 rooting, fuel and error-order coverage. Performance parity is still not achieved.
+
+## Продолжение 2026-09-09: D107 rejection / D108 execution image
+
+[Evidence](evidence/cp42-vm-execution-image-2026-09-09.md) records the verified
+execution image, prepared direct callees, safe nested root borrowing and generic
+array-shift/record-array loop runners. A universal image dispatcher and the D107
+general record region were rejected by paired measurements. Predecoded execution
+is isolated from the stable compact translation unit. Five paired unchanged runs
+measure insertion 6 062.67 → 965.82 ms and DSU 5 478.70 → 3 846.05 ms with exact
+checksums; heap-sort is 1.02× faster, while BFS and Dijkstra remain within 0.21%
+and 0.08% of control.
+
+This is still far from Bun. The post-change
+profile measures distributed scalar/array, call/frame and image-runner cost, so
+the next block is the bounded hot-loop compilation tier already allowed by D019,
+with portable fallback and exact side exits. Do not expand one universal switch,
+install this intermediate binary or mark CP42/CP41/CLI0 complete. No new book
+idea was used in D107/D108.

@@ -39,6 +39,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
 MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
     MarimayBytecodeRunFrame *frame, MarimayBytecodeExecution *execution,
     MarimayAllocator allocator);
+void mmay_bytecode_run_frame_borrow_caller_roots(
+    MarimayBytecodeRunFrame *frame);
 bool mmay_bytecode_run_frames_reserve(MarimayBytecodeRunFrame **frames,
     size_t *capacity, size_t required, size_t maximum, MarimayAllocator allocator);
 

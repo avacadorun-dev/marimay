@@ -564,6 +564,19 @@ failure comparisons and directly checks region coverage without allocation.
 The runtime array-access test owner checks bounds, rejected truncation,
 generation saturation, rooted growth and collection for each storage width.
 
+D108 is owned by `bytecode/vm_image.c` behind `vm_image.h`. It performs the
+single-arena verified-program flattening, direct branch/callee binding, root-
+borrowing eligibility analysis and generic CFG matching. `vm_image_run.c`,
+`vm_image_shift.c` and `vm_image_follow.c` separately own predecoded dispatch,
+array-shift and record-backed array-follow/compression execution; they never
+inspect source names or symbols. The stable `vm_hot.c` scalar/array owner remains
+an independent translation unit after the measured D107 rejection. `vm.c`
+sequences the prepared owners and retains cold failure, call, panic and cleanup
+policy. `vm_frame.c` alone marks an inactive nested frame as borrowing caller
+roots. `test_bytecode_vm_image.c` owns operation layout, direct binding,
+eligibility, generic loop recognition, exact finite/shared-fuel comparison and
+single-arena allocation cleanup.
+
 D105 keeps inactive activation buffers in that same frame owner, at most one
 function layout per call depth until program teardown. Only checked root-frame
 registration can reactivate them. Return unlinks roots before reuse; managed

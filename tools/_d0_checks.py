@@ -159,7 +159,16 @@ REQUIRED_DECISIONS = {
     "D096",
     "D097",
     "D098",
-        "D099", "D100", "D101", "D102", "D103",
+    "D099",
+    "D100",
+    "D101",
+    "D102",
+    "D103",
+    "D104",
+    "D105",
+    "D106",
+    "D107",
+    "D108",
 }
 
 VALID_DECISION_STATES = {"accepted", "provisional", "deferred", "rejected"}

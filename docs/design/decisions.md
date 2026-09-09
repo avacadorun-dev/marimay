@@ -3518,3 +3518,63 @@ generated instruction demand before adding further interpreter specialization.
 The method uses non-SSA liveness suited to today's mutable-register MIR,
 following Vladimirov printed 71–74 / PDF 72–75; no SSA-only proof is presumed.
 Speedup, startup cost and parity remain measured obligations, not predictions.
+
+## D107 — Do not append a general record cache to the scalar/array hot loop
+
+Status: rejected.
+
+A bounded record-view cache was implemented with exact managed identity,
+layout, mutability, failure and fuel handling, then measured in alternating
+full-size runs. It made `record-reference-copy` 3.4%, `record-create` 2.0%,
+`catalog-interface` 1.5% and Dijkstra 1.1% slower at the median. An earlier
+combined implementation also changed the compiler's inlining of the established
+scalar/array runner and regressed unrelated algorithms.
+
+The general record region and its tests were therefore removed before commit.
+Record-heavy shapes may use a separate, completely matched execution-image
+runner when that runner wins a paired workload and retains exact side exits.
+The established D104 scalar/array translation unit remains independent so a
+new representation cannot change its machine-code shape accidentally.
+
+## D108 — Verified execution images own prepared VM dispatch
+
+Status: accepted.
+
+After complete program verification, one VM invocation may build a transient
+execution image from the verified bytecode. The image is an internal execution
+form, never a wire format or an additional source of language semantics. It
+flattens each function into fixed-size operations, resolves block targets and
+direct callees once, and retains the original block/instruction coordinates for
+every side exit and diagnostic. An unrepresentable program uses the ordinary
+verified dispatcher. Failure of the image's single central-allocator arena is
+reported as the same deterministic allocation failure and cannot be hidden by
+an allocation-dependent fallback.
+
+The image may mark a superinstruction only from opcode, operand, layout and CFG
+relations already established by the verifier. Current array-shift and
+record-backed array-follow/compression loops are recognized by their complete
+generic topology; package names, symbols, source paths and benchmark identity
+are unavailable to the matcher. A composed runner commits registers and heap
+effects in bytecode order, accounts for the exact number of original D087
+steps, and exits at the first uncommitted original instruction when fuel or an
+operation fails. The ordinary dispatcher retains panic construction, spans,
+classification and cleanup.
+
+Nested call-free functions containing only nonallocating scalar, control,
+record and non-growing array operations may borrow the caller's linked managed
+roots. Their arguments remain live in that caller for the complete nested
+activation, and no reachable instruction may allocate or collect. Entry frames
+always establish their own roots. A function containing any call, allocation,
+host operation, collection mutation that can grow, string construction or
+unknown opcode is ineligible. Cached record/array views are non-owning, compare
+the complete heap provenance/slot/generation before reuse, and remain valid
+across storage growth only through the runtime view's stable object fields.
+
+This tier remains optional on every host and does not weaken D019: unsupported
+shapes use the interpreter, and acceptable startup cannot depend on executable
+code generation. Required evidence includes direct binding and eligibility
+tests, exact per-frame/shared-fuel comparisons at every composed boundary,
+managed alias/rebinding and forced-collection cases, every reachable allocation
+failure with zero live allocations/bytes, sanitizers, unchanged workload
+checksums and paired before/after measurements. Interpreter specialization alone
+is not performance parity.

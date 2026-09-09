@@ -666,6 +666,22 @@ before modifying storage or the mutation generation. Boolean conversion is
 canonical; floating-point access preserves the stored bits, including negative
 zero and NaN payloads. These accesses introduce no allocation or safepoint.
 
+Under D108, a VM invocation may prepare an internal execution image only after
+the complete bytecode program passes verification. The image may flatten
+instructions, resolve direct branch/call targets and compose verified opcode
+sequences, but each operation remains mapped to its original block, instruction
+and span. Composed execution consumes the exact original per-frame and shared
+fuel and publishes effects in the same order. Insufficient fuel or failure
+returns at the first uncommitted original instruction. Unsupported image shapes
+use ordinary dispatch; central-allocation failure remains observable.
+
+A nested call-free function may borrow its caller's linked managed roots only
+when every reachable instruction is nonallocating and cannot collect, invoke a
+host, suspend, call or grow managed storage. The caller retains every argument
+for the whole activation. Entry frames always link their own roots. Cached views
+must compare full managed identity before reuse and cannot turn a view into a
+bounds, type, mutability or generation proof.
+
 Under D105, one program invocation may reuse inactive VM activation storage
 per call depth. Returning unlinks the callee's root frame after publishing its
 result to the parent. Inactive storage never roots managed values; every managed

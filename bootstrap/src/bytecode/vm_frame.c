@@ -160,6 +160,12 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
     }
     return status;
 }
+
+void mmay_bytecode_run_frame_borrow_caller_roots(
+    MarimayBytecodeRunFrame *frame
+) {
+    if (frame != NULL) frame->roots_prepared = true;
+}
 bool mmay_bytecode_run_frames_reserve(
     MarimayBytecodeRunFrame **frames,
     size_t *capacity,

@@ -141,6 +141,13 @@ records D104/D105, 32 unchanged full-size diagnostics, exact instruction counts,
 GC/fuel/failure coverage and 86 passing Release tests. It leaves parity and all
 release-gate obligations open.
 
+[Verified VM execution image](cp42-vm-execution-image-2026-09-09.md) records
+the measured D107 rejection, D108 fixed operations, prepared branches/callees,
+root-borrow eligibility, generic composed-loop fuel checks and paired
+insertion/DSU/control diagnostics. It measures an interpreter ceiling and leaves
+hot-loop compilation, the complete 32-workload replay, parity and every
+product/platform gate open.
+
 [Full catalogue measurement and native child access](cp42-catalog-performance-2026-09-09.md)
 ([raw matrices and profiles](cp42-catalog-performance-2026-09-09.json)) records
 32 full-size workloads, the quadratic native queue-cache cause, and remaining
