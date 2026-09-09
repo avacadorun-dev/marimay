@@ -1825,6 +1825,18 @@ order, collision resistance, mutation/iterator and failure semantics, plus
 focused allocation, sanitizer and VM/native regression coverage. Feed the
 resulting artifact into CP41; neither this entry nor a findings log closes it.
 
+The user's 2026-09-09 full catalogue request adds the
+[32-workload measurement and profiling evidence](evidence/cp42-catalog-performance-2026-09-09.md).
+All standard-size checksums pass; the native growing-record queue exposed a
+quadratic whole-array child-cache refresh under D063. Constant-time selected
+child access removes that defect locally with paired measurements and
+allocation/GC/differential coverage. The remaining work stays grouped by shared
+cause: owned text results and transient Option/Result construction; measured
+Map/Set operation paths; verified VM execution metadata/dispatch. Keep the
+catalogue pipeline and unchanged original anchors as end-to-end guards. The
+VM full-size diagnostic also explains the long combined run; it does not waive
+default-engine responsiveness, existing portfolio budgets or Tier 1 evidence.
+
 The first JSON slice supports public-field acyclic records, concrete generic
 records, arrays, int/bool/string. Explicit codecs remain available. No unbounded
 DOM/reflection, private-field discovery, host parser, new task runtime, release

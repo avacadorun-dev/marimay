@@ -119,6 +119,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[Full catalogue measurement and native child access](cp42-catalog-performance-2026-09-09.md)
+([raw matrices and profiles](cp42-catalog-performance-2026-09-09.json)) records
+32 full-size workloads, the quadratic native queue-cache cause, and remaining
+text/collection/VM costs. It supplies local performance evidence, not CP42 or
+Tier 1 closure.
+
 [Managed VM string lifetimes](cp42-vm-string-lifetime-2026-09-09.md)
 ([raw evidence](cp42-vm-string-lifetime-2026-09-09.json)) records the exact
 10,000-row concatenation regression, shared D055 live-heap accounting,

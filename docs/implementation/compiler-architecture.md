@@ -879,7 +879,15 @@ D063 assigns activation-view declaration and companion-state emission to
 `runtime/common/managed_array_access.c` behind the narrow
 `mmay/runtime/array_view.h` contract and `runtime/common/managed_record.c`
 behind `mmay/runtime/record.h`. Views contain no copied storage address and do
-not own memory. The emitter coordinator owns the conservative transitive
+not own memory. Whole-array child caches are constructed only for proven
+read-only parameters at activation entry. Other child accesses resolve the
+selected validated cell directly through the current managed slot, in constant
+time. They must neither rebuild the whole parent after each mutation nor use a
+cache left stale by an earlier read-only callee. The managed-view and root
+fixtures cover record/nested-array growth, alias replacement, retained old
+children, forced GC and every deterministic allocation failure. This preserves
+D063 identity/layout proofs without making a growing object queue quadratic.
+The emitter coordinator owns the conservative transitive
 safepoint predicate and root-location placement because those are activation
 construction decisions; runtime owners do not infer compiler liveness.
 `c_emitter_roots.c` owns backward safepoint liveness and activation-wide root

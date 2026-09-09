@@ -384,6 +384,9 @@ static bool mmay_native_c_emit_array_get(
         && mmay_native_c_array_children_parameter(
             function, functions, function_count, source_origin
         );
+    /* A mutable parent may retain a stale cache from a read-only callee.
+     * Resolve the selected, validated cell directly; refreshing every child
+     * after each mutation turns growing record/nested-array queues quadratic. */
     bool snapshot_array = prewarmed_children && target_array != NULL
         && mmay_native_c_dense_scalar_stride(target_array->element_type) != 0
         && mmay_native_c_array_register_unmodified(
@@ -443,26 +446,29 @@ static bool mmay_native_c_emit_array_get(
                 instruction->first, instruction->second
             ) || !mmay_native_c_write_from_managed_cell(
                 buffer, array->element_type, instruction->target
-            ) || ((array_target || record_target) && !prewarmed_children
+            ) || (array_target && !prewarmed_children
                 && !mmay_native_c_write(
-                buffer,
-                "; if (mmay_g_av_%u.object->generated_children == NULL || mmay_g_av_%u.object->generated_children->generation != mmay_g_av_%u.object->mutation_generation || mmay_g_av_%u.object->generated_children->count != mmay_g_av_%u.object->length) { mmay_g_m = mmay_managed_array_generated_cache_children(&mmay_g_x->heap, mmay_g_v_%u, &mmay_g_av_%u); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }",
-                instruction->first, instruction->first, instruction->first,
-                instruction->first, instruction->first, instruction->first,
-                instruction->first
-            )) || (array_target && !mmay_native_c_write(
+                    buffer,
+                    "; mmay_g_av_%u = (MarimayManagedArrayGeneratedView){0}; mmay_g_av_%u.object = mmay_managed_array_generated_child_unchecked(&mmay_g_x->heap, mmay_g_cell.reference)",
+                    instruction->target, instruction->target
+            )) || (array_target && prewarmed_children
+                && !mmay_native_c_write(
                     buffer,
                     snapshot_array
                         ? "; mmay_g_av_%u = (MarimayManagedArrayGeneratedView){0}; mmay_g_av_%u.object = ((void)mmay_g_av_%u.object, &mmay_g_av_%u.object->generated_children->entries[(size_t)mmay_g_v_%u].array_snapshot)"
-                        : "; mmay_g_av_%u = (MarimayManagedArrayGeneratedView){0}; mmay_g_av_%u.object = mmay_g_av_%u.object->generated_children != NULL ? (MarimayManagedArray *)mmay_g_av_%u.object->generated_children->entries[(size_t)mmay_g_v_%u].object : mmay_managed_array_generated_child_unchecked(&mmay_g_x->heap, mmay_g_cell.reference)",
+                        : "; mmay_g_av_%u = (MarimayManagedArrayGeneratedView){0}; mmay_g_av_%u.object = ((void)mmay_g_av_%u.object, (MarimayManagedArray *)mmay_g_av_%u.object->generated_children->entries[(size_t)mmay_g_v_%u].object)",
                     instruction->target, instruction->target,
                     instruction->first, instruction->first,
                     instruction->second
-            )) || (record_target && !mmay_native_c_write(
+            )) || (record_target && !prewarmed_children
+                && !mmay_native_c_write(
                     buffer,
-                    prewarmed_children
-                        ? "; mmay_g_rv_%u.reference = mmay_g_cell.reference; mmay_g_rv_%u.object = ((void)mmay_g_av_%u.object, (MarimayManagedRecord *)mmay_g_av_%u.object->generated_children->entries[(size_t)mmay_g_v_%u].object)"
-                        : "; mmay_g_rv_%u.reference = mmay_g_cell.reference; mmay_g_rv_%u.object = mmay_g_av_%u.object->generated_children != NULL ? (MarimayManagedRecord *)mmay_g_av_%u.object->generated_children->entries[(size_t)mmay_g_v_%u].object : mmay_managed_record_generated_child_unchecked(&mmay_g_x->heap, mmay_g_cell.reference)",
+                    "; mmay_g_rv_%u.reference = mmay_g_cell.reference; mmay_g_rv_%u.object = mmay_managed_record_generated_child_unchecked(&mmay_g_x->heap, mmay_g_cell.reference)",
+                    instruction->target, instruction->target
+            )) || (record_target && prewarmed_children
+                && !mmay_native_c_write(
+                    buffer,
+                    "; mmay_g_rv_%u.reference = mmay_g_cell.reference; mmay_g_rv_%u.object = ((void)mmay_g_av_%u.object, (MarimayManagedRecord *)mmay_g_av_%u.object->generated_children->entries[(size_t)mmay_g_v_%u].object)",
                     instruction->target, instruction->target,
                     instruction->first, instruction->first,
                     instruction->second

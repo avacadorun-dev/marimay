@@ -29,5 +29,10 @@ Latest local runtime evidence: [managed VM string lifetimes and the catalogue
 regression matrix](docs/implementation/evidence/cp42-vm-string-lifetime-2026-09-09.md).
 This fixes the report-concat defect; release-gate states remain unchanged.
 
+The [full catalogue performance investigation](docs/implementation/evidence/cp42-catalog-performance-2026-09-09.md)
+records all 32 standard workloads, the native object-queue regression and open
+shared text/collection/VM execution costs. These findings remain part of the
+pre-alpha performance work; no existing acceptance budget is waived.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

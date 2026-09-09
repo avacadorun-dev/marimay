@@ -389,3 +389,34 @@ the new catalogue smoke matrix covers 21 workloads on VM/native/Go/Rust.
 The runtime change supplies local defect evidence, not competitive-performance
 or full-alpha acceptance. Continue the shared portfolio startup/preparation
 work and CP42 → CP41 → CP39 → CP40/N0 obligations; commit/push main.
+
+## 2026-09-09 — measured catalogue costs and native queue repair
+
+The user requested an actual full benchmark and pre-alpha diagnosis. The
+[catalogue investigation](evidence/cp42-catalog-performance-2026-09-09.md)
+retains two complete 32-workload native/Go/Rust matrices (3 warmups + 11 samples),
+one full-size 32-workload VM diagnostic (3 samples), four CPU profiles and an
+alternating 21-workload before/after check. Every checksum passes. Inputs were
+frozen per run; host isolation remains local-unverified.
+
+Native record BFS spent 98.9% of sampled stacks refreshing all parent children
+after queue mutation. D063 access now resolves only the selected cell; bulk
+prewarming remains for proven read-only parameters. Full-matrix BFS fell from
+553.85 to 9.58 ms, and alternating binaries confirmed 575.91 / 9.73 ms (59.2×).
+All 86 Release CTest cases passed across initial successes and corrected test
+reruns; the two changed owners passed forced-GC/all-index checks under
+ASan/UBSan, including generated C O0/O2. The system release is rebuilt.
+
+Remaining priorities are shared owned text/Option/Result construction and
+measured Map/Set paths, then prepared VM execution metadata and dispatch;
+retain the whole pipeline and original anchors as guards. Native word counting
+is still 7.1× Go, normalization 6.2×, string Map 3.1× and Set churn 4.8×.
+VM insertion takes 21.2 seconds; the summed VM median round is 84 seconds,
+explaining roughly 20 minutes for 14 rounds. This is an estimate from measured
+medians, not a timed complete VM 14-round run. Startup/portfolio and Tier 1
+obligations remain open. No new book idea was used in this investigation.
+
+The external benchmark worktree retains pre-existing uncommitted catalogue
+work. Local harness repairs add per-observation journals, early integrity
+checks, replay and default console results; 89 Python tests pass. Do not edit
+hashed sources or replace binaries while a user or agent measurement is active.

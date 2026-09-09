@@ -39,13 +39,28 @@ void mmay_test_native_c_emitter_managed_views(void) {
         "  const copied = original;\n"
         "  return stableFirst(copied);\n"
         "}\n"
+        "fn recordFirst(values: []StableBag): int { return values[0].values[0]; }\n"
+        "fn arrayFirst(values: [][]int): int { return values[0][0]; }\n"
+        "fn children(): int {\n"
+        "  const records = [StableBag { values: [2] }];\n"
+        "  const arrays = [[3]];\n"
+        "  const before = recordFirst(records) + arrayFirst(arrays);\n"
+        "  records[0] = StableBag { values: [11] };\n"
+        "  arrays[0] = [13];\n"
+        "  for i in 0..32 {\n"
+        "    const _ = push(records, StableBag { values: [i] });\n"
+        "    const _ = push(arrays, [i]);\n"
+        "  }\n"
+        "  return before + records[0].values[0] + arrays[0][0]\n"
+        "    + records[32].values[0] + arrays[32][0];\n"
+        "}\n"
         "fn main(): int {\n"
-        "  return afterReplace(Bag { values: [7] }) + copiedStable();\n"
+        "  return afterReplace(Bag { values: [7] }) + copiedStable() + children();\n"
         "}\n";
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
     const MarimayCheckedFunction *main_function = NULL;
-    const MarimayMirFunction *functions[8];
+    const MarimayMirFunction *functions[16];
     MarimayNativeCProgram program;
     MarimayOwnedBytes generated;
     size_t function_count = 0;
@@ -69,8 +84,8 @@ void mmay_test_native_c_emitter_managed_views(void) {
         return;
     }
     MMAY_EXPECT(checked.diagnostics.length == 0);
-    MMAY_EXPECT(checked.functions.length <= 8);
-    for (index = 0; index < checked.functions.length && index < 8;
+    MMAY_EXPECT(checked.functions.length <= 16);
+    for (index = 0; index < checked.functions.length && index < 16;
         index += 1) {
         const MarimayCheckedFunction *function = mmay_checked_function(
             &checked, index
@@ -127,13 +142,30 @@ void mmay_test_native_c_emitter_managed_views(void) {
         MMAY_EXPECT(mmay_test_native_contains(
             &generated, "mmay_managed_array_generated_get_scalar("
         ));
+        /* Keep proven parameter prewarming, but never rescan a mutable
+         * parent or consult its possibly stale child cache at an access. */
+        MMAY_EXPECT(mmay_test_native_contains(
+            &generated, "mmay_managed_array_generated_cache_children("
+        ));
+        MMAY_EXPECT(!mmay_test_native_contains(
+            &generated, "generated_children->generation !="
+        ));
+        MMAY_EXPECT(!mmay_test_native_contains(
+            &generated, "generated_children != NULL ?"
+        ));
+        MMAY_EXPECT(mmay_test_native_contains(
+            &generated, "mmay_managed_record_generated_child_unchecked(&mmay_g_x->heap, mmay_g_cell.reference)"
+        ));
+        MMAY_EXPECT(mmay_test_native_contains(
+            &generated, "mmay_managed_array_generated_child_unchecked(&mmay_g_x->heap, mmay_g_cell.reference)"
+        ));
         MMAY_EXPECT(mmay_test_native_contains(
             &generated,
             "#if MMAY_G_FAIL_ALLOCATION_AT != SIZE_MAX\n"
             "#if MMAY_G_FAIL_ALLOCATION_AT != SIZE_MAX\n"
         ));
 #if !defined(_WIN32)
-        mmay_test_native_compile_and_run(&generated, "ok:i64:21\n", 0);
+        mmay_test_native_compile_and_run(&generated, "ok:i64:112\n", 0);
 #endif
     }
     mmay_owned_bytes_dispose(&generated);
