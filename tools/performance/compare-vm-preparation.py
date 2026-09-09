@@ -52,6 +52,11 @@ def main():
         meta = capture_metadata(repository, compiler.resolve(), warmups=args.warmups,
                                 samples=args.samples, timeout_seconds=timeout,
                                 max_heap_bytes=heap, command=sys.argv)
+        # The upstream collector labels every host dedicated without checking
+        # other work. This developer comparison cannot attest that contract.
+        isolation = meta["isolation"]
+        isolation["collector_reported_mode"] = isolation["mode"]
+        isolation["mode"] = "local-unverified"
         pinned, files = pin_toolchain(compiler, create_workspace(snapshot_root), meta)
         artifacts.update(files)
         metadata[label] = meta

@@ -87,10 +87,14 @@ insertion/DSU/Dijkstra при неизменном числе логически
 
 ### 3. Hot-loop compilation tier
 
-Миллиарды логических операций не позволят переносимому switch-interpreter
-сравняться с JIT одним layout. После стабилизации execution image вводится
-компиляция горячих scalar/control/array traces. Это tier той же VM над тем же
-typed MIR, а не распознавание benchmark или вызов алгоритма из runtime.
+Миллиарды логических операций указывают на большой расход исполнения, но не
+доказывают необходимость собственного JIT. После проверки переносимости этот
+этап остаётся кандидатом: его нужно сравнить с общими преобразованиями MIR,
+дешёвыми активациями и переносимой специализацией интерпретатора. Выбор
+собственного машинного emitter или готового backend требует отдельного
+обоснования. Если выбирается компиляция горячих scalar/control/array traces,
+она остаётся tier той же VM над тем же typed MIR, без распознавания benchmark
+или вызова алгоритма из runtime.
 
 Tier допускается только для verified operations и обязан иметь side exit на
 каждой failing/allocating/call/GC/host boundary. Он получает явный fuel budget,
@@ -155,8 +159,10 @@ native workload должна быть ≤ 1,25× более быстрого и�
 1. Завершить execution-image owner: компактное представление, прямые branch,
    callee и layout bindings, rollback/failure tests.
 2. Добавить family runners и superinstructions; повторить 32-cell VM matrix.
-3. По полученному dispatch ceiling реализовать hot-loop tier; повторять до
-   длинного VM/Bun gate, не выдавая interpreter-only улучшение за завершение.
+3. По оставшемуся разрыву сравнить общий compiler tier и дальнейшие переносимые
+   изменения. Проверять стоимость source-run и все Tier 1 targets; собственный
+   JIT не является заранее обязательным решением. VM/Bun — промежуточный gate,
+   цель пользователя остаётся паритетом с Go/Rust на всех 32 workloads.
 4. Параллельно по независимому native профилю выполнить borrowed-text и
    result-transport волну; затем escaping records.
 5. Полная локальная матрица 3+11, Tier 1 CI/perf, CP42 → CP41 → CP39 → CP40/N0.

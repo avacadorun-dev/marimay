@@ -700,9 +700,12 @@ Under D105, one program invocation may reuse inactive VM activation storage
 per call depth. Returning unlinks the callee's root frame after publishing its
 result to the parent. Inactive storage never roots managed values; every managed
 location is invalidated before arguments are installed and checked roots are
-linked for reuse. Only the same verified function layout reuses a slot; a
-different layout replaces it. Teardown releases all active and inactive storage
-on success and failure. Call-depth/fuel limits, source values, panic/defer order
+linked for reuse. Under D110, a different verified function layout may reuse
+the slot's allocated buffer capacity. It must rebuild active register types and
+root locations; unused capacity must never become a root. Each buffer is bounded
+by the largest corresponding verified layout encountered at that depth, and no
+layout or value survives the program invocation. Teardown releases all active
+and inactive storage on success and failure. Call-depth/fuel limits, source values, panic/defer order
 and D055 managed-heap accounting remain unchanged.
 
 Under D076, `Bytes`, both bounded builders, `Bytes.Iterator`, and every owned

@@ -3,6 +3,18 @@
 
 #include <string.h>
 
+/* Only inactive buffers may grow. Preserve the previous allocation on failure
+ * so the normal frame teardown still owns every byte. Contents are rebuilt. */
+static void *mmay_bytecode_frame_reserve_buffer(void *buffer, size_t *capacity,
+    size_t required, MarimayAllocator allocator) {
+    if (required <= *capacity) return buffer;
+    void *next = mmay_allocate(&allocator, required);
+    if (next == NULL) return NULL;
+    mmay_deallocate(&allocator, buffer, *capacity);
+    *capacity = required;
+    return next;
+}
+
 void mmay_bytecode_run_frame_dispose(
     MarimayBytecodeRunFrame *frame,
     const MarimayAllocator *allocator,
@@ -10,6 +22,7 @@ void mmay_bytecode_run_frame_dispose(
 ) {
     if (frame != NULL && allocator != NULL) {
         if (frame->managed_roots != NULL) {
+            frame->managed_roots->location_bytes = frame->root_location_capacity;
             mmay_bytecode_run_roots_dispose(
                 frame->managed_roots, execution, *allocator
             );
@@ -39,7 +52,9 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
     const MarimayBytecodeFunction *body = function != NULL ? &function->body : NULL;
     size_t index = 0;
     if (frame == NULL || body == NULL
-        || (arguments == NULL && argument_count != 0)) {
+        || argument_count > body->parameter_count
+        || (arguments == NULL && argument_count != 0)
+        || (frame->managed_roots != NULL && frame->managed_roots->frame.linked)) {
         return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
     if (frame->function == function && frame->roots_prepared) {
@@ -53,35 +68,33 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
             }
         }
     } else {
-        mmay_bytecode_run_frame_dispose(frame, &allocator, NULL);
+        size_t register_bytes = 0;
+        size_t defer_bytes = 0;
+        frame->function = NULL;
+        frame->roots_prepared = false;
+        if (frame->managed_roots != NULL) {
+            /* Old locations may refer to a smaller layout or a buffer about
+             * to move. They are inactive and must never be relinked. */
+            frame->managed_roots->location_bytes = 0;
+        }
         if (!mmay_size_multiply(
                 body->register_types.length == 0 ? 1 : body->register_types.length,
-                sizeof(MarimayBytecodeValue),
-                &frame->register_bytes
-            )) {
+                sizeof(MarimayBytecodeValue), &register_bytes)
+            || !mmay_size_multiply(body->calls.length,
+                sizeof(*frame->defer_stack), &defer_bytes)) {
             return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         }
-        frame->registers = mmay_allocate(&allocator, frame->register_bytes);
-        if (frame->registers == NULL) {
+        void *registers = mmay_bytecode_frame_reserve_buffer(frame->registers,
+            &frame->register_bytes, register_bytes, allocator);
+        if (registers == NULL) return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+        frame->registers = registers;
+        memset(frame->registers, 0, register_bytes);
+        void *defers = mmay_bytecode_frame_reserve_buffer(frame->defer_stack,
+            &frame->defer_stack_bytes, defer_bytes, allocator);
+        if (defer_bytes != 0 && defers == NULL) {
             return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         }
-        memset(frame->registers, 0, frame->register_bytes);
-        if (body->calls.length != 0) {
-            if (!mmay_size_multiply(
-                    body->calls.length, sizeof(*frame->defer_stack),
-                    &frame->defer_stack_bytes
-                )) {
-                mmay_bytecode_run_frame_dispose(frame, &allocator, NULL);
-                return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-            }
-            frame->defer_stack = mmay_allocate(
-                &allocator, frame->defer_stack_bytes
-            );
-            if (frame->defer_stack == NULL) {
-                mmay_bytecode_run_frame_dispose(frame, &allocator, NULL);
-                return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-            }
-        }
+        frame->defer_stack = defers;
         for (index = 0; index < body->register_types.length; index += 1) {
             const MarimayBytecodeType *type = mmay_vector_at_const(
                 &body->register_types,
@@ -139,25 +152,40 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
     if (execution == NULL) {
         return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
     }
-    frame->managed_roots = mmay_allocate(
-        &allocator, sizeof(*frame->managed_roots)
-    );
     if (frame->managed_roots == NULL) {
+        frame->managed_roots = mmay_allocate(&allocator, sizeof(*frame->managed_roots));
+        if (frame->managed_roots == NULL) return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+        memset(frame->managed_roots, 0, sizeof(*frame->managed_roots));
+    }
+    size_t count = 0;
+    const MarimayBytecodeFunction *body = &frame->function->body;
+    const MarimayBytecodeType *types = body->register_types.data;
+    for (size_t index = 0; index < body->register_types.length; index += 1) {
+        if (mmay_bytecode_type_is_managed(types[index])) count += 1;
+    }
+    size_t bytes = 0;
+    if (!mmay_size_multiply(count, sizeof(*frame->managed_roots->locations), &bytes)) {
         return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     }
-    memset(frame->managed_roots, 0, sizeof(*frame->managed_roots));
-    status = mmay_bytecode_run_roots_init(
-        frame->managed_roots, execution, &frame->function->body,
-        frame->registers, allocator
-    );
-    if (status != MMAY_BYTECODE_RUN_OK) {
-        mmay_deallocate(
-            &allocator, frame->managed_roots, sizeof(*frame->managed_roots)
-        );
-        frame->managed_roots = NULL;
-    } else {
-        frame->roots_prepared = true;
+    void *locations = mmay_bytecode_frame_reserve_buffer(frame->managed_roots->locations,
+        &frame->root_location_capacity, bytes, allocator);
+    if (bytes != 0 && locations == NULL) return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+    frame->managed_roots->locations = locations;
+    frame->managed_roots->location_bytes = bytes;
+    count = 0;
+    for (size_t index = 0; index < body->register_types.length; index += 1) {
+        if (mmay_bytecode_type_is_managed(types[index])) {
+            frame->managed_roots->locations[count++] =
+                &frame->registers[index].as.managed_reference;
+        }
     }
+    MarimayManagedStatus managed_status = mmay_managed_root_push(
+        &execution->managed_heap, &frame->managed_roots->frame,
+        frame->managed_roots->locations, count);
+    status = managed_status == MMAY_MANAGED_OK ? MMAY_BYTECODE_RUN_OK
+        : managed_status == MMAY_MANAGED_INVALID_REFERENCE
+            ? MMAY_BYTECODE_RUN_INVALID_REFERENCE : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    if (status == MMAY_BYTECODE_RUN_OK) frame->roots_prepared = true;
     return status;
 }
 

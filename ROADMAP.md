@@ -75,8 +75,17 @@ parity, execution-loop costs and Tier 1 acceptance remain open.
 
 The [VM execution cost map](docs/research/vm-execution-cost-map-2026-09-09.md)
 records 4.442 billion original instructions across the unchanged 32 workloads.
-It directs the next performance wave toward general linked hot regions and
-internal calls; diagnostic coverage is not a new speedup or parity acceptance.
+It identifies shared execution, call and runtime costs. A handwritten JIT is
+one candidate, not a conclusion established by opcode counts; its ARM64
+prototype is parked outside production after portability and correctness
+review. Diagnostic coverage is not a new speedup or parity acceptance.
+
+[Portable VM frame capacity reuse](docs/implementation/evidence/cp42-vm-frame-capacity-2026-09-09.md)
+extends D105 under D110 so alternating verified callees reuse inactive buffer
+capacity while rebuilding active types and GC root locations. The change is
+independent of CPU architecture. Exact limits, managed-heap accounting and
+source semantics remain unchanged; local timing and ownership evidence does
+not close the remaining execution-loop, native runtime or Tier 1 parity gates.
 
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

@@ -588,15 +588,18 @@ contents and allocator teardown.
 D105 keeps inactive activation buffers in that same frame owner, at most one
 function layout per call depth until program teardown. Only checked root-frame
 registration can reactivate them. Return unlinks roots before reuse; managed
-locations are invalidated before new arguments are installed. A changed
-function layout replaces its storage, and final teardown traverses inactive as
-well as active slots. Root-frame objects remain separately allocated so stack
+locations are invalidated before new arguments are installed. Under D110 a
+changed function layout reuses buffer capacities, initializes its active types
+and rebuilds its root-location map. `vm_frame.c` tracks the root-location
+allocation capacity separately from its active byte length; final teardown
+frees capacity and traverses inactive as well as active slots. Root-frame objects remain separately allocated so stack
 growth cannot move a linked root. No cached register value keeps a managed
 object alive, and no function metadata survives the program invocation.
 `test_bytecode_vm_frame.c` owns the activation lifecycle regression: stable
 roots across stack relocation, collection of inactive values, all-reference
-reset before reuse, allocation-free same-layout setup, changed-layout setup,
-inactive-slot teardown, and every deterministic allocation-failure index with
+reset before reuse, allocation-free same-layout and alternating-layout setup,
+reference-position changes, growth/shrinkage, stale trailing references,
+borrowed-to-owning transitions, inactive-slot teardown, and every deterministic allocation-failure index with
 both allocator counters zero after teardown.
 
 The CP42 config performance follow-up keeps opcode-family routing in

@@ -3442,8 +3442,9 @@ Status: accepted.
 The program VM may retain inactive register, defer and root-location storage
 in its explicit frame stack until that program invocation finishes. The pool
 is indexed by call depth and stores at most one function layout per slot,
-bounded by the existing maximum call depth. A different function at that depth
-releases the previous storage before creating its own. There is no process-
+bounded by the existing maximum call depth. Originally a different function at
+that depth released the previous storage before creating its own; D110 extends
+this policy to reuse capacity while replacing the active layout. There is no process-
 global cache, retained program, or reuse across independent invocations.
 
 Returning first publishes the result to the parent's rooted destination, then
@@ -3621,3 +3622,44 @@ complete iterations removes that representation cost without adding a source
 rewrite, workload kernel or executable-code dependency. The measured D109
 candidate reduces the paired same-base median from 980.44 to 234.36
 milliseconds; VM/Bun parity and other trace families remain open.
+
+## D110 — Reuse inactive VM buffer capacity across verified function layouts
+
+Status: accepted.
+
+D105's invocation-local activation storage may retain register, defer and
+root-location buffer capacity when a different verified function enters the
+same inactive depth slot. The slot still has exactly one current function
+layout. Each buffer grows only when the current function requires more space;
+its retained capacity is bounded by the largest corresponding verified layout
+encountered at that depth. There is no additional callee cache or executable
+code, and no architecture-specific path.
+
+A layout change invalidates the old root-location map before register storage
+can move. It initializes every active register's type and invalidates every
+active managed reference before installing arguments. An owning activation
+rebuilds its complete root-location map and uses checked root registration.
+Unused capacity is never a root. D108's proven borrowing eligibility is
+unchanged; an inactive retained root object is not linked merely because it
+exists. Same-function reuse may retain its already prepared metadata under
+D105's definite-assignment contract.
+
+Root-frame addresses remain stable across frame-vector and register-buffer
+growth. Growth failure leaves prior buffers owned by the frame; teardown frees
+all partial, active and inactive storage using allocation capacities rather
+than current layout lengths. Repeated calls within established capacities
+require no host allocations. Allocation failure remains observable whenever a
+required allocation fails; the host allocation sequence is not a language
+contract. Managed-heap accounting, logical call depth, exact per-frame/shared
+fuel, argument and return checks, panic locations and defer order are unchanged.
+
+Validation covers alternating scalar/managed layouts with different reference
+positions, growth and shrinkage, stale trailing references after collection,
+borrowed-to-owning transitions, stack relocation, every deterministic allocation
+failure through successful teardown and both zero allocator counters. Existing
+VM/native differential and finite-fuel tests remain required.
+
+Reason: D105 removes repeated allocation for one callee, but alternating callees
+still rebuild their buffers from fresh allocations even at constant call depth.
+Retaining capacity removes that allocator traffic in portable C17 without
+retaining the values of a completed activation.

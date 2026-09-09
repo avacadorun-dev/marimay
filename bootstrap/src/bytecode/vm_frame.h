@@ -21,6 +21,7 @@ typedef struct MarimayBytecodeRunFrame {
     MarimayBytecodeCallId *defer_stack;
     size_t defer_stack_bytes;
     size_t defer_count;
+    size_t root_location_capacity;
     bool roots_prepared;
 } MarimayBytecodeRunFrame;
 
