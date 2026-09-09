@@ -21,6 +21,7 @@ add_executable(mmay_c_unit
   test_base.c
   test_checked_integer.c
   test_integer_range.c
+  test_integer_range_edges.c
   test_integer_text.c
   test_string_interpolation.c
   test_bytecode.c

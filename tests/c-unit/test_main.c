@@ -9,6 +9,7 @@ void mmay_test_ast(void);
 void mmay_test_base(void);
 void mmay_test_checked_integer(void);
 void mmay_test_integer_range(void);
+void mmay_test_integer_range_edges(void);
 void mmay_test_integer_text(void);
 void mmay_test_string_interpolation(void);
 void mmay_test_bytecode(void);
@@ -158,6 +159,7 @@ static void mmay_test_run_suite_shard(size_t shard_index) {
         mmay_test_base();
         mmay_test_checked_integer();
         mmay_test_integer_range();
+        mmay_test_integer_range_edges();
         mmay_test_integer_text();
         mmay_test_string_interpolation();
         mmay_test_diagnostic();

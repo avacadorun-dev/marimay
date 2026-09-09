@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "mmay/base/checked_i64.h"
+#include "integer_range_edges.h"
 
 static bool mmay_integer_range_consume(
     size_t *used,
@@ -310,24 +311,6 @@ static bool mmay_integer_range_edge(
     return true;
 }
 
-static bool mmay_integer_range_predecessor(
-    const MarimayIntegerRangeProgram *program,
-    size_t predecessor,
-    size_t successor
-) {
-    MarimayIntegerRangeTerminator terminator;
-    if (!program->read_terminator(
-            program->context, predecessor, &terminator
-        )) {
-        return false;
-    }
-    return (terminator.kind == MMAY_INTEGER_RANGE_TERMINATOR_GOTO
-            && terminator.target == successor)
-        || (terminator.kind == MMAY_INTEGER_RANGE_TERMINATOR_BRANCH
-            && (terminator.target == successor
-                || terminator.otherwise == successor));
-}
-
 MarimayIntegerRangeStatus mmay_integer_range_analyze(
     const MarimayIntegerRangeProgram *program,
     size_t work_limit,
@@ -338,6 +321,7 @@ MarimayIntegerRangeStatus mmay_integer_range_analyze(
     MarimayIntegerRange *edge = NULL;
     unsigned char *outgoing_ready = NULL;
     unsigned char *updates = NULL;
+    MarimayIntegerRangeEdges edges = {0};
     size_t block_index = 0;
     size_t bytes = 0;
     size_t ready_bytes = 0;
@@ -401,6 +385,8 @@ MarimayIntegerRangeStatus mmay_integer_range_analyze(
     memset(analysis->incoming_ready, 0, ready_bytes);
     memset(outgoing_ready, 0, ready_bytes);
     memset(updates, 0, ready_bytes);
+    status = mmay_integer_range_edges_init(program, &edges);
+    if (status != MMAY_INTEGER_RANGE_OK) goto cleanup;
     while (changed || !narrowing) {
         if (!changed) {
             narrowing = true;
@@ -409,7 +395,6 @@ MarimayIntegerRangeStatus mmay_integer_range_analyze(
         changed = false;
         for (block_index = 0; block_index < program->block_count;
             block_index += 1) {
-            size_t predecessor = 0;
             size_t register_index = 0;
             size_t instruction_count = 0;
             size_t instruction_index = 0;
@@ -443,15 +428,13 @@ MarimayIntegerRangeStatus mmay_integer_range_analyze(
                 }
                 ready = true;
             } else {
-                for (predecessor = 0;
-                    predecessor < program->block_count;
-                    predecessor += 1) {
+                for (size_t edge_id = edges.heads[block_index];
+                    edge_id != SIZE_MAX;
+                    edge_id = edges.entries[edge_id].next) {
+                    size_t predecessor = edges.entries[edge_id].predecessor;
                     const MarimayIntegerRange *predecessor_row = outgoing
                         + predecessor * program->register_count;
-                    if (!outgoing_ready[predecessor]
-                        || !mmay_integer_range_predecessor(
-                            program, predecessor, block_index
-                        )) {
+                    if (!outgoing_ready[predecessor]) {
                         continue;
                     }
                     if (predecessor >= block_index) {
@@ -600,6 +583,7 @@ MarimayIntegerRangeStatus mmay_integer_range_analyze(
         }
     }
 cleanup:
+    mmay_integer_range_edges_dispose(&edges);
     mmay_deallocate(&program->allocator, outgoing, bytes);
     mmay_deallocate(
         &program->allocator, edge, analysis->scratch_bytes

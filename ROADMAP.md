@@ -56,7 +56,14 @@ records the measured D107 rejection, D108 direct call/root preparation and
 generic composed loops. Paired insertion improves 6.28× and DSU 1.42× with
 unchanged checksums; the stable compact runner also removes measured control
 regressions. The interpreter ceiling still leaves both far from Bun. Hot-loop
-compilation, the full 32-workload replay and all parity/Tier 1 gates remain open.
+compilation and all parity/Tier 1 gates remain open.
+
+[VM source preparation](docs/implementation/evidence/cp42-vm-preparation-2026-09-09.md)
+indexes D062 predecessor edges while preserving every charged work boundary
+and proof result. Paired 3+11 runs remove about 9 ms from short source runs;
+all 32 workloads across five participants pass the full 3+11 matrix. Release
+86/86 and focused ASan/UBSan 12/12 pass locally. Native and VM performance
+parity, execution-loop costs and Tier 1 acceptance remain open.
 
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

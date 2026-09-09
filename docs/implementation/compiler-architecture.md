@@ -937,6 +937,13 @@ the work limit. Bytecode adaptation consults the opcode-effects owner before
 treating operand zero as a destination: void-call table indices and stores are
 not scalar-register writes. Focused convergence tests exercise real loop CFGs
 under a small deterministic work budget and sweep allocation failures.
+The private `base/integer_range_edges.c` owner indexes the immutable adapter's
+CFG in one checked allocator arena. Its incoming lists retain ascending
+predecessor order and coalesce duplicate branch arms; interval transfer,
+widening/narrowing order and charged verification work stay in the lattice
+owner. `test_integer_range_edges.c` pins pre-index facts, proof decisions and
+every finite-work boundary, linear CFG traversal, malformed adapter edges and
+all-index allocation cleanup. No prepared index survives one analysis.
 VM/MIR/native execution only consumes already verified proven forms and
 uses the portable unsigned-domain helpers in `checked_i64.c`; no backend grants
 or repairs a proof.

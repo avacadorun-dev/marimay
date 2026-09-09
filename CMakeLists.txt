@@ -391,6 +391,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/base/f64_runtime.c
   bootstrap/src/base/hash.c
   bootstrap/src/base/integer_range.c
+  bootstrap/src/base/integer_range_edges.c
   bootstrap/src/base/integer_text.c
   bootstrap/src/base/map.c
   bootstrap/src/base/number_format.c
