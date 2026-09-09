@@ -54,6 +54,8 @@ add_executable(mmay_c_unit
   test_bytecode_vm_support.c
   test_bytecode_vm_scalar.c
   test_bytecode_vm_strings.c
+  test_bytecode_vm_hot.c
+  test_bytecode_vm_frame.c
   test_bytecode_vm_arithmetic.c
   test_bytecode_vm_arrays.c
   test_bytecode_vm_array_storage.c
@@ -257,6 +259,7 @@ target_include_directories(mmay_c_unit PRIVATE
   "${CMAKE_CURRENT_SOURCE_DIR}"
   "${CMAKE_CURRENT_SOURCE_DIR}/../fuzz"
   "${CMAKE_SOURCE_DIR}/bootstrap/src/cli"
+  "${CMAKE_SOURCE_DIR}/bootstrap/src/bytecode"
 )
 target_compile_definitions(mmay_c_unit PRIVATE
   MMAY_TEST_C_COMPILER="${CMAKE_C_COMPILER}"

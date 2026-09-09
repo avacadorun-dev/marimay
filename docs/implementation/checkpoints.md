@@ -1837,6 +1837,15 @@ catalogue pipeline and unchanged original anchors as end-to-end guards. The
 VM full-size diagnostic also explains the long combined run; it does not waive
 default-engine responsiveness, existing portfolio budgets or Tier 1 evidence.
 
+[D104/D105 VM execution evidence](evidence/cp42-vm-regions-2026-09-09.md)
+adds nonallocating validated-view regions and invocation-local inactive-frame
+reuse. All 32 full-size diagnostic workloads and 86 Release tests pass locally,
+with focused sanitizer, exact fuel, forced-GC and allocation-failure evidence.
+Dynamic instruction counts expose redundant scalar/control flow and call
+preparation as the next shared boundary. This improvement is not VM/native
+parity, does not replace the full CP42/CP41 acceptance and leaves all platform,
+startup and native text/collection obligations in force.
+
 The first JSON slice supports public-field acyclic records, concrete generic
 records, arrays, int/bool/string. Explicit codecs remain available. No unbounded
 DOM/reflection, private-field discovery, host parser, new task runtime, release

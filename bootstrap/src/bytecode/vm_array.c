@@ -1,4 +1,5 @@
 #include "vm_internal.h"
+#include "vm_hot.h"
 
 #include <string.h>
 
@@ -102,6 +103,21 @@ static MarimayBytecodeArrayDescriptorEntry *mmay_bytecode_find_array_descriptor(
         }
     }
     return NULL;
+}
+
+const MarimayManagedArrayDescriptor *mmay_bytecode_array_descriptor_cached(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    MarimayBytecodeType type, uint32_t layout
+) {
+    if (type != MMAY_BYTECODE_TYPE_ARRAY) {
+        return mmay_bytecode_array_descriptor(type);
+    }
+    if (execution == NULL || !execution->initialized || function == NULL) {
+        return NULL;
+    }
+    MarimayBytecodeArrayDescriptorEntry *entry =
+        mmay_bytecode_find_array_descriptor(execution, function, layout);
+    return entry != NULL && entry->complete ? entry->descriptor : NULL;
 }
 
 static bool mmay_bytecode_build_array_element_descriptor(

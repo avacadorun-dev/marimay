@@ -442,6 +442,8 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm.c
   bootstrap/src/bytecode/vm_array.c
   bootstrap/src/bytecode/vm_range.c
+  bootstrap/src/bytecode/vm_hot.c
+  bootstrap/src/bytecode/vm_frame.c
   bootstrap/src/bytecode/vm_array_mutation.c
   bootstrap/src/bytecode/vm_collection.c
   bootstrap/src/bytecode/vm_defer.c

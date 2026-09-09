@@ -420,3 +420,30 @@ The external benchmark worktree retains pre-existing uncommitted catalogue
 work. Local harness repairs add per-observation journals, early integrity
 checks, replay and default console results; 89 Python tests pass. Do not edit
 hashed sources or replace binaries while a user or agent measurement is active.
+
+## Продолжение 2026-09-09: D104/D105 VM regions and frames
+
+The user explicitly makes measured performance parity the current objective,
+with VM execution first. [Region/frame evidence](evidence/cp42-vm-regions-2026-09-09.md)
+records 32 unchanged full-size VM workloads, three samples each, exact opcode
+counts, all 86 passing Release tests and focused ASan/UBSan/allocation checks.
+`vm_hot.c` owns allocation-free scalar/control/raw64-array regions with validated
+views; `vm_frame.c` owns invocation-local inactive activation reuse. Views never
+cross cold dispatch; inactive registers never root managed values. Exact fuel,
+error publication, GC, defer and panic behavior retain their contracts.
+
+System `mmay` is rebuilt: insertion 21.20 → 7.77 s, heap-sort 5.99 → 1.91 s,
+DSU 12.28 → 5.78 s, BFS 12.94 → 6.26 s. The summed median VM round falls from
+84.04 to 47.21 s. These separate three-sample diagnostic matrices leave parity
+open; native compilation is excluded while VM still includes source preparation.
+Source and harness hashes match exactly. No new book idea was used.
+
+The instruction probe finds 1.80 billion executed instructions in insertion
+(34.78% constants/copies), 570 million in DSU (15 million direct calls), and
+990 million in Dijkstra (44.63% jumps/branches). These are counts, not CPU shares.
+Next shared work: simplify typed MIR scalar/control flow, prepare calls/layouts,
+and handle supported typed-array storage without repeated descriptor work.
+Keep source-preparation timing separate. Any fusion/compilation tier requires
+an explicit contract and evidence; no speedup prediction closes the goal.
+Native owned text/Option/Result, Map/Set, startup and full Tier 1 obligations
+remain open. Do not stop at this intermediate VM improvement or mark CP42 done.

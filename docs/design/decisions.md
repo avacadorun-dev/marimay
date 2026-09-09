@@ -3393,3 +3393,80 @@ Backends do not reconstruct capture semantics. More precise no-retention
 summaries and strong updates are future refinements, not reasons to block legal
 programs or waive the warning tests. This closes the D098 diagnostic removal
 gate locally; CP42 and Tier 1 acceptance still require their own evidence.
+
+## D104 — Nonallocating VM execution regions retain validated array views
+
+Status: accepted.
+
+After complete bytecode verification and argument validation, the program VM
+may execute supported scalar, control-flow and raw-array instructions in a
+separate nonallocating loop. It consumes the original instructions in order;
+there are no new wire opcodes, source rewrites or workload-specific kernels.
+D035/D062 arithmetic, D053 mutation generations, D058 bounds capabilities,
+D055 roots and D087 per-frame/shared instruction fuel retain their contracts.
+
+Within one such region, a bounded activation-local view cache may retain an
+exact validated array identity and immutable descriptor. It uses the existing
+D063 runtime view ABI: object-field locations remain valid across storage
+growth, and no element-storage address is retained. The region neither
+allocates nor collects, calls, suspends, performs I/O or invokes host code.
+All views expire before the ordinary dispatcher handles any unsupported
+instruction or potentially observable failure. Register rebinding cannot
+cause collection inside the region; cache lookup still compares the complete
+managed identity and expected layout.
+
+Descriptor preparation remains lazy in the existing owner. The region can
+only borrow an already complete descriptor; a miss returns to the ordinary
+dispatcher without consuming the instruction. Likewise an arithmetic, bounds,
+reference, mutation-generation or fuel failure is left uncommitted and is
+handled at the same instruction by the ordinary dispatcher. Successful
+instructions consume exactly one unit of applicable frame/shared fuel. Failed
+speculation must not allocate, mutate a register/array, advance the instruction
+or consume fuel. Panic construction, spans, cleanup and failure classification
+therefore stay in their existing owners. Unsupported types/layouts use the
+ordinary dispatcher without weakened validation.
+
+Reason: the measured VM repeatedly performs descriptor/type/handle work and
+crosses generic instruction-owner boundaries inside allocation-free loops.
+A scoped execution region removes that repeated work while retaining one
+verified code stream and the checked failure path. This does not promise
+native throughput or close the measured parity objective. Required coverage
+includes reference rebinding, GC/call boundaries, scalar/layout fallbacks,
+exact finite/shared fuel, overflow/bounds/iterator failures and all-index
+allocation sweeps, plus the unchanged full benchmark inputs.
+
+## D105 — Program-local reuse of inactive VM activation storage
+
+Status: accepted.
+
+The program VM may retain inactive register, defer and root-location storage
+in its explicit frame stack until that program invocation finishes. The pool
+is indexed by call depth and stores at most one function layout per slot,
+bounded by the existing maximum call depth. A different function at that depth
+releases the previous storage before creating its own. There is no process-
+global cache, retained program, or reuse across independent invocations.
+
+Returning first publishes the result to the parent's rooted destination, then
+unlinks the callee's root frame. Inactive register storage is never a GC root.
+Before reactivating the same function, every managed location is reset to the
+invalid reference, arguments are installed, and the ordinary checked root
+registration validates and links the frame. Definitely-assigned verified
+scalar registers may reuse their initialized type metadata; no prior scalar
+value can be read before its new definition. Program verification, register
+identity, argument/result semantics, call-depth and instruction limits,
+closure/interface dispatch, panic spans and defer ordering are unchanged.
+
+The activation owner retains stable separately allocated root-frame addresses
+across frame-stack relocation. Setup failure releases every partial allocation;
+normal and failing teardown release both active and inactive slots. D055's
+managed heap still counts the same managed graph; host activation buffers have
+the bounded invocation lifetime above and are not relabeled as managed objects.
+All deterministic allocation-failure indices, both zero allocator counters,
+forced collection, same/different-layout reuse and recursive stack growth must
+be tested. Reduced allocation counts are an implementation consequence, not a
+promise of a stable host allocation sequence.
+
+Reason: after D104 removes repeated array work, the measured DSU profile spends
+about 40% of sampled stacks constructing/registering and destroying activation
+storage. Reusing a verified inactive layout avoids repeated metadata walks and
+host allocations without retaining its old managed values.

@@ -119,6 +119,12 @@ checkpoint; CP39–CP42 must each add completion evidence.
 
 ## CP42
 
+[VM execution regions and frame reuse](cp42-vm-regions-2026-09-09.md)
+([raw matrices, instruction probes and checks](cp42-vm-regions-2026-09-09.json))
+records D104/D105, 32 unchanged full-size diagnostics, exact instruction counts,
+GC/fuel/failure coverage and 86 passing Release tests. It leaves parity and all
+release-gate obligations open.
+
 [Full catalogue measurement and native child access](cp42-catalog-performance-2026-09-09.md)
 ([raw matrices and profiles](cp42-catalog-performance-2026-09-09.json)) records
 32 full-size workloads, the quadratic native queue-cache cause, and remaining

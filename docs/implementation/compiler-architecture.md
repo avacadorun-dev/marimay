@@ -514,12 +514,42 @@ provenance and all-index allocation failures. `test_vm_string_lifetime.cmake`
 owns the source/VM/native report-concat regression and classified budget errors.
 
 D087 leaves instruction-fuel accounting in `bytecode/vm_prepare.c` and host
-policy selection in `cli_run_program.c`/`cli_test_program.c`. The shared VM
-dispatchers, verifier, memory and capability owners remain unchanged.
+policy selection in `cli_run_program.c`/`cli_test_program.c`. D104 additionally
+allows the nonallocating region owner to consume exactly the same successful
+instruction units, returning to ordinary dispatch before a fuel failure.
 `test_bytecode_vm_arithmetic.c` owns finite/unmetered/shared fuel boundary and
 cleanup checks; `test_cli_local_execution.cmake` owns process parity for long
 finite work and maximum-sized JSON input. It uses explicit test timeouts, not
 a relaxed verifier or smaller workload.
+
+D104 assigns nonallocating program execution regions and their bounded local
+array-view cache to `bytecode/vm_hot.c` behind `vm_hot.h`. It borrows complete
+descriptors from `vm_array.c`; preparation remains lazy and allocation failures
+stay in the existing dispatcher. The region uses the D063 view API, stops at
+every unsupported instruction/failure before committing it, and cannot retain
+a view across cold dispatch, calls, allocation or GC. Scalar helpers consume
+the existing checked/proven C17 arithmetic contract. `vm_frame.c` behind
+`vm_frame.h` independently owns activation/register/defer/root storage and frame
+stack growth; `vm.c` only sequences these owners and executes cold control-flow,
+panic and cleanup transitions. The single-function execution entry remains the
+ordinary-dispatch reference. `test_bytecode_vm_hot.c` compares that reference
+against program execution at every scalar/array fuel boundary, arithmetic
+extremes, bounds errors and generation saturation, and exercises call/GC,
+growth/rebinding and unsupported layouts with all-index engine sweeps.
+
+D105 keeps inactive activation buffers in that same frame owner, at most one
+function layout per call depth until program teardown. Only checked root-frame
+registration can reactivate them. Return unlinks roots before reuse; managed
+locations are invalidated before new arguments are installed. A changed
+function layout replaces its storage, and final teardown traverses inactive as
+well as active slots. Root-frame objects remain separately allocated so stack
+growth cannot move a linked root. No cached register value keeps a managed
+object alive, and no function metadata survives the program invocation.
+`test_bytecode_vm_frame.c` owns the activation lifecycle regression: stable
+roots across stack relocation, collection of inactive values, all-reference
+reset before reuse, allocation-free same-layout setup, changed-layout setup,
+inactive-slot teardown, and every deterministic allocation-failure index with
+both allocator counters zero after teardown.
 
 The CP42 config performance follow-up keeps opcode-family routing in
 `vm_value.c` and live-expression eligibility in `c_emitter_relations.c`.

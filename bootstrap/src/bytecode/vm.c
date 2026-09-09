@@ -1,4 +1,6 @@
 #include "vm_internal.h"
+#include "vm_hot.h"
+#include "vm_frame.h"
 #include <limits.h>
 #include <string.h>
 #include "mmay/base/f64.h"
@@ -231,149 +233,6 @@ cleanup:
     mmay_deallocate(&allocator, registers, register_bytes);
     return status;
 }
-typedef struct MarimayBytecodeRunFrame {
-    const MarimayBytecodeProgramFunction *function;
-    MarimayBytecodeValue *registers;
-    size_t register_bytes;
-    size_t block;
-    size_t instruction;
-    size_t steps;
-    uint32_t return_destination;
-    bool return_is_void;
-    bool return_is_never;
-    MarimayBytecodeSpan call_span;
-    MarimayBytecodeManagedRoots *managed_roots;
-    MarimayBytecodeCallId *defer_stack;
-    size_t defer_stack_bytes;
-    size_t defer_count;
-} MarimayBytecodeRunFrame;
-static void mmay_bytecode_run_frame_dispose(
-    MarimayBytecodeRunFrame *frame,
-    const MarimayAllocator *allocator,
-    MarimayBytecodeExecution *execution
-) {
-    if (frame != NULL && allocator != NULL) {
-        if (frame->managed_roots != NULL) {
-            mmay_bytecode_run_roots_dispose(
-                frame->managed_roots, execution, *allocator
-            );
-            mmay_deallocate(
-                allocator, frame->managed_roots,
-                sizeof(*frame->managed_roots)
-            );
-        }
-        mmay_deallocate(
-            allocator, frame->defer_stack, frame->defer_stack_bytes
-        );
-        mmay_deallocate(allocator, frame->registers, frame->register_bytes);
-        memset(frame, 0, sizeof(*frame));
-    }
-}
-static MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
-    MarimayBytecodeRunFrame *frame,
-    const MarimayBytecodeProgramFunction *function,
-    const MarimayBytecodeValue *arguments,
-    size_t argument_count,
-    MarimayAllocator allocator,
-    uint32_t return_destination,
-    bool return_is_void,
-    bool return_is_never,
-    MarimayBytecodeSpan call_span
-) {
-    const MarimayBytecodeFunction *body = function != NULL ? &function->body : NULL;
-    size_t index = 0;
-    if (frame == NULL || body == NULL
-        || (arguments == NULL && argument_count != 0)) {
-        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
-    }
-    memset(frame, 0, sizeof(*frame));
-    if (!mmay_size_multiply(
-            body->register_types.length == 0 ? 1 : body->register_types.length,
-            sizeof(MarimayBytecodeValue),
-            &frame->register_bytes
-        )) {
-        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-    }
-    frame->registers = mmay_allocate(&allocator, frame->register_bytes);
-    if (frame->registers == NULL) {
-        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-    }
-    memset(frame->registers, 0, frame->register_bytes);
-    if (body->calls.length != 0) {
-        if (!mmay_size_multiply(
-                body->calls.length, sizeof(*frame->defer_stack),
-                &frame->defer_stack_bytes
-            )) {
-            mmay_bytecode_run_frame_dispose(frame, &allocator, NULL);
-            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-        }
-        frame->defer_stack = mmay_allocate(
-            &allocator, frame->defer_stack_bytes
-        );
-        if (frame->defer_stack == NULL) {
-            mmay_bytecode_run_frame_dispose(frame, &allocator, NULL);
-            return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-        }
-    }
-    for (index = 0; index < body->register_types.length; index += 1) {
-        const MarimayBytecodeType *type = mmay_vector_at_const(
-            &body->register_types,
-            index
-        );
-        if (type == NULL) {
-            mmay_bytecode_run_frame_dispose(frame, &allocator, NULL);
-            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
-        }
-        frame->registers[index].type = *type;
-        if (mmay_bytecode_type_is_managed(*type)) {
-            frame->registers[index].as.managed_reference =
-                mmay_managed_invalid_reference();
-        }
-    }
-    for (index = 0; index < argument_count; index += 1) {
-        frame->registers[index] = arguments[index];
-    }
-    frame->function = function;
-    frame->return_destination = return_destination;
-    frame->return_is_void = return_is_void;
-    frame->return_is_never = return_is_never;
-    frame->call_span = call_span;
-    return MMAY_BYTECODE_RUN_OK;
-}
-static MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
-    MarimayBytecodeRunFrame *frame,
-    MarimayBytecodeExecution *execution,
-    MarimayAllocator allocator
-) {
-    MarimayBytecodeRunStatus status;
-    if (frame == NULL || frame->function == NULL) {
-        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
-    }
-    if (!mmay_bytecode_run_function_uses_managed(&frame->function->body)) {
-        return MMAY_BYTECODE_RUN_OK;
-    }
-    if (execution == NULL) {
-        return MMAY_BYTECODE_RUN_INVALID_ARGUMENT;
-    }
-    frame->managed_roots = mmay_allocate(
-        &allocator, sizeof(*frame->managed_roots)
-    );
-    if (frame->managed_roots == NULL) {
-        return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-    }
-    memset(frame->managed_roots, 0, sizeof(*frame->managed_roots));
-    status = mmay_bytecode_run_roots_init(
-        frame->managed_roots, execution, &frame->function->body,
-        frame->registers, allocator
-    );
-    if (status != MMAY_BYTECODE_RUN_OK) {
-        mmay_deallocate(
-            &allocator, frame->managed_roots, sizeof(*frame->managed_roots)
-        );
-        frame->managed_roots = NULL;
-    }
-    return status;
-}
 static MarimayBytecodeRunStatus mmay_bytecode_run_program_verify_status(
     MarimayBytecodeProgramVerifyStatus status
 ) {
@@ -387,58 +246,6 @@ static MarimayBytecodeRunStatus mmay_bytecode_run_program_verify_status(
         return MMAY_BYTECODE_RUN_LIMIT_REACHED;
     }
     return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
-}
-static bool mmay_bytecode_run_frames_reserve(
-    MarimayBytecodeRunFrame **frames,
-    size_t *capacity,
-    size_t required,
-    size_t maximum,
-    MarimayAllocator allocator
-) {
-    MarimayBytecodeRunFrame *next = NULL;
-    size_t next_capacity = *capacity == 0 ? 1 : *capacity;
-    size_t bytes = 0;
-    if (frames == NULL || capacity == NULL || required > maximum) {
-        return false;
-    }
-    if (*capacity >= required) {
-        return true;
-    }
-    while (next_capacity < required) {
-        if (next_capacity > maximum / 2) {
-            next_capacity = maximum;
-        } else {
-            next_capacity *= 2;
-        }
-    }
-    if (!mmay_size_multiply(
-            next_capacity,
-            sizeof(MarimayBytecodeRunFrame),
-            &bytes
-        )) {
-        return false;
-    }
-    next = mmay_allocate(&allocator, bytes);
-    if (next == NULL) {
-        return false;
-    }
-    memset(next, 0, bytes);
-    if (*frames != NULL) {
-        size_t old_bytes = 0;
-        if (!mmay_size_multiply(
-                *capacity,
-                sizeof(MarimayBytecodeRunFrame),
-                &old_bytes
-            )) {
-            mmay_deallocate(&allocator, next, bytes);
-            return false;
-        }
-        memcpy(next, *frames, old_bytes);
-        mmay_deallocate(&allocator, *frames, old_bytes);
-    }
-    *frames = next;
-    *capacity = next_capacity;
-    return true;
 }
 MarimayBytecodeRunStatus mmay_bytecode_run_program(
     const MarimayBytecodeProgram *program,
@@ -530,6 +337,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
     for (;;) {
         MarimayBytecodeRunFrame *frame = &frames[frame_count - 1];
         const MarimayBytecodeFunction *body = &frame->function->body;
+        mmay_bytecode_run_hot(body, frame->registers, options.execution,
+            &frame->block, &frame->instruction, &frame->steps, options);
         const MarimayBytecodeBlock *block = mmay_vector_at_const(
             &body->blocks,
             frame->block
@@ -598,9 +407,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
                 if (!return_is_void) {
                     parent->registers[destination] = completed;
                 }
-                mmay_bytecode_run_frame_dispose(
-                    frame, &allocator, options.execution
-                );
+                mmay_bytecode_run_frame_release(frame, options.execution);
                 frame_count -= 1;
             }
             continue;
@@ -886,15 +693,7 @@ cleanup:
             &frames[frame_count], &allocator, options.execution
         );
     }
-    if (frames != NULL) {
-        size_t bytes = 0;
-        if (mmay_size_multiply(
-                frame_capacity,
-                sizeof(MarimayBytecodeRunFrame),
-                &bytes
-            )) {
-            mmay_deallocate(&allocator, frames, bytes);
-        }
-    }
+    mmay_bytecode_run_frames_dispose(frames, frame_capacity,
+        &allocator, options.execution);
     return status;
 }

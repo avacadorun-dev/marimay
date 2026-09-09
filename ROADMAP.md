@@ -34,5 +34,11 @@ records all 32 standard workloads, the native object-queue regression and open
 shared text/collection/VM execution costs. These findings remain part of the
 pre-alpha performance work; no existing acceptance budget is waived.
 
+[VM execution regions and frame reuse](docs/implementation/evidence/cp42-vm-regions-2026-09-09.md)
+remove repeated view validation and activation allocation from supported paths.
+All 32 full-size VM diagnostics and 86 Release tests pass locally. Instruction
+counts expose the next shared code-preparation boundary; performance parity,
+startup budgets and Tier 1 acceptance remain open.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

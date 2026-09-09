@@ -638,6 +638,26 @@ stores preserve D053 generation saturation and commit order. Reference layouts
 retain exact type validation, and nested aliases, collection, growth, iterator
 G4005 behavior, panic identity, and VM observations are unchanged.
 
+Under D104, a fully verified VM program may execute supported instructions in
+a nonallocating region using the same runtime array-view contract. Complete
+managed identity and expected layout are validated before view reuse. The
+region cannot allocate, collect, call, suspend, perform I/O or invoke host code;
+every view expires before returning to ordinary dispatch. Descriptor misses,
+unsupported instructions and observable failures return at the original
+instruction without register/array mutation or fuel consumption. Successful
+instructions consume exactly the original D087 per-frame/shared fuel. The
+ordinary dispatcher retains error construction, spans, cleanup and resource
+classification; D053 generations and D058 bounds proofs are unchanged.
+
+Under D105, one program invocation may reuse inactive VM activation storage
+per call depth. Returning unlinks the callee's root frame after publishing its
+result to the parent. Inactive storage never roots managed values; every managed
+location is invalidated before arguments are installed and checked roots are
+linked for reuse. Only the same verified function layout reuses a slot; a
+different layout replaces it. Teardown releases all active and inactive storage
+on success and failure. Call-depth/fuel limits, source values, panic/defer order
+and D055 managed-heap accounting remain unchanged.
+
 Under D076, `Bytes`, both bounded builders, `Bytes.Iterator`, and every owned
 text collection are ordinary managed record/array/string graphs. A text or
 binary operation that may construct an owned result is a native safepoint and
