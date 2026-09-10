@@ -15,13 +15,12 @@ typedef struct MarimayBytecodeJitFunction {
     MarimayBytecodeJitPlanOperation *plan;
     void *code;
     size_t code_bytes;
-    size_t code_offset;
-    size_t epilogue;
+    MarimayCodeMemory memory;
 } MarimayBytecodeJitFunction;
 
 typedef struct MarimayBytecodeJit {
     MarimayAllocator allocator;
-    MarimayCodeMemory memory;
+    bool ready;
     MarimayBytecodeJitFunction *functions;
     size_t function_count;
     void *metadata;
@@ -36,7 +35,8 @@ typedef struct MarimayBytecodeJit {
  * observable; code-size eligibility is a bounded optimization decision. */
 MarimayBytecodeRunStatus mmay_bytecode_jit_init(MarimayBytecodeJit *jit,
     const MarimayBytecodeProgram *program,
-    const MarimayBytecodeExecutionImage *image, MarimayAllocator allocator);
+    const MarimayBytecodeExecutionImage *image, MarimayAllocator allocator,
+    MarimayCodeMemoryFault *fault);
 void mmay_bytecode_jit_dispose(MarimayBytecodeJit *jit);
 void mmay_bytecode_jit_run(MarimayBytecodeJit *jit, size_t function_id,
     const MarimayBytecodeImageFunction *image,

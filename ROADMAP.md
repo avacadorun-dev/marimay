@@ -90,10 +90,14 @@ not close the remaining execution-loop, native runtime or Tier 1 parity gates.
 [SLJIT feasibility with the reused ARM64 prototype](docs/implementation/evidence/cp42-sljit-feasibility-2026-09-10.md)
 records the user-selected JIT route, a common C backend, 32 unchanged checksum
 passes, the bytecode suite and a paired six-workload 3+11 series. The isolated
-adapter improves five heavy cells but regresses insertion. It remains excluded
-from production CMake pending central allocation/W^X ownership, exact JIT
-conformance, preserved image-loop performance and Tier 1 acceptance. Go/Rust
-parity remains open.
+adapter in that first snapshot improves five heavy cells but regresses insertion.
+The [owned-memory and composed-loop follow-up](docs/implementation/evidence/cp42-sljit-owned-memory-2026-09-10.md)
+adds central allocation, one-way W^X publication, deterministic failure teardown
+and D109 composition, with 32/32 correctness on ARM64, x86-64 under Rosetta
+and ARM64 ASan/UBSan. Its paired 896-observation full matrix reduces the sum
+of VM medians by 46.1%, with insertion at parity and no median regression above
+2%. Production integration, complete JIT conformance, Linux
+LSan, Tier 1 acceptance and Go/Rust parity remain open.
 
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

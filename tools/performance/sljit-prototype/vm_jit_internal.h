@@ -29,13 +29,14 @@ typedef struct MarimayBytecodeJitContext {
 
 void *mmay_bytecode_jit_bind(MarimayBytecodeJitContext *context, uint32_t reg);
 bool mmay_bytecode_jit_enum(MarimayBytecodeJitContext *context, uint32_t pc);
+bool mmay_bytecode_jit_shift(MarimayBytecodeJitContext *context, uint32_t pc);
 size_t mmay_bytecode_jit_array_width(const MarimayBytecodeFunction *function,
     uint32_t reg);
 void mmay_bytecode_jit_plan(const MarimayBytecodeImageFunction *image,
     const MarimayBytecodeFunction *function, MarimayBytecodeJitPlanOperation *plan);
 
-bool mmay_bytecode_jit_sljit(const MarimayBytecodeImageFunction *image,
+MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFunction *image,
     const MarimayBytecodeFunction *function, MarimayBytecodeJitFunction *compiled,
-    MarimayAllocator *allocator, size_t capacity);
+    MarimayAllocator *allocator, size_t capacity, MarimayCodeMemoryFault *fault);
 
 #endif

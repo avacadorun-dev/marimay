@@ -155,6 +155,16 @@ identity. Dijkstra improves 7.70× against the paired control, but insertion
 regresses 2.52×. This is reproducible experimental evidence; central allocation,
 W^X/failure/platform conformance and performance parity remain open.
 
+[Shared JIT memory ownership and composed loops](cp42-sljit-owned-memory-2026-09-10.md)
+([validation](cp42-sljit-owned-memory-validation-2026-09-10.json),
+[paired 32-workload matrix](cp42-sljit-owned-memory-paired-2026-09-10.json))
+adds central SLJIT allocation, immutable code publication, D109 composition,
+all-index local ownership checks and 32-workload correctness on macOS ARM64,
+x86-64 under Rosetta and ARM64 ASan/UBSan. The paired full matrix reduces the
+sum of VM medians by 46.1%, with no median regression above 2%.
+It remains an experiment; production
+integration, full JIT conformance, Linux LSan and Tier 1 parity remain open.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

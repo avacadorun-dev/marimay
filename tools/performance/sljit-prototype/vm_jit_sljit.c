@@ -2,6 +2,7 @@
 #include "vm_jit_internal.h"
 #include "bytecode_internal.h"
 #include "sljitLir.h"
+#include "jit_memory.h"
 #include <string.h>
 
 #define CTX SLJIT_S0
@@ -86,6 +87,19 @@ static sljit_sw enum_address(void) {
     sljit_sw address = 0;
     memcpy(&address, &function, sizeof(address));
     return address;
+}
+static void composed_shift(Emitter *e) {
+    bool (*function)(MarimayBytecodeJitContext *, uint32_t) = mmay_bytecode_jit_shift;
+    sljit_sw address = 0;
+    _Static_assert(sizeof(address) == sizeof(function), "helper pointer");
+    memcpy(&address, &function, sizeof(address));
+    move(e, SLJIT_MOV, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, budget), FUEL, 0);
+    move(e, SLJIT_MOV, SLJIT_R0, 0, CTX, 0);
+    move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_IMM, (sljit_sw)e->pc);
+    sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS2(32, P, 32), SLJIT_IMM, address);
+    struct sljit_jump *unchanged = sljit_emit_cmp(e->c, SLJIT_EQUAL | SLJIT_32, SLJIT_R0, 0, SLJIT_IMM, 0);
+    sljit_emit_return_void(e->c);
+    sljit_set_label(unchanged, sljit_emit_label(e->c));
 }
 /* Returns view in R5. No borrowed data address survives a VM safepoint. */
 static void bind(Emitter *e, uint32_t reg) {
@@ -215,18 +229,18 @@ static void scalar(Emitter *e, const MarimayBytecodeImageOperation *op) {
     save(e, op->first, SLJIT_R0);
 }
 
-bool mmay_bytecode_jit_sljit(const MarimayBytecodeImageFunction *image,
+MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFunction *image,
     const MarimayBytecodeFunction *function, MarimayBytecodeJitFunction *compiled,
-    MarimayAllocator *allocator, size_t capacity) {
+    MarimayAllocator *allocator, size_t capacity, MarimayCodeMemoryFault *fault) {
     size_t n = image->operation_count;
     size_t scratch_bytes = n * (sizeof(struct sljit_label *) + 2*sizeof(struct sljit_jump *));
     void *scratch = mmay_allocate(allocator, scratch_bytes);
-    if (!scratch) return false;
+    if (!scratch) return MMAY_CODE_MEMORY_ALLOCATION_FAILED;
     memset(scratch, 0, scratch_bytes);
     struct sljit_label **labels = scratch;
     struct sljit_jump **edges = (struct sljit_jump **)(labels + n);
-    struct sljit_compiler *compiler = sljit_create_compiler(NULL);
-    if (!compiler) { mmay_deallocate(allocator, scratch, scratch_bytes); return false; }
+    struct sljit_compiler *compiler = sljit_create_compiler(allocator);
+    if (!compiler) { mmay_deallocate(allocator, scratch, scratch_bytes); return MMAY_CODE_MEMORY_ALLOCATION_FAILED; }
     Emitter e = {compiler, function, 0, 0};
     sljit_emit_enter(compiler, 0, SLJIT_ARGS2V(P, P), 6, 5, 0);
     move(&e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_S1, 0);
@@ -241,6 +255,8 @@ bool mmay_bytecode_jit_sljit(const MarimayBytecodeImageFunction *image,
         labels[pc] = sljit_emit_label(compiler);
         e.pc = pc; e.restore = 0;
         if (!plan->supported) { leave(&e); continue; }
+        if (plan->starts_segment && op->fusion == MMAY_BYTECODE_IMAGE_FUSION_ARRAY_SHIFT_LOOP)
+            composed_shift(&e);
         if (plan->starts_segment) {
             condition(&e, SLJIT_GREATER_EQUAL, FUEL, 0, SLJIT_IMM, plan->segment_end - pc);
             sljit_emit_op2(compiler, SLJIT_SUB, FUEL, 0, FUEL, 0, SLJIT_IMM, plan->segment_end - pc);
@@ -273,10 +289,14 @@ bool mmay_bytecode_jit_sljit(const MarimayBytecodeImageFunction *image,
         if (edges[2*pc]) sljit_set_label(edges[2*pc], labels[op->opcode == MMAY_OPCODE_JUMP ? op->first : op->second]);
         if (edges[2*pc+1]) sljit_set_label(edges[2*pc+1], labels[op->third]);
     }
-    void *code = sljit_generate_code(compiler, 0, NULL);
+    MarimayJitCodeBuild build = {.allocator = *allocator, .capacity = capacity, .status = MMAY_CODE_MEMORY_OK, .fault = fault};
+    void *code = sljit_generate_code(compiler, 0, &build);
     size_t bytes = sljit_get_generated_code_size(compiler);
-    bool valid = code && bytes <= capacity;
-    if (valid) {
+    MarimayCodeMemoryStatus status = code ? mmay_jit_code_publish(&build, code, bytes)
+        : build.status != MMAY_CODE_MEMORY_OK ? build.status : MMAY_CODE_MEMORY_ALLOCATION_FAILED;
+    if (status == MMAY_CODE_MEMORY_OK) {
+        compiled->memory = build.memory;
+        memset(&build.memory, 0, sizeof(build.memory));
         compiled->code = code;
         compiled->code_bytes = bytes;
         for (size_t pc = 0; pc < n; ++pc) {
@@ -284,8 +304,9 @@ bool mmay_bytecode_jit_sljit(const MarimayBytecodeImageFunction *image,
             compiled->entries[pc] = (uint32_t)(address - (uintptr_t)code)
                 | (compiled->plan[pc].starts_segment ? MMAY_JIT_ENTRY : 0);
         }
-    } else if (code) sljit_free_code(code, NULL);
+    }
+    mmay_jit_code_dispose(&build);
     sljit_free_compiler(compiler);
     mmay_deallocate(allocator, scratch, scratch_bytes);
-    return valid;
+    return status;
 }

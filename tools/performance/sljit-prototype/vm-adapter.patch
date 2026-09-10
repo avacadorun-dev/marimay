@@ -21,7 +21,7 @@
          }
          image_ready = image_status == MMAY_BYTECODE_IMAGE_OK;
 +        if (image_ready) {
-+            status = mmay_bytecode_jit_init(&jit, program, &image, allocator);
++            status = mmay_bytecode_jit_init(&jit, program, &image, allocator, NULL);
 +            if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
 +        }
      }
@@ -55,7 +55,7 @@
              memset(target, 0, sizeof(*target));
              const MarimayOpcodeMetadata *metadata = source == NULL
                  ? NULL : mmay_opcode_metadata(source->opcode);
-+            uint64_t third = metadata != NULL
++            uint64_t third = source == NULL ? 0 : metadata != NULL
 +                    && (source->opcode == MMAY_OPCODE_RECORD_GET || source->opcode == MMAY_OPCODE_RECORD_SET)
 +                && source->operands[2].signed_value >= 0
 +                ? (uint64_t)source->operands[2].signed_value

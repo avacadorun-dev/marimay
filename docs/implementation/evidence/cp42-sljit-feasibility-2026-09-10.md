@@ -86,8 +86,8 @@ references invalidate their slot. The paired table measures that version.
 
 The [experiment sources and build instructions](../../../tools/performance/sljit-prototype/README.md)
 record the original prototype reuse, source hashes, pinned SLJIT revision and
-narrow patches applied only under `build/`. Rebuild from the recorded base
-with a matching Release archive, then run:
+narrow patches applied only under `build/`. Use experiment snapshot `0145177bd4c6366128a2039fd094ba1fede30f3a`
+with a matching Release archive to reproduce this historical candidate, then run:
 
 ```sh
 python3 tools/performance/compare-vm-preparation.py \

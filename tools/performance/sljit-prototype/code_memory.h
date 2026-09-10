@@ -1,6 +1,5 @@
 #ifndef MMAY_BASE_CODE_MEMORY_H
 #define MMAY_BASE_CODE_MEMORY_H
-
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -8,20 +7,25 @@ typedef enum MarimayCodeMemoryStatus {
     MMAY_CODE_MEMORY_OK,
     MMAY_CODE_MEMORY_UNAVAILABLE,
     MMAY_CODE_MEMORY_ALLOCATION_FAILED,
-    MMAY_CODE_MEMORY_INVALID
+    MMAY_CODE_MEMORY_INVALID,
+    MMAY_CODE_MEMORY_LIMIT
 } MarimayCodeMemoryStatus;
 
+/* Optional deterministic platform fault ledger. It must outlive its maps. */
+typedef struct MarimayCodeMemoryFault {
+    size_t failure_index, attempts, live_mappings, live_bytes;
+} MarimayCodeMemoryFault;
 typedef struct MarimayCodeMemory {
     void *address;
     size_t bytes;
     bool published;
+    MarimayCodeMemoryFault *fault;
 } MarimayCodeMemory;
 
-/* Central executable-page allocator. Publication is one-way and never exposes
- * a writable pointer to its caller. No executable page enters a managed heap. */
 bool mmay_code_memory_supported(void);
+MarimayCodeMemoryStatus mmay_code_memory_reserve(MarimayCodeMemory *memory,
+    size_t bytes, size_t limit, MarimayCodeMemoryFault *fault);
 MarimayCodeMemoryStatus mmay_code_memory_publish(MarimayCodeMemory *memory,
-    const void *bytes, size_t length, size_t limit);
+    const void *source, size_t bytes);
 void mmay_code_memory_dispose(MarimayCodeMemory *memory);
-
 #endif

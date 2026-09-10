@@ -1,0 +1,9 @@
+--- a/sljitNativeARM_64.c
++++ b/sljitNativeARM_64.c
+@@ -905 +905 @@
+-			if (flags & ARG1_IMM)
++			if ((flags & ARG1_IMM) || (sljit_uw)imm == ((sljit_uw)1 << 63))
+@@ -920,0 +921,3 @@
++			/* INT64_MIN has no positive signed counterpart or immediate encoding. */
++			if ((sljit_uw)imm == ((sljit_uw)1 << 63))
++				break;
