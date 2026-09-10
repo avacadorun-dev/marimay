@@ -44,12 +44,23 @@ leak detection and cannot replace the Linux LeakSanitizer gate.
 The first tier admits bounded functions with a control-flow backedge and emits
 nonallocating scalar, array and nominal-read segments. Its arithmetic generator
 requires exact signed i64 operands. Historical I64-named wire instructions may
-carry other integer widths; these retain ordinary typed execution. Calls,
-allocation and unsupported instructions return to the existing VM owners.
+carry other integer widths; these retain ordinary typed execution. In the
+unlimited-frame/no-shared-counter mode, admission also follows bounded direct
+callees. Direct calls and returns use the shared logical activation owner and
+transfer between compiled labels within one native trampoline. The persistent
+invocation context is prepared once. Allocation and unsupported operations
+return to the existing VM owners; finite/shared calls retain ordinary dispatch.
 
 VM registers remain the authoritative state. A side exit restores the original
 source PC and executes the uncommitted instruction through ordinary dispatch.
-Borrowed managed views expire at every return to the VM. Existing logical
+Borrowed managed views expire at every logical call/return and return to the VM.
+Retained metadata can be revalidated on the next native entry by exact execution,
+function/layout/type, full reference and heap provenance, and an unchanged
+runtime view epoch. GC invalidates the proof before tracing, including on failure;
+saturation disables reuse. Array views observe the live object's storage and
+length fields after growth. A failed proof uses the ordinary checked binding.
+An exit after a nested call exposes the actual callee frame and PC, including
+after frame-vector growth; no committed callee prefix is replayed. Existing logical
 frames, roots, heap/capability limits and panic reporting remain authoritative.
 
 Finite frame fuel and every non-null shared counter are charged exactly. Only
@@ -69,6 +80,8 @@ The [architecture contract](compiler-architecture.md) names each owner. Focused
 tests assert actual JIT admission, compare original dispatch across numeric
 boundaries and precise fuel/traps, cover signed record and wide enum selectors,
 and exhaust reachable allocation/publication failure indices with zero ledgers.
+Call tests also prove nested calls and 10,000 logical recursive frames in one
+native entry, precise cold exits after mutations and roots across forced GC.
 These checks do not establish Go/Rust parity or complete Tier 1 acceptance.
 
 ## Performance evidence

@@ -27,6 +27,25 @@ void *mmay_bytecode_jit_bind(MarimayBytecodeJitContext *context, uint32_t reg) {
     const MarimayBytecodeValue value = context->registers[reg];
     MarimayBytecodeJitBinding *binding = &context->bindings[reg];
     const uint32_t *layouts = context->function->register_layouts.data;
+    const MarimayManagedHeap *heap = &context->execution->managed_heap;
+    /* The view points at nonmoving object fields, never copied array storage.
+     * Revalidate its lifetime before reading any retained object pointer. */
+    if (context->execution->initialized && heap->initialized && !heap->collecting
+        && heap->view_epoch != UINT64_MAX
+        && binding->view_epoch == heap->view_epoch
+        && binding->execution == context->execution
+        && binding->function == context->function
+        && binding->layout == layouts[reg] && binding->type == value.type
+        && heap->provenance == value.as.managed_reference.heap_provenance
+        && mmay_managed_reference_equal(value.as.managed_reference,
+            value.type == MMAY_BYTECODE_TYPE_RECORD
+                ? binding->view.record.reference : binding->view.array.reference)) {
+        binding->epoch = context->epoch;
+        return &binding->view;
+    }
+    /* A failed checked miss cannot leave a reusable partial view. */
+    binding->function = NULL;
+    binding->epoch = 0;
     if (value.type == MMAY_BYTECODE_TYPE_RECORD) {
         const MarimayManagedRecordDescriptor *descriptor =
             mmay_bytecode_record_descriptor_cached(context->execution,
@@ -42,6 +61,11 @@ void *mmay_bytecode_jit_bind(MarimayBytecodeJitContext *context, uint32_t reg) {
                 &context->execution->managed_heap, value.as.managed_reference,
                 descriptor, &binding->view.array) != MMAY_MANAGED_OK) return NULL;
     }
+    binding->execution = context->execution;
+    binding->function = context->function;
+    binding->layout = layouts[reg];
+    binding->type = value.type;
+    binding->view_epoch = heap->view_epoch;
     binding->epoch = context->epoch;
     return &binding->view;
 }

@@ -69,6 +69,21 @@ Borrowed storage cannot survive allocation, collection, a host/call boundary or
 return to ordinary VM execution without revalidation. D109 composed loops retain
 their existing exact-prefix contract.
 
+Revalidation may reuse an earlier checked object view only when exact execution,
+type/layout, full reference identity and heap provenance still match and a
+runtime-owned lifetime epoch proves that no invalidation occurred. Collection
+must invalidate that proof before tracing or sweeping, even if collection fails.
+Epoch saturation must disable reuse, and heap reinitialization must have a new
+provenance. Retained array access must observe current storage and length after
+growth. An expired or mismatched proof must take the ordinary checked path
+before any retained object pointer is dereferenced.
+
+A machine-code transfer between functions does not eliminate the corresponding
+logical activation. It must preserve call-depth checks, arguments, return values,
+typed roots and cleanup order even if native stack depth stays constant. On a
+side exit inside a callee, execution resumes in that callee at the uncommitted
+instruction; earlier calls and mutations must not be replayed.
+
 D087 local invocations with unlimited frame steps and no shared counter may
 omit instruction accounting. Any shared-counter pointer, including one whose
 current value is SIZE_MAX, requires exact accounting. Code prepared without

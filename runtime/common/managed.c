@@ -51,6 +51,9 @@ void mmay_managed_view_cache_clear(MarimayManagedHeap *heap) {
     if (heap == NULL) {
         return;
     }
+    if (heap->view_epoch != UINT64_MAX) {
+        heap->view_epoch += 1;
+    }
     heap->cached_record_reference = mmay_managed_invalid_reference();
     heap->cached_record_descriptor = NULL;
     heap->cached_record_object = NULL;

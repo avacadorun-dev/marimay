@@ -1,0 +1,123 @@
+#include "vm_jit_internal.h"
+#include <string.h>
+
+/* Every generated function uses the same SLJIT register/stack context. A label
+ * transfer changes the logical activation without growing the native stack. */
+static void *resume(MarimayBytecodeJitContext *context) {
+    MarimayBytecodeJitActivation *activation = context->activation;
+    MarimayBytecodeJit *jit = activation->jit;
+    MarimayBytecodeRunFrame *frame = &activation->stack->frames[activation->stack->count - 1];
+    size_t id = (size_t)(frame->function
+        - (const MarimayBytecodeProgramFunction *)activation->program->functions.data);
+    context->function = &frame->function->body;
+    context->image = &activation->image->functions[id];
+    context->registers = frame->registers;
+    context->pc = (size_t)context->image->block_starts[frame->block] + frame->instruction;
+    jit->epoch += 1;
+    if (jit->epoch == 0) {
+        memset(jit->bindings, 0, jit->binding_bytes);
+        jit->epoch = 1;
+    }
+    context->epoch = jit->epoch;
+    if (id >= jit->function_count) return NULL;
+    const MarimayBytecodeJitFunction *compiled = &jit->functions[id];
+    if (compiled->entries == NULL || compiled->code == NULL
+        || context->pc >= context->image->operation_count) return NULL;
+    return (unsigned char *)compiled->code + (compiled->entries[context->pc] & MMAY_JIT_OFFSET);
+}
+
+void *mmay_bytecode_jit_transition(MarimayBytecodeJitContext *context, uint32_t pc) {
+    context->pc = pc;
+    MarimayBytecodeJitActivation *activation = context->activation;
+    if (activation == NULL) return NULL;
+    const MarimayBytecodeImageOperation *operation = &context->image->operations[pc];
+    const MarimayBytecodeBlock *block = mmay_vector_at_const(
+        &context->function->blocks, operation->source_block);
+    const MarimayBytecodeInstruction *instruction = mmay_vector_at_const(
+        &block->instructions, operation->source_instruction);
+    MarimayBytecodeRunFrame *frame = &activation->stack->frames[activation->stack->count - 1];
+    /* Publish the caller's actual PC before the shared owner advances it. */
+    frame->block = operation->source_block;
+    frame->instruction = operation->source_instruction;
+    if (instruction->opcode == MMAY_OPCODE_CALL_DIRECT
+        || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID) {
+        size_t callee = operation->third;
+        if (callee >= activation->jit->function_count
+            || activation->jit->functions[callee].code == NULL) return NULL;
+        activation->status = mmay_bytecode_run_call(activation->stack,
+            activation->program, activation->image, instruction,
+            activation->allocator, activation->options);
+    } else if (instruction->opcode == MMAY_OPCODE_RETURN
+        || instruction->opcode == MMAY_OPCODE_RETURN_VOID) {
+        activation->status = mmay_bytecode_run_return(activation->stack,
+            instruction, activation->options, activation->result, &activation->finished);
+    } else {
+        return NULL;
+    }
+    if (activation->status != MMAY_BYTECODE_RUN_OK || activation->finished) return NULL;
+    /* The frame buffer may have moved; no old frame/view pointer survives. */
+    return resume(context);
+}
+
+void mmay_bytecode_jit_start(MarimayBytecodeJit *jit,
+    const MarimayBytecodeProgram *program, const MarimayBytecodeExecutionImage *image,
+    MarimayBytecodeRunStack *stack, MarimayAllocator allocator,
+    const MarimayBytecodeRunOptions *options, MarimayBytecodeValue *result
+) {
+    if (!jit->ready) return;
+    jit->state->activation = (MarimayBytecodeJitActivation){
+        jit, program, image, stack, allocator, options, result, MMAY_BYTECODE_RUN_OK, false
+    };
+    jit->state->context = (MarimayBytecodeJitContext){
+        .bindings=jit->bindings, .execution=options->execution,
+        .budget=SIZE_MAX, .activation=&jit->state->activation
+    };
+}
+
+bool mmay_bytecode_jit_run_stack(MarimayBytecodeJit *jit,
+    MarimayBytecodeRunStatus *status, bool *finished
+) {
+    *finished = false;
+    *status = MMAY_BYTECODE_RUN_OK;
+    if (!jit->ready || jit->state->activation.jit == NULL) return false;
+    MarimayBytecodeJitActivation *activation = &jit->state->activation;
+    MarimayBytecodeJitContext *context = &jit->state->context;
+    MarimayBytecodeRunStack *stack = activation->stack;
+    const MarimayBytecodeRunOptions *options = activation->options;
+    MarimayBytecodeRunFrame *frame = &stack->frames[stack->count - 1];
+    size_t id = (size_t)(frame->function
+        - (const MarimayBytecodeProgramFunction *)activation->program->functions.data);
+    const MarimayBytecodeImageFunction *image = &activation->image->functions[id];
+    if (jit->meters_fuel) {
+        return mmay_bytecode_jit_run(jit, id, image,
+            &frame->function->body, frame->registers, options->execution,
+            &frame->block, &frame->instruction, &frame->steps, *options);
+    }
+    if (options->max_steps != SIZE_MAX || options->remaining_shared_steps != NULL) return false;
+    if (id >= jit->function_count) return false;
+    const MarimayBytecodeJitFunction *compiled = &jit->functions[id];
+    if (compiled->entries == NULL || compiled->code == NULL) return false;
+    size_t pc = (size_t)image->block_starts[frame->block] + frame->instruction;
+    if (pc >= image->operation_count) return false;
+    /* A cold instruction needs neither a native activation nor new bindings. */
+    if (!(compiled->entries[pc] & MMAY_JIT_ENTRY)) return true;
+    context->function = &frame->function->body;
+    context->image = image;
+    context->registers = frame->registers;
+    context->pc = pc;
+    jit->epoch += 1;
+    if (jit->epoch == 0) {
+        memset(jit->bindings, 0, jit->binding_bytes);
+        jit->epoch = 1;
+    }
+    context->epoch = jit->epoch;
+    mmay_bytecode_jit_enter(compiled, context, pc);
+    *finished = activation->finished;
+    *status = activation->status;
+    if (!*finished && *status == MMAY_BYTECODE_RUN_OK) {
+        frame = &stack->frames[stack->count - 1];
+        frame->block = context->image->operations[context->pc].source_block;
+        frame->instruction = context->image->operations[context->pc].source_instruction;
+    }
+    return true;
+}

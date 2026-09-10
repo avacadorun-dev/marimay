@@ -13,6 +13,9 @@ endfunction()
 mmay_add_jit_test(mmay_code_memory test_code_memory.c)
 mmay_add_jit_test(mmay_jit_ownership test_jit_ownership.c)
 mmay_add_jit_test(mmay_jit_fuel test_jit_fuel.c)
+mmay_add_jit_test(mmay_jit_calls test_jit_calls.c)
+mmay_add_jit_test(mmay_jit_call_roots test_jit_call_roots.c)
+mmay_add_jit_test(mmay_jit_views test_jit_views.c)
 
 add_test(NAME mmay_jit_pinned_inputs
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_prepare_sljit.py"

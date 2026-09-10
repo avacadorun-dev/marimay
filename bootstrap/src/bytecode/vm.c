@@ -1,6 +1,6 @@
 #include "vm_internal.h"
 #include "vm_hot.h"
-#include "vm_frame.h"
+#include "vm_activation.h"
 #include "vm_image.h"
 #ifdef MMAY_HAVE_SLJIT
 #include "vm_jit.h"
@@ -259,9 +259,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
     MarimayBytecodeRunOptions options,
     MarimayBytecodeValue *result
 ) {
-    MarimayBytecodeRunFrame *frames = NULL;
-    size_t frame_count = 0;
-    size_t frame_capacity = 0;
+    MarimayBytecodeRunStack stack = {0};
+    MarimayBytecodeRunFrame *current_frame = NULL;
     MarimayBytecodeExecutionImage image = {0};
 #ifdef MMAY_HAVE_SLJIT
     MarimayBytecodeJit jit = {0};
@@ -330,8 +329,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
 #endif
     }
     if (!mmay_bytecode_run_frames_reserve(
-            &frames,
-            &frame_capacity,
+            &stack.frames,
+            &stack.capacity,
             1,
             options.max_call_depth,
             allocator
@@ -340,27 +339,33 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
         goto cleanup;
     }
     status = mmay_bytecode_run_frame_init(
-        &frames[0], entry, arguments, argument_count, allocator, 0, false,
+        &stack.frames[0], entry, arguments, argument_count, allocator, 0, false,
         false, (MarimayBytecodeSpan){0}
     );
     if (status != MMAY_BYTECODE_RUN_OK) {
         mmay_bytecode_run_frame_dispose(
-            &frames[0], &allocator, options.execution
+            &stack.frames[0], &allocator, options.execution
         );
         goto cleanup;
     }
     status = mmay_bytecode_run_frame_roots_init(
-        &frames[0], options.execution, allocator
+        &stack.frames[0], options.execution, allocator
     );
     if (status != MMAY_BYTECODE_RUN_OK) {
         mmay_bytecode_run_frame_dispose(
-            &frames[0], &allocator, options.execution
+            &stack.frames[0], &allocator, options.execution
         );
         goto cleanup;
     }
-    frame_count = 1;
+    stack.count = 1;
+#ifdef MMAY_HAVE_SLJIT
+    mmay_bytecode_jit_start(&jit, program, &image, &stack, allocator, &options, result);
+#endif
+    /* Cold value/branch operations cannot relocate the logical frame vector.
+     * Refresh this local borrow only after an owner changes the activation. */
+    current_frame = &stack.frames[0];
     for (;;) {
-        MarimayBytecodeRunFrame *frame = &frames[frame_count - 1];
+        MarimayBytecodeRunFrame *frame = current_frame;
         const MarimayBytecodeFunction *body = &frame->function->body;
         if (image_ready) {
             const MarimayBytecodeProgramFunction *functions =
@@ -371,10 +376,13 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
                 goto cleanup;
             }
 #ifdef MMAY_HAVE_SLJIT
-            if (mmay_bytecode_jit_run(&jit, function_id, &image.functions[function_id],
-                body, frame->registers, options.execution, &frame->block,
-                &frame->instruction, &frame->steps, options)) {
-                /* One cold instruction preserves an exact source exit. */
+            bool finished = false;
+            if (mmay_bytecode_jit_run_stack(&jit, &status, &finished)) {
+                if (status != MMAY_BYTECODE_RUN_OK || finished) goto cleanup;
+                /* Native transfers may relocate storage and change the callee. */
+                current_frame = &stack.frames[stack.count - 1];
+                frame = current_frame;
+                body = &frame->function->body;
             } else
 #endif
             if (image.functions[function_id].has_specialized_loop) {
@@ -408,59 +416,11 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
         }
         if (instruction->opcode == MMAY_OPCODE_RETURN
             || instruction->opcode == MMAY_OPCODE_RETURN_VOID) {
-            MarimayBytecodeValue completed;
-            bool returns_void = instruction->opcode == MMAY_OPCODE_RETURN_VOID;
-            memset(&completed, 0, sizeof(completed));
-            if (returns_void) {
-                completed.type = MMAY_BYTECODE_TYPE_VOID;
-            } else {
-                completed = frame->registers[
-                    (size_t)instruction->operands[0].unsigned_value
-                ];
-            }
-            if (frame->return_is_never) {
-                status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
-                goto cleanup;
-            }
-            if (completed.type == MMAY_BYTECODE_TYPE_STRING
-                && !mmay_bytecode_run_string_value_valid(
-                    options.execution, completed
-                )) {
-                status = MMAY_BYTECODE_RUN_INVALID_REFERENCE;
-                goto cleanup;
-            }
-            if (mmay_bytecode_type_is_array(completed.type)
-                && !mmay_bytecode_managed_value_valid_for(
-                    options.execution, body, completed, body->result_layout
-                )) {
-                status = MMAY_BYTECODE_RUN_INVALID_REFERENCE;
-                goto cleanup;
-            }
-            if (completed.type == MMAY_BYTECODE_TYPE_INTERFACE
-                && !mmay_bytecode_run_interface_value_valid(
-                    options.execution,
-                    body,
-                    completed,
-                    body->result_layout
-                )) {
-                status = MMAY_BYTECODE_RUN_INVALID_REFERENCE;
-                goto cleanup;
-            }
-            if (frame_count == 1) {
-                *result = completed;
-                status = MMAY_BYTECODE_RUN_OK;
-                goto cleanup;
-            }
-            {
-                MarimayBytecodeRunFrame *parent = &frames[frame_count - 2];
-                uint32_t destination = frame->return_destination;
-                bool return_is_void = frame->return_is_void;
-                if (!return_is_void) {
-                    parent->registers[destination] = completed;
-                }
-                mmay_bytecode_run_frame_release(frame, options.execution);
-                frame_count -= 1;
-            }
+            bool finished = false;
+            status = mmay_bytecode_run_return(&stack, instruction, &options,
+                result, &finished);
+            if (status != MMAY_BYTECODE_RUN_OK || finished) goto cleanup;
+            current_frame = &stack.frames[stack.count - 1];
             continue;
         }
         if (instruction->opcode == MMAY_OPCODE_JUMP) {
@@ -477,7 +437,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
             continue;
         }
         if (instruction->opcode == MMAY_OPCODE_PANIC_STRING) {
-            size_t panic_index = frame_count - 1;
+            size_t panic_index = stack.count - 1;
             status = mmay_bytecode_run_begin_panic(
                 options.panic,
                 allocator,
@@ -487,8 +447,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
                 instruction->span
             );
             while (status == MMAY_BYTECODE_RUN_PANIC && panic_index != 0) {
-                MarimayBytecodeRunFrame *callee = &frames[panic_index];
-                MarimayBytecodeRunFrame *caller = &frames[panic_index - 1];
+                MarimayBytecodeRunFrame *callee = &stack.frames[panic_index];
+                MarimayBytecodeRunFrame *caller = &stack.frames[panic_index - 1];
                 status = mmay_bytecode_run_append_panic_frame(
                     options.panic, caller->function->symbol, callee->call_span
                 );
@@ -542,158 +502,10 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
             || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID
             || instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER
             || instruction->opcode == MMAY_OPCODE_CALL_INTERFACE) {
-            bool returns_never = instruction->opcode == MMAY_OPCODE_CALL_DIRECT_NEVER;
-            bool interface_call = instruction->opcode
-                == MMAY_OPCODE_CALL_INTERFACE;
-            uint64_t call_wire = instruction->operands[
-                instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID || returns_never ? 0 : 1
-            ].unsigned_value;
-            const MarimayBytecodeCall *call = call_wire < body->calls.length
-                ? mmay_bytecode_call(body, (MarimayBytecodeCallId)call_wire)
-                : NULL;
-            bool returns_void = call != NULL && call->result_type == MMAY_BYTECODE_TYPE_VOID;
-            MarimaySymbolId callee_symbol;
-            MarimayManagedReference interface_payload =
-                mmay_managed_invalid_reference();
-            const MarimayBytecodeProgramFunction *callee = NULL;
-            size_t argument_index = 0;
-            memset(&callee_symbol, 0, sizeof(callee_symbol));
-            if (interface_call && call != NULL) {
-                status = mmay_bytecode_run_interface_resolve(
-                    instruction,
-                    frame->registers,
-                    options.execution,
-                    body,
-                    &callee_symbol,
-                    &interface_payload
-                );
-                if (status != MMAY_BYTECODE_RUN_OK) {
-                    goto cleanup;
-                }
-            } else if (call != NULL) {
-                callee_symbol = call->callee;
-            }
-            if (!interface_call && call != NULL && image_ready) {
-                const MarimayBytecodeProgramFunction *functions =
-                    program->functions.data;
-                size_t function_id = (size_t)(frame->function - functions);
-                const MarimayBytecodeImageOperation *operation =
-                    function_id < image.function_count
-                        ? mmay_bytecode_image_operation_at(
-                            &image.functions[function_id], frame->block,
-                            frame->instruction) : NULL;
-                callee = operation != NULL
-                    && operation->third < image.function_count
-                    ? mmay_bytecode_program_function(
-                        program, operation->third) : NULL;
-            } else {
-                callee = call != NULL
-                    ? mmay_bytecode_program_function_by_symbol(
-                        program, callee_symbol) : NULL;
-            }
-            if (call == NULL || callee == NULL || frame_count >= options.max_call_depth
-            ) {
-                status = frame_count >= options.max_call_depth
-                    ? MMAY_BYTECODE_RUN_STEP_LIMIT
-                    : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
-                mmay_bytecode_run_set_trap(options, instruction->span);
-                goto cleanup;
-            }
-            if (!mmay_bytecode_run_frames_reserve(
-                    &frames,
-                    &frame_capacity,
-                    frame_count + 1,
-                    options.max_call_depth,
-                    allocator
-                )) {
-                status = MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-                goto cleanup;
-            }
-            /* Reserve may relocate frames, so only now advance the caller. */
-            frames[frame_count - 1].instruction += 1;
-            status = mmay_bytecode_run_frame_init(
-                &frames[frame_count],
-                callee,
-                NULL,
-                0,
-                allocator,
-                returns_void || returns_never
-                    ? 0
-                    : (uint32_t)instruction->operands[0].unsigned_value,
-                returns_void,
-                returns_never,
-                instruction->span
-            );
-            if (status != MMAY_BYTECODE_RUN_OK) {
-                mmay_bytecode_run_frame_dispose(
-                    &frames[frame_count], &allocator, options.execution
-                );
-                goto cleanup;
-            }
-            for (argument_index = 0;
-                argument_index < call->argument_count;
-                argument_index += 1) {
-                const MarimayBytecodeCallArgument *argument =
-                    mmay_bytecode_call_argument(
-                        body,
-                        call->argument_start + argument_index
-                    );
-                if (argument == NULL) {
-                    mmay_bytecode_run_frame_dispose(
-                        &frames[frame_count],
-                        &allocator,
-                        options.execution
-                    );
-                    status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
-                    goto cleanup;
-                }
-                if (interface_call && argument_index == 0) {
-                    const MarimayBytecodeType *parameter = mmay_vector_at_const(
-                        &callee->body.register_types,
-                        0
-                    );
-                    if (parameter == NULL
-                        || !mmay_bytecode_type_is_managed(*parameter)) {
-                        mmay_bytecode_run_frame_dispose(
-                            &frames[frame_count],
-                            &allocator,
-                            options.execution
-                        );
-                        status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
-                        goto cleanup;
-                    }
-                    frames[frame_count].registers[0].type = *parameter;
-                    frames[frame_count].registers[0].as.managed_reference =
-                        interface_payload;
-                } else {
-                    frames[frame_count].registers[argument_index] =
-                        frames[frame_count - 1]
-                            .registers[argument->register_id];
-                }
-            }
-            {
-                size_t callee_id = (size_t)(callee
-                    - (const MarimayBytecodeProgramFunction *)
-                        program->functions.data);
-                bool borrow_roots = image_ready
-                    && callee_id < image.function_count
-                    && image.functions[callee_id].borrows_caller_roots;
-                if (borrow_roots) {
-                    mmay_bytecode_run_frame_borrow_caller_roots(
-                        &frames[frame_count]);
-                    status = MMAY_BYTECODE_RUN_OK;
-                } else {
-                    status = mmay_bytecode_run_frame_roots_init(
-                        &frames[frame_count], options.execution, allocator);
-                }
-            }
-            if (status != MMAY_BYTECODE_RUN_OK) {
-                mmay_bytecode_run_frame_dispose(
-                    &frames[frame_count], &allocator, options.execution
-                );
-                goto cleanup;
-            }
-            frame_count += 1;
+            status = mmay_bytecode_run_call(&stack, program,
+                image_ready ? &image : NULL, instruction, allocator, &options);
+            if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
+            current_frame = &stack.frames[stack.count - 1];
             continue;
         }
         {
@@ -706,7 +518,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
                 &bounds_index, &bounds_length
             );
             if (status == MMAY_BYTECODE_RUN_PANIC) {
-                size_t panic_index = frame_count - 1;
+                size_t panic_index = stack.count - 1;
                 if (options.panic == NULL || options.panic->code == NULL) {
                     status = mmay_bytecode_run_begin_bounds_panic(
                         options.panic, allocator, bounds_index, bounds_length,
@@ -715,8 +527,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
                 }
                 while (status == MMAY_BYTECODE_RUN_PANIC
                     && panic_index != 0) {
-                    MarimayBytecodeRunFrame *callee = &frames[panic_index];
-                    MarimayBytecodeRunFrame *caller = &frames[panic_index - 1];
+                    MarimayBytecodeRunFrame *callee = &stack.frames[panic_index];
+                    MarimayBytecodeRunFrame *caller = &stack.frames[panic_index - 1];
                     status = mmay_bytecode_run_append_panic_frame(
                         options.panic, caller->function->symbol,
                         callee->call_span
@@ -736,8 +548,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
         frame->instruction += 1;
     }
 cleanup:
-    while (frame_count != 0) {
-        MarimayBytecodeRunFrame *frame = &frames[frame_count - 1];
+    while (stack.count != 0) {
+        MarimayBytecodeRunFrame *frame = &stack.frames[stack.count - 1];
         const MarimayBytecodeFunction *body = &frame->function->body;
         while (frame->defer_count != 0) {
             MarimayBytecodeCallId call_id;
@@ -764,12 +576,12 @@ cleanup:
                 status = cleanup_status;
             }
         }
-        frame_count -= 1;
+        stack.count -= 1;
         mmay_bytecode_run_frame_dispose(
-            &frames[frame_count], &allocator, options.execution
+            &stack.frames[stack.count], &allocator, options.execution
         );
     }
-    mmay_bytecode_run_frames_dispose(frames, frame_capacity,
+    mmay_bytecode_run_frames_dispose(stack.frames, stack.capacity,
         &allocator, options.execution);
 #ifdef MMAY_HAVE_SLJIT
     mmay_bytecode_jit_dispose(&jit);

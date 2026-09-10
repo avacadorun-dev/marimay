@@ -589,6 +589,25 @@ D111 adds an explicitly enabled shared machine-code tier. `vm_jit.c` owns its
 invocation lifecycle and tier entry; `vm_jit_plan.c` owns bounded segmentation;
 `vm_jit_sljit.c` owns machine-code lowering; `vm_jit_bind.c` owns nonallocating
 validated views and enum reads; `vm_jit_loops.c` delegates D109 composition.
+The binding owner may retain view metadata between native entries and cheaply
+revalidate execution, function/layout/type, full reference/provenance and the
+runtime view epoch before reading object pointers. `runtime/common/managed.c`
+alone advances that epoch in its existing cache-invalidation boundary, before
+any collection work; saturation disables reuse. `test_jit_views.c` proves actual
+cache hits, mutation/growth, successful and failed GC, stale-slot rejection,
+callee changes, wrong heaps, fresh provenance and saturation. It preserves the
+ordinary checked miss path and requires no new allocation on a binding hit.
+`vm_activation.c` owns the shared logical call/return protocol over the
+nonrecursive stack; `vm_frame.c` retains buffer and root lifetimes. Both
+ordinary dispatch and compiled transitions use those same rules.
+`vm_jit_calls.c` owns invocation context setup, unmetered native label transfers
+and publication of the current logical activation on exit. Its context lives
+with JIT metadata and borrows the stable VM invocation owners. Native transfers
+may relocate logical frame storage; no caller-frame pointer survives them.
+The coordinator borrows the current frame across cold value and branch
+operations, which cannot relocate that invocation's frame vector. It refreshes
+the borrow after every successful call, return or native transition; failure
+cleanup always consults the authoritative stack, including after relocation.
 The coordinator uses the narrow entry result rather than inspecting compiled
 function plans. `vm_jit_internal.h` exposes those plans only to focused JIT
 owners. No cold call/frame/panic implementation moves into the generator.
@@ -596,7 +615,9 @@ The plan checks exact operand types: I64-named wire instructions also encode
 other integer widths, whose policies the current i64 emitter cannot implement.
 `test_bytecode_vm_jit.c` owns verified admission, cold/JIT scalar and selector
 differential checks; `tests/c-unit/jit/` owns code memory, allocation/platform
-failure sweeps, fuel-mode and pinned dependency preparation tests.
+failure sweeps, fuel-mode and pinned dependency preparation tests. Its focused
+call owners prove native entry across nested calls, deep logical recursion,
+source exits, allocation failure cleanup and managed roots across cold GC.
 
 `base/code_memory.c` is the central OS page-allocation owner behind the narrow
 `mmay/base/code_memory.h` API. It owns rounding, bounded reserve, one-way W^X

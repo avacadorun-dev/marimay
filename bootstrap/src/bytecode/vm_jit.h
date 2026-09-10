@@ -5,6 +5,8 @@
 #include "mmay/base/code_memory.h"
 
 typedef struct MarimayBytecodeJitFunction MarimayBytecodeJitFunction;
+typedef struct MarimayBytecodeRunStack MarimayBytecodeRunStack;
+typedef struct MarimayBytecodeJitState MarimayBytecodeJitState;
 
 typedef struct MarimayBytecodeJit {
     MarimayAllocator allocator;
@@ -17,6 +19,7 @@ typedef struct MarimayBytecodeJit {
     void *bindings;
     size_t binding_bytes;
     size_t epoch;
+    MarimayBytecodeJitState *state;
 } MarimayBytecodeJit;
 
 /* Verified image and original function metadata must outlive this owner.
@@ -34,5 +37,15 @@ bool mmay_bytecode_jit_run(MarimayBytecodeJit *jit, size_t function_id,
     const MarimayBytecodeFunction *function, MarimayBytecodeValue *registers,
     MarimayBytecodeExecution *execution, size_t *block, size_t *instruction,
     size_t *steps, MarimayBytecodeRunOptions options);
+
+/* The unmetered source tier may transfer logical activations without leaving
+ * the native trampoline. On a cold exit the current stack/PC is authoritative. */
+void mmay_bytecode_jit_start(MarimayBytecodeJit *jit,
+    const MarimayBytecodeProgram *program, const MarimayBytecodeExecutionImage *image,
+    MarimayBytecodeRunStack *stack, MarimayAllocator allocator,
+    const MarimayBytecodeRunOptions *options, MarimayBytecodeValue *result);
+/* Start borrows these stable owners until the run finishes or starts anew. */
+bool mmay_bytecode_jit_run_stack(MarimayBytecodeJit *jit,
+    MarimayBytecodeRunStatus *status, bool *finished);
 
 #endif

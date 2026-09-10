@@ -449,6 +449,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_image_run.c
   bootstrap/src/bytecode/vm_image_shift.c
   bootstrap/src/bytecode/vm_frame.c
+  bootstrap/src/bytecode/vm_activation.c
   bootstrap/src/bytecode/vm_array_mutation.c
   bootstrap/src/bytecode/vm_collection.c
   bootstrap/src/bytecode/vm_defer.c
@@ -719,6 +720,7 @@ if(MMAY_ENABLE_SLJIT)
   target_sources(mmay_bootstrap PRIVATE
     bootstrap/src/base/code_memory.c
     bootstrap/src/bytecode/vm_jit.c
+    bootstrap/src/bytecode/vm_jit_calls.c
     bootstrap/src/bytecode/vm_jit_plan.c
     bootstrap/src/bytecode/vm_jit_bind.c
     bootstrap/src/bytecode/vm_jit_loops.c

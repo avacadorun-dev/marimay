@@ -3704,11 +3704,34 @@ source-prefix and fuel contract inside this tier.
 Each side exit restores the original source PC before ordinary execution
 handles the uncommitted instruction, trap or call. Calls retain existing
 logical frames, call-depth limits, typed roots, argument/return checks and
-cleanup order. Borrowed array/record views never survive a return to the VM,
-allocation, collection or host/call boundary. A managed register write may
+cleanup order. Borrowed array/record views lose their validity at a return to
+the VM, allocation, collection or host/call boundary. A managed register write may
 retain its cached view only when the complete reference identity is unchanged.
 Representation projections use authoritative verified operands; a compact
 image field cannot silently truncate a signed or wide selector.
+
+Cached view metadata may be retained without dereferencing its object pointers.
+A subsequent native entry may revalidate it using exact execution identity,
+function/layout and value type, the complete managed reference and heap
+provenance, and the runtime's unchanged view-invalidation epoch. That epoch
+advances before collection can trace or sweep, including failed collection;
+UINT64_MAX saturation permanently disables this reuse for the heap lifetime.
+Fresh heap provenance distinguishes disposal/reinitialization even at the same
+address and epoch. Array views refer to the nonmoving object's live storage,
+length and generation fields, not a copied storage buffer. A failed proof uses
+the existing full descriptor/reference binding owner. This makes the spec's
+revalidation allowance explicit; it does not let an expired borrow remain usable.
+
+In the unlimited-frame/no-shared-counter mode, bounded direct callees of selected
+functions may also be compiled. A single native trampoline may transfer between
+their labels through the shared logical call/return owner. Every Marimay call
+still creates its logical activation and enforces the original depth limit,
+argument/return rules and root lifetime. Frame-vector relocation cannot leave
+stale pointers in the native context. Cold exits publish the actual callee and
+its next uncommitted instruction; an already executed callee prefix is never
+replayed. Finite/shared runs retain ordinary call/return dispatch and its exact
+accounting. The invocation context is prepared once, not reconstructed at each
+native entry.
 
 Focused coverage must include operations and source exits, finite/shared fuel,
 managed alias/rebinding and collection, code-policy/budget fallback, all

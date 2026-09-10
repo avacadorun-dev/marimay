@@ -91,6 +91,8 @@ typedef struct MarimayManagedHeap {
     MarimayManagedResourceFailure last_resource_failure;
     bool collecting;
     bool initialized;
+    /* Advances before view invalidation/GC. Saturation forbids retained views. */
+    uint64_t view_epoch;
 } MarimayManagedHeap;
 
 MarimayManagedHeapOptions mmay_managed_heap_default_options(void);

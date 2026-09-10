@@ -87,6 +87,36 @@ and reuse of already checked object views, with explicit GC/provenance
 invalidation and the same unchanged-corpus acceptance. Its implementation and
 deadline must be recorded before that experiment starts.
 
+## Checked object-view stage: accepted locally
+
+This stage starts at **12:18 UTC on 2026-09-10** and is due by
+**14:18 UTC (21:18 Asia/Krasnoyarsk)**. It tests reuse of the
+existing JIT array/record view after exact function/layout, execution, full
+reference and runtime GC-epoch revalidation. Collection must invalidate the
+proof before tracing/sweeping; saturation disables persistent reuse. Every
+miss retains the existing checked owner and all heap, fuel and depth limits.
+
+Early acceptance against published `8c14357` requires BFS improvement of at
+least 25%, DSU 20% and min-heap 10%. Full acceptance uses all 32 unchanged
+workloads with JIT and the default interpreter independently. It retains the
+2% median regression rule and adds a **5% P90 regression rule** before this
+experiment starts, addressing the previous candidate's repeated slow mode.
+P90 linearly interpolates sorted samples at `0.9 * (n - 1)`. Exactly one further
+3+11 series confirms each flagged workload; a threshold exceeded in both series
+rejects the candidate. All observations and both statistics remain visible.
+Required correctness, failure, sanitizer and architecture checks precede any
+acceptance, main commit and push. A missed target records a rejected experiment.
+
+Outcome: **accepted locally after the predeclared correctness and performance
+checks**. The [complete evidence](evidence/cp42-sljit-views-2026-09-10.md)
+records 93/93 enabled tests, 86/86 disabled tests, sanitizer/Rosetta checks and
+all unchanged workload replays. The early BFS/DSU/min-heap gains are 31.3%, 47.4%
+and 17.8%. The full JIT median sum falls 23.2%; OFF changes -0.05%, with no
+threshold exceeded. The one JIT P90 flag (`catalog-interface`) is not reproduced
+in its single confirmation, so neither median nor P90 has a confirmed regression.
+A fresh five-participant full matrix is also recorded. This accepts the opt-in
+implementation, not default enablement, Tier 1 validation or overall parity.
+
 ## Sequence after this stage
 
 1. Follow the measured object-binding profile. Reduce repeated managed-object validation,

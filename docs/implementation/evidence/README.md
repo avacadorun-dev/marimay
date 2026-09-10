@@ -198,6 +198,15 @@ leave stability unresolved; the implementation remains a reproducible patch.
 Nine subsequent diagnostic profiles locate 49.6% of BFS and 58.2% of DSU samples
 under object binding, with raw stacks and a reproduction script preserved.
 
+[Checked object-view reuse across native JIT entries](cp42-sljit-views-2026-09-10.md)
+([validation](cp42-sljit-views-validation-2026-09-10.json),
+[fresh five-participant matrix](cp42-sljit-views-comprehensive-2026-09-10.json))
+records exact GC/provenance revalidation, shared logical calls, 93/93 JIT and
+86/86 interpreter tests, sanitizer/Rosetta correctness and replayable inputs.
+The paired JIT median sum improves 23.2%, with no confirmed median/P90 regression;
+OFF remains within its gates. The new full comparison includes all 32 workloads
+in native Marimay, Go, Rust, opt-in VM/JIT and Bun. Overall parity remains open.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

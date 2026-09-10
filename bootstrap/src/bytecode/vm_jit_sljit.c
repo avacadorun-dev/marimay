@@ -89,6 +89,27 @@ static sljit_sw enum_address(void) {
     memcpy(&address, &function, sizeof(address));
     return address;
 }
+static void reload(Emitter *e) {
+    move(e, SLJIT_MOV, REGS, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, registers));
+    move(e, SLJIT_MOV, BINDS, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, bindings));
+    move(e, SLJIT_MOV, FUEL, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, budget));
+    move(e, SLJIT_MOV, EPOCH, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, epoch));
+}
+static void transition(Emitter *e) {
+    void *(*function)(MarimayBytecodeJitContext *, uint32_t) = mmay_bytecode_jit_transition;
+    sljit_sw address = 0;
+    _Static_assert(sizeof(address) == sizeof(function), "transition pointer");
+    memcpy(&address, &function, sizeof(address));
+    move(e, SLJIT_MOV, SLJIT_R0, 0, CTX, 0);
+    move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_IMM, (sljit_sw)e->pc);
+    sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS2(P, P, 32), SLJIT_IMM, address);
+    struct sljit_jump *resume = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R0, 0, SLJIT_IMM, 0);
+    /* The helper has already published the current logical activation/PC. */
+    sljit_emit_return_void(e->c);
+    sljit_set_label(resume, sljit_emit_label(e->c));
+    reload(e);
+    sljit_emit_ijump(e->c, SLJIT_JUMP, SLJIT_R0, 0);
+}
 static void composed_shift(Emitter *e) {
     bool (*function)(MarimayBytecodeJitContext *, uint32_t) = mmay_bytecode_jit_shift;
     sljit_sw address = 0;
@@ -260,10 +281,7 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
     Emitter e = {compiler, function, 0, 0, meter_fuel};
     sljit_emit_enter(compiler, 0, SLJIT_ARGS2V(P, P), 6, 5, 0);
     move(&e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_S1, 0);
-    move(&e, SLJIT_MOV, REGS, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, registers));
-    move(&e, SLJIT_MOV, BINDS, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, bindings));
-    move(&e, SLJIT_MOV, FUEL, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, budget));
-    move(&e, SLJIT_MOV, EPOCH, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, epoch));
+    reload(&e);
     sljit_emit_ijump(compiler, SLJIT_JUMP, SLJIT_R0, 0);
     for (size_t pc = 0; pc < n; ++pc) {
         const MarimayBytecodeImageOperation *op = &image->operations[pc];
@@ -279,6 +297,9 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
         }
         e.restore = meter_fuel ? plan->segment_end - pc : 0;
         switch (op->opcode) {
+            case MMAY_OPCODE_CALL_DIRECT: case MMAY_OPCODE_CALL_DIRECT_VOID:
+            case MMAY_OPCODE_RETURN: case MMAY_OPCODE_RETURN_VOID:
+                transition(&e); break;
             case MMAY_OPCODE_JUMP: edges[2*pc] = sljit_emit_jump(compiler, SLJIT_JUMP); break;
             case MMAY_OPCODE_BRANCH_BOOL:
                 load(&e, SLJIT_R0, op->first);

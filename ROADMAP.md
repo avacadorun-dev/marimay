@@ -136,5 +136,17 @@ patch and all observations are preserved. Post-measurement profiles locate
 about half of BFS and DSU samples in JIT object binding, defining the next
 systemic experiment; they do not establish a new speedup or close parity.
 
+[Checked object-view reuse across JIT entries](docs/implementation/evidence/cp42-sljit-views-2026-09-10.md)
+revalidates retained array/record metadata through exact identities and a
+runtime-owned GC epoch while preserving the full checked miss path. It carries
+forward the shared logical call owner and cursor. Local checks pass 93/93 with
+JIT, 86/86 without it, plus sanitizer and Rosetta workload replays. The paired
+JIT matrix reduces the sum of medians by 23.2%; the default interpreter changes
+by -0.05%. One flagged catalogue P90 increase is not reproduced in its single
+predeclared confirmation; no regression is confirmed. A new full five-participant
+matrix records current native, Go, Rust, VM/JIT and Bun results. The opt-in
+implementation is accepted locally; default enablement, Linux LSan, full Tier 1
+and native/VM parity remain open.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.
