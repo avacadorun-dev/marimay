@@ -147,6 +147,14 @@ root-borrow eligibility, generic composed-loop fuel checks and paired
 insertion/DSU/control diagnostics. It measures an interpreter ceiling and leaves
 additional trace families, parity and every product/platform gate open.
 
+[SLJIT feasibility with the reused ARM64 prototype](cp42-sljit-feasibility-2026-09-10.md)
+([paired observations](cp42-sljit-feasibility-paired-2026-09-10.json),
+[32-workload correctness](cp42-sljit-feasibility-correctness-2026-09-10.json))
+records the shared backend, corrected record selectors and retained view
+identity. Dijkstra improves 7.70× against the paired control, but insertion
+regresses 2.52×. This is reproducible experimental evidence; central allocation,
+W^X/failure/platform conformance and performance parity remain open.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

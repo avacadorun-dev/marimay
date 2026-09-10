@@ -1,0 +1,75 @@
+--- a/vm.c
++++ b/vm.c
+@@ -2,6 +2,7 @@
+ #include "vm_hot.h"
+ #include "vm_frame.h"
+ #include "vm_image.h"
++#include "vm_jit.h"
+ #include <limits.h>
+ #include <string.h>
+ #include "mmay/base/f64.h"
+@@ -260,6 +261,7 @@
+     size_t frame_count = 0;
+     size_t frame_capacity = 0;
+     MarimayBytecodeExecutionImage image = {0};
++    MarimayBytecodeJit jit = {0};
+     bool image_ready = false;
+     MarimayBytecodeRunStatus status;
+     const MarimayBytecodeProgramFunction *entry = NULL;
+@@ -315,6 +317,10 @@
+             return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+         }
+         image_ready = image_status == MMAY_BYTECODE_IMAGE_OK;
++        if (image_ready) {
++            status = mmay_bytecode_jit_init(&jit, program, &image, allocator);
++            if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
++        }
+     }
+     if (!mmay_bytecode_run_frames_reserve(
+             &frames,
+@@ -357,7 +363,12 @@
+                 status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+                 goto cleanup;
+             }
+-            if (image.functions[function_id].has_specialized_loop) {
++            mmay_bytecode_jit_run(&jit, function_id, &image.functions[function_id],
++                body, frame->registers, options.execution, &frame->block,
++                &frame->instruction, &frame->steps, options);
++            if (function_id < jit.function_count && jit.functions[function_id].code) {
++                /* Execute exactly one cold instruction before JIT re-entry. */
++            } else if (image.functions[function_id].has_specialized_loop) {
+                 mmay_bytecode_run_image_hot(&image.functions[function_id], body,
+                     frame->registers, options.execution, &frame->block,
+                     &frame->instruction, &frame->steps, options);
+@@ -751,6 +762,7 @@
+     }
+     mmay_bytecode_run_frames_dispose(frames, frame_capacity,
+         &allocator, options.execution);
++    mmay_bytecode_jit_dispose(&jit);
+     mmay_bytecode_execution_image_dispose(&image);
+     return status;
+ }
+--- a/vm_image.c
++++ b/vm_image.c
+@@ -352,6 +352,11 @@
+             memset(target, 0, sizeof(*target));
+             const MarimayOpcodeMetadata *metadata = source == NULL
+                 ? NULL : mmay_opcode_metadata(source->opcode);
++            uint64_t third = metadata != NULL
++                    && (source->opcode == MMAY_OPCODE_RECORD_GET || source->opcode == MMAY_OPCODE_RECORD_SET)
++                && source->operands[2].signed_value >= 0
++                ? (uint64_t)source->operands[2].signed_value
++                : source->operands[2].unsigned_value;
+             if (source == NULL || metadata == NULL || source->opcode > UINT8_MAX
+                 || !mmay_bytecode_image_operand_u32(
+                     source->operands[0].unsigned_value, &target->first)
+@@ -360,8 +365,7 @@
+                         && metadata->operands[1] != MMAY_BYTECODE_OPERAND_U64)
+                     && !mmay_bytecode_image_operand_u32(
+                         source->operands[1].unsigned_value, &target->second))
+-                || !mmay_bytecode_image_operand_u32(
+-                    source->operands[2].unsigned_value, &target->third)) {
++                || !mmay_bytecode_image_operand_u32(third, &target->third)) {
+                 return false;
+             }
+             target->opcode = (uint8_t)source->opcode;

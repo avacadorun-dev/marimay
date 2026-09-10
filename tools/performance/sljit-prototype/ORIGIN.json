@@ -1,0 +1,38 @@
+{
+  "reuse": "previous ARM64 prototype from this task",
+  "upstream_sljit_revision": "d6ec3d07dcdbf2256ccae2b84d0d8a2d019f392e",
+  "source_parent": "f43647eeef4728eed96ab4855eb7ce02549dae7a",
+  "status": "Experimental evaluation only; not compiled or enabled by production CMake.",
+  "source_base": "f43647eeef4728eed96ab4855eb7ce02549dae7a",
+  "sljit_commit": "d6ec3d07dcdbf2256ccae2b84d0d8a2d019f392e",
+  "reused": [
+    "vm_jit_plan.c",
+    "vm_jit_bind.c",
+    "VM entry/exit, fuel and source-PC mapping from the earlier ARM64 prototype"
+  ],
+  "changes": [
+    "Replace handwritten ARM64 emission with the shared SLJIT adapter.",
+    "Decode signed record-field selectors correctly.",
+    "Retain a bound view on a managed register write only when complete provenance/slot/generation is unchanged."
+  ],
+  "evaluation_limits": [
+    "SLJIT uses its built-in WX executable allocator and default C heap hooks in this experiment; central allocator and OS failure injection are production gates.",
+    "Only bounded functions with backedges are compiled; calls and unsupported instructions return to the interpreter.",
+    "The generic JIT currently supersedes the existing image loop specializations in compiled functions; insertion regresses.",
+    "No Tier 1 portability or performance-parity claim."
+  ],
+  "files_sha256": {
+    "vm_jit.c": "875b7bb0dd88a6c48451f479a098cb92b4db86ae7435cf247860ffd9832cacda",
+    "vm_jit.h": "fd54859a0e8838b1efef340df31ea4f0bc3258ab99b812fe7206ab336fc6dc86",
+    "vm_jit_internal.h": "97c4f2b81eef0ae87f82f586e95cf3fdbe7cb5b4d1b0a56e620a3b9115af537b",
+    "vm_jit_plan.c": "f326591efa31af26fec6d5ab4a99783a8776cd4065444d6dcbf64d94e3d112b3",
+    "vm_jit_bind.c": "8631ec1e689b792e4e4ab3e5fe5aea853c2a8ca1c3da28201bcb095d01c4756b",
+    "vm_jit_sljit.c": "250f6710f03a1c96527d09d74a6654d2d3e48303a710215b84d9a332dd1bf399",
+    "code_memory.h": "bb483464fb339c0634820fa04fb39f19d4a147596ba5d4169f490ec6ccb5e50f",
+    "smoke.c": "aba6c24782354c27fd47444cf9c8502cda7448d06277f7cd08694f65833fd352"
+  },
+  "baseline_sources_sha256": {
+    "bootstrap/src/bytecode/vm.c": "245f42cecd809d1289547f5483b36007ea97e0207a44e3359341606cb214465e",
+    "bootstrap/src/bytecode/vm_image.c": "9ba909622a60c893e9a51f5fb6e7cdafa098d76f88a1f45bfc9cafb6ac29703a"
+  }
+}

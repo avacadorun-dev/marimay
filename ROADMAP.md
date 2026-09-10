@@ -87,5 +87,13 @@ independent of CPU architecture. Exact limits, managed-heap accounting and
 source semantics remain unchanged; local timing and ownership evidence does
 not close the remaining execution-loop, native runtime or Tier 1 parity gates.
 
+[SLJIT feasibility with the reused ARM64 prototype](docs/implementation/evidence/cp42-sljit-feasibility-2026-09-10.md)
+records the user-selected JIT route, a common C backend, 32 unchanged checksum
+passes, the bytecode suite and a paired six-workload 3+11 series. The isolated
+adapter improves five heavy cells but regresses insertion. It remains excluded
+from production CMake pending central allocation/W^X ownership, exact JIT
+conformance, preserved image-loop performance and Tier 1 acceptance. Go/Rust
+parity remains open.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.
