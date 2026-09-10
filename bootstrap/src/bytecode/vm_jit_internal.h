@@ -71,6 +71,7 @@ void mmay_bytecode_jit_enter(const MarimayBytecodeJitFunction *compiled,
 
 void *mmay_bytecode_jit_bind(MarimayBytecodeJitContext *context, uint32_t reg);
 bool mmay_bytecode_jit_enum(MarimayBytecodeJitContext *context, uint32_t pc);
+bool mmay_bytecode_jit_array_push(MarimayBytecodeJitContext *context, uint32_t pc);
 bool mmay_bytecode_jit_shift(MarimayBytecodeJitContext *context, uint32_t pc);
 size_t mmay_bytecode_jit_array_width(const MarimayBytecodeFunction *function,
     uint32_t reg);

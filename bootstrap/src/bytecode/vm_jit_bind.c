@@ -18,7 +18,11 @@ size_t mmay_bytecode_jit_array_width(const MarimayBytecodeFunction *function,
         case MMAY_BYTECODE_TYPE_F32: case MMAY_BYTECODE_TYPE_RUNE: return 4;
         case MMAY_BYTECODE_TYPE_I64: case MMAY_BYTECODE_TYPE_U64:
         case MMAY_BYTECODE_TYPE_F64: return 8;
-        default: return 0;
+        default:
+            /* Strings additionally validate their byte view on conversion.
+             * Other managed cells transfer the complete reference unchanged. */
+            return type != MMAY_BYTECODE_TYPE_STRING
+                && mmay_bytecode_type_is_managed(type) ? sizeof(MarimayManagedCell) : 0;
     }
 }
 

@@ -148,5 +148,22 @@ matrix records current native, Go, Rust, VM/JIT and Bun results. The opt-in
 implementation is accepted locally; default enablement, Linux LSan, full Tier 1
 and native/VM parity remain open.
 
+[Nonallocating JIT array segments with retained identity](docs/implementation/evidence/cp42-sljit-array-identity-2026-09-10.md)
+add complete non-string reference reads and scalar pushes into existing spare
+capacity through the runtime mutation owner. The [preceding candidate](docs/implementation/evidence/cp42-sljit-array-segments-2026-09-10.md)
+was rejected after DSU exceeded the 2% median threshold in both prescribed
+series. The follow-up removes redundant identity comparisons after successful
+pushes and passes new 95/95 enabled tests, sanitizer/Rosetta replays and the
+complete paired JIT matrix: median sum -9.9%, BFS -32.5%, catalogue-pipeline
+-26.2%. Every workload stays within the 2% median / 5% P90 thresholds; DSU is
++1.77% median and -1.05% P90. The identical OFF executable's previous 86-test
+result, full matrix and successful confirmations are explicitly reused.
+A [fresh five-participant matrix](docs/implementation/evidence/cp42-sljit-array-identity-comprehensive-2026-09-10.md)
+passes all 32 unchanged workloads with this candidate executable. Descriptive
+geometric mean time ratios are native/Go 2.04x, native/Rust 2.19x, VM/Go 19.92x
+and VM/Rust 21.38x; VM includes source preparation.
+This is local opt-in acceptance; default enablement, full Tier 1 and parity
+remain open. The earlier checkpoint overrun remains recorded.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

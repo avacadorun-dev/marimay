@@ -207,6 +207,26 @@ The paired JIT median sum improves 23.2%, with no confirmed median/P90 regressio
 OFF remains within its gates. The new full comparison includes all 32 workloads
 in native Marimay, Go, Rust, opt-in VM/JIT and Bun. Overall parity remains open.
 
+[Array-segment candidate rejected by DSU confirmation](cp42-sljit-array-segments-2026-09-10.md)
+([validation](cp42-sljit-array-segments-validation-2026-09-10.json)) preserves
+the read-only experiment, the extended candidate's full correctness and both
+paired matrices, and the 2.14% / 2.05% DSU median regressions. Its checkpoint
+overrun and all observations remain visible.
+
+[Retaining unchanged array identity after native push](cp42-sljit-array-identity-2026-09-10.md)
+([validation](cp42-sljit-array-identity-validation-2026-09-10.json)) records the
+changed candidate, new enabled/sanitizer/Rosetta validation and the explicit
+reuse of the identical OFF compiler's prior evidence. The new full JIT matrix
+improves the median sum 9.9%; no workload exceeds either threshold, and no
+additional JIT confirmation is needed. DSU remains within tolerance at +1.77%
+median and -1.05% P90. This accepts the opt-in implementation locally, not parity
+or full Tier 1 support.
+The [fresh five-participant comparison](cp42-sljit-array-identity-comprehensive-2026-09-10.md)
+([raw observations](cp42-sljit-array-identity-comprehensive-2026-09-10.json))
+uses the same candidate and passes all 32 unchanged workloads. All five columns
+come from one 3-warmup/11-sample series; source preparation remains inside VM
+timings. Dispersion, including the noisy Rust frequency-map result, is retained.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

@@ -619,6 +619,13 @@ failure sweeps, fuel-mode and pinned dependency preparation tests. Its focused
 call owners prove native entry across nested calls, deep logical recursion,
 source exits, allocation failure cleanup and managed roots across cold GC.
 
+`vm_jit_arrays.c` owns the nonallocating scalar-push bridge: an exact checked
+view and spare-capacity guard precede the existing runtime mutation owner.
+`test_jit_array_push.c` proves native execution without allocation, all scalar
+widths, growth exits, length/generation limits, diagnostics and exact fuel.
+`test_jit_reference_arrays.c` owns checked/proven reference-array reads, full
+identity and rebinding, rooted collection, precise exits and allocation failures.
+
 `base/code_memory.c` is the central OS page-allocation owner behind the narrow
 `mmay/base/code_memory.h` API. It owns rounding, bounded reserve, one-way W^X
 publication, cache flush, platform fault injection and release. Ordinary compiler

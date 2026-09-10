@@ -90,8 +90,11 @@ static bool mmay_jit_plan_supported(const MarimayBytecodeFunction *function,
             return types[op->first] != MMAY_BYTECODE_TYPE_STRING;
         case MMAY_OPCODE_ARRAY_GET: case MMAY_OPCODE_ARRAY_GET_IN_BOUNDS:
             return mmay_bytecode_jit_array_width(function, op->second) != 0;
+        case MMAY_OPCODE_ARRAY_PUSH:
         case MMAY_OPCODE_ARRAY_SET: case MMAY_OPCODE_ARRAY_SET_IN_BOUNDS:
-            return mmay_bytecode_jit_array_width(function, op->first) != 0;
+            /* Reference stores still require the runtime child-type checks. */
+            return mmay_bytecode_jit_array_width(function, op->first) != 0
+                && mmay_bytecode_jit_array_width(function, op->first) <= 8;
         default: return false;
     }
 }

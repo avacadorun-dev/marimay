@@ -3722,6 +3722,14 @@ length and generation fields, not a copied storage buffer. A failed proof uses
 the existing full descriptor/reference binding owner. This makes the spec's
 revalidation allowance explicit; it does not let an expired borrow remain usable.
 
+Reference-array reads copy both words of the managed identity after parent and
+index validation; string conversion and reference stores retain their existing
+checked owners. A reserved scalar push may enter the runtime view-mutation owner
+inside a compiled segment after a spare-capacity guard proves that growth and
+collection are unreachable. The runtime retains length/generation limits,
+resource diagnostics and mutation commit order. A full array or rejected guard
+exits before the original push, with exact fuel and no committed mutation.
+
 In the unlimited-frame/no-shared-counter mode, bounded direct callees of selected
 functions may also be compiled. A single native trampoline may transfer between
 their labels through the shared logical call/return owner. Every Marimay call

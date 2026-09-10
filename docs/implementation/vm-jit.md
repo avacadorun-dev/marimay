@@ -63,6 +63,12 @@ An exit after a nested call exposes the actual callee frame and PC, including
 after frame-vector growth; no committed callee prefix is replayed. Existing logical
 frames, roots, heap/capability limits and panic reporting remain authoritative.
 
+Non-string reference-array reads load the complete identity and invalidate a
+destination view when it changes. Scalar pushes with existing spare capacity
+call the runtime view-mutation owner inside the native segment. The guard rules
+out growth and GC; full arrays and failed limit checks resume the original push.
+String reads and reference writes retain ordinary checked execution.
+
 Finite frame fuel and every non-null shared counter are charged exactly. Only
 D087's unlimited-frame/no-shared-counter mode omits unused segment accounting.
 Unmetered code refuses entry with incompatible options. D109's composed array

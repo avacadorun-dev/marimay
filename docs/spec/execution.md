@@ -78,6 +78,14 @@ provenance. Retained array access must observe current storage and length after
 growth. An expired or mismatched proof must take the ordinary checked path
 before any retained object pointer is dereferenced.
 
+Non-string reference-array reads may copy the complete managed cell after the
+same parent descriptor and checked/proven-index validation as ordinary execution.
+Destination roots and view invalidation must follow the full reference identity.
+A scalar array push may remain in a nonallocating segment only when the current
+checked view proves spare capacity. The runtime mutation contract, configured
+length limit, generation limit and resource diagnostics remain authoritative;
+growth or a failed guard resumes the original uncommitted instruction.
+
 A machine-code transfer between functions does not eliminate the corresponding
 logical activation. It must preserve call-depth checks, arguments, return values,
 typed roots and cleanup order even if native stack depth stays constant. On a

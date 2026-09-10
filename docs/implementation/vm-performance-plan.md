@@ -117,6 +117,64 @@ in its single confirmation, so neither median nor P90 has a confirmed regression
 A fresh five-participant full matrix is also recorded. This accepts the opt-in
 implementation, not default enablement, Tier 1 validation or overall parity.
 
+## Rejected stage: JIT array reads and reserved scalar pushes
+
+Starts **13:58 UTC on 2026-09-10**, due **15:58 UTC**.
+The accepted `bbb9b2b` profile shows 40.8% of BFS samples under ordinary
+value execution. Non-string managed-reference array reads currently exit JIT;
+this stage compiles those reads using the existing checked parent view and
+full reference representation. String reads and reference stores retain their
+existing checked owners. No workload or source-language semantics change.
+
+The first read-only candidate measured BFS 2135.28 to 1915.02 ms (10.3%),
+BFS-record 133.00 to 120.34 ms (9.5%), and catalogue-pipeline 386.29 to
+289.29 ms (25.1%). It misses the BFS target and is not accepted. Its preserved
+profile still has 43.7% inclusive cold value dispatch. Before the second edit,
+the candidate scope was extended to scalar pushes with proven spare capacity:
+the existing runtime mutation owner executes inside the nonallocating segment;
+growth and failed guards return to the original instruction. The deadline,
+baseline, workload hashes and acceptance thresholds remain unchanged.
+
+Early 3+11 measurement against `bbb9b2b` must improve BFS by at least 25%;
+BFS-record and catalogue-pipeline are additional diagnostic workloads. Full
+acceptance also requires at least 5% improvement in the JIT median sum and
+retains the 2% median / 5% P90 limits on all 32 workloads, independently for
+JIT and OFF. Exactly one confirmation per flagged workload applies the same
+rule as the preceding stage. All safety, failure, sanitizer, architecture and
+unchanged-input gates precede acceptance and main/push publication. A failed
+target remains a recorded rejected experiment.
+
+The [complete local result](evidence/cp42-sljit-array-segments-2026-09-10.md)
+passed correctness and improved the JIT median sum by 10.3%, but DSU regressed
+2.14% in the full matrix and 2.05% in its single confirmation. The candidate is
+rejected. The 15:58 UTC checkpoint was also missed; final validation was recorded
+at 16:06 UTC. Neither the speedup nor the later checks erase these failures.
+
+## Locally accepted stage: preserve unchanged array identity after push
+
+The next one-hour stage starts at the timestamp recorded in
+`build/jit-array-identity/SMART.json`. It removes redundant native view-identity
+checks after a successful scalar push, which cannot change the array reference.
+The accepted `bbb9b2b` controls and all numerical full-matrix thresholds remain
+unchanged. Early BFS must improve at least 25%; DSU must stay within 2% median
+and 5% P90 before full acceptance work proceeds. No confirmation reruns the
+rejected candidate. The exact unchanged OFF executable and its already completed
+tests/full matrix/confirmations may be reused with explicit provenance.
+
+The [follow-up evidence](evidence/cp42-sljit-array-identity-2026-09-10.md)
+records local acceptance at 16:28 UTC: 95/95 enabled tests, sanitizer/Rosetta
+replays and a full paired matrix with median sum -9.9%, BFS -32.5% and
+catalogue-pipeline -26.2%. No workload exceeds either full-series threshold;
+DSU is +1.77% median and -1.05% P90. No new JIT confirmation is required.
+The previous OFF result is reused with exact executable and input provenance.
+The earlier candidate's rejection and missed checkpoint are not rewritten.
+A [new five-participant snapshot](evidence/cp42-sljit-array-identity-comprehensive-2026-09-10.md)
+passes all 32 workloads with this same candidate. Equal-workload geometric mean
+time ratios are native/Go 2.04x, native/Rust 2.19x, VM/Go 19.92x and VM/Rust
+21.38x. These descriptive ratios include VM source preparation and are separate
+from the paired acceptance gate. This stage changes JIT, not native generation.
+Default JIT enablement, full Tier 1 validation and overall parity remain open.
+
 ## Sequence after this stage
 
 1. Follow the measured object-binding profile. Reduce repeated managed-object validation,

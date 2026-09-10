@@ -89,6 +89,12 @@ static sljit_sw enum_address(void) {
     memcpy(&address, &function, sizeof(address));
     return address;
 }
+static sljit_sw push_address(void) {
+    bool (*function)(MarimayBytecodeJitContext *, uint32_t) = mmay_bytecode_jit_array_push;
+    sljit_sw address = 0;
+    memcpy(&address, &function, sizeof(address));
+    return address;
+}
 static void reload(Emitter *e) {
     move(e, SLJIT_MOV, REGS, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, registers));
     move(e, SLJIT_MOV, BINDS, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, bindings));
@@ -176,6 +182,20 @@ static void array(Emitter *e, const MarimayBytecodeImageOperation *op) {
     }
     move(e, SLJIT_MOV, SLJIT_R2, 0, SLJIT_MEM1(SLJIT_R5), offsetof(MarimayManagedArrayView, storage));
     move(e, SLJIT_MOV, SLJIT_R2, 0, SLJIT_MEM1(SLJIT_R2), 0);
+    if (!store && width == sizeof(MarimayManagedCell)) {
+        _Static_assert(sizeof(MarimayManagedCell) == 16
+            && sizeof(MarimayManagedReference) == 16, "complete reference cell");
+        /* SLJIT indexed memory scales only through 8 bytes. Form the 16-byte
+         * cell address explicitly, then load both identity words before publish. */
+        sljit_emit_op2(e->c, SLJIT_SHL, SLJIT_R1, 0, SLJIT_R1, 0, SLJIT_IMM, 4);
+        sljit_emit_op2(e->c, SLJIT_ADD, SLJIT_R2, 0, SLJIT_R2, 0, SLJIT_R1, 0);
+        move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_MEM1(SLJIT_R2), 0);
+        move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_MEM1(SLJIT_R2), 8);
+        move(e, SLJIT_MOV, SLJIT_MEM1(REGS), slot(op->first), SLJIT_R0, 0);
+        move(e, SLJIT_MOV, SLJIT_MEM1(REGS), slot(op->first) + 8, SLJIT_R1, 0);
+        invalidate(e, op->first);
+        return;
+    }
     if (store) {
         move(e, mov, SLJIT_MEM2(SLJIT_R2, SLJIT_R1), shift, SLJIT_R0, 0);
         sljit_emit_op2(e->c, SLJIT_ADD, SLJIT_R4, 0, SLJIT_R4, 0, SLJIT_IMM, 1);
@@ -311,13 +331,17 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
             case MMAY_OPCODE_ARRAY_GET_IN_BOUNDS: case MMAY_OPCODE_ARRAY_SET_IN_BOUNDS:
                 array(&e, op); break;
             case MMAY_OPCODE_RECORD_GET: record(&e, op); break;
+            case MMAY_OPCODE_ARRAY_PUSH:
             case MMAY_OPCODE_ENUM_IS_VARIANT: case MMAY_OPCODE_ENUM_REQUIRE_VARIANT:
             case MMAY_OPCODE_ENUM_GET_PAYLOAD:
                 move(&e, SLJIT_MOV, SLJIT_R0, 0, CTX, 0);
                 move(&e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_IMM, (sljit_sw)pc);
-                sljit_emit_icall(compiler, SLJIT_CALL, SLJIT_ARGS2(32, P, 32), SLJIT_IMM, enum_address());
+                sljit_emit_icall(compiler, SLJIT_CALL, SLJIT_ARGS2(32, P, 32), SLJIT_IMM,
+                    op->opcode == MMAY_OPCODE_ARRAY_PUSH ? push_address() : enum_address());
                 condition(&e, SLJIT_NOT_EQUAL | SLJIT_32, SLJIT_R0, 0, SLJIT_IMM, 0);
-                invalidate(&e, op->first); break;
+                /* A successful push changes the object, never its reference. */
+                if (op->opcode != MMAY_OPCODE_ARRAY_PUSH) invalidate(&e, op->first);
+                break;
             default: scalar(&e, op); break;
         }
     }
