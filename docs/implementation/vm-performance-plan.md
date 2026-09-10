@@ -1,0 +1,87 @@
+# VM and native performance: working SMART plan
+
+Date: 2026-09-10. This plan scopes performance work under D111; it does not
+change language semantics, release gates or the current opt-in JIT status.
+
+## Objective and measurement
+
+The user's objective is Go/Rust parity on the unchanged 32-workload corpus,
+first removing systemic VM costs, with semantics, safety and limits preserved.
+The proposed numerical definition of parity is a median no greater than
+**1.10 times the faster of Go and Rust on each workload**, evaluated separately
+for native Marimay and VM source execution. This tolerance is a working
+proposal, not a user-ratified requirement or an achieved result. A good aggregate
+score cannot hide a failed workload.
+
+Every accepted comparison pins compiler/runtime inputs, the 114 frozen
+source/harness hashes, workload arguments and expected results. It uses three
+warmups and eleven fresh-process samples, alternating participants and rotating
+workloads. VM timing includes source loading, checking and lowering; the managed
+heap remains limited to 67,108,864 bytes. Builds, tests and profiling finish
+before timing. A cache experiment must report cold and warm costs explicitly.
+Contemporaneous Go/Rust measurements are required for a parity claim; an earlier
+table or a two-Marimay comparison cannot establish it.
+
+## Current bounded stage
+
+At 09:12 UTC on 2026-09-10 the current stage was timeboxed to **11:12 UTC
+(18:12 Asia/Krasnoyarsk)**. The deliverable is either a verified, measured change
+committed to main and pushed, or a documented failed acceptance gate. This is a
+checkpoint deadline, not a promise of final parity within two hours.
+
+- Specific: support direct native call/return transfers through the existing
+  logical frame protocol, using the shared SLJIT adapter for ARM64 and x86-64.
+- Measurable: relative to published integration `8c14357`, improve VM `stack`
+  and `queue` by at least 15% and DSU by at least 5%, with no confirmed regression
+  above 2% across all 32 workloads. Check the default interpreter separately.
+- Achievable scope: the cost map identifies millions of ordinary calls, and
+  the six-workload experiment already supports those three improvement targets.
+  The full matrix and final validation still decide acceptance.
+- Relevant: reduce VM dispatch/activation overhead shared by ordinary programs;
+  do not recognize benchmark names or rewrite their algorithms.
+- Time-bound: publish the checkpoint outcome by the time above. A failed
+  experiment remains rejected even when the timebox expires.
+
+Native calls retain logical depth, exact bounded/shared fuel, managed roots,
+allocation failure behavior, trap/panic frames and the actual callee exit PC.
+Required checks include conformance and differential suites, deterministic
+allocation/publication failures, sanitizers, architecture and documentation
+gates. Rosetta is functional x86 evidence; physical x86 performance and complete
+Tier 1 results remain separate open gates.
+
+At 10:55 UTC the [call-stage checkpoint](evidence/cp42-sljit-calls-2026-09-10.md)
+was rejected: stack/queue improved by 22.9%/27.8% and DSU by 7.7%, but the
+single planned frequency-map confirmation showed 2.5% regression with JIT
+and 3.3% without it. All correctness checks passed. The candidate is preserved
+as an indexed source patch and measured evidence; its production code is not
+accepted by this checkpoint. The next candidate must remove that regression
+while retaining the original speedup targets and full-matrix gate.
+
+## Sequence after this stage
+
+1. Profile the accepted call tier. Reduce repeated managed-object validation,
+   view binding and register/frame traffic where the profile shows the largest
+   remaining cost. The optimizing tier should retain hot scalar values in CPU
+   registers and consider bounded leaf inlining with exact logical-frame
+   materialization on exits. Any retained view needs explicit GC/provenance
+   invalidation; these are separate proof obligations, not unconditional skips.
+2. Address source preparation as its own measured stage. Retain all source-run
+   costs and validate any prepared artifact against source/dependency changes,
+   corruption and execution options.
+3. Address native text and collection/runtime costs independently; faster VM
+   dispatch alone does not close the native Go/Rust gap.
+4. Rerun all five participants on the unchanged corpus, then the supported
+   platform matrix. Claim parity only when the per-workload acceptance holds.
+
+Each subsequent implementation stage needs an exact baseline, measurable
+acceptance and a bounded checkpoint before work starts. A substantiated final
+parity date is not yet available: source preparation, runtime costs and platform
+coverage are still unresolved. The current evidence starts with the
+[integrated JIT comparison](evidence/cp42-sljit-integration-2026-09-10.md) and the
+[VM cost map](../research/vm-execution-cost-map-2026-09-09.md).
+
+Reference designs: LLVM describes [mapping virtual values to physical registers
+and spill slots](https://llvm.org/docs/CodeGenerator.html#register-allocation);
+LuaJIT's [snapshot restoration](https://github.com/LuaJIT/LuaJIT/blob/v2.1/src/lj_snap.c)
+reconstructs interpreter state on exits. These inform the proposed next tier;
+they are not imported implementations or evidence that Marimay already has it.

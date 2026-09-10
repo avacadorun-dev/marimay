@@ -117,5 +117,17 @@ their results, full Tier 1 acceptance, default enablement and Go/Rust parity
 remain open. The next structural JIT boundary is ordinary calls and logical
 activation state; native text/runtime work remains independently necessary.
 
+The [working SMART performance plan](docs/implementation/vm-performance-plan.md)
+defines a per-workload parity proposal, the bounded native-call checkpoint,
+unchanged measurement rules and the subsequent runtime/preparation stages.
+It does not set an unsupported final parity date or close a product gate.
+
+The [native-call checkpoint](docs/implementation/evidence/cp42-sljit-calls-2026-09-10.md)
+passed local correctness (92/92 JIT, 86/86 interpreter, sanitizer and Rosetta
+replays) but failed its performance acceptance: frequency-map regressed in both
+full matrices and the single planned confirmations. The implementation remains
+a reproducible candidate patch; these results do not merge it into production
+or close the parity gate.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

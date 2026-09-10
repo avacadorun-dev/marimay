@@ -183,6 +183,14 @@ the VM median sum by 46.5%, without a median regression above 2%. Default
 enablement, Linux JIT/LSan results, full Tier 1 acceptance and Go/Rust parity
 remain open.
 
+[Native-call checkpoint rejected by the performance gate](cp42-sljit-calls-2026-09-10.md)
+records a reproducible source patch, full JIT/interpreter matrices, one planned
+confirmation per flagged case and passing local correctness checks. Stack,
+queue and DSU meet the stage's speedup targets, but frequency-map has confirmed
+regressions above 2% in both configurations. The candidate is not accepted into
+the production compiler. The [SMART plan](../vm-performance-plan.md) retains
+the original per-workload gate and the open overall parity objective.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate
