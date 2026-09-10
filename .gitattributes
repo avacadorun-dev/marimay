@@ -1,0 +1,2 @@
+# Dependency patch digest is defined over its committed LF bytes.
+cmake/sljit-arm64-minimum.patch text eol=lf

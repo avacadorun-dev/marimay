@@ -1,0 +1,2645 @@
+{
+  "schema": "marimay.sljit-integration-validation/1",
+  "status": "passed-local-only",
+  "parent_revision": "496872b52123b6dd1a83adb93f9b9616132fd962",
+  "host": "Darwin MacBook-Air-contributor.local 25.6.0 Darwin Kernel Version 25.6.0: Fri Jul 31 19:18:43 PDT 2026; root:xnu-12377.161.14~5/RELEASE_ARM64_T8112 arm64",
+  "compiler": "Apple clang version 21.0.0 (clang-2100.1.1.101)\nTarget: arm64-apple-darwin25.6.0\nThread model: posix\nInstalledDir: /Library/Developer/CommandLineTools/usr/bin",
+  "cmake": "cmake version 4.4.2\n\nCMake suite maintained and supported by Kitware (kitware.com/cmake).",
+  "sljit_manifest": {
+    "repository": "https://github.com/zherczeg/sljit.git",
+    "commit": "d6ec3d07dcdbf2256ccae2b84d0d8a2d019f392e",
+    "license": "BSD-2-Clause",
+    "files_sha256": {
+      "sljit_src/allocator_src/sljitExecAllocatorApple.c": "dbf8e95ad7db9b691c68d6225f54f603f9ef1bbf41d1afee96bd8b1269432227",
+      "sljit_src/allocator_src/sljitExecAllocatorCore.c": "d8688f91e0b4f0ace65d44500e65500c743b1fbd2c1134984c95aad5e2d32336",
+      "sljit_src/allocator_src/sljitExecAllocatorFreeBSD.c": "8bf44ef0314954c9e4deb4010db3a74b12308745f714ca1fa9d403e36b033d16",
+      "sljit_src/allocator_src/sljitExecAllocatorPosix.c": "4ca3ae7d73c0ae5a7659edde562621741a5e68a81dea848054fbff22062aa6a6",
+      "sljit_src/allocator_src/sljitExecAllocatorWindows.c": "7688f9450260e975439a6afcae2b820399258fcf7ed883e5ee247763fe886168",
+      "sljit_src/allocator_src/sljitProtExecAllocatorNetBSD.c": "7ba64819eb5ff75ac8f9f98d3092ecb2132f09ae1d882dd629badc8844f41355",
+      "sljit_src/allocator_src/sljitProtExecAllocatorPosix.c": "1f2081b015f49fed120d92c8da770de7bcda8caac8cbc32cbfa4fefdf347cc01",
+      "sljit_src/allocator_src/sljitWXExecAllocatorPosix.c": "38cb003b670f91ddb224386d7026915fbe06dfbdd5f272fddfd42452e1f34448",
+      "sljit_src/allocator_src/sljitWXExecAllocatorWindows.c": "ed8405a759e254ad32fe56f8dd2b6b5c01ebade19c5e4b78992850bb0d9f8f3d",
+      "sljit_src/sljitConfig.h": "fd8a440cbc8ba79595dfc19bf1f00fcc5ad459b8e8bac0a47a64c2e21cb91cfa",
+      "sljit_src/sljitConfigCPU.h": "b07a8951dc7cef875f3dc3fc203a20c4a9df5ec391686c7adb301ae189c15bd7",
+      "sljit_src/sljitConfigInternal.h": "9f8765b228a939ef95a41e2457a9fe625087f50fd5ed3255cb3a96bb0f2a4564",
+      "sljit_src/sljitLir.c": "a8ab301281e18970ee7459e484cfb83f07abb673fdac3aafc81393ddcd8f104a",
+      "sljit_src/sljitLir.h": "dd461ec35a3dcf178a2b699b0f4c087322e899abff4e81e1a110fbcc78ef622c",
+      "sljit_src/sljitNativeALPHA_64.c": "d1220502d92f5008e34ac4220b65a037c8f41136d2e246a398708a12d2259bd4",
+      "sljit_src/sljitNativeARM_32.c": "a1f37da582f107e6afd797012a21d6c54a52317308bacd0ba9613659ce55782d",
+      "sljit_src/sljitNativeARM_64.c": "7893e0dff666137b9ff4316280fb1a36b2d35f03af9420ae00a2511161a7dc4f",
+      "sljit_src/sljitNativeARM_T2_32.c": "df81aaff61965a439968bf07d776e4df29d92b7385a3f533dd19ef2866bd91a4",
+      "sljit_src/sljitNativeLOONGARCH_64.c": "d83b3952d9392d8cc5c6aa07fe181918e0225a60087bc311eef5900912ee15c0",
+      "sljit_src/sljitNativeMIPS_32.c": "ddbc21bb6b224172a8a1a1fb91f6311071dd3e738fd7320760a8c5b04fe4717e",
+      "sljit_src/sljitNativeMIPS_64.c": "60386ef9733c38fff3fe7fffe31bc385fabf5b9eb53821693d071ea273bc94b1",
+      "sljit_src/sljitNativeMIPS_common.c": "c51fff8d080311d66c64dd80325fd427a133667f0406125d168a407984cbb468",
+      "sljit_src/sljitNativePPC_32.c": "06a6dbfe5e512a12a43834c076250fe7fa936f3c986bf9b64458961ff58aef8f",
+      "sljit_src/sljitNativePPC_64.c": "a27fbe99b5772e41b48e8afc70d719b85d870d9fc1322ed60fcdece4cafbccd7",
+      "sljit_src/sljitNativePPC_common.c": "6d06190850e92037537336d7ccc16e7500bf91e51f864d21134fc515254cae25",
+      "sljit_src/sljitNativeRISCV_32.c": "c44f14192f648f7018c9aef74511eda73a71e8668daaabb6ba2f67d7ca67151f",
+      "sljit_src/sljitNativeRISCV_64.c": "4439f2cd68a550341a8c52468cd0e261278cd802203f0926957b49760eb73d75",
+      "sljit_src/sljitNativeRISCV_common.c": "54de057349106b2e86ed7c2fa6835eead217bc5231391c71940b06f58487d124",
+      "sljit_src/sljitNativeS390X.c": "efb5bf5ca1aa2b3498473e59e2d161434e37865bfa2dd554483c03e59ddc9fad",
+      "sljit_src/sljitNativeX86_32.c": "b380192357d7e112f40a0b4aa6e1761f2b6620e36f5ae2afe8f550a2bb18769a",
+      "sljit_src/sljitNativeX86_64.c": "aff0f9523378520776a0f06fae5f7dee1b3b295fa8272802f323c7d0747aacc9",
+      "sljit_src/sljitNativeX86_common.c": "7a010d80de0f0f6c647a0532357cfe506aae540cdc71f061a883c15898088311",
+      "sljit_src/sljitSerialize.c": "76400232579d96701788a84221c29ec5a1c774615efe34183a27b1609bf52cea",
+      "sljit_src/sljitUtils.c": "a6f848e3be7939ba2e2b5304213497837b6b67dc433a63ba8a96947f6ab06c50",
+      "LICENSE": "5f216505c0f6ea3273caec89e766eef93cdeb7bbb0c429f9360116d7c938feeb"
+    },
+    "arm64_patch_sha256": "2f285475677cace772df0ce71aa63eb1e8559c5d1b5223e214913ad854c1013f",
+    "patched_arm64_sha256": "147e135d9968baab67cd31d480cfcad552f5a1cb3296c40622e78ce1cffe5368"
+  },
+  "configurations": {
+    "arm64-release": {
+      "build_directory": "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated",
+      "compiler_sha256": "83564606c695677e4c1ac88528bf7a80ce291a65d84d9b3303e76b33e57ea07d",
+      "test_count": 90,
+      "test_log": "Test project /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated\n      Start 70: mmay_cp38_json\n 1/90 Test #70: mmay_cp38_json ...................   Passed   10.96 sec\n      Start 47: mmay_cp37_cli_parser\n 2/90 Test #47: mmay_cp37_cli_parser .............   Passed    4.25 sec\n      Start 41: mmay_cp39_distribution\n 3/90 Test #41: mmay_cp39_distribution ...........   Passed   21.76 sec\n      Start 10: mmay_c_unit_cp31\n      Start 20: mmay_c_unit_cp18-cp20\n 4/90 Test #10: mmay_c_unit_cp31 .................   Passed    4.53 sec\n      Start 19: mmay_c_unit_cp16-cp17\n 5/90 Test #20: mmay_c_unit_cp18-cp20 ............   Passed    4.88 sec\n      Start 11: mmay_c_unit_final-preview\n 6/90 Test #19: mmay_c_unit_cp16-cp17 ............   Passed    2.97 sec\n      Start  9: mmay_c_unit_native\n 7/90 Test #11: mmay_c_unit_final-preview ........   Passed    9.22 sec\n      Start 18: mmay_c_unit_cp14-cp15\n 8/90 Test #18: mmay_c_unit_cp14-cp15 ............   Passed    3.18 sec\n      Start 46: mmay_cp36_map_set\n 9/90 Test #46: mmay_cp36_map_set ................   Passed    4.57 sec\n      Start 43: mmay_cp33_process_text_bytes\n10/90 Test #43: mmay_cp33_process_text_bytes .....   Passed    1.75 sec\n      Start 44: mmay_cp34_process_files\n11/90 Test #44: mmay_cp34_process_files ..........   Passed    2.32 sec\n      Start 45: mmay_cp35_process_context\n12/90 Test #45: mmay_cp35_process_context ........   Passed    2.30 sec\n      Start 17: mmay_c_unit_cli-test\n13/90 Test #17: mmay_c_unit_cli-test .............   Passed    5.66 sec\n      Start 15: mmay_c_unit_cli-heap\n14/90 Test #15: mmay_c_unit_cli-heap .............   Passed    1.84 sec\n      Start 39: mmay_install_relocation\n15/90 Test #39: mmay_install_relocation ..........   Passed    4.36 sec\n      Start 42: mmay_cp32_process_streams\n16/90 Test #42: mmay_cp32_process_streams ........   Passed    1.11 sec\n      Start 16: mmay_c_unit_cli-run\n17/90 Test #16: mmay_c_unit_cli-run ..............   Passed    7.58 sec\n      Start 13: mmay_c_unit_cli-build\n18/90 Test #13: mmay_c_unit_cli-build ............   Passed   20.42 sec\n      Start 40: mmay_cp29_release_contract\n19/90 Test #40: mmay_cp29_release_contract .......   Passed    4.32 sec\n      Start 21: mmay_cp31_allocation_0\n20/90 Test #21: mmay_cp31_allocation_0 ...........   Passed    2.97 sec\n      Start  6: mmay_c_unit_checker\n21/90 Test  #6: mmay_c_unit_checker ..............   Passed    4.43 sec\n      Start 14: mmay_c_unit_cli-check\n22/90 Test #14: mmay_c_unit_cli-check ............   Passed   10.01 sec\n      Start  8: mmay_c_unit_runtime\n23/90 Test  #8: mmay_c_unit_runtime ..............   Passed   41.84 sec\n      Start 22: mmay_cp31_allocation_1\n24/90 Test #22: mmay_cp31_allocation_1 ...........   Passed    3.04 sec\n      Start 23: mmay_cp31_allocation_2\n25/90 Test #23: mmay_cp31_allocation_2 ...........   Passed    3.02 sec\n      Start 24: mmay_cp31_allocation_3\n26/90 Test #24: mmay_cp31_allocation_3 ...........   Passed    3.08 sec\n      Start 25: mmay_cp31_allocation_4\n27/90 Test #25: mmay_cp31_allocation_4 ...........   Passed    3.21 sec\n      Start 26: mmay_cp31_allocation_5\n28/90 Test #26: mmay_cp31_allocation_5 ...........   Passed    2.99 sec\n      Start 27: mmay_cp31_allocation_6\n29/90 Test #27: mmay_cp31_allocation_6 ...........   Passed    3.05 sec\n      Start 28: mmay_cp31_allocation_7\n30/90 Test #28: mmay_cp31_allocation_7 ...........   Passed    3.03 sec\n      Start  7: mmay_c_unit_bytecode\n31/90 Test  #7: mmay_c_unit_bytecode .............   Passed    9.71 sec\n      Start 85: mmay_cli-source-lint\n32/90 Test #85: mmay_cli-source-lint .............   Passed   18.41 sec\n      Start 48: mmay_cli_notes\n33/90 Test #48: mmay_cli_notes ...................   Passed   25.08 sec\n      Start 33: mmay_cp36_unit\n34/90 Test #33: mmay_cp36_unit ...................   Passed   19.03 sec\n      Start 84: mmay_cli-delimited\n35/90 Test #84: mmay_cli-delimited ...............   Passed    7.74 sec\n      Start 69: mmay_cli_local_execution\n36/90 Test #69: mmay_cli_local_execution .........   Passed    7.82 sec\n      Start 68: mmay_typed_json\n37/90 Test #68: mmay_typed_json ..................   Passed    6.79 sec\n      Start 29: mmay_cp32_unit\n38/90 Test #29: mmay_cp32_unit ...................   Passed    4.25 sec\n      Start 30: mmay_cp33_unit\n39/90 Test #30: mmay_cp33_unit ...................   Passed   11.21 sec\n      Start 36: mmay_cp42_unit\n40/90 Test  #9: mmay_c_unit_native ...............   Passed  285.12 sec\n      Start 37: mmay_cp41_unit\n41/90 Test #37: mmay_cp41_unit ...................   Passed    5.05 sec\n      Start 86: mmay_vm_string_lifetime\n42/90 Test #86: mmay_vm_string_lifetime ..........   Passed    3.42 sec\n      Start 50: mmay_cli_config_migrate\n43/90 Test #36: mmay_cp42_unit ...................   Passed   38.99 sec\n      Start 49: mmay_cli_frequency\n44/90 Test #49: mmay_cli_frequency ...............   Passed    3.38 sec\n      Start 32: mmay_cp35_unit\n45/90 Test #50: mmay_cli_config_migrate ..........   Passed    6.26 sec\n      Start 72: mmay_cp42_test_helpers\n46/90 Test #32: mmay_cp35_unit ...................   Passed    2.08 sec\n      Start 71: mmay_cp42_void_match\n47/90 Test #72: mmay_cp42_test_helpers ...........   Passed    1.86 sec\n      Start 73: mmay_cp42_map_error_context\n48/90 Test #71: mmay_cp42_void_match .............   Passed    1.99 sec\n      Start 57: mmay_match_format\n49/90 Test #57: mmay_match_format ................   Passed    0.26 sec\n      Start  5: mmay_c_unit_frontend\n50/90 Test  #5: mmay_c_unit_frontend .............   Passed    0.08 sec\n      Start 74: mmay_cp42_test_locations\n51/90 Test #73: mmay_cp42_map_error_context ......   Passed    1.95 sec\n      Start 67: mmay_cli_notes_model\n52/90 Test #67: mmay_cli_notes_model .............   Passed    0.38 sec\n      Start 56: mmay_cp33_text_bytes\n53/90 Test #74: mmay_cp42_test_locations .........   Passed    0.61 sec\n      Start 58: mmay_run_startup\n54/90 Test #58: mmay_run_startup .................   Passed    0.27 sec\n      Start 53: mmay_generic_lifetime\n55/90 Test #56: mmay_cp33_text_bytes .............   Passed    0.41 sec\n      Start 54: mmay_map_error_imports\n56/90 Test #53: mmay_generic_lifetime ............   Passed    0.28 sec\n      Start 51: mmay_record_imports\n57/90 Test #54: mmay_map_error_imports ...........   Passed    0.26 sec\n      Start 55: mmay_enum_pattern_names\n58/90 Test #51: mmay_record_imports ..............   Passed    0.26 sec\n      Start 52: mmay_match_void\n59/90 Test #55: mmay_enum_pattern_names ..........   Passed    0.26 sec\n      Start 12: mmay_c_unit_cli-core\n60/90 Test #12: mmay_c_unit_cli-core .............   Passed    0.02 sec\n      Start 31: mmay_cp34_unit\n61/90 Test #52: mmay_match_void ..................   Passed    0.26 sec\n      Start 34: mmay_cp37_unit\n62/90 Test #34: mmay_cp37_unit ...................   Passed    0.05 sec\n      Start 35: mmay_cp38_unit\n63/90 Test #35: mmay_cp38_unit ...................   Passed    0.01 sec\n      Start 38: mmay_cp39_unit\n64/90 Test #38: mmay_cp39_unit ...................   Passed    0.10 sec\n      Start  1: mmay_ci_diagnostics\n65/90 Test  #1: mmay_ci_diagnostics ..............   Passed    0.42 sec\n      Start  2: mmay_cli_acceptance_driver\n66/90 Test  #2: mmay_cli_acceptance_driver .......   Passed    0.59 sec\n      Start 90: mmay_jit_pinned_inputs\n67/90 Test #90: mmay_jit_pinned_inputs ...........   Passed    0.42 sec\n      Start 89: mmay_jit_fuel\n68/90 Test #89: mmay_jit_fuel ....................   Passed    0.35 sec\n      Start 88: mmay_jit_ownership\n69/90 Test #88: mmay_jit_ownership ...............   Passed    0.69 sec\n      Start 87: mmay_code_memory\n70/90 Test #87: mmay_code_memory .................   Passed    0.34 sec\n      Start  3: mmay_roadmap\n71/90 Test  #3: mmay_roadmap .....................   Passed    0.08 sec\n      Start 75: mmay_cp42_for_recovery\n72/90 Test #75: mmay_cp42_for_recovery ...........   Passed    0.05 sec\n      Start  4: mmay_release_contract\n73/90 Test  #4: mmay_release_contract ............   Passed    0.04 sec\n      Start 66: mmay_format_run-startup\n74/90 Test #66: mmay_format_run-startup ..........   Passed    0.00 sec\n      Start 64: mmay_format_cp33-text-bytes\n75/90 Test #64: mmay_format_cp33-text-bytes ......   Passed    0.00 sec\n      Start 61: mmay_format_generic-lifetime\n76/90 Test #61: mmay_format_generic-lifetime .....   Passed    0.00 sec\n      Start 63: mmay_format_enum-pattern-names\n77/90 Test #63: mmay_format_enum-pattern-names ...   Passed    0.00 sec\n      Start 62: mmay_format_map-error-imports\n78/90 Test #62: mmay_format_map-error-imports ....   Passed    0.00 sec\n      Start 59: mmay_format_record-imports\n79/90 Test #59: mmay_format_record-imports .......   Passed    0.00 sec\n      Start 65: mmay_format_match-format\n80/90 Test #65: mmay_format_match-format .........   Passed    0.00 sec\n      Start 60: mmay_format_match-void\n81/90 Test #60: mmay_format_match-void ...........   Passed    0.00 sec\n82/90 Test #31: mmay_cp34_unit ...................   Passed    5.25 sec\n      Start 76: mmay_cp42_option_binding\n83/90 Test #76: mmay_cp42_option_binding .........   Passed    3.02 sec\n      Start 77: mmay_cp42_array_edit\n84/90 Test #77: mmay_cp42_array_edit .............   Passed    3.10 sec\n      Start 78: mmay_cp42_function_values\n85/90 Test #78: mmay_cp42_function_values ........   Passed    5.75 sec\n      Start 79: mmay_cp42_mapper_values\n86/90 Test #79: mmay_cp42_mapper_values ..........   Passed    5.36 sec\n      Start 80: mmay_cp42_array_search\n87/90 Test #80: mmay_cp42_array_search ...........   Passed    3.74 sec\n      Start 81: mmay_cp42_file_lines\n88/90 Test #81: mmay_cp42_file_lines .............   Passed    4.87 sec\n      Start 82: mmay_cp42_enum_bottom\n89/90 Test #82: mmay_cp42_enum_bottom ............   Passed    1.64 sec\n      Start 83: mmay_cp42_escape\n90/90 Test #83: mmay_cp42_escape .................   Passed    5.15 sec\n\n100% tests passed out of 90\n\nLabel Time Summary:\nacceptance-harness    =   0.59 sec*proc (1 test)\nallocation            =  24.38 sec*proc (8 tests)\nbytecode              =   9.71 sec*proc (1 test)\nc-unit                = 497.51 sec*proc (26 tests)\nchecker               =   4.43 sec*proc (1 test)\nci                    =   0.42 sec*proc (1 test)\ncli                   =   0.59 sec*proc (1 test)\ncli-build             =  20.42 sec*proc (1 test)\ncli-check             =  10.01 sec*proc (1 test)\ncli-core              =   0.02 sec*proc (1 test)\ncli-heap              =   1.84 sec*proc (1 test)\ncli-run               =   7.58 sec*proc (1 test)\ncli-test              =   5.66 sec*proc (1 test)\ncp14-cp15             =   3.18 sec*proc (1 test)\ncp16-cp17             =   2.97 sec*proc (1 test)\ncp18-cp20             =   4.88 sec*proc (1 test)\ncp31                  =   4.53 sec*proc (1 test)\ncp32                  =   4.25 sec*proc (1 test)\ncp33                  =  11.21 sec*proc (1 test)\ncp34                  =   5.25 sec*proc (1 test)\ncp35                  =   2.08 sec*proc (1 test)\ncp36                  =  19.03 sec*proc (1 test)\ncp37                  =   0.05 sec*proc (1 test)\ncp38                  =   0.01 sec*proc (1 test)\ncp39                  =  43.62 sec*proc (2 tests)\ncp41                  =   5.05 sec*proc (1 test)\ncp42                  =  94.89 sec*proc (11 tests)\ndiagnostics           =   0.42 sec*proc (1 test)\ndifferential          =  73.93 sec*proc (13 tests)\ndistribution          =  43.53 sec*proc (1 test)\nfinal-preview         =   9.22 sec*proc (1 test)\nfocused               =  87.40 sec*proc (13 tests)\nfrontend              =   0.08 sec*proc (1 test)\njit                   =   1.38 sec*proc (3 tests)\nlocal-execution       =   7.82 sec*proc (1 test)\nmanaged-memory        =   3.42 sec*proc (1 test)\nnative                = 285.12 sec*proc (1 test)\nresource              =   7.82 sec*proc (1 test)\nruntime               =  41.84 sec*proc (1 test)\nstateful              =  26.15 sec*proc (2 tests)\ntyped-json            =   6.79 sec*proc (1 test)\n\nTotal Test time (real) = 387.33 sec\n",
+      "test_log_sha256": "88f522344cb3e39e72f535eee86220fdf33b61f169d6680b6c320b58814c5695",
+      "cmake_cache_selected": [
+        "CMAKE_BUILD_TYPE:STRING=Release",
+        "CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc",
+        "CMAKE_OSX_ARCHITECTURES:STRING=",
+        "MMAY_ENABLE_ADDRESS_SANITIZER:BOOL=OFF",
+        "MMAY_ENABLE_SLJIT:BOOL=ON",
+        "MMAY_ENABLE_UNDEFINED_SANITIZER:BOOL=OFF",
+        "MMAY_SLJIT_SOURCE_DIR:PATH=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation",
+        "MMAY_WARNINGS_AS_ERRORS:BOOL=ON"
+      ],
+      "bootstrap_flags": "# CMAKE generated file: DO NOT EDIT!\n# Generated by \"Unix Makefiles\" Generator, CMake Version 4.4\n\n# compile C with /usr/bin/cc\nC_DEFINES = -DMMAY_HAVE_SLJIT=1\n\nC_INCLUDES = -I/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/generated -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/include -I/workspace/Projects/Marimay/marimay-vm-parity/runtime/include -isystem /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay-sljit-inputs/sljit_src\n\nC_FLAGSarm64 = -O3 -DNDEBUG -std=c17 -arch arm64 -fno-fast-math -frounding-math -ffp-contract=off -fexcess-precision=standard -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror\n\nC_FLAGS = -O3 -DNDEBUG -std=c17 -arch arm64 -fno-fast-math -frounding-math -ffp-contract=off -fexcess-precision=standard -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror\n\n# Custom include directories: CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_jit_sljit.c.o_INCLUDE_DIRECTORIES = /workspace/Projects/Marimay/marimay-vm-parity/bootstrap/src/bytecode\n\n# Custom defines: CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_jit_sljit.c.o_DEFINES = SLJIT_HAVE_CONFIG_PRE=1\n\n",
+      "correctness": {
+        "schema": "marimay.vm-correctness-replay/1",
+        "status": "passed",
+        "note": "Correctness replay only; no performance measurements.",
+        "reference_sha256": "37b14b6b85962f7c57a2929957f3fccdb6a9fdd22d6eb8c7425f5d9b255d9f57",
+        "source_sha256": {
+          "benchmarks/catalog_bench.py": "fb508fd45e2e22fa78136089e5c3720ed4d7cd54eb5bbdde56a7c5cc4a0ba1eb",
+          "benchmarks/catalog_bun.py": "f29b5affddd12cff292b9c4acbbd0b8acc2fb4f3337e27fb2e34c317f6f470f7",
+          "benchmarks/catalog_contract.py": "d3f35414890bb6ee531f92818a0abbfee116a03bc21b88ae2490edef43c11c05",
+          "benchmarks/catalog_measure.py": "4d14a068121795efca6d9f4dd62232a97e2f23a5b8c8d5f8609f5b5ee2169fdc",
+          "benchmarks/catalog_oracle.py": "938be6450f701d39ced4fe7fede5cf52c19467b3960618389d650440a6068fe6",
+          "benchmarks/catalog_report.py": "ffb9c988ad073204940621514276e2ba235aafe8b915c1a1789e11d8f2df2e89",
+          "benchmarks/catalog_session.py": "d5bee8e089927fa9d0e37b469f959689b772e1ffa4c67528e255e5693ee6a360",
+          "benchmarks/catalog_snapshot.py": "9df56623e96d77e112842b23e4342a857a956ceea14cd990506517851c7b7f3d",
+          "benchmarks/catalog_workloads.json": "41827b45029f4213033bff20086deb2e9b940d70b3303e3562e5c68ec6f6b803",
+          "benchmarks/marimay-toolchain.json": "5f4e299dc22372d9ac6f3eb2d824ffc53e916cc136183fb585e637c32ed57ee4",
+          "benchmarks/marimay_toolchain.py": "524e7730d291068744182a7ce1d0901f8f1e4ea8486e5231e672908003d720c4",
+          "benchmarks/perf_environment.py": "17366997c959e8c7695b2122a3c11d95f1f60c0efaa6bd5761c2bc3ec4b71cdb",
+          "benchmarks/perf_protocol.py": "8033589224b9ae58394d13877f0752c13e71ec5f70afc06465a81d1682618e64",
+          "benchmarks/performance_protocol.json": "a94f5be850eb26fd821b3630b16254f145a8e30c1b8e7a63fd7230ed761dd4a8",
+          "go/catalog/catalog_test.go": "b4679b643d4c478c0727c3618697ba9965f427824d92baeae6df41af59bba41d",
+          "go/catalog/collections.go": "ee6c4ac9f5eab4009b8e580a24e1f589a9754052b28b535dd2b1d617d30dab0b",
+          "go/catalog/graphs.go": "3ab5594a58dd60caf21e8ba8577e084b2f7509e4329b7934002465b125008a7e",
+          "go/catalog/model.go": "10bec252a16654bbecfbe5a0803efd382c859a9848bf8722d28a85531d51b9ab",
+          "go/catalog/objects.go": "e0531a49606ccd1b9167a9610fe502a0b057c270e562468d1d4a64ff5df117ba",
+          "go/catalog/text.go": "5373ed8a62e748e4ed9ce9a59ba5ef1f835aa18a4a3302d84253ea24819e1247",
+          "go/cmd/catalog/main.go": "f89b40a58db273064f8802a908ad1079ae16b9b238af0a8ec8caf7548c75ff6d",
+          "go/go.mod": "519344fdcec7e981381cb2d6781b014eb1d8f0f9b92b3a988347142aef747475",
+          "marimay/catalog/core/catalog_test.my": "34f5f4095b019f6989daed51dc48686ab917ff43d7f0f1ba991e6621a8f3d865",
+          "marimay/catalog/core/checksum.my": "0843cb69f07177252259e4298a49330a347d44a88fa9c2291ca7c2e6759e89f7",
+          "marimay/catalog/core/collections.my": "49df9baabf06487021606bd33a98f4bf79bfefa394c1e7fb770fb3679069a78a",
+          "marimay/catalog/core/graphs.my": "95ecb3d8e6a48adfe14696b57d4fa860e62fa7aad0bb6e018bde5a155d16bbae",
+          "marimay/catalog/core/model.my": "fa682ce371f167b1054b51255580d774c01d231c4fcf56e5cb0a37449661a14b",
+          "marimay/catalog/core/objects.my": "0951ea8e5fcd57586ed66ff93f57cd64b1c663b02d0f8fc87ee209f6974c7c52",
+          "marimay/catalog/core/text.my": "424bf8d1e2cb00bf1acf6b32dd7e826350442eaeca861e77fd64cc074e50feb1",
+          "marimay/catalog/main.my": "f198cecd2490928af0ca585ef99390e66f34d4294ad2da71f858a21883e2a326",
+          "marimay/mmay.mod": "561867408c89e2b5855f27134f5e5b84b4cf655a02d195cd3c4a5a4917837345",
+          "rust/Cargo.lock": "1c3b1ca3d3783a6861a2c35745303d8845e306deed805bda68a3029d85a27891",
+          "rust/Cargo.toml": "f9a86632e519d2ec45dc96f727defedda35cceeea7bb30f260e5d200f7ee4a68",
+          "rust/src/bin/catalog.rs": "6cc82483af4b5d8464261ce5c1b00adb1e1d7cc15ea2390a6818add7eaee6328",
+          "rust/src/catalog/collections.rs": "a861e9d35ae3d8bb9ecb8774cc442711428ea4e85b267b7daa70854296494ff9",
+          "rust/src/catalog/graphs.rs": "4e6297879f27d4631f59b6b8ca0b6b52f355d5b4db05729807aa7e2bc4ca59bb",
+          "rust/src/catalog/mod.rs": "b7c75c3c1a8af6f997366afc966e2cc53ee4d2c670bc5d6bcca5c3f33139b93c",
+          "rust/src/catalog/objects.rs": "1754afb88b4475bb7700b61ac42bda887b69872c3e70d150fb18f860c89208fa",
+          "rust/src/catalog/text.rs": "c934a5b37e44132df3474eb4bd83aa572275bd69402ab55ef558df817ce2e29c",
+          "rust/src/lib.rs": "bcbc3e8fd7fc6ed1100eefdf18e28c4890e693eae5bba179db38f3deef58527f",
+          "typescript/src/benchmark.ts": "cec4be668f1f710262bf92431cf4ce1edc2930a11248d996d4c44d60e7b1abf5",
+          "typescript/src/catalog/collections.ts": "623fd2d8fd1c2c5a2b59432ca57fbdceae04215571a708906ab4ed990fc11ad1",
+          "typescript/src/catalog/graphs.ts": "26b5cc1db790738c33b436ef1e4875a8aecd8f3980a442d35765e70e5fca4a7a",
+          "typescript/src/catalog/main.ts": "c7e244b480f08175e2a365ee84c1a6f42a9c737248cab4e5a479814366662671",
+          "typescript/src/catalog/model.ts": "80ef26b6d8ff864aa94f71864231cbd906a8e05976f7adee3b60bcaa1b3d6acd",
+          "typescript/src/catalog/objects.ts": "167f1f2b852147d21bde5134ffb49b6f263ba727580b3383e12c7b4e7804e2b1",
+          "typescript/src/catalog/text.ts": "9f4006cd1cae99424d7294a0dca27264a55614c96d6274f4c96feee754f02719",
+          "typescript/src/counting.ts": "625b7842a6b1b69010daa6bdc78cedec2a0d4df73b55b324c8d812b3f5ec87c2",
+          "typescript/src/graphs.ts": "56d1901a1074f521b306990edee01f1a97c99737cb025d30e8603193863ec3f4",
+          "typescript/src/sorting.ts": "b765864b8e5f475641ad07fde9a882d689ce88249dcea0f791046e8591abf282",
+          "typescript/src/structures.ts": "8feba332c65846607d4ce5d714b823a4704c11525bdce9b49db1ce15c2d30a3d",
+          "benchmarks/equivalence.json": "64ddc892dcac9a30a9e4b86aa669d1dff5a12aea65c3f353e180958f23a8c27a",
+          "benchmarks/expanded_workloads.json": "ef6e688152b4bfe2906dd7ef22f285fc8a94d900d90c8518b0698a4da1aa1188",
+          "go/algorithms_test.go": "bf9a0344e4b29e363403cb3b4874056c18f545c3456c156e5b2155be149801ac",
+          "go/cmd/benchmark/main.go": "fc67e17464c835650cb14e412e791ce9b023055ee421e1a4b9a6b126e010fcf7",
+          "go/counting/counting.go": "88d4a0346b5694f3cb9f041621f6c2313226da3fd2580df3b0c18d0f01440302",
+          "go/graphs/bfs.go": "46a827da59512cd261508821ac40125eac03f56396aa9a55cb57a23ea75e46b6",
+          "go/graphs/dijkstra.go": "d30569c0658320fd09c664eefec98a2f1c221be9b4e74efa6a3a6df154cffe17",
+          "go/main.go": "247eec5279f2bfb27a59f3db75c0b70908d10ebd015787e0b9c89656d8d88b38",
+          "go/sorting/heap.go": "d3932509370faa3e7c6e284c91d0bc2556306549aeb8be9f4d404e6251fabaea",
+          "go/sorting/insertion.go": "42df19a215a3acf271d8ced34012f3060e8cd3d546687314ecec8a72c19a7fc7",
+          "go/structures/dsu.go": "f0d999fc2eb8c2df8a6d757b9a3034ff21efbbb866f7d0a9fde3073e34dda3d0",
+          "go/structures/heap.go": "cc642696fdb1a1720b5074aa6ecca0fa2ae62940177028ba35c9ea37bf23cda5",
+          "go/structures/queue.go": "8292c88a97d3089c10e013e6735ad2c683e8f8e417b09b78a7d87a9b65781a7c",
+          "go/structures/stack.go": "c015b0780747c65499790f0222c848c7bd5ff00cd407c15c6c63401bc5473db9",
+          "marimay/algorithms_test.my": "8d6ab04952980c30f43539d1c90339202cdfc94b0a331fd0cea3430f11f9a3be",
+          "marimay/benchmarks/bfs/main.my": "90681525821fc4a66210483f8e7895621c1e1d51aeb62528a5d9de7da4d76e77",
+          "marimay/benchmarks/core/benchmarks.my": "0dc9f987328f786ff9e143403e719be0e5ea2edcf2db97366086f2210fdec413",
+          "marimay/benchmarks/dijkstra/main.my": "266964cac17441cd340bec2c86667a322854915104de723ed7cfed68179a7150",
+          "marimay/benchmarks/dsu/main.my": "fc021778eccbc16e90c33dc503ddb07a4c80048883dc6e111584c19a4a6dbeb2",
+          "marimay/benchmarks/frequency_map/main.my": "e284b6301321ba31fcf55566fbfaaf6af805bba0ccb529a0b757e6fae17df98c",
+          "marimay/benchmarks/heap_sort/main.my": "444d2540e294ba35053cb4a93ee9fcdf3dc6b13e9074996773c0c103130d0125",
+          "marimay/benchmarks/insertion/main.my": "eb5e8bea75429f20730c89658b18601345b245461d4e83cb0048baa17d156532",
+          "marimay/benchmarks/min_heap/main.my": "391650c1681458a7ed12b5460fba0cb0ceb780703d00db06e960f1f9bfd659fb",
+          "marimay/benchmarks/queue/main.my": "366db40c9e2f556a0ba0a7bca3159d56b08a8cd241f9495e97d2fbffcd5441eb",
+          "marimay/benchmarks/rune_frequency/main.my": "c2cc6b56cf586bd0722ea1c3b0400345256aa3847be002a8e03e60a23e65bb7b",
+          "marimay/benchmarks/stack/main.my": "819a2622f736a33b4998fd651d4684b1834886111627b43415240ea3d1f0e0e5",
+          "marimay/benchmarks/unique_set/main.my": "858d40300ca95310692860f75e230dcacf59a180d93b69c8d1380a11b95e53d6",
+          "marimay/counting/counting.my": "56f55b1f7d4c5258fb98717d20e44f8e5afe8cd5e03a54e658cbb8d0fb2962c1",
+          "marimay/features/core/features.my": "85dbea0608f6a5fe9b25ccaad4e8ced23cd70a1af0bac582e616b5de4d9855ac",
+          "marimay/features/dynamic_text/main.my": "ff252d8e09d4cd270de8c7eb121e262b58005c09fe74d511ca1816785afc2ad5",
+          "marimay/graphs/bfs.my": "9311d4aee89a63c448264fec7bed545f6b8e6a7d3ff8d09ed546132d5ceb966c",
+          "marimay/graphs/dijkstra.my": "43497061eadd720c03e08bc9b67dbce2d63ab416086f8a0b4c4d68b234395ecb",
+          "marimay/main.my": "62fc52a22231def9d3d9217d3bb9b87b76518188e15a8c1bcffd8e3cacba08ce",
+          "marimay/probes/checked_loop/main.my": "1061a1f2a0b9702b9181603979115ea38c15df2c6deea2c7e93b8842faa29ea2",
+          "marimay/probes/core/probes.my": "13fbcfed30cece00ec5c8feb0d2b806fac8ee8445a85e43319df5c9af32e5d3c",
+          "marimay/probes/density/main.my": "5d36768e6cf1da81cc70ffa35480a7c1953ee5e6c1cbe6e44ea001678dd75864",
+          "marimay/probes/growth/main.my": "c5631ef1a046d6f1e5764686bcba274794229c5a36a9720a1c1ab08847bf156e",
+          "marimay/probes/nested_traversal/main.my": "9512d7562d601bf2593f5b599a68adabe463351123b35cd481ae200c17d9b520",
+          "marimay/probes/proven_bounds/main.my": "cf75eaf443f52b11e08e74d7b0b5019fd0368dfbf085e4d8b6542e889b48f73a",
+          "marimay/probes/reserved_growth/main.my": "07f9adbaa5c0c3134f739c25d9cc40518901a16e2e82224c05372931d4e3446d",
+          "marimay/probes/scalar_get/main.my": "ac2323bbf188dba1180ec832e8ae9511bd00cdf1436a34d181324068d6e36e29",
+          "marimay/probes/scalar_set/main.my": "053372b108e98513c58e6abd871b8729aa8c9e787dcc09c6f0be2609c3a7d868",
+          "marimay/probes/unproven_bounds/main.my": "ec80dc54a439d584574a353fedf5708a2589dbe0a7241ef74b0769a8194409a3",
+          "marimay/sorting/heap.my": "c9733afb52a68dbba2a2af6b24f3a710c3272a07a45c4e396d3e755f033b3e9a",
+          "marimay/sorting/insertion.my": "0cfd33d99a284121ae15c52e836db106ced35768da168b31dde394ecb0bf8abc",
+          "marimay/structures/dsu.my": "197a5723205b6b0383d2f6d24b839bafdeea6cfcfbf29f54a359df6e49296117",
+          "marimay/structures/heap.my": "6955b87473b5f606bfa1d0390d21826c604ec22dd78b56134b654683951f6bc7",
+          "marimay/structures/queue.my": "891c3c0cb2b3545896c39d15bfbd618d21cc745cd64056372f3ec6a00167e782",
+          "marimay/structures/stack.my": "b83fb25f76326e84e57506f7aae72747454594d2008b38ef2124b0ff005bf0c7",
+          "rust/src/bin/benchmark.rs": "c3a8b98326aa1f74f6c9b3a1d5dd7e3c602113e74a39045126a7bbd8a9c4b081",
+          "rust/src/counting.rs": "4048dd9efc57a11e847147e2887e887dce8552c9142059edfb600805131b57ba",
+          "rust/src/graphs/bfs.rs": "dbad73628cacbb3477be7d3e1f3c942a1115957576acba4d5b0f4e9edffa9658",
+          "rust/src/graphs/dijkstra.rs": "a6e223bae6025405f994f773d862d9bac3e0b93c2858d7226b696e1574caf85f",
+          "rust/src/graphs/mod.rs": "6941c3a3a16d2f09110c5d1bb8afd60cfccb26ec087f7dc1f8a2a4179c1c414e",
+          "rust/src/main.rs": "0cda49792fd44d139eea651bbcbd26b601ec5267e0ac12936be4376449862088",
+          "rust/src/sorting/heap.rs": "b9a77a947da088985bcce692c166a2206865f5fe793c4c27488c1d4f8ae9f6e8",
+          "rust/src/sorting/insertion.rs": "a3b87671750cd47c10566a90886776c0d8a42a631da5bb823fbb9f3c6cc84cbb",
+          "rust/src/sorting/mod.rs": "c54522f01f83c0209c3b1926ddf1cd60825fd024415ea5f12c3f578df623c3a8",
+          "rust/src/structures/dsu.rs": "e04eb2f008482498c5b67823945a14480ba58c3f583302cc73b2526f71865799",
+          "rust/src/structures/heap.rs": "d20c7e17de585f3055cb2eb47346893acfc8dfd5a3dc2e10e9839c763663eda3",
+          "rust/src/structures/mod.rs": "8bf0379fec682537e05d3e115fd0884ca2644b4ac4ff1a4cfa8fcf13880139d6",
+          "rust/src/structures/queue.rs": "532380be498930784223f251ba643f9eecccf3fa7d167d60e8531aab8666b0b4",
+          "rust/src/structures/stack.rs": "36f954da0974e5de1e556403705a0c374f83db841a463f472e77257d08b0df0a"
+        },
+        "compiler_sha256": "83564606c695677e4c1ac88528bf7a80ce291a65d84d9b3303e76b33e57ea07d",
+        "workloads": {
+          "title-search-10k": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "title-search-10k",
+              "10000",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "title-search-10k 484208\n",
+            "stderr": "",
+            "passed": true
+          },
+          "title-search-100k": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "title-search-100k",
+              "100000",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "title-search-100k 4794208\n",
+            "stderr": "",
+            "passed": true
+          },
+          "normalize-title": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "normalize-title",
+              "10000",
+              "1"
+            ],
+            "exit_code": 0,
+            "stdout": "normalize-title 222500\n",
+            "stderr": "",
+            "passed": true
+          },
+          "word-frequency": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "word-frequency",
+              "10000",
+              "10"
+            ],
+            "exit_code": 0,
+            "stdout": "word-frequency 2925090\n",
+            "stderr": "",
+            "passed": true
+          },
+          "report-builder": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "report-builder",
+              "10000",
+              "1"
+            ],
+            "exit_code": 0,
+            "stdout": "report-builder 762303259\n",
+            "stderr": "",
+            "passed": true
+          },
+          "report-concat": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "report-concat",
+              "10000",
+              "1"
+            ],
+            "exit_code": 0,
+            "stdout": "report-concat 762303259\n",
+            "stderr": "",
+            "passed": true
+          },
+          "map-int": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "map-int",
+              "4096",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "map-int 268505088\n",
+            "stderr": "",
+            "passed": true
+          },
+          "map-string": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "map-string",
+              "4096",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "map-string 268505088\n",
+            "stderr": "",
+            "passed": true
+          },
+          "map-string-book": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "map-string-book",
+              "10000",
+              "4"
+            ],
+            "exit_code": 0,
+            "stdout": "map-string-book 203013924\n",
+            "stderr": "",
+            "passed": true
+          },
+          "set-string-churn": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "set-string-churn",
+              "4096",
+              "8"
+            ],
+            "exit_code": 0,
+            "stdout": "set-string-churn 134325504\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-match": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-match",
+              "10000",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-match 22386912\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-dotcall": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-dotcall",
+              "10000",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-dotcall 6180000\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-interface": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-interface",
+              "10000",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-interface 6180000\n",
+            "stderr": "",
+            "passed": true
+          },
+          "record-reference-copy": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "record-reference-copy",
+              "1024",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "record-reference-copy 69705728\n",
+            "stderr": "",
+            "passed": true
+          },
+          "record-create": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "record-create",
+              "1024",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "record-create 69574656\n",
+            "stderr": "",
+            "passed": true
+          },
+          "array-grow": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "array-grow",
+              "100000",
+              "4"
+            ],
+            "exit_code": 0,
+            "stdout": "array-grow 201582740\n",
+            "stderr": "",
+            "passed": true
+          },
+          "array-reserved": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "array-reserved",
+              "100000",
+              "4"
+            ],
+            "exit_code": 0,
+            "stdout": "array-reserved 201582740\n",
+            "stderr": "",
+            "passed": true
+          },
+          "bfs-int": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "bfs-int",
+              "4096",
+              "16"
+            ],
+            "exit_code": 0,
+            "stdout": "bfs-int 734834361\n",
+            "stderr": "",
+            "passed": true
+          },
+          "bfs-record": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "bfs-record",
+              "4096",
+              "16"
+            ],
+            "exit_code": 0,
+            "stdout": "bfs-record 734834361\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-pipeline": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-pipeline",
+              "10000",
+              "16"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-pipeline 8589600\n",
+            "stderr": "",
+            "passed": true
+          },
+          "parse-result": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "parse-result",
+              "10000",
+              "8"
+            ],
+            "exit_code": 0,
+            "stdout": "parse-result 30188104\n",
+            "stderr": "",
+            "passed": true
+          },
+          "insertion": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/insertion",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "insertion 999956059\n",
+            "stderr": "",
+            "passed": true
+          },
+          "heap-sort": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/heap_sort",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "heap-sort 999995320\n",
+            "stderr": "",
+            "passed": true
+          },
+          "stack": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/stack",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "stack 498055372\n",
+            "stderr": "",
+            "passed": true
+          },
+          "queue": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/queue",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "queue 498106199\n",
+            "stderr": "",
+            "passed": true
+          },
+          "min-heap": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/min_heap",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "min-heap 405398755\n",
+            "stderr": "",
+            "passed": true
+          },
+          "dsu": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/dsu",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "dsu 21343152\n",
+            "stderr": "",
+            "passed": true
+          },
+          "bfs": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/bfs",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "bfs 715800\n",
+            "stderr": "",
+            "passed": true
+          },
+          "dijkstra": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/dijkstra",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "dijkstra 38672\n",
+            "stderr": "",
+            "passed": true
+          },
+          "frequency-map": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/frequency_map",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "frequency-map 5073\n",
+            "stderr": "",
+            "passed": true
+          },
+          "unique-set": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/unique_set",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "unique-set 20001\n",
+            "stderr": "",
+            "passed": true
+          },
+          "rune-frequency": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/rune_frequency",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "rune-frequency 270012\n",
+            "stderr": "",
+            "passed": true
+          }
+        }
+      },
+      "dependency_preparation": {
+        "schema": "marimay.sljit-inputs/1",
+        "status": "prepared",
+        "commit": "d6ec3d07dcdbf2256ccae2b84d0d8a2d019f392e",
+        "upstream_sha256": {
+          "sljit_src/allocator_src/sljitExecAllocatorApple.c": "dbf8e95ad7db9b691c68d6225f54f603f9ef1bbf41d1afee96bd8b1269432227",
+          "sljit_src/allocator_src/sljitExecAllocatorCore.c": "d8688f91e0b4f0ace65d44500e65500c743b1fbd2c1134984c95aad5e2d32336",
+          "sljit_src/allocator_src/sljitExecAllocatorFreeBSD.c": "8bf44ef0314954c9e4deb4010db3a74b12308745f714ca1fa9d403e36b033d16",
+          "sljit_src/allocator_src/sljitExecAllocatorPosix.c": "4ca3ae7d73c0ae5a7659edde562621741a5e68a81dea848054fbff22062aa6a6",
+          "sljit_src/allocator_src/sljitExecAllocatorWindows.c": "7688f9450260e975439a6afcae2b820399258fcf7ed883e5ee247763fe886168",
+          "sljit_src/allocator_src/sljitProtExecAllocatorNetBSD.c": "7ba64819eb5ff75ac8f9f98d3092ecb2132f09ae1d882dd629badc8844f41355",
+          "sljit_src/allocator_src/sljitProtExecAllocatorPosix.c": "1f2081b015f49fed120d92c8da770de7bcda8caac8cbc32cbfa4fefdf347cc01",
+          "sljit_src/allocator_src/sljitWXExecAllocatorPosix.c": "38cb003b670f91ddb224386d7026915fbe06dfbdd5f272fddfd42452e1f34448",
+          "sljit_src/allocator_src/sljitWXExecAllocatorWindows.c": "ed8405a759e254ad32fe56f8dd2b6b5c01ebade19c5e4b78992850bb0d9f8f3d",
+          "sljit_src/sljitConfig.h": "fd8a440cbc8ba79595dfc19bf1f00fcc5ad459b8e8bac0a47a64c2e21cb91cfa",
+          "sljit_src/sljitConfigCPU.h": "b07a8951dc7cef875f3dc3fc203a20c4a9df5ec391686c7adb301ae189c15bd7",
+          "sljit_src/sljitConfigInternal.h": "9f8765b228a939ef95a41e2457a9fe625087f50fd5ed3255cb3a96bb0f2a4564",
+          "sljit_src/sljitLir.c": "a8ab301281e18970ee7459e484cfb83f07abb673fdac3aafc81393ddcd8f104a",
+          "sljit_src/sljitLir.h": "dd461ec35a3dcf178a2b699b0f4c087322e899abff4e81e1a110fbcc78ef622c",
+          "sljit_src/sljitNativeALPHA_64.c": "d1220502d92f5008e34ac4220b65a037c8f41136d2e246a398708a12d2259bd4",
+          "sljit_src/sljitNativeARM_32.c": "a1f37da582f107e6afd797012a21d6c54a52317308bacd0ba9613659ce55782d",
+          "sljit_src/sljitNativeARM_64.c": "7893e0dff666137b9ff4316280fb1a36b2d35f03af9420ae00a2511161a7dc4f",
+          "sljit_src/sljitNativeARM_T2_32.c": "df81aaff61965a439968bf07d776e4df29d92b7385a3f533dd19ef2866bd91a4",
+          "sljit_src/sljitNativeLOONGARCH_64.c": "d83b3952d9392d8cc5c6aa07fe181918e0225a60087bc311eef5900912ee15c0",
+          "sljit_src/sljitNativeMIPS_32.c": "ddbc21bb6b224172a8a1a1fb91f6311071dd3e738fd7320760a8c5b04fe4717e",
+          "sljit_src/sljitNativeMIPS_64.c": "60386ef9733c38fff3fe7fffe31bc385fabf5b9eb53821693d071ea273bc94b1",
+          "sljit_src/sljitNativeMIPS_common.c": "c51fff8d080311d66c64dd80325fd427a133667f0406125d168a407984cbb468",
+          "sljit_src/sljitNativePPC_32.c": "06a6dbfe5e512a12a43834c076250fe7fa936f3c986bf9b64458961ff58aef8f",
+          "sljit_src/sljitNativePPC_64.c": "a27fbe99b5772e41b48e8afc70d719b85d870d9fc1322ed60fcdece4cafbccd7",
+          "sljit_src/sljitNativePPC_common.c": "6d06190850e92037537336d7ccc16e7500bf91e51f864d21134fc515254cae25",
+          "sljit_src/sljitNativeRISCV_32.c": "c44f14192f648f7018c9aef74511eda73a71e8668daaabb6ba2f67d7ca67151f",
+          "sljit_src/sljitNativeRISCV_64.c": "4439f2cd68a550341a8c52468cd0e261278cd802203f0926957b49760eb73d75",
+          "sljit_src/sljitNativeRISCV_common.c": "54de057349106b2e86ed7c2fa6835eead217bc5231391c71940b06f58487d124",
+          "sljit_src/sljitNativeS390X.c": "efb5bf5ca1aa2b3498473e59e2d161434e37865bfa2dd554483c03e59ddc9fad",
+          "sljit_src/sljitNativeX86_32.c": "b380192357d7e112f40a0b4aa6e1761f2b6620e36f5ae2afe8f550a2bb18769a",
+          "sljit_src/sljitNativeX86_64.c": "aff0f9523378520776a0f06fae5f7dee1b3b295fa8272802f323c7d0747aacc9",
+          "sljit_src/sljitNativeX86_common.c": "7a010d80de0f0f6c647a0532357cfe506aae540cdc71f061a883c15898088311",
+          "sljit_src/sljitSerialize.c": "76400232579d96701788a84221c29ec5a1c774615efe34183a27b1609bf52cea",
+          "sljit_src/sljitUtils.c": "a6f848e3be7939ba2e2b5304213497837b6b67dc433a63ba8a96947f6ab06c50",
+          "LICENSE": "5f216505c0f6ea3273caec89e766eef93cdeb7bbb0c429f9360116d7c938feeb"
+        },
+        "patch_sha256": "2f285475677cace772df0ce71aa63eb1e8559c5d1b5223e214913ad854c1013f",
+        "patched_arm64_sha256": "147e135d9968baab67cd31d480cfcad552f5a1cb3296c40622e78ce1cffe5368",
+        "config_sha256": "18661d042d8e1af82af8e275829bb00bc7e925503a54a50b7803a38a08021bc5"
+      },
+      "sljit_flags": "# CMAKE generated file: DO NOT EDIT!\n# Generated by \"Unix Makefiles\" Generator, CMake Version 4.4\n\n# compile C with /usr/bin/cc\nC_DEFINES = -DSLJIT_HAVE_CONFIG_PRE=1\n\nC_INCLUDES = -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/include -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/src/bytecode\n\nC_FLAGSarm64 = -O3 -DNDEBUG -std=c17 -arch arm64\n\nC_FLAGS = -O3 -DNDEBUG -std=c17 -arch arm64\n\n",
+      "commands": [
+        [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated",
+          "-DCMAKE_BUILD_TYPE=Release",
+          "-DMMAY_ENABLE_SLJIT=ON",
+          "-DMMAY_SLJIT_SOURCE_DIR=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation"
+        ],
+        [
+          "cmake",
+          "--build",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated",
+          "-j2"
+        ],
+        [
+          "ctest",
+          "--test-dir",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated",
+          "-j2",
+          "--output-on-failure"
+        ],
+        [
+          "python3",
+          "tools/performance/sljit-prototype/check.py",
+          "--mmay",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/mmay",
+          "--benchmarks",
+          "../algorithm-benchmarks",
+          "--reference",
+          "docs/implementation/evidence/cp42-vm-preparation-comprehensive-2026-09-09.json",
+          "--output",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/all32-correctness.json"
+        ]
+      ],
+      "focused_test_details": {
+        "mmay_code_memory": "87/90 Testing: mmay_code_memory\n87/90 Test: mmay_code_memory\nCommand: \"/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/tests/c-unit/jit/mmay_code_memory\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/tests/c-unit/jit\n\"mmay_code_memory\" start time: Sep 10 15:06 +07\nOutput:\n----------------------------------------------------------\nARM-64 (LSE) 64bit (little endian + unaligned): 5 allocation failure indices, 2 platform failure indices, relocated calls/branches, immutable publication, zero allocation/map counters: passed\n<end of output>\nTest time =   0.34 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_code_memory\" end time: Sep 10 15:06 +07\n\"mmay_code_memory\" time elapsed: 00:00:00\n",
+        "mmay_jit_ownership": "88/90 Testing: mmay_jit_ownership\n88/90 Test: mmay_jit_ownership\nCommand: \"/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/tests/c-unit/jit/mmay_jit_ownership\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/tests/c-unit/jit\n\"mmay_jit_ownership\" start time: Sep 10 15:06 +07\nOutput:\n----------------------------------------------------------\ntwo-function JIT (unmetered): 12 allocation failure indices, 4 platform failure indices, exact source/fuel exit or mode rejection, zero allocation/map counters: passed\ntwo-function JIT (metered): 12 allocation failure indices, 4 platform failure indices, exact source/fuel exit or mode rejection, zero allocation/map counters: passed\n<end of output>\nTest time =   0.69 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_jit_ownership\" end time: Sep 10 15:06 +07\n\"mmay_jit_ownership\" time elapsed: 00:00:00\n",
+        "mmay_jit_fuel": "89/90 Testing: mmay_jit_fuel\n89/90 Test: mmay_jit_fuel\nCommand: \"/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/tests/c-unit/jit/mmay_jit_fuel\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/tests/c-unit/jit\n\"mmay_jit_fuel\" start time: Sep 10 15:06 +07\nOutput:\n----------------------------------------------------------\nJIT fuel mode: exact metered exit, reject every shared/finite counter in unmetered mode, zero counters: passed (284 / 176 code bytes)\n<end of output>\nTest time =   0.35 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_jit_fuel\" end time: Sep 10 15:06 +07\n\"mmay_jit_fuel\" time elapsed: 00:00:00\n",
+        "mmay_jit_pinned_inputs": "90/90 Testing: mmay_jit_pinned_inputs\n90/90 Test: mmay_jit_pinned_inputs\nCommand: \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9\" \"/workspace/Projects/Marimay/marimay-vm-parity/tests/c-unit/jit/test_prepare_sljit.py\" \"/workspace/Projects/Marimay/marimay-vm-parity/tools/prepare-sljit.py\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated/tests/c-unit/jit\n\"mmay_jit_pinned_inputs\" start time: Sep 10 15:06 +07\nOutput:\n----------------------------------------------------------\n......\n----------------------------------------------------------------------\nRan 6 tests in 0.375s\n\nOK\n<end of output>\nTest time =   0.42 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_jit_pinned_inputs\" end time: Sep 10 15:06 +07\n\"mmay_jit_pinned_inputs\" time elapsed: 00:00:00\n"
+      }
+    },
+    "arm64-asan-ubsan": {
+      "build_directory": "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan",
+      "compiler_sha256": "7b39942e405b3bcf0cdd075e9740d1734c623a92cdf688cf0bddf1d22d341d84",
+      "test_count": 6,
+      "test_log": "Test project /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan\n    Start  8: mmay_c_unit_runtime\n    Start  7: mmay_c_unit_bytecode\n1/6 Test  #7: mmay_c_unit_bytecode .............   Passed   17.09 sec\n    Start 87: mmay_code_memory\n2/6 Test #87: mmay_code_memory .................   Passed    0.35 sec\n    Start 88: mmay_jit_ownership\n3/6 Test #88: mmay_jit_ownership ...............   Passed    0.25 sec\n    Start 89: mmay_jit_fuel\n4/6 Test #89: mmay_jit_fuel ....................   Passed    0.31 sec\n    Start 90: mmay_jit_pinned_inputs\n5/6 Test #90: mmay_jit_pinned_inputs ...........   Passed    0.57 sec\n6/6 Test  #8: mmay_c_unit_runtime ..............   Passed   54.03 sec\n\n100% tests passed out of 6\n\nLabel Time Summary:\nbytecode    =  17.09 sec*proc (1 test)\nc-unit      =  71.12 sec*proc (2 tests)\nruntime     =  54.03 sec*proc (1 test)\n\nTotal Test time (real) =  54.03 sec\n",
+      "test_log_sha256": "d4e28ad161a9017fdb600a2b787d9ff512fdbf679ecef80c5a161ed18a7add96",
+      "cmake_cache_selected": [
+        "CMAKE_BUILD_TYPE:STRING=Debug",
+        "CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc",
+        "CMAKE_OSX_ARCHITECTURES:STRING=",
+        "MMAY_ENABLE_ADDRESS_SANITIZER:BOOL=ON",
+        "MMAY_ENABLE_SLJIT:BOOL=ON",
+        "MMAY_ENABLE_UNDEFINED_SANITIZER:BOOL=ON",
+        "MMAY_SLJIT_SOURCE_DIR:PATH=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation",
+        "MMAY_WARNINGS_AS_ERRORS:BOOL=ON"
+      ],
+      "bootstrap_flags": "# CMAKE generated file: DO NOT EDIT!\n# Generated by \"Unix Makefiles\" Generator, CMake Version 4.4\n\n# compile C with /usr/bin/cc\nC_DEFINES = -DMMAY_HAVE_SLJIT=1\n\nC_INCLUDES = -I/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/generated -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/include -I/workspace/Projects/Marimay/marimay-vm-parity/runtime/include -isystem /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay-sljit-inputs/sljit_src\n\nC_FLAGSarm64 = -g -std=c17 -arch arm64 -fno-fast-math -frounding-math -ffp-contract=off -fexcess-precision=standard -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -O1\n\nC_FLAGS = -g -std=c17 -arch arm64 -fno-fast-math -frounding-math -ffp-contract=off -fexcess-precision=standard -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror -fsanitize=address,undefined -fno-omit-frame-pointer -O1\n\n# Custom include directories: CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_jit_sljit.c.o_INCLUDE_DIRECTORIES = /workspace/Projects/Marimay/marimay-vm-parity/bootstrap/src/bytecode\n\n# Custom defines: CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_jit_sljit.c.o_DEFINES = SLJIT_HAVE_CONFIG_PRE=1\n\n",
+      "correctness": {
+        "schema": "marimay.vm-correctness-replay/1",
+        "status": "passed",
+        "note": "Correctness replay only; no performance measurements.",
+        "reference_sha256": "37b14b6b85962f7c57a2929957f3fccdb6a9fdd22d6eb8c7425f5d9b255d9f57",
+        "source_sha256": {
+          "benchmarks/catalog_bench.py": "fb508fd45e2e22fa78136089e5c3720ed4d7cd54eb5bbdde56a7c5cc4a0ba1eb",
+          "benchmarks/catalog_bun.py": "f29b5affddd12cff292b9c4acbbd0b8acc2fb4f3337e27fb2e34c317f6f470f7",
+          "benchmarks/catalog_contract.py": "d3f35414890bb6ee531f92818a0abbfee116a03bc21b88ae2490edef43c11c05",
+          "benchmarks/catalog_measure.py": "4d14a068121795efca6d9f4dd62232a97e2f23a5b8c8d5f8609f5b5ee2169fdc",
+          "benchmarks/catalog_oracle.py": "938be6450f701d39ced4fe7fede5cf52c19467b3960618389d650440a6068fe6",
+          "benchmarks/catalog_report.py": "ffb9c988ad073204940621514276e2ba235aafe8b915c1a1789e11d8f2df2e89",
+          "benchmarks/catalog_session.py": "d5bee8e089927fa9d0e37b469f959689b772e1ffa4c67528e255e5693ee6a360",
+          "benchmarks/catalog_snapshot.py": "9df56623e96d77e112842b23e4342a857a956ceea14cd990506517851c7b7f3d",
+          "benchmarks/catalog_workloads.json": "41827b45029f4213033bff20086deb2e9b940d70b3303e3562e5c68ec6f6b803",
+          "benchmarks/marimay-toolchain.json": "5f4e299dc22372d9ac6f3eb2d824ffc53e916cc136183fb585e637c32ed57ee4",
+          "benchmarks/marimay_toolchain.py": "524e7730d291068744182a7ce1d0901f8f1e4ea8486e5231e672908003d720c4",
+          "benchmarks/perf_environment.py": "17366997c959e8c7695b2122a3c11d95f1f60c0efaa6bd5761c2bc3ec4b71cdb",
+          "benchmarks/perf_protocol.py": "8033589224b9ae58394d13877f0752c13e71ec5f70afc06465a81d1682618e64",
+          "benchmarks/performance_protocol.json": "a94f5be850eb26fd821b3630b16254f145a8e30c1b8e7a63fd7230ed761dd4a8",
+          "go/catalog/catalog_test.go": "b4679b643d4c478c0727c3618697ba9965f427824d92baeae6df41af59bba41d",
+          "go/catalog/collections.go": "ee6c4ac9f5eab4009b8e580a24e1f589a9754052b28b535dd2b1d617d30dab0b",
+          "go/catalog/graphs.go": "3ab5594a58dd60caf21e8ba8577e084b2f7509e4329b7934002465b125008a7e",
+          "go/catalog/model.go": "10bec252a16654bbecfbe5a0803efd382c859a9848bf8722d28a85531d51b9ab",
+          "go/catalog/objects.go": "e0531a49606ccd1b9167a9610fe502a0b057c270e562468d1d4a64ff5df117ba",
+          "go/catalog/text.go": "5373ed8a62e748e4ed9ce9a59ba5ef1f835aa18a4a3302d84253ea24819e1247",
+          "go/cmd/catalog/main.go": "f89b40a58db273064f8802a908ad1079ae16b9b238af0a8ec8caf7548c75ff6d",
+          "go/go.mod": "519344fdcec7e981381cb2d6781b014eb1d8f0f9b92b3a988347142aef747475",
+          "marimay/catalog/core/catalog_test.my": "34f5f4095b019f6989daed51dc48686ab917ff43d7f0f1ba991e6621a8f3d865",
+          "marimay/catalog/core/checksum.my": "0843cb69f07177252259e4298a49330a347d44a88fa9c2291ca7c2e6759e89f7",
+          "marimay/catalog/core/collections.my": "49df9baabf06487021606bd33a98f4bf79bfefa394c1e7fb770fb3679069a78a",
+          "marimay/catalog/core/graphs.my": "95ecb3d8e6a48adfe14696b57d4fa860e62fa7aad0bb6e018bde5a155d16bbae",
+          "marimay/catalog/core/model.my": "fa682ce371f167b1054b51255580d774c01d231c4fcf56e5cb0a37449661a14b",
+          "marimay/catalog/core/objects.my": "0951ea8e5fcd57586ed66ff93f57cd64b1c663b02d0f8fc87ee209f6974c7c52",
+          "marimay/catalog/core/text.my": "424bf8d1e2cb00bf1acf6b32dd7e826350442eaeca861e77fd64cc074e50feb1",
+          "marimay/catalog/main.my": "f198cecd2490928af0ca585ef99390e66f34d4294ad2da71f858a21883e2a326",
+          "marimay/mmay.mod": "561867408c89e2b5855f27134f5e5b84b4cf655a02d195cd3c4a5a4917837345",
+          "rust/Cargo.lock": "1c3b1ca3d3783a6861a2c35745303d8845e306deed805bda68a3029d85a27891",
+          "rust/Cargo.toml": "f9a86632e519d2ec45dc96f727defedda35cceeea7bb30f260e5d200f7ee4a68",
+          "rust/src/bin/catalog.rs": "6cc82483af4b5d8464261ce5c1b00adb1e1d7cc15ea2390a6818add7eaee6328",
+          "rust/src/catalog/collections.rs": "a861e9d35ae3d8bb9ecb8774cc442711428ea4e85b267b7daa70854296494ff9",
+          "rust/src/catalog/graphs.rs": "4e6297879f27d4631f59b6b8ca0b6b52f355d5b4db05729807aa7e2bc4ca59bb",
+          "rust/src/catalog/mod.rs": "b7c75c3c1a8af6f997366afc966e2cc53ee4d2c670bc5d6bcca5c3f33139b93c",
+          "rust/src/catalog/objects.rs": "1754afb88b4475bb7700b61ac42bda887b69872c3e70d150fb18f860c89208fa",
+          "rust/src/catalog/text.rs": "c934a5b37e44132df3474eb4bd83aa572275bd69402ab55ef558df817ce2e29c",
+          "rust/src/lib.rs": "bcbc3e8fd7fc6ed1100eefdf18e28c4890e693eae5bba179db38f3deef58527f",
+          "typescript/src/benchmark.ts": "cec4be668f1f710262bf92431cf4ce1edc2930a11248d996d4c44d60e7b1abf5",
+          "typescript/src/catalog/collections.ts": "623fd2d8fd1c2c5a2b59432ca57fbdceae04215571a708906ab4ed990fc11ad1",
+          "typescript/src/catalog/graphs.ts": "26b5cc1db790738c33b436ef1e4875a8aecd8f3980a442d35765e70e5fca4a7a",
+          "typescript/src/catalog/main.ts": "c7e244b480f08175e2a365ee84c1a6f42a9c737248cab4e5a479814366662671",
+          "typescript/src/catalog/model.ts": "80ef26b6d8ff864aa94f71864231cbd906a8e05976f7adee3b60bcaa1b3d6acd",
+          "typescript/src/catalog/objects.ts": "167f1f2b852147d21bde5134ffb49b6f263ba727580b3383e12c7b4e7804e2b1",
+          "typescript/src/catalog/text.ts": "9f4006cd1cae99424d7294a0dca27264a55614c96d6274f4c96feee754f02719",
+          "typescript/src/counting.ts": "625b7842a6b1b69010daa6bdc78cedec2a0d4df73b55b324c8d812b3f5ec87c2",
+          "typescript/src/graphs.ts": "56d1901a1074f521b306990edee01f1a97c99737cb025d30e8603193863ec3f4",
+          "typescript/src/sorting.ts": "b765864b8e5f475641ad07fde9a882d689ce88249dcea0f791046e8591abf282",
+          "typescript/src/structures.ts": "8feba332c65846607d4ce5d714b823a4704c11525bdce9b49db1ce15c2d30a3d",
+          "benchmarks/equivalence.json": "64ddc892dcac9a30a9e4b86aa669d1dff5a12aea65c3f353e180958f23a8c27a",
+          "benchmarks/expanded_workloads.json": "ef6e688152b4bfe2906dd7ef22f285fc8a94d900d90c8518b0698a4da1aa1188",
+          "go/algorithms_test.go": "bf9a0344e4b29e363403cb3b4874056c18f545c3456c156e5b2155be149801ac",
+          "go/cmd/benchmark/main.go": "fc67e17464c835650cb14e412e791ce9b023055ee421e1a4b9a6b126e010fcf7",
+          "go/counting/counting.go": "88d4a0346b5694f3cb9f041621f6c2313226da3fd2580df3b0c18d0f01440302",
+          "go/graphs/bfs.go": "46a827da59512cd261508821ac40125eac03f56396aa9a55cb57a23ea75e46b6",
+          "go/graphs/dijkstra.go": "d30569c0658320fd09c664eefec98a2f1c221be9b4e74efa6a3a6df154cffe17",
+          "go/main.go": "247eec5279f2bfb27a59f3db75c0b70908d10ebd015787e0b9c89656d8d88b38",
+          "go/sorting/heap.go": "d3932509370faa3e7c6e284c91d0bc2556306549aeb8be9f4d404e6251fabaea",
+          "go/sorting/insertion.go": "42df19a215a3acf271d8ced34012f3060e8cd3d546687314ecec8a72c19a7fc7",
+          "go/structures/dsu.go": "f0d999fc2eb8c2df8a6d757b9a3034ff21efbbb866f7d0a9fde3073e34dda3d0",
+          "go/structures/heap.go": "cc642696fdb1a1720b5074aa6ecca0fa2ae62940177028ba35c9ea37bf23cda5",
+          "go/structures/queue.go": "8292c88a97d3089c10e013e6735ad2c683e8f8e417b09b78a7d87a9b65781a7c",
+          "go/structures/stack.go": "c015b0780747c65499790f0222c848c7bd5ff00cd407c15c6c63401bc5473db9",
+          "marimay/algorithms_test.my": "8d6ab04952980c30f43539d1c90339202cdfc94b0a331fd0cea3430f11f9a3be",
+          "marimay/benchmarks/bfs/main.my": "90681525821fc4a66210483f8e7895621c1e1d51aeb62528a5d9de7da4d76e77",
+          "marimay/benchmarks/core/benchmarks.my": "0dc9f987328f786ff9e143403e719be0e5ea2edcf2db97366086f2210fdec413",
+          "marimay/benchmarks/dijkstra/main.my": "266964cac17441cd340bec2c86667a322854915104de723ed7cfed68179a7150",
+          "marimay/benchmarks/dsu/main.my": "fc021778eccbc16e90c33dc503ddb07a4c80048883dc6e111584c19a4a6dbeb2",
+          "marimay/benchmarks/frequency_map/main.my": "e284b6301321ba31fcf55566fbfaaf6af805bba0ccb529a0b757e6fae17df98c",
+          "marimay/benchmarks/heap_sort/main.my": "444d2540e294ba35053cb4a93ee9fcdf3dc6b13e9074996773c0c103130d0125",
+          "marimay/benchmarks/insertion/main.my": "eb5e8bea75429f20730c89658b18601345b245461d4e83cb0048baa17d156532",
+          "marimay/benchmarks/min_heap/main.my": "391650c1681458a7ed12b5460fba0cb0ceb780703d00db06e960f1f9bfd659fb",
+          "marimay/benchmarks/queue/main.my": "366db40c9e2f556a0ba0a7bca3159d56b08a8cd241f9495e97d2fbffcd5441eb",
+          "marimay/benchmarks/rune_frequency/main.my": "c2cc6b56cf586bd0722ea1c3b0400345256aa3847be002a8e03e60a23e65bb7b",
+          "marimay/benchmarks/stack/main.my": "819a2622f736a33b4998fd651d4684b1834886111627b43415240ea3d1f0e0e5",
+          "marimay/benchmarks/unique_set/main.my": "858d40300ca95310692860f75e230dcacf59a180d93b69c8d1380a11b95e53d6",
+          "marimay/counting/counting.my": "56f55b1f7d4c5258fb98717d20e44f8e5afe8cd5e03a54e658cbb8d0fb2962c1",
+          "marimay/features/core/features.my": "85dbea0608f6a5fe9b25ccaad4e8ced23cd70a1af0bac582e616b5de4d9855ac",
+          "marimay/features/dynamic_text/main.my": "ff252d8e09d4cd270de8c7eb121e262b58005c09fe74d511ca1816785afc2ad5",
+          "marimay/graphs/bfs.my": "9311d4aee89a63c448264fec7bed545f6b8e6a7d3ff8d09ed546132d5ceb966c",
+          "marimay/graphs/dijkstra.my": "43497061eadd720c03e08bc9b67dbce2d63ab416086f8a0b4c4d68b234395ecb",
+          "marimay/main.my": "62fc52a22231def9d3d9217d3bb9b87b76518188e15a8c1bcffd8e3cacba08ce",
+          "marimay/probes/checked_loop/main.my": "1061a1f2a0b9702b9181603979115ea38c15df2c6deea2c7e93b8842faa29ea2",
+          "marimay/probes/core/probes.my": "13fbcfed30cece00ec5c8feb0d2b806fac8ee8445a85e43319df5c9af32e5d3c",
+          "marimay/probes/density/main.my": "5d36768e6cf1da81cc70ffa35480a7c1953ee5e6c1cbe6e44ea001678dd75864",
+          "marimay/probes/growth/main.my": "c5631ef1a046d6f1e5764686bcba274794229c5a36a9720a1c1ab08847bf156e",
+          "marimay/probes/nested_traversal/main.my": "9512d7562d601bf2593f5b599a68adabe463351123b35cd481ae200c17d9b520",
+          "marimay/probes/proven_bounds/main.my": "cf75eaf443f52b11e08e74d7b0b5019fd0368dfbf085e4d8b6542e889b48f73a",
+          "marimay/probes/reserved_growth/main.my": "07f9adbaa5c0c3134f739c25d9cc40518901a16e2e82224c05372931d4e3446d",
+          "marimay/probes/scalar_get/main.my": "ac2323bbf188dba1180ec832e8ae9511bd00cdf1436a34d181324068d6e36e29",
+          "marimay/probes/scalar_set/main.my": "053372b108e98513c58e6abd871b8729aa8c9e787dcc09c6f0be2609c3a7d868",
+          "marimay/probes/unproven_bounds/main.my": "ec80dc54a439d584574a353fedf5708a2589dbe0a7241ef74b0769a8194409a3",
+          "marimay/sorting/heap.my": "c9733afb52a68dbba2a2af6b24f3a710c3272a07a45c4e396d3e755f033b3e9a",
+          "marimay/sorting/insertion.my": "0cfd33d99a284121ae15c52e836db106ced35768da168b31dde394ecb0bf8abc",
+          "marimay/structures/dsu.my": "197a5723205b6b0383d2f6d24b839bafdeea6cfcfbf29f54a359df6e49296117",
+          "marimay/structures/heap.my": "6955b87473b5f606bfa1d0390d21826c604ec22dd78b56134b654683951f6bc7",
+          "marimay/structures/queue.my": "891c3c0cb2b3545896c39d15bfbd618d21cc745cd64056372f3ec6a00167e782",
+          "marimay/structures/stack.my": "b83fb25f76326e84e57506f7aae72747454594d2008b38ef2124b0ff005bf0c7",
+          "rust/src/bin/benchmark.rs": "c3a8b98326aa1f74f6c9b3a1d5dd7e3c602113e74a39045126a7bbd8a9c4b081",
+          "rust/src/counting.rs": "4048dd9efc57a11e847147e2887e887dce8552c9142059edfb600805131b57ba",
+          "rust/src/graphs/bfs.rs": "dbad73628cacbb3477be7d3e1f3c942a1115957576acba4d5b0f4e9edffa9658",
+          "rust/src/graphs/dijkstra.rs": "a6e223bae6025405f994f773d862d9bac3e0b93c2858d7226b696e1574caf85f",
+          "rust/src/graphs/mod.rs": "6941c3a3a16d2f09110c5d1bb8afd60cfccb26ec087f7dc1f8a2a4179c1c414e",
+          "rust/src/main.rs": "0cda49792fd44d139eea651bbcbd26b601ec5267e0ac12936be4376449862088",
+          "rust/src/sorting/heap.rs": "b9a77a947da088985bcce692c166a2206865f5fe793c4c27488c1d4f8ae9f6e8",
+          "rust/src/sorting/insertion.rs": "a3b87671750cd47c10566a90886776c0d8a42a631da5bb823fbb9f3c6cc84cbb",
+          "rust/src/sorting/mod.rs": "c54522f01f83c0209c3b1926ddf1cd60825fd024415ea5f12c3f578df623c3a8",
+          "rust/src/structures/dsu.rs": "e04eb2f008482498c5b67823945a14480ba58c3f583302cc73b2526f71865799",
+          "rust/src/structures/heap.rs": "d20c7e17de585f3055cb2eb47346893acfc8dfd5a3dc2e10e9839c763663eda3",
+          "rust/src/structures/mod.rs": "8bf0379fec682537e05d3e115fd0884ca2644b4ac4ff1a4cfa8fcf13880139d6",
+          "rust/src/structures/queue.rs": "532380be498930784223f251ba643f9eecccf3fa7d167d60e8531aab8666b0b4",
+          "rust/src/structures/stack.rs": "36f954da0974e5de1e556403705a0c374f83db841a463f472e77257d08b0df0a"
+        },
+        "compiler_sha256": "7b39942e405b3bcf0cdd075e9740d1734c623a92cdf688cf0bddf1d22d341d84",
+        "workloads": {
+          "title-search-10k": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "title-search-10k",
+              "10000",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "title-search-10k 484208\n",
+            "stderr": "",
+            "passed": true
+          },
+          "title-search-100k": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "title-search-100k",
+              "100000",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "title-search-100k 4794208\n",
+            "stderr": "",
+            "passed": true
+          },
+          "normalize-title": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "normalize-title",
+              "10000",
+              "1"
+            ],
+            "exit_code": 0,
+            "stdout": "normalize-title 222500\n",
+            "stderr": "",
+            "passed": true
+          },
+          "word-frequency": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "word-frequency",
+              "10000",
+              "10"
+            ],
+            "exit_code": 0,
+            "stdout": "word-frequency 2925090\n",
+            "stderr": "",
+            "passed": true
+          },
+          "report-builder": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "report-builder",
+              "10000",
+              "1"
+            ],
+            "exit_code": 0,
+            "stdout": "report-builder 762303259\n",
+            "stderr": "",
+            "passed": true
+          },
+          "report-concat": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "report-concat",
+              "10000",
+              "1"
+            ],
+            "exit_code": 0,
+            "stdout": "report-concat 762303259\n",
+            "stderr": "",
+            "passed": true
+          },
+          "map-int": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "map-int",
+              "4096",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "map-int 268505088\n",
+            "stderr": "",
+            "passed": true
+          },
+          "map-string": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "map-string",
+              "4096",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "map-string 268505088\n",
+            "stderr": "",
+            "passed": true
+          },
+          "map-string-book": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "map-string-book",
+              "10000",
+              "4"
+            ],
+            "exit_code": 0,
+            "stdout": "map-string-book 203013924\n",
+            "stderr": "",
+            "passed": true
+          },
+          "set-string-churn": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "set-string-churn",
+              "4096",
+              "8"
+            ],
+            "exit_code": 0,
+            "stdout": "set-string-churn 134325504\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-match": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-match",
+              "10000",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-match 22386912\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-dotcall": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-dotcall",
+              "10000",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-dotcall 6180000\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-interface": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-interface",
+              "10000",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-interface 6180000\n",
+            "stderr": "",
+            "passed": true
+          },
+          "record-reference-copy": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "record-reference-copy",
+              "1024",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "record-reference-copy 69705728\n",
+            "stderr": "",
+            "passed": true
+          },
+          "record-create": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "record-create",
+              "1024",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "record-create 69574656\n",
+            "stderr": "",
+            "passed": true
+          },
+          "array-grow": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "array-grow",
+              "100000",
+              "4"
+            ],
+            "exit_code": 0,
+            "stdout": "array-grow 201582740\n",
+            "stderr": "",
+            "passed": true
+          },
+          "array-reserved": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "array-reserved",
+              "100000",
+              "4"
+            ],
+            "exit_code": 0,
+            "stdout": "array-reserved 201582740\n",
+            "stderr": "",
+            "passed": true
+          },
+          "bfs-int": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "bfs-int",
+              "4096",
+              "16"
+            ],
+            "exit_code": 0,
+            "stdout": "bfs-int 734834361\n",
+            "stderr": "",
+            "passed": true
+          },
+          "bfs-record": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "bfs-record",
+              "4096",
+              "16"
+            ],
+            "exit_code": 0,
+            "stdout": "bfs-record 734834361\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-pipeline": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-pipeline",
+              "10000",
+              "16"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-pipeline 8589600\n",
+            "stderr": "",
+            "passed": true
+          },
+          "parse-result": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "parse-result",
+              "10000",
+              "8"
+            ],
+            "exit_code": 0,
+            "stdout": "parse-result 30188104\n",
+            "stderr": "",
+            "passed": true
+          },
+          "insertion": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/insertion",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "insertion 999956059\n",
+            "stderr": "",
+            "passed": true
+          },
+          "heap-sort": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/heap_sort",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "heap-sort 999995320\n",
+            "stderr": "",
+            "passed": true
+          },
+          "stack": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/stack",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "stack 498055372\n",
+            "stderr": "",
+            "passed": true
+          },
+          "queue": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/queue",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "queue 498106199\n",
+            "stderr": "",
+            "passed": true
+          },
+          "min-heap": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/min_heap",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "min-heap 405398755\n",
+            "stderr": "",
+            "passed": true
+          },
+          "dsu": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/dsu",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "dsu 21343152\n",
+            "stderr": "",
+            "passed": true
+          },
+          "bfs": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/bfs",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "bfs 715800\n",
+            "stderr": "",
+            "passed": true
+          },
+          "dijkstra": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/dijkstra",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "dijkstra 38672\n",
+            "stderr": "",
+            "passed": true
+          },
+          "frequency-map": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/frequency_map",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "frequency-map 5073\n",
+            "stderr": "",
+            "passed": true
+          },
+          "unique-set": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/unique_set",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "unique-set 20001\n",
+            "stderr": "",
+            "passed": true
+          },
+          "rune-frequency": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/rune_frequency",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "rune-frequency 270012\n",
+            "stderr": "",
+            "passed": true
+          }
+        }
+      },
+      "dependency_preparation": {
+        "schema": "marimay.sljit-inputs/1",
+        "status": "prepared",
+        "commit": "d6ec3d07dcdbf2256ccae2b84d0d8a2d019f392e",
+        "upstream_sha256": {
+          "sljit_src/allocator_src/sljitExecAllocatorApple.c": "dbf8e95ad7db9b691c68d6225f54f603f9ef1bbf41d1afee96bd8b1269432227",
+          "sljit_src/allocator_src/sljitExecAllocatorCore.c": "d8688f91e0b4f0ace65d44500e65500c743b1fbd2c1134984c95aad5e2d32336",
+          "sljit_src/allocator_src/sljitExecAllocatorFreeBSD.c": "8bf44ef0314954c9e4deb4010db3a74b12308745f714ca1fa9d403e36b033d16",
+          "sljit_src/allocator_src/sljitExecAllocatorPosix.c": "4ca3ae7d73c0ae5a7659edde562621741a5e68a81dea848054fbff22062aa6a6",
+          "sljit_src/allocator_src/sljitExecAllocatorWindows.c": "7688f9450260e975439a6afcae2b820399258fcf7ed883e5ee247763fe886168",
+          "sljit_src/allocator_src/sljitProtExecAllocatorNetBSD.c": "7ba64819eb5ff75ac8f9f98d3092ecb2132f09ae1d882dd629badc8844f41355",
+          "sljit_src/allocator_src/sljitProtExecAllocatorPosix.c": "1f2081b015f49fed120d92c8da770de7bcda8caac8cbc32cbfa4fefdf347cc01",
+          "sljit_src/allocator_src/sljitWXExecAllocatorPosix.c": "38cb003b670f91ddb224386d7026915fbe06dfbdd5f272fddfd42452e1f34448",
+          "sljit_src/allocator_src/sljitWXExecAllocatorWindows.c": "ed8405a759e254ad32fe56f8dd2b6b5c01ebade19c5e4b78992850bb0d9f8f3d",
+          "sljit_src/sljitConfig.h": "fd8a440cbc8ba79595dfc19bf1f00fcc5ad459b8e8bac0a47a64c2e21cb91cfa",
+          "sljit_src/sljitConfigCPU.h": "b07a8951dc7cef875f3dc3fc203a20c4a9df5ec391686c7adb301ae189c15bd7",
+          "sljit_src/sljitConfigInternal.h": "9f8765b228a939ef95a41e2457a9fe625087f50fd5ed3255cb3a96bb0f2a4564",
+          "sljit_src/sljitLir.c": "a8ab301281e18970ee7459e484cfb83f07abb673fdac3aafc81393ddcd8f104a",
+          "sljit_src/sljitLir.h": "dd461ec35a3dcf178a2b699b0f4c087322e899abff4e81e1a110fbcc78ef622c",
+          "sljit_src/sljitNativeALPHA_64.c": "d1220502d92f5008e34ac4220b65a037c8f41136d2e246a398708a12d2259bd4",
+          "sljit_src/sljitNativeARM_32.c": "a1f37da582f107e6afd797012a21d6c54a52317308bacd0ba9613659ce55782d",
+          "sljit_src/sljitNativeARM_64.c": "7893e0dff666137b9ff4316280fb1a36b2d35f03af9420ae00a2511161a7dc4f",
+          "sljit_src/sljitNativeARM_T2_32.c": "df81aaff61965a439968bf07d776e4df29d92b7385a3f533dd19ef2866bd91a4",
+          "sljit_src/sljitNativeLOONGARCH_64.c": "d83b3952d9392d8cc5c6aa07fe181918e0225a60087bc311eef5900912ee15c0",
+          "sljit_src/sljitNativeMIPS_32.c": "ddbc21bb6b224172a8a1a1fb91f6311071dd3e738fd7320760a8c5b04fe4717e",
+          "sljit_src/sljitNativeMIPS_64.c": "60386ef9733c38fff3fe7fffe31bc385fabf5b9eb53821693d071ea273bc94b1",
+          "sljit_src/sljitNativeMIPS_common.c": "c51fff8d080311d66c64dd80325fd427a133667f0406125d168a407984cbb468",
+          "sljit_src/sljitNativePPC_32.c": "06a6dbfe5e512a12a43834c076250fe7fa936f3c986bf9b64458961ff58aef8f",
+          "sljit_src/sljitNativePPC_64.c": "a27fbe99b5772e41b48e8afc70d719b85d870d9fc1322ed60fcdece4cafbccd7",
+          "sljit_src/sljitNativePPC_common.c": "6d06190850e92037537336d7ccc16e7500bf91e51f864d21134fc515254cae25",
+          "sljit_src/sljitNativeRISCV_32.c": "c44f14192f648f7018c9aef74511eda73a71e8668daaabb6ba2f67d7ca67151f",
+          "sljit_src/sljitNativeRISCV_64.c": "4439f2cd68a550341a8c52468cd0e261278cd802203f0926957b49760eb73d75",
+          "sljit_src/sljitNativeRISCV_common.c": "54de057349106b2e86ed7c2fa6835eead217bc5231391c71940b06f58487d124",
+          "sljit_src/sljitNativeS390X.c": "efb5bf5ca1aa2b3498473e59e2d161434e37865bfa2dd554483c03e59ddc9fad",
+          "sljit_src/sljitNativeX86_32.c": "b380192357d7e112f40a0b4aa6e1761f2b6620e36f5ae2afe8f550a2bb18769a",
+          "sljit_src/sljitNativeX86_64.c": "aff0f9523378520776a0f06fae5f7dee1b3b295fa8272802f323c7d0747aacc9",
+          "sljit_src/sljitNativeX86_common.c": "7a010d80de0f0f6c647a0532357cfe506aae540cdc71f061a883c15898088311",
+          "sljit_src/sljitSerialize.c": "76400232579d96701788a84221c29ec5a1c774615efe34183a27b1609bf52cea",
+          "sljit_src/sljitUtils.c": "a6f848e3be7939ba2e2b5304213497837b6b67dc433a63ba8a96947f6ab06c50",
+          "LICENSE": "5f216505c0f6ea3273caec89e766eef93cdeb7bbb0c429f9360116d7c938feeb"
+        },
+        "patch_sha256": "2f285475677cace772df0ce71aa63eb1e8559c5d1b5223e214913ad854c1013f",
+        "patched_arm64_sha256": "147e135d9968baab67cd31d480cfcad552f5a1cb3296c40622e78ce1cffe5368",
+        "config_sha256": "18661d042d8e1af82af8e275829bb00bc7e925503a54a50b7803a38a08021bc5"
+      },
+      "sljit_flags": "# CMAKE generated file: DO NOT EDIT!\n# Generated by \"Unix Makefiles\" Generator, CMake Version 4.4\n\n# compile C with /usr/bin/cc\nC_DEFINES = -DSLJIT_HAVE_CONFIG_PRE=1\n\nC_INCLUDES = -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/include -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/src/bytecode\n\nC_FLAGSarm64 = -g -std=c17 -arch arm64 -fsanitize=address,undefined -fno-omit-frame-pointer -O1\n\nC_FLAGS = -g -std=c17 -arch arm64 -fsanitize=address,undefined -fno-omit-frame-pointer -O1\n\n",
+      "commands": [
+        [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan",
+          "-DCMAKE_BUILD_TYPE=Debug",
+          "-DMMAY_ENABLE_SLJIT=ON",
+          "-DMMAY_SLJIT_SOURCE_DIR=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation",
+          "-DMMAY_ENABLE_ADDRESS_SANITIZER=ON",
+          "-DMMAY_ENABLE_UNDEFINED_SANITIZER=ON"
+        ],
+        [
+          "cmake",
+          "--build",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan",
+          "-j2"
+        ],
+        [
+          "ctest",
+          "--test-dir",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan",
+          "-j2",
+          "--output-on-failure",
+          "-R",
+          "mmay_c_unit_(bytecode|runtime)$|mmay_jit_|mmay_code_memory"
+        ],
+        [
+          "python3",
+          "tools/performance/sljit-prototype/check.py",
+          "--mmay",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/mmay",
+          "--benchmarks",
+          "../algorithm-benchmarks",
+          "--reference",
+          "docs/implementation/evidence/cp42-vm-preparation-comprehensive-2026-09-09.json",
+          "--output",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/all32-correctness.json"
+        ]
+      ],
+      "focused_test_details": {
+        "mmay_code_memory": "87/90 Testing: mmay_code_memory\n87/90 Test: mmay_code_memory\nCommand: \"/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/tests/c-unit/jit/mmay_code_memory\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/tests/c-unit/jit\n\"mmay_code_memory\" start time: Sep 10 14:59 +07\nOutput:\n----------------------------------------------------------\nARM-64 (LSE) 64bit (little endian + unaligned): 5 allocation failure indices, 2 platform failure indices, relocated calls/branches, immutable publication, zero allocation/map counters: passed\n<end of output>\nTest time =   0.35 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_code_memory\" end time: Sep 10 14:59 +07\n\"mmay_code_memory\" time elapsed: 00:00:00\n",
+        "mmay_jit_ownership": "88/90 Testing: mmay_jit_ownership\n88/90 Test: mmay_jit_ownership\nCommand: \"/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/tests/c-unit/jit/mmay_jit_ownership\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/tests/c-unit/jit\n\"mmay_jit_ownership\" start time: Sep 10 14:59 +07\nOutput:\n----------------------------------------------------------\ntwo-function JIT (unmetered): 12 allocation failure indices, 4 platform failure indices, exact source/fuel exit or mode rejection, zero allocation/map counters: passed\ntwo-function JIT (metered): 12 allocation failure indices, 4 platform failure indices, exact source/fuel exit or mode rejection, zero allocation/map counters: passed\n<end of output>\nTest time =   0.25 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_jit_ownership\" end time: Sep 10 14:59 +07\n\"mmay_jit_ownership\" time elapsed: 00:00:00\n",
+        "mmay_jit_fuel": "89/90 Testing: mmay_jit_fuel\n89/90 Test: mmay_jit_fuel\nCommand: \"/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/tests/c-unit/jit/mmay_jit_fuel\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/tests/c-unit/jit\n\"mmay_jit_fuel\" start time: Sep 10 14:59 +07\nOutput:\n----------------------------------------------------------\nJIT fuel mode: exact metered exit, reject every shared/finite counter in unmetered mode, zero counters: passed (284 / 176 code bytes)\n<end of output>\nTest time =   0.31 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_jit_fuel\" end time: Sep 10 14:59 +07\n\"mmay_jit_fuel\" time elapsed: 00:00:00\n",
+        "mmay_jit_pinned_inputs": "90/90 Testing: mmay_jit_pinned_inputs\n90/90 Test: mmay_jit_pinned_inputs\nCommand: \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9\" \"/workspace/Projects/Marimay/marimay-vm-parity/tests/c-unit/jit/test_prepare_sljit.py\" \"/workspace/Projects/Marimay/marimay-vm-parity/tools/prepare-sljit.py\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-asan/tests/c-unit/jit\n\"mmay_jit_pinned_inputs\" start time: Sep 10 14:59 +07\nOutput:\n----------------------------------------------------------\n......\n----------------------------------------------------------------------\nRan 6 tests in 0.479s\n\nOK\n<end of output>\nTest time =   0.57 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_jit_pinned_inputs\" end time: Sep 10 14:59 +07\n\"mmay_jit_pinned_inputs\" time elapsed: 00:00:00\n"
+      }
+    },
+    "x86-64-rosetta": {
+      "build_directory": "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86",
+      "compiler_sha256": "13ed9e5561d73c47efcabde8f06feab88505d510ec8eae2410cffc5d62e5f5e2",
+      "test_count": 5,
+      "test_log": "Test project /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86\n    Start  7: mmay_c_unit_bytecode\n    Start 87: mmay_code_memory\n1/5 Test #87: mmay_code_memory .................   Passed    1.90 sec\n    Start 88: mmay_jit_ownership\n2/5 Test #88: mmay_jit_ownership ...............   Passed    0.59 sec\n    Start 89: mmay_jit_fuel\n3/5 Test #89: mmay_jit_fuel ....................   Passed    0.59 sec\n    Start 90: mmay_jit_pinned_inputs\n4/5 Test #90: mmay_jit_pinned_inputs ...........   Passed    0.65 sec\n5/5 Test  #7: mmay_c_unit_bytecode .............   Passed   28.55 sec\n\n100% tests passed out of 5\n\nLabel Time Summary:\nbytecode    =  28.55 sec*proc (1 test)\nc-unit      =  28.55 sec*proc (1 test)\n\nTotal Test time (real) =  28.56 sec\n",
+      "test_log_sha256": "350fae8348dc862504c48cd3f5d6610c71ce8d75f53dd7b5ee8861c5a7845d0b",
+      "cmake_cache_selected": [
+        "CMAKE_BUILD_TYPE:STRING=Release",
+        "CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc",
+        "CMAKE_OSX_ARCHITECTURES:STRING=x86_64",
+        "MMAY_ENABLE_ADDRESS_SANITIZER:BOOL=OFF",
+        "MMAY_ENABLE_SLJIT:BOOL=ON",
+        "MMAY_ENABLE_UNDEFINED_SANITIZER:BOOL=OFF",
+        "MMAY_SLJIT_SOURCE_DIR:PATH=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation",
+        "MMAY_WARNINGS_AS_ERRORS:BOOL=ON"
+      ],
+      "bootstrap_flags": "# CMAKE generated file: DO NOT EDIT!\n# Generated by \"Unix Makefiles\" Generator, CMake Version 4.4\n\n# compile C with /usr/bin/cc\nC_DEFINES = -DMMAY_HAVE_SLJIT=1\n\nC_INCLUDES = -I/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/generated -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/include -I/workspace/Projects/Marimay/marimay-vm-parity/runtime/include -isystem /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay-sljit-inputs/sljit_src\n\nC_FLAGSx86_64 = -O3 -DNDEBUG -std=c17 -arch x86_64 -fno-fast-math -frounding-math -ffp-contract=off -fexcess-precision=standard -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror\n\nC_FLAGS = -O3 -DNDEBUG -std=c17 -arch x86_64 -fno-fast-math -frounding-math -ffp-contract=off -fexcess-precision=standard -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror\n\n# Custom include directories: CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_jit_sljit.c.o_INCLUDE_DIRECTORIES = /workspace/Projects/Marimay/marimay-vm-parity/bootstrap/src/bytecode\n\n# Custom defines: CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_jit_sljit.c.o_DEFINES = SLJIT_HAVE_CONFIG_PRE=1\n\n",
+      "correctness": {
+        "schema": "marimay.vm-correctness-replay/1",
+        "status": "passed",
+        "note": "Correctness replay only; no performance measurements.",
+        "reference_sha256": "37b14b6b85962f7c57a2929957f3fccdb6a9fdd22d6eb8c7425f5d9b255d9f57",
+        "source_sha256": {
+          "benchmarks/catalog_bench.py": "fb508fd45e2e22fa78136089e5c3720ed4d7cd54eb5bbdde56a7c5cc4a0ba1eb",
+          "benchmarks/catalog_bun.py": "f29b5affddd12cff292b9c4acbbd0b8acc2fb4f3337e27fb2e34c317f6f470f7",
+          "benchmarks/catalog_contract.py": "d3f35414890bb6ee531f92818a0abbfee116a03bc21b88ae2490edef43c11c05",
+          "benchmarks/catalog_measure.py": "4d14a068121795efca6d9f4dd62232a97e2f23a5b8c8d5f8609f5b5ee2169fdc",
+          "benchmarks/catalog_oracle.py": "938be6450f701d39ced4fe7fede5cf52c19467b3960618389d650440a6068fe6",
+          "benchmarks/catalog_report.py": "ffb9c988ad073204940621514276e2ba235aafe8b915c1a1789e11d8f2df2e89",
+          "benchmarks/catalog_session.py": "d5bee8e089927fa9d0e37b469f959689b772e1ffa4c67528e255e5693ee6a360",
+          "benchmarks/catalog_snapshot.py": "9df56623e96d77e112842b23e4342a857a956ceea14cd990506517851c7b7f3d",
+          "benchmarks/catalog_workloads.json": "41827b45029f4213033bff20086deb2e9b940d70b3303e3562e5c68ec6f6b803",
+          "benchmarks/marimay-toolchain.json": "5f4e299dc22372d9ac6f3eb2d824ffc53e916cc136183fb585e637c32ed57ee4",
+          "benchmarks/marimay_toolchain.py": "524e7730d291068744182a7ce1d0901f8f1e4ea8486e5231e672908003d720c4",
+          "benchmarks/perf_environment.py": "17366997c959e8c7695b2122a3c11d95f1f60c0efaa6bd5761c2bc3ec4b71cdb",
+          "benchmarks/perf_protocol.py": "8033589224b9ae58394d13877f0752c13e71ec5f70afc06465a81d1682618e64",
+          "benchmarks/performance_protocol.json": "a94f5be850eb26fd821b3630b16254f145a8e30c1b8e7a63fd7230ed761dd4a8",
+          "go/catalog/catalog_test.go": "b4679b643d4c478c0727c3618697ba9965f427824d92baeae6df41af59bba41d",
+          "go/catalog/collections.go": "ee6c4ac9f5eab4009b8e580a24e1f589a9754052b28b535dd2b1d617d30dab0b",
+          "go/catalog/graphs.go": "3ab5594a58dd60caf21e8ba8577e084b2f7509e4329b7934002465b125008a7e",
+          "go/catalog/model.go": "10bec252a16654bbecfbe5a0803efd382c859a9848bf8722d28a85531d51b9ab",
+          "go/catalog/objects.go": "e0531a49606ccd1b9167a9610fe502a0b057c270e562468d1d4a64ff5df117ba",
+          "go/catalog/text.go": "5373ed8a62e748e4ed9ce9a59ba5ef1f835aa18a4a3302d84253ea24819e1247",
+          "go/cmd/catalog/main.go": "f89b40a58db273064f8802a908ad1079ae16b9b238af0a8ec8caf7548c75ff6d",
+          "go/go.mod": "519344fdcec7e981381cb2d6781b014eb1d8f0f9b92b3a988347142aef747475",
+          "marimay/catalog/core/catalog_test.my": "34f5f4095b019f6989daed51dc48686ab917ff43d7f0f1ba991e6621a8f3d865",
+          "marimay/catalog/core/checksum.my": "0843cb69f07177252259e4298a49330a347d44a88fa9c2291ca7c2e6759e89f7",
+          "marimay/catalog/core/collections.my": "49df9baabf06487021606bd33a98f4bf79bfefa394c1e7fb770fb3679069a78a",
+          "marimay/catalog/core/graphs.my": "95ecb3d8e6a48adfe14696b57d4fa860e62fa7aad0bb6e018bde5a155d16bbae",
+          "marimay/catalog/core/model.my": "fa682ce371f167b1054b51255580d774c01d231c4fcf56e5cb0a37449661a14b",
+          "marimay/catalog/core/objects.my": "0951ea8e5fcd57586ed66ff93f57cd64b1c663b02d0f8fc87ee209f6974c7c52",
+          "marimay/catalog/core/text.my": "424bf8d1e2cb00bf1acf6b32dd7e826350442eaeca861e77fd64cc074e50feb1",
+          "marimay/catalog/main.my": "f198cecd2490928af0ca585ef99390e66f34d4294ad2da71f858a21883e2a326",
+          "marimay/mmay.mod": "561867408c89e2b5855f27134f5e5b84b4cf655a02d195cd3c4a5a4917837345",
+          "rust/Cargo.lock": "1c3b1ca3d3783a6861a2c35745303d8845e306deed805bda68a3029d85a27891",
+          "rust/Cargo.toml": "f9a86632e519d2ec45dc96f727defedda35cceeea7bb30f260e5d200f7ee4a68",
+          "rust/src/bin/catalog.rs": "6cc82483af4b5d8464261ce5c1b00adb1e1d7cc15ea2390a6818add7eaee6328",
+          "rust/src/catalog/collections.rs": "a861e9d35ae3d8bb9ecb8774cc442711428ea4e85b267b7daa70854296494ff9",
+          "rust/src/catalog/graphs.rs": "4e6297879f27d4631f59b6b8ca0b6b52f355d5b4db05729807aa7e2bc4ca59bb",
+          "rust/src/catalog/mod.rs": "b7c75c3c1a8af6f997366afc966e2cc53ee4d2c670bc5d6bcca5c3f33139b93c",
+          "rust/src/catalog/objects.rs": "1754afb88b4475bb7700b61ac42bda887b69872c3e70d150fb18f860c89208fa",
+          "rust/src/catalog/text.rs": "c934a5b37e44132df3474eb4bd83aa572275bd69402ab55ef558df817ce2e29c",
+          "rust/src/lib.rs": "bcbc3e8fd7fc6ed1100eefdf18e28c4890e693eae5bba179db38f3deef58527f",
+          "typescript/src/benchmark.ts": "cec4be668f1f710262bf92431cf4ce1edc2930a11248d996d4c44d60e7b1abf5",
+          "typescript/src/catalog/collections.ts": "623fd2d8fd1c2c5a2b59432ca57fbdceae04215571a708906ab4ed990fc11ad1",
+          "typescript/src/catalog/graphs.ts": "26b5cc1db790738c33b436ef1e4875a8aecd8f3980a442d35765e70e5fca4a7a",
+          "typescript/src/catalog/main.ts": "c7e244b480f08175e2a365ee84c1a6f42a9c737248cab4e5a479814366662671",
+          "typescript/src/catalog/model.ts": "80ef26b6d8ff864aa94f71864231cbd906a8e05976f7adee3b60bcaa1b3d6acd",
+          "typescript/src/catalog/objects.ts": "167f1f2b852147d21bde5134ffb49b6f263ba727580b3383e12c7b4e7804e2b1",
+          "typescript/src/catalog/text.ts": "9f4006cd1cae99424d7294a0dca27264a55614c96d6274f4c96feee754f02719",
+          "typescript/src/counting.ts": "625b7842a6b1b69010daa6bdc78cedec2a0d4df73b55b324c8d812b3f5ec87c2",
+          "typescript/src/graphs.ts": "56d1901a1074f521b306990edee01f1a97c99737cb025d30e8603193863ec3f4",
+          "typescript/src/sorting.ts": "b765864b8e5f475641ad07fde9a882d689ce88249dcea0f791046e8591abf282",
+          "typescript/src/structures.ts": "8feba332c65846607d4ce5d714b823a4704c11525bdce9b49db1ce15c2d30a3d",
+          "benchmarks/equivalence.json": "64ddc892dcac9a30a9e4b86aa669d1dff5a12aea65c3f353e180958f23a8c27a",
+          "benchmarks/expanded_workloads.json": "ef6e688152b4bfe2906dd7ef22f285fc8a94d900d90c8518b0698a4da1aa1188",
+          "go/algorithms_test.go": "bf9a0344e4b29e363403cb3b4874056c18f545c3456c156e5b2155be149801ac",
+          "go/cmd/benchmark/main.go": "fc67e17464c835650cb14e412e791ce9b023055ee421e1a4b9a6b126e010fcf7",
+          "go/counting/counting.go": "88d4a0346b5694f3cb9f041621f6c2313226da3fd2580df3b0c18d0f01440302",
+          "go/graphs/bfs.go": "46a827da59512cd261508821ac40125eac03f56396aa9a55cb57a23ea75e46b6",
+          "go/graphs/dijkstra.go": "d30569c0658320fd09c664eefec98a2f1c221be9b4e74efa6a3a6df154cffe17",
+          "go/main.go": "247eec5279f2bfb27a59f3db75c0b70908d10ebd015787e0b9c89656d8d88b38",
+          "go/sorting/heap.go": "d3932509370faa3e7c6e284c91d0bc2556306549aeb8be9f4d404e6251fabaea",
+          "go/sorting/insertion.go": "42df19a215a3acf271d8ced34012f3060e8cd3d546687314ecec8a72c19a7fc7",
+          "go/structures/dsu.go": "f0d999fc2eb8c2df8a6d757b9a3034ff21efbbb866f7d0a9fde3073e34dda3d0",
+          "go/structures/heap.go": "cc642696fdb1a1720b5074aa6ecca0fa2ae62940177028ba35c9ea37bf23cda5",
+          "go/structures/queue.go": "8292c88a97d3089c10e013e6735ad2c683e8f8e417b09b78a7d87a9b65781a7c",
+          "go/structures/stack.go": "c015b0780747c65499790f0222c848c7bd5ff00cd407c15c6c63401bc5473db9",
+          "marimay/algorithms_test.my": "8d6ab04952980c30f43539d1c90339202cdfc94b0a331fd0cea3430f11f9a3be",
+          "marimay/benchmarks/bfs/main.my": "90681525821fc4a66210483f8e7895621c1e1d51aeb62528a5d9de7da4d76e77",
+          "marimay/benchmarks/core/benchmarks.my": "0dc9f987328f786ff9e143403e719be0e5ea2edcf2db97366086f2210fdec413",
+          "marimay/benchmarks/dijkstra/main.my": "266964cac17441cd340bec2c86667a322854915104de723ed7cfed68179a7150",
+          "marimay/benchmarks/dsu/main.my": "fc021778eccbc16e90c33dc503ddb07a4c80048883dc6e111584c19a4a6dbeb2",
+          "marimay/benchmarks/frequency_map/main.my": "e284b6301321ba31fcf55566fbfaaf6af805bba0ccb529a0b757e6fae17df98c",
+          "marimay/benchmarks/heap_sort/main.my": "444d2540e294ba35053cb4a93ee9fcdf3dc6b13e9074996773c0c103130d0125",
+          "marimay/benchmarks/insertion/main.my": "eb5e8bea75429f20730c89658b18601345b245461d4e83cb0048baa17d156532",
+          "marimay/benchmarks/min_heap/main.my": "391650c1681458a7ed12b5460fba0cb0ceb780703d00db06e960f1f9bfd659fb",
+          "marimay/benchmarks/queue/main.my": "366db40c9e2f556a0ba0a7bca3159d56b08a8cd241f9495e97d2fbffcd5441eb",
+          "marimay/benchmarks/rune_frequency/main.my": "c2cc6b56cf586bd0722ea1c3b0400345256aa3847be002a8e03e60a23e65bb7b",
+          "marimay/benchmarks/stack/main.my": "819a2622f736a33b4998fd651d4684b1834886111627b43415240ea3d1f0e0e5",
+          "marimay/benchmarks/unique_set/main.my": "858d40300ca95310692860f75e230dcacf59a180d93b69c8d1380a11b95e53d6",
+          "marimay/counting/counting.my": "56f55b1f7d4c5258fb98717d20e44f8e5afe8cd5e03a54e658cbb8d0fb2962c1",
+          "marimay/features/core/features.my": "85dbea0608f6a5fe9b25ccaad4e8ced23cd70a1af0bac582e616b5de4d9855ac",
+          "marimay/features/dynamic_text/main.my": "ff252d8e09d4cd270de8c7eb121e262b58005c09fe74d511ca1816785afc2ad5",
+          "marimay/graphs/bfs.my": "9311d4aee89a63c448264fec7bed545f6b8e6a7d3ff8d09ed546132d5ceb966c",
+          "marimay/graphs/dijkstra.my": "43497061eadd720c03e08bc9b67dbce2d63ab416086f8a0b4c4d68b234395ecb",
+          "marimay/main.my": "62fc52a22231def9d3d9217d3bb9b87b76518188e15a8c1bcffd8e3cacba08ce",
+          "marimay/probes/checked_loop/main.my": "1061a1f2a0b9702b9181603979115ea38c15df2c6deea2c7e93b8842faa29ea2",
+          "marimay/probes/core/probes.my": "13fbcfed30cece00ec5c8feb0d2b806fac8ee8445a85e43319df5c9af32e5d3c",
+          "marimay/probes/density/main.my": "5d36768e6cf1da81cc70ffa35480a7c1953ee5e6c1cbe6e44ea001678dd75864",
+          "marimay/probes/growth/main.my": "c5631ef1a046d6f1e5764686bcba274794229c5a36a9720a1c1ab08847bf156e",
+          "marimay/probes/nested_traversal/main.my": "9512d7562d601bf2593f5b599a68adabe463351123b35cd481ae200c17d9b520",
+          "marimay/probes/proven_bounds/main.my": "cf75eaf443f52b11e08e74d7b0b5019fd0368dfbf085e4d8b6542e889b48f73a",
+          "marimay/probes/reserved_growth/main.my": "07f9adbaa5c0c3134f739c25d9cc40518901a16e2e82224c05372931d4e3446d",
+          "marimay/probes/scalar_get/main.my": "ac2323bbf188dba1180ec832e8ae9511bd00cdf1436a34d181324068d6e36e29",
+          "marimay/probes/scalar_set/main.my": "053372b108e98513c58e6abd871b8729aa8c9e787dcc09c6f0be2609c3a7d868",
+          "marimay/probes/unproven_bounds/main.my": "ec80dc54a439d584574a353fedf5708a2589dbe0a7241ef74b0769a8194409a3",
+          "marimay/sorting/heap.my": "c9733afb52a68dbba2a2af6b24f3a710c3272a07a45c4e396d3e755f033b3e9a",
+          "marimay/sorting/insertion.my": "0cfd33d99a284121ae15c52e836db106ced35768da168b31dde394ecb0bf8abc",
+          "marimay/structures/dsu.my": "197a5723205b6b0383d2f6d24b839bafdeea6cfcfbf29f54a359df6e49296117",
+          "marimay/structures/heap.my": "6955b87473b5f606bfa1d0390d21826c604ec22dd78b56134b654683951f6bc7",
+          "marimay/structures/queue.my": "891c3c0cb2b3545896c39d15bfbd618d21cc745cd64056372f3ec6a00167e782",
+          "marimay/structures/stack.my": "b83fb25f76326e84e57506f7aae72747454594d2008b38ef2124b0ff005bf0c7",
+          "rust/src/bin/benchmark.rs": "c3a8b98326aa1f74f6c9b3a1d5dd7e3c602113e74a39045126a7bbd8a9c4b081",
+          "rust/src/counting.rs": "4048dd9efc57a11e847147e2887e887dce8552c9142059edfb600805131b57ba",
+          "rust/src/graphs/bfs.rs": "dbad73628cacbb3477be7d3e1f3c942a1115957576acba4d5b0f4e9edffa9658",
+          "rust/src/graphs/dijkstra.rs": "a6e223bae6025405f994f773d862d9bac3e0b93c2858d7226b696e1574caf85f",
+          "rust/src/graphs/mod.rs": "6941c3a3a16d2f09110c5d1bb8afd60cfccb26ec087f7dc1f8a2a4179c1c414e",
+          "rust/src/main.rs": "0cda49792fd44d139eea651bbcbd26b601ec5267e0ac12936be4376449862088",
+          "rust/src/sorting/heap.rs": "b9a77a947da088985bcce692c166a2206865f5fe793c4c27488c1d4f8ae9f6e8",
+          "rust/src/sorting/insertion.rs": "a3b87671750cd47c10566a90886776c0d8a42a631da5bb823fbb9f3c6cc84cbb",
+          "rust/src/sorting/mod.rs": "c54522f01f83c0209c3b1926ddf1cd60825fd024415ea5f12c3f578df623c3a8",
+          "rust/src/structures/dsu.rs": "e04eb2f008482498c5b67823945a14480ba58c3f583302cc73b2526f71865799",
+          "rust/src/structures/heap.rs": "d20c7e17de585f3055cb2eb47346893acfc8dfd5a3dc2e10e9839c763663eda3",
+          "rust/src/structures/mod.rs": "8bf0379fec682537e05d3e115fd0884ca2644b4ac4ff1a4cfa8fcf13880139d6",
+          "rust/src/structures/queue.rs": "532380be498930784223f251ba643f9eecccf3fa7d167d60e8531aab8666b0b4",
+          "rust/src/structures/stack.rs": "36f954da0974e5de1e556403705a0c374f83db841a463f472e77257d08b0df0a"
+        },
+        "compiler_sha256": "13ed9e5561d73c47efcabde8f06feab88505d510ec8eae2410cffc5d62e5f5e2",
+        "workloads": {
+          "title-search-10k": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "title-search-10k",
+              "10000",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "title-search-10k 484208\n",
+            "stderr": "",
+            "passed": true
+          },
+          "title-search-100k": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "title-search-100k",
+              "100000",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "title-search-100k 4794208\n",
+            "stderr": "",
+            "passed": true
+          },
+          "normalize-title": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "normalize-title",
+              "10000",
+              "1"
+            ],
+            "exit_code": 0,
+            "stdout": "normalize-title 222500\n",
+            "stderr": "",
+            "passed": true
+          },
+          "word-frequency": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "word-frequency",
+              "10000",
+              "10"
+            ],
+            "exit_code": 0,
+            "stdout": "word-frequency 2925090\n",
+            "stderr": "",
+            "passed": true
+          },
+          "report-builder": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "report-builder",
+              "10000",
+              "1"
+            ],
+            "exit_code": 0,
+            "stdout": "report-builder 762303259\n",
+            "stderr": "",
+            "passed": true
+          },
+          "report-concat": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "report-concat",
+              "10000",
+              "1"
+            ],
+            "exit_code": 0,
+            "stdout": "report-concat 762303259\n",
+            "stderr": "",
+            "passed": true
+          },
+          "map-int": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "map-int",
+              "4096",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "map-int 268505088\n",
+            "stderr": "",
+            "passed": true
+          },
+          "map-string": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "map-string",
+              "4096",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "map-string 268505088\n",
+            "stderr": "",
+            "passed": true
+          },
+          "map-string-book": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "map-string-book",
+              "10000",
+              "4"
+            ],
+            "exit_code": 0,
+            "stdout": "map-string-book 203013924\n",
+            "stderr": "",
+            "passed": true
+          },
+          "set-string-churn": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "set-string-churn",
+              "4096",
+              "8"
+            ],
+            "exit_code": 0,
+            "stdout": "set-string-churn 134325504\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-match": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-match",
+              "10000",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-match 22386912\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-dotcall": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-dotcall",
+              "10000",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-dotcall 6180000\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-interface": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-interface",
+              "10000",
+              "32"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-interface 6180000\n",
+            "stderr": "",
+            "passed": true
+          },
+          "record-reference-copy": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "record-reference-copy",
+              "1024",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "record-reference-copy 69705728\n",
+            "stderr": "",
+            "passed": true
+          },
+          "record-create": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "record-create",
+              "1024",
+              "128"
+            ],
+            "exit_code": 0,
+            "stdout": "record-create 69574656\n",
+            "stderr": "",
+            "passed": true
+          },
+          "array-grow": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "array-grow",
+              "100000",
+              "4"
+            ],
+            "exit_code": 0,
+            "stdout": "array-grow 201582740\n",
+            "stderr": "",
+            "passed": true
+          },
+          "array-reserved": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "array-reserved",
+              "100000",
+              "4"
+            ],
+            "exit_code": 0,
+            "stdout": "array-reserved 201582740\n",
+            "stderr": "",
+            "passed": true
+          },
+          "bfs-int": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "bfs-int",
+              "4096",
+              "16"
+            ],
+            "exit_code": 0,
+            "stdout": "bfs-int 734834361\n",
+            "stderr": "",
+            "passed": true
+          },
+          "bfs-record": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "bfs-record",
+              "4096",
+              "16"
+            ],
+            "exit_code": 0,
+            "stdout": "bfs-record 734834361\n",
+            "stderr": "",
+            "passed": true
+          },
+          "catalog-pipeline": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "catalog-pipeline",
+              "10000",
+              "16"
+            ],
+            "exit_code": 0,
+            "stdout": "catalog-pipeline 8589600\n",
+            "stderr": "",
+            "passed": true
+          },
+          "parse-result": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/catalog",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864",
+              "--",
+              "parse-result",
+              "10000",
+              "8"
+            ],
+            "exit_code": 0,
+            "stdout": "parse-result 30188104\n",
+            "stderr": "",
+            "passed": true
+          },
+          "insertion": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/insertion",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "insertion 999956059\n",
+            "stderr": "",
+            "passed": true
+          },
+          "heap-sort": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/heap_sort",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "heap-sort 999995320\n",
+            "stderr": "",
+            "passed": true
+          },
+          "stack": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/stack",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "stack 498055372\n",
+            "stderr": "",
+            "passed": true
+          },
+          "queue": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/queue",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "queue 498106199\n",
+            "stderr": "",
+            "passed": true
+          },
+          "min-heap": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/min_heap",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "min-heap 405398755\n",
+            "stderr": "",
+            "passed": true
+          },
+          "dsu": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/dsu",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "dsu 21343152\n",
+            "stderr": "",
+            "passed": true
+          },
+          "bfs": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/bfs",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "bfs 715800\n",
+            "stderr": "",
+            "passed": true
+          },
+          "dijkstra": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/dijkstra",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "dijkstra 38672\n",
+            "stderr": "",
+            "passed": true
+          },
+          "frequency-map": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/frequency_map",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "frequency-map 5073\n",
+            "stderr": "",
+            "passed": true
+          },
+          "unique-set": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/unique_set",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "unique-set 20001\n",
+            "stderr": "",
+            "passed": true
+          },
+          "rune-frequency": {
+            "command": [
+              "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+              "run",
+              "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/rune_frequency",
+              "--engine",
+              "vm",
+              "--max-heap-bytes",
+              "67108864"
+            ],
+            "exit_code": 0,
+            "stdout": "rune-frequency 270012\n",
+            "stderr": "",
+            "passed": true
+          }
+        }
+      },
+      "dependency_preparation": {
+        "schema": "marimay.sljit-inputs/1",
+        "status": "prepared",
+        "commit": "d6ec3d07dcdbf2256ccae2b84d0d8a2d019f392e",
+        "upstream_sha256": {
+          "sljit_src/allocator_src/sljitExecAllocatorApple.c": "dbf8e95ad7db9b691c68d6225f54f603f9ef1bbf41d1afee96bd8b1269432227",
+          "sljit_src/allocator_src/sljitExecAllocatorCore.c": "d8688f91e0b4f0ace65d44500e65500c743b1fbd2c1134984c95aad5e2d32336",
+          "sljit_src/allocator_src/sljitExecAllocatorFreeBSD.c": "8bf44ef0314954c9e4deb4010db3a74b12308745f714ca1fa9d403e36b033d16",
+          "sljit_src/allocator_src/sljitExecAllocatorPosix.c": "4ca3ae7d73c0ae5a7659edde562621741a5e68a81dea848054fbff22062aa6a6",
+          "sljit_src/allocator_src/sljitExecAllocatorWindows.c": "7688f9450260e975439a6afcae2b820399258fcf7ed883e5ee247763fe886168",
+          "sljit_src/allocator_src/sljitProtExecAllocatorNetBSD.c": "7ba64819eb5ff75ac8f9f98d3092ecb2132f09ae1d882dd629badc8844f41355",
+          "sljit_src/allocator_src/sljitProtExecAllocatorPosix.c": "1f2081b015f49fed120d92c8da770de7bcda8caac8cbc32cbfa4fefdf347cc01",
+          "sljit_src/allocator_src/sljitWXExecAllocatorPosix.c": "38cb003b670f91ddb224386d7026915fbe06dfbdd5f272fddfd42452e1f34448",
+          "sljit_src/allocator_src/sljitWXExecAllocatorWindows.c": "ed8405a759e254ad32fe56f8dd2b6b5c01ebade19c5e4b78992850bb0d9f8f3d",
+          "sljit_src/sljitConfig.h": "fd8a440cbc8ba79595dfc19bf1f00fcc5ad459b8e8bac0a47a64c2e21cb91cfa",
+          "sljit_src/sljitConfigCPU.h": "b07a8951dc7cef875f3dc3fc203a20c4a9df5ec391686c7adb301ae189c15bd7",
+          "sljit_src/sljitConfigInternal.h": "9f8765b228a939ef95a41e2457a9fe625087f50fd5ed3255cb3a96bb0f2a4564",
+          "sljit_src/sljitLir.c": "a8ab301281e18970ee7459e484cfb83f07abb673fdac3aafc81393ddcd8f104a",
+          "sljit_src/sljitLir.h": "dd461ec35a3dcf178a2b699b0f4c087322e899abff4e81e1a110fbcc78ef622c",
+          "sljit_src/sljitNativeALPHA_64.c": "d1220502d92f5008e34ac4220b65a037c8f41136d2e246a398708a12d2259bd4",
+          "sljit_src/sljitNativeARM_32.c": "a1f37da582f107e6afd797012a21d6c54a52317308bacd0ba9613659ce55782d",
+          "sljit_src/sljitNativeARM_64.c": "7893e0dff666137b9ff4316280fb1a36b2d35f03af9420ae00a2511161a7dc4f",
+          "sljit_src/sljitNativeARM_T2_32.c": "df81aaff61965a439968bf07d776e4df29d92b7385a3f533dd19ef2866bd91a4",
+          "sljit_src/sljitNativeLOONGARCH_64.c": "d83b3952d9392d8cc5c6aa07fe181918e0225a60087bc311eef5900912ee15c0",
+          "sljit_src/sljitNativeMIPS_32.c": "ddbc21bb6b224172a8a1a1fb91f6311071dd3e738fd7320760a8c5b04fe4717e",
+          "sljit_src/sljitNativeMIPS_64.c": "60386ef9733c38fff3fe7fffe31bc385fabf5b9eb53821693d071ea273bc94b1",
+          "sljit_src/sljitNativeMIPS_common.c": "c51fff8d080311d66c64dd80325fd427a133667f0406125d168a407984cbb468",
+          "sljit_src/sljitNativePPC_32.c": "06a6dbfe5e512a12a43834c076250fe7fa936f3c986bf9b64458961ff58aef8f",
+          "sljit_src/sljitNativePPC_64.c": "a27fbe99b5772e41b48e8afc70d719b85d870d9fc1322ed60fcdece4cafbccd7",
+          "sljit_src/sljitNativePPC_common.c": "6d06190850e92037537336d7ccc16e7500bf91e51f864d21134fc515254cae25",
+          "sljit_src/sljitNativeRISCV_32.c": "c44f14192f648f7018c9aef74511eda73a71e8668daaabb6ba2f67d7ca67151f",
+          "sljit_src/sljitNativeRISCV_64.c": "4439f2cd68a550341a8c52468cd0e261278cd802203f0926957b49760eb73d75",
+          "sljit_src/sljitNativeRISCV_common.c": "54de057349106b2e86ed7c2fa6835eead217bc5231391c71940b06f58487d124",
+          "sljit_src/sljitNativeS390X.c": "efb5bf5ca1aa2b3498473e59e2d161434e37865bfa2dd554483c03e59ddc9fad",
+          "sljit_src/sljitNativeX86_32.c": "b380192357d7e112f40a0b4aa6e1761f2b6620e36f5ae2afe8f550a2bb18769a",
+          "sljit_src/sljitNativeX86_64.c": "aff0f9523378520776a0f06fae5f7dee1b3b295fa8272802f323c7d0747aacc9",
+          "sljit_src/sljitNativeX86_common.c": "7a010d80de0f0f6c647a0532357cfe506aae540cdc71f061a883c15898088311",
+          "sljit_src/sljitSerialize.c": "76400232579d96701788a84221c29ec5a1c774615efe34183a27b1609bf52cea",
+          "sljit_src/sljitUtils.c": "a6f848e3be7939ba2e2b5304213497837b6b67dc433a63ba8a96947f6ab06c50",
+          "LICENSE": "5f216505c0f6ea3273caec89e766eef93cdeb7bbb0c429f9360116d7c938feeb"
+        },
+        "patch_sha256": "2f285475677cace772df0ce71aa63eb1e8559c5d1b5223e214913ad854c1013f",
+        "patched_arm64_sha256": "147e135d9968baab67cd31d480cfcad552f5a1cb3296c40622e78ce1cffe5368",
+        "config_sha256": "18661d042d8e1af82af8e275829bb00bc7e925503a54a50b7803a38a08021bc5"
+      },
+      "sljit_flags": "# CMAKE generated file: DO NOT EDIT!\n# Generated by \"Unix Makefiles\" Generator, CMake Version 4.4\n\n# compile C with /usr/bin/cc\nC_DEFINES = -DSLJIT_HAVE_CONFIG_PRE=1\n\nC_INCLUDES = -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/include -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/src/bytecode\n\nC_FLAGSx86_64 = -O3 -DNDEBUG -std=c17 -arch x86_64\n\nC_FLAGS = -O3 -DNDEBUG -std=c17 -arch x86_64\n\n",
+      "commands": [
+        [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86",
+          "-DCMAKE_BUILD_TYPE=Release",
+          "-DMMAY_ENABLE_SLJIT=ON",
+          "-DMMAY_SLJIT_SOURCE_DIR=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation",
+          "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+        ],
+        [
+          "cmake",
+          "--build",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86",
+          "-j2"
+        ],
+        [
+          "ctest",
+          "--test-dir",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86",
+          "-j2",
+          "--output-on-failure",
+          "-R",
+          "mmay_c_unit_bytecode|mmay_jit_|mmay_code_memory"
+        ],
+        [
+          "python3",
+          "tools/performance/sljit-prototype/check.py",
+          "--mmay",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/mmay",
+          "--benchmarks",
+          "../algorithm-benchmarks",
+          "--reference",
+          "docs/implementation/evidence/cp42-vm-preparation-comprehensive-2026-09-09.json",
+          "--output",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/all32-correctness.json"
+        ]
+      ],
+      "focused_test_details": {
+        "mmay_code_memory": "87/90 Testing: mmay_code_memory\n87/90 Test: mmay_code_memory\nCommand: \"/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/tests/c-unit/jit/mmay_code_memory\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/tests/c-unit/jit\n\"mmay_code_memory\" start time: Sep 10 14:58 +07\nOutput:\n----------------------------------------------------------\nx86 64bit (little endian + unaligned): 5 allocation failure indices, 2 platform failure indices, relocated calls/branches, immutable publication, zero allocation/map counters: passed\n<end of output>\nTest time =   1.90 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_code_memory\" end time: Sep 10 14:58 +07\n\"mmay_code_memory\" time elapsed: 00:00:01\n",
+        "mmay_jit_ownership": "88/90 Testing: mmay_jit_ownership\n88/90 Test: mmay_jit_ownership\nCommand: \"/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/tests/c-unit/jit/mmay_jit_ownership\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/tests/c-unit/jit\n\"mmay_jit_ownership\" start time: Sep 10 14:58 +07\nOutput:\n----------------------------------------------------------\ntwo-function JIT (unmetered): 12 allocation failure indices, 4 platform failure indices, exact source/fuel exit or mode rejection, zero allocation/map counters: passed\ntwo-function JIT (metered): 12 allocation failure indices, 4 platform failure indices, exact source/fuel exit or mode rejection, zero allocation/map counters: passed\n<end of output>\nTest time =   0.59 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_jit_ownership\" end time: Sep 10 14:58 +07\n\"mmay_jit_ownership\" time elapsed: 00:00:00\n",
+        "mmay_jit_fuel": "89/90 Testing: mmay_jit_fuel\n89/90 Test: mmay_jit_fuel\nCommand: \"/workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/tests/c-unit/jit/mmay_jit_fuel\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/tests/c-unit/jit\n\"mmay_jit_fuel\" start time: Sep 10 14:58 +07\nOutput:\n----------------------------------------------------------\nJIT fuel mode: exact metered exit, reject every shared/finite counter in unmetered mode, zero counters: passed (207 / 133 code bytes)\n<end of output>\nTest time =   0.59 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_jit_fuel\" end time: Sep 10 14:58 +07\n\"mmay_jit_fuel\" time elapsed: 00:00:00\n",
+        "mmay_jit_pinned_inputs": "90/90 Testing: mmay_jit_pinned_inputs\n90/90 Test: mmay_jit_pinned_inputs\nCommand: \"/Library/Developer/CommandLineTools/Library/Frameworks/Python3.framework/Versions/3.9/bin/python3.9\" \"/workspace/Projects/Marimay/marimay-vm-parity/tests/c-unit/jit/test_prepare_sljit.py\" \"/workspace/Projects/Marimay/marimay-vm-parity/tools/prepare-sljit.py\"\nDirectory: /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated-x86/tests/c-unit/jit\n\"mmay_jit_pinned_inputs\" start time: Sep 10 14:58 +07\nOutput:\n----------------------------------------------------------\n......\n----------------------------------------------------------------------\nRan 6 tests in 0.497s\n\nOK\n<end of output>\nTest time =   0.65 sec\n----------------------------------------------------------\nTest Passed.\n\"mmay_jit_pinned_inputs\" end time: Sep 10 14:58 +07\n\"mmay_jit_pinned_inputs\" time elapsed: 00:00:00\n"
+      }
+    },
+    "arm64-interpreter": {
+      "build_directory": "/workspace/Projects/Marimay/marimay-vm-parity/build/release",
+      "compiler_sha256": "0f1f65ee914aa680ed5fd7e7b4b69cec49a3b20aa916a503f6a3f9a441d4fce9",
+      "test_count": 86,
+      "test_log": "Test project /workspace/Projects/Marimay/marimay-vm-parity/build/release\n      Start 70: mmay_cp38_json\n 1/86 Test #70: mmay_cp38_json ...................   Passed   10.16 sec\n      Start 47: mmay_cp37_cli_parser\n 2/86 Test #47: mmay_cp37_cli_parser .............   Passed    3.64 sec\n      Start 41: mmay_cp39_distribution\n 3/86 Test #41: mmay_cp39_distribution ...........   Passed   19.91 sec\n      Start 10: mmay_c_unit_cp31\n      Start 20: mmay_c_unit_cp18-cp20\n 4/86 Test #10: mmay_c_unit_cp31 .................   Passed    4.02 sec\n      Start 19: mmay_c_unit_cp16-cp17\n 5/86 Test #20: mmay_c_unit_cp18-cp20 ............   Passed    5.04 sec\n      Start 11: mmay_c_unit_final-preview\n 6/86 Test #19: mmay_c_unit_cp16-cp17 ............   Passed    3.42 sec\n      Start  9: mmay_c_unit_native\n 7/86 Test #11: mmay_c_unit_final-preview ........   Passed    8.69 sec\n      Start 18: mmay_c_unit_cp14-cp15\n 8/86 Test #18: mmay_c_unit_cp14-cp15 ............   Passed    7.29 sec\n      Start 46: mmay_cp36_map_set\n 9/86 Test #46: mmay_cp36_map_set ................   Passed    4.23 sec\n      Start 43: mmay_cp33_process_text_bytes\n10/86 Test #43: mmay_cp33_process_text_bytes .....   Passed    0.82 sec\n      Start 44: mmay_cp34_process_files\n11/86 Test #44: mmay_cp34_process_files ..........   Passed    0.93 sec\n      Start 45: mmay_cp35_process_context\n12/86 Test #45: mmay_cp35_process_context ........   Passed    0.98 sec\n      Start 17: mmay_c_unit_cli-test\n13/86 Test #17: mmay_c_unit_cli-test .............   Passed    4.49 sec\n      Start 15: mmay_c_unit_cli-heap\n14/86 Test #15: mmay_c_unit_cli-heap .............   Passed    0.93 sec\n      Start 39: mmay_install_relocation\n15/86 Test #39: mmay_install_relocation ..........   Passed    2.45 sec\n      Start 42: mmay_cp32_process_streams\n16/86 Test #42: mmay_cp32_process_streams ........   Passed    0.41 sec\n      Start 16: mmay_c_unit_cli-run\n17/86 Test #16: mmay_c_unit_cli-run ..............   Passed    5.99 sec\n      Start 13: mmay_c_unit_cli-build\n18/86 Test #13: mmay_c_unit_cli-build ............   Passed   11.42 sec\n      Start 40: mmay_cp29_release_contract\n19/86 Test #40: mmay_cp29_release_contract .......   Passed    4.19 sec\n      Start 21: mmay_cp31_allocation_0\n20/86 Test #21: mmay_cp31_allocation_0 ...........   Passed    2.32 sec\n      Start  6: mmay_c_unit_checker\n21/86 Test  #6: mmay_c_unit_checker ..............   Passed    3.54 sec\n      Start 14: mmay_c_unit_cli-check\n22/86 Test #14: mmay_c_unit_cli-check ............   Passed    9.50 sec\n      Start  8: mmay_c_unit_runtime\n23/86 Test  #8: mmay_c_unit_runtime ..............   Passed   33.26 sec\n      Start 22: mmay_cp31_allocation_1\n24/86 Test #22: mmay_cp31_allocation_1 ...........   Passed    2.17 sec\n      Start 23: mmay_cp31_allocation_2\n25/86 Test #23: mmay_cp31_allocation_2 ...........   Passed    2.23 sec\n      Start 24: mmay_cp31_allocation_3\n26/86 Test #24: mmay_cp31_allocation_3 ...........   Passed    2.19 sec\n      Start 25: mmay_cp31_allocation_4\n27/86 Test #25: mmay_cp31_allocation_4 ...........   Passed    2.21 sec\n      Start 26: mmay_cp31_allocation_5\n28/86 Test #26: mmay_cp31_allocation_5 ...........   Passed    2.18 sec\n      Start 27: mmay_cp31_allocation_6\n29/86 Test #27: mmay_cp31_allocation_6 ...........   Passed    2.37 sec\n      Start 28: mmay_cp31_allocation_7\n30/86 Test #28: mmay_cp31_allocation_7 ...........   Passed    2.76 sec\n      Start 48: mmay_cli_notes\n31/86 Test #48: mmay_cli_notes ...................   Passed   30.99 sec\n      Start  7: mmay_c_unit_bytecode\n32/86 Test  #7: mmay_c_unit_bytecode .............   Passed    9.20 sec\n      Start 85: mmay_cli-source-lint\n33/86 Test #85: mmay_cli-source-lint .............   Passed   18.07 sec\n      Start 33: mmay_cp36_unit\n34/86 Test #33: mmay_cp36_unit ...................   Passed   27.28 sec\n      Start 84: mmay_cli-delimited\n35/86 Test #84: mmay_cli-delimited ...............   Passed   10.74 sec\n      Start 69: mmay_cli_local_execution\n36/86 Test #69: mmay_cli_local_execution .........   Passed   11.10 sec\n      Start 68: mmay_typed_json\n37/86 Test #68: mmay_typed_json ..................   Passed    8.92 sec\n      Start 29: mmay_cp32_unit\n38/86 Test #29: mmay_cp32_unit ...................   Passed    7.46 sec\n      Start 30: mmay_cp33_unit\n39/86 Test #30: mmay_cp33_unit ...................   Passed   19.62 sec\n      Start 36: mmay_cp42_unit\n40/86 Test  #9: mmay_c_unit_native ...............   Passed  299.99 sec\n      Start 37: mmay_cp41_unit\n41/86 Test #37: mmay_cp41_unit ...................   Passed    7.88 sec\n      Start 50: mmay_cli_config_migrate\n42/86 Test #36: mmay_cp42_unit ...................   Passed   50.47 sec\n      Start 86: mmay_vm_string_lifetime\n43/86 Test #86: mmay_vm_string_lifetime ..........   Passed    4.77 sec\n      Start 49: mmay_cli_frequency\n44/86 Test #50: mmay_cli_config_migrate ..........   Passed    7.84 sec\n      Start 32: mmay_cp35_unit\n45/86 Test #32: mmay_cp35_unit ...................   Passed    2.14 sec\n      Start 72: mmay_cp42_test_helpers\n46/86 Test #49: mmay_cli_frequency ...............   Passed    4.52 sec\n      Start 73: mmay_cp42_map_error_context\n47/86 Test #72: mmay_cp42_test_helpers ...........   Passed    3.02 sec\n      Start 71: mmay_cp42_void_match\n48/86 Test #73: mmay_cp42_map_error_context ......   Passed    2.77 sec\n      Start  5: mmay_c_unit_frontend\n49/86 Test  #5: mmay_c_unit_frontend .............   Passed    0.11 sec\n      Start 74: mmay_cp42_test_locations\n50/86 Test #74: mmay_cp42_test_locations .........   Passed    0.88 sec\n      Start 67: mmay_cli_notes_model\n51/86 Test #67: mmay_cli_notes_model .............   Passed    0.55 sec\n      Start 56: mmay_cp33_text_bytes\n52/86 Test #56: mmay_cp33_text_bytes .............   Passed    0.57 sec\n      Start 12: mmay_c_unit_cli-core\n53/86 Test #12: mmay_c_unit_cli-core .............   Passed    0.03 sec\n      Start 31: mmay_cp34_unit\n54/86 Test #71: mmay_cp42_void_match .............   Passed    2.76 sec\n      Start 34: mmay_cp37_unit\n55/86 Test #34: mmay_cp37_unit ...................   Passed    0.06 sec\n      Start 35: mmay_cp38_unit\n56/86 Test #35: mmay_cp38_unit ...................   Passed    0.01 sec\n      Start 38: mmay_cp39_unit\n57/86 Test #38: mmay_cp39_unit ...................   Passed    0.12 sec\n      Start 58: mmay_run_startup\n58/86 Test #58: mmay_run_startup .................   Passed    0.37 sec\n      Start 54: mmay_map_error_imports\n59/86 Test #54: mmay_map_error_imports ...........   Passed    0.54 sec\n      Start 57: mmay_match_format\n60/86 Test #57: mmay_match_format ................   Passed    0.34 sec\n      Start 52: mmay_match_void\n61/86 Test #52: mmay_match_void ..................   Passed    0.42 sec\n      Start 51: mmay_record_imports\n62/86 Test #51: mmay_record_imports ..............   Passed    0.36 sec\n      Start 53: mmay_generic_lifetime\n63/86 Test #53: mmay_generic_lifetime ............   Passed    0.39 sec\n      Start 55: mmay_enum_pattern_names\n64/86 Test #55: mmay_enum_pattern_names ..........   Passed    0.36 sec\n      Start  1: mmay_ci_diagnostics\n65/86 Test  #1: mmay_ci_diagnostics ..............   Passed    0.68 sec\n      Start  2: mmay_cli_acceptance_driver\n66/86 Test  #2: mmay_cli_acceptance_driver .......   Passed    0.63 sec\n      Start  4: mmay_release_contract\n67/86 Test  #4: mmay_release_contract ............   Passed    0.06 sec\n      Start  3: mmay_roadmap\n68/86 Test  #3: mmay_roadmap .....................   Passed    0.11 sec\n      Start 75: mmay_cp42_for_recovery\n69/86 Test #75: mmay_cp42_for_recovery ...........   Passed    0.06 sec\n      Start 59: mmay_format_record-imports\n70/86 Test #59: mmay_format_record-imports .......   Passed    0.00 sec\n      Start 64: mmay_format_cp33-text-bytes\n71/86 Test #64: mmay_format_cp33-text-bytes ......   Passed    0.00 sec\n      Start 65: mmay_format_match-format\n72/86 Test #65: mmay_format_match-format .........   Passed    0.00 sec\n      Start 66: mmay_format_run-startup\n73/86 Test #66: mmay_format_run-startup ..........   Passed    0.00 sec\n      Start 61: mmay_format_generic-lifetime\n74/86 Test #61: mmay_format_generic-lifetime .....   Passed    0.00 sec\n      Start 60: mmay_format_match-void\n75/86 Test #60: mmay_format_match-void ...........   Passed    0.00 sec\n      Start 62: mmay_format_map-error-imports\n76/86 Test #62: mmay_format_map-error-imports ....   Passed    0.00 sec\n      Start 63: mmay_format_enum-pattern-names\n77/86 Test #63: mmay_format_enum-pattern-names ...   Passed    0.00 sec\n78/86 Test #31: mmay_cp34_unit ...................   Passed    6.91 sec\n      Start 76: mmay_cp42_option_binding\n79/86 Test #76: mmay_cp42_option_binding .........   Passed    3.65 sec\n      Start 77: mmay_cp42_array_edit\n80/86 Test #77: mmay_cp42_array_edit .............   Passed    3.91 sec\n      Start 78: mmay_cp42_function_values\n81/86 Test #78: mmay_cp42_function_values ........   Passed    6.68 sec\n      Start 79: mmay_cp42_mapper_values\n82/86 Test #79: mmay_cp42_mapper_values ..........   Passed    6.33 sec\n      Start 80: mmay_cp42_array_search\n83/86 Test #80: mmay_cp42_array_search ...........   Passed    4.54 sec\n      Start 81: mmay_cp42_file_lines\n84/86 Test #81: mmay_cp42_file_lines .............   Passed    6.78 sec\n      Start 82: mmay_cp42_enum_bottom\n85/86 Test #82: mmay_cp42_enum_bottom ............   Passed    2.28 sec\n      Start 83: mmay_cp42_escape\n86/86 Test #83: mmay_cp42_escape .................   Passed    6.30 sec\n\n100% tests passed out of 86\n\nLabel Time Summary:\nacceptance-harness    =   0.63 sec*proc (1 test)\nallocation            =  18.42 sec*proc (8 tests)\nbytecode              =   9.20 sec*proc (1 test)\nc-unit                = 528.87 sec*proc (26 tests)\nchecker               =   3.54 sec*proc (1 test)\nci                    =   0.68 sec*proc (1 test)\ncli                   =   0.63 sec*proc (1 test)\ncli-build             =  11.42 sec*proc (1 test)\ncli-check             =   9.50 sec*proc (1 test)\ncli-core              =   0.03 sec*proc (1 test)\ncli-heap              =   0.93 sec*proc (1 test)\ncli-run               =   5.99 sec*proc (1 test)\ncli-test              =   4.49 sec*proc (1 test)\ncp14-cp15             =   7.29 sec*proc (1 test)\ncp16-cp17             =   3.42 sec*proc (1 test)\ncp18-cp20             =   5.04 sec*proc (1 test)\ncp31                  =   4.02 sec*proc (1 test)\ncp32                  =   7.46 sec*proc (1 test)\ncp33                  =  19.62 sec*proc (1 test)\ncp34                  =   6.91 sec*proc (1 test)\ncp35                  =   2.14 sec*proc (1 test)\ncp36                  =  27.28 sec*proc (1 test)\ncp37                  =   0.06 sec*proc (1 test)\ncp38                  =   0.01 sec*proc (1 test)\ncp39                  =  39.94 sec*proc (2 tests)\ncp41                  =   7.88 sec*proc (1 test)\ncp42                  = 119.51 sec*proc (11 tests)\ndiagnostics           =   0.68 sec*proc (1 test)\ndifferential          =  93.82 sec*proc (13 tests)\ndistribution          =  39.81 sec*proc (1 test)\nfinal-preview         =   8.69 sec*proc (1 test)\nfocused               = 121.95 sec*proc (10 tests)\nfrontend              =   0.11 sec*proc (1 test)\nlocal-execution       =  11.10 sec*proc (1 test)\nmanaged-memory        =   4.77 sec*proc (1 test)\nnative                = 299.99 sec*proc (1 test)\nresource              =  11.10 sec*proc (1 test)\nruntime               =  33.26 sec*proc (1 test)\nstateful              =  28.81 sec*proc (2 tests)\ntyped-json            =   8.92 sec*proc (1 test)\n\nTotal Test time (real) = 411.73 sec\n",
+      "test_log_sha256": "9db024cdc554338033aa85f37e7bc32c77f24ff14075f82a0699868aaf9a0f2f",
+      "cmake_cache_selected": [
+        "CMAKE_BUILD_TYPE:STRING=Release",
+        "CMAKE_C_COMPILER:FILEPATH=/usr/bin/cc",
+        "CMAKE_OSX_ARCHITECTURES:STRING=",
+        "MMAY_ENABLE_ADDRESS_SANITIZER:BOOL=OFF",
+        "MMAY_ENABLE_SLJIT:BOOL=OFF",
+        "MMAY_ENABLE_UNDEFINED_SANITIZER:BOOL=OFF",
+        "MMAY_SLJIT_SOURCE_DIR:PATH=",
+        "MMAY_WARNINGS_AS_ERRORS:BOOL=ON"
+      ],
+      "bootstrap_flags": "# CMAKE generated file: DO NOT EDIT!\n# Generated by \"Unix Makefiles\" Generator, CMake Version 4.4\n\n# compile C with /usr/bin/cc\nC_DEFINES = \n\nC_INCLUDES = -I/workspace/Projects/Marimay/marimay-vm-parity/build/release/generated -I/workspace/Projects/Marimay/marimay-vm-parity/bootstrap/include -I/workspace/Projects/Marimay/marimay-vm-parity/runtime/include\n\nC_FLAGSarm64 = -O3 -DNDEBUG -std=c17 -arch arm64 -fno-fast-math -frounding-math -ffp-contract=off -fexcess-precision=standard -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror\n\nC_FLAGS = -O3 -DNDEBUG -std=c17 -arch arm64 -fno-fast-math -frounding-math -ffp-contract=off -fexcess-precision=standard -Wall -Wextra -Wpedantic -Wconversion -Wshadow -Werror\n\n",
+      "commands": [
+        [
+          "cmake",
+          "-S",
+          ".",
+          "-B",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/release",
+          "-DCMAKE_BUILD_TYPE=Release",
+          "-DMMAY_ENABLE_SLJIT=OFF"
+        ],
+        [
+          "cmake",
+          "--build",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/release",
+          "-j2"
+        ],
+        [
+          "ctest",
+          "--test-dir",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/release",
+          "-j2",
+          "--output-on-failure"
+        ]
+      ]
+    }
+  },
+  "initial_conformance_failure": {
+    "log": "Test project /workspace/Projects/Marimay/marimay-vm-parity/build/jit-integrated\n      Start 70: mmay_cp38_json\n      Start 47: mmay_cp37_cli_parser\n 1/90 Test #47: mmay_cp37_cli_parser .............   Passed    5.91 sec\n      Start 41: mmay_cp39_distribution\n 2/90 Test #70: mmay_cp38_json ...................   Passed   12.84 sec\n      Start 10: mmay_c_unit_cp31\n      Start 20: mmay_c_unit_cp18-cp20\n 3/90 Test #10: mmay_c_unit_cp31 .................   Passed    5.92 sec\n      Start 19: mmay_c_unit_cp16-cp17\n 4/90 Test #20: mmay_c_unit_cp18-cp20 ............   Passed    8.71 sec\n      Start 11: mmay_c_unit_final-preview\n 5/90 Test #19: mmay_c_unit_cp16-cp17 ............   Passed    5.60 sec\n      Start  9: mmay_c_unit_native\n 6/90 Test #41: mmay_cp39_distribution ...........   Passed   19.22 sec\n      Start 18: mmay_c_unit_cp14-cp15\n      Start 46: mmay_cp36_map_set\n 7/90 Test #46: mmay_cp36_map_set ................   Passed    6.41 sec\n      Start 43: mmay_cp33_process_text_bytes\n 8/90 Test #18: mmay_c_unit_cp14-cp15 ............   Passed    7.09 sec\n      Start 44: mmay_cp34_process_files\n 9/90 Test #11: mmay_c_unit_final-preview ........   Passed   12.01 sec\n      Start 45: mmay_cp35_process_context\n10/90 Test #43: mmay_cp33_process_text_bytes .....   Passed    2.37 sec\n      Start 17: mmay_c_unit_cli-test\n11/90 Test #44: mmay_cp34_process_files ..........   Passed    3.07 sec\n      Start 15: mmay_c_unit_cli-heap\n12/90 Test #45: mmay_cp35_process_context ........   Passed    2.73 sec\n      Start 39: mmay_install_relocation\n13/90 Test #15: mmay_c_unit_cli-heap .............   Passed    3.90 sec\n      Start 42: mmay_cp32_process_streams\n14/90 Test #39: mmay_install_relocation ..........   Passed    4.05 sec\n      Start 16: mmay_c_unit_cli-run\n15/90 Test #42: mmay_cp32_process_streams ........   Passed    1.86 sec\n      Start 13: mmay_c_unit_cli-build\n16/90 Test #17: mmay_c_unit_cli-test .............   Passed   10.20 sec\n      Start 40: mmay_cp29_release_contract\n17/90 Test #16: mmay_c_unit_cli-run ..............   Passed    5.78 sec\n      Start 21: mmay_cp31_allocation_0\n18/90 Test #40: mmay_cp29_release_contract .......   Passed    3.36 sec\n      Start  6: mmay_c_unit_checker\n19/90 Test #21: mmay_cp31_allocation_0 ...........   Passed    2.31 sec\n      Start 14: mmay_c_unit_cli-check\n20/90 Test  #6: mmay_c_unit_checker ..............   Passed    3.45 sec\n      Start  8: mmay_c_unit_runtime\n21/90 Test #14: mmay_c_unit_cli-check ............   Passed    9.06 sec\n      Start 22: mmay_cp31_allocation_1\n22/90 Test #13: mmay_c_unit_cli-build ............   Passed   18.20 sec\n      Start 23: mmay_cp31_allocation_2\n23/90 Test #22: mmay_cp31_allocation_1 ...........   Passed    2.33 sec\n      Start 24: mmay_cp31_allocation_3\n24/90 Test #23: mmay_cp31_allocation_2 ...........   Passed    2.35 sec\n      Start 25: mmay_cp31_allocation_4\n25/90 Test #24: mmay_cp31_allocation_3 ...........   Passed    2.33 sec\n      Start 26: mmay_cp31_allocation_5\n26/90 Test #25: mmay_cp31_allocation_4 ...........   Passed    2.31 sec\n      Start 27: mmay_cp31_allocation_6\n27/90 Test #26: mmay_cp31_allocation_5 ...........   Passed    2.32 sec\n      Start 28: mmay_cp31_allocation_7\n28/90 Test #27: mmay_cp31_allocation_6 ...........   Passed    2.34 sec\n      Start  7: mmay_c_unit_bytecode\n29/90 Test #28: mmay_cp31_allocation_7 ...........   Passed    2.34 sec\n      Start 33: mmay_cp36_unit\n30/90 Test  #7: mmay_c_unit_bytecode .............   Passed   11.31 sec\n      Start 29: mmay_cp32_unit\n31/90 Test #29: mmay_cp32_unit ...................   Passed    8.83 sec\n      Start 30: mmay_cp33_unit\n32/90 Test  #8: mmay_c_unit_runtime ..............***Failed   41.84 sec\n/workspace/Projects/Marimay/marimay-vm-parity/tests/c-unit/test_numeric_cp6_differential.c:256: expectation failed: mmay_bytecode_run_program( &decoded, NULL, 0, mmay_system_allocator(), run_options, &vm_result ) == MMAY_BYTECODE_RUN_OK\n/workspace/Projects/Marimay/marimay-vm-parity/tests/c-unit/test_numeric_cp6_differential.c:257: expectation failed: vm_result.type == MMAY_BYTECODE_TYPE_I64\n/workspace/Projects/Marimay/marimay-vm-parity/tests/c-unit/test_numeric_cp6_differential.c:258: expectation failed: vm_result.as.i64 == 6\nmmay_c_unit_3: 3 failure(s)\n\n      Start 36: mmay_cp42_unit\n33/90 Test #33: mmay_cp36_unit ...................   Passed   28.00 sec\n      Start 37: mmay_cp41_unit\n34/90 Test #37: mmay_cp41_unit ...................   Passed    6.36 sec\n      Start 32: mmay_cp35_unit\n35/90 Test #32: mmay_cp35_unit ...................   Passed    2.17 sec\n      Start  5: mmay_c_unit_frontend\n36/90 Test  #5: mmay_c_unit_frontend .............   Passed    0.08 sec\n      Start 12: mmay_c_unit_cli-core\n37/90 Test #12: mmay_c_unit_cli-core .............   Passed    0.02 sec\n      Start 31: mmay_cp34_unit\n38/90 Test #30: mmay_cp33_unit ...................   Passed   18.64 sec\n      Start 34: mmay_cp37_unit\n39/90 Test #34: mmay_cp37_unit ...................   Passed    0.05 sec\n      Start 35: mmay_cp38_unit\n40/90 Test #35: mmay_cp38_unit ...................   Passed    0.01 sec\n      Start 38: mmay_cp39_unit\n41/90 Test #38: mmay_cp39_unit ...................   Passed    0.10 sec\n      Start 87: mmay_code_memory\n42/90 Test #87: mmay_code_memory .................   Passed    0.61 sec\n      Start 88: mmay_jit_ownership\n43/90 Test #88: mmay_jit_ownership ...............   Passed    1.02 sec\n      Start 89: mmay_jit_fuel\n44/90 Test #89: mmay_jit_fuel ....................   Passed    0.68 sec\n      Start  1: mmay_ci_diagnostics\n45/90 Test  #1: mmay_ci_diagnostics ..............   Passed    0.52 sec\n      Start  2: mmay_cli_acceptance_driver\n46/90 Test  #2: mmay_cli_acceptance_driver .......   Passed    0.50 sec\n      Start  3: mmay_roadmap\n47/90 Test  #3: mmay_roadmap .....................   Passed    0.09 sec\n      Start  4: mmay_release_contract\n48/90 Test  #4: mmay_release_contract ............   Passed    0.05 sec\n      Start 48: mmay_cli_notes\n49/90 Test #31: mmay_cp34_unit ...................   Passed    6.31 sec\n      Start 49: mmay_cli_frequency\n50/90 Test #49: mmay_cli_frequency ...............   Passed    5.78 sec\n      Start 50: mmay_cli_config_migrate\n51/90 Test #50: mmay_cli_config_migrate ..........   Passed    6.58 sec\n      Start 51: mmay_record_imports\n52/90 Test #51: mmay_record_imports ..............   Passed    1.39 sec\n      Start 52: mmay_match_void\n53/90 Test #52: mmay_match_void ..................   Passed    1.37 sec\n      Start 53: mmay_generic_lifetime\n54/90 Test #53: mmay_generic_lifetime ............   Passed    1.43 sec\n      Start 54: mmay_map_error_imports\n55/90 Test #54: mmay_map_error_imports ...........   Passed    1.39 sec\n      Start 55: mmay_enum_pattern_names\n56/90 Test #55: mmay_enum_pattern_names ..........   Passed    1.38 sec\n      Start 56: mmay_cp33_text_bytes\n57/90 Test #56: mmay_cp33_text_bytes .............   Passed    1.68 sec\n      Start 57: mmay_match_format\n58/90 Test #48: mmay_cli_notes ...................   Passed   23.26 sec\n      Start 58: mmay_run_startup\n59/90 Test #36: mmay_cp42_unit ...................   Passed   39.84 sec\n      Start 59: mmay_format_record-imports\n60/90 Test #59: mmay_format_record-imports .......   Passed    0.00 sec\n      Start 60: mmay_format_match-void\n61/90 Test #60: mmay_format_match-void ...........   Passed    0.00 sec\n      Start 61: mmay_format_generic-lifetime\n62/90 Test #61: mmay_format_generic-lifetime .....   Passed    0.00 sec\n      Start 62: mmay_format_map-error-imports\n63/90 Test #62: mmay_format_map-error-imports ....   Passed    0.00 sec\n      Start 63: mmay_format_enum-pattern-names\n64/90 Test #63: mmay_format_enum-pattern-names ...   Passed    0.00 sec\n      Start 64: mmay_format_cp33-text-bytes\n65/90 Test #64: mmay_format_cp33-text-bytes ......   Passed    0.00 sec\n      Start 65: mmay_format_match-format\n66/90 Test #65: mmay_format_match-format .........   Passed    0.00 sec\n      Start 66: mmay_format_run-startup\n67/90 Test #66: mmay_format_run-startup ..........   Passed    0.00 sec\n      Start 67: mmay_cli_notes_model\n68/90 Test #57: mmay_match_format ................   Passed    2.22 sec\n      Start 68: mmay_typed_json\n69/90 Test #58: mmay_run_startup .................   Passed    1.44 sec\n      Start 69: mmay_cli_local_execution\n70/90 Test #67: mmay_cli_notes_model .............   Passed    1.71 sec\n      Start 71: mmay_cp42_void_match\n71/90 Test #71: mmay_cp42_void_match .............   Passed    4.30 sec\n      Start 72: mmay_cp42_test_helpers\n72/90 Test #72: mmay_cp42_test_helpers ...........   Passed    4.67 sec\n      Start 73: mmay_cp42_map_error_context\n73/90 Test #68: mmay_typed_json ..................   Passed   12.80 sec\n      Start 74: mmay_cp42_test_locations\n74/90 Test #69: mmay_cli_local_execution .........   Passed   13.09 sec\n      Start 75: mmay_cp42_for_recovery\n75/90 Test #75: mmay_cp42_for_recovery ...........   Passed    0.05 sec\n      Start 84: mmay_cli-delimited\n76/90 Test #73: mmay_cp42_map_error_context ......   Passed    4.14 sec\n      Start 85: mmay_cli-source-lint\n77/90 Test #74: mmay_cp42_test_locations .........   Passed    1.80 sec\n      Start 86: mmay_vm_string_lifetime\n78/90 Test #86: mmay_vm_string_lifetime ..........   Passed    6.70 sec\n      Start 90: mmay_jit_pinned_inputs\n79/90 Test #90: mmay_jit_pinned_inputs ...........   Passed    0.50 sec\n80/90 Test #84: mmay_cli-delimited ...............   Passed   15.97 sec\n      Start 76: mmay_cp42_option_binding\n81/90 Test #76: mmay_cp42_option_binding .........   Passed    3.15 sec\n      Start 77: mmay_cp42_array_edit\n82/90 Test #77: mmay_cp42_array_edit .............   Passed    3.44 sec\n      Start 78: mmay_cp42_function_values\n83/90 Test #85: mmay_cli-source-lint .............   Passed   23.39 sec\n84/90 Test #78: mmay_cp42_function_values ........   Passed    6.00 sec\n      Start 79: mmay_cp42_mapper_values\n85/90 Test #79: mmay_cp42_mapper_values ..........   Passed    5.91 sec\n      Start 80: mmay_cp42_array_search\n86/90 Test #80: mmay_cp42_array_search ...........   Passed    3.91 sec\n      Start 81: mmay_cp42_file_lines\n87/90 Test #81: mmay_cp42_file_lines .............   Passed    7.27 sec\n      Start 82: mmay_cp42_enum_bottom\n88/90 Test #82: mmay_cp42_enum_bottom ............   Passed    3.18 sec\n      Start 83: mmay_cp42_escape\n89/90 Test #83: mmay_cp42_escape .................   Passed    5.16 sec\n90/90 Test  #9: mmay_c_unit_native ...............   Passed  269.45 sec\n\n99% tests passed, 1 tests failed out of 90\n\nLabel Time Summary:\nacceptance-harness    =   0.50 sec*proc (1 test)\nallocation            =  18.63 sec*proc (8 tests)\nbytecode              =  11.31 sec*proc (1 test)\nc-unit                = 522.93 sec*proc (26 tests)\nchecker               =   3.45 sec*proc (1 test)\nci                    =   0.52 sec*proc (1 test)\ncli                   =   0.50 sec*proc (1 test)\ncli-build             =  18.20 sec*proc (1 test)\ncli-check             =   9.06 sec*proc (1 test)\ncli-core              =   0.02 sec*proc (1 test)\ncli-heap              =   3.90 sec*proc (1 test)\ncli-run               =   5.78 sec*proc (1 test)\ncli-test              =  10.20 sec*proc (1 test)\ncp14-cp15             =   7.09 sec*proc (1 test)\ncp16-cp17             =   5.60 sec*proc (1 test)\ncp18-cp20             =   8.71 sec*proc (1 test)\ncp31                  =   5.92 sec*proc (1 test)\ncp32                  =   8.83 sec*proc (1 test)\ncp33                  =  18.64 sec*proc (1 test)\ncp34                  =   6.31 sec*proc (1 test)\ncp35                  =   2.17 sec*proc (1 test)\ncp36                  =  28.00 sec*proc (1 test)\ncp37                  =   0.05 sec*proc (1 test)\ncp38                  =   0.01 sec*proc (1 test)\ncp39                  =  38.54 sec*proc (2 tests)\ncp41                  =   6.36 sec*proc (1 test)\ncp42                  = 125.38 sec*proc (11 tests)\ndiagnostics           =   0.52 sec*proc (1 test)\ndifferential          = 118.14 sec*proc (13 tests)\ndistribution          =  38.44 sec*proc (1 test)\nfinal-preview         =  12.01 sec*proc (1 test)\nfocused               = 110.31 sec*proc (10 tests)\nfrontend              =   0.08 sec*proc (1 test)\nlocal-execution       =  13.09 sec*proc (1 test)\nmanaged-memory        =   6.70 sec*proc (1 test)\nnative                = 269.45 sec*proc (1 test)\nresource              =  13.09 sec*proc (1 test)\nruntime               =  41.84 sec*proc (1 test)\nstateful              =  39.36 sec*proc (2 tests)\ntyped-json            =  12.80 sec*proc (1 test)\n\nTotal Test time (real) = 293.81 sec\n\nThe following tests FAILED:\n\t  8 - mmay_c_unit_runtime (Failed)                      c-unit runtime\nErrors while running CTest\n",
+    "diagnosis": "I64-named wire opcodes can carry other integer widths; the initial generator omitted exact operand-type admission. The corrected plan requires signed i64 for its i64 arithmetic and comparisons. Final 90-test run passes; focused tests assert admission and narrow/unsigned fallback."
+  },
+  "installation": {
+    "installed_license": "build/jit-integration/install/share/doc/mmay/0.1.0-alpha.1/licenses/SLJIT-BSD-2-Clause.txt",
+    "license_sha256": "5f216505c0f6ea3273caec89e766eef93cdeb7bbb0c429f9360116d7c938feeb",
+    "default_binary_has_jit_symbols": false
+  },
+  "missing_dependency": {
+    "command": [
+      "cmake",
+      "-S",
+      ".",
+      "-B",
+      "build/jit-integration/configure-negative/missing",
+      "-DMMAY_ENABLE_SLJIT=ON"
+    ],
+    "exit_code": 1,
+    "expected_diagnostic": "requires a local MMAY_SLJIT_SOURCE_DIR",
+    "passed": true
+  },
+  "open_gates": [
+    "Linux LSan and optional-JIT CI results have not been observed",
+    "Linux and Windows execution evidence",
+    "Full Tier 1 conformance and physical x86 performance",
+    "Go/Rust parity across unchanged 32 workloads",
+    "Default enablement"
+  ],
+  "notes": [
+    "macOS sanitizer runs use ASAN_OPTIONS=detect_leaks=0:halt_on_error=1 and UBSAN_OPTIONS=halt_on_error=1:print_stacktrace=1",
+    "Rosetta is execution evidence only",
+    "Timing includes source loading/checking/lowering and uses the 64 MiB managed-heap budget",
+    "Installed user toolchain and main working-tree image edits remain untouched"
+  ],
+  "integration_inputs_sha256": {
+    ".gitattributes": "503d91266d2b806a8bf0194b5d22cb7095b69f4ca505b0ef70ebd8a0c7195a7d",
+    ".gitea/workflows/ci.yml": "2bf2b8432f1a11ed202a28dfd397a700393754efc6a8af1211c128bff0f6a169",
+    "CMakeLists.txt": "db86ca664e1b029bc0ccf03d8b4b0c1a84496cb8b7ca3fee066be4ac0596f07d",
+    "bootstrap/include/mmay/base/code_memory.h": "1b17b13e7929655bd7214ddf0d3ab34147a482ca2222f64cd0908a3ff1a2db9c",
+    "bootstrap/src/base/code_memory.c": "42b45664ccd96e2f6e39ebc8b27f820d191cf4572e0fde51cd20bd6875345cb3",
+    "bootstrap/src/bytecode/sljitConfigPre.h": "18661d042d8e1af82af8e275829bb00bc7e925503a54a50b7803a38a08021bc5",
+    "bootstrap/src/bytecode/vm.c": "883dab8ce07346bb41dc0a2cc20e43b837540544e91a413d26a87f53ce7ff982",
+    "bootstrap/src/bytecode/vm_jit.c": "a6c48d36c2760160bd47ead4d09c3baf14e4a6d5e3e836fca624cda354512df2",
+    "bootstrap/src/bytecode/vm_jit.h": "ca60bdde0599ad16d274ac57ec391467a34ce6d0aa28372ba0f07d35879648b0",
+    "bootstrap/src/bytecode/vm_jit_bind.c": "8631ec1e689b792e4e4ab3e5fe5aea853c2a8ca1c3da28201bcb095d01c4756b",
+    "bootstrap/src/bytecode/vm_jit_internal.h": "04ed651856aca901ba021915dbc907c7a9194fdccb832d411b095ed01e37ddbb",
+    "bootstrap/src/bytecode/vm_jit_loops.c": "1a4b9366684b11733f2cfbcfc8a1480e013f78acfdbc508d1a5c15b4ed135318",
+    "bootstrap/src/bytecode/vm_jit_memory.c": "2fd550f2746a49632ec4bb76a9f05195d41995117b64d36895cce75a1e383558",
+    "bootstrap/src/bytecode/vm_jit_memory.h": "b3a307572e16ff4fb7c7ca1df2bc5a33eba6278e8ef19be62a500cfee8837cab",
+    "bootstrap/src/bytecode/vm_jit_plan.c": "959ed3dd6760489d4251a23ca84ef67db2c78b7abf078d906fad6368188eef7d",
+    "bootstrap/src/bytecode/vm_jit_sljit.c": "aa93ee55afd002ebaa9daf4b6afd248bd9c10e885d213127894f40e467997036",
+    "cmake/MarimaySljit.cmake": "647b6fda6a63c73f646e53262282d71426fa43eea6b976b19c0535158258a17a",
+    "cmake/sljit-arm64-minimum.patch": "2f285475677cace772df0ce71aa63eb1e8559c5d1b5223e214913ad854c1013f",
+    "cmake/sljit-source.json": "01324d2011f49c41f121deb83e1c1223034a2daa4f27104e14d6ed7d7debbb28",
+    "tests/c-unit/CMakeLists.txt": "c642e7da280a0efbbee5b8bf2316a9bc8a2603b025b23c85ec56cdd48b0abe5f",
+    "tests/c-unit/jit/CMakeLists.txt": "7b106ce6910dfb9d49e6e6e12d03280cda86a58afffe3bb68b6fb87a1b40cbc6",
+    "tests/c-unit/jit/test_code_memory.c": "307e1e5e5144223ad0c070c7c9b09464de704f8819d405ba64ab037924a227bb",
+    "tests/c-unit/jit/test_jit_fuel.c": "f3e88921567cc6e2897ae30fa2f4ccb3284624417f0cd956910608740d855c9b",
+    "tests/c-unit/jit/test_jit_ownership.c": "b73e7f95c424284c39c6ab12c2a1968940c6c9afe987f1e663599188d66cdd88",
+    "tests/c-unit/jit/test_prepare_sljit.py": "29c5470375c172d118a7adf58323b669d987d987cb93f7305fcd44c1c9d29629",
+    "tests/c-unit/test_bytecode_vm.c": "876ee200976c2e18a6977592a5566c3f1e72c57a90de8b97bcde29e6868f957e",
+    "tests/c-unit/test_bytecode_vm_jit.c": "3b4e0dddc12b8f6bb6487aefebc32223fa6ce58e37a5169b1cfbeb855dd8f108",
+    "tools/prepare-sljit.py": "8167ace32a536bacea764a754701a217413ec9722f196a04d5de60bc7b33fbf9"
+  },
+  "preparer_rebuild": {
+    "before": {
+      "mmay": "83564606c695677e4c1ac88528bf7a80ce291a65d84d9b3303e76b33e57ea07d",
+      "tests/c-unit/mmay_c_unit": "c500883fcca8ceddc349938a8c637e991e367d837db52b6958ea0b21138870f5",
+      "tests/c-unit/jit/mmay_code_memory": "dd1f6d512f5133cacd85bb1b359922f4f9c266bb933fdd6395d6fd8facc0344d",
+      "tests/c-unit/jit/mmay_jit_ownership": "f64ecf498a296075e5cb15c58ec564fb4d39a60a72332d62d88d99243ab2f8b5",
+      "tests/c-unit/jit/mmay_jit_fuel": "94119f2b6622a333e82592f25a0e24a3c501c4e38a5598b4479213ef9e99b29f"
+    },
+    "after": {
+      "mmay": "83564606c695677e4c1ac88528bf7a80ce291a65d84d9b3303e76b33e57ea07d",
+      "tests/c-unit/mmay_c_unit": "c500883fcca8ceddc349938a8c637e991e367d837db52b6958ea0b21138870f5",
+      "tests/c-unit/jit/mmay_code_memory": "dd1f6d512f5133cacd85bb1b359922f4f9c266bb933fdd6395d6fd8facc0344d",
+      "tests/c-unit/jit/mmay_jit_ownership": "f64ecf498a296075e5cb15c58ec564fb4d39a60a72332d62d88d99243ab2f8b5",
+      "tests/c-unit/jit/mmay_jit_fuel": "94119f2b6622a333e82592f25a0e24a3c501c4e38a5598b4479213ef9e99b29f"
+    },
+    "byte_identical": true,
+    "reason": "Preserve and verify actual patched LF bytes on Windows; rebuild at the same macOS path changes no tested executable."
+  },
+  "preparer_final_tests": {
+    "command": [
+      "python3",
+      "tests/c-unit/jit/test_prepare_sljit.py",
+      "tools/prepare-sljit.py"
+    ],
+    "exit_code": 0,
+    "output": "......\n----------------------------------------------------------------------\nRan 6 tests in 0.332s\n\nOK\n"
+  },
+  "performance": {
+    "record": "cp42-sljit-integration-paired-2026-09-10.json",
+    "sha256": "1c72b763ea60d3a8b2e154aeccb483d974cb00b20dc9c619b4b9ef0d55c9b8fa",
+    "summary": {
+      "before_sum_ms": 27475.638541999997,
+      "after_sum_ms": 14704.538544,
+      "sum_reduction_percent": 46.48154028696276,
+      "geomean_speedup": 1.3659318502205955,
+      "candidate_sha256": "83564606c695677e4c1ac88528bf7a80ce291a65d84d9b3303e76b33e57ea07d"
+    },
+    "output": "Completed paired round 1/14\nCompleted paired round 2/14\nCompleted paired round 3/14\nCompleted paired round 4/14\nCompleted paired round 5/14\nCompleted paired round 6/14\nCompleted paired round 7/14\nCompleted paired round 8/14\nCompleted paired round 9/14\nCompleted paired round 10/14\nCompleted paired round 11/14\nCompleted paired round 12/14\nCompleted paired round 13/14\nCompleted paired round 14/14\ntitle-search-10k             146.96 ->     124.05 ms (0.844x)\ntitle-search-100k            913.40 ->     670.69 ms (0.734x)\nnormalize-title              214.01 ->     208.45 ms (0.974x)\nword-frequency               410.57 ->     350.02 ms (0.853x)\nreport-builder               139.20 ->     135.88 ms (0.976x)\nreport-concat                220.63 ->     218.40 ms (0.990x)\nmap-int                      106.69 ->      91.46 ms (0.857x)\nmap-string                   135.59 ->     118.97 ms (0.877x)\nmap-string-book              134.20 ->     132.94 ms (0.991x)\nset-string-churn             150.82 ->     151.23 ms (1.003x)\ncatalog-match                270.52 ->     235.96 ms (0.872x)\ncatalog-dotcall              197.80 ->     180.90 ms (0.915x)\ncatalog-interface            257.75 ->     242.39 ms (0.940x)\nrecord-reference-copy        181.92 ->     164.91 ms (0.906x)\nrecord-create                219.08 ->     201.58 ms (0.920x)\narray-grow                   203.42 ->     171.57 ms (0.843x)\narray-reserved               204.56 ->     171.21 ms (0.837x)\nbfs-int                      219.56 ->     140.57 ms (0.640x)\nbfs-record                   237.38 ->     156.08 ms (0.658x)\ncatalog-pipeline             549.89 ->     446.48 ms (0.812x)\nparse-result                 121.33 ->     116.17 ms (0.957x)\ninsertion                    232.38 ->     234.75 ms (1.010x)\nheap-sort                   1670.72 ->     432.12 ms (0.259x)\nstack                        794.62 ->     748.44 ms (0.942x)\nqueue                        895.91 ->     865.12 ms (0.966x)\nmin-heap                    5632.05 ->    1131.67 ms (0.201x)\ndsu                         3879.26 ->    2658.48 ms (0.685x)\nbfs                         5620.75 ->    3112.13 ms (0.554x)\ndijkstra                    2417.62 ->     268.49 ms (0.111x)\nfrequency-map                484.97 ->     360.31 ms (0.743x)\nunique-set                   361.87 ->     268.01 ms (0.741x)\nrune-frequency               250.19 ->     195.10 ms (0.780x)\n"
+  },
+  "gates": {
+    "check-architecture": {
+      "command": [
+        "./tools/check-architecture"
+      ],
+      "exit_code": 0,
+      "output": "check-architecture: ok\n",
+      "sha256": "d9350711c33efa6ee9fdc6a821dd06ddde0af490e1928d5812621b47de44706c"
+    },
+    "check-c-memory-policy": {
+      "command": [
+        "./tools/check-c-memory-policy"
+      ],
+      "exit_code": 0,
+      "output": "check-c-memory-policy: ok\n",
+      "sha256": "b2d064001e3464a5c31b01a228afda5e9726d586b725f57ba2d8dfc446dfb072"
+    },
+    "check-roadmap": {
+      "command": [
+        "./tools/check-roadmap"
+      ],
+      "exit_code": 0,
+      "output": "roadmap ok: 21 gates, 43 checkpoints, one active checkpoint, mutation self-tests passed\n",
+      "sha256": "5e14aacea127d5b49d4c0d05b0cb75174e613e810ac25ba743738e95c1424aaf"
+    },
+    "check-doc-links": {
+      "command": [
+        "./tools/check-doc-links"
+      ],
+      "exit_code": 0,
+      "output": "check-doc-links: ok\n",
+      "sha256": "32f90d8099b25005753fbe468151771f677bb259f03b75625894d830a981dcf7"
+    },
+    "check-spec-terms": {
+      "command": [
+        "./tools/check-spec-terms"
+      ],
+      "exit_code": 0,
+      "output": "check-spec-terms: ok\n",
+      "sha256": "2e6092b83d36076befa5b3ae0a92d8a5a2889735e265188d592b580df1665577"
+    },
+    "check-generated": {
+      "command": [
+        "./tools/check-generated"
+      ],
+      "exit_code": 0,
+      "output": "bytecode generated artifacts: ok\ndiagnostic generated artifacts: ok\nUnicode generated artifacts: ok\nGitea C17 image reference is current: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242\nsyntax generated artifacts: ok\n",
+      "sha256": "9f2645794a546a53b153ef2a74f8b3be37ddab312c16188655cf4958be6079ee"
+    }
+  }
+}

@@ -96,15 +96,26 @@ adds central allocation, one-way W^X publication, deterministic failure teardown
 and D109 composition, with 32/32 correctness on ARM64, x86-64 under Rosetta
 and ARM64 ASan/UBSan. Its paired 896-observation full matrix reduces the sum
 of VM medians by 46.1%, with insertion at parity and no median regression above
-2%. Production integration, complete JIT conformance, Linux
-LSan, Tier 1 acceptance and Go/Rust parity remain open.
+2%. That snapshot leaves production integration, complete JIT conformance,
+Linux LSan, Tier 1 acceptance and Go/Rust parity open.
 
 [JIT fuel selected from invocation options](docs/implementation/evidence/cp42-sljit-fuel-mode-2026-09-10.md)
 retains exact metering for bounded/shared invocations and omits unused segment
 accounting for D087 local runs. All 32 correctness cases pass on ARM64, Rosetta
 x86-64 and ARM64 ASan/UBSan. A separate paired six-workload series improves
 Dijkstra by 15.3%; it does not replace the full-matrix evidence above or close
-production, platform or parity gates.
+production, platform or parity gates at that snapshot.
+
+[Optional shared JIT integrated into CMake](docs/implementation/evidence/cp42-sljit-integration-2026-09-10.md)
+adds the D111 production owners and pinned dependency preparation behind an
+explicit OFF-by-default option. The final local run passes 90/90 tests with JIT
+and 86/86 without it; ARM64, Rosetta x86-64 and ARM64 ASan/UBSan each replay all
+32 frozen workloads. Exact-type admission fixes the prototype's narrow-integer
+arithmetic defect. A fresh full paired series reduces the sum of VM medians by
+46.5%, with no median regression above 2%. Linux JIT/LSan CI jobs are configured;
+their results, full Tier 1 acceptance, default enablement and Go/Rust parity
+remain open. The next structural JIT boundary is ordinary calls and logical
+activation state; native text/runtime work remains independently necessary.
 
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

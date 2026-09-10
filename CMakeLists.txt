@@ -714,6 +714,18 @@ else()
 endif()
 mmay_target_warnings(mmay_bootstrap)
 mmay_target_sanitizers(mmay_bootstrap)
+include(cmake/MarimaySljit.cmake)
+if(MMAY_ENABLE_SLJIT)
+  target_sources(mmay_bootstrap PRIVATE
+    bootstrap/src/base/code_memory.c
+    bootstrap/src/bytecode/vm_jit.c
+    bootstrap/src/bytecode/vm_jit_plan.c
+    bootstrap/src/bytecode/vm_jit_bind.c
+    bootstrap/src/bytecode/vm_jit_loops.c
+    bootstrap/src/bytecode/vm_jit_sljit.c
+    bootstrap/src/bytecode/vm_jit_memory.c
+  )
+endif()
 if(MMAY_BUILD_FUZZERS)
   target_compile_options(mmay_bootstrap PRIVATE -fsanitize=fuzzer-no-link)
 endif()

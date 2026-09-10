@@ -21,8 +21,8 @@ case "${1:-}" in
         ;;
     --check)
         references=$(grep -Fxc "      image: $image" "$workflow" || true)
-        if [ "$references" -ne 5 ]; then
-            echo "expected five Gitea C17 job references to $image; found $references" >&2
+        if [ "$references" -ne 6 ]; then
+            echo "expected six Gitea C17 job references to $image; found $references" >&2
             exit 1
         fi
         printf 'Gitea C17 image reference is current: %s\n' "$image"

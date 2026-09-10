@@ -3663,3 +3663,62 @@ Reason: D105 removes repeated allocation for one callee, but alternating callees
 still rebuild their buffers from fresh allocations even at constant call depth.
 Retaining capacity removes that allocator traffic in portable C17 without
 retaining the values of a completed activation.
+
+## D111 — Optional shared machine-code tier for verified VM segments
+
+Status: accepted.
+
+The typed bytecode VM may execute verified nonallocating segments through a
+shared C machine-code backend. The portable interpreter remains required and
+is the reference/fallback engine. Machine code is invocation-local, immutable
+and absent from portable bytecode bundles. Unsupported instructions, platforms,
+executable-memory policy or bounded code eligibility retain ordinary execution;
+actual allocation failures remain observable. This decision does not enable the
+experimental tier by default or establish release/platform acceptance.
+
+The first adapter uses pinned SLJIT C sources. Enabling it requires an explicit
+build option and locally supplied files matching the committed source manifest.
+Preparation verifies a copy of each named input, applies only a recorded patch,
+installs the owned allocator configuration and preserves the upstream license.
+No build-time network retrieval is implicit. The external backend has its own
+compilation target; Marimay-owned compiler/runtime code remains C17 with the
+ordinary warning, architecture and sanitizer gates.
+
+Compiler arenas and staging use the existing central allocator. The central
+allocation boundary additionally owns OS code pages in `base/code_memory.c`;
+only that owner may reserve/release them. Page rounding counts against the
+invocation's 8 MiB executable-code budget. Relocation targets the final mapping,
+while emission writes non-executable staging. Publication is one-way and uses
+platform W^X and instruction-cache synchronization. A denied executable mapping
+never triggers a generic RWX fallback. Code-page and ordinary allocator ledgers
+must both reach zero on every tested success/failure teardown.
+
+D087 frame/shared instruction fuel remains exact for supplied bytecode. A
+compiled segment reserves its full original-instruction cost and refunds the
+unexecuted suffix before a side exit. Only an invocation with unlimited frame
+steps and no shared-counter pointer may omit that accounting. A SIZE_MAX-valued
+shared counter is still observable. Unmetered code cannot execute when later
+presented with finite/shared options. D109 composed loops retain their existing
+source-prefix and fuel contract inside this tier.
+
+Each side exit restores the original source PC before ordinary execution
+handles the uncommitted instruction, trap or call. Calls retain existing
+logical frames, call-depth limits, typed roots, argument/return checks and
+cleanup order. Borrowed array/record views never survive a return to the VM,
+allocation, collection or host/call boundary. A managed register write may
+retain its cached view only when the complete reference identity is unchanged.
+Representation projections use authoritative verified operands; a compact
+image field cannot silently truncate a signed or wide selector.
+
+Focused coverage must include operations and source exits, finite/shared fuel,
+managed alias/rebinding and collection, code-policy/budget fallback, all
+reachable allocation/platform failure indices and teardown. VM/native
+conformance, Linux LSan and every claimed Tier 1 platform remain release gates.
+The opt-in local build is not equivalent to completing those gates.
+
+Reason: the reused ARM64 prototype with a shared SLJIT adapter reduces the full
+32-workload paired VM median sum by 46.1%; invocation-selected fuel additionally
+reduces Dijkstra by 15.3% in a separate six-workload series. These results justify
+a shared execution tier while leaving ordinary-call, preparation and native
+runtime costs open. They do not justify workload rewrites, weaker limits or a
+CPU-specific semantic implementation.

@@ -173,6 +173,16 @@ unmetered entries and the additional 15.3% Dijkstra improvement. All 32
 correctness cases pass in three local configurations; production and Tier 1
 parity remain open.
 
+[Optional shared JIT integrated into the C17 compiler](cp42-sljit-integration-2026-09-10.md)
+([validation](cp42-sljit-integration-validation-2026-09-10.json),
+[paired 32-workload observations](cp42-sljit-integration-paired-2026-09-10.json))
+records D111's opt-in production ownership, pinned offline inputs, exact-type
+admission, signed/wide selectors, 90/90 enabled and 86/86 disabled CTest passes,
+and three complete local correctness replays. The fresh full matrix reduces
+the VM median sum by 46.5%, without a median regression above 2%. Default
+enablement, Linux JIT/LSan results, full Tier 1 acceptance and Go/Rust parity
+remain open.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

@@ -4,13 +4,18 @@ This experiment reuses the previous ARM64 prototype's region plan, VM bindings,
 source-PC mapping and fuel accounting. A single C adapter delegates machine
 instruction generation to [SLJIT](https://github.com/zherczeg/sljit), pinned at
 `d6ec3d07dcdbf2256ccae2b84d0d8a2d019f392e` (BSD-2-Clause). No handwritten
-ARM64 or x86-64 emitter is carried forward. These sources remain diagnostic
-tooling, excluded from production CMake and ordinary `mmay run`.
+ARM64 or x86-64 emitter is carried forward. These historical sources remain
+diagnostic tooling. D111 integrates corrected owners into the optional CMake
+tier; use the [integration instructions](../../../docs/implementation/vm-jit.md)
+for current builds. The historical adapter also lacks the production admission
+guard for non-i64 types carried by I64-named bytecode instructions.
 
 ## Reproduction
 
-From this Marimay snapshot, with a matching baseline archive and clean SLJIT
-checkout:
+Reproduce the final historical fuel-mode experiment from commit
+`496872b52123b6dd1a83adb93f9b9616132fd962`, in an isolated checkout with a
+matching baseline archive and clean SLJIT checkout. The builder deliberately
+rejects later production coordinators; do not bypass its source hashes:
 
 ```sh
 git clone https://github.com/zherczeg/sljit.git build/sljit-evaluation
@@ -47,8 +52,9 @@ preparation, arguments, heap limits, checksums, 3 warmups and 11 samples.
 The first feasibility report describes the older experiment at commit
 `0145177bd4c6366128a2039fd094ba1fede30f3a`. Reproduce its exact candidate from
 that snapshot. The full owned-memory matrix uses snapshot
-`35155570616f3a0677117db34938e473dc6bb278`; current sources additionally select
-fuel mode from the invocation options.
+`35155570616f3a0677117db34938e473dc6bb278`; snapshot
+`496872b52123b6dd1a83adb93f9b9616132fd962` additionally selects fuel mode from
+the invocation options.
 
 ## Owners and contracts
 

@@ -132,6 +132,57 @@ jobs:
             build/distribution/*.sha256
           if-no-files-found: error
 
+  sljit:
+    name: Linux x86_64 optional JIT / sanitizers=${{ matrix.sanitizers }}
+    runs-on: ubuntu-latest
+    container:
+      image: marimay-ci-c17:4c842677fa5dfacf2a7adeee8a09e8301b1a8d9414fe7d53fba6163983863242
+    needs: [classify, documentation]
+    if: ${{ needs.classify.outputs.code_changed == 'true' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizers: ['OFF', 'ON']
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:symbolize=1:allow_addr2line=1
+      ASAN_SYMBOLIZER_PATH: /usr/bin/llvm-symbolizer-18
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Install C17 toolchain
+        run: >-
+          ./tools/ci-apt-install
+          build-essential clang cmake git libclang-rt-18-dev llvm-18 python3
+      - name: Fetch the explicit pinned C dependency
+        run: |
+          git init build/sljit-source
+          git -C build/sljit-source fetch --depth 1 https://github.com/zherczeg/sljit.git d6ec3d07dcdbf2256ccae2b84d0d8a2d019f392e
+          git -C build/sljit-source checkout --detach FETCH_HEAD
+      - name: Configure verified local inputs
+        run: >-
+          cmake -S . -B build/sljit
+          -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang
+          -DMMAY_WARNINGS_AS_ERRORS=ON -DMMAY_ENABLE_SLJIT=ON
+          -DMMAY_SLJIT_SOURCE_DIR="$PWD/build/sljit-source"
+          -DMMAY_ENABLE_ADDRESS_SANITIZER=${{ matrix.sanitizers }}
+          -DMMAY_ENABLE_UNDEFINED_SANITIZER=${{ matrix.sanitizers }}
+      - name: Build
+        run: cmake --build build/sljit --parallel 4
+      - name: Test including exact fuel, ownership and native differential checks
+        run: ctest --test-dir build/sljit --parallel 2 --output-on-failure
+      - name: Preserve JIT test and dependency evidence
+        if: always()
+        uses: actions/upload-artifact@ff15f0306b3f739f7b6fd43fb5d26cd321bd4de5 # v3
+        with:
+          name: sljit-linux-x86_64-sanitizers-${{ matrix.sanitizers }}-attempt-${{ gitea.run_attempt }}
+          path: |
+            build/sljit/Testing/Temporary/*.log
+            build/sljit/mmay-sljit-inputs/.mmay-sljit-inputs.json
+          if-no-files-found: warn
+
   sanitizers:
     name: Linux x86_64 ASan+UBSan+LSan
     runs-on: ubuntu-latest

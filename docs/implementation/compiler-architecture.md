@@ -585,6 +585,36 @@ focused owner for cold/image equivalence over every finite frame/shared-fuel
 boundary, false-condition and bounds exits, generation saturation, final array
 contents and allocator teardown.
 
+D111 adds an explicitly enabled shared machine-code tier. `vm_jit.c` owns its
+invocation lifecycle and tier entry; `vm_jit_plan.c` owns bounded segmentation;
+`vm_jit_sljit.c` owns machine-code lowering; `vm_jit_bind.c` owns nonallocating
+validated views and enum reads; `vm_jit_loops.c` delegates D109 composition.
+The coordinator uses the narrow entry result rather than inspecting compiled
+function plans. `vm_jit_internal.h` exposes those plans only to focused JIT
+owners. No cold call/frame/panic implementation moves into the generator.
+The plan checks exact operand types: I64-named wire instructions also encode
+other integer widths, whose policies the current i64 emitter cannot implement.
+`test_bytecode_vm_jit.c` owns verified admission, cold/JIT scalar and selector
+differential checks; `tests/c-unit/jit/` owns code memory, allocation/platform
+failure sweeps, fuel-mode and pinned dependency preparation tests.
+
+`base/code_memory.c` is the central OS page-allocation owner behind the narrow
+`mmay/base/code_memory.h` API. It owns rounding, bounded reserve, one-way W^X
+publication, cache flush, platform fault injection and release. Ordinary compiler
+and staging allocations pass through `vm_jit_memory.c` to the existing allocator;
+that adapter does not own OS policy. Both allocation ledgers remain testable.
+Only the central page owner may use mmap/munmap or VirtualAlloc/VirtualFree.
+
+`cmake/MarimaySljit.cmake` owns optional dependency/build composition.
+`tools/prepare-sljit.py` validates the explicit local dependency against
+`cmake/sljit-source.json`, copies only named upstream inputs under the build
+directory, applies the recorded ARM64 minimum-immediate patch and installs the
+owned allocator configuration. The upstream C library is a separate external
+target; it is not treated as handwritten Marimay owner code or used to bypass
+Marimay source-size/dependency gates. The default bootstrap has no dependency
+or runtime stub-call overhead from this tier. Enabled distributions retain the
+SLJIT license; no source-program engine or third-party runtime selector is added.
+
 D105 keeps inactive activation buffers in that same frame owner, at most one
 function layout per call depth until program teardown. Only checked root-frame
 registration can reactivate them. Return unlinks roots before reuse; managed

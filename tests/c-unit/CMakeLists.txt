@@ -3,6 +3,9 @@ set_source_files_properties(runtime_profile_probe.c PROPERTIES
 )
 
 set(MMAY_C_UNIT_SHARD_COUNT 16)
+if(MMAY_ENABLE_SLJIT)
+  add_subdirectory(jit)
+endif()
 
 add_executable(mmay_cp32_process_fixture cp32_process_fixture.c)
 mmay_target_warnings(mmay_cp32_process_fixture)
@@ -260,6 +263,11 @@ add_executable(mmay_c_unit
   test_utf8.c
   ../fuzz/semantic_oracle.c
 )
+
+if(MMAY_ENABLE_SLJIT)
+  target_sources(mmay_c_unit PRIVATE test_bytecode_vm_jit.c)
+  target_compile_definitions(mmay_c_unit PRIVATE MMAY_TEST_HAS_SLJIT=1)
+endif()
 
 target_link_libraries(mmay_c_unit PRIVATE mmay_bootstrap)
 target_include_directories(mmay_c_unit PRIVATE

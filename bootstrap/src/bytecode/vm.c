@@ -2,6 +2,9 @@
 #include "vm_hot.h"
 #include "vm_frame.h"
 #include "vm_image.h"
+#ifdef MMAY_HAVE_SLJIT
+#include "vm_jit.h"
+#endif
 #include <limits.h>
 #include <string.h>
 #include "mmay/base/f64.h"
@@ -260,6 +263,9 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
     size_t frame_count = 0;
     size_t frame_capacity = 0;
     MarimayBytecodeExecutionImage image = {0};
+#ifdef MMAY_HAVE_SLJIT
+    MarimayBytecodeJit jit = {0};
+#endif
     bool image_ready = false;
     MarimayBytecodeRunStatus status;
     const MarimayBytecodeProgramFunction *entry = NULL;
@@ -315,6 +321,13 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
             return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         }
         image_ready = image_status == MMAY_BYTECODE_IMAGE_OK;
+#ifdef MMAY_HAVE_SLJIT
+        if (image_ready) {
+            status = mmay_bytecode_jit_init(&jit, program, &image, allocator, NULL,
+                options.max_steps != SIZE_MAX || options.remaining_shared_steps != NULL);
+            if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
+        }
+#endif
     }
     if (!mmay_bytecode_run_frames_reserve(
             &frames,
@@ -357,6 +370,13 @@ MarimayBytecodeRunStatus mmay_bytecode_run_program(
                 status = MMAY_BYTECODE_RUN_INVALID_BYTECODE;
                 goto cleanup;
             }
+#ifdef MMAY_HAVE_SLJIT
+            if (mmay_bytecode_jit_run(&jit, function_id, &image.functions[function_id],
+                body, frame->registers, options.execution, &frame->block,
+                &frame->instruction, &frame->steps, options)) {
+                /* One cold instruction preserves an exact source exit. */
+            } else
+#endif
             if (image.functions[function_id].has_specialized_loop) {
                 mmay_bytecode_run_image_hot(&image.functions[function_id], body,
                     frame->registers, options.execution, &frame->block,
@@ -751,6 +771,9 @@ cleanup:
     }
     mmay_bytecode_run_frames_dispose(frames, frame_capacity,
         &allocator, options.execution);
+#ifdef MMAY_HAVE_SLJIT
+    mmay_bytecode_jit_dispose(&jit);
+#endif
     mmay_bytecode_execution_image_dispose(&image);
     return status;
 }

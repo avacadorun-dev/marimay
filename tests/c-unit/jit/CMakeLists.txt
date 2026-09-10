@@ -1,0 +1,20 @@
+function(mmay_add_jit_test mmay_jit_test source)
+  add_executable(${mmay_jit_test} "${source}")
+  target_link_libraries(${mmay_jit_test} PRIVATE mmay_bootstrap)
+  target_include_directories(${mmay_jit_test} PRIVATE "${PROJECT_SOURCE_DIR}/bootstrap/src/bytecode")
+  target_include_directories(${mmay_jit_test} SYSTEM PRIVATE "${mmay_sljit_prepared}/sljit_src")
+  target_compile_definitions(${mmay_jit_test} PRIVATE SLJIT_HAVE_CONFIG_PRE=1)
+  mmay_target_warnings(${mmay_jit_test})
+  mmay_target_sanitizers(${mmay_jit_test})
+  add_test(NAME ${mmay_jit_test} COMMAND ${mmay_jit_test})
+  set_tests_properties(${mmay_jit_test} PROPERTIES SKIP_RETURN_CODE 77 TIMEOUT 120 LABELS "jit;focused")
+endfunction()
+
+mmay_add_jit_test(mmay_code_memory test_code_memory.c)
+mmay_add_jit_test(mmay_jit_ownership test_jit_ownership.c)
+mmay_add_jit_test(mmay_jit_fuel test_jit_fuel.c)
+
+add_test(NAME mmay_jit_pinned_inputs
+  COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_prepare_sljit.py"
+    "${PROJECT_SOURCE_DIR}/tools/prepare-sljit.py")
+set_tests_properties(mmay_jit_pinned_inputs PROPERTIES TIMEOUT 120)

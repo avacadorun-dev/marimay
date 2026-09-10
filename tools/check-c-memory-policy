@@ -10,6 +10,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 ALLOWED = {
     Path("bootstrap/src/base/allocator.c"): {"malloc", "realloc", "free"},
+    Path("bootstrap/src/base/code_memory.c"): {"mmap", "munmap", "VirtualAlloc", "VirtualFree"},
 }
 FORBIDDEN = (
     "malloc",
@@ -33,6 +34,8 @@ FORBIDDEN = (
     "GlobalFree",
     "VirtualAlloc",
     "VirtualFree",
+    "mmap",
+    "munmap",
 )
 IDENTIFIER = re.compile(
     r"\b(" + "|".join(map(re.escape, FORBIDDEN)) + r")\b"
@@ -172,6 +175,8 @@ def self_test() -> None:
         "void *value = mal\\\nloc(4);",
         "#define HEAP ma ## lloc\nvoid *value = HEAP(4);",
         "#define CAT(a, b) a ## b\nvoid *value = CAT(m, alloc)(4);",
+        "void *value = mmap(0, 4096, 3, 0, -1, 0);",
+        "munmap(value, 4096); VirtualAlloc(0, 4096, 0, 0); VirtualFree(value, 0, 0);",
     )
     ignored = (
         "// malloc(4)\nint value = 0;",
@@ -190,6 +195,11 @@ def self_test() -> None:
         raise RuntimeError("policy self-test rejected the exact allocator allowlist")
     if not violations_for(allocator, "calloc(1, 1);"):
         raise RuntimeError("policy self-test widened the allocator allowlist")
+    pages = Path("bootstrap/src/base/code_memory.c")
+    if violations_for(pages, "mmap(0, 1, 0, 0, -1, 0); munmap(0, 1); VirtualAlloc(0, 1, 0, 0); VirtualFree(0, 0, 0);"):
+        raise RuntimeError("policy self-test rejected the central page allocator")
+    if not violations_for(pages, "malloc(1); free(0);"):
+        raise RuntimeError("policy self-test widened the central page allocator")
     if not any(path.suffix == ".inc" for path in production_files()):
         raise RuntimeError("policy self-test did not discover compiled .inc files")
     numbered = violations_for(

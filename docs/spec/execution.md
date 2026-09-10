@@ -52,6 +52,39 @@ The VM is required in every standard Marimay installation. It is the default eng
 
 The baseline VM is an interpreter. A JIT is not required for 1.0 and cannot become a semantic dependency.
 
+#### 3.1.1 Optional machine-code execution (D111)
+
+An implementation may compile bounded regions of already verified bytecode
+into invocation-local machine code. The region is an optimization of the same
+VM engine, not a source-language feature or a bytecode compatibility dependency.
+Portable bundles contain no machine code, native address or executable cache.
+The required interpreter remains available on every supported host.
+
+The compiled region must preserve the original instruction's observable effects,
+source/trap location, exact finite frame/shared fuel, logical call depth,
+capabilities, typed managed roots and heap accounting. Before an unsupported
+operation or failed speculative guard, it must expose the last completed source
+prefix and resume ordinary execution before the uncommitted instruction.
+Borrowed storage cannot survive allocation, collection, a host/call boundary or
+return to ordinary VM execution without revalidation. D109 composed loops retain
+their existing exact-prefix contract.
+
+D087 local invocations with unlimited frame steps and no shared counter may
+omit instruction accounting. Any shared-counter pointer, including one whose
+current value is SIZE_MAX, requires exact accounting. Code prepared without
+metering must refuse execution under finite/shared options and retain ordinary
+VM handling of those options.
+
+Code storage is separate from the managed heap and bounded by an explicit
+implementation budget that includes page rounding. Compiler/staging allocation
+and executable-page ownership obey the central allocation boundary. Executable
+publication is immutable, uses platform W^X and cache synchronization, and must
+not expose a generic writable/executable fallback. Unsupported execution policy
+or code eligibility uses the interpreter; an actual allocation failure remains
+observable. Partial compilation and all completed code are released at invocation
+teardown. Enabling an optional tier does not waive conformance, deterministic
+failure, sanitizer or supported-platform release gates.
+
 ### 3.2 Native AOT
 
 The native backend lowers typed MIR to portable C17 and invokes a supported host C toolchain. It is the default engine for `mmay build`. Generated C and the C runtime form an implementation boundary, not a stable foreign API.
