@@ -42,7 +42,7 @@ static void fixture_init(Fixture *fixture) {
 }
 
 static size_t observe(size_t allocation_failure, size_t platform_failure,
-    bool succeeds, MarimayBytecodeRunStatus expected) {
+    bool succeeds, MarimayBytecodeRunStatus expected, bool meter) {
     Fixture fixture;
     fixture_init(&fixture);
     MarimayFailAllocator failing;
@@ -50,7 +50,7 @@ static size_t observe(size_t allocation_failure, size_t platform_failure,
     MarimayCodeMemoryFault fault = {platform_failure, 0, 0, 0};
     MarimayBytecodeJit jit = {0};
     EXPECT(mmay_bytecode_jit_init(&jit, &fixture.program, &fixture.image,
-        mmay_fail_allocator(&failing), &fault) == expected);
+        mmay_fail_allocator(&failing), &fault, meter) == expected);
     EXPECT(jit.ready == succeeds);
     if (succeeds) {
         EXPECT(jit.function_count == 2 && fault.attempts == 4 && fault.live_mappings == 2);
@@ -62,8 +62,13 @@ static size_t observe(size_t allocation_failure, size_t platform_failure,
             MarimayBytecodeRunOptions options = {.max_steps=10, .remaining_shared_steps=&shared};
             mmay_bytecode_jit_run(&jit, id, &fixture.images[id], &fixture.functions[id].body,
                 registers, NULL, &block, &instruction, &steps, options);
-            EXPECT(registers[0].as.i64 == 3 && registers[1].as.i64 == 1);
-            EXPECT(block == 1 && instruction == 0 && steps == 9 && shared == 1);
+            if (meter) {
+                EXPECT(registers[0].as.i64 == 3 && registers[1].as.i64 == 1);
+                EXPECT(block == 1 && instruction == 0 && steps == 9 && shared == 1);
+            } else {
+                EXPECT(registers[0].as.i64 == 0 && registers[1].as.i64 == 0);
+                EXPECT(block == 0 && instruction == 0 && steps == 0 && shared == 10);
+            }
         }
     } else {
         EXPECT(jit.metadata == NULL && jit.bindings == NULL && jit.function_count == 0);
@@ -78,12 +83,16 @@ static size_t observe(size_t allocation_failure, size_t platform_failure,
 
 int main(void) {
     if (!mmay_code_memory_supported()) return 77;
-    size_t allocations = observe(SIZE_MAX, SIZE_MAX, true, MMAY_BYTECODE_RUN_OK);
-    for (size_t i = 0; i < allocations; ++i)
-        observe(i, SIZE_MAX, false, MMAY_BYTECODE_RUN_ALLOCATION_FAILED);
-    observe(allocations, SIZE_MAX, true, MMAY_BYTECODE_RUN_OK);
-    for (size_t i = 0; i < 4; ++i)
-        observe(SIZE_MAX, i, false, i % 2 == 0 ? MMAY_BYTECODE_RUN_ALLOCATION_FAILED : MMAY_BYTECODE_RUN_OK);
-    printf("two-function JIT: %zu allocation failure indices, 4 platform failure indices, exact source/fuel exit, zero allocation/map counters: passed\n", allocations);
+    for (size_t mode = 0; mode < 2; ++mode) {
+        bool meter = mode != 0;
+        size_t allocations = observe(SIZE_MAX, SIZE_MAX, true, MMAY_BYTECODE_RUN_OK, meter);
+        for (size_t i = 0; i < allocations; ++i)
+            observe(i, SIZE_MAX, false, MMAY_BYTECODE_RUN_ALLOCATION_FAILED, meter);
+        observe(allocations, SIZE_MAX, true, MMAY_BYTECODE_RUN_OK, meter);
+        for (size_t i = 0; i < 4; ++i)
+            observe(SIZE_MAX, i, false, i % 2 == 0 ? MMAY_BYTECODE_RUN_ALLOCATION_FAILED : MMAY_BYTECODE_RUN_OK, meter);
+        printf("two-function JIT (%s): %zu allocation failure indices, 4 platform failure indices, exact source/fuel exit or mode rejection, zero allocation/map counters: passed\n",
+            meter ? "metered" : "unmetered", allocations);
+    }
     return 0;
 }

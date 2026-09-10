@@ -17,7 +17,8 @@
     "Reuse the accepted D109 shift-loop owner before generic JIT segment charging, returning the exact source PC and expiring view epochs after progress.",
     "Route every SLJIT compiler/staging allocation through the central allocator; publish relocated code through an owned W^X platform mapping.",
     "Count page-rounded mappings against the code budget; distinguish unavailable hosts, capacity limits and allocation failures.",
-    "Patch two ARM64 immediate-selection negations in SLJIT to fall back to register operands for INT64_MIN, without sanitizer suppression."
+    "Patch two ARM64 immediate-selection negations in SLJIT to fall back to register operands for INT64_MIN, without sanitizer suppression.",
+    "Generate without segment fuel only for invocations with unlimited frame steps and no shared counter; refuse unmetered entry when any counter is supplied."
   ],
   "evaluation_limits": [
     "Only bounded functions with backedges are compiled; calls and unsupported instructions return to the interpreter.",
@@ -25,12 +26,12 @@
     "No Tier 1 portability or performance-parity claim."
   ],
   "files_sha256": {
-    "vm_jit.c": "9da70cfb4f13defeb2a026c13846bc1041174e1a7e6740534ac65636752dd491",
-    "vm_jit.h": "1a7240843974a04d12c2a6becb7b6de5e85996273f836e8a51c2916cca7f2507",
-    "vm_jit_internal.h": "b413c88b2298327da360cb3c8de5cfd9a79ef8d4e3a25f77a8b9f12a94ab767e",
+    "vm_jit.c": "74080b4d6f1d27c5cb584b69bccbd87d4cdda90d01da8cf03d12e3df6b78da75",
+    "vm_jit.h": "b696c9bd95a9d1213615dc111572eb83880910e094be76486fe18b8b04d3af42",
+    "vm_jit_internal.h": "f57071a84b6e189245a1d2b1db5423814cbd3e5fdce2109536e02330df0da271",
     "vm_jit_plan.c": "f326591efa31af26fec6d5ab4a99783a8776cd4065444d6dcbf64d94e3d112b3",
     "vm_jit_bind.c": "8631ec1e689b792e4e4ab3e5fe5aea853c2a8ca1c3da28201bcb095d01c4756b",
-    "vm_jit_sljit.c": "5e5caca732a60351572e929be8146dd8e47c002878a385f6026c06c3b80d3f4a",
+    "vm_jit_sljit.c": "566546ba49cd3ce285148b46d3f3a463043090b1bda220a59b343c4845b5c7df",
     "code_memory.h": "1b17b13e7929655bd7214ddf0d3ab34147a482ca2222f64cd0908a3ff1a2db9c",
     "smoke.c": "aba6c24782354c27fd47444cf9c8502cda7448d06277f7cd08694f65833fd352",
     "vm_jit_loops.c": "1a4b9366684b11733f2cfbcfc8a1480e013f78acfdbc508d1a5c15b4ed135318",
@@ -40,8 +41,9 @@
     "sljitConfigPre.h": "3643fe7f2bcc25a8b17ec6532ca9066db5710f30b0c06cddacb3a77eed40bb49",
     "test_memory.c": "c7af6429979835e410af8bf69df296dc11d34099a590a1dd9a30716125d248a0",
     "sljit-arm64-minimum.patch": "2f285475677cace772df0ce71aa63eb1e8559c5d1b5223e214913ad854c1013f",
-    "test_jit_ownership.c": "dfae501f12f89c19eb049c48d16c9c1d9c56c9140df6ffa2ca77dfb1f0611670",
-    "vm-adapter.patch": "ba5c4f907c68e7de6878d30d31ff26ec840d93832199da85594e21d5189f4ecf"
+    "test_jit_ownership.c": "b73e7f95c424284c39c6ab12c2a1968940c6c9afe987f1e663599188d66cdd88",
+    "vm-adapter.patch": "afce24c02383f3020f044537e553c04ccd0641cda81932a17250861d8326d5f0",
+    "test_jit_fuel.c": "f3e88921567cc6e2897ae30fa2f4ccb3284624417f0cd956910608740d855c9b"
   },
   "baseline_sources_sha256": {
     "bootstrap/src/bytecode/vm.c": "245f42cecd809d1289547f5483b36007ea97e0207a44e3359341606cb214465e",

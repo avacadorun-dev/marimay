@@ -21,6 +21,7 @@ typedef struct MarimayBytecodeJitFunction {
 typedef struct MarimayBytecodeJit {
     MarimayAllocator allocator;
     bool ready;
+    bool meters_fuel;
     MarimayBytecodeJitFunction *functions;
     size_t function_count;
     void *metadata;
@@ -36,7 +37,7 @@ typedef struct MarimayBytecodeJit {
 MarimayBytecodeRunStatus mmay_bytecode_jit_init(MarimayBytecodeJit *jit,
     const MarimayBytecodeProgram *program,
     const MarimayBytecodeExecutionImage *image, MarimayAllocator allocator,
-    MarimayCodeMemoryFault *fault);
+    MarimayCodeMemoryFault *fault, bool meter_fuel);
 void mmay_bytecode_jit_dispose(MarimayBytecodeJit *jit);
 void mmay_bytecode_jit_run(MarimayBytecodeJit *jit, size_t function_id,
     const MarimayBytecodeImageFunction *image,

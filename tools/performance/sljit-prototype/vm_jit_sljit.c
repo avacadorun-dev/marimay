@@ -16,6 +16,7 @@ typedef struct Emitter {
     const MarimayBytecodeFunction *function;
     size_t pc;
     size_t restore;
+    bool meter_fuel;
 } Emitter;
 
 static sljit_sw slot(uint32_t reg) {
@@ -58,8 +59,8 @@ static void copy(Emitter *e, uint32_t dst, uint32_t src) {
     invalidate(e, dst);
 }
 static void leave(Emitter *e) {
-    if (e->restore) sljit_emit_op2(e->c, SLJIT_ADD, FUEL, 0, FUEL, 0, SLJIT_IMM, (sljit_sw)e->restore);
-    move(e, SLJIT_MOV, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, budget), FUEL, 0);
+    if (e->meter_fuel && e->restore) sljit_emit_op2(e->c, SLJIT_ADD, FUEL, 0, FUEL, 0, SLJIT_IMM, (sljit_sw)e->restore);
+    if (e->meter_fuel) move(e, SLJIT_MOV, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, budget), FUEL, 0);
     move(e, SLJIT_MOV, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, pc), SLJIT_IMM, (sljit_sw)e->pc);
     sljit_emit_return_void(e->c);
 }
@@ -93,7 +94,7 @@ static void composed_shift(Emitter *e) {
     sljit_sw address = 0;
     _Static_assert(sizeof(address) == sizeof(function), "helper pointer");
     memcpy(&address, &function, sizeof(address));
-    move(e, SLJIT_MOV, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, budget), FUEL, 0);
+    if (e->meter_fuel) move(e, SLJIT_MOV, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, budget), FUEL, 0);
     move(e, SLJIT_MOV, SLJIT_R0, 0, CTX, 0);
     move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_IMM, (sljit_sw)e->pc);
     sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS2(32, P, 32), SLJIT_IMM, address);
@@ -231,7 +232,7 @@ static void scalar(Emitter *e, const MarimayBytecodeImageOperation *op) {
 
 MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFunction *image,
     const MarimayBytecodeFunction *function, MarimayBytecodeJitFunction *compiled,
-    MarimayAllocator *allocator, size_t capacity, MarimayCodeMemoryFault *fault) {
+    MarimayAllocator *allocator, size_t capacity, MarimayCodeMemoryFault *fault, bool meter_fuel) {
     size_t n = image->operation_count;
     size_t scratch_bytes = n * (sizeof(struct sljit_label *) + 2*sizeof(struct sljit_jump *));
     void *scratch = mmay_allocate(allocator, scratch_bytes);
@@ -241,7 +242,7 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
     struct sljit_jump **edges = (struct sljit_jump **)(labels + n);
     struct sljit_compiler *compiler = sljit_create_compiler(allocator);
     if (!compiler) { mmay_deallocate(allocator, scratch, scratch_bytes); return MMAY_CODE_MEMORY_ALLOCATION_FAILED; }
-    Emitter e = {compiler, function, 0, 0};
+    Emitter e = {compiler, function, 0, 0, meter_fuel};
     sljit_emit_enter(compiler, 0, SLJIT_ARGS2V(P, P), 6, 5, 0);
     move(&e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_S1, 0);
     move(&e, SLJIT_MOV, REGS, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, registers));
@@ -257,11 +258,11 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
         if (!plan->supported) { leave(&e); continue; }
         if (plan->starts_segment && op->fusion == MMAY_BYTECODE_IMAGE_FUSION_ARRAY_SHIFT_LOOP)
             composed_shift(&e);
-        if (plan->starts_segment) {
+        if (plan->starts_segment && meter_fuel) {
             condition(&e, SLJIT_GREATER_EQUAL, FUEL, 0, SLJIT_IMM, plan->segment_end - pc);
             sljit_emit_op2(compiler, SLJIT_SUB, FUEL, 0, FUEL, 0, SLJIT_IMM, plan->segment_end - pc);
         }
-        e.restore = plan->segment_end - pc;
+        e.restore = meter_fuel ? plan->segment_end - pc : 0;
         switch (op->opcode) {
             case MMAY_OPCODE_JUMP: edges[2*pc] = sljit_emit_jump(compiler, SLJIT_JUMP); break;
             case MMAY_OPCODE_BRANCH_BOOL:

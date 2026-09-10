@@ -20,7 +20,7 @@ def main():
     parser.add_argument('--output', type=Path, default=Path('build/sljit-prototype'))
     parser.add_argument('--arch', choices=['arm64', 'x86_64'])
     parser.add_argument('--unit', action='store_true', help='Also link the existing bytecode unit suite against this VM')
-    parser.add_argument('--memory-test', action='store_true', help='Build the focused allocation/publication test')
+    parser.add_argument('--memory-test', action='store_true', help='Build the focused allocation, publication and fuel tests')
     parser.add_argument('--sanitize', action='store_true', help='ASan/UBSan; requires a matching instrumented baseline')
     args = parser.parse_args()
     here = Path(__file__).resolve().parent
@@ -95,6 +95,9 @@ def main():
         run(['cc', *architecture, *flags, '-c', str(output / 'test_jit_ownership.c'), '-o', str(output / 'test_jit_ownership.o')])
         run(['cc', *architecture, *instrumentation, str(output / 'test_jit_ownership.o'), *objects,
              str(build / 'libmmay_bootstrap.a'), '-lm', '-o', str(output / 'test_jit_ownership')])
+        run(['cc', *architecture, *flags, '-c', str(output / 'test_jit_fuel.c'), '-o', str(output / 'test_jit_fuel.o')])
+        run(['cc', *architecture, *instrumentation, str(output / 'test_jit_fuel.o'), *objects,
+             str(build / 'libmmay_bootstrap.a'), '-lm', '-o', str(output / 'test_jit_fuel')])
     manifest = {
         'status': 'built-experimental', 'sljit_commit': revision,
         'base_archive_sha256': digest(build / 'libmmay_bootstrap.a'),

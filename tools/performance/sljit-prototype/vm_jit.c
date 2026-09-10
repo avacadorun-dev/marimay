@@ -29,10 +29,11 @@ void mmay_bytecode_jit_dispose(MarimayBytecodeJit *jit) {
 MarimayBytecodeRunStatus mmay_bytecode_jit_init(MarimayBytecodeJit *jit,
     const MarimayBytecodeProgram *program,
     const MarimayBytecodeExecutionImage *image, MarimayAllocator allocator,
-    MarimayCodeMemoryFault *fault
+    MarimayCodeMemoryFault *fault, bool meter_fuel
 ) {
     memset(jit, 0, sizeof(*jit));
     jit->allocator = allocator;
+    jit->meters_fuel = meter_fuel;
     if (!mmay_code_memory_supported()) return MMAY_BYTECODE_RUN_OK;
 
     size_t bytes = 0, registers = 0;
@@ -70,7 +71,7 @@ MarimayBytecodeRunStatus mmay_bytecode_jit_init(MarimayBytecodeJit *jit,
         position += body->operation_count * sizeof(*compiled->plan);
         mmay_bytecode_jit_plan(body, function, compiled->plan);
         MarimayCodeMemoryStatus compiled_status = mmay_bytecode_jit_sljit(body, function, compiled, &allocator,
-            MMAY_JIT_MAX_CODE_BYTES - code_bytes, fault);
+            MMAY_JIT_MAX_CODE_BYTES - code_bytes, fault, meter_fuel);
         if (compiled_status == MMAY_CODE_MEMORY_ALLOCATION_FAILED) goto failed;
         if (compiled_status == MMAY_CODE_MEMORY_LIMIT) { compiled->entries = NULL; continue; }
         if (compiled_status != MMAY_CODE_MEMORY_OK) {
@@ -98,6 +99,8 @@ void mmay_bytecode_jit_run(MarimayBytecodeJit *jit, size_t function_id,
     size_t *steps, MarimayBytecodeRunOptions options
 ) {
     if (!jit->ready || function_id >= jit->function_count) return;
+    if (!jit->meters_fuel && (options.max_steps != SIZE_MAX
+        || options.remaining_shared_steps != NULL)) return;
     const MarimayBytecodeJitFunction *compiled = &jit->functions[function_id];
     if (compiled->entries == NULL) return;
     size_t pc = (size_t)image->block_starts[*block] + *instruction;

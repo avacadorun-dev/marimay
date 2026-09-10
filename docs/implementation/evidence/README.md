@@ -165,6 +165,14 @@ sum of VM medians by 46.1%, with no median regression above 2%.
 It remains an experiment; production
 integration, full JIT conformance, Linux LSan and Tier 1 parity remain open.
 
+[JIT fuel selected from invocation options](cp42-sljit-fuel-mode-2026-09-10.md)
+([validation](cp42-sljit-fuel-mode-validation-2026-09-10.json),
+[paired six-workload observations](cp42-sljit-fuel-mode-paired-2026-09-10.json))
+records exact bounded/shared accounting, conservative rejection of incompatible
+unmetered entries and the additional 15.3% Dijkstra improvement. All 32
+correctness cases pass in three local configurations; production and Tier 1
+parity remain open.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

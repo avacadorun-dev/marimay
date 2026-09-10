@@ -99,5 +99,12 @@ of VM medians by 46.1%, with insertion at parity and no median regression above
 2%. Production integration, complete JIT conformance, Linux
 LSan, Tier 1 acceptance and Go/Rust parity remain open.
 
+[JIT fuel selected from invocation options](docs/implementation/evidence/cp42-sljit-fuel-mode-2026-09-10.md)
+retains exact metering for bounded/shared invocations and omits unused segment
+accounting for D087 local runs. All 32 correctness cases pass on ARM64, Rosetta
+x86-64 and ARM64 ASan/UBSan. A separate paired six-workload series improves
+Dijkstra by 15.3%; it does not replace the full-matrix evidence above or close
+production, platform or parity gates.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

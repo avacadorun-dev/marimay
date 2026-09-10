@@ -37,6 +37,6 @@ void mmay_bytecode_jit_plan(const MarimayBytecodeImageFunction *image,
 
 MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFunction *image,
     const MarimayBytecodeFunction *function, MarimayBytecodeJitFunction *compiled,
-    MarimayAllocator *allocator, size_t capacity, MarimayCodeMemoryFault *fault);
+    MarimayAllocator *allocator, size_t capacity, MarimayCodeMemoryFault *fault, bool meter_fuel);
 
 #endif

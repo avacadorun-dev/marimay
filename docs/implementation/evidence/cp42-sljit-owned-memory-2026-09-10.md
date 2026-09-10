@@ -132,7 +132,9 @@ path-independent binary reproducibility is not claimed.
 ## Reproduction and open gates
 
 The [experiment README](../../../tools/performance/sljit-prototype/README.md)
-provides exact build/test commands. `build.py --unit --memory-test` rebuilds
+provides build/test commands. Use snapshot
+`35155570616f3a0677117db34938e473dc6bb278` to reproduce this historical
+candidate. `build.py --unit --memory-test` rebuilds
 the ordinary and focused suites; `--sanitize` requires a matching instrumented
 baseline archive. A macOS x86-64 baseline uses
 `-DCMAKE_OSX_ARCHITECTURES=x86_64` and the adapter uses `--arch x86_64`.

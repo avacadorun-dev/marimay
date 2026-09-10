@@ -21,6 +21,7 @@ python3 tools/performance/sljit-prototype/build.py \
   --sljit build/sljit-evaluation --unit --memory-test
 build/sljit-prototype/test_memory
 build/sljit-prototype/test_jit_ownership
+build/sljit-prototype/test_jit_fuel
 mkdir -p build/sljit-prototype/suite-2
 (cd build/sljit-prototype/suite-2 && ../mmay_c_unit ../mmay --suite-shard 2)
 python3 tools/performance/sljit-prototype/check.py \
@@ -45,7 +46,9 @@ preparation, arguments, heap limits, checksums, 3 warmups and 11 samples.
 
 The first feasibility report describes the older experiment at commit
 `0145177bd4c6366128a2039fd094ba1fede30f3a`. Reproduce its exact candidate from
-that snapshot; current sources include the ownership and composed-loop changes.
+that snapshot. The full owned-memory matrix uses snapshot
+`35155570616f3a0677117db34938e473dc6bb278`; current sources additionally select
+fuel mode from the invocation options.
 
 ## Owners and contracts
 
@@ -56,6 +59,10 @@ that snapshot; current sources include the ownership and composed-loop changes.
 - `vm_jit_plan.c` selects bounded supported segments without source/name-based
   specialization. `vm_jit_sljit.c` lowers them to the shared backend. Calls and
   unsupported instructions return to the ordinary VM with an exact source PC.
+  D087 local source runs have unlimited steps and no shared counter; only that
+  explicit mode omits segment fuel. A metered invocation retains exact charging
+  and refunds. Unmetered code rejects entry with any finite frame limit or any
+  shared-counter pointer, including one initially containing SIZE_MAX.
 - `vm_jit_bind.c` validates borrowed array/record storage. Every return to the
   VM expires binding epochs. Within a segment, a managed COPY/read preserves
   its binding only when all provenance, slot and generation bits are identical.
@@ -84,7 +91,9 @@ that snapshot; current sources include the ownership and composed-loop changes.
 rejected writes to published memory, page/staging limits, alignment, all reachable
 allocation/platform failure indices, and zero allocator/mapping counters after
 teardown. `test_jit_ownership.c` adds two-function preparation, failures after a
-prior publication, exact source/fuel exit, and complete teardown. Neither is a
+prior publication, exact source/fuel exit, and complete teardown. `test_jit_fuel.c` checks both modes,
+exact metered accounting and refusal of finite/shared options by unmetered code.
+These focused tests are not a
 substitute for Linux LeakSanitizer or full JIT semantic/platform conformance.
 
 ## Findings retained from the earlier prototype

@@ -21,7 +21,7 @@
          }
          image_ready = image_status == MMAY_BYTECODE_IMAGE_OK;
 +        if (image_ready) {
-+            status = mmay_bytecode_jit_init(&jit, program, &image, allocator, NULL);
++            status = mmay_bytecode_jit_init(&jit, program, &image, allocator, NULL, options.max_steps != SIZE_MAX || options.remaining_shared_steps != NULL);
 +            if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
 +        }
      }
