@@ -191,6 +191,13 @@ regressions above 2% in both configurations. The candidate is not accepted into
 the production compiler. The [SMART plan](../vm-performance-plan.md) retains
 the original per-workload gate and the open overall parity objective.
 
+[Frame-cursor candidate held and remaining JIT costs profiled](cp42-sljit-cursor-2026-09-10.md)
+records complete local correctness, full JIT/interpreter matrices and the one
+planned BFS confirmation. Median criteria pass, but repeatable slow BFS runs
+leave stability unresolved; the implementation remains a reproducible patch.
+Nine subsequent diagnostic profiles locate 49.6% of BFS and 58.2% of DSU samples
+under object binding, with raw stacks and a reproduction script preserved.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

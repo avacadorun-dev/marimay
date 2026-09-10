@@ -22,7 +22,7 @@ before timing. A cache experiment must report cold and warm costs explicitly.
 Contemporaneous Go/Rust measurements are required for a parity claim; an earlier
 table or a two-Marimay comparison cannot establish it.
 
-## Current bounded stage
+## First bounded stage: rejected
 
 At 09:12 UTC on 2026-09-10 the current stage was timeboxed to **11:12 UTC
 (18:12 Asia/Krasnoyarsk)**. The deliverable is either a verified, measured change
@@ -57,9 +57,39 @@ as an indexed source patch and measured evidence; its production code is not
 accepted by this checkpoint. The next candidate must remove that regression
 while retaining the original speedup targets and full-matrix gate.
 
+## Second bounded stage: frame cursor held
+
+The second stage started at **11:12 UTC on 2026-09-10** and is due by
+**13:12 UTC (20:12 Asia/Krasnoyarsk)**. It retains all acceptance criteria above
+and the same published JIT and interpreter controls. The specific change is a
+local current-frame pointer in the VM coordinator, refreshed after activation
+transfers. Cold operations cannot relocate this invocation's frame vector.
+This removes repeated frame-container reads without changing call semantics,
+compiler-wide optimization flags or safety checks.
+
+Preliminary paired measurements put frequency-map at -0.3% without JIT and
++1.1% with JIT; BFS is -0.4% with JIT. These are admission experiments, not the
+full acceptance matrix. The deadline deliverable remains either accepted code,
+tests and measurements committed to main and pushed, or a recorded failed gate.
+
+The [full checkpoint](evidence/cp42-sljit-cursor-2026-09-10.md) passes local
+correctness and the nominal median criteria: stack/queue improve 22.9%/26.6%,
+DSU improves 10.6%, and the only flagged JIT median (BFS +9.4%) has a +0.3%
+single confirmation. The interpreter has no median regression above 2%.
+Nevertheless, the implementation is held: a slow BFS mode recurs in all three
+series, while the control stays stable. The recorded outcome distinguishes this
+unresolved stability concern from the predeclared median rule, which passed.
+The candidate remains a replayable patch; its production code is not merged.
+
+Post-measurement sampling locates 49.6% of BFS and 58.2% of DSU samples under
+JIT object binding. The next bounded experiment should test cheap revalidation
+and reuse of already checked object views, with explicit GC/provenance
+invalidation and the same unchanged-corpus acceptance. Its implementation and
+deadline must be recorded before that experiment starts.
+
 ## Sequence after this stage
 
-1. Profile the accepted call tier. Reduce repeated managed-object validation,
+1. Follow the measured object-binding profile. Reduce repeated managed-object validation,
    view binding and register/frame traffic where the profile shows the largest
    remaining cost. The optimizing tier should retain hot scalar values in CPU
    registers and consider bounded leaf inlining with exact logical-frame

@@ -129,5 +129,12 @@ full matrices and the single planned confirmations. The implementation remains
 a reproducible candidate patch; these results do not merge it into production
 or close the parity gate.
 
+The [frame-cursor follow-up](docs/implementation/evidence/cp42-sljit-cursor-2026-09-10.md)
+passes local correctness and the nominal median confirmation rule but remains
+held because BFS repeatedly develops a slow execution mode. Its replayable
+patch and all observations are preserved. Post-measurement profiles locate
+about half of BFS and DSU samples in JIT object binding, defining the next
+systemic experiment; they do not establish a new speedup or close parity.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.
