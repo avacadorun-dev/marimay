@@ -3,6 +3,21 @@
 Date: 2026-09-10. This plan scopes performance work under D111; it does not
 change language semantics, release gates or the current opt-in JIT status.
 
+## Current work order — 2026-09-11
+
+The user-directed [architecture review and ordered work protocol](evidence/cp42-parity-architecture-review-2026-09-11.md)
+supersedes earlier next-intervention suggestions in this historical log.
+Start with `title-search-10k` and `title-search-100k` together, then
+`normalize-title`, then `word-frequency`, and continue through the original
+32-row manifest order. Keep one active workload family and report Native and
+VM separately. Necessary shared-runtime/compiler changes are documented
+dependencies of that family. Existing call-root analysis remains follow-up work.
+The next diagnosis separates title creation from repeated search, byte-resolution
+work and source/JIT startup. The accepted baseline is `51e0be3`; no per-row parity
+or language-level impossibility has been established. Each candidate requires
+its own targets before timing and the unchanged corpus, safety, limit, validation
+and main/push evidence contracts.
+
 ## Objective and measurement
 
 The user's objective is Go/Rust parity on the unchanged 32-workload corpus,

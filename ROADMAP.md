@@ -267,3 +267,5 @@ It combines a shared VM boundary removal with the existing array-length invarian
 The unchanged 32-workload comparison, revised user-directed tradeoff policy,
 101/87 full tests, sanitizer/Rosetta checks and frame-work counters are retained.
 Native executable hashes remain identical. Overall parity and full Tier 1 remain open.
+
+[Parity architecture review and ordered workload work](docs/implementation/evidence/cp42-parity-architecture-review-2026-09-11.md) records the user-directed text-first queue against accepted `51e0be3`. It distinguishes measured implementation costs from unproven language limits, preserves Native/VM boundaries and all32 completion requirements, and makes no new speedup claim.
