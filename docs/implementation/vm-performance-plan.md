@@ -354,3 +354,9 @@ It removes temporary concatenation copies and a separate payload allocation;
 Unchanged-corpus measurements, allocation/GC/root tests and the exact candidate patch are
 preserved. The record also exposes the existing D055 string-allocation precedence
 gap. Overall parity, full Tier 1 and Linux LSan remain open.
+
+[Immediate enum construction inside JIT segments](evidence/cp42-jit-immediate-enum-2026-09-11-rejected.md) is **rejected**.
+Paired unchanged-corpus timing and exact before/after counters connect a shared
+VM boundary removal to several workloads. All 32 Native executables remain
+byte-identical. Full ON/OFF, focused sanitizer/Rosetta and failure/fuel checks
+are recorded. Overall parity, complete Tier 1 and Linux LSan remain open.
