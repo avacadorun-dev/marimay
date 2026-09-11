@@ -4,7 +4,9 @@
 #include "mmay/bytecode/vm.h"
 
 /* D104: verified, rooted program frame only. No allocation or safepoint;
- * stops before an unsupported/failing instruction without consuming it. */
+ * stops before an unsupported/failing instruction without consuming it.
+ * Cursor pointers name distinct fields of that frame, separate from registers
+ * and fuel. The cursor is published at every exit, before any observer runs. */
 void mmay_bytecode_run_hot(const MarimayBytecodeFunction *function,
     MarimayBytecodeValue *registers, MarimayBytecodeExecution *execution,
     size_t *block, size_t *instruction, size_t *steps,

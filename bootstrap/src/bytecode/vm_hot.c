@@ -10,6 +10,12 @@
  * the entire cache before the ordinary dispatcher can reach a safepoint. */
 #define MMAY_VM_HOT_ARRAYS 4
 
+#if defined(__clang__) || defined(__GNUC__)
+#define MMAY_VM_HOT_INLINE static inline __attribute__((always_inline))
+#else
+#define MMAY_VM_HOT_INLINE static inline
+#endif
+
 typedef struct MarimayBytecodeHotArray {
     MarimayManagedArrayView view;
     MarimayBytecodeType type;
@@ -215,37 +221,50 @@ static bool mmay_bytecode_hot_scalar(
     return true;
 }
 
-void mmay_bytecode_run_hot(const MarimayBytecodeFunction *function,
+MMAY_VM_HOT_INLINE void mmay_bytecode_hot_region(const MarimayBytecodeFunction *function,
     MarimayBytecodeValue *registers, MarimayBytecodeExecution *execution,
     size_t *block_id, size_t *instruction_id, size_t *steps,
-    MarimayBytecodeRunOptions options
+    MarimayBytecodeRunOptions options, bool metered
 ) {
     MarimayBytecodeHotArrays cache;
     cache.count = 0;
     cache.next = 0;
+    /* No observer can inspect the frame while this nonallocating region runs.
+     * Keep its cursor local and publish the next unexecuted instruction once,
+     * before cold dispatch, a fuel failure or any other region exit. */
+    size_t current_block = *block_id;
+    size_t current_instruction = *instruction_id;
     const MarimayBytecodeBlock *blocks =
         (const MarimayBytecodeBlock *)function->blocks.data;
+    /* Verified block metadata cannot change in this region. Refresh its span
+     * only on a branch, rather than rereading it after every register store. */
+    const MarimayBytecodeInstruction *instructions =
+        (const MarimayBytecodeInstruction *)blocks[current_block].instructions.data;
+    size_t instruction_count = blocks[current_block].instructions.length;
     for (;;) {
-        const MarimayBytecodeBlock *block = &blocks[*block_id];
-        if (*instruction_id >= block->instructions.length) return;
-        const MarimayBytecodeInstruction *instructions =
-            (const MarimayBytecodeInstruction *)block->instructions.data;
-        const MarimayBytecodeInstruction *instruction = &instructions[*instruction_id];
-        if ((options.max_steps != SIZE_MAX && *steps >= options.max_steps)
+        if (current_instruction >= instruction_count) break;
+        const MarimayBytecodeInstruction *instruction = &instructions[current_instruction];
+        if (metered && ((options.max_steps != SIZE_MAX && *steps >= options.max_steps)
             || (options.remaining_shared_steps != NULL
-                && *options.remaining_shared_steps == 0)) return;
-        size_t next_block = *block_id;
-        size_t next_instruction = *instruction_id + 1;
+                && *options.remaining_shared_steps == 0))) break;
+        size_t next_block = current_block;
+        size_t next_instruction = current_instruction + 1;
         switch (instruction->opcode) {
             case MMAY_OPCODE_JUMP:
                 next_block = (size_t)instruction->operands[0].unsigned_value;
                 next_instruction = 0;
+                instructions = (const MarimayBytecodeInstruction *)
+                    blocks[next_block].instructions.data;
+                instruction_count = blocks[next_block].instructions.length;
                 break;
             case MMAY_OPCODE_BRANCH_BOOL: {
                 size_t condition = (size_t)instruction->operands[0].unsigned_value;
                 next_block = (size_t)instruction->operands[
                     registers[condition].as.boolean ? 1 : 2].unsigned_value;
                 next_instruction = 0;
+                instructions = (const MarimayBytecodeInstruction *)
+                    blocks[next_block].instructions.data;
+                instruction_count = blocks[next_block].instructions.length;
                 break;
             }
             case MMAY_OPCODE_ARRAY_LENGTH:
@@ -257,15 +276,36 @@ void mmay_bytecode_run_hot(const MarimayBytecodeFunction *function,
             case MMAY_OPCODE_ARRAY_GENERATION:
             case MMAY_OPCODE_ARRAY_REQUIRE_GENERATION:
                 if (!mmay_bytecode_hot_array_instruction(instruction, registers,
-                    function, execution, &cache)) return;
+                    function, execution, &cache)) goto stopped;
                 break;
             default:
-                if (!mmay_bytecode_hot_scalar(instruction, registers)) return;
+                if (!mmay_bytecode_hot_scalar(instruction, registers)) goto stopped;
                 break;
         }
-        if (options.max_steps != SIZE_MAX) *steps += 1;
-        if (options.remaining_shared_steps != NULL) *options.remaining_shared_steps -= 1;
-        *block_id = next_block;
-        *instruction_id = next_instruction;
+        if (metered) {
+            if (options.max_steps != SIZE_MAX) *steps += 1;
+            if (options.remaining_shared_steps != NULL) *options.remaining_shared_steps -= 1;
+        }
+        current_block = next_block;
+        current_instruction = next_instruction;
+    }
+stopped:
+    *block_id = current_block;
+    *instruction_id = current_instruction;
+}
+
+void mmay_bytecode_run_hot(const MarimayBytecodeFunction *function,
+    MarimayBytecodeValue *registers, MarimayBytecodeExecution *execution,
+    size_t *block_id, size_t *instruction_id, size_t *steps,
+    MarimayBytecodeRunOptions options
+) {
+    /* D087: a shared budget must be accounted even when its value is SIZE_MAX.
+     * Specialize the single region body without a per-instruction mode check. */
+    if (options.max_steps == SIZE_MAX && options.remaining_shared_steps == NULL) {
+        mmay_bytecode_hot_region(function, registers, execution,
+            block_id, instruction_id, steps, options, false);
+    } else {
+        mmay_bytecode_hot_region(function, registers, execution,
+            block_id, instruction_id, steps, options, true);
     }
 }

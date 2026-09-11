@@ -75,7 +75,9 @@ struct MarimayBytecodeJitState {
 MarimayBytecodeRunStatus mmay_bytecode_jit_prepare_activations(MarimayBytecodeJit *jit,
     const MarimayBytecodeProgram *program, const MarimayBytecodeExecutionImage *image,
     const unsigned char *selected);
-void *mmay_bytecode_jit_transition(MarimayBytecodeJitContext *context, uint32_t pc,
+void *mmay_bytecode_jit_call(MarimayBytecodeJitContext *context, uint32_t pc,
+    const MarimayBytecodeInstruction *instruction, const MarimayBytecodePreparedCall *call);
+void *mmay_bytecode_jit_return(MarimayBytecodeJitContext *context, uint32_t pc,
     const MarimayBytecodeInstruction *instruction);
 void mmay_bytecode_jit_enter(const MarimayBytecodeJitFunction *compiled,
     MarimayBytecodeJitContext *context, size_t pc);

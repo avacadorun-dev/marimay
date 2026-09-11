@@ -39,7 +39,7 @@ void mmay_bytecode_run_frame_dispose(
     }
 }
 #ifdef MMAY_HAVE_SLJIT
-static MarimayBytecodeRunStatus initialize(
+static inline MarimayBytecodeRunStatus initialize(
 #else
 MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
 #endif
@@ -72,8 +72,9 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
         if (frame->managed_roots != NULL) {
             size_t count = frame->managed_roots->location_bytes
                 / sizeof(*frame->managed_roots->locations);
+            const MarimayManagedReference invalid = mmay_managed_invalid_reference();
             for (index = 0; index < count; index += 1) {
-                *frame->managed_roots->locations[index] = mmay_managed_invalid_reference();
+                *frame->managed_roots->locations[index] = invalid;
             }
         }
     } else {
@@ -151,7 +152,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
     return MMAY_BYTECODE_RUN_OK;
 }
 #ifdef MMAY_HAVE_SLJIT
-static MarimayBytecodeRunStatus initialize_roots(
+static inline MarimayBytecodeRunStatus initialize_roots(
 #else
 MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
 #endif

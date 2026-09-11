@@ -228,6 +228,151 @@ static void recursion(size_t maximum_depth) {
     EXPECT(fault.live_mappings == 0 && fault.live_bytes == 0);
 }
 
+/* Consecutive calls reuse one layout; the third call changes its scalar types
+ * and capacity at the same depth. Distinct argument spans must remain bound. */
+static void reuse_fixture(MarimayBytecodeProgram *program) {
+    MarimayAllocator allocator = mmay_system_allocator();
+    const MarimayBytecodeType parameters[] = {MMAY_BYTECODE_TYPE_I64, MMAY_BYTECODE_TYPE_I64};
+    EXPECT(mmay_bytecode_program_init(program, allocator, 1,
+        mmay_bytecode_program_default_options()));
+    for (uint32_t id = 0; id < 3; ++id) {
+        MarimayBytecodeFunction function = {0};
+        uint32_t added;
+        EXPECT(mmay_bytecode_function_init(&function, allocator, MMAY_BYTECODE_TYPE_I64,
+            1, id == 2 ? NULL : parameters, id == 2 ? 0 : 2,
+            mmay_bytecode_function_default_options()));
+        size_t registers = id == 0 ? 3 : id == 1 ? 4 : 9;
+        for (size_t i = id == 2 ? 0 : 2; i < registers; ++i)
+            EXPECT(mmay_bytecode_add_register(&function,
+                (id == 1 && i == 2) || (id == 2 && i == 7)
+                    ? MMAY_BYTECODE_TYPE_BOOL : MMAY_BYTECODE_TYPE_I64, &added));
+        for (size_t i = 0; i < (id == 2 ? 4U : 1U); ++i)
+            EXPECT(mmay_bytecode_add_block(&function, &added));
+        if (id < 2) {
+            if (id == 1) append(&function, 0, MMAY_OPCODE_CONST_BOOL, 2, 0, 0, 300, 0);
+            append(&function, 0, id == 0 ? MMAY_OPCODE_I64_SUBTRACT_CHECKED
+                : MMAY_OPCODE_I64_MULTIPLY_CHECKED, id == 0 ? 2 : 3, 0, 1, 301, 0);
+            append(&function, 0, MMAY_OPCODE_RETURN, id == 0 ? 2 : 3, 0, 0, 302, 0);
+        } else {
+            const uint32_t source[][2] = {{2, 3}, {3, 2}, {5, 3}};
+            for (size_t call = 0; call < 3; ++call) {
+                MarimayBytecodeCallArgument arguments[2] = {
+                    {.register_id=source[call][0], .type=MMAY_BYTECODE_TYPE_I64},
+                    {.register_id=source[call][1], .type=MMAY_BYTECODE_TYPE_I64}};
+                MarimayBytecodeCallId wire;
+                EXPECT(mmay_bytecode_add_call(&function,
+                    (MarimaySymbolId){{call == 2 ? 0x20 : 0x10}},
+                    MMAY_BYTECODE_TYPE_I64, arguments, 2, &wire));
+                EXPECT(wire == call);
+            }
+            const int64_t values[] = {4, 1, 17, 5, 0};
+            for (uint32_t reg = 0; reg < 5; ++reg)
+                append(&function, 0, MMAY_OPCODE_CONST_I64, reg, 0, 0, 310 + reg, values[reg]);
+            append(&function, 0, MMAY_OPCODE_CONST_I64, 8, 0, 0, 315, 0);
+            append(&function, 0, MMAY_OPCODE_JUMP, 1, 0, 0, 316, 0);
+            append(&function, 1, MMAY_OPCODE_I64_LESS, 7, 8, 0, 317, 0);
+            append(&function, 1, MMAY_OPCODE_BRANCH_BOOL, 7, 2, 3, 318, 0);
+            append(&function, 2, MMAY_OPCODE_CALL_DIRECT, 5, 0, 0, 319, 0);
+            append(&function, 2, MMAY_OPCODE_CALL_DIRECT, 5, 1, 0, 320, 0);
+            append(&function, 2, MMAY_OPCODE_CALL_DIRECT, 6, 2, 0, 321, 0);
+            append(&function, 2, MMAY_OPCODE_I64_ADD_CHECKED, 4, 4, 5, 322, 0);
+            append(&function, 2, MMAY_OPCODE_I64_ADD_CHECKED, 4, 4, 6, 323, 0);
+            append(&function, 2, MMAY_OPCODE_I64_SUBTRACT_CHECKED, 0, 0, 1, 324, 0);
+            append(&function, 2, MMAY_OPCODE_JUMP, 1, 0, 0, 325, 0);
+            append(&function, 3, MMAY_OPCODE_RETURN, 4, 0, 0, 326, 0);
+        }
+        MarimaySymbolId symbol = {{(unsigned char)((id + 1) * 0x10)}};
+        EXPECT(mmay_bytecode_program_take_function(program, symbol, &function, &added));
+        if (id == 2) EXPECT(mmay_bytecode_program_set_entry(program, symbol));
+    }
+    EXPECT(mmay_bytecode_program_verify(program) == MMAY_BYTECODE_PROGRAM_VERIFY_OK);
+}
+
+static size_t reuse_native(const MarimayBytecodeProgram *program, size_t failure) {
+    MarimayFailAllocator failing;
+    mmay_fail_allocator_init(&failing, mmay_system_allocator(), failure);
+    MarimayAllocator allocator = mmay_fail_allocator(&failing);
+    MarimayCodeMemoryFault fault = {SIZE_MAX, 0, 0, 0};
+    MarimayBytecodeExecutionImage image = {0};
+    MarimayBytecodeJit jit = {0};
+    MarimayBytecodeRunStack stack = {0};
+    MarimayBytecodeRunOptions options = mmay_bytecode_run_default_options();
+    options.max_steps = SIZE_MAX; options.max_call_depth = 2;
+    MarimayBytecodeRunStatus status = MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (mmay_bytecode_execution_image_init(&image, program, allocator)
+        != MMAY_BYTECODE_IMAGE_OK) goto cleanup;
+    status = mmay_bytecode_jit_init(&jit, program, &image, allocator, &fault, false);
+    if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
+    status = MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
+    if (!mmay_bytecode_run_frames_reserve(&stack.frames, &stack.capacity, 1, 2, allocator))
+        goto cleanup;
+    status = mmay_bytecode_run_frame_init(&stack.frames[0],
+        mmay_bytecode_program_function(program, 2), NULL, 0, allocator,
+        0, false, false, (MarimayBytecodeSpan){0});
+    if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
+    status = mmay_bytecode_run_frame_roots_init(&stack.frames[0], NULL, allocator);
+    if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
+    stack.count = 1;
+    MarimayBytecodeValue result = {.type=MMAY_BYTECODE_TYPE_I64, .as.i64=1234};
+    mmay_bytecode_jit_start(&jit, program, &image, &stack, allocator, &options, &result);
+    bool finished;
+    EXPECT(mmay_bytecode_jit_run_stack(&jit, &status, &finished));
+    if (status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED) goto cleanup;
+    EXPECT(status == MMAY_BYTECODE_RUN_OK && finished && result.as.i64 == -288);
+    EXPECT(stack.count == 1 && stack.capacity == 2);
+    EXPECT(stack.frames[1].function == mmay_bytecode_program_function(program, 1));
+    size_t retained_attempts = failing.attempts;
+    EXPECT(mmay_bytecode_run_frame_init(&stack.frames[0],
+        mmay_bytecode_program_function(program, 2), NULL, 0, allocator,
+        0, false, false, (MarimayBytecodeSpan){0}) == MMAY_BYTECODE_RUN_OK);
+    result.as.i64 = 1234;
+    mmay_bytecode_jit_start(&jit, program, &image, &stack, allocator, &options, &result);
+    EXPECT(mmay_bytecode_jit_run_stack(&jit, &status, &finished));
+    EXPECT(status == MMAY_BYTECODE_RUN_OK && finished && result.as.i64 == -288);
+    EXPECT(failing.attempts == retained_attempts);
+cleanup:
+    if (failure < failing.attempts) EXPECT(status == MMAY_BYTECODE_RUN_ALLOCATION_FAILED);
+    else EXPECT(status == MMAY_BYTECODE_RUN_OK);
+    size_t attempts = failing.attempts;
+    mmay_bytecode_run_frames_dispose(stack.frames, stack.capacity, &allocator, NULL);
+    mmay_bytecode_jit_dispose(&jit);
+    mmay_bytecode_execution_image_dispose(&image);
+    EXPECT(failing.live_allocations == 0 && failing.live_bytes == 0);
+    EXPECT(fault.live_mappings == 0 && fault.live_bytes == 0);
+    return attempts;
+}
+
+static void reuse_calls(void) {
+    MarimayBytecodeProgram program = {0};
+    reuse_fixture(&program);
+    size_t attempts = reuse_native(&program, SIZE_MAX);
+    for (size_t i = 0; i <= attempts; ++i) reuse_native(&program, i);
+    /* The fixture executes 46 caller instructions and 28 callee instructions. */
+    for (size_t mode = 0; mode < 2; ++mode) {
+        for (size_t fuel = 0; fuel <= 80; ++fuel) {
+            MarimayBytecodeRunOptions options = mmay_bytecode_run_default_options();
+            size_t remaining = fuel;
+            options.max_steps = mode == 0 ? fuel : SIZE_MAX;
+            options.remaining_shared_steps = mode == 1 ? &remaining : NULL;
+            options.max_call_depth = 2;
+            MarimayBytecodeValue result = {.type=MMAY_BYTECODE_TYPE_I64, .as.i64=1234};
+            bool enough = fuel >= (mode == 0 ? 46U : 74U);
+            MarimayBytecodeRunStatus expected = mode == 0 && fuel == 0
+                ? MMAY_BYTECODE_RUN_INVALID_ARGUMENT : enough ? MMAY_BYTECODE_RUN_OK
+                : MMAY_BYTECODE_RUN_STEP_LIMIT;
+            MarimayBytecodeRunStatus status = mmay_bytecode_run_program(&program,
+                NULL, 0, mmay_system_allocator(), options, &result);
+            if (status != expected) fprintf(stderr, "reuse mode %zu fuel %zu: status %d expected %d\n",
+                mode, fuel, (int)status, (int)expected);
+            EXPECT(status == expected);
+            EXPECT(result.as.i64 == (enough ? -288 : 1234));
+            if (mode == 1) EXPECT(remaining == (enough ? fuel - 74 : 0));
+        }
+    }
+    mmay_bytecode_program_dispose(&program);
+    printf("JIT repeated calls: changing argument spans/layouts, allocation-free retained run, exact fuel and %zu failure indices: passed\n", attempts);
+}
+
 int main(void) {
     if (!mmay_code_memory_supported()) return 77;
     for (size_t kind = 0; kind < 2; ++kind) {
@@ -242,6 +387,7 @@ int main(void) {
         printf("JIT nested calls (%s): one native entry, logical frames/exit PC, %zu allocation failure indices, zero counters: passed\n",
             kind ? "overflow" : "return", allocations);
     }
+    reuse_calls();
     recursion(10000);
     recursion(100);
     puts("JIT recursion: 10000 logical frames in one native entry, argument transport, bounded depth and zero counters: passed");

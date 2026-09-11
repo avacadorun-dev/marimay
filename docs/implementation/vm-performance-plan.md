@@ -264,6 +264,31 @@ nonallocating activation-path experiment in the shared owners, with a predeclare
 15% early DSU/stack latency target. These are diagnostic samples and counts, not
 an additional accepted speedup; all32, safety and overall parity gates remain.
 
+[Compiler IPO, shared calls and VM dispatch](evidence/cp42-ipo-shared-vm-2026-09-11.md)
+passes the complete unchanged all32 paired gate in both modes, with geometric
+mean speedups of 1.196x for JIT and 1.200x for the default interpreter.
+Rejected no-IPO, combined IPO/call and partial cursor variants remain recorded.
+Exact finite/shared fuel, roots, depth and allocation-failure behavior are retained;
+97/97 ON and 87/87 OFF tests plus focused sanitizer/Rosetta and all32 replays pass.
+Native runtime objects and Native/Go/Rust/Bun executable hashes match prior evidence.
+JIT remains opt-in; Linux LSan, full Tier1 and overall Go/Rust parity remain open.
+
+## Execution tiers and allocation of effort
+
+Keep the interpreter as the portable checked execution tier, the fallback for
+operations outside JIT coverage, and an independent differential reference.
+Its correctness, bounded execution and supported-platform coverage remain
+required. Subsequent performance stages prioritize JIT execution, shared VM
+mechanisms, source preparation and the native backend. Interpreter optimization
+is justified by a measured shared cost or a regression that blocks an otherwise
+useful change; it is not assigned a separate Go/Rust parity program.
+
+The extra 10% interpreter early target in the cursor experiments was a local
+experiment choice. It remains part of those recorded outcomes but is not a
+standing prerequisite for future JIT work. Future stages declare their own
+measurable improvement target and retain the all32 correctness and regression
+checks. JIT remains opt-in under the current platform and safety gates.
+
 ## Sequence after this stage
 
 1. Follow the current execution diagnosis: shorten the shared call/return protocol

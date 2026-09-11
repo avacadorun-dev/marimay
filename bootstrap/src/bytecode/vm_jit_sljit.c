@@ -14,6 +14,7 @@
 typedef struct Emitter {
     struct sljit_compiler *c;
     const MarimayBytecodeFunction *function;
+    const MarimayBytecodeJitFunction *compiled;
     size_t pc;
     size_t restore;
     bool meter_fuel;
@@ -102,11 +103,9 @@ static void reload(Emitter *e) {
     move(e, SLJIT_MOV, EPOCH, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, epoch));
 }
 static void transition(Emitter *e, const MarimayBytecodeImageOperation *operation) {
-    void *(*function)(MarimayBytecodeJitContext *, uint32_t,
-        const MarimayBytecodeInstruction *) = mmay_bytecode_jit_transition;
+    bool is_call = operation->opcode == MMAY_OPCODE_CALL_DIRECT
+        || operation->opcode == MMAY_OPCODE_CALL_DIRECT_VOID;
     sljit_sw address = 0;
-    _Static_assert(sizeof(address) == sizeof(function), "transition pointer");
-    memcpy(&address, &function, sizeof(address));
     const MarimayBytecodeBlock *block = mmay_vector_at_const(
         &e->function->blocks, operation->source_block);
     const MarimayBytecodeInstruction *instruction = block == NULL ? NULL
@@ -115,7 +114,24 @@ static void transition(Emitter *e, const MarimayBytecodeImageOperation *operatio
     move(e, SLJIT_MOV, SLJIT_R0, 0, CTX, 0);
     move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_IMM, (sljit_sw)e->pc);
     move(e, SLJIT_MOV, SLJIT_R2, 0, SLJIT_IMM, (sljit_sw)(uintptr_t)instruction);
-    sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS3(P, P, 32, P), SLJIT_IMM, address);
+    if (is_call) {
+        void *(*function)(MarimayBytecodeJitContext *, uint32_t,
+            const MarimayBytecodeInstruction *, const MarimayBytecodePreparedCall *)
+            = mmay_bytecode_jit_call;
+        _Static_assert(sizeof(address) == sizeof(function), "call pointer");
+        memcpy(&address, &function, sizeof(address));
+        uint32_t wire = operation->opcode == MMAY_OPCODE_CALL_DIRECT_VOID
+            ? operation->first : operation->second;
+        move(e, SLJIT_MOV, SLJIT_R3, 0, SLJIT_IMM,
+            (sljit_sw)(uintptr_t)&e->compiled->calls[wire]);
+        sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS4(P, P, 32, P, P), SLJIT_IMM, address);
+    } else {
+        void *(*function)(MarimayBytecodeJitContext *, uint32_t,
+            const MarimayBytecodeInstruction *) = mmay_bytecode_jit_return;
+        _Static_assert(sizeof(address) == sizeof(function), "return pointer");
+        memcpy(&address, &function, sizeof(address));
+        sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS3(P, P, 32, P), SLJIT_IMM, address);
+    }
     struct sljit_jump *resume = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R0, 0, SLJIT_IMM, 0);
     /* The helper has already published the current logical activation/PC. */
     sljit_emit_return_void(e->c);
@@ -359,7 +375,7 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
     struct sljit_jump **edges = (struct sljit_jump **)(labels + n);
     struct sljit_compiler *compiler = sljit_create_compiler(allocator);
     if (!compiler) { mmay_deallocate(allocator, scratch, scratch_bytes); return MMAY_CODE_MEMORY_ALLOCATION_FAILED; }
-    Emitter e = {compiler, function, 0, 0, meter_fuel};
+    Emitter e = {compiler, function, compiled, 0, 0, meter_fuel};
     sljit_emit_enter(compiler, 0, SLJIT_ARGS2V(P, P), 6, 5, 0);
     move(&e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_S1, 0);
     reload(&e);

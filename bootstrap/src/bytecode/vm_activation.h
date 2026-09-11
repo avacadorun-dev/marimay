@@ -20,6 +20,8 @@ typedef struct MarimayBytecodePreparedCall {
     const MarimayBytecodeCall *call;
     const MarimayBytecodeFrameLayout *layout;
     bool borrows_caller_roots;
+    const MarimayBytecodeCallArgument *arguments;
+    size_t callee_id;
 } MarimayBytecodePreparedCall;
 
 /* Active verified caller/instruction; the instruction's fuel is already

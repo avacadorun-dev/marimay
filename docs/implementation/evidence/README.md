@@ -268,6 +268,15 @@ nonallocating activation-path experiment in the shared owners, with a predeclare
 15% early DSU/stack latency target. These are diagnostic samples and counts, not
 an additional accepted speedup; all32, safety and overall parity gates remain.
 
+[Compiler IPO, shared calls and VM dispatch](cp42-ipo-shared-vm-2026-09-11.md)
+passes the complete unchanged all32 paired gate in both modes, with geometric
+mean speedups of 1.196x for JIT and 1.200x for the default interpreter.
+Rejected no-IPO, combined IPO/call and partial cursor variants remain recorded.
+Exact finite/shared fuel, roots, depth and allocation-failure behavior are retained;
+97/97 ON and 87/87 OFF tests plus focused sanitizer/Rosetta and all32 replays pass.
+Native runtime objects and Native/Go/Rust/Bun executable hashes match prior evidence.
+JIT remains opt-in; Linux LSan, full Tier1 and overall Go/Rust parity remain open.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

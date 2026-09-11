@@ -1,0 +1,1608 @@
+{
+  "schema": "marimay.ipo-shared-vm-evidence/1",
+  "status": "accepted-local",
+  "recorded_utc": "2026-09-11T06:20:27.344586+00:00",
+  "protocol": {
+    "started_utc": "2026-09-11T05:37:31.414464+00:00",
+    "due_utc": "2026-09-11T06:52:27.583258+00:00",
+    "parent_revision": "01b994d2cda6aceb8dfb7f689748f36cfa030a4b",
+    "previous_goal_turn": "progress: v2 rejected on full ON/OFF gate; original-source IPO-only control reproduces large OFF regressions; old candidate and data retained. Original v2 deadline was missed, unchanged.",
+    "variant": "v3c: specialize the same hot-region source once at entry for existing D087 completely unmetered execution (SIZE_MAX frame budget and NULL shared budget). Retain exact finite/shared accounting in the metered specialization, local cursor and immutable block span, shared call refactor and IPO in both JIT modes.",
+    "evidence": "IPO-only versus refactor+IPO differs <1% on heap-sort/dijkstra. Three full-size sampling runs each put 95-99% exclusive samples in vm_hot for both binaries. Per-op frame cursor memory traffic is the selected intervention; sampling alone does not prove the exact machine-level cause.",
+    "early_gate": "After focused fuel/root/exit/allocator tests, 3 warmups+11 paired unchanged heap-sort/dijkstra/title-search-100k/bfs-int versus accepted OFF: each median <=1.02 baseline and geometric mean latency reduction >=10%. The existing call target also remains: DSU/stack ON geometric mean latency reduction >=15%. Reject/rework if these fail.",
+    "full_gate": "Both ON/OFF all32 unchanged workloads,114 input hashes, original stdout/args,64MiB. Median >2% or P90 >5% receives one confirmation; same metric repeated rejects. Nonincreasing sum of medians in both modes.",
+    "validation": "Full ON/OFF tests, all32 correctness under ASan/UBSan and x86 Rosetta plus focused tests, all reachable deterministic allocation failures and both zero ledgers. Architecture/memory/roadmap/doc/spec/generated gates. No builds/tests/profilers during acceptance timings.",
+    "limits": "Local candidate acceptance only; whole Go/Rust parity and Tier1/Linux LSan remain open; JIT remains opt-in. Native/Go/Rust/Bun comparison only after accepted full gate.",
+    "preceding_variant": "v3b: 7.71% early geometric mean reduction, below unchanged10% gate. Rejected and preserved. V3a:7.07%. The original v3 deadline and both early/full gates remain unchanged."
+  },
+  "parent_revision": "01b994d2cda6aceb8dfb7f689748f36cfa030a4b",
+  "inputs_sha256": {
+    "CMakeLists.txt": "75b79053ab5285268aa451f65cc5ab4dfa8d093621ec5c5ad2be267e961693f9",
+    "README.md": "24ab0fce5246aeec87b587bfe6d674484d0237f9b7d2af7e1adedbc2952b55ce",
+    "bootstrap/src/bytecode/vm_activation.c": "033b046159fea6c099e2103b210ff8eb8b27a750fcc46236c337567864eb015c",
+    "bootstrap/src/bytecode/vm_activation.h": "1216acb74097320887945f530ee3c46cc4f2322c9e2260baaa5a5ea0983f81ba",
+    "bootstrap/src/bytecode/vm_frame.c": "023db9bc61351aeee302f2625d37c800d8f345bb624f8e15492b0058c23e9f27",
+    "bootstrap/src/bytecode/vm_jit_activations.c": "b189f9f1215c19e3e8fedf5e373a40bfe9d2b9012808f513129b59149cdf25ed",
+    "bootstrap/src/bytecode/vm_jit_calls.c": "e117537b51242cdb6ecf5f2fe1e108a63d6fc54296ec1770117951465a247180",
+    "bootstrap/src/bytecode/vm_jit_internal.h": "317daa73043985fd88ec886169b8ae3cf90be8fc5824b9ba162bf2c5abb5416d",
+    "bootstrap/src/bytecode/vm_jit_sljit.c": "1aee95aa0e6c1872bf8f8a2eec0df70667a1c9e70635de9913704d22f44c4316",
+    "docs/implementation/compiler-architecture.md": "3e5bf9c5ddafa42076359d39b2fe788992ab9e9b9b346041917af03a370037c1",
+    "tests/c-unit/jit/test_jit_calls.c": "6c15c21407e7c860599078f16ce63583028cc204ccbea9dbf834cbcd9f396a38",
+    "cmake/MarimayCompilerOptimization.cmake": "0a61c3e54e08eabecd1d81c1fec2e2e2316edf3da43075a341a6118b22be99db",
+    "tests/build/test_compiler_ipo.py": "d4ab6daba7adb98ff90c7f436e3e18326784043ccf8e9d8a56f6b4bcf8304ba2",
+    "bootstrap/src/bytecode/vm_hot.c": "37c57231e3bbd6963f7022f3cb8f37481a89a5080223c3f7de5e1e436504e35a",
+    "bootstrap/src/bytecode/vm_hot.h": "515109f0bf0642e04bf75203a4612a324131c6f1902e6efa32befc50501d931d",
+    "tests/c-unit/test_bytecode_vm_hot.c": "a295fe7761486dba66e9c2e5969de5bd98d51fb0ab2c20ab70a7ab8b2d93e243"
+  },
+  "measurement": {
+    "status": "accepted-local",
+    "started_utc": "2026-09-11T06:00:54.758418+00:00",
+    "protocol": {
+      "started_utc": "2026-09-11T05:37:31.414464+00:00",
+      "due_utc": "2026-09-11T06:52:27.583258+00:00",
+      "parent_revision": "01b994d2cda6aceb8dfb7f689748f36cfa030a4b",
+      "previous_goal_turn": "progress: v2 rejected on full ON/OFF gate; original-source IPO-only control reproduces large OFF regressions; old candidate and data retained. Original v2 deadline was missed, unchanged.",
+      "variant": "v3c: specialize the same hot-region source once at entry for existing D087 completely unmetered execution (SIZE_MAX frame budget and NULL shared budget). Retain exact finite/shared accounting in the metered specialization, local cursor and immutable block span, shared call refactor and IPO in both JIT modes.",
+      "evidence": "IPO-only versus refactor+IPO differs <1% on heap-sort/dijkstra. Three full-size sampling runs each put 95-99% exclusive samples in vm_hot for both binaries. Per-op frame cursor memory traffic is the selected intervention; sampling alone does not prove the exact machine-level cause.",
+      "early_gate": "After focused fuel/root/exit/allocator tests, 3 warmups+11 paired unchanged heap-sort/dijkstra/title-search-100k/bfs-int versus accepted OFF: each median <=1.02 baseline and geometric mean latency reduction >=10%. The existing call target also remains: DSU/stack ON geometric mean latency reduction >=15%. Reject/rework if these fail.",
+      "full_gate": "Both ON/OFF all32 unchanged workloads,114 input hashes, original stdout/args,64MiB. Median >2% or P90 >5% receives one confirmation; same metric repeated rejects. Nonincreasing sum of medians in both modes.",
+      "validation": "Full ON/OFF tests, all32 correctness under ASan/UBSan and x86 Rosetta plus focused tests, all reachable deterministic allocation failures and both zero ledgers. Architecture/memory/roadmap/doc/spec/generated gates. No builds/tests/profilers during acceptance timings.",
+      "limits": "Local candidate acceptance only; whole Go/Rust parity and Tier1/Linux LSan remain open; JIT remains opt-in. Native/Go/Rust/Bun comparison only after accepted full gate.",
+      "preceding_variant": "v3b: 7.71% early geometric mean reduction, below unchanged10% gate. Rejected and preserved. V3a:7.07%. The original v3 deadline and both early/full gates remain unchanged.",
+      "baseline": {
+        "on": {
+          "path": "build/bytecode-program-preparation/mmay",
+          "sha256": "517a8ea363b93e4ea36e2a6a48fa93867658c9acd26dffead64980e52cf2714b"
+        },
+        "off": {
+          "path": "build/bytecode-program-preparation-off/mmay",
+          "sha256": "fc5a9a781ac24f12c123deecd0833052880760a609be0643115e06de60ef1ab0"
+        }
+      }
+    },
+    "frozen_inputs": {
+      "CMakeLists.txt": "75b79053ab5285268aa451f65cc5ab4dfa8d093621ec5c5ad2be267e961693f9",
+      "README.md": "24ab0fce5246aeec87b587bfe6d674484d0237f9b7d2af7e1adedbc2952b55ce",
+      "bootstrap/src/bytecode/vm_activation.c": "033b046159fea6c099e2103b210ff8eb8b27a750fcc46236c337567864eb015c",
+      "bootstrap/src/bytecode/vm_activation.h": "1216acb74097320887945f530ee3c46cc4f2322c9e2260baaa5a5ea0983f81ba",
+      "bootstrap/src/bytecode/vm_frame.c": "023db9bc61351aeee302f2625d37c800d8f345bb624f8e15492b0058c23e9f27",
+      "bootstrap/src/bytecode/vm_jit_activations.c": "b189f9f1215c19e3e8fedf5e373a40bfe9d2b9012808f513129b59149cdf25ed",
+      "bootstrap/src/bytecode/vm_jit_calls.c": "e117537b51242cdb6ecf5f2fe1e108a63d6fc54296ec1770117951465a247180",
+      "bootstrap/src/bytecode/vm_jit_internal.h": "317daa73043985fd88ec886169b8ae3cf90be8fc5824b9ba162bf2c5abb5416d",
+      "bootstrap/src/bytecode/vm_jit_sljit.c": "1aee95aa0e6c1872bf8f8a2eec0df70667a1c9e70635de9913704d22f44c4316",
+      "docs/implementation/compiler-architecture.md": "3e5bf9c5ddafa42076359d39b2fe788992ab9e9b9b346041917af03a370037c1",
+      "tests/c-unit/jit/test_jit_calls.c": "6c15c21407e7c860599078f16ce63583028cc204ccbea9dbf834cbcd9f396a38",
+      "cmake/MarimayCompilerOptimization.cmake": "0a61c3e54e08eabecd1d81c1fec2e2e2316edf3da43075a341a6118b22be99db",
+      "tests/build/test_compiler_ipo.py": "d4ab6daba7adb98ff90c7f436e3e18326784043ccf8e9d8a56f6b4bcf8304ba2",
+      "bootstrap/src/bytecode/vm_hot.c": "37c57231e3bbd6963f7022f3cb8f37481a89a5080223c3f7de5e1e436504e35a",
+      "bootstrap/src/bytecode/vm_hot.h": "515109f0bf0642e04bf75203a4612a324131c6f1902e6efa32befc50501d931d",
+      "tests/c-unit/test_bytecode_vm_hot.c": "a295fe7761486dba66e9c2e5969de5bd98d51fb0ab2c20ab70a7ab8b2d93e243"
+    },
+    "commands": [
+      {
+        "series": "on-full",
+        "command": [
+          "caffeinate",
+          "-i",
+          "python3",
+          "tools/performance/compare-vm-preparation.py",
+          "--benchmarks",
+          "../algorithm-benchmarks",
+          "--reference",
+          "docs/implementation/evidence/cp42-program-verification-comprehensive-2026-09-11.json",
+          "--before",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/bytecode-program-preparation/mmay",
+          "--after",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/mmay",
+          "--output",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/on-full.json"
+        ],
+        "before_sha256": "517a8ea363b93e4ea36e2a6a48fa93867658c9acd26dffead64980e52cf2714b",
+        "after_sha256": "69c1bc7ecba625dc204fefb85587a94588eb426807b8782593dc429e1f8162bb",
+        "started_utc": "2026-09-11T06:00:54.764100+00:00",
+        "exit_code": 0,
+        "finished_utc": "2026-09-11T06:04:47.030760+00:00"
+      },
+      {
+        "series": "off-full",
+        "command": [
+          "caffeinate",
+          "-i",
+          "python3",
+          "tools/performance/compare-vm-preparation.py",
+          "--benchmarks",
+          "../algorithm-benchmarks",
+          "--reference",
+          "docs/implementation/evidence/cp42-program-verification-comprehensive-2026-09-11.json",
+          "--before",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/bytecode-program-preparation-off/mmay",
+          "--after",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-off/mmay",
+          "--output",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/off-full.json"
+        ],
+        "before_sha256": "fc5a9a781ac24f12c123deecd0833052880760a609be0643115e06de60ef1ab0",
+        "after_sha256": "ca08b8f301fe7895f6e5b16a58ed965b2f42f3cf4378ed57d441b03da43c4a89",
+        "started_utc": "2026-09-11T06:04:47.054779+00:00",
+        "exit_code": 0,
+        "finished_utc": "2026-09-11T06:16:34.039071+00:00"
+      }
+    ],
+    "modes": {
+      "on": {
+        "compiler_sha256": "69c1bc7ecba625dc204fefb85587a94588eb426807b8782593dc429e1f8162bb",
+        "sum_before_ms": 8901.943666000001,
+        "sum_after_ms": 7462.632542999999,
+        "geomean_speedup": 1.1963397105781133,
+        "flagged": {},
+        "confirmed": {},
+        "accepted": true
+      },
+      "off": {
+        "compiler_sha256": "ca08b8f301fe7895f6e5b16a58ed965b2f42f3cf4378ed57d441b03da43c4a89",
+        "sum_before_ms": 27120.263496,
+        "sum_after_ms": 22595.324666,
+        "geomean_speedup": 1.1999478907159362,
+        "flagged": {},
+        "confirmed": {},
+        "accepted": true
+      }
+    },
+    "host_isolation": "local-unverified; builds/tests/profilers from this task completed before timings; host samples retained.",
+    "finished_utc": "2026-09-11T06:16:34.067049+00:00",
+    "deadline_met": true
+  },
+  "matrices": {
+    "early-on": {
+      "file": "cp42-ipo-shared-vm-2026-09-11-early-on.json",
+      "sha256": "b941fb21736ded7515788f795019e42ff706262ffd5b507da8c96f325f826d50"
+    },
+    "early-off": {
+      "file": "cp42-ipo-shared-vm-2026-09-11-early-off.json",
+      "sha256": "dbfd2e6bc2ea3fa5280cbd69c718dc7a701783a2c7623f408d2b0d53d737fd8d"
+    },
+    "on-full": {
+      "file": "cp42-ipo-shared-vm-2026-09-11-on-full.json",
+      "sha256": "51c3587330cee3d653ba44ac26207ec2b73e9d61ce5467d59405e9be8175bd8e"
+    },
+    "off-full": {
+      "file": "cp42-ipo-shared-vm-2026-09-11-off-full.json",
+      "sha256": "efe1e4ef8debb0be9b9f798fd5f370b30d3824712912f4dfb6776f662753f217"
+    }
+  },
+  "early_result": {
+    "status": "passed-early",
+    "started_utc": "2026-09-11T05:39:25.635899+00:00",
+    "protocol": {
+      "started_utc": "2026-09-11T05:37:31.414464+00:00",
+      "due_utc": "2026-09-11T06:52:27.583258+00:00",
+      "parent_revision": "01b994d2cda6aceb8dfb7f689748f36cfa030a4b",
+      "previous_goal_turn": "progress: v2 rejected on full ON/OFF gate; original-source IPO-only control reproduces large OFF regressions; old candidate and data retained. Original v2 deadline was missed, unchanged.",
+      "variant": "v3c: specialize the same hot-region source once at entry for existing D087 completely unmetered execution (SIZE_MAX frame budget and NULL shared budget). Retain exact finite/shared accounting in the metered specialization, local cursor and immutable block span, shared call refactor and IPO in both JIT modes.",
+      "evidence": "IPO-only versus refactor+IPO differs <1% on heap-sort/dijkstra. Three full-size sampling runs each put 95-99% exclusive samples in vm_hot for both binaries. Per-op frame cursor memory traffic is the selected intervention; sampling alone does not prove the exact machine-level cause.",
+      "early_gate": "After focused fuel/root/exit/allocator tests, 3 warmups+11 paired unchanged heap-sort/dijkstra/title-search-100k/bfs-int versus accepted OFF: each median <=1.02 baseline and geometric mean latency reduction >=10%. The existing call target also remains: DSU/stack ON geometric mean latency reduction >=15%. Reject/rework if these fail.",
+      "full_gate": "Both ON/OFF all32 unchanged workloads,114 input hashes, original stdout/args,64MiB. Median >2% or P90 >5% receives one confirmation; same metric repeated rejects. Nonincreasing sum of medians in both modes.",
+      "validation": "Full ON/OFF tests, all32 correctness under ASan/UBSan and x86 Rosetta plus focused tests, all reachable deterministic allocation failures and both zero ledgers. Architecture/memory/roadmap/doc/spec/generated gates. No builds/tests/profilers during acceptance timings.",
+      "limits": "Local candidate acceptance only; whole Go/Rust parity and Tier1/Linux LSan remain open; JIT remains opt-in. Native/Go/Rust/Bun comparison only after accepted full gate.",
+      "preceding_variant": "v3b: 7.71% early geometric mean reduction, below unchanged10% gate. Rejected and preserved. V3a:7.07%. The original v3 deadline and both early/full gates remain unchanged."
+    },
+    "frozen_inputs": {
+      "CMakeLists.txt": "75b79053ab5285268aa451f65cc5ab4dfa8d093621ec5c5ad2be267e961693f9",
+      "README.md": "24ab0fce5246aeec87b587bfe6d674484d0237f9b7d2af7e1adedbc2952b55ce",
+      "bootstrap/src/bytecode/vm_activation.c": "033b046159fea6c099e2103b210ff8eb8b27a750fcc46236c337567864eb015c",
+      "bootstrap/src/bytecode/vm_activation.h": "1216acb74097320887945f530ee3c46cc4f2322c9e2260baaa5a5ea0983f81ba",
+      "bootstrap/src/bytecode/vm_frame.c": "023db9bc61351aeee302f2625d37c800d8f345bb624f8e15492b0058c23e9f27",
+      "bootstrap/src/bytecode/vm_jit_activations.c": "b189f9f1215c19e3e8fedf5e373a40bfe9d2b9012808f513129b59149cdf25ed",
+      "bootstrap/src/bytecode/vm_jit_calls.c": "e117537b51242cdb6ecf5f2fe1e108a63d6fc54296ec1770117951465a247180",
+      "bootstrap/src/bytecode/vm_jit_internal.h": "317daa73043985fd88ec886169b8ae3cf90be8fc5824b9ba162bf2c5abb5416d",
+      "bootstrap/src/bytecode/vm_jit_sljit.c": "1aee95aa0e6c1872bf8f8a2eec0df70667a1c9e70635de9913704d22f44c4316",
+      "docs/implementation/compiler-architecture.md": "3e5bf9c5ddafa42076359d39b2fe788992ab9e9b9b346041917af03a370037c1",
+      "tests/c-unit/jit/test_jit_calls.c": "6c15c21407e7c860599078f16ce63583028cc204ccbea9dbf834cbcd9f396a38",
+      "cmake/MarimayCompilerOptimization.cmake": "0a61c3e54e08eabecd1d81c1fec2e2e2316edf3da43075a341a6118b22be99db",
+      "tests/build/test_compiler_ipo.py": "d4ab6daba7adb98ff90c7f436e3e18326784043ccf8e9d8a56f6b4bcf8304ba2",
+      "bootstrap/src/bytecode/vm_hot.c": "37c57231e3bbd6963f7022f3cb8f37481a89a5080223c3f7de5e1e436504e35a",
+      "bootstrap/src/bytecode/vm_hot.h": "515109f0bf0642e04bf75203a4612a324131c6f1902e6efa32befc50501d931d",
+      "tests/c-unit/test_bytecode_vm_hot.c": "a295fe7761486dba66e9c2e5969de5bd98d51fb0ab2c20ab70a7ab8b2d93e243"
+    },
+    "series": [
+      {
+        "mode": "off",
+        "command": [
+          "caffeinate",
+          "-i",
+          "python3",
+          "tools/performance/compare-vm-preparation.py",
+          "--benchmarks",
+          "../algorithm-benchmarks",
+          "--reference",
+          "docs/implementation/evidence/cp42-program-verification-comprehensive-2026-09-11.json",
+          "--before",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/bytecode-program-preparation-off/mmay",
+          "--after",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-off/mmay",
+          "--output",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/early-off.json",
+          "--workload",
+          "heap-sort",
+          "--workload",
+          "dijkstra",
+          "--workload",
+          "title-search-100k",
+          "--workload",
+          "bfs-int"
+        ],
+        "started_utc": "2026-09-11T05:39:25.636276+00:00",
+        "before_sha256": "fc5a9a781ac24f12c123deecd0833052880760a609be0643115e06de60ef1ab0",
+        "after_sha256": "ca08b8f301fe7895f6e5b16a58ed965b2f42f3cf4378ed57d441b03da43c4a89",
+        "exit_code": 0,
+        "finished_utc": "2026-09-11T05:41:46.955344+00:00",
+        "summary": {
+          "heap-sort": {
+            "before": {
+              "median_ms": 1632.478042,
+              "mad_ms": 2.306332999999995,
+              "q1_ms": 1630.397625,
+              "q3_ms": 1636.710208,
+              "iqr_ms": 6.312582999999904,
+              "min_ms": 1626.531583,
+              "max_ms": 1639.052875,
+              "noise_fraction": 0.02
+            },
+            "after": {
+              "median_ms": 1426.355083,
+              "mad_ms": 2.172458000000006,
+              "q1_ms": 1424.182625,
+              "q3_ms": 1430.204875,
+              "iqr_ms": 6.0222499999999854,
+              "min_ms": 1421.190958,
+              "max_ms": 1434.346625,
+              "noise_fraction": 0.02
+            }
+          },
+          "dijkstra": {
+            "before": {
+              "median_ms": 2369.929708,
+              "mad_ms": 4.136999999999716,
+              "q1_ms": 2366.238875,
+              "q3_ms": 2384.795,
+              "iqr_ms": 18.556125000000065,
+              "min_ms": 2360.019625,
+              "max_ms": 2439.527125,
+              "noise_fraction": 0.02
+            },
+            "after": {
+              "median_ms": 2234.53175,
+              "mad_ms": 12.227041999999983,
+              "q1_ms": 2216.398959,
+              "q3_ms": 2239.849292,
+              "iqr_ms": 23.450332999999773,
+              "min_ms": 2205.663792,
+              "max_ms": 2261.664625,
+              "noise_fraction": 0.02
+            }
+          },
+          "title-search-100k": {
+            "before": {
+              "median_ms": 879.763792,
+              "mad_ms": 10.493791999999985,
+              "q1_ms": 867.806042,
+              "q3_ms": 887.759417,
+              "iqr_ms": 19.953374999999937,
+              "min_ms": 857.789416,
+              "max_ms": 904.139625,
+              "noise_fraction": 0.03578389595738211
+            },
+            "after": {
+              "median_ms": 801.814375,
+              "mad_ms": 48.956792000000064,
+              "q1_ms": 762.052708,
+              "q3_ms": 864.123917,
+              "iqr_ms": 102.07120899999995,
+              "min_ms": 752.857583,
+              "max_ms": 875.652541,
+              "noise_fraction": 0.18317254040250922
+            }
+          },
+          "bfs-int": {
+            "before": {
+              "median_ms": 206.196542,
+              "mad_ms": 1.1973330000000146,
+              "q1_ms": 205.489042,
+              "q3_ms": 207.6395,
+              "iqr_ms": 2.150457999999986,
+              "min_ms": 204.93125,
+              "max_ms": 244.429334,
+              "noise_fraction": 0.02
+            },
+            "after": {
+              "median_ms": 172.501792,
+              "mad_ms": 0.5847080000000062,
+              "q1_ms": 171.614916,
+              "q3_ms": 172.998375,
+              "iqr_ms": 1.3834590000000162,
+              "min_ms": 171.222625,
+              "max_ms": 173.53225,
+              "noise_fraction": 0.02
+            }
+          }
+        },
+        "geomean_latency_ratio": 0.8902517570031035,
+        "passed": true
+      },
+      {
+        "mode": "on",
+        "command": [
+          "caffeinate",
+          "-i",
+          "python3",
+          "tools/performance/compare-vm-preparation.py",
+          "--benchmarks",
+          "../algorithm-benchmarks",
+          "--reference",
+          "docs/implementation/evidence/cp42-program-verification-comprehensive-2026-09-11.json",
+          "--before",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/bytecode-program-preparation/mmay",
+          "--after",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/mmay",
+          "--output",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/early-on.json",
+          "--workload",
+          "dsu",
+          "--workload",
+          "stack"
+        ],
+        "started_utc": "2026-09-11T05:41:46.967306+00:00",
+        "before_sha256": "517a8ea363b93e4ea36e2a6a48fa93867658c9acd26dffead64980e52cf2714b",
+        "after_sha256": "69c1bc7ecba625dc204fefb85587a94588eb426807b8782593dc429e1f8162bb",
+        "exit_code": 0,
+        "finished_utc": "2026-09-11T05:42:32.410108+00:00",
+        "summary": {
+          "dsu": {
+            "before": {
+              "median_ms": 1180.03575,
+              "mad_ms": 7.1121250000001055,
+              "q1_ms": 1175.843416,
+              "q3_ms": 1193.978958,
+              "iqr_ms": 18.135541999999987,
+              "min_ms": 1167.353542,
+              "max_ms": 1262.1925,
+              "noise_fraction": 0.02
+            },
+            "after": {
+              "median_ms": 961.403334,
+              "mad_ms": 2.733916000000022,
+              "q1_ms": 957.155375,
+              "q3_ms": 964.13725,
+              "iqr_ms": 6.981874999999945,
+              "min_ms": 956.390375,
+              "max_ms": 1008.84475,
+              "noise_fraction": 0.02
+            }
+          },
+          "stack": {
+            "before": {
+              "median_ms": 427.724958,
+              "mad_ms": 2.5633750000000077,
+              "q1_ms": 425.161583,
+              "q3_ms": 435.131167,
+              "iqr_ms": 9.969583999999998,
+              "min_ms": 423.935375,
+              "max_ms": 455.728583,
+              "noise_fraction": 0.023308399038991776
+            },
+            "after": {
+              "median_ms": 318.36625,
+              "mad_ms": 0.7318329999999946,
+              "q1_ms": 317.756875,
+              "q3_ms": 320.104584,
+              "iqr_ms": 2.347709000000009,
+              "min_ms": 317.222875,
+              "max_ms": 337.164792,
+              "noise_fraction": 0.02
+            }
+          }
+        },
+        "geomean_latency_ratio": 0.7787291724363781,
+        "passed": true
+      }
+    ],
+    "host_isolation": "local-unverified",
+    "finished_utc": "2026-09-11T05:42:32.423971+00:00",
+    "deadline_met": true
+  },
+  "native_runtime_object_identity": [
+    {
+      "profile": "debug",
+      "objects": 47,
+      "before": {
+        "bootstrap/src/base/text.c.o": "cb7742becc2a208c1234f0084dd5ccb9696bbb0f03b41a8e5a03cbf1ba6a2b59",
+        "bootstrap/src/base/owned_bytes.c.o": "09b8d05e6707e4177125d7c82bcb066c5a3c2edb47fe9f03b0433990834f167c",
+        "bootstrap/src/base/provenance.c.o": "0dcebd7b8f9f2b31c1884cdb79b96dc894d4c44cff545b3fda91e82ba2dca88d",
+        "bootstrap/src/base/integer_text.c.o": "a255bbc4ec7df891733253b695cb78321e5ea0d6e7ac89a50f345d6e0913f284",
+        "bootstrap/src/base/checked_integer.c.o": "4cdf60f82605d19de78a7d93742b533cbfd96e85732ddab338443b1e6085812a",
+        "bootstrap/src/base/path.c.o": "4e96e33c938bf7742bcbf3683ba53812975acabf672fbafc8d97a6b86c6aad6b",
+        "bootstrap/src/base/checked_i64.c.o": "9f9bc9cf98f6d48e88e5a9559f7dd7a5ba699b1b1ba670e96e35accc97f3ceaa",
+        "bootstrap/src/base/vector.c.o": "73228a8f492ecd26f3abf3feb14a8e87d4c71a734e3c864764c9ab9cc8db99e8",
+        "bootstrap/src/base/allocator.c.o": "971ce3842a4ac75775a9a373e45c9af3f99d409058282c7b2048812bc097d0ba",
+        "bootstrap/src/base/utf8.c.o": "aad908ed47ff6b2ae6fef87ba1dd52bda6321a2f816303f9c2d87c729977a5a4",
+        "bootstrap/src/base/f64_runtime.c.o": "a3df6f8a630b88b0060bf85d06c0d1da12b12f91d70f49066d9bd1dc6272a55c",
+        "bootstrap/src/base/unicode.c.o": "94f928d207ebc88ab490b69e0c8e14fb19651539f0bf80a3062b012b13175cdd",
+        "bootstrap/src/base/number_format.c.o": "1dd9056eb0d546acedacaa63a6d18d94041cb0cfc0f3cc7c8da039f393b40ea1",
+        "bootstrap/src/base/hash.c.o": "806e6694e087b7adf1bb0416c14d9fbf91ac2d6895fabf641fda2834ac1ff4bc",
+        "runtime/platform/posix/process.c.o": "d925e5aad273513fcd9dff58127731718399d1492d6856ebb7604e011359997a",
+        "runtime/platform/posix/environment.c.o": "b6d3acb2d1c941004ead3a30c3437a09bfc7144a6ac8f1feded10afdb83ce2e2",
+        "runtime/platform/posix/directory.c.o": "91ceaf3bfc529ac14bd1864f73368579af6233f80c1b8ffa99b13e5766bbb264",
+        "runtime/platform/posix/file.c.o": "c935c4a718014b02d5b4c1bfa528c9e2ccc65237746eb318a8184bc926ac9c17",
+        "runtime/platform/posix/program_arguments.c.o": "49f065f7a60ee8b14b18b3d6eaf47e14cb7a4196932bf63a226e6c790b03ff7f",
+        "runtime/common/managed_interface.c.o": "45d97f409995859d91fb666426a22b494f489954445b8cd8d51449d825f6e5ea",
+        "runtime/common/managed_internal.c.o": "7b936cc2229ae60c255947ea77ff05d766ddaa072f59b6e3ec7ab8a242e3bd04",
+        "runtime/common/managed_enum.c.o": "be316cd98c858923f4688420a329fe99b5fc2d3e31b556c12e916ec2cf362ecd",
+        "runtime/common/managed_array_access.c.o": "1335e43aab4d24874770e0a7a77a671c937461bbb96769bf41403845541659ee",
+        "runtime/common/line_reader.c.o": "ca3f857fe3daa45f7ebb85128ceaeed34cc10ed25803707419fb6bafd4b70d30",
+        "runtime/common/managed_array_storage.c.o": "2b4084ff2f55d8abe6f6ee954fc174083d18abdbe37cbdbf4608be052f65aa71",
+        "runtime/common/process_context.c.o": "2c99bdb33f16ace23b5166401e88e264eb8e48f30aa52ef6c988bc55a063a07b",
+        "runtime/common/managed_set.c.o": "ad0da59e84670840e448f81f38b01593546b51f792f77ab6be1db30c76a6ee15",
+        "runtime/common/profile.c.o": "7bf3f49e7722973577dac2fe037d1461aec305d19a7cfe84f5287d3e7cda7032",
+        "runtime/common/managed.c.o": "f330ee7f171d81f3950050f3f6e075b8ab6705c4dfcba8ed4a7235ae15a4446d",
+        "runtime/common/directory.c.o": "e4c59faa4751894763b6360599d0eaac693e9324c3f23590e07bdcd6224884c2",
+        "runtime/common/managed_string.c.o": "30417cb4fb2f5dcce1751cbae1f12cf8bf7493e9518df3fc4c0864a0a1f0976e",
+        "runtime/common/managed_map_probe.c.o": "ac338c6debe69f9afb7a1be12916d97de7154df3b9ecfad5e5c5cf1fb8d84482",
+        "runtime/common/test_output.c.o": "70a57ac398e57f18b01b3beadd646be39754e0472116cba5e78faeed28556efc",
+        "runtime/common/managed_map.c.o": "03629507e0f3e2c91c67c4d2f1f89daa013661b10d396920f2422b4671a4a3d5",
+        "runtime/common/fs.c.o": "9b17d4927993e13981b671c45b2d88c747b4b3889fd65919a82830d3342704df",
+        "runtime/common/managed_resource.c.o": "90871bc5c6a2f9d5dfcf9bf8cdd2f7d8d9bdcc72451da748f90d866501723bcd",
+        "runtime/common/managed_collection_iteration.c.o": "439319e2c639fa220b8ce4ea435e1f57c4de831c95da2d0d382a772b00c243af",
+        "runtime/common/io.c.o": "b5acb9681289b21680c7d7823dd139ef375afd55d796207651c2e6fca512d9ca",
+        "runtime/common/env.c.o": "2f0f254d3e9ba9e7b513ce43793313f53e52bedb9f40ac5d3c71f0de335a9983",
+        "runtime/common/file.c.o": "681d744452e1785ce6e99d79f8fe11870cb8853c4b2c3f22424d78d694e67be0",
+        "runtime/common/io_stdout.c.o": "94275eac0bfa99c46f074b75666542c451d6f3d5af3f42c8664c9b761c3297b9",
+        "runtime/common/fs_handles.c.o": "0860a2950e00ec475dfe2007351f8bb5f3d7fcda51c3454e768ef5f2afb5622f",
+        "runtime/common/managed_record.c.o": "4cb1fa30faa812c0592788e8e62811628d27958c2e7d244d9d5cbbc7fad5a86e",
+        "runtime/common/managed_array_mutation.c.o": "a407e0afb953ee62edee0726c0500d0a4754118c59f0315e098b742dc878da94",
+        "runtime/common/program_arguments.c.o": "f30f5106af78cb1bdb9709f9c3dcef956dc21b3df5a9e9d765a5baed46b306b4",
+        "runtime/common/managed_array_capacity.c.o": "4f566f9be1cd34103cc2e8b79c08caf0cfffe29309c5a05a52ad73e4fba842b1",
+        "runtime/common/managed_map_storage.c.o": "8b12ea418afaa0653460d2b5f1987451837c83c885cec982b58e06ded31cd419"
+      },
+      "after": {
+        "bootstrap/src/base/text.c.o": "cb7742becc2a208c1234f0084dd5ccb9696bbb0f03b41a8e5a03cbf1ba6a2b59",
+        "bootstrap/src/base/owned_bytes.c.o": "09b8d05e6707e4177125d7c82bcb066c5a3c2edb47fe9f03b0433990834f167c",
+        "bootstrap/src/base/provenance.c.o": "0dcebd7b8f9f2b31c1884cdb79b96dc894d4c44cff545b3fda91e82ba2dca88d",
+        "bootstrap/src/base/integer_text.c.o": "a255bbc4ec7df891733253b695cb78321e5ea0d6e7ac89a50f345d6e0913f284",
+        "bootstrap/src/base/checked_integer.c.o": "4cdf60f82605d19de78a7d93742b533cbfd96e85732ddab338443b1e6085812a",
+        "bootstrap/src/base/path.c.o": "4e96e33c938bf7742bcbf3683ba53812975acabf672fbafc8d97a6b86c6aad6b",
+        "bootstrap/src/base/checked_i64.c.o": "9f9bc9cf98f6d48e88e5a9559f7dd7a5ba699b1b1ba670e96e35accc97f3ceaa",
+        "bootstrap/src/base/vector.c.o": "73228a8f492ecd26f3abf3feb14a8e87d4c71a734e3c864764c9ab9cc8db99e8",
+        "bootstrap/src/base/allocator.c.o": "971ce3842a4ac75775a9a373e45c9af3f99d409058282c7b2048812bc097d0ba",
+        "bootstrap/src/base/utf8.c.o": "aad908ed47ff6b2ae6fef87ba1dd52bda6321a2f816303f9c2d87c729977a5a4",
+        "bootstrap/src/base/f64_runtime.c.o": "a3df6f8a630b88b0060bf85d06c0d1da12b12f91d70f49066d9bd1dc6272a55c",
+        "bootstrap/src/base/unicode.c.o": "94f928d207ebc88ab490b69e0c8e14fb19651539f0bf80a3062b012b13175cdd",
+        "bootstrap/src/base/number_format.c.o": "1dd9056eb0d546acedacaa63a6d18d94041cb0cfc0f3cc7c8da039f393b40ea1",
+        "bootstrap/src/base/hash.c.o": "806e6694e087b7adf1bb0416c14d9fbf91ac2d6895fabf641fda2834ac1ff4bc",
+        "runtime/platform/posix/process.c.o": "d925e5aad273513fcd9dff58127731718399d1492d6856ebb7604e011359997a",
+        "runtime/platform/posix/environment.c.o": "b6d3acb2d1c941004ead3a30c3437a09bfc7144a6ac8f1feded10afdb83ce2e2",
+        "runtime/platform/posix/directory.c.o": "91ceaf3bfc529ac14bd1864f73368579af6233f80c1b8ffa99b13e5766bbb264",
+        "runtime/platform/posix/file.c.o": "c935c4a718014b02d5b4c1bfa528c9e2ccc65237746eb318a8184bc926ac9c17",
+        "runtime/platform/posix/program_arguments.c.o": "49f065f7a60ee8b14b18b3d6eaf47e14cb7a4196932bf63a226e6c790b03ff7f",
+        "runtime/common/managed_interface.c.o": "45d97f409995859d91fb666426a22b494f489954445b8cd8d51449d825f6e5ea",
+        "runtime/common/managed_internal.c.o": "7b936cc2229ae60c255947ea77ff05d766ddaa072f59b6e3ec7ab8a242e3bd04",
+        "runtime/common/managed_enum.c.o": "be316cd98c858923f4688420a329fe99b5fc2d3e31b556c12e916ec2cf362ecd",
+        "runtime/common/managed_array_access.c.o": "1335e43aab4d24874770e0a7a77a671c937461bbb96769bf41403845541659ee",
+        "runtime/common/line_reader.c.o": "ca3f857fe3daa45f7ebb85128ceaeed34cc10ed25803707419fb6bafd4b70d30",
+        "runtime/common/managed_array_storage.c.o": "2b4084ff2f55d8abe6f6ee954fc174083d18abdbe37cbdbf4608be052f65aa71",
+        "runtime/common/process_context.c.o": "2c99bdb33f16ace23b5166401e88e264eb8e48f30aa52ef6c988bc55a063a07b",
+        "runtime/common/managed_set.c.o": "ad0da59e84670840e448f81f38b01593546b51f792f77ab6be1db30c76a6ee15",
+        "runtime/common/profile.c.o": "7bf3f49e7722973577dac2fe037d1461aec305d19a7cfe84f5287d3e7cda7032",
+        "runtime/common/managed.c.o": "f330ee7f171d81f3950050f3f6e075b8ab6705c4dfcba8ed4a7235ae15a4446d",
+        "runtime/common/directory.c.o": "e4c59faa4751894763b6360599d0eaac693e9324c3f23590e07bdcd6224884c2",
+        "runtime/common/managed_string.c.o": "30417cb4fb2f5dcce1751cbae1f12cf8bf7493e9518df3fc4c0864a0a1f0976e",
+        "runtime/common/managed_map_probe.c.o": "ac338c6debe69f9afb7a1be12916d97de7154df3b9ecfad5e5c5cf1fb8d84482",
+        "runtime/common/test_output.c.o": "70a57ac398e57f18b01b3beadd646be39754e0472116cba5e78faeed28556efc",
+        "runtime/common/managed_map.c.o": "03629507e0f3e2c91c67c4d2f1f89daa013661b10d396920f2422b4671a4a3d5",
+        "runtime/common/fs.c.o": "9b17d4927993e13981b671c45b2d88c747b4b3889fd65919a82830d3342704df",
+        "runtime/common/managed_resource.c.o": "90871bc5c6a2f9d5dfcf9bf8cdd2f7d8d9bdcc72451da748f90d866501723bcd",
+        "runtime/common/managed_collection_iteration.c.o": "439319e2c639fa220b8ce4ea435e1f57c4de831c95da2d0d382a772b00c243af",
+        "runtime/common/io.c.o": "b5acb9681289b21680c7d7823dd139ef375afd55d796207651c2e6fca512d9ca",
+        "runtime/common/env.c.o": "2f0f254d3e9ba9e7b513ce43793313f53e52bedb9f40ac5d3c71f0de335a9983",
+        "runtime/common/file.c.o": "681d744452e1785ce6e99d79f8fe11870cb8853c4b2c3f22424d78d694e67be0",
+        "runtime/common/io_stdout.c.o": "94275eac0bfa99c46f074b75666542c451d6f3d5af3f42c8664c9b761c3297b9",
+        "runtime/common/fs_handles.c.o": "0860a2950e00ec475dfe2007351f8bb5f3d7fcda51c3454e768ef5f2afb5622f",
+        "runtime/common/managed_record.c.o": "4cb1fa30faa812c0592788e8e62811628d27958c2e7d244d9d5cbbc7fad5a86e",
+        "runtime/common/managed_array_mutation.c.o": "a407e0afb953ee62edee0726c0500d0a4754118c59f0315e098b742dc878da94",
+        "runtime/common/program_arguments.c.o": "f30f5106af78cb1bdb9709f9c3dcef956dc21b3df5a9e9d765a5baed46b306b4",
+        "runtime/common/managed_array_capacity.c.o": "4f566f9be1cd34103cc2e8b79c08caf0cfffe29309c5a05a52ad73e4fba842b1",
+        "runtime/common/managed_map_storage.c.o": "8b12ea418afaa0653460d2b5f1987451837c83c885cec982b58e06ded31cd419"
+      },
+      "identical": true
+    },
+    {
+      "profile": "release",
+      "objects": 47,
+      "before": {
+        "bootstrap/src/base/text.c.o": "64f6463877fbfd90637d9b63f3d8eddc06cb2bb57cb80bc099fff3062a38b416",
+        "bootstrap/src/base/owned_bytes.c.o": "8608de505970ab04f6db5e4745ce2f64d6538d2eb5381b0f2a15f22ef760307b",
+        "bootstrap/src/base/provenance.c.o": "bc136965e534edbdeee74a31c2d39442cd10dc436c0750ca68d496716ecb8ffb",
+        "bootstrap/src/base/integer_text.c.o": "21c7d5889a4c183913978ea0e8c5ca20c288a394b18409228c12b86cb6f144e8",
+        "bootstrap/src/base/checked_integer.c.o": "fbcb475f4dd8ab1754ae6e53f2f2d5b64564adc397159c8b9eeed88e69d11cef",
+        "bootstrap/src/base/path.c.o": "eb2f0ccd497eb4e44cb996bd547a78a00b1ff4d3b4840190433f2711f4c98df5",
+        "bootstrap/src/base/checked_i64.c.o": "82267a598757437596ef9c417f57165178fb6b3ecd05e2afae4701380195b816",
+        "bootstrap/src/base/vector.c.o": "7e142707109831df7843f2d696e3cec62a15ef8d37c376dfda79c0163cbd8577",
+        "bootstrap/src/base/allocator.c.o": "014ef4c1f69d8a8547869f04b96e438df9e7a155d40604ea473444eccf4d3318",
+        "bootstrap/src/base/utf8.c.o": "b873c5b60698b6ce748fb1d57e8e03d1b4eaee85a951c9a976ea2739743c994a",
+        "bootstrap/src/base/f64_runtime.c.o": "02dc758bfeb479ceafd9151c25ff0566dc29383f8232ef53a51a8fd97ce9a219",
+        "bootstrap/src/base/unicode.c.o": "2156a7cb193dd63fa8570410cd0c7cd551ad3041f215ec1c83237160912e3039",
+        "bootstrap/src/base/number_format.c.o": "bea8c969e24234562fa65b6c7154c3bc749e6c7acf55580e9e79c4f64a0e0004",
+        "bootstrap/src/base/hash.c.o": "b8b9ded62afe185ab964551a3a1cd632cc748b8d4f17fa40c688d0c11a38ed1c",
+        "runtime/platform/posix/process.c.o": "e1fe2edb038e3c86b392d2d0a5e6e279926ca35b07e33ec2d4410b421738bdac",
+        "runtime/platform/posix/environment.c.o": "d309e9c8c772e71a638a7aac338b7ddc7270a1de65796a7729b0f32f17dc9dbf",
+        "runtime/platform/posix/directory.c.o": "a50ba638dbe27ef641364c08049a51b42228c99f74bc98b29f1aa0468b98dc20",
+        "runtime/platform/posix/file.c.o": "5ded94b1c752b6c780b7c4c5086b96997173520e67f55c0ae50b8bb07ee9447b",
+        "runtime/platform/posix/program_arguments.c.o": "e8eff2561c6978fb44d55f2494db04894cd2b1cf2abbfe1d5fda5ac07b60b668",
+        "runtime/common/managed_interface.c.o": "f1de62ca1a262c2c8931030246e1ce6e10b167d8698337a116c39fe2259e2c69",
+        "runtime/common/managed_internal.c.o": "e137da23dc243e454df567fca34468401b62c53eff93fdeda92784048c5e3d24",
+        "runtime/common/managed_enum.c.o": "38df464f07dd4bddcb436ea86010ee446b0dcae251e8b44d0b778cb572a87294",
+        "runtime/common/managed_array_access.c.o": "c321e19e000090b28c250bb4233a91a15b72e797b95f1e1793cde0041c05e99a",
+        "runtime/common/line_reader.c.o": "9312afd3b42e3dc262cd71d601064b0d1874adb50b5901bd19a004a352bcd49f",
+        "runtime/common/managed_array_storage.c.o": "0c454f21f2ee956051202ce3e493cbab94d95915601984840f470557dd8a7e7c",
+        "runtime/common/process_context.c.o": "87ee0ae831a5e17ff15e97890c15f1aee3b7f828d86ce3ba7eb3144da206dd0e",
+        "runtime/common/managed_set.c.o": "7a286263bdea0a5f321bbb6be2f908495d28da3d720b5d680126041322f038cc",
+        "runtime/common/profile.c.o": "4871f9c37605062b9a7befaa849c3cdef32bed29638d87c0ef693afe67840642",
+        "runtime/common/managed.c.o": "38ba4a744c6781a8f5385091c932741d1ad0a363b934892cce7ee5d0b6b97c41",
+        "runtime/common/directory.c.o": "23038a81014d9df5bcfccc1f2f8234f88600b896704e0b2eedfe2a6662cb3ea4",
+        "runtime/common/managed_string.c.o": "0cb689063b0a3035e2ca9e7d2e97b864ea3a6bfa8500fd1349a431cf8af0767a",
+        "runtime/common/managed_map_probe.c.o": "79467327476e1d91e413db9c7ec484c0741e40350cdb908b0f7cfb4f71caf6fe",
+        "runtime/common/test_output.c.o": "491380b711e73cd532c490813d474535f9a1602055e170083fe6de7001f26919",
+        "runtime/common/managed_map.c.o": "7a3d5585ea5be6658b7e8c5e953aa86df67e9efb0b6076cfac991ee301c97c45",
+        "runtime/common/fs.c.o": "1c3ab2ffdaf449754d3eba0e25d3a6c69e7cac346b30e2620ec3403042bc10d5",
+        "runtime/common/managed_resource.c.o": "2a0023a15ff97dc1f4b7ebd3c56b01773ec2fbffa3b48169969ec368f0da53a0",
+        "runtime/common/managed_collection_iteration.c.o": "7a6d4b5e9a05e6dcf5290e329f1e0a7cdfcb7b7133583d557ec28a209981308a",
+        "runtime/common/io.c.o": "0b6563502e02075813ab537b4a03de078c1dfbec8ab97bfa089e00e9b7518def",
+        "runtime/common/env.c.o": "65e6eaf529069243735cb28fbfb8a51490fc20702e51f879215b855b956e844f",
+        "runtime/common/file.c.o": "7cd0a8701be90381b87cd4f46602d85335a38d54f775e8eb00dd732650dba4a6",
+        "runtime/common/io_stdout.c.o": "abc1446d28668652cd99dd04e30d90532e6f6e52e1464f7c60bd8183ae5d5cca",
+        "runtime/common/fs_handles.c.o": "0bb00f81dc4ad3002464ef6089a45d85afd863989320141a79064d543a041c14",
+        "runtime/common/managed_record.c.o": "aff10df043a428db484a8f2288c41e69563bcef9c7559647f5c2b79a5307225c",
+        "runtime/common/managed_array_mutation.c.o": "f0cb3452f17f6e07d6326e5f565b930ef612440cf08ff9643512e4b431b83b99",
+        "runtime/common/program_arguments.c.o": "d0f3d2bca9759c7eec7e3f8e20e0f45ed4ac0aaa714774d9b886cc8cd3dcc307",
+        "runtime/common/managed_array_capacity.c.o": "f558d984fa011a37f80baa1deaad7821cc82b8d3fd825044710fd0cd152b3110",
+        "runtime/common/managed_map_storage.c.o": "fb327eb9e16f983dfdd67cecf7ff679dffff095e86e963e5ab0b7c91de771636"
+      },
+      "after": {
+        "bootstrap/src/base/text.c.o": "64f6463877fbfd90637d9b63f3d8eddc06cb2bb57cb80bc099fff3062a38b416",
+        "bootstrap/src/base/owned_bytes.c.o": "8608de505970ab04f6db5e4745ce2f64d6538d2eb5381b0f2a15f22ef760307b",
+        "bootstrap/src/base/provenance.c.o": "bc136965e534edbdeee74a31c2d39442cd10dc436c0750ca68d496716ecb8ffb",
+        "bootstrap/src/base/integer_text.c.o": "21c7d5889a4c183913978ea0e8c5ca20c288a394b18409228c12b86cb6f144e8",
+        "bootstrap/src/base/checked_integer.c.o": "fbcb475f4dd8ab1754ae6e53f2f2d5b64564adc397159c8b9eeed88e69d11cef",
+        "bootstrap/src/base/path.c.o": "eb2f0ccd497eb4e44cb996bd547a78a00b1ff4d3b4840190433f2711f4c98df5",
+        "bootstrap/src/base/checked_i64.c.o": "82267a598757437596ef9c417f57165178fb6b3ecd05e2afae4701380195b816",
+        "bootstrap/src/base/vector.c.o": "7e142707109831df7843f2d696e3cec62a15ef8d37c376dfda79c0163cbd8577",
+        "bootstrap/src/base/allocator.c.o": "014ef4c1f69d8a8547869f04b96e438df9e7a155d40604ea473444eccf4d3318",
+        "bootstrap/src/base/utf8.c.o": "b873c5b60698b6ce748fb1d57e8e03d1b4eaee85a951c9a976ea2739743c994a",
+        "bootstrap/src/base/f64_runtime.c.o": "02dc758bfeb479ceafd9151c25ff0566dc29383f8232ef53a51a8fd97ce9a219",
+        "bootstrap/src/base/unicode.c.o": "2156a7cb193dd63fa8570410cd0c7cd551ad3041f215ec1c83237160912e3039",
+        "bootstrap/src/base/number_format.c.o": "bea8c969e24234562fa65b6c7154c3bc749e6c7acf55580e9e79c4f64a0e0004",
+        "bootstrap/src/base/hash.c.o": "b8b9ded62afe185ab964551a3a1cd632cc748b8d4f17fa40c688d0c11a38ed1c",
+        "runtime/platform/posix/process.c.o": "e1fe2edb038e3c86b392d2d0a5e6e279926ca35b07e33ec2d4410b421738bdac",
+        "runtime/platform/posix/environment.c.o": "d309e9c8c772e71a638a7aac338b7ddc7270a1de65796a7729b0f32f17dc9dbf",
+        "runtime/platform/posix/directory.c.o": "a50ba638dbe27ef641364c08049a51b42228c99f74bc98b29f1aa0468b98dc20",
+        "runtime/platform/posix/file.c.o": "5ded94b1c752b6c780b7c4c5086b96997173520e67f55c0ae50b8bb07ee9447b",
+        "runtime/platform/posix/program_arguments.c.o": "e8eff2561c6978fb44d55f2494db04894cd2b1cf2abbfe1d5fda5ac07b60b668",
+        "runtime/common/managed_interface.c.o": "f1de62ca1a262c2c8931030246e1ce6e10b167d8698337a116c39fe2259e2c69",
+        "runtime/common/managed_internal.c.o": "e137da23dc243e454df567fca34468401b62c53eff93fdeda92784048c5e3d24",
+        "runtime/common/managed_enum.c.o": "38df464f07dd4bddcb436ea86010ee446b0dcae251e8b44d0b778cb572a87294",
+        "runtime/common/managed_array_access.c.o": "c321e19e000090b28c250bb4233a91a15b72e797b95f1e1793cde0041c05e99a",
+        "runtime/common/line_reader.c.o": "9312afd3b42e3dc262cd71d601064b0d1874adb50b5901bd19a004a352bcd49f",
+        "runtime/common/managed_array_storage.c.o": "0c454f21f2ee956051202ce3e493cbab94d95915601984840f470557dd8a7e7c",
+        "runtime/common/process_context.c.o": "87ee0ae831a5e17ff15e97890c15f1aee3b7f828d86ce3ba7eb3144da206dd0e",
+        "runtime/common/managed_set.c.o": "7a286263bdea0a5f321bbb6be2f908495d28da3d720b5d680126041322f038cc",
+        "runtime/common/profile.c.o": "4871f9c37605062b9a7befaa849c3cdef32bed29638d87c0ef693afe67840642",
+        "runtime/common/managed.c.o": "38ba4a744c6781a8f5385091c932741d1ad0a363b934892cce7ee5d0b6b97c41",
+        "runtime/common/directory.c.o": "23038a81014d9df5bcfccc1f2f8234f88600b896704e0b2eedfe2a6662cb3ea4",
+        "runtime/common/managed_string.c.o": "0cb689063b0a3035e2ca9e7d2e97b864ea3a6bfa8500fd1349a431cf8af0767a",
+        "runtime/common/managed_map_probe.c.o": "79467327476e1d91e413db9c7ec484c0741e40350cdb908b0f7cfb4f71caf6fe",
+        "runtime/common/test_output.c.o": "491380b711e73cd532c490813d474535f9a1602055e170083fe6de7001f26919",
+        "runtime/common/managed_map.c.o": "7a3d5585ea5be6658b7e8c5e953aa86df67e9efb0b6076cfac991ee301c97c45",
+        "runtime/common/fs.c.o": "1c3ab2ffdaf449754d3eba0e25d3a6c69e7cac346b30e2620ec3403042bc10d5",
+        "runtime/common/managed_resource.c.o": "2a0023a15ff97dc1f4b7ebd3c56b01773ec2fbffa3b48169969ec368f0da53a0",
+        "runtime/common/managed_collection_iteration.c.o": "7a6d4b5e9a05e6dcf5290e329f1e0a7cdfcb7b7133583d557ec28a209981308a",
+        "runtime/common/io.c.o": "0b6563502e02075813ab537b4a03de078c1dfbec8ab97bfa089e00e9b7518def",
+        "runtime/common/env.c.o": "65e6eaf529069243735cb28fbfb8a51490fc20702e51f879215b855b956e844f",
+        "runtime/common/file.c.o": "7cd0a8701be90381b87cd4f46602d85335a38d54f775e8eb00dd732650dba4a6",
+        "runtime/common/io_stdout.c.o": "abc1446d28668652cd99dd04e30d90532e6f6e52e1464f7c60bd8183ae5d5cca",
+        "runtime/common/fs_handles.c.o": "0bb00f81dc4ad3002464ef6089a45d85afd863989320141a79064d543a041c14",
+        "runtime/common/managed_record.c.o": "aff10df043a428db484a8f2288c41e69563bcef9c7559647f5c2b79a5307225c",
+        "runtime/common/managed_array_mutation.c.o": "f0cb3452f17f6e07d6326e5f565b930ef612440cf08ff9643512e4b431b83b99",
+        "runtime/common/program_arguments.c.o": "d0f3d2bca9759c7eec7e3f8e20e0f45ed4ac0aaa714774d9b886cc8cd3dcc307",
+        "runtime/common/managed_array_capacity.c.o": "f558d984fa011a37f80baa1deaad7821cc82b8d3fd825044710fd0cd152b3110",
+        "runtime/common/managed_map_storage.c.o": "fb327eb9e16f983dfdd67cecf7ff679dffff095e86e963e5ab0b7c91de771636"
+      },
+      "identical": true
+    }
+  ],
+  "native_comparator_binary_identity": {
+    "reference": "docs/implementation/evidence/cp42-program-verification-comprehensive-2026-09-11.json",
+    "method": "Resolve each workload command executable in its own pinned binary metadata. Shared catalogue executables appear in multiple workload rows; the changing VM compiler is excluded.",
+    "workloads": {
+      "title-search-10k": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "title-search-100k": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "normalize-title": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "word-frequency": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "report-builder": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "report-concat": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "map-int": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "map-string": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "map-string-book": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "set-string-churn": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "catalog-match": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "catalog-dotcall": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "catalog-interface": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "record-reference-copy": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "record-create": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "array-grow": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "array-reserved": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "bfs-int": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "bfs-record": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "catalog-pipeline": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "parse-result": {
+        "marimay-native": {
+          "before": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "after": "02e18528c79e7e3125f2cc3e6f88bf179edf5a022319ebc51be3dc088c153660",
+          "identical": true
+        },
+        "go": {
+          "before": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "after": "9eea40db74126cf728093b8f7a0c4abf85774a1e5540747e7b4423b0dde5077a",
+          "identical": true
+        },
+        "rust": {
+          "before": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "after": "59f49b71297ee18c6bba83e5934fed02ba09a20af236eff2539d5289bf0ac69c",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "insertion": {
+        "marimay-native": {
+          "before": "d3b788b3111729bdedbb95d546713891cead311f9aba7f5cdc6cce6ad6ac50b6",
+          "after": "d3b788b3111729bdedbb95d546713891cead311f9aba7f5cdc6cce6ad6ac50b6",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "heap-sort": {
+        "marimay-native": {
+          "before": "2386492d27008ce632a49b06c90f0e84eacfdc4becb8cde7ae2a922fd17df3c0",
+          "after": "2386492d27008ce632a49b06c90f0e84eacfdc4becb8cde7ae2a922fd17df3c0",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "stack": {
+        "marimay-native": {
+          "before": "0010c1966dbad80eec7f59a14e55276d28f13ce02b23e3abcf8ef5aeebd81986",
+          "after": "0010c1966dbad80eec7f59a14e55276d28f13ce02b23e3abcf8ef5aeebd81986",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "queue": {
+        "marimay-native": {
+          "before": "87797db9bb6398568478cc86979d298ad09dfbeed3df3af76d43f2ebdc64ee45",
+          "after": "87797db9bb6398568478cc86979d298ad09dfbeed3df3af76d43f2ebdc64ee45",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "min-heap": {
+        "marimay-native": {
+          "before": "2d86617ea3c27f0e814d317394a49b222afa318bb6e17df7e0619889c4e97f86",
+          "after": "2d86617ea3c27f0e814d317394a49b222afa318bb6e17df7e0619889c4e97f86",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "dsu": {
+        "marimay-native": {
+          "before": "00e5f58b76e392649a73d460cffb15d2ae19d0fa7000ed6125dc904f2fdc4c0c",
+          "after": "00e5f58b76e392649a73d460cffb15d2ae19d0fa7000ed6125dc904f2fdc4c0c",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "bfs": {
+        "marimay-native": {
+          "before": "5e63bf68c8d9dcbd9d02b1c3a2b02b0eb8a2497e2216424b7770331dc760d8eb",
+          "after": "5e63bf68c8d9dcbd9d02b1c3a2b02b0eb8a2497e2216424b7770331dc760d8eb",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "dijkstra": {
+        "marimay-native": {
+          "before": "921c8160279c335653a1e3a207bcfd0aebcaff5066b08d77d89680c3c0498b80",
+          "after": "921c8160279c335653a1e3a207bcfd0aebcaff5066b08d77d89680c3c0498b80",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "frequency-map": {
+        "marimay-native": {
+          "before": "21fa8ec44fbd4e12666a2d7761b466fb1249a59a2ab3ae357ac10505c5de90e7",
+          "after": "21fa8ec44fbd4e12666a2d7761b466fb1249a59a2ab3ae357ac10505c5de90e7",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "unique-set": {
+        "marimay-native": {
+          "before": "6fbcfb6e26012b83c7162690ddb736b46509a7841cb94acad3db932cda69656e",
+          "after": "6fbcfb6e26012b83c7162690ddb736b46509a7841cb94acad3db932cda69656e",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      },
+      "rune-frequency": {
+        "marimay-native": {
+          "before": "2690064628f617bf3b21dd35e386efcf57d91786c19cd6458fbc75f2cd595c34",
+          "after": "2690064628f617bf3b21dd35e386efcf57d91786c19cd6458fbc75f2cd595c34",
+          "identical": true
+        },
+        "go": {
+          "before": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "after": "e14e1c9cb7e0c1a3d4d2bdd22f11e22a8c94258df75a9343b99ef39d1a080162",
+          "identical": true
+        },
+        "rust": {
+          "before": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "after": "1d1069cdb12d06828d90be6c22bb8eaa70b18b718f06ff9fdabc60b62e46c24f",
+          "identical": true
+        },
+        "bun": {
+          "before": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "after": "35d20dd0263e5c950194434b925454fdfa9ba6e4467da960410fa05b08a7a5b5",
+          "identical": true
+        }
+      }
+    },
+    "all_identical": true
+  },
+  "candidate_patch": {
+    "file": "cp42-ipo-shared-vm-2026-09-11-candidate.patch",
+    "sha256": "a060f33d82a55437630f863eb2d089baa6019a987e89af0d7b2b443c8070b3c2",
+    "replayed_tree": "aef0ba6722a977fd9de936e950356a1628f59759",
+    "apply_option": "--unidiff-zero"
+  },
+  "validation_commands": [
+    {
+      "suffix": "full-on-tests",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor",
+        "--no-tests=error",
+        "--output-on-failure",
+        "-j2"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "full-off-tests",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-off",
+        "--no-tests=error",
+        "--output-on-failure",
+        "-j2"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "asan-configure",
+      "command": [
+        "cmake",
+        "-S",
+        ".",
+        "-B",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-asan",
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DMMAY_ENABLE_SLJIT=ON",
+        "-DMMAY_SLJIT_SOURCE_DIR=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation",
+        "-DMMAY_ENABLE_ADDRESS_SANITIZER=ON",
+        "-DMMAY_ENABLE_UNDEFINED_SANITIZER=ON",
+        "-DMMAY_COMPILER_IPO=ON"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "asan-build",
+      "command": [
+        "cmake",
+        "--build",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-asan",
+        "-j4"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "asan-tests",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-asan",
+        "--no-tests=error",
+        "--output-on-failure",
+        "-j2",
+        "-R",
+        "mmay_c_unit_(bytecode|runtime)$|mmay_jit_|mmay_code_memory"
+      ],
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=0:halt_on_error=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+      },
+      "exit_code": 0
+    },
+    {
+      "suffix": "asan-correctness",
+      "command": [
+        "python3",
+        "tools/performance/sljit-prototype/check.py",
+        "--mmay",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-asan/mmay",
+        "--benchmarks",
+        "../algorithm-benchmarks",
+        "--reference",
+        "docs/implementation/evidence/cp42-program-verification-comprehensive-2026-09-11.json",
+        "--output",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/asan-all32-correctness.json"
+      ],
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=0:halt_on_error=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+      },
+      "exit_code": 0
+    },
+    {
+      "suffix": "x86-configure",
+      "command": [
+        "cmake",
+        "-S",
+        ".",
+        "-B",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-x86",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DMMAY_ENABLE_SLJIT=ON",
+        "-DMMAY_SLJIT_SOURCE_DIR=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation",
+        "-DCMAKE_OSX_ARCHITECTURES=x86_64"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "x86-build",
+      "command": [
+        "cmake",
+        "--build",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-x86",
+        "-j4"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "x86-tests",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-x86",
+        "--no-tests=error",
+        "--output-on-failure",
+        "-j2",
+        "-R",
+        "mmay_c_unit_(bytecode|runtime)$|mmay_jit_|mmay_code_memory"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "x86-correctness",
+      "command": [
+        "python3",
+        "tools/performance/sljit-prototype/check.py",
+        "--mmay",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor-x86/mmay",
+        "--benchmarks",
+        "../algorithm-benchmarks",
+        "--reference",
+        "docs/implementation/evidence/cp42-program-verification-comprehensive-2026-09-11.json",
+        "--output",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/x86-all32-correctness.json"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "final-architecture",
+      "command": [
+        "./tools/check-architecture"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "final-c-memory-policy",
+      "command": [
+        "./tools/check-c-memory-policy"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "final-roadmap",
+      "command": [
+        "./tools/check-roadmap"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "final-doc-links",
+      "command": [
+        "./tools/check-doc-links"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "final-spec-terms",
+      "command": [
+        "./tools/check-spec-terms"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    },
+    {
+      "suffix": "final-generated",
+      "command": [
+        "./tools/check-generated"
+      ],
+      "environment_overrides": {},
+      "exit_code": 0
+    }
+  ],
+  "comprehensive_command": {
+    "command": [
+      "python3",
+      "/workspace/Projects/Marimay/algorithm-benchmarks/benchmarks/catalog_bench.py",
+      "--anchors",
+      "--profile",
+      "standard",
+      "--warmups",
+      "3",
+      "--samples",
+      "11",
+      "--output",
+      "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/comprehensive-current.md"
+    ],
+    "cwd": "/workspace/Projects/Marimay/algorithm-benchmarks",
+    "environment_overrides": {
+      "MMAY": "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-ipo-unmetered-cursor/mmay"
+    },
+    "compiler_sha256": "69c1bc7ecba625dc204fefb85587a94588eb426807b8782593dc429e1f8162bb"
+  },
+  "summary_time_ratios": {
+    "marimay-native": {
+      "go": 2.031687159909741,
+      "rust": 2.1854589220938956,
+      "bun": 0.988832923241937
+    },
+    "marimay-vm": {
+      "go": 15.038191240431729,
+      "rust": 16.1763827950834,
+      "bun": 7.319167486990476
+    }
+  },
+  "deadline_met": true,
+  "deadline_scope": "Evidence preparation time; actual commit/push time is recorded separately in publication.json.",
+  "limits": [
+    "Local implementation acceptance; JIT remains OFF by default.",
+    "Full all32 Go/Rust parity, Linux LeakSanitizer and complete Tier1 validation remain open.",
+    "macOS ASan uses detect_leaks=0; Rosetta proves local x86 correctness, not physical x86 timing.",
+    "Sampling observes partial executions; function attribution alone does not prove a specific machine-level stall.",
+    "The prior v2 deadline was missed and is retained. Both rejected v3 early variants retain the same final-v3 deadline.",
+    "Host isolation is local-unverified; all full matrices, flags and required confirmations are retained."
+  ],
+  "configurations": {
+    "arm64-jit-ipo": {
+      "compiler_sha256": "69c1bc7ecba625dc204fefb85587a94588eb426807b8782593dc429e1f8162bb",
+      "test_count": 97
+    },
+    "arm64-interpreter-ipo": {
+      "compiler_sha256": "ca08b8f301fe7895f6e5b16a58ed965b2f42f3cf4378ed57d441b03da43c4a89",
+      "test_count": 87
+    },
+    "arm64-asan-ubsan-ipo": {
+      "compiler_sha256": "932a136934079f484c625d6ca2305b14489c9221bd678bcb297781f499800149",
+      "test_count": 12
+    },
+    "x86-64-rosetta-ipo": {
+      "compiler_sha256": "fa48dba1326859cd2445451db14c1b4d9794b98a5fbec8c4f8fe9aeffbd23a38",
+      "test_count": 12
+    }
+  },
+  "raw_validation": {
+    "file": "cp42-ipo-shared-vm-2026-09-11-validation.json.gz",
+    "encoding": "gzip",
+    "sha256": "958663044e816dd2fb67e75b40f626f99b081a76c7e68f023311e3ae4688590e",
+    "decoded_sha256": "35dc763d37187f8f00a9f0b934a3e61466987ddf34838c664b37ea55d6e39025",
+    "decoded_bytes": 47048025,
+    "contents": "Complete configurations and test logs, all rejected variants, diagnostics, raw host samples and reproduction files."
+  }
+}

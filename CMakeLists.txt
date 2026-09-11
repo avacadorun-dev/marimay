@@ -922,3 +922,5 @@ endif()
 if(MMAY_BUILD_FUZZERS)
   add_subdirectory(tests/fuzz)
 endif()
+
+include(cmake/MarimayCompilerOptimization.cmake)

@@ -43,6 +43,14 @@ build/debug/cp29-quick-start
 ```
 <!-- cp29-quick-start:end -->
 
+Optimized compiler builds (`Release`, `RelWithDebInfo`, `MinSizeRel`) use
+interprocedural optimization when the C toolchain supports it. The default
+`-DMMAY_COMPILER_IPO=AUTO` falls back to ordinary C17 compilation when unsupported
+and does not enable IPO for Debug builds. Use `OFF` to disable this policy or `ON`
+to require IPO in every configuration. Native runtime archives retain their
+independent debug/release profiles; the experimental JIT still requires its
+separate build option.
+
 CP39 adds native execution, local project initialization, installed toolchain
 diagnostics, and deterministic distribution artifacts:
 

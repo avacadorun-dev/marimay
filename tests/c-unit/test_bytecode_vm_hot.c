@@ -89,6 +89,50 @@ static void mmay_hot_scalar_boundaries(void) {
     mmay_bytecode_function_dispose(&function);
 }
 
+/* A backward edge repeatedly changes both cursor fields; the divide instruction
+ * can also fail after earlier loop iterations have successfully committed. */
+static void mmay_hot_loop_boundaries(void) {
+    MarimayBytecodeFunction function = {0};
+    MarimayBytecodeProgram program = {0};
+    const MarimayBytecodeType parameters[] = {MMAY_BYTECODE_TYPE_I64};
+    const MarimayBytecodeType locals[] = {
+        MMAY_BYTECODE_TYPE_I64, MMAY_BYTECODE_TYPE_I64,
+        MMAY_BYTECODE_TYPE_I64, MMAY_BYTECODE_TYPE_BOOL
+    };
+    uint32_t block = UINT32_MAX;
+    uint64_t span = 1000;
+    MMAY_EXPECT(mmay_bytecode_function_init(&function, mmay_system_allocator(),
+        MMAY_BYTECODE_TYPE_I64, 1, parameters, 1,
+        mmay_bytecode_function_default_options()));
+    MMAY_EXPECT(mmay_test_vm_add_registers(&function, locals, 4));
+    for (size_t index = 0; index < 4; index += 1) {
+        MMAY_EXPECT(mmay_bytecode_add_block(&function, &block));
+    }
+    MMAY_EXPECT(mmay_test_vm_append(&function, 0, MMAY_OPCODE_CONST_I64, 1, 4, 0, &span));
+    MMAY_EXPECT(mmay_test_vm_append(&function, 0, MMAY_OPCODE_CONST_I64, 2, 1, 0, &span));
+    MMAY_EXPECT(mmay_test_vm_append(&function, 0, MMAY_OPCODE_JUMP, 1, 0, 0, &span));
+    MMAY_EXPECT(mmay_test_vm_append(&function, 1, MMAY_OPCODE_I64_LESS, 4, 0, 1, &span));
+    MMAY_EXPECT(mmay_test_vm_append(&function, 1, MMAY_OPCODE_BRANCH_BOOL, 4, 2, 3, &span));
+    MMAY_EXPECT(mmay_test_vm_append(&function, 2, MMAY_OPCODE_I64_DIVIDE_CHECKED, 3, 0, 1, &span));
+    MMAY_EXPECT(mmay_test_vm_append(&function, 2, MMAY_OPCODE_I64_SUBTRACT_CHECKED, 1, 1, 2, &span));
+    MMAY_EXPECT(mmay_test_vm_append(&function, 2, MMAY_OPCODE_JUMP, 1, 0, 0, &span));
+    MMAY_EXPECT(mmay_test_vm_append(&function, 3, MMAY_OPCODE_RETURN, 1, 0, 0, &span));
+    MMAY_EXPECT(mmay_hot_program(&function, &program));
+    for (int64_t input = -1; input <= 4; input += 1) {
+        MarimayBytecodeValue argument = mmay_test_vm_i64(input);
+        for (size_t fuel = 0; fuel <= 26; fuel += 1) {
+            mmay_hot_compare_scalar(&program, &argument, 1, fuel, 0, false);
+            mmay_hot_compare_scalar(&program, &argument, 1, SIZE_MAX, fuel, true);
+            mmay_hot_compare_scalar(&program, &argument, 1, fuel, fuel + 1, true);
+            mmay_hot_compare_scalar(&program, &argument, 1, fuel + 1, fuel, true);
+        }
+        mmay_hot_compare_scalar(&program, &argument, 1, SIZE_MAX, 0, false);
+        mmay_hot_compare_scalar(&program, &argument, 1, SIZE_MAX, SIZE_MAX, true);
+    }
+    mmay_bytecode_program_dispose(&program);
+    mmay_bytecode_function_dispose(&function);
+}
+
 static bool mmay_hot_array_function(MarimayBytecodeFunction *function) {
     const MarimayBytecodeType parameters[] = {
         MMAY_BYTECODE_TYPE_ARRAY_F64, MMAY_BYTECODE_TYPE_I64
@@ -211,6 +255,7 @@ static void mmay_hot_array_boundaries(void) {
 
 void mmay_test_vm_hot_regions(void) {
     mmay_hot_scalar_boundaries();
+    mmay_hot_loop_boundaries();
     mmay_hot_array_boundaries();
     static const char source[] =
         "fn pressure():void{const make=():[]int=>[99];const _=make();}"

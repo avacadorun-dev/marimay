@@ -71,10 +71,19 @@ MarimayBytecodeRunStatus mmay_bytecode_jit_prepare_activations(MarimayBytecodeJi
             if (wire >= functions[id].body.calls.length || op->third >= image->function_count)
                 return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
             if (!selected[op->third]) continue;
+            const MarimayBytecodeFunction *function = &functions[id].body;
+            const MarimayBytecodeCall *call = &calls[wire];
+            const MarimayBytecodeCallArgument *arguments = function->call_arguments.data;
+            if (call->argument_count != 0 && (arguments == NULL
+                || call->argument_start > function->call_arguments.length
+                || call->argument_count > function->call_arguments.length - call->argument_start))
+                return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
             jit->functions[id].calls[wire] = (MarimayBytecodePreparedCall){
                 &functions[id], &functions[op->third], &calls[wire],
                 &jit->functions[op->third].frame_layout,
-                image->functions[op->third].borrows_caller_roots
+                image->functions[op->third].borrows_caller_roots,
+                call->argument_count != 0 ? arguments + call->argument_start : NULL,
+                op->third
             };
         }
     }

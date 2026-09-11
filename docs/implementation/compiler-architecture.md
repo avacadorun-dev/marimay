@@ -577,6 +577,18 @@ roots. `test_bytecode_vm_image.c` owns operation layout, direct binding,
 eligibility, generic loop recognition, exact finite/shared-fuel comparison and
 single-arena allocation cleanup.
 
+The D104 region keeps the block/instruction cursor in local state while no
+allocation, host call or safepoint can observe the frame. Every exit publishes
+the next unexecuted instruction before ordinary dispatch or trap reporting.
+The immutable instruction span is refreshed on control transfers, so register
+writes do not require repeated block-metadata reads within the same block.
+Frame and shared fuel still account for each successfully completed instruction.
+The same region body is specialized at entry for D087 fully unmetered execution;
+any non-null shared budget, including a value of `SIZE_MAX`, keeps exact fuel
+accounting. No source program or workload identity participates in selection.
+`test_bytecode_vm_hot.c` compares backward branches, mixed fuel boundaries,
+arithmetic failures and cold exits against independent ordinary dispatch.
+
 D109 batching stays inside the array-shift family owner
 `bytecode/vm_image_shift.c`. It retains a raw storage view and scalar state only
 for complete iterations of the exact verified nonallocating trace and publishes
@@ -638,6 +650,13 @@ ordinary and prepared calls; neither JIT owner implements a second call policy.
 The focused frame-storage test compares ordinary/prepared layout changes and
 all allocation failures; JIT call/root owners prove actual prepared transitions,
 deep recursion, cold exits, logical limits and managed-root lifetime.
+Prepared direct calls also bind their verified argument span and callee image
+index. The emitter passes that immutable projection to the call bridge; return
+uses its own bridge. Both continue through the single activation/root publication
+protocol in `vm_activation.c`. Frame-vector capacity hits need no reserve call;
+retained frame initialization keeps its checked managed-reference reset. The
+focused call owner covers repeated and alternating layouts, distinct argument
+spans, allocation-free retained execution and exact frame/shared fuel boundaries.
 That preparation arena also assigns optional per-function view tables within
 a 2 MiB cap; excess functions use the existing shared table. `vm_jit_bind.c`
 clears all tables on entry-epoch wrap. `vm_jit_sljit.c` inlines the retained-view
@@ -662,6 +681,16 @@ target; it is not treated as handwritten Marimay owner code or used to bypass
 Marimay source-size/dependency gates. The default bootstrap has no dependency
 or runtime stub-call overhead from this tier. Enabled distributions retain the
 SLJIT license; no source-program engine or third-party runtime selector is added.
+
+`cmake/MarimayCompilerOptimization.cmake` owns compiler IPO configuration. AUTO
+probes the C toolchain and enables supported optimized configurations; OFF keeps
+ordinary compilation, while explicit ON requires support in every configuration.
+The policy applies to the bootstrap, optional SLJIT and executables linked to
+the bootstrap, including focused tests. Native runtime archive profiles and
+unrelated fixture executables are independent. Source owners remain separate
+translation units and retain strict floating-point flags. The focused build
+configuration test covers support/fallback, option errors, configuration scope
+and target ownership; actual execution still requires the ordinary test matrix.
 
 D105 keeps inactive activation buffers in that same frame owner, at most one
 function layout per call depth until program teardown. Only checked root-frame
