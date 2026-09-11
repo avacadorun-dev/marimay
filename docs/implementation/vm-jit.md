@@ -69,6 +69,17 @@ call the runtime view-mutation owner inside the native segment. The guard rules
 out growth and GC; full arrays and failed limit checks resume the original push.
 String reads and reference writes retain ordinary checked execution.
 
+Direct calls use per-invocation projections of immutable call metadata and
+register/root initialization templates. Native transitions retain a pointer to
+the original verified instruction, whose program outlives the generated code.
+The shared logical activation and frame owners still enforce depth, arguments,
+return validation, invalidation before relinking roots, and complete teardown.
+Finite/shared-fuel execution retains its ordinary call protocol.
+Prepared functions may also receive separate view tables within a 2 MiB cap,
+falling back to the shared table when it is exhausted. The native retained-view
+predicate keeps all existing lifetime and identity checks; a miss still calls
+the ordinary binding owner. Entry-epoch wrap clears all tables.
+
 Finite frame fuel and every non-null shared counter are charged exactly. Only
 D087's unlimited-frame/no-shared-counter mode omits unused segment accounting.
 Unmetered code refuses entry with incompatible options. D109's composed array

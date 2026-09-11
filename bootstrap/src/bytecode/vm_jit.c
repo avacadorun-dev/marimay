@@ -8,6 +8,8 @@ void mmay_bytecode_jit_dispose(MarimayBytecodeJit *jit) {
     for (size_t i = 0; i < jit->function_count; ++i)
         mmay_code_memory_dispose(&jit->functions[i].memory);
     mmay_deallocate(&jit->allocator, jit->bindings, jit->binding_bytes);
+    if (jit->state != NULL) mmay_deallocate(&jit->allocator,
+        jit->state->activation_metadata, jit->state->activation_metadata_bytes);
     mmay_deallocate(&jit->allocator, jit->metadata, jit->metadata_bytes);
     memset(jit, 0, sizeof(*jit));
 }
@@ -60,6 +62,13 @@ MarimayBytecodeRunStatus mmay_bytecode_jit_init(MarimayBytecodeJit *jit,
     jit->functions = (MarimayBytecodeJitFunction *)((unsigned char *)jit->metadata
         + sizeof(MarimayBytecodeJitState));
     jit->function_count = image->function_count;
+    MarimayBytecodeRunStatus activation_status = mmay_bytecode_jit_prepare_activations(
+        jit, program, image, selected);
+    if (activation_status != MMAY_BYTECODE_RUN_OK) {
+        mmay_deallocate(&allocator, selection, selection_bytes);
+        mmay_bytecode_jit_dispose(jit);
+        return activation_status;
+    }
     size_t position = entries_start, code_bytes = 0;
     for (size_t index = 0; index < image->function_count; index += 1) {
         const MarimayBytecodeFunction *function = &functions[index].body;
@@ -117,7 +126,7 @@ bool mmay_bytecode_jit_run(MarimayBytecodeJit *jit, size_t function_id,
         && budget > *options.remaining_shared_steps) budget = *options.remaining_shared_steps;
     jit->epoch += 1;
     if (jit->epoch == 0) {
-        memset(jit->bindings, 0, jit->binding_bytes);
+        mmay_bytecode_jit_clear_bindings(jit);
         jit->epoch = 1;
     }
     MarimayBytecodeJitContext context = {

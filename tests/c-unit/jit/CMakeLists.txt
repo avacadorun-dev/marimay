@@ -16,6 +16,7 @@ mmay_add_jit_test(mmay_jit_fuel test_jit_fuel.c)
 mmay_add_jit_test(mmay_jit_calls test_jit_calls.c)
 mmay_add_jit_test(mmay_jit_call_roots test_jit_call_roots.c)
 mmay_add_jit_test(mmay_jit_views test_jit_views.c)
+mmay_add_jit_test(mmay_jit_view_proofs test_jit_view_proofs.c)
 mmay_add_jit_test(mmay_jit_reference_arrays test_jit_reference_arrays.c)
 mmay_add_jit_test(mmay_jit_array_push test_jit_array_push.c)
 

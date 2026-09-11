@@ -101,14 +101,21 @@ static void reload(Emitter *e) {
     move(e, SLJIT_MOV, FUEL, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, budget));
     move(e, SLJIT_MOV, EPOCH, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, epoch));
 }
-static void transition(Emitter *e) {
-    void *(*function)(MarimayBytecodeJitContext *, uint32_t) = mmay_bytecode_jit_transition;
+static void transition(Emitter *e, const MarimayBytecodeImageOperation *operation) {
+    void *(*function)(MarimayBytecodeJitContext *, uint32_t,
+        const MarimayBytecodeInstruction *) = mmay_bytecode_jit_transition;
     sljit_sw address = 0;
     _Static_assert(sizeof(address) == sizeof(function), "transition pointer");
     memcpy(&address, &function, sizeof(address));
+    const MarimayBytecodeBlock *block = mmay_vector_at_const(
+        &e->function->blocks, operation->source_block);
+    const MarimayBytecodeInstruction *instruction = block == NULL ? NULL
+        : mmay_vector_at_const(&block->instructions, operation->source_instruction);
+    if (instruction == NULL) { leave(e); return; }
     move(e, SLJIT_MOV, SLJIT_R0, 0, CTX, 0);
     move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_IMM, (sljit_sw)e->pc);
-    sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS2(P, P, 32), SLJIT_IMM, address);
+    move(e, SLJIT_MOV, SLJIT_R2, 0, SLJIT_IMM, (sljit_sw)(uintptr_t)instruction);
+    sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS3(P, P, 32, P), SLJIT_IMM, address);
     struct sljit_jump *resume = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R0, 0, SLJIT_IMM, 0);
     /* The helper has already published the current logical activation/PC. */
     sljit_emit_return_void(e->c);
@@ -129,16 +136,70 @@ static void composed_shift(Emitter *e) {
     sljit_emit_return_void(e->c);
     sljit_set_label(unchanged, sljit_emit_label(e->c));
 }
+/* Inline the retained-view predicate before the unchanged checked miss owner.
+ * No object pointer is dereferenced here. Function-specific tables still check
+ * every identity component, so recursion and cold GC cannot revive old views. */
+static struct sljit_jump *retained_view(Emitter *e, uint32_t reg, sljit_sw base) {
+    struct sljit_jump *miss[14];
+    size_t n = 0;
+    sljit_sw heap = (sljit_sw)offsetof(MarimayBytecodeExecution, managed_heap);
+    sljit_sw value = (sljit_sw)(reg * sizeof(MarimayBytecodeValue));
+    const uint32_t *layouts = e->function->register_layouts.data;
+    _Static_assert(sizeof(MarimayBytecodeType) == 4, "runtime value type word");
+    move(e, SLJIT_MOV, SLJIT_R3, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, execution));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_EQUAL, SLJIT_R3, 0, SLJIT_IMM, 0);
+    move(e, SLJIT_MOV_U8, SLJIT_R0, 0, SLJIT_MEM1(SLJIT_R3), offsetof(MarimayBytecodeExecution, initialized));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_EQUAL, SLJIT_R0, 0, SLJIT_IMM, 0);
+    move(e, SLJIT_MOV_U8, SLJIT_R0, 0, SLJIT_MEM1(SLJIT_R3), heap + (sljit_sw)offsetof(MarimayManagedHeap, initialized));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_EQUAL, SLJIT_R0, 0, SLJIT_IMM, 0);
+    move(e, SLJIT_MOV_U8, SLJIT_R0, 0, SLJIT_MEM1(SLJIT_R3), heap + (sljit_sw)offsetof(MarimayManagedHeap, collecting));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R0, 0, SLJIT_IMM, 0);
+    move(e, SLJIT_MOV, SLJIT_R4, 0, SLJIT_MEM1(SLJIT_R3), heap + (sljit_sw)offsetof(MarimayManagedHeap, view_epoch));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_EQUAL, SLJIT_R4, 0, SLJIT_IMM, -1);
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R4, 0,
+        SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view_epoch));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R3, 0,
+        SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, execution));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL,
+        SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, function),
+        SLJIT_IMM, (sljit_sw)(uintptr_t)e->function);
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL,
+        SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, function),
+        SLJIT_IMM, (sljit_sw)(uintptr_t)e->function);
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL | SLJIT_32,
+        SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, layout),
+        SLJIT_IMM, (sljit_s32)layouts[reg]);
+    move(e, SLJIT_MOV_U32, SLJIT_R0, 0, SLJIT_MEM1(REGS), value + (sljit_sw)offsetof(MarimayBytecodeValue, type));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL | SLJIT_32, SLJIT_R0, 0,
+        SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, type));
+    move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_MEM1(REGS), slot(reg));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R0, 0,
+        SLJIT_MEM1(SLJIT_R3), heap + (sljit_sw)offsetof(MarimayManagedHeap, provenance));
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R0, 0,
+        SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view));
+    move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_MEM1(REGS), slot(reg) + 8);
+    miss[n++] = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R0, 0,
+        SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view) + 8);
+    move(e, SLJIT_MOV, SLJIT_MEM1(BINDS), base, EPOCH, 0);
+    struct sljit_jump *reused = sljit_emit_jump(e->c, SLJIT_JUMP);
+    struct sljit_label *slow = sljit_emit_label(e->c);
+    for (size_t i = 0; i < n; ++i) sljit_set_label(miss[i], slow);
+    return reused;
+}
+
 /* Returns view in R5. No borrowed data address survives a VM safepoint. */
 static void bind(Emitter *e, uint32_t reg) {
     sljit_sw base = (sljit_sw)(reg * sizeof(MarimayBytecodeJitBinding));
     struct sljit_jump *hit = sljit_emit_cmp(e->c, SLJIT_EQUAL,
         SLJIT_MEM1(BINDS), base, EPOCH, 0);
+    struct sljit_jump *reused = retained_view(e, reg, base);
     move(e, SLJIT_MOV, SLJIT_R0, 0, CTX, 0);
     move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_IMM, reg);
     sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS2(P, P, 32), SLJIT_IMM, bind_address());
     condition(e, SLJIT_NOT_EQUAL, SLJIT_R0, 0, SLJIT_IMM, 0);
-    sljit_set_label(hit, sljit_emit_label(e->c));
+    struct sljit_label *bound = sljit_emit_label(e->c);
+    sljit_set_label(hit, bound);
+    sljit_set_label(reused, bound);
     sljit_emit_op2(e->c, SLJIT_ADD, SLJIT_R5, 0, BINDS, 0, SLJIT_IMM,
         base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view));
 }
@@ -319,7 +380,7 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
         switch (op->opcode) {
             case MMAY_OPCODE_CALL_DIRECT: case MMAY_OPCODE_CALL_DIRECT_VOID:
             case MMAY_OPCODE_RETURN: case MMAY_OPCODE_RETURN_VOID:
-                transition(&e); break;
+                transition(&e, op); break;
             case MMAY_OPCODE_JUMP: edges[2*pc] = sljit_emit_jump(compiler, SLJIT_JUMP); break;
             case MMAY_OPCODE_BRANCH_BOOL:
                 load(&e, SLJIT_R0, op->first);

@@ -2,6 +2,7 @@
 #define MMAY_BYTECODE_VM_FRAME_H
 
 #include "mmay/bytecode/vm.h"
+#include "vm_frame_layout.h"
 
 /* Activation storage: this owner allocates/releases registers, defer slots,
  * root frames and the nonrecursive frame stack. Dispatch owns the cursors.
@@ -40,6 +41,13 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
 MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
     MarimayBytecodeRunFrame *frame, MarimayBytecodeExecution *execution,
     MarimayAllocator allocator);
+MarimayBytecodeRunStatus mmay_bytecode_run_frame_init_layout(
+    MarimayBytecodeRunFrame *frame, const MarimayBytecodeFrameLayout *layout,
+    MarimayAllocator allocator, uint32_t return_destination, bool return_is_void,
+    bool return_is_never, MarimayBytecodeSpan call_span);
+MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init_layout(
+    MarimayBytecodeRunFrame *frame, const MarimayBytecodeFrameLayout *layout,
+    MarimayBytecodeExecution *execution, MarimayAllocator allocator);
 void mmay_bytecode_run_frame_borrow_caller_roots(
     MarimayBytecodeRunFrame *frame);
 bool mmay_bytecode_run_frames_reserve(MarimayBytecodeRunFrame **frames,

@@ -2,11 +2,20 @@
 #include "vm_internal.h"
 #include <string.h>
 
+#ifdef MMAY_HAVE_SLJIT
+static MarimayBytecodeRunStatus call_transition(
+#else
 MarimayBytecodeRunStatus mmay_bytecode_run_call(
+#endif
     MarimayBytecodeRunStack *stack, const MarimayBytecodeProgram *program,
     const MarimayBytecodeExecutionImage *image,
     const MarimayBytecodeInstruction *instruction, MarimayAllocator allocator,
+#ifdef MMAY_HAVE_SLJIT
+    const MarimayBytecodeRunOptions *options,
+    const MarimayBytecodePreparedCall *prepared
+#else
     const MarimayBytecodeRunOptions *options
+#endif
 ) {
     const size_t count = stack->count;
     MarimayBytecodeRunFrame *frame = &stack->frames[count - 1];
@@ -18,14 +27,22 @@ MarimayBytecodeRunStatus mmay_bytecode_run_call(
     uint64_t call_wire = instruction->operands[
         instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID || returns_never ? 0 : 1
     ].unsigned_value;
+#ifdef MMAY_HAVE_SLJIT
+    const MarimayBytecodeCall *call = prepared != NULL ? prepared->call : call_wire < body->calls.length
+#else
     const MarimayBytecodeCall *call = call_wire < body->calls.length
+#endif
         ? mmay_bytecode_call(body, (MarimayBytecodeCallId)call_wire)
         : NULL;
     bool returns_void = call != NULL && call->result_type == MMAY_BYTECODE_TYPE_VOID;
     MarimaySymbolId callee_symbol;
     MarimayManagedReference interface_payload =
         mmay_managed_invalid_reference();
+#ifdef MMAY_HAVE_SLJIT
+    const MarimayBytecodeProgramFunction *callee = prepared != NULL ? prepared->callee : NULL;
+#else
     const MarimayBytecodeProgramFunction *callee = NULL;
+#endif
     size_t argument_index = 0;
     memset(&callee_symbol, 0, sizeof(callee_symbol));
     if (interface_call && call != NULL) {
@@ -43,7 +60,17 @@ MarimayBytecodeRunStatus mmay_bytecode_run_call(
     } else if (call != NULL) {
         callee_symbol = call->callee;
     }
+#ifdef MMAY_HAVE_SLJIT
+    if (prepared != NULL) {
+        /* Preparation only projects immutable direct-call metadata. Dynamic
+         * depth, storage, roots and publication still pass through this owner. */
+        if (prepared->caller != frame->function || prepared->layout == NULL
+            || prepared->layout->function != callee || interface_call)
+            return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    } else if (!interface_call && call != NULL && image != NULL) {
+#else
     if (!interface_call && call != NULL && image != NULL) {
+#endif
         const MarimayBytecodeProgramFunction *functions =
             program->functions.data;
         size_t function_id = (size_t)(frame->function - functions);
@@ -84,7 +111,14 @@ MarimayBytecodeRunStatus mmay_bytecode_run_call(
     frame = &stack->frames[count - 1];
     MarimayBytecodeRunFrame *next = &stack->frames[count];
     frame->instruction += 1;
+#ifdef MMAY_HAVE_SLJIT
+    status = prepared != NULL ? mmay_bytecode_run_frame_init_layout(next,
+        prepared->layout, allocator, returns_void || returns_never ? 0
+            : (uint32_t)instruction->operands[0].unsigned_value,
+        returns_void, returns_never, instruction->span) : mmay_bytecode_run_frame_init(
+#else
     status = mmay_bytecode_run_frame_init(
+#endif
         next,
         callee,
         NULL,
@@ -141,10 +175,18 @@ MarimayBytecodeRunStatus mmay_bytecode_run_call(
         }
     }
     {
+#ifdef MMAY_HAVE_SLJIT
+        size_t callee_id = prepared != NULL ? 0 : (size_t)(callee
+#else
         size_t callee_id = (size_t)(callee
+#endif
             - (const MarimayBytecodeProgramFunction *)
                 program->functions.data);
+#ifdef MMAY_HAVE_SLJIT
+        bool borrow_roots = prepared != NULL ? prepared->borrows_caller_roots : image != NULL
+#else
         bool borrow_roots = image != NULL
+#endif
             && callee_id < image->function_count
             && image->functions[callee_id].borrows_caller_roots;
         if (borrow_roots) {
@@ -152,8 +194,14 @@ MarimayBytecodeRunStatus mmay_bytecode_run_call(
                 next);
             status = MMAY_BYTECODE_RUN_OK;
         } else {
+#ifdef MMAY_HAVE_SLJIT
+            status = prepared != NULL ? mmay_bytecode_run_frame_roots_init_layout(
+                next, prepared->layout, options->execution, allocator)
+                : mmay_bytecode_run_frame_roots_init(next, options->execution, allocator);
+#else
             status = mmay_bytecode_run_frame_roots_init(
                 next, options->execution, allocator);
+#endif
         }
     }
     if (status != MMAY_BYTECODE_RUN_OK) {
@@ -165,6 +213,24 @@ MarimayBytecodeRunStatus mmay_bytecode_run_call(
     stack->count = count + 1;
     return MMAY_BYTECODE_RUN_OK;
 }
+
+#ifdef MMAY_HAVE_SLJIT
+MarimayBytecodeRunStatus mmay_bytecode_run_call(
+    MarimayBytecodeRunStack *stack, const MarimayBytecodeProgram *program,
+    const MarimayBytecodeExecutionImage *image,
+    const MarimayBytecodeInstruction *instruction, MarimayAllocator allocator,
+    const MarimayBytecodeRunOptions *options) {
+    return call_transition(stack, program, image, instruction, allocator, options, NULL);
+}
+
+MarimayBytecodeRunStatus mmay_bytecode_run_call_prepared(
+    MarimayBytecodeRunStack *stack, const MarimayBytecodePreparedCall *prepared,
+    const MarimayBytecodeInstruction *instruction, MarimayAllocator allocator,
+    const MarimayBytecodeRunOptions *options) {
+    if (prepared == NULL) return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    return call_transition(stack, NULL, NULL, instruction, allocator, options, prepared);
+}
+#endif
 
 MarimayBytecodeRunStatus mmay_bytecode_run_return(
     MarimayBytecodeRunStack *stack, const MarimayBytecodeInstruction *instruction,

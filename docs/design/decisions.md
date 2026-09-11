@@ -3730,6 +3730,23 @@ collection are unreachable. The runtime retains length/generation limits,
 resource diagnostics and mutation commit order. A full array or rejected guard
 exits before the original push, with exact fuel and no committed mutation.
 
+The tier may project immutable direct-call metadata and prepare register/root
+initialization layouts once per selected function. Generated transitions may
+refer directly to their original verified instruction while that program is
+alive. The shared activation owner still performs depth checks, argument and
+return handling, checked root registration and failure publication. Prepared
+layouts hold only types, invalid references and register indexes, never live
+objects or extra cached activations. They are bounded by selected verified
+function layouts, allocated through the central allocator and released with
+the invocation on success or any preparation/execution failure.
+
+Function-specific view tables may use a bounded 2 MiB host-cache arena to avoid
+cross-function cache collisions. Excess functions retain the shared checked
+table. The emitter may inline the existing retained-view predicate, including
+all execution/function/layout/type, reference/provenance and heap-epoch checks;
+its miss still enters the checked binding owner. Entry-epoch wrap clears every
+table. No cached view is a GC root or an additional logical activation.
+
 In the unlimited-frame/no-shared-counter mode, bounded direct callees of selected
 functions may also be compiled. A single native trampoline may transfer between
 their labels through the shared logical call/return owner. Every Marimay call

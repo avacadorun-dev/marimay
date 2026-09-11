@@ -86,6 +86,22 @@ checked view proves spare capacity. The runtime mutation contract, configured
 length limit, generation limit and resource diagnostics remain authoritative;
 growth or a failed guard resumes the original uncommitted instruction.
 
+The optional tier may prepare direct-call projections, initial register types
+and invalid references, and managed-root indexes once per verified function.
+These immutable invocation-local templates contain no live values or linked
+roots. Applying a template must retain the ordinary activation owner's depth
+checks, argument transport, return validation and publication order. Layout
+changes invalidate old root locations before storage can move; checked root
+registration remains required for every owning activation. Preparation failure
+and all partially initialized frames remain owned by normal teardown.
+
+Retained JIT views may occupy separate function tables within a fixed host-cache
+budget, with the shared checked table as fallback. Neither table roots objects.
+Native revalidation must preserve the execution/function/layout/type, complete
+reference/provenance and heap-epoch proof before using retained pointers.
+Generation of a new entry epoch does not extend a managed view's lifetime;
+entry-epoch wrap must invalidate every shared and function-specific table.
+
 A machine-code transfer between functions does not eliminate the corresponding
 logical activation. It must preserve call-depth checks, arguments, return values,
 typed roots and cleanup order even if native stack depth stays constant. On a

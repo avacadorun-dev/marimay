@@ -103,6 +103,11 @@ static void native_exit(const MarimayBytecodeProgram *program) {
     EXPECT(mmay_bytecode_execution_image_init(&image, program, allocator) == MMAY_BYTECODE_IMAGE_OK);
     EXPECT(mmay_bytecode_jit_init(&jit, program, &image, allocator, &fault, false) == MMAY_BYTECODE_RUN_OK);
     EXPECT(jit.ready && jit.functions[0].code != NULL && jit.functions[1].code != NULL);
+    /* A wrapped entry epoch must clear every function table, including a
+     * future callee whose poisoned epoch would otherwise look current. */
+    jit.epoch = SIZE_MAX;
+    EXPECT(jit.functions[0].bindings != NULL);
+    jit.functions[0].bindings[0].epoch = 3;
     EXPECT(mmay_bytecode_run_frames_reserve(&stack.frames, &stack.capacity, 1, 3, allocator));
     EXPECT(mmay_bytecode_run_frame_init(&stack.frames[0],
         mmay_bytecode_program_function(program, 2), &argument, 1, allocator,

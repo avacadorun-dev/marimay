@@ -81,7 +81,17 @@ static size_t native_entry(const MarimayBytecodeProgram *program, bool overflow,
     status = mmay_bytecode_jit_init(&jit, program, &image, allocator, &fault, false);
     if (status != MMAY_BYTECODE_RUN_OK) goto cleanup;
     EXPECT(jit.ready && jit.function_count == 3);
-    for (size_t id = 0; id < 3; ++id) EXPECT(jit.functions[id].code != NULL);
+    EXPECT(jit.state->activation_metadata != NULL && jit.state->activation_metadata_bytes != 0);
+    for (size_t id = 0; id < 3; ++id) {
+        EXPECT(jit.functions[id].code != NULL);
+        EXPECT(jit.functions[id].frame_layout.function == mmay_bytecode_program_function(program, id));
+        EXPECT(jit.functions[id].frame_layout.initial_registers != NULL);
+        if (id != 0) {
+            EXPECT(jit.functions[id].calls[0].caller == mmay_bytecode_program_function(program, id));
+            EXPECT(jit.functions[id].calls[0].callee == mmay_bytecode_program_function(program, id - 1));
+            EXPECT(jit.functions[id].calls[0].layout == &jit.functions[id - 1].frame_layout);
+        }
+    }
     status = MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     if (!mmay_bytecode_run_frames_reserve(&stack.frames, &stack.capacity, 1,
         options.max_call_depth, allocator)) goto cleanup;

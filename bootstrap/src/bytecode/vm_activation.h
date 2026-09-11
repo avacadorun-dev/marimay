@@ -12,11 +12,25 @@ typedef struct MarimayBytecodeRunStack {
     size_t capacity;
 } MarimayBytecodeRunStack;
 
+/* Direct-call projection of immutable verified program metadata. It carries
+ * no dynamic register values, linked roots or authority to waive a limit. */
+typedef struct MarimayBytecodePreparedCall {
+    const MarimayBytecodeProgramFunction *caller;
+    const MarimayBytecodeProgramFunction *callee;
+    const MarimayBytecodeCall *call;
+    const MarimayBytecodeFrameLayout *layout;
+    bool borrows_caller_roots;
+} MarimayBytecodePreparedCall;
+
 /* Active verified caller/instruction; the instruction's fuel is already
  * charged. A failed transition remains owned by normal stack teardown. */
 MarimayBytecodeRunStatus mmay_bytecode_run_call(
     MarimayBytecodeRunStack *stack, const MarimayBytecodeProgram *program,
     const MarimayBytecodeExecutionImage *image,
+    const MarimayBytecodeInstruction *instruction, MarimayAllocator allocator,
+    const MarimayBytecodeRunOptions *options);
+MarimayBytecodeRunStatus mmay_bytecode_run_call_prepared(
+    MarimayBytecodeRunStack *stack, const MarimayBytecodePreparedCall *prepared,
     const MarimayBytecodeInstruction *instruction, MarimayAllocator allocator,
     const MarimayBytecodeRunOptions *options);
 MarimayBytecodeRunStatus mmay_bytecode_run_return(

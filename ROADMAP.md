@@ -165,5 +165,22 @@ and VM/Rust 21.38x; VM includes source preparation.
 This is local opt-in acceptance; default enablement, full Tier 1 and parity
 remain open. The earlier checkpoint overrun remains recorded.
 
+[Prepared JIT activations with OFF isolation](docs/implementation/evidence/cp42-sljit-prepared-isolation-2026-09-11.md)
+prepare immutable call/frame metadata and bounded view tables. The enabled
+compiler is byte-identical to the measured candidate: the full JIT median sum
+falls 8.8%, with stack/queue improvements of 20.5%/21.5%. The preceding candidate
+remains rejected under its observed OFF gate; an identical-binary A/A diagnostic
+then exceeded the P90 threshold, leaving code causality unresolved. The follow-up
+proves canonical OFF implementation identity, explicitly accounting for build
+paths and linker UUID/signature metadata. Current validation covers all 96
+enabled tests (95 initial passes and one sleep-timeout recheck), 86/86 OFF,
+sanitizers and x86 Rosetta, including the unchanged 32-workload replays.
+The [fresh five-participant matrix](docs/implementation/evidence/cp42-sljit-prepared-isolation-comprehensive-2026-09-11.md)
+passes all 160 correctness outcomes. Descriptive geometric mean ratios are
+native/Go 2.12x, native/Rust 2.22x, VM/Go 19.98x and VM/Rust 20.99x.
+These local-unverified timings do not establish a cross-series code regression
+or overall parity. The missed deadline is recorded; JIT remains OFF by default,
+and Linux LSan, full Tier 1 and overall Go/Rust parity remain open.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.

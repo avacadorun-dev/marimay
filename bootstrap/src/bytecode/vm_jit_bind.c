@@ -1,6 +1,16 @@
 #include "vm_jit_internal.h"
 #include "vm_hot.h"
 #include "vm_internal.h"
+#include <string.h>
+
+void mmay_bytecode_jit_clear_bindings(MarimayBytecodeJit *jit) {
+    memset(jit->bindings, 0, jit->binding_bytes);
+    for (size_t id = 0; id < jit->function_count; ++id) {
+        MarimayBytecodeJitFunction *function = &jit->functions[id];
+        if (function->bindings != NULL)
+            memset(function->bindings, 0, function->binding_bytes);
+    }
+}
 
 size_t mmay_bytecode_jit_array_width(const MarimayBytecodeFunction *function,
     uint32_t reg

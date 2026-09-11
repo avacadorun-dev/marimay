@@ -227,6 +227,22 @@ uses the same candidate and passes all 32 unchanged workloads. All five columns
 come from one 3-warmup/11-sample series; source preparation remains inside VM
 timings. Dispersion, including the noisy Rust frequency-map result, is retained.
 
+[Prepared activations and retained-view proofs](cp42-sljit-prepared-activations-2026-09-10.md)
+preserves both early candidates, profiling, the complete JIT/OFF matrices and
+the second candidate's original observed-performance rejection.
+[Compile-time OFF isolation](cp42-sljit-prepared-isolation-2026-09-11.md)
+([validation and reproduction](cp42-sljit-prepared-isolation-validation-2026-09-11.json))
+retains that exact measured JIT executable and proves canonical OFF code identity.
+It records the inconclusive A/A control, all raw observations, current tests,
+the sleep-timeout recheck, sanitizer/Rosetta checks and the deadline overrun.
+Local opt-in acceptance does not establish default enablement or overall parity.
+The [fresh 32-workload comparison](cp42-sljit-prepared-isolation-comprehensive-2026-09-11.md)
+([raw observations](cp42-sljit-prepared-isolation-comprehensive-2026-09-11.json))
+records all five participants in one series with the same measured compiler,
+114 unchanged source/harness inputs and 64 MiB managed heap limit. Its host
+monitor and dispersion are retained; absolute values from different series
+are not a causal code-regression test.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

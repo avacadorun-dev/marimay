@@ -38,7 +38,11 @@ void mmay_bytecode_run_frame_dispose(
         memset(frame, 0, sizeof(*frame));
     }
 }
+#ifdef MMAY_HAVE_SLJIT
+static MarimayBytecodeRunStatus initialize(
+#else
 MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
+#endif
     MarimayBytecodeRunFrame *frame,
     const MarimayBytecodeProgramFunction *function,
     const MarimayBytecodeValue *arguments,
@@ -47,7 +51,12 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
     uint32_t return_destination,
     bool return_is_void,
     bool return_is_never,
+#ifdef MMAY_HAVE_SLJIT
+    MarimayBytecodeSpan call_span,
+    const MarimayBytecodeFrameLayout *layout
+#else
     MarimayBytecodeSpan call_span
+#endif
 ) {
     const MarimayBytecodeFunction *body = function != NULL ? &function->body : NULL;
     size_t index = 0;
@@ -77,7 +86,14 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
              * to move. They are inactive and must never be relinked. */
             frame->managed_roots->location_bytes = 0;
         }
+#ifdef MMAY_HAVE_SLJIT
+        if (layout != NULL) {
+            register_bytes = layout->register_bytes;
+            defer_bytes = layout->defer_bytes;
+        } else if (!mmay_size_multiply(
+#else
         if (!mmay_size_multiply(
+#endif
                 body->register_types.length == 0 ? 1 : body->register_types.length,
                 sizeof(MarimayBytecodeValue), &register_bytes)
             || !mmay_size_multiply(body->calls.length,
@@ -88,14 +104,23 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
             &frame->register_bytes, register_bytes, allocator);
         if (registers == NULL) return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         frame->registers = registers;
+#ifdef MMAY_HAVE_SLJIT
+        if (layout != NULL) memcpy(frame->registers, layout->initial_registers, register_bytes);
+        else memset(frame->registers, 0, register_bytes);
+#else
         memset(frame->registers, 0, register_bytes);
+#endif
         void *defers = mmay_bytecode_frame_reserve_buffer(frame->defer_stack,
             &frame->defer_stack_bytes, defer_bytes, allocator);
         if (defer_bytes != 0 && defers == NULL) {
             return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         }
         frame->defer_stack = defers;
+#ifdef MMAY_HAVE_SLJIT
+        for (index = 0; layout == NULL && index < body->register_types.length; index += 1) {
+#else
         for (index = 0; index < body->register_types.length; index += 1) {
+#endif
             const MarimayBytecodeType *type = mmay_vector_at_const(
                 &body->register_types,
                 index
@@ -125,10 +150,19 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
     frame->call_span = call_span;
     return MMAY_BYTECODE_RUN_OK;
 }
+#ifdef MMAY_HAVE_SLJIT
+static MarimayBytecodeRunStatus initialize_roots(
+#else
 MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
+#endif
     MarimayBytecodeRunFrame *frame,
     MarimayBytecodeExecution *execution,
+#ifdef MMAY_HAVE_SLJIT
+    MarimayAllocator allocator,
+    const MarimayBytecodeFrameLayout *layout
+#else
     MarimayAllocator allocator
+#endif
 ) {
     MarimayBytecodeRunStatus status;
     if (frame == NULL || frame->function == NULL) {
@@ -145,7 +179,12 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
             : managed_status == MMAY_MANAGED_INVALID_REFERENCE
                 ? MMAY_BYTECODE_RUN_INVALID_REFERENCE : MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
+#ifdef MMAY_HAVE_SLJIT
+    if (layout != NULL ? layout->managed_count == 0
+        : !mmay_bytecode_run_function_uses_managed(&frame->function->body)) {
+#else
     if (!mmay_bytecode_run_function_uses_managed(&frame->function->body)) {
+#endif
         frame->roots_prepared = true;
         return MMAY_BYTECODE_RUN_OK;
     }
@@ -157,10 +196,18 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
         if (frame->managed_roots == NULL) return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
         memset(frame->managed_roots, 0, sizeof(*frame->managed_roots));
     }
+#ifdef MMAY_HAVE_SLJIT
+    size_t count = layout != NULL ? layout->managed_count : 0;
+#else
     size_t count = 0;
+#endif
     const MarimayBytecodeFunction *body = &frame->function->body;
     const MarimayBytecodeType *types = body->register_types.data;
+#ifdef MMAY_HAVE_SLJIT
+    for (size_t index = 0; layout == NULL && index < body->register_types.length; index += 1) {
+#else
     for (size_t index = 0; index < body->register_types.length; index += 1) {
+#endif
         if (mmay_bytecode_type_is_managed(types[index])) count += 1;
     }
     size_t bytes = 0;
@@ -172,11 +219,25 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
     if (bytes != 0 && locations == NULL) return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
     frame->managed_roots->locations = locations;
     frame->managed_roots->location_bytes = bytes;
+#ifdef MMAY_HAVE_SLJIT
+    if (layout != NULL) {
+        for (size_t i = 0; i < count; ++i)
+            frame->managed_roots->locations[i] =
+                &frame->registers[layout->managed_registers[i]].as.managed_reference;
+    } else {
+        count = 0;
+        for (size_t index = 0; index < body->register_types.length; index += 1) {
+            if (mmay_bytecode_type_is_managed(types[index])) {
+                frame->managed_roots->locations[count++] =
+                    &frame->registers[index].as.managed_reference;
+            }
+#else
     count = 0;
     for (size_t index = 0; index < body->register_types.length; index += 1) {
         if (mmay_bytecode_type_is_managed(types[index])) {
             frame->managed_roots->locations[count++] =
                 &frame->registers[index].as.managed_reference;
+#endif
         }
     }
     MarimayManagedStatus managed_status = mmay_managed_root_push(
@@ -188,6 +249,41 @@ MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
     if (status == MMAY_BYTECODE_RUN_OK) frame->roots_prepared = true;
     return status;
 }
+
+#ifdef MMAY_HAVE_SLJIT
+MarimayBytecodeRunStatus mmay_bytecode_run_frame_init(
+    MarimayBytecodeRunFrame *frame, const MarimayBytecodeProgramFunction *function,
+    const MarimayBytecodeValue *arguments, size_t argument_count,
+    MarimayAllocator allocator, uint32_t destination, bool returns_void,
+    bool returns_never, MarimayBytecodeSpan span) {
+    return initialize(frame, function, arguments, argument_count, allocator,
+        destination, returns_void, returns_never, span, NULL);
+}
+
+MarimayBytecodeRunStatus mmay_bytecode_run_frame_init_layout(
+    MarimayBytecodeRunFrame *frame, const MarimayBytecodeFrameLayout *layout,
+    MarimayAllocator allocator, uint32_t destination, bool returns_void,
+    bool returns_never, MarimayBytecodeSpan span) {
+    if (layout == NULL || layout->function == NULL || layout->initial_registers == NULL)
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    return initialize(frame, layout->function, NULL, 0, allocator,
+        destination, returns_void, returns_never, span, layout);
+}
+
+MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init(
+    MarimayBytecodeRunFrame *frame, MarimayBytecodeExecution *execution,
+    MarimayAllocator allocator) {
+    return initialize_roots(frame, execution, allocator, NULL);
+}
+
+MarimayBytecodeRunStatus mmay_bytecode_run_frame_roots_init_layout(
+    MarimayBytecodeRunFrame *frame, const MarimayBytecodeFrameLayout *layout,
+    MarimayBytecodeExecution *execution, MarimayAllocator allocator) {
+    if (frame == NULL || layout == NULL || frame->function != layout->function)
+        return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
+    return initialize_roots(frame, execution, allocator, layout);
+}
+#endif
 
 void mmay_bytecode_run_frame_borrow_caller_roots(
     MarimayBytecodeRunFrame *frame

@@ -6,6 +6,7 @@
 
 #define MMAY_JIT_MAX_REGISTERS 1024
 #define MMAY_JIT_MAX_CODE_BYTES (8U * 1024U * 1024U)
+#define MMAY_JIT_MAX_VIEW_BYTES (2U * 1024U * 1024U)
 #define MMAY_JIT_ENTRY UINT32_C(0x80000000)
 #define MMAY_JIT_OFFSET UINT32_C(0x7fffffff)
 
@@ -21,6 +22,10 @@ struct MarimayBytecodeJitFunction {
     void *code;
     size_t code_bytes;
     MarimayCodeMemory memory;
+    MarimayBytecodeFrameLayout frame_layout;
+    MarimayBytecodePreparedCall *calls;
+    struct MarimayBytecodeJitBinding *bindings;
+    size_t binding_bytes;
 };
 
 typedef struct MarimayBytecodeJitBinding {
@@ -63,13 +68,20 @@ typedef struct MarimayBytecodeJitContext {
 struct MarimayBytecodeJitState {
     MarimayBytecodeJitActivation activation;
     MarimayBytecodeJitContext context;
+    void *activation_metadata;
+    size_t activation_metadata_bytes;
 };
 
-void *mmay_bytecode_jit_transition(MarimayBytecodeJitContext *context, uint32_t pc);
+MarimayBytecodeRunStatus mmay_bytecode_jit_prepare_activations(MarimayBytecodeJit *jit,
+    const MarimayBytecodeProgram *program, const MarimayBytecodeExecutionImage *image,
+    const unsigned char *selected);
+void *mmay_bytecode_jit_transition(MarimayBytecodeJitContext *context, uint32_t pc,
+    const MarimayBytecodeInstruction *instruction);
 void mmay_bytecode_jit_enter(const MarimayBytecodeJitFunction *compiled,
     MarimayBytecodeJitContext *context, size_t pc);
 
 void *mmay_bytecode_jit_bind(MarimayBytecodeJitContext *context, uint32_t reg);
+void mmay_bytecode_jit_clear_bindings(MarimayBytecodeJit *jit);
 bool mmay_bytecode_jit_enum(MarimayBytecodeJitContext *context, uint32_t pc);
 bool mmay_bytecode_jit_array_push(MarimayBytecodeJitContext *context, uint32_t pc);
 bool mmay_bytecode_jit_shift(MarimayBytecodeJitContext *context, uint32_t pc);

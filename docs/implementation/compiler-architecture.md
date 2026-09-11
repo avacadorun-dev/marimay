@@ -626,6 +626,26 @@ widths, growth exits, length/generation limits, diagnostics and exact fuel.
 `test_jit_reference_arrays.c` owns checked/proven reference-array reads, full
 identity and rebinding, rooted collection, precise exits and allocation failures.
 
+`vm_frame_layout.c` behind `vm_frame_layout.h` owns immutable verified-function
+initialization templates and managed-register indexes. It borrows its storage
+from the preparing owner and contains no live references or linked roots.
+`vm_frame.c` alone applies those templates to inactive storage and rebuilds
+checked root locations; its ordinary initialization path remains available.
+`vm_jit_activations.c` owns the bounded per-invocation arena and direct-call
+projections for selected functions. `vm_jit.c` sequences preparation and frees
+the arena at teardown. `vm_activation.c` shares one transition protocol between
+ordinary and prepared calls; neither JIT owner implements a second call policy.
+The focused frame-storage test compares ordinary/prepared layout changes and
+all allocation failures; JIT call/root owners prove actual prepared transitions,
+deep recursion, cold exits, logical limits and managed-root lifetime.
+That preparation arena also assigns optional per-function view tables within
+a 2 MiB cap; excess functions use the existing shared table. `vm_jit_bind.c`
+clears all tables on entry-epoch wrap. `vm_jit_sljit.c` inlines the retained-view
+predicate before its existing checked binding call. `test_jit_view_proofs.c`
+compares native predicates with the C owner across every failed proof component
+and verifies bounded table allocation/fallback; the call-root owner poisons a
+future callee cache to prove wrap invalidation before native entry.
+
 `base/code_memory.c` is the central OS page-allocation owner behind the narrow
 `mmay/base/code_memory.h` API. It owns rounding, bounded reserve, one-way W^X
 publication, cache flush, platform fault injection and release. Ordinary compiler

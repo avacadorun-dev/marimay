@@ -175,6 +175,69 @@ time ratios are native/Go 2.04x, native/Rust 2.19x, VM/Go 19.92x and VM/Rust
 from the paired acceptance gate. This stage changes JIT, not native generation.
 Default JIT enablement, full Tier 1 validation and overall parity remain open.
 
+## Active stage: prepare immutable call and frame metadata
+
+Starts **16:51 UTC on 2026-09-10**, due **18:51 UTC**, with exact timestamps and
+the accepted `719aa54` JIT/OFF executable hashes in
+`build/jit-prepared-activations/SMART.json`. A fresh profile of that binary puts
+call transitions at 44.9% of DSU, 49.7% of stack and 52.1% of queue sampled
+stacks. Binding contributes separately; sampling is diagnostic, not timing.
+
+Prepare direct-call metadata, initial register templates and managed-root
+indexes once per selected verified function. Keep the shared activation/frame
+owners authoritative for dynamic depth, storage growth, argument/return checks,
+invalid-reference initialization, checked roots, source PCs and cleanup.
+No workload changes or additional cached live activations are allowed.
+
+Early 3+11 paired acceptance requires at least 20% improvement in both stack
+and queue, and 15% in DSU. Full acceptance requires at least 8% improvement in
+the JIT sum of medians, while retaining the independent 2% median / 5% P90
+regression limits for every workload in JIT and OFF. Exactly one confirmation
+per flagged workload applies the existing rule; all observations are retained.
+Ordinary/prepared frame tests, actual native calls, depth/fuel and precise exits,
+GC/root/layout changes, deterministic failures, full ON/OFF, sanitizer/Rosetta
+and all32 correctness precede the complete timing matrix and main/push outcome.
+A missed gate or deadline is documented explicitly.
+
+The first candidate passed focused correctness and all32 replay but missed all
+early targets: stack 566.72 to 482.87 ms (-14.8%), queue 592.10 to 481.48 ms
+(-18.7%), DSU 1439.32 to 1358.95 ms (-5.6%). Its binary, replayable patch and
+all observations are preserved. Before the second edit, `SMART-v2.json` extends
+preparation with bounded function-specific view tables and inlined retained-view
+revalidation before the same checked miss owner. The baseline, numeric gates
+and original deadline remain unchanged; the first candidate is not accepted.
+
+The second candidate passes early 3+11 targets: stack 583.96 to 461.14 ms
+(-21.0%), queue 595.84 to 461.86 ms (-22.5%), DSU 1439.46 to 1206.49 ms
+(-16.2%). The [full result](evidence/cp42-sljit-prepared-activations-2026-09-10.md)
+passes correctness and reduces the JIT median sum by 8.8%, but is rejected by
+the original OFF performance gate. Five OFF workloads repeat a threshold
+exceedance. This is an observed-performance decision, not proof of code causality.
+
+The user subsequently reported concurrent agent work. A single predeclared
+five-workload A/A diagnostic used the exact same OFF compiler on both sides,
+AC power and a background-process/thermal monitor. Median differences stay
+within 1.2%, but queue P90 differs by 14.7%; the negative control is inconclusive
+and its planned A/B follow-up is not run. All previous observations and the
+second candidate's rejection remain preserved. Repeating until passing is not
+an acceptance strategy.
+
+Before the third edit, `SMART-v3.json` records compile-time isolation of the
+prepared-JIT additions in the common frame and activation owners. The ON
+compiler is byte-identical to measured candidate two. OFF retains the accepted
+407 identical objects; two build-location objects become identical when compiled
+with the control's generated paths. Relinking then matches the accepted binary
+apart from linker UUID/signature metadata. This is explicit implementation
+identity evidence, not a replacement OFF timing result. The
+[follow-up evidence](evidence/cp42-sljit-prepared-isolation-2026-09-11.md)
+accepts the opt-in implementation locally: current ON tests cover 95 initial
+passes and one successful recheck after a recorded 978-second system sleep;
+OFF passes 86/86, with new sanitizer/Rosetta tests and all32 replays. The original
+deadline was missed and remains recorded. A fresh five-participant series
+passes all 160 correctness outcomes; identical Native/Go/Rust/Bun binaries
+run slower across this series, so cross-series absolute times are not a code
+regression test. The overall Go/Rust parity goal remains unchanged.
+
 ## Sequence after this stage
 
 1. Follow the measured object-binding profile. Reduce repeated managed-object validation,

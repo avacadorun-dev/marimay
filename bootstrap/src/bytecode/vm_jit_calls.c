@@ -15,26 +15,24 @@ static void *resume(MarimayBytecodeJitContext *context) {
     context->pc = (size_t)context->image->block_starts[frame->block] + frame->instruction;
     jit->epoch += 1;
     if (jit->epoch == 0) {
-        memset(jit->bindings, 0, jit->binding_bytes);
+        mmay_bytecode_jit_clear_bindings(jit);
         jit->epoch = 1;
     }
     context->epoch = jit->epoch;
     if (id >= jit->function_count) return NULL;
     const MarimayBytecodeJitFunction *compiled = &jit->functions[id];
+    context->bindings = compiled->bindings != NULL ? compiled->bindings : jit->bindings;
     if (compiled->entries == NULL || compiled->code == NULL
         || context->pc >= context->image->operation_count) return NULL;
     return (unsigned char *)compiled->code + (compiled->entries[context->pc] & MMAY_JIT_OFFSET);
 }
 
-void *mmay_bytecode_jit_transition(MarimayBytecodeJitContext *context, uint32_t pc) {
+void *mmay_bytecode_jit_transition(MarimayBytecodeJitContext *context, uint32_t pc,
+    const MarimayBytecodeInstruction *instruction) {
     context->pc = pc;
     MarimayBytecodeJitActivation *activation = context->activation;
     if (activation == NULL) return NULL;
     const MarimayBytecodeImageOperation *operation = &context->image->operations[pc];
-    const MarimayBytecodeBlock *block = mmay_vector_at_const(
-        &context->function->blocks, operation->source_block);
-    const MarimayBytecodeInstruction *instruction = mmay_vector_at_const(
-        &block->instructions, operation->source_instruction);
     MarimayBytecodeRunFrame *frame = &activation->stack->frames[activation->stack->count - 1];
     /* Publish the caller's actual PC before the shared owner advances it. */
     frame->block = operation->source_block;
@@ -44,8 +42,12 @@ void *mmay_bytecode_jit_transition(MarimayBytecodeJitContext *context, uint32_t 
         size_t callee = operation->third;
         if (callee >= activation->jit->function_count
             || activation->jit->functions[callee].code == NULL) return NULL;
-        activation->status = mmay_bytecode_run_call(activation->stack,
-            activation->program, activation->image, instruction,
+        size_t caller = (size_t)(frame->function
+            - (const MarimayBytecodeProgramFunction *)activation->program->functions.data);
+        uint32_t wire = instruction->opcode == MMAY_OPCODE_CALL_DIRECT_VOID
+            ? operation->first : operation->second;
+        activation->status = mmay_bytecode_run_call_prepared(activation->stack,
+            &activation->jit->functions[caller].calls[wire], instruction,
             activation->allocator, activation->options);
     } else if (instruction->opcode == MMAY_OPCODE_RETURN
         || instruction->opcode == MMAY_OPCODE_RETURN_VOID) {
@@ -104,10 +106,11 @@ bool mmay_bytecode_jit_run_stack(MarimayBytecodeJit *jit,
     context->function = &frame->function->body;
     context->image = image;
     context->registers = frame->registers;
+    context->bindings = compiled->bindings != NULL ? compiled->bindings : jit->bindings;
     context->pc = pc;
     jit->epoch += 1;
     if (jit->epoch == 0) {
-        memset(jit->bindings, 0, jit->binding_bytes);
+        mmay_bytecode_jit_clear_bindings(jit);
         jit->epoch = 1;
     }
     context->epoch = jit->epoch;
