@@ -249,3 +249,9 @@ concatenation copying in report-concat; direct shared-runtime string constructio
 is selected for the next experiment, not implemented or accepted. The record
 also specifies focused diagnostic additions while preserving the fixed corpus.
 Full Tier 1, Linux LSan and overall parity remain open.
+
+[Shared string storage and direct concatenation](docs/implementation/evidence/cp42-shared-string-storage-2026-09-11-rejected.md) is **rejected**.
+It removes temporary concatenation copies and a separate payload allocation;
+Unchanged-corpus measurements, allocation/GC/root tests and the exact candidate patch are
+preserved. The record also exposes the existing D055 string-allocation precedence
+gap. Overall parity, full Tier 1 and Linux LSan remain open.

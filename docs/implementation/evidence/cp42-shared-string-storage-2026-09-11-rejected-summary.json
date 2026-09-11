@@ -1,0 +1,878 @@
+{
+  "status": "rejected",
+  "protocol": {
+    "started_utc": "2026-09-11T10:03:46.647042+00:00",
+    "due_utc": "2026-09-11T12:03:46.647042+00:00",
+    "parent_revision": "7ee78591052071f1d6c0a3371cadc986669f6792",
+    "previous_goal_turn": "progress: completed and pushed fresh accepted all32 comparison and diagnostic evidence; exact string counters selected shared construction as next intervention.",
+    "specific": "Coallocate managed string header and payload without changing its representation or logical heap charge; copy concat inputs directly into final storage; use shared checked concat from VM with transactional register publication.",
+    "evidence": "cp42-text-runtime-diagnosis-2026-09-11: both engines copy 1,356,336,482 temporary concat bytes then copy them again; frequent two-allocation string creation.",
+    "early_gate": "After focused correctness: unchanged report-concat Native median reduction >=15% and VM+JIT >=8%; geometric mean latency reduction over report-concat/title-search-100k/word-frequency/normalize-title >=5% Native and >=3% VM+JIT. 3 warmups+11 alternating fresh-process pairs; no median >2% or P90 >5% regression in those cases.",
+    "full_gate": "All32 unchanged,114 hashes,original args/stdout,64MiB; paired Native,VM+JIT and interpreter OFF. Native sum of medians reduction >=3%; each VM sum must not increase. Every mode/workload median >2% or P90 >5% gets exactly one confirmation; repeated same metric rejects. Fresh fiveway for accepted candidate. No retuning gates or repeat-until-pass.",
+    "host_gate": "Three quiet preflight snapshots 10 seconds apart, then every5s known foreign compiler/test/profiler/Node/Python compute >=40% CPU outside benchmark tree rejects timing. No task builds/tests/profiles during timing. Preserve all observations; sampled host gate does not establish isolated hardware.",
+    "validation": "Full ON/OFF CTest; focused runtime/bytecode/string-lifetime/resource/JIT ASan+UBSan and x86 Rosetta, both all32 correctness; all reachable allocation failures, alias/GC/provenance, empty/NUL/Unicode strings, exact logical byte budget, transactional register output and finite/shared fuel; zero allocation/byte ledgers. Six architecture/memory/document/generated gates and diff check before main commit/push. FullTier1/LinuxLSan remain open.",
+    "baseline": {
+      "on": {
+        "path": "build/jit-reference-values/mmay",
+        "sha256": "53c2c1396bb4b206465a2a48bda03385d7bea6f6ed72d36ae230478187f288a5"
+      },
+      "off": {
+        "path": "build/jit-ipo-unmetered-cursor-off/mmay",
+        "sha256": "ca08b8f301fe7895f6e5b16a58ed965b2f42f3cf4378ed57d441b03da43c4a89"
+      }
+    },
+    "reference": "docs/implementation/evidence/cp42-text-runtime-diagnosis-2026-09-11-comprehensive.json",
+    "source_sha256": {
+      "benchmarks/catalog_bench.py": "fb508fd45e2e22fa78136089e5c3720ed4d7cd54eb5bbdde56a7c5cc4a0ba1eb",
+      "benchmarks/catalog_bun.py": "f29b5affddd12cff292b9c4acbbd0b8acc2fb4f3337e27fb2e34c317f6f470f7",
+      "benchmarks/catalog_contract.py": "d3f35414890bb6ee531f92818a0abbfee116a03bc21b88ae2490edef43c11c05",
+      "benchmarks/catalog_measure.py": "4d14a068121795efca6d9f4dd62232a97e2f23a5b8c8d5f8609f5b5ee2169fdc",
+      "benchmarks/catalog_oracle.py": "938be6450f701d39ced4fe7fede5cf52c19467b3960618389d650440a6068fe6",
+      "benchmarks/catalog_report.py": "ffb9c988ad073204940621514276e2ba235aafe8b915c1a1789e11d8f2df2e89",
+      "benchmarks/catalog_session.py": "d5bee8e089927fa9d0e37b469f959689b772e1ffa4c67528e255e5693ee6a360",
+      "benchmarks/catalog_snapshot.py": "9df56623e96d77e112842b23e4342a857a956ceea14cd990506517851c7b7f3d",
+      "benchmarks/catalog_workloads.json": "41827b45029f4213033bff20086deb2e9b940d70b3303e3562e5c68ec6f6b803",
+      "benchmarks/marimay-toolchain.json": "5f4e299dc22372d9ac6f3eb2d824ffc53e916cc136183fb585e637c32ed57ee4",
+      "benchmarks/marimay_toolchain.py": "524e7730d291068744182a7ce1d0901f8f1e4ea8486e5231e672908003d720c4",
+      "benchmarks/perf_environment.py": "17366997c959e8c7695b2122a3c11d95f1f60c0efaa6bd5761c2bc3ec4b71cdb",
+      "benchmarks/perf_protocol.py": "8033589224b9ae58394d13877f0752c13e71ec5f70afc06465a81d1682618e64",
+      "benchmarks/performance_protocol.json": "a94f5be850eb26fd821b3630b16254f145a8e30c1b8e7a63fd7230ed761dd4a8",
+      "go/catalog/catalog_test.go": "b4679b643d4c478c0727c3618697ba9965f427824d92baeae6df41af59bba41d",
+      "go/catalog/collections.go": "ee6c4ac9f5eab4009b8e580a24e1f589a9754052b28b535dd2b1d617d30dab0b",
+      "go/catalog/graphs.go": "3ab5594a58dd60caf21e8ba8577e084b2f7509e4329b7934002465b125008a7e",
+      "go/catalog/model.go": "10bec252a16654bbecfbe5a0803efd382c859a9848bf8722d28a85531d51b9ab",
+      "go/catalog/objects.go": "e0531a49606ccd1b9167a9610fe502a0b057c270e562468d1d4a64ff5df117ba",
+      "go/catalog/text.go": "5373ed8a62e748e4ed9ce9a59ba5ef1f835aa18a4a3302d84253ea24819e1247",
+      "go/cmd/catalog/main.go": "f89b40a58db273064f8802a908ad1079ae16b9b238af0a8ec8caf7548c75ff6d",
+      "go/go.mod": "519344fdcec7e981381cb2d6781b014eb1d8f0f9b92b3a988347142aef747475",
+      "marimay/catalog/core/catalog_test.my": "34f5f4095b019f6989daed51dc48686ab917ff43d7f0f1ba991e6621a8f3d865",
+      "marimay/catalog/core/checksum.my": "0843cb69f07177252259e4298a49330a347d44a88fa9c2291ca7c2e6759e89f7",
+      "marimay/catalog/core/collections.my": "49df9baabf06487021606bd33a98f4bf79bfefa394c1e7fb770fb3679069a78a",
+      "marimay/catalog/core/graphs.my": "95ecb3d8e6a48adfe14696b57d4fa860e62fa7aad0bb6e018bde5a155d16bbae",
+      "marimay/catalog/core/model.my": "fa682ce371f167b1054b51255580d774c01d231c4fcf56e5cb0a37449661a14b",
+      "marimay/catalog/core/objects.my": "0951ea8e5fcd57586ed66ff93f57cd64b1c663b02d0f8fc87ee209f6974c7c52",
+      "marimay/catalog/core/text.my": "424bf8d1e2cb00bf1acf6b32dd7e826350442eaeca861e77fd64cc074e50feb1",
+      "marimay/catalog/main.my": "f198cecd2490928af0ca585ef99390e66f34d4294ad2da71f858a21883e2a326",
+      "marimay/mmay.mod": "561867408c89e2b5855f27134f5e5b84b4cf655a02d195cd3c4a5a4917837345",
+      "rust/Cargo.lock": "1c3b1ca3d3783a6861a2c35745303d8845e306deed805bda68a3029d85a27891",
+      "rust/Cargo.toml": "f9a86632e519d2ec45dc96f727defedda35cceeea7bb30f260e5d200f7ee4a68",
+      "rust/src/bin/catalog.rs": "6cc82483af4b5d8464261ce5c1b00adb1e1d7cc15ea2390a6818add7eaee6328",
+      "rust/src/catalog/collections.rs": "a861e9d35ae3d8bb9ecb8774cc442711428ea4e85b267b7daa70854296494ff9",
+      "rust/src/catalog/graphs.rs": "4e6297879f27d4631f59b6b8ca0b6b52f355d5b4db05729807aa7e2bc4ca59bb",
+      "rust/src/catalog/mod.rs": "b7c75c3c1a8af6f997366afc966e2cc53ee4d2c670bc5d6bcca5c3f33139b93c",
+      "rust/src/catalog/objects.rs": "1754afb88b4475bb7700b61ac42bda887b69872c3e70d150fb18f860c89208fa",
+      "rust/src/catalog/text.rs": "c934a5b37e44132df3474eb4bd83aa572275bd69402ab55ef558df817ce2e29c",
+      "rust/src/lib.rs": "bcbc3e8fd7fc6ed1100eefdf18e28c4890e693eae5bba179db38f3deef58527f",
+      "typescript/src/benchmark.ts": "cec4be668f1f710262bf92431cf4ce1edc2930a11248d996d4c44d60e7b1abf5",
+      "typescript/src/catalog/collections.ts": "623fd2d8fd1c2c5a2b59432ca57fbdceae04215571a708906ab4ed990fc11ad1",
+      "typescript/src/catalog/graphs.ts": "26b5cc1db790738c33b436ef1e4875a8aecd8f3980a442d35765e70e5fca4a7a",
+      "typescript/src/catalog/main.ts": "c7e244b480f08175e2a365ee84c1a6f42a9c737248cab4e5a479814366662671",
+      "typescript/src/catalog/model.ts": "80ef26b6d8ff864aa94f71864231cbd906a8e05976f7adee3b60bcaa1b3d6acd",
+      "typescript/src/catalog/objects.ts": "167f1f2b852147d21bde5134ffb49b6f263ba727580b3383e12c7b4e7804e2b1",
+      "typescript/src/catalog/text.ts": "9f4006cd1cae99424d7294a0dca27264a55614c96d6274f4c96feee754f02719",
+      "typescript/src/counting.ts": "625b7842a6b1b69010daa6bdc78cedec2a0d4df73b55b324c8d812b3f5ec87c2",
+      "typescript/src/graphs.ts": "56d1901a1074f521b306990edee01f1a97c99737cb025d30e8603193863ec3f4",
+      "typescript/src/sorting.ts": "b765864b8e5f475641ad07fde9a882d689ce88249dcea0f791046e8591abf282",
+      "typescript/src/structures.ts": "8feba332c65846607d4ce5d714b823a4704c11525bdce9b49db1ce15c2d30a3d",
+      "benchmarks/equivalence.json": "64ddc892dcac9a30a9e4b86aa669d1dff5a12aea65c3f353e180958f23a8c27a",
+      "benchmarks/expanded_workloads.json": "ef6e688152b4bfe2906dd7ef22f285fc8a94d900d90c8518b0698a4da1aa1188",
+      "go/algorithms_test.go": "bf9a0344e4b29e363403cb3b4874056c18f545c3456c156e5b2155be149801ac",
+      "go/cmd/benchmark/main.go": "fc67e17464c835650cb14e412e791ce9b023055ee421e1a4b9a6b126e010fcf7",
+      "go/counting/counting.go": "88d4a0346b5694f3cb9f041621f6c2313226da3fd2580df3b0c18d0f01440302",
+      "go/graphs/bfs.go": "46a827da59512cd261508821ac40125eac03f56396aa9a55cb57a23ea75e46b6",
+      "go/graphs/dijkstra.go": "d30569c0658320fd09c664eefec98a2f1c221be9b4e74efa6a3a6df154cffe17",
+      "go/main.go": "247eec5279f2bfb27a59f3db75c0b70908d10ebd015787e0b9c89656d8d88b38",
+      "go/sorting/heap.go": "d3932509370faa3e7c6e284c91d0bc2556306549aeb8be9f4d404e6251fabaea",
+      "go/sorting/insertion.go": "42df19a215a3acf271d8ced34012f3060e8cd3d546687314ecec8a72c19a7fc7",
+      "go/structures/dsu.go": "f0d999fc2eb8c2df8a6d757b9a3034ff21efbbb866f7d0a9fde3073e34dda3d0",
+      "go/structures/heap.go": "cc642696fdb1a1720b5074aa6ecca0fa2ae62940177028ba35c9ea37bf23cda5",
+      "go/structures/queue.go": "8292c88a97d3089c10e013e6735ad2c683e8f8e417b09b78a7d87a9b65781a7c",
+      "go/structures/stack.go": "c015b0780747c65499790f0222c848c7bd5ff00cd407c15c6c63401bc5473db9",
+      "marimay/algorithms_test.my": "8d6ab04952980c30f43539d1c90339202cdfc94b0a331fd0cea3430f11f9a3be",
+      "marimay/benchmarks/bfs/main.my": "90681525821fc4a66210483f8e7895621c1e1d51aeb62528a5d9de7da4d76e77",
+      "marimay/benchmarks/core/benchmarks.my": "0dc9f987328f786ff9e143403e719be0e5ea2edcf2db97366086f2210fdec413",
+      "marimay/benchmarks/dijkstra/main.my": "266964cac17441cd340bec2c86667a322854915104de723ed7cfed68179a7150",
+      "marimay/benchmarks/dsu/main.my": "fc021778eccbc16e90c33dc503ddb07a4c80048883dc6e111584c19a4a6dbeb2",
+      "marimay/benchmarks/frequency_map/main.my": "e284b6301321ba31fcf55566fbfaaf6af805bba0ccb529a0b757e6fae17df98c",
+      "marimay/benchmarks/heap_sort/main.my": "444d2540e294ba35053cb4a93ee9fcdf3dc6b13e9074996773c0c103130d0125",
+      "marimay/benchmarks/insertion/main.my": "eb5e8bea75429f20730c89658b18601345b245461d4e83cb0048baa17d156532",
+      "marimay/benchmarks/min_heap/main.my": "391650c1681458a7ed12b5460fba0cb0ceb780703d00db06e960f1f9bfd659fb",
+      "marimay/benchmarks/queue/main.my": "366db40c9e2f556a0ba0a7bca3159d56b08a8cd241f9495e97d2fbffcd5441eb",
+      "marimay/benchmarks/rune_frequency/main.my": "c2cc6b56cf586bd0722ea1c3b0400345256aa3847be002a8e03e60a23e65bb7b",
+      "marimay/benchmarks/stack/main.my": "819a2622f736a33b4998fd651d4684b1834886111627b43415240ea3d1f0e0e5",
+      "marimay/benchmarks/unique_set/main.my": "858d40300ca95310692860f75e230dcacf59a180d93b69c8d1380a11b95e53d6",
+      "marimay/counting/counting.my": "56f55b1f7d4c5258fb98717d20e44f8e5afe8cd5e03a54e658cbb8d0fb2962c1",
+      "marimay/features/core/features.my": "85dbea0608f6a5fe9b25ccaad4e8ced23cd70a1af0bac582e616b5de4d9855ac",
+      "marimay/features/dynamic_text/main.my": "ff252d8e09d4cd270de8c7eb121e262b58005c09fe74d511ca1816785afc2ad5",
+      "marimay/graphs/bfs.my": "9311d4aee89a63c448264fec7bed545f6b8e6a7d3ff8d09ed546132d5ceb966c",
+      "marimay/graphs/dijkstra.my": "43497061eadd720c03e08bc9b67dbce2d63ab416086f8a0b4c4d68b234395ecb",
+      "marimay/main.my": "62fc52a22231def9d3d9217d3bb9b87b76518188e15a8c1bcffd8e3cacba08ce",
+      "marimay/probes/checked_loop/main.my": "1061a1f2a0b9702b9181603979115ea38c15df2c6deea2c7e93b8842faa29ea2",
+      "marimay/probes/core/probes.my": "13fbcfed30cece00ec5c8feb0d2b806fac8ee8445a85e43319df5c9af32e5d3c",
+      "marimay/probes/density/main.my": "5d36768e6cf1da81cc70ffa35480a7c1953ee5e6c1cbe6e44ea001678dd75864",
+      "marimay/probes/growth/main.my": "c5631ef1a046d6f1e5764686bcba274794229c5a36a9720a1c1ab08847bf156e",
+      "marimay/probes/nested_traversal/main.my": "9512d7562d601bf2593f5b599a68adabe463351123b35cd481ae200c17d9b520",
+      "marimay/probes/proven_bounds/main.my": "cf75eaf443f52b11e08e74d7b0b5019fd0368dfbf085e4d8b6542e889b48f73a",
+      "marimay/probes/reserved_growth/main.my": "07f9adbaa5c0c3134f739c25d9cc40518901a16e2e82224c05372931d4e3446d",
+      "marimay/probes/scalar_get/main.my": "ac2323bbf188dba1180ec832e8ae9511bd00cdf1436a34d181324068d6e36e29",
+      "marimay/probes/scalar_set/main.my": "053372b108e98513c58e6abd871b8729aa8c9e787dcc09c6f0be2609c3a7d868",
+      "marimay/probes/unproven_bounds/main.my": "ec80dc54a439d584574a353fedf5708a2589dbe0a7241ef74b0769a8194409a3",
+      "marimay/sorting/heap.my": "c9733afb52a68dbba2a2af6b24f3a710c3272a07a45c4e396d3e755f033b3e9a",
+      "marimay/sorting/insertion.my": "0cfd33d99a284121ae15c52e836db106ced35768da168b31dde394ecb0bf8abc",
+      "marimay/structures/dsu.my": "197a5723205b6b0383d2f6d24b839bafdeea6cfcfbf29f54a359df6e49296117",
+      "marimay/structures/heap.my": "6955b87473b5f606bfa1d0390d21826c604ec22dd78b56134b654683951f6bc7",
+      "marimay/structures/queue.my": "891c3c0cb2b3545896c39d15bfbd618d21cc745cd64056372f3ec6a00167e782",
+      "marimay/structures/stack.my": "b83fb25f76326e84e57506f7aae72747454594d2008b38ef2124b0ff005bf0c7",
+      "rust/src/bin/benchmark.rs": "c3a8b98326aa1f74f6c9b3a1d5dd7e3c602113e74a39045126a7bbd8a9c4b081",
+      "rust/src/counting.rs": "4048dd9efc57a11e847147e2887e887dce8552c9142059edfb600805131b57ba",
+      "rust/src/graphs/bfs.rs": "dbad73628cacbb3477be7d3e1f3c942a1115957576acba4d5b0f4e9edffa9658",
+      "rust/src/graphs/dijkstra.rs": "a6e223bae6025405f994f773d862d9bac3e0b93c2858d7226b696e1574caf85f",
+      "rust/src/graphs/mod.rs": "6941c3a3a16d2f09110c5d1bb8afd60cfccb26ec087f7dc1f8a2a4179c1c414e",
+      "rust/src/main.rs": "0cda49792fd44d139eea651bbcbd26b601ec5267e0ac12936be4376449862088",
+      "rust/src/sorting/heap.rs": "b9a77a947da088985bcce692c166a2206865f5fe793c4c27488c1d4f8ae9f6e8",
+      "rust/src/sorting/insertion.rs": "a3b87671750cd47c10566a90886776c0d8a42a631da5bb823fbb9f3c6cc84cbb",
+      "rust/src/sorting/mod.rs": "c54522f01f83c0209c3b1926ddf1cd60825fd024415ea5f12c3f578df623c3a8",
+      "rust/src/structures/dsu.rs": "e04eb2f008482498c5b67823945a14480ba58c3f583302cc73b2526f71865799",
+      "rust/src/structures/heap.rs": "d20c7e17de585f3055cb2eb47346893acfc8dfd5a3dc2e10e9839c763663eda3",
+      "rust/src/structures/mod.rs": "8bf0379fec682537e05d3e115fd0884ca2644b4ac4ff1a4cfa8fcf13880139d6",
+      "rust/src/structures/queue.rs": "532380be498930784223f251ba643f9eecccf3fa7d167d60e8531aab8666b0b4",
+      "rust/src/structures/stack.rs": "36f954da0974e5de1e556403705a0c374f83db841a463f472e77257d08b0df0a"
+    }
+  },
+  "early": {
+    "status": "passed-early",
+    "started_utc": "2026-09-11T10:40:30.813285+00:00",
+    "modes": {
+      "native": {
+        "median_ratios": {
+          "report-concat": 0.628132080999157,
+          "title-search-100k": 0.7539295563506545,
+          "word-frequency": 0.9516442993115122,
+          "normalize-title": 0.958049816189374
+        },
+        "p90_ratios": {
+          "report-concat": 0.625367620468553,
+          "title-search-100k": 0.7292842856921171,
+          "word-frequency": 0.9503666518127589,
+          "normalize-title": 0.9643940883808529
+        },
+        "geomean_latency_ratio": 0.8106084406807563,
+        "passed": true
+      },
+      "on": {
+        "median_ratios": {
+          "report-concat": 0.7865268953059887,
+          "title-search-100k": 0.9519404818058133,
+          "word-frequency": 0.9710821015897422,
+          "normalize-title": 0.9830508495145528
+        },
+        "p90_ratios": {
+          "report-concat": 0.7835059941257368,
+          "title-search-100k": 0.9502213994463007,
+          "word-frequency": 0.9755105793838725,
+          "normalize-title": 0.9838200510498497
+        },
+        "geomean_latency_ratio": 0.9194726732643017,
+        "passed": true
+      }
+    },
+    "finished_utc": "2026-09-11T10:41:36.684029+00:00"
+  },
+  "measurement": {
+    "status": "rejected",
+    "started_utc": "2026-09-11T10:41:36.740843+00:00",
+    "protocol": {
+      "started_utc": "2026-09-11T10:03:46.647042+00:00",
+      "due_utc": "2026-09-11T12:03:46.647042+00:00",
+      "parent_revision": "7ee78591052071f1d6c0a3371cadc986669f6792",
+      "previous_goal_turn": "progress: completed and pushed fresh accepted all32 comparison and diagnostic evidence; exact string counters selected shared construction as next intervention.",
+      "specific": "Coallocate managed string header and payload without changing its representation or logical heap charge; copy concat inputs directly into final storage; use shared checked concat from VM with transactional register publication.",
+      "evidence": "cp42-text-runtime-diagnosis-2026-09-11: both engines copy 1,356,336,482 temporary concat bytes then copy them again; frequent two-allocation string creation.",
+      "early_gate": "After focused correctness: unchanged report-concat Native median reduction >=15% and VM+JIT >=8%; geometric mean latency reduction over report-concat/title-search-100k/word-frequency/normalize-title >=5% Native and >=3% VM+JIT. 3 warmups+11 alternating fresh-process pairs; no median >2% or P90 >5% regression in those cases.",
+      "full_gate": "All32 unchanged,114 hashes,original args/stdout,64MiB; paired Native,VM+JIT and interpreter OFF. Native sum of medians reduction >=3%; each VM sum must not increase. Every mode/workload median >2% or P90 >5% gets exactly one confirmation; repeated same metric rejects. Fresh fiveway for accepted candidate. No retuning gates or repeat-until-pass.",
+      "host_gate": "Three quiet preflight snapshots 10 seconds apart, then every5s known foreign compiler/test/profiler/Node/Python compute >=40% CPU outside benchmark tree rejects timing. No task builds/tests/profiles during timing. Preserve all observations; sampled host gate does not establish isolated hardware.",
+      "validation": "Full ON/OFF CTest; focused runtime/bytecode/string-lifetime/resource/JIT ASan+UBSan and x86 Rosetta, both all32 correctness; all reachable allocation failures, alias/GC/provenance, empty/NUL/Unicode strings, exact logical byte budget, transactional register output and finite/shared fuel; zero allocation/byte ledgers. Six architecture/memory/document/generated gates and diff check before main commit/push. FullTier1/LinuxLSan remain open.",
+      "baseline": {
+        "on": {
+          "path": "build/jit-reference-values/mmay",
+          "sha256": "53c2c1396bb4b206465a2a48bda03385d7bea6f6ed72d36ae230478187f288a5"
+        },
+        "off": {
+          "path": "build/jit-ipo-unmetered-cursor-off/mmay",
+          "sha256": "ca08b8f301fe7895f6e5b16a58ed965b2f42f3cf4378ed57d441b03da43c4a89"
+        }
+      },
+      "reference": "docs/implementation/evidence/cp42-text-runtime-diagnosis-2026-09-11-comprehensive.json",
+      "source_sha256": {
+        "benchmarks/catalog_bench.py": "fb508fd45e2e22fa78136089e5c3720ed4d7cd54eb5bbdde56a7c5cc4a0ba1eb",
+        "benchmarks/catalog_bun.py": "f29b5affddd12cff292b9c4acbbd0b8acc2fb4f3337e27fb2e34c317f6f470f7",
+        "benchmarks/catalog_contract.py": "d3f35414890bb6ee531f92818a0abbfee116a03bc21b88ae2490edef43c11c05",
+        "benchmarks/catalog_measure.py": "4d14a068121795efca6d9f4dd62232a97e2f23a5b8c8d5f8609f5b5ee2169fdc",
+        "benchmarks/catalog_oracle.py": "938be6450f701d39ced4fe7fede5cf52c19467b3960618389d650440a6068fe6",
+        "benchmarks/catalog_report.py": "ffb9c988ad073204940621514276e2ba235aafe8b915c1a1789e11d8f2df2e89",
+        "benchmarks/catalog_session.py": "d5bee8e089927fa9d0e37b469f959689b772e1ffa4c67528e255e5693ee6a360",
+        "benchmarks/catalog_snapshot.py": "9df56623e96d77e112842b23e4342a857a956ceea14cd990506517851c7b7f3d",
+        "benchmarks/catalog_workloads.json": "41827b45029f4213033bff20086deb2e9b940d70b3303e3562e5c68ec6f6b803",
+        "benchmarks/marimay-toolchain.json": "5f4e299dc22372d9ac6f3eb2d824ffc53e916cc136183fb585e637c32ed57ee4",
+        "benchmarks/marimay_toolchain.py": "524e7730d291068744182a7ce1d0901f8f1e4ea8486e5231e672908003d720c4",
+        "benchmarks/perf_environment.py": "17366997c959e8c7695b2122a3c11d95f1f60c0efaa6bd5761c2bc3ec4b71cdb",
+        "benchmarks/perf_protocol.py": "8033589224b9ae58394d13877f0752c13e71ec5f70afc06465a81d1682618e64",
+        "benchmarks/performance_protocol.json": "a94f5be850eb26fd821b3630b16254f145a8e30c1b8e7a63fd7230ed761dd4a8",
+        "go/catalog/catalog_test.go": "b4679b643d4c478c0727c3618697ba9965f427824d92baeae6df41af59bba41d",
+        "go/catalog/collections.go": "ee6c4ac9f5eab4009b8e580a24e1f589a9754052b28b535dd2b1d617d30dab0b",
+        "go/catalog/graphs.go": "3ab5594a58dd60caf21e8ba8577e084b2f7509e4329b7934002465b125008a7e",
+        "go/catalog/model.go": "10bec252a16654bbecfbe5a0803efd382c859a9848bf8722d28a85531d51b9ab",
+        "go/catalog/objects.go": "e0531a49606ccd1b9167a9610fe502a0b057c270e562468d1d4a64ff5df117ba",
+        "go/catalog/text.go": "5373ed8a62e748e4ed9ce9a59ba5ef1f835aa18a4a3302d84253ea24819e1247",
+        "go/cmd/catalog/main.go": "f89b40a58db273064f8802a908ad1079ae16b9b238af0a8ec8caf7548c75ff6d",
+        "go/go.mod": "519344fdcec7e981381cb2d6781b014eb1d8f0f9b92b3a988347142aef747475",
+        "marimay/catalog/core/catalog_test.my": "34f5f4095b019f6989daed51dc48686ab917ff43d7f0f1ba991e6621a8f3d865",
+        "marimay/catalog/core/checksum.my": "0843cb69f07177252259e4298a49330a347d44a88fa9c2291ca7c2e6759e89f7",
+        "marimay/catalog/core/collections.my": "49df9baabf06487021606bd33a98f4bf79bfefa394c1e7fb770fb3679069a78a",
+        "marimay/catalog/core/graphs.my": "95ecb3d8e6a48adfe14696b57d4fa860e62fa7aad0bb6e018bde5a155d16bbae",
+        "marimay/catalog/core/model.my": "fa682ce371f167b1054b51255580d774c01d231c4fcf56e5cb0a37449661a14b",
+        "marimay/catalog/core/objects.my": "0951ea8e5fcd57586ed66ff93f57cd64b1c663b02d0f8fc87ee209f6974c7c52",
+        "marimay/catalog/core/text.my": "424bf8d1e2cb00bf1acf6b32dd7e826350442eaeca861e77fd64cc074e50feb1",
+        "marimay/catalog/main.my": "f198cecd2490928af0ca585ef99390e66f34d4294ad2da71f858a21883e2a326",
+        "marimay/mmay.mod": "561867408c89e2b5855f27134f5e5b84b4cf655a02d195cd3c4a5a4917837345",
+        "rust/Cargo.lock": "1c3b1ca3d3783a6861a2c35745303d8845e306deed805bda68a3029d85a27891",
+        "rust/Cargo.toml": "f9a86632e519d2ec45dc96f727defedda35cceeea7bb30f260e5d200f7ee4a68",
+        "rust/src/bin/catalog.rs": "6cc82483af4b5d8464261ce5c1b00adb1e1d7cc15ea2390a6818add7eaee6328",
+        "rust/src/catalog/collections.rs": "a861e9d35ae3d8bb9ecb8774cc442711428ea4e85b267b7daa70854296494ff9",
+        "rust/src/catalog/graphs.rs": "4e6297879f27d4631f59b6b8ca0b6b52f355d5b4db05729807aa7e2bc4ca59bb",
+        "rust/src/catalog/mod.rs": "b7c75c3c1a8af6f997366afc966e2cc53ee4d2c670bc5d6bcca5c3f33139b93c",
+        "rust/src/catalog/objects.rs": "1754afb88b4475bb7700b61ac42bda887b69872c3e70d150fb18f860c89208fa",
+        "rust/src/catalog/text.rs": "c934a5b37e44132df3474eb4bd83aa572275bd69402ab55ef558df817ce2e29c",
+        "rust/src/lib.rs": "bcbc3e8fd7fc6ed1100eefdf18e28c4890e693eae5bba179db38f3deef58527f",
+        "typescript/src/benchmark.ts": "cec4be668f1f710262bf92431cf4ce1edc2930a11248d996d4c44d60e7b1abf5",
+        "typescript/src/catalog/collections.ts": "623fd2d8fd1c2c5a2b59432ca57fbdceae04215571a708906ab4ed990fc11ad1",
+        "typescript/src/catalog/graphs.ts": "26b5cc1db790738c33b436ef1e4875a8aecd8f3980a442d35765e70e5fca4a7a",
+        "typescript/src/catalog/main.ts": "c7e244b480f08175e2a365ee84c1a6f42a9c737248cab4e5a479814366662671",
+        "typescript/src/catalog/model.ts": "80ef26b6d8ff864aa94f71864231cbd906a8e05976f7adee3b60bcaa1b3d6acd",
+        "typescript/src/catalog/objects.ts": "167f1f2b852147d21bde5134ffb49b6f263ba727580b3383e12c7b4e7804e2b1",
+        "typescript/src/catalog/text.ts": "9f4006cd1cae99424d7294a0dca27264a55614c96d6274f4c96feee754f02719",
+        "typescript/src/counting.ts": "625b7842a6b1b69010daa6bdc78cedec2a0d4df73b55b324c8d812b3f5ec87c2",
+        "typescript/src/graphs.ts": "56d1901a1074f521b306990edee01f1a97c99737cb025d30e8603193863ec3f4",
+        "typescript/src/sorting.ts": "b765864b8e5f475641ad07fde9a882d689ce88249dcea0f791046e8591abf282",
+        "typescript/src/structures.ts": "8feba332c65846607d4ce5d714b823a4704c11525bdce9b49db1ce15c2d30a3d",
+        "benchmarks/equivalence.json": "64ddc892dcac9a30a9e4b86aa669d1dff5a12aea65c3f353e180958f23a8c27a",
+        "benchmarks/expanded_workloads.json": "ef6e688152b4bfe2906dd7ef22f285fc8a94d900d90c8518b0698a4da1aa1188",
+        "go/algorithms_test.go": "bf9a0344e4b29e363403cb3b4874056c18f545c3456c156e5b2155be149801ac",
+        "go/cmd/benchmark/main.go": "fc67e17464c835650cb14e412e791ce9b023055ee421e1a4b9a6b126e010fcf7",
+        "go/counting/counting.go": "88d4a0346b5694f3cb9f041621f6c2313226da3fd2580df3b0c18d0f01440302",
+        "go/graphs/bfs.go": "46a827da59512cd261508821ac40125eac03f56396aa9a55cb57a23ea75e46b6",
+        "go/graphs/dijkstra.go": "d30569c0658320fd09c664eefec98a2f1c221be9b4e74efa6a3a6df154cffe17",
+        "go/main.go": "247eec5279f2bfb27a59f3db75c0b70908d10ebd015787e0b9c89656d8d88b38",
+        "go/sorting/heap.go": "d3932509370faa3e7c6e284c91d0bc2556306549aeb8be9f4d404e6251fabaea",
+        "go/sorting/insertion.go": "42df19a215a3acf271d8ced34012f3060e8cd3d546687314ecec8a72c19a7fc7",
+        "go/structures/dsu.go": "f0d999fc2eb8c2df8a6d757b9a3034ff21efbbb866f7d0a9fde3073e34dda3d0",
+        "go/structures/heap.go": "cc642696fdb1a1720b5074aa6ecca0fa2ae62940177028ba35c9ea37bf23cda5",
+        "go/structures/queue.go": "8292c88a97d3089c10e013e6735ad2c683e8f8e417b09b78a7d87a9b65781a7c",
+        "go/structures/stack.go": "c015b0780747c65499790f0222c848c7bd5ff00cd407c15c6c63401bc5473db9",
+        "marimay/algorithms_test.my": "8d6ab04952980c30f43539d1c90339202cdfc94b0a331fd0cea3430f11f9a3be",
+        "marimay/benchmarks/bfs/main.my": "90681525821fc4a66210483f8e7895621c1e1d51aeb62528a5d9de7da4d76e77",
+        "marimay/benchmarks/core/benchmarks.my": "0dc9f987328f786ff9e143403e719be0e5ea2edcf2db97366086f2210fdec413",
+        "marimay/benchmarks/dijkstra/main.my": "266964cac17441cd340bec2c86667a322854915104de723ed7cfed68179a7150",
+        "marimay/benchmarks/dsu/main.my": "fc021778eccbc16e90c33dc503ddb07a4c80048883dc6e111584c19a4a6dbeb2",
+        "marimay/benchmarks/frequency_map/main.my": "e284b6301321ba31fcf55566fbfaaf6af805bba0ccb529a0b757e6fae17df98c",
+        "marimay/benchmarks/heap_sort/main.my": "444d2540e294ba35053cb4a93ee9fcdf3dc6b13e9074996773c0c103130d0125",
+        "marimay/benchmarks/insertion/main.my": "eb5e8bea75429f20730c89658b18601345b245461d4e83cb0048baa17d156532",
+        "marimay/benchmarks/min_heap/main.my": "391650c1681458a7ed12b5460fba0cb0ceb780703d00db06e960f1f9bfd659fb",
+        "marimay/benchmarks/queue/main.my": "366db40c9e2f556a0ba0a7bca3159d56b08a8cd241f9495e97d2fbffcd5441eb",
+        "marimay/benchmarks/rune_frequency/main.my": "c2cc6b56cf586bd0722ea1c3b0400345256aa3847be002a8e03e60a23e65bb7b",
+        "marimay/benchmarks/stack/main.my": "819a2622f736a33b4998fd651d4684b1834886111627b43415240ea3d1f0e0e5",
+        "marimay/benchmarks/unique_set/main.my": "858d40300ca95310692860f75e230dcacf59a180d93b69c8d1380a11b95e53d6",
+        "marimay/counting/counting.my": "56f55b1f7d4c5258fb98717d20e44f8e5afe8cd5e03a54e658cbb8d0fb2962c1",
+        "marimay/features/core/features.my": "85dbea0608f6a5fe9b25ccaad4e8ced23cd70a1af0bac582e616b5de4d9855ac",
+        "marimay/features/dynamic_text/main.my": "ff252d8e09d4cd270de8c7eb121e262b58005c09fe74d511ca1816785afc2ad5",
+        "marimay/graphs/bfs.my": "9311d4aee89a63c448264fec7bed545f6b8e6a7d3ff8d09ed546132d5ceb966c",
+        "marimay/graphs/dijkstra.my": "43497061eadd720c03e08bc9b67dbce2d63ab416086f8a0b4c4d68b234395ecb",
+        "marimay/main.my": "62fc52a22231def9d3d9217d3bb9b87b76518188e15a8c1bcffd8e3cacba08ce",
+        "marimay/probes/checked_loop/main.my": "1061a1f2a0b9702b9181603979115ea38c15df2c6deea2c7e93b8842faa29ea2",
+        "marimay/probes/core/probes.my": "13fbcfed30cece00ec5c8feb0d2b806fac8ee8445a85e43319df5c9af32e5d3c",
+        "marimay/probes/density/main.my": "5d36768e6cf1da81cc70ffa35480a7c1953ee5e6c1cbe6e44ea001678dd75864",
+        "marimay/probes/growth/main.my": "c5631ef1a046d6f1e5764686bcba274794229c5a36a9720a1c1ab08847bf156e",
+        "marimay/probes/nested_traversal/main.my": "9512d7562d601bf2593f5b599a68adabe463351123b35cd481ae200c17d9b520",
+        "marimay/probes/proven_bounds/main.my": "cf75eaf443f52b11e08e74d7b0b5019fd0368dfbf085e4d8b6542e889b48f73a",
+        "marimay/probes/reserved_growth/main.my": "07f9adbaa5c0c3134f739c25d9cc40518901a16e2e82224c05372931d4e3446d",
+        "marimay/probes/scalar_get/main.my": "ac2323bbf188dba1180ec832e8ae9511bd00cdf1436a34d181324068d6e36e29",
+        "marimay/probes/scalar_set/main.my": "053372b108e98513c58e6abd871b8729aa8c9e787dcc09c6f0be2609c3a7d868",
+        "marimay/probes/unproven_bounds/main.my": "ec80dc54a439d584574a353fedf5708a2589dbe0a7241ef74b0769a8194409a3",
+        "marimay/sorting/heap.my": "c9733afb52a68dbba2a2af6b24f3a710c3272a07a45c4e396d3e755f033b3e9a",
+        "marimay/sorting/insertion.my": "0cfd33d99a284121ae15c52e836db106ced35768da168b31dde394ecb0bf8abc",
+        "marimay/structures/dsu.my": "197a5723205b6b0383d2f6d24b839bafdeea6cfcfbf29f54a359df6e49296117",
+        "marimay/structures/heap.my": "6955b87473b5f606bfa1d0390d21826c604ec22dd78b56134b654683951f6bc7",
+        "marimay/structures/queue.my": "891c3c0cb2b3545896c39d15bfbd618d21cc745cd64056372f3ec6a00167e782",
+        "marimay/structures/stack.my": "b83fb25f76326e84e57506f7aae72747454594d2008b38ef2124b0ff005bf0c7",
+        "rust/src/bin/benchmark.rs": "c3a8b98326aa1f74f6c9b3a1d5dd7e3c602113e74a39045126a7bbd8a9c4b081",
+        "rust/src/counting.rs": "4048dd9efc57a11e847147e2887e887dce8552c9142059edfb600805131b57ba",
+        "rust/src/graphs/bfs.rs": "dbad73628cacbb3477be7d3e1f3c942a1115957576acba4d5b0f4e9edffa9658",
+        "rust/src/graphs/dijkstra.rs": "a6e223bae6025405f994f773d862d9bac3e0b93c2858d7226b696e1574caf85f",
+        "rust/src/graphs/mod.rs": "6941c3a3a16d2f09110c5d1bb8afd60cfccb26ec087f7dc1f8a2a4179c1c414e",
+        "rust/src/main.rs": "0cda49792fd44d139eea651bbcbd26b601ec5267e0ac12936be4376449862088",
+        "rust/src/sorting/heap.rs": "b9a77a947da088985bcce692c166a2206865f5fe793c4c27488c1d4f8ae9f6e8",
+        "rust/src/sorting/insertion.rs": "a3b87671750cd47c10566a90886776c0d8a42a631da5bb823fbb9f3c6cc84cbb",
+        "rust/src/sorting/mod.rs": "c54522f01f83c0209c3b1926ddf1cd60825fd024415ea5f12c3f578df623c3a8",
+        "rust/src/structures/dsu.rs": "e04eb2f008482498c5b67823945a14480ba58c3f583302cc73b2526f71865799",
+        "rust/src/structures/heap.rs": "d20c7e17de585f3055cb2eb47346893acfc8dfd5a3dc2e10e9839c763663eda3",
+        "rust/src/structures/mod.rs": "8bf0379fec682537e05d3e115fd0884ca2644b4ac4ff1a4cfa8fcf13880139d6",
+        "rust/src/structures/queue.rs": "532380be498930784223f251ba643f9eecccf3fa7d167d60e8531aab8666b0b4",
+        "rust/src/structures/stack.rs": "36f954da0974e5de1e556403705a0c374f83db841a463f472e77257d08b0df0a"
+      }
+    },
+    "modes": {
+      "native": {
+        "sum_before_ms": 1039.2735439999997,
+        "sum_after_ms": 941.9841650000001,
+        "geomean_speedup": 1.0652427727400917,
+        "ratios": {
+          "median_ms": {
+            "title-search-10k": 0.8562348914903442,
+            "title-search-100k": 0.7167360867706193,
+            "normalize-title": 0.9573038385119699,
+            "word-frequency": 0.948095590772766,
+            "report-builder": 0.7740766847532088,
+            "report-concat": 0.6303460281434556,
+            "map-int": 1.003990548432879,
+            "map-string": 0.9267056474586752,
+            "map-string-book": 0.7862447066395294,
+            "set-string-churn": 0.6957811126065623,
+            "catalog-match": 0.9987424234311773,
+            "catalog-dotcall": 1.005178596038527,
+            "catalog-interface": 0.9957397241279661,
+            "record-reference-copy": 0.9674703511939197,
+            "record-create": 0.9965701233641558,
+            "array-grow": 1.0265737741041665,
+            "array-reserved": 0.9754665679652078,
+            "bfs-int": 0.9970218661610584,
+            "bfs-record": 1.0212606174789347,
+            "catalog-pipeline": 0.995609061966016,
+            "parse-result": 0.884029927527357,
+            "insertion": 1.0195277176596451,
+            "heap-sort": 1.0022669272196005,
+            "stack": 1.0060035735115844,
+            "queue": 1.0070716988029325,
+            "min-heap": 1.0378282183291778,
+            "dsu": 1.0060082728444244,
+            "bfs": 1.0088086286218858,
+            "dijkstra": 0.9988888294670127,
+            "frequency-map": 1.0050088286082026,
+            "unique-set": 1.0001381423217348,
+            "rune-frequency": 1.0102132782432816
+          },
+          "p90_ms": {
+            "title-search-10k": 0.8759875388987304,
+            "title-search-100k": 0.6946584595885508,
+            "normalize-title": 0.9535080421108137,
+            "word-frequency": 0.9581822566778255,
+            "report-builder": 0.7929063056180871,
+            "report-concat": 0.6288670862672057,
+            "map-int": 0.9666790973445893,
+            "map-string": 0.9447038620856687,
+            "map-string-book": 0.8009921710623554,
+            "set-string-churn": 0.6962948276806608,
+            "catalog-match": 0.9866911561359459,
+            "catalog-dotcall": 1.0085908962327967,
+            "catalog-interface": 1.007715548706302,
+            "record-reference-copy": 0.9538324391981913,
+            "record-create": 1.0121537591859808,
+            "array-grow": 1.0372284657972668,
+            "array-reserved": 1.0024186604490968,
+            "bfs-int": 0.9981853275483775,
+            "bfs-record": 1.0311689924140055,
+            "catalog-pipeline": 0.9901849573470943,
+            "parse-result": 0.883217242370826,
+            "insertion": 0.9839273293282628,
+            "heap-sort": 1.0089224838549478,
+            "stack": 0.9811675403832647,
+            "queue": 1.0187447504583387,
+            "min-heap": 1.0344430087524727,
+            "dsu": 1.0098419801865621,
+            "bfs": 1.005375379530743,
+            "dijkstra": 0.9923934805687875,
+            "frequency-map": 1.005313737503663,
+            "unique-set": 0.9999954287456273,
+            "rune-frequency": 0.9943266313076362
+          }
+        },
+        "flagged": {
+          "array-grow": [
+            "median_ms"
+          ],
+          "bfs-record": [
+            "median_ms"
+          ],
+          "min-heap": [
+            "median_ms"
+          ]
+        },
+        "confirmed": {
+          "min-heap": [
+            "median_ms"
+          ]
+        },
+        "confirmation_ratios": {
+          "median_ms": {
+            "array-grow": 0.9665160429112399,
+            "bfs-record": 1.0086139017280669,
+            "min-heap": 1.0349047294999383
+          },
+          "p90_ms": {
+            "array-grow": 1.0151990977704521,
+            "bfs-record": 1.003149169223133,
+            "min-heap": 1.0567748007394326
+          }
+        }
+      },
+      "on": {
+        "sum_before_ms": 7098.948834999999,
+        "sum_after_ms": 7015.982123,
+        "geomean_speedup": 1.0194201817884128,
+        "ratios": {
+          "median_ms": {
+            "title-search-10k": 0.9792885486002595,
+            "title-search-100k": 0.9570500547984239,
+            "normalize-title": 0.9851027499785034,
+            "word-frequency": 0.9652943565426895,
+            "report-builder": 0.9545430192482154,
+            "report-concat": 0.7956428703186477,
+            "map-int": 0.9982951800089342,
+            "map-string": 0.9825175616891609,
+            "map-string-book": 0.9291876406290556,
+            "set-string-churn": 0.8745188706513993,
+            "catalog-match": 0.9952689805774908,
+            "catalog-dotcall": 1.0008162626175374,
+            "catalog-interface": 0.9953073887321596,
+            "record-reference-copy": 1.0016126482151995,
+            "record-create": 1.0092329090810306,
+            "array-grow": 0.9981210096379959,
+            "array-reserved": 1.001923982289566,
+            "bfs-int": 1.0025609858160676,
+            "bfs-record": 0.9958114265643511,
+            "catalog-pipeline": 0.9964704471779876,
+            "parse-result": 0.9768253169769282,
+            "insertion": 0.998309450867057,
+            "heap-sort": 0.9977684822155152,
+            "stack": 1.0084608215753523,
+            "queue": 1.0272054316681685,
+            "min-heap": 1.0096057923448747,
+            "dsu": 1.0001432575170726,
+            "bfs": 1.0020950074635147,
+            "dijkstra": 1.0002705840488362,
+            "frequency-map": 0.9929216513535593,
+            "unique-set": 1.00174675916999,
+            "rune-frequency": 0.9900779458273864
+          },
+          "p90_ms": {
+            "title-search-10k": 0.9785529348320086,
+            "title-search-100k": 0.9468290212157067,
+            "normalize-title": 0.9803414428797779,
+            "word-frequency": 0.9679334527509615,
+            "report-builder": 0.9601342154981616,
+            "report-concat": 0.7850146656964061,
+            "map-int": 0.9867898481354596,
+            "map-string": 0.9771285468905359,
+            "map-string-book": 0.9219091309766226,
+            "set-string-churn": 0.8659354777386186,
+            "catalog-match": 0.9980397833624327,
+            "catalog-dotcall": 1.0049295422729654,
+            "catalog-interface": 0.9966626607926781,
+            "record-reference-copy": 0.9910935484483445,
+            "record-create": 1.003934059537451,
+            "array-grow": 0.9986707105649308,
+            "array-reserved": 0.9831721735983161,
+            "bfs-int": 0.9869673933917343,
+            "bfs-record": 0.9990254964867337,
+            "catalog-pipeline": 1.0026130984290735,
+            "parse-result": 0.9706951586164685,
+            "insertion": 0.9967861410961418,
+            "heap-sort": 0.9913840498732801,
+            "stack": 1.0160669057684362,
+            "queue": 1.0295073898640241,
+            "min-heap": 1.0183981407638727,
+            "dsu": 0.9995108819975789,
+            "bfs": 1.003370403065516,
+            "dijkstra": 0.998890452468194,
+            "frequency-map": 1.008601334258868,
+            "unique-set": 1.035688590769289,
+            "rune-frequency": 1.0021001278137514
+          }
+        },
+        "flagged": {
+          "queue": [
+            "median_ms"
+          ]
+        },
+        "confirmed": {},
+        "confirmation_ratios": {
+          "median_ms": {
+            "queue": 1.0131243262271814
+          },
+          "p90_ms": {
+            "queue": 1.023376557080794
+          }
+        }
+      }
+    },
+    "finished_utc": "2026-09-11T10:48:51.967246+00:00",
+    "early_stop_reason": "Native min-heap repeated median regression; remaining mode stopped once the process tree was resolved.",
+    "incomplete_modes": [
+      "off"
+    ]
+  },
+  "validation_commands": [
+    {
+      "suffix": "full-on-tests",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage",
+        "--no-tests=error",
+        "--output-on-failure",
+        "-j2"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:16:36.748056+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:24:43.770526+00:00"
+    },
+    {
+      "suffix": "off-configure",
+      "command": [
+        "cmake",
+        "-S",
+        ".",
+        "-B",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-off",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DMMAY_ENABLE_SLJIT=OFF",
+        "-DMMAY_COMPILER_IPO=ON"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:24:43.799470+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:24:47.328192+00:00"
+    },
+    {
+      "suffix": "off-build",
+      "command": [
+        "cmake",
+        "--build",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-off",
+        "-j4"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:24:47.340204+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:25:31.784134+00:00"
+    },
+    {
+      "suffix": "full-off-tests",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-off",
+        "--no-tests=error",
+        "--output-on-failure",
+        "-j2"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:25:31.826635+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:32:09.095688+00:00"
+    },
+    {
+      "suffix": "asan-configure",
+      "command": [
+        "cmake",
+        "-S",
+        ".",
+        "-B",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-asan",
+        "-DCMAKE_BUILD_TYPE=Debug",
+        "-DMMAY_COMPILER_IPO=ON",
+        "-DMMAY_ENABLE_ADDRESS_SANITIZER=ON",
+        "-DMMAY_ENABLE_UNDEFINED_SANITIZER=ON",
+        "-DMMAY_ENABLE_SLJIT=ON",
+        "-DMMAY_SLJIT_SOURCE_DIR=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:32:09.124415+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:32:11.856011+00:00"
+    },
+    {
+      "suffix": "asan-build",
+      "command": [
+        "cmake",
+        "--build",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-asan",
+        "-j4"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:32:11.864567+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:33:46.126800+00:00"
+    },
+    {
+      "suffix": "asan-tests",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-asan",
+        "--no-tests=error",
+        "--output-on-failure",
+        "-j2",
+        "-R",
+        "mmay_c_unit_(bytecode|runtime)$|mmay_jit_|mmay_code_memory|mmay_vm_string_lifetime$"
+      ],
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=0:halt_on_error=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+      },
+      "started_utc": "2026-09-11T10:33:46.162868+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:34:39.346823+00:00"
+    },
+    {
+      "suffix": "asan-correctness",
+      "command": [
+        "python3",
+        "tools/performance/sljit-prototype/check.py",
+        "--mmay",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-asan/mmay",
+        "--benchmarks",
+        "../algorithm-benchmarks",
+        "--reference",
+        "docs/implementation/evidence/cp42-text-runtime-diagnosis-2026-09-11-comprehensive.json",
+        "--output",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage/asan-all32-correctness.json"
+      ],
+      "environment_overrides": {
+        "ASAN_OPTIONS": "detect_leaks=0:halt_on_error=1",
+        "UBSAN_OPTIONS": "halt_on_error=1:print_stacktrace=1"
+      },
+      "started_utc": "2026-09-11T10:34:39.375393+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:35:17.795433+00:00"
+    },
+    {
+      "suffix": "x86-configure",
+      "command": [
+        "cmake",
+        "-S",
+        ".",
+        "-B",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-x86",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DCMAKE_OSX_ARCHITECTURES=x86_64",
+        "-DMMAY_ENABLE_SLJIT=ON",
+        "-DMMAY_SLJIT_SOURCE_DIR=/workspace/Projects/Marimay/marimay-vm-parity/build/sljit-evaluation"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:35:17.804141+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:35:20.616638+00:00"
+    },
+    {
+      "suffix": "x86-build",
+      "command": [
+        "cmake",
+        "--build",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-x86",
+        "-j4"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:35:20.625266+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:35:54.401857+00:00"
+    },
+    {
+      "suffix": "x86-tests",
+      "command": [
+        "ctest",
+        "--test-dir",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-x86",
+        "--no-tests=error",
+        "--output-on-failure",
+        "-j2",
+        "-R",
+        "mmay_c_unit_(bytecode|runtime)$|mmay_jit_|mmay_code_memory|mmay_vm_string_lifetime$"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:35:54.414575+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:38:56.521437+00:00"
+    },
+    {
+      "suffix": "x86-correctness",
+      "command": [
+        "python3",
+        "tools/performance/sljit-prototype/check.py",
+        "--mmay",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage-x86/mmay",
+        "--benchmarks",
+        "../algorithm-benchmarks",
+        "--reference",
+        "docs/implementation/evidence/cp42-text-runtime-diagnosis-2026-09-11-comprehensive.json",
+        "--output",
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/shared-string-storage/x86-all32-correctness.json"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:38:56.551464+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:39:06.750236+00:00"
+    },
+    {
+      "suffix": "final-architecture",
+      "command": [
+        "./tools/check-architecture"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:39:06.758492+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:39:19.171491+00:00"
+    },
+    {
+      "suffix": "final-c-memory-policy",
+      "command": [
+        "./tools/check-c-memory-policy"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:39:19.180178+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:39:22.043569+00:00"
+    },
+    {
+      "suffix": "final-roadmap",
+      "command": [
+        "./tools/check-roadmap"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:39:22.051558+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:39:22.131267+00:00"
+    },
+    {
+      "suffix": "final-doc-links",
+      "command": [
+        "./tools/check-doc-links"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:39:22.139372+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:39:35.881919+00:00"
+    },
+    {
+      "suffix": "final-spec-terms",
+      "command": [
+        "./tools/check-spec-terms"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:39:35.891548+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:39:49.756837+00:00"
+    },
+    {
+      "suffix": "final-generated",
+      "command": [
+        "./tools/check-generated"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:39:49.766101+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:39:50.000857+00:00"
+    },
+    {
+      "suffix": "diff-check",
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "environment_overrides": {},
+      "started_utc": "2026-09-11T10:39:50.008640+00:00",
+      "exit_code": 0,
+      "finished_utc": "2026-09-11T10:39:50.043855+00:00"
+    }
+  ],
+  "candidate_sha256": "759197141d126bd3d1e3a57f4a261aa4c8b4108a1b1ec0e9f985ba7b23dde584",
+  "raw": {
+    "file": "cp42-shared-string-storage-2026-09-11-rejected-raw.json.gz",
+    "compressed_sha256": "ff5e9c6afa3888a958933dd46da9fb5f55df5afc5a139074347257fa318e2333",
+    "decoded_sha256": "84110a8c11e079aa7b6dff4302e31ece9a81698c7f655f938a858279630aca03",
+    "decoded_bytes": 12353513
+  },
+  "baseline_limitations": {
+    "status": "pre-existing-contract-gap-confirmed",
+    "normative_contract": "D055 and docs/spec/execution.md section9.4 require managed-budget preflight before rejected host allocation. Existing managed string construction stages storage before publication preflight.",
+    "scope": "Both accepted baseline and storage candidate report host allocation failure instead of budget failure when max_live_bytes=1 and the first allocator call fails. Both fully tear down. This candidate retains that existing ordering; no unqualified D055 conformance claim. A separate owner transaction/preflight correction is required without collecting borrowed input before copying.",
+    "events": [
+      {
+        "mode": "before",
+        "build_command": [
+          "cc",
+          "-O2",
+          "-std=c17",
+          "-Ibootstrap/include",
+          "-Iruntime/include",
+          "build/shared-string-storage/budget-precedence-probe.c",
+          "build/jit-reference-values/native-runtime/release/libmmay_native_runtime_release.a",
+          "-lm",
+          "-o",
+          "build/shared-string-storage/budget-precedence-before"
+        ],
+        "build_exit_code": 0,
+        "build_stdout": "",
+        "build_stderr": "",
+        "run_command": [
+          "build/shared-string-storage/budget-precedence-before"
+        ],
+        "exit_code": 0,
+        "stdout": "shape=0 status=2 class=2 attempts=1 live=0 bytes=0\nshape=1 status=2 class=2 attempts=1 live=0 bytes=0\n",
+        "stderr": ""
+      },
+      {
+        "mode": "after",
+        "build_command": [
+          "cc",
+          "-O2",
+          "-std=c17",
+          "-Ibootstrap/include",
+          "-Iruntime/include",
+          "build/shared-string-storage/budget-precedence-probe.c",
+          "build/shared-string-storage/native-runtime/release/libmmay_native_runtime_release.a",
+          "-lm",
+          "-o",
+          "build/shared-string-storage/budget-precedence-after"
+        ],
+        "build_exit_code": 0,
+        "build_stdout": "",
+        "build_stderr": "",
+        "run_command": [
+          "build/shared-string-storage/budget-precedence-after"
+        ],
+        "exit_code": 0,
+        "stdout": "shape=0 status=2 class=2 attempts=1 live=0 bytes=0\nshape=1 status=2 class=2 attempts=1 live=0 bytes=0\n",
+        "stderr": ""
+      }
+    ]
+  },
+  "native_runtime_object_changes": {
+    "debug": [
+      "runtime/common/managed_internal.c.o",
+      "runtime/common/managed_string.c.o"
+    ],
+    "release": [
+      "runtime/common/managed_internal.c.o",
+      "runtime/common/managed_string.c.o"
+    ]
+  },
+  "standalone_patch": {
+    "path": "cp42-shared-string-storage-2026-09-11-rejected-candidate.patch",
+    "sha256": "6a70b8c2d7cb41743c92898cb8a7c18238ccc3aa5d36cf605e93310063b58420",
+    "format": "zero-context textual diff; full-context original also retained in raw candidate_patch",
+    "replay": "git apply --unidiff-zero cp42-shared-string-storage-2026-09-11-rejected-candidate.patch",
+    "all_seven_candidate_files_reconstructed": true
+  }
+}
