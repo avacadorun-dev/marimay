@@ -340,14 +340,8 @@ static int mmay_cli_run_execute(
         );
         goto cleanup;
     }
-    if (mmay_bytecode_program_verify(&decoded)
-            != MMAY_BYTECODE_PROGRAM_VERIFY_OK) {
-        exit_code = mmay_cli_run_pipeline_error(
-            options, "encoded bytecode did not decode and verify",
-            standard_error
-        );
-        goto cleanup;
-    }
+    /* Successful program decoding already includes complete verification.
+     * Keep that D049 boundary and the independent VM admission check. */
     execution_options = mmay_bytecode_execution_default_options();
     execution_options.managed_heap.max_live_bytes = options->max_heap_bytes;
     if (!mmay_cli_fs_capabilities(options, &fs_capabilities)) goto cleanup;

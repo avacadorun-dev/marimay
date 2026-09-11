@@ -1,5 +1,6 @@
 #include "test_bytecode_support.h"
 
+void mmay_test_bytecode_preparation(void);
 void mmay_test_bytecode_imported_arrays(void);
 void mmay_test_bytecode_imported_results(void);
 void mmay_test_bytecode_layout_features(void);
@@ -13,6 +14,7 @@ void mmay_test_bytecode(void) {
     mmay_test_bytecode_verifier_rejections();
     mmay_test_bytecode_integer_widths();
     mmay_test_bytecode_calls_and_program();
+    mmay_test_bytecode_preparation();
     mmay_test_bytecode_string_pool();
     mmay_test_bytecode_string_verifier_rejections();
     mmay_test_bytecode_allocation_failures();

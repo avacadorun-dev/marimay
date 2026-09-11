@@ -147,8 +147,26 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
     MarimayAllocator allocator,
     MarimayOwnedBytes *output
 ) {
+    if (output == NULL) return MMAY_BYTECODE_CODEC_INVALID_ARGUMENT;
+    output->allocator = allocator;
+    output->data = NULL;
+    output->length = 0;
+    if (function == NULL || !function->initialized) {
+        return MMAY_BYTECODE_CODEC_INVALID_ARGUMENT;
+    }
+    MarimayBytecodeCodecStatus status = mmay_bytecode_codec_from_verify(
+        mmay_bytecode_verify(function)
+    );
+    if (status != MMAY_BYTECODE_CODEC_OK) return status;
+    return mmay_bytecode_encode_verified_function(function, allocator, output);
+}
+
+MarimayBytecodeCodecStatus mmay_bytecode_encode_verified_function(
+    const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator,
+    MarimayOwnedBytes *output
+) {
     MarimayBytecodeEncodeBuffer buffer;
-    MarimayBytecodeVerifyStatus verify_status;
     MarimayBytecodeCodecStatus status = MMAY_BYTECODE_CODEC_OK;
     size_t block_index = 0;
     bool generic_arrays = function != NULL && function->array_types.length != 0;
@@ -163,11 +181,6 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_function(
     output->length = 0;
     if (function == NULL || !function->initialized) {
         return MMAY_BYTECODE_CODEC_INVALID_ARGUMENT;
-    }
-    verify_status = mmay_bytecode_verify(function);
-    status = mmay_bytecode_codec_from_verify(verify_status);
-    if (status != MMAY_BYTECODE_CODEC_OK) {
-        return status;
     }
     memset(&buffer, 0, sizeof(buffer));
     buffer.limit = function->options.max_encoded_bytes;

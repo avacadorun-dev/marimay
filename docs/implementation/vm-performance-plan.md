@@ -246,8 +246,15 @@ September 11. All 384 runs preserve the 32 workloads and exact outputs. They
 show eight bytecode-function verifications per function and substantial repeated
 MIR verification. The next bounded candidate targets redundant checks inside
 program lowering/encoding and the CLI repeat after verified decoding, retaining
-D049 and every public/untrusted admission check. Its implementation and numeric
-acceptance remain pending. This does not replace the overall parity objective.
+D049 and every public/untrusted admission check. The
+[implemented candidate](evidence/cp42-program-verification-2026-09-11.md) passes
+its predeclared early 7% target (8.7% observed geometric mean time reduction)
+and both complete paired matrices. The JIT median sum falls 3.26%, the interpreter
+sum 0.77%, with no 2% median / 5% P90 exceedance on any workload in either mode.
+All 32 complete bytecode encodings remain identical to the baseline while each
+function is checked five times instead of eight. Current full ON/OFF tests and
+focused sanitizer/Rosetta suites plus all32 replays pass. This is local acceptance
+of reduced preparation cost, not closure of the overall parity objective.
 
 ## Sequence after this stage
 
@@ -257,7 +264,7 @@ acceptance remain pending. This does not replace the overall parity objective.
    registers and consider bounded leaf inlining with exact logical-frame
    materialization on exits. Any retained view needs explicit GC/provenance
    invalidation; these are separate proof obligations, not unconditional skips.
-2. Address source preparation as its own measured stage. Retain all source-run
+2. Address remaining source preparation as its own measured stage. Retain all source-run
    costs and validate any prepared artifact against source/dependency changes,
    corruption and execution options.
 3. Address native text and collection/runtime costs independently; faster VM

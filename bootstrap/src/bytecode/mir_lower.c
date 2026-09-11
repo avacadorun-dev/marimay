@@ -657,11 +657,12 @@ static MarimayMirBytecodeLowerStatus mmay_mir_bytecode_terminator(
     return MMAY_MIR_BYTECODE_LOWER_INVALID_MIR;
 }
 
-MarimayMirBytecodeLowerStatus mmay_mir_lower_bytecode_function(
+static MarimayMirBytecodeLowerStatus mmay_mir_lower_bytecode_function_body(
     const MarimayMirFunction *input,
     MarimayAllocator allocator,
     MarimayMirBytecodeLowerOptions options,
-    MarimayBytecodeFunction *output
+    MarimayBytecodeFunction *output,
+    bool verify_output
 ) {
     MarimayBytecodeFunction lowered;
     MarimayBytecodeType result_type;
@@ -1202,7 +1203,7 @@ MarimayMirBytecodeLowerStatus mmay_mir_lower_bytecode_function(
             }
         }
     }
-    {
+    if (verify_output) {
         MarimayBytecodeVerifyStatus verify_status = mmay_bytecode_verify(&lowered);
         if (verify_status == MMAY_BYTECODE_VERIFY_ALLOCATION_FAILED) {
             status = MMAY_MIR_BYTECODE_LOWER_ALLOCATION_FAILED;
@@ -1224,6 +1225,17 @@ cleanup:
     mmay_deallocate(&allocator, parameter_types, parameter_bytes);
     mmay_bytecode_function_dispose(&lowered);
     return status;
+}
+
+MarimayMirBytecodeLowerStatus mmay_mir_lower_bytecode_function(
+    const MarimayMirFunction *input,
+    MarimayAllocator allocator,
+    MarimayMirBytecodeLowerOptions options,
+    MarimayBytecodeFunction *output
+) {
+    return mmay_mir_lower_bytecode_function_body(
+        input, allocator, options, output, true
+    );
 }
 
 static int mmay_mir_bytecode_compare_function_symbols(
@@ -1321,11 +1333,14 @@ MarimayMirBytecodeLowerStatus mmay_mir_lower_bytecode_program(
         function_options.source_count = options.source_count;
         function_options.function_options =
             options.program_options.function_options;
-        status = mmay_mir_lower_bytecode_function(
+        /* Output verification is deferred to the complete program verifier
+         * below; no partially verified body leaves this local program. */
+        status = mmay_mir_lower_bytecode_function_body(
             ordered[index],
             allocator,
             function_options,
-            &function
+            &function,
+            false
         );
         if (status == MMAY_MIR_BYTECODE_LOWER_OK
             && !mmay_bytecode_program_take_function(

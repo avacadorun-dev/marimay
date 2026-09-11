@@ -1460,3 +1460,22 @@ is not constant across different records held in the same MIR register.
 `test_native_c_emitter_view_lifetimes.c` owns record construction/rebinding,
 array selection, direct calls and forced-GC/allocation parity;
 `typed-json/encode_loop_test.my` pins the actual repeated JSON encoding trigger.
+
+
+### Canonical program preparation verification
+
+D049 still requires lowering every checked function, canonical encoding and
+decoding, complete decoded-program verification and verified VM admission.
+`bytecode_codec.c` owns a private encoder for a function in an already verified,
+unmodified program; the public standalone encoder always verifies first.
+`program.c` invokes that private encoder only after its complete program check.
+`mir_lower.c` keeps a static function-building implementation: the standalone
+API verifies its output immediately; the program API defers output verification
+to the existing complete-program verifier before publishing anything. All MIR
+input verification and function/program work budgets remain in their owners.
+`cli_run_program.c` relies on the successful decoder's complete-program check,
+then retains independent VM admission. No validation cache or mutable trust bit
+is attached to a public bytecode object. The focused preparation tests compare
+canonical bytes, finite work/encoding limits, mutation rejection and complete
+allocation-failure teardown. This implements the existing D049 contract without
+changing source semantics or removing the codec roundtrip.

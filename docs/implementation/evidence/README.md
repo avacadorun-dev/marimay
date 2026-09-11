@@ -249,6 +249,17 @@ identity. Repeated MIR and bytecode-function verification dominates preparation
 on short cases; it selects a bounded verification-deduplication candidate.
 These are diagnostic measurements, not a new accepted optimization or parity.
 
+[Canonical program verification](cp42-program-verification-2026-09-11.md)
+removes three redundant function-verifier passes from source preparation while
+retaining D049, standalone API checks, complete program verification and VM
+admission. All 32 encoded programs match the control byte-for-byte. Full paired
+JIT/interpreter median sums fall 3.26%/0.77%, with geometric mean speedups of
+1.055x/1.032x; no workload exceeds the predeclared 2% median / 5% P90 thresholds.
+Current validation passes 96/96 JIT tests, 86/86 interpreter tests, and 12 focused
+suites plus all32 workloads under both ASan/UBSan and x86 Rosetta. This is local
+implementation acceptance; default JIT enablement, Linux LSan, full Tier 1 and
+overall Go/Rust parity remain open.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

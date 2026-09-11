@@ -45,6 +45,15 @@ MarimayBytecodeCodecStatus mmay_bytecode_codec_decode_u64(
 );
 bool mmay_bytecode_codec_u64_to_size(uint64_t value, size_t *result);
 
+/* Program encoding only: the complete containing program must have passed
+ * verification with no intervening mutation. Standalone callers use the
+ * public encoder, which always verifies. Encoded-byte limits still apply. */
+MarimayBytecodeCodecStatus mmay_bytecode_encode_verified_function(
+    const MarimayBytecodeFunction *function,
+    MarimayAllocator allocator,
+    MarimayOwnedBytes *output
+);
+
 bool mmay_bytecode_function_uses_nominal(
     const MarimayBytecodeFunction *function
 );

@@ -48,6 +48,7 @@ add_executable(mmay_c_unit
   test_cp38_json.c
   test_checker_json.c
   test_bytecode_program.c
+  test_bytecode_preparation.c
   test_bytecode_program_nominal.c
   test_bytecode_verify_provenance.c
   test_bytecode_verify_nominal_matrix.c
@@ -200,6 +201,7 @@ add_executable(mmay_c_unit
   test_mir_bytecode.c
   test_mir_bytecode_model.c
   test_mir_bytecode_programs.c
+  test_mir_program_preparation.c
   test_mir_bytecode_support.c
   test_mir_enums.c
   test_mir_interface_execution.c

@@ -5,6 +5,7 @@
 
 #include "mmay/base/hash.h"
 #include "bytecode_internal.h"
+#include "bytecode_codec_internal.h"
 #include "program_internal.h"
 
 
@@ -602,7 +603,11 @@ MarimayBytecodeCodecStatus mmay_bytecode_encode_program(
             status = MMAY_BYTECODE_CODEC_VERIFY_FAILED;
             goto cleanup;
         }
-        status = mmay_bytecode_encode_function(&function->body, allocator, &encoded);
+        /* The complete immutable program was verified above, including each
+         * function's own budget and the aggregate program work limit. */
+        status = mmay_bytecode_encode_verified_function(
+            &function->body, allocator, &encoded
+        );
         if (status != MMAY_BYTECODE_CODEC_OK) {
             goto cleanup;
         }
