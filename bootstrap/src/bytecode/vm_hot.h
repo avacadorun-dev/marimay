@@ -21,4 +21,10 @@ const MarimayManagedRecordDescriptor *mmay_bytecode_record_descriptor_cached(
     MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
     uint32_t layout);
 
+#ifdef MMAY_HAVE_SLJIT
+const MarimayManagedEnumDescriptor *mmay_bytecode_enum_descriptor_cached(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    uint32_t layout);
+#endif
+
 #endif

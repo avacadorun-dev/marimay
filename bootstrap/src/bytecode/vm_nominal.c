@@ -210,6 +210,7 @@ MarimayManagedObjectKind mmay_bytecode_nominal_object_kind(
     return MMAY_MANAGED_OBJECT_INVALID;
 }
 
+
 static const MarimayManagedRecordDescriptor *mmay_bytecode_record_descriptor(
     MarimayBytecodeExecution *execution,
     const MarimayBytecodeFunction *function,
@@ -325,6 +326,20 @@ mmay_bytecode_find_enum_descriptor(
     }
     return NULL;
 }
+
+#ifdef MMAY_HAVE_SLJIT
+const MarimayManagedEnumDescriptor *mmay_bytecode_enum_descriptor_cached(
+    MarimayBytecodeExecution *execution, const MarimayBytecodeFunction *function,
+    uint32_t layout_id
+) {
+    if (execution == NULL || !execution->initialized || function == NULL) return NULL;
+    const MarimayBytecodeEnumLayout *layout = mmay_bytecode_enum_layout(function, layout_id);
+    if (layout == NULL) return NULL;
+    MarimayBytecodeEnumDescriptorCacheEntry *entry =
+        mmay_bytecode_find_enum_descriptor(execution, layout->symbol);
+    return entry != NULL && entry->complete ? entry->descriptor : NULL;
+}
+#endif
 
 static const MarimayManagedRecordDescriptor *mmay_bytecode_record_descriptor(
     MarimayBytecodeExecution *execution,

@@ -33,6 +33,10 @@ typedef struct MarimayBytecodeJitBinding {
     union {
         MarimayManagedArrayView array;
         MarimayManagedRecordView record;
+        struct {
+            const MarimayManagedEnumDescriptor *descriptor;
+            uint64_t heap_provenance;
+        } enumeration;
     } view;
     const MarimayBytecodeExecution *execution;
     const MarimayBytecodeFunction *function;
@@ -87,6 +91,9 @@ void mmay_bytecode_jit_enter(const MarimayBytecodeJitFunction *compiled,
 void *mmay_bytecode_jit_bind(MarimayBytecodeJitContext *context, uint32_t reg);
 void mmay_bytecode_jit_clear_bindings(MarimayBytecodeJit *jit);
 bool mmay_bytecode_jit_enum(MarimayBytecodeJitContext *context, uint32_t pc);
+bool mmay_bytecode_jit_enum_new_supported(const MarimayBytecodeFunction *function,
+    const MarimayBytecodeImageOperation *operation);
+bool mmay_bytecode_jit_enum_new(MarimayBytecodeJitContext *context, uint32_t pc);
 bool mmay_bytecode_jit_array_push(MarimayBytecodeJitContext *context, uint32_t pc);
 bool mmay_bytecode_jit_shift(MarimayBytecodeJitContext *context, uint32_t pc);
 size_t mmay_bytecode_jit_array_width(const MarimayBytecodeFunction *function,

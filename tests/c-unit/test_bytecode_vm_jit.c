@@ -245,7 +245,10 @@ static void nominal_selectors(void) {
         bool ready = prepare(&fixture, &function);
         MMAY_EXPECT(ready);
         if (!ready) { dispose(&fixture); mmay_bytecode_function_dispose(&function); return; }
-        MMAY_EXPECT(fixture.jit.functions[0].entries[5] & MMAY_JIT_ENTRY);
+        /* Immediate construction now belongs to the initial scalar segment;
+         * allocating record construction still ends that segment. */
+        MMAY_EXPECT(fixture.jit.functions[0].entries[enumeration ? 2 : 5] & MMAY_JIT_ENTRY);
+        MMAY_EXPECT(fixture.jit.functions[0].plan[4].supported == (enumeration != 0));
         MMAY_EXPECT(fixture.jit.functions[0].plan[enumeration ? 6 : 5].supported);
         MarimayBytecodeValue result = {0};
         MarimayBytecodeExecution execution = {0};

@@ -88,6 +88,8 @@ static bool mmay_jit_plan_supported(const MarimayBytecodeFunction *function,
             return !meter_fuel;
         case MMAY_OPCODE_RECORD_GET:
             return types[op->first] != MMAY_BYTECODE_TYPE_STRING;
+        case MMAY_OPCODE_ENUM_NEW:
+            return mmay_bytecode_jit_enum_new_supported(function, op);
         case MMAY_OPCODE_ARRAY_GET: case MMAY_OPCODE_ARRAY_GET_IN_BOUNDS:
             return mmay_bytecode_jit_array_width(function, op->second) != 0;
         case MMAY_OPCODE_ARRAY_PUSH:

@@ -3745,6 +3745,17 @@ collection are unreachable. The runtime retains length/generation limits,
 resource diagnostics and mutation commit order. A full array or rejected guard
 exits before the original push, with exact fuel and no committed mutation.
 
+An immediate enum constructor may also remain in a segment when its complete
+nominal descriptor and runtime descriptor ID already exist. The tier must prove
+the runtime's nonallocating representation before calling the shared validation
+and construction owner. Missing descriptors/IDs and other payload shapes exit
+before the original constructor; registration and its allocation failures remain
+on the ordinary path. Cached descriptor metadata must match execution, function,
+layout and fresh heap provenance. It owns no managed value and cannot preserve a
+descriptor across execution teardown. Success publishes the complete result only
+after validation, retains resource-failure clearing and consumes the original
+instruction's fuel; neither allocation nor collection is permitted in this path.
+
 The tier may project immutable direct-call metadata and prepare register/root
 initialization layouts once per selected function. Generated transitions may
 refer directly to their original verified instruction while that program is
@@ -3785,3 +3796,10 @@ reduces Dijkstra by 15.3% in a separate six-workload series. These results justi
 a shared execution tier while leaving ordinary-call, preparation and native
 runtime costs open. They do not justify workload rewrites, weaker limits or a
 CPU-specific semantic implementation.
+
+Checked JIT array indexing may use one unsigned comparison of the i64 index
+against current array length. The runtime publication/mutation invariant bounds
+length by `min(SIZE_MAX, INT64_MAX)`, so every negative index converts above the
+largest valid length. Reference/view validation precedes the comparison; failure
+restores the original PC and unspent fuel before ordinary bounds diagnostics.
+No index check is suppressed and no array-storage access precedes success.

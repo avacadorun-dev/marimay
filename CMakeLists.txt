@@ -728,6 +728,7 @@ if(MMAY_ENABLE_SLJIT)
     bootstrap/src/bytecode/vm_jit_record_reads.c
     bootstrap/src/bytecode/vm_jit_bind.c
     bootstrap/src/bytecode/vm_jit_arrays.c
+    bootstrap/src/bytecode/vm_jit_enums.c
     bootstrap/src/bytecode/vm_jit_loops.c
     bootstrap/src/bytecode/vm_jit_sljit.c
     bootstrap/src/bytecode/vm_jit_memory.c

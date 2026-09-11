@@ -657,6 +657,22 @@ view and spare-capacity guard precede the existing runtime mutation owner.
 widths, growth exits, length/generation limits, diagnostics and exact fuel.
 `test_jit_reference_arrays.c` owns checked/proven reference-array reads, full
 identity and rebinding, rooted collection, precise exits and allocation failures.
+`test_jit_bounds.c` owns the JIT checked-index predicate at empty, ordinary and
+synthetic maximum lengths, including signed extremes, original-PC/fuel recovery
+and destination publication. Its synthetic lengths exercise guards only and
+are restored before teardown; no element storage is accessed in those probes.
+The existing scalar-alias and reference-array differential owners retain real
+array, invalid-index, exact-fuel and allocation-failure coverage.
+
+
+`vm_jit_enums.c` owns structural admission and the nonallocating immediate-enum
+construction bridge. It borrows complete existing descriptors through the
+nominal-cache owner and admits only already registered runtime IDs. Its binding
+metadata checks execution/function/layout and heap provenance; the shared enum
+runtime retains validation, resource-failure clearing and result construction.
+Missing metadata and allocating payloads exit to the original constructor.
+`test_jit_enum_new.c` owns actual native entry, descriptor/ID misses, execution
+reuse, scalar payload bits, exact fuel and deterministic allocation teardown.
 
 `vm_frame_layout.c` behind `vm_frame_layout.h` owns immutable verified-function
 initialization templates and managed-register indexes. It borrows its storage

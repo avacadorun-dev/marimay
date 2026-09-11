@@ -193,7 +193,9 @@ int main(void) {
     for (size_t proven=0;proven<2;++proven) {
         MarimayBytecodeProgram program={0}; fixture(&program,false,proven!=0);
         for (size_t branch=0;branch<2;++branch) {
-            for (int64_t index=-1;index<=3;++index) {
+            const int64_t indices[]={INT64_MIN,-1,0,1,2,3,INT64_MAX};
+            for (size_t i=0;i<sizeof(indices)/sizeof(*indices);++i) {
+                int64_t index=indices[i];
                 for (size_t fuel=0;fuel<=18;++fuel) {
                     compare(&program,branch!=0,index,fuel,0,false);
                     compare(&program,branch!=0,index,SIZE_MAX,fuel,true);

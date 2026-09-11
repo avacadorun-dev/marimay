@@ -261,3 +261,9 @@ Paired unchanged-corpus timing and exact before/after counters connect a shared
 VM boundary removal to several workloads. All 32 Native executables remain
 byte-identical. Full ON/OFF, focused sanitizer/Rosetta and failure/fuel checks
 are recorded. Overall parity, complete Tier 1 and Linux LSan remain open.
+
+[Immediate enums and one checked-index guard](docs/implementation/evidence/cp42-jit-enum-bounds-2026-09-11.md) is **accepted locally**.
+It combines a shared VM boundary removal with the existing array-length invariant.
+The unchanged 32-workload comparison, revised user-directed tradeoff policy,
+101/87 full tests, sanitizer/Rosetta checks and frame-work counters are retained.
+Native executable hashes remain identical. Overall parity and full Tier 1 remain open.

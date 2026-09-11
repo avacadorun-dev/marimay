@@ -101,6 +101,22 @@ checked view proves spare capacity. The runtime mutation contract, configured
 length limit, generation limit and resource diagnostics remain authoritative;
 growth or a failed guard resumes the original uncommitted instruction.
 
+An enum constructor may remain in a nonallocating segment only when its
+complete nominal descriptor and runtime descriptor ID already exist and the
+selected payload has the runtime's immediate representation. The shared runtime
+must still validate that payload and construct the result. Missing registration
+and allocating representations resume the original uncommitted constructor.
+Retained descriptor metadata requires matching execution, function, layout and
+heap provenance; it cannot outlive execution teardown. Successful construction
+preserves resource-diagnostic clearing, complete result publication and exact
+instruction fuel without allocating or collecting.
+
+An array's published length never exceeds `min(SIZE_MAX, INT64_MAX)`. On a
+64-bit JIT target, checking the i64 index as an unsigned value against current
+length is equivalent to checking both nonnegativity and the upper bound. This
+may combine the two predicates into one guard after reference/view validation;
+a failure retains the original instruction, fuel and D045 bounds diagnostic.
+
 The optional tier may prepare direct-call projections, initial register types
 and invalid references, and managed-root indexes once per verified function.
 These immutable invocation-local templates contain no live values or linked

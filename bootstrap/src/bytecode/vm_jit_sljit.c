@@ -104,6 +104,12 @@ static sljit_sw push_address(void) {
     memcpy(&address, &function, sizeof(address));
     return address;
 }
+static sljit_sw enum_new_address(void) {
+    bool (*function)(MarimayBytecodeJitContext *, uint32_t) = mmay_bytecode_jit_enum_new;
+    sljit_sw address = 0;
+    memcpy(&address, &function, sizeof(address));
+    return address;
+}
 static void reload(Emitter *e) {
     move(e, SLJIT_MOV, REGS, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, registers));
     move(e, SLJIT_MOV, BINDS, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, bindings));
@@ -253,7 +259,8 @@ static void array(Emitter *e, const MarimayBytecodeImageOperation *op) {
     }
     load(e, SLJIT_R1, store ? op->second : op->third);
     if (op->opcode != MMAY_OPCODE_ARRAY_GET_IN_BOUNDS && op->opcode != MMAY_OPCODE_ARRAY_SET_IN_BOUNDS) {
-        condition(e, SLJIT_SIG_GREATER_EQUAL, SLJIT_R1, 0, SLJIT_IMM, 0);
+        /* Every published array length is <= INT64_MAX. Unsigned index <
+         * length therefore rejects all negative i64 indices as well. */
         move(e, SLJIT_MOV, SLJIT_R2, 0, SLJIT_MEM1(SLJIT_R5), offsetof(MarimayManagedArrayView, length));
         condition(e, SLJIT_LESS, SLJIT_R1, 0, SLJIT_MEM1(SLJIT_R2), 0);
     }
@@ -439,12 +446,14 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
                 array(&e, op); break;
             case MMAY_OPCODE_RECORD_GET: record(&e, op); break;
             case MMAY_OPCODE_ARRAY_PUSH:
+            case MMAY_OPCODE_ENUM_NEW:
             case MMAY_OPCODE_ENUM_IS_VARIANT: case MMAY_OPCODE_ENUM_REQUIRE_VARIANT:
             case MMAY_OPCODE_ENUM_GET_PAYLOAD:
                 move(&e, SLJIT_MOV, SLJIT_R0, 0, CTX, 0);
                 move(&e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_IMM, (sljit_sw)pc);
                 sljit_emit_icall(compiler, SLJIT_CALL, SLJIT_ARGS2(32, P, 32), SLJIT_IMM,
-                    op->opcode == MMAY_OPCODE_ARRAY_PUSH ? push_address() : enum_address());
+                    op->opcode == MMAY_OPCODE_ARRAY_PUSH ? push_address()
+                        : op->opcode == MMAY_OPCODE_ENUM_NEW ? enum_new_address() : enum_address());
                 condition(&e, SLJIT_NOT_EQUAL | SLJIT_32, SLJIT_R0, 0, SLJIT_IMM, 0);
                 /* A successful push changes the object, never its reference. */
                 if (op->opcode != MMAY_OPCODE_ARRAY_PUSH) invalidate(&e, op->first);
