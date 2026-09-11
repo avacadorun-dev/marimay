@@ -216,6 +216,7 @@ add_executable(mmay_c_unit
   test_native_c_emitter_array_storage.c
   test_native_c_emitter_fill.c
   test_native_c_emitter_array_cells.c
+  test_native_string_views.c
   test_native_c_emitter_roots.c
   test_native_c_emitter_view_lifetimes.c
   test_native_c_emitter_managed_views.c
@@ -931,3 +932,11 @@ add_test(
     -P "${CMAKE_CURRENT_SOURCE_DIR}/test_vm_string_lifetime.cmake"
 )
 set_tests_properties(mmay_vm_string_lifetime PROPERTIES LABELS "differential;managed-memory" TIMEOUT 600)
+
+add_executable(mmay_vm_hot_strings test_bytecode_vm_hot_strings.c)
+target_link_libraries(mmay_vm_hot_strings PRIVATE mmay_bootstrap)
+target_include_directories(mmay_vm_hot_strings PRIVATE "${PROJECT_SOURCE_DIR}/bootstrap/src/bytecode")
+mmay_target_warnings(mmay_vm_hot_strings)
+mmay_target_sanitizers(mmay_vm_hot_strings)
+add_test(NAME mmay_vm_hot_strings COMMAND mmay_vm_hot_strings)
+set_tests_properties(mmay_vm_hot_strings PROPERTIES TIMEOUT 120 LABELS "bytecode;focused;managed-memory")

@@ -1,4 +1,5 @@
 #include "vm_hot.h"
+#include "vm_hot_strings.h"
 
 #include <limits.h>
 
@@ -26,13 +27,23 @@ typedef struct MarimayBytecodeHotArrays {
     MarimayBytecodeHotArray entries[MMAY_VM_HOT_ARRAYS];
     size_t count;
     size_t next;
+    MarimayBytecodeHotStrings strings;
 } MarimayBytecodeHotArrays;
 
-static bool mmay_bytecode_hot_reference_same(
-    MarimayManagedReference left, MarimayManagedReference right
+static bool mmay_bytecode_hot_array_same(
+    const MarimayBytecodeHotArray *entry, MarimayBytecodeValue value,
+    uint32_t layout
 ) {
-    return left.heap_provenance == right.heap_provenance
-        && left.slot == right.slot && left.generation == right.generation;
+    MarimayManagedReference left = entry->view.reference;
+    MarimayManagedReference right = value.as.managed_reference;
+    /* Every entry below count is fully initialized. Compare all identity
+     * fields without a dependent branch for each likely metadata match. */
+    uint64_t difference = left.heap_provenance ^ right.heap_provenance;
+    difference |= (uint64_t)(left.slot ^ right.slot);
+    difference |= (uint64_t)(left.generation ^ right.generation);
+    difference |= (uint64_t)((uint32_t)entry->type ^ (uint32_t)value.type);
+    difference |= (uint64_t)(entry->layout ^ layout);
+    return difference == 0;
 }
 
 static MarimayManagedArrayView *mmay_bytecode_hot_array(
@@ -45,9 +56,7 @@ static MarimayManagedArrayView *mmay_bytecode_hot_array(
     uint32_t layout = layouts[register_id];
     for (size_t index = 0; index < cache->count; index += 1) {
         MarimayBytecodeHotArray *entry = &cache->entries[index];
-        if (entry->type == value.type && entry->layout == layout
-            && mmay_bytecode_hot_reference_same(
-                entry->view.reference, value.as.managed_reference)) {
+        if (mmay_bytecode_hot_array_same(entry, value, layout)) {
             return &entry->view;
         }
     }
@@ -115,6 +124,10 @@ static bool mmay_bytecode_hot_array_instruction(
         opcode == MMAY_OPCODE_ARRAY_GET_IN_BOUNDS
             || opcode == MMAY_OPCODE_ARRAY_SET_IN_BOUNDS
         ? MMAY_MANAGED_ARRAY_ACCESS_IN_BOUNDS : MMAY_MANAGED_ARRAY_ACCESS_CHECKED;
+    if (!store && registers[target].type == MMAY_BYTECODE_TYPE_STRING) {
+        return mmay_bytecode_hot_string_read(&cache->strings, execution,
+            view, index, mode, &registers[target]);
+    }
     uint64_t bits = 0;
     if (store) {
         bits = registers[second].type == MMAY_BYTECODE_TYPE_I64
@@ -229,6 +242,8 @@ MMAY_VM_HOT_INLINE void mmay_bytecode_hot_region(const MarimayBytecodeFunction *
     MarimayBytecodeHotArrays cache;
     cache.count = 0;
     cache.next = 0;
+    cache.strings.count = 0;
+    cache.strings.next = 0;
     /* No observer can inspect the frame while this nonallocating region runs.
      * Keep its cursor local and publish the next unexecuted instruction once,
      * before cold dispatch, a fuel failure or any other region exit. */
@@ -250,6 +265,15 @@ MMAY_VM_HOT_INLINE void mmay_bytecode_hot_region(const MarimayBytecodeFunction *
         size_t next_block = current_block;
         size_t next_instruction = current_instruction + 1;
         switch (instruction->opcode) {
+            case MMAY_OPCODE_STRING_EQUAL: {
+                size_t target = (size_t)instruction->operands[0].unsigned_value;
+                size_t first = (size_t)instruction->operands[1].unsigned_value;
+                size_t second = (size_t)instruction->operands[2].unsigned_value;
+                if (!mmay_bytecode_hot_string_equal(&cache.strings, execution,
+                        registers[first], registers[second], &registers[target]))
+                    goto stopped;
+                break;
+            }
             case MMAY_OPCODE_JUMP:
                 next_block = (size_t)instruction->operands[0].unsigned_value;
                 next_instruction = 0;

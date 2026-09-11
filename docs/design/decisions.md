@@ -3399,7 +3399,8 @@ gate locally; CP42 and Tier 1 acceptance still require their own evidence.
 Status: accepted.
 
 After complete bytecode verification and argument validation, the program VM
-may execute supported scalar, control-flow and raw-array instructions in a
+may execute supported scalar, control-flow, raw-array, string-array read and
+string-equality instructions in a
 separate nonallocating loop. It consumes the original instructions in order;
 there are no new wire opcodes, source rewrites or workload-specific kernels.
 D035/D062 arithmetic, D053 mutation generations, D058 bounds capabilities,
@@ -3413,7 +3414,17 @@ allocates nor collects, calls, suspends, performs I/O or invokes host code.
 All views expire before the ordinary dispatcher handles any unsupported
 instruction or potentially observable failure. Register rebinding cannot
 cause collection inside the region; cache lookup still compares the complete
-managed identity and expected layout.
+managed identity and expected layout. Lookup may evaluate all initialized
+identity fields together; equality requires matching type, layout, heap
+provenance, slot and generation, regardless of comparison order.
+
+A separately owned, bounded string-byte cache may reuse complete checked
+string references only within that same nonallocating region. String-array
+reads require the exact parent descriptor and original checked/proven index,
+then validate the selected string before publishing its register. Byte equality
+validates both operands before publishing its boolean and preserves embedded
+zero bytes and empty strings. All string views expire with the region; calls,
+allocation, collection and ordinary dispatch cannot observe or reuse them.
 
 Descriptor preparation remains lazy in the existing owner. The region can
 only borrow an already complete descriptor; a miss returns to the ordinary
@@ -3739,7 +3750,19 @@ the original instruction's fuel and preserves its materialized destination.
 
 Reference-array reads copy both words of the managed identity after parent and
 index validation; string conversion and reference stores retain their existing
-checked owners. A reserved scalar push may enter the runtime view-mutation owner
+checked owners. String-array reads may remain in a segment when the checked
+child conversion precedes destination publication. Immutable byte views and
+equality obey the same complete reference, execution/function/layout and GC-epoch
+proof as other retained views. Empty and embedded-zero strings keep byte-wise
+equality; a failed conversion resumes the unchanged original destination/PC/fuel.
+Generated Native may project a string child directly from an exact, validated,
+rooted array using D063's existing child-edge proof, with no intervening
+safepoint. Host references still require checked string access.
+The successfully published result of a managed string constructor proves the
+same live string identity until the next safepoint, so generated Native may
+project its immutable bytes directly. The constructor retains all allocation,
+heap-budget, error and publication behavior.
+A reserved scalar push may enter the runtime view-mutation owner
 inside a compiled segment after a spare-capacity guard proves that growth and
 collection are unreachable. The runtime retains length/generation limits,
 resource diagnostics and mutation commit order. A full array or rejected guard

@@ -19,5 +19,6 @@
 #include "mmay/runtime/generated_record.h"
 #include "mmay/runtime/generated_roots.h"
 #include "mmay/runtime/generated_slots.h"
+#include "mmay/runtime/generated_string.h"
 
 #endif

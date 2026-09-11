@@ -547,7 +547,12 @@ descriptors from `vm_array.c`; preparation remains lazy and allocation failures
 stay in the existing dispatcher. The region uses the D063 view API, stops at
 every unsupported instruction/failure before committing it, and cannot retain
 a view across cold dispatch, calls, allocation or GC. Scalar helpers consume
-the existing checked/proven C17 arithmetic contract. `vm_frame.c` behind
+the existing checked/proven C17 arithmetic contract. Lookup combines the fully
+initialized entry's type, layout and complete managed-reference fields into one
+unsigned difference predicate; zero means every field matched. Cache capacity,
+replacement and lifetime are unchanged. `test_bytecode_vm_hot.c` also covers
+cache eviction across equal-metadata references, distinct scalar layouts and
+alias writes. `vm_frame.c` behind
 `vm_frame.h` independently owns activation/register/defer/root storage and frame
 stack growth; `vm.c` only sequences these owners and executes cold control-flow,
 panic and cleanup transitions. The single-function execution entry remains the
@@ -558,7 +563,14 @@ growth/rebinding and unsupported layouts with all-index engine sweeps.
 `mmay/runtime/array_scalar_view.h` extends the D063 scalar view primitives to
 RAW8/RAW16/RAW32 alongside RAW64. It owns portable typed copies, representable
 store checks and generation commit order; `vm_hot.c` only translates verified
-VM scalar representations. Reference cells still return to ordinary dispatch.
+VM scalar representations. `vm_hot_strings.c`, behind `vm_hot_strings.h`, owns
+checked string-child reads and equality with two byte views local to one
+nonallocating region. It validates the complete string reference on a cache miss
+before publishing a value and retains no view across cold dispatch. The region
+owner supplies the exact bound parent view and original checked/proven index.
+`test_bytecode_vm_hot_strings.c` owns actual region execution, comparison with
+ordinary dispatch, fuel boundaries, stale/wrong-kind child failures, cold GC
+boundaries and all-index teardown. Other reference-cell accesses stay cold.
 `test_bytecode_vm_scalar_arrays.c` owns all scalar-width cold/region fuel and
 failure comparisons and directly checks region coverage without allocation.
 The runtime array-access test owner checks bounds, rejected truncation,
@@ -664,6 +676,13 @@ are restored before teardown; no element storage is accessed in those probes.
 The existing scalar-alias and reference-array differential owners retain real
 array, invalid-index, exact-fuel and allocation-failure coverage.
 
+
+`vm_jit_strings.c` owns nonallocating checked string-cell projection and
+transactional destination/byte-view publication. `vm_jit_bind.c` extends its
+full identity and lifetime-epoch proof to immutable string bytes; the emitter
+owns byte-length/equality lowering. `jit/test_jit_strings.c` owns actual native
+entry, checked/proven reads, empty/NUL/Unicode bytes, overwrite and GC lifetime,
+stale/foreign/wrong-kind references, exact fuel and allocation-failure teardown.
 
 `vm_jit_enums.c` owns structural admission and the nonallocating immediate-enum
 construction bridge. It borrows complete existing descriptors through the
@@ -1115,6 +1134,14 @@ read-only parameters at activation entry. Other child accesses resolve the
 selected validated cell directly through the current managed slot, in constant
 time. They must neither rebuild the whole parent after each mutation nor use a
 cache left stale by an earlier read-only callee. The managed-view and root
+fixtures include `test_native_string_views.c` for string child selection,
+alias replacement and retained old bytes across allocation/GC, with both-engine
+and generated-C all-index allocation replay. `generated_string.h` owns the
+compiler-private immutable-byte projection; `c_emitter_range.c` uses it only
+after exact parent validation and checked/proven bounds. `c_emitter_format.c`
+and `c_emitter_text.c` may also use it immediately after successful string
+construction; `test_native_text_failures.c` retains all-index generated helper
+coverage, including empty strings. The other view and root
 fixtures cover record/nested-array growth, alias replacement, retained old
 children, forced GC and every deterministic allocation failure. This preserves
 D063 identity/layout proofs without making a growing object queue quadratic.

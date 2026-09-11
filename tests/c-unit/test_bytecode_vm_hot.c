@@ -269,4 +269,14 @@ void mmay_test_vm_hot_regions(void) {
         "const nested=[[2]];if nested[0][0]!=2{panic(\"reference fallback\");}"
         "return sum+saved[0]+values[0]+saved.length();}";
     mmay_test_callable_engines(source, 139, 1, 1);
+    static const char cache_source[] =
+        "fn main():int{const a:[]u32=[1];const b:[]u32=[2];"
+        "const c:[]u32=[4];const d:[]u32=[8];const e:[]u32=[16];"
+        "const f:[]i32=[-32];const g=[64];const alias=a;let sum:u32=0;"
+        "for i in 0..8{sum+=a[0]+b[0]+c[0]+d[0]+e[0];"
+        "if f[0]!=-32||g[0]!=64{panic(\"cache layout\");}alias[0]+=1;}"
+        "if sum+a[0]!=285{panic(\"cache identity\");}return 1053;}";
+    /* Distinct references with equal metadata, different scalar layouts, an
+     * alias write and more live arrays than the four-entry region cache. */
+    mmay_test_callable_engines(cache_source, 1053, 0, 0);
 }

@@ -23,6 +23,7 @@ mmay_add_jit_test(mmay_jit_reference_arrays test_jit_reference_arrays.c)
 mmay_add_jit_test(mmay_jit_array_push test_jit_array_push.c)
 mmay_add_jit_test(mmay_jit_enum_new test_jit_enum_new.c)
 mmay_add_jit_test(mmay_jit_bounds test_jit_bounds.c)
+mmay_add_jit_test(mmay_jit_strings test_jit_strings.c)
 
 add_test(NAME mmay_jit_pinned_inputs
   COMMAND "${Python3_EXECUTABLE}" "${CMAKE_CURRENT_SOURCE_DIR}/test_prepare_sljit.py"

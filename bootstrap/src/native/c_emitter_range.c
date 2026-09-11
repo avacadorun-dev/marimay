@@ -444,9 +444,13 @@ static bool mmay_native_c_emit_array_get(
                 buffer,
                 " memcpy(&mmay_g_cell, mmay_g_av_%u.object->storage + (size_t)mmay_g_v_%u * sizeof(mmay_g_cell), sizeof(mmay_g_cell)); ",
                 instruction->first, instruction->second
-            ) || !mmay_native_c_write_from_managed_cell(
-                buffer, array->element_type, instruction->target
-            ) || (array_target && !prewarmed_children
+            ) || !(array->element_type == MMAY_TYPE_STRING
+                ? mmay_native_c_write(buffer,
+                    "mmay_g_v_%u.managed = mmay_g_cell.reference; mmay_managed_string_generated_bytes(&mmay_g_x->heap, mmay_g_cell.reference, &mmay_g_v_%u.data, &mmay_g_v_%u.length)",
+                    instruction->target, instruction->target, instruction->target)
+                : mmay_native_c_write_from_managed_cell(
+                    buffer, array->element_type, instruction->target))
+            || (array_target && !prewarmed_children
                 && !mmay_native_c_write(
                     buffer,
                     "; mmay_g_av_%u = (MarimayManagedArrayGeneratedView){0}; mmay_g_av_%u.object = mmay_managed_array_generated_child_unchecked(&mmay_g_x->heap, mmay_g_cell.reference)",

@@ -96,6 +96,12 @@ the original instruction's fuel and preserves its materialized destination.
 Non-string reference-array reads may copy the complete managed cell after the
 same parent descriptor and checked/proven-index validation as ordinary execution.
 Destination roots and view invalidation must follow the full reference identity.
+String-array reads may join the same segment after preserving ordinary checked
+string-cell conversion before publishing the destination. The resulting immutable
+byte view may be reused for string equality under the same full identity and
+lifetime-epoch proof. Equality compares byte lengths and all bytes, including
+embedded zero bytes; empty strings need no readable byte pointer. A failed child
+conversion leaves the destination unchanged and resumes the original instruction.
 A scalar array push may remain in a nonallocating segment only when the current
 checked view proves spare capacity. The runtime mutation contract, configured
 length limit, generation limit and resource diagnostics remain authoritative;
@@ -753,6 +759,17 @@ stores preserve D053 generation saturation and commit order. Reference layouts
 retain exact type validation, and nested aliases, collection, growth, iterator
 G4005 behavior, panic identity, and VM observations are unchanged.
 
+A string cell read from an exact, descriptor-checked rooted native array may
+project its immutable bytes directly through the current managed slot. The
+container's construction and mutation owners must already have validated the
+complete child reference and string kind. No safepoint may intervene before
+the child reference is published into its destination root. The projection is
+compiler-private; arbitrary host references retain ordinary checked access.
+The same projection is permitted immediately after a successful managed string
+constructor has published a valid string reference. Constructor failure still
+takes the original error path; no allocation or safepoint may occur between
+successful publication and byte projection.
+
 Under D104, a fully verified VM program may execute supported instructions in
 a nonallocating region using the same runtime array-view contract. Complete
 managed identity and expected layout are validated before view reuse. The
@@ -763,6 +780,12 @@ instruction without register/array mutation or fuel consumption. Successful
 instructions consume exactly the original D087 per-frame/shared fuel. The
 ordinary dispatcher retains error construction, spans, cleanup and resource
 classification; D053 generations and D058 bounds proofs are unchanged.
+The region may also retain checked immutable string bytes for complete managed
+references. Reading a string-array child preserves the exact parent descriptor,
+the original bounds proof/check and checked child identity before publication.
+String equality publishes only after both operands validate, compares every
+byte and handles empty strings without reading their byte pointers. These
+string views have the same region lifetime and cannot survive a cold exit.
 Scalar views may access every D060 storage width with host-order typed copies.
 Narrow stores must validate the complete scalar bits before narrowing and
 before modifying storage or the mutation generation. Boolean conversion is

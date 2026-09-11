@@ -46,7 +46,7 @@ static bool mmay_native_c_emit_formatted_string(
 ) {
     return mmay_native_c_write(
         buffer,
-        "  { char mmay_g_text[%s]; size_t mmay_g_length = 0; if (%s != %s) { mmay_g_s = 7; goto mmay_g_cleanup; } mmay_g_m = mmay_managed_string_new(&mmay_g_x->heap, (const unsigned char *)mmay_g_text, mmay_g_length, &mmay_g_v_%u.managed); if (mmay_g_m == MMAY_MANAGED_OK) mmay_g_m = mmay_managed_string_bytes(&mmay_g_x->heap, mmay_g_v_%u.managed, &mmay_g_v_%u.data, &mmay_g_v_%u.length); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n",
+        "  { char mmay_g_text[%s]; size_t mmay_g_length = 0; if (%s != %s) { mmay_g_s = 7; goto mmay_g_cleanup; } mmay_g_m = mmay_managed_string_new(&mmay_g_x->heap, (const unsigned char *)mmay_g_text, mmay_g_length, &mmay_g_v_%u.managed); if (mmay_g_m == MMAY_MANAGED_OK) mmay_managed_string_generated_bytes(&mmay_g_x->heap, mmay_g_v_%u.managed, &mmay_g_v_%u.data, &mmay_g_v_%u.length); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n",
         capacity, call, ok,
         instruction->target, instruction->target,
         instruction->target, instruction->target
@@ -98,7 +98,7 @@ bool mmay_native_c_emit_format_instruction(
     if (instruction->kind == MMAY_MIR_STRING_CONCAT) {
         return mmay_native_c_write(
             buffer,
-            "  mmay_g_m = mmay_managed_string_concat(&mmay_g_x->heap, mmay_g_v_%u.data, mmay_g_v_%u.length, mmay_g_v_%u.data, mmay_g_v_%u.length, &mmay_g_v_%u.managed); if (mmay_g_m == MMAY_MANAGED_OK) mmay_g_m = mmay_managed_string_bytes(&mmay_g_x->heap, mmay_g_v_%u.managed, &mmay_g_v_%u.data, &mmay_g_v_%u.length); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; }\n",
+            "  mmay_g_m = mmay_managed_string_concat(&mmay_g_x->heap, mmay_g_v_%u.data, mmay_g_v_%u.length, mmay_g_v_%u.data, mmay_g_v_%u.length, &mmay_g_v_%u.managed); if (mmay_g_m == MMAY_MANAGED_OK) mmay_managed_string_generated_bytes(&mmay_g_x->heap, mmay_g_v_%u.managed, &mmay_g_v_%u.data, &mmay_g_v_%u.length); if (mmay_g_m != MMAY_MANAGED_OK) { mmay_g_s = mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; }\n",
             instruction->first, instruction->first,
             instruction->second, instruction->second, instruction->target,
             instruction->target, instruction->target, instruction->target

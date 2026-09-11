@@ -12,9 +12,11 @@ Start with `title-search-10k` and `title-search-100k` together, then
 32-row manifest order. Keep one active workload family and report Native and
 VM separately. Necessary shared-runtime/compiler changes are documented
 dependencies of that family. Existing call-root analysis remains follow-up work.
-The next diagnosis separates title creation from repeated search, byte-resolution
-work and source/JIT startup. The accepted baseline is `51e0be3`; no per-row parity
-or language-level impossibility has been established. Each candidate requires
+The [string-view step](evidence/cp42-string-views-2026-09-11.md) records the accepted title-pair
+implementation, exact operation counts and latest comparison. The family remains
+active: title creation, residual search and source preparation still require
+measurement against the current control. No per-row parity or language-level
+impossibility has been established. Each candidate requires
 its own targets before timing and the unchanged corpus, safety, limit, validation
 and main/push evidence contracts.
 
@@ -381,3 +383,10 @@ It combines a shared VM boundary removal with the existing array-length invarian
 The unchanged 32-workload comparison, revised user-directed tradeoff policy,
 101/87 full tests, sanitizer/Rosetta checks and frame-work counters are retained.
 Native executable hashes remain identical. Overall parity and full Tier 1 remain open.
+
+[Retained string bytes in Native, interpreter and JIT](evidence/cp42-string-views-2026-09-11.md) is **accepted locally**.
+It removes redundant byte validation while preserving original32 inputs, logical
+comparison/allocation counts and exact fuel. Full103/88 tests,20/20 sanitizer and
+Rosetta checks, all32 Native/ON/OFF paired timing and a fresh five-way comparison
+are recorded. Three rejected candidates remain archived. Title-search stays
+active; all-row parity, known baseline defects and full Tier1 remain open.

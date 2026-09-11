@@ -444,6 +444,7 @@ add_library(mmay_bootstrap STATIC
   bootstrap/src/bytecode/vm_array.c
   bootstrap/src/bytecode/vm_range.c
   bootstrap/src/bytecode/vm_hot.c
+  bootstrap/src/bytecode/vm_hot_strings.c
   bootstrap/src/bytecode/vm_image.c
   bootstrap/src/bytecode/vm_image_follow.c
   bootstrap/src/bytecode/vm_image_run.c
@@ -729,6 +730,7 @@ if(MMAY_ENABLE_SLJIT)
     bootstrap/src/bytecode/vm_jit_bind.c
     bootstrap/src/bytecode/vm_jit_arrays.c
     bootstrap/src/bytecode/vm_jit_enums.c
+    bootstrap/src/bytecode/vm_jit_strings.c
     bootstrap/src/bytecode/vm_jit_loops.c
     bootstrap/src/bytecode/vm_jit_sljit.c
     bootstrap/src/bytecode/vm_jit_memory.c

@@ -29,10 +29,7 @@ size_t mmay_bytecode_jit_array_width(const MarimayBytecodeFunction *function,
         case MMAY_BYTECODE_TYPE_I64: case MMAY_BYTECODE_TYPE_U64:
         case MMAY_BYTECODE_TYPE_F64: return 8;
         default:
-            /* Strings additionally validate their byte view on conversion.
-             * Other managed cells transfer the complete reference unchanged. */
-            return type != MMAY_BYTECODE_TYPE_STRING
-                && mmay_bytecode_type_is_managed(type) ? sizeof(MarimayManagedCell) : 0;
+            return mmay_bytecode_type_is_managed(type) ? sizeof(MarimayManagedCell) : 0;
     }
 }
 
@@ -52,15 +49,21 @@ void *mmay_bytecode_jit_bind(MarimayBytecodeJitContext *context, uint32_t reg) {
         && binding->layout == layouts[reg] && binding->type == value.type
         && heap->provenance == value.as.managed_reference.heap_provenance
         && mmay_managed_reference_equal(value.as.managed_reference,
-            value.type == MMAY_BYTECODE_TYPE_RECORD
-                ? binding->view.record.reference : binding->view.array.reference)) {
+            value.type == MMAY_BYTECODE_TYPE_STRING ? binding->view.string.reference
+                : value.type == MMAY_BYTECODE_TYPE_RECORD
+                    ? binding->view.record.reference : binding->view.array.reference)) {
         binding->epoch = context->epoch;
         return &binding->view;
     }
     /* A failed checked miss cannot leave a reusable partial view. */
     binding->function = NULL;
     binding->epoch = 0;
-    if (value.type == MMAY_BYTECODE_TYPE_RECORD) {
+    if (value.type == MMAY_BYTECODE_TYPE_STRING) {
+        if (mmay_managed_string_bytes(heap, value.as.managed_reference,
+                &binding->view.string.bytes, &binding->view.string.length)
+                != MMAY_MANAGED_OK) return NULL;
+        binding->view.string.reference = value.as.managed_reference;
+    } else if (value.type == MMAY_BYTECODE_TYPE_RECORD) {
         const MarimayManagedRecordDescriptor *descriptor =
             mmay_bytecode_record_descriptor_cached(context->execution,
                 context->function, layouts[reg]);

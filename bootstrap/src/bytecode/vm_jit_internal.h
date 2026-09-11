@@ -34,6 +34,11 @@ typedef struct MarimayBytecodeJitBinding {
         MarimayManagedArrayView array;
         MarimayManagedRecordView record;
         struct {
+            MarimayManagedReference reference;
+            const unsigned char *bytes;
+            size_t length;
+        } string;
+        struct {
             const MarimayManagedEnumDescriptor *descriptor;
             uint64_t heap_provenance;
         } enumeration;
@@ -89,6 +94,8 @@ void mmay_bytecode_jit_enter(const MarimayBytecodeJitFunction *compiled,
     MarimayBytecodeJitContext *context, size_t pc);
 
 void *mmay_bytecode_jit_bind(MarimayBytecodeJitContext *context, uint32_t reg);
+bool mmay_bytecode_jit_string_load(MarimayBytecodeJitContext *context,
+    uint32_t target, const MarimayManagedCell *cell);
 void mmay_bytecode_jit_clear_bindings(MarimayBytecodeJit *jit);
 bool mmay_bytecode_jit_enum(MarimayBytecodeJitContext *context, uint32_t pc);
 bool mmay_bytecode_jit_enum_new_supported(const MarimayBytecodeFunction *function,

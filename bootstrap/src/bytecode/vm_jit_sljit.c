@@ -44,10 +44,13 @@ static void save(Emitter *e, uint32_t reg, int source) {
 static void invalidate(Emitter *e, uint32_t reg) {
     mmay_bytecode_jit_record_read_write(e->reads, reg);
     const MarimayBytecodeType *types = e->function->register_types.data;
-    if (!mmay_bytecode_type_is_array(types[reg]) && types[reg] != MMAY_BYTECODE_TYPE_RECORD) return;
+    if (!mmay_bytecode_type_is_array(types[reg]) && types[reg] != MMAY_BYTECODE_TYPE_RECORD
+        && types[reg] != MMAY_BYTECODE_TYPE_STRING) return;
     mmay_bytecode_jit_alias_write(e->aliases, reg);
     sljit_sw base = (sljit_sw)(reg * sizeof(MarimayBytecodeJitBinding));
     _Static_assert(offsetof(MarimayManagedArrayView, reference) == 0 && offsetof(MarimayManagedRecordView, reference) == 0, "view identity prefix");
+    _Static_assert(offsetof(MarimayBytecodeJitBinding, view.string.reference)
+        == offsetof(MarimayBytecodeJitBinding, view), "string view identity prefix");
     move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view));
     struct sljit_jump *different = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R0, 0, SLJIT_MEM1(REGS), slot(reg));
     move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view) + 8);
@@ -236,6 +239,36 @@ static void bind(Emitter *e, uint32_t reg) {
     sljit_emit_op2(e->c, SLJIT_ADD, SLJIT_R5, 0, BINDS, 0, SLJIT_IMM,
         base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view));
 }
+static void string_equal(Emitter *e, const MarimayBytecodeImageOperation *op) {
+    bind(e, op->second);
+    bind(e, op->third);
+    /* Both immutable views are live in this nonallocating native entry. The
+     * second bind may clobber scratch registers, so read both from the table. */
+    sljit_sw left = (sljit_sw)(op->second * sizeof(MarimayBytecodeJitBinding));
+    sljit_sw right = (sljit_sw)(op->third * sizeof(MarimayBytecodeJitBinding));
+    move(e, SLJIT_MOV, SLJIT_R2, 0, SLJIT_MEM1(BINDS),
+        left + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view.string.length));
+    move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_IMM, 0);
+    struct sljit_jump *different = sljit_emit_cmp(e->c, SLJIT_NOT_EQUAL, SLJIT_R2, 0,
+        SLJIT_MEM1(BINDS), right + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view.string.length));
+    move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_IMM, 1);
+    struct sljit_jump *empty = sljit_emit_cmp(e->c, SLJIT_EQUAL, SLJIT_R2, 0, SLJIT_IMM, 0);
+    move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_MEM1(BINDS),
+        left + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view.string.bytes));
+    move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_MEM1(BINDS),
+        right + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view.string.bytes));
+    int (*compare)(const void *, const void *, size_t) = memcmp;
+    sljit_sw address = 0;
+    _Static_assert(sizeof(address) == sizeof(compare), "memcmp pointer");
+    memcpy(&address, &compare, sizeof(address));
+    sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS3(32, P, P, W), SLJIT_IMM, address);
+    move(e, SLJIT_MOV_S32, SLJIT_R0, 0, SLJIT_R0, 0);
+    boolean(e, SLJIT_EQUAL, SLJIT_R0, 0, SLJIT_IMM, 0);
+    struct sljit_label *done = sljit_emit_label(e->c);
+    sljit_set_label(different, done);
+    sljit_set_label(empty, done);
+    save(e, op->first, SLJIT_R0);
+}
 static void array(Emitter *e, const MarimayBytecodeImageOperation *op) {
     bool store = op->opcode == MMAY_OPCODE_ARRAY_SET || op->opcode == MMAY_OPCODE_ARRAY_SET_IN_BOUNDS;
     uint32_t source = store ? op->first : op->second;
@@ -284,6 +317,20 @@ static void array(Emitter *e, const MarimayBytecodeImageOperation *op) {
          * cell address explicitly, then load both identity words before publish. */
         sljit_emit_op2(e->c, SLJIT_SHL, SLJIT_R1, 0, SLJIT_R1, 0, SLJIT_IMM, 4);
         sljit_emit_op2(e->c, SLJIT_ADD, SLJIT_R2, 0, SLJIT_R2, 0, SLJIT_R1, 0);
+        const MarimayBytecodeType *types = e->function->register_types.data;
+        if (types[op->first] == MMAY_BYTECODE_TYPE_STRING) {
+            bool (*project)(MarimayBytecodeJitContext *, uint32_t,
+                const MarimayManagedCell *) = mmay_bytecode_jit_string_load;
+            sljit_sw address = 0;
+            _Static_assert(sizeof(address) == sizeof(project), "string projection pointer");
+            memcpy(&address, &project, sizeof(address));
+            move(e, SLJIT_MOV, SLJIT_R0, 0, CTX, 0);
+            move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_IMM, op->first);
+            sljit_emit_icall(e->c, SLJIT_CALL, SLJIT_ARGS3(32, P, 32, P), SLJIT_IMM, address);
+            condition(e, SLJIT_NOT_EQUAL | SLJIT_32, SLJIT_R0, 0, SLJIT_IMM, 0);
+            mmay_bytecode_jit_record_read_write(e->reads, op->first);
+            return;
+        }
         move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_MEM1(SLJIT_R2), 0);
         move(e, SLJIT_MOV, SLJIT_R1, 0, SLJIT_MEM1(SLJIT_R2), 8);
         move(e, SLJIT_MOV, SLJIT_MEM1(REGS), slot(op->first), SLJIT_R0, 0);
@@ -445,6 +492,7 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
             case MMAY_OPCODE_ARRAY_GET_IN_BOUNDS: case MMAY_OPCODE_ARRAY_SET_IN_BOUNDS:
                 array(&e, op); break;
             case MMAY_OPCODE_RECORD_GET: record(&e, op); break;
+            case MMAY_OPCODE_STRING_EQUAL: string_equal(&e, op); break;
             case MMAY_OPCODE_ARRAY_PUSH:
             case MMAY_OPCODE_ENUM_NEW:
             case MMAY_OPCODE_ENUM_IS_VARIANT: case MMAY_OPCODE_ENUM_REQUIRE_VARIANT:
