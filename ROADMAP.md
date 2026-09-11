@@ -233,3 +233,11 @@ The alias-only variant remains rejected. 99/99 ON tests, 14 focused tests in
 sanitizer/Rosetta builds and all32 correctness pass. Exact OFF binary/dependency
 provenance reuses previous interpreter evidence; Native/comparator binaries are
 unchanged. JIT remains opt-in; full Tier1, Linux LSan and parity remain open.
+
+[VM reachable preparation: rejected candidate](docs/implementation/evidence/cp42-vm-reachable-preparation-rejected-2026-09-11.md) records completed
+source-phase diagnosis and the unchanged-corpus experiment. A fixed recheck
+with sampled foreign-compute rejection gives JIT median sum -3.41% and OFF -1.45%,
+but Dijkstra OFF P90 repeats above the 5% gate (+18.22%, +15.64%). Production
+remains at the f4c9961 implementation. The rejected patch, correctness evidence,
+contaminated first series and all recheck observations are preserved. Full
+Tier 1, Linux LSan and overall Go/Rust parity remain open.
