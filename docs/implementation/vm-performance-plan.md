@@ -256,14 +256,22 @@ function is checked five times instead of eight. Current full ON/OFF tests and
 focused sanitizer/Rosetta suites plus all32 replays pass. This is local acceptance
 of reduced preparation cost, not closure of the overall parity objective.
 
+[JIT execution diagnosis](evidence/cp42-jit-execution-profile-2026-09-11.md)
+attributes about 51% of DSU and 46% of stack sampled stacks to compiled call/return
+transitions. Separate counters show 15 million DSU calls with almost complete
+prepared-layout reuse, while stack alternates layouts. This selects a guarded
+nonallocating activation-path experiment in the shared owners, with a predeclared
+15% early DSU/stack latency target. These are diagnostic samples and counts, not
+an additional accepted speedup; all32, safety and overall parity gates remain.
+
 ## Sequence after this stage
 
-1. Follow the measured object-binding profile. Reduce repeated managed-object validation,
-   view binding and register/frame traffic where the profile shows the largest
-   remaining cost. The optimizing tier should retain hot scalar values in CPU
-   registers and consider bounded leaf inlining with exact logical-frame
-   materialization on exits. Any retained view needs explicit GC/provenance
-   invalidation; these are separate proof obligations, not unconditional skips.
+1. Follow the current execution diagnosis: shorten the shared call/return protocol
+   for retained activation storage and measure both same-layout and alternating-layout
+   cases. Separately map anonymous native frames before choosing register allocation,
+   view-traffic changes or bounded leaf inlining. Inlining requires exact logical-frame
+   materialization on exits; retained views require explicit GC/provenance invalidation.
+   These proof obligations remain in addition to the unchanged all32 acceptance gate.
 2. Address remaining source preparation as its own measured stage. Retain all source-run
    costs and validate any prepared artifact against source/dependency changes,
    corruption and execution options.

@@ -199,5 +199,13 @@ suites plus all32 workloads under both ASan/UBSan and x86 Rosetta. This is local
 implementation acceptance; default JIT enablement, Linux LSan, full Tier 1 and
 overall Go/Rust parity remain open.
 
+[JIT execution diagnosis](docs/implementation/evidence/cp42-jit-execution-profile-2026-09-11.md)
+attributes about 51% of DSU and 46% of stack sampled stacks to compiled call/return
+transitions. Separate counters show 15 million DSU calls with almost complete
+prepared-layout reuse, while stack alternates layouts. This selects a guarded
+nonallocating activation-path experiment in the shared owners, with a predeclared
+15% early DSU/stack latency target. These are diagnostic samples and counts, not
+an additional accepted speedup; all32, safety and overall parity gates remain.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.
