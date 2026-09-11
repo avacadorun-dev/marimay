@@ -619,3 +619,9 @@ comparison/allocation counts and exact fuel. Full103/88 tests,20/20 sanitizer an
 Rosetta checks, all32 Native/ON/OFF paired timing and a fresh five-way comparison
 are recorded. Three rejected candidates remain archived. Title-search stays
 active; all-row parity, known baseline defects and full Tier1 remain open.
+
+[Title costs after retained string bytes](cp42-title-after-string-views-2026-09-11.md) records completed local
+phase diagnosis on `78d3070`: shared string creation/storage is the next common
+mechanism, subject to D055 preflight/lifetime obligations and a fresh protocol.
+About 40 ms of VM source preparation remains a separate dependency. No new
+optimization, row closure or parity result is claimed.
