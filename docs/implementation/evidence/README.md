@@ -277,6 +277,13 @@ Exact finite/shared fuel, roots, depth and allocation-failure behavior are retai
 Native runtime objects and Native/Go/Rust/Bun executable hashes match prior evidence.
 JIT remains opt-in; Linux LSan, full Tier1 and overall Go/Rust parity remain open.
 
+[Address-level JIT attribution](cp42-jit-address-attribution-2026-09-11.md) maps current generated-code samples back to
+VM operations on DSU, BFS, stack and min-heap. Both diagnostic variants preserve
+all inputs and all48 expected outcomes. Repeated checked-binding work across
+managed-reference copies selects a segment-local alias analysis experiment;
+C call/runtime costs and source preparation remain independent gaps. This is
+diagnostic evidence, not an additional speedup or a parity claim.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate
