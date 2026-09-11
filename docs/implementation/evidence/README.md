@@ -584,3 +584,11 @@ but Dijkstra OFF P90 repeats above the 5% gate (+18.22%, +15.64%). Production
 remains at the f4c9961 implementation. The rejected patch, correctness evidence,
 contaminated first series and all recheck observations are preserved. Full
 Tier 1, Linux LSan and overall Go/Rust parity remain open.
+
+[Text runtime diagnosis and current accepted-version snapshot](cp42-text-runtime-diagnosis-2026-09-11.md) records
+reproducible string counters and a fresh five-participant all32 comparison of
+the unchanged f4c9961 implementation. Both engines duplicate 1.356 GB of
+concatenation copying in report-concat; direct shared-runtime string construction
+is selected for the next experiment, not implemented or accepted. The record
+also specifies focused diagnostic additions while preserving the fixed corpus.
+Full Tier 1, Linux LSan and overall parity remain open.
