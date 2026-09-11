@@ -78,6 +78,21 @@ provenance. Retained array access must observe current storage and length after
 growth. An expired or mismatched proof must take the ordinary checked path
 before any retained object pointer is dereferenced.
 
+Within an uninterrupted native segment, exact-type/layout register copies may
+reuse the checked view of a canonical register that still contains the same
+complete managed reference. Every original reference value remains materialized
+for roots and side exits. A write to the canonical register invalidates dependent
+relations; every independently enterable segment and native call/return boundary
+resets them. This does not remove index/generation checks, extend view lifetime
+or allow a stale descriptor/reference proof to be used.
+
+Repeated reads of the same record field may reuse a still-materialized value
+of the exact result type/layout within that segment. This requires unchanged
+receiver identity and no intervening record-field mutation. Writing either the
+receiver or saved result invalidates the corresponding expression; calls, cold
+record stores and independent entries reset the analysis. Reuse still consumes
+the original instruction's fuel and preserves its materialized destination.
+
 Non-string reference-array reads may copy the complete managed cell after the
 same parent descriptor and checked/proven-index validation as ordinary execution.
 Destination roots and view invalidation must follow the full reference identity.

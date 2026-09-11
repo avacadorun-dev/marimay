@@ -3722,6 +3722,21 @@ length and generation fields, not a copied storage buffer. A failed proof uses
 the existing full descriptor/reference binding owner. This makes the spec's
 revalidation allowance explicit; it does not let an expired borrow remain usable.
 
+Within an uninterrupted native segment, exact-type/layout register copies may
+reuse the checked view of a canonical register that still contains the same
+complete managed reference. Every original reference value remains materialized
+for roots and side exits. A write to the canonical register invalidates dependent
+relations; every independently enterable segment and native call/return boundary
+resets them. This does not remove index/generation checks, extend view lifetime
+or allow a stale descriptor/reference proof to be used.
+
+Repeated reads of the same record field may reuse a still-materialized value
+of the exact result type/layout within that segment. This requires unchanged
+receiver identity and no intervening record-field mutation. Writing either the
+receiver or saved result invalidates the corresponding expression; calls, cold
+record stores and independent entries reset the analysis. Reuse still consumes
+the original instruction's fuel and preserves its materialized destination.
+
 Reference-array reads copy both words of the managed identity after parent and
 index validation; string conversion and reference stores retain their existing
 checked owners. A reserved scalar push may enter the runtime view-mutation owner

@@ -79,6 +79,8 @@ void *mmay_bytecode_jit_call(MarimayBytecodeJitContext *context, uint32_t pc,
     const MarimayBytecodeInstruction *instruction, const MarimayBytecodePreparedCall *call);
 void *mmay_bytecode_jit_return(MarimayBytecodeJitContext *context, uint32_t pc,
     const MarimayBytecodeInstruction *instruction);
+/* Enter a marked segment start. Native call continuations reset emission proofs
+ * separately before transferring through their internal labels. */
 void mmay_bytecode_jit_enter(const MarimayBytecodeJitFunction *compiled,
     MarimayBytecodeJitContext *context, size_t pc);
 

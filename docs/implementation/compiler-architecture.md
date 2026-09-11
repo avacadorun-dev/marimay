@@ -631,6 +631,26 @@ failure sweeps, fuel-mode and pinned dependency preparation tests. Its focused
 call owners prove native entry across nested calls, deep logical recursion,
 source exits, allocation failure cleanup and managed roots across cold GC.
 
+`vm_jit_aliases.c` behind `vm_jit_aliases.h` owns emission-time equivalence
+between exact-type/layout array and record registers. It uses bounded caller
+storage and retains no managed pointers. The emitter still writes every complete
+reference to its VM register and invalidates the destination's own cached view.
+A later access may bind through a canonical register whose value is still equal.
+Overwriting a canonical register detaches its dependents; independent segment
+entries and native call/return boundaries reset all relations. The focused
+`test_jit_aliases.c` owner checks relation changes and actual native access,
+precise exits, bounded fuel and allocator cleanup; existing view/root owners
+retain growth, collection, recursion and stale-view coverage.
+
+`vm_jit_record_reads.c` behind `vm_jit_record_reads.h` owns bounded,
+emission-time record-field value numbering. Exact result types/layouts and
+unchanged canonical receiver registers are required. Register writes invalidate
+saved values and dependent receivers; every segment entry, cold operation and
+native transition resets the table. Record stores remain cold. No managed value
+or allocation belongs to this analysis. `test_jit_record_reads.c` owns overwrite,
+field/layout separation, actual native reuse, cold mutation and fuel/failure
+comparisons against ordinary VM execution.
+
 `vm_jit_arrays.c` owns the nonallocating scalar-push bridge: an exact checked
 view and spare-capacity guard precede the existing runtime mutation owner.
 `test_jit_array_push.c` proves native execution without allocation, all scalar

@@ -1,5 +1,7 @@
 /* Machine-code lowering for verified nonallocating VM segments. */
 #include "vm_jit_internal.h"
+#include "vm_jit_aliases.h"
+#include "vm_jit_record_reads.h"
 #include "bytecode_internal.h"
 #include "sljitLir.h"
 #include "vm_jit_memory.h"
@@ -18,6 +20,8 @@ typedef struct Emitter {
     size_t pc;
     size_t restore;
     bool meter_fuel;
+    MarimayBytecodeJitAliases *aliases;
+    MarimayBytecodeJitRecordReads *reads;
 } Emitter;
 
 static sljit_sw slot(uint32_t reg) {
@@ -32,13 +36,16 @@ static void load(Emitter *e, int target, uint32_t reg) {
         target, 0, SLJIT_MEM1(REGS), slot(reg));
 }
 static void save(Emitter *e, uint32_t reg, int source) {
+    mmay_bytecode_jit_record_read_write(e->reads, reg);
     const MarimayBytecodeType *types = e->function->register_types.data;
     move(e, types[reg] == MMAY_BYTECODE_TYPE_BOOL ? SLJIT_MOV_U8 : SLJIT_MOV,
         SLJIT_MEM1(REGS), slot(reg), source, 0);
 }
 static void invalidate(Emitter *e, uint32_t reg) {
+    mmay_bytecode_jit_record_read_write(e->reads, reg);
     const MarimayBytecodeType *types = e->function->register_types.data;
     if (!mmay_bytecode_type_is_array(types[reg]) && types[reg] != MMAY_BYTECODE_TYPE_RECORD) return;
+    mmay_bytecode_jit_alias_write(e->aliases, reg);
     sljit_sw base = (sljit_sw)(reg * sizeof(MarimayBytecodeJitBinding));
     _Static_assert(offsetof(MarimayManagedArrayView, reference) == 0 && offsetof(MarimayManagedRecordView, reference) == 0, "view identity prefix");
     move(e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_MEM1(BINDS), base + (sljit_sw)offsetof(MarimayBytecodeJitBinding, view));
@@ -58,6 +65,7 @@ static void copy(Emitter *e, uint32_t dst, uint32_t src) {
         move(e, op, SLJIT_MEM1(REGS), slot(dst) + (sljit_sw)(8*i), SLJIT_R0, 0);
     }
     invalidate(e, dst);
+    mmay_bytecode_jit_alias_copy(e->aliases, dst, src);
 }
 static void leave(Emitter *e) {
     if (e->meter_fuel && e->restore) sljit_emit_op2(e->c, SLJIT_ADD, FUEL, 0, FUEL, 0, SLJIT_IMM, (sljit_sw)e->restore);
@@ -103,6 +111,8 @@ static void reload(Emitter *e) {
     move(e, SLJIT_MOV, EPOCH, 0, SLJIT_MEM1(CTX), offsetof(MarimayBytecodeJitContext, epoch));
 }
 static void transition(Emitter *e, const MarimayBytecodeImageOperation *operation) {
+    mmay_bytecode_jit_aliases_reset(e->aliases);
+    mmay_bytecode_jit_record_reads_reset(e->reads);
     bool is_call = operation->opcode == MMAY_OPCODE_CALL_DIRECT
         || operation->opcode == MMAY_OPCODE_CALL_DIRECT_VOID;
     sljit_sw address = 0;
@@ -205,6 +215,7 @@ static struct sljit_jump *retained_view(Emitter *e, uint32_t reg, sljit_sw base)
 
 /* Returns view in R5. No borrowed data address survives a VM safepoint. */
 static void bind(Emitter *e, uint32_t reg) {
+    reg = mmay_bytecode_jit_alias_source(e->aliases, reg);
     sljit_sw base = (sljit_sw)(reg * sizeof(MarimayBytecodeJitBinding));
     struct sljit_jump *hit = sljit_emit_cmp(e->c, SLJIT_EQUAL,
         SLJIT_MEM1(BINDS), base, EPOCH, 0);
@@ -298,6 +309,14 @@ static void record(Emitter *e, const MarimayBytecodeImageOperation *op) {
         leave(e);
         return;
     }
+    uint32_t receiver = mmay_bytecode_jit_alias_source(e->aliases, op->second);
+    uint64_t field = (uint64_t)original->operands[2].signed_value;
+    uint32_t previous = mmay_bytecode_jit_record_read_find(e->reads, receiver, field, op->first);
+    if (previous != UINT32_MAX) {
+        copy(e, op->first, previous);
+        mmay_bytecode_jit_record_read_remember(e->reads, receiver, field, op->first);
+        return;
+    }
     sljit_sw field_offset = (sljit_sw)((uint64_t)original->operands[2].signed_value
         * sizeof(MarimayManagedCell));
     bind(e, op->second);
@@ -314,6 +333,7 @@ static void record(Emitter *e, const MarimayBytecodeImageOperation *op) {
             SLJIT_MEM1(REGS), slot(op->first) + (sljit_sw)(part * 8), SLJIT_R0, 0);
     }
     invalidate(e, op->first);
+    mmay_bytecode_jit_record_read_remember(e->reads, receiver, field, op->first);
 }
 static void scalar(Emitter *e, const MarimayBytecodeImageOperation *op) {
     if (op->opcode == MMAY_OPCODE_COPY) { copy(e, op->first, op->second); return; }
@@ -375,7 +395,13 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
     struct sljit_jump **edges = (struct sljit_jump **)(labels + n);
     struct sljit_compiler *compiler = sljit_create_compiler(allocator);
     if (!compiler) { mmay_deallocate(allocator, scratch, scratch_bytes); return MMAY_CODE_MEMORY_ALLOCATION_FAILED; }
-    Emitter e = {compiler, function, compiled, 0, 0, meter_fuel};
+    uint32_t alias_storage[MMAY_JIT_MAX_REGISTERS];
+    MarimayBytecodeJitAliases aliases;
+    mmay_bytecode_jit_aliases_init(&aliases, function, alias_storage);
+    MarimayBytecodeJitRecordRead read_storage[MMAY_JIT_MAX_REGISTERS];
+    MarimayBytecodeJitRecordReads reads;
+    mmay_bytecode_jit_record_reads_init(&reads, function, read_storage);
+    Emitter e = {compiler, function, compiled, 0, 0, meter_fuel, &aliases, &reads};
     sljit_emit_enter(compiler, 0, SLJIT_ARGS2V(P, P), 6, 5, 0);
     move(&e, SLJIT_MOV, SLJIT_R0, 0, SLJIT_S1, 0);
     reload(&e);
@@ -383,6 +409,10 @@ MarimayCodeMemoryStatus mmay_bytecode_jit_sljit(const MarimayBytecodeImageFuncti
     for (size_t pc = 0; pc < n; ++pc) {
         const MarimayBytecodeImageOperation *op = &image->operations[pc];
         const MarimayBytecodeJitPlanOperation *plan = &compiled->plan[pc];
+        if (plan->starts_segment || !plan->supported) {
+            mmay_bytecode_jit_aliases_reset(&aliases);
+            mmay_bytecode_jit_record_reads_reset(&reads);
+        }
         labels[pc] = sljit_emit_label(compiler);
         e.pc = pc; e.restore = 0;
         if (!plan->supported) { leave(&e); continue; }

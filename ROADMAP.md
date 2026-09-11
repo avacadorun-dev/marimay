@@ -225,3 +225,11 @@ diagnostic evidence, not an additional speedup or a parity claim.
 
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.
+
+[JIT reference aliases and record-field reuse](docs/implementation/evidence/cp42-jit-reference-values-2026-09-11.md) passes the local
+unchanged all32 gate: median sum -5.49%,
+geometric speedup 1.022x, with no confirmed regression.
+The alias-only variant remains rejected. 99/99 ON tests, 14 focused tests in
+sanitizer/Rosetta builds and all32 correctness pass. Exact OFF binary/dependency
+provenance reuses previous interpreter evidence; Native/comparator binaries are
+unchanged. JIT remains opt-in; full Tier1, Linux LSan and parity remain open.
