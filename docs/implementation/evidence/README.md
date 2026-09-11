@@ -243,6 +243,12 @@ records all five participants in one series with the same measured compiler,
 monitor and dispersion are retained; absolute values from different series
 are not a causal code-regression test.
 
+[Source-run phase attribution](cp42-source-phase-profile-2026-09-11.md) records
+two 32-workload diagnostic series with unchanged inputs and exact compiler
+identity. Repeated MIR and bytecode-function verification dominates preparation
+on short cases; it selects a bounded verification-deduplication candidate.
+These are diagnostic measurements, not a new accepted optimization or parity.
+
 [Verified VM trace batching](cp42-vm-trace-batching-2026-09-09.md) records D109,
 the exact array-shift trace contract, exhaustive finite frame/shared-fuel and
 side-exit equivalence, a passing 32-workload VM replay and paired D108/candidate

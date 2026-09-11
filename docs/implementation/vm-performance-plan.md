@@ -238,6 +238,17 @@ passes all 160 correctness outcomes; identical Native/Go/Rust/Bun binaries
 run slower across this series, so cross-series absolute times are not a code
 regression test. The overall Go/Rust parity goal remains unchanged.
 
+## Measured source preparation follow-up
+
+The [two source-phase diagnostic series](evidence/cp42-source-phase-profile-2026-09-11.md)
+complete the 20-minute attribution checkpoint started at 01:38:04 UTC on
+September 11. All 384 runs preserve the 32 workloads and exact outputs. They
+show eight bytecode-function verifications per function and substantial repeated
+MIR verification. The next bounded candidate targets redundant checks inside
+program lowering/encoding and the CLI repeat after verified decoding, retaining
+D049 and every public/untrusted admission check. Its implementation and numeric
+acceptance remain pending. This does not replace the overall parity objective.
+
 ## Sequence after this stage
 
 1. Follow the measured object-binding profile. Reduce repeated managed-object validation,

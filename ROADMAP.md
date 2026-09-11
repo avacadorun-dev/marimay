@@ -182,5 +182,11 @@ These local-unverified timings do not establish a cross-series code regression
 or overall parity. The missed deadline is recorded; JIT remains OFF by default,
 and Linux LSan, full Tier 1 and overall Go/Rust parity remain open.
 
+[Source-run phase attribution](docs/implementation/evidence/cp42-source-phase-profile-2026-09-11.md) records
+two 32-workload diagnostic series with unchanged inputs and exact compiler
+identity. Repeated MIR and bytecode-function verification dominates preparation
+on short cases; it selects a bounded verification-deduplication candidate.
+These are diagnostic measurements, not a new accepted optimization or parity.
+
 Do not replace evidence-based states with unchecked task-list boxes or treat a
 locally implemented slice as publicly shippable.
