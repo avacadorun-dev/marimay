@@ -1,0 +1,1911 @@
+{
+  "status": "completed-diagnosis",
+  "parent_revision": "65220b0c1f685ecaa1fca0be2bb196cca7740939",
+  "record_protocol": {
+    "status": "prepared-not-executed",
+    "started_utc": "2026-09-12T04:46:39.211136+00:00",
+    "question": "Does routing already-allocated records through the new prepare/commit transaction account for the confirmed Native record-create regression?",
+    "parent_revision": "e74872a7a38e378e1dce3dc541fab456ee3cdb08",
+    "source_candidate": "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication",
+    "intervention": "Diagnostic-only replacement of mmay_managed_publish_object with its exact parent implementation; retain candidate string constructor, prepare/commit API, collector, all runtime dependencies and generated benchmark C. No production edits.",
+    "workloads": [
+      "record-create",
+      "record-reference-copy",
+      "title-search-10k",
+      "title-search-100k"
+    ],
+    "method": "Compile both wrapper versions against the same candidate runtime archive and the same generated C object. Compare both relinked diagnostics and the frozen candidate/control with 3 warmups and 11 rotating fresh-process samples, in two independent series. Preserve original arguments/stdout/corpus hashes/64MiB. Counter-only copies establish publication kinds and GC counts. No diagnostic performance result accepts production.",
+    "interpretation": "A repeatable reduction versus the relinked candidate supports the publication-path hypothesis. Compiler/code-layout effects remain possible; do not overclaim a unique instruction-level cause. An unchanged result requires another diagnosis before selecting a code change.",
+    "must_wait_for": "measurement.json terminal rejected-full; no overlap with acceptance timing",
+    "files_sha256": {
+      "catalog.c": "104b30e002ec9f7bc2e530a8a8dfaf131363f75c18f43bb419eb53f387121f6b",
+      "managed_collection.h": "8f58936b94c2d69b4702760208de9829ecdc4b8b18add06aab16643185656ad8",
+      "managed_publication.h": "5cc8cefdbe008f7f9500999bd9e9891a8e0e77a01a96752e3470743656f62a6f",
+      "publication-candidate.c": "453e26da53f2de8ccbce593978d7b935f997172ff2da7545762e0f620f0f425d",
+      "publication-legacy-wrapper.c": "767eace5cf78b8f13ca3c78f7aad95eed5b8c96115881e5a034268df65b5fd66"
+    }
+  },
+  "method_correction": {
+    "declared_utc": "2026-09-12T05:06:21.764560+00:00",
+    "reason": "The first diagnostic retains each full host snapshot inside an ever-growing in-memory result and rewrites it after every process. The final result is 35,332,396 bytes; series duration grows from 42.8s to 88.3s and small-process latencies rise. This is a measurement-harness confound, not accepted speed evidence. Preserve the entire first result.",
+    "change": "Write full host snapshots to an append-only JSONL journal and keep only their UTC in the compact result. Keep all binaries, original arguments, counters, 3 warmups and 11 samples, two series and balanced participant order unchanged. Repeat this diagnostic only; do not change or repeat the rejected acceptance series.",
+    "prior_result": "result.json",
+    "purpose": "Bound parent memory/serialization overhead for a more reliable publication-path diagnosis."
+  },
+  "native_series": [
+    {
+      "record-create": {
+        "frozen-before": {
+          "median_ms": 23.344583,
+          "p90_ms": 23.722417,
+          "raw_ms": [
+            23.54375,
+            40.164959,
+            23.1305,
+            23.048375,
+            23.344583,
+            23.210584,
+            23.173792,
+            23.428875,
+            23.722417,
+            23.537791,
+            23.224625
+          ]
+        },
+        "frozen-candidate": {
+          "median_ms": 24.958333,
+          "p90_ms": 25.151375,
+          "raw_ms": [
+            25.741958,
+            25.151375,
+            24.34075,
+            24.876,
+            25.024208,
+            24.86075,
+            24.958333,
+            24.624208,
+            24.647541,
+            24.95875,
+            24.981417
+          ]
+        },
+        "candidate": {
+          "median_ms": 24.73525,
+          "p90_ms": 24.812083,
+          "raw_ms": [
+            24.84775,
+            24.7965,
+            24.739375,
+            24.711667,
+            24.264291,
+            24.459792,
+            24.364917,
+            24.812083,
+            24.784208,
+            24.689042,
+            24.73525
+          ]
+        },
+        "legacy-wrapper": {
+          "median_ms": 22.9895,
+          "p90_ms": 23.410541,
+          "raw_ms": [
+            22.7155,
+            23.112417,
+            23.410541,
+            22.98875,
+            23.693292,
+            22.903125,
+            23.12825,
+            22.547542,
+            22.9895,
+            22.905917,
+            23.210167
+          ]
+        }
+      },
+      "record-reference-copy": {
+        "frozen-before": {
+          "median_ms": 6.881167,
+          "p90_ms": 7.045583,
+          "raw_ms": [
+            6.971625,
+            6.791,
+            6.938917,
+            7.009833,
+            7.045583,
+            7.280791,
+            6.798792,
+            6.852083,
+            6.796,
+            6.873875,
+            6.881167
+          ]
+        },
+        "frozen-candidate": {
+          "median_ms": 6.933,
+          "p90_ms": 7.054083,
+          "raw_ms": [
+            6.983417,
+            6.86275,
+            6.809625,
+            7.054083,
+            7.016625,
+            6.933,
+            6.852334,
+            6.874708,
+            6.913041,
+            6.949833,
+            7.18075
+          ]
+        },
+        "candidate": {
+          "median_ms": 6.855583,
+          "p90_ms": 7.007458,
+          "raw_ms": [
+            6.868792,
+            6.865875,
+            6.763666,
+            6.859,
+            7.007458,
+            7.068542,
+            6.816125,
+            6.83525,
+            6.855583,
+            6.714666,
+            6.81875
+          ]
+        },
+        "legacy-wrapper": {
+          "median_ms": 6.878584,
+          "p90_ms": 7.049125,
+          "raw_ms": [
+            6.878584,
+            6.715834,
+            6.833333,
+            6.913292,
+            7.049125,
+            6.7765,
+            6.901917,
+            7.02325,
+            6.768,
+            7.098917,
+            6.8185
+          ]
+        }
+      },
+      "title-search-10k": {
+        "frozen-before": {
+          "median_ms": 7.604042,
+          "p90_ms": 7.829333,
+          "raw_ms": [
+            7.410833,
+            7.553083,
+            7.492417,
+            7.463833,
+            7.829333,
+            7.681833,
+            7.8565,
+            7.604042,
+            7.80675,
+            7.556958,
+            7.741208
+          ]
+        },
+        "frozen-candidate": {
+          "median_ms": 6.436167,
+          "p90_ms": 6.749042,
+          "raw_ms": [
+            6.313125,
+            6.436167,
+            6.786459,
+            6.502292,
+            6.259667,
+            6.416125,
+            6.381416,
+            6.749042,
+            6.723791,
+            6.583791,
+            6.388709
+          ]
+        },
+        "candidate": {
+          "median_ms": 6.603584,
+          "p90_ms": 6.756167,
+          "raw_ms": [
+            6.489625,
+            6.756167,
+            6.46325,
+            6.682542,
+            6.374584,
+            6.414542,
+            6.603584,
+            6.653583,
+            6.506292,
+            6.772583,
+            6.608292
+          ]
+        },
+        "legacy-wrapper": {
+          "median_ms": 6.473583,
+          "p90_ms": 6.518292,
+          "raw_ms": [
+            6.386583,
+            6.289666,
+            6.430083,
+            6.473583,
+            6.501375,
+            6.518292,
+            6.27875,
+            6.494917,
+            6.517458,
+            6.341291,
+            6.954208
+          ]
+        }
+      },
+      "title-search-100k": {
+        "frozen-before": {
+          "median_ms": 59.065542,
+          "p90_ms": 66.182125,
+          "raw_ms": [
+            65.458375,
+            58.768917,
+            66.014584,
+            66.557417,
+            57.575083,
+            65.898083,
+            59.065542,
+            57.017208,
+            57.66575,
+            66.182125,
+            58.052208
+          ]
+        },
+        "frozen-candidate": {
+          "median_ms": 44.286417,
+          "p90_ms": 47.78825,
+          "raw_ms": [
+            44.286417,
+            44.205334,
+            44.192333,
+            47.78825,
+            48.539125,
+            44.203209,
+            47.785291,
+            47.577041,
+            44.760292,
+            44.238208,
+            44.070666
+          ]
+        },
+        "candidate": {
+          "median_ms": 47.196333,
+          "p90_ms": 48.311416,
+          "raw_ms": [
+            48.969416,
+            48.311416,
+            48.224292,
+            44.878417,
+            44.1385,
+            43.8935,
+            44.372083,
+            47.196333,
+            47.565583,
+            44.708917,
+            47.265584
+          ]
+        },
+        "legacy-wrapper": {
+          "median_ms": 44.413375,
+          "p90_ms": 47.646125,
+          "raw_ms": [
+            44.651458,
+            44.282333,
+            47.646125,
+            44.283917,
+            47.45125,
+            47.584125,
+            44.413375,
+            44.309625,
+            44.095875,
+            47.899375,
+            44.072375
+          ]
+        }
+      }
+    },
+    {
+      "record-create": {
+        "frozen-before": {
+          "median_ms": 23.315042,
+          "p90_ms": 23.558541,
+          "raw_ms": [
+            23.149834,
+            23.462333,
+            23.121708,
+            23.309209,
+            23.339209,
+            23.558541,
+            23.514625,
+            23.315042,
+            23.266958,
+            23.628125,
+            22.976042
+          ]
+        },
+        "frozen-candidate": {
+          "median_ms": 24.995666,
+          "p90_ms": 25.205709,
+          "raw_ms": [
+            25.0895,
+            24.995666,
+            24.68775,
+            24.993708,
+            25.205709,
+            24.919417,
+            25.019041,
+            24.828541,
+            26.134334,
+            24.85375,
+            25.088375
+          ]
+        },
+        "candidate": {
+          "median_ms": 24.743417,
+          "p90_ms": 24.906334,
+          "raw_ms": [
+            25.022,
+            24.903042,
+            24.524708,
+            24.826875,
+            24.358375,
+            24.234708,
+            24.743417,
+            24.731625,
+            24.710833,
+            24.806333,
+            24.906334
+          ]
+        },
+        "legacy-wrapper": {
+          "median_ms": 23.17325,
+          "p90_ms": 23.414708,
+          "raw_ms": [
+            23.183583,
+            23.020792,
+            23.051834,
+            23.17325,
+            24.140583,
+            23.231917,
+            23.414708,
+            22.658,
+            23.245166,
+            23.073333,
+            23.123542
+          ]
+        }
+      },
+      "record-reference-copy": {
+        "frozen-before": {
+          "median_ms": 6.943542,
+          "p90_ms": 7.110583,
+          "raw_ms": [
+            6.903542,
+            6.816875,
+            7.438708,
+            6.943542,
+            7.110583,
+            6.843167,
+            6.817208,
+            7.066333,
+            7.072292,
+            6.98175,
+            6.896459
+          ]
+        },
+        "frozen-candidate": {
+          "median_ms": 6.959583,
+          "p90_ms": 7.278459,
+          "raw_ms": [
+            6.983584,
+            7.278459,
+            6.807125,
+            6.8775,
+            6.818917,
+            7.086291,
+            7.071875,
+            7.463959,
+            6.893416,
+            6.959583,
+            6.88575
+          ]
+        },
+        "candidate": {
+          "median_ms": 6.936292,
+          "p90_ms": 7.152834,
+          "raw_ms": [
+            7.158709,
+            7.010708,
+            6.950291,
+            7.0215,
+            6.936292,
+            6.765375,
+            6.752208,
+            6.855167,
+            7.152834,
+            6.907959,
+            6.861208
+          ]
+        },
+        "legacy-wrapper": {
+          "median_ms": 6.958958,
+          "p90_ms": 7.172375,
+          "raw_ms": [
+            6.927875,
+            7.337458,
+            6.72425,
+            6.888291,
+            6.832583,
+            6.958958,
+            7.045041,
+            7.172375,
+            6.921125,
+            7.106333,
+            7.068458
+          ]
+        }
+      },
+      "title-search-10k": {
+        "frozen-before": {
+          "median_ms": 7.723917,
+          "p90_ms": 7.90775,
+          "raw_ms": [
+            7.416916,
+            7.541041,
+            7.927625,
+            7.738667,
+            7.723917,
+            7.61525,
+            7.336542,
+            7.751125,
+            7.806291,
+            7.5805,
+            7.90775
+          ]
+        },
+        "frozen-candidate": {
+          "median_ms": 6.457375,
+          "p90_ms": 6.540042,
+          "raw_ms": [
+            6.272834,
+            6.540042,
+            6.42125,
+            6.47725,
+            6.286,
+            6.3385,
+            6.368083,
+            6.457375,
+            6.534708,
+            6.508542,
+            6.725917
+          ]
+        },
+        "candidate": {
+          "median_ms": 6.516,
+          "p90_ms": 6.560708,
+          "raw_ms": [
+            6.560708,
+            6.551083,
+            6.334417,
+            6.580584,
+            6.530917,
+            6.46775,
+            6.444125,
+            6.471625,
+            6.517333,
+            6.35375,
+            6.516
+          ]
+        },
+        "legacy-wrapper": {
+          "median_ms": 6.423833,
+          "p90_ms": 6.490416,
+          "raw_ms": [
+            6.423833,
+            6.490416,
+            6.276875,
+            6.293458,
+            6.2635,
+            6.611375,
+            6.458375,
+            6.298416,
+            6.358666,
+            6.4405,
+            6.437834
+          ]
+        }
+      },
+      "title-search-100k": {
+        "frozen-before": {
+          "median_ms": 64.568334,
+          "p90_ms": 66.180959,
+          "raw_ms": [
+            61.758541,
+            66.180959,
+            66.56025,
+            57.450375,
+            65.24275,
+            62.40075,
+            60.915375,
+            64.568334,
+            64.708375,
+            59.37325,
+            65.702458
+          ]
+        },
+        "frozen-candidate": {
+          "median_ms": 44.916417,
+          "p90_ms": 47.998458,
+          "raw_ms": [
+            44.916417,
+            43.734,
+            47.998458,
+            44.7175,
+            44.537416,
+            47.719708,
+            47.86225,
+            44.216041,
+            48.330333,
+            44.261792,
+            47.957459
+          ]
+        },
+        "candidate": {
+          "median_ms": 47.81725,
+          "p90_ms": 48.957,
+          "raw_ms": [
+            47.659208,
+            47.81725,
+            48.20525,
+            48.811625,
+            44.603833,
+            63.316792,
+            44.0725,
+            48.198125,
+            44.61825,
+            48.957,
+            47.537917
+          ]
+        },
+        "legacy-wrapper": {
+          "median_ms": 44.37675,
+          "p90_ms": 47.755084,
+          "raw_ms": [
+            48.2375,
+            44.114125,
+            44.710458,
+            43.812667,
+            47.241291,
+            44.067292,
+            44.744292,
+            43.924083,
+            44.19375,
+            44.37675,
+            47.755084
+          ]
+        }
+      }
+    }
+  ],
+  "record_counters": [
+    {
+      "trial": 0,
+      "workload": "record-create",
+      "variant": "candidate",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/candidate-counts",
+        "record-create",
+        "1024",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "record-create 69574656\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,132096,1024,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          132096,
+          1024,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 0,
+      "workload": "record-create",
+      "variant": "legacy-wrapper",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/legacy-wrapper-counts",
+        "record-create",
+        "1024",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "record-create 69574656\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,132096,1024,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          132096,
+          1024,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 0,
+      "workload": "record-reference-copy",
+      "variant": "candidate",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/candidate-counts",
+        "record-reference-copy",
+        "1024",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "record-reference-copy 69705728\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,1024,1024,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          1024,
+          1024,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 0,
+      "workload": "record-reference-copy",
+      "variant": "legacy-wrapper",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/legacy-wrapper-counts",
+        "record-reference-copy",
+        "1024",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "record-reference-copy 69705728\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,1024,1024,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          1024,
+          1024,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 0,
+      "workload": "title-search-10k",
+      "variant": "candidate",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/candidate-counts",
+        "title-search-10k",
+        "10000",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "title-search-10k 484208\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,0,0,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 0,
+      "workload": "title-search-10k",
+      "variant": "legacy-wrapper",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/legacy-wrapper-counts",
+        "title-search-10k",
+        "10000",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "title-search-10k 484208\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,0,0,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 0,
+      "workload": "title-search-100k",
+      "variant": "candidate",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/candidate-counts",
+        "title-search-100k",
+        "100000",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "title-search-100k 4794208\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,0,0,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 0,
+      "workload": "title-search-100k",
+      "variant": "legacy-wrapper",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/legacy-wrapper-counts",
+        "title-search-100k",
+        "100000",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "title-search-100k 4794208\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,0,0,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 1,
+      "workload": "record-create",
+      "variant": "candidate",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/candidate-counts",
+        "record-create",
+        "1024",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "record-create 69574656\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,132096,1024,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          132096,
+          1024,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 1,
+      "workload": "record-create",
+      "variant": "legacy-wrapper",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/legacy-wrapper-counts",
+        "record-create",
+        "1024",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "record-create 69574656\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,132096,1024,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          132096,
+          1024,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 1,
+      "workload": "record-reference-copy",
+      "variant": "candidate",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/candidate-counts",
+        "record-reference-copy",
+        "1024",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "record-reference-copy 69705728\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,1024,1024,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          1024,
+          1024,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 1,
+      "workload": "record-reference-copy",
+      "variant": "legacy-wrapper",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/legacy-wrapper-counts",
+        "record-reference-copy",
+        "1024",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "record-reference-copy 69705728\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,1024,1024,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          1024,
+          1024,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 1,
+      "workload": "title-search-10k",
+      "variant": "candidate",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/candidate-counts",
+        "title-search-10k",
+        "10000",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "title-search-10k 484208\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,0,0,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 1,
+      "workload": "title-search-10k",
+      "variant": "legacy-wrapper",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/legacy-wrapper-counts",
+        "title-search-10k",
+        "10000",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "title-search-10k 484208\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,0,0,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 1,
+      "workload": "title-search-100k",
+      "variant": "candidate",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/candidate-counts",
+        "title-search-100k",
+        "100000",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "title-search-100k 4794208\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,0,0,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    },
+    {
+      "trial": 1,
+      "workload": "title-search-100k",
+      "variant": "legacy-wrapper",
+      "command": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-record-diagnosis/legacy-wrapper-counts",
+        "title-search-100k",
+        "100000",
+        "128"
+      ],
+      "exit_code": 0,
+      "stdout": "title-search-100k 4794208\n",
+      "stderr": "RECORD_PUBLICATION {\"publications\":[0,0,0,0,0,0,0],\"collections\":0,\"dead_objects\":0}\n",
+      "counts": {
+        "publications": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ],
+        "collections": 0,
+        "dead_objects": 0
+      }
+    }
+  ],
+  "off_protocol": {
+    "started_utc": "2026-09-12T05:05:35.667747+00:00",
+    "question": "Why does rejected OFF Dijkstra have a repeatable 2.2s/2.7s distribution while its exact control stays near 2.2s?",
+    "method": "Twelve alternating pairs on the original workload/arguments. Six pairs collect a one-second 1ms macOS sample of each exact owned VM process; six have no sampling. Record wait4 user/system CPU, faults and context switches for the VM child alone, plus sampled stacks and image addresses. No source, binary, input, limit or execution fuel change. No performance acceptance or favorable rerun is derived from these diagnostic observations.",
+    "interpretation": "CPU time versus elapsed distinguishes extra CPU work from descheduling; sampled paths may localize it. Profiles are diagnostic and can perturb execution. ASLR/layout correlation is a hypothesis only.",
+    "commands": {
+      "before": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-string-views-v4-off/mmay",
+        "run",
+        "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/dijkstra",
+        "--engine",
+        "vm",
+        "--max-heap-bytes",
+        "67108864"
+      ],
+      "candidate": [
+        "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off/mmay",
+        "run",
+        "/workspace/Projects/Marimay/algorithm-benchmarks/marimay/benchmarks/dijkstra",
+        "--engine",
+        "vm",
+        "--max-heap-bytes",
+        "67108864"
+      ]
+    },
+    "binaries": {
+      "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-string-views-v4-off/mmay": "65107ff2c6369bfa6dd31913830eb88445f188d4c09438209feaed50130fbbfa",
+      "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off/mmay": "8efff527beba315131a1c45f6ef8747e410c2c39e96f1ed5fbff2d00f1edae56"
+    },
+    "rejection_commit": "65220b0c1f685ecaa1fca0be2bb196cca7740939"
+  },
+  "off_observations": [
+    {
+      "trial": 0,
+      "variant": "before",
+      "sampled": true,
+      "pid": 77874,
+      "started_utc": "2026-09-12T05:05:55.926390+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77874",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/00-before.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77874 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77874 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/00-before.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:05:58.261141+00:00",
+      "elapsed_ms": 2333.834666,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.231704,
+        "ru_stime": 0.027274,
+        "ru_maxrss": 20938752,
+        "ru_minflt": 1469,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 2,
+        "ru_nivcsw": 1357
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 0,
+      "variant": "candidate",
+      "sampled": true,
+      "pid": 77879,
+      "started_utc": "2026-09-12T05:05:58.311194+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77879",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/00-candidate.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77879 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77879 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/00-candidate.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:00.647903+00:00",
+      "elapsed_ms": 2335.925,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.233211,
+        "ru_stime": 0.029493,
+        "ru_maxrss": 20561920,
+        "ru_minflt": 1447,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1472
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 1,
+      "variant": "candidate",
+      "sampled": false,
+      "pid": 77886,
+      "started_utc": "2026-09-12T05:06:00.697701+00:00",
+      "finished_utc": "2026-09-12T05:06:02.951283+00:00",
+      "elapsed_ms": 2252.911708,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.214805,
+        "ru_stime": 0.020392999999999998,
+        "ru_maxrss": 20480000,
+        "ru_minflt": 1442,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 515
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 1,
+      "variant": "before",
+      "sampled": false,
+      "pid": 77890,
+      "started_utc": "2026-09-12T05:06:03.002045+00:00",
+      "finished_utc": "2026-09-12T05:06:05.411417+00:00",
+      "elapsed_ms": 2408.703666,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.22554,
+        "ru_stime": 0.025646,
+        "ru_maxrss": 21020672,
+        "ru_minflt": 1475,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 582
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 2,
+      "variant": "before",
+      "sampled": true,
+      "pid": 77894,
+      "started_utc": "2026-09-12T05:06:05.464123+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77894",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/02-before.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77894 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77894 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/02-before.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:07.798494+00:00",
+      "elapsed_ms": 2333.789,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.239155,
+        "ru_stime": 0.022778,
+        "ru_maxrss": 21053440,
+        "ru_minflt": 1477,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1429
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 2,
+      "variant": "candidate",
+      "sampled": true,
+      "pid": 77900,
+      "started_utc": "2026-09-12T05:06:07.854601+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77900",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/02-candidate.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77900 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77900 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/02-candidate.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:10.186367+00:00",
+      "elapsed_ms": 2331.209708,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.242528,
+        "ru_stime": 0.020988,
+        "ru_maxrss": 20643840,
+        "ru_minflt": 1452,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1462
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 3,
+      "variant": "candidate",
+      "sampled": false,
+      "pid": 77912,
+      "started_utc": "2026-09-12T05:06:10.239917+00:00",
+      "finished_utc": "2026-09-12T05:06:12.520345+00:00",
+      "elapsed_ms": 2279.950042,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.24343,
+        "ru_stime": 0.010687,
+        "ru_maxrss": 20463616,
+        "ru_minflt": 1441,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 584
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 3,
+      "variant": "before",
+      "sampled": false,
+      "pid": 77916,
+      "started_utc": "2026-09-12T05:06:12.574270+00:00",
+      "finished_utc": "2026-09-12T05:06:14.841201+00:00",
+      "elapsed_ms": 2266.468833,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.236634,
+        "ru_stime": 0.012187,
+        "ru_maxrss": 21053440,
+        "ru_minflt": 1477,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 484
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 4,
+      "variant": "before",
+      "sampled": true,
+      "pid": 77921,
+      "started_utc": "2026-09-12T05:06:14.893241+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77921",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/04-before.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77921 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77921 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/04-before.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:17.246877+00:00",
+      "elapsed_ms": 2353.244041,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.255994,
+        "ru_stime": 0.012521,
+        "ru_maxrss": 20889600,
+        "ru_minflt": 1467,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1475
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 4,
+      "variant": "candidate",
+      "sampled": true,
+      "pid": 77927,
+      "started_utc": "2026-09-12T05:06:17.300763+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77927",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/04-candidate.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77927 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77927 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/04-candidate.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:20.084250+00:00",
+      "elapsed_ms": 2783.07575,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.698586,
+        "ru_stime": 0.022614,
+        "ru_maxrss": 21168128,
+        "ru_minflt": 1484,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1555
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 5,
+      "variant": "candidate",
+      "sampled": false,
+      "pid": 77932,
+      "started_utc": "2026-09-12T05:06:20.139336+00:00",
+      "finished_utc": "2026-09-12T05:06:22.403795+00:00",
+      "elapsed_ms": 2264.077417,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.224563,
+        "ru_stime": 0.024322999999999997,
+        "ru_maxrss": 20480000,
+        "ru_minflt": 1443,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 543
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 5,
+      "variant": "before",
+      "sampled": false,
+      "pid": 77943,
+      "started_utc": "2026-09-12T05:06:22.458794+00:00",
+      "finished_utc": "2026-09-12T05:06:24.709861+00:00",
+      "elapsed_ms": 2250.730709,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.217094,
+        "ru_stime": 0.023748,
+        "ru_maxrss": 20955136,
+        "ru_minflt": 1473,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 617
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 6,
+      "variant": "before",
+      "sampled": true,
+      "pid": 77948,
+      "started_utc": "2026-09-12T05:06:24.763485+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77948",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/06-before.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77948 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77948 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/06-before.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:27.089160+00:00",
+      "elapsed_ms": 2325.364875,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.227377,
+        "ru_stime": 0.024956,
+        "ru_maxrss": 21069824,
+        "ru_minflt": 1479,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1372
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 6,
+      "variant": "candidate",
+      "sampled": true,
+      "pid": 77953,
+      "started_utc": "2026-09-12T05:06:27.144038+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77953",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/06-candidate.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77953 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77953 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/06-candidate.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:29.482171+00:00",
+      "elapsed_ms": 2337.860875,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.2332,
+        "ru_stime": 0.027301,
+        "ru_maxrss": 20561920,
+        "ru_minflt": 1448,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1497
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 7,
+      "variant": "candidate",
+      "sampled": false,
+      "pid": 77958,
+      "started_utc": "2026-09-12T05:06:29.538114+00:00",
+      "finished_utc": "2026-09-12T05:06:31.785111+00:00",
+      "elapsed_ms": 2246.697583,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.212787,
+        "ru_stime": 0.021082999999999998,
+        "ru_maxrss": 20430848,
+        "ru_minflt": 1440,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 409
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 7,
+      "variant": "before",
+      "sampled": false,
+      "pid": 77964,
+      "started_utc": "2026-09-12T05:06:31.842562+00:00",
+      "finished_utc": "2026-09-12T05:06:34.110209+00:00",
+      "elapsed_ms": 2267.365834,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.220797,
+        "ru_stime": 0.024093999999999997,
+        "ru_maxrss": 21037056,
+        "ru_minflt": 1477,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 542
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 8,
+      "variant": "before",
+      "sampled": true,
+      "pid": 77968,
+      "started_utc": "2026-09-12T05:06:34.168127+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77968",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/08-before.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77968 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77968 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/08-before.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:36.506125+00:00",
+      "elapsed_ms": 2337.731292,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.244153,
+        "ru_stime": 0.02727,
+        "ru_maxrss": 20856832,
+        "ru_minflt": 1466,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1477
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 8,
+      "variant": "candidate",
+      "sampled": true,
+      "pid": 77973,
+      "started_utc": "2026-09-12T05:06:36.561473+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77973",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/08-candidate.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77973 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77973 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/08-candidate.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:38.910255+00:00",
+      "elapsed_ms": 2348.511959,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.245792,
+        "ru_stime": 0.032799999999999996,
+        "ru_maxrss": 20561920,
+        "ru_minflt": 1448,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1883
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 9,
+      "variant": "candidate",
+      "sampled": false,
+      "pid": 77980,
+      "started_utc": "2026-09-12T05:06:38.970428+00:00",
+      "finished_utc": "2026-09-12T05:06:41.242596+00:00",
+      "elapsed_ms": 2271.9755,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.228881,
+        "ru_stime": 0.026565,
+        "ru_maxrss": 20430848,
+        "ru_minflt": 1440,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 875
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 9,
+      "variant": "before",
+      "sampled": false,
+      "pid": 77985,
+      "started_utc": "2026-09-12T05:06:41.300061+00:00",
+      "finished_utc": "2026-09-12T05:06:43.563214+00:00",
+      "elapsed_ms": 2262.926625,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.225475,
+        "ru_stime": 0.02523,
+        "ru_maxrss": 20987904,
+        "ru_minflt": 1474,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 1,
+        "ru_nivcsw": 535
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 10,
+      "variant": "before",
+      "sampled": true,
+      "pid": 77996,
+      "started_utc": "2026-09-12T05:06:43.645118+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "77996",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/10-before.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 77996 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 77996 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/10-before.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:45.956257+00:00",
+      "elapsed_ms": 2310.926708,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.228819,
+        "ru_stime": 0.024655,
+        "ru_maxrss": 21102592,
+        "ru_minflt": 1481,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1342
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 10,
+      "variant": "candidate",
+      "sampled": true,
+      "pid": 78001,
+      "started_utc": "2026-09-12T05:06:46.014052+00:00",
+      "sampler": {
+        "command": [
+          "/usr/bin/sample",
+          "78001",
+          "1",
+          "1",
+          "-file",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/10-candidate.sample"
+        ],
+        "exit_code": 0,
+        "stdout": "",
+        "stderr": "Sampling process 78001 for 1 second with 1 millisecond of run time between samples\nSampling completed, processing symbols...\nSample analysis of process 78001 written to file /workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off-tail-diagnosis/10-candidate.sample\n"
+      },
+      "finished_utc": "2026-09-12T05:06:48.810421+00:00",
+      "elapsed_ms": 2796.108375,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.6957999999999998,
+        "ru_stime": 0.027424,
+        "ru_maxrss": 21364736,
+        "ru_minflt": 1497,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 1512
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 11,
+      "variant": "candidate",
+      "sampled": false,
+      "pid": 78006,
+      "started_utc": "2026-09-12T05:06:48.871177+00:00",
+      "finished_utc": "2026-09-12T05:06:51.118792+00:00",
+      "elapsed_ms": 2247.404292,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.21,
+        "ru_stime": 0.021817,
+        "ru_maxrss": 20463616,
+        "ru_minflt": 1442,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 394
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    },
+    {
+      "trial": 11,
+      "variant": "before",
+      "sampled": false,
+      "pid": 78010,
+      "started_utc": "2026-09-12T05:06:51.178468+00:00",
+      "finished_utc": "2026-09-12T05:06:53.602097+00:00",
+      "elapsed_ms": 2423.36525,
+      "exit_code": 0,
+      "usage": {
+        "ru_utime": 2.239739,
+        "ru_stime": 0.023146999999999997,
+        "ru_maxrss": 20922368,
+        "ru_minflt": 1470,
+        "ru_majflt": 1,
+        "ru_inblock": 0,
+        "ru_oublock": 0,
+        "ru_nvcsw": 0,
+        "ru_nivcsw": 709
+      },
+      "stdout": "dijkstra 38672\n",
+      "stderr": ""
+    }
+  ],
+  "off_samples": [
+    {
+      "trial": 0,
+      "variant": "before",
+      "elapsed_ms": 2333.834666,
+      "user_ms": 2231.704,
+      "load_address": "0x1048f0000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        402\n        mmay_bytecode_run_hot  (in mmay)        192\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        126\n        mmay_bytecode_hot_scalar  (in mmay)        100\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        17\n\n"
+    },
+    {
+      "trial": 0,
+      "variant": "candidate",
+      "elapsed_ms": 2335.925,
+      "user_ms": 2233.211,
+      "load_address": "0x104d98000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        406\n        mmay_bytecode_run_hot  (in mmay)        189\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        116\n        mmay_bytecode_hot_scalar  (in mmay)        104\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        13\n        mmay_bytecode_program_same_type  (in mmay)        8\n\n"
+    },
+    {
+      "trial": 2,
+      "variant": "before",
+      "elapsed_ms": 2333.789,
+      "user_ms": 2239.1549999999997,
+      "load_address": "0x104184000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        390\n        mmay_bytecode_run_hot  (in mmay)        191\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        126\n        mmay_bytecode_hot_scalar  (in mmay)        118\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        10\n\n"
+    },
+    {
+      "trial": 2,
+      "variant": "candidate",
+      "elapsed_ms": 2331.209708,
+      "user_ms": 2242.5280000000002,
+      "load_address": "0x1023c4000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        422\n        mmay_bytecode_run_hot  (in mmay)        196\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        120\n        mmay_bytecode_hot_scalar  (in mmay)        86\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        12\n\n"
+    },
+    {
+      "trial": 4,
+      "variant": "before",
+      "elapsed_ms": 2353.244041,
+      "user_ms": 2255.9939999999997,
+      "load_address": "0x104330000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        365\n        mmay_bytecode_run_hot  (in mmay)        193\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        138\n        mmay_bytecode_hot_scalar  (in mmay)        124\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        19\n        mmay_bytecode_program_same_type  (in mmay)        5\n\n"
+    },
+    {
+      "trial": 4,
+      "variant": "candidate",
+      "elapsed_ms": 2783.07575,
+      "user_ms": 2698.5860000000002,
+      "load_address": "0x102918000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        487\n        mmay_bytecode_run_hot  (in mmay)        141\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        107\n        mmay_bytecode_hot_scalar  (in mmay)        95\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        12\n\n"
+    },
+    {
+      "trial": 6,
+      "variant": "before",
+      "elapsed_ms": 2325.364875,
+      "user_ms": 2227.377,
+      "load_address": "0x102448000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        411\n        mmay_bytecode_run_hot  (in mmay)        177\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        130\n        mmay_bytecode_hot_scalar  (in mmay)        99\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        14\n        mmay_bytecode_run_program  (in mmay)        6\n        mmay_bytecode_program_same_type  (in mmay)        5\n\n"
+    },
+    {
+      "trial": 6,
+      "variant": "candidate",
+      "elapsed_ms": 2337.860875,
+      "user_ms": 2233.2000000000003,
+      "load_address": "0x102bac000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        401\n        mmay_bytecode_run_hot  (in mmay)        185\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        121\n        mmay_bytecode_hot_scalar  (in mmay)        110\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        19\n\n"
+    },
+    {
+      "trial": 8,
+      "variant": "before",
+      "elapsed_ms": 2337.731292,
+      "user_ms": 2244.153,
+      "load_address": "0x104860000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        377\n        mmay_bytecode_run_hot  (in mmay)        200\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        125\n        mmay_bytecode_hot_scalar  (in mmay)        111\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        22\n        mmay_bytecode_program_same_type  (in mmay)        7\n\n"
+    },
+    {
+      "trial": 8,
+      "variant": "candidate",
+      "elapsed_ms": 2348.511959,
+      "user_ms": 2245.792,
+      "load_address": "0x102bd0000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        393\n        mmay_bytecode_run_hot  (in mmay)        182\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        122\n        mmay_bytecode_hot_scalar  (in mmay)        105\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        25\n        mmay_bytecode_program_same_type  (in mmay)        10\n\n"
+    },
+    {
+      "trial": 10,
+      "variant": "before",
+      "elapsed_ms": 2310.926708,
+      "user_ms": 2228.819,
+      "load_address": "0x102ac0000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        388\n        mmay_bytecode_run_hot  (in mmay)        195\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        129\n        mmay_bytecode_hot_scalar  (in mmay)        112\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        12\n\n"
+    },
+    {
+      "trial": 10,
+      "variant": "candidate",
+      "elapsed_ms": 2796.108375,
+      "user_ms": 2695.7999999999997,
+      "load_address": "0x104904000",
+      "top": "Sort by top of stack, same collapsed (when >= 5):\n        mmay_bytecode_hot_array_instruction  (in mmay)        439\n        mmay_bytecode_run_hot  (in mmay)        171\n        mmay_managed_array_scalar_view_get_fast  (in mmay)        118\n        mmay_bytecode_hot_scalar  (in mmay)        101\n        mmay_managed_array_view_get_raw64_fast  (in mmay)        8\n\n"
+    }
+  ],
+  "hot_owner_identity": {
+    "method": "Read-only comparison of archived OFF object files; final compiler hashes remain pinned by the diagnostic protocol. Source owner is unchanged by the rejected candidate. This is not a proof of whole-process layout equivalence.",
+    "owners": {
+      "vm_hot.c": {
+        "objects": {
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-string-views-v4-off/CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_hot.c.o": "f31eaa66d5b39f3e309a5fe8afe35098eb9847d5e5f429cbba2e1da9785232ba",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off/CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_hot.c.o": "f31eaa66d5b39f3e309a5fe8afe35098eb9847d5e5f429cbba2e1da9785232ba"
+        },
+        "identical": true
+      },
+      "vm_hot_strings.c": {
+        "objects": {
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/jit-string-views-v4-off/CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_hot_strings.c.o": "0b37d21e4ee2e96564238f204caa5bdc035d1436f465700689dfe757685bf18e",
+          "/workspace/Projects/Marimay/marimay-vm-parity/build/string-publication-off/CMakeFiles/mmay_bootstrap.dir/bootstrap/src/bytecode/vm_hot_strings.c.o": "0b37d21e4ee2e96564238f204caa5bdc035d1436f465700689dfe757685bf18e"
+        },
+        "identical": true
+      }
+    }
+  },
+  "raw": {
+    "file": "cp42-string-publication-regressions-2026-09-12-raw.json.gz",
+    "compressed_sha256": "a608f3ee3e09dec5ef5e4cb492770d63d63e850de55617c75d14765494198398",
+    "decoded_sha256": "2c40fa1345e81b908c57d002c41ad6455248500a79b5539abb26415e00d75881",
+    "decoded_bytes": 77246820
+  },
+  "prepared_utc": "2026-09-12T05:14:22.717144+00:00",
+  "next_steps": [
+    "Keep the original string-publication candidate rejected.",
+    "Count OFF hot-array lookups/cache probes and instruction paths against the unchanged controls before selecting a remedy for the bimodal CPU cost.",
+    "Revise shared publication to avoid unnecessary transaction overhead for already allocated objects, using common owned budget/slot logic and all failure tests; require a new declared acceptance stage."
+  ],
+  "open_gates": [
+    "D055 string budget preflight remains unfixed in accepted production",
+    "Title-search and all32 Go/Rust parity",
+    "Complete Tier1 and Linux LSan",
+    "F32 and B0001 baseline gaps"
+  ]
+}

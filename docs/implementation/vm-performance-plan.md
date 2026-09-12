@@ -402,3 +402,10 @@ Title-search improves, but the unchanged all32 gate contains a confirmed Native
 record-create regression. Full104/89 tests,21/21 sanitizer/Rosetta checks, exact
 allocation counters and every Native/ON/OFF timing remain archived. Production
 is restored; D055, title-search parity and complete Tier1 remain open.
+
+[String-publication regression diagnosis](evidence/cp42-string-publication-regressions-2026-09-12.md) records two preserved local
+diagnostics. Record registration volume and a controlled wrapper replacement
+support revising the publication path; OFF Dijkstra's tail consumes extra CPU
+inside otherwise unchanged hot-array owners. The rejected candidate stays
+rejected. Cache/path counters are the next bounded investigation; production,
+title-family closure and full Tier1 status are unchanged.
