@@ -433,3 +433,10 @@ same-stride implementation and its fixed title-pair results. Native improves
 Focused 7/6 tests and all32 Native/ON/OFF correctness pass; full validation and
 full32 timing were not run. Production is restored. Checked JIT publication
 is the next bounded investigation; accepted all32/Tier1 status is unchanged.
+
+[String-array projection V2: rejected early](evidence/cp42-string-array-projection-v2-2026-09-12-rejected.md) records a separate checked
+machine-code projection owner and actual native/C oracle coverage. Focused 8/6
+checks and all32 correctness pass; Native improves 14.47% geometrically, while
+VM+JIT shows no useful gain and misses its 3% minimum. Production is restored.
+Repeated invariant binding stores are the next hypothesis; no full32/Tier1
+acceptance or parity claim follows this rejected fixed series.
