@@ -279,4 +279,13 @@ void mmay_test_vm_hot_regions(void) {
     /* Distinct references with equal metadata, different scalar layouts, an
      * alias write and more live arrays than the four-entry region cache. */
     mmay_test_callable_engines(cache_source, 1053, 0, 0);
+    static const char rebind_source[] =
+        "fn main():int{const a=[1];const b=[2];const c=[4];const d=[8];"
+        "let selected=c;let sum=0;for i in 0..8{sum+=a[0]+b[0]+c[0];"
+        "sum+=selected[0];if i%2==0{selected=a;}else{selected=c;}"
+        "selected[0]+=1;sum+=selected[0];if i==3{selected=d;}}"
+        "return sum+a[0]+c[0]+d[0];}";
+    /* Revisit a recent entry, then rebind the same typed register and mutate
+     * through it. Complete identity must win over either access history. */
+    mmay_test_callable_engines(rebind_source, 183, 0, 0);
 }

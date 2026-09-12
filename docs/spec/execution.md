@@ -896,6 +896,17 @@ preflight is the distinct host-allocation `I0002`/exit `70`. Source-semantic
 array growth checks precede both and retain `ArrayGrowthError.LengthLimit` or
 `NegativeAdditional` rather than becoming execution failures.
 
+String construction may use one contiguous header-and-payload allocation;
+the accounted header, exact counted payload and slot-table bytes remain the
+same. To preserve valid borrowed input bytes while checking the post-collection
+budget, Stage 0 may trace and compute exact reclamation before allocating,
+then physically release unreachable storage after copying the inputs. This
+private interval permits no source execution or unrelated heap mutation and
+must end on every success and failure path before the constructor returns.
+Budget rejection still attempts no allocation for the rejected string.
+Embedded zero bytes, empty strings, root replacement and reference identity
+retain their existing contracts.
+
 Every test and isolate starts with a fresh counter and failure record. A future
 child isolate inherits the configured ceiling value, not its parent's live
 usage, unless an explicit isolate API selects another ceiling. Exceeding another

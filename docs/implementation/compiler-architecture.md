@@ -532,6 +532,32 @@ test oracle remains a separate implementation, not the public VM runner.
 provenance and all-index allocation failures. `test_vm_string_lifetime.cmake`
 owns the source/VM/native report-concat regression and classified budget errors.
 
+`runtime/common/managed_string.c` owns immutable string construction with one
+header/payload allocation and direct concatenation copies. It prepares the
+D055 budget before allocating. `managed_collection.c`, behind the private
+`managed_collection.h`, owns root tracing, exact reclamation forecasting and
+sweep. Its allocation-free token temporarily links unreachable slots in the
+existing gray-link fields; sweep retains ascending slot order and the existing
+generation/retirement rules. Ordinary collection immediately finishes the
+token. String construction may delay sweep until valid borrowed bytes have
+been copied, including unrooted inputs and an output alias of an input.
+`managed_publication.c`, behind `managed_publication.h`, owns checked byte/slot
+preflight and final slot publication. Operations crossing the private API must
+commit or cancel; every pending collection finishes before return. Already
+allocated objects use the same private preparation and slot installer directly,
+with no intervening observer, instead of repeating the external transaction
+validation. The private interval
+allows no source calls, allocator callback reentry into the same heap, or
+unrelated heap mutation. Other object owners retain their existing publication
+wrapper and are not claimed to have adopted string preallocation preflight.
+`managed.c` retains heap/root lifecycle and view-epoch invalidation;
+`managed_internal.c` retains object disposal, tracing dispatch and accounting.
+VM `vm_format.c` delegates concatenation to the shared constructor and assigns
+its target only after success. `runtime/test_string_publication.c` owns exact
+budget precedence, all allocation indices, borrowed slices, output aliasing,
+slot growth/reuse/retirement and collection cancellation; every teardown
+asserts both zero allocator ledgers. No source syntax is added.
+
 D087 leaves instruction-fuel accounting in `bytecode/vm_prepare.c` and host
 policy selection in `cli_run_program.c`/`cli_test_program.c`. D104 additionally
 allows the nonallocating region owner to consume exactly the same successful
@@ -550,9 +576,13 @@ a view across cold dispatch, calls, allocation or GC. Scalar helpers consume
 the existing checked/proven C17 arithmetic contract. Lookup combines the fully
 initialized entry's type, layout and complete managed-reference fields into one
 unsigned difference predicate; zero means every field matched. Cache capacity,
-replacement and lifetime are unchanged. `test_bytecode_vm_hot.c` also covers
+replacement and lifetime are unchanged. Lookup checks the last successful entry
+first, then each other initialized entry at most once with the same predicate.
+The last-entry index resets with the region and never identifies a view without
+validating its full reference/type/layout. `test_bytecode_vm_hot.c` also covers
 cache eviction across equal-metadata references, distinct scalar layouts and
-alias writes. `vm_frame.c` behind
+alias writes, including rebinding a recently read register before mutation.
+`vm_frame.c` behind
 `vm_frame.h` independently owns activation/register/defer/root storage and frame
 stack growth; `vm.c` only sequences these owners and executes cold control-flow,
 panic and cleanup transitions. The single-function execution entry remains the
@@ -616,8 +646,9 @@ validated views and enum reads; `vm_jit_loops.c` delegates D109 composition.
 The binding owner may retain view metadata between native entries and cheaply
 revalidate execution, function/layout/type, full reference/provenance and the
 runtime view epoch before reading object pointers. `runtime/common/managed.c`
-alone advances that epoch in its existing cache-invalidation boundary, before
-any collection work; saturation disables reuse. `test_jit_views.c` proves actual
+alone advances that epoch in its existing cache-invalidation boundary, invoked
+by `managed_collection.c` before tracing; saturation disables reuse.
+`test_jit_views.c` proves actual
 cache hits, mutation/growth, successful and failed GC, stale-slot rejection,
 callee changes, wrong heaps, fresh provenance and saturation. It preserves the
 ordinary checked miss path and requires no new allocation on a binding hit.

@@ -309,6 +309,8 @@ set(MMAY_NATIVE_RUNTIME_SOURCES
   runtime/common/fs_handles.c
   runtime/common/fs.c
   runtime/common/managed.c
+  runtime/common/managed_collection.c
+  runtime/common/managed_publication.c
   runtime/common/managed_array_access.c
   runtime/common/managed_array_capacity.c
   runtime/common/managed_array_storage.c
@@ -676,6 +678,8 @@ add_library(mmay_bootstrap STATIC
   runtime/common/io.c
   runtime/common/test_output.c
   runtime/common/managed.c
+  runtime/common/managed_collection.c
+  runtime/common/managed_publication.c
   runtime/common/managed_array_access.c
   runtime/common/managed_array_capacity.c
   runtime/common/managed_array_storage.c

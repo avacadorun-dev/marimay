@@ -409,3 +409,9 @@ support revising the publication path; OFF Dijkstra's tail consumes extra CPU
 inside otherwise unchanged hot-array owners. The rejected candidate stays
 rejected. Cache/path counters are the next bounded investigation; production,
 title-family closure and full Tier1 status are unchanged.
+
+[Shared strings, publication and recent array views](evidence/cp42-string-publication-v2-2026-09-12.md) is **accepted locally**.
+It records coallocated string storage with D055 preflight, shared publication
+internals and D104 previous-entry-first lookup, full 104/89 tests, 21/21 sanitizer
+and Rosetta checks, exact allocation/cache counters and all 32 paired timings.
+The original title family, all-32-workload parity and full Tier1 remain open.

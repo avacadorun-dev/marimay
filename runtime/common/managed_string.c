@@ -1,56 +1,53 @@
 #include "managed_internal.h"
+#include "managed_publication.h"
 
 #include <limits.h>
 #include <string.h>
 
-MarimayManagedStatus mmay_managed_string_new(
+/* A single allocation retains the unchanged logical header + payload charge.
+ * Collection tracing precedes allocation, while physical sweep waits until
+ * borrowed bytes (including an aliased output's old value) have been copied. */
+static MarimayManagedStatus mmay_managed_string_join(
     MarimayManagedHeap *heap,
-    const unsigned char *bytes,
-    size_t length,
+    const unsigned char *left, size_t left_length,
+    const unsigned char *right, size_t right_length,
     MarimayManagedReference *result
 ) {
-    MarimayManagedString *value = NULL;
-    MarimayManagedStatus status;
-    size_t object_bytes = 0;
-    if (result != NULL) {
-        *result = mmay_managed_invalid_reference();
-    }
-    if (!mmay_managed_heap_valid(heap) || result == NULL
-        || (bytes == NULL && length != 0)
-        || !mmay_size_add(sizeof(*value), length, &object_bytes)) {
+    size_t length = 0, object_bytes = 0;
+    if (result != NULL) *result = mmay_managed_invalid_reference();
+    if (!mmay_managed_heap_valid(heap) || heap->collecting || result == NULL
+        || (left == NULL && left_length != 0)
+        || (right == NULL && right_length != 0)
+        || !mmay_size_add(left_length, right_length, &length)
+        || !mmay_size_add(sizeof(MarimayManagedString), length, &object_bytes))
         return MMAY_MANAGED_INVALID_ARGUMENT;
-    }
     mmay_managed_resource_failure_clear(heap);
-    value = mmay_allocate(&heap->allocator, sizeof(*value));
+    MarimayManagedPublication publication = {0};
+    MarimayManagedStatus status = mmay_managed_publication_prepare(heap,
+        object_bytes, NULL, 0, NULL, 0, true, &publication);
+    if (status != MMAY_MANAGED_OK) return status;
+    MarimayManagedString *value = mmay_allocate(&heap->allocator, object_bytes);
     if (value == NULL) {
-        return mmay_managed_resource_host_failure(heap, sizeof(*value));
+        mmay_managed_publication_cancel(&publication);
+        return mmay_managed_resource_host_failure(heap, object_bytes);
     }
-    memset(value, 0, sizeof(*value));
-    if (length != 0) {
-        value->bytes = mmay_allocate(&heap->allocator, length);
-        if (value->bytes == NULL) {
-            mmay_deallocate(&heap->allocator, value, sizeof(*value));
-            return mmay_managed_resource_host_failure(heap, length);
-        }
-        memcpy(value->bytes, bytes, length);
-        value->length = length;
-    }
-    status = mmay_managed_publish_object(
-        heap,
-        MMAY_MANAGED_OBJECT_STRING,
-        value,
-        object_bytes,
-        NULL,
-        0,
-        NULL,
-        0,
-        result
-    );
-    if (status != MMAY_MANAGED_OK) {
-        mmay_managed_string_dispose(heap, value);
-    }
+    value->length = length;
+    value->bytes = length == 0 ? NULL : (unsigned char *)value + sizeof(*value);
+    if (left_length != 0) memcpy(value->bytes, left, left_length);
+    if (right_length != 0) memcpy(value->bytes + left_length, right, right_length);
+    status = mmay_managed_publication_commit(&publication,
+        MMAY_MANAGED_OBJECT_STRING, value, result);
+    if (status != MMAY_MANAGED_OK) mmay_managed_string_dispose(heap, value);
     return status;
 }
+
+MarimayManagedStatus mmay_managed_string_new(
+    MarimayManagedHeap *heap, const unsigned char *bytes, size_t length,
+    MarimayManagedReference *result
+) {
+    return mmay_managed_string_join(heap, bytes, length, NULL, 0, result);
+}
+
 MarimayManagedStatus mmay_managed_string_bytes(
     const MarimayManagedHeap *heap,
     MarimayManagedReference value,
@@ -81,39 +78,10 @@ MarimayManagedStatus mmay_managed_string_bytes(
 
 MarimayManagedStatus mmay_managed_string_concat(
     MarimayManagedHeap *heap,
-    const unsigned char *left,
-    size_t left_length,
-    const unsigned char *right,
-    size_t right_length,
+    const unsigned char *left, size_t left_length,
+    const unsigned char *right, size_t right_length,
     MarimayManagedReference *result
 ) {
-    size_t length = 0;
-    unsigned char *joined = NULL;
-    MarimayManagedStatus status;
-    if (result != NULL) {
-        *result = mmay_managed_invalid_reference();
-    }
-    if (!mmay_managed_heap_valid(heap) || result == NULL
-        || (left == NULL && left_length != 0)
-        || (right == NULL && right_length != 0)
-        || !mmay_size_add(left_length, right_length, &length)) {
-        return MMAY_MANAGED_INVALID_ARGUMENT;
-    }
-    if (length != 0) {
-        joined = mmay_allocate(&heap->allocator, length);
-        if (joined == NULL) {
-            return mmay_managed_resource_host_failure(heap, length);
-        }
-        if (left_length != 0) {
-            memcpy(joined, left, left_length);
-        }
-        if (right_length != 0) {
-            memcpy(joined + left_length, right, right_length);
-        }
-    }
-    status = mmay_managed_string_new(heap, joined, length, result);
-    if (joined != NULL) {
-        mmay_deallocate(&heap->allocator, joined, length);
-    }
-    return status;
+    return mmay_managed_string_join(heap, left, left_length,
+        right, right_length, result);
 }

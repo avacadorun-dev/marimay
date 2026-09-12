@@ -1240,6 +1240,16 @@ and the net additional accounted `requested` value determine the outcome.
 Budget rejection is failure-atomic and does not attempt the rejected host
 allocation.
 
+The shared string constructor enforces this order before obtaining either
+header or payload storage. Contiguous header/payload storage is permitted with
+the same logical byte charges. An allocation-free trace may forecast exact
+post-sweep bytes while retaining unreachable storage until borrowed inputs
+have been copied; physical sweep must finish before return, including budget,
+host-allocation and publication failures. No source execution or unrelated
+heap mutation may occur in that private interval. This implements the existing
+budget precedence and byte/identity semantics; it does not increase the heap
+limit or require a live root for bytes already valid at constructor entry.
+
 The precedence is source semantics, configured budget, then host allocation:
 negative `reserve` and growth past `int::MAX` retain their typed
 `ArrayGrowthError` cases; a valid operation beyond the configured managed-heap

@@ -27,6 +27,7 @@ typedef struct MarimayBytecodeHotArrays {
     MarimayBytecodeHotArray entries[MMAY_VM_HOT_ARRAYS];
     size_t count;
     size_t next;
+    size_t last;
     MarimayBytecodeHotStrings strings;
 } MarimayBytecodeHotArrays;
 
@@ -54,9 +55,17 @@ static MarimayManagedArrayView *mmay_bytecode_hot_array(
     if (execution == NULL) return NULL;
     const uint32_t *layouts = (const uint32_t *)function->register_layouts.data;
     uint32_t layout = layouts[register_id];
+    /* Every hit still validates the complete reference/type/layout. A miss
+     * visits each other initialized entry once, preserving replacement order. */
+    if (cache->count != 0 && mmay_bytecode_hot_array_same(
+            &cache->entries[cache->last], value, layout)) {
+        return &cache->entries[cache->last].view;
+    }
     for (size_t index = 0; index < cache->count; index += 1) {
+        if (index == cache->last) continue;
         MarimayBytecodeHotArray *entry = &cache->entries[index];
         if (mmay_bytecode_hot_array_same(entry, value, layout)) {
+            cache->last = index;
             return &entry->view;
         }
     }
@@ -75,6 +84,7 @@ static MarimayManagedArrayView *mmay_bytecode_hot_array(
     cache->entries[index].view = view;
     cache->entries[index].type = value.type;
     cache->entries[index].layout = layout;
+    cache->last = index;
     return &cache->entries[index].view;
 }
 
@@ -242,6 +252,7 @@ MMAY_VM_HOT_INLINE void mmay_bytecode_hot_region(const MarimayBytecodeFunction *
     MarimayBytecodeHotArrays cache;
     cache.count = 0;
     cache.next = 0;
+    cache.last = 0;
     cache.strings.count = 0;
     cache.strings.next = 0;
     /* No observer can inspect the frame while this nonallocating region runs.

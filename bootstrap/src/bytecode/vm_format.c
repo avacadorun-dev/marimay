@@ -3,7 +3,7 @@
 #include "mmay/base/integer_text.h"
 #include "mmay/base/number_format.h"
 
-#include <string.h>
+#include "mmay/runtime/string.h"
 
 static bool mmay_bytecode_format_integer_kind(
     MarimayBytecodeType type,
@@ -90,8 +90,8 @@ MarimayBytecodeRunStatus mmay_bytecode_run_string_concat_instruction(
     size_t left_length = 0;
     size_t right_length = 0;
     size_t length = 0;
-    unsigned char *joined = NULL;
-    MarimayBytecodeRunStatus status;
+    MarimayManagedReference result = mmay_managed_invalid_reference();
+    MarimayManagedStatus status;
     if (!mmay_bytecode_execution_string_bytes(
             execution, registers[left], &left_bytes, &left_length
         ) || !mmay_bytecode_execution_string_bytes(
@@ -99,17 +99,12 @@ MarimayBytecodeRunStatus mmay_bytecode_run_string_concat_instruction(
         ) || !mmay_size_add(left_length, right_length, &length)) {
         return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
-    if (length != 0) {
-        joined = mmay_allocate(&execution->allocator, length);
-        if (joined == NULL) return MMAY_BYTECODE_RUN_ALLOCATION_FAILED;
-        if (left_length != 0) memcpy(joined, left_bytes, left_length);
-        if (right_length != 0) {
-            memcpy(joined + left_length, right_bytes, right_length);
-        }
-    }
-    status = mmay_bytecode_execution_new_string(
-        execution, joined, length, &registers[target].as.managed_reference
+    status = mmay_managed_string_concat(
+        &execution->managed_heap, left_bytes, left_length,
+        right_bytes, right_length, &result
     );
-    if (joined != NULL) mmay_deallocate(&execution->allocator, joined, length);
-    return status;
+    /* Keep the destination's input root until the transaction succeeds. */
+    if (status == MMAY_MANAGED_OK)
+        registers[target].as.managed_reference = result;
+    return mmay_bytecode_run_managed_status(status);
 }
