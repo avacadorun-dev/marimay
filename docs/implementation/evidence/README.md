@@ -676,3 +676,10 @@ but VM+JIT elapsed time does not improve. Native also misses its 10k row minimum
 Focused 8/6 and all32 correctness pass; the exact candidate, failed setup logs and
 fixed series remain archived. Production is restored. Map anonymous JIT frames
 before another instruction change; original all32/Tier1 parity remains open.
+
+[Mapped accepted title JIT instructions](cp42-title-jit-map-2026-09-12.md) completes the bounded diagnosis.
+All 434 anonymous leaf observations map across captured code lifetimes; 512 original
+returns and 256 zero-ledger returns pass. The next candidate targets repeated view
+checks within a segment and immediate boolean reloads, preserving all VM stores
+and exact exits. Production, the accepted all32 comparison and parity/Tier1 status
+remain unchanged.
