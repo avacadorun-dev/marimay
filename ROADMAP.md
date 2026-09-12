@@ -354,3 +354,11 @@ Focused 20/5 checks and all32 correctness pass; Native executables are identical
 to accepted controls. The candidate and failed fixed series remain archived;
 production is restored. Next investigate full checked original-Cell string
 projection in the JIT. Original all32 parity and complete Tier1 remain open.
+
+[Inline original-Cell string projection](docs/implementation/evidence/cp42-jit-cell-projection-2026-09-12-rejected.md) is **rejected early**:
+the unchanged VM title pair improves 2.353783%, below its fixed 3% minimum.
+Focused 21/5 tests, 108 native/C-oracle cases and all32 stdout checks pass;
+Native executables are identical to accepted controls. The exact candidate and
+series are archived and production restored. Next measure stable array identity,
+generation and heap-epoch reuse before considering speculative whole-array
+child validation. Original all32 parity and complete Tier1 remain open.
