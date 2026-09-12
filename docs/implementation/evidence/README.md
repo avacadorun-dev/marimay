@@ -735,3 +735,12 @@ all 32 outputs and Native byte identity pass after a recorded C17 fixture repair
 128 diagnostic runs and 64 zero ledgers prove metadata reuse on 98.76% of title100k
 reads. Next test proof-based emitted projection and entry metadata reuse together
 under fresh gates, against accepted production. Full parity/Tier1 remain open.
+
+[Combined certified reads and metadata reuse: rejected early](cp42-jit-string-array-proof-v3-2026-09-12-rejected.md) archives the
+fixed 0.65% title-pair slowdown and restores production. First-attempt focused
+19/5 tests, all 32 outputs and Native byte identity pass. Direct 128-run counters,
+64 zero-ledger returns and exact emitted capture prove both mechanisms execute
+without the required elapsed-time improvement. Stop isolated bridge variants;
+attribute the whole original search loop and source/JIT startup before another
+candidate. Generic checked loop composition is a hypothesis, not acceptance.
+The accepted full comparison, original parity and Tier1 status remain unchanged.
