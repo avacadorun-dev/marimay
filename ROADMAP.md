@@ -347,3 +347,10 @@ all32 correctness pass; Native executables are byte-identical to the accepted
 control. The exact candidate and fixed observations remain archived; production
 is restored. The next hypothesis concerns invalidation of a copied alias's own
 view. Original all32 parity and complete Tier1 remain open.
+
+[Alias-cache JIT V2](docs/implementation/evidence/cp42-jit-local-views-v2-2026-09-12-rejected.md) is **rejected early**: the unchanged VM title
+pair improves 2.995623%, below its fixed 3% minimum (exact ratio 0.970043769715).
+Focused 20/5 checks and all32 correctness pass; Native executables are identical
+to accepted controls. The candidate and failed fixed series remain archived;
+production is restored. Next investigate full checked original-Cell string
+projection in the JIT. Original all32 parity and complete Tier1 remain open.
