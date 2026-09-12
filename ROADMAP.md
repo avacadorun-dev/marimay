@@ -301,3 +301,8 @@ It records coallocated string storage with D055 preflight, shared publication
 internals and D104 previous-entry-first lookup, full 104/89 tests, 21/21 sanitizer
 and Rosetta checks, exact allocation/cache counters and all 32 paired timings.
 The original title family, all-32-workload parity and full Tier1 remain open.
+
+[Title costs after string publication](docs/implementation/evidence/cp42-title-after-publication-2026-09-12.md) records local repeated-entry
+profiles with per-return zero allocator ledgers and a refuted Native alias-cache
+hypothesis. String-array projection and checked JIT publication remain measured
+costs to investigate. Production and all32/Tier1 parity status are unchanged.
