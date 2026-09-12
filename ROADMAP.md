@@ -377,3 +377,11 @@ confirm predicted reuse and 64 zero-ledger returns; the C helper still performs
 almost as many hot-path instructions. Production is restored. Next investigate
 certified projection inside the JIT segment under fresh fixed gates; accepted
 all 32/Tier1 and original parity status remain unchanged.
+
+[Inline certified string-array projection: rejected early](docs/implementation/evidence/cp42-jit-string-array-proof-v2-2026-09-12-rejected.md) archives the
+fixed 1.45% title-pair slowdown and restores production. Focused 18/5 tests,
+all 32 outputs and Native byte identity pass. Direct 128-run counters and 64
+zero-ledger returns prove 7,894,270 title100k reads bypass C; emitted disassembly
+shows complete destination publication remains. Next inspect repeated invariant
+metadata writes under the existing entry-epoch proof from accepted production.
+The accepted full comparison, original parity and Tier1 status remain unchanged.
