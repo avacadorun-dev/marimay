@@ -306,3 +306,9 @@ The original title family, all-32-workload parity and full Tier1 remain open.
 profiles with per-return zero allocator ledgers and a refuted Native alias-cache
 hypothesis. String-array projection and checked JIT publication remain measured
 costs to investigate. Production and all32/Tier1 parity status are unchanged.
+
+[Native title string-projection screening](docs/implementation/evidence/cp42-title-projection-probe-2026-09-12.md) passes its predeclared
+diagnostic thresholds with unchanged counts and zero post-return allocator
+ledgers. It motivates a general descriptor-selected implementation with full
+GC and checked identity support; no production optimization or parity status
+is accepted by this two-row experiment.
