@@ -454,3 +454,10 @@ returns and 256 zero-ledger returns pass. The next candidate targets repeated vi
 checks within a segment and immediate boolean reloads, preserving all VM stores
 and exact exits. Production, the accepted all32 comparison and parity/Tier1 status
 remain unchanged.
+
+[Local JIT view/boolean candidate](evidence/cp42-jit-local-views-2026-09-12-rejected.md) is **rejected early**: the original
+VM title pair improves 2.10%, below its fixed 3% minimum. Focused 19/5 checks and
+all32 correctness pass; Native executables are byte-identical to the accepted
+control. The exact candidate and fixed observations remain archived; production
+is restored. The next hypothesis concerns invalidation of a copied alias's own
+view. Original all32 parity and complete Tier1 remain open.
