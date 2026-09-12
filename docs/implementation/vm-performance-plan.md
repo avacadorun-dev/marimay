@@ -440,3 +440,10 @@ checks and all32 correctness pass; Native improves 14.47% geometrically, while
 VM+JIT shows no useful gain and misses its 3% minimum. Production is restored.
 Repeated invariant binding stores are the next hypothesis; no full32/Tier1
 acceptance or parity claim follows this rejected fixed series.
+
+[String-array projection V3: rejected early](evidence/cp42-string-array-projection-v3-2026-09-12-rejected.md) removes over 98% of
+invariant binding-header publications with unchanged compiled string-read counts,
+but VM+JIT elapsed time does not improve. Native also misses its 10k row minimum.
+Focused 8/6 and all32 correctness pass; the exact candidate, failed setup logs and
+fixed series remain archived. Production is restored. Map anonymous JIT frames
+before another instruction change; original all32/Tier1 parity remains open.
