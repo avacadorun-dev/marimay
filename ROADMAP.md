@@ -282,3 +282,9 @@ phase diagnosis on `78d3070`: shared string creation/storage is the next common
 mechanism, subject to D055 preflight/lifetime obligations and a fresh protocol.
 About 40 ms of VM source preparation remains a separate dependency. No new
 optimization, row closure or parity result is claimed.
+
+[Shared string allocation and budget preflight: rejected candidate](docs/implementation/evidence/cp42-string-publication-2026-09-11-rejected.md) is **rejected**.
+Title-search improves, but the unchanged all32 gate contains a confirmed Native
+record-create regression. Full104/89 tests,21/21 sanitizer/Rosetta checks, exact
+allocation counters and every Native/ON/OFF timing remain archived. Production
+is restored; D055, title-search parity and complete Tier1 remain open.
