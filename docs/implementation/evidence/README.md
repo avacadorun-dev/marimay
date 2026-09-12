@@ -712,3 +712,11 @@ An independent source oracle confirms repeated reads of the same title array.
 Waiting for twice its length in prior reads avoids one-pass text arrays in the
 work-count model. No speedup or new child certificate is accepted; production,
 the accepted all32 comparison and complete Tier1/parity status remain unchanged.
+
+[Adaptive string-array proof: rejected early](cp42-jit-string-array-proof-2026-09-12-rejected.md) preserves the full checked
+certificate candidate and fixed 3.55% title-pair slowdown. Focused 18/5 tests,
+all 32 outputs and Native byte identity pass. Post-rejection 128-run counters
+confirm predicted reuse and 64 zero-ledger returns; the C helper still performs
+almost as many hot-path instructions. Production is restored. Next investigate
+certified projection inside the JIT segment under fresh fixed gates; accepted
+all 32/Tier1 and original parity status remain unchanged.
