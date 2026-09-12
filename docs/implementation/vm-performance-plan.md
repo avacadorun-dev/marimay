@@ -476,3 +476,10 @@ Native executables are identical to accepted controls. The exact candidate and
 series are archived and production restored. Next measure stable array identity,
 generation and heap-epoch reuse before considering speculative whole-array
 child validation. Original all32 parity and complete Tier1 remain open.
+
+[Stable string-array reuse diagnosis](evidence/cp42-string-array-reuse-2026-09-12.md) records 128 unchanged original
+results, four-way counter agreement per workload and 64 zero-ledger returns.
+An independent source oracle confirms repeated reads of the same title array.
+Waiting for twice its length in prior reads avoids one-pass text arrays in the
+work-count model. No speedup or new child certificate is accepted; production,
+the accepted all32 comparison and complete Tier1/parity status remain unchanged.
