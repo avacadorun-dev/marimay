@@ -728,3 +728,10 @@ zero-ledger returns prove 7,894,270 title100k reads bypass C; emitted disassembl
 shows complete destination publication remains. Next inspect repeated invariant
 metadata writes under the existing entry-epoch proof from accepted production.
 The accepted full comparison, original parity and Tier1 status remain unchanged.
+
+[Checked string metadata reuse: rejected early](cp42-jit-string-metadata-2026-09-12-rejected.md) records the fixed 0.62%
+title-pair reduction, below the 3% minimum, and restores production. Focused 18/5,
+all 32 outputs and Native byte identity pass after a recorded C17 fixture repair.
+128 diagnostic runs and 64 zero ledgers prove metadata reuse on 98.76% of title100k
+reads. Next test proof-based emitted projection and entry metadata reuse together
+under fresh gates, against accepted production. Full parity/Tier1 remain open.
