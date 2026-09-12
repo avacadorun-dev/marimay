@@ -655,3 +655,10 @@ diagnostic thresholds with unchanged counts and zero post-return allocator
 ledgers. It motivates a general descriptor-selected implementation with full
 GC and checked identity support; no production optimization or parity status
 is accepted by this two-row experiment.
+
+[String-array projection: rejected early](cp42-string-array-projection-2026-09-12-rejected.md) preserves the general
+same-stride implementation and its fixed title-pair results. Native improves
+15.28% geometrically, but VM+JIT improves only 0.33%, missing its 3% minimum.
+Focused 7/6 tests and all32 Native/ON/OFF correctness pass; full validation and
+full32 timing were not run. Production is restored. Checked JIT publication
+is the next bounded investigation; accepted all32/Tier1 status is unchanged.
