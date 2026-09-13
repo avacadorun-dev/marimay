@@ -744,3 +744,11 @@ without the required elapsed-time improvement. Stop isolated bridge variants;
 attribute the whole original search loop and source/JIT startup before another
 candidate. Generic checked loop composition is a hypothesis, not acceptance.
 The accepted full comparison, original parity and Tier1 status remain unchanged.
+
+[Checked string-search loop composition](cp42-jit-string-search-loop-2026-09-13-rejected.md) is **rejected in the full gate**.
+The title pair improves 9.33% early, but OFF record-create
+P90 exceeds the 5% allowance in both fixed series. Full105/89, sanitizer22,
+fresh x86-64/Rosetta22 and all32 correctness pass; production is restored.
+Raw recovery evidence and a fresh unchanged-production five-way table are retained.
+Shared runtime string construction is the next measured title-family dependency;
+original all32 parity, complete Tier1 and Linux LSan remain open.
