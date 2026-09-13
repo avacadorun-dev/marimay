@@ -213,10 +213,10 @@ regression limits for every workload in JIT and OFF. Exactly one confirmation
 per flagged workload applies the existing rule; all observations are retained.
 Ordinary/prepared frame tests, actual native calls, depth/fuel and precise exits,
 GC/root/layout changes, deterministic failures, full ON/OFF, sanitizer/Rosetta
-and all32 correctness precede the complete timing matrix and main/push outcome.
+and all 32 correctness precede the complete timing matrix and main/push outcome.
 A missed gate or deadline is documented explicitly.
 
-The first candidate passed focused correctness and all32 replay but missed all
+The first candidate passed focused correctness and all 32 replay but missed all
 early targets: stack 566.72 to 482.87 ms (-14.8%), queue 592.10 to 481.48 ms
 (-18.7%), DSU 1439.32 to 1358.95 ms (-5.6%). Its binary, replayable patch and
 all observations are preserved. Before the second edit, `SMART-v2.json` extends
@@ -249,7 +249,7 @@ identity evidence, not a replacement OFF timing result. The
 [follow-up evidence](evidence/cp42-sljit-prepared-isolation-2026-09-11.md)
 accepts the opt-in implementation locally: current ON tests cover 95 initial
 passes and one successful recheck after a recorded 978-second system sleep;
-OFF passes 86/86, with new sanitizer/Rosetta tests and all32 replays. The original
+OFF passes 86/86, with new sanitizer/Rosetta tests and all 32 replays. The original
 deadline was missed and remains recorded. A fresh five-participant series
 passes all 160 correctness outcomes; identical Native/Go/Rust/Bun binaries
 run slower across this series, so cross-series absolute times are not a code
@@ -270,7 +270,7 @@ and both complete paired matrices. The JIT median sum falls 3.26%, the interpret
 sum 0.77%, with no 2% median / 5% P90 exceedance on any workload in either mode.
 All 32 complete bytecode encodings remain identical to the baseline while each
 function is checked five times instead of eight. Current full ON/OFF tests and
-focused sanitizer/Rosetta suites plus all32 replays pass. This is local acceptance
+focused sanitizer/Rosetta suites plus all 32 replays pass. This is local acceptance
 of reduced preparation cost, not closure of the overall parity objective.
 
 [JIT execution diagnosis](evidence/cp42-jit-execution-profile-2026-09-11.md)
@@ -279,14 +279,14 @@ transitions. Separate counters show 15 million DSU calls with almost complete
 prepared-layout reuse, while stack alternates layouts. This selects a guarded
 nonallocating activation-path experiment in the shared owners, with a predeclared
 15% early DSU/stack latency target. These are diagnostic samples and counts, not
-an additional accepted speedup; all32, safety and overall parity gates remain.
+an additional accepted speedup; all 32, safety and overall parity gates remain.
 
 [Compiler IPO, shared calls and VM dispatch](evidence/cp42-ipo-shared-vm-2026-09-11.md)
-passes the complete unchanged all32 paired gate in both modes, with geometric
+passes the complete unchanged all 32 paired gate in both modes, with geometric
 mean speedups of 1.196x for JIT and 1.200x for the default interpreter.
 Rejected no-IPO, combined IPO/call and partial cursor variants remain recorded.
 Exact finite/shared fuel, roots, depth and allocation-failure behavior are retained;
-97/97 ON and 87/87 OFF tests plus focused sanitizer/Rosetta and all32 replays pass.
+97/97 ON and 87/87 OFF tests plus focused sanitizer/Rosetta and all 32 replays pass.
 Native runtime objects and Native/Go/Rust/Bun executable hashes match prior evidence.
 JIT remains opt-in; Linux LSan, full Tier1 and overall Go/Rust parity remain open.
 
@@ -310,7 +310,7 @@ useful change; it is not assigned a separate Go/Rust parity program.
 The extra 10% interpreter early target in the cursor experiments was a local
 experiment choice. It remains part of those recorded outcomes but is not a
 standing prerequisite for future JIT work. Future stages declare their own
-measurable improvement target and retain the all32 correctness and regression
+measurable improvement target and retain the all 32 correctness and regression
 checks. JIT remains opt-in under the current platform and safety gates.
 
 ## Sequence after this stage
@@ -320,7 +320,7 @@ checks. JIT remains opt-in under the current platform and safety gates.
    cases. Separately map anonymous native frames before choosing register allocation,
    view-traffic changes or bounded leaf inlining. Inlining requires exact logical-frame
    materialization on exits; retained views require explicit GC/provenance invalidation.
-   These proof obligations remain in addition to the unchanged all32 acceptance gate.
+   These proof obligations remain in addition to the unchanged all 32 acceptance gate.
 2. Address remaining source preparation as its own measured stage. Retain all source-run
    costs and validate any prepared artifact against source/dependency changes,
    corruption and execution options.
@@ -343,10 +343,10 @@ reconstructs interpreter state on exits. These inform the proposed next tier;
 they are not imported implementations or evidence that Marimay already has it.
 
 [JIT reference aliases and record-field reuse](evidence/cp42-jit-reference-values-2026-09-11.md) passes the local
-unchanged all32 gate: median sum -5.49%,
+unchanged all 32 gate: median sum -5.49%,
 geometric speedup 1.022x, with no confirmed regression.
 The alias-only variant remains rejected. 99/99 ON tests, 14 focused tests in
-sanitizer/Rosetta builds and all32 correctness pass. Exact OFF binary/dependency
+sanitizer/Rosetta builds and all 32 correctness pass. Exact OFF binary/dependency
 provenance reuses previous interpreter evidence; Native/comparator binaries are
 unchanged. JIT remains opt-in; full Tier1, Linux LSan and parity remain open.
 
@@ -359,7 +359,7 @@ contaminated first series and all recheck observations are preserved. Full
 Tier 1, Linux LSan and overall Go/Rust parity remain open.
 
 [Text runtime diagnosis and current accepted-version snapshot](evidence/cp42-text-runtime-diagnosis-2026-09-11.md) records
-reproducible string counters and a fresh five-participant all32 comparison of
+reproducible string counters and a fresh five-participant all 32 comparison of
 the unchanged f4c9961 implementation. Both engines duplicate 1.356 GB of
 concatenation copying in report-concat; direct shared-runtime string construction
 is selected for the next experiment, not implemented or accepted. The record
@@ -385,9 +385,9 @@ The unchanged 32-workload comparison, revised user-directed tradeoff policy,
 Native executable hashes remain identical. Overall parity and full Tier 1 remain open.
 
 [Retained string bytes in Native, interpreter and JIT](evidence/cp42-string-views-2026-09-11.md) is **accepted locally**.
-It removes redundant byte validation while preserving original32 inputs, logical
+It removes redundant byte validation while preserving original 32 inputs, logical
 comparison/allocation counts and exact fuel. Full103/88 tests,20/20 sanitizer and
-Rosetta checks, all32 Native/ON/OFF paired timing and a fresh five-way comparison
+Rosetta checks, all 32 Native/ON/OFF paired timing and a fresh five-way comparison
 are recorded. Three rejected candidates remain archived. Title-search stays
 active; all-row parity, known baseline defects and full Tier1 remain open.
 
@@ -398,7 +398,7 @@ About 40 ms of VM source preparation remains a separate dependency. No new
 optimization, row closure or parity result is claimed.
 
 [Shared string allocation and budget preflight: rejected candidate](evidence/cp42-string-publication-2026-09-11-rejected.md) is **rejected**.
-Title-search improves, but the unchanged all32 gate contains a confirmed Native
+Title-search improves, but the unchanged all 32 gate contains a confirmed Native
 record-create regression. Full104/89 tests,21/21 sanitizer/Rosetta checks, exact
 allocation counters and every Native/ON/OFF timing remain archived. Production
 is restored; D055, title-search parity and complete Tier1 remain open.
@@ -419,7 +419,7 @@ The original title family, all-32-workload parity and full Tier1 remain open.
 [Title costs after string publication](evidence/cp42-title-after-publication-2026-09-12.md) records local repeated-entry
 profiles with per-return zero allocator ledgers and a refuted Native alias-cache
 hypothesis. String-array projection and checked JIT publication remain measured
-costs to investigate. Production and all32/Tier1 parity status are unchanged.
+costs to investigate. Production and all 32/Tier1 parity status are unchanged.
 
 [Native title string-projection screening](evidence/cp42-title-projection-probe-2026-09-12.md) passes its predeclared
 diagnostic thresholds with unchanged counts and zero post-return allocator
@@ -430,13 +430,13 @@ is accepted by this two-row experiment.
 [String-array projection: rejected early](evidence/cp42-string-array-projection-2026-09-12-rejected.md) preserves the general
 same-stride implementation and its fixed title-pair results. Native improves
 15.28% geometrically, but VM+JIT improves only 0.33%, missing its 3% minimum.
-Focused 7/6 tests and all32 Native/ON/OFF correctness pass; full validation and
+Focused 7/6 tests and all 32 Native/ON/OFF correctness pass; full validation and
 full32 timing were not run. Production is restored. Checked JIT publication
-is the next bounded investigation; accepted all32/Tier1 status is unchanged.
+is the next bounded investigation; accepted all 32/Tier1 status is unchanged.
 
 [String-array projection V2: rejected early](evidence/cp42-string-array-projection-v2-2026-09-12-rejected.md) records a separate checked
 machine-code projection owner and actual native/C oracle coverage. Focused 8/6
-checks and all32 correctness pass; Native improves 14.47% geometrically, while
+checks and all 32 correctness pass; Native improves 14.47% geometrically, while
 VM+JIT shows no useful gain and misses its 3% minimum. Production is restored.
 Repeated invariant binding stores are the next hypothesis; no full32/Tier1
 acceptance or parity claim follows this rejected fixed series.
@@ -444,45 +444,45 @@ acceptance or parity claim follows this rejected fixed series.
 [String-array projection V3: rejected early](evidence/cp42-string-array-projection-v3-2026-09-12-rejected.md) removes over 98% of
 invariant binding-header publications with unchanged compiled string-read counts,
 but VM+JIT elapsed time does not improve. Native also misses its 10k row minimum.
-Focused 8/6 and all32 correctness pass; the exact candidate, failed setup logs and
+Focused 8/6 and all 32 correctness pass; the exact candidate, failed setup logs and
 fixed series remain archived. Production is restored. Map anonymous JIT frames
-before another instruction change; original all32/Tier1 parity remains open.
+before another instruction change; original all 32/Tier1 parity remains open.
 
 [Mapped accepted title JIT instructions](evidence/cp42-title-jit-map-2026-09-12.md) completes the bounded diagnosis.
 All 434 anonymous leaf observations map across captured code lifetimes; 512 original
 returns and 256 zero-ledger returns pass. The next candidate targets repeated view
 checks within a segment and immediate boolean reloads, preserving all VM stores
-and exact exits. Production, the accepted all32 comparison and parity/Tier1 status
+and exact exits. Production, the accepted all 32 comparison and parity/Tier1 status
 remain unchanged.
 
 [Local JIT view/boolean candidate](evidence/cp42-jit-local-views-2026-09-12-rejected.md) is **rejected early**: the original
 VM title pair improves 2.10%, below its fixed 3% minimum. Focused 19/5 checks and
-all32 correctness pass; Native executables are byte-identical to the accepted
+all 32 correctness pass; Native executables are byte-identical to the accepted
 control. The exact candidate and fixed observations remain archived; production
 is restored. The next hypothesis concerns invalidation of a copied alias's own
-view. Original all32 parity and complete Tier1 remain open.
+view. Original all 32 parity and complete Tier1 remain open.
 
 [Alias-cache JIT V2](evidence/cp42-jit-local-views-v2-2026-09-12-rejected.md) is **rejected early**: the unchanged VM title
 pair improves 2.995623%, below its fixed 3% minimum (exact ratio 0.970043769715).
-Focused 20/5 checks and all32 correctness pass; Native executables are identical
+Focused 20/5 checks and all 32 correctness pass; Native executables are identical
 to accepted controls. The candidate and failed fixed series remain archived;
 production is restored. Next investigate full checked original-Cell string
-projection in the JIT. Original all32 parity and complete Tier1 remain open.
+projection in the JIT. Original all 32 parity and complete Tier1 remain open.
 
 [Inline original-Cell string projection](evidence/cp42-jit-cell-projection-2026-09-12-rejected.md) is **rejected early**:
 the unchanged VM title pair improves 2.353783%, below its fixed 3% minimum.
-Focused 21/5 tests, 108 native/C-oracle cases and all32 stdout checks pass;
+Focused 21/5 tests, 108 native/C-oracle cases and all 32 stdout checks pass;
 Native executables are identical to accepted controls. The exact candidate and
 series are archived and production restored. Next measure stable array identity,
 generation and heap-epoch reuse before considering speculative whole-array
-child validation. Original all32 parity and complete Tier1 remain open.
+child validation. Original all 32 parity and complete Tier1 remain open.
 
 [Stable string-array reuse diagnosis](evidence/cp42-string-array-reuse-2026-09-12.md) records 128 unchanged original
 results, four-way counter agreement per workload and 64 zero-ledger returns.
 An independent source oracle confirms repeated reads of the same title array.
 Waiting for twice its length in prior reads avoids one-pass text arrays in the
 work-count model. No speedup or new child certificate is accepted; production,
-the accepted all32 comparison and complete Tier1/parity status remain unchanged.
+the accepted all 32 comparison and complete Tier1/parity status remain unchanged.
 
 [Adaptive string-array proof: rejected early](evidence/cp42-jit-string-array-proof-2026-09-12-rejected.md) preserves the full checked
 certificate candidate and fixed 3.55% title-pair slowdown. Focused 18/5 tests,
@@ -519,7 +519,22 @@ The accepted full comparison, original parity and Tier1 status remain unchanged.
 [Checked string-search loop composition](evidence/cp42-jit-string-search-loop-2026-09-13-rejected.md) is **rejected in the full gate**.
 The title pair improves 9.33% early, but OFF record-create
 P90 exceeds the 5% allowance in both fixed series. Full105/89, sanitizer22,
-fresh x86-64/Rosetta22 and all32 correctness pass; production is restored.
+fresh x86-64/Rosetta22 and all 32 correctness pass; production is restored.
 Raw recovery evidence and a fresh unchanged-production five-way table are retained.
 Shared runtime string construction is the next measured title-family dependency;
-original all32 parity, complete Tier1 and Linux LSan remain open.
+original all 32 parity, complete Tier1 and Linux LSan remain open.
+
+[Fresh string references over shared immutable bodies](evidence/cp42-string-body-sharing-2026-09-13-plan.md)
+starts the next title-family dependency experiment. Its protocol is fixed before
+candidate timing: preserve logical charges and fresh references, test common
+runtime allocation/collection ownership, and retain all 32 regression gates.
+The single tail confirmation uses 51 samples under the unchanged 5% allowance.
+The preceding checked-search rejection and the full parity objective are unchanged.
+
+[Shared immutable string bodies](evidence/cp42-string-body-sharing-2026-09-13-rejected.md) is **rejected early**.
+The title pair is 1.15% slower in Native and
+1.07% slower in VM+JIT. Focused 7, the final storage
+test and all 32 Native/ON/OFF results pass; production is restored. Actual body
+counts and later text-row diagnostics remain evidence, not acceptance.
+Next audit repeated MIR verification with explicit proof/rollback ownership;
+the original all 32 parity and complete Tier1/LSan requirements remain open.
