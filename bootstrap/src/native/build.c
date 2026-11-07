@@ -153,7 +153,7 @@ static bool mmay_native_build_hash(
     const MarimayNativeRuntimeArtifact *runtime,
     char output[65]
 ) {
-    static const char contract[] = "mmay-native-build-cache-v3";
+    static const char contract[] = "mmay-native-build-cache-v4";
     static const char emit_only[] = "emit-c-without-linked-runtime";
     MarimaySha256 hash;
     unsigned char digest[32];
@@ -298,6 +298,7 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     arguments[argument_count++] = "/W4";
     arguments[argument_count++] = "/WX";
     arguments[argument_count++] = "/fp:strict";
+    arguments[argument_count++] = "/MT";
     arguments[argument_count++] = request->release ? "/O2" : "/Od";
     if (MMAY_NATIVE_C_SANITIZER_FLAG[0] != 0) {
         arguments[argument_count++] = MMAY_NATIVE_C_SANITIZER_FLAG;

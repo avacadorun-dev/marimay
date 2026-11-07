@@ -38,7 +38,7 @@ static void mmay_test_native_source_matrix_differential(void) {
     MarimayCheckResult checked;
     const MarimayCheckedFunction *entry = NULL;
     const MarimayCheckedFunction *bounds = NULL;
-    const MarimayMirFunction *functions[2];
+    const MarimayMirFunction *functions[2] = {0};
     MarimayBytecodeProgram program;
     MarimayBytecodeProgram decoded;
     MarimayOwnedBytes encoded;
@@ -73,7 +73,6 @@ static void mmay_test_native_source_matrix_differential(void) {
     memset(&parsed, 0, sizeof(parsed));
     memset(&ast, 0, sizeof(ast));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&program, 0, sizeof(program));
     memset(&decoded, 0, sizeof(decoded));
     memset(&encoded, 0, sizeof(encoded));

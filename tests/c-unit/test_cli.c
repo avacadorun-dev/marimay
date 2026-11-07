@@ -66,7 +66,7 @@ static bool mmay_cli_test_write_file(
     const unsigned char *bytes,
     size_t length
 ) {
-    FILE *file = fopen(path, "wb");
+    FILE *file = mmay_test_open_file(path, "wb");
     bool ok = file != NULL;
     if (ok) {
         ok = fwrite(bytes, 1, length, file) == length;
@@ -81,7 +81,7 @@ static bool mmay_cli_test_read_file(
     size_t capacity,
     size_t *length
 ) {
-    FILE *file = fopen(path, "rb");
+    FILE *file = mmay_test_open_file(path, "rb");
     bool ok = file != NULL;
     size_t count = 0;
     if (ok) {

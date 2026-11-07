@@ -519,12 +519,11 @@ static void mmay_cp35_native_allocation_failures(
 
 void mmay_test_cp35_context_pipeline(void) {
     MarimayCp35PipelineFixture fixture;
-    const MarimayMirFunction *functions[16];
+    const MarimayMirFunction *functions[16] = {0};
     size_t function_count;
     size_t function_index = 0;
     size_t mir_count = 0;
     size_t bytecode_count = 0;
-    memset(functions, 0, sizeof(functions));
     MMAY_EXPECT(mmay_cp35_pipeline_init(&fixture));
     function_count = mmay_cp35_collect_functions(
         &fixture, functions, sizeof(functions) / sizeof(functions[0])

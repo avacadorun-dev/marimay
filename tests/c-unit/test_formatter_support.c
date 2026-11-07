@@ -663,7 +663,7 @@ bool mmay_formatter_read_file(
     size_t capacity,
     size_t *length
 ) {
-    FILE *file = fopen(path, "rb");
+    FILE *file = mmay_test_open_file(path, "rb");
     size_t count = 0;
     bool ok = false;
     int close_status = 0;

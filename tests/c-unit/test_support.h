@@ -4,6 +4,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "mmay/base/writer.h"
 
@@ -16,6 +17,10 @@ typedef struct MarimayTestBuffer {
 
 void mmay_test_buffer_init(MarimayTestBuffer *buffer);
 MarimayWriter mmay_test_buffer_writer(MarimayTestBuffer *buffer);
+
+/* Successful test streams belong to the caller and must be closed. */
+FILE *mmay_test_open_file(const char *path, const char *mode);
+FILE *mmay_test_temporary_file(void);
 
 void mmay_test_fail(const char *file, int line, const char *expression);
 void mmay_test_expect_snapshot(

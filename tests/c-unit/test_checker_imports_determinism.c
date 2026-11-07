@@ -54,7 +54,7 @@ static bool mmay_determinism_encode(
     MarimayCheckerImportFixture fixture;
     MarimayCheckResult checked;
     MarimayBytecodeProgram program;
-    const MarimayMirFunction *functions[16];
+    const MarimayMirFunction *functions[16] = {0};
     const MarimayCheckedFunction *entry = NULL;
     size_t entry_index = SIZE_MAX;
     size_t index = 0;
@@ -62,7 +62,6 @@ static bool mmay_determinism_encode(
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
     memset(&program, 0, sizeof(program));
-    memset(functions, 0, sizeof(functions));
     memset(encoded, 0, sizeof(*encoded));
     if (!mmay_checker_import_fixture_init(&fixture, sources, source_count)
         || mmay_checker_import_fixture_check(

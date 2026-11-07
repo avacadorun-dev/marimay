@@ -672,7 +672,7 @@ static void mmay_test_checker_resolution_engines(void) {
     MarimayCheckResult checked;
     const MarimayCheckedFunction *entry = NULL;
     const MarimayCheckedFunction *callee = NULL;
-    const MarimayMirFunction *functions[2];
+    const MarimayMirFunction *functions[2] = {0};
     MarimayBytecodeProgram program;
     MarimayNativeCProgram native_program;
     MarimayOwnedBytes generated;
@@ -681,7 +681,6 @@ static void mmay_test_checker_resolution_engines(void) {
     memset(&program, 0, sizeof(program));
     memset(&generated, 0, sizeof(generated));
     memset(&native_program, 0, sizeof(native_program));
-    memset(functions, 0, sizeof(functions));
     MMAY_EXPECT(mmay_checker_resolution_fixture_init(&fixture, source));
     MMAY_EXPECT(mmay_check_ast(
         &fixture.ast,

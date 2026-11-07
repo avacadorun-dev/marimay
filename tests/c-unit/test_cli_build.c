@@ -243,7 +243,7 @@ static void mmay_cli_build_test_atomic_failures(MarimaySession *session) {
     MarimayOwnedBytes bytes = {0};
     FILE *file = NULL;
     (void)remove("cp10-stale-artifact");
-    file = fopen("cp10-stale-artifact", "wb");
+    file = mmay_test_open_file("cp10-stale-artifact", "wb");
     MMAY_EXPECT(file != NULL);
     if (file != NULL) {
         MMAY_EXPECT(fwrite(

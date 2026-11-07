@@ -13,8 +13,12 @@ function(mmay_target_sanitizers target)
     if(MMAY_ENABLE_UNDEFINED_SANITIZER OR MMAY_ENABLE_THREAD_SANITIZER)
       message(FATAL_ERROR "Requested sanitizer is not available in the MSVC preset")
     endif()
+    mmay_disable_msvc_runtime_checks(${target})
     target_compile_options(${target} PRIVATE /fsanitize=address)
-    target_link_options(${target} PRIVATE /fsanitize=address)
+    # Instrumented object metadata selects the ASan libraries in MSVC. The
+    # compiler's /fsanitize switch is not a link.exe option; incremental linking
+    # is incompatible with ASan.
+    target_link_options(${target} PRIVATE /INCREMENTAL:NO)
     return()
   endif()
 

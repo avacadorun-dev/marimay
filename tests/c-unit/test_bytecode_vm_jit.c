@@ -62,7 +62,7 @@ static void compare(const JitFixture *fixture, const MarimayBytecodeValue *args,
         &mmay_bytecode_program_function(&fixture->program, 0)->body;
     MarimayBytecodeRunStatus statuses[2];
     MarimayBytecodeValue values[2] = {mmay_test_vm_i64(1234), mmay_test_vm_i64(1234)};
-    MarimayBytecodeTrap traps[2] = {{0}};
+    MarimayBytecodeTrap traps[2] = {0};
     size_t remaining[] = {shared_limit, shared_limit};
     for (unsigned engine = 0; engine < 2; ++engine) {
         MarimayFailAllocator allocations;

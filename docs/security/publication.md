@@ -44,3 +44,10 @@ absolute guarantee from a passing scanner.
 Use synthetic hostnames under `.example`, documentation IPv4 ranges, relative
 paths, and no-reply commit metadata. Do not push an older unedited clone to the
 public remote: that would restore the original private history.
+
+For pull requests, source-security CI scans the exact submitted head and its
+full ancestry alongside fetched public branches and tags. It does not add
+GitHub's temporary test-merge ref to that history scan. Metadata checks apply
+unchanged to submitted commits and real branch/tag history; there is no
+exception for a personal email in those objects. The build workflow separately
+checks the PR merge result. See [CI](../ci.md) for checkout and permission scope.

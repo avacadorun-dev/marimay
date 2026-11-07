@@ -46,7 +46,8 @@ MarimayNativeToolchainStatus mmay_native_toolchain_probe(
     const char *expected_version,
     MarimayOwnedBytes *identity_output
 ) {
-    const char *arguments[3];
+    const char *arguments[4];
+    size_t argument_count = 2;
     MarimayProcessResult process;
     MarimayProcessStatus status;
     size_t expected_length = expected_version != NULL
@@ -59,13 +60,17 @@ MarimayNativeToolchainStatus mmay_native_toolchain_probe(
     memset(&process, 0, sizeof(process));
     arguments[0] = compiler;
 #if defined(_WIN32)
+    /* /Bv alone prints a missing-source error. Help keeps the version query
+     * successful without compiling a file or creating a temporary artifact. */
     arguments[1] = "/Bv";
+    arguments[2] = "/?";
+    argument_count = 3;
 #else
     arguments[1] = "--version";
 #endif
-    arguments[2] = NULL;
+    arguments[argument_count] = NULL;
     status = mmay_process_run(
-        allocator, arguments, 2, MMAY_NATIVE_TOOLCHAIN_MAX_OUTPUT, &process
+        allocator, arguments, argument_count, MMAY_NATIVE_TOOLCHAIN_MAX_OUTPUT, &process
     );
     if (status != MMAY_PROCESS_OK) {
         mmay_process_result_dispose(&process);

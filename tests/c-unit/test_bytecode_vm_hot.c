@@ -21,7 +21,7 @@ static void mmay_hot_compare_scalar(const MarimayBytecodeProgram *program,
     const MarimayBytecodeFunction *function =
         &mmay_bytecode_program_function(program, 0)->body;
     MarimayBytecodeRunStatus statuses[2];
-    MarimayBytecodeTrap traps[2] = {{0}};
+    MarimayBytecodeTrap traps[2] = {0};
     MarimayBytecodeValue results[2];
     size_t remaining[2] = {shared_limit, shared_limit};
     for (unsigned engine = 0; engine < 2; engine += 1) {

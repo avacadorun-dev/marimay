@@ -53,7 +53,7 @@ void mmay_test_diagnostic(void) {
     MMAY_EXPECT(strstr(buffer.bytes, "\"context\"") == NULL);
 
     {
-        static const char invalid_utf8[] = {'b', 'a', 'd', (char)0xff, '\0'};
+        static const char invalid_utf8[] = "bad\xff";
         diagnostic.message = invalid_utf8;
         mmay_test_buffer_init(&buffer);
         MMAY_EXPECT(mmay_diagnostic_render(

@@ -85,7 +85,7 @@ static void mmay_expect_path(
 
 static void mmay_test_paths(void) {
     MarimayPath path;
-    static const char invalid_utf8[] = {'a', (char)0xff, '\0'};
+    static const char invalid_utf8[] = "a\xff";
     static const char embedded_zero[] = {'a', 0, 'b'};
     size_t failure_index = 0;
     bool reached_success = false;
@@ -293,7 +293,7 @@ static void mmay_test_streams(void) {
     }
     MMAY_EXPECT(reached_success);
 
-    file = tmpfile();
+    file = mmay_test_temporary_file();
     MMAY_EXPECT(file != NULL);
     if (file != NULL) {
         MMAY_EXPECT(fwrite(small, 1, sizeof(small) - 1, file) == sizeof(small) - 1);

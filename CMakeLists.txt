@@ -1,10 +1,15 @@
 cmake_minimum_required(VERSION 3.25)
 
+if(POLICY CMP0184)
+  cmake_policy(SET CMP0184 NEW)
+endif()
+
 project(Marimay VERSION 0.1.0 LANGUAGES C)
 
 include(CTest)
 include(GNUInstallDirs)
 include(cmake/MarimayWarnings.cmake)
+include(cmake/MarimayMsvcRuntimeChecks.cmake)
 include(cmake/MarimaySanitizers.cmake)
 
 set(CMAKE_C_STANDARD 17)
@@ -16,6 +21,8 @@ option(MMAY_ENABLE_ADDRESS_SANITIZER "Enable AddressSanitizer" OFF)
 option(MMAY_ENABLE_UNDEFINED_SANITIZER "Enable UndefinedBehaviorSanitizer" OFF)
 option(MMAY_ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
 option(MMAY_BUILD_FUZZERS "Build Clang libFuzzer frontend targets" OFF)
+
+mmay_configure_msvc_runtime_checks()
 
 if(MMAY_BUILD_FUZZERS)
   if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -355,6 +362,12 @@ function(mmay_add_native_runtime target profile optimization output_directory)
   endforeach()
   mmay_target_sanitizers(${target})
   if(MSVC)
+    # Generated C uses the same static CRT in both logical output profiles.
+    # Do not inherit /MDd or /MD from the compiler's CMake configuration.
+    set_property(TARGET ${target} PROPERTY MSVC_RUNTIME_LIBRARY MultiThreaded)
+    if(profile STREQUAL "release")
+      mmay_disable_msvc_runtime_checks(${target})
+    endif()
     target_compile_options(${target} PRIVATE /fp:strict "${optimization}")
   else()
     target_compile_options(${target} PRIVATE

@@ -1,0 +1,46 @@
+# CMake 4 selects /RTC through a target property. Older supported versions put
+# it in directory-wide C flags, which also reach the always-/O2 runtime archive.
+function(mmay_configure_msvc_runtime_checks)
+  if(NOT MSVC)
+    return()
+  endif()
+  if(POLICY CMP0184)
+    cmake_policy(GET CMP0184 mmay_runtime_check_policy)
+    if(mmay_runtime_check_policy STREQUAL "NEW")
+      return()
+    endif()
+  endif()
+
+  set(mmay_flag_variables CMAKE_C_FLAGS)
+  set(mmay_configurations Debug Release RelWithDebInfo MinSizeRel
+    ${CMAKE_CONFIGURATION_TYPES} ${CMAKE_BUILD_TYPE})
+  list(REMOVE_DUPLICATES mmay_configurations)
+  foreach(mmay_configuration IN LISTS mmay_configurations)
+    string(TOUPPER "${mmay_configuration}" mmay_upper_configuration)
+    list(APPEND mmay_flag_variables "CMAKE_C_FLAGS_${mmay_upper_configuration}")
+  endforeach()
+  list(REMOVE_DUPLICATES mmay_flag_variables)
+  foreach(mmay_flag_variable IN LISTS mmay_flag_variables)
+    set(mmay_flags "${${mmay_flag_variable}}")
+    string(REGEX MATCHALL "[/-]RTC[1csu]+" mmay_checks "${mmay_flags}")
+    foreach(mmay_check IN LISTS mmay_checks)
+      string(REPLACE "${mmay_check}" "" mmay_flags "${mmay_flags}")
+      set(mmay_enabled "$<NOT:$<BOOL:$<TARGET_PROPERTY:MMAY_DISABLE_MSVC_RUNTIME_CHECKS>>>")
+      if(NOT mmay_flag_variable STREQUAL "CMAKE_C_FLAGS")
+        string(REPLACE "CMAKE_C_FLAGS_" "" mmay_configuration "${mmay_flag_variable}")
+        set(mmay_enabled "$<AND:$<CONFIG:${mmay_configuration}>,${mmay_enabled}>")
+      endif()
+      add_compile_options("$<${mmay_enabled}:${mmay_check}>")
+    endforeach()
+    set(${mmay_flag_variable} "${mmay_flags}" PARENT_SCOPE)
+  endforeach()
+endfunction()
+
+function(mmay_disable_msvc_runtime_checks target)
+  if(MSVC)
+    set_target_properties(${target} PROPERTIES
+      MSVC_RUNTIME_CHECKS ""
+      MMAY_DISABLE_MSVC_RUNTIME_CHECKS TRUE
+    )
+  endif()
+endfunction()

@@ -55,11 +55,11 @@ static MarimayNativeRuntimePaths mmay_cp13_paths(
 
 static bool mmay_cp13_copy_file(const char *source, const char *destination) {
     unsigned char buffer[8192];
-    FILE *input = fopen(source, "rb");
+    FILE *input = mmay_test_open_file(source, "rb");
     FILE *output = NULL;
     bool ok = input != NULL;
     if (ok) {
-        output = fopen(destination, "wb");
+        output = mmay_test_open_file(destination, "wb");
         ok = output != NULL;
     }
     while (ok) {
@@ -79,7 +79,7 @@ static bool mmay_cp13_copy_file(const char *source, const char *destination) {
 
 static bool mmay_cp13_write_file(const char *path, const char *bytes) {
     size_t length = strlen(bytes);
-    FILE *output = fopen(path, "wb");
+    FILE *output = mmay_test_open_file(path, "wb");
     bool ok = output != NULL;
     if (ok && fwrite(bytes, 1, length, output) != length) ok = false;
     if (output != NULL && fclose(output) != 0) ok = false;
@@ -87,7 +87,7 @@ static bool mmay_cp13_write_file(const char *path, const char *bytes) {
 }
 
 static bool mmay_cp13_append_byte(const char *path) {
-    FILE *output = fopen(path, "ab");
+    FILE *output = mmay_test_open_file(path, "ab");
     bool ok = output != NULL;
     if (ok && fputc('\n', output) == EOF) ok = false;
     if (output != NULL && fclose(output) != 0) ok = false;

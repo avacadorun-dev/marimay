@@ -130,9 +130,9 @@ void mmay_test_process(void) {
     ) == MMAY_PROCESS_INVALID_ARGUMENT);
 
     {
-        FILE *input_file = tmpfile();
-        FILE *output_file = tmpfile();
-        FILE *error_file = tmpfile();
+        FILE *input_file = mmay_test_temporary_file();
+        FILE *output_file = mmay_test_temporary_file();
+        FILE *error_file = mmay_test_temporary_file();
         unsigned char actual_output[sizeof(exact_input)] = {0};
         char actual_error[sizeof("fixture-error\n")] = {0};
         MMAY_EXPECT(input_file != NULL && output_file != NULL
@@ -174,9 +174,9 @@ void mmay_test_process(void) {
     ) == MMAY_PROCESS_INVALID_ARGUMENT);
 
     {
-        FILE *input_file = tmpfile();
-        FILE *output_file = tmpfile();
-        FILE *error_file = tmpfile();
+        FILE *input_file = mmay_test_temporary_file();
+        FILE *output_file = mmay_test_temporary_file();
+        FILE *error_file = mmay_test_temporary_file();
         reached_success = false;
         MMAY_EXPECT(input_file != NULL && output_file != NULL
             && error_file != NULL);

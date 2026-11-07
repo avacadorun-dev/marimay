@@ -88,6 +88,10 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{ matrix.configuration }}
           -DCMAKE_C_COMPILER=${{ matrix.target.compiler }}
           -DMMAY_WARNINGS_AS_ERRORS=ON
+      - name: Set up MSVC developer environment
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: ./.github/scripts/enable-msvc.ps1
       - name: Configure (Windows)
         if: runner.os == 'Windows'
         run: cmake -S . -B build -DMMAY_WARNINGS_AS_ERRORS=ON
@@ -239,6 +243,9 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+      - name: Set up MSVC developer environment
+        shell: pwsh
+        run: ./.github/scripts/enable-msvc.ps1
       - name: Configure
         run: cmake --preset asan
       - name: Build

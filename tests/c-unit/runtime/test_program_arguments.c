@@ -101,7 +101,7 @@ static void mmay_test_host_argument_import(void) {
     static const char *const values[] = {
         "", "two words", "--", "\xd0\x9c\xd0\xb8\xd1\x80"
     };
-    static const char invalid_value[] = {(char)0xff, 0};
+    static const char invalid_value[] = "\xff";
     static const char *const invalid_values[] = {invalid_value};
 #endif
     MarimayFailAllocator state;

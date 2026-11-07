@@ -271,7 +271,7 @@ void mmay_test_native_compile_and_run_configured(
         MMAY_EXPECT(false);
         goto cleanup;
     }
-    file = fopen(source_path, "wb");
+    file = mmay_test_open_file(source_path, "wb");
     if (file == NULL) {
         MMAY_EXPECT(false);
         goto cleanup;

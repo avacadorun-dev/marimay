@@ -60,7 +60,7 @@ static const MarimayCheckedFunction *mmay_test_generic_entry(
 void mmay_test_native_generics_differential(void) {
     MarimayCheckerFixture fixture;
     MarimayCheckResult checked;
-    const MarimayMirFunction *functions[12];
+    const MarimayMirFunction *functions[12] = {0};
     const MarimayCheckedFunction *entry = NULL;
     MarimayMirValue oracle_result;
     MarimayCheckInterpretOptions oracle_options;
@@ -82,7 +82,6 @@ void mmay_test_native_generics_differential(void) {
     bool decoded_initialized = false;
     memset(&fixture, 0, sizeof(fixture));
     memset(&checked, 0, sizeof(checked));
-    memset(functions, 0, sizeof(functions));
     memset(&oracle_result, 0, sizeof(oracle_result));
     memset(&bytecode, 0, sizeof(bytecode));
     memset(&decoded, 0, sizeof(decoded));

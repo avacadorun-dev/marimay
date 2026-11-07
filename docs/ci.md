@@ -61,6 +61,14 @@ privileged pull-request trigger. Public forks run without secrets. No job
 publishes a release, deploys a site, writes a package registry, or contacts
 private development infrastructure.
 
+The source-security workflow checks out the exact submitted PR head SHA, or
+the event SHA for pushes and manual runs. It fetches complete branch/tag
+history and the submitted head's ancestry, then keeps both the Gitleaks
+`--all` scan and the publication guard's `--history` check. GitHub's temporary
+PR merge commit can carry service-generated author metadata; it is not part
+of the submitted history. Build/conformance jobs still test GitHub's PR merge
+result. This checkout choice adds no scanner or metadata allowlist exception.
+
 Release-profile CI archives are test artifacts, not published releases. Uploads
 are limited to distribution archives/checksums, fuzz executables/reproducers,
 and selected test/JIT diagnostics. Failure collection can include generated
