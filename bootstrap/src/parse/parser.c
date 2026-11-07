@@ -185,6 +185,9 @@ MarimayMarker mmay_parser_precede(
     MarimayParseEvent *child_start = NULL;
     parent.position = parser->events.length;
     parent.valid = false;
+    if (parser->allocation_failed || parser->limit_reached) {
+        return parent;
+    }
     if (!completed.valid || completed.position >= parser->events.length) {
         parser->allocation_failed = true;
         return parent;

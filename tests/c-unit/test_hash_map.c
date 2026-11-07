@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "mmay/base/allocator.h"
+#include "mmay/base/alignment.h"
 #include "mmay/base/hash.h"
 #include "mmay/base/map.h"
 
@@ -148,15 +149,20 @@ static void mmay_test_map_failures(void) {
         MarimayFailAllocator state;
         MarimayAllocator allocator;
         MarimayMap map;
-        int value = 42;
+        MarimayMaxAlign value = {0};
         bool inserted = false;
+        memset(&value, 0, sizeof(value));
         mmay_fail_allocator_init(&state, mmay_system_allocator(), failure_index);
         allocator = mmay_fail_allocator(&state);
         MMAY_EXPECT(mmay_map_init(&map, allocator, sizeof(value), 1, 2));
         inserted = mmay_map_put(&map, "key", 3, &value);
         if (inserted) {
+            const MarimayMaxAlign *stored = mmay_map_get_const(&map, "key", 3);
             reached_success = true;
             MMAY_EXPECT(map.length == 1);
+            MMAY_EXPECT(stored != NULL);
+            MMAY_EXPECT((uintptr_t)stored % _Alignof(MarimayMaxAlign) == 0);
+            MMAY_EXPECT(stored != NULL && memcmp(stored, &value, sizeof(value)) == 0);
         } else {
             MMAY_EXPECT(map.length == 0);
             MMAY_EXPECT(mmay_map_get(&map, "key", 3) == NULL);

@@ -1,4 +1,5 @@
 #include "vm_jit_memory.h"
+#include "mmay/base/alignment.h"
 #include "sljitLir.h"
 #include <stdio.h>
 #include <string.h>
@@ -94,7 +95,7 @@ static void argument_contract(void) {
     EXPECT(mmay_sljit_allocate(1, NULL) == NULL);
     EXPECT(failing.attempts == 0);
     void *memory = mmay_sljit_allocate(1, &allocator);
-    EXPECT(memory != NULL && (uintptr_t)memory % alignof(max_align_t) == 0);
+    EXPECT(memory != NULL && (uintptr_t)memory % alignof(MarimayMaxAlign) == 0);
     mmay_sljit_deallocate(memory, &allocator);
     mmay_sljit_deallocate(NULL, &allocator);
     EXPECT(failing.live_allocations == 0 && failing.live_bytes == 0);

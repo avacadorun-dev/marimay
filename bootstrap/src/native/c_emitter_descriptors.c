@@ -1070,8 +1070,6 @@ bool mmay_native_c_emit_managed_parameter_check(
         &function->register_types, parameter
     );
     MarimayNativeCManagedLayout layout;
-    const char *descriptor_type = NULL;
-    const char *describe = NULL;
     if (type == NULL || *type < MMAY_TYPE_FIRST_DYNAMIC) return type != NULL;
     if (!mmay_native_c_find_managed_layout(functions, count, *type, &layout)) {
         return false;
@@ -1163,16 +1161,4 @@ bool mmay_native_c_emit_managed_parameter_check(
         return mmay_native_c_write(buffer,
             ") { mmay_g_s = mmay_g_m == MMAY_MANAGED_OK ? 7 : mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n");
     }
-    if (!mmay_native_c_write(buffer,
-        "  { const %s *mmay_g_actual = NULL; mmay_g_m = %s(&mmay_g_x->heap, mmay_g_v_%zu, &mmay_g_actual); if (mmay_g_m != MMAY_MANAGED_OK || mmay_g_actual != ",
-        descriptor_type, describe, parameter)) return false;
-    if (layout.kind == MMAY_NATIVE_C_MANAGED_ARRAY) {
-        if (!mmay_native_c_write(buffer, "%s",
-            mmay_native_c_array_descriptor(layout.function, *type))) return false;
-    } else if (!mmay_native_c_write(buffer, "&")
-        || !mmay_native_c_write_descriptor_name(buffer, layout.kind, *type)) {
-        return false;
-    }
-    return mmay_native_c_write(buffer,
-        ") { mmay_g_s = mmay_g_m == MMAY_MANAGED_OK ? 7 : mmay_g_managed_status(mmay_g_m); goto mmay_g_cleanup; } }\n");
 }

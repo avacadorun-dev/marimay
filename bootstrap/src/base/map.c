@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <string.h>
 
+#include "mmay/base/alignment.h"
 #include "mmay/base/hash.h"
 #include "mmay/base/owned_bytes.h"
 
@@ -11,9 +12,12 @@ typedef struct MarimayMapEntry {
     size_t allocation_size;
     uint64_t hash;
     MarimayOwnedBytes key;
-    max_align_t alignment_anchor;
+    MarimayMaxAlign alignment_anchor;
     unsigned char value[];
 } MarimayMapEntry;
+
+_Static_assert(offsetof(MarimayMapEntry, value) % _Alignof(MarimayMaxAlign) == 0,
+    "map values start at maximum alignment");
 
 struct MarimayMapSlot {
     MarimayMapEntry *entry;

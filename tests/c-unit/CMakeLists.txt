@@ -255,6 +255,7 @@ add_executable(mmay_c_unit
   test_parser_nested_generics.c
   test_parser_array_types.c
   test_parser_incremental.c
+  test_parser_limits.c
   test_process.c
   test_runtime_lines.c
   test_file_line_engines.c

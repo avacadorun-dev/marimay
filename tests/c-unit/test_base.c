@@ -6,6 +6,7 @@
 #include <string.h>
 
 #include "mmay/base/allocator.h"
+#include "mmay/base/alignment.h"
 #include "mmay/base/arena.h"
 #include "mmay/base/f64.h"
 #include "mmay/base/owned_bytes.h"
@@ -13,7 +14,7 @@
 #include "mmay/base/vector.h"
 
 typedef struct MarimayAlignedFixture {
-    max_align_t alignment;
+    MarimayMaxAlign alignment;
     int value;
 } MarimayAlignedFixture;
 
@@ -160,6 +161,49 @@ static void mmay_test_f64_strict_arithmetic(void) {
     ));
 }
 
+static bool mmay_test_arena_alignment_run(size_t failure_index, size_t *attempts) {
+    MarimayFailAllocator state;
+    MarimayArena arena;
+    MarimayAlignedFixture *values[20] = {0};
+    size_t index = 0;
+    bool complete = true;
+    mmay_fail_allocator_init(&state, mmay_system_allocator(), failure_index);
+    mmay_arena_init(&arena, mmay_fail_allocator(&state), 128);
+    for (index = 0; index < 20; index += 1) {
+        if (mmay_arena_allocate(&arena, index + 1, 1) == NULL) {
+            complete = false;
+            break;
+        }
+        values[index] = MMAY_ARENA_NEW(&arena, MarimayAlignedFixture);
+        if (values[index] == NULL) {
+            complete = false;
+            break;
+        }
+        MMAY_EXPECT((uintptr_t)values[index] % _Alignof(MarimayAlignedFixture) == 0);
+        values[index]->value = (int)index;
+    }
+    for (index = 0; index < 20; index += 1) {
+        if (values[index] != NULL) MMAY_EXPECT(values[index]->value == (int)index);
+    }
+    *attempts = state.attempts;
+    mmay_arena_dispose(&arena);
+    MMAY_EXPECT(state.live_allocations == 0);
+    MMAY_EXPECT(state.live_bytes == 0);
+    return complete;
+}
+
+static void mmay_test_arena_alignment(void) {
+    size_t count = 0;
+    size_t failure_index = 0;
+    MMAY_EXPECT(mmay_test_arena_alignment_run(SIZE_MAX, &count));
+    MMAY_EXPECT(count > 1);
+    for (failure_index = 0; failure_index < count; failure_index += 1) {
+        size_t attempts = 0;
+        MMAY_EXPECT(!mmay_test_arena_alignment_run(failure_index, &attempts));
+        MMAY_EXPECT(attempts == failure_index + 1);
+    }
+}
+
 void mmay_test_base(void) {
     MarimayAllocator system = mmay_system_allocator();
     MarimayVector vector;
@@ -177,6 +221,7 @@ void mmay_test_base(void) {
     static const unsigned char raw_spelling[] = "r\"path\\\\raw\"";
     static const unsigned char raw_value[] = "path\\\\raw";
     MarimayOwnedBytes decoded;
+    mmay_test_arena_alignment();
 
     mmay_test_f64_decimal_parser();
     mmay_test_f64_strict_arithmetic();

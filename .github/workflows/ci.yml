@@ -94,12 +94,13 @@ jobs:
       - name: Build
         run: cmake --build build --config ${{ matrix.configuration }} --parallel
       - name: Test
+        id: test
         run: ctest --test-dir build -C ${{ matrix.configuration }} --parallel 4 --output-on-failure
       - name: Capture failed CTest evidence
-        if: ${{ failure() && runner.os != 'Windows' }}
+        if: ${{ always() && steps.test.outcome == 'failure' && runner.os != 'Windows' }}
         run: python3 tools/ci-diagnostics/collect.py --root . --build-dir build --output build/ci-failure
       - name: Preserve failed CTest evidence
-        if: ${{ failure() && runner.os != 'Windows' }}
+        if: ${{ always() && steps.test.outcome == 'failure' && runner.os != 'Windows' }}
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: failure-${{ matrix.target.name }}-${{ matrix.configuration }}
@@ -150,7 +151,19 @@ jobs:
       - name: Build
         run: cmake --build --preset asan-ubsan --parallel
       - name: Test
+        id: test
         run: ctest --preset asan-ubsan
+      - name: Capture failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        run: python3 tools/ci-diagnostics/collect.py --root . --build-dir build/asan-ubsan --output build/asan-ubsan/ci-failure
+      - name: Preserve failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: failure-${{ matrix.name }}
+          path: build/asan-ubsan/ci-failure
+          if-no-files-found: ignore
+          retention-days: 7
 
   linux-tsan:
     name: Linux x86_64 TSan
@@ -169,7 +182,19 @@ jobs:
       - name: Build
         run: cmake --build --preset tsan --parallel
       - name: Test
+        id: test
         run: ctest --preset tsan
+      - name: Capture failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        run: python3 tools/ci-diagnostics/collect.py --root . --build-dir build/tsan --output build/tsan/ci-failure
+      - name: Preserve failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: failure-linux-x86_64-tsan
+          path: build/tsan/ci-failure
+          if-no-files-found: ignore
+          retention-days: 7
 
   linux-leaks:
     name: Linux x86_64 LeakSanitizer
@@ -189,7 +214,19 @@ jobs:
       - name: Build
         run: cmake --build --preset asan-ubsan --parallel
       - name: Test
+        id: test
         run: ctest --preset asan-ubsan --output-on-failure
+      - name: Capture failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        run: python3 tools/ci-diagnostics/collect.py --root . --build-dir build/asan-ubsan --output build/asan-ubsan/ci-failure
+      - name: Preserve failed CTest evidence
+        if: ${{ always() && steps.test.outcome == 'failure' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: failure-linux-x86_64-leaks
+          path: build/asan-ubsan/ci-failure
+          if-no-files-found: ignore
+          retention-days: 7
 
   windows-asan:
     name: Windows x86_64 MSVC ASan
@@ -308,7 +345,7 @@ jobs:
           persist-credentials: false
       - name: Install C17 toolchain
         run: >-
-          ./tools/ci-apt-install
+          sudo ./tools/ci-apt-install
           build-essential clang cmake git libclang-rt-18-dev llvm-18 python3
       - name: Fetch the explicit pinned C dependency
         run: |

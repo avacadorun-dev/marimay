@@ -142,5 +142,4 @@ bool mmay_bytecode_opcode_writes_register(MarimayOpcode opcode) {
         default:
             return false;
     }
-    return false;
 }

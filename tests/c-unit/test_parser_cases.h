@@ -26,6 +26,7 @@ void mmay_test_parser_array_type_spelling(void);
 void mmay_test_parser_nested_generic_boundaries(void);
 void mmay_test_parser_incremental_reuse(void);
 void mmay_test_parser_limits_and_allocation(void);
+void mmay_test_parser_pattern_limits(void);
 void mmay_test_parser_all_single_bytes(void);
 
 #endif

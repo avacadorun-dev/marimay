@@ -199,7 +199,7 @@ MarimayProcessStatus mmay_process_run(
     HANDLE read_handle = INVALID_HANDLE_VALUE;
     HANDLE write_handle = INVALID_HANDLE_VALUE;
     STARTUPINFOW startup;
-    PROCESS_INFORMATION process;
+    PROCESS_INFORMATION process = {0};
     wchar_t *command = NULL;
     size_t command_allocation_size = 0;
     MarimayVector output;
@@ -249,7 +249,6 @@ MarimayProcessStatus mmay_process_run(
     startup.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
     startup.hStdOutput = write_handle;
     startup.hStdError = write_handle;
-    ZeroMemory(&process, sizeof(process));
     if (!CreateProcessW(
             NULL,
             command,
@@ -353,7 +352,7 @@ MarimayProcessStatus mmay_process_run_stdio(
     MarimayProcessResult *result
 ) {
     STARTUPINFOW startup;
-    PROCESS_INFORMATION process;
+    PROCESS_INFORMATION process = {0};
     HANDLE input_handle = INVALID_HANDLE_VALUE;
     HANDLE output_handle = INVALID_HANDLE_VALUE;
     HANDLE error_handle = INVALID_HANDLE_VALUE;
@@ -390,7 +389,6 @@ MarimayProcessStatus mmay_process_run_stdio(
     startup.hStdInput = input_handle;
     startup.hStdOutput = output_handle;
     startup.hStdError = error_handle;
-    ZeroMemory(&process, sizeof(process));
     if (!CreateProcessW(
             NULL, command, NULL, NULL, TRUE, 0,
             NULL, NULL, &startup, &process
@@ -539,7 +537,7 @@ MarimayProcessStatus mmay_process_run_capture_input(
     HANDLE error_write = INVALID_HANDLE_VALUE;
     HANDLE input_file = INVALID_HANDLE_VALUE;
     STARTUPINFOW startup;
-    PROCESS_INFORMATION process;
+    PROCESS_INFORMATION process = {0};
     wchar_t *command = NULL;
     size_t command_size = 0;
     MarimayVector output;
@@ -595,7 +593,6 @@ MarimayProcessStatus mmay_process_run_capture_input(
     startup.hStdInput = input_file;
     startup.hStdOutput = output_write;
     startup.hStdError = error_write;
-    ZeroMemory(&process, sizeof(process));
     if (!CreateProcessW(
             NULL, command, NULL, NULL, TRUE, CREATE_NO_WINDOW,
             NULL, NULL, &startup, &process

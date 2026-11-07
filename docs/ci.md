@@ -31,6 +31,28 @@ Set `ASAN_OPTIONS=detect_leaks=1:halt_on_error=1` for Linux leak checks. A
 macOS sanitizer result does not establish Linux LeakSanitizer coverage.
 Follow [CONTRIBUTING.md](../CONTRIBUTING.md) for the documentation gates.
 
+## Investigate a failing run
+
+Read the failing job's revision and first unsuccessful step before reproducing
+it. Configuration, compilation, CTest, and artifact transport are separate
+failure points. Match the job's compiler, build configuration, sanitizer
+options, and exact test command; rerunning a different local profile does not
+establish a fix on the failing platform.
+
+On GitHub-hosted Ubuntu, the optional JIT job invokes the bounded
+`tools/ci-apt-install` helper through `sudo`, because installing missing system
+packages requires root privileges. The helper still checks installed packages
+first and retains its bounded network retries.
+
+C17 Unix, Unix sanitizer, TSan, and LeakSanitizer jobs collect
+[diagnostic packets](../tools/ci-diagnostics/README.md) only when their CTest
+step actually ran and failed. Setup/build failures leave their diagnostics in
+the job log and do not start a collector that expects a built compiler and
+CTest logs. Upload is attempted even when collection reports an error, so a
+partial packet can survive. Neither collection nor upload replaces the failed
+test result. Windows diagnostics remain in the job log; the packet collector
+currently recognizes POSIX native-compiler paths.
+
 ## Permissions and outputs
 
 Actions are pinned to full commit IDs; Dependabot proposes updates. Workflows

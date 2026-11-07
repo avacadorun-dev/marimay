@@ -21,12 +21,29 @@ class DriverTests(unittest.TestCase):
 
     def test_raw_bytes_cwd_and_argv(self):
         code = ("import os,sys; from pathlib import Path; "
-                "assert Path.cwd() == Path(sys.argv[1]); "
+                "assert Path.cwd().samefile(sys.argv[1]); "
                 "sys.stdout.buffer.write(sys.stdin.buffer.read()); "
                 "sys.stderr.buffer.write(b'\\x00\\xff')")
         engines = {name: self.command(code) for name in ("vm", "debug", "release")}
         observed = self.app.compare(engines, [str(self.root)], 0, data=b"\x00\xff\r\n")
         self.assertEqual(observed, (0, b"\x00\xff\r\n", b"\x00\xff"))
+
+    def test_cwd_identity_accepts_alias_and_rejects_other_directory(self):
+        # A child reports the physical cwd, which can have a different spelling
+        # after symlink traversal or filesystem Unicode normalization.
+        alias = self.root / "cwd-alias"
+        try:
+            alias.symlink_to(self.root, target_is_directory=True)
+        except OSError:
+            self.skipTest("directory symlinks are unavailable")
+        code = ("import sys; from pathlib import Path; "
+                "assert Path.cwd().samefile(sys.argv[1])")
+        engines = {"vm": self.command(code)}
+        self.app.compare(engines, [str(alias)], 0)
+        other = self.root / "other"
+        other.mkdir()
+        with self.assertRaises(AssertionError):
+            self.app.compare(engines, [str(other)], 0)
 
     def test_detects_each_observable_divergence(self):
         for changed in ("import sys; sys.exit(1)", "print('unexpected')",

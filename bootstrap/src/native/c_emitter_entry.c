@@ -40,7 +40,7 @@ MarimayNativeCEmitStatus mmay_native_c_validate_executable_entry(
         return MMAY_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
     }
     if (!options->executable_returns_result) {
-        return entry->result_type == (options->executable_returns_status
+        return entry->result_type == (MarimayTypeId)(options->executable_returns_status
                 ? MMAY_TYPE_I64 : MMAY_TYPE_VOID)
             ? MMAY_NATIVE_C_EMIT_OK : MMAY_NATIVE_C_EMIT_UNSUPPORTED_TYPE;
     }

@@ -162,7 +162,7 @@ static void mmay_parse_condition(MarimayParser *parser) {
     MarimayTokenKind current = mmay_parser_current(parser);
     bool binding = (current == MMAY_TOKEN_KW_CONST || current == MMAY_TOKEN_KW_LET)
         && mmay_parser_contextual_statement_starts(parser, current);
-    MarimayMarker marker;
+    MarimayMarker marker = {0};
     if (binding) {
         marker = mmay_parser_start(parser);
         mmay_parser_bump(parser);

@@ -551,7 +551,7 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         case MMAY_OPCODE_ARRAY_GET: {
             size_t first = (size_t)instruction->operands[1].unsigned_value;
             size_t second = (size_t)instruction->operands[2].unsigned_value;
-            MarimayManagedCell cell;
+            MarimayManagedCell cell = {0};
             size_t length = 0;
             int64_t index = registers[second].as.i64;
             if (!mmay_bytecode_managed_value_valid_for(
@@ -1187,5 +1187,4 @@ MarimayBytecodeRunStatus mmay_bytecode_run_value_instruction(
         default:
             return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
     }
-    return MMAY_BYTECODE_RUN_INVALID_BYTECODE;
 }

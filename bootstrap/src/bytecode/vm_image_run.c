@@ -119,7 +119,7 @@ MMAY_VM_HOT_INLINE bool mmay_bytecode_hot_array_instruction(
         bits = registers[second].type == MMAY_BYTECODE_TYPE_I64
             ? (uint64_t)registers[second].as.i64
             : registers[second].type == MMAY_BYTECODE_TYPE_BOOL
-            ? (registers[second].as.boolean ? 1 : 0)
+            ? (registers[second].as.boolean ? UINT64_C(1) : UINT64_C(0))
             : registers[second].as.integer_bits;
         return (view->descriptor->storage_kind == MMAY_MANAGED_ARRAY_STORAGE_RAW64
             ? mmay_managed_array_view_set_raw64_fast(view, index, mode, bits, &length)
@@ -301,7 +301,8 @@ static inline bool mmay_bytecode_image_array_set(
     uint64_t bits = source->type == MMAY_BYTECODE_TYPE_I64
         ? (uint64_t)source->as.i64
         : source->type == MMAY_BYTECODE_TYPE_BOOL
-            ? (source->as.boolean ? 1 : 0) : source->as.integer_bits;
+            ? (source->as.boolean ? UINT64_C(1) : UINT64_C(0))
+            : source->as.integer_bits;
     return (view->descriptor->storage_kind == MMAY_MANAGED_ARRAY_STORAGE_RAW64
         ? mmay_managed_array_view_set_raw64_fast(view, index,
             MMAY_MANAGED_ARRAY_ACCESS_IN_BOUNDS, bits, &length)
