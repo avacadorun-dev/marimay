@@ -787,13 +787,18 @@ install(DIRECTORY std
 )
 install(FILES
   README.md
+  LICENSE
+  THIRD_PARTY_NOTICES.md
+  CONTRIBUTING.md
+  SECURITY.md
+  AGENTS.md
   IMPLEMENTATION-BRIEF.md
   CMakeLists.txt
   CMakePresets.json
   DESTINATION
     "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
 )
-install(DIRECTORY docs examples
+install(DIRECTORY docs examples licenses
   DESTINATION
     "${CMAKE_INSTALL_DATADIR}/doc/mmay/${MMAY_COMPILER_VERSION}"
   USE_SOURCE_PERMISSIONS
@@ -806,6 +811,9 @@ install(DIRECTORY docs examples
     PATTERN "*.json"
     PATTERN "*.tsv"
     PATTERN "*.my"
+    PATTERN "*.svg"
+    PATTERN "*.png"
+    PATTERN "*.txt"
 )
 install(DIRECTORY cmake tools
   DESTINATION

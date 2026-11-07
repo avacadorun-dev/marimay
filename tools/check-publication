@@ -1,0 +1,164 @@
+#!/usr/bin/env python3
+"""Check tracked source for private infrastructure and unsafe public CI settings.
+
+This offline guard complements Gitleaks. It is not a general proof of privacy.
+Use --history to inspect every reachable blob and commit, not only the index.
+"""
+import argparse
+import gzip
+import re
+import subprocess
+import zlib
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+PATTERNS = {
+    "home or personal mount path": rb"/(?:Users|home|Volumes)/[^/\s\"'<>\\]+",
+    "Windows home path": rb"[A-Za-z]:[\\/]+(?:Users|home)[\\/]+[^\\/\s\"'<>]+",
+    "private IPv4 endpoint": rb"(?<![\d.])(?:192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3})(?![\d.])",
+    "private host URL": rb"(?i)(?:https?|ssh)://[^/\s\"<>]*(?:\.local|\.lan|\.internal)(?::\d+)?(?:/|\b)",
+    "SSH remote": rb"(?:ssh" + rb"://[^\s\"<>]+|git" + rb"@[^\s\"<>]+)",
+    "credential-bearing URL": rb"(?:https?|ssh)://[^\s/:\"<>]{1,128}:[^\s/@\"<>]{1,256}@",
+    "provider credential": rb"(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{40,}|glpat-[A-Za-z0-9_-]{20,}|xox[baprs]-[A-Za-z0-9-]{15,}|AKIA[A-Z0-9]{16})",
+    "private key": rb"-----BEGIN (?:RSA |EC |OPENSSH |DSA )?PRIVATE KEY-----",
+}
+RULES = {name: re.compile(pattern) for name, pattern in PATTERNS.items()}
+EMAIL = re.compile(rb"[A-Za-z0-9._%+-]{1,64}@[A-Za-z0-9.-]{1,253}\.[A-Za-z]{2,24}")
+
+
+def inspect(data, label):
+    if data.startswith(b"\x1f\x8b"):
+        try:
+            data = gzip.decompress(data)
+        except (OSError, EOFError) as error:
+            return [f"{label}: invalid gzip ({type(error).__name__})"]
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return png_metadata(data, label)
+    issues = []
+    for name, rule in RULES.items():
+        hints = {
+            "home or personal mount path": (b"Users", b"home", b"Volumes"),
+            "Windows home path": (b"Users", b"home"),
+            "private IPv4 endpoint": (b"192.168.", b"10.", b"172."),
+            "private host URL": (b".local", b".lan", b".internal"),
+            "SSH remote": (b"ssh" + b"://", b"git" + b"@"),
+            "credential-bearing URL": (b"://",),
+            "provider credential": (b"gh", b"glpat-", b"xox", b"AKIA"),
+            "private key": (b"PRIVATE KEY",),
+        }
+        if any(hint in data for hint in hints[name]) and rule.search(data):
+            issues.append(f"{label}: {name}")
+    for marker in re.finditer(b"@", data):
+        nearby = data[max(0, marker.start() - 64):marker.end() + 280]
+        for address in EMAIL.findall(nearby):
+            domain = address.rsplit(b"@", 1)[1].lower()
+            if address != b"noreply@github.com" and domain != b"users.noreply.github.com" and not domain.endswith((b".invalid", b".example")):
+                issues.append(f"{label}: non-placeholder email address")
+                return issues
+    return issues
+
+
+def png_metadata(data, label):
+    """Scan PNG text metadata without treating compressed pixels as text."""
+    offset = 8
+    issues = []
+    while offset < len(data):
+        if len(data) - offset < 12:
+            return issues + [f"{label}: malformed PNG chunk"]
+        size = int.from_bytes(data[offset:offset + 4], "big")
+        kind = data[offset + 4:offset + 8]
+        if size > len(data) - offset - 12:
+            return issues + [f"{label}: malformed PNG chunk size"]
+        chunk = data[offset + 8:offset + 8 + size]
+        offset += 12 + size
+        try:
+            if kind == b"tEXt":
+                issues.extend(inspect(chunk.replace(b"\0", b" "), label + " PNG text"))
+            elif kind == b"zTXt":
+                _, rest = chunk.split(b"\0", 1)
+                if rest[0] != 0:
+                    raise ValueError("unknown PNG compression")
+                issues.extend(inspect(zlib.decompress(rest[1:]), label + " PNG text"))
+            elif kind == b"iTXt":
+                _, rest = chunk.split(b"\0", 1)
+                compressed, method = rest[:2]
+                _, _, text = rest[2:].split(b"\0", 2)
+                if compressed not in (0, 1) or method != 0:
+                    raise ValueError("unknown PNG compression")
+                issues.extend(inspect(zlib.decompress(text) if compressed else text,
+                                      label + " PNG text"))
+            elif kind == b"eXIf":
+                issues.append(f"{label}: strip EXIF before publication")
+            elif kind == b"IEND":
+                return issues if offset == len(data) else issues + [f"{label}: trailing PNG data"]
+        except (ValueError, IndexError, zlib.error):
+            issues.append(f"{label}: malformed PNG text metadata")
+    return issues + [f"{label}: PNG missing IEND"]
+
+
+def history():
+    lines = subprocess.check_output(["git", "rev-list", "--objects", "--all"], cwd=ROOT).splitlines()
+    process = subprocess.Popen(["git", "cat-file", "--batch"], cwd=ROOT,
+                               stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    try:
+        for line in lines:
+            oid, _, name = line.partition(b" ")
+            process.stdin.write(oid + b"\n")
+            process.stdin.flush()
+            header = process.stdout.readline().split()
+            size = int(header[2])
+            data = process.stdout.read(size)
+            if len(data) != size or process.stdout.read(1) != b"\n":
+                raise RuntimeError("incomplete Git object read")
+            if header[1] in (b"blob", b"commit", b"tag"):
+                yield data, name.decode("utf-8", "replace") or "commit/tag metadata"
+    finally:
+        process.stdin.close()
+        process.stdout.close()
+        if process.wait() != 0:
+            raise RuntimeError("git cat-file failed")
+
+
+def workflows():
+    issues = []
+    for path in (ROOT / ".github/workflows").glob("*.yml"):
+        text = path.read_text()
+        label = str(path.relative_to(ROOT))
+        for word in ("pull_request_target", "self-hosted", "secrets."):
+            if word in text:
+                issues.append(f"{label}: prohibited privileged trigger, runner, or secret context")
+        if "permissions:\n  contents: read\n" not in text:
+            issues.append(f"{label}: explicit read-only contents permission required")
+        for match in re.finditer(r"uses:\s*([^\s#]+)", text):
+            if not re.fullmatch(r"[\w.-]+/[\w./-]+@[0-9a-f]{40}", match[1]):
+                issues.append(f"{label}: action must be pinned to a full commit")
+        for block in text.split("uses: actions/checkout@")[1:]:
+            if "persist-credentials: false" not in block.split("      - name:", 1)[0]:
+                issues.append(f"{label}: checkout must not persist credentials")
+    return issues
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--history", action="store_true")
+    args = parser.parse_args()
+    issues = []
+    count = 0
+    if args.history:
+        entries = history()
+    else:
+        names = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).split(b"\0")
+        entries = (( (ROOT / name.decode()).read_bytes(), name.decode())
+                   for name in names if name and (ROOT / name.decode()).is_file())
+    for data, label in entries:
+        count += 1
+        issues.extend(inspect(data, label))
+    issues.extend(workflows())
+    for issue in sorted(set(issues)):
+        print(issue)
+    print(f"publication privacy: {count} inputs checked, {len(set(issues))} findings")
+    return bool(issues)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

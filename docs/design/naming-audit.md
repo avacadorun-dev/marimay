@@ -34,3 +34,11 @@ N0 blocks:
 - any claim that `Marimay`, `mmay`, or `marimay.example` is a legally cleared, available, reserved, or controlled external release identity.
 
 Popularity, `Imported by` count, an unused exact domain, or absence from one trademark database cannot independently close the gate.
+
+## Public source repository scope (D112)
+
+The owner authorizes the public source repository as a personal learning and
+hobby project. This is not a public toolchain alpha, supported installer,
+registry publication, or legal clearance. The N0 release restrictions and
+required evidence remain open. The source import follows the
+[privacy publication policy](../security/publication.md).

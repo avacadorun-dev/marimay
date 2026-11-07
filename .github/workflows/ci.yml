@@ -3,13 +3,19 @@ name: C17 bootstrap
 on:
   push:
   pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   documentation:
     name: Documentation invariants
+    timeout-minutes: 45
     runs-on: ubuntu-24.04
     steps:
       - name: Check out source
@@ -32,6 +38,15 @@ jobs:
         run: ./tools/check-c-memory-policy
       - name: Check architecture boundaries
         run: ./tools/check-architecture
+      - name: Check release contract
+        run: ./tools/check-release-contract
+      - name: Check public source privacy
+        run: ./tools/check-publication
+      - name: Test Python development tools
+        run: |
+          python3 -m unittest discover -s tools/ci-diagnostics -p 'test_*.py'
+          python3 -m unittest discover -s tools/cli-acceptance -p 'test_*.py'
+          python3 -m unittest discover -s tools/publication -p 'test_*.py'
 
   c17:
     name: ${{ matrix.target.name }} / ${{ matrix.configuration }}
@@ -59,6 +74,7 @@ jobs:
             runner: windows-2025
             compiler: ""
         configuration: [Debug, Release]
+    timeout-minutes: 45
     runs-on: ${{ matrix.target.runner }}
     steps:
       - name: Check out source
@@ -79,9 +95,20 @@ jobs:
         run: cmake --build build --config ${{ matrix.configuration }} --parallel
       - name: Test
         run: ctest --test-dir build -C ${{ matrix.configuration }} --parallel 4 --output-on-failure
+      - name: Capture failed CTest evidence
+        if: ${{ failure() && runner.os != 'Windows' }}
+        run: python3 tools/ci-diagnostics/collect.py --root . --build-dir build --output build/ci-failure
+      - name: Preserve failed CTest evidence
+        if: ${{ failure() && runner.os != 'Windows' }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: failure-${{ matrix.target.name }}-${{ matrix.configuration }}
+          path: build/ci-failure
+          if-no-files-found: ignore
+          retention-days: 7
       - name: Preserve CP39 host artifacts
         if: matrix.configuration == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: cp39-${{ matrix.target.name }}
           path: |
@@ -89,6 +116,7 @@ jobs:
             build/distribution/*.zip
             build/distribution/*.sha256
           if-no-files-found: error
+          retention-days: 7
 
   unix-sanitizers:
     name: ${{ matrix.name }}
@@ -105,6 +133,7 @@ jobs:
           - name: macOS arm64 ASan+UBSan
             runner: macos-15
             compiler: clang
+    timeout-minutes: 45
     runs-on: ${{ matrix.runner }}
     env:
       ASAN_OPTIONS: halt_on_error=1
@@ -125,6 +154,7 @@ jobs:
 
   linux-tsan:
     name: Linux x86_64 TSan
+    timeout-minutes: 45
     runs-on: ubuntu-24.04
     env:
       CC: clang
@@ -143,6 +173,7 @@ jobs:
 
   linux-leaks:
     name: Linux x86_64 LeakSanitizer
+    timeout-minutes: 45
     runs-on: ubuntu-24.04
     env:
       CC: clang
@@ -162,6 +193,7 @@ jobs:
 
   windows-asan:
     name: Windows x86_64 MSVC ASan
+    timeout-minutes: 45
     runs-on: windows-2025
     env:
       ASAN_OPTIONS: halt_on_error=1
@@ -179,6 +211,7 @@ jobs:
 
   fuzz-build:
     name: Linux x86_64 fuzz / build once
+    timeout-minutes: 45
     runs-on: ubuntu-24.04
     env:
       CC: clang
@@ -202,7 +235,7 @@ jobs:
           mmay_fuzz_bytecode mmay_fuzz_frontend
           mmay_fuzz_formatter mmay_fuzz_json
       - name: Preserve fuzz executables
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: fuzz-linux-x86_64-binaries
           path: fuzz-binaries.tar.gz
@@ -211,6 +244,7 @@ jobs:
 
   fuzz:
     name: Linux x86_64 fuzz / ${{ matrix.target }}
+    timeout-minutes: 45
     runs-on: ubuntu-24.04
     needs: fuzz-build
     strategy:
@@ -227,7 +261,7 @@ jobs:
         with:
           persist-credentials: false
       - name: Restore fuzz executables
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: fuzz-linux-x86_64-binaries
       - name: Extract fuzz executables
@@ -243,7 +277,7 @@ jobs:
           tests/fuzz/corpus/${{ matrix.target }}
       - name: Preserve fuzz failure inputs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: fuzz-${{ matrix.target }}-failure-inputs
           path: |
@@ -252,3 +286,55 @@ jobs:
             oom-*
             leak-*
           if-no-files-found: ignore
+          retention-days: 7
+
+  sljit:
+    name: Linux x86_64 optional JIT / sanitizers=${{ matrix.sanitizers }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    needs: documentation
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizers: ['OFF', 'ON']
+    env:
+      ASAN_OPTIONS: detect_leaks=1:halt_on_error=1:symbolize=1:allow_addr2line=1
+      ASAN_SYMBOLIZER_PATH: /usr/bin/llvm-symbolizer-18
+      UBSAN_OPTIONS: halt_on_error=1:print_stacktrace=1
+    steps:
+      - name: Check out source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Install C17 toolchain
+        run: >-
+          ./tools/ci-apt-install
+          build-essential clang cmake git libclang-rt-18-dev llvm-18 python3
+      - name: Fetch the explicit pinned C dependency
+        run: |
+          git init build/sljit-source
+          git -C build/sljit-source fetch --depth 1 https://github.com/zherczeg/sljit.git d6ec3d07dcdbf2256ccae2b84d0d8a2d019f392e
+          git -C build/sljit-source checkout --detach FETCH_HEAD
+      - name: Configure verified local inputs
+        run: >-
+          cmake -S . -B build/sljit
+          -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang
+          -DMMAY_WARNINGS_AS_ERRORS=ON -DMMAY_ENABLE_SLJIT=ON
+          -DMMAY_SLJIT_SOURCE_DIR="$PWD/build/sljit-source"
+          -DMMAY_ENABLE_ADDRESS_SANITIZER=${{ matrix.sanitizers }}
+          -DMMAY_ENABLE_UNDEFINED_SANITIZER=${{ matrix.sanitizers }}
+      - name: Build
+        run: cmake --build build/sljit --parallel 4
+      - name: Test including exact fuel, ownership and native differential checks
+        run: ctest --test-dir build/sljit --parallel 2 --output-on-failure
+      - name: Preserve JIT test and dependency evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          include-hidden-files: true
+          name: sljit-linux-x86_64-sanitizers-${{ matrix.sanitizers }}-attempt-${{ github.run_attempt }}
+          path: |
+            build/sljit/Testing/Temporary/*.log
+            build/sljit/mmay-sljit-inputs/.mmay-sljit-inputs.json
+          if-no-files-found: warn
+          retention-days: 7

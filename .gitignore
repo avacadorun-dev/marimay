@@ -15,3 +15,21 @@
 *.profraw
 *.profdata
 *.plist
+
+# Local configuration, credentials, and developer state
+CMakeUserPresets.json
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+.netrc
+.npmrc
+__pycache__/
+*.py[cod]
+.venv/
+.vscode/
+.idea/
+*.private.*

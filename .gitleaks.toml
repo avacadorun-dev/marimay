@@ -1,0 +1,30 @@
+title = "Marimay secret scanning"
+
+[extend]
+useDefault = true
+
+# Reviewed file-to-SHA-256 entries in benchmark manifests. Restrict by BOTH
+# location and exact match shape; do not suppress arbitrary hexadecimal keys.
+[[allowlists]]
+description = "Source-file SHA-256 inventory in historical evidence"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''^docs/implementation/evidence/''']
+regexTarget = "match"
+regexes = ['''^[A-Za-z0-9_./-]+\.(?:c(?:\.o)?|h|my|py|json|patch|inc|tsv|md|tokens)"\s*:\s*"[0-9a-f]{64}"?$''']
+
+[[allowlists]]
+description = "Literal C field expression and prose, reviewed as non-credentials"
+targetRules = ["generic-api-key"]
+regexTarget = "secret"
+regexes = ['''^key\.f64_bits$''', '''^unproven/mismatching$''']
+
+# The scanner splits a compressed JSON record at its internal buffer boundary.
+# This exact fragment was verified as the prefix of a stored 64-digit SHA-256.
+[[allowlists]]
+description = "Reviewed truncated token-header checksum in one archived evidence file"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''^docs/implementation/evidence/cp42-ipo-shared-vm-2026-09-11-validation\.json\.gz$''']
+regexTarget = "secret"
+regexes = ['''^2919f1bf18aaa5c4898aa3fd6aea7156f345eb73fa0b9$''']

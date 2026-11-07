@@ -3836,3 +3836,26 @@ length by `min(SIZE_MAX, INT64_MAX)`, so every negative index converts above the
 largest valid length. Reference/view validation precedes the comparison; failure
 restores the original PC and unspent fuel before ordinary bounds diagnostics.
 No index check is suppressed and no array-storage access precedes success.
+
+## D112 — Publish the learning-project source with privacy-edited history
+
+Status: accepted (repository-owner direction, 2026-11-08).
+
+Marimay is presented publicly as a personal hobby and learning project for
+exploring programming-language implementation and writing small programs and
+algorithms. It makes no competitive or production-readiness claim. Original
+project code and documentation are published under MIT; third-party terms remain.
+
+The owner authorizes publication of the committed main lineage at the public
+GitHub repository, after removing private contact metadata, paths, and
+infrastructure references across history. Parent relationships, order, dates,
+and development changes are retained; object IDs change. The unedited local
+repository and unfinished working changes remain local. Historical evidence is
+marked as privacy-edited and is not fresh acceptance evidence.
+
+This public source repository is distinct from distributing a supported
+toolchain release. N0, P0, and all feature/platform gates stay open. No domain,
+trademark, package registry, signing identity, or PATH coexistence clearance is
+claimed. See [publication policy](../security/publication.md).
+
+No source-language, runtime, or command semantics change.

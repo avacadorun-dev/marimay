@@ -11,6 +11,7 @@ permissions:
 jobs:
   valgrind:
     name: Linux x86_64 Valgrind
+    timeout-minutes: 45
     runs-on: ubuntu-24.04
     steps:
       - name: Check out source

@@ -103,3 +103,11 @@ forbidden and enforced by `tools/check-c-memory-policy`. Linux LeakSanitizer is
 a required CI contract. Sanitizer suppressions require a documented reason and
 review; neither sanitizer success nor allocator counters justify an unqualified
 claim that all leaks are absent.
+
+## Public contribution hygiene
+
+- Use descriptive branch prefixes such as `fix/`, `feature/`, or `chore/`; never `codex/`.
+- Follow [CONTRIBUTING.md](CONTRIBUTING.md) and [docs/agent-workflow.md](docs/agent-workflow.md).
+- Keep secrets, personal emails/paths, private remotes, environment dumps, and unrelated process data out of commits and evidence.
+- Public CI uses GitHub-hosted runners and requires no repository secrets or private infrastructure.
+- Run `./tools/check-publication` before publishing changes; it supplements the secret scanner.
