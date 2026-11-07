@@ -20,7 +20,7 @@ A place to try ideas, write algorithms, and see how languages work.</p>
 Marimay is my personal learning project: a programming language, a compiler,
 and a runtime that I can tinker with. I’m exploring how these pieces fit
 together, and having fun writing small programs and algorithms in the language
-itself. There is no pitch here, and no ambition to replace your favorite language.
+itself.
 
 The command is **`mmay`**, and source files use **`.my`**. Under the hood, a
 C17 bootstrap produces typed intermediate code for a bytecode VM and native

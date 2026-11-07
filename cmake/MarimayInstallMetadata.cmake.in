@@ -75,7 +75,10 @@ file(WRITE "${mmay_metadata}/sbom.spdx.json"
   "\"filesAnalyzed\":false,\"licenseConcluded\":\"NOASSERTION\",\"licenseDeclared\":\"MIT\"},"
   "{\"name\":\"Marimay offline documentation and source kit\",\"SPDXID\":\"SPDXRef-DocsSource\","
   "\"versionInfo\":\"@MMAY_COMPILER_VERSION@\",\"downloadLocation\":\"NOASSERTION\","
-  "\"filesAnalyzed\":false,\"licenseConcluded\":\"NOASSERTION\",\"licenseDeclared\":\"MIT\"}]}\n"
+  "\"filesAnalyzed\":false,\"licenseConcluded\":\"NOASSERTION\",\"licenseDeclared\":\"MIT\"},"
+  "{\"name\":\"Unicode Character Database\",\"SPDXID\":\"SPDXRef-Unicode\","
+  "\"versionInfo\":\"17.0.0\",\"downloadLocation\":\"https://www.unicode.org/Public/17.0.0/ucd/\","
+  "\"filesAnalyzed\":false,\"licenseConcluded\":\"Unicode-3.0\",\"licenseDeclared\":\"Unicode-3.0\"}]}\n"
 )
 
 file(GLOB_RECURSE mmay_distribution_files LIST_DIRECTORIES false

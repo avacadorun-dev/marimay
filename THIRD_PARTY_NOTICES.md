@@ -23,7 +23,6 @@ root. Its upstream is [zherczeg/sljit](https://github.com/zherczeg/sljit).
 
 ## Logo
 
-The original project logo was made by the repository owner with their daughter
-and supplied for use here. The unmodified drawing is retained as a local asset;
+The original project logo was supplied by the repository owner for use here. The unmodified drawing is retained as a local asset;
 the final banner places that drawing on a light background. No personal names or
 photo metadata are included in these assets.
