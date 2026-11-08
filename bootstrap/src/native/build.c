@@ -153,7 +153,7 @@ static bool mmay_native_build_hash(
     const MarimayNativeRuntimeArtifact *runtime,
     char output[65]
 ) {
-    static const char contract[] = "mmay-native-build-cache-v4";
+    static const char contract[] = "mmay-native-build-cache-v5";
     static const char emit_only[] = "emit-c-without-linked-runtime";
     MarimaySha256 hash;
     unsigned char digest[32];
@@ -287,10 +287,10 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     memset(&process, 0, sizeof(process));
 #if defined(_WIN32)
     written = snprintf(bootstrap_include, sizeof(bootstrap_include),
-        "/I%s", (const char *)runtime->bootstrap_include.data);
+        "%s", (const char *)runtime->bootstrap_include.data);
     if (written < 0 || (size_t)written >= sizeof(bootstrap_include)) goto limit;
     written = snprintf(runtime_include, sizeof(runtime_include),
-        "/I%s", (const char *)runtime->runtime_include.data);
+        "%s", (const char *)runtime->runtime_include.data);
     if (written < 0 || (size_t)written >= sizeof(runtime_include)) goto limit;
     arguments[argument_count++] = compiler;
     arguments[argument_count++] = "/nologo";
@@ -304,13 +304,16 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     if (MMAY_NATIVE_C_SANITIZER_FLAG[0] != 0) {
         arguments[argument_count++] = MMAY_NATIVE_C_SANITIZER_FLAG;
     }
+    arguments[argument_count++] = "/I";
     arguments[argument_count++] = bootstrap_include;
+    arguments[argument_count++] = "/I";
     arguments[argument_count++] = runtime_include;
     arguments[argument_count++] = (const char *)source_path->data;
     arguments[argument_count++] = (const char *)runtime->archive.data;
     written = snprintf(executable_argument, sizeof(executable_argument),
-        "/Fe:%s", (const char *)temporary.data);
+        "%s", (const char *)temporary.data);
     if (written < 0 || (size_t)written >= sizeof(executable_argument)) goto limit;
+    arguments[argument_count++] = "/Fe:";
     arguments[argument_count++] = executable_argument;
 #else
     written = snprintf(bootstrap_include, sizeof(bootstrap_include),

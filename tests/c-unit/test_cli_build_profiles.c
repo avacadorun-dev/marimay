@@ -128,13 +128,13 @@ static void mmay_cp13_expect_probe(
     if (written <= 0 || (size_t)written >= sizeof(source_path)) return;
 #if defined(_WIN32)
     written = snprintf(
-        include_argument, sizeof(include_argument), "/I%s",
+        include_argument, sizeof(include_argument), "%s",
         (const char *)artifact->runtime_include.data
     );
     MMAY_EXPECT(written > 0 && (size_t)written < sizeof(include_argument));
     written = snprintf(
         executable_argument, sizeof(executable_argument),
-        "/Fe:%s", output_path
+        "%s", output_path
     );
     MMAY_EXPECT(
         written > 0 && (size_t)written < sizeof(executable_argument)
@@ -146,9 +146,11 @@ static void mmay_cp13_expect_probe(
 #if defined(MMAY_TEST_C_SANITIZER)
     arguments[argument_count++] = MMAY_TEST_C_SANITIZER;
 #endif
+    arguments[argument_count++] = "/I";
     arguments[argument_count++] = include_argument;
     arguments[argument_count++] = source_path;
     arguments[argument_count++] = (const char *)artifact->archive.data;
+    arguments[argument_count++] = "/Fe:";
     arguments[argument_count++] = executable_argument;
 #else
     written = snprintf(

@@ -83,6 +83,11 @@ static bool mmay_windows_append_argument(MarimayVector *command, const char *arg
     size_t length = strlen(argument);
     size_t index = 0;
     char quote = '"';
+    /* Keep simple options bare: cl.exe interprets a quoted /? as an unknown
+     * option even though ordinary CRT consumers reconstruct the same argv. */
+    if (length != 0 && strpbrk(argument, " \t\r\n\v\f\"") == NULL) {
+        return mmay_vector_append(command, argument, length);
+    }
     if (!mmay_vector_push(command, &quote)) {
         return false;
     }

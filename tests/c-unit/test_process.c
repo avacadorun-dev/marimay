@@ -9,6 +9,52 @@
 #include "mmay/base/allocator.h"
 #include "mmay/platform/process.h"
 
+static bool mmay_test_process_argument_run(size_t failure_index, size_t *attempts) {
+    static const char *const arguments[] = {
+        MMAY_TEST_CP32_PROCESS_FIXTURE, "--echo-arguments", "", "/?", "plain",
+        "two words", "tab\tvalue", "quote\"tail", "one\\two\\", "space \\",
+        "slash\\\"quote", "line\nbreak", NULL
+    };
+    static const char expected[] =
+        "\n2f3f\n706c61696e\n74776f20776f726473\n7461620976616c7565\n"
+        "71756f7465227461696c\n6f6e655c74776f5c\n7370616365205c\n"
+        "736c6173685c2271756f7465\n6c696e650a627265616b\n";
+    MarimayFailAllocator state;
+    MarimayProcessResult result = {0};
+    MarimayProcessStatus status;
+    mmay_fail_allocator_init(&state, mmay_system_allocator(), failure_index);
+    status = mmay_process_run(
+        mmay_fail_allocator(&state), arguments,
+        sizeof(arguments) / sizeof(arguments[0]) - 1, 16384, &result
+    );
+    if (status == MMAY_PROCESS_OK) {
+        MMAY_EXPECT(result.exit_code == 0 && !result.signaled);
+        MMAY_EXPECT(result.output.length == sizeof(expected) - 1);
+        MMAY_EXPECT(result.output.length != sizeof(expected) - 1
+            || memcmp(result.output.data, expected, sizeof(expected) - 1) == 0);
+    } else {
+        MMAY_EXPECT(status == MMAY_PROCESS_ALLOCATION_FAILED);
+        MMAY_EXPECT(result.output.data == NULL);
+    }
+    *attempts = state.attempts;
+    mmay_process_result_dispose(&result);
+    MMAY_EXPECT(state.live_allocations == 0);
+    MMAY_EXPECT(state.live_bytes == 0);
+    return status == MMAY_PROCESS_OK;
+}
+
+static void mmay_test_process_arguments(void) {
+    size_t count = 0;
+    size_t failure_index = 0;
+    MMAY_EXPECT(mmay_test_process_argument_run(SIZE_MAX, &count));
+    MMAY_EXPECT(count != 0);
+    for (failure_index = 0; failure_index < count; failure_index += 1) {
+        size_t attempts = 0;
+        MMAY_EXPECT(!mmay_test_process_argument_run(failure_index, &attempts));
+        MMAY_EXPECT(attempts == failure_index + 1);
+    }
+}
+
 void mmay_test_process(void) {
     static const unsigned char exact_input[] = {
         'a', 0, 0xff, '\r', '\n'
@@ -33,6 +79,7 @@ void mmay_test_process(void) {
     if (executable == NULL) {
         return;
     }
+    mmay_test_process_arguments();
     MMAY_EXPECT(mmay_process_executable_path(
         mmay_system_allocator(), 32768, &executable_path
     ) == MMAY_PROCESS_OK);

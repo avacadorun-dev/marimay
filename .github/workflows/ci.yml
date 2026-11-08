@@ -95,10 +95,6 @@ jobs:
       - name: Configure (Windows)
         if: runner.os == 'Windows'
         run: cmake -S . -B build -DMMAY_WARNINGS_AS_ERRORS=ON
-      - name: Diagnose MSVC identity query
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ./.github/scripts/check-msvc-probe.ps1 -BuildDirectory build
       - name: Build
         run: cmake --build build --config ${{ matrix.configuration }} --parallel
       - name: Preflight Windows native toolchain
@@ -257,9 +253,6 @@ jobs:
         run: ./.github/scripts/enable-msvc.ps1
       - name: Configure
         run: cmake --preset asan
-      - name: Diagnose MSVC identity query
-        shell: pwsh
-        run: ./.github/scripts/check-msvc-probe.ps1 -BuildDirectory build/asan
       - name: Build
         run: cmake --build --preset asan --parallel
       - name: Preflight Windows native toolchain

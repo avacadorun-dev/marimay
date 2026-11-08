@@ -104,6 +104,9 @@ MSVC compiles first-party and generated C as UTF-8. The CLI and generated
 native entry points select binary mode for available standard streams so D075
 preserves exact bytes, including LF and Ctrl-Z. Runtime manifests are generated
 with LF independently of checkout line endings and retain exact validation.
+The Windows process adapter leaves simple arguments bare and escapes arguments
+that need quoting. Native compiler options `/I` and `/Fe:` carry their path in
+a separate argument, including paths with spaces in relocated installations.
 See the [MSVC ASan build reference](https://learn.microsoft.com/en-us/cpp/sanitizers/asan-building)
 and [runtime-check restrictions](https://learn.microsoft.com/en-us/cpp/build/reference/rtc-run-time-error-checks).
 
