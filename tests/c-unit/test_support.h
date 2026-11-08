@@ -20,6 +20,7 @@ MarimayWriter mmay_test_buffer_writer(MarimayTestBuffer *buffer);
 
 /* Successful test streams belong to the caller and must be closed. */
 FILE *mmay_test_open_file(const char *path, const char *mode);
+int mmay_test_remove_file(const char *path);
 FILE *mmay_test_temporary_file(void);
 
 void mmay_test_fail(const char *file, int line, const char *expression);

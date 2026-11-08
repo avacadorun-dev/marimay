@@ -758,6 +758,19 @@ and staging allocations pass through `vm_jit_memory.c` to the existing allocator
 that adapter does not own OS policy. Both allocation ledgers remain testable.
 Only the central page owner may use mmap/munmap or VirtualAlloc/VirtualFree.
 
+Under [D111](../design/decisions.md),
+the callable payload begins after a 16-byte zero-filled prefix in the same
+owned code mapping. [Clang's indirect-function sanitizer](https://github.com/llvm/llvm-project/blob/release/18.x/clang/lib/CodeGen/CGExpr.cpp)
+probes immediately before a target to recognize compiler-emitted type metadata.
+A target at the mapping boundary would make that probe access an unowned page. The prefix
+keeps the probe readable without disabling instrumentation or manufacturing
+compiler-specific type hashes. Publication protects the complete mapping;
+release reconstructs its original base. The executable-code budget and page
+ledger charge the prefix and page rounding, while publication bounds use only
+the remaining payload capacity. `jit/test_code_memory.c` owns prefix reads,
+exact-capacity/overflow rejection, payload and prefix write protection, and
+the unchanged complete allocator/platform-failure sweeps and zero ledgers.
+
 `cmake/MarimaySljit.cmake` owns optional dependency/build composition.
 `tools/prepare-sljit.py` validates the explicit local dependency against
 `cmake/sljit-source.json`, copies only named upstream inputs under the build

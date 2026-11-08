@@ -1,6 +1,6 @@
 function(mmay_target_warnings target)
   if(MSVC)
-    target_compile_options(${target} PRIVATE /W4)
+    target_compile_options(${target} PRIVATE /W4 /utf-8)
     if(MMAY_WARNINGS_AS_ERRORS)
       target_compile_options(${target} PRIVATE /WX)
     endif()

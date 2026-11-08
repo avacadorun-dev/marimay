@@ -502,8 +502,8 @@ static void mmay_test_real_file_adapter(void) {
     size_t failure_index = 0;
     bool reached_success = false;
 
-    (void)remove(temporary_path);
-    (void)remove(destination_path);
+    (void)mmay_test_remove_file(temporary_path);
+    (void)mmay_test_remove_file(destination_path);
     MMAY_EXPECT(mmay_test_write_file(
         destination_path,
         original,
@@ -585,8 +585,8 @@ static void mmay_test_real_file_adapter(void) {
         replacement,
         sizeof(replacement)
     ) == MMAY_FILE_ALREADY_EXISTS);
-    (void)remove(temporary_path);
-    (void)remove(destination_path);
+    (void)mmay_test_remove_file(temporary_path);
+    (void)mmay_test_remove_file(destination_path);
 }
 
 static void mmay_test_executable_publication(void) {
@@ -596,8 +596,8 @@ static void mmay_test_executable_publication(void) {
     static const unsigned char replacement[] = "new executable";
     size_t failure_index = 0;
     bool reached_success = false;
-    (void)remove(temporary);
-    (void)remove(destination);
+    (void)mmay_test_remove_file(temporary);
+    (void)mmay_test_remove_file(destination);
     for (failure_index = 0; failure_index < 8; failure_index += 1) {
         MarimayFailAllocator state;
         MarimayFileStatus status;
@@ -637,7 +637,7 @@ static void mmay_test_executable_publication(void) {
         }
         MMAY_EXPECT(state.live_allocations == 0);
         MMAY_EXPECT(state.live_bytes == 0);
-        (void)remove(temporary);
+        (void)mmay_test_remove_file(temporary);
         if (reached_success) break;
     }
     MMAY_EXPECT(reached_success);
@@ -652,8 +652,8 @@ static void mmay_test_executable_publication(void) {
         mmay_system_allocator(), NULL, 0,
         destination, sizeof(destination) - 1
     ) == MMAY_FILE_INVALID_ARGUMENT);
-    (void)remove(temporary);
-    MMAY_EXPECT(remove(destination) == 0);
+    (void)mmay_test_remove_file(temporary);
+    MMAY_EXPECT(mmay_test_remove_file(destination) == 0);
 }
 
 void mmay_test_file(void) {

@@ -142,6 +142,7 @@ static void mmay_cp13_expect_probe(
     arguments[argument_count++] = MMAY_TEST_C_COMPILER;
     arguments[argument_count++] = "/nologo";
     arguments[argument_count++] = "/std:c17";
+    arguments[argument_count++] = "/utf-8";
 #if defined(MMAY_TEST_C_SANITIZER)
     arguments[argument_count++] = MMAY_TEST_C_SANITIZER;
 #endif

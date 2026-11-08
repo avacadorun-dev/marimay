@@ -4,15 +4,47 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
 static int mmay_failures = 0;
 static const char *mmay_executable = NULL;
 
+#if defined(_WIN32)
+static bool mmay_test_wide_text(const char *text, wchar_t *wide, int capacity) {
+    return text != NULL && MultiByteToWideChar(
+        CP_UTF8, MB_ERR_INVALID_CHARS, text, -1, wide, capacity
+    ) > 0;
+}
+#endif
+
 FILE *mmay_test_open_file(const char *path, const char *mode) {
+#if defined(_WIN32)
+    wchar_t wide_path[4096];
+    wchar_t wide_mode[16];
+    if (!mmay_test_wide_text(path, wide_path, 4096)
+        || !mmay_test_wide_text(mode, wide_mode, 16)) {
+        return NULL;
+    }
 #if defined(_MSC_VER)
     FILE *file = NULL;
-    return fopen_s(&file, path, mode) == 0 ? file : NULL;
+    return _wfopen_s(&file, wide_path, wide_mode) == 0 ? file : NULL;
+#else
+    return _wfopen(wide_path, wide_mode);
+#endif
 #else
     return fopen(path, mode);
+#endif
+}
+
+int mmay_test_remove_file(const char *path) {
+#if defined(_WIN32)
+    wchar_t wide_path[4096];
+    return mmay_test_wide_text(path, wide_path, 4096) ? _wremove(wide_path) : -1;
+#else
+    return remove(path);
 #endif
 }
 

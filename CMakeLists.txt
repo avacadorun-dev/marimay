@@ -282,13 +282,13 @@ set(MMAY_NATIVE_RUNTIME_MANIFEST_PROFILE debug)
 configure_file(
   cmake/mmay_native_runtime.manifest.in
   "${MMAY_NATIVE_RUNTIME_DEBUG_MANIFEST}"
-  @ONLY
+  @ONLY NEWLINE_STYLE UNIX
 )
 set(MMAY_NATIVE_RUNTIME_MANIFEST_PROFILE release)
 configure_file(
   cmake/mmay_native_runtime.manifest.in
   "${MMAY_NATIVE_RUNTIME_RELEASE_MANIFEST}"
-  @ONLY
+  @ONLY NEWLINE_STYLE UNIX
 )
 
 set(MMAY_NATIVE_RUNTIME_SOURCES
@@ -922,26 +922,30 @@ if(BUILD_TESTING)
     )
     add_test(
       NAME mmay_roadmap
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
     )
     set_tests_properties(mmay_roadmap PROPERTIES
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_custom_target(check-roadmap
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-roadmap"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       COMMENT "Checking roadmap and checkpoint invariants"
       VERBATIM
     )
     add_test(
       NAME mmay_release_contract
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
     )
     set_tests_properties(mmay_release_contract PROPERTIES
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
     )
     add_custom_target(check-release-contract
-      COMMAND "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
+      COMMAND "${Python3_EXECUTABLE}"
+        "${CMAKE_CURRENT_SOURCE_DIR}/tools/check-release-contract"
       WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
       COMMENT "Checking release metadata and CLI0 closure ownership"
       VERBATIM

@@ -152,7 +152,10 @@ metering must refuse execution under finite/shared options and retain ordinary
 VM handling of those options.
 
 Code storage is separate from the managed heap and bounded by an explicit
-implementation budget that includes page rounding. Compiler/staging allocation
+implementation budget that includes entry padding and page rounding. Host
+indirect-call metadata probes must remain within the owned readable mapping;
+entry padding must not supply forged type metadata or disable sanitizer checks.
+Compiler/staging allocation
 and executable-page ownership obey the central allocation boundary. Executable
 publication is immutable, uses platform W^X and cache synchronization, and must
 not expose a generic writable/executable fallback. Unsupported execution policy

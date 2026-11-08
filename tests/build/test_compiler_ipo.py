@@ -17,6 +17,7 @@ add_executable(mmay unit.c)
 target_link_libraries(mmay PRIVATE mmay_bootstrap)
 add_subdirectory(child)
 include("@MODULE@")
+file(WRITE "${CMAKE_BINARY_DIR}/configurations.txt" "${CMAKE_CONFIGURATION_TYPES}")
 foreach(target mmay_bootstrap mmay_sljit mmay mmay_test mmay_native_runtime_release unrelated)
   get_target_property(all ${target} INTERPROCEDURAL_OPTIMIZATION)
   get_target_property(release ${target} INTERPROCEDURAL_OPTIMIZATION_RELEASE)
@@ -61,6 +62,11 @@ with tempfile.TemporaryDirectory(prefix='mmay-ipo-contract-') as temporary:
         if not success:
             assert expected in result.stdout + result.stderr
             continue
+        # Multi-config generators expose Release independently of the requested
+        # CMAKE_BUILD_TYPE; AUTO must enable only that configuration there too.
+        if ((build / 'configurations.txt').read_text().strip()
+                and policy == 'AUTO' and supported):
+            expected = 'release'
         for line in (build / 'properties.txt').read_text().splitlines():
             target, all_configs, release, debug = line.split(':')
             enabled = target in {'mmay_bootstrap', 'mmay_sljit', 'mmay', 'mmay_test'}

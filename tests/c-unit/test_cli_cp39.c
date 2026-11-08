@@ -134,6 +134,50 @@ static void mmay_cp39_expect_init_allocations(void) {
     MMAY_EXPECT(reached_success);
 }
 
+#if defined(_WIN32)
+static void mmay_cp39_expect_msvc_identity(void) {
+    const char *version = MMAY_NATIVE_C_COMPILER_VERSION;
+    size_t base_length = 0;
+    size_t separators = 0;
+    char alternate[128];
+    MarimayOwnedBytes output = {0};
+    int written = 0;
+    while (version[base_length] != '\0') {
+        if (version[base_length] == '.' && ++separators == 3) break;
+        base_length += 1;
+    }
+    MMAY_EXPECT(base_length > 0 && base_length < sizeof(alternate));
+    if (base_length == 0 || base_length >= sizeof(alternate)) return;
+    if (strcmp(version + base_length, ".0") == 0) {
+        memcpy(alternate, version, base_length);
+        alternate[base_length] = '\0';
+        MMAY_EXPECT(mmay_native_toolchain_probe(
+            mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
+            alternate, &output
+        ) == MMAY_NATIVE_TOOLCHAIN_OK);
+        mmay_owned_bytes_dispose(&output);
+    }
+    written = snprintf(alternate, sizeof(alternate), "%.*s.%u",
+        (int)base_length, version,
+        strcmp(version + base_length, ".1") == 0 ? 2U : 1U);
+    MMAY_EXPECT(written > 0 && (size_t)written < sizeof(alternate));
+    if (written <= 0 || (size_t)written >= sizeof(alternate)) return;
+    MMAY_EXPECT(mmay_native_toolchain_probe(
+        mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
+        alternate, &output
+    ) == MMAY_NATIVE_TOOLCHAIN_UNAVAILABLE);
+    MMAY_EXPECT(output.data == NULL);
+    /* A shorter final field must not match the prefix of the reported build. */
+    memcpy(alternate, version, base_length - 1);
+    alternate[base_length - 1] = '\0';
+    MMAY_EXPECT(mmay_native_toolchain_probe(
+        mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
+        alternate, &output
+    ) == MMAY_NATIVE_TOOLCHAIN_UNAVAILABLE);
+    MMAY_EXPECT(output.data == NULL);
+}
+#endif
+
 static void mmay_cp39_expect_toolchain(void) {
     MarimayOwnedBytes output = {0};
     size_t failure_index = 0;
@@ -144,6 +188,9 @@ static void mmay_cp39_expect_toolchain(void) {
     ) == MMAY_NATIVE_TOOLCHAIN_OK);
     MMAY_EXPECT(output.length != 0);
     mmay_owned_bytes_dispose(&output);
+#if defined(_WIN32)
+    mmay_cp39_expect_msvc_identity();
+#endif
     MMAY_EXPECT(mmay_native_toolchain_probe(
         mmay_system_allocator(), MMAY_NATIVE_C_COMPILER,
         "999.999.999", &output

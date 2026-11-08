@@ -295,6 +295,7 @@ static MarimayNativeBuildStatus mmay_native_build_compile(
     arguments[argument_count++] = compiler;
     arguments[argument_count++] = "/nologo";
     arguments[argument_count++] = "/std:c17";
+    arguments[argument_count++] = "/utf-8";
     arguments[argument_count++] = "/W4";
     arguments[argument_count++] = "/WX";
     arguments[argument_count++] = "/fp:strict";
