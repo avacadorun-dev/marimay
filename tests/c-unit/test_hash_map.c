@@ -249,9 +249,77 @@ static void mmay_test_map_max_alignment(void) {
     MMAY_EXPECT(completed);
 }
 
+static void mmay_test_seeded_hash(void) {
+    static const unsigned char input[16] = {
+        0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+    };
+    unsigned char wide[100];
+    size_t index = 0;
+    static const uint64_t key0 = 0x0706050403020100ULL;
+    static const uint64_t key1 = 0x0f0e0d0c0b0a0908ULL;
+    for (index = 0; index < sizeof(wide); index += 1) {
+        wide[index] = (unsigned char)(index & 0xffU);
+    }
+    /* Known answers mirror the XXH64 structure with both injected seed
+     * words folded into its standard seed slot. */
+    MMAY_EXPECT(mmay_hash_seeded(NULL, 0, 0, 0)
+        == 0xef46db3751d8e999ULL);
+    MMAY_EXPECT(mmay_hash_seeded("abc", 3, 0, 0)
+        == 0x44bc2cf5ad770999ULL);
+    MMAY_EXPECT(mmay_hash_seeded(NULL, 0, key0, key1)
+        == 0x6a83ebc6247ef77dULL);
+    MMAY_EXPECT(mmay_hash_seeded(input, 1, key0, key1)
+        == 0xe5798d4e82915530ULL);
+    MMAY_EXPECT(mmay_hash_seeded(input, 7, key0, key1)
+        == 0xedb731e624d0780fULL);
+    MMAY_EXPECT(mmay_hash_seeded(input, 15, key0, key1)
+        == 0xaac216598b908616ULL);
+    MMAY_EXPECT(mmay_hash_seeded(input, 16, key0, key1)
+        == 0xd2594db2a571ca68ULL);
+    MMAY_EXPECT(mmay_hash_seeded(wide, 31, key0, key1)
+        == 0x25d7dd7d349162a1ULL);
+    MMAY_EXPECT(mmay_hash_seeded(wide, 32, key0, key1)
+        == 0x594f14ec628061dcULL);
+    MMAY_EXPECT(mmay_hash_seeded(wide, 40, key0, key1)
+        == 0x1943a26794cff530ULL);
+    MMAY_EXPECT(mmay_hash_seeded(wide, 100, key0, key1)
+        == 0x34a7683c0902052cULL);
+}
+
+static void mmay_test_seeded_hash_word(void) {
+    static const uint64_t values[] = {
+        0, 1, UINT64_MAX, UINT64_C(0x8000000000000000),
+        UINT64_C(0x7fffffffffffffff), UINT64_C(0x0706050403020100),
+        UINT64_C(0xaaaaaaaaaaaaaaaa), UINT64_C(0x5555555555555555)
+    };
+    uint64_t random = UINT64_C(0x20260906c036c036);
+    size_t index = 0;
+    for (index = 0; index < 100000; index += 1) {
+        uint64_t word, seed0, seed1;
+        random = random * UINT64_C(6364136223846793005)
+            + UINT64_C(1442695040888963407);
+        word = index < sizeof(values) / sizeof(values[0]) ? values[index] : random;
+        random = random * UINT64_C(6364136223846793005)
+            + UINT64_C(1442695040888963407);
+        seed0 = random;
+        random = random * UINT64_C(6364136223846793005)
+            + UINT64_C(1442695040888963407);
+        seed1 = random;
+        MMAY_EXPECT(mmay_hash_seeded_word(word, seed0, seed1)
+            == mmay_hash_seeded(&word, sizeof(word), seed0, seed1));
+        MMAY_EXPECT(mmay_hash_seeded_word(word, 0, UINT64_MAX)
+            == mmay_hash_seeded(&word, sizeof(word), 0, UINT64_MAX));
+    }
+    MMAY_EXPECT(mmay_hash_seeded_word(
+        UINT64_C(0x0706050403020100), 0x0706050403020100ULL,
+        0x0f0e0d0c0b0a0908ULL) == 0x9c90762342c5cfdaULL);
+}
+
 void mmay_test_hash_map(void) {
     mmay_test_hashes();
     mmay_test_siphash_word();
+    mmay_test_seeded_hash();
+    mmay_test_seeded_hash_word();
     mmay_test_map_behavior();
     mmay_test_map_failures();
     mmay_test_map_max_alignment();

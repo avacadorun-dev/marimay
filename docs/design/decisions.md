@@ -3966,3 +3966,37 @@ try the current compiler on supported Macs without presenting the unfinished
 CLI0 audit or target language as complete. Separate publication authorization,
 bounded artifact validation and product-gate readiness make that distinction
 inspectable. No source-language or VM/native observable semantics change.
+
+## D115 — Seeded non-cryptographic hash for managed collection keys
+
+Status: accepted.
+
+Managed Map/Set key hashing moves from SipHash-2-4 to the `mmay_hash_seeded`
+owner: the XXH64 structure with both injected 64-bit collection seed words
+folded into its standard seed slot (`seed0 ^ rotl64(seed1, 32)`), plus an
+exact fixed-word entry point. The two-seed injection contract, per-heap seed
+options, group-control high-bit derivation, probing, insertion order,
+capacity policy, failure atomicity and D055 byte accounting are unchanged.
+
+The ordered-collection decision already makes hashing unobservable: resizing,
+layout, tombstones and hash seeds cannot change visible order or any result,
+and a runtime may randomize hashing. No source syntax, formatter rule, MIR or
+bytecode wire ID, public signature or observable program behavior changes.
+Iteration remains insertion-ordered and key equality remains exact counted
+UTF-8 comparison, so the algorithm swap has no semantic surface. SipHash-2-4
+and its reference vectors remain in the base hash owner for the compiler's
+internal tables; only the managed runtime dispatch changes.
+
+Reason: string-keyed collections dominate the current local performance
+laggards (word-frequency about 7.4x, set-string-churn about 3.3x, map-string
+about 2.8x, rune-frequency about 3.7x from Go medians on the unchanged
+corpus). Short-string key hashing is a measured common cost across those
+rows. SipHash-2-4's per-block double rounds and six-round finalization are
+disproportionate for 4–30 byte keys; the selected structure processes those
+keys with one multiply-rotate round per 8 bytes and a short avalanche while
+keeping both seeds mandatory. Hash-flooding hardening now rests on seed
+injection as it already did: the default seeds remain fixed constants, so
+controlled executions keep deterministic behavior and the documented security
+review obligation for attacker-controlled map keys is unchanged. Collision
+resistance claims for this hobby runtime are not strengthened or weakened by
+this record; no DoS-resistance parity with SipHash is asserted.

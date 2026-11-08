@@ -37,4 +37,19 @@ uint64_t mmay_hash_sip24(
  * equivalent to mmay_hash_sip24(&word, sizeof(word), key0, key1). */
 uint64_t mmay_hash_sip24_word(uint64_t word, uint64_t key0, uint64_t key1);
 
+/* Seeded 64-bit hash for managed collection keys (XXH64 structure with
+ * both injected seed words mixed into the standard seed slot). Hash values
+ * are unobservable per the ordered-collection decision; only the injectable
+ * two-seed contract and collision behavior are retained. */
+uint64_t mmay_hash_seeded(
+    const void *bytes,
+    size_t length,
+    uint64_t seed0,
+    uint64_t seed1
+);
+
+/* Exact equivalent of mmay_hash_seeded(&word, sizeof(word), seed0, seed1)
+ * on every C17 host. */
+uint64_t mmay_hash_seeded_word(uint64_t word, uint64_t seed0, uint64_t seed1);
+
 #endif

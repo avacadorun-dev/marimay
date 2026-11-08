@@ -1003,9 +1003,10 @@ compiler inlining hint keeps sharing that core from adding a call boundary
 to Map.put; other C17 compilers retain the ordinary inline implementation.
 `runtime/test_managed_set_insertion.c` owns this operation's handle, output,
 key, duplicate/limit and lifetime boundaries. Raw 64-bit keys
-use the base hash owner's fixed-word SipHash-2-4 entry point, exactly equivalent
-to hashing the native word bytes with the generic routine. Round count, seeds,
-reference-key hashing, probing, order and storage accounting rules are unchanged.
+use the base hash owner's fixed-word `mmay_hash_seeded` entry point, exactly
+equivalent to hashing the native word bytes with the generic routine. Round
+structure, both seeds, reference-key hashing, probing, order and storage
+accounting rules are unchanged.
 
 `managed_map_probe.c` owns the bounded bucket walk, integrity checks and
 resumable hash-candidate enumeration behind `managed_map_probe_internal.h`.
@@ -1535,7 +1536,7 @@ checkpoint:
 | `bootstrap/src/bytecode/bytecode_verify_collections.c` | 0 | 188 | hostile collection opcode register/layout validation |
 | `bootstrap/src/bytecode/vm_collection.c` | 0 | 450 | managed descriptor cache, cell conversion, collection execution, and G4005 mapping |
 | `bootstrap/src/native/c_emitter_collections.c` | 0 | 337 | portable-C descriptors, instructions, and iterator panic emission |
-| `runtime/common/managed_map.c` | 0 | 1,205 | D079 coherent SipHash keys, insertion order, failure-atomic growth, mutation generation, and precise tracing |
+| `runtime/common/managed_map.c` | 0 | 1,205 | D079 coherent seeded-hash keys, insertion order, failure-atomic growth, mutation generation, and precise tracing |
 | `runtime/common/managed_set.c` | 0 | 161 | narrow Set API over the single map-storage implementation |
 | `runtime/include/mmay/runtime/map.h` | 0 | 78 | narrow owner API for managed ordered maps |
 | `runtime/include/mmay/runtime/set.h` | 0 | 56 | narrow owner API for managed ordered sets |

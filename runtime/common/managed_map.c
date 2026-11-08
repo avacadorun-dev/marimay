@@ -65,7 +65,7 @@ static uint64_t mmay_managed_map_hash_words(
     uint64_t words[2];
     words[0] = first;
     words[1] = second;
-    return mmay_hash_sip24(words, sizeof(words), seed0, seed1);
+    return mmay_hash_seeded(words, sizeof(words), seed0, seed1);
 }
 
 static uint64_t mmay_managed_map_hash_raw64(
@@ -73,8 +73,8 @@ static uint64_t mmay_managed_map_hash_raw64(
     uint64_t seed0,
     uint64_t seed1
 ) {
-    /* Keep keyed SipHash; specialize dispatch, not collision resistance. */
-    return mmay_hash_sip24_word(value, seed0, seed1);
+    /* Keep both injected seeds; specialize dispatch, not collision behavior. */
+    return mmay_hash_seeded_word(value, seed0, seed1);
 }
 
 static MarimayManagedStatus mmay_managed_map_value_hash(
@@ -267,7 +267,7 @@ static MarimayManagedStatus mmay_managed_map_value_hash(
             || field->reference_descriptor != NULL) {
             return MMAY_MANAGED_TYPE_MISMATCH;
         }
-        *result = mmay_hash_sip24(
+        *result = mmay_hash_seeded(
             slot->as.string->bytes, slot->as.string->length,
             heap->options.collection_hash_seed0,
             heap->options.collection_hash_seed1
