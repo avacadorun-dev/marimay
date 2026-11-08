@@ -838,7 +838,10 @@ verified old active wrapper/prefix, complete physical plist and BOM, and
 matching package ID, version, install location and target volume. Foreign,
 partial, corrupt or unqueryable receipts fail without replacement; absence
 checks inspect only the package's own identifier and receipt files. The
-new wrapper is activated last by
+receipt's `install-location` must exactly equal `usr/local/lib/marimay/V`,
+relative to its separately validated target `volume`; absolute paths and
+alternate spellings are rejected.
+The new wrapper is activated last by
 atomic rename only after validation; failure preserves the old active command.
 This is atomic command activation, not atomic file-by-file Installer payload
 installation. Installer manages receipts and inactive payloads; cleanup of a

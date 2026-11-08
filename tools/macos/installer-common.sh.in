@@ -217,7 +217,7 @@ mmay_receipt_owner() {
         case "$mmay_field" in
             pkgid) mmay_expected=org.marimay.mmay;;
             pkg-version) mmay_expected=$MMAY_OLD_VERSION;;
-            install-location) mmay_expected=/usr/local/lib/marimay/$MMAY_OLD_VERSION;;
+            install-location) mmay_expected=usr/local/lib/marimay/$MMAY_OLD_VERSION;;
             volume) mmay_expected=$MMAY_VOLUME;;
         esac
         mmay_receipt_field "$mmay_field" > "$MMAY_WORK/receipt-value" 2> "$MMAY_WORK/receipt-errors" || \

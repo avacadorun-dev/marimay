@@ -416,7 +416,7 @@ class InstallerTests(unittest.TestCase):
 
     def receipt_reader(self, **changed):
         fields = {"pkgid": "org.marimay.mmay", "pkg-version": "0.1.0-alpha.0",
-                  "install-location": "/usr/local/lib/marimay/0.1.0-alpha.0",
+                  "install-location": "usr/local/lib/marimay/0.1.0-alpha.0",
                   "volume": str(self.volume)}
         fields.update(changed)
         cases = []
@@ -453,6 +453,12 @@ class InstallerTests(unittest.TestCase):
         self.hook("preinstall", prefix_code=self.receipt_reader())
         for field, value in (("pkgid", "foreign.identifier"), ("pkg-version", "0.0.0"),
                 ("install-location", "/foreign/prefix"), ("volume", "/other-volume"),
+                ("install-location", "/usr/local/lib/marimay/0.1.0-alpha.0"),
+                ("install-location", "usr/local/lib//marimay/0.1.0-alpha.0"),
+                ("install-location", "usr/local/lib/other/0.1.0-alpha.0"),
+                ("install-location", "usr/local/lib/../marimay/0.1.0-alpha.0"),
+                ("install-location", "usr/local/lib\\marimay/0.1.0-alpha.0"),
+                ("install-location", ""), ("install-location", None),
                 ("pkg-version", "0.1.0-alpha.0\n"), ("pkg-version", None)):
             with self.subTest(field=field, value=value):
                 self.hook("preinstall", 1, self.receipt_reader(**{field: value}))
@@ -474,7 +480,7 @@ class InstallerTests(unittest.TestCase):
         self.receipt_files()
         fixture = self.work / "queried receipt.plist"
         fields = {"pkgid": "org.marimay.mmay", "pkg-version": "0.1.0-alpha.0",
-                  "install-location": "/usr/local/lib/marimay/0.1.0-alpha.0",
+                  "install-location": "usr/local/lib/marimay/0.1.0-alpha.0",
                   "volume": str(self.volume)}
         reader = ("mmay_receipt_list() { printf 'org.marimay.mmay\\n'; }; "
                   "mmay_receipt_info() { /bin/cat " + shlex.quote(str(fixture)) + "; }")
@@ -604,7 +610,7 @@ class InstallGateTests(unittest.TestCase):
     def test_receipt_mismatch_reports_only_queried_identity_fields(self):
         import plistlib
         fields = {"pkgid": SMOKE.IDENTIFIER, "pkg-version": "0.0.0",
-                  "install-location": "usr/local/lib/marimay/0.0.0-alpha.ci-fixture",
+                  "install-location": "usr/local/lib/foreign/0.0.0-alpha.ci-fixture",
                   "volume": "/", "unrelated-system-metadata": "must not report"}
         result = subprocess.CompletedProcess([], 0, plistlib.dumps(fields), b"")
         with mock.patch.object(SMOKE, "command", return_value=result) as command, \
@@ -615,6 +621,27 @@ class InstallGateTests(unittest.TestCase):
         self.assertIn('"install-location"', str(caught.exception))
         self.assertNotIn("unrelated-system-metadata", str(caught.exception))
         self.assertNotIn("must not report", str(caught.exception))
+
+    def test_receipt_identity_requires_exact_volume_relative_location(self):
+        import plistlib
+        location = "/usr/local/lib/marimay/" + VERSION
+        fields = {"pkgid": SMOKE.IDENTIFIER, "pkg-version": VERSION,
+                  "install-location": location[1:], "volume": "/"}
+        result = subprocess.CompletedProcess([], 0, plistlib.dumps(fields), b"")
+        with mock.patch.object(SMOKE, "command", return_value=result):
+            self.assertEqual(SMOKE.receipt_identity(SMOKE.IDENTIFIER, VERSION, location,
+                                                  Path("/unused")), fields)
+        for value in (location, location[1:] + "/", location[1:].replace("/lib/", "/lib//"),
+                      location[1:].replace("/marimay/", "/foreign/"),
+                      location[1:].replace("/marimay/", "/../marimay/"),
+                      location[1:].replace("/marimay/", "\\marimay/"), "", None, 7):
+            changed = dict(fields)
+            if value is None: del changed["install-location"]
+            else: changed["install-location"] = value
+            result = subprocess.CompletedProcess([], 0, plistlib.dumps(changed), b"")
+            with self.subTest(location=value), mock.patch.object(SMOKE, "command", return_value=result), \
+                    self.assertRaisesRegex(AssertionError, "Installer receipt identity mismatch"):
+                SMOKE.receipt_identity(SMOKE.IDENTIFIER, VERSION, location, Path("/unused"))
 
     def test_previous_fixture_registers_real_receipt_with_installer(self):
         with tempfile.TemporaryDirectory() as directory:

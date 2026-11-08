@@ -107,10 +107,14 @@ def write_previous_fixture(root, version):
 
 
 def receipt_identity(identifier, version, location, work):
+    if not location.startswith("/") or location.startswith("//"):
+        raise ValueError("expected package install location must be canonical absolute")
     result = command(["/usr/sbin/pkgutil", "--volume", "/", "--pkg-info-plist", identifier], work)
     fields = plistlib.loads(result.stdout)
+    # Stock Installer reports a volume-relative receipt location. Convert only
+    # our fixed absolute expectation; the observed field is compared unchanged.
     expected = {"pkgid": identifier, "pkg-version": version,
-                "install-location": location, "volume": "/"}
+                "install-location": location[1:], "volume": "/"}
     mismatches = {key: {"expected": value, "actual": repr(fields.get(key)),
                         "type": type(fields.get(key)).__name__}
                   for key, value in expected.items()

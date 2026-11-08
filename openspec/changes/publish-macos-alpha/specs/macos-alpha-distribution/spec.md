@@ -64,6 +64,11 @@ be edited.
   with the verified old active prefix and target volume
 - **THEN** installation fails without replacing its receipt or active command
 
+#### Scenario: Match canonical macOS receipt location
+- **WHEN** the existing owned version is `V` on a validated target volume
+- **THEN** receipt `install-location` must exactly equal the volume-relative
+  `usr/local/lib/marimay/V`; absolute or alternate spellings are rejected
+
 ### Requirement: Verified immutable release publication
 Tag/manual publication SHALL validate tag/version/commit/main ancestry, complete
 repository CI and security, both macOS full test suites, installed smoke tests,

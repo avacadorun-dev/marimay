@@ -38,6 +38,8 @@ promotion of existing product milestones. No source syntax changes.
    prefix, including a same-version reinstall, is rejected unchanged. Upgrades
    require a fresh version slot. Existing Installer receipts must match the
    verified old active wrapper/prefix and exact package/version/location/volume;
+   stock `pkgutil` represents receipt locations relative to the target volume,
+   so compare exactly `usr/local/lib/marimay/V` without a leading slash.
    partial, corrupt or foreign records fail closed without replacement.
    The CI upgrade fixture registers a real old receipt/BOM through Installer,
    then adds unrelated data outside its BOM and verifies its preservation.

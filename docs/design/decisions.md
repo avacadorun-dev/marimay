@@ -3932,6 +3932,8 @@ damaged attempts, and rejects foreign or modified global commands. An upgrade
 uses a fresh version slot. An existing Installer receipt is accepted only
 with the verified old active wrapper/prefix, complete physical plist and BOM,
 and exact package ID, version, install location and target-volume identity.
+The receipt location is the exact volume-relative `usr/local/lib/marimay/V`
+reported by `pkgutil`, while the package destination remains absolute.
 Foreign, partial, corrupt or unqueryable receipts fail without replacement;
 receipt absence is checked without enumerating unrelated installations.
 After payload/ownership validation, the wrapper is
