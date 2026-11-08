@@ -13,7 +13,7 @@ class DriverTests(unittest.TestCase):
     def setUp(self):
         self.temporary = tempfile.TemporaryDirectory(prefix="mmay проверка ")
         self.addCleanup(self.temporary.cleanup)
-        self.root = Path(self.temporary.name)
+        self.root = Path(self.temporary.name).resolve()
         self.app = Application(self.root, sys.executable)
 
     def command(self, code):

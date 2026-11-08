@@ -308,7 +308,7 @@ jobs:
           persist-credentials: false
       - name: Install C17 toolchain
         run: >-
-          ./tools/ci-apt-install
+          sudo ./tools/ci-apt-install
           build-essential clang cmake git libclang-rt-18-dev llvm-18 python3
       - name: Fetch the explicit pinned C dependency
         run: |

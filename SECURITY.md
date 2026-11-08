@@ -7,7 +7,7 @@ may remain unpatched.
 ## Report a vulnerability privately
 
 Use **Security → Report a vulnerability** on
-[this repository](https://github.com/avacadorun-dev/marimay/security/advisories/new).
+[this repository](https://github.com/marimay-lang/marimay/security/advisories/new).
 Include the revision, platform, a minimal reproducer with synthetic data,
 impact, and any proposed mitigation. Do not open public issues with exploits,
 credentials, private URLs, or personal data. No response-time commitment is

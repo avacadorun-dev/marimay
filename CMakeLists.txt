@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.25)
 
+# Select per-target MSVC runtime checks before enabling C, when available.
+if(POLICY CMP0184)
+  cmake_policy(SET CMP0184 NEW)
+endif()
+
 project(Marimay VERSION 0.1.0 LANGUAGES C)
 
 include(CTest)
@@ -16,6 +21,12 @@ option(MMAY_ENABLE_ADDRESS_SANITIZER "Enable AddressSanitizer" OFF)
 option(MMAY_ENABLE_UNDEFINED_SANITIZER "Enable UndefinedBehaviorSanitizer" OFF)
 option(MMAY_ENABLE_THREAD_SANITIZER "Enable ThreadSanitizer" OFF)
 option(MMAY_BUILD_FUZZERS "Build Clang libFuzzer frontend targets" OFF)
+
+# CMake <4 puts /RTC1 into the global Debug flags. Reapply it per target so
+# an optimized runtime archive and ASan never inherit incompatible checks.
+if(MSVC AND NOT POLICY CMP0184)
+  string(REGEX REPLACE "(^| )/RTC[1csu]+( |$)" " " CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+endif()
 
 if(MMAY_BUILD_FUZZERS)
   if(NOT CMAKE_C_COMPILER_ID MATCHES "Clang")
@@ -353,7 +364,7 @@ function(mmay_add_native_runtime target profile optimization output_directory)
       ARCHIVE_OUTPUT_DIRECTORY_${mmay_config} "${output_directory}"
     )
   endforeach()
-  mmay_target_sanitizers(${target})
+  mmay_target_sanitizers(${target} "${profile}")
   if(MSVC)
     target_compile_options(${target} PRIVATE /fp:strict "${optimization}")
   else()

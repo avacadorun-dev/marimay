@@ -11,7 +11,7 @@ typedef struct MarimayMapEntry {
     size_t allocation_size;
     uint64_t hash;
     MarimayOwnedBytes key;
-    max_align_t alignment_anchor;
+    MarimayMaxAlign alignment_anchor;
     unsigned char value[];
 } MarimayMapEntry;
 

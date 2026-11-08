@@ -2,7 +2,7 @@
 #include <stdalign.h>
 #include <string.h>
 typedef union MarimayJitAllocation {
-    max_align_t alignment;
+    MarimayMaxAlign alignment;
     struct { size_t bytes; intptr_t executable_offset; } owned;
 } MarimayJitAllocation;
 void *mmay_sljit_allocate(size_t bytes, void *context) {

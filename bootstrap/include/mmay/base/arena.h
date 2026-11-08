@@ -16,7 +16,7 @@ typedef struct MarimayArena {
 /* Arena owns every returned pointer until reset/dispose. */
 void mmay_arena_init(MarimayArena *arena, MarimayAllocator allocator, size_t default_block_size);
 
-/* alignment must be a nonzero power of two no greater than max_align_t. */
+/* alignment must be a nonzero power of two no greater than MarimayMaxAlign. */
 void *mmay_arena_allocate(MarimayArena *arena, size_t size, size_t alignment);
 
 /* Frees all blocks and invalidates all pointers returned by the arena. */

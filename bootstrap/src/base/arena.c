@@ -8,7 +8,7 @@ struct MarimayArenaBlock {
     size_t allocation_size;
     size_t capacity;
     size_t used;
-    max_align_t alignment_anchor;
+    MarimayMaxAlign alignment_anchor;
     unsigned char bytes[];
 };
 
@@ -59,7 +59,7 @@ void *mmay_arena_allocate(MarimayArena *arena, size_t size, size_t alignment) {
     size_t aligned = 0;
     size_t end = 0;
     if (arena == NULL || size == 0 || !mmay_is_power_of_two(alignment)
-        || alignment > _Alignof(max_align_t)) {
+        || alignment > _Alignof(MarimayMaxAlign)) {
         return NULL;
     }
     block = arena->blocks;

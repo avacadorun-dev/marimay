@@ -5,6 +5,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "mmay/base/alignment.h"
+
 typedef void *(*MarimayAllocateFn)(void *context, size_t size);
 typedef void *(*MarimayResizeFn)(
     void *context,
